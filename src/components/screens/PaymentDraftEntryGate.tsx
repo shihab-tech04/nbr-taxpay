@@ -72,7 +72,7 @@ export function PaymentDraftEntryGate({
         if (!Array.isArray(latest.form_payload.passengers))
           throw new Error(tr('Saved passenger details could not be verified.', 'সংরক্ষিত যাত্রীর তথ্য যাচাই করা যায়নি।'));
       } else if (latest.form_payload.category !== latest.service ||
-                 typeof latest.form_payload.forSelf !== 'boolean') {
+                 (typeof latest.form_payload.forSelf !== 'boolean' && latest.form_payload.forSelf !== null)) {
         throw new Error(tr('Saved taxpayer details could not be verified.', 'সংরক্ষিত করদাতার তথ্য যাচাই করা যায়নি।'));
       }
       setCatalog({ ownerKey, status: 'ready', rows });
