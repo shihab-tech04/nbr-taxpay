@@ -275,6 +275,13 @@ jobs:
             echo "Local Edge Function log was not found."
           fi
 
+      - name: Verify actual two-browser SQL Save Draft, resume, conflict and cross-account isolation
+        env:
+          VITE_SUPABASE_DISABLED: "false"
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/account-payment-drafts-real-local.spec.ts --project=mobile-375 --workers=1
+
       - name: Verify SQL profiles and all eight service types render for real preview identities
         env:
           VITE_SUPABASE_DISABLED: 'false'
