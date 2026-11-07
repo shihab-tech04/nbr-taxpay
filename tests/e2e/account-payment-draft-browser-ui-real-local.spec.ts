@@ -111,6 +111,31 @@ test('payment form drafts survive another browser, protect owner isolation and r
     }, { timeout: 10_000, message: 'Start new must expand the modal and reveal both payer cards above its footer' }).toBe(true);
     console.log('DRAFT_TO_ORIGINAL_MODAL_GEOMETRY', JSON.stringify({ project: info.project.name, compactHeight, expanded: await measure() }));
     await entry.screenshot({ path: 'test-results/draft-to-original-payer-' + info.project.name + '.png' });
+
+    // A second Back must survive after entering and leaving Taxpayer details.
+    // This is the exact real-world regression: the payer screen previously
+    // lost its Back arrow after a payment started.
+    await entryModal.locator('[data-payer-relationship="SELF"]').click();
+    await entryModal.locator('[data-payment-entry="OTHER_TAX"]').click();
+    await entryModal.locator('.taxpay-modal__footer').getByRole('button', { name: 'Continue' }).click();
+    await expect(entryModal.locator('.taxpay-modal__title')).toHaveText('Taxpayer details');
+    const payerBack = entryModal.locator('.taxpay-modal__header .taxpay-modal__back');
+    await expect(payerBack).toBeVisible();
+    await payerBack.click();
+    await expect(entryModal.locator('.taxpay-modal__title')).toHaveText('Pay Tax');
+    await expect(entryModal.locator('[data-payer-relationship]')).toHaveCount(2);
+    await expect(entryModal.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(entryModal.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(entryModal.locator('.taxpay-modal__footer').getByRole('button', { name: 'Continue' })).toBeVisible();
+    await expect(payerBack, 'Back must survive after returning from Taxpayer details').toBeVisible();
+    await payerBack.click();
+    await expect(draftGate.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
+    await expect(draftGate.getByRole('button', { name: 'Continue from draft' })).toBeVisible();
+    await expect(entryModal.locator('.taxpay-modal__footer')).toHaveCount(0);
+    await expect(payerBack).toHaveCount(0);
+    await draftGate.getByRole('button', { name: 'Start new Tax payment' }).click();
+    await expect(payerBack).toBeVisible();
+    await expect(entryModal.locator('[data-payer-relationship]')).toHaveCount(2);
     await entryModal.getByRole('button', { name: 'Close payment services' }).click();
 
     const b = await open('user29');
