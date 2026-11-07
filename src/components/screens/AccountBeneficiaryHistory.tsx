@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Search, FileText } from 'lucide-react';
 import { getAccountStoryPayments, beneficiaryPaymentEntries, type BeneficiaryPaymentEntry } from '../../services/story1AccountPaymentHistory';
 import { formatCurrency } from '../../services/numberFormat';
+import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
+import {PAYMENT_TAG_GROUPS,paymentTagGroupForTin,paymentTagGroupLabels,type PaymentTagGroup} from '../../services/beneficiaryPaymentTags';
 import { TaxPayModal } from '../ui/TaxPayModal';
 import { ReceiptView } from '../common/ReceiptView';
 
@@ -16,6 +18,8 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
   const [error,setError]=useState('');
   const [revision,setRevision]=useState(0);
   const [search,setSearch]=useState('');
+  const [tagFilter,setTagFilter]=useState<'all'|PaymentTagGroup>('all');
+  const [tags,setTags]=useState<{owner:string|null;status:'loading'|'ready'|'error';people:Beneficiary[]}>({owner:null,status:'loading',people:[]});
   const [selected,setSelected]=useState<BeneficiaryPaymentEntry|null>(null);
   const bn=language==='bn';
   const tr=(en:string,other:string)=>bn?other:en;
@@ -29,13 +33,21 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
     });
     return ()=>{active=false;};
   },[ownerUid,revision]);
+  useEffect(()=>{
+    let active=true;setTags({owner:ownerUid,status:'loading',people:[]});
+    void loadBeneficiaries(ownerUid).then(result=>{
+      if(active)setTags({owner:ownerUid,status:'ready',people:result.people});
+    }).catch(()=>{if(active)setTags({owner:ownerUid,status:'error',people:[]});});
+    return()=>{active=false;};
+  },[ownerUid,revision]);
+  const visibleTags=tags.owner===ownerUid?tags:{owner:ownerUid,status:'loading' as const,people:[]};
   const filtered=useMemo(()=>{
     const q=search.trim().toLocaleLowerCase();
-    return rows.filter(row=>!q||[
-      row.beneficiaryName,row.taxpayerTin,row.paymentHead,row.assessmentYear,
-      row.paymentId,row.batchId||''
-    ].some(value=>value.toLocaleLowerCase().includes(q)));
-  },[rows,search]);
+    return rows.filter(row=>(tagFilter==='all'||(visibleTags.status==='ready'&&
+      paymentTagGroupForTin(row.taxpayerTin,visibleTags.people)===tagFilter))&&
+      (!q||[row.beneficiaryName,row.taxpayerTin,row.paymentHead,row.assessmentYear,
+        row.paymentId,row.batchId||''].some(value=>value.toLocaleLowerCase().includes(q))));
+  },[rows,search,tagFilter,visibleTags]);
   return <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" data-testid="beneficiary-payment-history"
     aria-label={tr('Individual beneficiary payment history','প্রতিটি উপকারভোগীর পেমেন্টের ইতিহাস')}>
     <div className="taxpay-table-toolbar">
@@ -51,6 +63,18 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
           className="min-h-11 w-full min-w-0 bg-transparent text-sm outline-none"/>
       </div>
     </div>
+    <div className="mt-3 flex flex-wrap gap-3">
+      <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm text-taxpay-muted">
+        {tr('Beneficiary tag','উপকারভোগীর ট্যাগ')}
+        <select value={tagFilter} onChange={event=>setTagFilter(event.target.value as 'all'|PaymentTagGroup)}
+          aria-label={tr('Filter beneficiary payments by tag','ট্যাগ দিয়ে উপকারভোগীর পেমেন্ট ফিল্টার')}
+          className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm text-taxpay-text">
+          <option value="all">{tr('All tags','সব ট্যাগ')}</option>
+          {PAYMENT_TAG_GROUPS.map(group=><option key={group} value={group}>{paymentTagGroupLabels[group][language]}</option>)}
+        </select>
+      </label>
+    </div>
+    {visibleTags.status==='error'&&<p className="mt-2 text-sm text-taxpay-error" role="alert">{tr('Saved tags unavailable; categories were not guessed.','সংরক্ষিত ট্যাগ পাওয়া যায়নি; শ্রেণি অনুমান করা হয়নি।')}</p>}
     {loading&&<p className="mt-4 text-sm text-taxpay-muted" role="status">{tr('Loading saved payments…','সংরক্ষিত পেমেন্ট লোড হচ্ছে…')}</p>}
     {error&&<div className="mt-4" role="alert">
       <p className="text-sm text-taxpay-error">{tr('Payment history could not be verified.','পেমেন্টের ইতিহাস যাচাই করা যায়নি।')}</p>
