@@ -19,6 +19,8 @@ import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,valid
 
 type Flow='single'|'bulk';
 type Phase='upload'|'preview'|'confirm';
+// Reuse the exact sample TIN suggestions used by Other Tax's progressive lookup.
+const SUGGESTED_TINS = Array.from({length:10},(_,index)=>String(index).repeat(12));
 interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
@@ -174,6 +176,8 @@ export function Beneficiaries(){
     editTargetList!==editPerson.list_id);
   const editValid=validBeneficiaryClassification(editTag,editRelationship,editOtherLabel) || editLegacyMove;
   const existingTins=new Set(people.filter(person=>person.list_id===targetList).map(person=>person.tin));
+  const reviewedBeneficiary=searchedBeneficiaryTin===tin && /^\d{12}$/.test(tin);
+  const reviewedBeneficiaryMatch=reviewedBeneficiary?lookupSampleTaxpayer(tin):null;
   const reviewed=useMemo<ReviewedRow[]>(()=>{
     const seen=new Set<string>();
     return rows.map(row=>{
@@ -699,6 +703,7 @@ export function Beneficiaries(){
             name={searchedBeneficiaryTin === tin && lookupSampleTaxpayer(tin)
               ? (bn ? lookupSampleTaxpayer(tin)!.nameBn : lookupSampleTaxpayer(tin)!.nameEn) : name}
             canSearch={/^\d{12}$/.test(tin)}
+            suggestedTins={SUGGESTED_TINS.filter(candidate=>!existingTins.has(candidate))}
             editableName={!(searchedBeneficiaryTin === tin && lookupSampleTaxpayer(tin))}
             onNameChange={setName}
             tinPlaceholder={tr('12-digit TIN','১২ সংখ্যার টিআইএন')}
@@ -707,6 +712,17 @@ export function Beneficiaries(){
             onSearch={()=>{const found=lookupSampleTaxpayer(tin);setSearchedBeneficiaryTin(tin);if(found)setName(found.nameEn);}}
             status={searchedBeneficiaryTin === tin && tin.length === 12 && !lookupSampleTaxpayer(tin)
               ? <p className="text-sm text-slate-600" role="status">{tr('No sample name found. You may enter a name or leave it empty.','নমুনা তথ্য থেকে নাম পাওয়া যায়নি। নাম লিখতে পারেন অথবা ফাঁকা রাখতে পারেন।')}</p> : undefined} />
+          {reviewedBeneficiary && <section className="taxpay-taxpayer-row__identity-card"
+            aria-label={tr('Taxpayer details','করদাতার তথ্য')} data-testid="searched-taxpayer-card">
+            <h4>{tr('Taxpayer details','করদাতার তথ্য')}</h4>
+            <dl className="taxpay-taxpayer-row__summary" data-testid="searched-taxpayer-summary">
+              <div><dt>{tr('Taxpayer name','করদাতার নাম')}</dt>
+                <dd>{reviewedBeneficiaryMatch
+                  ? (bn ? reviewedBeneficiaryMatch.nameBn : reviewedBeneficiaryMatch.nameEn)
+                  : name.trim() || tr('Not provided','দেওয়া হয়নি')}</dd></div>
+              <div><dt>{tr('TIN','টিআইএন')}</dt><dd>{tin}</dd></div>
+            </dl>
+          </section>}
 
         </form>:phase==='upload'?<div className="space-y-3">
           <label htmlFor="beneficiary-file" className="block text-sm font-semibold">{tr('Upload an Excel workbook (.xlsx)','এক্সেল ফাইল আপলোড করুন (.xlsx)')}</label>
