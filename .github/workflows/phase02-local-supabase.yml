@@ -214,8 +214,13 @@ jobs:
       - name: Verify actual email magic-link authentication against disposable Mailpit
         run: node tests/integration/localMagicLinkAuth.mjs
 
+      - name: Restore local UI Playwright browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install headless Chromium for real local authenticated UI
-        run: npx playwright install chromium
+        run: npx playwright install chromium --only-shell
 
       - name: Test React draft save, edit and account isolation against real local Supabase
         env:
