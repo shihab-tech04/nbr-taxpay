@@ -151,9 +151,10 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByText('Already covered').first()).toBeVisible();
   await expect(phase.getByText('Still remaining').first()).toBeVisible();
   await expect(phase.getByRole('button',{name:'Check tax ledger'})).toBeVisible();
-  for (const heading of ['Quick actions','How your tax is covered','Monthly activity','By tax year','Already covered','Tax summary for this year']) {
+  for (const heading of ['Quick actions','How your tax is covered','By tax year','Already covered','Tax summary for this year']) {
     await expect(phase.getByRole('heading',{name:heading})).toBeVisible();
   }
+  await expect(phase.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   // A signed-in account must use the approved Phase A/B visual sections, but
   // private scenario allocations never become government liability or credits.
   await expect(phase.getByRole('region',{name:'Tax summary for this year'})).toContainText('—');
