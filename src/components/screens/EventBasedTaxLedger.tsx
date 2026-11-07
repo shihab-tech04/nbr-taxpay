@@ -1,4 +1,4 @@
-import {TaxPayDataGrid,TaxPayTableViewport,TaxPayTablePanel,TaxPayTableControls} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableViewport,TaxPayTablePanel,TaxPayTableControls,TaxPayTableFilterToggle,TaxPayActiveFilterChips} from '../ui/TaxPayDataTable';
 import React, {useMemo, useState} from 'react';
 import {ArrowRight, Clock3, FileText} from 'lucide-react';
 import {TaxPayModal} from '../ui/TaxPayModal';
@@ -178,6 +178,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
   const t=(en:string,bn:string)=>pair(en,bn,language);
   const [selectedYear,setSelectedYear]=useState('all');
   const [type,setType]=useState<typeof filters[number][0]>('all');
+  const [ledgerFiltersExpanded,setLedgerFiltersExpanded]=useState(true);
   const [selected,setSelected]=useState<TaxAccountEvent|null>(null);
   const allYears=useMemo(()=>[...new Set(events.map(e=>e.assessmentYear))].filter(Boolean).sort().reverse(),[events]);
   const currentYear=year??selectedYear;
@@ -198,6 +199,15 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
         <p className="text-xs text-taxpay-muted">{visible.length} {t('events','ঘটনা')}</p>
       </div>
     </div>
+    <div className="taxpay-office-table-heading">
+      <div className="taxpay-office-table-heading__identity">
+        <h2>{t('Tax event register','কর ঘটনার তালিকা')}</h2>
+        <span className="taxpay-table-count">{visible.length} {t('records','রেকর্ড')}</span>
+      </div>
+      <div className="taxpay-office-table-heading__actions">
+        <TaxPayTableFilterToggle expanded={ledgerFiltersExpanded} onToggle={()=>setLedgerFiltersExpanded(open=>!open)} label={t('Filter','ফিল্টার')}/>
+      </div>
+    </div>
     <TaxPayTableControls className="taxpay-table-toolbar taxpay-table-filters">
       <nav className="taxpay-table-tabs flex max-w-full gap-2 overflow-x-auto" aria-label={t('Event categories','ঘটনার শ্রেণি')}>
         {filters.map(([key,label])=><button type="button" key={key} aria-pressed={type===key} onClick={()=>setType(key)}
@@ -205,7 +215,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           {language==='bn'?({all:'সব',liabilities:'দায়',credits:'ক্রেডিট',payments:'পেমেন্টের ধাপ',corrections:'সংশোধন',refunds:'ফেরত'} as Record<string,string>)[key]:label}
         </button>)}
       </nav>
-      <label className="flex items-center gap-2 text-xs text-taxpay-muted">
+      {ledgerFiltersExpanded&&<label className="flex items-center gap-2 text-xs text-taxpay-muted">
         {t('Assessment year','করবর্ষ')}
         <select aria-label={t('Filter ledger by year','করবর্ষ অনুযায়ী লেজার')}
           value={currentYear} onChange={e=>onYearChange?onYearChange(e.target.value):setSelectedYear(e.target.value)}
@@ -213,8 +223,14 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           <option value="all">{t('All years','সব করবর্ষ')}</option>
           {allYears.map(y=><option key={y} value={y}>{y}</option>)}
         </select>
-      </label>
+      </label>}
     </TaxPayTableControls>
+    <TaxPayActiveFilterChips clearLabel={t('Clear all','সব ফিল্টার মুছুন')}
+      onClear={()=>{setType('all');onYearChange?onYearChange('all'):setSelectedYear('all');}}
+      filters={[
+        ...(type!=='all'?[{key:'type',label:language==='bn'?({liabilities:'দায়',credits:'ক্রেডিট',payments:'পেমেন্টের ধাপ',corrections:'সংশোধন',refunds:'ফেরত'} as Record<string,string>)[type]:filters.find(([key])=>key===type)?.[1]??type,onRemove:()=>setType('all')}]:[]),
+        ...(currentYear!=='all'?[{key:'year',label:currentYear,onRemove:()=>onYearChange?onYearChange('all'):setSelectedYear('all')}]:[])
+      ]}/>
     <TaxPayTablePanel className="taxpay-ledger-records">
     <TaxPayTableViewport>
       {visible.length===0&&<p role="status" className="taxpay-table-state p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>}
