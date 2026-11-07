@@ -37,6 +37,19 @@ test('signed-in Pay Tax offers saved drafts before original journey and restores
   const draftEntry = dialog.getByTestId('account-draft-entry');
   await expect(draftEntry.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
   await draftEntry.getByRole('button', { name: 'Continue from draft' }).click();
+  // The shared modal header owns Back. Never show a stray body button or blank footer.
+  const headerBack = dialog.locator('.taxpay-modal__header .taxpay-modal__back');
+  await expect(headerBack).toBeVisible();
+  await expect(headerBack).toHaveAttribute('aria-label', 'Back');
+  // Keep the approved X alongside the header arrow; neither action belongs in the body.
+  await expect(dialog.locator('.taxpay-modal__header .taxpay-modal__close')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__footer')).toHaveCount(0);
+  await expect(draftEntry.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
+  await headerBack.click();
+  await expect(draftEntry.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
+  await expect(headerBack).toHaveCount(0);
+  await draftEntry.getByRole('button', { name: 'Continue from draft' }).click();
+  await expect(headerBack).toBeVisible();
   const savedList = draftEntry.getByTestId('saved-payment-draft-list');
   await expect(savedList.locator('[data-draft-id]').first()).toBeVisible();
   await savedList.locator('[data-draft-id]').first().click();

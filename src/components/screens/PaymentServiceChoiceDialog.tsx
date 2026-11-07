@@ -56,6 +56,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
   const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(null);
   // Once a payer starts a journey, Back returns to its original chooser, not the draft gate.
   const [draftEntryCompleted, setDraftEntryCompleted] = useState(false);
+  const [draftEntryMode, setDraftEntryMode] = useState<'choice' | 'list' | 'new'>('choice');
   const [draftEntryBlocking, setDraftEntryBlocking] = useState(Boolean(verifiedUser || previewAccount));
   const draftActor: PaymentDraftActor | null = verifiedUser
     ? { kind: 'authenticated', userId: verifiedUser.id }
@@ -116,7 +117,9 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
       className={view === 'login' ? 'taxpayer-login-modal' : ''}
       animateSize={view === 'payer'}
       motionKey={view}
-      onBack={view === 'login' ? () => setView('payer') : view === 'payment' ? () => {
+      onBack={view === 'payer' && draftEntryBlocking && draftEntryMode === 'list'
+        ? () => setDraftEntryMode('choice')
+        : view === 'login' ? () => setView('payer') : view === 'payment' ? () => {
         const back = document.querySelector<HTMLButtonElement>(
           '.taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions .tax-service-choice__cancel, ' +
           '.taxpay-modal[data-payment-stage="true"] .travel-flow__footer-actions .tax-service-choice__cancel'
@@ -125,6 +128,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         else if (stage === 1 || stage === 4) returnToService();
       } : undefined}
       backLabel={tr('Back', 'ফিরুন')}
+      hideFooter={view === 'payer' && draftEntryBlocking}
       service={view === 'login' ? 'login' : view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={view === 'login'
@@ -166,6 +170,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         </>}
         {view === 'payer' ? <PaymentDraftEntryGate
            actor={draftActor} ownerKey={draftOwnerKey}
+           mode={draftEntryMode} onModeChange={setDraftEntryMode}
            enabled={Boolean(!draftEntryCompleted && draftActor && !initialService && !paymentBeneficiaryPrefill)}
            language={language}
            serviceLabel={id => {

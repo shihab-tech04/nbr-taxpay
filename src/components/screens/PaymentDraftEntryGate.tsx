@@ -5,10 +5,14 @@ import {
   type PaymentFormDraft,
 } from '../../services/accountPaymentFormDrafts';
 
+type DraftEntryMode = 'choice' | 'list' | 'new';
+
 type Props = {
   actor: PaymentDraftActor | null;
   ownerKey: string;
   enabled: boolean;
+  mode: DraftEntryMode;
+  onModeChange: (mode: DraftEntryMode) => void;
   language: 'en' | 'bn';
   serviceLabel: (service: PaymentDraftService) => string;
   onResume: (draft: PaymentFormDraft) => void;
@@ -26,11 +30,10 @@ type Catalog = {
  * A fresh payment still uses the original, unchanged payer/service selector.
  */
 export function PaymentDraftEntryGate({
-  actor, ownerKey, enabled, language, serviceLabel, onResume, onBlockingChange, children,
+  actor, ownerKey, enabled, mode, onModeChange, language, serviceLabel, onResume, onBlockingChange, children,
 }: Props) {
   const bn = language === 'bn';
   const tr = (en: string, bengali: string) => bn ? bengali : en;
-  const [mode, setMode] = useState<'choice' | 'list' | 'new'>('choice');
   const [refresh, setRefresh] = useState(0);
   const [catalog, setCatalog] = useState<Catalog>({ ownerKey: '', status: 'loading', rows: [] });
   const [resuming, setResuming] = useState<string | null>(null);
@@ -38,7 +41,7 @@ export function PaymentDraftEntryGate({
 
   useEffect(() => {
     let active = true;
-    setMode('choice');
+    onModeChange('choice');
     setError(null);
     setCatalog({ ownerKey, status: 'loading', rows: [] });
     if (!enabled || !actor) return () => { active = false; };
@@ -50,7 +53,7 @@ export function PaymentDraftEntryGate({
     return () => { active = false; };
     // The stable ownerKey identifies the actor; a render does not reload the list.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownerKey, enabled, refresh]);
+  }, [ownerKey, enabled, refresh, onModeChange]);
 
   const ready = catalog.ownerKey === ownerKey && catalog.status === 'ready';
   const blocking = enabled && mode !== 'new' && (!ready || catalog.rows.length > 0);
@@ -100,7 +103,7 @@ export function PaymentDraftEntryGate({
           <button type="button" className="tax-service-choice__cancel min-h-11 rounded-lg px-4" onClick={() => setRefresh(n => n + 1)}>
             {tr('Retry', 'আবার চেষ্টা করুন')}
           </button>
-          <button type="button" className="tax-service-choice__continue min-h-11 rounded-lg px-4" onClick={() => setMode('new')}>
+          <button type="button" className="tax-service-choice__continue min-h-11 rounded-lg px-4" onClick={() => onModeChange('new')}>
             {tr('Start new Tax payment', 'নতুন কর পরিশোধ শুরু করুন')}
           </button>
         </div>
@@ -111,7 +114,7 @@ export function PaymentDraftEntryGate({
           {tr('How would you like to proceed?', 'আপনি কীভাবে এগোতে চান?')}
         </h3>
         <div className="tax-service-choice__grid tax-service-choice__payer-grid" role="group" aria-label={tr('Payment start options', 'পেমেন্ট শুরুর বিকল্প')}>
-          <button type="button" className="tax-service-choice__card" onClick={() => setMode('new')}>
+          <button type="button" className="tax-service-choice__card" onClick={() => onModeChange('new')}>
             <span className="tax-service-choice__icon"><FileCheck2 size={23} aria-hidden="true" /></span>
             <span className="tax-service-choice__copy">
               <strong>{tr('Start new Tax payment', 'নতুন কর পরিশোধ শুরু করুন')}</strong>
@@ -119,7 +122,7 @@ export function PaymentDraftEntryGate({
             </span>
             <ArrowRight size={18} aria-hidden="true" />
           </button>
-          <button type="button" className="tax-service-choice__card" onClick={() => setMode('list')}>
+          <button type="button" className="tax-service-choice__card" onClick={() => onModeChange('list')}>
             <span className="tax-service-choice__icon"><FolderOpen size={23} aria-hidden="true" /></span>
             <span className="tax-service-choice__copy">
               <strong>{tr('Continue from draft', 'সংরক্ষিত খসড়া থেকে চালিয়ে যান')}</strong>
@@ -157,10 +160,6 @@ export function PaymentDraftEntryGate({
             </button>;
           })}
         </div>
-        <button type="button" className="tax-service-choice__cancel min-h-11 rounded-lg px-4"
-          onClick={() => { setMode('choice'); setError(null); }}>
-          {tr('Back', 'ফিরুন')}
-        </button>
       </>
     )}
     {error && <p role="alert" className="text-sm text-taxpay-error">{error}</p>}
