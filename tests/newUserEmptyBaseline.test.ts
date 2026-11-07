@@ -15,7 +15,7 @@ test('user7 through user10 retain first-time financial scenarios with named test
   }
 });
 test('older six taxpayer identities remain available and retain their existing scenarios', () => {
-  assert.equal(Object.keys(DEMO_USERS).length,10);
+  assert.equal(Object.keys(DEMO_USERS).length,30);
   for (const n of [1,2,3,4,5,6]) {
     const u=getDemoUser(`user${n}`);
     assert.ok(u);
