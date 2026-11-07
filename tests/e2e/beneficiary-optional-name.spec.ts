@@ -207,3 +207,48 @@ test('single beneficiary uses the shared TIN lookup card, clears lookup, and ret
   await expect(page.getByText('Beneficiary saved.')).toBeVisible();
   expect(transport.saved().find(record=>record.tin==='012345678901')?.display_name).toBe('Local contact');
 });
+
+test('beneficiary suggestions match Other Tax and Search reveals the same taxpayer details card',async({page})=>{
+  const transport=await setupGuestTransport(page);
+  await page.goto('/?action=beneficiaries&demoUser=user1');
+  await page.getByRole('button',{name:'Create list',exact:true}).click();
+  let dialog=page.getByRole('dialog',{name:'Create list'});
+  await dialog.locator('#beneficiary-create-list-name').fill('TIN parity');
+  await dialog.getByRole('button',{name:'Create list',exact:true}).click();
+
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
+  dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  const lookup=dialog.getByTestId('shared-taxpayer-tin-lookup');
+  await expect(dialog.getByTestId('searched-taxpayer-card')).toHaveCount(0);
+  await lookup.locator('#beneficiary-tin').focus();
+  const suggestions=lookup.getByRole('listbox',{name:'Suggested TIN numbers'});
+  await expect(suggestions).toBeVisible();
+  await expect(suggestions.getByRole('option')).toHaveCount(10);
+  await suggestions.getByRole('option',{name:'000000000000'}).click();
+  await expect(lookup.locator('#beneficiary-tin')).toHaveValue('000000000000');
+  await lookup.getByRole('button',{name:'Search',exact:true}).click();
+  const details=dialog.getByTestId('searched-taxpayer-card');
+  await expect(details).toBeVisible();
+  await expect(details).toContainText('Taxpayer details');
+  await expect(details).toContainText('User 10');
+  await expect(details).toContainText('000000000000');
+  await expect(lookup.locator('#beneficiary-name')).toHaveAttribute('readonly','');
+  await dialog.locator('#beneficiary-tag').selectOption('clients');
+  await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await expect(page.getByTestId('beneficiary-records')).toContainText('000000000000');
+  expect(transport.saved().find(person=>person.tin==='000000000000')?.display_name).toBe('User 10');
+
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
+  dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  const nextLookup=dialog.getByTestId('shared-taxpayer-tin-lookup');
+  await nextLookup.locator('#beneficiary-tin').focus();
+  await expect(nextLookup.getByRole('option',{name:'000000000000'})).toHaveCount(0);
+  await nextLookup.locator('#beneficiary-tin').fill('111111111111');
+  await nextLookup.getByRole('button',{name:'Search',exact:true}).click();
+  await expect(dialog.getByTestId('searched-taxpayer-card')).toContainText('User 1');
+  await nextLookup.getByRole('button',{name:'Clear TIN search'}).click();
+  await expect(dialog.getByTestId('searched-taxpayer-card')).toHaveCount(0);
+  await expect(nextLookup.locator('#beneficiary-name')).toHaveValue('');
+});
