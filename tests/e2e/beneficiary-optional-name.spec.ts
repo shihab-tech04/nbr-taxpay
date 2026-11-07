@@ -224,7 +224,7 @@ test('beneficiary suggestions match Other Tax and Search reveals the same taxpay
   await lookup.locator('#beneficiary-tin').focus();
   const suggestions=lookup.getByRole('listbox',{name:'Suggested TIN numbers'});
   await expect(suggestions).toBeVisible();
-  await expect(suggestions.getByRole('option')).toHaveCount(10);
+  await expect(suggestions.getByRole('option')).toHaveCount(30);
   await suggestions.getByRole('option',{name:'000000000000'}).click();
   await expect(lookup.locator('#beneficiary-tin')).toHaveValue('000000000000');
   await lookup.getByRole('button',{name:'Search',exact:true}).click();
