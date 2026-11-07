@@ -34,6 +34,14 @@ interface MenuPosition {
  * Overlay stays in the modal rather than growing/clipping its scrollable body.
  * Values and change handlers are identical to the original select contract.
  */
+/** Search labels, codes, group headings and bilingual secondary text without changing values. */
+export function matchSearchableOptions(options:SearchableSelectOption[],query:string){
+  const term=query.trim().toLocaleLowerCase();
+  return options.filter(option=>option.value!==''&&(
+    !term||[option.label,option.secondary,option.group,option.value].some(text=>
+      text?.toLocaleLowerCase().includes(term))));
+}
+
 export function SearchableSelect({
   id,value,onChange,options,placeholder='Select an option',
   searchPlaceholder='Search options',emptyLabel='No matching options',
@@ -47,12 +55,7 @@ export function SearchableSelect({
   const [active,setActive]=useState(0);
   const [position,setPosition]=useState<MenuPosition|null>(null);
   const label=options.find(option=>option.value===value)?.label??placeholder;
-  const filtered=useMemo(()=>{
-    const term=query.trim().toLocaleLowerCase();
-    return options.filter(option=>option.value!==''&&(
-      !term||[option.label,option.secondary,option.group,option.value].some(text=>
-        text?.toLocaleLowerCase().includes(term))));
-  },[options,query]);
+  const filtered=useMemo(()=>matchSearchableOptions(options,query),[options,query]);
   const enabled=useMemo(()=>filtered.map((option,index)=>option.disabled?-1:index).filter(index=>index>=0),[filtered]);
 
   useEffect(()=>{
