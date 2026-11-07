@@ -50,7 +50,7 @@ BEGIN
 
   IF p_action = 'list' THEN
     SELECT COALESCE(jsonb_agg(jsonb_build_object(
-      'id',id,'journey',journey,'category',form_state->>'category',
+      'id',id,'journey',journey,'category',COALESCE(form_state->>'category','TRAVEL_TAX'),
       'step',form_state->'step','version',version,'updatedAt',updated_at
     ) ORDER BY updated_at DESC,id), '[]'::jsonb) INTO v_result
     FROM taxpay_guest_private.preview_payment_drafts
