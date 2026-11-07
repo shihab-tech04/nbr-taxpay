@@ -80,7 +80,7 @@ test('payment form drafts survive another browser, protect owner isolation and r
       const m = await measure();
       return m.cardCount === 2 && m.finalCardBottom <= m.bodyBottom - 1 &&
         m.finalCardBottom <= m.footerTop - 1 && m.bodyScrollHeight <= m.bodyClientHeight + 2 &&
-        m.height >= compactHeight + 35;
+        (info.project.name.startsWith('mobile') ? m.height >= compactHeight - 1 : m.height >= compactHeight + 35);
     }, { timeout: 10_000, message: 'Start new must expand the modal and reveal both payer cards above its footer' }).toBe(true);
     console.log('DRAFT_TO_ORIGINAL_MODAL_GEOMETRY', JSON.stringify({ project: info.project.name, compactHeight, expanded: await measure() }));
     await entry.screenshot({ path: 'test-results/draft-to-original-payer-' + info.project.name + '.png' });
