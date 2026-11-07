@@ -1,3 +1,4 @@
+import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
 
@@ -60,13 +61,15 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     await expect(dialog.getByText('012345678901')).toBeVisible();
     await expect(dialog.locator('#beneficiary-edit-name')).toHaveCount(0);
     await expect(dialog.getByRole('textbox')).toHaveCount(0);
-    await expect(dialog.locator('#beneficiary-edit-list option')).toHaveCount(2);
-    await expect(dialog.locator('#beneficiary-edit-list')).toHaveValue(family);
+    await dialog.locator('#beneficiary-edit-list').click();
+    await expect(dialog.locator('#beneficiary-edit-list-options [role="option"]')).toHaveCount(2);
+    await dialog.locator('#beneficiary-edit-list').click();
+    await expect(dialog.locator('#beneficiary-edit-list')).toHaveAttribute('data-value',family);
     await expect(dialog.getByRole('button',{name:'Save changes'})).toBeDisabled();
-    await dialog.locator('#beneficiary-edit-tag').selectOption('friends_family');
-    await dialog.locator('#beneficiary-edit-relationship').selectOption('father');
+    await chooseBeneficiaryOption(dialog,'beneficiary-edit-tag','friends_family');
+    await chooseBeneficiaryOption(dialog,'beneficiary-edit-relationship','father');
     await expect(dialog.getByRole('button',{name:'Save changes'})).toBeEnabled();
-    await dialog.locator('#beneficiary-edit-list').selectOption(clients);
+    await chooseBeneficiaryOption(dialog,'beneficiary-edit-list',clients);
     await dialog.getByRole('button',{name:'Save changes'}).click();
     await expect(page.getByText('Beneficiary details updated.')).toBeVisible();
     await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Clients');
@@ -75,10 +78,10 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     const movedRow=recordRows().filter({hasText:'012345678901'});
     await movedRow.getByRole('button',{name:'Edit',exact:true}).click();
     dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
-    await expect(dialog.locator('#beneficiary-edit-tag')).toHaveValue('friends_family');
-    await expect(dialog.locator('#beneficiary-edit-relationship')).toHaveValue('father');
-    await expect(dialog.locator('#beneficiary-edit-list')).toHaveValue(clients);
-    await dialog.locator('#beneficiary-edit-tag').selectOption('others');
+    await expect(dialog.locator('#beneficiary-edit-tag')).toHaveAttribute('data-value','friends_family');
+    await expect(dialog.locator('#beneficiary-edit-relationship')).toHaveAttribute('data-value','father');
+    await expect(dialog.locator('#beneficiary-edit-list')).toHaveAttribute('data-value',clients);
+    await chooseBeneficiaryOption(dialog,'beneficiary-edit-tag','others');
     await expect(dialog.getByRole('button',{name:'Save changes'})).toBeDisabled();
     await dialog.locator('#beneficiary-edit-other-label').fill('Neighbour representative');
     await expect(dialog.getByRole('button',{name:'Save changes'})).toBeEnabled();
@@ -109,7 +112,7 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     await desktopRow.getByRole('button',{name:'Edit',exact:true}).click();
     dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
     await expect(dialog.locator('#beneficiary-edit-other-label')).toHaveValue('Neighbour representative');
-    await dialog.locator('#beneficiary-edit-list').selectOption(family);
+    await chooseBeneficiaryOption(dialog,'beneficiary-edit-list',family);
     await dialog.getByRole('button',{name:'Save changes'}).click();
     await expect(dialog.getByRole('alert')).toContainText('already saved in the destination list');
     await expect(dialog).toBeVisible();
