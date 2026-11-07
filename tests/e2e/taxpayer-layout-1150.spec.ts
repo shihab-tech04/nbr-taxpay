@@ -12,7 +12,7 @@ test('User1 dashboard omits the redundant register and lengthy data notice but p
   await expect(page.getByRole('heading', {name:'Transaction history'})).toHaveCount(0);
   await expect(page.getByText('৳ 180,000').first()).toBeVisible();
   await expect(page.getByText('৳ 25,000').first()).toBeVisible();
-  await page.getByRole('button', {name:'Open transaction history'}).click();
+  await page.getByRole('button', {name:'View all activity'}).click();
   await expect(page.getByRole('heading', {name:'Payments & activity'})).toBeVisible();
   await expect(page.getByRole('heading', {name:'Transaction history'})).toBeVisible();
   await expect(page.getByRole('searchbox', {name:'Search transaction reference'})).toBeVisible();
@@ -20,16 +20,17 @@ test('User1 dashboard omits the redundant register and lengthy data notice but p
   await expect(page.getByText('DEMO-PAY-PEND-01').filter({visible:true}).first()).toBeVisible();
 });
 
-test('User1 charts use TaxPay blue tokens, and category filters work by keyboard', async ({page}) => {
+test('User1 bento keeps approved blue chart and accessible keyboard year selection',async({page})=>{
   await page.goto(url('taxpayer_home'));
-  const active = page.getByRole('button', {name:'Income tax', exact:true});
-  await expect(active).toHaveCSS('background-color','rgb(234, 242, 255)');
-  const travel = page.getByRole('button', {name:'Travel tax', exact:true});
-  await travel.focus();
+  const hero=page.locator('.taxpay-bento-hero');
+  await expect(hero).toHaveCSS('background-color','rgb(8, 85, 135)');
+  const chart=page.getByRole('group',{name:'Liability and posted credits by tax year'});
+  const year=chart.getByRole('button',{name:/2024-2025: Total tax/});
+  await year.focus();
   await page.keyboard.press('Space');
-  await expect(travel).toHaveAttribute('aria-pressed','true');
-  await expect(travel).toHaveCSS('background-color','rgb(234, 242, 255)');
+  await expect(year).toHaveAttribute('aria-current','true');
   await expect(page.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
 });
 
 test('User1 overview preserves narrow screens and expands fluidly at 1400px and wider', async ({page},info) => {
@@ -55,7 +56,7 @@ test('User1 overview preserves narrow screens and expands fluidly at 1400px and 
     }
     if (width<=390) {
       await expect(page.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
-      await expect(page.getByRole('button',{name:'Open transaction history'})).toBeVisible();
+      await expect(page.getByRole('button',{name:'View all activity'})).toBeVisible();
     }
   }
 });
