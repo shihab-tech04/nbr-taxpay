@@ -1,3 +1,4 @@
+import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {test,expect,type Page} from '@playwright/test';
 
 /** A self-contained signed-in UI fixture; no production taxpayer or SQL records are used. */
@@ -41,13 +42,14 @@ for(const language of ['en','bn'] as const){
     await expect(screen.getByRole('button',{name:t('Sign in with email','ইমেইল দিয়ে সাইন ইন')})).toHaveCount(0);
     await expect(screen.getByRole('heading',{level:1,name:t('Beneficiaries','উপকারভোগী')})).toBeVisible();
     await expect(screen.getByRole('heading',{level:2,name:t('Beneficiary list','উপকারভোগীর তালিকা')})).toBeVisible();
+    await screen.getByRole('button',{name:t('Filter','ফিল্টার'),exact:true}).click();
     const filters=screen.locator('.taxpayer-transaction-filters.beneficiary-directory__filters');
     await expect(filters).toBeVisible();
-    const selectList=filters.getByRole('button',{name:t('Selected list','নির্বাচিত তালিকা')});
+    const selectList=screen.getByRole('button',{name:t('Selected list','নির্বাচিত তালিকা')});
     await expect(selectList).toContainText('Clients');
-    const search=filters.getByRole('searchbox',{name:t('Search this list','এই তালিকায় খুঁজুন')});
+    const search=screen.getByRole('searchbox',{name:t('Search this list','এই তালিকায় খুঁজুন')});
     await expect(search).toBeVisible();
-    await expect(screen.locator('.beneficiary-directory__count')).toContainText('2');
+    await expect(screen.locator('.taxpay-office-register__count')).toContainText('2');
     const directory=screen.getByTestId('beneficiary-records');
     await expect(directory).toBeVisible();
     const rows=directory.locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
@@ -140,17 +142,15 @@ for(const language of ['en','bn'] as const){
     await rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true}).click();
     const edit=page.getByRole('dialog',{name:t('Edit beneficiary','উপকারভোগী সম্পাদনা')});
     await expect(edit).toBeVisible();
-    await expect(edit.locator('#beneficiary-edit-tag')).toHaveValue('others');
+    await expect(edit.locator('#beneficiary-edit-tag')).toHaveAttribute('data-value','others');
     await expect(edit.locator('#beneficiary-edit-other-label')).toHaveValue('Neighbour');
     await expect(edit.locator('#beneficiary-edit-other-label')).toHaveAttribute('maxlength','80');
-    await expect(edit.locator('#beneficiary-edit-list')).toHaveValue('00000000-0000-4000-8000-000000000101');
+    await expect(edit.locator('#beneficiary-edit-list')).toHaveAttribute('data-value','00000000-0000-4000-8000-000000000101');
     await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeDisabled();
-    await edit.locator('#beneficiary-edit-tag').selectOption('friends_family');
+    await chooseBeneficiaryOption(edit,'beneficiary-edit-tag','friends_family:father');
     await expect(edit.locator('#beneficiary-edit-other-label')).toHaveCount(0);
-    await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeDisabled();
-    await edit.locator('#beneficiary-edit-relationship').selectOption('father');
     await expect(edit.getByRole('button',{name:t('Save changes','পরিবর্তন সংরক্ষণ')})).toBeEnabled();
-    await expect(edit.locator('#beneficiary-edit-list')).toHaveValue('00000000-0000-4000-8000-000000000101');
+    await expect(edit.locator('#beneficiary-edit-list')).toHaveAttribute('data-value','00000000-0000-4000-8000-000000000101');
     await edit.getByRole('button',{name:t('Cancel','বাতিল')}).click();
     await expect(rows.first()).toContainText('Neighbour');
     await rows.first().getByRole('checkbox',{name:t('Select Shihab','Shihab নির্বাচন')}).check();
@@ -158,15 +158,15 @@ for(const language of ['en','bn'] as const){
     await expect(screen.getByRole('button',{name:t('Clear','মুছুন'),exact:true})).toBeVisible();
     await screen.getByRole('button',{name:t('Add beneficiary','উপকারভোগী যোগ'),exact:true}).click();
     await page.getByRole('button',{name:t('Add one beneficiary','একজন উপকারভোগী যোগ')}).click();
-    await page.locator('#beneficiary-tag').selectOption('others');
+    await chooseBeneficiaryOption(page,'beneficiary-tag','others');
     const otherInput=page.locator('#beneficiary-other-label');
     await expect(otherInput).toBeVisible();
     await expect(otherInput).toHaveAttribute('maxlength','80');
     await otherInput.fill('a'.repeat(80));
     await expect(page.getByText(t('80/80 characters','80/80 অক্ষর'))).toBeVisible();
-    await page.locator('#beneficiary-tag').selectOption('clients');
+    await chooseBeneficiaryOption(page,'beneficiary-tag','clients');
     await expect(otherInput).toHaveCount(0);
-    await page.locator('#beneficiary-tag').selectOption('others');
+    await chooseBeneficiaryOption(page,'beneficiary-tag','others');
     await expect(otherInput).toHaveValue('');
   });
 }
