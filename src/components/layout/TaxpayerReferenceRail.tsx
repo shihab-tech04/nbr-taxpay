@@ -18,7 +18,7 @@ const activityRoutes = new Set(['history', 'verify', 'corrections', 'certificate
 
 /** Taxpayer-only desktop layout. Demo navigation is not a verified-taxpayer entitlement. */
 export function TaxpayerReferenceRail() {
-  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, setPaymentServiceChoiceOpen } = useTaxState();
   const { user } = useAccountIdentity();
   const [signOutError, setSignOutError] = React.useState('');
   const [signingOut, setSigningOut] = React.useState(false);
@@ -53,7 +53,7 @@ export function TaxpayerReferenceRail() {
         <button className="taxpayer-reference-brand" type="button" onClick={() => navigate('landing')}>
           <SiteLogo className="taxpayer-reference-wordmark" alt={bn ? 'করবৃত্ত' : 'Korbritto'} />
         </button>
-        {(user || sampleProfile) && currentRoute !== 'wizard' && !isPaymentServiceChoiceOpen && <button type="button" className="taxpayer-reference-main-action" onClick={() => setPaymentServiceChoiceOpen(true)}
+        {(user || sampleProfile) && currentRoute !== 'wizard' && <button type="button" className="taxpayer-reference-main-action" onClick={() => setPaymentServiceChoiceOpen(true)}
           aria-label={bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type'}>
           <CirclePlus size={20} aria-hidden={true} />
           <span>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</span>

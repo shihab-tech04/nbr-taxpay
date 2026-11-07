@@ -245,13 +245,52 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     await expect(savedCard).toBeVisible();
     const id = await savedCard.getAttribute('data-draft-id');
     expect(id).toBeTruthy();
+    // The entire approved Overview and its existing Pay action must remain mounted
+    // and keep their geometry when a payment dialog covers the page.
+    const countBefore = await cards.locator('[data-draft-id]').count();
+    const layoutBefore = await cards.boundingBox();
+    expect(layoutBefore).not.toBeNull();
+    const desktopPay = page.locator('.taxpayer-reference-main-action');
+    if (page.viewportSize()!.width > 900) await expect(desktopPay).toBeVisible();
     // Preserve existing user1 financial dashboard; insert cards after the heading.
     await expect(workspace.getByRole('heading', { name: 'What needs your attention' })).toBeVisible();
     await savedCard.getByRole('button', { name: 'Continue' }).click();
     const payment = page.getByRole('dialog', { name: 'Pay Tax' });
     await expect(payment.locator('#guest-notice-ref')).toHaveValue(marker);
+    await expect(cards).toBeVisible();
+    await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
+    if (page.viewportSize()!.width > 900) await expect(desktopPay).toBeVisible();
+    const layoutUnderModal = await cards.boundingBox();
+    expect(layoutUnderModal).not.toBeNull();
+    expect(Math.abs(layoutUnderModal!.y - layoutBefore!.y)).toBeLessThanOrEqual(2);
+    await expect(workspace.getByRole('heading', { name: 'What needs your attention' })).toBeVisible();
     await payment.getByRole('button', { name: 'Close payment services' }).click();
+    await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
 
+    // Opening Pay Tax from the sidebar must also keep both the sidebar and
+    // saved draft cards unchanged, including the background mobile Pay action.
+    if (page.viewportSize()!.width > 900) {
+      await desktopPay.click();
+      await expect(page.getByRole('dialog', { name: 'Pay Tax' })
+        .getByRole('button', { name: 'Continue from draft' })).toBeVisible();
+      await expect(desktopPay).toBeVisible();
+      await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
+      await page.setViewportSize({ width: 375, height: 812 });
+      await expect(page.locator('.citizen-pay')).toBeVisible();
+      await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
+      await page.getByRole('dialog', { name: 'Pay Tax' })
+        .getByRole('button', { name: 'Close payment services' }).click();
+    } else {
+      const mobilePay = page.locator('.citizen-pay');
+      await expect(mobilePay).toBeVisible();
+      await mobilePay.click();
+      await expect(page.getByRole('dialog', { name: 'Pay Tax' })
+        .getByRole('button', { name: 'Continue from draft' })).toBeVisible();
+      await expect(mobilePay).toBeVisible();
+      await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
+      await page.getByRole('dialog', { name: 'Pay Tax' })
+        .getByRole('button', { name: 'Close payment services' }).click();
+    }
     const matching = workspace.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="' + id + '"]');
     await expect(matching).toBeVisible();
     await matching.getByRole('button', { name: 'Delete' }).click();

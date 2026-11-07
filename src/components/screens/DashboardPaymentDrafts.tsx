@@ -40,7 +40,10 @@ export const DashboardPaymentDrafts: React.FC<{
     let active = true;
     // Re-query on modal close to include newly saved, updated or settled drafts.
     if (isPaymentServiceChoiceOpen) return () => { active = false; };
-    setCatalog({ ownerKey, status: 'loading', rows: [] });
+    // Preserve the rendered cards while the dialog opens and during its close refresh.
+    // Clear old rows immediately only when the account owner changes.
+    setCatalog(previous => previous.ownerKey === ownerKey && previous.status === 'ready'
+      ? previous : { ownerKey, status: 'loading', rows: [] });
     setPendingDelete(null);
     setBusyId(null);
     setError(null);
@@ -55,8 +58,8 @@ export const DashboardPaymentDrafts: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownerKey, authLoading, isPaymentServiceChoiceOpen]);
 
-  if (!actor || authLoading || isPaymentServiceChoiceOpen ||
-      catalog.ownerKey !== ownerKey && catalog.status !== 'loading') return null;
+  if (!actor || authLoading ||
+      (catalog.ownerKey !== ownerKey && catalog.status !== 'loading')) return null;
 
   const retry = () => {
     if (busyId) return;

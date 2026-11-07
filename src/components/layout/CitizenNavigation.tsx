@@ -94,7 +94,11 @@ export function CitizenNavigation() {
   const dialogRef = useRef<HTMLDivElement>(null);
   const bn = language === 'bn';
   const label = (item: CitizenAction) => bn ? item.bn : item.en;
-  const showPay = !inTransaction && currentRoute !== 'wizard' && !inputFocused && !isPaymentServiceChoiceOpen;
+  // Keep taxpayer Pay mounted behind the modal; preserve the approved guest
+  // navigation rule, which hides its floating Pay action while the modal is open.
+  const showPay = !inTransaction && currentRoute !== 'wizard'
+    && (!inputFocused || (isTaxpayer && isPaymentServiceChoiceOpen))
+    && (isTaxpayer || !isPaymentServiceChoiceOpen);
   const go = (route: string, params: Record<string, string> = {}) => {
     setMenuOpen(false);
     setCompact(false);
