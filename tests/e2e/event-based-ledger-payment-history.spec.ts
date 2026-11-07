@@ -32,6 +32,7 @@ test('event-based tax ledger filters recorded entries, changes year and opens so
   await expect(events.getByText('Calculated balance for selected year')).toBeVisible();
   await expect(events.getByText('৳ 25,000').first()).toBeVisible();
 
+  await events.getByRole('button',{name:'Filter',exact:true}).click();
   await events.getByRole('combobox',{name:'Filter ledger by year'}).selectOption('2025-2026');
   await events.getByRole('button',{name:'Credits'}).click();
   await expect(events.getByRole('button',{name:/Salary withholding/}).first()).toBeVisible();
@@ -79,6 +80,7 @@ test('desktop ledger keeps one year control and the complete table within its ow
   await page.goto(ledger);
   await expect(page.getByTestId('event-tax-ledger')).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Assessment year',exact:true})).toHaveCount(0);
+  await page.getByTestId('event-tax-ledger').getByRole('button',{name:'Filter',exact:true}).click();
   await expect(page.getByRole('combobox',{name:'Filter ledger by year'})).toHaveCount(1);
   const table=page.getByTestId('event-ledger-table');
   const scroller=table.locator('..');
@@ -163,6 +165,7 @@ test('mobile ledger preserves financial fields, source and unverified balance in
 test('ledger filtered-empty state does not display a duplicate empty financial table or card list',async({page})=>{
   await page.goto(ledger);
   const panel=page.getByTestId('event-tax-ledger');
+  await panel.getByRole('button',{name:'Filter',exact:true}).click();
   await panel.getByRole('combobox',{name:'Filter ledger by year'}).selectOption('2024-2025');
   await panel.getByRole('button',{name:'Refunds',exact:true}).click();
   await expect(panel.locator('.taxpay-table-state')).toContainText('No recorded events match the selected filters.');
