@@ -2,18 +2,17 @@ import { expect, test } from '@playwright/test';
 
 const dashboard='/?action=taxpayer_home&demoUser=user1';
 
-test('financial overview retains correct balances and highlights the action-relevant balance',async({page})=>{
+test('bento financial position reconciles with the unchanged account ledger and coverage chart',async({page})=>{
   await page.goto(dashboard);
-  const cards=page.locator('.taxpayer-dashboard-kpi');
-  await expect(cards).toHaveCount(4);
-  await expect(cards.nth(0)).toContainText('৳ 180,000');
-  await expect(cards.nth(1)).toContainText('৳ 80,000');
-  await expect(cards.nth(2)).toContainText('৳ 75,000');
-  await expect(cards.nth(3)).toContainText('৳ 25,000');
-  await expect(cards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
-  await expect(page.getByText('Travel tax (separate)')).toBeVisible();
-  await expect(page.getByText('৳ 6,500').first()).toBeVisible();
-
+  const bento=page.getByTestId('taxpayer-overview-bento');
+  await expect(bento).toBeVisible();
+  const position=bento.locator('.taxpay-bento-position');
+  await expect(position).toContainText('৳ 180,000');
+  await expect(position).toContainText('৳ 155,000');
+  await expect(position).toContainText('৳ 25,000');
+  await expect(position).toContainText('Travel tax (separate)');
+  await expect(position).toContainText('৳ 6,500');
+  await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   const tds=page.getByRole('button',{name:/TDS.*48,000/});
   await tds.focus();
   await page.keyboard.press('Space');
@@ -22,36 +21,37 @@ test('financial overview retains correct balances and highlights the action-rele
   await page.keyboard.press('Space');
   await expect(tds).toHaveAttribute('aria-pressed','false');
   await expect(page.locator('[role="img"][aria-label^="Liability coverage"]')).toContainText('86%');
+  await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
 });
 
-test('review tiles navigate to accurately filtered transaction sets without crediting unresolved amounts',async({page})=>{
+test('attention actions retain their filtered Activity and correction routes',async({page})=>{
   for(const [label,count] of [['Pending',1],['Failed / reversed',2],['Unmatched',1],['Requests',2]] as const){
     await page.goto(dashboard);
     await page.getByRole('button',{name:'View '+label+': '+count}).click();
     await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
     await expect(page.getByText('Records: '+count)).toBeVisible();
-    await expect(page.getByRole('combobox',{name:'Transaction status'})).toHaveValue('all');
     await page.getByRole('button',{name:'Clear review filter'}).click();
     await expect(page.getByText('Records: 14')).toBeVisible();
   }
   await page.goto(dashboard);
-  await expect(page.locator('.taxpayer-dashboard-kpi').last()).toContainText('৳ 25,000');
+  await page.getByRole('button',{name:'Review exceptions'}).click();
+  await expect(page.getByRole('heading',{name:'Corrections & exceptions'})).toBeVisible();
 });
 
-test('monthly chart renders only recorded bars, supports Tab focus and routes to filtered activity',async({page})=>{
+test('tax year bars remain keyboard-accessible selectors and do not invent monthly trends',async({page})=>{
   await page.goto(dashboard);
-  await expect(page.getByRole('heading',{name:'Monthly activity'})).toBeVisible();
-  const group=page.getByRole('group',{name:/Income tax: Jun 2026/});
-  await expect(group.getByRole('button',{name:/Income tax, Jan 2026/})).toHaveCount(0);
-  const june=group.getByRole('button',{name:/Income tax, Jun 2026/});
-  await expect(june).toBeVisible();
-  await june.focus();
-  await expect(june).toBeFocused();
-  await expect(june).toHaveAttribute('title',/Jun.*30,000/);
+  const group=page.getByRole('group',{name:'Liability and posted credits by tax year'});
+  const oldYear=group.getByRole('button',{name:/2024-2025: Total tax/});
+  await expect(oldYear).toBeVisible();
+  await oldYear.focus();
   await page.keyboard.press('Enter');
+  await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2024-2025');
+  await expect(oldYear).toHaveAttribute('aria-current','true');
+  await expect(page.locator('.taxpay-bento-position')).toContainText('৳ 10,000');
+  await expect(page.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
+  await page.getByRole('button',{name:'View all activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-  await expect(page.getByRole('combobox',{name:'Transaction category'})).toHaveValue('income');
-  await expect(page.getByText('DEMO-PAY-01').filter({visible:true}).first()).toBeVisible();
+  await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2024-2025');
 });
 
 test('desktop navigation consolidates duplicate Overview/Tax summary and groups account routes',async({page},info)=>{
@@ -74,16 +74,23 @@ test('desktop navigation consolidates duplicate Overview/Tax summary and groups 
   await expect(rail.getByRole('button',{name:'Payment services',exact:true})).toHaveCount(0);
 });
 
-test('phone-to-wide-desktop layout keeps chart, KPIs and review actions usable',async({page},info)=>{
-  test.skip(info.project.name!=='mobile-375','One worker checks the full viewport matrix');
+
+test('bento layout, Travel Tax and action controls remain usable from 320px to wide desktop',async({page},info)=>{
+  test.skip(info.project.name!=='mobile-375','One worker verifies the full responsive matrix');
   test.setTimeout(120000);
-  for(const width of [320,360,375,390,600,768,900,1024,1280,1440,1600,1920]){
+  for(const width of [320,360,375,390,600,768,800,900,1024,1199,1200,1280,1440,1600,1920]){
     await page.setViewportSize({width,height:820});
     await page.goto(dashboard);
-    await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(4);
-    await expect(page.getByRole('group',{name:/Income tax: Jun 2026/})).toBeVisible();
-    await expect(page.getByRole('button',{name:'View Pending: 1'})).toBeVisible();
+    const bento=page.getByTestId('taxpayer-overview-bento');
+    await expect(bento).toBeVisible();
+    await expect(bento.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'Payments by beneficiary tag'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'Recent activity'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'Horizontal overflow at '+width).toBeLessThanOrEqual(2);
+    const before=await bento.evaluate(node=>node.getBoundingClientRect());
+    expect(before.width,'Bento bounds should be nonempty at '+width).toBeGreaterThan(250);
   }
 });
