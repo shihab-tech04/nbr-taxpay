@@ -1,4 +1,4 @@
-import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips} from '../ui/TaxPayDataTable';
+import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
@@ -96,7 +96,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [savedTagPeople,setSavedTagPeople]=useState<Beneficiary[]>([]);
   const [tagLoadState,setTagLoadState]=useState<'loading'|'ready'|'error'>('loading');
   const [paymentTagFilter,setPaymentTagFilter]=useState<'all'|PaymentTagGroup>('all');
-  const [transactionFiltersExpanded,setTransactionFiltersExpanded]=useState(true);
+  const [transactionFiltersExpanded,setTransactionFiltersExpanded]=useState(false);
   useEffect(()=>{
     let active=true;
     if(activePreviewSession()?.profileId!=='user1'){
@@ -129,6 +129,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   };
   const [ledgerYear,setLedgerYear]=useState<string>(year);
   const [documentSearch,setDocumentSearch]=useState('');
+  const [caseFiltersExpanded,setCaseFiltersExpanded]=useState(false);
   const [caseSearch,setCaseSearch]=useState('');
   const [caseStatus,setCaseStatus]=useState<State|'all'>('all');
   const [kind,setKind]=useState<Kind|'all'>('all');
@@ -213,18 +214,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={year} onChange={e=>changeYear(e.target.value)}>{taxYears.map(x=><option key={x.year} value={x.year}>{x.year}</option>)}</select>
   </label>;
   const transactionList=<section className={panel+' taxpayer-transaction-panel'} aria-labelledby="taxpayer-transaction-heading">
-    <div className="taxpayer-transaction-panel__heading taxpayer-convay-table-toolbar taxpay-office-table-heading" data-testid="convay-table-toolbar">
-      <div className="taxpayer-convay-table-toolbar__identity">
-        <h2 id="taxpayer-transaction-heading" className="text-base font-semibold">{tr('Transaction history','লেনদেনের ইতিহাস')}</h2>
-        <TaxPayTableCounter label={tr('Records','রেকর্ড')} shown={filtered.length} total={scoped.length}/>
-      </div>
-      <div className="taxpay-office-table-heading__actions">
-        <TaxPayTableFilterToggle expanded={transactionFiltersExpanded} onToggle={()=>setTransactionFiltersExpanded(open=>!open)} label={tr('Filter','ফিল্টার')}/>
-        <button type="button" onClick={csv} className={action+' taxpayer-convay-table-toolbar__export'}><Download size={16}/>{tr('Export CSV','CSV রপ্তানি')}</button>
-      </div>
-    </div>
-    {transactionFiltersExpanded&&<TaxPayTableControls className="taxpayer-transaction-filters taxpayer-convay-table-filters" data-testid="convay-table-filters">
-      <label className="taxpayer-transaction-filter taxpayer-transaction-filter--search"><span>{tr('Search','খুঁজুন')}</span><span className="taxpayer-transaction-filter__search"><Search size={17} aria-hidden="true"/><input aria-label={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')} type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}/></span></label>
+    <TaxPayOfficeRegisterToolbar id="taxpayer-transaction-heading" testId="convay-table-toolbar"
+      title={tr('Transaction history','লেনদেনের ইতিহাস')} count={filtered.length} total={scoped.length}
+      countLabel={tr('records','রেকর্ড')} searchValue={query} onSearchChange={setQuery}
+      searchLabel={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')}
+      searchPlaceholder={tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}
+      filterLabel={tr('Filter','ফিল্টার')} filtersOpen={transactionFiltersExpanded}
+      onToggleFilters={()=>setTransactionFiltersExpanded(open=>!open)}
+      actions={<button type="button" onClick={csv} className={action+' taxpayer-convay-table-toolbar__export'}>
+        <Download size={16}/>{tr('Export CSV','CSV রপ্তানি')}</button>}/>
+    <TaxPayOfficeRegisterFilters open={transactionFiltersExpanded} className="taxpayer-transaction-filters taxpayer-convay-table-filters" testId="convay-table-filters">
       <label className="taxpayer-transaction-filter"><span>{tr('Payment type','পেমেন্টের ধরন')}</span><select aria-label={tr('Transaction category','লেনদেনের ধরন')} value={kind} onChange={e=>setKind(e.target.value as Kind|'all')}>
         <option value="all">{tr('All types','সব ধরন')}</option>{(Object.keys(labels) as Kind[]).map(k=><option key={k} value={k}>{tr(...labels[k])}</option>)}
       </select></label>
@@ -241,7 +240,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           {PAYMENT_TAG_GROUPS.map(group=><option key={group} value={group}>{paymentTagLabel(group)}</option>)}
         </select>
       </label>
-    </TaxPayTableControls>}
+    </TaxPayOfficeRegisterFilters>
     <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
       onClear={()=>{setQuery('');setKind('all');setStatus('all');chooseHistoryMonth('all');setPaymentTagFilter('all');setReviewFilter(null);}}
       filters={[
