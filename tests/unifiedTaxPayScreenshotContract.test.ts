@@ -20,7 +20,7 @@ test('screenshots: ledger, transactions and beneficiaries use shared table compo
  assert.match(activity,/setSelected\(item\)/);
  assert.match(beneficiaries,/openPersonEditor\(person\)/);
  assert.match(beneficiaries,/payWith\(\[person\]\)/);
- assert.match(beneficiaries,/setDeletePerson\(person\)/);
+ assert.match(beneficiaries,/setDeletePerson\(editPerson\)/);
  assert.match(beneficiaries,/selectedIds\.includes\(person\.id\)/);
 });
 test('desktop table markup is semantic, and all existing record tables use the same component',()=>{
