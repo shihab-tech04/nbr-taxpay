@@ -45,7 +45,7 @@ BEGIN
     v_snapshot := new.data->'details'->'receiptSnapshot';
     v_count := jsonb_array_length(v_lines);
     IF new.service_code <> 'OTHER_TAX_PAYMENT'
-       OR v_mode NOT IN ('OTHER','SELF')
+       OR v_mode IS NULL OR v_mode NOT IN ('OTHER','SELF')
        OR jsonb_typeof(v_allocations) IS DISTINCT FROM 'array'
        OR jsonb_typeof(v_receipt_lines) IS DISTINCT FROM 'array'
        OR jsonb_typeof(v_snapshot) IS DISTINCT FROM 'object'
@@ -56,7 +56,7 @@ BEGIN
        OR coalesce(new.data->'details'->>'allocationCount','') <> v_count::text
        OR v_snapshot->>'paymentCategory' <> 'OTHER_TAX_PAYMENT'
        OR v_snapshot->>'challanNo' IS DISTINCT FROM new.data->'details'->>'receiptReference'
-       OR coalesce(v_snapshot->>'totalAmount','') !~ '^[0-9]+(\\.[0-9]{1,2})?$'
+       OR coalesce(v_snapshot->>'totalAmount','') !~ '^[0-9]+(\.[0-9]{1,2})?$'
        OR (v_snapshot->>'totalAmount')::numeric * 100 <> new.amount_minor
     THEN RAISE EXCEPTION 'INVALID_COMBINED_PAYMENT'; END IF;
 
@@ -78,7 +78,7 @@ BEGIN
         OR coalesce(v_allocation->>'headId','') !~ '^[1-9][0-9]{0,8}$'
         OR v_line->>'headId' <> v_allocation->>'headId'
         OR v_receipt_line->>'headId' <> v_allocation->>'headId'
-        OR coalesce(v_receipt_line->>'totalAmount','') !~ '^[0-9]+(\\.[0-9]{1,2})?$'
+        OR coalesce(v_receipt_line->>'totalAmount','') !~ '^[0-9]+(\.[0-9]{1,2})?$'
         OR (v_receipt_line->>'totalAmount')::numeric * 100 <> (v_line->>'amountMinor')::bigint
         OR (v_snapshot->'items'->v_i)->>'headId' <> v_allocation->>'headId'
         OR (v_snapshot->'items'->v_i)->>'totalAmount' <> v_receipt_line->>'totalAmount'
@@ -86,8 +86,18 @@ BEGIN
       v_amount := (v_line->>'amountMinor')::bigint;
       v_sum := v_sum + v_amount;
       IF v_mode = 'SELF' THEN
+        v_number := substring(v_payer from 5)::integer;
+        v_expected13 := CASE
+          WHEN v_number BETWEEN 1 AND 9 THEN repeat(v_number::text,13)
+          WHEN v_number = 10 THEN '1010101010101'
+          ELSE '90000000000'||lpad(v_number::text,2,'0') END;
+        v_expected12 := CASE
+          WHEN v_number BETWEEN 1 AND 9 THEN repeat(v_number::text,12)
+          WHEN v_number = 10 THEN '000000000000'
+          ELSE '9090000000'||lpad(v_number::text,2,'0') END;
         IF v_beneficiary IS DISTINCT FROM v_payer
           OR v_tin IS DISTINCT FROM new.data->'details'->>'taxpayerTin'
+          OR v_tin NOT IN (v_expected12,v_expected13)
         THEN RAISE EXCEPTION 'INVALID_SELF_ALLOCATION'; END IF;
       ELSE
         v_allowed_tin := false;
