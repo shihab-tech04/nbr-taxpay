@@ -54,7 +54,7 @@ export function Beneficiaries(){
   const displayName=(person:Pick<Beneficiary,'display_name'>)=>beneficiaryNameForDisplay(person.display_name,tr('Name not provided','নাম দেওয়া হয়নি'));
   const [lists,setLists]=useState<BeneficiaryList[]>([]);
   const [people,setPeople]=useState<Beneficiary[]>([]);
-  const [activeList,setActiveList]=useState('');
+  const [activeList,setActiveList]=useState('all');
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState<{en:string;bn:string}|null>(null);
@@ -123,9 +123,9 @@ export function Beneficiaries(){
   const reload=async(preferredList?:string)=>{
     const data=await loadBeneficiaries(owner);
     setLists(data.lists);setPeople(data.people);
-    const validPreferredList=preferredList&&data.lists.some(list=>list.id===preferredList)?preferredList:null;
+    const validPreferredList=preferredList&&(preferredList==='all'||data.lists.some(list=>list.id===preferredList))?preferredList:null;
     setActiveList(current=>validPreferredList
-      ??(data.lists.some(list=>list.id===current)?current:(data.lists[0]?.id??'')));
+      ??(current==='all'||data.lists.some(list=>list.id===current)?current:'all'));
     // An edit or move may navigate to a new list without pressing the list picker.
     // That change is also a user choice and must survive a future login.
     if(validPreferredList)rememberList(validPreferredList);
@@ -142,7 +142,7 @@ export function Beneficiaries(){
     loadBeneficiaries(owner).then(data=>{
       if(cancelled)return;
       setLists(data.lists);setPeople(data.people);
-      setActiveList(rememberedBeneficiaryListId(data.lists,savedListId));
+      setActiveList(rememberedBeneficiaryListId([{id:'all'},...data.lists],savedListId||'all'));
     }).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:String(e));})
       .finally(()=>{
         if(initialRequestRef.current===requestToken)initialRequestRef.current=null;
@@ -167,7 +167,7 @@ export function Beneficiaries(){
       void loadBeneficiaries(owner).then(data=>{
         if(cancelled || current!==revision)return;
         setLists(data.lists);setPeople(data.people);setError('');
-        setActiveList(selected=>data.lists.some(list=>list.id===selected)?selected:(data.lists[0]?.id??''));
+        setActiveList(selected=>selected==='all'||data.lists.some(list=>list.id===selected)?selected:'all');
         setSelectedIds(selected=>selected.filter(id=>data.people.some(person=>person.id===id)));
       }).catch(()=>{
         // The last verified snapshot is still visible. A manual reload gives
@@ -179,7 +179,7 @@ export function Beneficiaries(){
     return()=>{cancelled=true;window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
   },[owner,checkingIdentity,busy]);
 
-  const listPeople=people.filter(person=>person.list_id===activeList);
+  const listPeople=activeList==='all'?people:people.filter(person=>person.list_id===activeList);
   const filteredPeople=listPeople.filter(person=>{
     const matchesTag=tagFilter==='all'||(tagFilter==='legacy'? !person.tag :person.tag===tagFilter);
     const matchesRelation=tagFilter!=='friends_family'||relationshipFilter==='all'||person.relationship===relationshipFilter;
@@ -386,7 +386,7 @@ export function Beneficiaries(){
 
   async function confirmBulkRemove(){
     if(!bulkRemoveIds?.length||busy)return;
-    const stillSelected=bulkRemoveIds.filter(id=>people.some(person=>person.id===id&&person.list_id===activeList));
+    const stillSelected=bulkRemoveIds.filter(id=>people.some(person=>person.id===id&&(activeList==='all'||person.list_id===activeList)));
     setBusy(true);setModalError('');
     try{
       for(const id of stillSelected)await removeBeneficiary(owner,id);
@@ -406,9 +406,9 @@ export function Beneficiaries(){
     if(!deletePerson)return;
     setBusy(true);setError('');
     try{
-      await removeBeneficiary(owner,deletePerson.id);await reload();setDeletePerson(null);
+      await removeBeneficiary(owner,deletePerson.id);await reload();setDeletePerson(null);setEditPerson(null);setModalError('');
       setNotice({en:'Beneficiary removed.',bn:'উপকারভোগী সরানো হয়েছে।'});
-    }catch(e){setError(e instanceof Error?e.message:String(e));}
+    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
 
@@ -476,25 +476,23 @@ export function Beneficiaries(){
           searchLabel={tr('Search this list','এই তালিকায় খুঁজুন')}
           searchPlaceholder={tr('Search name or TIN','নাম বা টিআইএন দিয়ে খুঁজুন')}
           filterLabel={tr('Filter','ফিল্টার')}
-          filtersOpen={filtersExpanded} onToggleFilters={()=>{setFiltersExpanded(open=>!open);setListMenuOpen(false);}}/>
-
-        {!lists.length?<div className="mx-auto flex max-w-xl flex-col items-center py-5 text-center sm:py-6">
-          <span className="mb-3 rounded-full bg-taxpay-light p-3 text-taxpay-primary"><UsersRound size={28} aria-hidden="true"/></span>
-          <h2 className="text-lg font-semibold text-taxpay-text">{tr('Create your first list','আপনার প্রথম তালিকা তৈরি করুন')}</h2>
-          <p className="mt-1 text-sm text-slate-600">{tr('Save taxpayer TINs and optional names for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার টিআইএন ও ঐচ্ছিক নাম সংরক্ষণ করুন।')}</p>
-
-        </div>:<>
-          <div className="beneficiary-directory__list-context">
+          filtersOpen={filtersExpanded} onToggleFilters={()=>{setFiltersExpanded(open=>!open);setListMenuOpen(false);}}
+          actions={<div className="beneficiary-directory__list-toolbar">
             <div className="taxpayer-transaction-filter beneficiary-directory__list-filter">
               <p id="beneficiary-selected-list-label">{tr('Selected list','নির্বাচিত তালিকা')}</p>
               <div className="beneficiary-list-picker" ref={listMenuRef}>
                 <button id="beneficiary-list" ref={listTriggerRef} type="button" className="beneficiary-list-picker__trigger" aria-label={tr('Selected list','নির্বাচিত তালিকা')} aria-haspopup="dialog" aria-expanded={listMenuOpen} aria-controls="beneficiary-list-menu" onClick={()=>setListMenuOpen(current=>!current)}>
-                  <span className="truncate text-left">{activeListRecord?.name??tr('Choose a list','তালিকা বাছুন')}</span>
+                  <span className="truncate text-left">{activeList==='all'?tr('All beneficiaries','সব উপকারভোগী'):activeListRecord?.name??tr('Choose a list','তালিকা বাছুন')}</span>
                   <ChevronDown size={18} className={listMenuOpen?'rotate-180 transition-transform':'transition-transform'} aria-hidden="true"/>
                 </button>
                 {listMenuOpen&&<div id="beneficiary-list-menu" className="beneficiary-list-picker__menu" role="dialog" aria-label={tr('Choose beneficiary list','উপকারভোগীর তালিকা বাছুন')}>
                   <p className="beneficiary-list-picker__caption">{tr('Your lists','আপনার তালিকা')}</p>
-                  {lists.map(list=><div className="beneficiary-list-picker__row" key={list.id}>
+                  <div className="beneficiary-list-picker__row">
+                      <button type="button" className="beneficiary-list-picker__select" aria-current={activeList==='all'?'true':undefined} onClick={()=>switchList('all')}>
+                        <span className="truncate">{tr('All beneficiaries','সব উপকারভোগী')}</span>{activeList==='all'&&<Check size={18} aria-hidden="true"/>}
+                      </button>
+                    </div>
+                    {lists.map(list=><div className="beneficiary-list-picker__row" key={list.id}>
                     <button type="button" className="beneficiary-list-picker__select" aria-current={activeList===list.id?'true':undefined} onClick={()=>switchList(list.id)}>
                       <span className="truncate">{list.name}</span>{activeList===list.id&&<Check size={18} aria-hidden="true"/>}
                     </button>
@@ -503,7 +501,14 @@ export function Beneficiaries(){
                 </div>}
               </div>
             </div>
-          </div>
+          </div>}/>
+
+        {!lists.length?<div className="mx-auto flex max-w-xl flex-col items-center py-5 text-center sm:py-6">
+          <span className="mb-3 rounded-full bg-taxpay-light p-3 text-taxpay-primary"><UsersRound size={28} aria-hidden="true"/></span>
+          <h2 className="text-lg font-semibold text-taxpay-text">{tr('Create your first list','আপনার প্রথম তালিকা তৈরি করুন')}</h2>
+          <p className="mt-1 text-sm text-slate-600">{tr('Save taxpayer TINs and optional names for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার টিআইএন ও ঐচ্ছিক নাম সংরক্ষণ করুন।')}</p>
+
+        </div>:<>
           <TaxPayOfficeRegisterFilters open={filtersExpanded} className="taxpayer-transaction-filters beneficiary-directory__filters taxpay-table-filters">
             <label className="taxpayer-transaction-filter beneficiary-directory__tag-filter"><span className="hidden sm:inline">{tr('Tag / relationship','ট্যাগ / সম্পর্ক')}</span><span className="sm:hidden">{tr('Tag','ট্যাগ')}</span>
               <SearchableSelect id="beneficiary-filter-tag" ariaLabel={tr('Filter by tag or relationship','ট্যাগ বা সম্পর্ক দিয়ে ফিল্টার')}
@@ -545,7 +550,7 @@ export function Beneficiaries(){
           </div>
 
           {listPeople.length===0?<div className="rounded-lg border border-dashed border-taxpay-border px-4 py-5 text-center">
-            <h2 className="font-semibold text-taxpay-text">{tr(`“${lists.find(list=>list.id===activeList)?.name??''}” is empty`,`“${lists.find(list=>list.id===activeList)?.name??''}” তালিকাটি খালি`)}</h2>
+            <h2 className="font-semibold text-taxpay-text">{activeList==='all'?tr('No beneficiaries yet','এখনো কোনো উপকারভোগী নেই'):tr(`“${lists.find(list=>list.id===activeList)?.name??''}” is empty`,`“${lists.find(list=>list.id===activeList)?.name??''}” তালিকাটি খালি`)}</h2>
             <p className="mt-1 text-sm text-slate-600">{tr('Add a taxpayer or import a spreadsheet into this list.','এই তালিকায় করদাতার তথ্য যোগ করুন অথবা স্প্রেডশিট আমদানি করুন।')}</p>
           </div>:filteredPeople.length===0?<div className="rounded-lg border border-dashed border-taxpay-border px-4 py-8 text-center">
             <p className="font-medium text-taxpay-text">{tr('No matching beneficiaries','কোনো উপকারভোগী মেলেনি')}</p>
@@ -572,14 +577,11 @@ export function Beneficiaries(){
                   </div>},
                   {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:person=><div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
-                    <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary text-sm"
+                    <UiButton type="button" variant="outline" className="beneficiary-directory__secondary text-sm"
                       onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
                     <UiButton type="button" variant="outline" className="beneficiary-directory__pay gap-2 text-sm" onClick={()=>payWith([person])}>
-                      <CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}
+                      <CreditCard size={16} aria-hidden="true"/>{tr('Make payment','পেমেন্ট করুন')}
                     </UiButton>
-                    <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary gap-2 text-sm text-taxpay-error"
-                      aria-label={tr(`Remove ${displayName(person)}`,`${displayName(person)} সরান`)}
-                      onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
                   </div>}
                 ]}
                 renderMobileCard={person=>{ const finalTag=beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label); return <>
@@ -599,13 +601,10 @@ export function Beneficiaries(){
                   </div>
                   <div className="taxpay-mobile-table-card__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
-                    <UiButton type="button" variant="quiet" onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
+                    <UiButton type="button" variant="outline" onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
                     <UiButton type="button" variant="outline" className="gap-2" onClick={()=>payWith([person])}>
-                      <CreditCard size={16} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যের কর পরিশোধ')}
+                      <CreditCard size={16} aria-hidden="true"/>{tr('Make payment','পেমেন্ট করুন')}
                     </UiButton>
-                    <UiButton type="button" variant="quiet" className="text-taxpay-error"
-                      aria-label={tr(`Remove ${displayName(person)}`,`${displayName(person)} সরান`)}
-                      onClick={()=>setDeletePerson(person)}><Trash2 size={16} aria-hidden="true"/>{tr('Remove','সরান')}</UiButton>
                   </div>
                 </>; }}
                 ariaLabel={tr('Saved beneficiaries','সংরক্ষিত উপকারভোগী')}/>
@@ -773,9 +772,13 @@ export function Beneficiaries(){
       </div>
     </TaxPayModal>}
 
-    {editPerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')} ariaLabel={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')}
+    {editPerson&&!deletePerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')} ariaLabel={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')}
       onClose={()=>{if(!busy){setEditPerson(null);setEditTargetList('');setModalError('');}}} initialFocusSelector="#beneficiary-edit-tag"
-      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>{setEditPerson(null);setEditTargetList('');setModalError('');}}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-edit-form" variant="primary" disabled={busy||!editHasChanges||!editValid}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>}>
+      footer={<div className="beneficiary-list-edit__footer">
+         <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-red-700 hover:bg-red-50" onClick={()=>{setModalError('');setDeletePerson(editPerson);}}><Trash2 size={17} aria-hidden="true"/>{tr('Delete beneficiary','উপকারভোগী মুছুন')}</UiButton>
+         <div className="flex items-center gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>{setEditPerson(null);setEditTargetList('');setModalError('');}}>{tr('Cancel','বাতিল')}</UiButton>
+           <UiButton type="submit" form="beneficiary-edit-form" variant="primary" disabled={busy||!editHasChanges||!editValid}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>
+       </div>}>
       <form id="beneficiary-edit-form" className="space-y-3 py-2" onSubmit={event=>void saveEdit(event)}>
         <p className="text-sm text-taxpay-text">{tr('Beneficiary','উপকারভোগী')}: <strong>{displayName(editPerson)}</strong></p>
         <p className="text-sm text-slate-600">{tr('TIN','টিআইএন')}: <span className="font-mono">{editPerson.tin}</span></p>
@@ -820,7 +823,7 @@ export function Beneficiaries(){
       onClose={()=>{if(!busy)setDeletePerson(null);}}
       footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setDeletePerson(null)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="button" variant="primary" disabled={busy} onClick={()=>void confirmRemove()}>{busy?tr('Removing…','সরানো হচ্ছে…'):tr('Remove','সরান')}</UiButton></div>}>
       <p className="py-2 text-sm text-slate-700">{tr(`Remove ${displayName(deletePerson)} (${deletePerson.tin}) from this saved list? This will not affect payment or tax records.`,`এই সংরক্ষিত তালিকা থেকে ${displayName(deletePerson)} (${deletePerson.tin})-কে সরাবেন? এতে পেমেন্ট বা করের রেকর্ডে কোনো পরিবর্তন হবে না।`)}</p>
-      {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
+      {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
     </TaxPayModal>}
   </section>;
 }
