@@ -46,7 +46,10 @@ for(const language of ['en','bn'] as const){
     const filters=screen.locator('.taxpayer-transaction-filters.beneficiary-directory__filters');
     await expect(filters).toBeVisible();
     const selectList=screen.getByRole('button',{name:t('Selected list','নির্বাচিত তালিকা')});
-    await expect(selectList).toContainText('Clients');
+    await expect(selectList).toContainText(t('All beneficiaries','সব উপকারভোগী'));
+    await selectList.click();
+    await expect(page.getByRole('dialog',{name:t('Choose beneficiary list','উপকারভোগীর তালিকা বাছুন')}).getByRole('button',{name:t('All beneficiaries','সব উপকারভোগী')})).toBeVisible();
+    await selectList.click();
     const search=screen.getByRole('searchbox',{name:t('Search this list','এই তালিকায় খুঁজুন')});
     await expect(search).toBeVisible();
     await expect(screen.locator('.taxpay-office-register__count')).toContainText('2');
@@ -69,11 +72,12 @@ for(const language of ['en','bn'] as const){
     // Hidden desktop <thead> has zero layout height at mobile widths.
     // Assert the shared header on desktop, and the record-card touch targets on mobile.
     if(page.viewportSize()!.width>=768)expect(theme.headerMinHeight).toBeGreaterThanOrEqual(44);
-    else await expect(rows.first().getByRole('button',{name:t('Pay Tax for Others','অন্যের কর পরিশোধ')})).toHaveCSS('min-height','44px');
+    else await expect(rows.first().getByRole('button',{name:t('Make payment','পেমেন্ট করুন')})).toHaveCSS('min-height','44px');
     expect(theme.rowBackground).not.toBe('transparent');
     await expect(rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true})).toBeVisible();
-    await expect(rows.first().getByRole('button',{name:t('Pay Tax for Others','অন্যের কর পরিশোধ')})).toBeVisible();
-    await expect(rows.first().getByRole('button',{name:t('Remove Shihab','Shihab সরান')})).toBeVisible();
+    await expect(rows.first().getByRole('button',{name:t('Make payment','পেমেন্ট করুন')})).toBeVisible();
+    await expect(rows.first().getByRole('button',{name:t('Remove Shihab','Shihab সরান')})).toHaveCount(0);
+    await expect(rows.first().locator('button')).toHaveCount(2);
     const layout=await page.evaluate(()=>{
       const wrapper=document.querySelector('[data-testid="beneficiaries-page"]');
       const desktopTable=wrapper?.querySelector('table.taxpay-unified-table');
@@ -102,15 +106,15 @@ for(const language of ['en','bn'] as const){
       await expect(identity.locator('.beneficiary-directory__tin')).toHaveText('123456789012');
       await expect(identity).not.toContainText(t('TIN','টিআইএন')+': ');
       await expect(identity).not.toContainText(t('Tag / relationship','ট্যাগ / সম্পর্ক')+': ');
-      // At 1280px the complete Actions column, including Remove, must fit
+      // At 1280px the complete two-action column must fit
       // without a hidden horizontal-scroll remainder.
       if(layout.width>=1180){
         const overflow=await directory.locator('.taxpay-table-viewport').evaluate(el=>el.scrollWidth-el.clientWidth);
         expect(overflow,'desktop Beneficiaries actions must not be clipped').toBeLessThanOrEqual(2);
-        const bounds=await rows.first().getByRole('button',{name:t('Remove Shihab','Shihab সরান')}).boundingBox();
+        const bounds=await rows.first().getByRole('button',{name:t('Make payment','পেমেন্ট করুন')}).boundingBox();
         const viewportBounds=await directory.locator('.taxpay-table-viewport').boundingBox();
         expect(bounds&&viewportBounds&&bounds.x+bounds.width<=viewportBounds.x+viewportBounds.width+1,
-          'Remove must remain within the visible desktop table viewport').toBe(true);
+          'Make payment must remain within the visible desktop table viewport').toBe(true);
       }
     }else{
       expect(layout.mobileVisible).toBe(true);
@@ -141,6 +145,12 @@ for(const language of ['en','bn'] as const){
     // Edit reuses the same mandatory classification as Add; no forced list move.
     await rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true}).click();
     const edit=page.getByRole('dialog',{name:t('Edit beneficiary','উপকারভোগী সম্পাদনা')});
+    await expect(edit).toBeVisible();
+    await expect(edit.getByRole('button',{name:t('Delete beneficiary','উপকারভোগী মুছুন')})).toBeVisible();
+    await edit.getByRole('button',{name:t('Delete beneficiary','উপকারভোগী মুছুন')}).click();
+    const deletion=page.getByRole('dialog',{name:t('Confirm beneficiary removal','উপকারভোগী সরানো নিশ্চিত করুন')});
+    await expect(deletion).toBeVisible();
+    await deletion.getByRole('button',{name:t('Cancel','বাতিল')}).click();
     await expect(edit).toBeVisible();
     await expect(edit.locator('#beneficiary-edit-tag')).toHaveAttribute('data-value','others');
     // The shared searchable dropdown has an understated, accessible neutral focus

@@ -27,7 +27,7 @@ test('account preference writes require current Auth owner, not a URL or preview
   assert.match(source,/db\.auth\.updateUser\(\{data:/);
   assert.match(state,/validSavedLanguage\(accountUser\.user_metadata\?\.taxpay_language\)/);
   assert.match(state,/saveAccountViewPreference\(accountUser\.id,'taxpay_language',lang\)/);
-  assert.match(people,/rememberedBeneficiaryListId\(data\.lists,savedListId\)/);
+  assert.match(people,/rememberedBeneficiaryListId\(\[\{id:'all'\},\.\.\.data\.lists\],savedListId\|\|'all'\)/);
   assert.match(people,/saveAccountViewPreference\(owner,'taxpay_last_beneficiary_list_id',id\)/);
   // Payment receipt and beneficiary ownership remain independent of preferences.
   assert.doesNotMatch(source,/\.from\('taxpay_beneficiar/);

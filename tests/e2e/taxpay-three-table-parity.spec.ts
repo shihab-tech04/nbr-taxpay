@@ -68,7 +68,7 @@ for(const language of ['en','bn'] as const){
           .toHaveText('012345678901');
       }
       if(view==='beneficiaries'&&!desktop){
-        const context=page.locator('.beneficiary-directory__list-context .beneficiary-directory__list-filter');
+        const context=page.locator('.taxpay-office-register__actions .beneficiary-directory__list-toolbar .beneficiary-directory__list-filter');
         const search=page.locator('.taxpay-office-register__actions .taxpay-record-toolbar__search');
         await expect(context.getByRole('button',{name:language==='en'?'Selected list':'নির্বাচিত তালিকা'})).toBeVisible();
         await expect(search.getByRole('searchbox')).toBeVisible();
@@ -255,7 +255,7 @@ test('Office-style record workspaces fill laptop width without hiding transactio
     if(view==='beneficiaries'){
       const actionCell=page.getByTestId('beneficiary-records').locator('tbody tr').first().locator('td:nth-child(2)');
       const buttons=actionCell.getByRole('button');
-      await expect(buttons).toHaveCount(3);
+      await expect(buttons).toHaveCount(2);
       const tops=await buttons.evaluateAll(nodes=>nodes.map(node=>Math.round(node.getBoundingClientRect().top)));
       expect(Math.max(...tops)-Math.min(...tops),'Beneficiary actions should fit one desktop row').toBeLessThanOrEqual(8);
     }
