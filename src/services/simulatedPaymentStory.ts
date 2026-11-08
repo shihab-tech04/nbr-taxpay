@@ -60,7 +60,7 @@ export function bindPreviewStoryPayer(
 ): StoryPaymentInput {
   if(!preview)return input;
   if(input.sessionId!==preview.paymentSessionId)throw new Error('Demo account changed.');
-  const details={...input.details,payerId:preview.profileId};
+  const details: Record<string,unknown>={...input.details,payerId:preview.profileId};
   if(!details.receiptSnapshot)return {...input,details};
   if(!Array.isArray(details.lines)||details.lines.length===0||
      !Number.isSafeInteger(input.amountMinor)||input.amountMinor<=0)
