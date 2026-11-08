@@ -158,14 +158,18 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
             paymentMethod:'SIMULATED',paymentChannel:'NOW',lines:auditedLines,
           }
         });
-        if(!synced.mirrored)throw Error('Office payment synchronization pending');
+        // The source SQL receipt is authoritative for this *simulation*.
+        // Office delivery runs through its durable retry outbox and is reported
+        // separately; a delayed mirror must not masquerade as a bank decline.
         const checkedRows=await getDemoStoryPaymentHistory(id,'payer');
         const confirmed=checkedRows.find(t=>t.transactionId===synced.id);
         if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)
           throw Error('Payment SQL read-back did not match. Retry the same payment.');
         setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());
         setCompletedReference(confirmed.id);setPaymentStage(3);
-        setSubmitMessage(txt('Payment synchronized with Office: ','অফিসের সঙ্গে পেমেন্ট সিঙ্ক হয়েছে: ')+confirmed.id);
+        setSubmitMessage((synced.mirrored
+          ? txt('Payment synchronized with Office: ','অফিসের সঙ্গে পেমেন্ট সিঙ্ক হয়েছে: ')
+          : txt('Simulation saved; Office synchronization pending: ','সিমুলেশন সংরক্ষিত; অফিস সমন্বয় অপেক্ষমাণ: '))+confirmed.id);
         return;
       }
       const result=privateMode?await submitPrivateSimulationPayment(checked,nonce):await submitSimulatedPayment(id,checked,nonce);
