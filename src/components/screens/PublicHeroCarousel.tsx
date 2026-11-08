@@ -100,7 +100,7 @@ type BannerSlide = {
 const fallbackSlides: BannerSlide[] = defaultSlides.map(slide => ({ ...slide }));
 
 /** Keep the approved v9 media and layout even if a published Storage object is missing. */
-function BannerPicture({ slide }: { slide: BannerSlide }) {
+function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
   // The keyed picture already retries when CMS changes its image URL. Also
   // retry an unchanged URL after a temporary network/storage outage recovers.
@@ -116,7 +116,7 @@ function BannerPicture({ slide }: { slide: BannerSlide }) {
   }, [imageFailed]);
   const fallbackImage = fallbackSlides.find(value =>
     (value.serviceCode || null) === (slide.serviceCode || null))?.image || heroPaymentIllustration;
-  return <picture className="public-hero-carousel__image-layer">
+  return <picture className="public-hero-carousel__image-layer" data-visible={visible}>
     {!imageFailed && slide.mobileImage && <source media="(max-width: 640px)" srcSet={slide.mobileImage} />}
     <img className="public-information-hero__image public-hero-carousel__service-image"
       src={imageFailed ? fallbackImage : slide.image} alt="" decoding="async"
@@ -418,7 +418,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                   </div>
                 </div>
                 <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
-                  <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`} slide={slide} />
+                  <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`} slide={slide} visible={isActive} />
                 </div>
               </article>
             );
