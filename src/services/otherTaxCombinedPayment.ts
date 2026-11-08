@@ -79,3 +79,65 @@ export function prepareCombinedOtherTaxPayment(
     throw new Error('PAYMENT_DETAILS_TOO_LONG');
   return { payload, receipt: combinedReceipt };
 }
+
+const COMBINED_STORAGE_KEY = 'taxpay-other-tax-combined-v2';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+type StoredCombinedRequest = {
+  version: 2;
+  phase: 'READY' | 'PENDING_BANK';
+  request: { payload: StoryPaymentInput; receipt: ChallanReceipt };
+};
+type CombinedStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+/** Durable exact-key retry; only one combined SQL row may be created. */
+export function saveCombinedOtherTaxRequest(
+  request: StoredCombinedRequest['request'],
+  phase: StoredCombinedRequest['phase'],
+  storage: CombinedStorage = sessionStorage,
+): void {
+  validateCombinedRequest(request);
+  storage.setItem(COMBINED_STORAGE_KEY,JSON.stringify({version:2,phase,request}));
+}
+export function loadCombinedOtherTaxRequest(
+  sessionId: string,
+  storage: CombinedStorage = sessionStorage,
+): StoredCombinedRequest | null {
+  const raw=storage.getItem(COMBINED_STORAGE_KEY);
+  if(!raw)return null;
+  let parsed:StoredCombinedRequest;
+  try{parsed=JSON.parse(raw) as StoredCombinedRequest;}catch{throw Error('INVALID_COMBINED_RECOVERY');}
+  if(parsed?.version!==2||!['READY','PENDING_BANK'].includes(parsed.phase)||
+    parsed.request?.payload?.sessionId!==sessionId)
+    throw Error('INVALID_COMBINED_RECOVERY');
+  validateCombinedRequest(parsed.request);
+  return parsed;
+}
+export function clearCombinedOtherTaxRequest(storage: CombinedStorage = sessionStorage): void {
+  storage.removeItem(COMBINED_STORAGE_KEY);
+}
+function validateCombinedRequest(request: StoredCombinedRequest['request']): void {
+  const {payload,receipt}=request;
+  const allocations=payload?.details?.allocations;
+  const snapshot=payload?.details?.receiptSnapshot as Partial<ChallanReceipt>|undefined;
+  if(!payload||!receipt||!UUID.test(payload.sessionId)||!UUID.test(payload.idempotencyKey)||
+    payload.service!=='OTHER_TAX_PAYMENT'||payload.details.combinedPayment!==true||
+    !Array.isArray(allocations)||!allocations.length||allocations.length>MAX_LINES||
+    !Array.isArray(payload.details.lines)||payload.details.lines.length!==allocations.length||
+    !snapshot||snapshot.challanNo!==receipt.challanNo||receipt.isSimulatedDemo!==true||
+    receipt.challanNo!=='SIM-'+payload.idempotencyKey||
+    !Array.isArray(receipt.allocationItems)||receipt.allocationItems.length!==allocations.length||
+    Math.round(receipt.totalAmount*100)!==payload.amountMinor||
+    !Number.isSafeInteger(payload.amountMinor)||payload.amountMinor<=0)
+    throw Error('INVALID_COMBINED_RECOVERY');
+  const sum=allocations.reduce((value,item,index)=>{
+    const a=item as Record<string,unknown>;
+    const r=receipt.allocationItems![index];
+    if(!a||typeof a!=='object'||!validTin(String(a.taxpayerTin??''))||
+      typeof a.amountMinor!=='number'||!Number.isSafeInteger(a.amountMinor)||a.amountMinor<=0||
+      typeof a.assessmentYear!=='string'||!a.assessmentYear||
+      a.taxpayerTin!==r.taxpayerTin||a.assessmentYear!==r.assessmentYear||
+      a.amountMinor!==r.amountMinor)
+      throw Error('INVALID_COMBINED_RECOVERY');
+    return value+(a.amountMinor as number);
+  },0);
+  if(sum!==payload.amountMinor||!Number.isSafeInteger(sum))throw Error('INVALID_COMBINED_RECOVERY');
+}
