@@ -138,3 +138,35 @@ test('signed-in workspace mirrors Sobaike Public design tokens without changing 
   expect(mobile.heading).toBe('26px');
   expect(mobile.overflow).toBeLessThanOrEqual(2);
 });
+
+test('dashboard only: calm card surfaces preserve action contrast and mobile containment',async({page})=>{
+  for(const width of [375,1440]){
+    await page.setViewportSize({width,height:900});
+    await page.goto(demo);
+    const bento=page.getByTestId('taxpayer-overview-bento');
+    const hero=bento.locator('.taxpay-bento-hero');
+    const highlight=bento.locator('.taxpay-bento-position__highlight');
+    await expect(hero).toHaveCSS('background-color','rgb(255, 255, 255)');
+    await expect(highlight).toHaveCSS('background-color','rgb(245, 248, 252)');
+    await expect(hero.locator('.taxpay-bento-hero__status button').first()).toHaveCSS('background-color','rgb(247, 249, 252)');
+    await expect(hero.getByRole('button',{name:'Pay tax',exact:true})).toBeVisible();
+    await expect(hero.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+    const colors=await hero.evaluate(element=>{
+      const heading=element.querySelector('h2');
+      const primary=element.querySelector('.taxpay-bento-hero__primary');
+      const secondary=element.querySelector('.taxpay-bento-hero__secondary');
+      return {
+        heading:heading?getComputedStyle(heading).color:'',
+        primaryInk:primary?getComputedStyle(primary).color:'',
+        primaryBackground:primary?getComputedStyle(primary).backgroundColor:'',
+        secondaryBackground:secondary?getComputedStyle(secondary).backgroundColor:''
+      };
+    });
+    expect(colors.heading).not.toBe('rgb(255, 255, 255)');
+    expect(colors.primaryInk).toBe('rgb(255, 255, 255)');
+    expect(colors.primaryBackground).not.toBe('rgb(255, 255, 255)');
+    expect(colors.secondaryBackground).toBe('rgb(255, 255, 255)');
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(overflow,'dashboard horizontal overflow at '+width).toBeLessThanOrEqual(2);
+  }
+});
