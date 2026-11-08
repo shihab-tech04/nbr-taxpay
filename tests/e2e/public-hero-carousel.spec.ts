@@ -91,6 +91,21 @@ test('track uses eased horizontal motion; reduced-motion users receive an instan
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
 });
 
+test('CMS artwork is never CSS-cropped or zoomed in the taxpayer banner at desktop and phone widths', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 820 });
+    await page.goto('/?action=landing');
+    const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+    await expect(carousel.locator('.public-hero-carousel__slide')).toHaveCount(5);
+    for (let index = 0; index < 5; index++) {
+      const image = carousel.locator('.public-hero-carousel__slide').nth(index).locator('img');
+      await expect(image).toHaveCSS('object-fit', 'contain');
+      await expect(image).toHaveCSS('transform', 'none');
+    }
+  }
+});
+
 test('desktop keeps full-width service artwork, equal intro buttons, and a single 270px hero', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Desktop geometry');
   await page.emulateMedia({ reducedMotion: 'reduce' });
