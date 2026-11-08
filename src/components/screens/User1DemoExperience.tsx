@@ -338,8 +338,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         {info(tr('Current tax position','বর্তমান কর অবস্থান'),'Recorded account scenario for the selected assessment year; this is not a verified government assessment.','নির্বাচিত করবর্ষের নথিভুক্ত হিসাব; এটি যাচাইকৃত সরকারি কর নির্ধারণ নয়।')}
       </div>
       <div className="taxpay-bento-position__highlight">
-        <p>{tr('Still remaining ·','অবশিষ্ট ·')} {year}</p>
-        <strong>{money(totals.outstanding)}</strong>
+        <div className="taxpay-bento-position__balance"><p>{tr('Still remaining ·','অবশিষ্ট ·')} {year}</p>
+          <strong>{money(totals.outstanding)}</strong></div>
         <div role="progressbar" aria-label={tr('Tax recorded as covered','নথিভুক্ত কর সমন্বয়')} aria-valuemin={0} aria-valuemax={100}
           aria-valuenow={Math.round(meter(totals.applied,totals.liability))} className="taxpay-bento-position__track">
           <span style={{width:meter(totals.applied,totals.liability)+'%'}}/>
