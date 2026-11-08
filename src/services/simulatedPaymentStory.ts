@@ -42,13 +42,25 @@ export function getStorySessionId(): string {
     return fallbackSession;
   }
 }
+/** Bind synthetic payer identity to the active server-issued demo profile,
+ * never to a user-entered TIN or the selected beneficiary. The source SQL
+ * independently verifies this ID against the private profile capability.
+ */
+export function bindPreviewStoryPayer(
+  input: StoryPaymentInput,
+  preview: {profileId:string;paymentSessionId:string}|null
+): StoryPaymentInput {
+  if(!preview)return input;
+  if(input.sessionId!==preview.paymentSessionId)throw new Error('Demo account changed.');
+  return {...input,details:{...input.details,payerId:preview.profileId}};
+}
 export async function persistSimulatedPayment(input: StoryPaymentInput): Promise<StoryPaymentAcknowledgement> {
   const preview=activePreviewSession();
-  if(preview&&input.sessionId!==preview.paymentSessionId)throw new Error('Demo account changed.');
+  const scoped=bindPreviewStoryPayer(input,preview);
   const response = await fetch(API + '/payments', {
     method: 'POST',
     headers: { ...storyApiHeaders(input.sessionId),'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...input, origin: import.meta.env?.VITE_SUPABASE_DISABLED === 'true' ? 'QA_BROWSER' : 'TAXPAY_UI' }),
+    body: JSON.stringify({ ...scoped, origin: import.meta.env?.VITE_SUPABASE_DISABLED === 'true' ? 'QA_BROWSER' : 'TAXPAY_UI' }),
   });
   const body = await response.json() as Partial<StoryPaymentAcknowledgement> & { error?: string };
   if (!response.ok || body.success !== true || body.mirrored !== true || !body.id)
