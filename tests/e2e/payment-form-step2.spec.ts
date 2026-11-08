@@ -227,7 +227,7 @@ test('multiple Other Tax heads retain their amounts inside ONE combined payment 
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay ৳ 1,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
-  expect(submitted).toEqual([150000],'the payment must be submitted only once');
+  expect(submitted, 'the payment must be submitted only once').toEqual([150000]);
   await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(0);
   await expect(dialog.getByRole('button',{name:'Back',exact:true})).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
