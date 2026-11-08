@@ -71,11 +71,34 @@ async function removeUnused(db:ReturnType<typeof serviceClient>,bucket:'taxpay-b
     if(unused.length) await db.storage.from(bucket).remove(unused);
   }
 }
+
+// Keep only high-contrast, light-background palettes from the verified Office publisher.
+function luminance(hex:string):number {
+  const c=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255)
+    .map(v=>v<=0.04045?v/12.92:((v+0.055)/1.055)**2.4);
+  return c[0]*.2126+c[1]*.7152+c[2]*.0722;
+}
+function contrast(a:string,b:string):number {
+  const x=luminance(a),y=luminance(b);
+  return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);
+}
+function validatePalette(p:Record<string,unknown>) {
+  const names=['background_color','heading_color','body_color','outline_color'];
+  const present=names.map(n=>p[n]!==undefined&&p[n]!==null);
+  if(!present.some(Boolean)) return;
+  if(!present.every(Boolean)||!names.every(n=>/^#[0-9a-fA-F]{6}$/.test(str(p[n]))))
+    fail('Provide all four hex banner colors.');
+  const bg=str(p.background_color);
+  if(luminance(bg)<.72||names.slice(1).some(n=>contrast(bg,str(p[n]))<4.5))
+    fail('Banner palette must have a light background and readable dark text/outline.');
+}
+
 function validateBanner(p:Record<string,unknown>) {
   if(!/^[a-z][a-z0-9_-]{0,39}$/.test(str(p.id))) fail('Invalid banner ID');
   if(p.service_code!==null && p.service_code!=='' && !VALID_SERVICES.has(str(p.service_code))) fail('Invalid banner category');
   if(typeof p.published!=='boolean') fail('Invalid banner publication flag');
   if(p.id==='intro' && (p.published!==true || (p.service_code!==null && p.service_code!==''))) fail('Main banner must stay published');
+  validatePalette(p);
   for(const key of COPY) if(typeof p[key]!=='string' || !str(p[key]).trim() || str(p[key]).length>2400) fail('Missing or invalid banner field '+key);
   for(const key of ['mobile_heading_en','mobile_heading_bn']) if(Array.from(str(p[key])).length>24) fail('Mobile heading is too long');
   for(const key of ['mobile_description_en','mobile_description_bn']) if(Array.from(str(p[key])).length>34) fail('Mobile description is too long');

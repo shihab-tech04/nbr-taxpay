@@ -95,6 +95,8 @@ type BannerSlide = {
   mobileHeadingEn: string; mobileHeadingBn: string; descriptionEn: string; descriptionBn: string;
   mobileDescriptionEn: string; mobileDescriptionBn: string; actionEn: string; actionBn: string;
   image: string; mobileImage?: string;
+  backgroundColor?: string | null; headingColor?: string | null;
+  bodyColor?: string | null; outlineColor?: string | null;
 };
 
 const fallbackSlides: BannerSlide[] = defaultSlides.map(slide => ({ ...slide }));
@@ -159,6 +161,8 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
       actionEn: row.action_en, actionBn: row.action_bn,
       image: publicBannerImage(row.desktop_image_path, categoryImage),
       mobileImage: row.mobile_image_path ? publicBannerImage(row.mobile_image_path, categoryImage) : undefined,
+      backgroundColor: row.background_color, headingColor: row.heading_color,
+      bodyColor: row.body_color, outlineColor: row.outline_color,
     };
   });
 }
@@ -357,6 +361,17 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
             const heading = bn ? slide.headingBn : slide.headingEn;
             const mobileHeading = bn ? slide.mobileHeadingBn : slide.mobileHeadingEn;
             const action = bn ? slide.actionBn : slide.actionEn;
+            // NULL palette preserves the existing approved service tokens.
+            const validHex = (value: string | null | undefined) =>
+              typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
+            const hasPalette = validHex(slide.backgroundColor) && validHex(slide.headingColor) &&
+              validHex(slide.bodyColor) && validHex(slide.outlineColor);
+            const paletteStyle = hasPalette ? {
+              '--banner-bg': slide.backgroundColor,
+              '--banner-heading': slide.headingColor,
+              '--banner-body': slide.bodyColor,
+              '--banner-outline': slide.outlineColor,
+            } as React.CSSProperties : undefined;
             return (
               <article
                 key={slide.id}
@@ -365,6 +380,8 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                 data-banner-kind={intro ? 'intro' : 'service'}
                 data-active={isActive}
                 data-payment-service={slide.serviceCode}
+                data-banner-palette={hasPalette ? 'image' : undefined}
+                style={paletteStyle}
                 role="group"
                 aria-roledescription="slide"
                 aria-label={bn ? `ব্যানার ${index + 1} / ${slides.length}` : `Slide ${index + 1} of ${slides.length}`}
