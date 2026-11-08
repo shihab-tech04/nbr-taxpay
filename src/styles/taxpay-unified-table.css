@@ -1357,22 +1357,33 @@ table.taxpay-unified-table {
  * register, matching Office Management. Mobile keeps the existing cards. */
 @media (min-width:1100px) and (max-width:1440px) {
   .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table {
-    min-width:1050px;
+    min-width:0;
     width:100%;
-    table-layout:auto;
+    table-layout:fixed;
+  }
+  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td) {
+    min-width:0;
+    overflow-wrap:anywhere;
   }
   .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(2),
   .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(3),
   .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(4) {
     display:table-cell;
   }
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(1),
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(5),
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(6),
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(7) {
-    width:auto;
-  }
+  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(1) {width:21%;}
+  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(2) {width:17%;}
+  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(3) {width:15%;}
+  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(4) {width:12%;}
+  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(5) {width:11%;}
+  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(6) {width:15%;}
+  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(7) {width:9%;}
   .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel .taxpayer-transaction-compact-meta {
     display:none;
   }
+}
+
+/* Preserve a single horizontal action row in the full-width beneficiary register. */
+@media (min-width:1100px) {
+  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .beneficiary-directory__table .taxpay-unified-table th:nth-child(1) {width:56%;}
+  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .beneficiary-directory__table .taxpay-unified-table th:nth-child(2) {width:44%;}
 }
