@@ -59,34 +59,27 @@
   border-color: var(--choice-border);
 }
 
+/* Every published banner occupies the same frame: fade the complete
+ * service palette, copy, CTA and unscaled illustration together. No slide travel. */
 .public-hero-carousel__track {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   width: 100%;
   align-items: stretch;
-  transition: transform 640ms cubic-bezier(.22, 1, .36, 1);
-  will-change: transform;
+  isolation: isolate;
 }
 
-/* The active offset is set by React so Office may publish any number of slides.
- * Move the whole panel first, then gently reveal its content; never scale images. */
-.public-hero-carousel__slide .citizen-public-hero__copy > :is(h1, h2, p, .citizen-public-hero__actions) {
+.public-hero-carousel__track > .public-hero-carousel__slide.public-information-hero {
+  grid-area: 1 / 1;
+  position: relative;
   opacity: 0;
-  transform: translateY(9px);
-  transition: opacity 420ms ease, transform 520ms cubic-bezier(.22, 1, .36, 1);
+  pointer-events: none;
+  transition: opacity 1000ms ease-in-out;
 }
-.public-hero-carousel__slide .citizen-public-hero__actions {
-  transition-delay: 65ms;
-}
-.public-hero-carousel__slide[data-active="true"] .citizen-public-hero__copy > :is(h1, h2, p, .citizen-public-hero__actions) {
+.public-hero-carousel__track > .public-hero-carousel__slide.public-information-hero[data-active="true"] {
+  z-index: 1;
   opacity: 1;
-  transform: translateY(0);
-}
-.public-hero-carousel__slide .public-hero-carousel__image-layer {
-  opacity: 0;
-  transition: opacity 540ms cubic-bezier(.22, 1, .36, 1);
-}
-.public-hero-carousel__slide[data-active="true"] .public-hero-carousel__image-layer {
-  opacity: 1;
+  pointer-events: auto;
 }
 
 .public-hero-carousel__slide.public-information-hero {
@@ -338,13 +331,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .public-hero-carousel__track,
-  .public-hero-carousel__slide .citizen-public-hero__copy > :is(h1, h2, p, .citizen-public-hero__actions),
-  .public-hero-carousel__slide .public-hero-carousel__image-layer {
+  .public-hero-carousel__track > .public-hero-carousel__slide.public-information-hero {
     transition: none;
-  }
-  .public-hero-carousel__slide .citizen-public-hero__copy > :is(h1, h2, p, .citizen-public-hero__actions) {
-    transform: none;
   }
 }
 
@@ -642,9 +630,7 @@
     padding: .55rem .65rem;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .public-hero-carousel__track { transition: none; will-change: auto; }
-}
+
 
 /* Fail closed when the CMS cannot confirm published artwork. Keep only safe
    service entrypoints, never bundled images with unknown publication state. */
