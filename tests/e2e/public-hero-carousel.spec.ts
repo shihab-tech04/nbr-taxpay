@@ -82,7 +82,7 @@ test('full service panels dissolve in one stationary frame, without sideways mov
 
   await expect(track).toHaveCSS('transform', 'none');
   await expect(first).toHaveCSS('transition-property', 'opacity');
-  await expect(first).toHaveCSS('transition-duration', '1s');
+  await expect(first).toHaveCSS('transition-duration', '0.75s');
   await expect(first).toHaveCSS('opacity', '1');
   await expect(second).toHaveCSS('opacity', '0');
   const initialPosition = await first.evaluate(el => el.getBoundingClientRect().left);
