@@ -236,3 +236,30 @@ for(const language of ['en','bn'] as const){
     expect(overflow).toBeLessThanOrEqual(2);
   });
 }
+
+
+test('Office-style record workspaces fill laptop width without hiding transaction columns',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Desktop laptop register geometry');
+  for(const view of ['beneficiaries','history','ledger'] as const){
+    if(view==='beneficiaries')await beneficiaryFixture(page);
+    await page.goto('/?action='+view+'&demoUser=user1&lang=en');
+    const workspace=page.locator('[data-taxpay-register-page="true"]').first();
+    await expect(workspace).toBeVisible();
+    const dimensions=await workspace.evaluate(element=>({
+      width:element.getBoundingClientRect().width,
+      right:element.getBoundingClientRect().right,
+      screenWidth:window.innerWidth
+    }));
+    expect(dimensions.width,view+' must use available desktop workspace').toBeGreaterThan(940);
+    expect(dimensions.right,view+' stays within viewport').toBeLessThanOrEqual(dimensions.screenWidth+1);
+    if(view==='history'){
+      const table=page.locator('.taxpayer-transaction-panel table.taxpayer-transaction-table');
+      await expect(table.locator('thead th')).toHaveCount(7);
+      for(const header of await table.locator('thead th').all())await expect(header).toBeVisible();
+      const meta=page.locator('.taxpayer-transaction-panel .taxpayer-transaction-compact-meta').first();
+      await expect(meta).toBeHidden();
+    }
+    const horizontalOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(horizontalOverflow,view+' must not overflow document').toBeLessThanOrEqual(2);
+  }
+});
