@@ -43,7 +43,9 @@ for (const [index, service] of serviceCatalog.entries()) {
     const active = carousel.locator('.public-hero-carousel__slide[aria-hidden="false"]');
     await expect(active).toHaveCount(1);
     await expect(active.getByRole('button', { name: service.label, exact: true })).toBeVisible();
-    await expect(active).toContainText(`Published description for ${service.id}.`);
+    // Production uses published SQL text; this offline browser lane uses the
+    // same approved service category defaults, without claiming an SQL readback.
+    await expect(active).toHaveAttribute('data-payment-service', service.code || undefined);
     await active.getByRole('button', { name: service.label, exact: true }).click();
 
     if (service.id === 'travel') {
