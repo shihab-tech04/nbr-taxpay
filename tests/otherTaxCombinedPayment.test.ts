@@ -55,10 +55,12 @@ test('the signed-in payer keeps both saved beneficiaries inside one scoped SQL s
  const grouped=mk();
  const bound=bindPreviewStoryPayer(grouped.payload,{profileId:'user1',paymentSessionId:session});
  const signed=bound.details.lines as Array<Record<string,unknown>>;
+ assert.equal(bound.details.payerId,'user1','payer must be bound to current profile');
  assert.equal(signed.length,2);
- assert.deepEqual(signed.map(x=>x.beneficiary),['user13','SAVED_TIN:000000000018']);
- assert.deepEqual(signed.map(x=>x.amountMinor),[1500,3500]);
- assert.deepEqual(signed.map(x=>x.taxpayerTin),['909000000013','000000000018']);
+ assert.deepEqual(signed,items,'Office-facing accounting heads must never become synthetic beneficiary lines');
+ const allocated=bound.details.allocations as Array<Record<string,unknown>>;
+ assert.deepEqual(allocated.map(x=>x.amountMinor),[1500,3500]);
+ assert.deepEqual(allocated.map(x=>x.taxpayerTin),['909000000013','000000000018']);
  assert.equal(bound.idempotencyKey,id);
  assert.deepEqual(bound,bindPreviewStoryPayer(grouped.payload,{profileId:'user1',paymentSessionId:session}));
  const confirmed=makeConfirmedReceipt({id,service:'OTHER_TAX_PAYMENT',amountMinor:5000,
