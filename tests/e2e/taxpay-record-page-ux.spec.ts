@@ -100,6 +100,22 @@ for(const viewport of [{width:1280,height:900},{width:375,height:812}]){
       await expect(frame.locator('.taxpay-office-register__toolbar')).toHaveCount(1);
       await expect(frame.locator('.taxpay-office-register__actions input[type="search"]')).toHaveCount(1);
       await expect(frame.locator('.taxpay-office-register__footer, .taxpay-table-pagination').first()).toBeVisible();
+      if(route==='history'&&viewport.width===1280){
+        const geometry=await frame.locator('.taxpay-table-viewport').evaluate(element=>{
+          const frameBounds=element.getBoundingClientRect();
+          const firstHeader=element.querySelector('thead th:first-child')?.getBoundingClientRect();
+          const firstTitle=element.querySelector('tbody tr:first-child .taxpayer-transaction-row__title')?.getBoundingClientRect();
+          const lastHeader=element.querySelector('thead th:last-child')?.getBoundingClientRect();
+          if(!firstHeader||!firstTitle||!lastHeader)throw new Error('Missing seven-column transaction geometry');
+          return {left:frameBounds.left,right:frameBounds.right,
+            firstHeader:firstHeader.left,firstTitle:firstTitle.left,lastHeader:lastHeader.right,
+            overflow:element.scrollWidth-element.clientWidth};
+        });
+        expect(geometry.firstHeader,'Payment column must not start left of the viewport').toBeGreaterThanOrEqual(geometry.left-1);
+        expect(geometry.firstTitle,'Payment title must be fully visible').toBeGreaterThanOrEqual(geometry.left-1);
+        expect(geometry.lastHeader,'Actions column must not be clipped').toBeLessThanOrEqual(geometry.right+2);
+        expect(geometry.overflow,'1280px desktop register must fit all seven columns').toBeLessThanOrEqual(2);
+      }
       const computed=await frame.evaluate(el=>{
         const s=getComputedStyle(el);
         return {radius:s.borderTopLeftRadius,border:s.borderTopWidth,background:s.backgroundColor};

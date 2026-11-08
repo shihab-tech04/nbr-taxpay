@@ -1542,6 +1542,17 @@ table.taxpay-unified-table {
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-mobile-table-cards {
   border:0;border-radius:0;
 }
+/* Office register owns its own scroll viewport. The earlier Convay shell's
+ * -20px margin and +40px width pushed the Payment column under the clipped
+ * frame at laptop widths, despite the seven-column grid being present. */
+.taxpay-taxpayer-reference .taxpayer-workspace[data-taxpay-register-page="true"] .taxpayer-transaction-panel.taxpay-office-register-frame .taxpay-table-viewport {
+  margin:0;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  overflow-x:auto;
+}
 @media (max-width:767px) {
   .taxpay-taxpayer-reference .taxpay-office-register-frame > .taxpay-office-register__toolbar {
     padding:12px;align-items:stretch;
