@@ -114,7 +114,7 @@ export const DashboardPaymentDrafts: React.FC<{
   const loading = catalog.ownerKey !== ownerKey || catalog.status === 'loading';
   if (!loading && catalog.status === 'ready' && catalog.rows.length === 0) return null;
 
-  return <section id="dashboard-payment-drafts" data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
+  return <section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
     className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-2">
