@@ -118,3 +118,42 @@ test('Pay Tax header reserves the Back column without overlapping the title in E
     });
   }
 });
+
+
+test('draft-eligible account payment protects backdrop, Escape and X at every payment breakpoint', async ({ page }) => {
+  // No hosted writes: this suite explicitly runs with the backend disabled.
+  await page.goto('/?action=taxpayer_login');
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
+  await login.getByLabel('Password', { exact: true }).fill('user2');
+  await login.getByRole('button', { name: 'Sign In' }).click();
+  await expect(login).toHaveCount(0);
+  await page.goto('/?action=landing');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
+  await expect(payment.locator('.payment-form-draft-controls__save')).toBeVisible();
+
+  // Accidental outside clicks must not close or open a destructive dialog.
+  await page.mouse.click(2, 2);
+  await expect(payment).toBeVisible();
+  await expect(payment.getByRole('alertdialog')).toHaveCount(0);
+
+  // Keyboard dismissal uses the same safe confirmation as the header X.
+  await page.keyboard.press('Escape');
+  const confirm = payment.getByRole('alertdialog');
+  await expect(confirm).toBeVisible();
+  await expect(confirm.getByRole('button', { name: 'Save Draft' })).toBeVisible();
+  await expect(confirm.getByRole('button', { name: 'Discard tax payment' })).toBeVisible();
+  await confirm.getByRole('button', { name: 'Keep editing' }).click();
+  await expect(payment).toBeVisible();
+
+  await payment.locator('.taxpay-modal__close').click();
+  await expect(confirm).toBeVisible();
+  // Failed persistence must keep the unsaved payment in place.
+  await confirm.getByRole('button', { name: 'Save Draft' }).click();
+  await expect(confirm.getByRole('alert')).toBeVisible();
+  await expect(payment).toBeVisible();
+  await confirm.getByRole('button', { name: 'Discard tax payment' }).click();
+  await expect(payment).toHaveCount(0);
+});
