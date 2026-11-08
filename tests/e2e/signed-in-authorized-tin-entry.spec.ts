@@ -218,7 +218,7 @@ test('guest input remains editable and limited to twelve digits',async({page})=>
   await expect(dialog.getByRole('button',{name:'Continue to purpose & amount'})).toBeDisabled();
 });
 
-test('signed-in facilitated payments save one record per selected taxpayer item', async ({ page }) => {
+test('signed-in facilitated payments produce one combined receipt with linked allocations', async ({ page }) => {
   await mockSavedBeneficiaries(page);
   await mockAuthorizations(page, null);
   const submitted: Array<Record<string, any>> = [];
@@ -248,7 +248,19 @@ test('signed-in facilitated payments save one record per selected taxpayer item'
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay ৳ 50/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
-  expect(submitted.map(record => record.details.taxpayerTin)).toEqual(['2222222222222', '3333333333333']);
-  expect(submitted.map(record => record.amountMinor)).toEqual([1500, 3500]);
-  await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(2);
+  expect(submitted).toHaveLength(1);
+  expect(submitted[0].amountMinor).toBe(5000);
+  expect(submitted[0].details.combinedPayment).toBe(true);
+  expect(submitted[0].details.allocations.map((line:{taxpayerTin:string;amountMinor:number}) =>
+    [line.taxpayerTin,line.amountMinor])).toEqual([
+      ['2222222222222',1500],['3333333333333',3500]
+    ]);
+  await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(0);
+  await dialog.getByRole('button',{name:'Receipt details'}).click();
+  const paper=dialog.locator('.receipt-view__paper');
+  await expect(paper).toContainText('2222222222222');
+  await expect(paper).toContainText('3333333333333');
+  await expect(paper).toContainText('৳ 50');
+  await dialog.getByRole('button',{name:'Back to confirmation'}).click();
+  await expect(dialog.getByRole('heading',{name:'Payment record saved'})).toBeVisible();
 });

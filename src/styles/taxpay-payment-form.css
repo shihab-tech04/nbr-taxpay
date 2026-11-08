@@ -162,7 +162,7 @@
 .payment-lifecycle__heading--complete{background:#eefaf5}
 .payment-lifecycle__heading--pending{background:#fff9ec}
 .payment-lifecycle__heading--failed{background:#fff0f0}
-.payment-flow-embedded__confirmation-layout{width:min(100%,760px);margin:0 auto}
+.payment-flow-embedded__confirmation-layout{width:100%;min-width:0;max-width:none;margin:0;padding:20px 22px}
 .payment-lifecycle__overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:20px 21px}
 .payment-lifecycle__overview>div{display:grid;gap:6px;min-width:0}
 .payment-lifecycle__overview span{font-size:14px;color:#526880}
@@ -174,6 +174,7 @@
 .payment-lifecycle__progress-detail>summary span{font-weight:400;color:#62748d}
 .payment-lifecycle__progress-detail .payment-lifecycle__details{border-top:1px solid #e5edf6}
 .payment-receipt-details{min-width:0;width:min(100%,840px);margin:0 auto}
+.payment-receipt-details.payment-flow-embedded--receipt{width:100%;max-width:none;margin:0}
 .payment-lifecycle__heading h2{font-size:18px;font-weight:850;margin:0;line-height:1.4}
 .payment-lifecycle__heading p{font-size:14px;color:#405a74;margin:6px 0 0;line-height:1.6}
 .payment-lifecycle__symbol{display:grid;place-items:center;border-radius:10px;width:38px;height:38px;background:white;color:#2968b2;flex:none}
@@ -201,7 +202,7 @@
 .payment-lifecycle__actions{display:flex;flex-wrap:wrap;gap:10px;padding:0 21px 20px}
 @media(max-width:900px){.payment-review{grid-template-columns:minmax(0,1fr)}.payment-review__aside{position:static;grid-row:1}.payment-review__rows{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.payment-radio-card-grid{grid-template-columns:1fr}.payment-radio-card{min-height:56px;padding:11px 12px}.payment-review__method-groups{grid-template-columns:1fr}.payment-review__method-group{justify-content:flex-start;padding:11px 14px;min-height:49px}.payment-review__method-list{grid-template-columns:repeat(2,minmax(0,1fr))}.payment-review__method{flex-wrap:wrap;gap:7px;min-width:0}.payment-review__brand{min-width:40px}.payment-form-summary__breakdown{padding:13px 14px}}
-@media(max-width:560px){.payment-review__panel{padding:14px}.payment-review__rows{grid-template-columns:1fr}.payment-review__channels{grid-template-columns:1fr}.payment-review__channel{min-height:72px}.payment-review__total-figure{font-size:25px}.payment-review__standalone-actions{flex-direction:column-reverse}.payment-review__standalone-actions button{width:100%}.payment-lifecycle__heading{padding:16px}.payment-lifecycle__overview{grid-template-columns:minmax(0,1fr);padding:16px}.payment-lifecycle__details{padding:16px;gap:16px}.payment-lifecycle__references{grid-template-columns:minmax(0,1fr)}.payment-lifecycle__result{margin:0 14px 14px}.payment-lifecycle__actions button{width:100%}.payment-lifecycle__timeline small{display:none}}
+@media(max-width:800px){.payment-flow-embedded__confirmation-layout{padding:0}}\n@media(max-width:560px){.payment-review__panel{padding:14px}.payment-review__rows{grid-template-columns:1fr}.payment-review__channels{grid-template-columns:1fr}.payment-review__channel{min-height:72px}.payment-review__total-figure{font-size:25px}.payment-review__standalone-actions{flex-direction:column-reverse}.payment-review__standalone-actions button{width:100%}.payment-lifecycle__heading{padding:16px}.payment-lifecycle__overview{grid-template-columns:minmax(0,1fr);padding:16px}.payment-lifecycle__details{padding:16px;gap:16px}.payment-lifecycle__references{grid-template-columns:minmax(0,1fr)}.payment-lifecycle__result{margin:0 14px 14px}.payment-lifecycle__actions button{width:100%}.payment-lifecycle__timeline small{display:none}}
 
 
 /* Clearly separate payer identity from receipt contacts without another card. */
