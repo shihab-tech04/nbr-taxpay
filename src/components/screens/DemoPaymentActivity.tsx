@@ -280,6 +280,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       {paymentStage===3&&<div className="space-y-4" role="status">
         <h2 className="text-xl font-bold text-taxpay-text">{txt('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</h2>
         <p className="text-sm text-taxpay-muted">{txt('Your reference is ready. You can find this entry in transaction history.','রেফারেন্স প্রস্তুত। লেনদেনের ইতিহাসেও এই রেকর্ড পাওয়া যাবে।')}</p>
+        {submitMessage&&<p className="rounded-lg border border-taxpay-border bg-taxpay-surface-subtle px-3 py-2 text-sm text-taxpay-text" aria-live="polite">{submitMessage}</p>}
         <p className="rounded-lg border border-taxpay-border p-4 font-mono text-sm break-all">{completedReference}</p>
         <button type="button" onClick={()=>{setPaymentStage(0);setSubmitMessage('');}} className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white">{txt('Make another payment','আরও একটি পেমেন্ট করুন')}</button>
       </div>}
