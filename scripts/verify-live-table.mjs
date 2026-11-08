@@ -43,8 +43,8 @@ try{
   ]);
   if(!viewportBox||!actionBox||actionBox.x+actionBox.width>viewportBox.x+viewportBox.width+2)
     throw new Error('Published desktop Transactions Details action is cut off');
-  // Desktop shows the full Reference column; compact meta is intentionally hidden.
-  await expect(rows.first().locator('td:nth-child(2)').getByText('DEMO-PAY-PEND-01',{exact:true})).toBeVisible();
+  // Desktop has a dedicated Reference column; the duplicate inline metadata is hidden.
+  await expect(rows.first().locator('td').nth(1).getByText('DEMO-PAY-PEND-01')).toBeVisible();
   await page.screenshot({path:'test-results/live-table-desktop.png',fullPage:true});
   await panel.getByRole('navigation',{name:'Page navigation'}).getByRole('button',{name:'Next'}).click();
   await expect(rows).toHaveCount(4);
@@ -54,6 +54,7 @@ try{
   const cards=panel.getByTestId('taxpayer-transaction-mobile-cards');
   await expect(cards).toBeVisible();
   await expect(cards.locator(':scope > li')).toHaveCount(10);
+  await expect(cards.locator(':scope > li').first().getByText('DEMO-PAY-PEND-01')).toBeVisible();
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   if(overflow>2)throw new Error('Published mobile page overflows by '+overflow+' pixels');
   await page.screenshot({path:'test-results/live-table-mobile.png',fullPage:true});

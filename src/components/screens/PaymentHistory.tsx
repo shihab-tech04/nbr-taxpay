@@ -142,7 +142,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
       <TaxpayerPageHeading title={label('Payments & activity','পেমেন্ট ও লেনদেন')}
         description={label('Activity overview','লেনদেনের সারসংক্ষেপ')} />
       {activityTabs && <TaxpayerActivityTabs />}
-      <section className="rounded-xl border border-taxpay-border bg-white px-4 sm:px-5" aria-label={label('Payment register','পেমেন্ট নিবন্ধন')}>
+      <section className="taxpay-office-register-frame rounded-xl border border-taxpay-border bg-white px-4 sm:px-5" aria-label={label('Payment register','পেমেন্ট নিবন্ধন')}>
         <TaxPayOfficeRegisterToolbar title={label('Payment records','পেমেন্টের তথ্য')}
           count={filtered.length} total={receipts.length} countLabel={label('records','রেকর্ড')}
           searchValue={query} onSearchChange={setQuery}

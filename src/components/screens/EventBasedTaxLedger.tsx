@@ -203,6 +203,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
         <p className="text-xs text-taxpay-muted">{visible.length} {t('events','ঘটনা')}</p>
       </div>
     </div>
+    <div className="taxpay-office-register-frame">
     <TaxPayOfficeRegisterToolbar title={t('Tax event register','কর ঘটনার তালিকা')}
       count={visible.length} total={events.length} countLabel={t('records','রেকর্ড')}
       searchValue={ledgerSearch} onSearchChange={setLedgerSearch}
@@ -275,6 +276,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
     </TaxPayTablePanel>
     <TaxPayOfficeRegisterFooter shown={visible.length} total={events.length}
       labels={{showing:t('Showing','দেখানো হচ্ছে'),of:t('of','মোট'),records:t('records','রেকর্ড')}}/>
+    </div>
     {selected&&<TaxPayModal title={selected.title} onClose={()=>setSelected(null)} hideFooter className="taxpayer-transaction-detail">
       <section className="space-y-4 p-1" data-testid="tax-event-details">
         <div className="flex items-center gap-2 text-xs text-taxpay-muted"><Clock3 size={16}/>{dateTime(selected.occurredAt,language)}</div>

@@ -201,7 +201,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const years=<label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
     <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={year} onChange={e=>changeYear(e.target.value)}>{taxYears.map(x=><option key={x.year} value={x.year}>{x.year}</option>)}</select>
   </label>;
-  const transactionList=<section className={panel+' taxpayer-transaction-panel'} aria-labelledby="taxpayer-transaction-heading">
+  const transactionList=<section className={panel+' taxpayer-transaction-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-transaction-heading">
     <TaxPayOfficeRegisterToolbar id="taxpayer-transaction-heading" testId="convay-table-toolbar"
       title={tr('Transaction history','লেনদেনের ইতিহাস')} count={filtered.length} total={scoped.length}
       countLabel={tr('records','রেকর্ড')} searchValue={query} onSearchChange={setQuery}
@@ -517,7 +517,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const documentNeedle=documentSearch.trim().toLocaleLowerCase();
   const documentRecords=allDocumentRecords.filter(x=>(x.title+' '+x.ref+' '+(x.challan||'')+' '+tr(...labels[x.kind]))
     .toLocaleLowerCase().includes(documentNeedle));
-  const documents=<section className={panel+' taxpayer-records-panel'} aria-labelledby="taxpayer-documents-heading">
+  const documents=<section className={panel+' taxpayer-records-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-documents-heading">
     <TaxPayOfficeRegisterToolbar id="taxpayer-documents-heading"
       title={tr('Payment records and supporting references','পেমেন্ট রেকর্ড ও সহায়ক রেফারেন্স')}
       description={tr('Open a record to check its payment details. A recorded entry is not itself an issued certificate.','পেমেন্টের বিস্তারিত দেখতে রেকর্ড খুলুন। নথিভুক্ত তথ্য নিজে কোনো ইস্যুকৃত সনদ নয়।')}
@@ -555,7 +555,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       {card('Refund or adjustment inquiries','ফেরত বা সমন্বয়ের আবেদন',String(allCorrectionRecords.filter(x=>x.state==='REQUESTED').length),'A request does not mean approval','আবেদন মানেই অনুমোদন নয়')}
       {card('Failed, reversed or disputed','ব্যর্থ, প্রত্যাবর্তিত বা বিরোধপূর্ণ',String(allCorrectionRecords.filter(x=>['DISPUTED','FAILED','REVERSED'].includes(x.state)).length),'Excluded from confirmed tax credits','নিশ্চিত কর ক্রেডিটে অন্তর্ভুক্ত নয়')}
     </div>
-    <section className={panel+' taxpayer-records-panel'} aria-labelledby="taxpayer-exceptions-heading">
+    <section className={panel+' taxpayer-records-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-exceptions-heading">
       <TaxPayOfficeRegisterToolbar id="taxpayer-exceptions-heading"
         title={tr('Cases requiring attention','যেসব বিষয়ে নজর দেওয়া প্রয়োজন')}
         description={tr('Review the recorded reason and status. These entries do not establish a tax credit.','নথিভুক্ত কারণ ও অবস্থা দেখুন। এসব এন্ট্রি কর ক্রেডিট নিশ্চিত করে না।')}

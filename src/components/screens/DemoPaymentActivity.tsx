@@ -324,7 +324,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         {mode==='beneficiary'?txt('Payments allocated to me','আমার হিসাবে বরাদ্দ'):txt('Payments I initiated','আমার শুরু করা পেমেন্ট')}
       </button>)}
     </nav>
-    <section className="space-y-3" data-testid="signed-in-payment-activity" aria-label={txt('Transaction history','লেনদেনের ইতিহাস')}>
+    <section className="space-y-3 taxpay-office-register-frame" data-testid="signed-in-payment-activity" aria-label={txt('Transaction history','লেনদেনের ইতিহাস')}>
       <TaxPayOfficeRegisterToolbar title={txt('Transaction history','লেনদেনের ইতিহাস')}
         count={visibleRows.length} total={rows.length} countLabel={txt('records','রেকর্ড')}
         searchValue={recordQuery} onSearchChange={setRecordQuery}

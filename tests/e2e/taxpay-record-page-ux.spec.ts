@@ -83,3 +83,33 @@ test('desktop ledger never duplicates mobile cards under the table after changin
     await expect(ledger.locator('.taxpay-mobile-table-cards')).toBeHidden();
   }
 });
+
+
+/** A single compositional frame, not individual lookalike toolbars.
+ * All four independently rendered financial registers must share the same
+ * surface, header, filter/disclosure, row and footer contract at every viewport.
+ */
+for(const viewport of [{width:1280,height:900},{width:375,height:812}]){
+  test('Office register frame is shared by the four Activity/Ledger routes at '+viewport.width+'px',async({page})=>{
+    await page.setViewportSize(viewport);
+    const observations:{route:string;radius:string;border:string;background:string}[]=[];
+    for(const route of ['history','corrections','certificates','ledger']){
+      await page.goto('/?action='+route+'&demoUser=user1&lang=en');
+      const frame=page.locator('.taxpay-office-register-frame').first();
+      await expect(frame).toBeVisible();
+      await expect(frame.locator('.taxpay-office-register__toolbar')).toHaveCount(1);
+      await expect(frame.locator('.taxpay-office-register__actions input[type="search"]')).toHaveCount(1);
+      await expect(frame.locator('.taxpay-office-register__footer, .taxpay-table-pagination').first()).toBeVisible();
+      const computed=await frame.evaluate(el=>{
+        const s=getComputedStyle(el);
+        return {radius:s.borderTopLeftRadius,border:s.borderTopWidth,background:s.backgroundColor};
+      });
+      observations.push({route,...computed});
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow,route+' must not overflow the '+viewport.width+'px viewport').toBeLessThanOrEqual(2);
+    }
+    expect(new Set(observations.map(x=>x.radius)).size).toBe(1);
+    expect(new Set(observations.map(x=>x.border)).size).toBe(1);
+    expect(new Set(observations.map(x=>x.background)).size).toBe(1);
+  });
+}
