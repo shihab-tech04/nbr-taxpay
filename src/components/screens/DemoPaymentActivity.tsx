@@ -181,7 +181,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       // Office reconciliation remains an independent, retryable outbox.
       let officeMirrorConfirmed = true;
       if (import.meta.env.VITE_SUPABASE_DISABLED !== 'true') {
-        const synced=await persistSimulatedPayment({
+        try {
+          const synced=await persistSimulatedPayment({
           idempotencyKey: nonce,
           sessionId: getStorySessionId(),
           service: checked[0]?.category??parentCategory,
@@ -198,7 +199,13 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
             lines: checked,
           }
         });
-        officeMirrorConfirmed = synced.mirrored;
+          officeMirrorConfirmed = synced.mirrored;
+        } catch {
+          // The private SQL payment was verified in the independent ledger
+          // before the separate mirror request. Mirror transport failures
+          // must not turn an existing simulation into a false decline.
+          officeMirrorConfirmed = false;
+        }
       }
       setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());
       setCompletedReference(result.reference);setPaymentStage(3);
