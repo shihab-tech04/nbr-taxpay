@@ -21,12 +21,12 @@ test('signed-in wizard simulates own tax with the SQL authorization allocation c
  assert.deepEqual(scoped.details.receiptSnapshot,payment.details.receiptSnapshot);
  assert.deepEqual(scoped,bindPreviewStoryPayer(payment,preview),'idempotent replay must have identical SQL payload');
 });
-test('another demo payer requires an active authorization and preserves the consent ID',()=>{
- const input={...payment,details:{...payment.details,payerMode:'OTHER',taxpayerTin:'222222222222'}};
- assert.throws(()=>bindPreviewStoryPayer(input,preview),/active payment authorization/);
- assert.throws(()=>bindPreviewStoryPayer(input,preview,{beneficiary:'user2'}),/Active authorization/);
- const bound=bindPreviewStoryPayer(input,preview,{beneficiary:'user2',authorizationId:'99999999-2222-4333-8444-555555555555'});
- assert.deepEqual(bound.details.lines,[{beneficiary:'user2',category:'TAX_WITH_RETURN',assessmentYear:'2025-2026',amountMinor:1000,authorizationId:'99999999-2222-4333-8444-555555555555'}]);
+test('saved beneficiary payment uses the exact selected TIN without inventing consent',()=>{
+ const input={...payment,details:{...payment.details,payerMode:'OTHER',taxpayerTin:'2222222222222'}};
+ const bound=bindPreviewStoryPayer(input,preview);
+ assert.deepEqual(bound.details.lines,[{beneficiary:'user2',category:'TAX_WITH_RETURN',assessmentYear:'2025-2026',amountMinor:1000}]);
+ assert.deepEqual(bound.details.receiptLines,payment.details.lines);
+ assert.throws(()=>bindPreviewStoryPayer({...input,details:{...input.details,taxpayerTin:'not-in-the-demo-directory'}},preview),/saved demo beneficiary/);
 });
 test('existing authorization workspace and public guest payloads stay unchanged',()=>{
  const original={...payment,details:{payerId:'user1',lines:[{beneficiary:'user1',amountMinor:1000}]}};
