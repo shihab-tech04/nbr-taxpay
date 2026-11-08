@@ -3,7 +3,7 @@ import {activePreviewSession} from './previewAccountSession';
 import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
 import type {DemoUserId} from '../data/demoUsers';
 import {sampleUserNumberForTin} from '../data/sampleTinSuggestions';
-import {activeAuthorizationFor,getHostedAuthorizations,userIdForHostedTin} from './hostedDemoAuthorizations';
+import {userIdForHostedTin} from './hostedDemoAuthorizations';
 /** Synthetic-only persistence; browser session ID is not an authenticated account. */
 export type StoryPaymentInput = {
   idempotencyKey: string;
@@ -55,8 +55,7 @@ export function getStorySessionId(): string {
  * Never manufacture an authorization for another taxpayer. */
 export function bindPreviewStoryPayer(
   input: StoryPaymentInput,
-  preview: {profileId:string;paymentSessionId:string}|null,
-  approved?: {beneficiary:DemoUserId;authorizationId?:string}
+  preview: {profileId:string;paymentSessionId:string}|null
 ): StoryPaymentInput {
   if(!preview)return input;
   if(input.sessionId!==preview.paymentSessionId)throw new Error('Demo account changed.');
@@ -66,42 +65,29 @@ export function bindPreviewStoryPayer(
      !Number.isSafeInteger(input.amountMinor)||input.amountMinor<=0)
     throw new Error('Simulation payment details are incomplete.');
   const thirdParty=details.payerMode==='OTHER';
-  if(thirdParty&&!approved)
-    throw new Error('Choose a demo beneficiary with active payment authorization.');
-  const beneficiary=thirdParty?approved!.beneficiary:preview.profileId;
-  if(thirdParty&&beneficiary!==preview.profileId&&!approved?.authorizationId)
-    throw new Error('Active authorization is required to pay for this beneficiary.');
+  const tin=typeof details.taxpayerTin==='string'?details.taxpayerTin.trim():'';
+  const number=sampleUserNumberForTin(tin);
+  // The server independently validates this exact TIN against the payer's
+  // capability-scoped saved list. A saved beneficiary payment is not an
+  // authorization to read the beneficiary's private tax records.
+  const selected=thirdParty
+    ? userIdForHostedTin(tin)||(number?`user${number}` as DemoUserId:null)
+    : preview.profileId;
+  if(!selected)throw new Error('Choose a saved demo beneficiary for this simulation.');
   return {...input,details:{
     ...details,
     receiptLines:details.lines,
     lines:[{
-      beneficiary,
+      beneficiary:selected,
       category:input.service,
       assessmentYear:typeof details.assessmentYear==='string'?details.assessmentYear:'2026-27',
-      amountMinor:input.amountMinor,
-      ...(thirdParty&&beneficiary!==preview.profileId?{authorizationId:approved!.authorizationId}:{})
+      amountMinor:input.amountMinor
     }]
   }};
 }
 export async function persistSimulatedPayment(input: StoryPaymentInput): Promise<StoryPaymentAcknowledgement> {
   const preview=activePreviewSession();
-  let approved: {beneficiary:DemoUserId;authorizationId?:string}|undefined;
-  if(preview&&input.details.receiptSnapshot&&input.details.payerMode==='OTHER'){
-    const tin=typeof input.details.taxpayerTin==='string'?input.details.taxpayerTin.trim():'';
-    const number=sampleUserNumberForTin(tin);
-    const beneficiary=userIdForHostedTin(tin)||(number?`user${number}` as DemoUserId:null);
-    if(!beneficiary)
-      throw new Error('Choose a saved demo beneficiary for this simulation.');
-    if(beneficiary===preview.profileId){
-      approved={beneficiary};
-    }else{
-      const authorizations=await getHostedAuthorizations(preview.profileId as DemoUserId);
-      const authorization=activeAuthorizationFor(authorizations,preview.profileId as DemoUserId,beneficiary);
-      if(!authorization)throw new Error('Active payment authorization is required for this beneficiary.');
-      approved={beneficiary,authorizationId:authorization.id};
-    }
-  }
-  const scoped=bindPreviewStoryPayer(input,preview,approved);
+  const scoped=bindPreviewStoryPayer(input,preview);
   const response = await fetch(API + '/payments', {
     method: 'POST',
     headers: { ...storyApiHeaders(input.sessionId),'Content-Type': 'application/json' },
