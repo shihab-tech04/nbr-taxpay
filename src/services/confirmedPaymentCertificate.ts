@@ -50,8 +50,41 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
   :[];
  const synthetic=lines.some(line=>typeof line.beneficiary==='string');
  let items:ReceiptAllocationItem[]=[];
- if(synthetic){
-  if(explicit.length||lines.some(line=>typeof line.beneficiary!=='string'||
+ if(synthetic && explicit.length){
+  // Combined SQL payment: accounting lines and display allocations must match
+  // one-to-one. Never use an unverified receipt snapshot to infer tax credit.
+  const receiptLines=Array.isArray(d.receiptLines)
+    ?d.receiptLines.filter(line=>line&&typeof line==='object'&&!Array.isArray(line)) as Array<Record<string,unknown>>
+    :[];
+  if(explicit.length!==lines.length||receiptLines.length!==lines.length||
+    explicit.some((allocation,index)=>{
+      const line=lines[index],head=receiptLines[index];
+      return !validTin(allocation.taxpayerTin) ||
+        !validMinorAmount(allocation.amountMinor) ||
+        !Number.isSafeInteger(allocation.headId) ||
+        typeof allocation.assessmentYear!=='string'||!allocation.assessmentYear.trim() ||
+        line.taxpayerTin!==allocation.taxpayerTin ||
+        line.amountMinor!==allocation.amountMinor ||
+        line.assessmentYear!==allocation.assessmentYear ||
+        line.headId!==allocation.headId ||
+        line.category!==tx.service ||
+        head.headId!==allocation.headId ||
+        Math.round(numberValue(head.totalAmount)*100)!==allocation.amountMinor;
+    }))return undefined;
+  items=explicit.map((allocation,index)=>{
+    const head=receiptLines[index];
+    const name=stringValue(allocation.taxpayerName).trim();
+    const serviceEn=stringValue(head.headNameEn).trim()||CATEGORY_LABELS[tx.service]?.en||tx.service;
+    return {taxpayerName:name||'TIN '+stringValue(allocation.taxpayerTin),
+      taxpayerTin:stringValue(allocation.taxpayerTin),
+      paymentServiceEn:serviceEn,
+      paymentServiceBn:stringValue(head.headNameBn).trim()||serviceEn,
+      assessmentYear:stringValue(allocation.assessmentYear),
+      amountMinor:allocation.amountMinor as number,
+      ...(stringValue(head.economicCode)?{economicCode:stringValue(head.economicCode)}:{})};
+  });
+ }else if(synthetic){
+  if(lines.some(line=>typeof line.beneficiary!=='string'||
     !validMinorAmount(line.amountMinor)||!serviceCodes.has(line.category as PaymentCategory)))return undefined;
   items=lines.map(line=>{
    const category=line.category as PaymentCategory;
