@@ -1318,7 +1318,7 @@ table.taxpay-unified-table {
   width:100%;min-width:0;
 }
 .taxpay-office-register__actions .beneficiary-directory__list-filter > p {
-  flex:0 0 auto;margin:0;font-size:13px;color:var(--taxpay-table-muted,#5f6b7a);white-space:nowrap;
+  flex:0 0 auto;margin:0;font-size:14px;color:var(--taxpay-table-muted,#5f6b7a);white-space:nowrap;
 }
 .taxpay-office-register__actions .beneficiary-list-picker {flex:1 1 160px;width:auto;min-width:0;max-width:none;}
 .taxpay-office-register__actions .beneficiary-list-picker__trigger {
