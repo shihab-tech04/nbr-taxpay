@@ -71,7 +71,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  // The disposable TaxPay database cannot be treated as source data by hosted
  // Office. The browser must report the unacknowledged mirror and retain the
  // original SQL records/outbox; a separate local Office journey verifies ACK.
- await expect(one.page.getByRole('status').filter({hasText:'OFFICE_SYNC_PENDING'})).toBeVisible({timeout:15000});
+ await expect(one.page.getByRole('status').filter({hasText:'Simulation saved; Office synchronization pending:'})).toBeVisible({timeout:15000});
  const author=await request('/rest/v1/rpc/sim_my_payment_history',{p_view:'payer'},payer.session.access_token);
  expect(author.status).toBe(200);
  const tx=(author.data as Array<{transactionId:string;id:string;totalMinor:number;allocations:Array<{beneficiary:string;amountMinor:number}>}>)
