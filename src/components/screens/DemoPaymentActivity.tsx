@@ -158,25 +158,31 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
             paymentMethod:'SIMULATED',paymentChannel:'NOW',lines:auditedLines,
           }
         });
-        if(!synced.mirrored)throw Error('Office payment synchronization pending');
+        // The source SQL receipt is authoritative for this *simulation*.
+        // Office delivery runs through its durable retry outbox and is reported
+        // separately; a delayed mirror must not masquerade as a bank decline.
         const checkedRows=await getDemoStoryPaymentHistory(id,'payer');
         const confirmed=checkedRows.find(t=>t.transactionId===synced.id);
         if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)
           throw Error('Payment SQL read-back did not match. Retry the same payment.');
         setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());
         setCompletedReference(confirmed.id);setPaymentStage(3);
-        setSubmitMessage(txt('Payment synchronized with Office: ','অফিসের সঙ্গে পেমেন্ট সিঙ্ক হয়েছে: ')+confirmed.id);
+        setSubmitMessage((synced.mirrored
+          ? txt('Payment synchronized with Office: ','অফিসের সঙ্গে পেমেন্ট সিঙ্ক হয়েছে: ')
+          : txt('Simulation saved; Office synchronization pending: ','সিমুলেশন সংরক্ষিত; অফিস সমন্বয় অপেক্ষমাণ: '))+confirmed.id);
         return;
       }
       const result=privateMode?await submitPrivateSimulationPayment(checked,nonce):await submitSimulatedPayment(id,checked,nonce);
       const readback=privateMode?await getPrivateSimulationHistory('payer'):await loadSimulationHistory(id,'payer');
       const confirmed=readback.find(t=>t.transactionId===result.transactionId);
       if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)throw new Error('SQL write may have succeeded, but read-back did not reconcile. Retry using the same form.');
-      // The private simulation ledger and the Office transaction feed are
-      // separate stores. Link them through this stable sourceTransactionId.
-      // Report payment completion only once Office SQL acknowledges receipt.
+      // Source and Office use separate SQL stores. The verified source
+      // simulation is saved regardless of Office mirror delivery status;
+      // Office reconciliation remains an independent, retryable outbox.
+      let officeMirrorConfirmed = true;
       if (import.meta.env.VITE_SUPABASE_DISABLED !== 'true') {
-        const synced=await persistSimulatedPayment({
+        try {
+          const synced=await persistSimulatedPayment({
           idempotencyKey: nonce,
           sessionId: getStorySessionId(),
           service: checked[0]?.category??parentCategory,
@@ -193,11 +199,20 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
             lines: checked,
           }
         });
-        if(!synced.mirrored)throw new Error('Office payment synchronization pending');
+          officeMirrorConfirmed = synced.mirrored;
+        } catch {
+          // The private SQL payment was verified in the independent ledger
+          // before the separate mirror request. Mirror transport failures
+          // must not turn an existing simulation into a false decline.
+          officeMirrorConfirmed = false;
+        }
       }
       setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());
       setCompletedReference(result.reference);setPaymentStage(3);
-      setSubmitMessage(txt('Payment record saved: ','পেমেন্ট রেকর্ড সংরক্ষিত: ')+result.reference+(result.replayed?' (previous request)':''));
+      setSubmitMessage((officeMirrorConfirmed
+        ? txt('Payment record saved: ','পেমেন্ট রেকর্ড সংরক্ষিত: ')
+        : txt('Simulation saved; Office synchronization pending: ','সিমুলেশন সংরক্ষিত; অফিস সমন্বয় অপেক্ষমাণ: '))+
+        result.reference+(result.replayed?' (previous request)':''));
     }catch(err){setSubmitMessage(err instanceof Error?err.message:'Submission could not be verified');}
     finally{setSaving(false);}
   },[id,lines,nonce,saving,language,privateMode,previewMode,parentCategory]);
@@ -265,6 +280,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       {paymentStage===3&&<div className="space-y-4" role="status">
         <h2 className="text-xl font-bold text-taxpay-text">{txt('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</h2>
         <p className="text-sm text-taxpay-muted">{txt('Your reference is ready. You can find this entry in transaction history.','রেফারেন্স প্রস্তুত। লেনদেনের ইতিহাসেও এই রেকর্ড পাওয়া যাবে।')}</p>
+        {submitMessage&&<p className="rounded-lg border border-taxpay-border bg-taxpay-surface-subtle px-3 py-2 text-sm text-taxpay-text" aria-live="polite">{submitMessage}</p>}
         <p className="rounded-lg border border-taxpay-border p-4 font-mono text-sm break-all">{completedReference}</p>
         <button type="button" onClick={()=>{setPaymentStage(0);setSubmitMessage('');}} className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white">{txt('Make another payment','আরও একটি পেমেন্ট করুন')}</button>
       </div>}

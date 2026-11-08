@@ -306,6 +306,12 @@ jobs:
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/mobile-payment-footer-calculation.spec.ts tests/e2e/payment-ux-regression.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/guest-amount-boundary.spec.ts
+      - name: Verify SQL-confirmed simulated payment when Office mirror is pending
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://simulation-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/office-mirror-retry.spec.ts --project=desktop-1280 --project=mobile-375
   payment-progress-e2e:
     name: Payment progress and v11 input acceptance
     needs: preflight

@@ -13,7 +13,7 @@ export type StoryPaymentAcknowledgement = {
   success: true;
   id: string;
   status: 'SIMULATED_SUCCESS';
-  mirrored: true;
+  mirrored: boolean;
   simulationOnly: true;
 };
 const API = TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'')+'/functions/v1/demo-story1-taxpay';
@@ -62,9 +62,36 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
     headers: { ...storyApiHeaders(input.sessionId),'Content-Type': 'application/json' },
     body: JSON.stringify({ ...scoped, origin: import.meta.env?.VITE_SUPABASE_DISABLED === 'true' ? 'QA_BROWSER' : 'TAXPAY_UI' }),
   });
-  const body = await response.json() as Partial<StoryPaymentAcknowledgement> & { error?: string };
-  if (!response.ok || body.success !== true || body.mirrored !== true || !body.id)
-    throw new Error(body.error || 'OFFICE_SYNC_PENDING');
+  const body = await response.json() as Partial<StoryPaymentAcknowledgement> & {
+    error?: string; requestId?: string; retryable?: boolean;
+  };
+  let acknowledged: StoryPaymentAcknowledgement;
+  if (response.ok && body.success === true && body.mirrored === true && body.id && body.status === 'SIMULATED_SUCCESS' && body.simulationOnly === true) {
+    acknowledged = body as StoryPaymentAcknowledgement;
+  } else if (response.status === 503 && body.error === 'OFFICE_SYNC_PENDING' && body.retryable === true &&
+             typeof body.requestId === 'string' && /^[0-9a-f-]{36}$/i.test(body.requestId)) {
+    // Office mirror failure is NOT a payment-gateway decline. Before showing a
+    // saved simulation, independently read back the exact idempotent source SQL
+    // row using this session's existing capability/ownership boundary.
+    const readback = await fetch(API + '/payments/' + encodeURIComponent(body.requestId) +
+      '?sessionId=' + encodeURIComponent(input.sessionId), {
+        headers: storyApiHeaders(input.sessionId), cache: 'no-store',
+      });
+    if (!readback.ok) throw new Error('SIMULATION_READBACK_PENDING');
+    const stored = await readback.json() as {success?:boolean;simulationOnly?:boolean;
+      data?:{id?:string;status?:string;data?:Partial<StoryPaymentInput>}};
+    if (stored.success !== true || stored.simulationOnly !== true ||
+        stored.data?.id !== body.requestId || stored.data.status !== 'SIMULATED_SUCCESS' ||
+        stored.data.data?.idempotencyKey !== scoped.idempotencyKey ||
+        stored.data.data?.sessionId !== scoped.sessionId ||
+        stored.data.data?.amountMinor !== scoped.amountMinor ||
+        stored.data.data?.service !== scoped.service)
+      throw new Error('SIMULATION_READBACK_MISMATCH');
+    acknowledged = {success:true,id:body.requestId,status:'SIMULATED_SUCCESS',
+      mirrored:false,simulationOnly:true};
+  } else {
+    throw new Error(body.error || 'SIMULATION_SUBMISSION_PENDING');
+  }
   try { sessionStorage.setItem('taxpay-guest-story-payment', 'true'); } catch { /* optional navigation hint only */ }
   // Persist the authenticated payer-to-payment link immediately after the SQL
   // acknowledgement. Do not delay a saved receipt or resubmit a payment when
@@ -81,7 +108,7 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
       }
     }
   } catch { /* Submitted SQL receipt remains authoritative; history can retry. */ }
-  return body as StoryPaymentAcknowledgement;
+  return acknowledged;
 }
 
 export type StoryPaymentNotice = {
