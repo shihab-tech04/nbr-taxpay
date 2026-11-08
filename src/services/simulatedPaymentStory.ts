@@ -91,7 +91,7 @@ export function bindPreviewStoryPayer(
       const allocationAmount = alloc.amountMinor;
       const allocationYear = alloc.assessmentYear;
       const headId = alloc.headId;
-      if (typeof allocationTin !== 'string' || !/^\\d{12,13}$/.test(allocationTin) ||
+      if (typeof allocationTin !== 'string' || !/^\d{12,13}$/.test(allocationTin) ||
         typeof allocationYear !== 'string' || !allocationYear ||
         typeof headId !== 'number' || !Number.isSafeInteger(headId) ||
         typeof allocationAmount !== 'number' || !Number.isSafeInteger(allocationAmount) ||
