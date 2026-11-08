@@ -350,8 +350,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         onPointerCancel={cancelSwipe}
         onLostPointerCapture={cancelSwipe}
       >
-        <div className="public-hero-carousel__track" aria-live="off"
-          style={{ transform: `translate3d(-${activeIndex * 100}%, 0, 0)` }}>
+        <div className="public-hero-carousel__track" aria-live="off">
           {slides.map((slide, index) => {
             const isActive = index === activeIndex;
             const intro = !slide.serviceCode;
