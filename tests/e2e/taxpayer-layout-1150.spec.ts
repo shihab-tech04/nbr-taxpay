@@ -21,10 +21,11 @@ test('User1 dashboard omits the redundant register and lengthy data notice but p
   await expect(page.getByText('DEMO-PAY-PEND-01').filter({visible:true}).first()).toBeVisible();
 });
 
-test('User1 bento keeps approved blue chart and accessible keyboard year selection',async({page})=>{
+test('User1 bento keeps the blue year chart and keyboard selection with a light hero surface',async({page})=>{
   await page.goto(url('taxpayer_home'));
   const hero=page.locator('.taxpay-bento-hero');
-  await expect(hero).toHaveCSS('background-color','rgb(8, 85, 135)');
+  await expect(hero).toHaveCSS('background-color','rgb(255, 255, 255)');
+  await expect(page.locator('.taxpay-bento-position__highlight')).toHaveCSS('background-color','rgb(245, 248, 252)');
   const chart=page.getByRole('group',{name:'Liability and posted credits by tax year'});
   const year=chart.getByRole('button',{name:/2024-2025: Total tax/});
   await year.focus();
