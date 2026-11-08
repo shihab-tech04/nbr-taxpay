@@ -1,5 +1,6 @@
--- One simulated combined payment/receipt with owner-checked beneficiary allocations.
--- Existing single-line requests, legacy split batches and real tax controls are unchanged.
+-- Verify Office-compatible, single-payment Other Tax allocations against
+-- payer-owned saved beneficiaries, head totals and the exact shared receipt.
+-- Preserve the preceding saved-TIN legacy payment authorization path.
 CREATE OR REPLACE FUNCTION demo_payment.validate_demo_authorized_payment()
 RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER
@@ -20,10 +21,9 @@ DECLARE
   v_saved boolean;
   v_allowed_tin boolean;
   v_allocations jsonb;
-  v_receipt_lines jsonb;
   v_snapshot jsonb;
   v_allocation jsonb;
-  v_receipt_line jsonb;
+  v_allocation_view jsonb;
   v_i integer;
   v_count integer;
   v_mode text;
@@ -36,25 +36,26 @@ BEGIN
   v_lines := new.data->'details'->'lines';
   IF jsonb_typeof(v_lines) <> 'array' OR jsonb_array_length(v_lines) NOT BETWEEN 1 AND 20
   THEN RAISE EXCEPTION 'INVALID_BENEFICIARY_LINES'; END IF;
-  -- New combined Other Tax protocol. One SQL payment, many independently
-  -- validated taxpayer/head/year allocations. Legacy v1 rows below unchanged.
+  -- One Office-compatible payment transaction, many independently verified
+  -- taxpayer allocations. Keep accounting heads in details.lines and explicit
+  -- beneficiary shares in details.allocations; never mix synthetic user IDs.
   IF new.data->'details'->>'combinedPayment' = 'true' THEN
     v_mode := new.data->'details'->>'payerMode';
     v_allocations := new.data->'details'->'allocations';
-    v_receipt_lines := new.data->'details'->'receiptLines';
     v_snapshot := new.data->'details'->'receiptSnapshot';
     v_count := jsonb_array_length(v_lines);
     IF new.service_code <> 'OTHER_TAX_PAYMENT'
        OR v_mode IS NULL OR v_mode NOT IN ('OTHER','SELF')
        OR jsonb_typeof(v_allocations) IS DISTINCT FROM 'array'
-       OR jsonb_typeof(v_receipt_lines) IS DISTINCT FROM 'array'
        OR jsonb_typeof(v_snapshot) IS DISTINCT FROM 'object'
        OR jsonb_typeof(v_snapshot->'items') IS DISTINCT FROM 'array'
+       OR jsonb_typeof(v_snapshot->'allocationItems') IS DISTINCT FROM 'array'
        OR jsonb_array_length(v_allocations) <> v_count
-       OR jsonb_array_length(v_receipt_lines) <> v_count
        OR jsonb_array_length(v_snapshot->'items') <> v_count
+       OR jsonb_array_length(v_snapshot->'allocationItems') <> v_count
        OR coalesce(new.data->'details'->>'allocationCount','') <> v_count::text
        OR v_snapshot->>'paymentCategory' <> 'OTHER_TAX_PAYMENT'
+       OR v_snapshot->>'challanNo' <> 'SIM-' || new.idempotency_key::text
        OR v_snapshot->>'challanNo' IS DISTINCT FROM new.data->'details'->>'receiptReference'
        OR coalesce(v_snapshot->>'totalAmount','') !~ '^[0-9]+(\.[0-9]{1,2})?$'
        OR (v_snapshot->>'totalAmount')::numeric * 100 <> new.amount_minor
@@ -63,27 +64,24 @@ BEGIN
     FOR v_i IN 0..v_count - 1 LOOP
       v_line := v_lines->v_i;
       v_allocation := v_allocations->v_i;
-      v_receipt_line := v_receipt_lines->v_i;
-      v_beneficiary := v_line->>'beneficiary';
+      v_allocation_view := v_snapshot->'allocationItems'->v_i;
       v_tin := btrim(coalesce(v_allocation->>'taxpayerTin',''));
-      IF jsonb_typeof(v_line) <> 'object' OR jsonb_typeof(v_allocation) <> 'object'
-        OR jsonb_typeof(v_receipt_line) <> 'object'
+      IF jsonb_typeof(v_line) <> 'object'
+        OR jsonb_typeof(v_allocation) <> 'object'
+        OR jsonb_typeof(v_allocation_view) <> 'object'
         OR v_tin !~ '^[0-9]{12,13}$'
         OR coalesce(v_allocation->>'assessmentYear','') = ''
-        OR coalesce(v_line->>'assessmentYear','') <> v_allocation->>'assessmentYear'
-        OR coalesce(v_line->>'taxpayerTin','') <> v_tin
-        OR coalesce(v_line->>'category','') <> 'OTHER_TAX_PAYMENT'
         OR coalesce(v_allocation->>'amountMinor','') !~ '^[1-9][0-9]{0,11}$'
-        OR coalesce(v_line->>'amountMinor','') <> v_allocation->>'amountMinor'
         OR coalesce(v_allocation->>'headId','') !~ '^[1-9][0-9]{0,8}$'
-        OR v_line->>'headId' <> v_allocation->>'headId'
-        OR v_receipt_line->>'headId' <> v_allocation->>'headId'
-        OR coalesce(v_receipt_line->>'totalAmount','') !~ '^[0-9]+(\.[0-9]{1,2})?$'
-        OR (v_receipt_line->>'totalAmount')::numeric * 100 <> (v_line->>'amountMinor')::bigint
-        OR (v_snapshot->'items'->v_i)->>'headId' <> v_allocation->>'headId'
-        OR (v_snapshot->'items'->v_i)->>'totalAmount' <> v_receipt_line->>'totalAmount'
+        OR v_line->>'headId' IS DISTINCT FROM v_allocation->>'headId'
+        OR (v_snapshot->'items'->v_i) IS DISTINCT FROM v_line
+        OR coalesce(v_line->>'totalAmount','') !~ '^[0-9]+(\.[0-9]{1,2})?$'
+        OR (v_line->>'totalAmount')::numeric * 100 <> (v_allocation->>'amountMinor')::bigint
+        OR v_allocation_view->>'taxpayerTin' IS DISTINCT FROM v_tin
+        OR v_allocation_view->>'assessmentYear' IS DISTINCT FROM v_allocation->>'assessmentYear'
+        OR v_allocation_view->>'amountMinor' IS DISTINCT FROM v_allocation->>'amountMinor'
       THEN RAISE EXCEPTION 'INVALID_COMBINED_ALLOCATION'; END IF;
-      v_amount := (v_line->>'amountMinor')::bigint;
+      v_amount := (v_allocation->>'amountMinor')::bigint;
       v_sum := v_sum + v_amount;
       IF v_mode = 'SELF' THEN
         v_number := substring(v_payer from 5)::integer;
@@ -95,30 +93,11 @@ BEGIN
           WHEN v_number BETWEEN 1 AND 9 THEN repeat(v_number::text,12)
           WHEN v_number = 10 THEN '000000000000'
           ELSE '9090000000'||lpad(v_number::text,2,'0') END;
-        IF v_beneficiary IS DISTINCT FROM v_payer
-          OR v_tin IS DISTINCT FROM new.data->'details'->>'taxpayerTin'
+        IF v_tin IS DISTINCT FROM new.data->'details'->>'taxpayerTin'
           OR v_tin NOT IN (v_expected12,v_expected13)
         THEN RAISE EXCEPTION 'INVALID_SELF_ALLOCATION'; END IF;
       ELSE
-        v_allowed_tin := false;
-        IF v_beneficiary = 'SAVED_TIN:' || v_tin THEN
-          v_allowed_tin := true;
-        ELSIF v_beneficiary ~ '^user([1-9]|[12][0-9]|30)$'
-            AND EXISTS(SELECT 1 FROM public.sim_payment_users WHERE id=v_beneficiary) THEN
-          v_number := substring(v_beneficiary from 5)::integer;
-          v_expected13 := CASE
-            WHEN v_number BETWEEN 1 AND 9 THEN repeat(v_number::text,13)
-            WHEN v_number = 10 THEN '1010101010101'
-            ELSE '90000000000'||lpad(v_number::text,2,'0') END;
-          v_expected12 := CASE
-            WHEN v_number BETWEEN 1 AND 9 THEN repeat(v_number::text,12)
-            WHEN v_number = 10 THEN repeat('0',12)
-            ELSE '9090000000'||lpad(v_number::text,2,'0') END;
-          v_allowed_tin := v_tin IN (v_expected12,v_expected13);
-        END IF;
-        IF NOT v_allowed_tin OR new.data->>'origin' <> 'TAXPAY_UI'
-          OR v_line->>'authorizationId' IS NOT NULL
-        THEN RAISE EXCEPTION 'INVALID_BENEFICIARY'; END IF;
+        IF new.data->>'origin' <> 'TAXPAY_UI' THEN RAISE EXCEPTION 'INVALID_BENEFICIARY'; END IF;
         SELECT EXISTS(
           SELECT 1 FROM taxpay_guest_private.demo_profiles prof
           JOIN taxpay_guest_private.sessions sess
