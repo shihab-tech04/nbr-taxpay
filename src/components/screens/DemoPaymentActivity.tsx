@@ -230,7 +230,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       assessmentYear:a.assessmentYear,amountMinor:a.amountMinor}))
   });
   if(!id)return null;
-  return <main className="mx-auto max-w-7xl space-y-5 pb-12" lang={language}>
+  return <main data-taxpay-register-page="true" className="mx-auto max-w-7xl space-y-5 pb-12" lang={language}>
     <TaxpayerPageHeading title={txt('Payments and transaction history','পেমেন্ট ও লেনদেনের ইতিহাস')}
       description={`${txt('User ID','ইউজার আইডি')}: ${id}`} />
     {activityTabs && <TaxpayerActivityTabs />}

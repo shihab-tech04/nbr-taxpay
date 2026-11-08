@@ -34,16 +34,18 @@ test('history uses one content panel and aligned, legible payment rows',async({p
   const positions=await first.evaluate(row=>Array.from(row.querySelectorAll('td'))
     .filter(cell=>getComputedStyle(cell).display!=='none')
     .map(cell=>({left:cell.getBoundingClientRect().left,right:cell.getBoundingClientRect().right})));
-  expect(positions).toHaveLength(4);
+  expect(positions).toHaveLength(7);
   for(let i=1;i<positions.length;i++)expect(positions[i].left).toBeGreaterThanOrEqual(positions[i-1].right-1);
   const viewport=panel.locator('.taxpay-table-viewport');
+  // Office registers keep all columns; the actions remain reachable by local horizontal scroll.
+  await viewport.evaluate(element=>{element.scrollLeft=element.scrollWidth;});
   const [bounds,actionBounds]=await Promise.all([
     viewport.boundingBox(),first.getByRole('button',{name:'Details for Pending bank reconciliation'}).boundingBox()
   ]);
   expect(bounds).not.toBeNull();
   expect(actionBounds).not.toBeNull();
   expect(actionBounds!.x+actionBounds!.width).toBeLessThanOrEqual(bounds!.x+bounds!.width+2);
-  await expect(first.locator('.taxpayer-transaction-compact-meta').getByText('DEMO-PAY-PEND-01')).toBeVisible();
+  await expect(first.locator('td:nth-child(2)').getByText('DEMO-PAY-PEND-01',{exact:true})).toBeVisible();
   await expect(first.getByRole('button',{name:'Details for Pending bank reconciliation'})).toBeVisible();
 
   await first.getByRole('button',{name:'Details for Pending bank reconciliation'}).click();

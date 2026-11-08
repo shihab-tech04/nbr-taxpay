@@ -84,7 +84,12 @@ test('All taxpayer inner pages preserve responsive access without a full-width s
       if(width>=1400) {
         expect(dims.content,route+' content did not expand at '+width).toBeGreaterThan(width * .7);
       } else if(width===1280) {
-        expect(dims.content,route+' should preserve its pre-1400px width').toBeLessThanOrEqual(902);
+        // Record registers now use the available workspace like Office Management;
+        // non-register pages retain the existing centered reading column.
+        if(['history','ledger','certificates','corrections'].includes(route))
+          expect(dims.content,route+' should use available laptop width').toBeGreaterThan(940);
+        else
+          expect(dims.content,route+' should preserve centered reading width').toBeLessThanOrEqual(902);
       }
       await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
     }

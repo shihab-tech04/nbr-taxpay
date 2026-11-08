@@ -442,7 +442,7 @@ export function Beneficiaries(){
     finally{setLoading(false);}
   };
 
-  return <section className="mx-auto w-full max-w-7xl space-y-5" lang={language} data-testid="beneficiaries-page" aria-labelledby="beneficiaries-title">
+  return <section className="mx-auto w-full max-w-7xl space-y-5" lang={language} data-taxpay-register-page="true" data-testid="beneficiaries-page" aria-labelledby="beneficiaries-title">
     <header className="flex flex-col gap-4 rounded-xl border border-taxpay-border bg-taxpay-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div className="min-w-0">
         <h1 id="beneficiaries-title" className="text-2xl font-bold tracking-tight text-taxpay-text sm:text-3xl">{tr('Beneficiaries','উপকারভোগী')}</h1>
