@@ -9,6 +9,7 @@ test('All beneficiaries selects every saved record without changing ownership or
   assert.match(page,/const listPeople=activeList==='all'\?people:people\.filter\(person=>person\.list_id===activeList\)/);
   assert.match(page,/rememberedBeneficiaryListId\(\[\{id:'all'\},\.\.\.data\.lists\]/);
   assert.match(page,/onClick=\{\(\)=>switchList\('all'\)\}/);
+  assert.match(page,/setTargetList\(activeList==='all'\?\(lists\[0\]\?\.id\?\?'new'\):activeList\|\|'new'\)/);
   assert.match(page,/person\.id===id&&\(activeList==='all'\|\|person\.list_id===activeList\)/);
   assert.match(page,/const filteredPeople=listPeople\.filter/);
   assert.match(page,/const selectedPeople=listPeople\.filter/);
