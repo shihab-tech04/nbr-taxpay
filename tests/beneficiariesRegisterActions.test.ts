@@ -17,7 +17,7 @@ test('All beneficiaries selects every saved record without changing ownership or
 
 test('Beneficiaries has one Office-style search/filter toolbar and no extra list-context strip',()=>{
   assert.match(page,/<TaxPayOfficeRegisterToolbar/);
-  assert.match(page,/actions=\{<div className="beneficiary-directory__list-toolbar">/);
+  assert.match(page,/actions=\{lists\.length>0\?<div className="beneficiary-directory__list-toolbar">/);
   assert.match(page,/<TaxPayOfficeRegisterFilters open=\{filtersExpanded\}/);
   assert.doesNotMatch(page,/className="beneficiary-directory__list-context"/);
   assert.match(styles,/\.taxpay-office-register__actions \.beneficiary-directory__list-toolbar/);
