@@ -882,7 +882,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       // is pending, so a manual retry never creates a second simulation.
       pendingStoryRef.current = confirmed.mirrored ? null : pending;
       if (confirmed.mirrored && pending.payload.details.combinedPayment === true) {
-        try { clearCombinedOtherTaxRequest(); } catch { /* confirmed SQL record remains authoritative */ }
+        try { clearCombinedOtherTaxRequest(getStorySessionId()); } catch { /* confirmed SQL record remains authoritative */ }
       }
     } catch (error) {
       const message=error instanceof Error?error.message:'';
@@ -1183,7 +1183,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   }, [step, paymentPhase, isProcessing, officeMirrorPending, simulateDecline, paymentValidationBlocked, batchAttempt]);
 
   const startAnotherBatch = () => {
-    try { clearOtherTaxBatch(); clearCombinedOtherTaxRequest(); } catch {
+    try { clearOtherTaxBatch(); clearCombinedOtherTaxRequest(getStorySessionId()); } catch {
       setErrorMessage(language === 'bn' ? 'অনুরোধ সংরক্ষণ পরিষ্কার করা যায়নি।' : 'The saved request could not be cleared.');
       return;
     }
