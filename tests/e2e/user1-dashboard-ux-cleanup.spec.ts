@@ -170,3 +170,55 @@ test('dashboard only: calm card surfaces preserve action contrast and mobile con
     expect(overflow,'dashboard horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }
 });
+
+test('Overview prioritizes actions and drafts before charts, without stretched empty cards',async({page})=>{
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto(demo);
+  const bento=page.getByTestId('taxpayer-overview-bento');
+  const components=await bento.evaluate(element=>Array.from(element.children).map(child=>
+    child.classList.contains('taxpay-bento-drafts')?'drafts':
+    child.classList.contains('taxpay-bento-recent')?'recent':
+    child.classList.contains('taxpay-bento-coverage')?'coverage':
+    child.classList.contains('taxpay-bento-years')?'years':
+    child.classList.contains('taxpay-bento-tags')?'tags':'other'));
+  expect(components.indexOf('recent')).toBeLessThan(components.indexOf('coverage'));
+  if(components.includes('drafts')){
+    expect(components.indexOf('drafts')).toBeLessThan(components.indexOf('coverage'));
+    expect(components.indexOf('drafts')).toBeLessThan(components.indexOf('recent'));
+  }
+  await expect(bento.locator('.taxpay-bento-position__totals > div')).toHaveCount(2);
+  await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(4);
+  await expect(bento.locator('.taxpay-tag-spending__track')).toBeVisible();
+  await expect(bento.locator('[data-testid^="tag-spend-"]')).toHaveCount(5);
+  await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
+  const visual=await bento.evaluate(element=>{
+    const find=(selector:string)=>element.querySelector(selector)!.getBoundingClientRect();
+    const hero=find('.taxpay-bento-hero'),position=find('.taxpay-bento-position');
+    const coverage=find('.taxpay-bento-coverage');
+    return {heroHeight:hero.height,positionHeight:position.height,coverageHeight:coverage.height};
+  });
+  expect(visual.heroHeight,'Next steps must be content-sized').toBeLessThan(320);
+  expect(visual.positionHeight,'Tax position must be content-sized').toBeLessThan(350);
+  expect(visual.coverageHeight,'Coverage chart must be compact').toBeLessThan(360);
+});
+
+test('selected assessment year controls recent activity and compact spending on desktop and mobile',async({page})=>{
+  for(const width of [375,1440]){
+    await page.setViewportSize({width,height:900});
+    await page.goto(demo);
+    const bento=page.getByTestId('taxpayer-overview-bento');
+    await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
+    const recent=bento.locator('.taxpay-bento-recent');
+    await expect(recent).toContainText('Assessment year: 2023-2024');
+    await expect(recent).toContainText('20 Aug 2024');
+    await expect(recent).not.toContainText('Pending bank reconciliation');
+    const tags=bento.getByTestId('beneficiary-spending-breakdown');
+    await expect(tags.getByTestId('tagged-payment-total')).toContainText('60,000');
+    await expect(tags.getByTestId('tag-spend-unassigned')).toContainText('60,000');
+    await expect(tags.getByTestId('tag-spend-family')).toContainText('0');
+    await expect(tags.locator('.taxpay-tag-spending__track span')).toHaveCount(1);
+    await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(4);
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
+  }
+});
