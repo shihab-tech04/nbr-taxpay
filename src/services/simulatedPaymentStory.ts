@@ -72,45 +72,37 @@ export function bindPreviewStoryPayer(
   // authorization to read the beneficiary's private tax records.
   // A saved TIN need not be one of the 30 illustrative accounts. Keep its
   // literal identity; SQL requires this exact TIN in the payer's owned list.
-  // A true combined payment is submitted once. Keep each beneficiary, head,
-  // assessment year and amount in one signed, independently checked payload.
+  // Combined payments use the established Office-compatible contract:
+  // details.lines = accounting heads, details.allocations = taxpayer shares.
+  // Do not synthesize beneficiary IDs into lines: Office 360 and Analytics
+  // explicitly reject records with BOTH beneficiary and explicit allocations.
+  // The private SQL trigger independently verifies every saved TIN for this
+  // payer's capability-scoped session before accepting the single payment.
   if (details.combinedPayment === true && input.service === 'OTHER_TAX_PAYMENT') {
-    const allocations = details.allocations;
-    const receiptLines = details.lines as Array<Record<string, unknown>>;
+    const allocations=details.allocations;
+    const accounting=details.lines as Array<Record<string,unknown>>;
+    const snapshot=details.receiptSnapshot as {items?:unknown}|undefined;
     if (!Array.isArray(allocations) || allocations.length < 1 || allocations.length > 20 ||
-      receiptLines.length !== allocations.length ||
-      !Array.isArray((details.receiptSnapshot as {items?:unknown}).items) ||
-      (details.receiptSnapshot as {items:unknown[]}).items.length !== allocations.length)
+      accounting.length !== allocations.length ||
+      !snapshot || !Array.isArray(snapshot.items) ||
+      snapshot.items.length !== allocations.length)
       throw new Error('INVALID_COMBINED_ALLOCATION');
-    let total = 0;
-    const signedLines = allocations.map((raw, index) => {
-      if (!raw || typeof raw !== 'object' || Array.isArray(raw))
+    let total=0;
+    for (let index=0;index<allocations.length;index++) {
+      const a=allocations[index] as Record<string,unknown>;
+      if (!a || typeof a!=='object' || Array.isArray(a) ||
+        typeof a.taxpayerTin!=='string' || !/^\d{12,13}$/.test(a.taxpayerTin) ||
+        typeof a.assessmentYear!=='string' || !a.assessmentYear ||
+        typeof a.headId!=='number' || !Number.isSafeInteger(a.headId) || a.headId<=0 ||
+        typeof a.amountMinor!=='number' || !Number.isSafeInteger(a.amountMinor) || a.amountMinor<=0 ||
+        accounting[index].headId!==a.headId ||
+        Math.round(Number(accounting[index].totalAmount)*100)!==a.amountMinor)
         throw new Error('INVALID_COMBINED_ALLOCATION');
-      const alloc = raw as Record<string, unknown>;
-      const allocationTin = alloc.taxpayerTin;
-      const allocationAmount = alloc.amountMinor;
-      const allocationYear = alloc.assessmentYear;
-      const headId = alloc.headId;
-      if (typeof allocationTin !== 'string' || !/^\d{12,13}$/.test(allocationTin) ||
-        typeof allocationYear !== 'string' || !allocationYear ||
-        typeof headId !== 'number' || !Number.isSafeInteger(headId) ||
-        typeof allocationAmount !== 'number' || !Number.isSafeInteger(allocationAmount) ||
-        allocationAmount <= 0 || receiptLines[index].headId !== headId ||
-        Math.round(Number(receiptLines[index].totalAmount) * 100) !== allocationAmount)
-        throw new Error('INVALID_COMBINED_ALLOCATION');
-      const userNumber = sampleUserNumberForTin(allocationTin);
-      const beneficiary = thirdParty
-        ? userIdForHostedTin(allocationTin) ||
-          (userNumber ? `user${userNumber}` as DemoUserId : null) ||
-          `SAVED_TIN:${allocationTin}`
-        : preview.profileId;
-      total += allocationAmount;
-      return {beneficiary, taxpayerTin: allocationTin, category: input.service,
-        assessmentYear: allocationYear, headId, amountMinor: allocationAmount};
-    });
-    if (!Number.isSafeInteger(total) || total !== input.amountMinor)
+      total+=a.amountMinor;
+    }
+    if (!Number.isSafeInteger(total) || total!==input.amountMinor)
       throw new Error('COMBINED_TOTAL_MISMATCH');
-    return {...input,details:{...details,receiptLines:details.lines,lines:signedLines}};
+    return {...input,details};
   }
   const selected=thirdParty
     ? userIdForHostedTin(tin)||(number?`user${number}` as DemoUserId:null)||
