@@ -160,8 +160,8 @@
   --banner-fade-end: 47%;
 }
 
-/* All service illustrations fill the frame. Keep their CSS fade narrow; the
- * introduction retains its gentler, wider blend with the default brand tint. */
+/* Preserve the complete Office-uploaded artwork without CSS cropping/zoom.
+ * The existing service-specific image blend and layout remain unchanged. */
 .public-hero-carousel__slide:not([data-banner-service="intro"]) .public-hero-carousel__media--illustrated {
   --banner-fade-mid: 8%;
   --banner-fade-end: 24%;
@@ -187,7 +187,7 @@
 
 .public-hero-carousel__slide .public-hero-carousel__service-image {
   max-height: none;
-  object-fit: cover;
+  object-fit: contain;
   /* The new character-free artwork is composed to the right; never crop its focal subject. */
   object-position: right center;
 }
@@ -284,15 +284,15 @@
 
   /* Prevent unnecessary zoom and preserve the new conceptual art at phone sizes. */
   .public-hero-carousel__slide .public-information-hero__image {
-    /* Fill the definite media frame instead of sizing from intrinsic image
-     * dimensions (which left a 143px image inside a 184px phone banner). */
+    /* Fill the media element's frame while fitting the entire uploaded image
+     * inside it without cropping or zooming at phone sizes. */
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     max-width: 100%;
     max-height: none;
-    object-fit: cover;
+    object-fit: contain;
     object-position: right center;
     transform: none;
   }
@@ -369,7 +369,7 @@
     height: 100%;
     max-width: none;
     max-height: none;
-    object-fit: cover;
+    object-fit: contain;
     object-position: right center;
     transform: none;
   }
