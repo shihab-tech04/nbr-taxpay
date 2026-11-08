@@ -460,7 +460,7 @@ export function Beneficiaries(){
     {recoveryError&&<p role="alert" className="text-sm text-red-800">{recoveryError}</p>}
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
 
-    <section className="rounded-xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-6" aria-labelledby="beneficiary-list-heading">
+    <section className="taxpay-office-register-frame rounded-xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-6" aria-labelledby="beneficiary-list-heading">
       {checkingIdentity&&<p role="status" className="py-8 text-center text-sm text-slate-600">{tr('Opening your beneficiary workspace…','উপকারভোগীর কর্মক্ষেত্র খোলা হচ্ছে…')}</p>}
       {!checkingIdentity&&loading&&<p role="status" className="py-8 text-center text-sm text-slate-600">{tr('Loading saved lists…','সংরক্ষিত তালিকা লোড হচ্ছে…')}</p>}
       {!checkingIdentity&&error&&<div className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -611,6 +611,8 @@ export function Beneficiaries(){
                 ariaLabel={tr('Saved beneficiaries','সংরক্ষিত উপকারভোগী')}/>
               </TaxPayTablePanel>
             </div>
+            <TaxPayOfficeRegisterFooter shown={filteredPeople.length} total={listPeople.length}
+              labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('records','রেকর্ড')}}/>
           </>}
         </>}
       </>}
