@@ -173,13 +173,21 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const taggedPaymentBreakdown=PAYMENT_TAG_GROUPS.map(group=>({
     group,amount:recordedDirectPayments.filter(item=>paymentTag(item)===group).reduce((sum,item)=>sum+item.amount,0)
   }));
-  // A saved TIN without a unique declared tag must remain unclassified.
-  // Distinguish this from payments not linked to any beneficiary without changing amounts.
-  const needsTagPayments=recordedDirectPayments.filter(item=>
-    Boolean(item.beneficiaryTin) && item.beneficiaryTin!==DEMO_USERS.user1.tin &&
-    paymentTag(item)==='unassigned');
+  // Reconcile the residual group without inventing tags or altering payment records.
+  const residualPayments=recordedDirectPayments.filter(item=>paymentTag(item)==='unassigned');
+  const ownAmount=residualPayments.filter(item=>item.beneficiaryTin===DEMO_USERS.user1.tin)
+    .reduce((sum,item)=>sum+item.amount,0);
+  const needsTagPayments=residualPayments.filter(item=>
+    Boolean(item.beneficiaryTin)&&item.beneficiaryTin!==DEMO_USERS.user1.tin&&
+    savedTagPeople.some(person=>person.tin===item.beneficiaryTin));
   const needsTagAmount=needsTagPayments.reduce((sum,item)=>sum+item.amount,0);
-  const noLinkedAmount=(taggedPaymentBreakdown.find(item=>item.group==='unassigned')?.amount??0)-needsTagAmount;
+  const missingSavedAmount=residualPayments.filter(item=>
+    Boolean(item.beneficiaryTin)&&item.beneficiaryTin!==DEMO_USERS.user1.tin&&
+    !savedTagPeople.some(person=>person.tin===item.beneficiaryTin))
+    .reduce((sum,item)=>sum+item.amount,0);
+  const noLinkedAmount=residualPayments.filter(item=>!item.beneficiaryTin)
+    .reduce((sum,item)=>sum+item.amount,0);
+  const reviewTins=[...new Set(needsTagPayments.flatMap(item=>item.beneficiaryTin?[item.beneficiaryTin]:[]))];
   const navigateTo=(r:string)=>navigate(r);
   const view=(r:string,textEn:string,textBn:string)=> <button type="button" className={action} onClick={()=>navigateTo(r)}>{tr(textEn,textBn)} <ArrowRight size={15} aria-hidden="true"/></button>;
   const tag=(s:State)=><span className={'inline-flex rounded-full px-2 py-1 text-[11px] font-medium '+stateColor[s]}>{tr(...stateLabels[s])}</span>;
@@ -369,8 +377,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           aria-label={tr('Liability coverage: ','করদায়ের বিভাজন: ')+Math.round(meter(totals.applied,totals.liability))+'%. '+tr('Remaining ','অবশিষ্ট ')+money(totals.outstanding)}
           style={{background:'conic-gradient('+gradients.parts.join(',')+')'}}>
           <div className="absolute inset-[34px] flex flex-col items-center justify-center rounded-full bg-white p-2 text-center">
-            <p className="text-xs text-taxpay-muted">{selectedCoverage===null?tr('Already covered','ইতোমধ্যে সমন্বিত কর'):coveredBreakdown[selectedCoverage].label}</p>
-            <p className={'font-semibold tabular-nums '+(selectedCoverage===null?'text-2xl':'text-base')}>{selectedCoverage===null?Math.round(meter(totals.applied,totals.liability))+'%':money(coveredBreakdown[selectedCoverage].value)}</p>
+            <p className="text-xs text-taxpay-muted">{selectedCoverage===null?tr('Payment sources','পরিশোধের উৎস'):coveredBreakdown[selectedCoverage].label}</p>
+            <p className={'font-semibold tabular-nums '+(selectedCoverage===null?'text-xl':'text-base')}>{selectedCoverage===null?tr(String(coveredBreakdown.slice(0,3).filter(item=>item.value>0).length)+' types',String(coveredBreakdown.slice(0,3).filter(item=>item.value>0).length)+' ধরন'):money(coveredBreakdown[selectedCoverage].value)}</p>
           </div>
         </div>
         <div className="taxpay-bento-coverage__details divide-y divide-taxpay-border" role="group" aria-label={tr('Coverage details','করদায়ের বিস্তারিত')}>{coveredBreakdown.map((x,i)=>
@@ -430,15 +438,23 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           {taggedPaymentBreakdown.map(({group,amount:groupAmount})=>
             <div key={group} data-testid={'tag-spend-'+group} data-empty={groupAmount===0?'true':undefined}
               className="taxpay-tag-spending__item">
-              <span className="taxpay-tag-spending__label"><i aria-hidden="true" style={{backgroundColor:spendingColors[group]}}/>{paymentTagLabel(group)}</span>
+              <span className="taxpay-tag-spending__label"><i aria-hidden="true" style={{backgroundColor:spendingColors[group]}}/>{group==='unassigned'?tr('Unclassified / no link','শ্রেণিবিহীন / সংযোগ নেই'):paymentTagLabel(group)}</span>
               <strong className="tabular-nums">{money(groupAmount)}</strong>
             </div>)}
         </div>
-        {needsTagAmount>0 && <div className="taxpay-tag-spending__notice" role="status" data-testid="dashboard-tag-review">
-          <p>{money(needsTagAmount)} {tr('is linked to a saved beneficiary without one clear tag. It remains unclassified until the saved tag is corrected.','সংরক্ষিত উপকারভোগীর ট্যাগ স্পষ্ট নয় বলে এই অর্থ শ্রেণিবিহীন আছে। ট্যাগ সংশোধন করলে শ্রেণি অনুযায়ী দেখাবে।')}</p>
-          <p>{tr('Payments without a beneficiary link','উপকারভোগীর সাথে যুক্ত নয় এমন পেমেন্ট')}: <strong className="tabular-nums">{money(noLinkedAmount)}</strong></p>
-          <button type="button" className="taxpay-tag-spending__review" onClick={()=>navigate('beneficiaries')}>{tr('Review beneficiary tags','উপকারভোগীর ট্যাগ পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/></button>
-        </div>}
+        {(ownAmount>0||needsTagAmount>0||missingSavedAmount>0||noLinkedAmount>0)&&
+          <div className="taxpay-tag-spending__notice" data-testid="dashboard-tag-review">
+            <div className="taxpay-tag-spending__breakdown" aria-label={tr('Unclassified payment breakdown','শ্রেণিবিহীন পেমেন্টের বিবরণ')}>
+              <span>{tr('Own payments','নিজের পেমেন্ট')} <strong>{money(ownAmount)}</strong></span>
+              <span>{tr('Saved beneficiary needs a tag','সংরক্ষিত উপকারভোগীর ট্যাগ প্রয়োজন')} <strong>{money(needsTagAmount)}</strong></span>
+              {missingSavedAmount>0&&<span>{tr('Beneficiary not saved','উপকারভোগী সংরক্ষিত নয়')} <strong>{money(missingSavedAmount)}</strong></span>}
+              <span>{tr('No beneficiary link','উপকারভোগীর সংযোগ নেই')} <strong>{money(noLinkedAmount)}</strong></span>
+            </div>
+            {reviewTins.length>0&&<button type="button" className="taxpay-tag-spending__review"
+              onClick={()=>navigate('beneficiaries',{reviewBeneficiaryTins:reviewTins})}>
+              {tr('Review affected beneficiaries','সংশ্লিষ্ট উপকারভোগীদের দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
+            </button>}
+          </div>}
       </div>}
     </section>
     </div>
