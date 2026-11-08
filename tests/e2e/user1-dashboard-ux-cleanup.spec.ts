@@ -171,35 +171,44 @@ test('dashboard only: calm card surfaces preserve action contrast and mobile con
   }
 });
 
-test('Overview prioritizes actions and drafts before charts, without stretched empty cards',async({page})=>{
+test('Overview puts financial position first, followed by exceptions, charts, spending and draft work',async({page})=>{
   await page.setViewportSize({width:1440,height:900});
   await page.goto(demo);
   const bento=page.getByTestId('taxpayer-overview-bento');
-  const components=await bento.evaluate(element=>Array.from(element.children).map(child=>
-    child.classList.contains('taxpay-bento-drafts')?'drafts':
-    child.classList.contains('taxpay-bento-recent')?'recent':
+  const order=await bento.evaluate(element=>Array.from(element.children).map(child=>
+    child.classList.contains('taxpay-bento-position')?'position':
+    child.classList.contains('taxpay-bento-hero')?'attention':
     child.classList.contains('taxpay-bento-coverage')?'coverage':
     child.classList.contains('taxpay-bento-years')?'years':
-    child.classList.contains('taxpay-bento-tags')?'tags':'other'));
-  expect(components.indexOf('recent')).toBeLessThan(components.indexOf('coverage'));
-  if(components.includes('drafts')){
-    expect(components.indexOf('drafts')).toBeLessThan(components.indexOf('coverage'));
-    expect(components.indexOf('drafts')).toBeLessThan(components.indexOf('recent'));
+    child.classList.contains('taxpay-bento-tags')?'tags':
+    child.classList.contains('taxpay-bento-drafts')?'drafts':
+    child.classList.contains('taxpay-bento-recent')?'recent':'other'));
+  expect(order.slice(0,5)).toEqual(['position','attention','coverage','years','tags']);
+  if(order.includes('drafts')){
+    expect(order.indexOf('drafts')).toBeGreaterThan(order.indexOf('tags'));
+    expect(order.indexOf('drafts')).toBeLessThan(order.indexOf('recent'));
   }
+  const positions=await bento.evaluate(element=>{
+    const rect=(selector:string)=>element.querySelector(selector)!.getBoundingClientRect();
+    const balance=rect('.taxpay-bento-position'),attention=rect('.taxpay-bento-hero');
+    const coverage=rect('.taxpay-bento-coverage'),years=rect('.taxpay-bento-years');
+    const tags=rect('.taxpay-bento-tags'),recent=rect('.taxpay-bento-recent');
+    return {balanceX:balance.x,attentionX:attention.x,coverageY:coverage.y,
+      yearsY:years.y,tagsY:tags.y,recentY:recent.y,attentionHeight:attention.height,
+      coverageHeight:coverage.height,yearsHeight:years.height};
+  });
+  expect(positions.balanceX).toBeLessThan(positions.attentionX);
+  expect(Math.abs(positions.coverageY-positions.yearsY)).toBeLessThan(3);
+  expect(positions.tagsY).toBeGreaterThan(positions.coverageY);
+  expect(positions.recentY).toBeGreaterThan(positions.tagsY);
+  expect(positions.attentionHeight,'Compact attention card').toBeLessThan(370);
+  expect(Math.abs(positions.coverageHeight-positions.yearsHeight),'Balanced analytics cards').toBeLessThan(3);
   await expect(bento.locator('.taxpay-bento-position__totals > div')).toHaveCount(2);
   await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(4);
+  await expect(bento.locator('.taxpay-bento-hero [aria-controls="dashboard-payment-drafts"]')).toHaveCount(0);
   await expect(bento.locator('.taxpay-tag-spending__track')).toBeVisible();
   await expect(bento.locator('[data-testid^="tag-spend-"]')).toHaveCount(5);
   await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
-  const visual=await bento.evaluate(element=>{
-    const find=(selector:string)=>element.querySelector(selector)!.getBoundingClientRect();
-    const hero=find('.taxpay-bento-hero'),position=find('.taxpay-bento-position');
-    const coverage=find('.taxpay-bento-coverage');
-    return {heroHeight:hero.height,positionHeight:position.height,coverageHeight:coverage.height};
-  });
-  expect(visual.heroHeight,'Next steps must be content-sized').toBeLessThan(320);
-  expect(visual.positionHeight,'Tax position must be content-sized').toBeLessThan(350);
-  expect(visual.coverageHeight,'Coverage chart must be compact').toBeLessThan(360);
 });
 
 test('selected assessment year controls recent activity and compact spending on desktop and mobile',async({page})=>{
@@ -217,7 +226,8 @@ test('selected assessment year controls recent activity and compact spending on 
     await expect(tags.getByTestId('tag-spend-unassigned')).toContainText('60,000');
     await expect(tags.getByTestId('tag-spend-family')).toContainText('0');
     await expect(tags.locator('.taxpay-tag-spending__track span')).toHaveCount(1);
-    await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(4);
+    await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(0);
+    await expect(bento.locator('.taxpay-bento-hero__clear')).toBeVisible();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }
