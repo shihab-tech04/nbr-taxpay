@@ -296,8 +296,10 @@ test('Other Tax allocations produce one shared simulation receipt and a reversib
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
   expect(submitted).toHaveLength(1);
   expect(submitted[0].amountMinor).toBe(250000);
-  expect(submitted[0].details.combinedPayment).toBe(true);
-  expect(submitted[0].details.allocations).toHaveLength(1);
+  const details = submitted[0].details as {combinedPayment:boolean;allocations:Array<{taxpayerTin:string;amountMinor:number}>};
+  expect(details.combinedPayment).toBe(true);
+  expect(details.allocations).toHaveLength(1);
+  expect(details.allocations[0]).toMatchObject({taxpayerTin:'111111111111',amountMinor:250000});
   await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.locator('.receipt-view__paper')).toContainText('111111111111');
