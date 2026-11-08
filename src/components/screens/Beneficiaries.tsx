@@ -254,7 +254,7 @@ export function Beneficiaries(){
     finally{setBusy(false);}
   }
   function open(next:Flow){
-    setEntryChoiceOpen(false);setFlow(next);setCreateListOpen(false);setPhase('upload');setTargetList(activeList||'new');setListName('');
+    setEntryChoiceOpen(false);setFlow(next);setCreateListOpen(false);setPhase('upload');setTargetList(activeList==='all'?(lists[0]?.id??'new'):activeList||'new');setListName('');
     setTin('');setName('');setTag('');setRelationship('');setOtherLabel('');setSearchedBeneficiaryTin(null);setRows([]);setFilename('');setModalError('');setNotice(null);
   }
   function closeFlow(){if(!busy){setFlow(null);setModalError('');}}
