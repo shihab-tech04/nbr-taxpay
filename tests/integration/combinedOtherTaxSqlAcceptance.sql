@@ -18,6 +18,8 @@ DECLARE
   replay jsonb;
   saved_id uuid;
   blocked boolean;
+  bad_key uuid;
+  bad_payload jsonb;
 BEGIN
   owner_login:=public.taxpay_demo_profile_login('user1','user1');
   other_login:=public.taxpay_demo_profile_login('user2','user2');
@@ -74,10 +76,13 @@ BEGIN
   THEN RAISE EXCEPTION 'COMBINED_TEST_DUPLICATE_ROW'; END IF;
 
   blocked:=false;
+  bad_key:=gen_random_uuid();
+  bad_payload:=jsonb_set(payload,'{idempotencyKey}',to_jsonb(bad_key::text));
+  bad_payload:=jsonb_set(bad_payload,'{details,receiptReference}',to_jsonb('SIM-'||bad_key::text));
+  bad_payload:=jsonb_set(bad_payload,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||bad_key::text));
   BEGIN
     PERFORM public.taxpay_demo_story1_submit(owner_hash,
-      jsonb_set(jsonb_set(jsonb_set(payload,
-          '{idempotencyKey}',to_jsonb(gen_random_uuid()::text)),
+      jsonb_set(jsonb_set(bad_payload,
           '{details,allocations,1,taxpayerTin}',to_jsonb('999999999998'::text)),
           '{details,receiptSnapshot,allocationItems,1,taxpayerTin}',to_jsonb('999999999998'::text)));
   EXCEPTION WHEN OTHERS THEN
@@ -85,10 +90,13 @@ BEGIN
   END;
   IF NOT blocked THEN RAISE EXCEPTION 'COMBINED_TEST_MISMATCHED_TIN_ACCEPTED'; END IF;
   blocked:=false;
+  bad_key:=gen_random_uuid();
+  bad_payload:=jsonb_set(payload,'{idempotencyKey}',to_jsonb(bad_key::text));
+  bad_payload:=jsonb_set(bad_payload,'{details,receiptReference}',to_jsonb('SIM-'||bad_key::text));
+  bad_payload:=jsonb_set(bad_payload,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||bad_key::text));
   BEGIN
     PERFORM public.taxpay_demo_story1_submit(owner_hash,
-      jsonb_set(jsonb_set(payload,'{idempotencyKey}',to_jsonb(gen_random_uuid()::text)),
-        '{details,allocations,1,headId}',to_jsonb(90)));
+      jsonb_set(bad_payload,'{details,allocations,1,headId}',to_jsonb(90)));
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM LIKE '%INVALID_COMBINED_ALLOCATION%' THEN blocked:=true; ELSE RAISE; END IF;
   END;
