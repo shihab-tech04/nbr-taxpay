@@ -28,6 +28,18 @@ test('saved beneficiary payment uses the exact selected TIN without inventing co
  assert.deepEqual(bound.details.receiptLines,payment.details.lines);
  assert.throws(()=>bindPreviewStoryPayer({...input,details:{...input.details,taxpayerTin:'not-in-the-demo-directory'}},preview),/saved demo beneficiary/);
 });
+test('an owned external saved TIN keeps its identity in synthetic payments',()=>{
+ const tin='000000000018';
+ const input={...payment,details:{...payment.details,payerMode:'OTHER',taxpayerTin:tin}};
+ const bound=bindPreviewStoryPayer(input,preview);
+ assert.deepEqual(bound.details.lines,[{
+  beneficiary:'SAVED_TIN:'+tin,category:'TAX_WITH_RETURN',assessmentYear:'2025-2026',amountMinor:1000
+ }]);
+ assert.deepEqual(bound.details.receiptLines,input.details.lines);
+ assert.equal(bound.idempotencyKey,input.idempotencyKey);
+ assert.deepEqual(bound,bindPreviewStoryPayer(input,preview),'same-key retry must not change payload');
+ assert.throws(()=>bindPreviewStoryPayer({...input,details:{...input.details,taxpayerTin:'1234'}},preview),/saved demo beneficiary/);
+});
 test('existing authorization workspace and public guest payloads stay unchanged',()=>{
  const original={...payment,details:{payerId:'user1',lines:[{beneficiary:'user1',amountMinor:1000}]}};
  assert.deepEqual(bindPreviewStoryPayer(original,preview),original);
