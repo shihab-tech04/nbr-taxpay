@@ -2774,3 +2774,11 @@
 @media (max-width:650px) {
  .travel-flow__steps { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+
+/* Searchable Tag / Relationship: keep a visible neutral focus outline.
+   Only the popup's list-search input is affected, not other modal inputs,
+   buttons, or the primary TaxPay brand colors. */
+.taxpay-citizen-shell .taxpay-modal input[type="search"][role="combobox"][aria-autocomplete="list"]:focus-visible {
+  outline: 2px solid #738196;
+  outline-offset: -2px;
+}

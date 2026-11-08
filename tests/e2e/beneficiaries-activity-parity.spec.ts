@@ -143,6 +143,15 @@ for(const language of ['en','bn'] as const){
     const edit=page.getByRole('dialog',{name:t('Edit beneficiary','উপকারভোগী সম্পাদনা')});
     await expect(edit).toBeVisible();
     await expect(edit.locator('#beneficiary-edit-tag')).toHaveAttribute('data-value','others');
+    // The shared searchable dropdown has an understated, accessible neutral focus
+    // stroke rather than the overly saturated blue ring shown in the report.
+    await edit.locator('#beneficiary-edit-tag').click();
+    const tagSearch=edit.locator('input[type="search"][role="combobox"][aria-autocomplete="list"]');
+    await expect(tagSearch).toBeFocused();
+    await expect(tagSearch).toHaveCSS('outline-color','rgb(115, 129, 150)');
+    await expect(tagSearch).toHaveCSS('outline-width','2px');
+    await expect(tagSearch).toHaveCSS('outline-offset','-2px');
+    await tagSearch.press('Escape');
     await expect(edit.locator('#beneficiary-edit-other-label')).toHaveValue('Neighbour');
     await expect(edit.locator('#beneficiary-edit-other-label')).toHaveAttribute('maxlength','80');
     await expect(edit.locator('#beneficiary-edit-list')).toHaveAttribute('data-value','00000000-0000-4000-8000-000000000101');
