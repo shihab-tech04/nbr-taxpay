@@ -1396,6 +1396,15 @@ table.taxpay-unified-table {
  *   -> flush header and rows -> single integrated footer/pagination.
  * Scoped to explicit register frames only, never general screens or print receipts.
  */
+/* The register is an opt-in component; give it the same physical frame even
+ * on non-preview account shells where .taxpay-taxpayer-reference is absent. */
+.taxpay-office-register-frame {
+  border-radius:12px!important;
+  background:var(--taxpay-table-surface,#fff);
+  border:1px solid var(--taxpay-table-border,#e1e6ee);
+  overflow:hidden;
+  min-width:0;
+}
 .taxpay-taxpayer-reference .taxpay-office-register-frame {
   --register-edge:var(--taxpay-table-border,#e1e6ee);
   --register-muted:var(--taxpay-table-muted,#5f6b7a);
