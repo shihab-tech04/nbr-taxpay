@@ -350,7 +350,8 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         onPointerCancel={cancelSwipe}
         onLostPointerCapture={cancelSwipe}
       >
-        <div className="public-hero-carousel__track" aria-live="off">
+        <div className="public-hero-carousel__track" aria-live="off"
+          style={{ transform: `translate3d(-${activeIndex * 100}%, 0, 0)` }}>
           {slides.map((slide, index) => {
             const isActive = index === activeIndex;
             const intro = !slide.serviceCode;
@@ -363,6 +364,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                 className="citizen-public-hero public-information-hero public-hero-carousel__slide"
                 data-banner-service={intro ? 'intro' : slide.id}
                 data-banner-kind={intro ? 'intro' : 'service'}
+                data-active={isActive}
                 data-payment-service={slide.serviceCode}
                 role="group"
                 aria-roledescription="slide"

@@ -67,10 +67,27 @@
   will-change: transform;
 }
 
-.public-hero-carousel[data-active-slide="1"] .public-hero-carousel__track { transform: translateX(-100%); }
-.public-hero-carousel[data-active-slide="2"] .public-hero-carousel__track { transform: translateX(-200%); }
-.public-hero-carousel[data-active-slide="3"] .public-hero-carousel__track { transform: translateX(-300%); }
-.public-hero-carousel[data-active-slide="4"] .public-hero-carousel__track { transform: translateX(-400%); }
+/* The active offset is set by React so Office may publish any number of slides.
+ * Move the whole panel first, then gently reveal its content; never scale images. */
+.public-hero-carousel__slide .citizen-public-hero__copy > :is(h1, h2, p, .citizen-public-hero__actions) {
+  opacity: 0;
+  transform: translateY(9px);
+  transition: opacity 420ms ease, transform 520ms cubic-bezier(.22, 1, .36, 1);
+}
+.public-hero-carousel__slide .citizen-public-hero__actions {
+  transition-delay: 65ms;
+}
+.public-hero-carousel__slide[data-active="true"] .citizen-public-hero__copy > :is(h1, h2, p, .citizen-public-hero__actions) {
+  opacity: 1;
+  transform: translateY(0);
+}
+.public-hero-carousel__slide .public-hero-carousel__image-layer {
+  opacity: 0;
+  transition: opacity 540ms cubic-bezier(.22, 1, .36, 1);
+}
+.public-hero-carousel__slide[data-active="true"] .public-hero-carousel__image-layer {
+  opacity: 1;
+}
 
 .public-hero-carousel__slide.public-information-hero {
   flex: 0 0 100%;
@@ -321,7 +338,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .public-hero-carousel__track { transition: none; }
+  .public-hero-carousel__track,
+  .public-hero-carousel__slide .citizen-public-hero__copy > :is(h1, h2, p, .citizen-public-hero__actions),
+  .public-hero-carousel__slide .public-hero-carousel__image-layer {
+    transition: none;
+  }
+  .public-hero-carousel__slide .citizen-public-hero__copy > :is(h1, h2, p, .citizen-public-hero__actions) {
+    transform: none;
+  }
 }
 
 
