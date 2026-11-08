@@ -30,6 +30,7 @@ test('Each record has exactly Edit and secondary Make payment; deletion is confi
     assert.equal((part.match(/<UiButton /g)||[]).length,2,label+' actions');
     assert.match(part,/openPersonEditor\(person\)/,label+' Edit');
     assert.match(part,/payWith\(\[person\]\)/,label+' Make payment');
+    assert.match(part,/tr\('Make payment','পেমেন্ট করুন'\)/,label+' payment button label');
     assert.match(part,/variant="outline"/,label+' secondary styling');
     assert.doesNotMatch(part,/setDeletePerson\(person\)/,label+' row deletion removed');
   }
