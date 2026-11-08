@@ -477,7 +477,7 @@ export function Beneficiaries(){
     {recoveryError&&<p role="alert" className="text-sm text-red-800">{recoveryError}</p>}
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
 
-    <section className="taxpay-office-register-frame beneficiary-register-frame" aria-labelledby="beneficiary-list-heading">
+    <section className="taxpay-office-register-frame beneficiary-register-frame rounded-xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-6" aria-labelledby="beneficiary-list-heading">
       {checkingIdentity&&<p role="status" className="py-8 text-center text-sm text-slate-600">{tr('Opening your beneficiary workspace…','উপকারভোগীর কর্মক্ষেত্র খোলা হচ্ছে…')}</p>}
       {!checkingIdentity&&loading&&<p role="status" className="py-8 text-center text-sm text-slate-600">{tr('Loading saved lists…','সংরক্ষিত তালিকা লোড হচ্ছে…')}</p>}
       {!checkingIdentity&&error&&<div className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -494,7 +494,7 @@ export function Beneficiaries(){
           description={tr('Search and manage your saved taxpayers','সংরক্ষিত করদাতাদের খুঁজুন ও পরিচালনা করুন')}
           count={filteredPeople.length} total={listPeople.length} countLabel={tr('records','রেকর্ড')}
           searchValue={search} onSearchChange={setSearch}
-          searchLabel={tr('Search beneficiaries','উপকারভোগী খুঁজুন')}
+          searchLabel={tr('Search this list','এই তালিকায় খুঁজুন')}
           searchPlaceholder={tr('Search name or TIN','নাম বা টিআইএন দিয়ে খুঁজুন')}
           filterLabel={tr('Filter','ফিল্টার')}
           filtersOpen={filtersExpanded} onToggleFilters={()=>{setFiltersExpanded(open=>!open);setListMenuOpen(false);}}
@@ -510,7 +510,7 @@ export function Beneficiaries(){
                   <p className="beneficiary-list-picker__caption">{tr('Your lists','আপনার তালিকা')}</p>
                   <div className="beneficiary-list-picker__row">
                       <button type="button" className="beneficiary-list-picker__select" aria-current={activeList==='all'?'true':undefined} onClick={()=>switchList('all')}>
-                        <span className="truncate">{tr('All (all beneficiaries)','সব (সকল উপকারভোগী)')}</span>{activeList==='all'&&<Check size={18} aria-hidden="true"/>}
+                        <span className="truncate">{tr('All beneficiaries','সব উপকারভোগী')}</span>{activeList==='all'&&<Check size={18} aria-hidden="true"/>}
                       </button>
                     </div>
                     {lists.map(list=><div className="beneficiary-list-picker__row" key={list.id}>
