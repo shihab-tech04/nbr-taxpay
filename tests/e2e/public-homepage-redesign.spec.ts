@@ -120,11 +120,12 @@ test('top navigation uses the approved blue pill for the current public route', 
   await expect(guide).not.toHaveAttribute('aria-current', 'page');
 });
 
-test('mobile banner keeps all five approved conceptual illustrations, one-line copy and no arrows', async ({ page }) => {
+test('mobile banner preserves all five conceptual illustrations and readable wrapped service labels', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  await expect(carousel.locator('.public-hero-carousel__slide')).toHaveCount(5);
   await expect(carousel.locator('.public-information-hero__image')).toHaveCount(5);
   const expectedAssets = ['intro-v9', 'return-v9', 'advance-v9', 'withholding-v9', 'travel-v9'];
   const images = await carousel.locator('.public-information-hero__image').evaluateAll(elements =>
@@ -134,8 +135,12 @@ test('mobile banner keeps all five approved conceptual illustrations, one-line c
 
   const shortHeading = carousel.locator('[data-banner-service="intro"] .public-hero-copy--mobile').first();
   await expect(shortHeading).toBeVisible();
-  await expect(shortHeading.locator('xpath=..')).toHaveCSS('white-space', 'nowrap');
+  await expect(shortHeading.locator('xpath=..')).toHaveCSS('white-space', 'normal');
   await expect(carousel.locator('.public-hero-carousel__arrow').first()).toBeHidden();
+  await carousel.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(carousel.locator('.public-hero-carousel__slide').nth(1)
+    .getByRole('button', { name: 'Pay Tax with Return' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 
