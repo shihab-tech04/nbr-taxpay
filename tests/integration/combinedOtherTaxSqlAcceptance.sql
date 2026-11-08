@@ -39,13 +39,16 @@ BEGIN
       'headId',68,'assessmentYear','2026-27','amountMinor',1500),
     jsonb_build_object('taxpayerTin','000000000018','taxpayerName','Second recipient',
       'headId',69,'assessmentYear','2025-26','amountMinor',3500));
-  lines:=jsonb_build_array(
-    jsonb_build_object('beneficiary','user13','taxpayerTin','909000000013',
-      'category','OTHER_TAX_PAYMENT','assessmentYear','2026-27','headId',68,'amountMinor',1500),
-    jsonb_build_object('beneficiary','SAVED_TIN:000000000018','taxpayerTin','000000000018',
-      'category','OTHER_TAX_PAYMENT','assessmentYear','2025-26','headId',69,'amountMinor',3500));
+  -- Office and Taxpayer 360 read accounting heads plus explicit allocations.
+  -- Never combine synthetic beneficiary lines and explicit allocations.
+  lines:=ledger_lines;
   snapshot:=jsonb_build_object('challanNo','SIM-'||payment_key::text,
     'paymentCategory','OTHER_TAX_PAYMENT','totalAmount',50,'items',ledger_lines,
+    'allocationItems',jsonb_build_array(
+      jsonb_build_object('taxpayerTin','909000000013','taxpayerName','First recipient',
+        'assessmentYear','2026-27','amountMinor',1500),
+      jsonb_build_object('taxpayerTin','000000000018','taxpayerName','Second recipient',
+        'assessmentYear','2025-26','amountMinor',3500)),
     'isSimulatedDemo',true);
   payload:=jsonb_build_object('origin','TAXPAY_UI','service','OTHER_TAX_PAYMENT',
     'idempotencyKey',payment_key,'sessionId',session_id,'amountMinor',5000,
@@ -73,8 +76,10 @@ BEGIN
   blocked:=false;
   BEGIN
     PERFORM public.taxpay_demo_story1_submit(owner_hash,
-      jsonb_set(jsonb_set(payload,'{idempotencyKey}',to_jsonb(gen_random_uuid()::text)),
-        '{details,lines,1,beneficiary}',to_jsonb('SAVED_TIN:999999999998'::text)));
+      jsonb_set(jsonb_set(jsonb_set(payload,
+          '{idempotencyKey}',to_jsonb(gen_random_uuid()::text)),
+          '{details,allocations,1,taxpayerTin}',to_jsonb('999999999998'::text)),
+          '{details,receiptSnapshot,allocationItems,1,taxpayerTin}',to_jsonb('999999999998'::text)));
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM LIKE '%INVALID_BENEFICIARY%' THEN blocked:=true; ELSE RAISE; END IF;
   END;
