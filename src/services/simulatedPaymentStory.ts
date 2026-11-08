@@ -70,8 +70,11 @@ export function bindPreviewStoryPayer(
   // The server independently validates this exact TIN against the payer's
   // capability-scoped saved list. A saved beneficiary payment is not an
   // authorization to read the beneficiary's private tax records.
+  // A saved TIN need not be one of the 30 illustrative accounts. Keep its
+  // literal identity; SQL requires this exact TIN in the payer's owned list.
   const selected=thirdParty
-    ? userIdForHostedTin(tin)||(number?`user${number}` as DemoUserId:null)
+    ? userIdForHostedTin(tin)||(number?`user${number}` as DemoUserId:null)||
+      (/^\d{12,13}$/.test(tin)?`SAVED_TIN:${tin}`:null)
     : preview.profileId;
   if(!selected)throw new Error('Choose a saved demo beneficiary for this simulation.');
   return {...input,details:{
