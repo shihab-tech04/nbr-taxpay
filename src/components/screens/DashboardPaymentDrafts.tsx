@@ -21,7 +21,8 @@ type Catalog = {
 export const DashboardPaymentDrafts: React.FC<{
   language: 'en' | 'bn';
   onResume: (draft: PaymentFormDraft) => void;
-}> = ({ language, onResume }) => {
+  onCountChange?: (count: number | null) => void;
+}> = ({ language, onResume, onCountChange }) => {
   const { user, loading: authLoading } = useAccountIdentity();
   const { previewAccount, isPaymentServiceChoiceOpen } = useTaxState();
   const actor: PaymentDraftActor | null = user
@@ -57,6 +58,12 @@ export const DashboardPaymentDrafts: React.FC<{
     // Recheck only on identity or modal lifecycle changes, not ordinary rerenders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownerKey, authLoading, isPaymentServiceChoiceOpen]);
+
+  // The Overview quick link is shown only when this account owns saved drafts.
+  // Reuse the already loaded catalog: never duplicate SQL reads or share owners.
+  useEffect(() => {
+    onCountChange?.(catalog.ownerKey === ownerKey && catalog.status === 'ready' ? catalog.rows.length : null);
+  }, [catalog.ownerKey, catalog.status, catalog.rows.length, ownerKey, onCountChange]);
 
   if (!actor || authLoading ||
       (catalog.ownerKey !== ownerKey && catalog.status !== 'loading')) return null;
@@ -107,7 +114,7 @@ export const DashboardPaymentDrafts: React.FC<{
   const loading = catalog.ownerKey !== ownerKey || catalog.status === 'loading';
   if (!loading && catalog.status === 'ready' && catalog.rows.length === 0) return null;
 
-  return <section data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
+  return <section id="dashboard-payment-drafts" data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
     className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-2">
