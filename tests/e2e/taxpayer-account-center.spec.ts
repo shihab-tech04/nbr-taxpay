@@ -163,10 +163,13 @@ test('mobile Services & menu sign-out is readable and actually ends the preview 
   await logout.click();
   await expect(page).toHaveURL(/action=landing/);
   await expect(sheet).toHaveCount(0);
-  await page.goto('/?action=account_profile');
-  // Do not hardcode the English heading: the language preference remains
-  // account-scoped and may be restored in Bangla. Require the actual private
-  // sign-in gate, not merely navigation to the public landing.
+  await expect.poll(() => page.evaluate(() =>
+    sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
+  // The dev-only Account Profile screen intentionally allows a signed-out
+  // empty state. Use a genuinely protected private route to verify that
+  // sign-out revoked the preview and not just the menu/dialog.
+  await page.goto('/?action=ledger');
   await expect(page.locator('.citizen-account-gate')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Taxpayer profile', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /^(Private taxpayer workspace|করদাতার ব্যক্তিগত তথ্য)$/ })).toBeVisible();
+  await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
 });
