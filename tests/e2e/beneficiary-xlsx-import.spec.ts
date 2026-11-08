@@ -222,9 +222,12 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await expect(searchControl.getByRole('searchbox',{name:'Search this list'})).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
   if(info.project.name.startsWith('mobile')){
     const actions=recordList.first().locator('.taxpay-mobile-table-card__actions');
-    const payButton=actions.getByRole('button',{name:'Pay Tax for Others'});
-    const groupBox=await actions.boundingBox(),payBox=await payButton.boundingBox();
-    expect(groupBox&&payBox&&payBox.width>=groupBox.width-2,'Mobile payment action occupies its own full row').toBeTruthy();
+    const editButton=actions.getByRole('button',{name:'Edit',exact:true});
+    const payButton=actions.getByRole('button',{name:'Make payment',exact:true});
+    const [groupBox,editBox,payBox]=await Promise.all([actions.boundingBox(),editButton.boundingBox(),payButton.boundingBox()]);
+    expect(groupBox&&editBox&&payBox&&Math.abs(payBox.y-editBox.y)<=2
+      &&payBox.x+payBox.width<=groupBox.x+groupBox.width+2
+      &&editBox.x>=groupBox.x-2,'Both mobile actions fit on one row without overflow').toBeTruthy();
   }
 
   const noMatch=page.getByRole('searchbox',{name:'Search this list'});
@@ -256,7 +259,9 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Guest Family',exact:true}).click();
 
   const secondRecord=recordList.filter({hasText:'987654321098'});
-  await secondRecord.getByRole('button',{name:'Remove Local Beneficiary Two'}).click();
+  await secondRecord.getByRole('button',{name:'Edit',exact:true}).click();
+  dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
+  await dialog.getByRole('button',{name:'Delete beneficiary'}).click();
   dialog=page.getByRole('dialog',{name:'Confirm beneficiary removal'});
   await dialog.getByRole('button',{name:'Remove',exact:true}).click();
   await expect(page.getByText('Local Beneficiary Two')).toHaveCount(0);
