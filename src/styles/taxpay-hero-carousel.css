@@ -74,7 +74,7 @@
   position: relative;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 1000ms ease-in-out;
+  transition: opacity 750ms ease-in-out;
 }
 .public-hero-carousel__track > .public-hero-carousel__slide.public-information-hero[data-active="true"] {
   z-index: 1;
