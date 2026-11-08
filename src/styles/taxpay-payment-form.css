@@ -173,7 +173,8 @@
 .payment-lifecycle__progress-detail>summary:focus-visible{outline:2px solid #2c5ead;outline-offset:-2px}
 .payment-lifecycle__progress-detail>summary span{font-weight:400;color:#62748d}
 .payment-lifecycle__progress-detail .payment-lifecycle__details{border-top:1px solid #e5edf6}
-.payment-receipt-details{min-width:0;width:100%;max-width:none;margin:0}
+.payment-receipt-details{min-width:0;width:min(100%,840px);margin:0 auto}
+.payment-receipt-details.payment-flow-embedded--receipt{width:100%;max-width:none;margin:0}
 .payment-lifecycle__heading h2{font-size:18px;font-weight:850;margin:0;line-height:1.4}
 .payment-lifecycle__heading p{font-size:14px;color:#405a74;margin:6px 0 0;line-height:1.6}
 .payment-lifecycle__symbol{display:grid;place-items:center;border-radius:10px;width:38px;height:38px;background:white;color:#2968b2;flex:none}
