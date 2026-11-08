@@ -322,3 +322,24 @@
     gap:4px;
   }
 }
+
+/* Keep the selected-year balance and its label in one compact row. */
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-position{
+  padding:12px 14px;
+  gap:6px;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-position__balance{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:4px 14px;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-position__balance strong{
+  display:inline-block;
+  margin:0;
+  font-size:clamp(1.4rem,2vw,1.8rem);
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-position__totals{
+  padding-top:6px;
+}
