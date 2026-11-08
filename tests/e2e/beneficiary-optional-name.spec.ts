@@ -119,7 +119,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
 
   const intendedRecord=visibleRecords.filter({hasText:'012345678901'});
   await intendedRecord.getByRole('checkbox',{name:'Select Name not provided',exact:true}).check();
-  await intendedRecord.getByRole('button',{name:'Pay Tax for Others',exact:true}).click();
+  await intendedRecord.getByRole('button',{name:'Make payment',exact:true}).click();
   const payment=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(payment.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed','true');
   await expect(payment.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed','true');
