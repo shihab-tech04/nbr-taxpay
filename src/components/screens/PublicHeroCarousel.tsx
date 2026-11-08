@@ -318,10 +318,8 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       </section>
     </div>;
   }
-  // The SQL main record owns the stationary copy. Changing the active image
-  // must never change the left-side headline, description, or payment CTAs.
-  const mainBanner = slides.find(slide => slide.id === 'intro' && !slide.serviceCode)
-    ?? slides.find(slide => !slide.serviceCode) ?? fallbackSlides[0];
+  // SQL controls publication and order. Each published row owns its own
+  // bilingual copy, theme, CTA, and artwork; never replace these with intro text.
   const travelBanner = slides.find(slide => slide.serviceCode === 'TRAVEL_TAX') ?? fallbackSlides[4];
 
   return (
@@ -340,11 +338,11 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         role="region"
         aria-roledescription="carousel"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
-        aria-description={bn ? 'শুধু ডান পাশের ছবি পরিবর্তন করতে সোয়াইপ করুন অথবা তীরচিহ্ন ব্যবহার করুন।' : 'Swipe or use the arrow keys to change the right-side illustration. The payment actions remain fixed.'}
+        aria-description={bn ? 'প্রতিটি সেবার তথ্য ও পেমেন্ট বোতাম দেখতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন।' : 'Swipe or use the arrow keys to move between service banners and their payment actions.'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
         data-dragging={isSwiping}
-        data-image-service={slides[activeIndex].serviceCode}
+        data-payment-service={slides[activeIndex].serviceCode}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onPointerDown={onSwipeStart}
@@ -352,60 +350,96 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         onPointerCancel={cancelSwipe}
         onLostPointerCapture={cancelSwipe}
       >
-        <article
-          className="citizen-public-hero public-information-hero public-hero-carousel__slide public-hero-carousel__fixed"
-          data-banner-service="intro"
-          data-banner-kind="intro"
-        >
-          <div className="citizen-public-hero__copy">
-            <h1 id="public-home-title">
-              <span className="public-hero-copy--desktop">{bn ? mainBanner.headingBn : mainBanner.headingEn}</span>
-              <span className="public-hero-copy--mobile">{bn ? mainBanner.mobileHeadingBn : mainBanner.mobileHeadingEn}</span>
-            </h1>
-            <p>
-              <span className="public-hero-copy--desktop">{bn ? mainBanner.descriptionBn : mainBanner.descriptionEn}</span>
-              <span className="public-hero-copy--mobile">{bn ? mainBanner.mobileDescriptionBn : mainBanner.mobileDescriptionEn}</span>
-            </p>
-            <div className="citizen-public-hero__actions public-guest-actions">
-              <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax()} aria-label={bn ? mainBanner.actionBn : mainBanner.actionEn}>
-                <WalletCards size={18} aria-hidden="true" />
-                <span className="public-hero-carousel__pay-full">{bn ? mainBanner.actionBn : mainBanner.actionEn}</span>
-                <span className="public-hero-carousel__pay-compact" aria-hidden="true">{bn ? compactAction(mainBanner.actionBn, fallbackSlides[0].actionBn, 'কর দিন') : compactAction(mainBanner.actionEn, fallbackSlides[0].actionEn, 'Pay Tax')}</span>
-              </button>
-              <button className="public-guest-action public-hero-carousel__travel" type="button" onClick={() => onPayTax('TRAVEL_TAX')} aria-label={bn ? travelBanner.actionBn : travelBanner.actionEn}>
-                <WalletCards size={18} aria-hidden="true" />
-                <span className="public-hero-carousel__travel-full">{bn ? travelBanner.actionBn : travelBanner.actionEn}</span>
-                <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? compactAction(travelBanner.actionBn, fallbackSlides[4].actionBn, 'ভ্রমণ কর') : compactAction(travelBanner.actionEn, fallbackSlides[4].actionEn, 'Travel Tax')}</span>
-              </button>
-            </div>
-          </div>
-          <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
-            {slides.map((slide, index) => (
-              <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`}
-                slide={slide} visible={index === activeIndex} />
-            ))}
-          </div>
-        </article>
+        <div className="public-hero-carousel__track" aria-live="off">
+          {slides.map((slide, index) => {
+            const isActive = index === activeIndex;
+            const intro = !slide.serviceCode;
+            const heading = bn ? slide.headingBn : slide.headingEn;
+            const mobileHeading = bn ? slide.mobileHeadingBn : slide.mobileHeadingEn;
+            const action = bn ? slide.actionBn : slide.actionEn;
+            return (
+              <article
+                key={slide.id}
+                className="citizen-public-hero public-information-hero public-hero-carousel__slide"
+                data-banner-service={intro ? 'intro' : slide.id}
+                data-banner-kind={intro ? 'intro' : 'service'}
+                data-payment-service={slide.serviceCode}
+                role="group"
+                aria-roledescription="slide"
+                aria-label={bn ? `ব্যানার ${index + 1} / ${slides.length}` : `Slide ${index + 1} of ${slides.length}`}
+                aria-hidden={!isActive}
+                inert={!isActive}
+              >
+                <div className="citizen-public-hero__copy">
+                  {intro ? (
+                    <h1 id="public-home-title">
+                      <span className="public-hero-copy--desktop">{heading}</span>
+                      <span className="public-hero-copy--mobile">{mobileHeading}</span>
+                    </h1>
+                  ) : (
+                    <h2>
+                      <span className="public-hero-copy--desktop">{heading}</span>
+                      <span className="public-hero-copy--mobile">{mobileHeading}</span>
+                    </h2>
+                  )}
+                  <p>
+                    <span className="public-hero-copy--desktop">{bn ? slide.descriptionBn : slide.descriptionEn}</span>
+                    <span className="public-hero-copy--mobile">{bn ? slide.mobileDescriptionBn : slide.mobileDescriptionEn}</span>
+                  </p>
+                  <div className="citizen-public-hero__actions public-guest-actions">
+                    <button className="citizen-public-primary public-guest-action" type="button"
+                      onClick={() => onPayTax(slide.serviceCode)}
+                      aria-label={action}>
+                      <WalletCards size={18} aria-hidden="true" />
+                      {intro ? (
+                        <>
+                          <span className="public-hero-carousel__pay-full">{action}</span>
+                          <span className="public-hero-carousel__pay-compact" aria-hidden="true">
+                            {bn ? compactAction(action, fallbackSlides[0].actionBn, 'কর দিন')
+                              : compactAction(action, fallbackSlides[0].actionEn, 'Pay Tax')}
+                          </span>
+                        </>
+                      ) : action}
+                    </button>
+                    {intro && (
+                      <button className="public-guest-action public-hero-carousel__travel" type="button"
+                        onClick={() => onPayTax('TRAVEL_TAX')}
+                        aria-label={bn ? travelBanner.actionBn : travelBanner.actionEn}>
+                        <WalletCards size={18} aria-hidden="true" />
+                        <span className="public-hero-carousel__travel-full">
+                          {bn ? travelBanner.actionBn : travelBanner.actionEn}
+                        </span>
+                        <span className="public-hero-carousel__travel-compact" aria-hidden="true">
+                          {bn ? compactAction(travelBanner.actionBn, fallbackSlides[4].actionBn, 'ভ্রমণ কর')
+                            : compactAction(travelBanner.actionEn, fallbackSlides[4].actionEn, 'Travel Tax')}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
+                  <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`} slide={slide} visible={isActive} />
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </section>
-      <div className="public-hero-carousel__controls" role="group" aria-label={bn ? 'ব্যানার পরিবর্তন করুন' : 'Banner navigation'}>
-        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--previous" onClick={goPrevious} aria-label={bn ? 'আগের ব্যানার' : 'Previous banner'}>
+      {slides.length > 1 && <div className="public-hero-carousel__controls" role="group"
+        aria-label={bn ? 'ব্যানার পরিবর্তন করুন' : 'Banner navigation'}>
+        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--previous"
+          onClick={goPrevious} aria-label={bn ? 'আগের ব্যানার' : 'Previous banner'}>
           <ChevronLeft size={21} aria-hidden="true" />
         </button>
-        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--next" onClick={goNext} aria-label={bn ? 'পরের ব্যানার' : 'Next banner'}>
+        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--next"
+          onClick={goNext} aria-label={bn ? 'পরের ব্যানার' : 'Next banner'}>
           <ChevronRight size={21} aria-hidden="true" />
         </button>
-      </div>
+      </div>}
       <span className="sr-only" role="status" aria-live="polite">
-        <span className="public-hero-copy--desktop">
-          {bn
-            ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}. ${slides[activeIndex].descriptionBn}`
-            : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}. ${slides[activeIndex].descriptionEn}`}
-        </span>
-        <span className="public-hero-copy--mobile">
-          {bn
-            ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].mobileHeadingBn}. ${slides[activeIndex].mobileDescriptionBn}`
-            : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].mobileHeadingEn}. ${slides[activeIndex].mobileDescriptionEn}`}
-        </span>
+        {bn
+          ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}`
+          : `Banner ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}`}
       </span>
     </div>
   );
