@@ -1584,3 +1584,66 @@ table.taxpay-unified-table {
     padding:12px;
   }
 }
+
+
+/* Beneficiaries follows the Transaction History register: one heading/search/filter
+   toolbar, a compact list picker, shared edge-to-edge table, and two row actions.
+   Scoped to this screen so approved transaction layouts remain unchanged. */
+.taxpay-taxpayer-reference .beneficiary-register-frame {
+  padding:0;
+  min-width:0;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame > .taxpay-office-register__toolbar {
+  gap:12px;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .taxpay-office-register__identity {
+  flex:1 1 220px;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .taxpay-office-register__actions {
+  flex:0 1 auto;
+  gap:8px;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-toolbar {
+  flex:0 1 205px;
+  min-width:165px;
+  max-width:205px;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-filter {
+  gap:6px;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-filter > p {
+  font-size:13px;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-list-picker__trigger {
+  min-width:0;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__table {
+  border-radius:0;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__actions button {
+  min-height:40px;
+  white-space:nowrap;
+}
+@media (max-width:1000px) {
+  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-toolbar {
+    flex:1 1 100%;
+    min-width:0;
+    max-width:280px;
+  }
+}
+@media (max-width:767px) {
+  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-toolbar {
+    max-width:none;
+    width:100%;
+  }
+  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__actions {
+    justify-content:flex-start;
+  }
+}
