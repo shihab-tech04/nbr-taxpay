@@ -1207,7 +1207,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const shownTotal = batchAttempt ? batchAttempt.amountMinor / 100 : totalAmount;
     if (showReceiptDetails && createdReceipt) return (
       <div lang={language} className={`payment-receipt-details ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''}`}>
-        <ReceiptView receipt={createdReceipt} embedded={embedded} />
+        <ReceiptView receipt={createdReceipt} embedded={embedded} onBack={embedded ? undefined : () => setShowReceiptDetails(false)} />
       </div>
     );
     return (
