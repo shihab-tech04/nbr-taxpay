@@ -37,7 +37,19 @@ try {
       await dialog.getByRole('textbox',{name:'User ID'}).fill('user1');
       await dialog.getByLabel('Password',{exact:true}).fill('user1');
       await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
-      await expect(page).toHaveURL(/action=taxpayer_home/);
+      // A real edge-backed preview login may take longer than Playwright's
+      // default five seconds on a cold mobile session. Do not skip login:
+      // require successful navigation, and preserve visible failure evidence.
+      try {
+        await expect(page).toHaveURL(/action=taxpayer_home/,{timeout:30_000});
+      } catch(error) {
+        const messages=await dialog.getByRole('alert').allTextContents().catch(()=>[]);
+        const buttonDisabled=await dialog.getByRole('button',{name:'Sign In',exact:true}).isDisabled().catch(()=>false);
+        await page.screenshot({path:'test-results/live-auth-login-failure-'+name+'.png',fullPage:true}).catch(()=>{});
+        throw new Error('Live '+name+' sign-in did not complete: '+JSON.stringify({
+          url:page.url(),messages,buttonDisabled
+        }),{cause:error});
+      }
       await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
       const beneficiaryUrl=new URL(base);
       beneficiaryUrl.searchParams.set('action','beneficiaries');
