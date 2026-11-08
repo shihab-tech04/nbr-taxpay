@@ -864,14 +864,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       pendingStoryRef.current = confirmed.mirrored ? null : pending;
     } catch (error) {
       const message=error instanceof Error?error.message:'';
-      const validationBlocked=/^(Choose a saved demo beneficiary|Choose a demo beneficiary|Active payment authorization|Active authorization is required|Simulation payment details are incomplete)/.test(message);
+      const validationBlocked=/^(Choose a saved demo beneficiary|Choose a demo beneficiary|INVALID_BENEFICIARY|AUTHORIZATION_REQUIRED|Simulation payment details are incomplete)/.test(message);
       // Invalid beneficiary/consent is a form correction, not a bank decline
       // and not a retry of an already-saved payment.
       setPaymentValidationBlocked(validationBlocked);
       if(validationBlocked)pendingStoryRef.current=null;
       setErrorMessage(validationBlocked
         ? (language === 'bn'
-            ? 'এই করদাতার জন্য সক্রিয় অনুমোদন নেই। নিজের করদাতা অ্যাকাউন্ট বাছুন অথবা অনুমোদিত সুবিধাভোগী নির্বাচন করুন।'
+            ? 'নির্বাচিত করদাতা আপনার সংরক্ষিত তালিকায় পাওয়া যায়নি। তালিকা আবার লোড করে নির্বাচন করুন।'
             : message)
         : (language === 'bn'
             ? 'সিমুলেশন সংরক্ষণের নিশ্চয়তা পাওয়া যায়নি। একই অনুরোধ আবার চেষ্টা করুন।'
@@ -892,19 +892,28 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             !(await areCurrentSavedBeneficiaries(tins as string[])))
           throw new Error('A selected beneficiary no longer belongs to the signed-in account.');
       }
-      await syncOtherTaxBatch(batch, persistSimulatedPayment, progress => {
+      const completedBatch=await syncOtherTaxBatch(batch, persistSimulatedPayment, progress => {
         rememberBatch(progress);
         const receipts = confirmedBatchReceipts(progress);
         receipts.forEach(addPaymentReceipt);
         if (receipts[0]) setCreatedReceipt(receipts[0]);
       });
       setLifecycleStages(previous => [...previous, 'CREDITED']);
+      setOfficeMirrorPending(completedBatch.items.some(item=>item.officeMirrorPending===true));
+      setPaymentValidationBlocked(false);
       setPaymentPhase('settled');
       setErrorMessage('');
-    } catch {
-      setErrorMessage(language === 'bn'
-        ? 'কিছু পেমেন্ট রেকর্ড অপেক্ষমাণ। একই অনুরোধ আবার চেষ্টা করুন।'
-        : 'Some payment records are pending. Retry the same request.');
+    } catch(error) {
+      const message=error instanceof Error?error.message:'';
+      const validationBlocked=/^(Choose a saved demo beneficiary|A selected beneficiary|INVALID_BENEFICIARY|AUTHORIZATION_REQUIRED)/.test(message);
+      setPaymentValidationBlocked(validationBlocked);
+      setErrorMessage(validationBlocked
+        ? (language === 'bn'
+          ? 'নির্বাচিত করদাতা সংরক্ষিত তালিকায় নেই। তালিকাটি আবার লোড করে নির্বাচন করুন।'
+          : 'Selected taxpayer is not in your saved list. Reload the list and select again.')
+        : (language === 'bn'
+          ? 'কিছু পেমেন্ট রেকর্ড অপেক্ষমাণ। একই অনুরোধ আবার চেষ্টা করুন।'
+          : 'Some payment records are pending. Retry the same request.'));
       setPaymentPhase('failed');
     } finally {
       setIsProcessing(false);
