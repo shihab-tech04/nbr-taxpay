@@ -1732,8 +1732,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 </p>}
                 {!batchRecoveryError && !errorField && errorMessage && <p role="alert" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{errorMessage}</p>}
                 {otherBatch && (forSelf === false || otherTaxLines.length > 1 || batchTaxpayers.length > 1) && <p role="status" className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-taxpay-dark mb-3">
-                  {language === 'bn' ? 'নির্বাচিত প্রতিটি খাতের জন্য আলাদা পেমেন্ট রেকর্ড তৈরি হবে।' :
-                    'A separate payment record will be created for each selected head.'}
+                  {language === 'bn' ? 'নির্বাচিত সব করদাতা ও খাতের জন্য একটি সম্মিলিত সিমুলেশন পেমেন্ট রেকর্ড ও রসিদ তৈরি হবে।' :
+                    'One combined simulated payment record and receipt will cover all selected taxpayers and heads.'}
                 </p>}
                 <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
                   onChannelChange={(channel, method) => { setPaymentChannel(channel); setPaymentMethod(method); setMethodGroup(null); setAcknowledged(false); }}
