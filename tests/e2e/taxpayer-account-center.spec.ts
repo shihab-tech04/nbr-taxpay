@@ -164,5 +164,7 @@ test('mobile Services & menu sign-out is readable and actually ends the preview 
   await expect(page).toHaveURL(/action=landing/);
   await expect(sheet).toHaveCount(0);
   await page.goto('/?action=account_profile');
-  await expect(page.getByRole('heading', { name: 'Private taxpayer workspace' })).toBeVisible();
+  // Account language survives sign-out as an allowed UI preference; the
+  // protected profile must always show the sign-in gate in either language.
+  await expect(page.getByRole('heading', { name: /^(Private taxpayer workspace|করদাতার ব্যক্তিগত তথ্য)$/ })).toBeVisible();
 });
