@@ -45,7 +45,8 @@ for (const [index, service] of serviceCatalog.entries()) {
     await expect(active.getByRole('button', { name: service.label, exact: true })).toBeVisible();
     // Production uses published SQL text; this offline browser lane uses the
     // same approved service category defaults, without claiming an SQL readback.
-    await expect(active).toHaveAttribute('data-payment-service', service.code || undefined);
+    if (service.code) await expect(active).toHaveAttribute('data-payment-service', service.code);
+    else await expect(active).not.toHaveAttribute('data-payment-service');
     await active.getByRole('button', { name: service.label, exact: true }).click();
 
     if (service.id === 'travel') {
