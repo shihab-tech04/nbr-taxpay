@@ -238,3 +238,19 @@ test('selected assessment year controls recent activity and compact spending on 
     expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }
 });
+
+test('dashboard residual breakdown reconciles linked and unlinked payments without duplicating totals',async({page})=>{
+  await page.goto(demo);
+  const overview=page.getByTestId('taxpayer-overview-bento');
+  const coverage=overview.locator('.taxpay-bento-coverage__donut');
+  await expect(coverage).toContainText('3 types');
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
+  const spending=overview.getByTestId('beneficiary-spending-breakdown');
+  await expect(spending.getByTestId('tagged-payment-total')).toContainText('60,000');
+  const residual=spending.getByTestId('dashboard-tag-review');
+  await expect(residual).toContainText('Own payments');
+  await expect(residual).toContainText('Saved beneficiary needs a tag');
+  await expect(residual).toContainText('No beneficiary link');
+  await expect(residual).toContainText('60,000');
+  await expect(residual.getByRole('button',{name:'Review beneficiary tags'})).toHaveCount(0);
+});
