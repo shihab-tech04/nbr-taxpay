@@ -18,12 +18,14 @@ type Props = {
   onSelectedDraft: (draft: PaymentFormDraft | null) => void;
   /** When the payment is embedded, action buttons belong in its shared modal footer. */
   actionTarget?: HTMLElement | null;
+  /** Keep a close-save guard on the review step without displaying a second Save control. */
+  guardOnly?: boolean;
 };
 
 /** Keep owner-scoped drafts inside the existing payment form; no extra login,
  * duplicate payment flow, URL state or browser-local draft storage. */
 export const AccountPaymentDraftControls: React.FC<Props> = ({
-  service, language, snapshot, restore, selectedDraft, onSelectedDraft, actionTarget,
+  service, language, snapshot, restore, selectedDraft, onSelectedDraft, actionTarget, guardOnly = false,
 }) => {
   const registerDraftExit = useContext(PaymentDraftExitContext);
   const { previewAccount } = useTaxState();
@@ -153,7 +155,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   </div>;
 
   return <section className="payment-form-draft-controls" aria-label={bn ? 'আমার পেমেন্ট খসড়া' : 'My payment drafts'}>
-    {actionTarget ? createPortal(actions, actionTarget) : actionTarget === undefined ? actions : null}
+    {!guardOnly && (actionTarget ? createPortal(actions, actionTarget) : actionTarget === undefined ? actions : null)}
     {feedback && <p className="mt-2 text-sm text-taxpay-dark" role="status">{feedback}</p>}
     {error && <p className="mt-2 text-sm text-taxpay-error" role="alert">{error}</p>}
     {expanded && <div className="mt-3 rounded-lg border border-taxpay-border bg-white p-3">
