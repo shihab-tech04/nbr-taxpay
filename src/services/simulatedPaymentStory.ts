@@ -1,6 +1,9 @@
 import type { ChallanReceipt } from '../types/tax';
 import {activePreviewSession} from './previewAccountSession';
 import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
+import type {DemoUserId} from '../data/demoUsers';
+import {sampleUserNumberForTin} from '../data/sampleTinSuggestions';
+import {userIdForHostedTin} from './hostedDemoAuthorizations';
 /** Synthetic-only persistence; browser session ID is not an authenticated account. */
 export type StoryPaymentInput = {
   idempotencyKey: string;
@@ -46,13 +49,41 @@ export function getStorySessionId(): string {
  * never to a user-entered TIN or the selected beneficiary. The source SQL
  * independently verifies this ID against the private profile capability.
  */
+/** The payment wizard stores receipt accounting heads in details.lines, but the
+ * existing demo-payment SQL authorization trigger expects beneficiary allocations.
+ * Preserve receipt items separately and send its exact, checked allocation contract.
+ * Never manufacture an authorization for another taxpayer. */
 export function bindPreviewStoryPayer(
   input: StoryPaymentInput,
   preview: {profileId:string;paymentSessionId:string}|null
 ): StoryPaymentInput {
   if(!preview)return input;
   if(input.sessionId!==preview.paymentSessionId)throw new Error('Demo account changed.');
-  return {...input,details:{...input.details,payerId:preview.profileId}};
+  const details: Record<string,unknown>={...input.details,payerId:preview.profileId};
+  if(!details.receiptSnapshot)return {...input,details};
+  if(!Array.isArray(details.lines)||details.lines.length===0||
+     !Number.isSafeInteger(input.amountMinor)||input.amountMinor<=0)
+    throw new Error('Simulation payment details are incomplete.');
+  const thirdParty=details.payerMode==='OTHER';
+  const tin=typeof details.taxpayerTin==='string'?details.taxpayerTin.trim():'';
+  const number=sampleUserNumberForTin(tin);
+  // The server independently validates this exact TIN against the payer's
+  // capability-scoped saved list. A saved beneficiary payment is not an
+  // authorization to read the beneficiary's private tax records.
+  const selected=thirdParty
+    ? userIdForHostedTin(tin)||(number?`user${number}` as DemoUserId:null)
+    : preview.profileId;
+  if(!selected)throw new Error('Choose a saved demo beneficiary for this simulation.');
+  return {...input,details:{
+    ...details,
+    receiptLines:details.lines,
+    lines:[{
+      beneficiary:selected,
+      category:input.service,
+      assessmentYear:typeof details.assessmentYear==='string'?details.assessmentYear:'2026-27',
+      amountMinor:input.amountMinor
+    }]
+  }};
 }
 export async function persistSimulatedPayment(input: StoryPaymentInput): Promise<StoryPaymentAcknowledgement> {
   const preview=activePreviewSession();

@@ -10,6 +10,8 @@ function payment():StoryPaymentInput {
     service:'TAX_WITH_RETURN',
     amountMinor:1000,
     details:{payerMode:'SELF',taxpayerTin:'123456789012',payerId:'untrusted-form-id',
+      lines:[{headId:1,economicCode:'1111101',totalAmount:10}],
+      assessmentYear:'2025-2026',
       receiptSnapshot:{isSimulatedDemo:true}}
   };
 }
