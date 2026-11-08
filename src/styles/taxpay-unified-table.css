@@ -1466,6 +1466,16 @@ table.taxpay-unified-table {
 .taxpay-taxpayer-reference .taxpay-office-register-frame > .mt-4 {
   margin:0!important;padding:0;min-width:0;
 }
+/* Keep the existing Beneficiaries grid's rounded clipping and accessible header size. */
+.taxpay-taxpayer-reference .taxpay-office-register-frame .beneficiary-directory__table.taxpay-data-table {
+  border-radius:12px;
+}
+.taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table thead th {
+  height:44px;
+}
+.taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table tbody tr:nth-child(odd):not([data-selected="true"]) {
+  background:#fff;
+}
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-record-list__columns,
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table thead tr {
   min-height:38px;background:var(--register-heading);
