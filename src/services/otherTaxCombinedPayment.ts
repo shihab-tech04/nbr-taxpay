@@ -1,5 +1,6 @@
 import type { ChallanReceipt, PaymentLineItem, ReceiptAllocationItem } from '../types/tax';
 import type { StoryPaymentInput } from './simulatedPaymentStory';
+import { MASTER_PAYMENT_HEADS } from '../data/paymentHeads';
 
 /** One immutable SQL payment and one receipt, with independently auditable allocations. */
 export type CombinedOtherTaxLine = {
@@ -44,7 +45,7 @@ export function prepareCombinedOtherTaxPayment(
     taxpayerName: item.taxpayerName.trim() || 'TIN ' + item.taxpayerTin,
     taxpayerTin: item.taxpayerTin,
     paymentServiceEn: item.line.headNameEn,
-    paymentServiceBn: item.line.headNameEn,
+    paymentServiceBn: MASTER_PAYMENT_HEADS.find(head => head.id===item.line.headId && head.nameEn===item.line.headNameEn)?.nameBn || item.line.headNameEn,
     assessmentYear: item.assessmentYear,
     amountMinor: item.amountMinor,
     economicCode: item.line.economicCode,
