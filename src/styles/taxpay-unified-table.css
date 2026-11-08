@@ -1424,10 +1424,10 @@ table.taxpay-unified-table {
   font-size:16px;line-height:1.4;font-weight:650;
 }
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-office-register__description {
-  max-width:540px;font-size:13px;line-height:1.4;
+  max-width:540px;font-size:14px;line-height:1.4;
 }
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-office-register__count {
-  padding:3px 8px;min-height:22px;font-size:12px;
+  padding:3px 8px;min-height:22px;font-size:14px;
   background:#f2f4f8;border:0;border-radius:999px;
 }
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-office-register__actions {
@@ -1509,7 +1509,7 @@ table.taxpay-unified-table {
   padding:12px 16px;min-height:52px;margin:0;
   border:0;border-top:1px solid var(--register-edge);
   border-radius:0;background:#fff;
-  color:var(--register-muted);font-size:12px;
+  color:var(--register-muted);font-size:14px;
 }
 .taxpay-taxpayer-reference .taxpay-office-register-frame > .beneficiary-directory__list-context {
   padding:10px 16px;border-bottom:1px solid var(--register-edge);
