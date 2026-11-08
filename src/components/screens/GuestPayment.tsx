@@ -1074,7 +1074,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           },
         },
       };
-      if (otherBatch) {
+      if (otherBatch && !(paymentChannel === 'NOW' && simulateDecline)) {
         // One combined payment and receipt across all taxpayers, heads and years.
         // Do not create one SQL transaction per allocation.
         const request = prepareCombinedOtherTaxPayment(
