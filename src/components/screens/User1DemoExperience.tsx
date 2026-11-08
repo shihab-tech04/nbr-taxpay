@@ -96,6 +96,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [savedTagPeople,setSavedTagPeople]=useState<Beneficiary[]>([]);
   const [tagLoadState,setTagLoadState]=useState<'loading'|'ready'|'error'>('loading');
   const [paymentTagFilter,setPaymentTagFilter]=useState<'all'|PaymentTagGroup>('all');
+  const [savedDraftCount,setSavedDraftCount]=useState<number|null>(null);
   const [transactionFiltersExpanded,setTransactionFiltersExpanded]=useState(false);
   useEffect(()=>{
     let active=true;
@@ -301,14 +302,20 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const gradients=coveredBreakdown.reduce((a,x)=>{const from=a.end;const end=from+meter(x.value,totals.liability);return {end,parts:[...a.parts,x.color+' '+from+'% '+end+'%']};},{end:0,parts:[] as string[]});
   const [selectedCoverage,setSelectedCoverage]=useState<number|null>(null);
   const yearChartMax=Math.max(1,...taxYears.map(item=>yearSummary(item.year)!.liability));
+  const spendingColors:Record<PaymentTagGroup,string>={family:'#2d65ad',friends:'#65a8dc',clients:'#204a85',others:'#b18439',unassigned:'#5c7fa8'};
   const overview=<div className="taxpay-bento-grid" data-testid="taxpayer-overview-bento">
     <section className="taxpay-bento-hero" aria-labelledby="taxpay-bento-hero-title">
       <p className="text-xs font-semibold">{tr('NEXT STEPS','পরবর্তী করণীয়')} · {year}</p>
       <h2 id="taxpay-bento-hero-title">{tr('What needs your attention?','কোন বিষয়গুলোতে নজর দেবেন?')}</h2>
-      <p className="text-sm">{tr('Review payment statuses or start your next payment. Travel tax remains separate from income tax.','পেমেন্টের অবস্থা দেখুন অথবা নতুন পেমেন্ট শুরু করুন। ভ্রমণ কর আয়কর থেকে পৃথক।')}</p>
+      <p className="text-sm">{tr('Start a payment or follow up on items that need attention.','পেমেন্ট শুরু করুন অথবা প্রয়োজনীয় বিষয়গুলো দেখুন।')}</p>
       <div className="taxpay-bento-hero__actions">
         <button type="button" className="taxpay-bento-hero__primary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16} aria-hidden="true"/></button>
         <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice('TRAVEL_TAX')}>{tr('Travel tax','ভ্রমণ কর')}<ArrowRight size={16} aria-hidden="true"/></button>
+        {onResumePaymentDraft && savedDraftCount!==null && savedDraftCount>0 &&
+          <button type="button" className="taxpay-bento-hero__secondary" aria-controls="dashboard-payment-drafts"
+            onClick={()=>{const target=document.getElementById('dashboard-payment-drafts');target?.scrollIntoView({behavior:'smooth',block:'start'});target?.focus({preventScroll:true});}}>
+            {tr('Saved drafts','সংরক্ষিত খসড়া')} ({savedDraftCount})<ArrowRight size={16} aria-hidden="true"/>
+          </button>}
       </div>
       <div className="taxpay-bento-hero__status" aria-label={tr('Attention and exceptions','নজরদারি ও ব্যতিক্রম')}>
         {([
@@ -317,11 +324,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           {label:tr('Unmatched','অমিল'),count:totals.disputed,states:['DISPUTED']},
           {label:tr('Requests','আবেদন'),count:scoped.filter(x=>x.state==='REQUESTED').length,states:['REQUESTED']}
         ] as {label:string;count:number;states:State[]}[]).map(item=>
-          <button type="button" key={item.label} onClick={()=>openReview(item.states)} aria-label={tr('View ','দেখুন: ')+item.label+': '+item.count}>
+          <button type="button" key={item.label} data-has-items={item.count>0?'true':'false'} onClick={()=>openReview(item.states)} aria-label={tr('View ','দেখুন: ')+item.label+': '+item.count}>
             <span>{item.label}</span><strong className="tabular-nums">{item.count}</strong>
           </button>)}
       </div>
-      <button type="button" className="self-end min-h-10 px-2 text-sm font-medium text-white underline underline-offset-4" onClick={()=>navigate('corrections')}>
+      <button type="button" className="taxpay-bento-hero__review self-end min-h-10 px-2 text-sm font-medium text-taxpay-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary" onClick={()=>navigate('corrections')}>
         {tr('Review exceptions','ব্যতিক্রম দেখুন')}<ArrowRight size={15} className="ml-2 inline" aria-hidden="true"/>
       </button>
     </section>
@@ -331,22 +338,44 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         {info(tr('Current tax position','বর্তমান কর অবস্থান'),'Recorded account scenario for the selected assessment year; this is not a verified government assessment.','নির্বাচিত করবর্ষের নথিভুক্ত হিসাব; এটি যাচাইকৃত সরকারি কর নির্ধারণ নয়।')}
       </div>
       <div className="taxpay-bento-position__highlight">
-        <p>{tr('Still remaining ·','অবশিষ্ট ·')} {year}</p>
-        <strong>{money(totals.outstanding)}</strong>
+        <div className="taxpay-bento-position__balance"><p>{tr('Still remaining ·','অবশিষ্ট ·')} {year}</p>
+          <strong>{money(totals.outstanding)}</strong></div>
         <div role="progressbar" aria-label={tr('Tax recorded as covered','নথিভুক্ত কর সমন্বয়')} aria-valuemin={0} aria-valuemax={100}
           aria-valuenow={Math.round(meter(totals.applied,totals.liability))} className="taxpay-bento-position__track">
           <span style={{width:meter(totals.applied,totals.liability)+'%'}}/>
         </div>
-        <p className="mt-2 text-xs">{money(totals.applied)} {tr('of','এর মধ্যে')} {money(totals.liability)} {tr('covered in the recorded account','নথিভুক্ত হিসাবে সমন্বিত')}</p>
+        <p className="mt-2 text-xs">{Math.round(meter(totals.applied,totals.liability))}% {tr('covered for this assessment year','এই করবর্ষে সমন্বিত')}</p>
       </div>
       <dl className="taxpay-bento-position__totals">
         <div><dt>{tr('Total tax','মোট কর')}</dt><dd>{money(totals.liability)}</dd></div>
         <div><dt>{tr('Already covered','সমন্বিত')}</dt><dd>{money(totals.applied)}</dd></div>
-        <div><dt>{tr('Remaining','অবশিষ্ট')}</dt><dd>{money(totals.outstanding)}</dd></div>
       </dl>
       <p className="text-xs text-taxpay-muted">{tr('Travel tax (separate)','ভ্রমণ কর (পৃথক)')}: <strong className="tabular-nums text-taxpay-text">{money(totals.travel)}</strong></p>
       {view('ledger','View tax ledger','কর লেজার দেখুন')}
     </section>
+    {onResumePaymentDraft && <div className="taxpay-bento-drafts">
+      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft} onCountChange={setSavedDraftCount}/>
+    </div>}
+    <div className="taxpay-bento-recent">
+    <section className={panel} aria-labelledby="taxpayer-recent-activity-title">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="taxpayer-recent-activity-title" className="text-base font-semibold">{tr('Recent activity','সাম্প্রতিক কার্যক্রম')}</h2>
+        {view('history','View all activity','সব কার্যক্রম দেখুন')}
+      </div>
+      <p className="mt-1 text-xs text-taxpay-muted">{tr('Assessment year','করবর্ষ')}: {year}</p>
+      <ul className="mt-3 divide-y divide-taxpay-border" aria-label={tr('Latest transactions in selected year','নির্বাচিত করবর্ষের সাম্প্রতিক লেনদেন')}>
+        {[...scoped].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-taxpay-text">{item.title}</p>
+            <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])}</p>
+          </div>
+          <p className="whitespace-nowrap text-sm font-semibold tabular-nums">{money(item.amount)}</p>
+          <div>{tag(item.state)}</div>
+          <button type="button" className={action} onClick={()=>setSelected(item)} aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
+        </li>)}
+      </ul>
+    </section>
+    </div>
     <div className="taxpay-bento-coverage">
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-coverage-title">
         <div className="flex items-center justify-between gap-2">
@@ -354,15 +383,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           {info(tr('How your tax is covered','আপনার কর কীভাবে সমন্বিত হয়'),
             'Distribution between TDS, advance tax, direct payments and remaining balance.','উৎসে কর, অগ্রিম কর, সরাসরি পরিশোধ ও অবশিষ্ট দায়ের বিভাজন।')}
         </div>
-        <div className="relative mx-auto my-5 h-48 w-48 rounded-full sm:h-52 sm:w-52" role="img"
+        <div className="taxpay-bento-coverage__layout">
+      <div className="taxpay-bento-coverage__donut relative mx-auto h-40 w-40 rounded-full" role="img"
           aria-label={tr('Liability coverage: ','করদায়ের বিভাজন: ')+Math.round(meter(totals.applied,totals.liability))+'%. '+tr('Remaining ','অবশিষ্ট ')+money(totals.outstanding)}
           style={{background:'conic-gradient('+gradients.parts.join(',')+')'}}>
-          <div className="absolute inset-[43px] flex flex-col items-center justify-center rounded-full bg-white p-2 text-center">
+          <div className="absolute inset-[34px] flex flex-col items-center justify-center rounded-full bg-white p-2 text-center">
             <p className="text-xs text-taxpay-muted">{selectedCoverage===null?tr('Already covered','ইতোমধ্যে সমন্বিত কর'):coveredBreakdown[selectedCoverage].label}</p>
             <p className={'font-semibold tabular-nums '+(selectedCoverage===null?'text-2xl':'text-base')}>{selectedCoverage===null?Math.round(meter(totals.applied,totals.liability))+'%':money(coveredBreakdown[selectedCoverage].value)}</p>
           </div>
         </div>
-        <div className="divide-y divide-taxpay-border" role="group" aria-label={tr('Coverage details','করদায়ের বিস্তারিত')}>{coveredBreakdown.map((x,i)=>
+        <div className="taxpay-bento-coverage__details divide-y divide-taxpay-border" role="group" aria-label={tr('Coverage details','করদায়ের বিস্তারিত')}>{coveredBreakdown.map((x,i)=>
           <button key={x.label} type="button" aria-pressed={selectedCoverage===i}
             title={tr('Show ','দেখুন: ')+x.label+': '+money(x.value)}
             onClick={()=>setSelectedCoverage(selectedCoverage===i?null:i)}
@@ -371,6 +401,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             <span className="shrink-0 font-semibold tabular-nums">{money(x.value)}</span>
           </button>)}
         </div>
+      </div>
       </section>
     </div>
     <section className={panel+' taxpay-bento-years'} aria-labelledby="taxpay-bento-years-title">
@@ -409,40 +440,21 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>
       {tagLoadState==='loading'&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('Loading saved beneficiary categories…','সংরক্ষিত উপকারভোগীর শ্রেণি লোড হচ্ছে…')}</p>}
       {tagLoadState==='error'&&<p role="alert" className="mt-3 text-sm text-taxpay-error">{tr('Spending categories are unavailable. Amounts were not attributed.','ব্যয়ের শ্রেণি পাওয়া যায়নি। কোনো অর্থ শ্রেণিবদ্ধ করা হয়নি।')}</p>}
-      {tagLoadState==='ready'&&<div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {taggedPaymentBreakdown.map(({group,amount:groupAmount})=><div key={group} className="rounded-lg border border-taxpay-border bg-taxpay-surface px-3 py-3" data-testid={'tag-spend-'+group}>
-          <p className="text-xs text-taxpay-muted">{paymentTagLabel(group)}</p>
-          <p className="mt-1 text-lg font-semibold tabular-nums">{money(groupAmount)}</p>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-taxpay-light">
-            <div className="h-full rounded-full bg-taxpay-primary" style={{width:(taggedPaymentTotal?groupAmount*100/taggedPaymentTotal:0)+'%'}}/>
-          </div>
-        </div>)}
+      {tagLoadState==='ready'&&<div className="taxpay-tag-spending mt-3">
+        <div className="taxpay-tag-spending__track" role="img"
+          aria-label={tr('Recorded payments by beneficiary category','উপকারভোগীর শ্রেণি অনুযায়ী নথিভুক্ত পেমেন্ট')+': '+taggedPaymentBreakdown.map(item=>paymentTagLabel(item.group)+' '+money(item.amount)).join(', ')}>
+          {taggedPaymentBreakdown.filter(item=>item.amount>0).map(({group,amount:groupAmount})=>
+            <span key={group} style={{width:(taggedPaymentTotal?groupAmount*100/taggedPaymentTotal:0)+'%',backgroundColor:spendingColors[group]}}/>)}
+        </div>
+        <div className="taxpay-tag-spending__legend">
+          {taggedPaymentBreakdown.map(({group,amount:groupAmount})=>
+            <div key={group} data-testid={'tag-spend-'+group} data-empty={groupAmount===0?'true':undefined}
+              className="taxpay-tag-spending__item">
+              <span className="taxpay-tag-spending__label"><i aria-hidden="true" style={{backgroundColor:spendingColors[group]}}/>{paymentTagLabel(group)}</span>
+              <strong className="tabular-nums">{money(groupAmount)}</strong>
+            </div>)}
+        </div>
       </div>}
-    </section>
-    </div>
-    {onResumePaymentDraft && <div className="taxpay-bento-drafts">
-      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}/>
-    </div>}
-    <div className="taxpay-bento-recent">
-    <section className={panel} aria-labelledby="taxpayer-recent-activity-title">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="taxpayer-recent-activity-title" className="text-base font-semibold">{tr('Recent activity','সাম্প্রতিক কার্যক্রম')}</h2>
-        {view('history','View all activity','সব কার্যক্রম দেখুন')}
-      </div>
-      <ul className="mt-3 divide-y divide-taxpay-border" aria-label={tr('Latest transactions in selected year','নির্বাচিত করবর্ষের সাম্প্রতিক লেনদেন')}>
-        {[...scoped].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-taxpay-text">{item.title}</p>
-            <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])}</p>
-          </div>
-          <p className="whitespace-nowrap text-sm font-semibold tabular-nums">{money(item.amount)}</p>
-          <div>{tag(item.state)}</div>
-          <button type="button" className={action} onClick={()=>setSelected(item)} aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
-        </li>)}
-      </ul>
-      <button type="button" className="mt-3 inline-flex min-h-10 items-center gap-2 text-sm font-medium text-taxpay-primary hover:underline" onClick={()=>navigate('services')}>
-        {tr('View payment services','পরিশোধ সেবাসমূহ দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
-      </button>
     </section>
     </div>
   </div>;
