@@ -344,6 +344,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [selectedAccountDraft, setSelectedAccountDraft] = useState<PaymentFormDraft | null>(null);
   const [draftFooterTarget, setDraftFooterTarget] = useState<HTMLDivElement | null>(null);
   const pendingStoryRef = useRef<{ payload: StoryPaymentInput; receipt: ChallanReceipt } | null>(null);
+  // Reconcile a source-SQL simulation while Office delivery remains pending.
+  const pendingMirrorRetryCount = useRef(0);
+  const pendingConfirmationRetryable = useRef(false);
   const [batchAttempt, setBatchAttempt] = useState<OtherTaxBatch | null>(null);
   const batchAttemptRef = useRef<OtherTaxBatch | null>(null);
   const batchRecoveryChecked = useRef(false);
@@ -856,6 +859,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setAttemptReceipt(settledReceipt);
       setCreatedReceipt(settledReceipt);
       setOfficeMirrorPending(!confirmed.mirrored);
+      pendingConfirmationRetryable.current = false;
       setPaymentValidationBlocked(false);
       setErrorMessage('');
       setPaymentPhase('settled');
@@ -864,15 +868,20 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       pendingStoryRef.current = confirmed.mirrored ? null : pending;
     } catch (error) {
       const message=error instanceof Error?error.message:'';
-      const validationBlocked=/^(Choose a saved demo beneficiary|Choose a demo beneficiary|INVALID_BENEFICIARY|AUTHORIZATION_REQUIRED|Simulation payment details are incomplete)/.test(message);
+      const validationBlocked=/^(Choose a saved demo beneficiary|Choose a demo beneficiary|INVALID_BENEFICIARY|AUTHORIZATION_REQUIRED|PROFILE_CAPABILITY_REQUIRED|SUBMISSION_FAILED|Simulation payment details are incomplete)/.test(message);
+      // Do not automatically retry a permanent SQL validation rejection.
+      pendingConfirmationRetryable.current = !validationBlocked &&
+        (message === 'SIMULATION_READBACK_PENDING' ||
+         message === 'SIMULATION_SUBMISSION_PENDING' ||
+         error instanceof TypeError);
       // Invalid beneficiary/consent is a form correction, not a bank decline
       // and not a retry of an already-saved payment.
       setPaymentValidationBlocked(validationBlocked);
       if(validationBlocked)pendingStoryRef.current=null;
       setErrorMessage(validationBlocked
         ? (language === 'bn'
-            ? 'নির্বাচিত করদাতা আপনার সংরক্ষিত তালিকায় পাওয়া যায়নি। তালিকা আবার লোড করে নির্বাচন করুন।'
-            : message)
+            ? 'সিমুলেশন সংরক্ষণ করা যায়নি। করদাতার তথ্য ও পেমেন্টের বিবরণ যাচাই করে আবার চেষ্টা করুন।'
+            : 'The simulation could not be saved. Review the taxpayer and payment details before retrying.')
         : (language === 'bn'
             ? 'সিমুলেশন সংরক্ষণের নিশ্চয়তা পাওয়া যায়নি। একই অনুরোধ আবার চেষ্টা করুন।'
             : 'Simulation confirmation is unavailable. Retry the same request.'));
@@ -941,6 +950,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const handleExecutePayment = () => {
     if (batchRecoveryError || isProcessing || !acknowledged || !paymentChannel || !paymentMethod ||
       !(otherBatch ? batchValid : amountsValid) || !storyAmountSupported || storyAmountMinor === null) return;
+    pendingMirrorRetryCount.current = 0;
+    pendingConfirmationRetryable.current = false;
     setIsProcessing(true);
     setPaymentPhase('processing');
     setLifecycleStages([]);
@@ -1105,6 +1116,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return;
     }
     pendingStoryRef.current = null;
+    pendingMirrorRetryCount.current = 0;
+    pendingConfirmationRetryable.current = false;
     lifecycleTimers.current.forEach(clearTimeout);
     lifecycleTimers.current = [];
     setPaymentPhase('review');
@@ -1120,6 +1133,24 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setShowReceiptDetails(false);
     setStep(3);
   };
+
+  // Reuse the exact original idempotency key for up to three bounded attempts.
+  // Never silently claim success without TaxPay SQL readback/Office acknowledgement.
+  useEffect(() => {
+    if (step !== 4 || isProcessing || simulateDecline || paymentValidationBlocked || batchAttempt ||
+        !pendingStoryRef.current ||
+        !((paymentPhase === 'settled' && officeMirrorPending) ||
+          (paymentPhase === 'failed' && pendingConfirmationRetryable.current)) ||
+        pendingMirrorRetryCount.current >= 3) return;
+    const attempt = ++pendingMirrorRetryCount.current;
+    const timer = setTimeout(() => {
+      const pending = pendingStoryRef.current;
+      if (!pending) return;
+      setIsProcessing(true);
+      void confirmSimulatedPayment(pending.receipt);
+    }, attempt === 1 ? 2500 : attempt === 2 ? 5000 : 10000);
+    return () => clearTimeout(timer);
+  }, [step, paymentPhase, isProcessing, officeMirrorPending, simulateDecline, paymentValidationBlocked, batchAttempt]);
 
   const startAnotherBatch = () => {
     try { clearOtherTaxBatch(); } catch {
@@ -1219,7 +1250,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             : (language === 'bn' ? 'পেমেন্ট রেকর্ড সংরক্ষিত হয়েছে; নিষ্পত্তি যাচাই হয়নি।' : 'Payment record saved; settlement is not verified.')}</p></div>}
           <div className="payment-lifecycle__actions no-print">
             {bankPending && <><button type="button" className="payment-lifecycle__secondary" onClick={() => window.print()}><FileText size={16} />{language === 'bn' ? 'স্লিপ প্রিন্ট করুন' : 'Print payment slip'}</button>{!embedded && <button type="button" className="payment-lifecycle__primary" onClick={simulateBankSettlement}>{language === 'bn' ? 'ব্যাংক পরিশোধের ধাপে যান' : 'Continue bank payment'}</button>}</>}
-            {declined && !embedded && <button type="button" className="payment-lifecycle__primary" onClick={retryPayment}>{batchAttempt ? (language === 'bn' ? 'অপেক্ষমাণ রেকর্ডে আবার চেষ্টা' : 'Retry pending records') : syncPending ? (language === 'bn' ? 'অফিস সমন্বয় আবার চেষ্টা করুন' : 'Retry Office synchronization') : paymentValidationBlocked ? (batchAttemptRef.current ? (language === 'bn' ? 'তালিকা সংশোধন করে আবার চেষ্টা করুন' : 'Retry after updating the saved list') : (language === 'bn' ? 'পেমেন্টের তথ্য দেখুন' : 'Review payment details')) : (language === 'bn' ? 'অন্য পদ্ধতিতে চেষ্টা করুন' : 'Try another payment method')}</button>}
+            {declined && !embedded && <button type="button" className="payment-lifecycle__primary" onClick={retryPayment} disabled={isProcessing}>{batchAttempt ? (language === 'bn' ? 'অপেক্ষমাণ রেকর্ডে আবার চেষ্টা' : 'Retry pending records') : syncPending ? (language === 'bn' ? 'অফিস সমন্বয় আবার চেষ্টা করুন' : 'Retry Office synchronization') : paymentValidationBlocked ? (batchAttemptRef.current ? (language === 'bn' ? 'তালিকা সংশোধন করে আবার চেষ্টা করুন' : 'Retry after updating the saved list') : (language === 'bn' ? 'পেমেন্টের তথ্য দেখুন' : 'Review payment details')) : (language === 'bn' ? 'অন্য পদ্ধতিতে চেষ্টা করুন' : 'Try another payment method')}</button>}
             {completed && officeMirrorPending && <button type="button" className="payment-lifecycle__secondary" disabled={isProcessing || !pendingStoryRef.current} onClick={()=>{const pending=pendingStoryRef.current;if(pending){setIsProcessing(true);void confirmSimulatedPayment(pending.receipt);}}}>{language === 'bn' ? 'অফিস সমন্বয় আবার চেষ্টা' : 'Retry Office synchronization'}</button>}
             {completed && !embedded && (batchAttempt ? <button type="button" className="payment-lifecycle__primary" onClick={startAnotherBatch}>{copy.anotherPayment}</button> : <button type="button" className="payment-lifecycle__primary" onClick={() => setShowReceiptDetails(true)}>{language === 'bn' ? 'রসিদের বিবরণ দেখুন' : 'View receipt details'} <ArrowRight size={17} /></button>)}
           </div>
@@ -1231,7 +1262,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             next={<>
               {completed && (batchAttempt ? <button type="button" className="tax-service-choice__continue" onClick={startAnotherBatch}>{copy.anotherPayment} <ArrowRight size={17} /></button> : <button type="button" className="tax-service-choice__continue" onClick={() => setShowReceiptDetails(true)}>{language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'} <ArrowRight size={17} /></button>)}
               {bankPending && <button type="button" className="tax-service-choice__continue" onClick={simulateBankSettlement}>{language === 'bn' ? 'ব্যাংক পরিশোধের ধাপে যান' : 'Continue bank payment'} <ArrowRight size={17} /></button>}
-              {declined && <button type="button" className="tax-service-choice__continue" onClick={retryPayment}>{batchAttempt ? (language === 'bn' ? 'অপেক্ষমাণ রেকর্ডে আবার চেষ্টা' : 'Retry pending records') : syncPending ? (language === 'bn' ? 'অফিস সমন্বয় আবার চেষ্টা করুন' : 'Retry Office synchronization') : paymentValidationBlocked ? (batchAttemptRef.current ? (language === 'bn' ? 'তালিকা সংশোধন করে আবার চেষ্টা করুন' : 'Retry after updating the saved list') : (language === 'bn' ? 'পেমেন্টের তথ্য দেখুন' : 'Review payment details')) : (language === 'bn' ? 'অন্য পদ্ধতিতে চেষ্টা' : 'Try another method')} <ArrowRight size={17} /></button>}
+              {declined && <button type="button" className="tax-service-choice__continue" onClick={retryPayment} disabled={isProcessing}>{batchAttempt ? (language === 'bn' ? 'অপেক্ষমাণ রেকর্ডে আবার চেষ্টা' : 'Retry pending records') : syncPending ? (language === 'bn' ? 'অফিস সমন্বয় আবার চেষ্টা করুন' : 'Retry Office synchronization') : paymentValidationBlocked ? (batchAttemptRef.current ? (language === 'bn' ? 'তালিকা সংশোধন করে আবার চেষ্টা করুন' : 'Retry after updating the saved list') : (language === 'bn' ? 'পেমেন্টের তথ্য দেখুন' : 'Review payment details')) : (language === 'bn' ? 'অন্য পদ্ধতিতে চেষ্টা' : 'Try another method')} <ArrowRight size={17} /></button>}
             </>} />, modalFooterTarget
         )}
       </div>
