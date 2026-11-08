@@ -6,6 +6,8 @@ const illustrations = ['intro-v9', 'return-v9', 'advance-v9', 'withholding-v9', 
 const services = [null, 'TAX_WITH_RETURN', 'ADVANCE_TAX', 'SOURCE_TAX_DEPOSIT', 'TRAVEL_TAX'];
 const headings = ['Tax payments, without the confusion', 'Tax with Return',
   'Advance Income Tax', 'Source Tax Deposit (TDS/TCS)', 'Travel Tax'];
+const mobileHeadings = ['Pay tax with confidence', 'Tax with Return',
+  'Advance Income Tax', 'Source Tax (TDS/TCS)', 'Travel Tax'];
 const actions = ['Pay Tax', 'Pay Tax with Return',
   'Pay Advance Income Tax', 'Deposit Source Tax', 'Pay Travel Tax'];
 const themeTokens = [null, '--service-return-bg', '--service-advance-bg',
@@ -13,7 +15,7 @@ const themeTokens = [null, '--service-return-bg', '--service-advance-bg',
 
 test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
 
-test('five published records render as distinct complete slides with their own CTA and artwork', async ({ page }) => {
+test('five published records render as distinct complete slides with their own CTA and artwork', async ({ page }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
@@ -36,7 +38,9 @@ test('five published records render as distinct complete slides with their own C
     const slide = carousel.locator('.public-hero-carousel__slide').nth(index);
     await expect(slide).toHaveAttribute('aria-hidden', 'false');
     await expect(slide).not.toHaveAttribute('inert', '');
-    await expect(slide.getByRole('heading', { name: headings[index] })).toBeVisible();
+    await expect(slide.getByRole('heading', {
+      name: info.project.name === 'desktop-1280' ? headings[index] : mobileHeadings[index],
+    })).toBeVisible();
     await expect(slide.getByRole('button', { name: actions[index] })).toBeVisible();
     await expect(slide.locator('.public-guest-action')).toHaveCount(1);
     await expect(carousel.getByRole('button', { name: 'Pay Tax', exact: true })).toHaveCount(0);
@@ -75,13 +79,15 @@ test('track uses eased horizontal motion; reduced-motion users receive an instan
   const track = carousel.locator('.public-hero-carousel__track');
   await expect(track).toHaveCSS('transition-property', 'transform');
   await expect(track).toHaveCSS('transition-duration', '0.64s');
-  await carousel.getByRole('button', { name: 'Next banner' }).click();
+  await carousel.focus();
+  await page.keyboard.press('ArrowRight');
   await expect(carousel).toHaveAttribute('data-active-slide', '1');
   await expect(carousel.locator('.public-hero-carousel__slide').nth(1)
     .getByRole('button', { name: 'Pay Tax with Return' })).toBeVisible();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(track).toHaveCSS('transition-duration', '0s');
-  await carousel.getByRole('button', { name: 'Previous banner' }).click();
+  await carousel.focus();
+  await page.keyboard.press('ArrowLeft');
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
 });
 
