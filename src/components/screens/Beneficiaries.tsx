@@ -477,7 +477,7 @@ export function Beneficiaries(){
     {recoveryError&&<p role="alert" className="text-sm text-red-800">{recoveryError}</p>}
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
 
-    <section className="taxpay-office-register-frame rounded-xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-6" aria-labelledby="beneficiary-list-heading">
+    <section className="taxpay-office-register-frame beneficiary-register-frame rounded-xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-6" aria-labelledby="beneficiary-list-heading">
       {checkingIdentity&&<p role="status" className="py-8 text-center text-sm text-slate-600">{tr('Opening your beneficiary workspace…','উপকারভোগীর কর্মক্ষেত্র খোলা হচ্ছে…')}</p>}
       {!checkingIdentity&&loading&&<p role="status" className="py-8 text-center text-sm text-slate-600">{tr('Loading saved lists…','সংরক্ষিত তালিকা লোড হচ্ছে…')}</p>}
       {!checkingIdentity&&error&&<div className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -599,7 +599,7 @@ export function Beneficiaries(){
                   </div>},
                   {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:person=><div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
-                    <UiButton type="button" variant="outline" className="beneficiary-directory__secondary text-sm"
+                    <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary text-sm"
                       onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
                     <UiButton type="button" variant="outline" className="beneficiary-directory__pay gap-2 text-sm" onClick={()=>payWith([person])}>
                       <CreditCard size={16} aria-hidden="true"/>{tr('Make payment','পেমেন্ট করুন')}
@@ -623,7 +623,7 @@ export function Beneficiaries(){
                   </div>
                   <div className="taxpay-mobile-table-card__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
-                    <UiButton type="button" variant="outline" onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
+                    <UiButton type="button" variant="quiet" onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
                     <UiButton type="button" variant="outline" className="gap-2" onClick={()=>payWith([person])}>
                       <CreditCard size={16} aria-hidden="true"/>{tr('Make payment','পেমেন্ট করুন')}
                     </UiButton>
