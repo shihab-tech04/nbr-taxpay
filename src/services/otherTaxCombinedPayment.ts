@@ -81,6 +81,7 @@ export function prepareCombinedOtherTaxPayment(
 }
 
 const COMBINED_STORAGE_KEY = 'taxpay-other-tax-combined-v2';
+const combinedKey = (sessionId:string) => COMBINED_STORAGE_KEY + ':' + sessionId;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type StoredCombinedRequest = {
   version: 2;
@@ -95,13 +96,13 @@ export function saveCombinedOtherTaxRequest(
   storage: CombinedStorage = sessionStorage,
 ): void {
   validateCombinedRequest(request);
-  storage.setItem(COMBINED_STORAGE_KEY,JSON.stringify({version:2,phase,request}));
+  storage.setItem(combinedKey(request.payload.sessionId),JSON.stringify({version:2,phase,request}));
 }
 export function loadCombinedOtherTaxRequest(
   sessionId: string,
   storage: CombinedStorage = sessionStorage,
 ): StoredCombinedRequest | null {
-  const raw=storage.getItem(COMBINED_STORAGE_KEY);
+  const raw=storage.getItem(combinedKey(sessionId));
   if(!raw)return null;
   let parsed:StoredCombinedRequest;
   try{parsed=JSON.parse(raw) as StoredCombinedRequest;}catch{throw Error('INVALID_COMBINED_RECOVERY');}
@@ -111,8 +112,9 @@ export function loadCombinedOtherTaxRequest(
   validateCombinedRequest(parsed.request);
   return parsed;
 }
-export function clearCombinedOtherTaxRequest(storage: CombinedStorage = sessionStorage): void {
-  storage.removeItem(COMBINED_STORAGE_KEY);
+export function clearCombinedOtherTaxRequest(sessionId:string,storage: CombinedStorage = sessionStorage): void {
+  if(!UUID.test(sessionId))throw Error('INVALID_COMBINED_RECOVERY');
+  storage.removeItem(combinedKey(sessionId));
 }
 function validateCombinedRequest(request: StoredCombinedRequest['request']): void {
   const {payload,receipt}=request;
