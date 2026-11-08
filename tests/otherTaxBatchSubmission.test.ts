@@ -85,6 +85,21 @@ test('partial sync and lost acknowledgement recover after reload without duplica
   assert.equal(loadOtherTaxBatch(template.sessionId, storage)?.phase, 'COMPLETE');
 });
 
+test('verified SQL batch completes once even while Office mirror is queued',async()=>{
+  const storage=memoryStorage(), batch=makeBatch();
+  const seen=new Map<string,string>();
+  const result=await syncOtherTaxBatch(batch,async input=>{
+    const paymentId=seen.get(input.idempotencyKey)??id(700+seen.size);
+    seen.set(input.idempotencyKey,paymentId);
+    return {...ack(paymentId),mirrored:false};
+  },()=>{},storage);
+  assert.equal(result.phase,'COMPLETE');
+  assert.equal(seen.size,2);
+  assert.equal(result.items.filter(item=>item.officeMirrorPending).length,2);
+  assert.equal(confirmedBatchReceipts(result).length,2);
+  assert.equal(loadOtherTaxBatch(batch.sessionId,storage)?.phase,'COMPLETE');
+});
+
 test('storage failure blocks sending and an unfinished bank slip cannot submit', async () => {
   const storage = memoryStorage();
   let sent = 0;
