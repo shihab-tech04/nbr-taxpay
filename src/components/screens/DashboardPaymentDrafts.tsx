@@ -145,18 +145,27 @@ export const DashboardPaymentDrafts: React.FC<{
           ? tr('Travel tax', 'ভ্রমণ কর')
           : draft.form_payload.forSelf === true ? tr('My Tax Liability', 'আমার করদায়')
             : tr('Another taxpayer', 'অন্য করদাতা');
+        const savedText = (key: string) => typeof draft.form_payload[key] === 'string'
+          ? String(draft.form_payload[key]).trim() : '';
+        const name = draft.form_payload.forSelf === false ? savedText('otherTaxpayerName') : '';
+        const tinDigits = draft.form_payload.forSelf === false ? savedText('tin').replace(/\D/g,'') : '';
+        const payerIdentity = name || (tinDigits.length >= 4
+          ? tr('TIN ending ', 'টিআইএন শেষ ') + tinDigits.slice(-4) : '');
+        const assessmentYear = savedText('assessmentYear');
+        const details = [payer, payerIdentity, assessmentYear
+          ? tr('Assessment year ', 'করবর্ষ ') + assessmentYear : ''].filter(Boolean).join(' · ');
         return <article role="listitem" key={draft.id} data-draft-id={draft.id}
           className="flex min-w-0 flex-col rounded-xl border border-taxpay-border p-4">
           <h3 className="text-base font-semibold text-taxpay-text">
             {CATEGORY_LABELS[draft.service]?.[language] ?? draft.service}
           </h3>
-          <p className="mt-1 text-sm text-taxpay-muted">{payer}</p>
+          <p className="mt-1 text-sm text-taxpay-muted">{details}</p>
           <p className="mt-2 text-xs text-taxpay-muted">
             {tr('Last saved:', 'সর্বশেষ সংরক্ষণ:')} <time dateTime={draft.updated_at}>{updated}</time>
           </p>
           <div className="mt-auto flex flex-wrap gap-2 pt-4">
             <button type="button" disabled={Boolean(busyId)} onClick={() => void resume(draft)}
-              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-taxpay-primary bg-white px-4 text-sm font-semibold text-taxpay-primary transition-colors hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">
               {busyId === draft.id ? tr('Opening…', 'খোলা হচ্ছে…') : tr('Continue', 'চালিয়ে যান')}
               {busyId !== draft.id && <ArrowRight size={16} aria-hidden="true" />}
             </button>

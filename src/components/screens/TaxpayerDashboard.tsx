@@ -131,7 +131,7 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
           <h2 id="account-bento-hero-title">{tr('What would you like to do?','আপনি কী করতে চান?')}</h2>
           <p className="text-sm">{tr('Start a payment, continue saved work or review your transaction history. No unverified amount is treated as tax due.','পেমেন্ট শুরু করুন, সংরক্ষিত কাজ চালিয়ে যান অথবা লেনদেন দেখুন। যাচাই হয়নি এমন অর্থ বকেয়া কর হিসেবে দেখানো হয় না।')}</p>
           <div className="taxpay-bento-hero__actions">
-            <button className="taxpay-bento-hero__primary" type="button" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
+            <button className="taxpay-bento-hero__secondary" type="button" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
             <button className="taxpay-bento-hero__secondary" type="button" onClick={()=>openPaymentServiceChoice('TRAVEL_TAX')}>{tr('Travel tax','ভ্রমণ কর')}<ArrowRight size={16}/></button>
           </div>
           <p className="mt-auto text-xs">{tr('Your saved account records are kept separate from illustrative examples.','আপনার সংরক্ষিত রেকর্ড উদাহরণের পরিমাণ থেকে পৃথক রাখা হয়।')}</p>
@@ -184,7 +184,7 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
       <h2>{tr('What would you like to do?','আপনি কী করতে চান?')}</h2>
       <p>{tr('Use the existing payment journey or start separate travel tax.','বিদ্যমান পেমেন্ট যাত্রা অথবা পৃথক ভ্রমণ কর শুরু করুন।')}</p>
       <div className="taxpay-bento-hero__actions">
-        <button type="button" className="taxpay-bento-hero__primary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
+        <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
         <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice('TRAVEL_TAX')}>{tr('Travel tax','ভ্রমণ কর')}<ArrowRight size={16}/></button>
       </div>
     </section>}

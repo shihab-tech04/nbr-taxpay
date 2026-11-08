@@ -116,9 +116,12 @@ test('signed-in workspace mirrors Sobaike Public design tokens without changing 
   expect(desktop.page).toBe('rgb(240, 242, 245)');
   expect(desktop.ink).toBe('rgb(5, 5, 5)');
   expect(desktop.railWidth).toBe('250px');
-  expect(desktop.headingFont).toBe('30px');
+  expect(desktop.headingFont).toBe('24px');
   expect(desktop.cardBorder).toBe('rgb(228, 230, 235)');
   expect(desktop.cardRadius).toBe('16px');
+  const headingBounds=await page.locator('.taxpayer-dashboard-header--overview').boundingBox();
+  expect(headingBounds).not.toBeNull();
+  expect(headingBounds!.height,'Overview heading must remain compact').toBeLessThan(90);
   expect(desktop.brandButton).toBe('rgb(44, 94, 173)');
   expect(desktop.brandVariable.toUpperCase()).toBe('#2C5EAD');
 
@@ -135,7 +138,7 @@ test('signed-in workspace mirrors Sobaike Public design tokens without changing 
     };
   });
   expect(mobile.font).toContain('Noto Sans');
-  expect(mobile.heading).toBe('26px');
+  expect(mobile.heading).toBe('24px');
   expect(mobile.overflow).toBeLessThanOrEqual(2);
 });
 
@@ -153,19 +156,20 @@ test('dashboard only: calm card surfaces preserve action contrast and mobile con
     await expect(hero.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
     const colors=await hero.evaluate(element=>{
       const heading=element.querySelector('h2');
-      const primary=element.querySelector('.taxpay-bento-hero__primary');
-      const secondary=element.querySelector('.taxpay-bento-hero__secondary');
+      const buttons=Array.from(element.querySelectorAll<HTMLButtonElement>('.taxpay-bento-hero__actions button'));
       return {
         heading:heading?getComputedStyle(heading).color:'',
-        primaryInk:primary?getComputedStyle(primary).color:'',
-        primaryBackground:primary?getComputedStyle(primary).backgroundColor:'',
-        secondaryBackground:secondary?getComputedStyle(secondary).backgroundColor:''
+        buttons:buttons.map(button=>({
+          background:getComputedStyle(button).backgroundColor,
+          color:getComputedStyle(button).color,
+          height:button.getBoundingClientRect().height
+        }))
       };
     });
     expect(colors.heading).not.toBe('rgb(255, 255, 255)');
-    expect(colors.primaryInk).toBe('rgb(255, 255, 255)');
-    expect(colors.primaryBackground).not.toBe('rgb(255, 255, 255)');
-    expect(colors.secondaryBackground).toBe('rgb(255, 255, 255)');
+    expect(colors.buttons).toHaveLength(2);
+    expect(colors.buttons.every(button=>button.background==='rgb(255, 255, 255)')).toBe(true);
+    expect(colors.buttons.every(button=>button.color!=='rgb(255, 255, 255)'&&button.height>=44)).toBe(true);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'dashboard horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }
@@ -207,6 +211,8 @@ test('Overview puts financial position first, followed by exceptions, charts, sp
   await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(4);
   await expect(bento.locator('.taxpay-bento-hero [aria-controls="dashboard-payment-drafts"]')).toHaveCount(0);
   await expect(bento.locator('.taxpay-tag-spending__track')).toBeVisible();
+  await expect(bento.getByRole('button',{name:'Check tax ledger'})).toHaveCount(0);
+  await expect(bento.getByRole('button',{name:'View tax ledger'})).toHaveCount(1);
   await expect(bento.locator('[data-testid^="tag-spend-"]')).toHaveCount(5);
   await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
 });

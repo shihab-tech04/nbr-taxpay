@@ -51,3 +51,44 @@ test('profile-scoped tags reconcile dashboard family/friends/clients and filter 
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(2);
 });
+
+
+test('unclassified saved beneficiary payments remain unassigned with an actionable secondary repair path',async({page})=>{
+  const date='2026-11-08T00:00:00Z';
+  const list={id:'00000000-0000-4000-8000-000000000111',name:'Saved beneficiaries',created_at:date};
+  const people=[
+    {tin:'222222222222',display_name:'Saved taxpayer',tag:null,relationship:null,other_label:null},
+    {tin:'888888888888',display_name:'Saved friend',tag:'friends_family',relationship:'friends',other_label:null},
+    {tin:'909000000011',display_name:'Saved client',tag:'clients',relationship:null,other_label:null},
+  ].map((data,index)=>({id:'00000000-0000-4000-8000-'+String(index+241).padStart(12,'0'),list_id:list.id,created_at:date,updated_at:date,...data}));
+  await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{"message":"No session"}'}));
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',route=>{
+    const body=route.request().postDataJSON() as {action?:string;offset?:number;limit?:number};
+    const settings={language:'en',selectedListId:list.id,paymentSessionId:'00000000-0000-4000-8000-000000000099'};
+    const data=body.action==='demo-login'?{...settings,profileId:'user1',capability:'A'.repeat(43)}
+      :body.action==='demo-settings'?settings
+      :body.action==='open'?{active:true}
+      :body.action==='lists'?[list]
+      :body.action==='people'?people.slice(body.offset??0,(body.offset??0)+(body.limit??500))
+      :[];
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
+  });
+  await page.goto('/?action=taxpayer_login');
+  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  await login.getByRole('textbox',{name:'User ID'}).fill('user1');
+  await login.getByLabel('Password',{exact:true}).fill('user1');
+  await login.getByRole('button',{name:'Sign In'}).click();
+  await expect(login).toHaveCount(0);
+  await page.goto('/?action=taxpayer_home');
+  const spending=page.getByTestId('beneficiary-spending-breakdown');
+  await expect(spending.getByTestId('tagged-payment-total')).toContainText('113,500');
+  await expect(spending.getByTestId('tag-spend-family')).toContainText('0');
+  await expect(spending.getByTestId('tag-spend-unassigned')).toContainText('62,000');
+  const notice=spending.getByTestId('dashboard-tag-review');
+  await expect(notice).toContainText('30,000');
+  await expect(notice).toContainText('32,000');
+  const review=notice.getByRole('button',{name:'Review beneficiary tags'});
+  await expect(review).toHaveCSS('background-color','rgb(255, 255, 255)');
+  await review.click();
+  await expect(page).toHaveURL(/action=beneficiaries/);
+});

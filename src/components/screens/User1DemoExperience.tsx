@@ -173,6 +173,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const taggedPaymentBreakdown=PAYMENT_TAG_GROUPS.map(group=>({
     group,amount:recordedDirectPayments.filter(item=>paymentTag(item)===group).reduce((sum,item)=>sum+item.amount,0)
   }));
+  // A saved TIN without a unique declared tag must remain unclassified.
+  // Distinguish this from payments not linked to any beneficiary without changing amounts.
+  const needsTagPayments=recordedDirectPayments.filter(item=>
+    Boolean(item.beneficiaryTin) && item.beneficiaryTin!==DEMO_USERS.user1.tin &&
+    paymentTag(item)==='unassigned');
+  const needsTagAmount=needsTagPayments.reduce((sum,item)=>sum+item.amount,0);
+  const noLinkedAmount=(taggedPaymentBreakdown.find(item=>item.group==='unassigned')?.amount??0)-needsTagAmount;
   const navigateTo=(r:string)=>navigate(r);
   const view=(r:string,textEn:string,textBn:string)=> <button type="button" className={action} onClick={()=>navigateTo(r)}>{tr(textEn,textBn)} <ArrowRight size={15} aria-hidden="true"/></button>;
   const tag=(s:State)=><span className={'inline-flex rounded-full px-2 py-1 text-[11px] font-medium '+stateColor[s]}>{tr(...stateLabels[s])}</span>;
@@ -290,7 +297,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Overview','সংক্ষিপ্ত বিবরণ');
-  const header=<TaxpayerPageHeading title={pageTitle} className="taxpayer-dashboard-header"
+  const header=<TaxpayerPageHeading title={pageTitle} className={'taxpayer-dashboard-header'+(overviewRoute?' taxpayer-dashboard-header--overview':'')}
     actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   const coveredBreakdown=[
     {label:tr('TDS','উৎসে কর'),value:totals.tds,color:'var(--color-taxpay-primary)'},
@@ -336,7 +343,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <h2 id="taxpay-bento-hero-title">{tr('What needs your attention?','কোন বিষয়গুলোতে নজর দেবেন?')}</h2>
       <p className="text-sm">{tr('Review exceptions or start a payment.','ব্যতিক্রম দেখুন অথবা পেমেন্ট শুরু করুন।')}</p>
       <div className="taxpay-bento-hero__actions">
-        <button type="button" className="taxpay-bento-hero__primary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16} aria-hidden="true"/></button>
+        <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16} aria-hidden="true"/></button>
         <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice('TRAVEL_TAX')}>{tr('Travel tax','ভ্রমণ কর')}<ArrowRight size={16} aria-hidden="true"/></button>
       </div>
       <div className="taxpay-bento-hero__status" aria-label={tr('Attention and exceptions','নজরদারি ও ব্যতিক্রম')}>
@@ -401,7 +408,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         })}
       </div>
       <p className="mt-2 text-xs text-taxpay-muted">{tr('Only eligible posted credits count; travel tax is separate.','শুধু যোগ্য নথিভুক্ত ক্রেডিট গণনা হয়; ভ্রমণ কর পৃথক।')}</p>
-      {view('ledger','Check tax ledger','কর লেজার দেখুন')}
     </section>
     <div className="taxpay-bento-tags">
     <section className={panel} data-testid="beneficiary-spending-breakdown" aria-label={tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}>
@@ -428,6 +434,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
               <strong className="tabular-nums">{money(groupAmount)}</strong>
             </div>)}
         </div>
+        {needsTagAmount>0 && <div className="taxpay-tag-spending__notice" role="status" data-testid="dashboard-tag-review">
+          <p>{money(needsTagAmount)} {tr('is linked to a saved beneficiary without one clear tag. It remains unclassified until the saved tag is corrected.','সংরক্ষিত উপকারভোগীর ট্যাগ স্পষ্ট নয় বলে এই অর্থ শ্রেণিবিহীন আছে। ট্যাগ সংশোধন করলে শ্রেণি অনুযায়ী দেখাবে।')}</p>
+          <p>{tr('Payments without a beneficiary link','উপকারভোগীর সাথে যুক্ত নয় এমন পেমেন্ট')}: <strong className="tabular-nums">{money(noLinkedAmount)}</strong></p>
+          <button type="button" className="taxpay-tag-spending__review" onClick={()=>navigate('beneficiaries')}>{tr('Review beneficiary tags','উপকারভোগীর ট্যাগ পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/></button>
+        </div>}
       </div>}
     </section>
     </div>
