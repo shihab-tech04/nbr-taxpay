@@ -27,7 +27,7 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
-  const {language,previewAccount,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
+  const {language,previewAccount,routeParams,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -81,6 +81,23 @@ export function Beneficiaries(){
   const [guestRecoveryDone,setGuestRecoveryDone]=useState(false);
   const [modalError,setModalError]=useState('');
   const [search,setSearch]=useState('');
+  // The Overview can focus the existing table on precisely those TINs whose
+  // saved tags are missing or conflicting. No new data source or list is created.
+  const [reviewTins,setReviewTins]=useState<string[]>(()=>Array.isArray(routeParams.reviewBeneficiaryTins)
+    ? [...new Set((routeParams.reviewBeneficiaryTins as unknown[])
+        .filter((value):value is string=>typeof value==='string'&&/^\d{12}$/.test(value)))].slice(0,30)
+    : []);
+  useEffect(()=>{
+    const incoming=routeParams.reviewBeneficiaryTins;
+    if(!Array.isArray(incoming))return;
+    const valid=[...new Set(incoming.filter((value:unknown):value is string=>
+      typeof value==='string'&&/^\d{12}$/.test(value)))].slice(0,30);
+    setReviewTins(valid);
+    if(valid.length){
+      setActiveList('all');setTagFilter('all');setRelationshipFilter('all');
+      setSearch('');setSelectedIds([]);
+    }
+  },[routeParams.reviewBeneficiaryTins]);
   const [selectedIds,setSelectedIds]=useState<string[]>([]);
   const [editPerson,setEditPerson]=useState<Beneficiary|null>(null);
   const [editTargetList,setEditTargetList]=useState('');
@@ -142,7 +159,7 @@ export function Beneficiaries(){
     loadBeneficiaries(owner).then(data=>{
       if(cancelled)return;
       setLists(data.lists);setPeople(data.people);
-      setActiveList(rememberedBeneficiaryListId([{id:'all'},...data.lists],savedListId||'all'));
+      setActiveList(reviewTins.length?'all':rememberedBeneficiaryListId([{id:'all'},...data.lists],savedListId||'all'));
     }).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:String(e));})
       .finally(()=>{
         if(initialRequestRef.current===requestToken)initialRequestRef.current=null;
@@ -183,7 +200,7 @@ export function Beneficiaries(){
   const filteredPeople=listPeople.filter(person=>{
     const matchesTag=tagFilter==='all'||(tagFilter==='legacy'? !person.tag :person.tag===tagFilter);
     const matchesRelation=tagFilter!=='friends_family'||relationshipFilter==='all'||person.relationship===relationshipFilter;
-    return matchesTag&&matchesRelation&&(displayName(person)+' '+person.tin+' '+beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label))
+    return (reviewTins.length===0||reviewTins.includes(person.tin))&&matchesTag&&matchesRelation&&(displayName(person)+' '+person.tin+' '+beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label))
       .toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
   });
   const selectedPeople=listPeople.filter(person=>selectedIds.includes(person.id));
@@ -218,7 +235,7 @@ export function Beneficiaries(){
   const allFilteredSelected=filteredPeople.length>0&&filteredPeople.every(person=>selectedIds.includes(person.id));
 
   function switchList(id:string){
-    setActiveList(id);setSelectedIds([]);setSearch('');setTagFilter('all');setRelationshipFilter('all');setListMenuOpen(false);
+    setReviewTins([]);setActiveList(id);setSelectedIds([]);setSearch('');setTagFilter('all');setRelationshipFilter('all');setListMenuOpen(false);
     rememberList(id);
     listTriggerRef.current?.focus();
   }
@@ -468,6 +485,10 @@ export function Beneficiaries(){
         <UiButton type="button" variant="outline" onClick={()=>void reloadData()}>{tr('Try again','আবার চেষ্টা করুন')}</UiButton>
       </div>}
       {!checkingIdentity&&!loading&&!error&&<>
+        {reviewTins.length>0&&<div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-taxpay-border bg-taxpay-light px-3 py-2 text-sm" data-testid="beneficiary-review-filter">
+          <span>{tr('Showing saved records linked to unclassified payments. Select Edit to assign the correct tag.','শ্রেণিবিহীন পেমেন্টের সাথে যুক্ত সংরক্ষিত রেকর্ড দেখানো হচ্ছে। সঠিক ট্যাগ দিতে সম্পাদনা নির্বাচন করুন।')}</span>
+          <UiButton type="button" variant="outline" onClick={()=>{setReviewTins([]);setSelectedIds([]);}}>{tr('Show all beneficiaries','সব উপকারভোগী দেখুন')}</UiButton>
+        </div>}
         <TaxPayOfficeRegisterToolbar id="beneficiary-list-heading"
           title={tr('Beneficiary list','উপকারভোগীর তালিকা')}
           description={tr('Search and manage your saved taxpayers','সংরক্ষিত করদাতাদের খুঁজুন ও পরিচালনা করুন')}
@@ -525,8 +546,9 @@ export function Beneficiaries(){
             </label>
           </TaxPayOfficeRegisterFilters>
           <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
-            onClear={()=>{setSearch('');setTagFilter('all');setRelationshipFilter('all');setSelectedIds([]);}}
+            onClear={()=>{setSearch('');setTagFilter('all');setRelationshipFilter('all');setReviewTins([]);setSelectedIds([]);}}
             filters={[
+              ...(reviewTins.length?[{key:'review-tins',label:tr('Needs tag review','ট্যাগ যাচাই প্রয়োজন'),onRemove:()=>{setReviewTins([]);setSelectedIds([]);}}]:[]),
               ...(search.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+search.trim(),onRemove:()=>setSearch('')}]:[]),
               ...(tagFilter!=='all'?[{key:'tag',label:tagFilter==='clients'?tr('Clients','ক্লায়েন্ট'):tagFilter==='friends_family'?tr('Friends & family members','বন্ধু ও পরিবারের সদস্য'):tagFilter==='others'?tr('Others','অন্যান্য'):tr('Uncategorized','শ্রেণিবিহীন'),onRemove:()=>{setTagFilter('all');setRelationshipFilter('all');setSelectedIds([]);}}]:[]),
               ...(tagFilter==='friends_family'&&relationshipFilter!=='all'?[{key:'relationship',label:beneficiaryTagLabel('friends_family',relationshipFilter as BeneficiaryRelation,language).split(' · ').at(-1)??relationshipFilter,onRemove:()=>{setRelationshipFilter('all');setSelectedIds([]);}}]:[])

@@ -130,12 +130,13 @@ export const DashboardPaymentDrafts: React.FC<{
         <RefreshCw size={16} aria-hidden="true" />{tr('Refresh', 'নতুন করে লোড')}
       </button>}
     </div>
+    <p className="mt-1 text-sm text-taxpay-muted">{tr('Saved drafts from all assessment years.','সব করবর্ষের সংরক্ষিত খসড়া।')}</p>
     {loading ? <p role="status" className="mt-3 text-sm text-taxpay-muted">
       {tr('Loading saved drafts…', 'সংরক্ষিত খসড়া লোড হচ্ছে…')}
     </p> : catalog.status === 'error' ? <p role="alert" className="mt-3 text-sm text-taxpay-error">
       {tr('Drafts could not be loaded. Try again.', 'খসড়াগুলো লোড করা যায়নি। আবার চেষ্টা করুন।')}
     </p> : <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="list">
-      {catalog.rows.map(draft => {
+      {catalog.rows.map((draft,index) => {
         const updatedAt = new Date(draft.updated_at);
         const updated = Number.isNaN(updatedAt.getTime()) ? draft.updated_at
           : new Intl.DateTimeFormat(bn ? 'bn-BD' : 'en-BD', {
@@ -156,9 +157,12 @@ export const DashboardPaymentDrafts: React.FC<{
           ? tr('Assessment year ', 'করবর্ষ ') + assessmentYear : ''].filter(Boolean).join(' · ');
         return <article role="listitem" key={draft.id} data-draft-id={draft.id}
           className="flex min-w-0 flex-col rounded-xl border border-taxpay-border p-4">
-          <h3 className="text-base font-semibold text-taxpay-text">
-            {CATEGORY_LABELS[draft.service]?.[language] ?? draft.service}
-          </h3>
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+            <h3 className="text-base font-semibold text-taxpay-text">{CATEGORY_LABELS[draft.service]?.[language] ?? draft.service}</h3>
+            <span className="text-xs font-medium text-taxpay-muted" aria-label={tr('Draft ','খসড়া ')+(index+1)+' / '+catalog.rows.length}>
+              {tr('Draft ','খসড়া ')}{index+1} / {catalog.rows.length}
+            </span>
+          </div>
           <p className="mt-1 text-sm text-taxpay-muted">{details}</p>
           <p className="mt-2 text-xs text-taxpay-muted">
             {tr('Last saved:', 'সর্বশেষ সংরক্ষণ:')} <time dateTime={draft.updated_at}>{updated}</time>
