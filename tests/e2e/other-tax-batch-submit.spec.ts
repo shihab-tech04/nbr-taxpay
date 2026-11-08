@@ -83,6 +83,10 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
   await expect(receipt).toContainText('৳ 50');
   await expect(dialog.locator('.receipt-view__actions')).toBeVisible();
   await expect(dialog.getByRole('button',{name:'Back',exact:true})).toHaveCount(0);
+  await dialog.getByRole('button',{name:'Back to confirmation'}).click();
+  await expect(dialog.getByRole('heading',{name:'Payment record saved'})).toBeVisible();
+  await dialog.getByRole('button',{name:'Receipt details'}).click();
+  await expect(dialog.locator('.receipt-view__paper')).toContainText('222222222222');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(2);
 });
 
