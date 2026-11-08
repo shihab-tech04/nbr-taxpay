@@ -1590,7 +1590,6 @@ table.taxpay-unified-table {
    toolbar, a compact list picker, shared edge-to-edge table, and two row actions.
    Scoped to this screen so approved transaction layouts remain unchanged. */
 .taxpay-taxpayer-reference .beneficiary-register-frame {
-  padding:0;
   min-width:0;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame > .taxpay-office-register__toolbar {
@@ -1612,7 +1611,7 @@ table.taxpay-unified-table {
   gap:6px;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-filter > p {
-  font-size:13px;
+  font-size:14px;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-list-picker__trigger {
   min-width:0;
