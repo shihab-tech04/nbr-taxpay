@@ -234,8 +234,12 @@ test('multiple Other Tax heads retain their amounts inside ONE combined payment 
   await expect(dialog.locator('.receipt-view__amount strong')).toHaveText('৳ 1,500');
   await expect(dialog.locator('.receipt-view__paper')).toContainText('1,200');
   await expect(dialog.locator('.receipt-view__paper')).toContainText('300');
-  await expect(dialog.locator('[data-testid="receipt-allocation-table"]')).toBeVisible();
-  await expect(dialog.locator('[data-testid="receipt-allocation-table"] tbody tr')).toHaveCount(2);
+  const allocationTable = dialog.getByTestId('receipt-allocation-table');
+  const allocationCards = dialog.getByTestId('receipt-allocation-mobile');
+  await expect(allocationTable.locator('tbody tr')).toHaveCount(2);
+  await expect(allocationCards.locator('article')).toHaveCount(2);
+  expect((await allocationTable.isVisible()) || (await allocationCards.isVisible()),
+    'at least one responsive allocation view must be visible').toBe(true);
 });
 test('mobile return payment uses one fixed head and focuses inline validation errors', async ({ page }, info) => {
   test.skip(info.project.name !== 'mobile-375', 'Focused mobile payment validation');
