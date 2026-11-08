@@ -72,26 +72,7 @@ test('published service palettes follow existing choice tokens without changing 
   }
 });
 
-test('track uses eased horizontal motion; reduced-motion users receive an instant slide change', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.goto('/?action=landing');
-  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
-  const track = carousel.locator('.public-hero-carousel__track');
-  await expect(track).toHaveCSS('transition-property', 'transform');
-  await expect(track).toHaveCSS('transition-duration', '0.64s');
-  await carousel.focus();
-  await page.keyboard.press('ArrowRight');
-  await expect(carousel).toHaveAttribute('data-active-slide', '1');
-  await expect(carousel.locator('.public-hero-carousel__slide').nth(1)
-    .getByRole('button', { name: 'Pay Tax with Return' })).toBeVisible();
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect(track).toHaveCSS('transition-duration', '0s');
-  await carousel.focus();
-  await page.keyboard.press('ArrowLeft');
-  await expect(carousel).toHaveAttribute('data-active-slide', '0');
-});
-
-test('service content and artwork fade into place without zoom while the track slides', async ({ page }) => {
+test('full service panels dissolve in one stationary frame, without sideways movement', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
@@ -99,24 +80,60 @@ test('service content and artwork fade into place without zoom while the track s
   const first = carousel.locator('.public-hero-carousel__slide').first();
   const second = carousel.locator('.public-hero-carousel__slide').nth(1);
 
-  await expect(first).toHaveAttribute('data-active', 'true');
-  await expect(second).toHaveAttribute('data-active', 'false');
-  await expect(second.locator('.public-hero-carousel__image-layer')).toHaveCSS('opacity', '0');
-  await expect(second.locator('h2')).toHaveCSS('opacity', '0');
+  await expect(track).toHaveCSS('transform', 'none');
+  await expect(first).toHaveCSS('transition-property', 'opacity');
+  await expect(first).toHaveCSS('transition-duration', '1s');
+  await expect(first).toHaveCSS('opacity', '1');
+  await expect(second).toHaveCSS('opacity', '0');
+  const initialPosition = await first.evaluate(el => el.getBoundingClientRect().left);
 
   await carousel.focus();
   await page.keyboard.press('ArrowRight');
+  await expect(carousel).toHaveAttribute('data-active-slide', '1');
   await expect(second).toHaveAttribute('data-active', 'true');
-  await expect(track).toHaveAttribute('style', /translate3d\(-100%,\s*0(?:px)?,\s*0(?:px)?\)/);
-  await expect(second.locator('h2')).toHaveCSS('opacity', '1');
-  await expect(second.locator('.public-hero-carousel__image-layer')).toHaveCSS('opacity', '1');
-  await expect(second.locator('img')).toHaveCSS('transform', 'none');
-  await expect(second.locator('img')).toHaveCSS('object-fit', 'contain');
 
+  // Check the actual transition, not just the final active-slide flag.
+  await page.waitForTimeout(220);
+  const duringFade = await carousel.evaluate(el => {
+    const [outgoing, incoming] = el.querySelectorAll<HTMLElement>('.public-hero-carousel__slide');
+    return {
+      outgoingOpacity: Number(getComputedStyle(outgoing).opacity),
+      incomingOpacity: Number(getComputedStyle(incoming).opacity),
+      outgoingLeft: outgoing.getBoundingClientRect().left,
+      incomingLeft: incoming.getBoundingClientRect().left,
+      trackTransform: getComputedStyle(el.querySelector('.public-hero-carousel__track')!).transform,
+    };
+  });
+  expect(duringFade.incomingOpacity).toBeGreaterThan(0);
+  expect(duringFade.incomingOpacity).toBeLessThan(1);
+  expect(duringFade.outgoingOpacity).toBeGreaterThan(0);
+  expect(duringFade.outgoingOpacity).toBeLessThan(1);
+  expect(duringFade.incomingLeft).toBeCloseTo(initialPosition, 0);
+  expect(duringFade.outgoingLeft).toBeCloseTo(initialPosition, 0);
+  expect(duringFade.trackTransform).toBe('none');
+
+  await expect(second).toHaveCSS('opacity', '1');
+  await expect(first).toHaveCSS('opacity', '0');
+  await expect(second.getByRole('button', { name: 'Pay Tax with Return' })).toBeVisible();
+  await expect(second.locator('img')).toHaveCSS('object-fit', 'contain');
+  await expect(second.locator('img')).toHaveCSS('transform', 'none');
+});
+
+test('reduced-motion users change complete banners instantly, with the payment CTA intact', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect(track).toHaveCSS('transition-duration', '0s');
-  await expect(second.locator('h2')).toHaveCSS('transition-duration', '0s');
-  await expect(second.locator('.public-hero-carousel__image-layer')).toHaveCSS('transition-duration', '0s');
+  await page.goto('/?action=landing');
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  const first = carousel.locator('.public-hero-carousel__slide').first();
+  const second = carousel.locator('.public-hero-carousel__slide').nth(1);
+  await expect(first).toHaveCSS('transition-duration', '0s');
+  await carousel.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(second).toHaveCSS('opacity', '1');
+  await expect(first).toHaveCSS('opacity', '0');
+  await expect(second.getByRole('button', { name: 'Pay Tax with Return' })).toBeVisible();
+  await page.keyboard.press('ArrowLeft');
+  await expect(first).toHaveCSS('opacity', '1');
+  await expect(second).toHaveCSS('opacity', '0');
 });
 
 test('CMS artwork is never CSS-cropped or zoomed in the taxpayer banner at desktop and phone widths', async ({ page }) => {
