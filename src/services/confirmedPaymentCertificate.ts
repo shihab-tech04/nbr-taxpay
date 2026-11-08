@@ -1,4 +1,4 @@
-import { CATEGORY_LABELS } from '../data/paymentHeads';
+import { CATEGORY_LABELS, MASTER_PAYMENT_HEADS } from '../data/paymentHeads';
 import type { ChallanReceipt, PaymentCategory, PaymentLineItem, ReceiptAllocationItem } from '../types/tax';
 
 /** Both Office and TaxPay link to this same TaxPay receipt route.
@@ -78,7 +78,7 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
     return {taxpayerName:name||'TIN '+stringValue(allocation.taxpayerTin),
       taxpayerTin:stringValue(allocation.taxpayerTin),
       paymentServiceEn:serviceEn,
-      paymentServiceBn:stringValue(head.headNameBn).trim()||serviceEn,
+      paymentServiceBn:stringValue(head.headNameBn).trim()||MASTER_PAYMENT_HEADS.find(item=>item.id===head.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn,
       assessmentYear:stringValue(allocation.assessmentYear),
       amountMinor:allocation.amountMinor as number,
       ...(stringValue(head.economicCode)?{economicCode:stringValue(head.economicCode)}:{})};
@@ -104,7 +104,7 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
    const head=lines.find(line=>line.headId===item.headId);
    const name=stringValue(item.taxpayerName);
    const serviceEn=stringValue(head?.headNameEn).trim()||CATEGORY_LABELS[tx.service]?.en||tx.service;
-   const serviceBn=stringValue(head?.headNameBn).trim()||serviceEn;
+   const serviceBn=stringValue(head?.headNameBn).trim()||MASTER_PAYMENT_HEADS.find(item=>item.id===head?.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn;
    return {taxpayerName:name||'TIN '+stringValue(item.taxpayerTin),
     taxpayerTin:stringValue(item.taxpayerTin),paymentServiceEn:serviceEn,paymentServiceBn:serviceBn,
     assessmentYear:stringValue(item.assessmentYear),amountMinor:item.amountMinor as number,
