@@ -138,7 +138,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
   if (demoUser) return <>{previewAccount&&<LegacyPaymentRecovery language={language}/>}<DemoPaymentActivity activityTabs={activityTabs}/>{previewAccount&&activePreviewSession()?.profileId===previewAccount.id&&<RecoveredStoryHistory profileId={previewAccount.id} language={language}/>}</>;
 
   return (
-    <div className={`mx-auto max-w-7xl space-y-4 pb-12 ${bn?'font-bengali':''}`}>
+    <div data-taxpay-register-page="true" className={`mx-auto max-w-7xl space-y-4 pb-12 ${bn?'font-bengali':''}`}>
       <TaxpayerPageHeading title={label('Payments & activity','পেমেন্ট ও লেনদেন')}
         description={label('Activity overview','লেনদেনের সারসংক্ষেপ')} />
       {activityTabs && <TaxpayerActivityTabs />}
