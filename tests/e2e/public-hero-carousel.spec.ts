@@ -91,6 +91,34 @@ test('track uses eased horizontal motion; reduced-motion users receive an instan
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
 });
 
+test('service content and artwork fade into place without zoom while the track slides', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/?action=landing');
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  const track = carousel.locator('.public-hero-carousel__track');
+  const first = carousel.locator('.public-hero-carousel__slide').first();
+  const second = carousel.locator('.public-hero-carousel__slide').nth(1);
+
+  await expect(first).toHaveAttribute('data-active', 'true');
+  await expect(second).toHaveAttribute('data-active', 'false');
+  await expect(second.locator('.public-hero-carousel__image-layer')).toHaveCSS('opacity', '0');
+  await expect(second.locator('h2')).toHaveCSS('opacity', '0');
+
+  await carousel.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(second).toHaveAttribute('data-active', 'true');
+  await expect(track).toHaveCSS('transform', 'matrix(1, 0, 0, 1, -' + await track.evaluate(el => el.getBoundingClientRect().width) + ', 0)');
+  await expect(second.locator('h2')).toHaveCSS('opacity', '1');
+  await expect(second.locator('.public-hero-carousel__image-layer')).toHaveCSS('opacity', '1');
+  await expect(second.locator('img')).toHaveCSS('transform', 'none');
+  await expect(second.locator('img')).toHaveCSS('object-fit', 'contain');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(track).toHaveCSS('transition-duration', '0s');
+  await expect(second.locator('h2')).toHaveCSS('transition-duration', '0s');
+  await expect(second.locator('.public-hero-carousel__image-layer')).toHaveCSS('transition-duration', '0s');
+});
+
 test('CMS artwork is never CSS-cropped or zoomed in the taxpayer banner at desktop and phone widths', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   for (const width of [1280, 390]) {
