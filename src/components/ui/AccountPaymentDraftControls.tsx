@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check } from 'lucide-react';
+import { PaymentDraftExitContext } from './TaxPayModal';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
 import {
@@ -17,13 +18,16 @@ type Props = {
   onSelectedDraft: (draft: PaymentFormDraft | null) => void;
   /** When the payment is embedded, action buttons belong in its shared modal footer. */
   actionTarget?: HTMLElement | null;
+  /** Keep a close-save guard on the review step without displaying a second Save control. */
+  guardOnly?: boolean;
 };
 
 /** Keep owner-scoped drafts inside the existing payment form; no extra login,
  * duplicate payment flow, URL state or browser-local draft storage. */
 export const AccountPaymentDraftControls: React.FC<Props> = ({
-  service, language, snapshot, restore, selectedDraft, onSelectedDraft, actionTarget,
+  service, language, snapshot, restore, selectedDraft, onSelectedDraft, actionTarget, guardOnly = false,
 }) => {
+  const registerDraftExit = useContext(PaymentDraftExitContext);
   const { previewAccount } = useTaxState();
   const { user: realUser, loading: authLoading } = useAccountIdentity();
   const bn = language === 'bn';
@@ -59,16 +63,17 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownerKey, service]);
 
-  if (!actor || authLoading) return null;
-
   const refresh = async () => {
     if (!actor) return;
     const result = await listPaymentFormDrafts(actor, service);
     setRows(result);
   };
 
-  const save = async () => {
-    if (!actor || busy) return;
+  const save = async (rethrowFailure = false) => {
+    if (!actor || busy || loading) {
+      if (rethrowFailure) throw new Error(bn ? 'এখন খসড়া সংরক্ষণ করা যাচ্ছে না। আবার চেষ্টা করুন।' : 'Draft saving is unavailable right now. Retry.');
+      return;
+    }
     setBusy(true); setError(null); setFeedback(null); setSavedSnapshot(null);
     try {
       const payload = snapshot();
@@ -82,6 +87,8 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       setSavedSnapshot(JSON.stringify(payload));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Save was not confirmed.');
+      // The close dialog must remain open unless the SQL write/readback succeeded.
+      if (rethrowFailure) throw cause;
     } finally { setBusy(false); }
   };
 
@@ -120,6 +127,15 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     } finally { setBusy(false); }
   };
 
+  // Keep the exit guard bound to the same save routine as the visible Save Draft
+  // button; no duplicate persistence path or optimistic close.
+  useEffect(() => {
+    if (!registerDraftExit || !actor || authLoading) return;
+    registerDraftExit(() => save(true));
+    return () => registerDraftExit(null);
+  }, [registerDraftExit, ownerKey, service, authLoading, busy, loading, snapshot, selectedDraft]);
+
+  if (!actor || authLoading) return null;
   const savedNow = savedSnapshot !== null && savedSnapshot === JSON.stringify(snapshot());
   const actions = <div className="payment-form-draft-controls__actions">
     <button type="button" className="payment-form-draft-controls__save"
@@ -139,7 +155,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   </div>;
 
   return <section className="payment-form-draft-controls" aria-label={bn ? 'আমার পেমেন্ট খসড়া' : 'My payment drafts'}>
-    {actionTarget ? createPortal(actions, actionTarget) : actionTarget === undefined ? actions : null}
+    {!guardOnly && (actionTarget ? createPortal(actions, actionTarget) : actionTarget === undefined ? actions : null)}
     {feedback && <p className="mt-2 text-sm text-taxpay-dark" role="status">{feedback}</p>}
     {error && <p className="mt-2 text-sm text-taxpay-error" role="alert">{error}</p>}
     {expanded && <div className="mt-3 rounded-lg border border-taxpay-border bg-white p-3">

@@ -268,6 +268,12 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     expect(Math.abs(layoutUnderModal!.height - layoutBefore!.height)).toBeLessThanOrEqual(2);
     await expect(workspace.getByRole('heading', { name: 'What needs your attention' })).toBeVisible();
     await payment.getByRole('button', { name: 'Close payment services' }).click();
+    // A resumed, draft-eligible payment must not be silently dismissed.
+    const exitPrompt = payment.getByRole('alertdialog');
+    await expect(exitPrompt).toBeVisible();
+    await exitPrompt.getByRole('button', { name: 'Save Draft', exact: true }).click();
+    // The modal closes only after the local SQL update and readback succeed.
+    await expect(payment).toHaveCount(0);
     await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
 
     // Opening Pay Tax from the sidebar must also keep both the sidebar and

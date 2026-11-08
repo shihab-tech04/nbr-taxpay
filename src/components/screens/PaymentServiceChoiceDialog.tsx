@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import type { BannerPaymentService } from '../../services/taxState';
-import { TaxPayModal } from '../ui/TaxPayModal';
+import { TaxPayModal, type PaymentDraftExitAction } from '../ui/TaxPayModal';
 import { GuestPayment } from './GuestPayment';
 import { TravelTax } from './TravelTax';
 import { TaxpayerLoginDialog, TaxpayerLoginFooter } from './TaxpayerLoginDialog';
@@ -76,6 +76,46 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
   const close = () => setPaymentServiceChoiceOpen(false);
+  const draftExitActionRef = useRef<PaymentDraftExitAction | null>(null);
+  const registerDraftExit = useCallback((action: PaymentDraftExitAction | null) => {
+    draftExitActionRef.current = action;
+  }, []);
+  const [exitPromptOpen, setExitPromptOpen] = useState(false);
+  const [exitSaving, setExitSaving] = useState(false);
+  const [exitError, setExitError] = useState('');
+  const exitFirstButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (exitPromptOpen) exitFirstButtonRef.current?.focus();
+  }, [exitPromptOpen]);
+  const requestClose = () => {
+    if (exitSaving) return;
+    if (exitPromptOpen) { setExitPromptOpen(false); setExitError(''); return; }
+    if (view === 'payment' && draftExitActionRef.current) {
+      setExitPromptOpen(true);
+      setExitError('');
+      return;
+    }
+    close();
+  };
+  const saveDraftAndClose = async () => {
+    if (exitSaving) return;
+    const saveDraft = draftExitActionRef.current;
+    if (!saveDraft) {
+      setExitError(tr('Draft saving is unavailable. Keep editing and try again.', 'খসড়া সংরক্ষণ করা যাচ্ছে না। ফর্মে ফিরে আবার চেষ্টা করুন।'));
+      return;
+    }
+    setExitSaving(true);
+    setExitError('');
+    try {
+      await saveDraft();
+      close();
+    } catch (cause) {
+      setExitError(cause instanceof Error ? cause.message :
+        tr('Draft saving failed. Your payment is still open.', 'খসড়া সংরক্ষণ ব্যর্থ হয়েছে। পেমেন্টটি এখনো খোলা আছে।'));
+    } finally {
+      setExitSaving(false);
+    }
+  };
   const stages = [tr('Taxpayer details', 'করদাতার তথ্য'), tr('Purpose & amount', 'খাত ও পরিমাণ'), tr('Payment channel', 'পেমেন্ট চ্যানেল'), tr('Confirmation', 'নিশ্চিতকরণ')];
   const shortStages = [tr('Identity', 'পরিচয়'), tr('Amount', 'পরিমাণ'), tr('Channel', 'চ্যানেল'), tr('Done', 'শেষ')];
   const effectiveSelected: ServiceId | null = draftToResume?.service ?? selected;
@@ -119,7 +159,13 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
           ? `${tr(chosenService.en, chosenService.bn)} › ${payerForSelf ? tr('My Tax Liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}`
           : undefined } : undefined}
       ariaLabel={view === 'login' ? undefined : tr('Pay Tax', 'কর পরিশোধ')}
-      onClose={close}
+      onClose={requestClose}
+      onBackdropClose={() => {
+        // A backdrop click never discards draft-eligible payment data.
+        if (exitPromptOpen || (view === 'payment' && draftExitActionRef.current)) return;
+        close();
+      }}
+      registerDraftExit={registerDraftExit}
       className={view === 'login' ? 'taxpayer-login-modal' : ''}
       animateSize={view === 'payer'}
       // Draft choice/list/new swap content inside the same payer view.
@@ -276,6 +322,59 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             onBackToService={returnToService} onStageChange={reportStage} />
         ) : null}
       </section>
+      {exitPromptOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/50 p-4"
+          data-testid="payment-draft-exit-overlay"
+          onMouseDown={event => event.stopPropagation()}>
+          <div role="alertdialog" aria-modal="true" aria-labelledby="payment-draft-exit-title"
+            aria-describedby="payment-draft-exit-description"
+            className="w-full max-w-md rounded-xl border border-taxpay-border bg-white p-5 shadow-2xl"
+            onKeyDown={event => {
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!exitSaving) { setExitPromptOpen(false); setExitError(''); }
+              }
+              if (event.key === 'Tab') {
+                const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
+                if (!buttons.length) { event.preventDefault(); return; }
+                if (event.shiftKey && document.activeElement === buttons[0]) {
+                  event.preventDefault();
+                  buttons[buttons.length - 1].focus();
+                } else if (!event.shiftKey && document.activeElement === buttons[buttons.length - 1]) {
+                  event.preventDefault();
+                  buttons[0].focus();
+                }
+              }
+            }}>
+            <h3 id="payment-draft-exit-title" className="text-lg font-semibold text-taxpay-dark">
+              {tr('Save your tax payment?', 'কর পরিশোধের খসড়া সংরক্ষণ করবেন?')}
+            </h3>
+            <p id="payment-draft-exit-description" className="mt-2 text-sm text-taxpay-muted">
+              {tr('Save this payment as a draft to continue later, or discard your unsaved changes.',
+                'পরে চালিয়ে যেতে পেমেন্টটি খসড়া হিসেবে সংরক্ষণ করুন, অথবা অসংরক্ষিত পরিবর্তন বাদ দিন।')}
+            </p>
+            {exitError && <p role="alert" className="mt-3 text-sm text-taxpay-error">{exitError}</p>}
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button ref={exitFirstButtonRef} type="button" disabled={exitSaving}
+                className="min-h-11 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white disabled:opacity-60"
+                onClick={() => void saveDraftAndClose()}>
+                {exitSaving ? tr('Saving…', 'সংরক্ষণ হচ্ছে…') : tr('Save Draft', 'খসড়া সংরক্ষণ করুন')}
+              </button>
+              <button type="button" disabled={exitSaving}
+                className="min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-dark disabled:opacity-60"
+                onClick={close}>
+                {tr('Discard tax payment', 'কর পরিশোধ বাদ দিন')}
+              </button>
+              <button type="button" disabled={exitSaving}
+                className="min-h-11 px-3 text-sm font-medium text-taxpay-primary disabled:opacity-60"
+                onClick={() => { setExitPromptOpen(false); setExitError(''); }}>
+                {tr('Keep editing', 'সম্পাদনা চালিয়ে যান')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </TaxPayModal>
   );
 }

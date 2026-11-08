@@ -1266,8 +1266,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         </ol>
         </>}
 
-        {signedInAccount && isPaymentDraftService(category) && step <= 2 &&
-          <AccountPaymentDraftControls service={category} language={language}
+        {signedInAccount && isPaymentDraftService(category) && step <= 3 &&
+          <AccountPaymentDraftControls service={category} language={language} guardOnly={step === 3}
             snapshot={snapshotAccountDraft} restore={restoreAccountDraft}
             selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft}
             actionTarget={embedded ? draftFooterTarget : undefined} />}
