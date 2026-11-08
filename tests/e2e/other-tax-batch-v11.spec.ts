@@ -264,7 +264,7 @@ test('three taxpayers keep separate heads, years and amounts through combined re
   for (const plan of plans) await expect(calculation).toContainText(plan.year);
 });
 
-test('other-tax allocations create individual records with their own receipts', async ({ page }) => {
+test('Other Tax allocations produce one shared simulation receipt and a reversible confirmation', async ({ page }) => {
   const submitted: Record<string, unknown>[] = [];
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     submitted.push(route.request().postDataJSON());
@@ -285,7 +285,7 @@ test('other-tax allocations create individual records with their own receipts', 
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2500');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('3/4 Steps');
-  await expect(dialog.getByText('A separate payment record will be created for each selected head.')).toBeVisible();
+  await expect(dialog.getByText('One combined simulated payment record and receipt will cover all selected taxpayers and heads.')).toBeVisible();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
@@ -294,11 +294,18 @@ test('other-tax allocations create individual records with their own receipts', 
   await expect(pay).toBeEnabled();
   await pay.click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
-  await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(1);
-  await expect(dialog.getByTestId('other-tax-batch-result')).toContainText('111111111111');
-  await expect(dialog.getByTestId('other-tax-batch-result')).toContainText('Record saved');
   expect(submitted).toHaveLength(1);
   expect(submitted[0].amountMinor).toBe(250000);
+  const details = submitted[0].details as {combinedPayment:boolean;allocations:Array<{taxpayerTin:string;amountMinor:number}>};
+  expect(details.combinedPayment).toBe(true);
+  expect(details.allocations).toHaveLength(1);
+  expect(details.allocations[0]).toMatchObject({taxpayerTin:'111111111111',amountMinor:250000});
+  await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Receipt details' }).click();
+  await expect(dialog.locator('.receipt-view__paper')).toContainText('111111111111');
+  await expect(dialog.locator('.receipt-view__paper')).toContainText('৳ 2,500');
+  await dialog.getByRole('button', { name: 'Back to confirmation' }).click();
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible();
 });
 
 test('Other Tax starts with one TIN and an optional name, and added rows remain clear on mobile', async ({ page }) => {

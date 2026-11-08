@@ -194,9 +194,9 @@ test('four and five selected Other Tax heads remain readable and avoid horizonta
   await page.setViewportSize({ width: 375, height: 812 });
   expect(await batch.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
 });
-test('multiple Other Tax heads retain distinct amounts and produce separate payment records and receipts', async ({ page }, info) => {
+test('multiple Other Tax heads retain their amounts inside ONE combined payment and receipt', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Financial allocation and receipt regression');
-  const submitted = await mockPayment(page, [120000, 30000]);
+  const submitted = await mockPayment(page, 150000);
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
@@ -227,22 +227,19 @@ test('multiple Other Tax heads retain distinct amounts and produce separate paym
   await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
   await dialog.getByRole('button', { name: /Pay ৳ 1,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
-  expect(submitted).toEqual([120000, 30000]);
-  const results = dialog.getByTestId('other-tax-batch-result');
-  await expect(results).toHaveCount(2);
-  await expect(results.first()).toContainText('1,200');
-  await expect(results.first()).toContainText('Advance tax on cigarrete manufacturer');
-  await expect(results.last()).toContainText('300');
-  await expect(results.last()).toContainText('private motor car');
-  await results.first().getByRole('button', { name: /View receipt/ }).click();
-  await expect(dialog.locator('.receipt-view__amount strong')).toHaveText('৳ 1,200');
-  await expect(dialog.locator('.receipt-view__paper')).not.toContainText('1,500');
-  await dialog.getByRole('button', { name: 'Close payment services' }).click();
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
-  const reopened = page.getByRole('dialog', { name: 'Pay Tax' });
-  await enterTaxPayService(reopened, 'OTHER_TAX_PAYMENT');
-  await reopened.getByTestId('other-tax-batch-result').last().getByRole('button', { name: /View receipt/ }).click();
-  await expect(reopened.locator('.receipt-view__amount strong')).toHaveText('৳ 300');
+  expect(submitted, 'the payment must be submitted only once').toEqual([150000]);
+  await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(0);
+  await expect(dialog.getByRole('button',{name:'Back',exact:true})).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Receipt details' }).click();
+  await expect(dialog.locator('.receipt-view__amount strong')).toHaveText('৳ 1,500');
+  await expect(dialog.locator('.receipt-view__paper')).toContainText('1,200');
+  await expect(dialog.locator('.receipt-view__paper')).toContainText('300');
+  const allocationTable = dialog.getByTestId('receipt-allocation-table');
+  const allocationCards = dialog.getByTestId('receipt-allocation-mobile');
+  await expect(allocationTable.locator('tbody tr')).toHaveCount(2);
+  await expect(allocationCards.locator('article')).toHaveCount(2);
+  expect((await allocationTable.isVisible()) || (await allocationCards.isVisible()),
+    'at least one responsive allocation view must be visible').toBe(true);
 });
 test('mobile return payment uses one fixed head and focuses inline validation errors', async ({ page }, info) => {
   test.skip(info.project.name !== 'mobile-375', 'Focused mobile payment validation');

@@ -181,13 +181,13 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         }
         : view === 'payer' && draftEntryBlocking && draftEntryMode === 'list'
         ? () => setDraftEntryMode('choice')
-        : view === 'login' ? () => setView('payer') : view === 'payment' ? () => {
+        : view === 'login' ? () => setView('payer') : view === 'payment' && stage !== 4 ? () => {
         const back = document.querySelector<HTMLButtonElement>(
           '.taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions .tax-service-choice__cancel, ' +
           '.taxpay-modal[data-payment-stage="true"] .travel-flow__footer-actions .tax-service-choice__cancel'
         );
         if (back && !back.disabled) back.click();
-        else if (stage === 1 || stage === 4) returnToService();
+        else if (stage === 1) returnToService();
       } : undefined}
       backLabel={tr('Back', 'ফিরুন')}
       hideFooter={view === 'payer' && draftEntryBlocking}
