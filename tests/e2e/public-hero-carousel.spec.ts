@@ -107,7 +107,7 @@ test('service content and artwork fade into place without zoom while the track s
   await carousel.focus();
   await page.keyboard.press('ArrowRight');
   await expect(second).toHaveAttribute('data-active', 'true');
-  await expect(track).toHaveAttribute('style', /translate3d\\(-100%, 0, 0\\)/);
+  await expect(track).toHaveAttribute('style', /translate3d\(-100%,\s*0(?:px)?,\s*0(?:px)?\)/);
   await expect(second.locator('h2')).toHaveCSS('opacity', '1');
   await expect(second.locator('.public-hero-carousel__image-layer')).toHaveCSS('opacity', '1');
   await expect(second.locator('img')).toHaveCSS('transform', 'none');
