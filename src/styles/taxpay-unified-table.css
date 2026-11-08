@@ -296,14 +296,9 @@ table.taxpay-unified-table {
   grid-template-columns:repeat(2,minmax(0,1fr));
   gap:8px;
 }
-.beneficiary-directory__table .taxpay-mobile-table-card__actions > button:nth-child(2) {
-  grid-column:1/-1;
-  grid-row:2;
+.beneficiary-directory__table .taxpay-mobile-table-card__actions > button {
   width:100%;
-}
-.beneficiary-directory__table .taxpay-mobile-table-card__actions > button:nth-child(3) {
-  grid-column:2;
-  grid-row:1;
+  min-width:0;
 }
 .beneficiary-directory__table .taxpay-mobile-table-card:has(input[type="checkbox"]:checked) {
     border-color:var(--taxpay-table-primary,#2c5ead);
@@ -1311,19 +1306,30 @@ table.taxpay-unified-table {
 }
 
 
-/* Beneficiary list is a primary workspace switch, never an advanced filter. */
-.taxpay-taxpayer-reference .beneficiary-directory__list-context {
-  display:flex;align-items:center;padding:12px 0;
-  border-bottom:1px solid var(--taxpay-table-border,#e1e6ee);
+/* Beneficiaries uses the same register header as Transaction history.
+   Its list selection is a compact header control, not another full-width row.
+   Keep the existing list editor popover visible without clipping the grid. */
+.taxpay-office-register-frame:has(.beneficiary-directory__list-toolbar) {overflow:visible;}
+.taxpay-office-register__actions .beneficiary-directory__list-toolbar {
+  display:flex;align-items:center;flex:0 1 282px;min-width:200px;max-width:100%;
 }
-.taxpay-taxpayer-reference .beneficiary-directory__list-context .beneficiary-directory__list-filter {
-  width:min(100%,320px);min-width:0;
+.taxpay-office-register__actions .beneficiary-directory__list-filter {
+  display:flex;flex-direction:row;align-items:center;gap:8px;
+  width:100%;min-width:0;
 }
-.taxpay-taxpayer-reference .beneficiary-directory__list-context .beneficiary-list-picker {
-  width:100%;
+.taxpay-office-register__actions .beneficiary-directory__list-filter > p {
+  flex:0 0 auto;margin:0;font-size:13px;color:var(--taxpay-table-muted,#5f6b7a);white-space:nowrap;
 }
-@media(max-width:700px) {
-  .taxpay-taxpayer-reference .beneficiary-directory__list-context .beneficiary-directory__list-filter {width:100%;}
+.taxpay-office-register__actions .beneficiary-list-picker {flex:1 1 160px;width:auto;min-width:0;max-width:none;}
+.taxpay-office-register__actions .beneficiary-list-picker__trigger {
+  min-height:38px;padding:7px 10px;font-size:14px;gap:8px;
+}
+.taxpay-office-register__actions .beneficiary-list-picker__menu {min-width:220px;}
+@media(max-width:767px) {
+  .taxpay-office-register__actions .beneficiary-directory__list-toolbar {
+    flex:1 1 100%;width:100%;max-width:none;min-width:0;
+  }
+  .taxpay-office-register__actions .beneficiary-list-picker__menu {min-width:0;}
 }
 
 
