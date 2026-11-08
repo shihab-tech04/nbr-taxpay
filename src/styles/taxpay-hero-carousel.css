@@ -63,7 +63,8 @@
   display: flex;
   width: 100%;
   align-items: stretch;
-  transition: transform 500ms cubic-bezier(0, 0, .2, 1);
+  transition: transform 640ms cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
 }
 
 .public-hero-carousel[data-active-slide="1"] .public-hero-carousel__track { transform: translateX(-100%); }
@@ -584,72 +585,41 @@
 }
 
 
-/* Fixed-copy hero: the words/buttons stay stationary while the illustration
- * and left-panel surface follow the active service's EXISTING design tokens.
- * No independent palette and no change to payment action colors. */
-.public-hero-carousel__fixed.public-information-hero {
-  --banner-bg: var(--citizen-primary-light);
-  transition: background-color 500ms ease-in-out;
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
+/* Restore the complete per-service presentation: slide copy, image and
+ * matching palette move together. Native transform keeps keyboard, pointer,
+ * autoplay and reduced-motion behavior consistent across all five records. */
+.public-hero-carousel__slide[data-banner-kind="service"] .public-guest-actions {
+  max-width: 100%;
 }
-/* The carousel already reports the active CMS service. Drive the background
- * from that attribute so its tint follows the actual displayed illustration.
- * Published images with no service category retain the approved blue fallback. */
-.public-hero-carousel[data-image-service="TAX_WITH_RETURN"] .public-hero-carousel__fixed {
-  --banner-bg: var(--service-return-bg);
+.public-hero-carousel__slide[data-banner-kind="service"] .public-guest-action {
+  min-height: 46px;
+  max-width: 100%;
+  white-space: normal;
+  text-wrap: balance;
 }
-.public-hero-carousel[data-image-service="ADVANCE_TAX"] .public-hero-carousel__fixed {
-  --banner-bg: var(--service-advance-bg);
-}
-.public-hero-carousel[data-image-service="SOURCE_TAX_DEPOSIT"] .public-hero-carousel__fixed {
-  --banner-bg: var(--service-withholding-bg);
-}
-.public-hero-carousel[data-image-service="TRAVEL_TAX"] .public-hero-carousel__fixed {
-  --banner-bg: var(--service-other-bg);
-}
-.public-hero-carousel__fixed .citizen-public-hero__copy { position: relative; z-index: 2; }
-.public-hero-carousel__fixed .public-hero-carousel__media--illustrated {
-  overflow: hidden;
-}
-.public-hero-carousel__fixed .public-hero-carousel__image-layer {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  transition: opacity 500ms ease-in-out;
-}
-.public-hero-carousel__fixed .public-hero-carousel__image-layer[data-visible="true"] { opacity: 1; }
-.public-hero-carousel__fixed .public-information-hero__image {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-  object-fit: cover;
-  object-position: right center;
-}
-@media (min-width: 901px) {
-  .public-hero-carousel__fixed .public-information-hero__media {
-    left: 50% !important;
-    right: 0 !important;
-    width: 50% !important;
+@media (max-width: 600px) {
+  /* Longer bilingual service titles and CTA labels must wrap instead of
+   * overflowing the fixed 150px introduction-only copy slot. */
+  .public-hero-carousel__slide.public-information-hero {
+    grid-template-rows: minmax(190px, auto) clamp(184px, 52vw, 270px);
+    height: auto;
+    min-height: calc(190px + clamp(184px, 52vw, 270px));
   }
-  .public-hero-carousel__fixed .public-hero-carousel__media--illustrated::before {
-    background: linear-gradient(to right, var(--banner-bg), transparent 28%) !important;
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2,
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
-}
-@media (max-width: 900px) {
-  .public-hero-carousel__fixed .public-hero-carousel__media--illustrated { position: relative; }
+  .public-hero-carousel__slide[data-banner-kind="service"] .public-guest-actions .public-guest-action {
+    width: 100%;
+    min-height: 44px;
+    line-height: 1.3;
+    padding: .55rem .65rem;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .public-hero-carousel__fixed { transition: none; }
-  .public-hero-carousel__fixed .public-hero-carousel__image-layer { transition: none; }
+  .public-hero-carousel__track { transition: none; will-change: auto; }
 }
 
 /* Fail closed when the CMS cannot confirm published artwork. Keep only safe
