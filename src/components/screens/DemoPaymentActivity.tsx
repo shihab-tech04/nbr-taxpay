@@ -176,9 +176,10 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       const readback=privateMode?await getPrivateSimulationHistory('payer'):await loadSimulationHistory(id,'payer');
       const confirmed=readback.find(t=>t.transactionId===result.transactionId);
       if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)throw new Error('SQL write may have succeeded, but read-back did not reconcile. Retry using the same form.');
-      // The private simulation ledger and the Office transaction feed are
-      // separate stores. Link them through this stable sourceTransactionId.
-      // Report payment completion only once Office SQL acknowledges receipt.
+      // Source and Office use separate SQL stores. The verified source
+      // simulation is saved regardless of Office mirror delivery status;
+      // Office reconciliation remains an independent, retryable outbox.
+      let officeMirrorConfirmed = true;
       if (import.meta.env.VITE_SUPABASE_DISABLED !== 'true') {
         const synced=await persistSimulatedPayment({
           idempotencyKey: nonce,
@@ -197,11 +198,14 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
             lines: checked,
           }
         });
-        if(!synced.mirrored)throw new Error('Office payment synchronization pending');
+        officeMirrorConfirmed = synced.mirrored;
       }
       setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());
       setCompletedReference(result.reference);setPaymentStage(3);
-      setSubmitMessage(txt('Payment record saved: ','পেমেন্ট রেকর্ড সংরক্ষিত: ')+result.reference+(result.replayed?' (previous request)':''));
+      setSubmitMessage((officeMirrorConfirmed
+        ? txt('Payment record saved: ','পেমেন্ট রেকর্ড সংরক্ষিত: ')
+        : txt('Simulation saved; Office synchronization pending: ','সিমুলেশন সংরক্ষিত; অফিস সমন্বয় অপেক্ষমাণ: '))+
+        result.reference+(result.replayed?' (previous request)':''));
     }catch(err){setSubmitMessage(err instanceof Error?err.message:'Submission could not be verified');}
     finally{setSaving(false);}
   },[id,lines,nonce,saving,language,privateMode,previewMode,parentCategory]);
