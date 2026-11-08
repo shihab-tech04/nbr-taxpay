@@ -74,8 +74,9 @@ test('pending combined request is recoverable with same identity, and cannot lea
  const restored=loadCombinedOtherTaxRequest(session,storage);
  assert.equal(restored?.request.payload.idempotencyKey,id);
  assert.equal(restored?.request.receipt.challanNo,receipt.challanNo);
- assert.throws(()=>loadCombinedOtherTaxRequest('99999999-aaaa-4ccc-8ddd-eeeeeeeeeeee',storage),/INVALID_COMBINED_RECOVERY/);
- clearCombinedOtherTaxRequest(storage);
+ assert.equal(loadCombinedOtherTaxRequest('99999999-aaaa-4ccc-8ddd-eeeeeeeeeeee',storage),null,'another taxpayer has no access to this pending request');
+ assert.equal(loadCombinedOtherTaxRequest(session,storage)?.request.receipt.challanNo,receipt.challanNo);
+ clearCombinedOtherTaxRequest(session,storage);
  assert.equal(loadCombinedOtherTaxRequest(session,storage),null);
 });
 test('fail closed for amount mismatch, invalid TIN, duplicate allocation and altered references',()=>{
