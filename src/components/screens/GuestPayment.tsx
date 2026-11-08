@@ -856,13 +856,20 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!pending) { setPaymentPhase('failed'); setIsProcessing(false); return; }
     try {
       if (signedInAccount && pending.payload.details.payerMode === 'OTHER') {
-        const paymentTin = pending.payload.details.taxpayerTin;
-        if (typeof paymentTin !== 'string' || !(await areCurrentSavedBeneficiaries([paymentTin])))
+        const combined = pending.payload.details.combinedPayment === true;
+        const allocations = pending.payload.details.allocations;
+        const tins = combined
+          ? Array.isArray(allocations) ? allocations.map(item =>
+              item && typeof item === 'object' && !Array.isArray(item)
+                ? (item as Record<string,unknown>).taxpayerTin : null) : []
+          : [pending.payload.details.taxpayerTin];
+        if (!tins.length || tins.some(tin => typeof tin !== 'string' || !/^\d{12,13}$/.test(tin)) ||
+          !(await areCurrentSavedBeneficiaries(tins as string[])))
           throw new Error('Selected beneficiary no longer belongs to the signed-in account.');
       }
       const confirmed = await persistSimulatedPayment(pending.payload);
       const settledReceipt: ChallanReceipt = {
-        ...receipt,
+        ...(pending.payload.details.combinedPayment === true ? pending.receipt : receipt),
         paymentTransactionId: confirmed.id,
         treasuryStatus: 'GATEWAY_SUCCESS',
         treasuryScrollNo: undefined,
