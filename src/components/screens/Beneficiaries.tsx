@@ -477,7 +477,7 @@ export function Beneficiaries(){
           searchPlaceholder={tr('Search name or TIN','নাম বা টিআইএন দিয়ে খুঁজুন')}
           filterLabel={tr('Filter','ফিল্টার')}
           filtersOpen={filtersExpanded} onToggleFilters={()=>{setFiltersExpanded(open=>!open);setListMenuOpen(false);}}
-          actions={<div className="beneficiary-directory__list-toolbar">
+          actions={lists.length>0?<div className="beneficiary-directory__list-toolbar">
             <div className="taxpayer-transaction-filter beneficiary-directory__list-filter">
               <p id="beneficiary-selected-list-label">{tr('Selected list','নির্বাচিত তালিকা')}</p>
               <div className="beneficiary-list-picker" ref={listMenuRef}>
@@ -501,7 +501,7 @@ export function Beneficiaries(){
                 </div>}
               </div>
             </div>
-          </div>}/>
+          </div>:null}/>
 
         {!lists.length?<div className="mx-auto flex max-w-xl flex-col items-center py-5 text-center sm:py-6">
           <span className="mb-3 rounded-full bg-taxpay-light p-3 text-taxpay-primary"><UsersRound size={28} aria-hidden="true"/></span>
