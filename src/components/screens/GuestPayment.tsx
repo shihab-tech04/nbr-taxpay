@@ -1288,7 +1288,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         </div>
         {embedded && modalFooterTarget && createPortal(
           <PaymentJourneyFooter className="payment-flow-embedded__footer-actions"
-            back={<button type="button" className="tax-service-choice__cancel" onClick={onBackToService} disabled={isProcessing}><ArrowLeft size={17} />{commonCopy.btnBack}</button>}
             next={<>
               {completed && (batchAttempt ? <button type="button" className="tax-service-choice__continue" onClick={startAnotherBatch}>{copy.anotherPayment} <ArrowRight size={17} /></button> : <button type="button" className="tax-service-choice__continue" onClick={() => setShowReceiptDetails(true)}>{language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'} <ArrowRight size={17} /></button>)}
               {bankPending && <button type="button" className="tax-service-choice__continue" onClick={simulateBankSettlement}>{language === 'bn' ? 'ব্যাংক পরিশোধের ধাপে যান' : 'Continue bank payment'} <ArrowRight size={17} /></button>}
