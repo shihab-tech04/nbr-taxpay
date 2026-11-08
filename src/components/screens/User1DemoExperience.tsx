@@ -452,7 +452,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             </div>
             {reviewTins.length>0&&<button type="button" className="taxpay-tag-spending__review"
               onClick={()=>navigate('beneficiaries',{reviewBeneficiaryTins:reviewTins})}>
-              {tr('Review affected beneficiaries','সংশ্লিষ্ট উপকারভোগীদের দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
+              {tr('Review beneficiary tags','উপকারভোগীর ট্যাগ পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/>
             </button>}
           </div>}
       </div>}
