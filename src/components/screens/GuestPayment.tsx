@@ -38,6 +38,7 @@ import { deletePaymentFormDraft, isPaymentDraftService, type PaymentFormDraft, t
 import { isOptionalReceiptEmailValid, normaliseReceiptEmail } from '../../services/receiptEmail';
 import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
 import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
+import { prepareCombinedOtherTaxPayment, saveCombinedOtherTaxRequest, loadCombinedOtherTaxRequest, clearCombinedOtherTaxRequest } from '../../services/otherTaxCombinedPayment';
 import { clearOtherTaxBatch, confirmedBatchReceipts, createOtherTaxBatch, loadOtherTaxBatch,
   saveOtherTaxBatch, syncOtherTaxBatch, type OtherTaxBatch } from '../../services/otherTaxBatchSubmission';
 import { OtherTaxTaxpayerList } from './OtherTaxTaxpayerList';
@@ -458,7 +459,21 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     batchRecoveryChecked.current = true;
     try {
       const batch = loadOtherTaxBatch(getStorySessionId());
-      if (!batch) return;
+      if (!batch) {
+        const combined = loadCombinedOtherTaxRequest(getStorySessionId());
+        if (!combined) return;
+        pendingStoryRef.current = combined.request;
+        setAttemptReceipt(combined.request.receipt);
+        setPaymentChannel(combined.phase === 'PENDING_BANK' ? 'OTC' : 'NOW');
+        setPaymentMethod(combined.request.receipt.paymentMethod);
+        setLifecycleStages(combined.phase === 'PENDING_BANK' ? BANK_LIFECYCLE : ONLINE_LIFECYCLE.slice(0,-1));
+        setPaymentPhase(combined.phase === 'PENDING_BANK' ? 'pending-bank' : 'failed');
+        setErrorMessage(language === 'bn'
+          ? 'একটি সম্মিলিত পেমেন্ট নিশ্চিত হওয়া বাকি। আগের রেফারেন্স দিয়েই আবার চেষ্টা করুন।'
+          : 'Combined payment confirmation is pending. Retry the original reference.');
+        setStep(4);
+        return;
+      }
       rememberBatch(batch);
       confirmedBatchReceipts(batch).forEach(addPaymentReceipt);
       setAttemptReceipt(batch.items[0].receipt);
@@ -866,6 +881,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       // Keep the original idempotency key while Office's durable retry queue
       // is pending, so a manual retry never creates a second simulation.
       pendingStoryRef.current = confirmed.mirrored ? null : pending;
+      if (confirmed.mirrored && pending.payload.details.combinedPayment === true) {
+        try { clearCombinedOtherTaxRequest(); } catch { /* confirmed SQL record remains authoritative */ }
+      }
     } catch (error) {
       const message=error instanceof Error?error.message:'';
       const validationBlocked=/^(Choose a saved demo beneficiary|Choose a demo beneficiary|INVALID_BENEFICIARY|AUTHORIZATION_REQUIRED|PROFILE_CAPABILITY_REQUIRED|SUBMISSION_FAILED|Simulation payment details are incomplete)/.test(message);
@@ -1056,17 +1074,22 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           },
         },
       };
-      const splitItems = otherBatch && (forSelf === false || otherTaxLines.length > 1 || batchTaxpayers.length > 1);
-      if (splitItems && !(paymentChannel === 'NOW' && simulateDecline)) {
-        const batch = createOtherTaxBatch(pendingStoryRef.current.payload, newReceipt, otherTaxLines.map((line, index) => {
-          const taxpayer = batchTaxpayers.find(person => person.id === line.taxpayerId)!;
-          return { sourceId: line.id, taxpayerTin: taxpayer.tin, taxpayerName: taxpayer.name,
-            assessmentYear: line.assessmentYear, amountMinor: Number(parseGuestMinorUnits(line.amount)), line: lineItems[index] };
-        }), paymentChannel === 'OTC' ? 'PENDING_BANK' : 'READY');
-        saveOtherTaxBatch(batch);
-        rememberBatch(batch);
-        pendingStoryRef.current = null;
-        setAttemptReceipt(batch.items[0].receipt);
+      if (otherBatch) {
+        // One combined payment and receipt across all taxpayers, heads and years.
+        // Do not create one SQL transaction per allocation.
+        const request = prepareCombinedOtherTaxPayment(
+          pendingStoryRef.current.payload, newReceipt,
+          otherTaxLines.map((line,index) => {
+            const person=batchTaxpayers.find(candidate=>candidate.id===line.taxpayerId)!;
+            return {sourceId:line.id,taxpayerTin:person.tin,taxpayerName:person.name,
+              assessmentYear:line.assessmentYear,amountMinor:Number(parseGuestMinorUnits(line.amount)),
+              line:lineItems[index]};
+          }),
+        );
+        saveCombinedOtherTaxRequest(request,paymentChannel==='OTC'?'PENDING_BANK':'READY');
+        pendingStoryRef.current=request;
+        rememberBatch(null);
+        setAttemptReceipt(request.receipt);
       } else {
         rememberBatch(null);
         setAttemptReceipt(newReceipt);
@@ -1094,6 +1117,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         rememberBatch(ready);
       } catch {
         setErrorMessage(language === 'bn' ? 'অনুরোধ সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।' : 'The request could not be saved. Try again.');
+        return;
+      }
+    }
+    if (pendingStoryRef.current?.payload.details.combinedPayment === true) {
+      try { saveCombinedOtherTaxRequest(pendingStoryRef.current,'READY'); }
+      catch {
+        setErrorMessage(language === 'bn' ? 'মূল পেমেন্ট অনুরোধ সংরক্ষণ করা যায়নি।' : 'Original payment request could not be saved.');
         return;
       }
     }
@@ -1153,7 +1183,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   }, [step, paymentPhase, isProcessing, officeMirrorPending, simulateDecline, paymentValidationBlocked, batchAttempt]);
 
   const startAnotherBatch = () => {
-    try { clearOtherTaxBatch(); } catch {
+    try { clearOtherTaxBatch(); clearCombinedOtherTaxRequest(); } catch {
       setErrorMessage(language === 'bn' ? 'অনুরোধ সংরক্ষণ পরিষ্কার করা যায়নি।' : 'The saved request could not be cleared.');
       return;
     }
@@ -1177,7 +1207,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const shownTotal = batchAttempt ? batchAttempt.amountMinor / 100 : totalAmount;
     if (showReceiptDetails && createdReceipt) return (
       <div lang={language} className={`payment-receipt-details ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''}`}>
-        <ReceiptView receipt={createdReceipt} embedded={embedded} onBack={() => setShowReceiptDetails(false)} />
+        <ReceiptView receipt={createdReceipt} embedded={embedded} />
       </div>
     );
     return (
