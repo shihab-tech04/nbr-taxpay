@@ -34,6 +34,7 @@ export const DashboardPaymentDrafts: React.FC<{
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
 
@@ -48,6 +49,7 @@ export const DashboardPaymentDrafts: React.FC<{
     setPendingDelete(null);
     setBusyId(null);
     setError(null);
+    setExpanded(false);
     if (!actor || authLoading) return () => { active = false; };
     void listPaymentFormDrafts(actor).then(rows => {
       if (active) setCatalog({ ownerKey, status: 'ready', rows });
@@ -134,8 +136,8 @@ export const DashboardPaymentDrafts: React.FC<{
       {tr('Loading saved drafts…', 'সংরক্ষিত খসড়া লোড হচ্ছে…')}
     </p> : catalog.status === 'error' ? <p role="alert" className="mt-3 text-sm text-taxpay-error">
       {tr('Drafts could not be loaded. Try again.', 'খসড়াগুলো লোড করা যায়নি। আবার চেষ্টা করুন।')}
-    </p> : <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="list">
-      {catalog.rows.map(draft => {
+    </p> : <div id="dashboard-payment-drafts-list" className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3" role="list">
+      {catalog.rows.slice(0, expanded ? undefined : 2).map(draft => {
         const updatedAt = new Date(draft.updated_at);
         const updated = Number.isNaN(updatedAt.getTime()) ? draft.updated_at
           : new Intl.DateTimeFormat(bn ? 'bn-BD' : 'en-BD', {
@@ -177,6 +179,14 @@ export const DashboardPaymentDrafts: React.FC<{
         </article>;
       })}
     </div>}
+    {!loading && catalog.status === 'ready' && catalog.rows.length > 2 && <button type="button"
+      aria-expanded={expanded} aria-controls="dashboard-payment-drafts-list"
+      onClick={() => setExpanded(value => !value)}
+      className="taxpay-bento-drafts__more mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-taxpay-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">
+      {expanded ? tr('Show fewer drafts', 'কম খসড়া দেখুন') : tr('View all saved drafts', 'সব সংরক্ষিত খসড়া দেখুন')}
+      {!expanded && <span className="tabular-nums">({catalog.rows.length})</span>}
+      <ArrowRight size={15} className={expanded ? '-rotate-90' : ''} aria-hidden="true"/>
+    </button>}
     {error && <p role="alert" className="mt-3 text-sm text-taxpay-error">{error}</p>}
   </section>;
 };
