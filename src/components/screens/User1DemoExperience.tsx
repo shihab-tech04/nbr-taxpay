@@ -302,12 +302,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const gradients=coveredBreakdown.reduce((a,x)=>{const from=a.end;const end=from+meter(x.value,totals.liability);return {end,parts:[...a.parts,x.color+' '+from+'% '+end+'%']};},{end:0,parts:[] as string[]});
   const [selectedCoverage,setSelectedCoverage]=useState<number|null>(null);
   const yearChartMax=Math.max(1,...taxYears.map(item=>yearSummary(item.year)!.liability));
-  const spendingColors:Record<PaymentTagGroup,string>={family:'#2d65ad',friends:'#65a8dc',clients:'#204a85',others:'#b18439',unassigned:'#5c7fa8'};
+  const spendingColors:Record<PaymentTagGroup,string>={family:'#24547d',friends:'#6c9cbe',clients:'#32496d',others:'#b28b4e',unassigned:'#8d9fb2'};
   const overview=<div className="taxpay-bento-grid" data-testid="taxpayer-overview-bento">
     <section className="taxpay-bento-hero" aria-labelledby="taxpay-bento-hero-title">
-      <p className="text-xs font-semibold">{tr('NEXT STEPS','পরবর্তী করণীয়')} · {year}</p>
       <h2 id="taxpay-bento-hero-title">{tr('What needs your attention?','কোন বিষয়গুলোতে নজর দেবেন?')}</h2>
-      <p className="text-sm">{tr('Start a payment or follow up on items that need attention.','পেমেন্ট শুরু করুন অথবা প্রয়োজনীয় বিষয়গুলো দেখুন।')}</p>
       <div className="taxpay-bento-hero__actions">
         <button type="button" className="taxpay-bento-hero__primary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16} aria-hidden="true"/></button>
         <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice('TRAVEL_TAX')}>{tr('Travel tax','ভ্রমণ কর')}<ArrowRight size={16} aria-hidden="true"/></button>
@@ -316,6 +314,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             onClick={()=>{const target=document.getElementById('dashboard-payment-drafts');target?.scrollIntoView({behavior:'smooth',block:'start'});target?.focus({preventScroll:true});}}>
             {tr('Saved drafts','সংরক্ষিত খসড়া')} ({savedDraftCount})<ArrowRight size={16} aria-hidden="true"/>
           </button>}
+      </div>
+      <div className="taxpay-bento-hero__attention-head">
+        <h3>{tr('Needs review','পর্যালোচনা প্রয়োজন')}</h3>
+        <button type="button" className="taxpay-bento-hero__review" onClick={()=>navigate('corrections')}>
+          {tr('Review exceptions','ব্যতিক্রম দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
+        </button>
       </div>
       <div className="taxpay-bento-hero__status" aria-label={tr('Attention and exceptions','নজরদারি ও ব্যতিক্রম')}>
         {([
@@ -328,9 +332,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             <span>{item.label}</span><strong className="tabular-nums">{item.count}</strong>
           </button>)}
       </div>
-      <button type="button" className="taxpay-bento-hero__review self-end min-h-10 px-2 text-sm font-medium text-taxpay-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary" onClick={()=>navigate('corrections')}>
-        {tr('Review exceptions','ব্যতিক্রম দেখুন')}<ArrowRight size={15} className="ml-2 inline" aria-hidden="true"/>
-      </button>
     </section>
     <section className={panel+' taxpay-bento-position'} aria-labelledby="taxpay-bento-position-title">
       <div className="flex items-center justify-between gap-2">
@@ -434,7 +435,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">{tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}</h2>
-          <p className="mt-1 text-xs text-taxpay-muted">{tr('Recorded direct and advance payments and travel tax; pending, failed, reversed and unmatched entries excluded.','নথিভুক্ত সরাসরি ও অগ্রিম পরিশোধ এবং ভ্রমণ কর; অপেক্ষমাণ, ব্যর্থ, বাতিল ও অমিল লেনদেন বাদ।')}</p>
+          <p className="mt-1 text-xs text-taxpay-muted">{tr('Posted direct, advance and travel payments. Pending, failed, reversed and unmatched records excluded.','নথিভুক্ত সরাসরি, অগ্রিম ও ভ্রমণ কর। অপেক্ষমাণ, ব্যর্থ, বাতিল ও অমিল রেকর্ড বাদ।')}</p>
         </div>
         <p className="text-lg font-semibold tabular-nums" data-testid="tagged-payment-total">{tagLoadState==='ready'?money(taggedPaymentTotal):'—'}</p>
       </div>
