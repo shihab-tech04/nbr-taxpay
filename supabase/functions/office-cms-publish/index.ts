@@ -178,7 +178,7 @@ Deno.serve(async(req:Request)=>{
         const {data,error}=await db.rpc('taxpay_office_save_banner',{
           p_banner:raw!,p_expected_version:expected,p_position:position,
         });
-        if(error) {if(error.code==='40001') fail('Banner changed in another session',409);throw error;}
+        if(error) {if(error.code==='40001' || error.code==='PT409') fail('Banner changed in another session',409);throw error;}
         committed=true;
         const {data:confirmed,error:checkErr}=await db.from('taxpay_site_banners').select('*').eq('id',raw!.id).single();
         if(checkErr || !confirmed || confirmed.version!==data?.version || confirmed.sort_order!==position-1)
