@@ -63,7 +63,9 @@ test('signed-in facilitation uses saved beneficiary list accordions and never ma
   await mockSavedBeneficiaries(page);await mockAuthorizations(page,[]);
   const dialog=await openSignedInPayment(page);
   const picker=dialog.getByTestId('saved-beneficiary-picker');
-  await expect(picker.getByRole('heading',{name:'Choose beneficiaries'})).toBeVisible();
+  // The parent payment section owns exactly one visible heading; the picker must not duplicate it.
+  await expect(dialog.getByRole('heading',{name:'Choose beneficiaries',exact:true})).toHaveCount(1);
+  await expect(picker.getByRole('heading',{name:'Choose beneficiaries',exact:true})).toHaveCount(0);
   await expect(picker.getByRole('button',{name:'Family'})).toHaveAttribute('aria-expanded','true');
   await expect(picker).toContainText('2222222222222');
   await expect(picker).toContainText('3333333333333');
@@ -73,8 +75,11 @@ test('signed-in facilitation uses saved beneficiary list accordions and never ma
   await expect(dialog.locator('#guest-payer-name')).toHaveCount(0);
   await expect(dialog.getByRole('button',{name:'Add another taxpayer'})).toHaveCount(0);
   await expect(dialog.getByRole('button',{name:'Continue to purpose & amount'})).toBeDisabled();
-  await picker.getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
+  // Preserve the order chosen for payment, not the original saved-list row order.
   await picker.getByRole('checkbox',{name:'Select Saved Taxpayer Three'}).check();
+  await expect(picker.locator('input[type=checkbox]').first()).toHaveAttribute('aria-label','Select Saved Taxpayer Three');
+  await picker.getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
+  await expect(picker.locator('input[type=checkbox]').first()).toHaveAttribute('aria-label','Select Saved Taxpayer Three');
   await expect(picker).toContainText('2 selected for this payment');
   await picker.getByRole('checkbox',{name:'Select Saved Taxpayer Three'}).uncheck();
   await expect(picker).toContainText('1 selected for this payment');
