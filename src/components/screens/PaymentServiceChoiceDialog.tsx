@@ -12,6 +12,7 @@ import { TaxpayerLoginDialog, TaxpayerLoginFooter } from './TaxpayerLoginDialog'
 import { useAccountIdentity } from '../../services/accountIdentity';
 import {recordAccountActivity} from '../../services/accountActivity';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
+import type {PaymentReuse} from '../../services/paymentReuse';
 import { PaymentDraftEntryGate } from './PaymentDraftEntryGate';
 import type { PaymentFormDraft, PaymentDraftActor } from '../../services/accountPaymentFormDrafts';
 import { taxpayerBrandName } from '../../config/brand';
@@ -37,17 +38,17 @@ export const TAXPAY_ENTRY_CHOICES = [
   { id: 'OTHER_TAX', Icon: WalletCards, en: 'Other Tax', bn: 'অন্যান্য কর', detailEn: 'Other tax payments.', detailBn: 'অন্যান্য কর পরিশোধ।' }
 ] as const;
 
-export function PaymentServiceChoiceDialog({ initialService = null, initialDraft = null }: { initialService?: BannerPaymentService | null; initialDraft?: PaymentFormDraft | null }) {
+export function PaymentServiceChoiceDialog({ initialService = null, initialDraft = null, initialReuse = null }: { initialService?: BannerPaymentService | null; initialDraft?: PaymentFormDraft | null; initialReuse?: PaymentReuse | null }) {
   const { language, navigate, setPaymentServiceChoiceOpen, previewAccount, paymentBeneficiaryPrefill } = useTaxState();
   const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
   const multiBeneficiaryPrefill = (paymentBeneficiaryPrefill?.additional?.length ?? 0) > 0;
-  const [payerForSelf, setPayerForSelf] = useState<boolean | null>(initialDraft ? (initialDraft.service === 'TRAVEL_TAX' ? true : initialDraft.form_payload.forSelf as boolean) : paymentBeneficiaryPrefill ? false : null);
-  const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialDraft ? (initialDraft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : paymentBeneficiaryPrefill ? 'OTHER_TAX' : initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
+  const [payerForSelf, setPayerForSelf] = useState<boolean | null>(initialDraft ? (initialDraft.service === 'TRAVEL_TAX' ? true : initialDraft.form_payload.forSelf as boolean) : initialReuse ? initialReuse.formPayload.forSelf as boolean : paymentBeneficiaryPrefill ? false : null);
+  const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialDraft ? (initialDraft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : initialReuse ? (initialReuse.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : paymentBeneficiaryPrefill ? 'OTHER_TAX' : initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
   // Other Tax is one entry choice. No follow-up subtype selection is collected here.
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
-  const [view, setView] = useState<'payer' | 'login' | 'payment'>(initialDraft ? 'payment' : 'payer');
+  const [view, setView] = useState<'payer' | 'login' | 'payment'>(initialDraft || initialReuse ? 'payment' : 'payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
-  const [useAccount, setUseAccount] = useState(Boolean(initialDraft));
+  const [useAccount, setUseAccount] = useState(Boolean(initialDraft || initialReuse));
   const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(null);
   // An existing signed-in session must always use the account journey.
   // Only signed-out users need to choose between account sign-in and walk-in.
@@ -56,7 +57,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(initialDraft);
   // Back from taxpayer details returns to payer choices without losing
   // the route back to the signed-in user's original saved-draft decision.
-  const [draftEntryCompleted, setDraftEntryCompleted] = useState(Boolean(initialDraft));
+  const [draftEntryCompleted, setDraftEntryCompleted] = useState(Boolean(initialDraft || initialReuse));
   const [enteredFromDraftChoice, setEnteredFromDraftChoice] = useState(false);
   const [draftEntryMode, setDraftEntryMode] = useState<'choice' | 'list' | 'new'>('choice');
   const changeDraftEntryMode = useCallback((next: 'choice' | 'list' | 'new') => {
@@ -118,7 +119,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   };
   const stages = [tr('Taxpayer details', 'করদাতার তথ্য'), tr('Purpose & amount', 'খাত ও পরিমাণ'), tr('Payment channel', 'পেমেন্ট চ্যানেল'), tr('Confirmation', 'নিশ্চিতকরণ')];
   const shortStages = [tr('Identity', 'পরিচয়'), tr('Amount', 'পরিমাণ'), tr('Channel', 'চ্যানেল'), tr('Done', 'শেষ')];
-  const effectiveSelected: ServiceId | null = draftToResume?.service ?? selected;
+  const effectiveSelected: ServiceId | null = draftToResume?.service ?? initialReuse?.service ?? selected;
   const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === effectiveSelected);
   const paymentAccess = effectiveSelected ? resolvePaymentServiceAccess(effectiveSelected, 'MAKE_PAYMENT') : null;
   const publicPayment = paymentAccess?.kind === 'PUBLIC';
@@ -315,9 +316,9 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             embedded fourStepJourney initialDraft={draftToResume ?? undefined}
             onBackToService={returnToService} onStageChange={reportStage} />
         ) : effectiveSelected ? (
-          <GuestPayment key={draftToResume ? 'payment-draft-' + draftToResume.id : effectiveSelected + '-' + String(payerForSelf)}
+          <GuestPayment key={draftToResume ? 'payment-draft-' + draftToResume.id : initialReuse ? 'payment-reuse-' + initialReuse.sourcePaymentId : effectiveSelected + '-' + String(payerForSelf)}
             embedded initialCategory={effectiveSelected} initialForSelf={payerForSelf ?? undefined}
-            initialDraft={draftToResume ?? undefined}
+            initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
             initialBeneficiary={payerForSelf === false ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
             isWithholdingMode={effectiveSelected === 'SOURCE_TAX_DEPOSIT'}
             onBackToService={returnToService} onStageChange={reportStage} />
