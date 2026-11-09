@@ -491,7 +491,6 @@ export function Beneficiaries(){
         </div>}
         <TaxPayOfficeRegisterToolbar id="beneficiary-list-heading"
           title={tr('Beneficiary list','উপকারভোগীর তালিকা')}
-          description={tr('Search and manage your saved taxpayers','সংরক্ষিত করদাতাদের খুঁজুন ও পরিচালনা করুন')}
           count={filteredPeople.length} total={listPeople.length} countLabel={tr('records','রেকর্ড')}
           searchValue={search} onSearchChange={setSearch}
           searchLabel={tr('Search this list','এই তালিকায় খুঁজুন')}
@@ -553,9 +552,9 @@ export function Beneficiaries(){
               ...(tagFilter!=='all'?[{key:'tag',label:tagFilter==='clients'?tr('Clients','ক্লায়েন্ট'):tagFilter==='friends_family'?tr('Friends & family members','বন্ধু ও পরিবারের সদস্য'):tagFilter==='others'?tr('Others','অন্যান্য'):tr('Uncategorized','শ্রেণিবিহীন'),onRemove:()=>{setTagFilter('all');setRelationshipFilter('all');setSelectedIds([]);}}]:[]),
               ...(tagFilter==='friends_family'&&relationshipFilter!=='all'?[{key:'relationship',label:beneficiaryTagLabel('friends_family',relationshipFilter as BeneficiaryRelation,language).split(' · ').at(-1)??relationshipFilter,onRemove:()=>{setRelationshipFilter('all');setSelectedIds([]);}}]:[])
             ]}/>
-          <div className="taxpayer-transaction-count beneficiary-directory__count taxpay-table-toolbar">
+          {(selectedPeople.length>0||filteredPeople.length>0)&&<div className={'taxpayer-transaction-count beneficiary-directory__count taxpay-table-toolbar'+(selectedPeople.length===0?' md:hidden':'')}>
             <div className="beneficiary-directory__bulk-actions">
-              {filteredPeople.length>0&&<label className="beneficiary-directory__select-all">
+              {filteredPeople.length>0&&<label className="beneficiary-directory__select-all md:hidden">
                 <input type="checkbox" aria-label={tr('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')} checked={allFilteredSelected}
                   onChange={event=>setSelectedIds(current=>event.target.checked
                     ?Array.from(new Set([...current,...filteredPeople.map(person=>person.id)]))
@@ -569,7 +568,7 @@ export function Beneficiaries(){
                 <UiButton type="button" variant="quiet" onClick={()=>setSelectedIds([])}>{tr('Clear','মুছুন')}</UiButton>
               </>}
             </div>
-          </div>
+          </div>}
 
           {listPeople.length===0?<div className="rounded-lg border border-dashed border-taxpay-border px-4 py-5 text-center">
             <h2 className="font-semibold text-taxpay-text">{activeList==='all'?tr('No beneficiaries yet','এখনো কোনো উপকারভোগী নেই'):tr(`“${lists.find(list=>list.id===activeList)?.name??''}” is empty`,`“${lists.find(list=>list.id===activeList)?.name??''}” তালিকাটি খালি`)}</h2>
@@ -585,7 +584,13 @@ export function Beneficiaries(){
                 testId="beneficiary-directory-desktop" mobileTestId="beneficiary-directory-mobile"
                 isSelected={person=>selectedIds.includes(person.id)} getRowClassName={()=>"beneficiary-directory__tabular-row"}
                 columns={[
-                  {key:'beneficiary',header:tr('Beneficiary','উপকারভোগী'),renderCell:person=><div className="beneficiary-directory__identity">
+                  {key:'beneficiary',header:tr('Beneficiary','উপকারভোগী'),headerContent:<label className="beneficiary-directory__select-all beneficiary-directory__header-select">
+                    <input type="checkbox" aria-label={tr('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')}
+                      checked={allFilteredSelected} onChange={event=>setSelectedIds(current=>event.target.checked
+                        ?Array.from(new Set([...current,...filteredPeople.map(person=>person.id)]))
+                        :current.filter(id=>!filteredPeople.some(person=>person.id===id)))}/>
+                    <span>{tr('Beneficiary','উপকারভোগী')}</span>
+                  </label>,renderCell:person=><div className="beneficiary-directory__identity">
                     <input id={'beneficiary-select-'+person.id} type="checkbox"
                       aria-label={tr(`Select ${displayName(person)}`,`${displayName(person)} নির্বাচন`)}
                       checked={selectedIds.includes(person.id)}
@@ -599,7 +604,7 @@ export function Beneficiaries(){
                   </div>},
                   {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:person=><div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
-                    <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary text-sm"
+                    <UiButton type="button" variant="outline" className="beneficiary-directory__secondary text-sm"
                       onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
                     <UiButton type="button" variant="outline" className="beneficiary-directory__pay gap-2 text-sm" onClick={()=>payWith([person])}>
                       <CreditCard size={16} aria-hidden="true"/>{tr('Make payment','পেমেন্ট করুন')}
@@ -623,7 +628,7 @@ export function Beneficiaries(){
                   </div>
                   <div className="taxpay-mobile-table-card__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
-                    <UiButton type="button" variant="quiet" onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
+                    <UiButton type="button" variant="outline" onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
                     <UiButton type="button" variant="outline" className="gap-2" onClick={()=>payWith([person])}>
                       <CreditCard size={16} aria-hidden="true"/>{tr('Make payment','পেমেন্ট করুন')}
                     </UiButton>
