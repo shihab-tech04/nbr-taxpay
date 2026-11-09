@@ -75,8 +75,11 @@ test('signed-in facilitation uses saved beneficiary list accordions and never ma
   await expect(dialog.locator('#guest-payer-name')).toHaveCount(0);
   await expect(dialog.getByRole('button',{name:'Add another taxpayer'})).toHaveCount(0);
   await expect(dialog.getByRole('button',{name:'Continue to purpose & amount'})).toBeDisabled();
-  await picker.getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
+  // Preserve the order chosen for payment, not the original saved-list row order.
   await picker.getByRole('checkbox',{name:'Select Saved Taxpayer Three'}).check();
+  await expect(picker.locator('input[type=checkbox]').first()).toHaveAttribute('aria-label','Select Saved Taxpayer Three');
+  await picker.getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
+  await expect(picker.locator('input[type=checkbox]').first()).toHaveAttribute('aria-label','Select Saved Taxpayer Three');
   await expect(picker).toContainText('2 selected for this payment');
   await picker.getByRole('checkbox',{name:'Select Saved Taxpayer Three'}).uncheck();
   await expect(picker).toContainText('1 selected for this payment');
