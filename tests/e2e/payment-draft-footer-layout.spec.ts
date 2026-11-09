@@ -145,6 +145,33 @@ test('draft-eligible account payment protects backdrop, Escape and X at every pa
   await expect(confirm).toBeVisible();
   await expect(confirm.getByRole('button', { name: 'Save Draft' })).toBeVisible();
   await expect(confirm.getByRole('button', { name: 'Discard tax payment' })).toBeVisible();
+
+  // The safe actions have equal-sized targets; discard is visually separated
+  // below rather than competing as a third primary action.
+  const ctaRow = confirm.getByTestId('payment-draft-exit-cta-row');
+  const discardRow = confirm.getByTestId('payment-draft-exit-discard-row');
+  await expect(ctaRow).toBeVisible();
+  await expect(discardRow).toBeVisible();
+  const saveBox = await confirm.getByRole('button', { name: 'Save Draft' }).boundingBox();
+  const editBox = await confirm.getByRole('button', { name: 'Keep editing' }).boundingBox();
+  const discardBox = await confirm.getByRole('button', { name: 'Discard tax payment' }).boundingBox();
+  const dialogBox = await confirm.boundingBox();
+  expect(saveBox && editBox && discardBox && dialogBox).toBeTruthy();
+  if (saveBox && editBox && discardBox && dialogBox) {
+    expect(saveBox.height).toBeGreaterThanOrEqual(44);
+    expect(editBox.height).toBeGreaterThanOrEqual(44);
+    expect(discardBox.height).toBeGreaterThanOrEqual(44);
+    expect(discardBox.y).toBeGreaterThan(Math.max(saveBox.y + saveBox.height, editBox.y + editBox.height));
+    expect(saveBox.x).toBeGreaterThanOrEqual(dialogBox.x);
+    expect(editBox.x + editBox.width).toBeLessThanOrEqual(dialogBox.x + dialogBox.width + 1);
+    expect(discardBox.x + discardBox.width).toBeLessThanOrEqual(dialogBox.x + dialogBox.width + 1);
+    if ((page.viewportSize()?.width ?? 1280) < 420) {
+      expect(editBox.y).toBeGreaterThan(saveBox.y);
+    } else {
+      expect(Math.abs(editBox.y - saveBox.y)).toBeLessThanOrEqual(1);
+    }
+  }
+  await page.screenshot({ path: 'test-results/payment-draft-exit-dialog-' + (page.viewportSize()?.width ?? 1280) + '.png' });
   await confirm.getByRole('button', { name: 'Keep editing' }).click();
   await expect(payment).toBeVisible();
 
