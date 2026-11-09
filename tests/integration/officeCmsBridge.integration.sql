@@ -29,6 +29,7 @@ CREATE TRIGGER test_banner_version BEFORE UPDATE ON public.taxpay_site_banners
 FOR EACH ROW EXECUTE FUNCTION public.test_banner_version();
 GRANT SELECT,INSERT,UPDATE,DELETE ON public.taxpay_site_banners TO service_role;
 \i supabase/migrations/20261107071500_office_authenticated_taxpay_banner_bridge.sql
+\i supabase/migrations/20261109152000_banner_conflict_pt409_postgrest14_retry.sql
 DO $$ BEGIN
 IF has_function_privilege('anon','public.taxpay_office_save_banner(jsonb,bigint,integer)','EXECUTE') THEN RAISE EXCEPTION 'anon can write'; END IF;
 IF has_function_privilege('authenticated','public.taxpay_office_save_banner(jsonb,bigint,integer)','EXECUTE') THEN RAISE EXCEPTION 'customer can write'; END IF;
@@ -56,7 +57,7 @@ DO $$ BEGIN
     PERFORM public.taxpay_office_save_banner(
       '{"id":"return","published":true,"service_code":"TAX_WITH_RETURN"}'::jsonb,1,1);
     RAISE EXCEPTION 'Stale write unexpectedly allowed';
-  EXCEPTION WHEN SQLSTATE '40001' THEN NULL;
+  EXCEPTION WHEN SQLSTATE 'PT409' THEN NULL;
   END;
   BEGIN
     PERFORM public.taxpay_office_save_banner(
