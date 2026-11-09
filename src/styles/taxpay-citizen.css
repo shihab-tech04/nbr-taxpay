@@ -946,6 +946,11 @@
 .receipt-view__allocation-table{min-width:620px}
 .receipt-view__allocation-table :is(th,td):nth-child(3){text-align:left;white-space:normal}
 .receipt-view__allocation-table tbody td:first-child{min-width:150px;overflow-wrap:anywhere}
+/* A taxpayer can span several payment heads; align by semantic column rather
+   than nth-child, because the row-spanned identity cell is absent on later rows. */
+.receipt-view__allocation-table td.receipt-view__allocation-service{text-align:left;white-space:normal;overflow-wrap:anywhere;min-width:190px}
+.receipt-view__allocation-table td.receipt-view__allocation-year{text-align:left;white-space:normal}
+.receipt-view__allocation-table td.receipt-view__allocation-amount{text-align:right;white-space:nowrap}
 .receipt-view__financial-table td .font-mono-plex{font-size:14px}
 .receipt-view__financial-table tfoot{background:var(--citizen-primary-light);color:var(--citizen-primary-dark)}
 .receipt-view__financial-table tfoot td{border-bottom:0;font-weight:750}
