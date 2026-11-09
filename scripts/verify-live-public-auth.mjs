@@ -51,6 +51,38 @@ try {
         }),{cause:error});
       }
       await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+      // Only a deployed build can certify the NEW dashboard UI. PR preflight
+      // runs against the older published version and must not pre-approve it.
+      if(process.env.GITHUB_EVENT_NAME!=='pull_request'){
+        const spending=page.getByTestId('beneficiary-spending-breakdown');
+        await expect(spending).toBeVisible({timeout:30_000});
+        await expect(spending.getByTestId('beneficiary-spending-segments')).toBeVisible();
+        await expect(spending.getByTestId('tag-spend-own')).toBeVisible();
+        await expect(spending.getByTestId('tag-spend-needs-tag')).toBeVisible();
+        await expect(spending.getByTestId('tag-spend-no-link')).toBeVisible();
+        await expect(spending.getByTestId('tag-spend-unassigned')).toHaveCount(0);
+        // A real Pages login must show a complete, reconciled breakdown in
+        // the user's current EN/BN preference. No backend writes or mocks.
+        const numbers=await spending.evaluate(root=>{
+          const read=id=>{
+            const text=root.querySelector('[data-testid="'+id+'"]')?.textContent??'';
+            const bengali='০১২৩৪৫৬৭৮৯';
+            const normal=text.replace(/[০-৯]/g,d=>String(bengali.indexOf(d))).replace(/[^0-9.-]/g,'');
+            return normal?Number(normal):NaN;
+          };
+          const total=read('tagged-payment-total');
+          const rows=[...root.querySelectorAll('[data-testid^="tag-spend-"]')];
+          const amounts=rows.map(row=>{
+            const strong=row.querySelector('strong')?.textContent??'';
+            const bengali='০১২৩৪৫৬৭৮৯';
+            return Number(strong.replace(/[০-৯]/g,d=>String(bengali.indexOf(d))).replace(/[^0-9.-]/g,''));
+          });
+          return {total,sum:amounts.reduce((a,b)=>a+b,0),count:rows.length};
+        });
+        if(!Number.isFinite(numbers.total)||numbers.total!==numbers.sum||numbers.count<7)
+          throw new Error('Live beneficiary spending breakdown does not reconcile: '+JSON.stringify(numbers));
+        await page.screenshot({path:'test-results/live-dashboard-category-breakdown-'+name+'.png',fullPage:true});
+      }
       const beneficiaryUrl=new URL(base);
       beneficiaryUrl.searchParams.set('action','beneficiaries');
       await page.goto(beneficiaryUrl.toString(),{waitUntil:'domcontentloaded',timeout:45_000});

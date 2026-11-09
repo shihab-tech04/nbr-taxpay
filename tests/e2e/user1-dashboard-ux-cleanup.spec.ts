@@ -213,7 +213,10 @@ test('Overview puts financial position first, followed by exceptions, charts, sp
   await expect(bento.locator('.taxpay-tag-spending__track')).toBeVisible();
   await expect(bento.getByRole('button',{name:'Check tax ledger'})).toHaveCount(0);
   await expect(bento.getByRole('button',{name:'View tax ledger'})).toHaveCount(1);
-  await expect(bento.locator('[data-testid^="tag-spend-"]')).toHaveCount(5);
+  await expect(bento.getByTestId('tag-spend-own')).toBeVisible();
+  await expect(bento.getByTestId('tag-spend-needs-tag')).toBeVisible();
+  await expect(bento.getByTestId('tag-spend-no-link')).toBeVisible();
+  await expect(bento.getByTestId('tag-spend-unassigned')).toHaveCount(0);
   await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
 });
 
@@ -229,7 +232,7 @@ test('selected assessment year controls recent activity and compact spending on 
     await expect(recent).not.toContainText('Pending bank reconciliation');
     const tags=bento.getByTestId('beneficiary-spending-breakdown');
     await expect(tags.getByTestId('tagged-payment-total')).toContainText('60,000');
-    await expect(tags.getByTestId('tag-spend-unassigned')).toContainText('60,000');
+    await expect(tags.getByTestId('tag-spend-no-link')).toContainText('60,000');
     await expect(tags.getByTestId('tag-spend-family')).toContainText('0');
     await expect(tags.locator('.taxpay-tag-spending__track span')).toHaveCount(1);
     await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(0);
@@ -247,10 +250,8 @@ test('dashboard residual breakdown reconciles linked and unlinked payments witho
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
   const spending=overview.getByTestId('beneficiary-spending-breakdown');
   await expect(spending.getByTestId('tagged-payment-total')).toContainText('60,000');
-  const residual=spending.getByTestId('dashboard-tag-review');
-  await expect(residual).toContainText('Own payments');
-  await expect(residual).toContainText('Saved beneficiary needs a tag');
-  await expect(residual).toContainText('No beneficiary link');
-  await expect(residual).toContainText('60,000');
-  await expect(residual.getByRole('button',{name:'Review beneficiary tags'})).toHaveCount(0);
+  await expect(spending.getByTestId('tag-spend-own')).toContainText('0');
+  await expect(spending.getByTestId('tag-spend-needs-tag')).toContainText('0');
+  await expect(spending.getByTestId('tag-spend-no-link')).toContainText('60,000');
+  await expect(spending.getByTestId('dashboard-tag-review')).toHaveCount(0);
 });
