@@ -31,3 +31,13 @@ test('every configured historical tax year independently follows current-year ru
  assert.equal(copy.lines[0].assessmentYear,y==='2026-27'?y:'');
  }
 });
+
+test('Tax with Return cannot be mixed with any other payment head when repeating a payment',()=>{
+ const invalid={...old,allocations:[
+   {...old.allocations[0],category:'TAX_WITH_RETURN'},
+   old.allocations[1]]};
+ assert.equal(canPayAgain(invalid,'user1','payer'),false);
+ assert.throws(()=>copyPreviousPayment(invalid,'user1','payer',people,[...categories,'TAX_WITH_RETURN']),/Only your recorded payments/);
+ const returnOnly={...old,allocations:[{...old.allocations[0],category:'TAX_WITH_RETURN'}]};
+ assert.equal(canPayAgain(returnOnly,'user1','payer'),true);
+});
