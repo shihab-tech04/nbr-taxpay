@@ -7,6 +7,9 @@ import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
 import {PAYMENT_TAG_GROUPS,paymentTagGroupForTin,paymentTagGroupLabels,type PaymentTagGroup} from '../../services/beneficiaryPaymentTags';
 import { TaxPayModal } from '../ui/TaxPayModal';
 import { ReceiptView } from '../common/ReceiptView';
+import {useTaxState} from '../../services/taxState';
+import {usePaymentAccountProfile} from '../../services/paymentAccountProfile';
+import {reuseRecordedPayment} from '../../services/paymentReuse';
 
 /** History of SQL-recorded payments initiated by this signed-in payer.
  * Each beneficiary allocation keeps its own TIN, assessment year, head and
@@ -14,6 +17,9 @@ import { ReceiptView } from '../common/ReceiptView';
  */
 export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: string; language: 'en'|'bn' }) {
   const [rows,setRows]=useState<BeneficiaryPaymentEntry[]>([]);
+  const {startPaymentReuse}=useTaxState();
+  const profile=usePaymentAccountProfile(ownerUid,null);
+  const [reuseError,setReuseError]=useState('');
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState('');
   const [revision,setRevision]=useState(0);
@@ -41,6 +47,16 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
     }).catch(()=>{if(active)setTags({owner:ownerUid,status:'error',people:[]});});
     return()=>{active=false;};
   },[ownerUid,revision]);
+  const payAgain=(entry:BeneficiaryPaymentEntry)=>{
+    try{
+      setReuseError('');
+      const matching = entry.batchId ? rows.filter(r=>r.batchId===entry.batchId) : [entry];
+      const unique = [...new Map(matching.map(r=>[r.paymentId,r.receipt])).values()];
+      startPaymentReuse(reuseRecordedPayment(unique,ownerUid,profile.profile?.tin??null,entry.batchId??entry.paymentId));
+      setSelected(null);
+    }catch(reason){setReuseError(reason instanceof Error?reason.message:'The original payment could not be reconstructed.');}
+  };
+  const canReuse=(row:BeneficiaryPaymentEntry)=>row.receipt.paymentCategory!=='TRAVEL_TAX' && Boolean(row.receipt.items.length);
   const visibleTags=tags.owner===ownerUid?tags:{owner:ownerUid,status:'loading' as const,people:[]};
   const filtered=useMemo(()=>{
     const q=search.trim().toLocaleLowerCase();
@@ -76,6 +92,7 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
         ...(tagFilter!=='all'?[{key:'tag',label:paymentTagGroupLabels[tagFilter][language],onRemove:()=>setTagFilter('all')}]:[])
       ]}/>
     {visibleTags.status==='error'&&<p className="mt-2 text-sm text-taxpay-error" role="alert">{tr('Saved tags unavailable; categories were not guessed.','সংরক্ষিত ট্যাগ পাওয়া যায়নি; শ্রেণি অনুমান করা হয়নি।')}</p>}
+    {reuseError&&<p className="mt-3 text-sm text-taxpay-error" role="alert">{reuseError}</p>}
     {loading&&<p className="mt-4 text-sm text-taxpay-muted" role="status">{tr('Loading saved payments…','সংরক্ষিত পেমেন্ট লোড হচ্ছে…')}</p>}
     {error&&<div className="mt-4" role="alert">
       <p className="text-sm text-taxpay-error">{tr('Payment history could not be verified.','পেমেন্টের ইতিহাস যাচাই করা যায়নি।')}</p>
@@ -106,9 +123,13 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
               {tr('Batch item','ব্যাচের রেকর্ড')} {row.batchItemIndex}/{row.batchItemCount}</p>}
           </div>},
           {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',renderCell:row=><p className="font-semibold">{formatCurrency(row.amountMinor/100,language)}</p>},
-          {key:'receipt',header:tr('Receipt','রসিদ'),renderCell:row=><button type="button"
-            className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-            onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View','দেখুন')}</button>}
+          {key:'receipt',header:tr('Receipt','রসিদ'),renderCell:row=><div className="flex flex-wrap gap-2">
+            <button type="button" className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+              onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View','দেখুন')}</button>
+            {canReuse(row)&&<button type="button" data-testid="account-pay-again-desktop"
+              className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+              onClick={()=>payAgain(row)}>{tr('Pay Again','আবার পরিশোধ')}</button>}
+          </div>}
         ]}
         renderMobileCard={row=><>
           <div className="taxpay-mobile-table-card__header">
@@ -122,7 +143,11 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
           {row.batchItemIndex&&row.batchItemCount&&<p className="taxpay-mobile-table-card__meta">{tr('Batch item','ব্যাচের রেকর্ড')} {row.batchItemIndex}/{row.batchItemCount}</p>}
           <div className="taxpay-mobile-table-card__actions"><button type="button"
             className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-            onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View receipt','রসিদ দেখুন')}</button></div>
+            onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View receipt','রসিদ দেখুন')}</button>
+            {canReuse(row)&&<button type="button" data-testid="account-pay-again-mobile"
+              className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+              onClick={()=>payAgain(row)}>{tr('Pay Again','আবার পরিশোধ')}</button>}
+          </div>
         </>}/>
     </div>
 
@@ -132,6 +157,11 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
     {selected&&<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')} service="status"
       className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
       <ReceiptView receipt={selected.receipt} embedded/>
+      {canReuse(selected)&&<div className="mt-3 flex justify-end">
+        <button type="button" data-testid="account-pay-again-receipt"
+          className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold text-taxpay-primary"
+          onClick={()=>payAgain(selected)}>{tr('Pay Again','আবার পরিশোধ')}</button>
+      </div>}
     </TaxPayModal>}
   </section>;
 }
