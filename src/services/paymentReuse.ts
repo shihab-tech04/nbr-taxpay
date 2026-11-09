@@ -143,6 +143,9 @@ export function reuseRecordedPayment(
   }
   if (!allocations.length || allocations.length > 20)
     throw Error('The original payment exceeds the supported allocation limit.');
+  const exactAllocations = allocations.map(item => item.tin + ':' + item.headId + ':' + item.year);
+  if (new Set(exactAllocations).size !== allocations.length)
+    throw Error('The original payment contains duplicate taxpayer/head/year allocations.');
   const people = new Map<string, {tin:string;name:string;id:string}>();
   for (const item of allocations) if (!people.has(item.tin))
     people.set(item.tin, {tin:item.tin,name:item.name,id:`repeat-${people.size + 1}`});
