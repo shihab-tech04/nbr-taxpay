@@ -317,6 +317,19 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [selectedCoverage,setSelectedCoverage]=useState<number|null>(null);
   const yearChartMax=Math.max(1,...taxYears.map(item=>yearSummary(item.year)!.liability));
   const spendingColors:Record<PaymentTagGroup,string>={family:'#2d65ad',friends:'#65a8dc',clients:'#204a85',others:'#b18439',unassigned:'#5c7fa8'};
+  // Display every recorded payment once. The old visual "Own / unassigned"
+  // segment hid distinct causes behind a single amount; keep the underlying
+  // transaction attribution and source totals unchanged.
+  const spendingSegments=[
+    ...taggedPaymentBreakdown.filter(item=>item.group!=='unassigned').map(item=>({
+      key:item.group,amount:item.amount,label:paymentTagLabel(item.group),color:spendingColors[item.group]
+    })),
+    {key:'own',amount:ownAmount,label:tr('Own payments','নিজের পেমেন্ট'),color:'#557ba5'},
+    {key:'needs-tag',amount:needsTagAmount,label:tr('Saved beneficiary needs a tag','সংরক্ষিত উপকারভোগীর ট্যাগ প্রয়োজন'),color:'#b18439'},
+    ...(missingSavedAmount>0?[{key:'not-saved',amount:missingSavedAmount,label:tr('Beneficiary not saved','উপকারভোগী সংরক্ষিত নয়'),color:'#9d6a82'}]:[]),
+    {key:'no-link',amount:noLinkedAmount,label:tr('No beneficiary link','উপকারভোগীর সংযোগ নেই'),color:'#8498b1'}
+  ];
+  const displayedSpendingTotal=spendingSegments.reduce((sum,item)=>sum+item.amount,0);
   const attentionItems:{label:string;count:number;states:State[]}[]=[
     {label:tr('Failed / reversed','ব্যর্থ / বাতিল'),count:scoped.filter(x=>x.state==='FAILED'||x.state==='REVERSED').length,states:['FAILED','REVERSED']},
     {label:tr('Pending','অপেক্ষমাণ'),count:scoped.filter(x=>x.state==='PENDING').length,states:['PENDING']},
@@ -429,32 +442,28 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       {tagLoadState==='loading'&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('Loading saved beneficiary categories…','সংরক্ষিত উপকারভোগীর শ্রেণি লোড হচ্ছে…')}</p>}
       {tagLoadState==='error'&&<p role="alert" className="mt-3 text-sm text-taxpay-error">{tr('Spending categories are unavailable. Amounts were not attributed.','ব্যয়ের শ্রেণি পাওয়া যায়নি। কোনো অর্থ শ্রেণিবদ্ধ করা হয়নি।')}</p>}
       {tagLoadState==='ready'&&<div className="taxpay-tag-spending mt-3">
-        <div className="taxpay-tag-spending__track" role="img"
-          aria-label={tr('Recorded payments by beneficiary category','উপকারভোগীর শ্রেণি অনুযায়ী নথিভুক্ত পেমেন্ট')+': '+taggedPaymentBreakdown.map(item=>paymentTagLabel(item.group)+' '+money(item.amount)).join(', ')}>
-          {taggedPaymentBreakdown.filter(item=>item.amount>0).map(({group,amount:groupAmount})=>
-            <span key={group} style={{width:(taggedPaymentTotal?groupAmount*100/taggedPaymentTotal:0)+'%',backgroundColor:spendingColors[group]}}/>)}
+        <div className="taxpay-tag-spending__track" role="img" data-testid="beneficiary-spending-segments"
+          aria-label={tr('Recorded payments by category','শ্রেণি অনুযায়ী নথিভুক্ত পেমেন্ট')+': '+spendingSegments.map(item=>item.label+' '+money(item.amount)).join(', ')}>
+          {spendingSegments.filter(item=>item.amount>0).map(item=>
+            <span key={item.key} style={{width:(taggedPaymentTotal?item.amount*100/taggedPaymentTotal:0)+'%',backgroundColor:item.color}}/>)}
         </div>
-        <div className="taxpay-tag-spending__legend">
-          {taggedPaymentBreakdown.map(({group,amount:groupAmount})=>
-            <div key={group} data-testid={'tag-spend-'+group} data-empty={groupAmount===0?'true':undefined}
-              className="taxpay-tag-spending__item">
-              <span className="taxpay-tag-spending__label"><i aria-hidden="true" style={{backgroundColor:spendingColors[group]}}/>{group==='unassigned'?tr('Unclassified / no link','শ্রেণিবিহীন / সংযোগ নেই'):paymentTagLabel(group)}</span>
-              <strong className="tabular-nums">{money(groupAmount)}</strong>
+        <div className="taxpay-tag-spending__legend taxpay-tag-spending__legend--detailed">
+          {spendingSegments.map(item=>
+            <div key={item.key} data-testid={'tag-spend-'+item.key}
+              data-empty={item.amount===0?'true':undefined} className="taxpay-tag-spending__item">
+              <span className="taxpay-tag-spending__label"><i aria-hidden="true" style={{backgroundColor:item.color}}/>{item.label}</span>
+              <strong className="tabular-nums">{money(item.amount)}</strong>
             </div>)}
         </div>
-        {(ownAmount>0||needsTagAmount>0||missingSavedAmount>0||noLinkedAmount>0)&&
-          <div className="taxpay-tag-spending__notice" data-testid="dashboard-tag-review">
-            <div className="taxpay-tag-spending__breakdown" aria-label={tr('Unclassified payment breakdown','শ্রেণিবিহীন পেমেন্টের বিবরণ')}>
-              <span>{tr('Own payments','নিজের পেমেন্ট')} <strong>{money(ownAmount)}</strong></span>
-              <span>{tr('Saved beneficiary needs a tag','সংরক্ষিত উপকারভোগীর ট্যাগ প্রয়োজন')} <strong>{money(needsTagAmount)}</strong></span>
-              {missingSavedAmount>0&&<span>{tr('Beneficiary not saved','উপকারভোগী সংরক্ষিত নয়')} <strong>{money(missingSavedAmount)}</strong></span>}
-              <span>{tr('No beneficiary link','উপকারভোগীর সংযোগ নেই')} <strong>{money(noLinkedAmount)}</strong></span>
-            </div>
-            {reviewTins.length>0&&<button type="button" className="taxpay-tag-spending__review"
-              onClick={()=>navigate('beneficiaries',{reviewBeneficiaryTins:reviewTins})}>
-              {tr('Review beneficiary tags','উপকারভোগীর ট্যাগ পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/>
-            </button>}
-          </div>}
+        {displayedSpendingTotal!==taggedPaymentTotal&&
+          <p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Unable to reconcile category totals. Please refresh.','শ্রেণির মোট অর্থ মিলছে না। অনুগ্রহ করে রিফ্রেশ করুন।')}</p>}
+        {needsTagAmount>0&&<div className="taxpay-tag-spending__notice" data-testid="dashboard-tag-review">
+          <p>{tr('Some saved beneficiaries need a tag before their payments can be classified.','কিছু সংরক্ষিত উপকারভোগীর ট্যাগ প্রয়োজন, তারপর তাদের পেমেন্ট শ্রেণিবদ্ধ হবে।')}</p>
+          {reviewTins.length>0&&<button type="button" className="taxpay-tag-spending__review"
+            onClick={()=>navigate('beneficiaries',{reviewBeneficiaryTins:reviewTins})}>
+            {tr('Review beneficiary tags','উপকারভোগীর ট্যাগ পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/>
+          </button>}
+        </div>}
       </div>}
     </section>
     </div>
