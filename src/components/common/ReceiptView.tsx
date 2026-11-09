@@ -148,9 +148,9 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
                     {group.taxpayerTin && <div className="mt-1 break-all font-mono-plex text-xs text-slate-700">{group.taxpayerTin}</div>}
                     {group.items.length > 1 && <div className="mt-2 text-xs font-semibold text-taxpay-dark">{labels.taxpayerSubtotal}: {formatCurrency(group.totalMinor / 100, language)}</div>}
                   </td>}
-                  <td className="text-slate-800">{bn ? item.paymentServiceBn : item.paymentServiceEn}</td>
-                  <td>{item.assessmentYear}</td>
-                  <td className="font-mono-plex font-bold text-slate-900">{formatCurrency(item.amountMinor / 100, language)}</td>
+                  <td className="receipt-view__allocation-service text-slate-800">{bn ? item.paymentServiceBn : item.paymentServiceEn}</td>
+                  <td className="receipt-view__allocation-year">{item.assessmentYear}</td>
+                  <td className="receipt-view__allocation-amount font-mono-plex font-bold text-slate-900">{formatCurrency(item.amountMinor / 100, language)}</td>
                 </tr>
               )))}
             </tbody>
