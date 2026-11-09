@@ -723,6 +723,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
           ))}
         </nav>}
         <form id="travel-tax-form" onSubmit={submit} noValidate>
+          {initialReuse && !createdReceipt && <p role="status" data-testid="travel-pay-again-notice"
+            className="rounded-lg border border-taxpay-border bg-taxpay-light px-3 py-2 text-sm text-taxpay-dark">
+            {tr('Copied from your previous travel payment. Confirm each passenger again, enter passport and date of birth, and choose a new travel date before paying.',
+              'আগের ভ্রমণ করের তথ্য থেকে কপি করা হয়েছে। পরিশোধের আগে প্রতিটি যাত্রীর পাসপোর্ট ও জন্মতারিখ পুনরায় দিন, যাচাই করুন এবং নতুন ভ্রমণের তারিখ নির্বাচন করুন।')}
+          </p>}
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert" tabIndex={-1}>{error}</p>}
           {(authenticatedUser || previewAccount) && !createdReceipt &&
             <AccountPaymentDraftControls service="TRAVEL_TAX" language={language}
