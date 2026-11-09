@@ -56,7 +56,8 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
       setSelected(null);
     }catch(reason){setReuseError(reason instanceof Error?reason.message:'The original payment could not be reconstructed.');}
   };
-  const canReuse=(row:BeneficiaryPaymentEntry)=>row.receipt.paymentCategory!=='TRAVEL_TAX' && Boolean(row.receipt.items.length);
+  const canReuse=(row:BeneficiaryPaymentEntry)=>Boolean(row.receipt.items.length) &&
+    (row.receipt.paymentCategory!=='TRAVEL_TAX' || Boolean(row.receipt.travelDetails?.passengers.length));
   const visibleTags=tags.owner===ownerUid?tags:{owner:ownerUid,status:'loading' as const,people:[]};
   const filtered=useMemo(()=>{
     const q=search.trim().toLocaleLowerCase();
