@@ -1565,6 +1565,14 @@ table.taxpay-unified-table {
 .taxpay-taxpayer-reference .beneficiary-register-frame {
   min-width: 0;
   overflow: visible;
+  border-radius: 12px;
+  background: var(--taxpay-table-surface,#fff);
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame > .taxpay-office-register__toolbar {
+  border-radius: 12px 12px 0 0;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame > .taxpay-office-register__footer {
+  border-radius: 0 0 12px 12px;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__filters {
   overflow: visible;
