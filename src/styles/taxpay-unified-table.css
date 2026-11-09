@@ -1559,50 +1559,47 @@ table.taxpay-unified-table {
 }
 
 
-/* Beneficiaries: a single Transaction History-style toolbar, with the list
-   selector alongside Search and Filter, not in a second full-width header row.
-   Existing list edit/menu, table and mobile batch selection remain functional. */
+/* Beneficiaries is a real Transaction History-style register: heading/count,
+   Search and Filter share one toolbar. List/tag controls live in the filter panel.
+   Select-all occupies the desktop table header, not a second full-width strip. */
 .taxpay-taxpayer-reference .beneficiary-register-frame {
   min-width: 0;
   overflow: visible;
 }
-.taxpay-taxpayer-reference .beneficiary-register-frame > .taxpay-office-register__toolbar {
-  gap: 12px;
-}
-.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-toolbar {
-  display: flex;
-  align-items: center;
-  min-width: 0;
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__filters {
+  overflow: visible;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-filter {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
   min-width: 0;
+  position: relative;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-filter > p {
-  flex: 0 0 auto;
   margin: 0;
   font-size: 14px;
-  white-space: nowrap;
+  line-height: 1.5;
   color: var(--taxpay-table-muted,#5f6b7a);
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-list-picker {
-  flex: 1 1 140px;
-  width: auto;
+  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
   max-width: none;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-list-picker__trigger {
-  min-width: 0;
-  min-height: 40px;
-  padding: 7px 10px;
+  min-height: 44px;
+  width: 100%;
+  padding: 8px 10px;
   gap: 8px;
   font-size: 14px;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-list-picker__menu {
+  width: 100%;
   min-width: 220px;
+  z-index: 30;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__header-select {
   display: inline-flex;
@@ -1637,53 +1634,23 @@ table.taxpay-unified-table {
   width: 270px;
   min-width: 250px;
 }
-@media(min-width: 1180px) {
-  .taxpay-taxpayer-reference .beneficiary-register-frame > .taxpay-office-register__toolbar {
-    flex-wrap: nowrap;
-    align-items: center;
-    min-height: 70px;
+@media (min-width: 768px) {
+  .taxpay-taxpayer-reference .beneficiary-register-frame > .beneficiary-directory__count[data-has-selection="false"] {
+    display: none;
   }
-  .taxpay-taxpayer-reference .beneficiary-register-frame > .taxpay-office-register__toolbar .taxpay-office-register__identity {
-    flex: 1 1 auto;
-    min-width: 170px;
-    flex-wrap: nowrap;
-  }
-  .taxpay-taxpayer-reference .beneficiary-register-frame > .taxpay-office-register__toolbar .taxpay-office-register__actions {
-    display: flex;
-    flex: 0 1 auto;
-    width: auto;
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: nowrap;
-    gap: 8px;
-  }
-  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-toolbar {
-    flex: 0 1 240px;
-    min-width: 170px;
-    max-width: 240px;
-  }
-  .taxpay-taxpayer-reference .beneficiary-register-frame .taxpay-office-register__actions .taxpay-record-toolbar__search {
-    flex: 0 1 205px;
-    min-width: 145px;
-    max-width: 205px;
+  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__bulk-actions > .beneficiary-directory__select-all {
+    display: none;
   }
 }
-@media(max-width: 767px) {
-  .taxpay-taxpayer-reference .beneficiary-register-frame > .taxpay-office-register__toolbar {
-    align-items: stretch;
-    gap: 10px;
+@media (max-width: 767px) {
+  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__header-select {
+    display: none;
   }
-  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-toolbar {
-    flex: 1 1 100%;
+  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-filter {
     min-width: 0;
-    max-width: none;
-    width: 100%;
   }
   .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-list-picker__menu {
     min-width: 0;
-  }
-  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__header-select {
-    display: none;
   }
   .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__actions {
     justify-content: flex-start;
