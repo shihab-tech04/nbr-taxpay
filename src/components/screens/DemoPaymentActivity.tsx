@@ -153,6 +153,9 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     try{
       if(lines.some(line=>!PAY_AGAIN_YEAR_OPTIONS.some(y=>y===line.assessmentYear)))
         throw new Error(txt('Select an assessment year for each allocation.','প্রতিটি বরাদ্দের করবর্ষ নির্বাচন করুন।'));
+      if(lines.some(line=>line.category==='TAX_WITH_RETURN') &&
+         lines.some(line=>line.category!=='TAX_WITH_RETURN'))
+        throw new Error(txt('Tax with Return cannot be combined with another tax head.','রিটার্নসহ কর অন্য করের খাতের সঙ্গে একত্রে পরিশোধ করা যাবে না।'));
       const checked:SimulationLine[]=lines.map(l=>({
         beneficiary:l.beneficiary,category:l.category,assessmentYear:l.assessmentYear,
         amountMinor:parseSimulatedAmount(l.amount)
