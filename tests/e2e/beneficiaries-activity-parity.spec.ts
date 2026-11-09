@@ -88,7 +88,7 @@ for(const language of ['en','bn'] as const){
     expect(theme.rowBackground).not.toBe('transparent');
     const editAction=rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true});
     await expect(editAction).toBeVisible();
-    if(layout.width>=768){
+    if(page.viewportSize()!.width>=768){
       await expect(editAction,'Edit must be an outlined secondary action, not a text link')
         .toHaveCSS('border-top-width','1px');
     }
