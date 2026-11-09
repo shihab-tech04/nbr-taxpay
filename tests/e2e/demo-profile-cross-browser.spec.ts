@@ -71,6 +71,7 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
     await expect(page).toHaveURL(/action=taxpayer_home/);
     await page.goto('/?action=beneficiaries');
     await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+    await page.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
   }
   const first=await browser.newContext({baseURL:base});
   const second=await browser.newContext({baseURL:base});
@@ -105,6 +106,7 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
     await modal.getByRole('button',{name:'তালিকা তৈরি',exact:true}).click();
     await expect(modal).toBeHidden();
     await b.reload();
+    await b.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     await b.locator('#beneficiary-list').click();
     await expect(b.locator('#beneficiary-list-menu')).toContainText('Office Clients');
   }finally{

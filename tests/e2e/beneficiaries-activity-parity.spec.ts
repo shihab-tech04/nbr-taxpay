@@ -86,7 +86,12 @@ for(const language of ['en','bn'] as const){
     if(page.viewportSize()!.width>=768)expect(theme.headerMinHeight).toBeGreaterThanOrEqual(44);
     else await expect(rows.first().getByRole('button',{name:t('Make payment','পেমেন্ট করুন')})).toHaveCSS('min-height','44px');
     expect(theme.rowBackground).not.toBe('transparent');
-    await expect(rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true})).toBeVisible();
+    const editAction=rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true});
+    await expect(editAction).toBeVisible();
+    if(layout.width>=768){
+      await expect(editAction,'Edit must be an outlined secondary action, not a text link')
+        .toHaveCSS('border-top-width','1px');
+    }
     await expect(rows.first().getByRole('button',{name:t('Make payment','পেমেন্ট করুন')})).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Remove Shihab','Shihab সরান')})).toHaveCount(0);
     await expect(rows.first().locator('button')).toHaveCount(2);

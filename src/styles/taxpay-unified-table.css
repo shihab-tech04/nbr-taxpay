@@ -1626,6 +1626,13 @@ table.taxpay-unified-table {
   min-height: 40px;
   white-space: nowrap;
 }
+/* Override the retired text-link styling: Edit must be a real secondary
+   outline action, visually paired with Make payment in desktop rows. */
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__actions .beneficiary-directory__secondary {
+  padding-inline: 12px;
+  border: 1px solid var(--taxpay-table-border,#e1e6ee);
+  background: var(--taxpay-table-surface,#fff);
+}
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__table .taxpay-unified-table th:last-child {
   width: 270px;
   text-align: right;

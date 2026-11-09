@@ -155,6 +155,7 @@ test('failed new-list import stays recoverable and retries against the same crea
   await dialog.getByRole('button',{name:'Finish import'}).click();
   await expect(page.getByText('2 beneficiaries added to the list.')).toBeVisible();
   expect(transport.createListCount()).toBe(2);
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
   await expect(page.locator('#beneficiary-list')).toContainText('Imported list');
   const visibleRecords=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
   await expect(visibleRecords.getByText('Local Beneficiary One',{exact:true})).toBeVisible();
