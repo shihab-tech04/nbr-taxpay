@@ -1775,7 +1775,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </aside>
             {!embedded && <div className="payment-review__standalone-actions">
               <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{commonCopy.btnBack}</button>
-              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={batchRecoveryError || !paymentChannel || !paymentMethod || !acknowledged || isProcessing || !storyAmountSupported || (otherBatch && !batchValid)}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
+              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={batchRecoveryError || !paymentChannel || !paymentMethod || !acknowledged || isProcessing || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
             </div>}
           </div>
         )}
@@ -1816,7 +1816,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <button type="button" className="tax-service-choice__cancel" onClick={() => setStep(2)} disabled={isProcessing}>
               <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
             </button>
-            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={batchRecoveryError || isProcessing || !paymentChannel || !paymentMethod || !acknowledged || !storyAmountSupported || (otherBatch && !batchValid)} aria-busy={isProcessing}>
+            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={batchRecoveryError || isProcessing || !paymentChannel || !paymentMethod || !acknowledged || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))} aria-busy={isProcessing}>
               {paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}
             </button>
           </>) : null}
