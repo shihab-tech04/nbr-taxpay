@@ -67,3 +67,25 @@ test('all service headings, descriptions and outlines respect different Office c
     }
   }
 });
+
+test('active service frame and keyboard focus use the Office outline accent', async ({page}) => {
+  const palette={background_color:'#F1F6FA',heading_color:'#234868',
+    body_color:'#375977',outline_color:'#265D79'};
+  await page.route('**/rest/v1/taxpay_site_banners**',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify(publishedBannerRows.map((row,i)=>i===1?{...row,...palette}:row)),
+  }));
+  await page.goto('/?action=landing');
+  const carousel=page.getByRole('region',{name:'Tax payment service banners'});
+  await carousel.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(carousel).toHaveAttribute('data-active-slide','1');
+  await expect(carousel).toHaveAttribute('data-active-palette','image');
+  await expect(carousel).toHaveCSS('border-color','rgb(38, 93, 121)');
+  const action=carousel.locator('.public-hero-carousel__slide').nth(1).locator('.citizen-public-primary');
+  await action.focus();
+  await expect(action).toHaveCSS('outline-color','rgb(38, 93, 121)');
+  await carousel.focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect(carousel).not.toHaveAttribute('data-active-palette','image');
+});
