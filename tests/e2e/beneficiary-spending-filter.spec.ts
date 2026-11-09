@@ -35,7 +35,9 @@ test('profile-scoped tags reconcile dashboard family/friends/clients and filter 
   await expect(summary.getByTestId('tag-spend-friends')).toContainText('6,500');
   await expect(summary.getByTestId('tag-spend-clients')).toContainText('45,000');
   await expect(summary.getByTestId('tag-spend-others')).toContainText('0');
-  await expect(summary.getByTestId('tag-spend-unassigned')).toContainText('32,000');
+  await expect(summary.getByTestId('tag-spend-no-link')).toContainText('32,000');
+  await expect(summary.getByTestId('tag-spend-needs-tag')).toContainText('0');
+  await expect(summary.getByTestId('tag-spend-unassigned')).toHaveCount(0);
   await page.goto('/?action=history');
   await page.getByRole('button',{name:'Filter',exact:true}).click();
   const filter=page.getByRole('combobox',{name:'Filter transactions by beneficiary tag'});
@@ -83,10 +85,13 @@ test('unclassified saved beneficiary payments remain unassigned with an actionab
   const spending=page.getByTestId('beneficiary-spending-breakdown');
   await expect(spending.getByTestId('tagged-payment-total')).toContainText('113,500');
   await expect(spending.getByTestId('tag-spend-family')).toContainText('0');
-  await expect(spending.getByTestId('tag-spend-unassigned')).toContainText('62,000');
+  await expect(spending.getByTestId('tag-spend-needs-tag')).toContainText('30,000');
+  await expect(spending.getByTestId('tag-spend-no-link')).toContainText('32,000');
+  await expect(spending.getByTestId('tag-spend-own')).toBeVisible();
+  await expect(spending.getByTestId('tag-spend-unassigned')).toHaveCount(0);
+  await expect(spending.getByTestId('beneficiary-spending-segments')).toBeVisible();
   const notice=spending.getByTestId('dashboard-tag-review');
-  await expect(notice).toContainText('30,000');
-  await expect(notice).toContainText('32,000');
+  await expect(notice).toContainText('Some saved beneficiaries need a tag');
   const review=notice.getByRole('button',{name:'Review beneficiary tags'});
   await expect(review).toHaveCSS('background-color','rgb(255, 255, 255)');
   await review.click();
