@@ -67,3 +67,28 @@ test('cannot reuse a partial grouped batch or unreconciled line amount',()=>{
    {...grouped,id:'second',batchItemIndex:2}
  ],'owner','1234567890123','batch-1'),/reconciled/);
 });
+
+test('Travel Tax reuse copies itinerary and people but never treats masked passports as verified',()=>{
+ const travel={...receipt,paymentCategory:'TRAVEL_TAX' as const,
+   assessmentYear:'2026-27',items:[{...receipt.items[0],totalAmount:30,taxAmount:30}],
+   totalAmount:30,travelDetails:{
+     mode:'LAND' as const,departurePort:'Benapole',destination:'India',travelDate:'2026-11-12',
+     economicCode:'1144102',
+     passengers:[{name:'Test Passenger',passportMasked:'••••1234',nationality:'BD' as const,
+       country:'Bangladesh',ageBand:'ADULT' as const,age:34,amount:30}]
+   }};
+ const draft=reuseRecordedPayment([travel],'owner','1234567890123','travel-origin');
+ assert.equal(draft.service,'TRAVEL_TAX');
+ assert.equal(draft.formPayload.travelDate,'');
+ assert.equal(draft.formPayload.port,'Benapole');
+ assert.equal(draft.formPayload.destination,'India');
+ const people=draft.formPayload.passengers as Array<{passport:string;name:string;birthDate:string;identitySource:string}>;
+ assert.deepEqual(people.map(p=>p.name),['Test Passenger']);
+ assert.deepEqual(people.map(p=>p.passport),['']);
+ assert.deepEqual(people.map(p=>p.birthDate),['']);
+ assert.deepEqual(people.map(p=>p.identitySource),['PENDING']);
+ assert.equal(JSON.stringify(draft).includes('••••1234'),false);
+ assert.throws(()=>reuseRecordedPayment([{...travel,
+   travelDetails:{...travel.travelDetails,passengers:[{...travel.travelDetails.passengers[0],amount:0}]}
+ }],'owner','1234567890123','travel-origin'),/cannot be reconciled/);
+});
