@@ -68,14 +68,14 @@ for(const language of ['en','bn'] as const){
           .toHaveText('012345678901');
       }
       if(view==='beneficiaries'&&!desktop){
-        const context=page.locator('.taxpay-office-register__actions .beneficiary-directory__list-toolbar .beneficiary-directory__list-filter');
+        await page.getByRole('button',{name:language==='en'?'Filter':'ফিল্টার',exact:true}).click();
+        const context=page.locator('.beneficiary-directory__filters .beneficiary-directory__list-filter');
         const search=page.locator('.taxpay-office-register__actions .taxpay-record-toolbar__search');
         await expect(context.getByRole('button',{name:language==='en'?'Selected list':'নির্বাচিত তালিকা'})).toBeVisible();
         await expect(search.getByRole('searchbox')).toBeVisible();
         const [listBox,searchBox]=await Promise.all([context.boundingBox(),search.boundingBox()]);
         if(!listBox||!searchBox)throw Error('Missing list switch or shared search');
         expect(searchBox.width,'Search is usable at 375px').toBeGreaterThan(120);
-        await page.getByRole('button',{name:language==='en'?'Filter':'ফিল্টার',exact:true}).click();
         const filters=page.locator('.beneficiary-directory__filters');
         const tag=filters.locator('.beneficiary-directory__tag-filter');
         await expect(tag).toBeVisible();

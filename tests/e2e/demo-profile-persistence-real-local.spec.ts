@@ -34,6 +34,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
   const openBeneficiaries=async(page:Page)=>{
     await page.goto('/?action=beneficiaries');
     await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+    await page.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
   };
   const openMobileAccountMenu=async(page:Page)=>{
     const dialog=page.locator('.citizen-dialog');
@@ -168,6 +169,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     const secondProfile=await second.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
     expect(secondProfile?.paymentSessionId).toBe(firstProfile.paymentSessionId);
     await second.reload();
+    await second.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     await expect(selectedListButton(second)).toContainText(listName);
     await expect(second.getByTestId('beneficiary-records')).toContainText(personName);
     await second.goto('/?action=history');

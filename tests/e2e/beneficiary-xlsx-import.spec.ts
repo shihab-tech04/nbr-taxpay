@@ -164,6 +164,7 @@ test('failed new-list import stays recoverable and retries against the same crea
 test('local sample taxpayer Beneficiaries supports independent lists, Excel import, list-only move, removal, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
   await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
   const recordList=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
   const expectRecord=async(name:string)=>expect(recordList.getByText(name,{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Create your first list'})).toBeVisible();
@@ -267,6 +268,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   await expect(page.getByText('Local Beneficiary Two')).toHaveCount(0);
 
   await page.reload();
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
   await page.getByRole('button',{name:'Selected list'}).click();
   await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Guest Work',exact:true}).click();
   await expectRecord('Synthetic Guest One');
@@ -277,6 +279,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, Excel impo
   mkdirSync('test-results/screenshots',{recursive:true});
   await page.screenshot({path:`test-results/screenshots/beneficiaries-${info.project.name}-en.png`,fullPage:true});
   await page.goto('/?action=beneficiaries&demoUser=user1&lang=bn');
+  await page.getByRole('button',{name:'ফিল্টার',exact:true}).click();
   await expect(page.getByRole('heading',{name:'উপকারভোগী',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'নির্বাচিত তালিকা'}).click();
   await page.getByRole('dialog',{name:'উপকারভোগীর তালিকা বাছুন'}).getByRole('button',{name:'Guest Work',exact:true}).click();
