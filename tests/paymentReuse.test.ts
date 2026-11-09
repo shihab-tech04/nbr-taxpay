@@ -92,3 +92,12 @@ test('Travel Tax reuse copies itinerary and people but never treats masked passp
    travelDetails:{...travel.travelDetails,passengers:[{...travel.travelDetails.passengers[0],amount:0}]}
  }],'owner','1234567890123','travel-origin'),/cannot be reconciled/);
 });
+
+test('does not reuse duplicate allocations for the same taxpayer, head and year',()=>{
+ const duplicate={...receipt,
+   items:[receipt.items[0],receipt.items[0]],
+   allocationItems:[receipt.allocationItems![0],receipt.allocationItems![0]],
+   totalAmount:20,
+ };
+ assert.throws(()=>reuseRecordedPayment([duplicate],'owner','1234567890123','source'),/duplicate taxpayer\/head\/year/);
+});
