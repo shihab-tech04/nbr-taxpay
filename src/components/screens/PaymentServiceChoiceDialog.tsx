@@ -324,12 +324,12 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         ) : null}
       </section>
       {exitPromptOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/50 p-4"
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/50 px-4 py-6"
           data-testid="payment-draft-exit-overlay"
           onMouseDown={event => event.stopPropagation()}>
           <div role="alertdialog" aria-modal="true" aria-labelledby="payment-draft-exit-title"
             aria-describedby="payment-draft-exit-description"
-            className="w-full max-w-md rounded-xl border border-taxpay-border bg-white p-5 shadow-2xl"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-[440px] overflow-y-auto rounded-2xl border border-taxpay-border bg-white p-5 shadow-2xl sm:p-6"
             onKeyDown={event => {
               if (event.key === 'Escape') {
                 event.preventDefault();
@@ -348,29 +348,40 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
                 }
               }
             }}>
-            <h3 id="payment-draft-exit-title" className="text-lg font-semibold text-taxpay-dark">
-              {tr('Save your tax payment?', 'কর পরিশোধের খসড়া সংরক্ষণ করবেন?')}
-            </h3>
-            <p id="payment-draft-exit-description" className="mt-2 text-sm text-taxpay-muted">
-              {tr('Save this payment as a draft to continue later, or discard your unsaved changes.',
-                'পরে চালিয়ে যেতে পেমেন্টটি খসড়া হিসেবে সংরক্ষণ করুন, অথবা অসংরক্ষিত পরিবর্তন বাদ দিন।')}
-            </p>
-            {exitError && <p role="alert" className="mt-3 text-sm text-taxpay-error">{exitError}</p>}
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-taxpay-primary/10 text-taxpay-primary" aria-hidden="true">
+                <FileCheck2 size={20} strokeWidth={1.8} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 id="payment-draft-exit-title" className="text-lg font-semibold leading-6 text-taxpay-dark">
+                  {tr('Save your tax payment?', 'কর পরিশোধের খসড়া সংরক্ষণ করবেন?')}
+                </h3>
+                <p id="payment-draft-exit-description" className="mt-2 text-sm leading-6 text-taxpay-muted">
+                  {tr('Save a draft to continue later. Discarding will lose your unsaved changes.',
+                    'পরে চালিয়ে যেতে খসড়া সংরক্ষণ করুন। বাদ দিলে অসংরক্ষিত পরিবর্তন হারিয়ে যাবে।')}
+                </p>
+              </div>
+            </div>
+            {exitError && <p role="alert" className="mt-4 rounded-lg border border-taxpay-border px-3 py-2 text-sm text-taxpay-error">{exitError}</p>}
+            <div className="mt-6 grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2"
+              data-testid="payment-draft-exit-cta-row">
               <button ref={exitFirstButtonRef} type="button" disabled={exitSaving}
-                className="min-h-11 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white disabled:opacity-60"
+                className="min-h-11 w-full rounded-lg bg-taxpay-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-taxpay-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
                 onClick={() => void saveDraftAndClose()}>
                 {exitSaving ? tr('Saving…', 'সংরক্ষণ হচ্ছে…') : tr('Save Draft', 'খসড়া সংরক্ষণ করুন')}
               </button>
               <button type="button" disabled={exitSaving}
-                className="min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-dark disabled:opacity-60"
-                onClick={close}>
-                {tr('Discard tax payment', 'কর পরিশোধ বাদ দিন')}
-              </button>
-              <button type="button" disabled={exitSaving}
-                className="min-h-11 px-3 text-sm font-medium text-taxpay-primary disabled:opacity-60"
+                className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-4 py-2.5 text-sm font-semibold text-taxpay-dark transition-colors hover:bg-taxpay-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
                 onClick={() => { setExitPromptOpen(false); setExitError(''); }}>
                 {tr('Keep editing', 'সম্পাদনা চালিয়ে যান')}
+              </button>
+            </div>
+            <div className="mt-5 border-t border-taxpay-border pt-3"
+              data-testid="payment-draft-exit-discard-row">
+              <button type="button" disabled={exitSaving}
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-taxpay-error transition-colors hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
+                onClick={close}>
+                {tr('Discard tax payment', 'কর পরিশোধ বাদ দিন')}
               </button>
             </div>
           </div>
