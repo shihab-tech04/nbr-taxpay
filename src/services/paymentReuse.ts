@@ -45,11 +45,17 @@ export function reuseRecordedPayment(
   if (!supported.has(service)) throw Error('This payment service needs a fresh payment journey.');
   if (source.some(r => !r.isSimulatedDemo || r.paymentCategory !== service || !r.items?.length))
     throw Error('The original payment is incomplete and cannot be copied.');
-  if (source.length > 1) {
+  // A single fetched row may still belong to a larger multi-item batch.
+  // Never treat a partial history page or missing item as an entire payment.
+  const isBatch = source.some(r => r.batchId || r.batchItemCount || r.batchItemIndex);
+  if (isBatch) {
     const batchId = source[0].batchId;
     const total = source[0].batchItemCount;
-    if (service !== 'OTHER_TAX_PAYMENT' || !batchId || total !== source.length ||
-        source.some(r => r.batchId !== batchId || r.batchItemCount !== total) ||
+    if (service !== 'OTHER_TAX_PAYMENT' || !batchId || !Number.isSafeInteger(total) ||
+        total! <= 0 || total !== source.length ||
+        source.some(r => r.batchId !== batchId || r.batchItemCount !== total ||
+          !Number.isSafeInteger(r.batchItemIndex) || r.batchItemIndex! < 1 ||
+          r.batchItemIndex! > total!) ||
         new Set(source.map(r => r.batchItemIndex)).size !== total)
       throw Error('The complete original batch is unavailable.');
   }
