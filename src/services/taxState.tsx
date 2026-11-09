@@ -12,6 +12,7 @@ import {
   TaxpayerProfile
 } from '../types/tax';
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
+import type {PaymentReuse} from './paymentReuse';
 import {useAccountIdentity} from './accountIdentity';
 import {readBrowserLanguage,saveBrowserLanguage,saveAccountViewPreference,validSavedLanguage} from './accountViewPreferences';
 import {recordAccountActivity} from './accountActivity';
@@ -37,6 +38,8 @@ export interface TaxStateContextType {
   paymentServiceInitialSelection: BannerPaymentService | null;
   openPaymentServiceChoice: (service?: BannerPaymentService) => void;
   paymentBeneficiaryPrefill: PaymentBeneficiaryPrefill | null;
+  paymentReuse: PaymentReuse | null;
+  startPaymentReuse: (reuse: PaymentReuse) => void;
   setPaymentBeneficiaryPrefill: (value: PaymentBeneficiaryPrefill | null) => void;
   demoUser: DemoUser | null;
   previewAccount: DemoUser | null;
@@ -95,15 +98,25 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpenState] = useState(false);
   const [paymentServiceInitialSelection, setPaymentServiceInitialSelection] = useState<BannerPaymentService | null>(null);
   const [paymentBeneficiaryPrefill, setPaymentBeneficiaryPrefill] = useState<PaymentBeneficiaryPrefill | null>(null);
+  const [paymentReuse, setPaymentReuse] = useState<PaymentReuse | null>(null);
+  const startPaymentReuse = (copy: PaymentReuse) => {
+    if (!accountUser || accountUser.id !== copy.ownerUid) return;
+    setPaymentBeneficiaryPrefill(null);
+    setPaymentServiceInitialSelection(null);
+    setPaymentReuse(copy);
+    setPaymentServiceChoiceOpenState(true);
+  };
   const setPaymentServiceChoiceOpen = (open: boolean) => {
     if (!open) {
       setPaymentServiceInitialSelection(null);
       setPaymentBeneficiaryPrefill(null);
+      setPaymentReuse(null);
     }
     setPaymentServiceChoiceOpenState(open);
   };
   const openPaymentServiceChoice = (service?: BannerPaymentService) => {
     setPaymentBeneficiaryPrefill(null);
+    setPaymentReuse(null);
     setPaymentServiceInitialSelection(service ?? null);
     setPaymentServiceChoiceOpenState(true);
   };
@@ -419,6 +432,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         openPaymentServiceChoice,
         paymentBeneficiaryPrefill,
         setPaymentBeneficiaryPrefill,
+        paymentReuse,
+        startPaymentReuse,
         demoUser,
         previewAccount,
         loginPreviewAccount,
