@@ -51,8 +51,12 @@ export function reuseRecordedPayment(
     const receipt = source[0];
     const trip = receipt.travelDetails;
     if (!trip || !['LAND','WATER'].includes(trip.mode) ||
+        typeof trip.departurePort !== 'string' || !trip.departurePort.trim() ||
+        typeof trip.destination !== 'string' || !trip.destination.trim() ||
+        typeof trip.travelDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(trip.travelDate) ||
         !Array.isArray(trip.passengers) || !trip.passengers.length ||
         trip.passengers.length > 20 || receipt.items.length !== trip.passengers.length ||
+        !(receipt.totalAmount > 0) ||
         !Number.isSafeInteger(Math.round(receipt.totalAmount * 100)))
       throw Error('Original travel details are incomplete.');
     const sum = trip.passengers.reduce((total, passenger, index) => {
