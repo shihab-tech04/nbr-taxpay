@@ -42,6 +42,53 @@ export function reuseRecordedPayment(
   if (!ownerUid || !sourcePaymentId || !source.length || source.length > 20)
     throw Error('A complete owned payment is required.');
   const service = source[0].paymentCategory;
+  // Travel receipts deliberately contain only masked passports. Copy the
+  // itinerary and passenger names, but require fresh identity and travel-date
+  // checks. Never invent a passport/DOB from a masked financial receipt.
+  if (service === 'TRAVEL_TAX') {
+    if (source.length !== 1 || !source[0].isSimulatedDemo || source[0].batchId)
+      throw Error('The original travel payment is incomplete.');
+    const receipt = source[0];
+    const trip = receipt.travelDetails;
+    if (!trip || !['LAND','WATER'].includes(trip.mode) ||
+        !Array.isArray(trip.passengers) || !trip.passengers.length ||
+        trip.passengers.length > 20 || receipt.items.length !== trip.passengers.length ||
+        !Number.isSafeInteger(Math.round(receipt.totalAmount * 100)))
+      throw Error('Original travel details are incomplete.');
+    const sum = trip.passengers.reduce((total, passenger, index) => {
+      const minor = Math.round(passenger.amount * 100);
+      const lineMinor = Math.round(receipt.items[index].totalAmount * 100);
+      if (!Number.isSafeInteger(minor) || minor < 0 || minor !== lineMinor ||
+          typeof passenger.name !== 'string' || !passenger.name.trim() ||
+          !['BD','FOREIGN'].includes(passenger.nationality) ||
+          (passenger.nationality === 'FOREIGN' && !passenger.country?.trim()))
+        throw Error('Original travel passenger details cannot be reconciled.');
+      return total + minor;
+    }, 0);
+    if (sum !== Math.round(receipt.totalAmount * 100))
+      throw Error('Original travel amount does not reconcile.');
+    const passengers = trip.passengers.map((passenger,index) => ({
+      id: 'repeat-traveller-' + (index + 1),
+      nationality: passenger.nationality,
+      passport: '',
+      name: passenger.name,
+      ageBand: 'ADULT' as const,
+      birthDate: '',
+      country: passenger.country || (passenger.nationality === 'BD' ? 'Bangladesh' : ''),
+      identitySource: (passenger.nationality === 'BD' ? 'PENDING' : 'MANUAL') as 'PENDING' | 'MANUAL',
+      medicalPortReferral: false,
+    }));
+    const payload: Record<string,unknown> = {
+      schemaVersion: 1, step: 0, mode: trip.mode,
+      port: trip.mode === 'LAND' ? trip.departurePort : '',
+      waterPort: trip.mode === 'WATER' ? trip.departurePort : '',
+      destination: trip.destination,
+      travelDate: '',
+      phone: /^01\d{9}$/.test(receipt.receiptMobile ?? '') ? receipt.receiptMobile : '',
+      passengers,
+    };
+    return {ownerUid,sourcePaymentId,service,formPayload:payload};
+  }
   if (!supported.has(service)) throw Error('This payment service needs a fresh payment journey.');
   if (source.some(r => !r.isSimulatedDemo || r.paymentCategory !== service || !r.items?.length))
     throw Error('The original payment is incomplete and cannot be copied.');
