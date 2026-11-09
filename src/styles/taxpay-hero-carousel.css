@@ -674,3 +674,12 @@
 .public-hero-carousel__slide[data-banner-palette="image"][data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel:hover { color: var(--banner-outline); border-color: var(--banner-outline); }
 .public-hero-carousel__slide[data-banner-palette="image"][data-payment-service] .public-guest-actions .citizen-public-primary,
 .public-hero-carousel__slide[data-banner-palette="image"][data-payment-service] .public-guest-actions .citizen-public-primary:hover { color: var(--banner-outline); border-color: var(--banner-outline); }
+
+/* CMS-published outline ink must also drive the related service focus ring.
+ * Navigation arrows and filled Pay Tax remain the permanent TaxPay blue. */
+.public-hero-carousel__slide[data-banner-palette="image"][data-payment-service] .public-guest-actions .citizen-public-primary:focus-visible {
+  outline-color: var(--banner-outline);
+}
+.public-hero-carousel__slide[data-banner-palette="image"][data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel:focus-visible {
+  outline-color: var(--banner-outline);
+}
