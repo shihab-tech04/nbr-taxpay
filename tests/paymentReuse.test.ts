@@ -32,3 +32,38 @@ test('refuses incomplete and mismatched receipt data',()=>{
  assert.throws(()=>reuseRecordedPayment([{...receipt,items:[...receipt.items,receipt.items[0]]}],'owner','1234567890123','ref'));
  assert.throws(()=>reuseRecordedPayment([{...receipt,paymentCategory:'TRAVEL_TAX'}],'owner','1234567890123','ref'));
 });
+
+test('preserves complete multi-taxpayer mixed-head multi-year source without reusing receipt identity',()=>{
+ const extended = {...receipt,
+   id:'r-combined',challanNo:'SIM-COMBINED',totalAmount:40,
+   items:[...receipt.items, {...receipt.items[0],headId:3,totalAmount:5,taxAmount:5},
+     {...receipt.items[1],headId:4,totalAmount:5,taxAmount:5}],
+   allocationItems:[...receipt.allocationItems!,
+     {...receipt.allocationItems![0],taxpayerTin:'8888888888888',assessmentYear:'2027-28',amountMinor:500},
+     {...receipt.allocationItems![1],taxpayerTin:'9999999999999',assessmentYear:'2026-27',amountMinor:500}]
+ } as ChallanReceipt;
+ const before=JSON.stringify(extended);
+ const copy=reuseRecordedPayment([extended],'signed-in-owner','1234567890123','source-payment');
+ const lines=copy.formPayload.otherTaxLines as Array<{taxpayerId:string;headId:number;assessmentYear:string;amount:string}>;
+ assert.equal(lines.length,4);
+ assert.deepEqual(lines.map(line=>line.headId),[1,2,3,4]);
+ assert.deepEqual(lines.map(line=>line.assessmentYear),['2026-27','','','2026-27']);
+ assert.deepEqual(lines.map(line=>line.amount),['10.00','20.00','5.00','5.00']);
+ assert.equal(copy.formPayload.forSelf,true);
+ assert.equal((copy.formPayload.additionalTaxpayers as unknown[]).length,2);
+ assert.equal(copy.sourcePaymentId,'source-payment');
+ assert.equal(Object.keys(copy.formPayload).some(key=>/challan|transaction|gateway|treasury|authorization|idempotency/i.test(key)),false);
+ lines[0].amount='1.00';
+ assert.equal(JSON.stringify(extended),before);
+});
+test('cannot reuse a partial grouped batch or unreconciled line amount',()=>{
+ const grouped={...receipt,batchId:'batch-1',batchItemCount:2,batchItemIndex:1};
+ assert.throws(()=>reuseRecordedPayment([grouped],'owner','1234567890123','batch-1'),/complete original batch/);
+ assert.throws(()=>reuseRecordedPayment([
+   grouped,{...grouped,id:'second',batchItemIndex:1}
+ ],'owner','1234567890123','batch-1'),/complete original batch/);
+ assert.throws(()=>reuseRecordedPayment([
+   {...grouped,allocationItems:[{...receipt.allocationItems![0],amountMinor:2000},receipt.allocationItems![1]]},
+   {...grouped,id:'second',batchItemIndex:2}
+ ],'owner','1234567890123','batch-1'),/reconciled/);
+});
