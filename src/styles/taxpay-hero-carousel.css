@@ -290,7 +290,7 @@
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__actions {
     margin-top: .75rem;
   }
-  .public-hero-carousel__slide .public-information-hero__media { height: clamp(184px, 52vw, 270px); }
+  .public-hero-carousel__slide .public-information-hero__media { height: clamp(164px, 47vw, 225px); }
 
   /* Prevent unnecessary zoom and preserve the new conceptual art at phone sizes. */
   .public-hero-carousel__slide .public-information-hero__image {
@@ -613,9 +613,12 @@
   /* Longer bilingual service titles and CTA labels must wrap instead of
    * overflowing the fixed 150px introduction-only copy slot. */
   .public-hero-carousel__slide.public-information-hero {
-    grid-template-rows: minmax(190px, auto) clamp(184px, 52vw, 270px);
+    /* The former 190px text track pushed CMS artwork far below compact
+     * mobile copy. Allow long Bengali CTAs to grow naturally, not every
+     * banner to inherit an oversized fixed empty row. */
+    grid-template-rows: minmax(154px, auto) clamp(164px, 47vw, 225px);
     height: auto;
-    min-height: calc(190px + clamp(184px, 52vw, 270px));
+    min-height: calc(154px + clamp(164px, 47vw, 225px));
   }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2,

@@ -67,3 +67,42 @@ for (const [index, service] of serviceCatalog.entries()) {
     }
   });
 }
+
+
+test('Source Tax banner uses the current full-width payment modal without changing withholding service rules', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Desktop multi-head banner payment acceptance');
+  await page.goto('/?action=landing');
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  await carousel.focus();
+  for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
+  const active = carousel.locator('.public-hero-carousel__slide[data-active="true"]');
+  await active.getByRole('button', { name: 'Deposit Source Tax' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await dialog.locator('[data-payer-relationship="SELF"]').click();
+  await dialog.locator('[data-payment-access="GUEST"]').click();
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(dialog.locator('.tax-service-choice')).toHaveAttribute('data-banner-entry', 'true');
+  await expect(dialog.locator('.tax-service-choice__selected-service strong'))
+    .toHaveAttribute('data-payment-service', 'SOURCE_TAX_DEPOSIT');
+  await dialog.locator('#guest-tin').fill('123456789012');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const legacy = dialog.locator('.payment-flow-embedded__payment');
+  await expect(legacy.locator('.payment-form-layout__sections')).toBeVisible();
+  await expect(legacy.locator('.payment-form-summary')).toBeVisible();
+  await expect(legacy.locator('#guest-head-search')).toBeVisible();
+  await expect(legacy.locator('#guest-assessment-year')).toBeVisible();
+  const geometry = await legacy.evaluate(root => {
+    const sections = root.querySelector<HTMLElement>('.payment-form-layout__sections')!.getBoundingClientRect();
+    const summary = root.querySelector<HTMLElement>('.payment-form-summary')!.getBoundingClientRect();
+    return { sectionsLeft: sections.left, sectionsRight: sections.right,
+      summaryLeft: summary.left, summaryTop: summary.top,
+      sectionsBottom: sections.bottom, summaryWidth: summary.width };
+  });
+  expect(geometry.summaryTop).toBeGreaterThanOrEqual(geometry.sectionsBottom - 3);
+  expect(Math.abs(geometry.summaryLeft - geometry.sectionsLeft)).toBeLessThan(3);
+  expect(geometry.summaryWidth).toBeGreaterThan(380);
+  // The withholding category is not silently converted into the Other Tax
+  // payment category; this protects its separate eTDS allocation treatment.
+  await expect(dialog.locator('.tax-service-choice__selected-service strong')).toHaveText('Source Tax Deposit');
+});

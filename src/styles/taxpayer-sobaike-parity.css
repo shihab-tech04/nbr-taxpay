@@ -386,6 +386,9 @@
   border-radius: 12px;
   background: var(--color-taxpay-primary);
   border-color: var(--color-taxpay-primary);
+  /* The taxpayer reference stylesheet previously set this button's text to
+   * the SAME blue as its background. Keep text and the SVG icon legible. */
+  color: var(--color-taxpay-surface);
 }
 @media (min-width: 901px) and (max-width: 1439px) {
   /* Sobaike tablet header: white surface and dark navigation. */

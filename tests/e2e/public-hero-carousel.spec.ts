@@ -277,3 +277,42 @@ test('public record search and 14px minimum primary label remain unchanged', asy
   await expect(button).toBeVisible();
   expect(await button.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);
 });
+
+
+test('compact mobile banners keep artwork near actions without cropping or horizontal overflow', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const width of [320, 390, 600]) {
+    await page.setViewportSize({ width, height: 820 });
+    await page.goto('/?action=landing');
+    const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+    const slide = carousel.locator('.public-hero-carousel__slide').first();
+    const layout = await slide.evaluate(element => {
+      const frame = element.getBoundingClientRect();
+      const actions = element.querySelector<HTMLElement>('.citizen-public-hero__actions')!.getBoundingClientRect();
+      const media = element.querySelector<HTMLElement>('.public-information-hero__media')!.getBoundingClientRect();
+      const image = element.querySelector<HTMLImageElement>('img')!;
+      return {
+        height: frame.height, gap: media.top - actions.bottom,
+        mediaInside: media.bottom <= frame.bottom + 2,
+        imageFit: getComputedStyle(image).objectFit,
+        imageTransform: getComputedStyle(image).transform,
+      };
+    });
+    expect(layout.height, 'banner height at ' + width).toBeLessThan(width <= 390 ? 405 : 455);
+    expect(layout.gap, 'excessive empty artwork gap at ' + width).toBeGreaterThanOrEqual(-2);
+    expect(layout.gap, 'excessive empty artwork gap at ' + width).toBeLessThan(85);
+    expect(layout.mediaInside).toBe(true);
+    expect(layout.imageFit).toBe('contain');
+    expect(layout.imageTransform).toBe('none');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth))
+      .toBeLessThanOrEqual(2);
+    for (let i = 1; i < 5; i++) {
+      await carousel.focus();
+      await page.keyboard.press('ArrowRight');
+      const active = carousel.locator('.public-hero-carousel__slide[data-active="true"]');
+      await expect(active).toBeVisible();
+      await expect(active.locator('img')).toHaveCSS('object-fit', 'contain');
+      await expect(active.getByRole('button').first()).toBeVisible();
+    }
+  }
+});

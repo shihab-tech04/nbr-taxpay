@@ -207,6 +207,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
       )}
     >
       <section key={view} ref={flowRef} data-view={view}
+        data-banner-entry={initialService && view === 'payment' ? 'true' : undefined}
         className={`tax-service-choice${view === 'payment' && effectiveSelected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
         {view === 'payment' && <>
           <p ref={stepHeadingRef} tabIndex={-1} className="tax-service-choice__eyebrow" aria-label={tr(`Step ${stage} of 4: ${stages[stage - 1]}`, `ধাপ ${stage} / ৪: ${stages[stage - 1]}`)}>{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)}</p>

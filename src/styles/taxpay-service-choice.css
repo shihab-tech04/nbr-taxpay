@@ -2294,3 +2294,47 @@
     gap: 4px;
   }
 }
+
+/* A CMS service-specific CTA must use the same readable progressive modal as
+ * the shared Pay action, without losing its distinct accounting category.
+ * The legacy two-column form + 310px rail cramped multi-head amount inputs.
+ * Only the direct service entry's Step 2 uses the full-width arrangement.
+ * All heads, per-head amounts, AY controls and the calculation remain present. */
+.taxpay-citizen-shell .tax-service-choice[data-banner-entry="true"]
+  .payment-flow-embedded__content:has(> .payment-flow-embedded__payment) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.taxpay-citizen-shell .tax-service-choice[data-banner-entry="true"]
+  .payment-flow-embedded__payment > .payment-form-layout__sections {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+}
+.taxpay-citizen-shell .tax-service-choice[data-banner-entry="true"]
+  .payment-flow-embedded__payment > .payment-form-summary {
+  grid-column: 1;
+  grid-row: 2;
+  width: 100%;
+  min-width: 0;
+  border-left: 0;
+  border-top: 1px solid var(--citizen-border);
+  position: static;
+}
+@media (min-width: 801px) {
+  .taxpay-citizen-shell .tax-service-choice[data-banner-entry="true"]
+    .payment-flow-embedded__payment .payment-head-amount-grid:has(.payment-head-amount:nth-child(2)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .taxpay-citizen-shell .tax-service-choice[data-banner-entry="true"]
+    .payment-flow-embedded__payment .payment-head-amount-grid:has(.payment-head-amount:nth-child(2))
+    .payment-head-amount {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 260px);
+    align-items: center;
+    gap: 12px;
+  }
+  .taxpay-citizen-shell .tax-service-choice[data-banner-entry="true"]
+    .payment-flow-embedded__payment .payment-head-amount-grid:has(.payment-head-amount:nth-child(2))
+    .payment-head-amount__label { margin: 0; }
+}
