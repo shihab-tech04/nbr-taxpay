@@ -50,6 +50,8 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
   const payAgain=(entry:BeneficiaryPaymentEntry)=>{
     try{
       setReuseError('');
+      if (profile.status === 'loading' || profile.status === 'idle')
+        throw Error('Taxpayer profile is still loading. Try again after your account is verified.');
       const matching = entry.batchId ? rows.filter(r=>r.batchId===entry.batchId) : [entry];
       const unique = [...new Map(matching.map(r=>[r.paymentId,r.receipt])).values()];
       startPaymentReuse(reuseRecordedPayment(unique,ownerUid,profile.profile?.tin??null,entry.batchId??entry.paymentId));
