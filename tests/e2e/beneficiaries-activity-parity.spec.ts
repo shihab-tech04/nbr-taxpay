@@ -55,6 +55,20 @@ for(const language of ['en','bn'] as const){
     await expect(screen.locator('.taxpay-office-register__count')).toContainText('2');
     const directory=screen.getByTestId('beneficiary-records');
     await expect(directory).toBeVisible();
+    // Unlike the old release, the selected-list picker, search and filter must
+    // remain on ONE toolbar row at desktop widths, without an empty bulk strip.
+    if(page.viewportSize()!.width>=1180){
+      const toolbar=screen.locator('.beneficiary-register-frame > .taxpay-office-register__toolbar');
+      const bounds=await toolbar.boundingBox();
+      const searchBounds=await search.boundingBox();
+      const listBounds=await selectList.boundingBox();
+      expect(bounds?.height,'Beneficiaries toolbar must match Transaction History compact height').toBeLessThanOrEqual(90);
+      expect(Math.abs((searchBounds?.y??0)-(listBounds?.y??0)),
+        'Selected list must align with Search and Filter, not wrap beneath them').toBeLessThan(18);
+      await expect(screen.locator('.beneficiary-register-frame > .beneficiary-directory__count')).toBeHidden();
+      await expect(directory.locator('thead').getByRole('checkbox',{
+        name:t('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')})).toBeVisible();
+    }
     const rows=directory.locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
     await expect(rows).toHaveCount(2);
     await expect(rows.first()).toContainText('Shihab');
