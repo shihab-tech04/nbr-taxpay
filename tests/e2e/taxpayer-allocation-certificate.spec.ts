@@ -109,5 +109,6 @@ test('same taxpayer heads group into one receipt section with correct subtotal',
     await expect(table.locator('td[rowspan="2"]')).toHaveCount(1);
     await expect(table.locator('tbody td[data-testid="receipt-taxpayer-cell"]')).toHaveCount(2);
     await expect(table.locator('td[rowspan="2"]')).toContainText('153.45');
+    await expect(table.locator('tbody tr').nth(1).locator('td').last()).toHaveCSS('text-align', 'right');
   }
 });
