@@ -312,8 +312,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
          </PaymentDraftEntryGate> : view === 'login' ? (
            <TaxpayerLoginDialog embedded preservePaymentJourney emailReturnTo="taxpayer_home" onClose={() => setView('payer')} onValidityChange={setLoginReady} onSuccess={() => beginPayment(true)} />
          ) : effectiveSelected === 'TRAVEL_TAX' ? (
-          <TravelTax key={draftToResume ? 'travel-draft-' + draftToResume.id : 'travel-tax-modal'}
-            embedded fourStepJourney initialDraft={draftToResume ?? undefined}
+          <TravelTax key={draftToResume ? 'travel-draft-' + draftToResume.id : initialReuse ? 'travel-reuse-' + initialReuse.sourcePaymentId : 'travel-tax-modal'}
+            embedded fourStepJourney initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
             onBackToService={returnToService} onStageChange={reportStage} />
         ) : effectiveSelected ? (
           <GuestPayment key={draftToResume ? 'payment-draft-' + draftToResume.id : initialReuse ? 'payment-reuse-' + initialReuse.sourcePaymentId : effectiveSelected + '-' + String(payerForSelf)}
