@@ -325,6 +325,14 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   // SQL controls publication and order. Each published row owns its own
   // bilingual copy, theme, CTA, and artwork; never replace these with intro text.
   const travelBanner = slides.find(slide => slide.serviceCode === 'TRAVEL_TAX') ?? fallbackSlides[4];
+  // The carousel border follows the currently published service theme,
+  // while the global brand controls and the main Pay Tax CTA remain fixed.
+  const activeSlide = slides[activeIndex];
+  const activeOutline = activeSlide.serviceCode && [
+    activeSlide.backgroundColor, activeSlide.headingColor,
+    activeSlide.bodyColor, activeSlide.outlineColor,
+  ].every(value => typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value))
+    ? activeSlide.outlineColor : null;
 
   return (
     <div
@@ -347,6 +355,8 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         data-active-slide={activeIndex}
         data-dragging={isSwiping}
         data-payment-service={slides[activeIndex].serviceCode}
+        data-active-palette={activeOutline ? 'image' : undefined}
+        style={activeOutline ? { borderColor: activeOutline } : undefined}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onPointerDown={onSwipeStart}
