@@ -75,3 +75,39 @@ test('shared receipt allocation labels and values stay in Bengali', async ({ pag
   await expect(paper).toContainText('৳ ১২৩.৪৫');
   await expect(paper).toContainText('৳ ৬.৫৫');
 });
+
+test('same taxpayer heads group into one receipt section with correct subtotal', async ({ page }) => {
+  const record = { ...allocationRecord, amountMinor: 16000, details: {
+    ...allocationRecord.details, lines: [
+      { beneficiary: 'user8', taxpayerTin: '1111111111111', category: 'PENALTY', assessmentYear: '2026-27', amountMinor: 12345 },
+      { beneficiary: 'user9', taxpayerTin: '9999999999999', category: 'PENALTY', assessmentYear: '2026-27', amountMinor: 655 },
+      { beneficiary: 'user8', taxpayerTin: '1111111111111', category: 'ADVANCE_TAX', assessmentYear: '2025-26', amountMinor: 3000 }
+    ]
+  }};
+  await page.route('**/functions/v1/demo-story1-office/payments*', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ success: true, data: { items: [record], total: 1, page: 1, perPage: 100 } })
+  }));
+  await page.goto('/?action=payment_details&transactionId=' + transactionId);
+  const paper = page.locator('.receipt-view__paper');
+  await expect(paper).toContainText('1111111111111');
+  await expect(paper).toContainText('9999999999999');
+  await expect(paper).toContainText('123.45');
+  await expect(paper).toContainText('6.55');
+  await expect(paper.locator('.receipt-view__amount strong')).toHaveText('৳ 160');
+  const table = page.getByTestId('receipt-allocation-table');
+  const cards = page.getByTestId('receipt-allocation-mobile');
+  if ((page.viewportSize()?.width ?? 0) <= 650) {
+    await expect(cards).toBeVisible();
+    await expect(cards.locator('article')).toHaveCount(2);
+    await expect(cards.locator('article').first().getByTestId('receipt-taxpayer-head-row')).toHaveCount(2);
+    await expect(cards.locator('article').first()).toContainText('Taxpayer subtotal');
+    await expect(cards.locator('article').first()).toContainText('153.45');
+  } else {
+    await expect(table).toBeVisible();
+    await expect(table.locator('tbody tr')).toHaveCount(3);
+    await expect(table.locator('td[rowspan="2"]')).toHaveCount(1);
+    await expect(table.locator('tbody td[data-testid="receipt-taxpayer-cell"]')).toHaveCount(2);
+    await expect(table.locator('td[rowspan="2"]')).toContainText('153.45');
+  }
+});
