@@ -126,6 +126,26 @@ test('historical SQL single-head payment opens editable repeat without guessing 
   },'user1','1111111111111');
   assert.equal(newYear.formPayload.assessmentYear,'2026-27');
 });
+test('historical head IDs never auto-select a current payment head',()=>{
+  const source={
+    id:'616259b2-4f41-496f-b72c-a9189a3ccb61',
+    service:'ADVANCE_TAX',status:'SIMULATED_SUCCESS',amountMinor:5500,
+    details:{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2025-26',
+      lines:[{category:'ADVANCE_TAX',beneficiary:'user1',assessmentYear:'2025-26',
+        amountMinor:5500,headId:11,headNameEn:'Old Advance Tax Quarter',economicCode:'1-1141-0015-0201'}]}
+  };
+  const result=reuseLegacySingleHeadPayment(source,'user1','1111111111111');
+  assert.equal(result.formPayload.legacySourceAmount,'55.00');
+  assert.deepEqual(result.formPayload.selectedHeadIds,[]);
+  assert.deepEqual(result.formPayload.amountInputs,{});
+  assert.equal(result.formPayload.assessmentYear,'');
+  assert.throws(()=>reuseLegacySingleHeadPayment({
+    ...source,details:{...source.details,lines:[{...source.details.lines[0],headId:-1}]}
+  },'user1','1111111111111'));
+  assert.throws(()=>reuseLegacySingleHeadPayment({
+    ...source,details:{...source.details,lines:[{...source.details.lines[0],taxpayerTin:'9999999999999'}]}
+  },'user1','1111111111111'));
+});
 test('legacy reuse refuses mixed Tax-with-Return, multiple lines, mismatched amount and modern snapshots',()=>{
   const sample={
     id:'c0227104-60d9-4827-be36-eba397e62c41',

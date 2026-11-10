@@ -9,6 +9,7 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   const payment='00000000-0000-4000-8000-000000030003';
   const older='00000000-0000-4000-8000-000000030004';
   const mixed='00000000-0000-4000-8000-000000030005';
+  const unsnapshottedMulti='00000000-0000-4000-8000-000000030006';
   const cap='A'.repeat(43);
   const date='2026-11-05T12:00:00Z';
   const snapshot={
@@ -72,7 +73,8 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
     const records=[
       {id:payment,service:'OTHER_TAX_PAYMENT',amountMinor:10000,status:'SIMULATED_SUCCESS',createdAt:date},
       {id:older,service:'TAX_WITH_RETURN',amountMinor:2500000,status:'SIMULATED_SUCCESS',createdAt:'2026-10-26T12:00:00Z'},
-      {id:mixed,service:'TAX_WITH_RETURN',amountMinor:5000,status:'SIMULATED_SUCCESS',createdAt:'2026-10-18T12:00:00Z'}
+      {id:mixed,service:'TAX_WITH_RETURN',amountMinor:5000,status:'SIMULATED_SUCCESS',createdAt:'2026-10-18T12:00:00Z'},
+      {id:unsnapshottedMulti,service:'ADVANCE_TAX',amountMinor:6500,status:'SIMULATED_SUCCESS',createdAt:'2026-10-17T12:00:00Z'}
     ];
     const chosen=records.find(item=>url.pathname.includes('/payments/'+item.id));
     if(chosen){
@@ -80,7 +82,14 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
         ?{payerName:'Earlier payer',assessmentYear:'2025-26',paymentMethod:'SIMULATED',receiptSnapshot:snapshot}
         :chosen.id===older
           ?{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2025-26',
-            lines:[{category:'TAX_WITH_RETURN',beneficiary:'user1',assessmentYear:'2025-26',amountMinor:2500000}]}
+            lines:[{category:'TAX_WITH_RETURN',beneficiary:'user1',assessmentYear:'2025-26',amountMinor:2500000,
+              headId:1,headNameEn:'Historic Tax with Return',economicCode:'1-1141-0010-0101'}]}
+          :chosen.id===unsnapshottedMulti
+          ?{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2025-26',
+            lines:[{category:'ADVANCE_TAX',beneficiary:'user1',assessmentYear:'2025-26',
+              amountMinor:3500,headId:11,headNameEn:'Old first quarter',economicCode:'1-1141-0015-0201'},
+              {category:'ADVANCE_TAX',beneficiary:'user1',assessmentYear:'2025-26',
+              amountMinor:3000,headId:12,headNameEn:'Old second quarter',economicCode:'1-1141-0015-0202'}]}
           :{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2026-27',
             lines:[{category:'TAX_WITH_RETURN',beneficiary:'user1',assessmentYear:'2026-27',amountMinor:3500},
               {category:'ADVANCE_TAX',beneficiary:'user1',assessmentYear:'2025-26',amountMinor:1500}]};
@@ -190,6 +199,10 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   const forbidden=reg.getByRole('row').filter({hasText:mixed});
   await expect(original.getByTestId('recorded-pay-again')).toBeEnabled({timeout:15000});
   await expect(forbidden.getByTestId('recorded-pay-again')).toBeDisabled();
+  // The fallback display receipt for older multi-line rows is not an input
+  // snapshot: head IDs in the old catalogue cannot silently become new heads.
+  const unverified=reg.getByRole('row').filter({hasText:unsnapshottedMulti});
+  await expect(unverified.getByTestId('recorded-pay-again')).toBeDisabled();
   await original.getByTestId('recorded-pay-again').click();
   const legacyCopy=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(legacyCopy.getByTestId('pay-again-reuse-notice')).toContainText(older);
