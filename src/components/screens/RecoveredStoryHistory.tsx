@@ -13,7 +13,7 @@ import type {DemoUserId} from '../../data/demoUsers';
 
 /** Preserve the approved Transactions register; show only old session records
  * not already in its payer table. Never rewrite their payer/beneficiary fields. */
-export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false,showEmpty=false,embedded=false}:{profileId:DemoUserId;language:'en'|'bn';skipDemoRegister?:boolean;showEmpty?:boolean;embedded?:boolean}) {
+export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false,showEmpty=false,embedded=false,onReuse}:{profileId:DemoUserId;language:'en'|'bn';skipDemoRegister?:boolean;showEmpty?:boolean;embedded?:boolean;onReuse?:()=>void}) {
   const [state,setState]=useState<{id:string;status:'loading'|'ready'|'error';rows:OwnedStoryPayment[]}>({
     id:profileId,status:'loading',rows:[]});
   const [selected,setSelected]=useState<OwnedStoryPayment|null>(null);
@@ -77,6 +77,7 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
         'আগের রেকর্ডে পুনরায় পরিশোধের জন্য সম্পূর্ণ তথ্য নেই।'));
       return;
     }
+    onReuse?.();
     startPaymentReuse(copy);
     setSelected(null);
   };
