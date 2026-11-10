@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {beneficiaryProfilePayments,countsTowardBeneficiaryPaidTotal} from '../src/services/beneficiaryProfileHistory';
+import {beneficiaryProfilePayments,countsTowardBeneficiaryPaidTotal,missingOptionalSimulationBinding} from '../src/services/beneficiaryProfileHistory';
 import {sampleTinForUserNumber} from '../src/data/sampleTinSuggestions';
 import type {SimulationTransaction} from '../src/contracts/paymentSimulationContract';
 import {readFileSync} from 'node:fs';
@@ -62,4 +62,12 @@ test('beneficiary profile remains within existing signed-in route and table acti
   assert.match(profile,/onBack/);
   assert.match(profile,/loadBeneficiaryProfilePayments/);
   assert.match(profile,/ReceiptView receipt=\{selected.receipt\}/);
+});
+
+test('only an explicitly unbound synthetic profile is optional for signed-in story history',()=>{
+  assert.equal(missingOptionalSimulationBinding(new Error('No approved synthetic profile binding')),true);
+  assert.equal(missingOptionalSimulationBinding(new Error('Authentication required')),false);
+  assert.equal(missingOptionalSimulationBinding(new Error('Permission denied')),false);
+  assert.equal(missingOptionalSimulationBinding(new Error('Payment service unavailable')),false);
+  assert.equal(missingOptionalSimulationBinding('No approved synthetic profile binding'),false);
 });
