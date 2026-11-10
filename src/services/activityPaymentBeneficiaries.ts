@@ -48,7 +48,11 @@ export function activityPaymentBeneficiaries(
   return [...byTin.values()].map(entry=>{
     const matches=savedPeople.filter(person=>person.tin===entry.tin);
     const person=matches[0];
-    const tag=person?beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label):null;
+    const declaredTags=[...new Set(matches.map(saved=>beneficiaryFinalTagLabel(
+      saved.tag,saved.relationship,language,saved.other_label)))];
+    // The same TIN may live in multiple lists. Never choose one conflicting
+    // classification arbitrarily; payment amounts still count only once.
+    const tag=declaredTags.length===1?declaredTags[0]:null;
     const name=person?beneficiaryNameForDisplay(person.display_name,entry.name||entry.tin):(entry.name||entry.tin);
     return {tin:entry.tin,name,tag,saved:!!person,amountMinor:entry.amountMinor,
       assessmentYears:[...entry.years],heads:[...entry.heads]};
