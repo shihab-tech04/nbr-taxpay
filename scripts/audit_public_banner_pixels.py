@@ -55,11 +55,11 @@ def audit(name,path,bg,heading,body,outline,version):
    maxv=max(r,g,b);minv=min(r,g,b)
    if x<int(W*.14) and (maxv+minv)/2>=190:
     light_edge.append((r,g,b))
-   hue,saturation,lightness=colorsys.rgb_to_hls(r/255,g/255,b/255)
+   pixel_hue,lightness,saturation=colorsys.rgb_to_hls(r/255,g/255,b/255)
    delta=(maxv-minv)/255
    if saturation<.065 or lightness<.13 or lightness>.99 or delta<.018:continue
    chromatic_count+=1
-   binid=int(hue*12)%12
+   binid=int(pixel_hue*12)%12
    if x>W*.18 and x<W*.86 and y<H*.72 and lightness>.45 and lightness<.985 and saturation>.08 and delta>.045:
     wash[binid]+=(saturation**.5)
    if saturation>=.12 and lightness<=.92:
