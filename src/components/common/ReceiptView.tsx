@@ -11,6 +11,7 @@ import { formatCurrency } from '../../services/numberFormat';
 import { useTaxState } from '../../services/taxState';
 import { MASTER_PAYMENT_HEADS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { downloadDisplayedCertificate } from '../../services/receiptDocumentExport';
+import { groupReceiptAllocations } from '../../services/receiptAllocationGroups';
 import { TaxPayModal, TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 
 interface ReceiptViewProps {
@@ -43,7 +44,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     scroll: 'ট্রেজারি স্ক্রল রেফারেন্স', pendingScroll: 'স্ক্রল রেফারেন্স নেই',
     withholdingTitle: 'উৎসে কর জমার নোটিশ', deductedFor: 'কর কর্তনগ্রহীতার টিআইএন-এর পক্ষে জমা:',
     noAgentCredit: 'এই রেকর্ডে কর কর্তনকারীর ব্যক্তিগত কর ক্রেডিট প্রতিষ্ঠিত হয় না।',
-    allocations: 'করদাতাভিত্তিক পেমেন্ট বরাদ্দ', allocationTaxpayer: 'করদাতা / ই-টিআইএন', allocationAmount: 'বরাদ্দের পরিমাণ',
+    allocations: 'করদাতাভিত্তিক পেমেন্ট বরাদ্দ', allocationTaxpayer: 'করদাতা / ই-টিআইএন', allocationAmount: 'বরাদ্দের পরিমাণ', taxpayerSubtotal: 'করদাতার মোট',
     breakdown: 'পেমেন্টের বিবরণ ও খাত', headCode: 'অর্থনৈতিক খাত কোড', description: 'খাতের বিবরণ',
     tax: 'কর (টাকা)', penalty: 'জরিমানা', surcharge: 'সারচার্জ', interest: 'সুদ', total: 'মোট (টাকা)', grandTotal: 'মোট অর্থ:',
     noAgentEntitlement: 'এজেন্টের স্বয়ংক্রিয় ক্রেডিট নয়; কর কর্তনগ্রহীতার অধিকার আলাদাভাবে যাচাই করতে হবে।'
@@ -57,7 +58,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     scroll: 'Treasury scroll reference', pendingScroll: 'No scroll reference',
     withholdingTitle: 'Withholding deposit notice', deductedFor: 'Deposit for deductee TIN:',
     noAgentCredit: 'Withholding-agent tax credit is not established by this record.',
-    allocations: 'Taxpayer payment allocations', allocationTaxpayer: 'Taxpayer / e-TIN', allocationAmount: 'Allocated amount (৳)',
+    allocations: 'Taxpayer payment allocations', allocationTaxpayer: 'Taxpayer / e-TIN', allocationAmount: 'Allocated amount (৳)', taxpayerSubtotal: 'Taxpayer subtotal',
     breakdown: 'Payment breakdown and head classification', headCode: 'Economic head code', description: 'Head description',
     tax: 'Tax (৳)', penalty: 'Penalty', surcharge: 'Surcharge', interest: 'Interest', total: 'Total (৳)', grandTotal: 'Total amount:',
     noAgentEntitlement: 'No automatic agent credit; deductee entitlement requires separate verification.'
@@ -76,6 +77,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     : item.headNameEn;
 
   const allocationItems = receipt.allocationItems ?? [];
+  const taxpayerGroups = groupReceiptAllocations(allocationItems);
   const batchLabel=receipt.batchId&&receipt.batchItemIndex&&receipt.batchItemCount
     ? (bn ? `ব্যাচ ${receipt.batchItemIndex} / ${receipt.batchItemCount}` : `Batch item ${receipt.batchItemIndex} of ${receipt.batchItemCount}`)
     : null;
@@ -100,21 +102,28 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
       <h3 className="receipt-view__section-title">{labels.allocations}</h3>
       <div className="receipt-view__breakdown-content">
         <div className="receipt-view__cards" data-testid="receipt-allocation-mobile">
-          {allocationItems.map((item, idx) => (
-            <article key={`${item.taxpayerTin || item.taxpayerName}-${item.assessmentYear}-${item.paymentServiceEn}-${idx}`} className="p-3 space-y-3">
+          {taxpayerGroups.map(group => (
+            <article key={group.key} data-testid="receipt-taxpayer-group" className="p-3 space-y-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">{labels.allocationTaxpayer}</p>
-                <p className="mt-1 break-words text-sm font-semibold text-slate-900">{item.taxpayerName}</p>
-                {item.taxpayerTin && <p className="mt-1 break-all font-mono-plex text-xs text-slate-700">{item.taxpayerTin}</p>}
+                <p className="mt-1 break-words text-sm font-semibold text-slate-900">{group.taxpayerName}</p>
+                {group.taxpayerTin && <p className="mt-1 break-all font-mono-plex text-xs text-slate-700">{group.taxpayerTin}</p>}
               </div>
-              <dl className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-slate-200 pt-3 text-xs">
-                <div><dt className="text-slate-700">{labels.service}</dt><dd className="mt-1 break-words font-medium text-slate-900">{bn ? item.paymentServiceBn : item.paymentServiceEn}</dd></div>
-                <div><dt className="text-slate-700">{labels.year}</dt><dd className="mt-1 font-medium text-slate-900">{item.assessmentYear}</dd></div>
-              </dl>
-              <div className="flex items-center justify-between gap-3 border-t border-taxpay-border pt-2 font-semibold text-taxpay-dark">
-                <span>{labels.allocationAmount}</span>
-                <span className="shrink-0 font-mono-plex">{formatCurrency(item.amountMinor / 100, language)}</span>
-              </div>
+              {group.items.map((item, index) => (
+                <div key={group.key + ':' + index} data-testid="receipt-taxpayer-head-row" className="border-t border-slate-200 pt-3">
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                    <div><dt className="text-slate-700">{labels.service}</dt><dd className="mt-1 break-words font-medium text-slate-900">{bn ? item.paymentServiceBn : item.paymentServiceEn}</dd></div>
+                    <div><dt className="text-slate-700">{labels.year}</dt><dd className="mt-1 font-medium text-slate-900">{item.assessmentYear}</dd></div>
+                  </dl>
+                  <div className="flex items-center justify-between gap-3 pt-2 font-semibold text-taxpay-dark">
+                    <span>{labels.allocationAmount}</span>
+                    <span className="shrink-0 font-mono-plex">{formatCurrency(item.amountMinor / 100, language)}</span>
+                  </div>
+                </div>
+              ))}
+              {group.items.length > 1 && <div className="flex items-center justify-between gap-3 border-t border-taxpay-border bg-taxpay-light px-2 py-2 text-sm font-semibold text-taxpay-dark">
+                <span>{labels.taxpayerSubtotal}</span><span className="font-mono-plex">{formatCurrency(group.totalMinor / 100, language)}</span>
+              </div>}
             </article>
           ))}
           <div className="flex items-center justify-between gap-3 bg-taxpay-light px-3 py-3 text-sm font-bold text-taxpay-dark">
@@ -132,17 +141,18 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
-              {allocationItems.map((item, idx) => (
-                <tr key={`${item.taxpayerTin || item.taxpayerName}-${item.assessmentYear}-${item.paymentServiceEn}-${idx}`} className="hover:bg-slate-50/50">
-                  <td>
-                    <div className="font-medium text-slate-900">{item.taxpayerName}</div>
-                    {item.taxpayerTin && <div className="mt-1 break-all font-mono-plex text-xs text-slate-700">{item.taxpayerTin}</div>}
-                  </td>
-                  <td className="text-slate-800">{bn ? item.paymentServiceBn : item.paymentServiceEn}</td>
-                  <td>{item.assessmentYear}</td>
-                  <td className="font-mono-plex font-bold text-slate-900">{formatCurrency(item.amountMinor / 100, language)}</td>
+              {taxpayerGroups.flatMap(group => group.items.map((item, index) => (
+                <tr key={`${group.key}:${index}`} data-testid="receipt-taxpayer-head-row" className="hover:bg-slate-50/50">
+                  {index === 0 && <td rowSpan={group.items.length} className="align-top" data-testid="receipt-taxpayer-cell">
+                    <div className="font-medium text-slate-900">{group.taxpayerName}</div>
+                    {group.taxpayerTin && <div className="mt-1 break-all font-mono-plex text-xs text-slate-700">{group.taxpayerTin}</div>}
+                    {group.items.length > 1 && <div className="mt-2 text-xs font-semibold text-taxpay-dark">{labels.taxpayerSubtotal}: {formatCurrency(group.totalMinor / 100, language)}</div>}
+                  </td>}
+                  <td className="receipt-view__allocation-service text-slate-800">{bn ? item.paymentServiceBn : item.paymentServiceEn}</td>
+                  <td className="receipt-view__allocation-year">{item.assessmentYear}</td>
+                  <td className="receipt-view__allocation-amount font-mono-plex font-bold text-slate-900">{formatCurrency(item.amountMinor / 100, language)}</td>
                 </tr>
-              ))}
+              )))}
             </tbody>
             <tfoot>
               <tr>
