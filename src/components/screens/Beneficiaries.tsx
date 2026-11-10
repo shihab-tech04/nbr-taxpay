@@ -28,7 +28,7 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
-  const {language,previewAccount,routeParams,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
+  const {language,previewAccount,routeParams,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -209,6 +209,20 @@ export function Beneficiaries(){
   });
   const selectedPeople=listPeople.filter(person=>selectedIds.includes(person.id));
   const profileAccount=owner??previewAccount?.id??'';
+  // Explicit Activity -> saved beneficiary deep link. Never resolve an
+  // arbitrary TIN outside the currently loaded account-owned beneficiary list.
+  const lastOpenedProfileRequest=useRef('');
+  useEffect(()=>{
+    const tin=routeParams.openBeneficiaryTin;
+    if(typeof tin!=='string'||!/^\d{12,13}$/.test(tin)||!profileAccount||
+       checkingIdentity||loading)return;
+    const requestKey=profileAccount+':'+tin;
+    if(lastOpenedProfileRequest.current===requestKey)return;
+    const match=people.find(person=>person.tin===tin);
+    if(!match)return; // Do not invent a saved contact or expose someone else's profile.
+    lastOpenedProfileRequest.current=requestKey;
+    setProfileSelection({id:match.id,account:profileAccount});
+  },[routeParams.openBeneficiaryTin,profileAccount,checkingIdentity,loading,people]);
   const profilePerson=profileSelection?.account===profileAccount&&profileAccount
     ?people.find(person=>person.id===profileSelection.id):undefined;
   const activeListRecord=lists.find(list=>list.id===activeList);
@@ -468,7 +482,8 @@ export function Beneficiaries(){
 
   if(profilePerson)return <BeneficiaryProfile key={profileAccount+':'+profilePerson.id}
     person={profilePerson} ownerUid={owner} previewId={owner?null:previewAccount?.id??null}
-    language={language} onBack={()=>{
+    language={language} backToActivity={routeParams.returnTo==='history'} onBack={()=>{
+      if(routeParams.returnTo==='history'){setProfileSelection(null);navigate('history');return;}
       setProfileSelection(null);
       window.requestAnimationFrame(()=>document.getElementById('beneficiary-profile-link-'+profilePerson.id)?.focus());
     }} onMakePayment={()=>payWith([profilePerson])}/>;
