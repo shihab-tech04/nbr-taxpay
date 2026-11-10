@@ -7,6 +7,7 @@ import {TaxPayModal} from '../ui/TaxPayModal';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
+import {RecordedPaymentReuseChooser} from './RecordedPaymentReuseChooser';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
@@ -89,7 +90,7 @@ const action='inline-flex min-h-11 items-center justify-center gap-2 rounded-lg 
 const meter=(value:number,total:number)=>Math.min(100,Math.max(0,total>0?value*100/total:0));
 export const user1DemoRoutes:readonly string[]=['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings'];
 export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;onResumePaymentDraft?: (draft:PaymentFormDraft)=>void}>=({route,activityTabs=false,onResumePaymentDraft})=>{
-  const {navigate,language,setLanguage,routeParams,openPaymentServiceChoice}=useTaxState();
+  const {navigate,language,setLanguage,routeParams,openPaymentServiceChoice,previewAccount}=useTaxState();
   const bn=language==='bn';
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -160,6 +161,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [query,setQuery]=useState('');
   const [historyPage,setHistoryPage]=useState(1);
   const [selected,setSelected]=useState<RecordItem|null>(null);
+  const [recordedPayAgainOpen,setRecordedPayAgainOpen]=useState(false);
   const totals=yearSummary(year)!;
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
   const filtered=useMemo(()=>scoped.filter(x=>(kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&(monthFilter==='all'||x.date.startsWith(monthFilter))&&(!reviewFilter||reviewFilter.includes(x.state))&&(paymentTagFilter==='all'||(tagLoadState==='ready'&&paymentTag(x)===paymentTagFilter))&&[x.ref,x.title,x.challan||'',x.detail].join(' ').toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)),[scoped,kind,status,reviewFilter,monthFilter,query,paymentTagFilter,savedTagPeople,tagLoadState]);
@@ -223,8 +225,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       searchPlaceholder={tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}
       filterLabel={tr('Filter','ফিল্টার')} filtersOpen={transactionFiltersExpanded}
       onToggleFilters={()=>setTransactionFiltersExpanded(open=>!open)}
-      actions={<button type="button" onClick={csv} className={action+' taxpayer-convay-table-toolbar__export'}>
-        <Download size={16}/>{tr('Export CSV','CSV রপ্তানি')}</button>}/>
+      actions={<div className="flex flex-wrap gap-2">
+        {previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1'&&
+          <button type="button" data-testid="user1-pay-again-entry"
+            onClick={()=>setRecordedPayAgainOpen(true)} className={action}>
+            {tr('Pay Again','আবার পরিশোধ')}
+          </button>}
+        <button type="button" onClick={csv} className={action+' taxpayer-convay-table-toolbar__export'}>
+          <Download size={16}/>{tr('Export CSV','CSV রপ্তানি')}
+        </button>
+      </div>}/>
     <TaxPayOfficeRegisterFilters open={transactionFiltersExpanded} className="taxpayer-transaction-filters taxpayer-convay-table-filters" testId="convay-table-filters">
       <label className="taxpayer-transaction-filter"><span>{tr('Payment type','পেমেন্টের ধরন')}</span><select aria-label={tr('Transaction category','লেনদেনের ধরন')} value={kind} onChange={e=>setKind(e.target.value as Kind|'all')}>
         <option value="all">{tr('All types','সব ধরন')}</option>{(Object.keys(labels) as Kind[]).map(k=><option key={k} value={k}>{tr(...labels[k])}</option>)}
@@ -702,6 +712,18 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
     {route==='history'&&activePreviewSession()?.profileId==='user1'&&<LegacyPaymentRecovery language={language}/>}
+    {route==='history'&&recordedPayAgainOpen&&previewAccount?.id==='user1'&&
+      activePreviewSession()?.profileId==='user1'&&
+      <TaxPayModal title={tr('Pay Again','আবার পরিশোধ')} hideFooter
+        onClose={()=>setRecordedPayAgainOpen(false)}
+        closeIconLabel={tr('Close recorded payments','সংরক্ষিত পেমেন্ট বন্ধ করুন')}>
+        <p className="mb-2 text-sm text-taxpay-muted">
+          {tr('Choose a verified, recorded payment to copy. Illustrative transaction examples cannot establish a new payment.',
+            'নতুন পেমেন্ট তৈরি করতে যাচাইকৃত সংরক্ষিত রেকর্ড নির্বাচন করুন। নমুনা লেনদেনকে আসল পেমেন্ট ধরা যাবে না।')}
+        </p>
+        <RecordedPaymentReuseChooser profileId="user1" language={language}
+          onReuse={()=>setRecordedPayAgainOpen(false)}/>
+      </TaxPayModal>}
     {selected && <TaxPayModal
       title={selected.title}
       onClose={() => setSelected(null)}

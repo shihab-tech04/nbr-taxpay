@@ -38,6 +38,7 @@ import { deletePaymentFormDraft, isPaymentDraftService, type PaymentFormDraft, t
 import { isOptionalReceiptEmailValid, normaliseReceiptEmail } from '../../services/receiptEmail';
 import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
 import type {PaymentReuse} from '../../services/paymentReuse';
+import {activePreviewSession} from '../../services/previewAccountSession';
 import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
 import { prepareCombinedOtherTaxPayment, saveCombinedOtherTaxRequest, loadCombinedOtherTaxRequest, clearCombinedOtherTaxRequest } from '../../services/otherTaxCombinedPayment';
 import { clearOtherTaxBatch, confirmedBatchReceipts, loadOtherTaxBatch,
@@ -420,7 +421,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // A history copy is an independent editable form, not a saved draft or receipt.
   useEffect(() => {
     if (!initialReuse) return;
-    if (!authenticatedUser || authenticatedUser.id !== initialReuse.ownerUid || initialReuse.service !== category) {
+    const verifiedOwner = authenticatedUser?.id === initialReuse.ownerUid;
+    const previewOwner = !authenticatedUser && previewAccount?.id === initialReuse.ownerUid &&
+      activePreviewSession()?.profileId === initialReuse.ownerUid;
+    if ((!verifiedOwner && !previewOwner) || initialReuse.service !== category) {
       setErrorMessage('Your account or payment category changed. Reopen your payment history.');
       return;
     }

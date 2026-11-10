@@ -6,6 +6,7 @@ import { getStorySessionId, persistSimulatedPayment } from '../../services/simul
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import type { PaymentReuse } from '../../services/paymentReuse';
+import {activePreviewSession} from '../../services/previewAccountSession';
 import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
 import { deletePaymentFormDraft, type PaymentDraftActor, type PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
@@ -124,8 +125,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   }, [initialDraft?.id]);
   useEffect(() => {
     if (!initialReuse) return;
-    if (initialReuse.service !== 'TRAVEL_TAX' ||
-        !authenticatedUser || authenticatedUser.id !== initialReuse.ownerUid) {
+    const verifiedOwner = authenticatedUser?.id === initialReuse.ownerUid;
+    const previewOwner = !authenticatedUser && previewAccount?.id === initialReuse.ownerUid &&
+      activePreviewSession()?.profileId === initialReuse.ownerUid;
+    if (initialReuse.service !== 'TRAVEL_TAX' || (!verifiedOwner && !previewOwner)) {
       setError('Account changed. Reopen your payment history before using Pay Again.');
       return;
     }

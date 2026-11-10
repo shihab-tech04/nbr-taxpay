@@ -100,7 +100,12 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [paymentBeneficiaryPrefill, setPaymentBeneficiaryPrefill] = useState<PaymentBeneficiaryPrefill | null>(null);
   const [paymentReuse, setPaymentReuse] = useState<PaymentReuse | null>(null);
   const startPaymentReuse = (copy: PaymentReuse) => {
-    if (!accountUser || accountUser.id !== copy.ownerUid) return;
+    const signedInOwner=accountUser?.id===copy.ownerUid;
+    // Preview history is available only with a still-valid server-issued
+    // profile capability. Never trust the URL or a local UI role as ownership.
+    const previewOwner=!accountUser && previewAccount?.id===copy.ownerUid &&
+      activePreviewSession()?.profileId===copy.ownerUid;
+    if (!signedInOwner && !previewOwner) return;
     setPaymentBeneficiaryPrefill(null);
     setPaymentServiceInitialSelection(null);
     setPaymentReuse(copy);

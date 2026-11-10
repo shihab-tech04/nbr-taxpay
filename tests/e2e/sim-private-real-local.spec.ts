@@ -99,6 +99,11 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(notices.status).toBe(200);
  const own=(notices.data as Array<{transactionId:string;isRead:boolean}>).find(n=>n.transactionId===tx!.transactionId);
  expect(own?.isRead).toBe(true);
+ // Revisit the Activity route after a fresh reload. Pay Again must remain
+ // visible by default to an initiating payer, not only immediately after saving.
+ await one.page.reload({waitUntil:'domcontentloaded'});
+ await expect(one.page.getByRole('button',{name:'Payments I initiated'}))
+   .toHaveAttribute('aria-pressed','true',{timeout:15000});
  // The recorded payer, not a beneficiary, can reuse the complete historical
  // transaction. The previous-year allocation must be reset individually.
  await expect(one.page.getByTestId('pay-again-mobile').first()).toBeVisible({timeout:15000});

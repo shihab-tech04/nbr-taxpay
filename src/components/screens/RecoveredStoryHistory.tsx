@@ -2,6 +2,10 @@ import React,{useEffect,useMemo,useState} from 'react';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
 import {getDemoStoryPaymentHistory} from '../../services/simulatedPaymentsApi';
 import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
+import {reuseRecordedPayment,type PaymentReuse} from '../../services/paymentReuse';
+import {useTaxState} from '../../services/taxState';
+import {activePreviewSession} from '../../services/previewAccountSession';
+import {getDemoUser} from '../../data/demoUsers';
 import {TaxPayDataGrid,TaxPayTableState} from '../ui/TaxPayDataTable';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {ReceiptView} from '../common/ReceiptView';
@@ -9,10 +13,12 @@ import type {DemoUserId} from '../../data/demoUsers';
 
 /** Preserve the approved Transactions register; show only old session records
  * not already in its payer table. Never rewrite their payer/beneficiary fields. */
-export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false}:{profileId:DemoUserId;language:'en'|'bn';skipDemoRegister?:boolean}) {
+export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false,showEmpty=false,embedded=false,onReuse}:{profileId:DemoUserId;language:'en'|'bn';skipDemoRegister?:boolean;showEmpty?:boolean;embedded?:boolean;onReuse?:()=>void}) {
   const [state,setState]=useState<{id:string;status:'loading'|'ready'|'error';rows:OwnedStoryPayment[]}>({
     id:profileId,status:'loading',rows:[]});
   const [selected,setSelected]=useState<OwnedStoryPayment|null>(null);
+  const [reuseError,setReuseError]=useState('');
+  const {startPaymentReuse}=useTaxState();
   const [revision,setRevision]=useState(0);
   useEffect(()=>{
     const refresh=()=>setRevision(value=>value+1);
@@ -39,13 +45,52 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
   },[profileId,revision,skipDemoRegister]);
   const current=state.id===profileId?state:{id:profileId,status:'loading' as const,rows:[]};
   const rows=useMemo(()=>current.rows,[current.rows]);
+  // Only complete, SQL-confirmed receipts (or complete batches) may be reused.
+  const reusable=useMemo(()=>{
+    const results=new Map<string,PaymentReuse>();
+    const receipts=rows.flatMap(payment=>{
+      try{return [{id:payment.id,receipt:makeConfirmedReceipt(payment)}];}
+      catch{return [];}
+    });
+    for(const item of receipts){
+      const original=item.receipt;
+      const batch=original.batchId
+        ?receipts.filter(entry=>entry.receipt.batchId===original.batchId).map(entry=>entry.receipt)
+        :[original];
+      try{
+        results.set(item.id,reuseRecordedPayment(batch,profileId,getDemoUser(profileId)?.tin??null,
+          original.batchId??item.id));
+      }catch{/* Incomplete allocations are not guessed. */}
+    }
+    return results;
+  },[rows,profileId]);
+  const payAgain=(payment:OwnedStoryPayment)=>{
+    setReuseError('');
+    if(activePreviewSession()?.profileId!==profileId){
+      setReuseError(tr('Sign in to the matching account before repeating a payment.',
+        'আগের পেমেন্ট আবার করতে সংশ্লিষ্ট অ্যাকাউন্টে সাইন ইন করুন।'));
+      return;
+    }
+    const copy=reusable.get(payment.id);
+    if(!copy){
+      setReuseError(tr('The original record does not contain a complete repeatable payment.',
+        'আগের রেকর্ডে পুনরায় পরিশোধের জন্য সম্পূর্ণ তথ্য নেই।'));
+      return;
+    }
+    onReuse?.();
+    startPaymentReuse(copy);
+    setSelected(null);
+  };
   const money=(value:number)=>'৳ '+(value/100).toLocaleString(bn?'bn-BD':'en-BD',
     {minimumFractionDigits:2,maximumFractionDigits:2});
   // No extra UI at all for a verified empty account. Existing table is unchanged.
-  if(current.status==='ready'&&rows.length===0)return null;
-  if(current.status==='loading')return null;
+  if(current.status==='ready'&&rows.length===0&&!showEmpty)return null;
+  if(current.status==='loading')return showEmpty
+    ?<p role="status" className="p-3 text-sm text-taxpay-muted">{tr('Loading recorded payments…','সংরক্ষিত পেমেন্ট লোড হচ্ছে…')}</p>
+    :null;
   return <section className="mx-auto mt-4 max-w-7xl rounded-xl border border-taxpay-border bg-white p-4"
     aria-label={tr('Earlier saved payment records','আগের সংরক্ষিত পেমেন্টের রেকর্ড')}>
+    {reuseError&&<p role="alert" className="mb-3 text-sm text-taxpay-error">{reuseError}</p>}
     <h2 className="mb-3 text-base font-semibold text-taxpay-text">
       {tr('Earlier saved payment records','আগের সংরক্ষিত পেমেন্টের রেকর্ড')}
     </h2>
@@ -59,11 +104,37 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
         {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:p=><span className="break-all text-sm">{p.id}</span>},
         {key:'service',header:tr('Payment type','পেমেন্টের ধরন'),renderCell:p=><span>{p.service.replaceAll('_',' ')}</span>},
         {key:'date',header:tr('Date','তারিখ'),renderCell:p=><span>{new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{dateStyle:'medium',timeZone:'Asia/Dhaka'}).format(new Date(p.createdAt))}</span>},
-        {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right',renderCell:p=><span>{money(p.amountMinor)}</span>}
+        {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right',renderCell:p=><span>{money(p.amountMinor)}</span>},
+        {key:'action',header:tr('Action','কার্যক্রম'),renderCell:p=><button type="button"
+          data-testid="recovered-pay-again" disabled={!reusable.has(p.id)}
+          title={!reusable.has(p.id)?tr('Complete original allocations are unavailable','আগের বরাদ্দের সম্পূর্ণ তথ্য নেই'):undefined}
+          onClick={()=>payAgain(p)}
+          className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary disabled:cursor-not-allowed disabled:opacity-50">
+          {tr('Pay Again','আবার পরিশোধ')}
+        </button>}
       ]}/>:<TaxPayTableState>{tr('No earlier saved records.','আগের কোনো রেকর্ড নেই।')}</TaxPayTableState>}
-    {selected&&<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')}
-      service="status" className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
-      <ReceiptView receipt={makeConfirmedReceipt(selected)} embedded/>
-    </TaxPayModal>}
+    {selected&&(embedded
+      ?<section aria-label={tr('Selected earlier payment receipt','নির্বাচিত আগের পেমেন্টের রসিদ')}
+        className="mt-4 border-t border-taxpay-border pt-3">
+        <button type="button" className="mb-3 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary"
+          onClick={()=>setSelected(null)}>{tr('Back to records','রেকর্ডে ফিরে যান')}</button>
+        <ReceiptView receipt={makeConfirmedReceipt(selected)} embedded/>
+        <button type="button" data-testid="recovered-pay-again-receipt"
+          disabled={!reusable.has(selected.id)} onClick={()=>payAgain(selected)}
+          className="mt-3 min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-medium text-taxpay-primary disabled:opacity-50">
+          {tr('Pay Again','আবার পরিশোধ')}
+        </button>
+      </section>
+      :<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')}
+        service="status" className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
+        <ReceiptView receipt={makeConfirmedReceipt(selected)} embedded/>
+        <div className="mt-3 flex justify-end">
+          <button type="button" data-testid="recovered-pay-again-receipt"
+            disabled={!reusable.has(selected.id)} onClick={()=>payAgain(selected)}
+            className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-medium text-taxpay-primary disabled:opacity-50">
+            {tr('Pay Again','আবার পরিশোধ')}
+          </button>
+        </div>
+      </TaxPayModal>)}
   </section>;
 }
