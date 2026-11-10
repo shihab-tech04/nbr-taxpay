@@ -227,6 +227,8 @@ export function reuseLegacySingleHeadPayment(
   // A historical amount is a form-input suggestion, not an approved tax head,
   // existing challan, government credit or beneficiary authorization.
   const ownerIsPayee=Boolean(ownTin&&validTin(ownTin)&&ownTin===tin);
+  if(ownerIsPayee && line.beneficiary!=null && line.beneficiary!==ownerUid)
+    throw Error('Historical beneficiary identity conflicts with the payer.');
   return {ownerUid,sourcePaymentId:original.id,service,formPayload:{
     schemaVersion:1,category:service,step:1,forSelf:ownerIsPayee,
     tin:ownerIsPayee?'':tin,payerName:'',otherTaxpayerName:'',
