@@ -15,6 +15,7 @@ import type {ChallanReceipt} from '../../types/tax';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
+import {activityPaymentBeneficiaries} from '../../services/activityPaymentBeneficiaries';
 import {PAYMENT_TAG_GROUPS,paymentTagGroupLabels,paymentTagGroupForTin,type PaymentTagGroup} from '../../services/beneficiaryPaymentTags';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {taxpayerGreeting} from '../../services/taxpayerGreeting';
@@ -106,6 +107,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [savedTagPeople,setSavedTagPeople]=useState<Beneficiary[]>([]);
   const [tagLoadState,setTagLoadState]=useState<'loading'|'ready'|'error'>('loading');
   const [paymentTagFilter,setPaymentTagFilter]=useState<'all'|PaymentTagGroup>('all');
+  const [beneficiaryFilter,setBeneficiaryFilter]=useState('all');
   const [transactionFiltersExpanded,setTransactionFiltersExpanded]=useState(false);
   useEffect(()=>{
     let active=true;
@@ -122,6 +124,35 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     return()=>{active=false;};
   },[route]);
   const paymentTag=(item:RecordItem)=>paymentTagGroupForTin(item.beneficiaryTin,savedTagPeople);
+  // Only link exact TINs saved under this payer's currently selected profile.
+  const transactionBeneficiaries=(item:RecordItem)=>activityPaymentBeneficiaries(item,savedTagPeople,language);
+  const matchesTransactionTag=(item:RecordItem,group:PaymentTagGroup)=>{
+    const recipients=transactionBeneficiaries(item);
+    return recipients.length
+      ?recipients.some(person=>paymentTagGroupForTin(person.tin,savedTagPeople)===group)
+      :group==='unassigned';
+  };
+  const transactionBeneficiaryCell=(item:RecordItem)=>{
+    const recipients=transactionBeneficiaries(item);
+    return <div className="mt-2 space-y-1 border-t border-taxpay-border pt-2 text-sm"
+      data-testid="transaction-beneficiaries" aria-label={tr('Beneficiaries','উপকারভোগী')}>
+      {!recipients.length?<p className="text-xs text-taxpay-muted">{tr('No beneficiary linked','উপকারভোগীর তথ্য সংযুক্ত নেই')}</p>:
+       recipients.map(person=><div key={person.tin} className="min-w-0 break-words">
+         {person.saved&&previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1'
+           ?<button type="button" onClick={event=>{event.stopPropagation();navigate('beneficiaries',{openBeneficiaryTin:person.tin,returnTo:'history'});}}
+             className="min-h-9 text-left font-semibold text-taxpay-primary underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
+             aria-label={tr('Open beneficiary profile for ','উপকারভোগীর প্রোফাইল খুলুন: ')+person.name}>
+             {person.name}</button>
+           :<span className="font-medium text-taxpay-text">{person.name}</span>}
+         <span className="ml-2 text-xs text-taxpay-muted">· {person.tag??tr('Tag not saved','ট্যাগ সংরক্ষিত নেই')}</span>
+         <p className="break-all text-xs text-taxpay-muted">{person.tin}
+           {person.amountMinor!==null&&<span> · {tr('Allocated','বরাদ্দ')}: ৳ {(person.amountMinor/100).toLocaleString(bn?'bn-BD':'en-BD')}</span>}
+         </p>
+         {person.heads.length>0&&<p className="text-xs text-taxpay-muted">{person.heads.join(', ')}
+           {person.assessmentYears.length>0?' · '+person.assessmentYears.join(', '):''}</p>}
+       </div>)}
+    </div>;
+  };
   const paymentTagLabel=(group:PaymentTagGroup)=>paymentTagGroupLabels[group][language];
   const [year,setYear]=useState<string>(()=>{
     const initial=new URLSearchParams(window.location.search).get('scenarioYear');
@@ -236,11 +267,24 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     applied:0,outstanding:0,pending:0,failed:0,disputed:0,posted:0};
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
   const historyScoped=useMemo(()=>[...scoped,...sqlRows.filter(row=>row.years?.includes(year))],[scoped,sqlRows,year]);
-  const filtered=useMemo(()=>historyScoped.filter(x=>(kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&(monthFilter==='all'||x.date.startsWith(monthFilter))&&(!reviewFilter||reviewFilter.includes(x.state))&&(paymentTagFilter==='all'||(tagLoadState==='ready'&&paymentTag(x)===paymentTagFilter))&&[x.ref,x.title,x.challan||'',x.detail].join(' ').toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)),[historyScoped,kind,status,reviewFilter,monthFilter,query,paymentTagFilter,savedTagPeople,tagLoadState]);
+  const availableTransactionBeneficiaries=[...new Map(historyScoped.flatMap(item=>
+    transactionBeneficiaries(item)).map(person=>[person.tin,person])).values()]
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  const filtered=historyScoped.filter(x=>{
+    const people=transactionBeneficiaries(x);
+    const searchFields=[x.ref,x.title,x.challan||'',x.detail,x.typeLabel||'',...people.flatMap(p=>
+      [p.name,p.tin,p.tag||'',...p.heads,...p.assessmentYears])];
+    return (kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&
+      (monthFilter==='all'||x.date.startsWith(monthFilter))&&
+      (!reviewFilter||reviewFilter.includes(x.state))&&
+      (beneficiaryFilter==='all'||people.some(person=>person.tin===beneficiaryFilter))&&
+      (paymentTagFilter==='all'||(tagLoadState==='ready'&&matchesTransactionTag(x,paymentTagFilter)))&&
+      searchFields.join(' ').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
+  }).sort((a,b)=>b.date.localeCompare(a.date));
   const historyPerPage=10;
   const currentHistoryPage=Math.min(historyPage,Math.max(1,Math.ceil(filtered.length/historyPerPage)));
   const visibleHistoryRows=filtered.slice((currentHistoryPage-1)*historyPerPage,currentHistoryPage*historyPerPage);
-  useEffect(()=>setHistoryPage(1),[year,query,kind,status,monthFilter,reviewFilter,paymentTagFilter]);
+  useEffect(()=>setHistoryPage(1),[year,query,kind,status,monthFilter,reviewFilter,paymentTagFilter,beneficiaryFilter]);
   const availableHistoryMonths=[...new Set(historyScoped.map(x=>x.date.slice(0,7)))].sort();
   const recordedDirectPayments=scoped.filter(item=>item.state==='POSTED'&&(['income','ait','travel'] as Kind[]).includes(item.kind));
   const taggedPaymentTotal=recordedDirectPayments.reduce((sum,item)=>sum+item.amount,0);
@@ -298,8 +342,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   }).format(new Date(date+'T00:00:00Z'));
   const csv=()=>{
     const clean=(v:string|number)=>{let s=String(v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
-    const lines=[['SYNTHETIC EXAMPLE ONLY','Reference','Assessment year','Kind','Amount ৳','Status','Event date','Challan sample'],
-      ...filtered.map(x=>[x.sql?'SQL-RECORDED SIMULATION':'NOT GOVERNMENT DATA',x.ref,x.year,x.kind,x.amount,x.state,x.date,x.challan||''])].map(x=>x.map(clean).join(',')).join('\r\n');
+    const lines=[['Record source','Reference','Assessment year','Kind','Amount ৳','Status','Event date','Challan sample','Beneficiaries','Beneficiary TINs','Beneficiary tags','Tax heads'],
+      ...filtered.map(x=>{
+        const recipients=transactionBeneficiaries(x);
+        return [x.sql?'SQL-RECORDED SIMULATION':'NOT GOVERNMENT DATA',x.ref,x.year,x.kind,x.amount,x.state,x.date,x.challan||'',
+          recipients.map(p=>p.name).join('; '),recipients.map(p=>p.tin).join('; '),
+          recipients.map(p=>p.tag||tr('Not saved','সংরক্ষিত নেই')).join('; '),
+          recipients.flatMap(p=>p.heads).join('; ')];
+      })].map(x=>x.map(clean).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF'+lines],{type:'text/csv;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download='Korbritto_user1_SYNTHETIC_'+year+'.csv';a.click();URL.revokeObjectURL(url);
   };
@@ -312,7 +362,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       title={tr('Transaction history','লেনদেনের ইতিহাস')} count={filtered.length} total={historyScoped.length}
       countLabel={tr('records','রেকর্ড')} searchValue={query} onSearchChange={setQuery}
       searchLabel={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')}
-      searchPlaceholder={tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}
+      searchPlaceholder={tr('Search reference, beneficiary, tag or head','রেফারেন্স, উপকারভোগী, ট্যাগ বা খাত খুঁজুন')}
       filterLabel={tr('Filter','ফিল্টার')} filtersOpen={transactionFiltersExpanded}
       onToggleFilters={()=>setTransactionFiltersExpanded(open=>!open)}
       actions={<button type="button" onClick={csv} className={action+' taxpayer-convay-table-toolbar__export'}>
@@ -328,6 +378,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <label className="taxpayer-transaction-filter"><span>{tr('Status','অবস্থা')}</span><select aria-label={tr('Transaction status','লেনদেনের অবস্থা')} value={status} onChange={e=>{setReviewFilter(null);setStatus(e.target.value as State|'all');}}>
         <option value="all">{tr('All statuses','সব অবস্থা')}</option>{(Object.keys(stateLabels) as State[]).map(s=><option key={s} value={s}>{tr(...stateLabels[s])}</option>)}
       </select></label>
+      <label className="taxpayer-transaction-filter"><span>{tr('Beneficiary','উপকারভোগী')}</span>
+        <select aria-label={tr('Filter transactions by beneficiary','উপকারভোগী অনুযায়ী লেনদেন ফিল্টার')}
+          value={beneficiaryFilter} onChange={event=>setBeneficiaryFilter(event.target.value)}>
+          <option value="all">{tr('All beneficiaries','সব উপকারভোগী')}</option>
+          {availableTransactionBeneficiaries.map(person=><option key={person.tin} value={person.tin}>{person.name} · {person.tin}</option>)}
+        </select>
+      </label>
       <label className="taxpayer-transaction-filter"><span>{tr('Beneficiary tag','উপকারভোগীর ট্যাগ')}</span>
         <select aria-label={tr('Filter transactions by beneficiary tag','উপকারভোগীর ট্যাগ দিয়ে লেনদেন ফিল্টার')}
           value={paymentTagFilter} onChange={event=>setPaymentTagFilter(event.target.value as 'all'|PaymentTagGroup)}>
@@ -337,13 +394,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </label>
     </TaxPayOfficeRegisterFilters>
     <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
-      onClear={()=>{setQuery('');setKind('all');setStatus('all');chooseHistoryMonth('all');setPaymentTagFilter('all');setReviewFilter(null);}}
+      onClear={()=>{setQuery('');setKind('all');setStatus('all');chooseHistoryMonth('all');setPaymentTagFilter('all');setBeneficiaryFilter('all');setReviewFilter(null);}}
       filters={[
         ...(query.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+query.trim(),onRemove:()=>setQuery('')}]:[]),
         ...(kind!=='all'?[{key:'kind',label:tr(...labels[kind]),onRemove:()=>setKind('all')}]:[]),
         ...(monthFilter!=='all'?[{key:'month',label:monthFilter,onRemove:()=>chooseHistoryMonth('all')}]:[]),
         ...(status!=='all'?[{key:'status',label:tr(...stateLabels[status]),onRemove:()=>setStatus('all')}]:[]),
-        ...(paymentTagFilter!=='all'?[{key:'tag',label:paymentTagLabel(paymentTagFilter),onRemove:()=>setPaymentTagFilter('all')}]:[])
+        ...(paymentTagFilter!=='all'?[{key:'tag',label:paymentTagLabel(paymentTagFilter),onRemove:()=>setPaymentTagFilter('all')}]:[]),
+        ...(beneficiaryFilter!=='all'?[{key:'beneficiary',label:tr('Beneficiary: ','উপকারভোগী: ')+(availableTransactionBeneficiaries.find(p=>p.tin===beneficiaryFilter)?.name??beneficiaryFilter),onRemove:()=>setBeneficiaryFilter('all')}]:[])
       ]}/>
     {tagLoadState==='error'&&<p className="px-3 text-sm text-taxpay-error" role="alert">{tr('Saved beneficiary tags could not be loaded.','সংরক্ষিত উপকারভোগীর ট্যাগ লোড করা যায়নি।')}</p>}
     {sqlLoadError&&<p role="alert" className="px-3 text-sm text-taxpay-error">
@@ -368,6 +426,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             <p className="taxpayer-transaction-reference">{item.ref}</p>
             <p>{tr(...labels[item.kind])} · <time dateTime={item.date}>{formatDate(item.date)}</time></p>
           </div>
+          {transactionBeneficiaryCell(item)}
         </div>},
         {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:item=>
           <span className="taxpayer-transaction-reference">{item.ref}</span>},
@@ -389,6 +448,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         </div>
         <p className="taxpayer-transaction-reference">{item.ref}</p>
         <p className="taxpayer-transaction-mobile-record__meta">{item.typeLabel??tr(...labels[item.kind])} · <time dateTime={item.date}>{formatDate(item.date)}</time></p>
+        {transactionBeneficiaryCell(item)}
         <div className="taxpayer-transaction-mobile-record__footer">
           <div className="taxpayer-transaction-row__status">{tag(item.state)}</div>
           {rowActions(item)}
