@@ -222,7 +222,11 @@ export function reuseLegacySingleHeadPayment(
     line.category!==service || line.amountMinor!==original.amountMinor ||
     typeof line.assessmentYear!=='string' || !validYear(line.assessmentYear) ||
     (details.assessmentYear!=null && details.assessmentYear!==line.assessmentYear) ||
-    'headId' in line || 'taxpayerTin' in line ||
+    // Historic head IDs belong to a different catalogue. Validate their
+    // shape, but NEVER reuse them as today's payment head. The wizard
+    // requires an explicit new head selection instead.
+    (line.headId!=null && (!Number.isSafeInteger(line.headId) || (line.headId as number)<=0)) ||
+    (line.taxpayerTin!=null && line.taxpayerTin!==tin) ||
     (line.beneficiary!=null && typeof line.beneficiary!=='string'))
     throw Error('Historical source facts do not reconcile.');
   // A historical amount is a form-input suggestion, not an approved tax head,
