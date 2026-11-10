@@ -1,16 +1,22 @@
--- Secure synthetic Office handoff surfaces against anonymous impersonation.
--- Existing public guest submit, history, summary and notices stay unchanged.
--- These three RPCs may only be invoked by a verified backend until the
--- cross-project Office identity/role contract is implemented and tested.
--- Do not grant EXECUTE back to anon/authenticated to make an API 403 disappear.
-BEGIN;
-REVOKE EXECUTE ON FUNCTION public.taxpay_v11_handoff_office_inbox(integer)
-  FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.taxpay_v11_handoff_office_action(uuid,text,text,text,text,uuid)
-  FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.taxpay_v11_handoff_finish(uuid,text,text,uuid)
-  FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.taxpay_v11_handoff_office_inbox(integer) TO service_role;
-GRANT EXECUTE ON FUNCTION public.taxpay_v11_handoff_office_action(uuid,text,text,text,text,uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.taxpay_v11_handoff_finish(uuid,text,text,uuid) TO service_role;
-COMMIT;
+-- Restrict synthetic Office handoff RPCs when installed in the hosted project.
+-- Local disposable Supabase omits these historical prototype-only functions.
+-- The migration must not break local Auth/RLS/payment tests on an absent RPC.
+-- Public guest submission, history and notices keep their existing grants.
+DO $restrict_office_handoff$
+DECLARE
+  signature text;
+BEGIN
+  FOREACH signature IN ARRAY ARRAY[
+    'public.taxpay_v11_handoff_office_inbox(integer)',
+    'public.taxpay_v11_handoff_office_action(uuid,text,text,text,text,uuid)',
+    'public.taxpay_v11_handoff_finish(uuid,text,text,uuid)'
+  ] LOOP
+    IF to_regprocedure(signature) IS NOT NULL THEN
+      EXECUTE 'REVOKE EXECUTE ON FUNCTION ' || signature
+        || ' FROM PUBLIC, anon, authenticated';
+      EXECUTE 'GRANT EXECUTE ON FUNCTION ' || signature
+        || ' TO service_role';
+    END IF;
+  END LOOP;
+END;
+$restrict_office_handoff$;
