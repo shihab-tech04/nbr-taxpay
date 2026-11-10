@@ -58,7 +58,8 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
  await expect(one.page.getByText('User ID: user6')).toBeVisible();
  await expect(one.page.getByRole('heading',{name:'Choose payment category'})).toBeVisible();
- await one.page.getByRole('button',{name:/TAX WITH RETURN/i}).click();
+ // Tax with Return is deliberately exclusive; use an eligible mixed-head pair.
+ await one.page.getByRole('button',{name:/ADVANCE TAX/i}).click();
  await expect(one.page.getByRole('heading',{name:'Information before payment'})).toBeVisible();
  await one.page.getByRole('button',{name:'Make Payment →'}).click();
  await one.page.getByLabel('Amount (৳)').first().fill('150.25');
