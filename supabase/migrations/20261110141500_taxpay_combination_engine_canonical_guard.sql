@@ -334,7 +334,7 @@ DECLARE
   v_rpc text;
   v_sql text;
   v_old text := 'length(p_input::text)>12000';
-  v_key text := 'v_key:=(p_input->>''idempotencyKey'')::uuid;';
+  v_insert text := 'insert into demo_payment.story_payments(idempotency_key,session_id,service_code,amount_minor,data,status)';
   v_validate text := 'perform demo_payment.assert_new_head_exclusivity(p_input);';
   v_new text := 'length(p_input::text) > (CASE WHEN p_input->''details''->>''combinedPayment'' = ''true'' AND p_input->>''service'' = ''OTHER_TAX_PAYMENT'' THEN 750000 ELSE 12000 END)';
 BEGIN
@@ -344,11 +344,11 @@ BEGIN
     IF position(v_old IN v_sql) = 0 AND position(v_new IN v_sql) = 0 THEN
       RAISE EXCEPTION 'TAXPAY_RPC_UNEXPECTED_SOURCE: %', v_rpc;
     END IF;
-    IF position(v_key IN v_sql) = 0 THEN
+    IF position(v_insert IN v_sql) = 0 THEN
       RAISE EXCEPTION 'TAXPAY_RPC_IDEMPOTENCY_SOURCE_UNEXPECTED: %', v_rpc;
     END IF;
     IF position(v_validate IN v_sql) = 0 THEN
-      v_sql := replace(v_sql, v_key, v_validate || E'\n  ' || v_key);
+      v_sql := replace(v_sql, v_insert, v_validate || E'\n  ' || v_insert);
     END IF;
     IF position(v_old IN v_sql) > 0 THEN
       v_sql := replace(v_sql, v_old, v_new);
