@@ -7,6 +7,8 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   const primary='00000000-0000-4000-8000-000000010001';
   const legacy='00000000-0000-4000-8000-000000020002';
   const payment='00000000-0000-4000-8000-000000030003';
+  const older='00000000-0000-4000-8000-000000030004';
+  const mixed='00000000-0000-4000-8000-000000030005';
   const cap='A'.repeat(43);
   const date='2026-11-05T12:00:00Z';
   const snapshot={
@@ -67,15 +69,27 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
     const url=new URL(route.request().url());
     paymentRequests.push(url.pathname+url.search);
-    const detail=url.pathname.includes('/payments/'+payment);
-    const record={id:payment,service:'OTHER_TAX_PAYMENT',amountMinor:10000,status:'SIMULATED_SUCCESS',createdAt:date};
-    if(detail){
+    const records=[
+      {id:payment,service:'OTHER_TAX_PAYMENT',amountMinor:10000,status:'SIMULATED_SUCCESS',createdAt:date},
+      {id:older,service:'TAX_WITH_RETURN',amountMinor:2500000,status:'SIMULATED_SUCCESS',createdAt:'2026-10-26T12:00:00Z'},
+      {id:mixed,service:'TAX_WITH_RETURN',amountMinor:5000,status:'SIMULATED_SUCCESS',createdAt:'2026-10-18T12:00:00Z'}
+    ];
+    const chosen=records.find(item=>url.pathname.includes('/payments/'+item.id));
+    if(chosen){
+      const details=chosen.id===payment
+        ?{payerName:'Earlier payer',assessmentYear:'2025-26',paymentMethod:'SIMULATED',receiptSnapshot:snapshot}
+        :chosen.id===older
+          ?{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2025-26',
+            lines:[{category:'TAX_WITH_RETURN',beneficiary:'user1',assessmentYear:'2025-26',amountMinor:2500000}]}
+          :{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2026-27',
+            lines:[{category:'TAX_WITH_RETURN',beneficiary:'user1',assessmentYear:'2026-27',amountMinor:3500},
+              {category:'ADVANCE_TAX',beneficiary:'user1',assessmentYear:'2025-26',amountMinor:1500}]};
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
-        success:true,simulationOnly:true,data:{id:payment,status:record.status,createdAt:date,
-          data:{service:record.service,amountMinor:10000,details:{payerName:'Earlier payer',assessmentYear:'2025-26',paymentMethod:'SIMULATED',receiptSnapshot:snapshot}}}
+        success:true,simulationOnly:true,data:{id:chosen.id,status:chosen.status,createdAt:chosen.createdAt,
+          data:{service:chosen.service,amountMinor:chosen.amountMinor,details}}
       })});return;
     }
-    const items=recovered?[record]:[];
+    const items=recovered?records:[];
     console.log('Mock Story1 list:',JSON.stringify({recovered,items:items.length,pathname:url.pathname,session:url.searchParams.get('sessionId')}));
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
       success:true,simulationOnly:true,data:{items,total:items.length,page:1,perPage:100}
@@ -170,4 +184,15 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(cloned).toBeVisible();
   await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText(payment);
   await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText('Original payment unchanged.');
+  await page.reload({waitUntil:'domcontentloaded'});
+  const reg=page.getByTestId('taxpayer-transaction-table');
+  const original=reg.getByRole('row').filter({hasText:older});
+  const forbidden=reg.getByRole('row').filter({hasText:mixed});
+  await expect(original.getByTestId('recorded-pay-again')).toBeEnabled({timeout:15000});
+  await expect(forbidden.getByTestId('recorded-pay-again')).toBeDisabled();
+  await original.getByTestId('recorded-pay-again').click();
+  const legacyCopy=page.getByRole('dialog',{name:'Pay Tax'});
+  await expect(legacyCopy.getByTestId('pay-again-reuse-notice')).toContainText(older);
+  await expect(legacyCopy.getByTestId('pay-again-legacy-note')).toContainText('25000.00');
+  await expect(legacyCopy.getByTestId('pay-again-legacy-note')).toContainText('Choose them again');
 });
