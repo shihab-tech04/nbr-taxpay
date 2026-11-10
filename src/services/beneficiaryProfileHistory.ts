@@ -63,13 +63,27 @@ export function beneficiaryProfilePayments(
     a.key.localeCompare(b.key));
 }
 
+/** An authenticated taxpayer can own saved payments without a fictional simulator binding.
+ * Only the explicit 'unbound' business condition makes simulator rows optional.
+ * Never swallow authentication, RLS, transport or malformed-profile failures. */
+export const missingOptionalSimulationBinding=(error:unknown):boolean=>
+  error instanceof Error && error.message==='No approved synthetic profile binding';
+
+async function optionalSimulationProfile():Promise<SimulationUser|null>{
+  try{return await getBoundSimulationUser();}
+  catch(error){
+    if(missingOptionalSimulationBinding(error))return null;
+    throw error;
+  }
+}
+
 /** No new tables, grants, profile identity or financial writes.
  * Server-side owner RLS and the preview capability remain authoritative. */
 export async function loadBeneficiaryProfilePayments(
   tin:string, ownerUid:string|null, previewId:SimulationUser|null, language:'en'|'bn'
 ):Promise<BeneficiaryProfilePayment[]> {
   if(ownerUid){
-    const [story,boundId]=await Promise.all([getAccountStoryPayments(ownerUid),getBoundSimulationUser()]);
+    const [story,boundId]=await Promise.all([getAccountStoryPayments(ownerUid),optionalSimulationProfile()]);
     const simulations=boundId?await getPrivateSimulationHistory('payer'):[];
     return beneficiaryProfilePayments(tin,story,simulations,boundId,language);
   }

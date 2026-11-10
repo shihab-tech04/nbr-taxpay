@@ -18,8 +18,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BASE_SHA=b138b202528954dabb832f342bfa12b6df2d4e2a
-          BASE_TREE=ef9a2709a2fd81e6d92aa699d8f6c5ba95da769b
+          BASE_SHA=c0e6148d51bb25930019660c3bda8300573fb62d
+          BASE_TREE=266d97803107efaa984a11c66a602208da3753d5
           git cat-file -e "${BASE_SHA}^{commit}"
           test "$(git rev-parse "${BASE_SHA}^{tree}")" = "${BASE_TREE}"
           mkdir -p "$RUNNER_TEMP/recovery"
@@ -40,7 +40,7 @@ jobs:
       - name: Upload independently restorable archive
         uses: actions/upload-artifact@v4
         with:
-          name: taxpay-pre-release-main-b138b202
+          name: taxpay-pre-release-main-c0e6148d
           path: |
             ${{ runner.temp }}/recovery/taxpay-history.bundle
             ${{ runner.temp }}/recovery/taxpay-source.tar.gz

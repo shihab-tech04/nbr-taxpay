@@ -186,3 +186,56 @@ export function reuseRecordedPayment(
   // A copied source record is retained only as informational context, not a receipt.
   return {ownerUid,sourcePaymentId,service,formPayload:payload};
 }
+
+
+/** Older SQL-recorded simulated payments predate the immutable receipt snapshot.
+ * Copy only independently recorded, single-head facts; the missing head and
+ * income-tax classification MUST be reselected in the existing payment wizard.
+ * Never use this compatibility path for a modern damaged/incomplete receipt,
+ * mixed service, multiple payer/beneficiary rows or a Travel Tax itinerary.
+ */
+export function reuseLegacySingleHeadPayment(
+  original:{
+    id:string;service:string;status:string;amountMinor:number;details:Record<string,unknown>;
+  },
+  ownerUid:string,ownTin:string|null,
+):PaymentReuse {
+  if(!ownerUid || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(original.id) ||
+    original.status!=='SIMULATED_SUCCESS' || !Number.isSafeInteger(original.amountMinor) ||
+    original.amountMinor<=0 || !original.details || typeof original.details!=='object' ||
+    Array.isArray(original.details))
+    throw Error('The original recorded payment cannot be verified.');
+  const service=original.service as PaymentCategory;
+  if(!supported.has(service) || service==='OTHER_TAX_PAYMENT' ||
+    original.details.receiptSnapshot!=null || original.details.receiptLines!=null ||
+    original.details.allocations!=null || original.details.combinedPayment===true)
+    throw Error('A complete historical allocation is required.');
+  const details=original.details;
+  const tin=details.taxpayerTin;
+  if(typeof tin!=='string'||!validTin(tin)||
+    (typeof details.payerId==='string' && details.payerId!==ownerUid))
+    throw Error('Original payer or taxpayer identity is incomplete.');
+  const lines=details.lines;
+  if(!Array.isArray(lines)||lines.length!==1)throw Error('Historical multi-head payment needs its full allocation.');
+  const line=lines[0] as Record<string,unknown>|null;
+  if(!line || typeof line!=='object' || Array.isArray(line) ||
+    line.category!==service || line.amountMinor!==original.amountMinor ||
+    typeof line.assessmentYear!=='string' || !validYear(line.assessmentYear) ||
+    (details.assessmentYear!=null && details.assessmentYear!==line.assessmentYear) ||
+    'headId' in line || 'taxpayerTin' in line ||
+    (line.beneficiary!=null && typeof line.beneficiary!=='string'))
+    throw Error('Historical source facts do not reconcile.');
+  // A historical amount is a form-input suggestion, not an approved tax head,
+  // existing challan, government credit or beneficiary authorization.
+  const ownerIsPayee=Boolean(ownTin&&validTin(ownTin)&&ownTin===tin);
+  if(ownerIsPayee && line.beneficiary!=null && line.beneficiary!==ownerUid)
+    throw Error('Historical beneficiary identity conflicts with the payer.');
+  return {ownerUid,sourcePaymentId:original.id,service,formPayload:{
+    schemaVersion:1,category:service,step:1,forSelf:ownerIsPayee,
+    tin:ownerIsPayee?'':tin,payerName:'',otherTaxpayerName:'',
+    additionalTaxpayers:[],otherTaxLines:[],phone:'',receiptEmail:'',
+    assessmentYear:copiedYear(line.assessmentYear),
+    noticeReference:'',incomeTaxType:null,selectedHeadIds:[],
+    amountInputs:{},legacySourceAmount:money(original.amountMinor),
+  }};
+}

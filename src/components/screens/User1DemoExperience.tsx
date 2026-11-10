@@ -9,7 +9,7 @@ import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
 import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
-import {reuseRecordedPayment,type PaymentReuse} from '../../services/paymentReuse';
+import {reuseRecordedPayment,reuseLegacySingleHeadPayment,type PaymentReuse} from '../../services/paymentReuse';
 import {ReceiptView} from '../common/ReceiptView';
 import type {ChallanReceipt} from '../../types/tax';
 import {activePreviewSession} from '../../services/previewAccountSession';
@@ -211,7 +211,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       let reuse:PaymentReuse|null=null;
       try{
         if(receipts.length===items.length)reuse=reuseRecordedPayment(receipts,'user1',DEMO_USERS.user1.tin,id);
-      }catch{/* Incomplete/mismatched originals are not repeatable. */}
+      }catch{/* Old records are checked separately; modern invalid snapshots remain blocked. */}
+      // Some legacy SQL rows stored only an exact category, one AY, one TIN
+      // and amount. No head ID or classification was recorded. Permit a new
+      // editable journey with the missing fields required, never infer a head.
+      if(!reuse && items.length===1){
+        try{reuse=reuseLegacySingleHeadPayment(first,'user1',DEMO_USERS.user1.tin);}
+        catch{/* Mixed/incomplete/unauthorized source records stay disabled. */}
+      }
       const service=first.service.replaceAll('_',' ').toLowerCase().replace(/(^|\s)\S/g,word=>word.toUpperCase());
       const minor=items.reduce((total,entry)=>total+entry.payment.amountMinor,0);
       const kind:Kind=first.service==='TRAVEL_TAX'?'travel':first.service==='SOURCE_TAX_DEPOSIT'?'tds':'income';

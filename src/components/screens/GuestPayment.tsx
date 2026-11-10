@@ -435,6 +435,21 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     // A changed source remounts the payment form; do not reset on ordinary renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialReuse?.sourcePaymentId, authenticatedUser?.id]);
+  // A valid older SQL payment may know the amount but not the original head.
+  // Suggest that exact amount only after the user selects a new eligible head;
+  // all other validation, ownership and year checks stay in the payment wizard.
+  useEffect(()=>{
+    const original=initialReuse?.formPayload.legacySourceAmount;
+    if(typeof original!=='string'||!/^\d+\.\d{2}$/.test(original))return;
+    const eligible=V11_PAYMENT_OPTIONS.filter(head=>head.category===category &&
+      head.status==='ACTIVE'&&!BLOCKED_HEAD_IDS.includes(head.id));
+    const selected=selectedHeadIds.length===1?selectedHeadIds[0]:
+      eligible.length===1?eligible[0].id:null;
+    if(selected===null || !eligible.some(head=>head.id===selected))return;
+    setAmountInputs(previous=>Object.prototype.hasOwnProperty.call(previous,selected)
+      ?previous:{...previous,[selected]:original});
+  },[initialReuse?.sourcePaymentId,selectedHeadIds,category]);
+
   // A confirmed receipt is the only signal allowed to retire a draft.
   useEffect(() => {
     if (!selectedAccountDraft || !createdReceipt || paymentPhase !== 'settled') return;
@@ -1349,6 +1364,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {language==='bn'?'আগের পেমেন্ট থেকে তথ্য কপি করা হয়েছে: ':'Copied from previous payment: '}
         <strong className="break-all">{initialReuse.sourcePaymentId}</strong>.
         {' '}{language==='bn'?'মূল পেমেন্ট অপরিবর্তিত। প্রতিটি করবর্ষ, পরিমাণ ও তথ্য যাচাই করুন।':'Original payment unchanged. Review every year, amount and taxpayer before submitting.'}
+        {typeof initialReuse.formPayload.legacySourceAmount==='string'&&
+          <span className="mt-2 block" data-testid="pay-again-legacy-note">
+            {language==='bn'
+              ? 'পুরোনো রেকর্ডে পেমেন্ট খাতের আইডি ও করদাতার ধরন ছিল না। এগুলো নতুন করে নির্বাচন করুন। রেকর্ডকৃত পরিমাণ ৳'+initialReuse.formPayload.legacySourceAmount+' — খাত নির্বাচন করলে পরিমাণ প্রস্তাব করা হবে।'
+              : 'This older record did not save the payment-head ID or income-tax classification. Choose them again. Original recorded amount: ৳'+initialReuse.formPayload.legacySourceAmount+'. The amount is suggested after selecting a head.'}
+          </span>}
       </p>}
       {/* Title & Mode Banner */}
       <div className={embedded ? 'payment-flow-embedded__content' : 'bg-white border border-slate-200 rounded-xl p-6 shadow-sm'}>
