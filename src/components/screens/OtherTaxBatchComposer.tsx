@@ -335,6 +335,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                               <select id={`other-tax-year-${line.id}`} value={line.assessmentYear}
                                 onChange={event => edit(line.id, { assessmentYear: event.target.value })}
                                 className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm">
+                                <option value="" disabled>{tx('Select assessment year','করবর্ষ নির্বাচন করুন')}</option>
                                 {OTHER_TAX_YEARS.filter(year => year === line.assessmentYear || !headLines.some(other => other.id !== line.id && other.assessmentYear === year))
                                   .map(year => <option key={year} value={year}>{year}</option>)}
                               </select>

@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, I
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
+import type { PaymentReuse } from '../../services/paymentReuse';
 import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
 import { deletePaymentFormDraft, type PaymentDraftActor, type PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
@@ -26,6 +27,7 @@ interface TravelTaxProps {
   embedded?: boolean;
   /** Previously verified account-owned draft selected at Pay Tax entry. */
   initialDraft?: PaymentFormDraft;
+  initialReuse?: PaymentReuse;
   fourStepJourney?: boolean;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
@@ -40,7 +42,7 @@ function maskPassport(passport: string) {
  * This is a UX/reference-data preview, not a real passport verification or
  * government A-Challan integration. An API owner can replace those boundaries.
  */
-export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, onBackToService, onStageChange }) => {
+export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, initialReuse, onBackToService, onStageChange }) => {
   const { language, navigate, addPaymentReceipt, previewAccount } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
@@ -120,6 +122,18 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     // Reconfirm passenger identities; never restore prior approvals or gateway choices.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialDraft?.id]);
+  useEffect(() => {
+    if (!initialReuse) return;
+    if (initialReuse.service !== 'TRAVEL_TAX' ||
+        !authenticatedUser || authenticatedUser.id !== initialReuse.ownerUid) {
+      setError('Account changed. Reopen your payment history before using Pay Again.');
+      return;
+    }
+    try { restoreTravelDraft(initialReuse.formPayload); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Previous travel payment could not be copied.'); }
+    // A different history record remounts this form.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialReuse?.sourcePaymentId,authenticatedUser?.id]);
   useEffect(() => {
     if (!selectedAccountDraft || !createdReceipt || bankSlipPending) return;
     const actor: PaymentDraftActor | null = authenticatedUser
@@ -709,6 +723,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
           ))}
         </nav>}
         <form id="travel-tax-form" onSubmit={submit} noValidate>
+          {initialReuse && !createdReceipt && <p role="status" data-testid="travel-pay-again-notice"
+            className="rounded-lg border border-taxpay-border bg-taxpay-light px-3 py-2 text-sm text-taxpay-dark">
+            {tr('Copied from your previous travel payment. Confirm each passenger again, enter passport and date of birth, and choose a new travel date before paying.',
+              'আগের ভ্রমণ করের তথ্য থেকে কপি করা হয়েছে। পরিশোধের আগে প্রতিটি যাত্রীর পাসপোর্ট ও জন্মতারিখ পুনরায় দিন, যাচাই করুন এবং নতুন ভ্রমণের তারিখ নির্বাচন করুন।')}
+          </p>}
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert" tabIndex={-1}>{error}</p>}
           {(authenticatedUser || previewAccount) && !createdReceipt &&
             <AccountPaymentDraftControls service="TRAVEL_TAX" language={language}

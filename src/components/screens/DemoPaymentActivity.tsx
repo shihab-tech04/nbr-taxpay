@@ -3,6 +3,7 @@ import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {getStorySessionId,persistSimulatedPayment} from '../../services/simulatedPaymentStory';
 import {parsePaymentPrefill} from '../../services/paymentPrefill';
+import {copyPreviousPayment,canPayAgain,CURRENT_PAY_AGAIN_YEAR,PAY_AGAIN_YEAR_OPTIONS} from '../../services/payAgain';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {sampleTinForUserNumber} from '../../data/sampleTinSuggestions';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
@@ -21,7 +22,7 @@ import {
 } from '../../services/simulatedPaymentsApi';
 
 type EditableLine={beneficiary:SimulationUser;category:SimulationCategory;assessmentYear:string;amount:string};
-const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amount:'100.00'});
+const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:CURRENT_PAY_AGAIN_YEAR,amount:'100.00'});
 /** Public, persistent synthetic transaction workspace. NEVER official payment evidence. */
 export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTabs=false})=>{
   const {demoUser,previewAccount,language,navigate,routeParams}=useTaxState();
@@ -52,7 +53,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   const [paymentStage,setPaymentStage]=useState<0|1|2|3>(0);
   const [parentCategory,setParentCategory]=useState<SimulationCategory>('TAX_WITH_RETURN');
   const [completedReference,setCompletedReference]=useState('');
-  const chooseCategory=(category:SimulationCategory)=>{setParentCategory(category);setLines(old=>old.map(line=>({...line,category})));setPaymentStage(1);};
+  const [payAgainSource,setPayAgainSource]=useState<string|null>(null);
+  const chooseCategory=(category:SimulationCategory)=>{setPayAgainSource(null);setParentCategory(category);setLines(old=>old.map(line=>({...line,category})));setPaymentStage(1);};
 
   useEffect(()=>{
     const context=parsePaymentPrefill(routeParams??{});
@@ -124,6 +126,21 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     const tin=match?sampleTinForUserNumber(Number(match[1])):null;
     return paymentTagGroupForTin(tin??undefined,savedTags.people);
   };
+  const payAgain=(record:SimulationTransaction)=>{
+    if(!id)return;
+    try{
+      const users=previewMode?[id,...permittedBeneficiaries]:simulationUsers;
+      const copy=copyPreviousPayment(record,id,view,users,simulationCategories);
+      setLines(copy.lines as EditableLine[]);
+      setParentCategory(copy.lines[0].category as SimulationCategory);
+      setPayAgainSource(record.id);
+      setNonce(crypto.randomUUID());
+      setSubmitMessage('');
+      setSelectedPayment(null);
+      setPaymentStage(2);
+      window.scrollTo({top:0,behavior:'smooth'});
+    }catch(error){setSubmitMessage(error instanceof Error?error.message:'This record cannot be safely reused.');}
+  };
   const modify=(index:number,field:keyof EditableLine,value:string)=>{
     setLines(before=>before.map((l,i)=>i===index?{...l,[field]:value}:l));
     setNonce(crypto.randomUUID());setSubmitMessage('');
@@ -134,6 +151,11 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     e.preventDefault();if(!id||saving)return;
     setSaving(true);setSubmitMessage('');
     try{
+      if(lines.some(line=>!PAY_AGAIN_YEAR_OPTIONS.some(y=>y===line.assessmentYear)))
+        throw new Error(txt('Select an assessment year for each allocation.','প্রতিটি বরাদ্দের করবর্ষ নির্বাচন করুন।'));
+      if(lines.some(line=>line.category==='TAX_WITH_RETURN') &&
+         lines.some(line=>line.category!=='TAX_WITH_RETURN'))
+        throw new Error(txt('Tax with Return cannot be combined with another tax head.','রিটার্নসহ কর অন্য করের খাতের সঙ্গে একত্রে পরিশোধ করা যাবে না।'));
       const checked:SimulationLine[]=lines.map(l=>({
         beneficiary:l.beneficiary,category:l.category,assessmentYear:l.assessmentYear,
         amountMinor:parseSimulatedAmount(l.amount)
@@ -165,7 +187,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         const confirmed=checkedRows.find(t=>t.transactionId===synced.id);
         if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)
           throw Error('Payment SQL read-back did not match. Retry the same payment.');
-        setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());
+        setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());setPayAgainSource(null);
         setCompletedReference(confirmed.id);setPaymentStage(3);
         setSubmitMessage((synced.mirrored
           ? txt('Payment synchronized with Office: ','অফিসের সঙ্গে পেমেন্ট সিঙ্ক হয়েছে: ')
@@ -207,7 +229,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
           officeMirrorConfirmed = false;
         }
       }
-      setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());
+      setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());setPayAgainSource(null);
       setCompletedReference(result.reference);setPaymentStage(3);
       setSubmitMessage((officeMirrorConfirmed
         ? txt('Payment record saved: ','পেমেন্ট রেকর্ড সংরক্ষিত: ')
@@ -287,6 +309,14 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       {paymentStage===2&&<>
       <h2 className="text-lg font-bold text-taxpay-text">{txt('Create a combined payment','একাধিক বরাদ্দের পেমেন্ট তৈরি করুন')}</h2>
       <p className="mt-1 text-sm text-taxpay-muted">{txt('Combine your own and other beneficiaries, categories and years in one atomic transaction.','একটি লেনদেনে নিজের ও অন্যের, একাধিক খাত ও একাধিক করবর্ষের বরাদ্দ রাখুন।')}</p>
+      {payAgainSource&&<p role="status" data-testid="pay-again-copy-status" className="mb-3 rounded-lg border border-taxpay-border bg-taxpay-light p-3 text-sm text-taxpay-dark">
+        {txt('Copied from','কপি করা হয়েছে')} <strong className="break-all">{payAgainSource}</strong>.
+        {' '}{txt('Original payment unchanged. Review each amount and tax year.','আগের পেমেন্ট অপরিবর্তিত। প্রতিটি পরিমাণ ও করবর্ষ যাচাই করুন।')}
+        {lines.some(l=>!l.assessmentYear)&&<span className="mt-1 block font-medium">
+          {txt(lines.filter(l=>!l.assessmentYear).length+' tax years require selection.',
+            lines.filter(l=>!l.assessmentYear).length+'টি করবর্ষ আলাদাভাবে নির্বাচন করতে হবে।')}
+        </span>}
+      </p>}
       <form onSubmit={e=>void submit(e)} className="mt-4 space-y-4">
         <button type="button" onClick={()=>setPaymentStage(1)} className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold">{txt('← Category information','← শ্রেণির তথ্য')}</button>
         <div className="payment-form-layout">
@@ -311,7 +341,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
             </label>
             <label className="block text-sm font-semibold text-taxpay-text">{txt('Assessment year','করবর্ষ')}
               <select className="mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3" value={line.assessmentYear} onChange={e=>modify(index,'assessmentYear',e.target.value)}>
-                {['2024-25','2025-26','2026-27','2027-28'].map(y=><option key={y} value={y}>{y}</option>)}
+                <option value="" disabled>{txt('Select assessment year','করবর্ষ নির্বাচন করুন')}</option>
+                {PAY_AGAIN_YEAR_OPTIONS.map(y=><option key={y} value={y}>{y}</option>)}
               </select>
             </label>
             <label className="block text-sm font-semibold text-taxpay-text">{txt('Amount (৳)','টাকার পরিমাণ (৳)')}
@@ -411,6 +442,10 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 rounded-lg px-3 text-sm font-medium text-taxpay-primary hover:bg-taxpay-light">
                {txt('Timeline','সময়রেখা')}</button>
+             {canPayAgain(tx,id??'',view)&&<button type="button" data-testid="pay-again-desktop"
+               onClick={e=>{e.stopPropagation();payAgain(tx);}}
+               className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
+               {txt('Pay Again','আবার পরিশোধ')}</button>}
            </div>}
          ]}
          renderMobileCard={tx=><div className="space-y-2">
@@ -436,6 +471,9 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
                className="min-h-11 flex-1 rounded-lg border border-taxpay-border px-3 text-sm">{txt('View details','বিস্তারিত দেখুন')}</button>
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 flex-1 rounded-lg bg-taxpay-light px-3 text-sm">{txt('Timeline','সময়রেখা')}</button>
+             {canPayAgain(tx,id??'',view)&&<button type="button" data-testid="pay-again-mobile"
+               onClick={()=>payAgain(tx)} className="min-h-11 w-full rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary">
+               {txt('Pay Again','আবার পরিশোধ')}</button>}
            </div>
          </div>}/>}
       <TaxPayOfficeRegisterFooter shown={visibleRows.length} total={rows.length}
@@ -456,6 +494,12 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         taxCreditStatus:txt('Not verified','যাচাই হয়নি'),source:'TaxPay SQL',
         ...lifecycleParts(selectedPayment)
       }}/>
+      {canPayAgain(selectedPayment,id??'',view)&&<div className="mt-4 flex justify-end">
+        <button type="button" data-testid="pay-again-details" onClick={()=>payAgain(selectedPayment)}
+          className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm text-taxpay-primary">
+          {txt('Pay Again','আবার পরিশোধ')}
+        </button>
+      </div>}
     </TaxPayModal>}
   </main>;
 };

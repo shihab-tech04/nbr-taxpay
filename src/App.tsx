@@ -57,7 +57,7 @@ const previewReadOnlyRoutes = new Set([
 const activityRoutes = new Set(['history', 'journey', 'verify', 'corrections', 'certificates']);
 
 const MainRouter: React.FC = () => {
-  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
+  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, paymentServiceInitialSelection, paymentReuse } = useTaxState();
   const [dashboardPaymentDraft, setDashboardPaymentDraft] = useState<PaymentFormDraft | null>(null);
   // Close always clears the one-shot resume request. No draft IDs in URLs or storage.
   useEffect(() => {
@@ -264,7 +264,7 @@ const MainRouter: React.FC = () => {
             <PaymentDetailView embedded />
           </TaxPayModal>)}
       <ParityRegisterModal />
-      {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} />}
+      {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} />}
       {loginOverlay && <TaxpayerLoginDialog />}
       {beneficiaryLoginRequired && <TaxpayerLoginDialog
         preservePaymentJourney
