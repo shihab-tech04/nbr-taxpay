@@ -7,7 +7,7 @@ import {TaxPayModal} from '../ui/TaxPayModal';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
-import {RecoveredStoryHistory} from './RecoveredStoryHistory';
+import {RecordedPaymentReuseChooser} from './RecordedPaymentReuseChooser';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
@@ -721,8 +721,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           {tr('Choose a verified, recorded payment to copy. Illustrative transaction examples cannot establish a new payment.',
             'নতুন পেমেন্ট তৈরি করতে যাচাইকৃত সংরক্ষিত রেকর্ড নির্বাচন করুন। নমুনা লেনদেনকে আসল পেমেন্ট ধরা যাবে না।')}
         </p>
-        <RecoveredStoryHistory profileId="user1" language={language}
-          skipDemoRegister showEmpty embedded onReuse={()=>setRecordedPayAgainOpen(false)}/>
+        <RecordedPaymentReuseChooser profileId="user1" language={language}
+          onReuse={()=>setRecordedPayAgainOpen(false)}/>
       </TaxPayModal>}
     {selected && <TaxPayModal
       title={selected.title}
