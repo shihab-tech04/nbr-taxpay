@@ -1,5 +1,6 @@
 import { CATEGORY_LABELS, MASTER_PAYMENT_HEADS } from '../data/paymentHeads';
 import type { ChallanReceipt, PaymentCategory, PaymentLineItem, ReceiptAllocationItem } from '../types/tax';
+import {sampleTinForUserNumber} from '../data/sampleTinSuggestions';
 
 /** Both Office and TaxPay link to this same TaxPay receipt route.
  * It reads SQL-confirmed Office records, never browser-local sample receipts. */
@@ -39,6 +40,19 @@ const validMinorAmount=(value:unknown):value is number=>
  typeof value==='number'&&Number.isSafeInteger(value)&&value>0;
 const validTin=(value:unknown):value is string=>
  typeof value==='string'&&/^[0-9]{12,13}$/.test(value);
+
+/** Older fictional records used a userN/SAVED_TIN synthetic beneficiary
+ * identifier without a separate TIN field. This restores only that exact,
+ * previously approved illustrative mapping, never taxpayer entitlement. */
+function legacySyntheticTin(beneficiary:string):string|undefined {
+ if(beneficiary.startsWith('SAVED_TIN:')){
+  const saved=beneficiary.slice('SAVED_TIN:'.length);
+  return validTin(saved)?saved:undefined;
+ }
+ const match=/^user([1-9]|[12][0-9]|30)$/.exec(beneficiary);
+ if(!match)return undefined;
+ return sampleTinForUserNumber(Number(match[1]))??undefined;
+}
 
 function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
  const d=tx.details??{};
@@ -93,8 +107,13 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
   items=lines.map(line=>{
    const category=line.category as PaymentCategory;
    const label=CATEGORY_LABELS[category];
-   const tin=validTin(line.taxpayerTin)?line.taxpayerTin:undefined;
    const name=stringValue(line.beneficiary).trim();
+   // A single legacy record may carry the exact saved TIN in payment
+   // details even when its synthetic user alias has a different length.
+   // For mixed-recipient records, derive only the fixed fictional ID mapping.
+   const storedSingleTin=lines.length===1&&validTin(d.taxpayerTin)?d.taxpayerTin:undefined;
+   const tin=validTin(line.taxpayerTin)?line.taxpayerTin:
+     storedSingleTin??legacySyntheticTin(name);
    return {taxpayerName:name||'—',paymentServiceEn:label.en,
     paymentServiceBn:label.bn,assessmentYear:stringValue(line.assessmentYear)||stringValue(d.assessmentYear)||'—',
     amountMinor:line.amountMinor as number,...(tin?{taxpayerTin:tin}:{}),
