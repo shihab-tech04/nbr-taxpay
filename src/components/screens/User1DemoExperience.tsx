@@ -7,7 +7,11 @@ import {TaxPayModal} from '../ui/TaxPayModal';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
-import {RecordedPaymentReuseChooser} from './RecordedPaymentReuseChooser';
+import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
+import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
+import {reuseRecordedPayment,type PaymentReuse} from '../../services/paymentReuse';
+import {ReceiptView} from '../common/ReceiptView';
+import type {ChallanReceipt} from '../../types/tax';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
@@ -27,6 +31,11 @@ type State = 'POSTED'|'PENDING'|'FAILED'|'REVERSED'|'DISPUTED'|'REQUESTED';
 type RecordItem = {
   id:string; year:string; date:string; kind:Kind; amount:number; state:State;
   title:string; detail:string; channel:string; ref:string; challan?:string; beneficiaryTin?:string;
+  sql?:{receipts:ChallanReceipt[];reuse:PaymentReuse|null}; years?:string[]; typeLabel?:string;
+};
+const normalizeAY=(input:string)=>{
+  const year=/^(20\d{2})-(\d{2})$/.exec(input.trim());
+  return year?year[1]+'-20'+year[2]:input.trim();
 };
 const taxYears = [
   {year:'2025-2026',liability:180000,description:'Salary and professional income'},
@@ -90,7 +99,7 @@ const action='inline-flex min-h-11 items-center justify-center gap-2 rounded-lg 
 const meter=(value:number,total:number)=>Math.min(100,Math.max(0,total>0?value*100/total:0));
 export const user1DemoRoutes:readonly string[]=['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings'];
 export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;onResumePaymentDraft?: (draft:PaymentFormDraft)=>void}>=({route,activityTabs=false,onResumePaymentDraft})=>{
-  const {navigate,language,setLanguage,routeParams,openPaymentServiceChoice,previewAccount}=useTaxState();
+  const {navigate,language,setLanguage,routeParams,openPaymentServiceChoice,previewAccount,startPaymentReuse}=useTaxState();
   const bn=language==='bn';
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -161,15 +170,71 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [query,setQuery]=useState('');
   const [historyPage,setHistoryPage]=useState(1);
   const [selected,setSelected]=useState<RecordItem|null>(null);
-  const [recordedPayAgainOpen,setRecordedPayAgainOpen]=useState(false);
-  const totals=yearSummary(year)!;
+  const [sqlPayments,setSqlPayments]=useState<OwnedStoryPayment[]>([]);
+  const [sqlLoadError,setSqlLoadError]=useState(false);
+  useEffect(()=>{
+    if(route!=='history'||previewAccount?.id!=='user1'||activePreviewSession()?.profileId!=='user1'){
+      setSqlPayments([]);setSqlLoadError(false);return;
+    }
+    let active=true;
+    const load=()=>{
+      void getDetailedStorySessionPayments().then(payments=>{
+        if(active){setSqlPayments(payments);setSqlLoadError(false);}
+      }).catch(()=>{if(active){setSqlPayments([]);setSqlLoadError(true);}});
+    };
+    load();
+    window.addEventListener('taxpay:story-payments-recovered',load);
+    return()=>{active=false;window.removeEventListener('taxpay:story-payments-recovered',load);};
+  },[route,previewAccount?.id]);
+  // SQL records are never matched to illustrative DEMO-* rows by their labels.
+  // Every complete multi-head batch is one transaction and repeats as a whole.
+  const sqlRows=useMemo<RecordItem[]>(()=>{
+    const records=sqlPayments.map(payment=>{
+      let receipt:ChallanReceipt|null=null;
+      try{receipt=makeConfirmedReceipt(payment);}catch{/* Do not infer missing allocations. */}
+      return {payment,receipt};
+    });
+    const grouped=new Map<string,typeof records>();
+    for(const entry of records){
+      const id=entry.receipt?.batchId??entry.payment.id;
+      grouped.set(id,[...(grouped.get(id)??[]),entry]);
+    }
+    return [...grouped].map(([id,items])=>{
+      const first=items[0].payment;
+      const receipts=items.flatMap(entry=>entry.receipt?[entry.receipt]:[]);
+      const years=[...new Set(items.flatMap(entry=>[
+        ...(entry.receipt?.allocationItems?.map(x=>x.assessmentYear)??[]),
+        entry.receipt?.assessmentYear??'',
+        typeof entry.payment.details.assessmentYear==='string'?entry.payment.details.assessmentYear:''
+      ]).flatMap(value=>value.split(',').map(normalizeAY))
+        .filter(value=>/^20\d{2}-20\d{2}$/.test(value)))];
+      let reuse:PaymentReuse|null=null;
+      try{
+        if(receipts.length===items.length)reuse=reuseRecordedPayment(receipts,'user1',DEMO_USERS.user1.tin,id);
+      }catch{/* Incomplete/mismatched originals are not repeatable. */}
+      const service=first.service.replaceAll('_',' ').toLowerCase().replace(/(^|\s)\S/g,word=>word.toUpperCase());
+      const minor=items.reduce((total,entry)=>total+entry.payment.amountMinor,0);
+      const kind:Kind=first.service==='TRAVEL_TAX'?'travel':first.service==='SOURCE_TAX_DEPOSIT'?'tds':'income';
+      return {id:'recorded-'+id,ref:id,year:years[0]??'—',years:years.length?years:['—'],
+        date:first.createdAt.slice(0,10),kind,amount:minor/100,state:'POSTED' as const,
+        title:service,typeLabel:service,detail:'SQL-recorded simulated payment',
+        channel:'Recorded simulated payment',sql:{receipts,reuse}};
+    }).sort((a,b)=>b.date.localeCompare(a.date));
+  },[sqlPayments]);
+  const availableYears=useMemo(()=>[
+    ...taxYears.map(item=>item.year),
+    ...new Set(sqlRows.flatMap(row=>row.years??[]).filter(value=>!taxYears.some(item=>item.year===value)))
+  ],[sqlRows]);
+  const totals=yearSummary(year)??{year,liability:0,tds:0,ait:0,direct:0,travel:0,
+    applied:0,outstanding:0,pending:0,failed:0,disputed:0,posted:0};
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
-  const filtered=useMemo(()=>scoped.filter(x=>(kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&(monthFilter==='all'||x.date.startsWith(monthFilter))&&(!reviewFilter||reviewFilter.includes(x.state))&&(paymentTagFilter==='all'||(tagLoadState==='ready'&&paymentTag(x)===paymentTagFilter))&&[x.ref,x.title,x.challan||'',x.detail].join(' ').toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)),[scoped,kind,status,reviewFilter,monthFilter,query,paymentTagFilter,savedTagPeople,tagLoadState]);
+  const historyScoped=useMemo(()=>[...scoped,...sqlRows.filter(row=>row.years?.includes(year))],[scoped,sqlRows,year]);
+  const filtered=useMemo(()=>historyScoped.filter(x=>(kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&(monthFilter==='all'||x.date.startsWith(monthFilter))&&(!reviewFilter||reviewFilter.includes(x.state))&&(paymentTagFilter==='all'||(tagLoadState==='ready'&&paymentTag(x)===paymentTagFilter))&&[x.ref,x.title,x.challan||'',x.detail].join(' ').toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)),[historyScoped,kind,status,reviewFilter,monthFilter,query,paymentTagFilter,savedTagPeople,tagLoadState]);
   const historyPerPage=10;
   const currentHistoryPage=Math.min(historyPage,Math.max(1,Math.ceil(filtered.length/historyPerPage)));
   const visibleHistoryRows=filtered.slice((currentHistoryPage-1)*historyPerPage,currentHistoryPage*historyPerPage);
   useEffect(()=>setHistoryPage(1),[year,query,kind,status,monthFilter,reviewFilter,paymentTagFilter]);
-  const availableHistoryMonths=[...new Set(scoped.map(x=>x.date.slice(0,7)))].sort();
+  const availableHistoryMonths=[...new Set(historyScoped.map(x=>x.date.slice(0,7)))].sort();
   const recordedDirectPayments=scoped.filter(item=>item.state==='POSTED'&&(['income','ait','travel'] as Kind[]).includes(item.kind));
   const taggedPaymentTotal=recordedDirectPayments.reduce((sum,item)=>sum+item.amount,0);
   const taggedPaymentBreakdown=PAYMENT_TAG_GROUPS.map(group=>({
@@ -204,37 +269,48 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     <p className="taxpayer-inline-help__content">{tr(english,bengali)}</p>
   </details>;
   const money=(x:number)=>amount(x,bn);
+  const payAgain=(item:RecordItem)=>{
+    if(!item.sql?.reuse||previewAccount?.id!=='user1'||
+        activePreviewSession()?.profileId!=='user1')return;
+    setSelected(null);
+    startPaymentReuse(item.sql.reuse);
+  };
+  const rowActions=(item:RecordItem)=><div className="flex flex-wrap items-center gap-2">
+    <button type="button" onClick={()=>setSelected(item)}
+      className={action+' taxpayer-transaction-row__action'}
+      aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
+    {item.sql&&<button type="button" data-testid="recorded-pay-again"
+      disabled={!item.sql.reuse} onClick={()=>payAgain(item)}
+      title={!item.sql.reuse?tr('Complete original payment unavailable','আগের পেমেন্টের সম্পূর্ণ তথ্য নেই'):undefined}
+      className={action+' taxpayer-transaction-row__action disabled:opacity-50'}>
+      {tr('Pay Again','আবার পরিশোধ')}
+    </button>}
+  </div>;
   const formatDate=(date:string)=>new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{
     day:'numeric',month:'short',year:'numeric',timeZone:'UTC'
   }).format(new Date(date+'T00:00:00Z'));
   const csv=()=>{
     const clean=(v:string|number)=>{let s=String(v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
     const lines=[['SYNTHETIC EXAMPLE ONLY','Reference','Assessment year','Kind','Amount ৳','Status','Event date','Challan sample'],
-      ...filtered.map(x=>['NOT GOVERNMENT DATA',x.ref,x.year,x.kind,x.amount,x.state,x.date,x.challan||''])].map(x=>x.map(clean).join(',')).join('\r\n');
+      ...filtered.map(x=>[x.sql?'SQL-RECORDED SIMULATION':'NOT GOVERNMENT DATA',x.ref,x.year,x.kind,x.amount,x.state,x.date,x.challan||''])].map(x=>x.map(clean).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF'+lines],{type:'text/csv;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download='Korbritto_user1_SYNTHETIC_'+year+'.csv';a.click();URL.revokeObjectURL(url);
   };
   const years=<label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
-    <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={year} onChange={e=>changeYear(e.target.value)}>{taxYears.map(x=><option key={x.year} value={x.year}>{x.year}</option>)}</select>
+    <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={year} onChange={e=>changeYear(e.target.value)}>{(route==='history'?availableYears:taxYears.map(x=>x.year)).map(value=>
+      <option key={value} value={value}>{value==='—'?tr('Unknown assessment year','অজ্ঞাত করবর্ষ'):value}</option>)}</select>
   </label>;
   const transactionList=<section className={panel+' taxpayer-transaction-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-transaction-heading">
     <TaxPayOfficeRegisterToolbar id="taxpayer-transaction-heading" testId="convay-table-toolbar"
-      title={tr('Transaction history','লেনদেনের ইতিহাস')} count={filtered.length} total={scoped.length}
+      title={tr('Transaction history','লেনদেনের ইতিহাস')} count={filtered.length} total={historyScoped.length}
       countLabel={tr('records','রেকর্ড')} searchValue={query} onSearchChange={setQuery}
       searchLabel={tr('Search transaction reference','লেনদেন রেফারেন্স খুঁজুন')}
       searchPlaceholder={tr('Search reference / title','রেফারেন্স/বিবরণ খুঁজুন')}
       filterLabel={tr('Filter','ফিল্টার')} filtersOpen={transactionFiltersExpanded}
       onToggleFilters={()=>setTransactionFiltersExpanded(open=>!open)}
-      actions={<div className="flex flex-wrap gap-2">
-        {previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1'&&
-          <button type="button" data-testid="user1-pay-again-entry"
-            onClick={()=>setRecordedPayAgainOpen(true)} className={action}>
-            {tr('Pay Again','আবার পরিশোধ')}
-          </button>}
-        <button type="button" onClick={csv} className={action+' taxpayer-convay-table-toolbar__export'}>
-          <Download size={16}/>{tr('Export CSV','CSV রপ্তানি')}
-        </button>
-      </div>}/>
+      actions={<button type="button" onClick={csv} className={action+' taxpayer-convay-table-toolbar__export'}>
+        <Download size={16}/>{tr('Export CSV','CSV রপ্তানি')}
+      </button>}/>
     <TaxPayOfficeRegisterFilters open={transactionFiltersExpanded} className="taxpayer-transaction-filters taxpayer-convay-table-filters" testId="convay-table-filters">
       <label className="taxpayer-transaction-filter"><span>{tr('Payment type','পেমেন্টের ধরন')}</span><select aria-label={tr('Transaction category','লেনদেনের ধরন')} value={kind} onChange={e=>setKind(e.target.value as Kind|'all')}>
         <option value="all">{tr('All types','সব ধরন')}</option>{(Object.keys(labels) as Kind[]).map(k=><option key={k} value={k}>{tr(...labels[k])}</option>)}
@@ -263,6 +339,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         ...(paymentTagFilter!=='all'?[{key:'tag',label:paymentTagLabel(paymentTagFilter),onRemove:()=>setPaymentTagFilter('all')}]:[])
       ]}/>
     {tagLoadState==='error'&&<p className="px-3 text-sm text-taxpay-error" role="alert">{tr('Saved beneficiary tags could not be loaded.','সংরক্ষিত উপকারভোগীর ট্যাগ লোড করা যায়নি।')}</p>}
+    {sqlLoadError&&<p role="alert" className="px-3 text-sm text-taxpay-error">
+      {tr('Recorded payments could not be verified. Example transactions remain available.',
+        'সংরক্ষিত পেমেন্ট যাচাই করা যায়নি। নমুনা লেনদেনগুলো দেখা যাবে।')}
+    </p>}
     {reviewFilter&&<div className="taxpayer-transaction-count">
       <button type="button" className="min-h-10 rounded-lg px-3 text-xs font-medium text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
         onClick={()=>setReviewFilter(null)}>{tr('Clear review filter','পর্যালোচনা ফিল্টার মুছুন')}</button>
@@ -285,31 +365,26 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:item=>
           <span className="taxpayer-transaction-reference">{item.ref}</span>},
         {key:'type',header:tr('Payment type','পেমেন্টের ধরন'),renderCell:item=>
-          <span className="taxpayer-transaction-type">{tr(...labels[item.kind])}</span>},
+          <span className="taxpayer-transaction-type">{item.typeLabel??tr(...labels[item.kind])}</span>},
         {key:'date',header:tr('Date','তারিখ'),renderCell:item=>
           <time dateTime={item.date} className="taxpayer-transaction-date">{formatDate(item.date)}</time>},
         {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',
           cellClassName:'text-right tabular-nums',renderCell:item=>
-          <p className="taxpayer-transaction-row__amount tabular-nums">{money(item.amount)}</p>},
+          <p className="taxpayer-transaction-row__amount tabular-nums">{item.sql?'৳ '+item.amount.toLocaleString(bn?'bn-BD':'en-BD',{minimumFractionDigits:2,maximumFractionDigits:2}):money(item.amount)}</p>},
         {key:'status',header:tr('Status','অবস্থা'),renderCell:item=>
           <div className="taxpayer-transaction-row__status">{tag(item.state)}</div>},
-        {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:item=>
-          <button type="button" onClick={()=>setSelected(item)}
-            className={action+' taxpayer-transaction-row__action'}
-            aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>}
+        {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:rowActions}
       ]}
       renderMobileCard={item=><div className="taxpayer-transaction-mobile-record">
         <div className="taxpayer-transaction-mobile-record__top">
           <p className="taxpayer-transaction-row__title">{item.title}</p>
-          <p className="taxpayer-transaction-row__amount tabular-nums">{money(item.amount)}</p>
+          <p className="taxpayer-transaction-row__amount tabular-nums">{item.sql?'৳ '+item.amount.toLocaleString(bn?'bn-BD':'en-BD',{minimumFractionDigits:2,maximumFractionDigits:2}):money(item.amount)}</p>
         </div>
         <p className="taxpayer-transaction-reference">{item.ref}</p>
-        <p className="taxpayer-transaction-mobile-record__meta">{tr(...labels[item.kind])} · <time dateTime={item.date}>{formatDate(item.date)}</time></p>
+        <p className="taxpayer-transaction-mobile-record__meta">{item.typeLabel??tr(...labels[item.kind])} · <time dateTime={item.date}>{formatDate(item.date)}</time></p>
         <div className="taxpayer-transaction-mobile-record__footer">
           <div className="taxpayer-transaction-row__status">{tag(item.state)}</div>
-          <button type="button" onClick={()=>setSelected(item)}
-            className={action+' taxpayer-transaction-row__action'}
-            aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
+          {rowActions(item)}
         </div>
       </div>}/>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </section>;
@@ -712,18 +787,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     {activityTabs && <TaxpayerActivityTabs />}
     {content}
     {route==='history'&&activePreviewSession()?.profileId==='user1'&&<LegacyPaymentRecovery language={language}/>}
-    {route==='history'&&recordedPayAgainOpen&&previewAccount?.id==='user1'&&
-      activePreviewSession()?.profileId==='user1'&&
-      <TaxPayModal title={tr('Pay Again','আবার পরিশোধ')} hideFooter
-        onClose={()=>setRecordedPayAgainOpen(false)}
-        closeIconLabel={tr('Close recorded payments','সংরক্ষিত পেমেন্ট বন্ধ করুন')}>
-        <p className="mb-2 text-sm text-taxpay-muted">
-          {tr('Choose a verified, recorded payment to copy. Illustrative transaction examples cannot establish a new payment.',
-            'নতুন পেমেন্ট তৈরি করতে যাচাইকৃত সংরক্ষিত রেকর্ড নির্বাচন করুন। নমুনা লেনদেনকে আসল পেমেন্ট ধরা যাবে না।')}
-        </p>
-        <RecordedPaymentReuseChooser profileId="user1" language={language}
-          onReuse={()=>setRecordedPayAgainOpen(false)}/>
-      </TaxPayModal>}
     {selected && <TaxPayModal
       title={selected.title}
       onClose={() => setSelected(null)}
@@ -731,7 +794,19 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       className="taxpayer-transaction-detail"
       hideFooter
     >
-      <PaymentLifecycleDetails language={language} record={{
+      {selected.sql?<section className="space-y-4">
+        <p className="break-all text-sm text-taxpay-muted">{tr('Recorded payment','সংরক্ষিত পেমেন্ট')}: {selected.ref}</p>
+        {selected.sql.receipts.length
+          ?selected.sql.receipts.map(receipt=><ReceiptView receipt={receipt}
+            key={receipt.paymentTransactionId} embedded/>)
+          :<p role="status">{tr('Original allocations unavailable; payment cannot be repeated.',
+            'আগের বরাদ্দের তথ্য নেই; পেমেন্ট পুনরায় করা যাবে না।')}</p>}
+        <div className="flex justify-end">
+          <button type="button" data-testid="recorded-pay-again-detail"
+            disabled={!selected.sql.reuse} onClick={()=>payAgain(selected)}
+            className={action+' disabled:opacity-50'}>{tr('Pay Again','আবার পরিশোধ')}</button>
+        </div>
+      </section>:<PaymentLifecycleDetails language={language} record={{
         reference:selected.ref,taxEventId:selected.id,challanNo:selected.challan,
         payerName:selected.kind==='income'?DEMO_USERS.user1.nameEn:undefined,
         payerTin:selected.kind==='income'?DEMO_USERS.user1.tin:undefined,
@@ -745,7 +820,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         source:selected.channel,
         events:[{id:selected.id,title:selected.title,occurredAt:selected.date+'T00:00:00Z',
           source:selected.channel,note:selected.detail}],
-      }}/>
+      }}/>}
     </TaxPayModal>}
   </div>;
 };
