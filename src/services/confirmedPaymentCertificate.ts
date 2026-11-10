@@ -63,10 +63,14 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
         !validMinorAmount(allocation.amountMinor) ||
         !Number.isSafeInteger(allocation.headId) ||
         typeof allocation.assessmentYear!=='string'||!allocation.assessmentYear.trim() ||
-        line.taxpayerTin!==allocation.taxpayerTin ||
+        // Earlier synthetic lines carry beneficiary/category/amount/year, with
+        // TIN and head ID stored in the matched allocation and receipt line.
+        // Preserve that valid historical contract while rejecting any explicit
+        // synthetic TIN/head that disagrees with the durable allocation.
+        (line.taxpayerTin!==undefined && line.taxpayerTin!==allocation.taxpayerTin) ||
         line.amountMinor!==allocation.amountMinor ||
         line.assessmentYear!==allocation.assessmentYear ||
-        line.headId!==allocation.headId ||
+        (line.headId!==undefined && line.headId!==allocation.headId) ||
         line.category!==tx.service ||
         head.headId!==allocation.headId ||
         Math.round(numberValue(head.totalAmount)*100)!==allocation.amountMinor;
