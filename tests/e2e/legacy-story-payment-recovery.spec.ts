@@ -150,15 +150,22 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   expect(reread.body?.data?.items?.some((row:{id:string})=>row.id===payment)).toBe(true);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-guest-simulation-session'))).toBeNull();
   await expect(page.getByRole('button',{name:'Restore earlier payments'})).toHaveCount(0);
-  // The approved user1 Transactions table stays intact; an explicit action
-  // opens the independently verified prior payment instead of treating fixed
-  // storybook entries as payable SQL receipts.
-  const entry=page.getByTestId('user1-pay-again-entry');
-  await expect(entry).toBeVisible();
-  await entry.click();
-  const history=page.getByRole('dialog',{name:'Pay Again'});
-  await expect(history.getByTestId('recovered-pay-again')).toBeEnabled({timeout:15000});
-  await history.getByTestId('recovered-pay-again').click();
+  // Pay Again is attached only to each SQL-recorded transaction, not to the
+  // search/filter/export toolbar and never to synthetic DEMO-* example rows.
+  await expect(page.getByTestId('user1-pay-again-entry')).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Pay Again'})).toHaveCount(0);
+  const register=page.getByTestId('taxpayer-transaction-table');
+  const paid=register.getByRole('row').filter({hasText:payment});
+  await expect(paid).toBeVisible({timeout:15000});
+  await expect(paid.getByTestId('recorded-pay-again')).toBeEnabled();
+  const illustrative=register.getByRole('row').filter({hasText:'DEMO-PAY-PEND-01'});
+  await expect(illustrative.getByTestId('recorded-pay-again')).toHaveCount(0);
+  // Each payment also exposes the repeat action within its own Details modal.
+  await paid.getByRole('button',{name:'Details for Other Tax Payment'}).click();
+  const detail=page.getByRole('dialog',{name:'Other Tax Payment'});
+  await expect(detail).toBeVisible();
+  await expect(detail.getByTestId('recorded-pay-again-detail')).toBeEnabled();
+  await detail.getByTestId('recorded-pay-again-detail').click();
   const cloned=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(cloned).toBeVisible();
   await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText(payment);
