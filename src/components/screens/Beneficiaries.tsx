@@ -58,6 +58,7 @@ export function Beneficiaries(){
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState<{en:string;bn:string}|null>(null);
+  const [preferenceError,setPreferenceError]=useState<{en:string;bn:string}|null>(null);
   const [flow,setFlow]=useState<Flow|null>(null);
   const [entryChoiceOpen,setEntryChoiceOpen]=useState(false);
   const [createListOpen,setCreateListOpen]=useState(false);
@@ -129,11 +130,12 @@ export function Beneficiaries(){
     const save=owner?saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id)
       :previewAccount?savePreviewSetting('selected-list',id):null;
     if(!save)return;
+    setPreferenceError(null);
     void save.then(()=>owner
       ?recordAccountActivity(owner,'BENEFICIARY_LIST_SELECTED','beneficiaries').catch(()=>undefined)
       :undefined).catch(()=>{
-      setNotice({en:'Could not remember your selected list for next login. Please retry.',
-        bn:'পরবর্তী লগইনের জন্য নির্বাচিত তালিকা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।'});
+      setPreferenceError({en:'Could not remember your selected list for next login. Please retry. Stored beneficiaries have not been changed.',
+        bn:'পরবর্তী লগইনের জন্য নির্বাচিত তালিকা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন। সংরক্ষিত উপকারভোগীর তথ্য পরিবর্তন করা হয়নি।'});
     });
   };
   const initialRequestRef=useRef<symbol|null>(null);
@@ -475,6 +477,7 @@ export function Beneficiaries(){
       <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>
     </div>}
     {recoveryError&&<p role="alert" className="text-sm text-red-800">{recoveryError}</p>}
+    {preferenceError&&<p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-900">{preferenceError[bn?'bn':'en']}</p>}
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
 
     <section className="taxpay-office-register-frame beneficiary-register-frame rounded-xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-6" aria-labelledby="beneficiary-list-heading">
