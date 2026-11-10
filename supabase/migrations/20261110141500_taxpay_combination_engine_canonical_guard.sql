@@ -97,7 +97,7 @@ BEGIN
   THEN RAISE EXCEPTION 'INVALID_DEMO_PAYER'; END IF;
   v_lines := new.data->'details'->'lines';
   IF jsonb_typeof(v_lines) <> 'array' OR jsonb_array_length(v_lines) NOT BETWEEN 1 AND
-    CASE WHEN new.data->'details'->>'combinedPayment' = 'true' THEN 256 ELSE 20 END
+    (CASE WHEN new.data->'details'->>'combinedPayment' = 'true' THEN 256 ELSE 20 END)
   THEN RAISE EXCEPTION 'INVALID_BENEFICIARY_LINES'; END IF;
   IF new.service_code='TAX_WITH_RETURN' AND EXISTS (
     SELECT 1 FROM jsonb_array_elements(v_lines) AS l(value)

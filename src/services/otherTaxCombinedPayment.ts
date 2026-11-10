@@ -1,6 +1,7 @@
 import type { ChallanReceipt, PaymentLineItem, ReceiptAllocationItem } from '../types/tax';
 import type { StoryPaymentInput } from './simulatedPaymentStory';
-import { MASTER_PAYMENT_HEADS } from '../data/paymentHeads';
+import { MASTER_PAYMENT_HEADS, BLOCKED_HEAD_IDS } from '../data/paymentHeads';
+import { V11_SOURCE_HEADS, isV11HeadReviewBlocked } from '../data/v11SourceHeads';
 
 /** One immutable SQL payment and one receipt, with independently auditable allocations. */
 export type CombinedOtherTaxLine = {
@@ -16,6 +17,9 @@ const validTin = (value: string) => /^\d{12,13}$/.test(value);
 export const MAX_COMBINED_ALLOCATIONS = 256;
 export const MAX_COMBINED_PAYLOAD_CHARS = 750_000;
 const MAX_LINES = MAX_COMBINED_ALLOCATIONS;
+const eligibleHeads = new Map(V11_SOURCE_HEADS.filter(head => head.journey === 'LIABILITY' && head.active &&
+  head.purpose !== 'return' && head.map === 'MAPPED' && !isV11HeadReviewBlocked(head) &&
+  !BLOCKED_HEAD_IDS.includes(head.id)).map(head => [head.id, head]));
 export function prepareCombinedOtherTaxPayment(
   original: StoryPaymentInput,
   receipt: ChallanReceipt,
@@ -30,11 +34,16 @@ export function prepareCombinedOtherTaxPayment(
   const uniqueAllocationKeys = new Set<string>();
   for (let i = 0; i < lines.length; i++) {
     const allocation = lines[i];
+    const head = eligibleHeads.get(allocation.line.headId);
+    if (!head || allocation.line.headNameEn !== head.en || allocation.line.economicCode !== head.codeEn)
+      throw new Error('INVALID_COMBINED_HEAD');
     const uniqueKey = `${allocation.taxpayerTin}:${allocation.line.headId}:${allocation.assessmentYear}`;
     if (uniqueAllocationKeys.has(uniqueKey)) throw new Error('DUPLICATE_COMBINED_ALLOCATION');
     uniqueAllocationKeys.add(uniqueKey);
     if (!allocation.sourceId || !validTin(allocation.taxpayerTin) ||
-      !/^20\d{2}-\d{2}$/.test(allocation.assessmentYear) || !Number.isSafeInteger(allocation.amountMinor) ||
+      !/^20\d{2}-\d{2}$/.test(allocation.assessmentYear) ||
+      Number(allocation.assessmentYear.slice(5)) !== (Number(allocation.assessmentYear.slice(0, 4)) + 1) % 100 ||
+      !Number.isSafeInteger(allocation.amountMinor) ||
       allocation.amountMinor <= 0 || allocation.line.headId <= 0 ||
       !Number.isSafeInteger(allocation.line.headId) ||
       Math.round(allocation.line.totalAmount * 100) !== allocation.amountMinor ||

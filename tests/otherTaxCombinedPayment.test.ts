@@ -12,8 +12,8 @@ import type {StoryPaymentInput} from '../src/services/simulatedPaymentStory.ts';
 const id='11111111-2222-4333-8444-555555555555';
 const session='aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
 const items:PaymentLineItem[]=[
- {headId:68,economicCode:'68A',headNameEn:'Advance tax',taxAmount:15,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:15},
- {headId:69,economicCode:'68B',headNameEn:'Motor vehicle advance tax',taxAmount:35,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:35},
+ {headId:121,economicCode:'64',headNameEn:'Advance Tax',taxAmount:15,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:15},
+ {headId:145,economicCode:'135',headNameEn:'Tax on notice of demand',taxAmount:35,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:35},
 ];
 const receipt:ChallanReceipt={
  id:'rcpt-'+id,challanNo:'SIM-'+id,tokenNumber:'SIM-TOKEN-'+id,
@@ -68,7 +68,7 @@ test('the signed-in payer keeps both saved beneficiaries inside one scoped SQL s
  assert.equal(confirmed.totalAmount,50);
  assert.equal(confirmed.paymentTransactionId,id);
  assert.deepEqual(confirmed.allocationItems?.map(item=>[item.taxpayerTin,item.economicCode,item.amountMinor]),
-  [['909000000013','68A',1500],['000000000018','68B',3500]]);
+  [['909000000013','64',1500],['000000000018','135',3500]]);
 });
 test('pending combined request is recoverable with same identity, and cannot leak across sessions',()=>{
  const storage=store(), request=mk();
@@ -131,4 +131,15 @@ test('configured capacity is explicit and one above the capacity is rejected bef
  assert.ok(MAX_COMBINED_ALLOCATIONS>20);
  const rows=Array.from({length:MAX_COMBINED_ALLOCATIONS+1},(_,n)=>({...allocations[0],sourceId:'overflow-'+n}));
  assert.throws(()=>prepareCombinedOtherTaxPayment(input,receipt,rows),/INVALID_COMBINED_PAYMENT/);
+});
+
+test('withholding and Tax With Return heads cannot impersonate an Other Tax liability',()=>{
+ for (const head of [
+   {headId:68,economicCode:'68A',headNameEn:'Advance tax'},
+   {headId:125,economicCode:'74',headNameEn:'Tax With Return'},
+ ]) {
+   assert.throws(()=>prepareCombinedOtherTaxPayment(input,receipt,[
+     {...allocations[0],line:{...items[0],...head}},allocations[1]
+   ]),/INVALID_COMBINED_HEAD/);
+ }
 });
