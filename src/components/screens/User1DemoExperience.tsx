@@ -241,7 +241,19 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         .filter(value=>/^20\d{2}-20\d{2}$/.test(value)))];
       let reuse:PaymentReuse|null=null;
       try{
-        if(receipts.length===items.length)reuse=reuseRecordedPayment(receipts,'user1',DEMO_USERS.user1.tin,id);
+        // A generated display-only fallback receipt is not a faithful
+        // payment input snapshot. Never let historic head IDs silently
+        // become different modern tax heads.
+        const sourceSnapshotsVerified=items.every(({payment})=>{
+          const snapshot=payment.details.receiptSnapshot;
+          return Boolean(snapshot)&&typeof snapshot==='object'&&!Array.isArray(snapshot)&&
+            (snapshot as Record<string,unknown>).paymentCategory===payment.service &&
+            Array.isArray((snapshot as Record<string,unknown>).items)&&
+            typeof (snapshot as Record<string,unknown>).totalAmount==='number' &&
+            Math.round(((snapshot as Record<string,unknown>).totalAmount as number)*100)===payment.amountMinor;
+        });
+        if(sourceSnapshotsVerified&&receipts.length===items.length)
+          reuse=reuseRecordedPayment(receipts,'user1',DEMO_USERS.user1.tin,id);
       }catch{/* Old records are checked separately; modern invalid snapshots remain blocked. */}
       // Some legacy SQL rows stored only an exact category, one AY, one TIN
       // and amount. No head ID or classification was recorded. Permit a new
