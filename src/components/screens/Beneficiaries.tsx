@@ -17,6 +17,7 @@ import {beneficiaryChoiceValue,beneficiaryChoiceParts} from '../../services/bene
 import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
+import {BeneficiaryProfile} from './BeneficiaryProfile';
 import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
 import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from '../../services/beneficiaryTags';
 
@@ -100,6 +101,7 @@ export function Beneficiaries(){
     }
   },[routeParams.reviewBeneficiaryTins]);
   const [selectedIds,setSelectedIds]=useState<string[]>([]);
+  const [profileSelection,setProfileSelection]=useState<{id:string;account:string}|null>(null);
   const [editPerson,setEditPerson]=useState<Beneficiary|null>(null);
   const [editTargetList,setEditTargetList]=useState('');
   const [editTag,setEditTag]=useState<BeneficiaryTag|''>('');
@@ -206,6 +208,9 @@ export function Beneficiaries(){
       .toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
   });
   const selectedPeople=listPeople.filter(person=>selectedIds.includes(person.id));
+  const profileAccount=owner??previewAccount?.id??'';
+  const profilePerson=profileSelection?.account===profileAccount&&profileAccount
+    ?people.find(person=>person.id===profileSelection.id):undefined;
   const activeListRecord=lists.find(list=>list.id===activeList);
   const editHasChanges=Boolean(editPerson && (
     editTargetList!==editPerson.list_id ||
@@ -461,6 +466,13 @@ export function Beneficiaries(){
     finally{setLoading(false);}
   };
 
+  if(profilePerson)return <BeneficiaryProfile key={profileAccount+':'+profilePerson.id}
+    person={profilePerson} ownerUid={owner} previewId={owner?null:previewAccount?.id??null}
+    language={language} onBack={()=>{
+      setProfileSelection(null);
+      window.requestAnimationFrame(()=>document.getElementById('beneficiary-profile-link-'+profilePerson.id)?.focus());
+    }} onMakePayment={()=>payWith([profilePerson])}/>;
+
   return <section className="mx-auto w-full max-w-7xl space-y-5" lang={language} data-taxpay-register-page="true" data-testid="beneficiaries-page" aria-labelledby="beneficiaries-title">
     <header className="flex flex-col gap-4 rounded-xl border border-taxpay-border bg-taxpay-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div className="min-w-0">
@@ -595,10 +607,13 @@ export function Beneficiaries(){
                       onChange={event=>setSelectedIds(current=>event.target.checked
                         ?Array.from(new Set([...current,person.id]))
                         :current.filter(id=>id!==person.id))}/>
-                    <label htmlFor={'beneficiary-select-'+person.id} className="taxpayer-transaction-row__identity beneficiary-directory__person">
+                    <button id={'beneficiary-profile-link-'+person.id} type="button"
+                      className="taxpayer-transaction-row__identity beneficiary-directory__person w-full text-left"
+                      aria-label={tr('Open profile for ','প্রোফাইল দেখুন: ')+displayName(person)}
+                      onClick={()=>setProfileSelection({id:person.id,account:profileAccount})}>
                       <p className="taxpayer-transaction-row__title">{displayName(person)}{beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)&&<span className="font-normal text-taxpay-muted"> · {beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)}</span>}</p>
                       <p className="beneficiary-directory__tin tabular-nums">{person.tin}</p>
-                    </label>
+                    </button>
                   </div>},
                   {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:person=><div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
@@ -618,10 +633,12 @@ export function Beneficiaries(){
                         onChange={event=>setSelectedIds(current=>event.target.checked
                           ?Array.from(new Set([...current,person.id]))
                           :current.filter(id=>id!==person.id))}/>
-                      <label htmlFor={'beneficiary-mobile-select-'+person.id} className="taxpay-mobile-table-card__title">
+                      <button type="button" className="taxpay-mobile-table-card__title text-left"
+                        aria-label={tr('Open profile for ','প্রোফাইল দেখুন: ')+displayName(person)}
+                        onClick={()=>setProfileSelection({id:person.id,account:profileAccount})}>
                         <span className="block break-words">{displayName(person)}{finalTag&&<span className="font-normal text-taxpay-muted"> · {finalTag}</span>}</span>
                         <span className="mt-1 block break-all text-sm font-normal tabular-nums text-taxpay-muted">{person.tin}</span>
-                      </label>
+                      </button>
                     </div>
                   </div>
                   <div className="taxpay-mobile-table-card__actions" role="group"
