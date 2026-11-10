@@ -34,7 +34,10 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   const id=(privateMode?boundId:previewAccount?.id) as SimulationUser|undefined;
   const bn=language==='bn';
   const txt=(en:string,bengali:string)=>bn?bengali:en;
-  const [view,setView]=useState<'beneficiary'|'payer'>('beneficiary');
+  // Start with the user's initiated payments so Pay Again is visible without
+  // switching perspectives. Fall back to received allocations for payees only.
+  const [view,setView]=useState<'beneficiary'|'payer'>('payer');
+  const [historyViewChosen,setHistoryViewChosen]=useState(false);
   const [rows,setRows]=useState<SimulationTransaction[]>([]);
   const [selectedPayment,setSelectedPayment]=useState<SimulationTransaction|null>(null);
   const [loading,setLoading]=useState(true);
@@ -73,6 +76,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   },[authenticatedUser?.id]);
   useEffect(()=>{
     if(!id)return;
+    setView('payer');setHistoryViewChosen(false);
     const context=parsePaymentPrefill(routeParams??{});
     setParentCategory(context?.category??'TAX_WITH_RETURN');
     setLines([{...freshLine(id),...(context??{})}]);
@@ -87,7 +91,10 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     const run=async()=>{
       try{
         const next=privateMode?await getPrivateSimulationHistory(view):await loadSimulationHistory(id,view);
-        if(active){setRows(next);setLoadError('');setLoading(false);}
+        if(active){
+          setRows(next);setLoadError('');setLoading(false);
+          if(view==='payer'&&!historyViewChosen&&!next.length)setView('beneficiary');
+        }
       }catch(e){
         if(active){setLoadError(e instanceof Error?e.message:'Read failed');setLoading(false);}
       }
@@ -95,7 +102,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     void run();
     const timer=window.setInterval(()=>void run(),7000);
     return()=>{active=false;window.clearInterval(timer);};
-  },[id,view,revision,privateMode]);
+  },[id,view,revision,privateMode,historyViewChosen]);
   useEffect(()=>{
     if(!id||!previewMode)return;
     let active=true;
@@ -103,14 +110,17 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     const run=async()=>{
       try{
         const [next,authorizationRecords]=await Promise.all([getDemoStoryPaymentHistory(id,view),getHostedAuthorizations(id)]);
-        if(active){setRows(next);setPermittedBeneficiaries(
-          authorizationRecords.filter(r=>r.payerId===id&&r.status==='ACTIVE').map(r=>r.taxpayerId));
-          setLoadError('');setLoading(false);}
+        if(active){
+          setRows(next);setPermittedBeneficiaries(
+            authorizationRecords.filter(r=>r.payerId===id&&r.status==='ACTIVE').map(r=>r.taxpayerId));
+          setLoadError('');setLoading(false);
+          if(view==='payer'&&!historyViewChosen&&!next.length)setView('beneficiary');
+        }
       }catch(e){if(active){setLoadError(e instanceof Error?e.message:'Read failed');setLoading(false);}}
     };
     void run();const timer=window.setInterval(()=>void run(),7000);
     return()=>{active=false;window.clearInterval(timer);};
-  },[id,view,revision,previewMode]);
+  },[id,view,revision,previewMode,historyViewChosen]);
 
   useEffect(()=>{
     let active=true;
@@ -366,7 +376,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     </section>
 
     <nav className="flex flex-wrap gap-2" aria-label={txt('History perspective','ইতিহাসের ধরন')}>
-      {(['beneficiary','payer'] as const).map(mode=><button key={mode} type="button" aria-pressed={view===mode} onClick={()=>setView(mode)}
+      {(['beneficiary','payer'] as const).map(mode=><button key={mode} type="button" aria-pressed={view===mode} onClick={()=>{setHistoryViewChosen(true);setView(mode);}}
         className="min-h-11 rounded-lg border border-taxpay-border bg-white px-4 font-semibold text-taxpay-dark">
         {mode==='beneficiary'?txt('Payments allocated to me','আমার হিসাবে বরাদ্দ'):txt('Payments I initiated','আমার শুরু করা পেমেন্ট')}
       </button>)}
