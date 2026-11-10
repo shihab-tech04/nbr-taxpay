@@ -101,11 +101,26 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
         {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:p=><span className="break-all text-sm">{p.id}</span>},
         {key:'service',header:tr('Payment type','পেমেন্টের ধরন'),renderCell:p=><span>{p.service.replaceAll('_',' ')}</span>},
         {key:'date',header:tr('Date','তারিখ'),renderCell:p=><span>{new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{dateStyle:'medium',timeZone:'Asia/Dhaka'}).format(new Date(p.createdAt))}</span>},
-        {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right',renderCell:p=><span>{money(p.amountMinor)}</span>}
+        {key:'amount',header:tr('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right',renderCell:p=><span>{money(p.amountMinor)}</span>},
+        {key:'action',header:tr('Action','কার্যক্রম'),renderCell:p=><button type="button"
+          data-testid="recovered-pay-again" disabled={!reusable.has(p.id)}
+          title={!reusable.has(p.id)?tr('Complete original allocations are unavailable','আগের বরাদ্দের সম্পূর্ণ তথ্য নেই'):undefined}
+          onClick={()=>payAgain(p)}
+          className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary disabled:cursor-not-allowed disabled:opacity-50">
+          {tr('Pay Again','আবার পরিশোধ')}
+        </button>}
       ]}/>:<TaxPayTableState>{tr('No earlier saved records.','আগের কোনো রেকর্ড নেই।')}</TaxPayTableState>}
     {selected&&<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')}
       service="status" className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
       <ReceiptView receipt={makeConfirmedReceipt(selected)} embedded/>
+      <div className="mt-3 flex justify-end">
+        <button type="button" data-testid="recovered-pay-again-receipt"
+          disabled={!reusable.has(selected.id)}
+          onClick={()=>payAgain(selected)}
+          className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-medium text-taxpay-primary disabled:cursor-not-allowed disabled:opacity-50">
+          {tr('Pay Again','আবার পরিশোধ')}
+        </button>
+      </div>
     </TaxPayModal>}
   </section>;
 }
