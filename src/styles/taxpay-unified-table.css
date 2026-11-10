@@ -1422,6 +1422,12 @@ table.taxpay-unified-table {
   border-radius:12px;box-shadow:0 1px 2px rgb(26 39 57 / 4%);
   overflow:hidden;
 }
+/* The beneficiary list picker is an anchored popover. Override the register's
+   later, more specific overflow rule only when that picker is present;
+   scrolling remains owned by each table viewport. */
+.taxpay-taxpayer-reference .taxpay-office-register-frame:has(.beneficiary-directory__list-toolbar) {
+  overflow:visible;
+}
 /* Older spacing utilities must not add a second gap between card sections. */
 .taxpay-taxpayer-reference .taxpay-office-register-frame > :not([hidden]) ~ :not([hidden]) {
   margin-top:0;
