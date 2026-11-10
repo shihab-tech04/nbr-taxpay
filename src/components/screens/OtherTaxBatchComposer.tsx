@@ -314,7 +314,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                               {bn ? head.en : head.bn}
                             </span>}
                             {blocked && <span className="block text-xs text-rose-700 mt-1">
-                              {tx('Unavailable pending verification', 'যাচাই না হওয়া পর্যন্ত নির্বাচন করা যাবে না')}
+                              {head.id === 5 ? tx('Historical section 19AAAAA was omitted in 2022; not available for new payments.', 'ঐতিহাসিক ধারা ১৯এএএএএ ২০২২ সালে বিলুপ্ত হয়েছে; নতুন পরিশোধের জন্য প্রযোজ্য নয়।') : tx('Unavailable pending verification', 'যাচাই না হওয়া পর্যন্ত নির্বাচন করা যাবে না')}
                             </span>}
                           </span>
                         </label>
