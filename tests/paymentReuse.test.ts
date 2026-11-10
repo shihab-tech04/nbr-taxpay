@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {reuseRecordedPayment} from '../src/services/paymentReuse.ts';
+import {reuseRecordedPayment,reuseLegacySingleHeadPayment} from '../src/services/paymentReuse.ts';
 import type {ChallanReceipt} from '../src/types/tax.ts';
 const receipt = {
   id:'r1',challanNo:'SIM-1',tokenNumber:'SIM-token',paymentCategory:'OTHER_TAX_PAYMENT',
@@ -100,4 +100,51 @@ test('does not reuse duplicate allocations for the same taxpayer, head and year'
    totalAmount:20,
  };
  assert.throws(()=>reuseRecordedPayment([duplicate],'owner','1234567890123','source'),/duplicate taxpayer\/head\/year/);
+});
+
+test('historical SQL single-head payment opens editable repeat without guessing an unrecorded head',()=>{
+  const source={
+    id:'572659b2-4f41-496f-b72c-a9189a3ccb61',
+    service:'TAX_WITH_RETURN',status:'SIMULATED_SUCCESS',amountMinor:2500000,
+    details:{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2025-26',
+      lines:[{beneficiary:'user1',category:'TAX_WITH_RETURN',assessmentYear:'2025-26',amountMinor:2500000}],
+      paymentMethod:'SIMULATED'}
+  };
+  const original=JSON.stringify(source);
+  const draft=reuseLegacySingleHeadPayment(source,'user1','1111111111111');
+  assert.equal(draft.service,'TAX_WITH_RETURN');
+  assert.equal(draft.formPayload.forSelf,true);
+  assert.equal(draft.formPayload.legacySourceAmount,'25000.00');
+  assert.equal(draft.formPayload.assessmentYear,'');
+  assert.deepEqual(draft.formPayload.selectedHeadIds,[]);
+  assert.deepEqual(draft.formPayload.amountInputs,{});
+  assert.equal(draft.formPayload.incomeTaxType,null);
+  assert.equal(draft.formPayload.noticeReference,'');
+  assert.equal(JSON.stringify(source),original);
+  const newYear=reuseLegacySingleHeadPayment({...source,details:{...source.details,
+    assessmentYear:'2026-27',lines:[{...source.details.lines[0],assessmentYear:'2026-27'}]}
+  },'user1','1111111111111');
+  assert.equal(newYear.formPayload.assessmentYear,'2026-27');
+});
+test('legacy reuse refuses mixed Tax-with-Return, multiple lines, mismatched amount and modern snapshots',()=>{
+  const sample={
+    id:'c0227104-60d9-4827-be36-eba397e62c41',
+    service:'TAX_WITH_RETURN',status:'SIMULATED_SUCCESS',amountMinor:5000,
+    details:{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2026-27',
+      lines:[{beneficiary:'user1',category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amountMinor:3500}]}
+  };
+  assert.throws(()=>reuseLegacySingleHeadPayment({...sample,details:{...sample.details,
+    lines:[...sample.details.lines,{beneficiary:'user1',category:'ADVANCE_TAX',assessmentYear:'2025-26',amountMinor:1500}]}
+  },'user1','1111111111111'));
+  assert.throws(()=>reuseLegacySingleHeadPayment(sample,'user1','1111111111111'));
+  assert.throws(()=>reuseLegacySingleHeadPayment({...sample,status:'FAILED'},'user1','1111111111111'));
+  assert.throws(()=>reuseLegacySingleHeadPayment({...sample,details:{...sample.details,payerId:'user2',
+    lines:[{...sample.details.lines[0],amountMinor:5000}]}
+  },'user1','1111111111111'));
+  assert.throws(()=>reuseLegacySingleHeadPayment({...sample,details:{...sample.details,
+    receiptSnapshot:{id:'old'},lines:[{...sample.details.lines[0],amountMinor:5000}]}
+  },'user1','1111111111111'));
+  assert.throws(()=>reuseLegacySingleHeadPayment({...sample,service:'TRAVEL_TAX',
+    details:{...sample.details,lines:[{...sample.details.lines[0],category:'TRAVEL_TAX',amountMinor:5000}]}
+  },'user1','1111111111111'));
 });
