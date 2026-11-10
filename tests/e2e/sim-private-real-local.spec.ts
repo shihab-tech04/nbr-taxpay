@@ -99,5 +99,27 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(notices.status).toBe(200);
  const own=(notices.data as Array<{transactionId:string;isRead:boolean}>).find(n=>n.transactionId===tx!.transactionId);
  expect(own?.isRead).toBe(true);
+ // The recorded payer, not a beneficiary, can reuse the complete historical
+ // transaction. The previous-year allocation must be reset individually.
+ await expect(one.page.getByTestId('pay-again-mobile').first()).toBeVisible({timeout:15000});
+ await one.page.getByTestId('pay-again-mobile').first().click();
+ await expect(one.page.getByTestId('pay-again-copy-status')).toContainText(tx!.id);
+ await expect(one.page.getByLabel('Payment category').nth(0)).toHaveValue('ADVANCE_TAX');
+ await expect(one.page.getByLabel('Payment category').nth(1)).toHaveValue('PENALTY');
+ await expect(one.page.getByLabel('Amount (৳)').nth(0)).toHaveValue('150.25');
+ await expect(one.page.getByLabel('Amount (৳)').nth(1)).toHaveValue('23.50');
+ await expect(one.page.getByLabel('Assessment year').nth(0)).toHaveValue('2026-27');
+ await expect(one.page.getByLabel('Assessment year').nth(1)).toHaveValue('');
+ // Reuse remains editable. Simply opening/changing a copy cannot mutate the
+ // immutable SQL payment or produce a second receipt.
+ await one.page.getByLabel('Assessment year').nth(1).selectOption('2026-27');
+ await one.page.getByLabel('Amount (৳)').nth(0).fill('150.30');
+ const original=await request('/rest/v1/rpc/sim_my_payment_history',{p_view:'payer'},payer.session.access_token);
+ const prior=(original.data as Array<{transactionId:string;totalMinor:number;allocations:Array<{assessmentYear:string;amountMinor:number}>}>)
+   .find(row=>row.transactionId===tx!.transactionId);
+ expect(prior?.totalMinor).toBe(17375);
+ expect(prior?.allocations.map(a=>a.amountMinor)).toEqual([15025,2350]);
+ expect(prior?.allocations.map(a=>a.assessmentYear)).toEqual(['2026-27','2025-26']);
+ await expect(two.page.getByTestId('pay-again-mobile')).toHaveCount(0);
  await one.context.close();await two.context.close();
 });
