@@ -722,7 +722,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             'নতুন পেমেন্ট তৈরি করতে যাচাইকৃত সংরক্ষিত রেকর্ড নির্বাচন করুন। নমুনা লেনদেনকে আসল পেমেন্ট ধরা যাবে না।')}
         </p>
         <RecoveredStoryHistory profileId="user1" language={language}
-          skipDemoRegister showEmpty embedded/>
+          skipDemoRegister showEmpty embedded onReuse={()=>setRecordedPayAgainOpen(false)}/>
       </TaxPayModal>}
     {selected && <TaxPayModal
       title={selected.title}
