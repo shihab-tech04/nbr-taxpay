@@ -53,3 +53,54 @@ test('historical compatibility never allows a supplied conflicting head or amoun
   amount.details.receiptLines[0].totalAmount=101;
   assert.throws(()=>makeConfirmedReceipt(amount),/allocations could not be reconciled/);
 });
+
+test('single historic synthetic payment uses its exact stored TIN, including 13 digits',()=>{
+  const tx={
+    id:'22222222-2222-4222-8222-222222222222',
+    service:'TAX_WITH_RETURN',amountMinor:2500,status:'SIMULATED_SUCCESS',
+    createdAt:'2026-11-09T10:00:00Z',
+    details:{
+      taxpayerTin:'1111111111111',
+      lines:[{beneficiary:'user1',category:'TAX_WITH_RETURN',assessmentYear:'2025-26',amountMinor:2500}]
+    }
+  };
+  const receipt=makeConfirmedReceipt(tx);
+  assert.equal(receipt.allocationItems?.[0].taxpayerTin,'1111111111111');
+  assert.equal(receipt.allocationItems?.[0].assessmentYear,'2025-26');
+});
+
+test('old multi-beneficiary synthetic lines resolve each approved illustrative TIN independently',()=>{
+  const tx={
+    id:'33333333-2222-4333-8333-333333333333',
+    service:'TAX_WITH_RETURN',amountMinor:4500,status:'SIMULATED_SUCCESS',
+    createdAt:'2026-11-09T10:00:00Z',
+    details:{
+      taxpayerTin:'MULTIPLE_BENEFICIARIES',
+      lines:[
+        {beneficiary:'user2',category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amountMinor:3000},
+        {beneficiary:'user1',category:'TAX_WITH_RETURN',assessmentYear:'2025-26',amountMinor:1500}
+      ]
+    }
+  };
+  const receipt=makeConfirmedReceipt(tx);
+  assert.deepEqual(receipt.allocationItems?.map(a=>[a.taxpayerTin,a.amountMinor,a.assessmentYear]),[
+    ['222222222222',3000,'2026-27'],
+    ['111111111111',1500,'2025-26']
+  ]);
+});
+
+test('historic saved-TIN alias resolves only a valid literal TIN',()=>{
+  const base={
+    id:'44444444-2222-4444-8444-444444444444',
+    service:'ADVANCE_TAX',amountMinor:1500,status:'SIMULATED_SUCCESS',
+    createdAt:'2026-11-09T10:00:00Z'
+  };
+  const receipt=makeConfirmedReceipt({...base,details:{
+    lines:[{beneficiary:'SAVED_TIN:909000000013',category:'ADVANCE_TAX',assessmentYear:'2026-27',amountMinor:1500}]
+  }});
+  assert.equal(receipt.allocationItems?.[0].taxpayerTin,'909000000013');
+  const invalid=makeConfirmedReceipt({...base,details:{
+    lines:[{beneficiary:'SAVED_TIN:invalid',category:'ADVANCE_TAX',assessmentYear:'2026-27',amountMinor:1500}]
+  }});
+  assert.equal(invalid.allocationItems?.[0].taxpayerTin,undefined);
+});
