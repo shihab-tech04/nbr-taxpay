@@ -607,13 +607,13 @@ export function Beneficiaries(){
                       onChange={event=>setSelectedIds(current=>event.target.checked
                         ?Array.from(new Set([...current,person.id]))
                         :current.filter(id=>id!==person.id))}/>
-                    <button id={'beneficiary-profile-link-'+person.id} type="button"
+                    <a id={'beneficiary-profile-link-'+person.id} href="#beneficiary-profile-title"
                       className="taxpayer-transaction-row__identity beneficiary-directory__person w-full text-left"
                       aria-label={tr('Open profile for ','প্রোফাইল দেখুন: ')+displayName(person)}
-                      onClick={()=>setProfileSelection({id:person.id,account:profileAccount})}>
+                      onClick={event=>{event.preventDefault();setProfileSelection({id:person.id,account:profileAccount});}}>
                       <p className="taxpayer-transaction-row__title">{displayName(person)}{beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)&&<span className="font-normal text-taxpay-muted"> · {beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)}</span>}</p>
                       <p className="beneficiary-directory__tin tabular-nums">{person.tin}</p>
-                    </button>
+                    </a>
                   </div>},
                   {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:person=><div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
@@ -633,12 +633,12 @@ export function Beneficiaries(){
                         onChange={event=>setSelectedIds(current=>event.target.checked
                           ?Array.from(new Set([...current,person.id]))
                           :current.filter(id=>id!==person.id))}/>
-                      <button type="button" className="taxpay-mobile-table-card__title text-left"
+                      <a href="#beneficiary-profile-title" className="taxpay-mobile-table-card__title text-left"
                         aria-label={tr('Open profile for ','প্রোফাইল দেখুন: ')+displayName(person)}
-                        onClick={()=>setProfileSelection({id:person.id,account:profileAccount})}>
+                        onClick={event=>{event.preventDefault();setProfileSelection({id:person.id,account:profileAccount});}}>
                         <span className="block break-words">{displayName(person)}{finalTag&&<span className="font-normal text-taxpay-muted"> · {finalTag}</span>}</span>
                         <span className="mt-1 block break-all text-sm font-normal tabular-nums text-taxpay-muted">{person.tin}</span>
-                      </button>
+                      </a>
                     </div>
                   </div>
                   <div className="taxpay-mobile-table-card__actions" role="group"
