@@ -99,14 +99,6 @@ BEGIN
   IF jsonb_typeof(v_lines) <> 'array' OR jsonb_array_length(v_lines) NOT BETWEEN 1 AND
     (CASE WHEN new.data->'details'->>'combinedPayment' = 'true' THEN 256 ELSE 20 END)
   THEN RAISE EXCEPTION 'INVALID_BENEFICIARY_LINES'; END IF;
-  IF new.service_code='TAX_WITH_RETURN' AND EXISTS (
-    SELECT 1 FROM jsonb_array_elements(v_lines) AS l(value)
-    WHERE l.value ? 'category' AND l.value->>'category'<>'TAX_WITH_RETURN'
-  ) THEN RAISE EXCEPTION 'RETURN_HEAD_EXCLUSIVE'; END IF;
-  IF new.service_code<>'TAX_WITH_RETURN' AND EXISTS (
-    SELECT 1 FROM jsonb_array_elements(v_lines) AS l(value)
-    WHERE l.value->>'category'='TAX_WITH_RETURN'
-  ) THEN RAISE EXCEPTION 'RETURN_HEAD_EXCLUSIVE'; END IF;
   -- One Office-compatible payment transaction, many independently verified
   -- taxpayer allocations. Keep accounting heads in details.lines and explicit
   -- beneficiary shares in details.allocations; never mix synthetic user IDs.
@@ -311,6 +303,29 @@ BEGIN
 END;
 $function$;
 
+-- Enforce the exclusive Tax with Return category on NEW RPC submissions only.
+-- Direct insertion of already-existing, knowingly invalid historical fixture
+-- rows remains possible in disposable tests without relaxing any public RPC.
+CREATE OR REPLACE FUNCTION demo_payment.assert_new_head_exclusivity(p_input jsonb)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $taxpay_return$
+DECLARE
+  v_service text := p_input->>'service';
+  v_lines jsonb := p_input->'details'->'lines';
+BEGIN
+  IF jsonb_typeof(v_lines) IS DISTINCT FROM 'array' THEN RETURN; END IF;
+  IF v_service = 'TAX_WITH_RETURN' THEN
+    IF EXISTS (SELECT 1 FROM jsonb_array_elements(v_lines) AS a(value)
+      WHERE (a.value ? 'category' AND a.value->>'category' <> 'TAX_WITH_RETURN')
+         OR (a.value ? 'headId' AND a.value->>'headId' <> '125'))
+    THEN RAISE EXCEPTION 'RETURN_HEAD_EXCLUSIVE'; END IF;
+  ELSIF EXISTS (SELECT 1 FROM jsonb_array_elements(v_lines) AS a(value)
+      WHERE a.value->>'category' = 'TAX_WITH_RETURN' OR a.value->>'headId' = '125')
+    THEN RAISE EXCEPTION 'RETURN_HEAD_EXCLUSIVE';
+  END IF;
+END;
+$taxpay_return$;
+REVOKE ALL ON FUNCTION demo_payment.assert_new_head_exclusivity(jsonb) FROM PUBLIC,anon,authenticated;
+
 -- Preserve every existing RPC ownership, idempotency and grant condition: change
 -- only the request limit for the already separately validated combined shape.
 -- The existing 12KB cap remains unchanged for all older/single-head services.
@@ -319,6 +334,8 @@ DECLARE
   v_rpc text;
   v_sql text;
   v_old text := 'length(p_input::text)>12000';
+  v_key text := 'v_key:=(p_input->>''idempotencyKey'')::uuid;';
+  v_validate text := 'perform demo_payment.assert_new_head_exclusivity(p_input);';
   v_new text := 'length(p_input::text) > (CASE WHEN p_input->''details''->>''combinedPayment'' = ''true'' AND p_input->>''service'' = ''OTHER_TAX_PAYMENT'' THEN 750000 ELSE 12000 END)';
 BEGIN
   FOR v_rpc IN SELECT unnest(ARRAY['public.demo_story1_submit(jsonb)',
@@ -327,8 +344,15 @@ BEGIN
     IF position(v_old IN v_sql) = 0 AND position(v_new IN v_sql) = 0 THEN
       RAISE EXCEPTION 'TAXPAY_RPC_UNEXPECTED_SOURCE: %', v_rpc;
     END IF;
-    IF position(v_old IN v_sql) > 0 THEN
-      EXECUTE replace(v_sql, v_old, v_new);
+    IF position(v_key IN v_sql) = 0 THEN
+      RAISE EXCEPTION 'TAXPAY_RPC_IDEMPOTENCY_SOURCE_UNEXPECTED: %', v_rpc;
     END IF;
+    IF position(v_validate IN v_sql) = 0 THEN
+      v_sql := replace(v_sql, v_key, v_validate || E'\n  ' || v_key);
+    END IF;
+    IF position(v_old IN v_sql) > 0 THEN
+      v_sql := replace(v_sql, v_old, v_new);
+    END IF;
+    EXECUTE v_sql;
   END LOOP;
 END $taxpay_payload_limit$;
