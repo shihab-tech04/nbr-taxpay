@@ -64,7 +64,9 @@ test('taxpayer → shared SQL → Maker/Reviewer/Approver Office UI → benefici
  await expect(taxpayer.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:16000});
  await expect(taxpayer.page.getByText('User ID: user8')).toBeVisible();
  await expect(taxpayer.page.getByRole('heading',{name:'Choose payment category'})).toBeVisible();
- await taxpayer.page.getByRole('button',{name:/TAX WITH RETURN/i}).click();
+ // A mixed payment cannot include Tax with Return. Exercise the legal
+  // Advance Tax + Penalty combination across TaxPay → Office review instead.
+  await taxpayer.page.getByRole('button',{name:/ADVANCE TAX/i}).click();
  await expect(taxpayer.page.getByRole('heading',{name:'Information before payment'})).toBeVisible();
  await taxpayer.page.getByRole('button',{name:'Make Payment →'}).click();
  await taxpayer.page.getByLabel('Amount (৳)').first().fill('123.45');
