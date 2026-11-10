@@ -9,6 +9,21 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   const payment='00000000-0000-4000-8000-000000030003';
   const cap='A'.repeat(43);
   const date='2026-11-05T12:00:00Z';
+  const snapshot={
+    id:payment,challanNo:'SIM-RECOVER-1',tokenNumber:'SIM-TOKEN',
+    paymentCategory:'OTHER_TAX_PAYMENT',assessmentYear:'2025-26',
+    payerName:'Preview user1',payerTin:'1111111111111',taxpayerTin:'1111111111111',
+    receiptMobile:'01712345678',isRepresentativePayment:false,
+    taxZone:'—',taxCircle:'—',isWithholding:false,
+    items:[{headId:1,economicCode:'16A',headNameEn:'Surcharge',
+      taxAmount:100,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:100}],
+    allocationItems:[{taxpayerTin:'1111111111111',taxpayerName:'Preview user1',
+      paymentServiceEn:'Surcharge',paymentServiceBn:'সারচার্জ',
+      assessmentYear:'2025-26',amountMinor:10000}],
+    totalAmount:100,paymentMethod:'SIMULATED',gatewayTransactionId:'SIMULATED',
+    treasuryStatus:'GATEWAY_SUCCESS',taxCreditStatus:'PENDING_RECONCILIATION',
+    createdAt:date,isSimulatedDemo:true
+  };
   let recovered=false;
   let recoveryAttempts=0;
   const paymentRequests:string[]=[];
@@ -57,7 +72,7 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
     if(detail){
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
         success:true,simulationOnly:true,data:{id:payment,status:record.status,createdAt:date,
-          data:{service:record.service,amountMinor:10000,details:{payerName:'Earlier payer',assessmentYear:'2026-27',paymentMethod:'SIMULATED'}}}
+          data:{service:record.service,amountMinor:10000,details:{payerName:'Earlier payer',assessmentYear:'2025-26',paymentMethod:'SIMULATED',receiptSnapshot:snapshot}}}
       })});return;
     }
     const items=recovered?[record]:[];
@@ -135,4 +150,17 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   expect(reread.body?.data?.items?.some((row:{id:string})=>row.id===payment)).toBe(true);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-guest-simulation-session'))).toBeNull();
   await expect(page.getByRole('button',{name:'Restore earlier payments'})).toHaveCount(0);
+  // The approved user1 Transactions table stays intact; an explicit action
+  // opens the independently verified prior payment instead of treating fixed
+  // storybook entries as payable SQL receipts.
+  const entry=page.getByTestId('user1-pay-again-entry');
+  await expect(entry).toBeVisible();
+  await entry.click();
+  const history=page.getByRole('dialog',{name:'Pay Again'});
+  await expect(history.getByTestId('recovered-pay-again')).toBeEnabled({timeout:15000});
+  await history.getByTestId('recovered-pay-again').click();
+  const cloned=page.getByRole('dialog',{name:'Pay Tax'});
+  await expect(cloned).toBeVisible();
+  await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText(payment);
+  await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText('Original payment unchanged.');
 });
