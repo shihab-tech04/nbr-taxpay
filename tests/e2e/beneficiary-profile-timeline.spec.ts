@@ -54,6 +54,10 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   await expect(profile.locator('ol li').getByText('Other tax payment',{exact:true})).toBeVisible();
   await expect(profile.locator('ol li').getByText('Penalty',{exact:true})).toHaveCount(0);
   await expect(profile.locator('ol li').getByText('record-1')).toHaveCount(2);
+  const timeline=profile.getByTestId('beneficiary-chronological-timeline');
+  await expect(timeline).toBeVisible();
+  await expect(timeline).toHaveCSS('border-left-width','2px');
+  await expect(timeline.locator('time')).toHaveCount(2);
   await profile.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
   await expect(profile.locator('ol li').getByText('Advance tax',{exact:true})).toHaveCount(0);
   await expect(profile.locator('ol li').getByText('Other tax payment',{exact:true})).toBeVisible();
@@ -62,4 +66,18 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   await expect(listScreen.getByRole('button',{name:'Edit',exact:true})).toBeVisible();
   await expect(listScreen.getByRole('button',{name:'Make payment'})).toBeVisible();
   await expect(listScreen.getByRole('link',{name:'Open profile for User Two'})).toBeVisible();
+
+  // The same saved beneficiary must be reachable from the Activity register.
+  await page.goto('/?action=history');
+  const register=page.locator('.taxpayer-transaction-panel');
+  await register.getByRole('button',{name:'Filter',exact:true}).click();
+  await register.getByRole('combobox',{name:'Filter transactions by beneficiary'}).selectOption('222222222222');
+  const activityRow=register.getByTestId('taxpayer-transaction-table').locator('tbody tr');
+  await expect(activityRow).toHaveCount(1);
+  await expect(activityRow.first().getByText('User Two')).toBeVisible();
+  await activityRow.first().getByRole('button',{name:'Open beneficiary profile for User Two'}).click();
+  await expect(page.getByTestId('beneficiary-profile')).toBeVisible();
+  await expect(page.getByTestId('beneficiary-chronological-timeline')).toBeVisible();
+  await page.getByRole('button',{name:'Back to activity'}).click();
+  await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
 });
