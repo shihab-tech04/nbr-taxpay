@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 
 /** Owned preview capability, no production account data or financial writes. */
-test('beneficiary profile shows only this payer’s allocations, filters and returns to the unchanged list',async({page})=>{
+test('beneficiary profile shows only this payer’s allocations, filters and returns to the unchanged list',async({page},testInfo)=>{
   const now='2026-11-09T10:00:00.000Z';
   const list={id:'00000000-0000-4000-8000-000000000101',name:'Saved family',created_at:now};
   const person={id:'00000000-0000-4000-8000-000000000201',list_id:list.id,tin:'222222222222',
@@ -74,8 +74,11 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   await register.getByRole('combobox',{name:'Filter transactions by beneficiary',exact:true}).selectOption('222222222222');
   const activityRow=register.getByTestId('taxpayer-transaction-table').locator('tbody tr');
   await expect(activityRow).toHaveCount(1);
-  await expect(activityRow.first().getByText('User Two')).toBeVisible();
-  await activityRow.first().getByRole('button',{name:'Open beneficiary profile for User Two'}).click();
+  const activityRecipient=testInfo.project.name.startsWith('mobile-')
+    ?register.getByTestId('taxpayer-transaction-mobile-cards')
+    :activityRow.first();
+  await expect(activityRecipient.getByRole('button',{name:'Open beneficiary profile for User Two'}).first()).toBeVisible();
+  await activityRecipient.getByRole('button',{name:'Open beneficiary profile for User Two'}).first().click();
   await expect(page.getByTestId('beneficiary-profile')).toBeVisible();
   await expect(page.getByTestId('beneficiary-chronological-timeline')).toBeVisible();
   await page.getByRole('button',{name:'Back to activity'}).click();
