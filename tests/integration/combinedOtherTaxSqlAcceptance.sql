@@ -32,15 +32,15 @@ BEGIN
   THEN RAISE EXCEPTION 'COMBINED_TEST_SAVED_LIST_FAILED'; END IF;
 
   ledger_lines:=jsonb_build_array(
-    jsonb_build_object('headId',68,'economicCode','68A','headNameEn','Advance tax',
+    jsonb_build_object('headId',121,'economicCode','64','headNameEn','Advance Tax',
       'taxAmount',15,'penaltyAmount',0,'surchargeAmount',0,'interestAmount',0,'totalAmount',15),
-    jsonb_build_object('headId',69,'economicCode','68B','headNameEn','Vehicle advance tax',
+    jsonb_build_object('headId',145,'economicCode','135','headNameEn','Tax on notice of demand',
       'taxAmount',35,'penaltyAmount',0,'surchargeAmount',0,'interestAmount',0,'totalAmount',35));
   allocations:=jsonb_build_array(
     jsonb_build_object('taxpayerTin','909000000013','taxpayerName','First recipient',
-      'headId',68,'assessmentYear','2026-27','amountMinor',1500),
+      'headId',121,'assessmentYear','2026-27','amountMinor',1500),
     jsonb_build_object('taxpayerTin','000000000018','taxpayerName','Second recipient',
-      'headId',69,'assessmentYear','2025-26','amountMinor',3500));
+      'headId',145,'assessmentYear','2025-26','amountMinor',3500));
   -- Office and Taxpayer 360 read accounting heads plus explicit allocations.
   -- Never combine synthetic beneficiary lines and explicit allocations.
   lines:=ledger_lines;
@@ -48,9 +48,9 @@ BEGIN
     'paymentCategory','OTHER_TAX_PAYMENT','totalAmount',50,'items',ledger_lines,
     'allocationItems',jsonb_build_array(
       jsonb_build_object('taxpayerTin','909000000013','taxpayerName','First recipient',
-        'assessmentYear','2026-27','amountMinor',1500),
+        'assessmentYear','2026-27','amountMinor',1500,'paymentServiceEn','Advance Tax','economicCode','64'),
       jsonb_build_object('taxpayerTin','000000000018','taxpayerName','Second recipient',
-        'assessmentYear','2025-26','amountMinor',3500)),
+        'assessmentYear','2025-26','amountMinor',3500,'paymentServiceEn','Tax on notice of demand','economicCode','135')),
     'isSimulatedDemo',true);
   payload:=jsonb_build_object('origin','TAXPAY_UI','service','OTHER_TAX_PAYMENT',
     'idempotencyKey',payment_key,'sessionId',session_id,'amountMinor',5000,

@@ -1,4 +1,5 @@
 import type { ChallanReceipt } from '../types/tax';
+import { MAX_COMBINED_ALLOCATIONS } from './otherTaxCombinedPayment';
 import {activePreviewSession} from './previewAccountSession';
 import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
 import type {DemoUserId} from '../data/demoUsers';
@@ -82,7 +83,7 @@ export function bindPreviewStoryPayer(
     const allocations=details.allocations;
     const accounting=details.lines as Array<Record<string,unknown>>;
     const snapshot=details.receiptSnapshot as {items?:unknown}|undefined;
-    if (!Array.isArray(allocations) || allocations.length < 1 || allocations.length > 20 ||
+    if (!Array.isArray(allocations) || allocations.length < 1 || allocations.length > MAX_COMBINED_ALLOCATIONS ||
       accounting.length !== allocations.length ||
       !snapshot || !Array.isArray(snapshot.items) ||
       snapshot.items.length !== allocations.length)
