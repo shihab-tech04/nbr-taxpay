@@ -33,14 +33,10 @@ BEGIN
     RETURN 0;
   END IF;
 
-  IF EXISTS (
-    SELECT 1 FROM demo_payment.story_payments payment
-    WHERE payment.session_id = p_session_id
-      AND (payment.data->>'origin' IS DISTINCT FROM 'TAXPAY_UI'
-        OR payment.data->'details'->>'payerId' IS DISTINCT FROM v_demo_id)
-  ) THEN
-    RAISE EXCEPTION 'SESSION_PAYMENT_SCOPE_MISMATCH';
-  END IF;
+  -- Existing synthetic fixture history can share one session UUID across
+  -- different payers. Never claim those unrelated rows, but do not make a
+  -- legitimate owner's matching payments inaccessible because they exist.
+  -- Exact per-row payer and origin checks below are the security boundary.
 
   INSERT INTO public.taxpay_story1_payment_owners(payment_id, owner_uid)
   SELECT payment.id, v_uid

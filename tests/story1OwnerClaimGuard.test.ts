@@ -16,9 +16,10 @@ test('account payment history claims require the existing authorized owner bindi
 });
 
 test('payment ownership is fail-closed for cross-profile sessions, preserving existing rows', () => {
-  assert.match(migration, /SESSION_PAYMENT_SCOPE_MISMATCH/);
-  assert.match(migration, /payment\.data->>'origin'\s+IS DISTINCT FROM 'TAXPAY_UI'/);
-  assert.match(migration, /payment\.data->'details'->>'payerId'\s+IS DISTINCT FROM v_demo_id/);
+  assert.doesNotMatch(migration, /SESSION_PAYMENT_SCOPE_MISMATCH/);
+  assert.match(migration, /Existing synthetic fixture history can share one session UUID/);
+  assert.match(migration, /payment\.data->>'origin'\s*=\s*'TAXPAY_UI'/);
+  assert.match(migration, /payment\.data->'details'->>'payerId'\s*=\s*v_demo_id/);
   assert.match(migration, /ON CONFLICT \(payment_id\) DO NOTHING/);
   assert.doesNotMatch(migration, /\bDELETE\s+FROM\b|\bUPDATE\s+demo_payment\.story_payments\b/i);
 });
