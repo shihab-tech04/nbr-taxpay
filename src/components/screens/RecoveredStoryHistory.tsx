@@ -13,7 +13,7 @@ import type {DemoUserId} from '../../data/demoUsers';
 
 /** Preserve the approved Transactions register; show only old session records
  * not already in its payer table. Never rewrite their payer/beneficiary fields. */
-export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false}:{profileId:DemoUserId;language:'en'|'bn';skipDemoRegister?:boolean}) {
+export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false,showEmpty=false,embedded=false}:{profileId:DemoUserId;language:'en'|'bn';skipDemoRegister?:boolean;showEmpty?:boolean;embedded?:boolean}) {
   const [state,setState]=useState<{id:string;status:'loading'|'ready'|'error';rows:OwnedStoryPayment[]}>({
     id:profileId,status:'loading',rows:[]});
   const [selected,setSelected]=useState<OwnedStoryPayment|null>(null);
@@ -83,8 +83,10 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
   const money=(value:number)=>'৳ '+(value/100).toLocaleString(bn?'bn-BD':'en-BD',
     {minimumFractionDigits:2,maximumFractionDigits:2});
   // No extra UI at all for a verified empty account. Existing table is unchanged.
-  if(current.status==='ready'&&rows.length===0)return null;
-  if(current.status==='loading')return null;
+  if(current.status==='ready'&&rows.length===0&&!showEmpty)return null;
+  if(current.status==='loading')return showEmpty
+    ?<p role="status" className="p-3 text-sm text-taxpay-muted">{tr('Loading recorded payments…','সংরক্ষিত পেমেন্ট লোড হচ্ছে…')}</p>
+    :null;
   return <section className="mx-auto mt-4 max-w-7xl rounded-xl border border-taxpay-border bg-white p-4"
     aria-label={tr('Earlier saved payment records','আগের সংরক্ষিত পেমেন্টের রেকর্ড')}>
     {reuseError&&<p role="alert" className="mb-3 text-sm text-taxpay-error">{reuseError}</p>}
@@ -110,17 +112,28 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
           {tr('Pay Again','আবার পরিশোধ')}
         </button>}
       ]}/>:<TaxPayTableState>{tr('No earlier saved records.','আগের কোনো রেকর্ড নেই।')}</TaxPayTableState>}
-    {selected&&<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')}
-      service="status" className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
-      <ReceiptView receipt={makeConfirmedReceipt(selected)} embedded/>
-      <div className="mt-3 flex justify-end">
+    {selected&&(embedded
+      ?<section aria-label={tr('Selected earlier payment receipt','নির্বাচিত আগের পেমেন্টের রসিদ')}
+        className="mt-4 border-t border-taxpay-border pt-3">
+        <button type="button" className="mb-3 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary"
+          onClick={()=>setSelected(null)}>{tr('Back to records','রেকর্ডে ফিরে যান')}</button>
+        <ReceiptView receipt={makeConfirmedReceipt(selected)} embedded/>
         <button type="button" data-testid="recovered-pay-again-receipt"
-          disabled={!reusable.has(selected.id)}
-          onClick={()=>payAgain(selected)}
-          className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-medium text-taxpay-primary disabled:cursor-not-allowed disabled:opacity-50">
+          disabled={!reusable.has(selected.id)} onClick={()=>payAgain(selected)}
+          className="mt-3 min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-medium text-taxpay-primary disabled:opacity-50">
           {tr('Pay Again','আবার পরিশোধ')}
         </button>
-      </div>
-    </TaxPayModal>}
+      </section>
+      :<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')}
+        service="status" className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
+        <ReceiptView receipt={makeConfirmedReceipt(selected)} embedded/>
+        <div className="mt-3 flex justify-end">
+          <button type="button" data-testid="recovered-pay-again-receipt"
+            disabled={!reusable.has(selected.id)} onClick={()=>payAgain(selected)}
+            className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-medium text-taxpay-primary disabled:opacity-50">
+            {tr('Pay Again','আবার পরিশোধ')}
+          </button>
+        </div>
+      </TaxPayModal>)}
   </section>;
 }
