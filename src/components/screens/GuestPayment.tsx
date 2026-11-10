@@ -438,7 +438,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // all other validation, ownership and year checks stay in the payment wizard.
   useEffect(()=>{
     const original=initialReuse?.formPayload.legacySourceAmount;
-    if(typeof original!=='string'||!/^\\d+\\.\\d{2}$/.test(original))return;
+    if(typeof original!=='string'||!/^\d+\.\d{2}$/.test(original))return;
     const eligible=V11_PAYMENT_OPTIONS.filter(head=>head.category===category &&
       head.status==='ACTIVE'&&!BLOCKED_HEAD_IDS.includes(head.id));
     const selected=selectedHeadIds.length===1?selectedHeadIds[0]:
