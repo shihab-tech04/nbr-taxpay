@@ -12,7 +12,7 @@ import {ReceiptView} from '../common/ReceiptView';
 
 type Props={
   person:Beneficiary;ownerUid:string|null;previewId:SimulationUser|null;
-  language:'en'|'bn';onBack:()=>void;onMakePayment:()=>void;
+  language:'en'|'bn';onBack:()=>void;onMakePayment:()=>void;backToActivity?:boolean;
 };
 const paymentStatus=(status:BeneficiaryProfilePayment['status'],bn:boolean)=>
   status==='SIMULATED_SUCCESS'||status==='SIMULATED'
@@ -20,7 +20,7 @@ const paymentStatus=(status:BeneficiaryProfilePayment['status'],bn:boolean)=>
     :status==='PENDING'?(bn?'অপেক্ষমাণ':'Pending')
     :status==='FAILED'?(bn?'ব্যর্থ':'Failed'):(bn?'বাতিল / ফেরত':'Reversed');
 
-export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,language,onBack,onMakePayment})=>{
+export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,language,onBack,onMakePayment,backToActivity=false})=>{
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [snapshot,setSnapshot]=useState<{identity:string;state:'loading'|'ready'|'error';rows:BeneficiaryProfilePayment[]}>({
@@ -64,12 +64,18 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
   const tag=beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label);
   const date=(value:string)=>Number.isFinite(Date.parse(value))?new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',
     {day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)):'—';
-  const groups=years.filter(item=>filtered.some(row=>row.assessmentYear===item));
+  // A timeline is ordered by the date the payer actually made the payment.
+  // Assessment years remain separate allocation metadata and filter values.
+  const calendarYear=(value:string)=>Number.isFinite(Date.parse(value))?
+    String(new Date(value).getUTCFullYear()):tr('Date unknown','তারিখ অজানা');
+  const groups=[...new Set(filtered.map(row=>calendarYear(row.createdAt)))];
   return <section lang={language} aria-labelledby="beneficiary-profile-title" data-testid="beneficiary-profile"
     className="mx-auto w-full max-w-7xl space-y-5">
     <div>
       <UiButton type="button" variant="quiet" className="gap-2" onClick={onBack}>
-        <ArrowLeft size={17} aria-hidden="true"/>{tr('Back to beneficiaries','উপকারভোগীর তালিকায় ফিরুন')}
+        <ArrowLeft size={17} aria-hidden="true"/>{backToActivity
+          ?tr('Back to activity','লেনদেনের তালিকায় ফিরুন')
+          :tr('Back to beneficiaries','উপকারভোগীর তালিকায় ফিরুন')}
       </UiButton>
     </div>
     <header className="rounded-xl border border-taxpay-border bg-taxpay-surface p-4 sm:p-6">
@@ -113,7 +119,7 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
         className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-taxpay-text">{tr('Payment timeline','পেমেন্টের সময়রেখা')}</h2>
-          <span className="text-sm text-taxpay-muted">{formatNumber(filtered.length,language)} {tr('entries','রেকর্ড')}</span>
+          <span className="text-sm text-taxpay-muted">{formatNumber(filtered.length,language)} {tr('entries · newest first','রেকর্ড · সর্বশেষ আগে')}</span>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="text-sm text-taxpay-text">{tr('Search','অনুসন্ধান')}
@@ -155,24 +161,27 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
             {tr('Clear filters','ফিল্টার মুছুন')}</UiButton>
         </div>}
         {groups.map(item=>{
-          const entries=filtered.filter(row=>row.assessmentYear===item);
+          const entries=filtered.filter(row=>calendarYear(row.createdAt)===item);
           const yearTotal=entries.filter(countsTowardBeneficiaryPaidTotal)
             .reduce((sum,row)=>sum+row.amountMinor,0);
           return <div key={item} className="mt-5">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-taxpay-border pb-2">
-              <h3 className="font-semibold text-taxpay-text">{item}</h3>
+              <h3 className="font-semibold text-taxpay-text">{item} · {tr('Payment date','পেমেন্টের তারিখ')}</h3>
               <span className="text-sm tabular-nums text-taxpay-muted">
                 {tr('Recorded','নথিভুক্ত')}: {formatCurrency(yearTotal/100,language)}
               </span>
             </div>
-            <ol className="mt-2 space-y-2">
-              {entries.map(row=><li key={row.key} className="rounded-lg border border-taxpay-border p-3 sm:p-4">
+            <ol className="relative ms-2 mt-4 space-y-3 border-s-2 border-taxpay-primary/30 ps-5"
+              data-testid="beneficiary-chronological-timeline">
+              {entries.map(row=><li key={row.key} className="relative rounded-lg border border-taxpay-border p-3 sm:p-4">
+                <span aria-hidden="true" className="absolute -start-[29px] top-4 h-3 w-3 rounded-full border-2 border-white bg-taxpay-primary"/>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-medium text-taxpay-text">{row.paymentHead}</p>
                     <p className="mt-1 flex items-center gap-1 text-xs text-taxpay-muted">
-                      <CalendarDays size={14} aria-hidden="true"/>{date(row.createdAt)} · {paymentStatus(row.status,bn)}
+                      <CalendarDays size={14} aria-hidden="true"/><time dateTime={row.createdAt}>{date(row.createdAt)}</time> · {paymentStatus(row.status,bn)}
                     </p>
+                    <p className="mt-1 text-xs text-taxpay-muted">{tr('Assessment year','করবর্ষ')}: {row.assessmentYear}</p>
                     <p className="mt-1 break-all text-xs text-taxpay-muted">
                       {tr('Reference','রেফারেন্স')}: {row.transactionId}
                     </p>
