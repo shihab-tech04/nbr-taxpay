@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  prepareCombinedOtherTaxPayment, saveCombinedOtherTaxRequest,
+  prepareCombinedOtherTaxPayment, MAX_COMBINED_ALLOCATIONS, saveCombinedOtherTaxRequest,
   loadCombinedOtherTaxRequest, clearCombinedOtherTaxRequest
 } from '../src/services/otherTaxCombinedPayment.ts';
 import {bindPreviewStoryPayer} from '../src/services/simulatedPaymentStory.ts';
@@ -87,4 +87,48 @@ test('fail closed for amount mismatch, invalid TIN, duplicate allocation and alt
  assert.throws(()=>prepareCombinedOtherTaxPayment(input,receipt,[allocations[0],{...allocations[1],sourceId:'one'}]),/INVALID_COMBINED_PAYMENT/);
  const storage=store(); const request=mk();
  assert.throws(()=>saveCombinedOtherTaxRequest({payload:request.payload,receipt:{...request.receipt,challanNo:'SIM-FORGED'}},'READY',storage),/INVALID_COMBINED_RECOVERY/);
+});
+
+test('one combined transaction supports more than twenty allocations without splitting',()=>{
+ const heads = Array.from({length:21},(_,index)=>({
+   sourceId:'bulk-'+index,
+   taxpayerTin:String(100000000000+index),
+   taxpayerName:'Beneficiary '+index,
+   assessmentYear:index%2===0?'2025-26':'2026-27',
+   amountMinor:100,
+   line:{...items[0],totalAmount:1,taxAmount:1},
+ }));
+ const combinedReceipt:ChallanReceipt={...receipt,items:heads.map(a=>a.line),totalAmount:21};
+ const combinedInput:StoryPaymentInput={...input,amountMinor:2100,details:{...input.details,lines:combinedReceipt.items}};
+ const result=prepareCombinedOtherTaxPayment(combinedInput,combinedReceipt,heads);
+ assert.equal(result.payload.details.combinedPayment,true);
+ assert.equal(result.payload.details.allocationCount,21);
+ assert.equal(result.payload.details.taxpayerCount,21);
+ assert.equal(result.receipt.allocationItems?.length,21);
+ assert.equal(result.payload.idempotencyKey,id);
+ assert.equal(result.receipt.challanNo,'SIM-'+id);
+ assert.equal(result.payload.amountMinor,2100);
+ const bound=bindPreviewStoryPayer(result.payload,{profileId:'user1',paymentSessionId:session});
+ assert.equal((bound.details.allocations as Array<unknown>).length,21);
+});
+
+test('one beneficiary can pay the same eligible head in different assessment years',()=>{
+ const second={...allocations[0],sourceId:'another-year',assessmentYear:'2025-26',amountMinor:3500,line:{...items[0],totalAmount:35,taxAmount:35}};
+ const combinedReceipt={...receipt,items:[allocations[0].line,second.line]};
+ const result=prepareCombinedOtherTaxPayment({...input,details:{...input.details,lines:combinedReceipt.items}},combinedReceipt,[allocations[0],second]);
+ assert.equal(result.payload.details.taxpayerCount,1);
+ assert.equal((result.payload.details.allocations as Array<Record<string,unknown>>)[1].assessmentYear,'2025-26');
+ assert.equal(result.payload.amountMinor,5000);
+});
+
+test('same TIN/head/year cannot be charged twice even under different source IDs',()=>{
+ const duplicate={...allocations[0],sourceId:'different-source-key',amountMinor:3500,line:{...items[0],totalAmount:35,taxAmount:35}};
+ const combinedReceipt={...receipt,items:[allocations[0].line,duplicate.line]};
+ assert.throws(()=>prepareCombinedOtherTaxPayment({...input,details:{...input.details,lines:combinedReceipt.items}},combinedReceipt,[allocations[0],duplicate]),/DUPLICATE_COMBINED_ALLOCATION/);
+});
+
+test('configured capacity is explicit and one above the capacity is rejected before gateway',()=>{
+ assert.ok(MAX_COMBINED_ALLOCATIONS>20);
+ const rows=Array.from({length:MAX_COMBINED_ALLOCATIONS+1},(_,n)=>({...allocations[0],sourceId:'overflow-'+n}));
+ assert.throws(()=>prepareCombinedOtherTaxPayment(input,receipt,rows),/INVALID_COMBINED_PAYMENT/);
 });

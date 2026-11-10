@@ -297,6 +297,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (beneficiaryChecking || forSelf === null || (ownAccountTax && !ownProfile)) return false;
     if (signedInBeneficiarySelection && (!availableSavedTins ||
       !batchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) return false;
+    if (ownAccountTax && additionalTaxpayers.length && (!availableSavedTins ||
+      !additionalTaxpayers.every(person => availableSavedTins.includes(person.tin)))) return false;
     const tinValid = ownAccountTax
       ? /^\d{12,13}$/.test(taxpayerTin)
       : isSupportedBeneficiaryTin(taxpayerTin, allowSyntheticDemoTin);
@@ -798,7 +800,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return;
     }
     if (beneficiaryChecking || !validateIdentity()) return;
-    if (signedInBeneficiarySelection || (Boolean(initialReuse && ownAccountTax && additionalTaxpayers.length))) {
+    if (signedInBeneficiarySelection || (ownAccountTax && additionalTaxpayers.length > 0)) {
       setBeneficiaryChecking(true);
       try {
         const tins = (otherBatch ? batchTaxpayers : batchTaxpayers.slice(0, 1)).map(person => person.tin);
@@ -1436,6 +1438,22 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               {ownAccountTax && (initialReuse && otherBatch
                 ? renderOtherTaxTaxpayerList(false)
                 : <SignedInTaxpayerCard profile={ownProfile} language={language} id="signed-in-account-taxpayer-card" />)}
+              {ownAccountTax && otherBatch && <SavedBeneficiaryPicker key={beneficiaryRefreshKey} language={language} allowMultiple
+                selectedTins={additionalTaxpayers.map(person => person.tin).filter(Boolean)}
+                onAvailableTins={setAvailableSavedTins}
+                onChoose={selected => {
+                  const unique = selected.filter((person, index) => person.tin !== taxpayerTin &&
+                    selected.findIndex(candidate => candidate.tin === person.tin) === index);
+                  const additions = unique.map(person => {
+                    const previous = additionalTaxpayers.find(candidate => candidate.tin === person.tin);
+                    return { ...person, id: previous?.id ?? crypto.randomUUID() };
+                  });
+                  setAdditionalTaxpayers(additions);
+                  setOtherTaxLines(lines => lines.filter(line => line.taxpayerId === 'primary' ||
+                    additions.some(person => person.id === line.taxpayerId)));
+                  setAuthorizedTaxpayerIds({});
+                  clearValidationError();
+                }} />}
               {!ownAccountTax && <>
               {!signedInAccount && (!otherBatch || ownAccountTax) &&
                 <TaxpayerTinLookup language={language} className="payment-identity__tin" card

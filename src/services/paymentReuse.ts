@@ -1,4 +1,5 @@
 import type { ChallanReceipt, PaymentCategory } from '../types/tax';
+import { MAX_COMBINED_ALLOCATIONS } from './otherTaxCombinedPayment';
 
 /** This is an editable INPUT snapshot, not a cloned receipt or authorization. */
 export type PaymentReuse = {
@@ -39,7 +40,7 @@ export function reuseRecordedPayment(
   source: readonly ChallanReceipt[], ownerUid: string, ownTin: string | null,
   sourcePaymentId: string,
 ): PaymentReuse {
-  if (!ownerUid || !sourcePaymentId || !source.length || source.length > 20)
+  if (!ownerUid || !sourcePaymentId || !source.length || source.length > MAX_COMBINED_ALLOCATIONS)
     throw Error('A complete owned payment is required.');
   const service = source[0].paymentCategory;
   // Travel receipts deliberately contain only masked passports. Copy the
@@ -141,7 +142,7 @@ export function reuseRecordedPayment(
     if (receiptSum !== checkedMinor(receipt.totalAmount))
       throw Error('Original payment amount does not reconcile.');
   }
-  if (!allocations.length || allocations.length > 20)
+  if (!allocations.length || allocations.length > MAX_COMBINED_ALLOCATIONS)
     throw Error('The original payment exceeds the supported allocation limit.');
   const exactAllocations = allocations.map(item => item.tin + ':' + item.headId + ':' + item.year);
   if (new Set(exactAllocations).size !== allocations.length)

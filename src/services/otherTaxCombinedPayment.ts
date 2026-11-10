@@ -13,7 +13,9 @@ export type CombinedOtherTaxLine = {
 };
 
 const validTin = (value: string) => /^\d{12,13}$/.test(value);
-const MAX_LINES = 20;
+export const MAX_COMBINED_ALLOCATIONS = 256;
+export const MAX_COMBINED_PAYLOAD_CHARS = 750_000;
+const MAX_LINES = MAX_COMBINED_ALLOCATIONS;
 export function prepareCombinedOtherTaxPayment(
   original: StoryPaymentInput,
   receipt: ChallanReceipt,
@@ -25,10 +27,14 @@ export function prepareCombinedOtherTaxPayment(
     new Set(lines.map(line => line.sourceId)).size !== lines.length)
     throw new Error('INVALID_COMBINED_PAYMENT');
   let sum = 0;
+  const uniqueAllocationKeys = new Set<string>();
   for (let i = 0; i < lines.length; i++) {
     const allocation = lines[i];
+    const uniqueKey = `${allocation.taxpayerTin}:${allocation.line.headId}:${allocation.assessmentYear}`;
+    if (uniqueAllocationKeys.has(uniqueKey)) throw new Error('DUPLICATE_COMBINED_ALLOCATION');
+    uniqueAllocationKeys.add(uniqueKey);
     if (!allocation.sourceId || !validTin(allocation.taxpayerTin) ||
-      !allocation.assessmentYear || !Number.isSafeInteger(allocation.amountMinor) ||
+      !/^20\d{2}-\d{2}$/.test(allocation.assessmentYear) || !Number.isSafeInteger(allocation.amountMinor) ||
       allocation.amountMinor <= 0 || allocation.line.headId <= 0 ||
       !Number.isSafeInteger(allocation.line.headId) ||
       Math.round(allocation.line.totalAmount * 100) !== allocation.amountMinor ||
@@ -76,7 +82,7 @@ export function prepareCombinedOtherTaxPayment(
       receiptSnapshot: { ...combinedReceipt, treasuryStatus: 'GATEWAY_SUCCESS' },
     },
   };
-  if (JSON.stringify({ ...payload, origin: 'TAXPAY_UI' }).length > 12000)
+  if (JSON.stringify({ ...payload, origin: 'TAXPAY_UI' }).length > MAX_COMBINED_PAYLOAD_CHARS)
     throw new Error('PAYMENT_DETAILS_TOO_LONG');
   return { payload, receipt: combinedReceipt };
 }
