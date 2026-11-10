@@ -237,7 +237,9 @@ test('multiple Other Tax heads retain their amounts inside ONE combined payment 
   const allocationTable = dialog.getByTestId('receipt-allocation-table');
   const allocationCards = dialog.getByTestId('receipt-allocation-mobile');
   await expect(allocationTable.locator('tbody tr')).toHaveCount(2);
-  await expect(allocationCards.locator('article')).toHaveCount(2);
+  await expect(allocationCards.locator('article')).toHaveCount(1);
+  await expect(allocationCards.locator('article').first().getByTestId('receipt-taxpayer-head-row')).toHaveCount(2);
+  await expect(allocationCards.locator('article').first()).toContainText('Taxpayer subtotal');
   expect((await allocationTable.isVisible()) || (await allocationCards.isVisible()),
     'at least one responsive allocation view must be visible').toBe(true);
 });

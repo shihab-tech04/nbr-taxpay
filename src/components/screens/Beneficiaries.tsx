@@ -17,6 +17,7 @@ import {beneficiaryChoiceValue,beneficiaryChoiceParts} from '../../services/bene
 import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
+import {BeneficiaryProfile} from './BeneficiaryProfile';
 import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
 import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from '../../services/beneficiaryTags';
 
@@ -58,6 +59,7 @@ export function Beneficiaries(){
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState<{en:string;bn:string}|null>(null);
+  const [preferenceError,setPreferenceError]=useState<{en:string;bn:string}|null>(null);
   const [flow,setFlow]=useState<Flow|null>(null);
   const [entryChoiceOpen,setEntryChoiceOpen]=useState(false);
   const [createListOpen,setCreateListOpen]=useState(false);
@@ -99,6 +101,7 @@ export function Beneficiaries(){
     }
   },[routeParams.reviewBeneficiaryTins]);
   const [selectedIds,setSelectedIds]=useState<string[]>([]);
+  const [profileSelection,setProfileSelection]=useState<{id:string;account:string}|null>(null);
   const [editPerson,setEditPerson]=useState<Beneficiary|null>(null);
   const [editTargetList,setEditTargetList]=useState('');
   const [editTag,setEditTag]=useState<BeneficiaryTag|''>('');
@@ -129,11 +132,12 @@ export function Beneficiaries(){
     const save=owner?saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id)
       :previewAccount?savePreviewSetting('selected-list',id):null;
     if(!save)return;
+    setPreferenceError(null);
     void save.then(()=>owner
       ?recordAccountActivity(owner,'BENEFICIARY_LIST_SELECTED','beneficiaries').catch(()=>undefined)
       :undefined).catch(()=>{
-      setNotice({en:'Could not remember your selected list for next login. Please retry.',
-        bn:'পরবর্তী লগইনের জন্য নির্বাচিত তালিকা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।'});
+      setPreferenceError({en:'Could not remember your selected list for next login. Please retry. Stored beneficiaries have not been changed.',
+        bn:'পরবর্তী লগইনের জন্য নির্বাচিত তালিকা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন। সংরক্ষিত উপকারভোগীর তথ্য পরিবর্তন করা হয়নি।'});
     });
   };
   const initialRequestRef=useRef<symbol|null>(null);
@@ -204,6 +208,9 @@ export function Beneficiaries(){
       .toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
   });
   const selectedPeople=listPeople.filter(person=>selectedIds.includes(person.id));
+  const profileAccount=owner??previewAccount?.id??'';
+  const profilePerson=profileSelection?.account===profileAccount&&profileAccount
+    ?people.find(person=>person.id===profileSelection.id):undefined;
   const activeListRecord=lists.find(list=>list.id===activeList);
   const editHasChanges=Boolean(editPerson && (
     editTargetList!==editPerson.list_id ||
@@ -459,6 +466,13 @@ export function Beneficiaries(){
     finally{setLoading(false);}
   };
 
+  if(profilePerson)return <BeneficiaryProfile key={profileAccount+':'+profilePerson.id}
+    person={profilePerson} ownerUid={owner} previewId={owner?null:previewAccount?.id??null}
+    language={language} onBack={()=>{
+      setProfileSelection(null);
+      window.requestAnimationFrame(()=>document.getElementById('beneficiary-profile-link-'+profilePerson.id)?.focus());
+    }} onMakePayment={()=>payWith([profilePerson])}/>;
+
   return <section className="mx-auto w-full max-w-7xl space-y-5" lang={language} data-taxpay-register-page="true" data-testid="beneficiaries-page" aria-labelledby="beneficiaries-title">
     <header className="flex flex-col gap-4 rounded-xl border border-taxpay-border bg-taxpay-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div className="min-w-0">
@@ -475,6 +489,7 @@ export function Beneficiaries(){
       <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>
     </div>}
     {recoveryError&&<p role="alert" className="text-sm text-red-800">{recoveryError}</p>}
+    {preferenceError&&<p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-900">{preferenceError[bn?'bn':'en']}</p>}
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
 
     <section className="taxpay-office-register-frame beneficiary-register-frame rounded-xl border border-taxpay-border bg-taxpay-surface p-4 shadow-sm sm:p-6" aria-labelledby="beneficiary-list-heading">
@@ -592,10 +607,13 @@ export function Beneficiaries(){
                       onChange={event=>setSelectedIds(current=>event.target.checked
                         ?Array.from(new Set([...current,person.id]))
                         :current.filter(id=>id!==person.id))}/>
-                    <label htmlFor={'beneficiary-select-'+person.id} className="taxpayer-transaction-row__identity beneficiary-directory__person">
+                    <a id={'beneficiary-profile-link-'+person.id} href="#beneficiary-profile-title"
+                      className="taxpayer-transaction-row__identity beneficiary-directory__person w-full text-left"
+                      aria-label={tr('Open profile for ','প্রোফাইল দেখুন: ')+displayName(person)}
+                      onClick={event=>{event.preventDefault();setProfileSelection({id:person.id,account:profileAccount});}}>
                       <p className="taxpayer-transaction-row__title">{displayName(person)}{beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)&&<span className="font-normal text-taxpay-muted"> · {beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)}</span>}</p>
                       <p className="beneficiary-directory__tin tabular-nums">{person.tin}</p>
-                    </label>
+                    </a>
                   </div>},
                   {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:person=><div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
@@ -615,10 +633,12 @@ export function Beneficiaries(){
                         onChange={event=>setSelectedIds(current=>event.target.checked
                           ?Array.from(new Set([...current,person.id]))
                           :current.filter(id=>id!==person.id))}/>
-                      <label htmlFor={'beneficiary-mobile-select-'+person.id} className="taxpay-mobile-table-card__title">
+                      <a href="#beneficiary-profile-title" className="taxpay-mobile-table-card__title text-left"
+                        aria-label={tr('Open profile for ','প্রোফাইল দেখুন: ')+displayName(person)}
+                        onClick={event=>{event.preventDefault();setProfileSelection({id:person.id,account:profileAccount});}}>
                         <span className="block break-words">{displayName(person)}{finalTag&&<span className="font-normal text-taxpay-muted"> · {finalTag}</span>}</span>
                         <span className="mt-1 block break-all text-sm font-normal tabular-nums text-taxpay-muted">{person.tin}</span>
-                      </label>
+                      </a>
                     </div>
                   </div>
                   <div className="taxpay-mobile-table-card__actions" role="group"
