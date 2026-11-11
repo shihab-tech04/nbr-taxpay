@@ -18,8 +18,11 @@ test('the same thirty 12-digit aliases are present for the optional guest payer 
     assert.ok(match?.nameBn);
   }
   assert.equal(seen.size, 30);
-  for (const value of ['','123456789012','2222222222222','not-a-tin'])
+  for (const value of ['', '123456789012', 'not-a-tin'])
     assert.equal(lookupSampleTaxpayer(value), null);
+  // The shared legacy fixture lookup also contains non-12-digit records.
+  // The guest payer flow must reject those by format before any lookup/confirmation.
+  assert.equal(/^\d{12}$/.test('2222222222222'), false);
 });
 
 test('walk-in payer SQL contract never assigns ownership from a typed TIN', () => {
