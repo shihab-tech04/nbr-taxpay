@@ -190,7 +190,7 @@ function validateCombinedRequest(request: StoredCombinedRequest['request']): voi
   const sum=allocations.reduce((value,item,index)=>{
     const a=item as Record<string,unknown>;
     const r=receipt.allocationItems![index];
-    const head = payload.details.lines[index];
+    const head = (payload.details.lines as PaymentLineItem[])[index];
     if ((payload.service === 'TAX_WITH_RETURN' && (a.headId !== 125 || head?.headId !== 125)) ||
         (payload.service === 'OTHER_TAX_PAYMENT' && (a.headId === 125 || head?.headId === 125)))
       throw Error('INVALID_COMBINED_RECOVERY');
