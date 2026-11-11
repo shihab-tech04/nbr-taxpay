@@ -114,6 +114,8 @@ test('public mobile footer stays compact and the floating Pay action remains rea
   const more=footer.locator('.public-footer__mobile-more > summary');
   await expect(more).toBeVisible();
   const inner=footer.locator('.public-footer__inner');
+  const footerClearance=await footer.evaluate(element=>parseFloat(getComputedStyle(element).paddingBottom));
+  expect(footerClearance).toBeGreaterThanOrEqual(150);
   const brandBox=await footer.locator('.public-footer__wordmark').boundingBox();
   const copyBox=await footer.locator('.public-footer__bottom').boundingBox();
   const moreBox=await more.boundingBox();
@@ -164,6 +166,11 @@ test('320px Bengali public footer remains one row with accessible links',async({
   await expect(more).toBeVisible();
   await expect(more).toContainText('আরও');
   await expect(footer.locator('.public-footer__bottom')).toContainText('© ২০২৬ করবৃত্ত');
+  const moreRect=await more.boundingBox();
+  const floatingPayRect=await page.getByRole('button',{name:'Pay — select payment type'}).boundingBox();
+  expect(moreRect).not.toBeNull();
+  expect(floatingPayRect).not.toBeNull();
+  expect(moreRect!.y+moreRect!.height).toBeLessThanOrEqual(floatingPayRect!.y-4);
   const extent=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(extent).toBeLessThanOrEqual(2);
   await more.click();
