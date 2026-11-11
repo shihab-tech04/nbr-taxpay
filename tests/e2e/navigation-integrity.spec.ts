@@ -190,6 +190,7 @@ test('taxpayer desktop rail keeps compact primary navigation and its menu routes
   await expect(rail.getByRole('button',{name:'Payment services',exact:true})).toHaveCount(0);
   await expect(rail.getByRole('button',{name:'Payment guide',exact:true})).toHaveCount(0);
   await pay.click();
+  await rail.getByRole('button',{name:'Pay Tax',exact:true}).click();
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
 });
 
