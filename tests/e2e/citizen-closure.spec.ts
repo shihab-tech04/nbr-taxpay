@@ -94,7 +94,7 @@ test('obligations dashboard cannot assert fictional credits, demand or paid inst
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+  await expect(page.locator('.taxpay-bento-hero__actions').getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'TDS & advance tax'})).toBeVisible();
   await expect(page.getByText('Available for e-Return AY 2025-2026')).toHaveCount(0);
