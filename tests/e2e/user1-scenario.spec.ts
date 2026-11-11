@@ -144,7 +144,7 @@ test('user1 profile has complete fictional data, clear source labeling and a res
   await page.goto('/?action=account_profile&demoUser=user1');
   const profile=page.getByTestId('user1-taxpayer-profile');
   await expect(profile).toBeVisible();
-  await expect(profile.getByText('Md. Arif Rahman')).toBeVisible();
+  await expect(profile.getByRole('heading',{name:'Md. Arif Rahman'})).toBeVisible();
   await expect(profile.getByTestId('user1-profile-tin')).toHaveText('1111111111111');
   await expect(profile.getByText('Fictional sample profile')).toBeVisible();
   await expect(profile.getByText('Taxpayer class',{exact:true})).toBeVisible();
