@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, FilePenLine, Files, History, ListChecks, ReceiptText, Search, UserRound, UsersRound, WalletCards, Zap } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, FileCheck2, FilePenLine, History, ListChecks, ReceiptText, Repeat2, Search, UserRound, UsersRound, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { PublicServiceModal, type PublicService } from './PublicServiceModal';
@@ -58,37 +58,37 @@ export const PublicLanding: React.FC = () => {
       id: 'payments',
       Icon: WalletCards,
       title: t('All Tax Payments', 'সব ধরনের কর পরিশোধ'),
-      detail: t('Pay for yourself or others in one place.', 'নিজের বা অন্যের কর এক জায়গায় পরিশোধ করুন।'),
-    },
-    {
-      id: 'documents',
-      Icon: Files,
-      title: t('Tax Documents', 'কর সংক্রান্ত নথি'),
-      detail: t('Receipts, challans and available certificates.', 'রসিদ, চালান ও উপলব্ধ সনদ একসঙ্গে।'),
+      detail: t('Pay different taxes for yourself or others.', 'নিজের বা অন্যের বিভিন্ন ধরনের কর পরিশোধ করুন।'),
     },
     {
       id: 'corrections',
       Icon: FilePenLine,
       title: t('Corrections & Requests', 'সংশোধন ও আবেদন'),
-      detail: t('Request corrections and track progress.', 'সংশোধনের আবেদন ও অগ্রগতি দেখুন।'),
+      detail: t('Request payment corrections and track progress.', 'পেমেন্ট সংশোধনের আবেদন করুন ও অগ্রগতি দেখুন।'),
+    },
+    {
+      id: 'certificates',
+      Icon: FileCheck2,
+      title: t('Tax Certificates', 'কর সনদ'),
+      detail: t('View and download available certificates.', 'উপলব্ধ কর সনদ দেখুন ও ডাউনলোড করুন।'),
     },
     {
       id: 'history',
       Icon: History,
       title: t('Payment History', 'পেমেন্টের ইতিহাস'),
-      detail: t('Find payments, tax years and receipts.', 'পেমেন্ট, করবর্ষ ও রসিদ খুঁজুন।'),
+      detail: t('Review past payments, tax years and receipts.', 'আগের পেমেন্ট, করবর্ষ ও রসিদ দেখুন।'),
     },
     {
       id: 'beneficiaries',
       Icon: UsersRound,
       title: t('Beneficiary Management', 'সুবিধাভোগী ব্যবস্থাপনা'),
-      detail: t('Organize people and their payment history.', 'ব্যক্তি ও তাঁদের পেমেন্টের ইতিহাস সাজিয়ে রাখুন।'),
+      detail: t('Organize people you pay for and their payment records.', 'যাঁদের কর পরিশোধ করেন, তাঁদের তথ্য ও পেমেন্ট রেকর্ড গুছিয়ে রাখুন।'),
     },
     {
-      id: 'faster',
-      Icon: Zap,
-      title: t('Faster Tax Management', 'সহজ ও দ্রুত কর ব্যবস্থাপনা'),
-      detail: t('Save drafts and reuse past payment details.', 'খসড়া রাখুন ও আগের পেমেন্টের তথ্য ব্যবহার করুন।'),
+      id: 'repeat-drafts',
+      Icon: Repeat2,
+      title: t('Pay Again & Saved Drafts', 'আবার পরিশোধ ও সংরক্ষিত খসড়া'),
+      detail: t('Repeat past payments or resume unfinished ones.', 'আগের পেমেন্ট আবার করুন বা অসমাপ্ত খসড়া চালিয়ে যান।'),
     },
   ];
 
@@ -268,7 +268,7 @@ export const PublicLanding: React.FC = () => {
     <section className="public-benefits" aria-labelledby="public-benefits-title">
       <div className="public-benefits__heading">
         <h2 id="public-benefits-title">{t('Why use Korbritto?', 'করবৃত্ত কেন ব্যবহার করবেন?')}</h2>
-        <p>{t('Pay. Manage. Track. All in one place.', 'কর পরিশোধ, ব্যবস্থাপনা ও রেকর্ড—সব এক জায়গায়।')}</p>
+        <p>{t('Pay, manage and track your tax payments—all in one place.', 'এক জায়গায় কর পরিশোধ, ব্যবস্থাপনা ও পেমেন্টের তথ্য দেখুন।')}</p>
       </div>
       <div className="public-benefits__grid">
         {citizenBenefits.map(({ id, Icon, title, detail }) => (
