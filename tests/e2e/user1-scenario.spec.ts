@@ -153,13 +153,13 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile.getByRole('button',{name:'View payment activity'})).toHaveCount(0);
   await expect(content.getByTestId('user1-profile-detail-columns').locator(':scope > div')).toHaveCount(2);
   for(const section of ['Personal information','Contact and addresses','TIN registration and jurisdiction',
-    'Certificate details','Account information'])
+    'Certificate details'])
     await expect(content.getByRole('heading',{name:section,exact:true})).toHaveCount(1);
   for(const field of ['Taxpayer class','TIN classification','User type','Local taxpayer',
     'Mobile number','Email address','Registered / permanent address','Current address',
     'Taxes zone','Taxes range','District','Country','Previous TIN',
     'Certificate issue date','Certificate last updated','Issuing tax officer','Tax office address',
-    'Tax office phone','Last account login']){
+    'Tax office phone']){
     await expect(content.getByText(field,{exact:true})).toHaveCount(1);
   }
   await expect(content.getByText('Taxes circle',{exact:true})).toHaveCount(0);
@@ -167,6 +167,12 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(content.getByText('TIN type',{exact:true})).toHaveCount(0);
   await expect(profile.getByText('TIN type',{exact:true})).toHaveCount(1);
   await expect(profile.getByText('Taxes circle',{exact:true})).toHaveCount(1);
+  await expect(profile.getByText('Last account login',{exact:true})).toHaveCount(1);
+  await expect(content.getByText('Last account login',{exact:true})).toHaveCount(0);
+  await expect(profile.getByRole('heading',{name:'Account information'})).toHaveCount(0);
+  const summary=profile.getByTestId('user1-profile-summary');
+  await expect(summary.locator(':scope > div')).toHaveCount(4);
+  await expect(summary).toContainText('11 Nov 2026, 11:23:40 AM');
   await expect(content).toContainText('Taxes Zone-12, Dhaka');
   await expect(content).toContainText('04 Jun 2026, 05:06:20 PM');
   await expect(content).toContainText('3/4 Purana Paltan');
@@ -185,6 +191,7 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(bn.getByRole('heading',{name:'টিআইএন নিবন্ধন ও কর অধিক্ষেত্র'})).toBeVisible();
   await expect(bn.getByRole('heading',{name:'সনদের তথ্য'})).toBeVisible();
   await expect(bn.getByText('সনদ ইস্যুর তারিখ')).toHaveCount(1);
+  await expect(page.getByTestId('user1-profile-summary').getByText('সর্বশেষ লগইন')).toHaveCount(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 test('user1 profile export contains supplied TIN fields without unnecessary copy',async({page},info)=>{
