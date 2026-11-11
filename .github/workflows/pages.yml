@@ -580,7 +580,7 @@ jobs:
         run: npx playwright test tests/e2e/secure-workspace-draft-resume.spec.ts tests/e2e/secure-workspace-session-isolation.spec.ts tests/e2e/secure-workspace-locale.spec.ts tests/e2e/secure-workspace-correction-retry.spec.ts tests/e2e/taxpay-login-real-auth.spec.ts tests/e2e/account-dashboard-private-activity.spec.ts tests/e2e/account-tax-journey-private.spec.ts
 
   route-e2e:
-    name: Public routes (shard ${{ matrix.shard }}/6)
+    name: Public routes (shard ${{ matrix.shard }}/8)
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
     runs-on: ubuntu-latest
@@ -588,7 +588,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     permissions:
       contents: read
     steps:
@@ -613,7 +613,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/payment-wizard-clarity-and-grouped-totals.spec.ts tests/e2e/amar-kor-brand.spec.ts tests/e2e/citizen-design-tokens.spec.ts tests/e2e/public-hero-carousel.spec.ts tests/e2e/public-search-discovery.spec.ts tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/citizen-keyboard-comprehensive.spec.ts tests/e2e/explore-payment-flow.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/manage-authorization-desktop.spec.ts tests/e2e/taxpayer-auth-search-ux-regression.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/payment-service-choice.spec.ts tests/e2e/pay-tax-entry-spacing.spec.ts tests/e2e/taxpay-modal-reference-parity.spec.ts tests/e2e/payment-login-resume.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/taxpayer-dashboard-historical-reference.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/dashboard-v11-journey-month.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/navigation-integrity.spec.ts tests/e2e/taxpayer-account-integrity.spec.ts tests/e2e/taxpayer-visible-entry.spec.ts tests/e2e/inapp-simulation-notification.spec.ts --shard=${{ matrix.shard }}/6
+        run: npx playwright test tests/e2e/payment-wizard-clarity-and-grouped-totals.spec.ts tests/e2e/amar-kor-brand.spec.ts tests/e2e/citizen-design-tokens.spec.ts tests/e2e/public-hero-carousel.spec.ts tests/e2e/public-search-discovery.spec.ts tests/e2e/office-login-entry.spec.ts tests/e2e/public-financial-safety.spec.ts tests/e2e/public-backend-disabled.spec.ts tests/e2e/citizen-navigation.spec.ts tests/e2e/citizen-page-matrix.spec.ts tests/e2e/citizen-closure.spec.ts tests/e2e/citizen-keyboard-comprehensive.spec.ts tests/e2e/explore-payment-flow.spec.ts tests/e2e/taxpayer-reference-design.spec.ts tests/e2e/taxpayer-account-center.spec.ts tests/e2e/ux-writing.spec.ts tests/e2e/demo-login-scenarios.spec.ts tests/e2e/manage-authorization-desktop.spec.ts tests/e2e/taxpayer-auth-search-ux-regression.spec.ts tests/e2e/payment-review-release.spec.ts tests/e2e/payment-service-choice.spec.ts tests/e2e/pay-tax-entry-spacing.spec.ts tests/e2e/taxpay-modal-reference-parity.spec.ts tests/e2e/payment-login-resume.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/public-guest-guide.spec.ts tests/e2e/user1-scenario.spec.ts tests/e2e/user1-dashboard-ux-cleanup.spec.ts tests/e2e/taxpayer-dashboard-historical-reference.spec.ts tests/e2e/user1-dashboard-financial-ux.spec.ts tests/e2e/dashboard-v11-journey-month.spec.ts tests/e2e/taxpayer-transaction-rows.spec.ts tests/e2e/taxpayer-layout-1150.spec.ts tests/e2e/citizen-copy-cleanup.spec.ts tests/e2e/navigation-integrity.spec.ts tests/e2e/taxpayer-account-integrity.spec.ts tests/e2e/taxpayer-visible-entry.spec.ts tests/e2e/inapp-simulation-notification.spec.ts --shard=${{ matrix.shard }}/8
 
   reuse-reviewed-build:
     name: Reuse exact-source verified PR bundle
