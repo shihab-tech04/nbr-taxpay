@@ -145,6 +145,41 @@ test('guest beneficiary client persists one opaque capability per browser and ke
       request.body.tag === 'others' && request.body.other_label === 'Neighbour' &&
       request.body.listId === listA.id));
 
+    // Preview session: parallel callers share one server read, navigation
+    // shortly afterward reuses a detached copy, and writes force fresh data.
+    const sessionStorage=new MemoryStorage();
+    const setPreview=(capability:string)=>{
+      sessionStorage.setItem('taxpay-taxpayer-preview-user','user1');
+      sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
+        profileId:'user1',capability,
+        paymentSessionId:'11111111-1111-4111-8111-111111111111',
+        language:'en',selectedListId:null
+      }));
+      (globalThis as any).window={localStorage:storageA,sessionStorage};
+    };
+    setPreview(capabilityA!);
+    let listReads=requests.filter(x=>x.body.action==='lists').length;
+    let peopleReads=requests.filter(x=>x.body.action==='people').length;
+    const [a,b]=await Promise.all([guest.loadGuestBeneficiaries(),guest.loadGuestBeneficiaries()]);
+    assert.deepEqual(a,b);
+    assert.equal(requests.filter(x=>x.body.action==='lists').length,listReads+1);
+    assert.equal(requests.filter(x=>x.body.action==='people').length,peopleReads+1);
+    a.people.push({id:'fake'} as any);
+    assert.deepEqual((await guest.loadGuestBeneficiaries()).people,[]);
+    assert.equal(requests.filter(x=>x.body.action==='lists').length,listReads+1);
+    const previewList=await guest.createGuestBeneficiaryList('Preview');
+    assert.ok(previewList.id);
+    assert.ok((await guest.loadGuestBeneficiaries()).lists.some(x=>x.id===previewList.id));
+    assert.equal(requests.filter(x=>x.body.action==='lists').length,listReads+2);
+    // Changing capability cannot expose the previous preview user's lists.
+    const capabilityB=storageB.getItem('korbritto.guest-beneficiaries.capability.v1');
+    assert.ok(capabilityB);
+    setPreview(capabilityB);
+    assert.deepEqual(await guest.loadGuestBeneficiaries(),{lists:[],people:[]});
+    setPreview(capabilityA!);
+    assert.ok((await guest.loadGuestBeneficiaries()).lists.some(x=>x.id===previewList.id));
+    await guest.deleteGuestBeneficiaryList(previewList.id);
+
     assert.ok(requests.every(request => request.url === 'https://guest-test.supabase.co/functions/v1/taxpay-guest-beneficiaries'));
     assert.ok(requests.every(request => !('authorization' in request.headers)));
     assert.ok(requests.every(request => !request.url.includes('012345678901') && !request.url.includes('Synthetic Guest')));
