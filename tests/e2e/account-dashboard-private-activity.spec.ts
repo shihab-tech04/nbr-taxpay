@@ -210,7 +210,7 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByText('কর ক্রেডিটের তথ্য এখনও পাওয়া যায়নি')).toBeVisible();
   await expect(phase.getByRole('heading',{name:'ইতোমধ্যে সমন্বিত কর'})).toBeVisible();
   await expect(financialCards).toHaveCount(0);
-  await expect(phase.getByRole('region',{name:'Tax summary for this year'})).toBeVisible();
+  await expect(phase.getByRole('region',{name:'এই করবর্ষের সারসংক্ষেপ'})).toBeVisible();
   await expect(financialCards).toHaveCount(0);
   await expect(financialCards).toHaveCount(0);
   await expect(phase.getByRole('heading',{name:'যে বিষয়ে খেয়াল রাখা দরকার'})).toBeVisible();
