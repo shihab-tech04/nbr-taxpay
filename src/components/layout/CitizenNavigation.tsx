@@ -96,8 +96,11 @@ export function CitizenNavigation() {
   const label = (item: CitizenAction) => bn ? item.bn : item.en;
   // Keep taxpayer Pay mounted behind the modal; preserve the approved guest
   // navigation rule, which hides its floating Pay action while the modal is open.
+  // Guest floating Pay is hidden by actual focused-input CSS, not an async
+  // focus flag that can stay stale when the separate Help panel unmounts.
+  // The approved signed-in keyboard and dialog rules remain unchanged.
   const showPay = !inTransaction && currentRoute !== 'wizard'
-    && (!inputFocused || (isTaxpayer && isPaymentServiceChoiceOpen))
+    && (!isTaxpayer || !inputFocused || isPaymentServiceChoiceOpen)
     && (isTaxpayer || !isPaymentServiceChoiceOpen);
   const go = (route: string, params: Record<string, string> = {}) => {
     setMenuOpen(false);
