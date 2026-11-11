@@ -3,6 +3,7 @@ import { useTaxState } from '../../services/taxState';
 import { TaxPayModal } from '../ui/TaxPayModal';
 import { ReceiptLookup } from './ReceiptLookup';
 import { TravelTax } from './TravelTax';
+import {travelTaxModalTitle, travelTaxModalStages} from './travelTaxModalContract';
 
 export type PublicService = 'status' | 'travel';
 
@@ -11,10 +12,8 @@ export function PublicServiceModal({ service, onClose }: { service: PublicServic
   const bn = language === 'bn';
   const [travelStage, setTravelStage] = useState<1 | 2 | 3 | 4>(1);
   const isTravel = service === 'travel';
-  const travelTitle = bn ? 'ভ্রমণ কর' : 'Travel tax';
-  const travelStages = bn
-    ? ['যাত্রী ও রসিদের তথ্য', 'ভ্রমণের তথ্য', 'পর্যালোচনা ও পেমেন্ট', 'সম্মিলিত চালান']
-    : ['Passengers and receipt details', 'Travel details', 'Review & payment', 'Combined challan'];
+  const travelTitle = travelTaxModalTitle(language);
+  const travelStages = travelTaxModalStages(language);
   const title = isTravel
     ? travelStages[travelStage - 1]
     : (bn ? 'পেমেন্টের অবস্থা ও রসিদ' : 'Payment status & receipt');
