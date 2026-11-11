@@ -97,6 +97,11 @@ export function reuseRecordedPayment(
   if (!supported.has(service)) throw Error('This payment service needs a fresh payment journey.');
   if (source.some(r => !r.isSimulatedDemo || r.paymentCategory !== service || !r.items?.length))
     throw Error('The original payment is incomplete and cannot be copied.');
+  // Historical or newly recorded Return receipts cannot introduce a non-return
+  // head through Pay Again, even when an old receipt lacks allocation metadata.
+  if (service === 'TAX_WITH_RETURN' && source.some(r =>
+    r.items.some(head => head.headId !== 125)))
+    throw Error('Tax with Return cannot be combined with another payment head.');
   // A single fetched row may still belong to a larger multi-item batch.
   // Never treat a partial history page or missing item as an entire payment.
   const isBatch = source.some(r => r.batchId || r.batchItemCount || r.batchItemIndex);
@@ -112,9 +117,15 @@ export function reuseRecordedPayment(
       throw Error('The complete original batch is unavailable.');
   }
   const sorted = [...source].sort((a,b) => (a.batchItemIndex ?? 0) - (b.batchItemIndex ?? 0));
+  // Return-only can now have a complete multi-taxpayer allocation snapshot.
+  // Distinguish it from legacy one-taxpayer Return receipts: never reconstruct
+  // a beneficiary or assessment year from a summary label alone.
+  const returnWithAllocations = service === 'TAX_WITH_RETURN' &&
+    sorted.some(receipt => (receipt.allocationItems?.length ?? 0) > 0);
+  const isAllocationPayment = service === 'OTHER_TAX_PAYMENT' || returnWithAllocations;
   const allocations: SourceAllocation[] = [];
   for (const receipt of sorted) {
-    if (service === 'OTHER_TAX_PAYMENT') {
+    if (isAllocationPayment) {
       if (!receipt.allocationItems?.length || receipt.items.length !== receipt.allocationItems.length)
         throw Error('Original taxpayer/head/year allocations are incomplete.');
       for (let index = 0; index < receipt.items.length; index++) {
@@ -123,6 +134,7 @@ export function reuseRecordedPayment(
         const tin = allocation.taxpayerTin ?? '';
         const value = checkedMinor(head.totalAmount);
         if (!validTin(tin) || head.headId <= 0 || !Number.isSafeInteger(head.headId) ||
+            (returnWithAllocations && head.headId !== 125) ||
             !Number.isSafeInteger(allocation.amountMinor) || allocation.amountMinor !== value)
           throw Error('Original taxpayer allocation cannot be reconciled.');
         allocations.push({tin, name: allocation.taxpayerName, headId: head.headId,
@@ -162,7 +174,8 @@ export function reuseRecordedPayment(
     tin: ownerIsPayee ? '' : first.tin,
     payerName: '', otherTaxpayerName: first.name,
     additionalTaxpayers: others,
-    otherTaxLines: service === 'OTHER_TAX_PAYMENT'
+    returnBatchRequested: returnWithAllocations,
+    otherTaxLines: isAllocationPayment
       ? allocations.map((item,index) => ({
           id:`repeat-line-${index + 1}`,
           taxpayerId: people.get(item.tin)!.id,
@@ -175,13 +188,13 @@ export function reuseRecordedPayment(
     // Old notice/demand references are historical, not new payment authority.
     noticeReference: '',
     incomeTaxType: null,
-    selectedHeadIds: service === 'OTHER_TAX_PAYMENT' ? [] : [...new Set(allocations.map(a=>a.headId))],
-    amountInputs: service === 'OTHER_TAX_PAYMENT' ? {} : Object.fromEntries(
+    selectedHeadIds: isAllocationPayment ? [] : [...new Set(allocations.map(a=>a.headId))],
+    amountInputs: isAllocationPayment ? {} : Object.fromEntries(
       allocations.map(a => [a.headId, money(a.amountMinor)])),
   };
-  if (service !== 'OTHER_TAX_PAYMENT' && allocations.some(a => a.year !== allocations[0].year))
+  if (!isAllocationPayment && allocations.some(a => a.year !== allocations[0].year))
     throw Error('Mixed assessment years require the allocation payment service.');
-  if (service !== 'OTHER_TAX_PAYMENT' && allocations.some(a => a.tin !== allocations[0].tin))
+  if (!isAllocationPayment && allocations.some(a => a.tin !== allocations[0].tin))
     throw Error('Mixed taxpayers require the allocation payment service.');
   // A copied source record is retained only as informational context, not a receipt.
   return {ownerUid,sourcePaymentId,service,formPayload:payload};
