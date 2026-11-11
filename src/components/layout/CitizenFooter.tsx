@@ -1,5 +1,5 @@
 import React from 'react';
-import {ArrowUpRight} from 'lucide-react';
+import {ArrowUpRight, ChevronDown} from 'lucide-react';
 import { SiteLogo } from './SiteLogo';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -14,6 +14,12 @@ export function CitizenFooter(){
   const isTaxpayer=Boolean(user)||['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole);
   const home=isTaxpayer?'taxpayer_home':'landing';
   const isPublic=['landing','user_guide','guidance','incident','verify','payment_details'].includes(currentRoute);
+  const publicFooterLinks = () => <>
+    <button onClick={()=>navigate('verify')} type="button">{bn?'পেমেন্টের অবস্থা ও রসিদ':'Payment status & receipt'}</button>
+    <button onClick={()=>navigate('user_guide',{category:'records'})} type="button">{bn?'রসিদ ও সংশোধন':'Receipts & corrections'}</button>
+    {!signedIn && <button onClick={()=>navigate('user_guide',{category:'security'})} type="button">{bn?'নিরাপত্তা ও সহায়তা':'Security & support'}</button>}
+    <a href="https://nbr.gov.bd/" target="_blank" rel="noopener noreferrer">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ArrowUpRight size={14} aria-hidden="true"/></a>
+  </>;
   if(isPublic) return <footer className="public-footer no-print" aria-label={bn?'করবৃত্ত ফুটার':'Korbritto footer'}>
     <div className="public-footer__inner">
       <div className="public-footer__identity">
@@ -21,11 +27,16 @@ export function CitizenFooter(){
         <p>{bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information'}</p>
       </div>
       <nav className="public-footer__navs" aria-label={bn?'ফুটার নেভিগেশন':'Footer navigation'}>
-        <button onClick={()=>navigate('verify')} type="button">{bn?'পেমেন্টের অবস্থা ও রসিদ':'Payment status & receipt'}</button>
-        <button onClick={()=>navigate('user_guide',{category:'records'})} type="button">{bn?'রসিদ ও সংশোধন':'Receipts & corrections'}</button>
-        {!signedIn && <button onClick={()=>navigate('user_guide',{category:'security'})} type="button">{bn?'নিরাপত্তা ও সহায়তা':'Security & support'}</button>}
-        <a href="https://nbr.gov.bd/" target="_blank" rel="noopener noreferrer">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ArrowUpRight size={14} aria-hidden="true"/></a>
+        {publicFooterLinks()}
       </nav>
+      <div className="public-footer__mobile-actions">
+        <details className="public-footer__mobile-more">
+          <summary>{bn?'আরও':'More'} <ChevronDown size={16} aria-hidden="true"/></summary>
+          <nav className="public-footer__mobile-menu" aria-label={bn?'ফুটারের আরও লিংক':'More footer links'}>
+            {publicFooterLinks()}
+          </nav>
+        </details>
+      </div>
       <div className="public-footer__bottom">
         <p>{bn?'© ২০২৬ করবৃত্ত':'© 2026 Korbritto'}</p>
       </div>
