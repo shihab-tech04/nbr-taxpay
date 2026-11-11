@@ -39,12 +39,13 @@ test('mobile transaction details use a contained sheet with a visible close cont
   await expect(dialog).toHaveCount(0);
 });
 
-test('mobile bento tax-position help opens fully within the dashboard width',async({page},info)=>{
+test('mobile bento coverage help opens fully within the dashboard width',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile tooltip geometry');
   await enterUser1(page);
-  const position=page.locator('.taxpay-bento-position');
-  await position.locator('.taxpayer-inline-help > summary').click();
-  const content=position.locator('.taxpayer-inline-help__content');
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
+  const analytics=page.locator('.taxpay-bento-coverage');
+  await analytics.locator('.taxpayer-inline-help > summary').first().click();
+  const content=analytics.locator('.taxpayer-inline-help__content').first();
   await expect(content).toBeVisible();
   const bounds=await content.boundingBox();
   expect(bounds).not.toBeNull();
@@ -148,14 +149,12 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
   expect(box!.x + box!.width).toBeLessThanOrEqual(side!.x + side!.width + 1);
 });
 
-test('mobile bento retains separate travel tax and opens its approved payment modal',async({page},info)=>{
+test('mobile Pay Tax retains Travel Tax service without an unverified dashboard position',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile travel-tax shortcut');
   await enterUser1(page);
-  const position=page.locator('.taxpay-bento-position');
-  await expect(position).toContainText('Travel tax (separate)');
-  await expect(position).toContainText('৳ 6,500');
-  await page.locator('.taxpay-bento-hero').getByRole('button',{name:'Travel tax'}).click();
-  const dialog=page.getByRole('dialog');
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
+  await page.locator('.citizen-pay:visible').click();
+  const dialog=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(dialog).toBeVisible();
   const bounds=await dialog.boundingBox();
   expect(bounds).not.toBeNull();
