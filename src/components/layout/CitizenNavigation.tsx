@@ -18,12 +18,12 @@ const taxpayerLinks: CitizenAction[] = [
 ];
 const taxpayerMenuLinks: CitizenAction[] = [
   ...taxpayerLinks,
+  { route: 'certificates', en: 'Tax Credit Certificates', bn: 'কর ক্রেডিট সনদপত্র' },
+  { route: 'corrections', en: 'Correction Requests', bn: 'সংশোধনের আবেদন' },
   { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি' }
 ];
 const serviceLinks: CitizenAction[] = [
   { route: 'services', en: 'Payment services', bn: 'কর পরিশোধ সেবা' },
-  { route: 'certificates', en: 'Certificates', bn: 'সনদ' },
-  { route: 'corrections', en: 'Corrections', bn: 'সংশোধন' },
   { route: 'journey', en: 'Tax Journey', bn: 'কর যাত্রা' }
 ];
 const accountLinks: CitizenAction[] = [
