@@ -1,3 +1,4 @@
+import {acceptPaymentRequestSize,MAX_COMBINED_PAYMENT_PAYLOAD_CHARS,officeMirrorIdentity} from "./combinedPaymentRequest.ts";
 import {createClient} from "npm:@supabase/supabase-js@2.57.0";
 import {createOfficeMirrorProof,verifyOfficeMirrorProof} from "./mirrorProof.ts";
 const headers={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"content-type,authorization,apikey,x-taxpay-guest-capability","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};
@@ -149,8 +150,11 @@ Deno.serve(async(req)=>{
    return respond({success:true,data:result,mirrored:true,simulationOnly:true});
   }
   if(req.method==="POST"&&path==="/payments"){
-    const raw=await req.text();if(raw.length>12000)return respond({success:false,error:"PAYLOAD_TOO_LARGE"},400);
+    const raw=await req.text();
+    // Match the canonical combined-payment SQL contract; keep legacy services capped.
+    if(raw.length>MAX_COMBINED_PAYMENT_PAYLOAD_CHARS)return respond({success:false,error:"PAYLOAD_TOO_LARGE"},400);
     const body=JSON.parse(raw);
+    if(!acceptPaymentRequestSize(raw.length,body))return respond({success:false,error:"PAYLOAD_TOO_LARGE"},400);
     const p_capability_hash=await capabilityHash(req);
     const client=p_capability_hash?serviceClient(url):db;
     const {data,error}=p_capability_hash
@@ -164,7 +168,9 @@ Deno.serve(async(req)=>{
         return respond({success:false,error:"PROFILE_CAPABILITY_REQUIRED"},403);
       return respond({success:false,error:"SUBMISSION_FAILED"},400);
     }
-    const out={id:data.id,sessionId:body.sessionId,service:body.service,amountMinor:body.amountMinor,data:body,status:data.status,createdAt:data.createdAt};
+    // Office independently reads the SQL record using the signed proof. Send only
+    // identifiers so a large combined request never trips Office's 16k edge gate.
+    const out=officeMirrorIdentity(data.id,body.sessionId);
     try{
       // Sign only after TaxPay SQL has returned a durable, idempotent payment ID.
       // No client profile capability or service credential crosses to Office.
