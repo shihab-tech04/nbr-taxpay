@@ -405,6 +405,10 @@
     background: var(--color-taxpay-background);
   }
 }
+/* Desktop chat keeps its existing launch X; mobile uses one panel X. */
+.taxpay-citizen-shell .public-help-launch[aria-expanded="true"] .public-help-launch__chat {
+  display:none;
+}
 @media (max-width: 900px) {
   /* Sobaike Public mobile bar: edge-to-edge, quiet surface, four equal actions.
      Retain the real TaxPay fourth slot / Pay action and its brand color. */
