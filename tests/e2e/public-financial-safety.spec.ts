@@ -9,10 +9,10 @@ test('public page does not claim real payment processing or grant account roles'
  if(page.viewportSize()!.width<=900) await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
  else await expect(page.locator('.citizen-pay')).toBeHidden();
  await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop')).toHaveAttribute('href','?action=taxpayer_login');
- await expect(page.getByRole('heading',{name:'Common questions'})).toBeVisible();
+ await expect(page.locator('#public-faq')).toBeHidden();
  await setWorkspaceLanguage(page,'bn');
  await expect(page.locator('#public-home-title')).toBeVisible();
- await expect(page.getByRole('heading',{name:'সাধারণ প্রশ্ন'})).toBeVisible();
+ await expect(page.locator('#public-faq')).toBeHidden();
  await expect(page.getByText('এখানে সরকারি পেমেন্ট বা চালান ইস্যু হয় না।')).toHaveCount(0);
 });
 

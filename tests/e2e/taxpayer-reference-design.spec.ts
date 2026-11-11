@@ -275,32 +275,25 @@ test('Guest numbers retain IBM Plex Mono, signed-in workspace uses Noto Sans',as
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCSS('font-family',/Noto Sans/);
 });
 
-test('Public homepage uses heading and description without duplicate eyebrow labels',async({page})=>{
+test('Public homepage hides only temporary payment steps and questions',async({page})=>{
   await page.goto('/?action=landing');
   await expect(page.locator('.citizen-hub-eyebrow')).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
-  await expect(page.getByText('Choose who you are paying for, then select one of two services and follow these four steps.')).toBeVisible();
+  await expect(page.locator('#public-how-it-works')).toBeHidden();
+  await expect(page.locator('#public-faq')).toBeHidden();
   await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
-  await expect(page.getByRole('heading',{name:'Common questions'})).toBeVisible();
+  await expect(page.getByRole('searchbox',{name:'Search payment records by reference'})).toBeVisible();
 });
-test('Public keyboard Tab order, skip link and FAQ disclosure remain operable',async({page})=>{
+test('Public keyboard Tab order and skip link remain operable with hidden FAQ',async({page})=>{
   await page.goto('/?action=landing');
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link',{name:/Skip to main content/})).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.locator('main#main-content')).toBeFocused();
-  const faq=page.locator('#public-faq summary').first();
-  await faq.focus();
-  await page.keyboard.press('Enter');
-  await expect(faq.locator('xpath=..')).toHaveAttribute('open','');
-  await page.keyboard.press('Enter');
-  await expect(faq.locator('xpath=..')).not.toHaveAttribute('open','');
+  await expect(page.locator('#public-faq')).toBeHidden();
 });
-test('citizen SPA navigation moves focus to main without making static content tabbable',async({page})=>{
-  await page.goto('/?action=landing');
-  await page.locator('#public-faq details').last().locator('summary').click();
-  await page.locator('#public-faq .public-faq-layout__guide-link').click();
-  await expect(page.locator('main#main-content')).toBeFocused();
+test('Hidden homepage FAQ does not remove the separately accessible User Guide route',async({page})=>{
+  await page.goto('/?action=user_guide');
+  await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
   await expect(page.locator('main#main-content')).toHaveAttribute('tabindex','-1');
   await expect(page.locator('.taxpay-citizen-shell p[tabindex="0"]')).toHaveCount(0);
 });

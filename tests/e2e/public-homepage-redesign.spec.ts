@@ -1,50 +1,31 @@
 import { mockPublishedBannerCms } from './mock-published-banners';
 import { expect, test } from '@playwright/test';
 
-test('public homepage explains the payment path without duplicating service categories', async ({ page }, testInfo) => {
+test('public homepage temporarily hides payment steps and FAQ, preserving entry actions', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
 
   const mobile = testInfo.project.name !== 'desktop-1280';
   await expect(page.getByRole('heading', { name: mobile ? 'Pay tax with confidence' : 'Tax payments, without the confusion' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'How your payment works' })).toBeVisible();
-  await expect(page.locator('.public-payment-path__steps > li')).toHaveCount(4);
-  await expect(page.locator('.public-payment-path__steps > li .public-payment-path__symbol svg')).toHaveCount(4);
-  for (const [index, stage] of ['Input taxpayer details', 'Select purpose & amount', 'Choose payment method', 'Review & confirm payment'].entries()) {
-    await expect(page.locator('.public-payment-path__steps > li').nth(index)).toContainText(stage);
-  }
+
+  // Temporarily hidden from Home only; content and User Guide remain unchanged.
+  await expect(page.locator('#public-how-it-works')).toBeHidden();
+  await expect(page.locator('#public-faq')).toBeHidden();
+  await expect(page.locator('.public-record-discovery')).toBeVisible();
   await expect(page.locator('.public-info-topic')).toHaveCount(0);
   await expect(page.locator('.public-info-guides')).toHaveCount(0);
   await expect(page.locator('.public-more-link')).toHaveCount(0);
-  const surfaces = await page.locator('.public-payment-path__starter, .public-payment-path__steps li, .public-payment-path__symbol').evaluateAll(elements =>
-    elements.map(element => ({gradient: getComputedStyle(element).backgroundImage, color: getComputedStyle(element).backgroundColor})),
-  );
-  expect(surfaces.every(surface => surface.gradient === 'none'), 'Steps should not use gradients').toBe(true);
-  expect(new Set(surfaces.slice(2).map(surface => surface.color)).size).toBeLessThanOrEqual(2);
 
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Pay Tax' }).locator('.tax-service-choice__card')).toHaveCount(2);
 });
 
-test('public FAQ offers readable answers and the full guide without a large footer gap', async ({ page }) => {
+test('hidden homepage FAQ remains available via the existing User Guide page', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/?action=landing');
-  const faq = page.locator('#public-faq');
-  await expect(faq.getByRole('heading', { name: 'Common questions' })).toBeVisible();
-  await expect(faq.locator('details')).toHaveCount(4);
-  const firstQuestion = faq.locator('details').first();
-  await firstQuestion.locator('summary').click();
-  await expect(firstQuestion).toHaveAttribute('open', '');
-  await expect(firstQuestion.getByText('It depends on the service.', { exact: false })).toBeVisible();
-  await expect(firstQuestion).toHaveCSS('background-image', 'none');
-
-  const gap = await page.evaluate(() => {
-    const section = document.querySelector('#public-faq')!;
-    const footer = document.querySelector('.public-footer')!;
-    return footer.getBoundingClientRect().top - section.getBoundingClientRect().bottom;
-  });
-  expect(gap, 'FAQ and footer should have a compact transition').toBeLessThanOrEqual(80);
-  await faq.getByRole('button', { name: 'Open user guide' }).click();
+  await expect(page.locator('#public-faq')).toBeHidden();
+  const guide = page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('link', { name: 'User guide' });
+  await guide.click();
   await expect(page.getByRole('heading', { name: 'Korbritto user guide' })).toBeVisible();
 });
 

@@ -30,7 +30,7 @@ test('typing opens a clean floating dropdown without changing the card height', 
   const cardHeightBefore = await section.evaluate(element => element.getBoundingClientRect().height);
   const nextGapBefore = await page.evaluate(() => {
     const card = document.querySelector('.public-record-discovery')!.getBoundingClientRect();
-    const next = document.querySelector('#public-how-it-works')!.getBoundingClientRect();
+    const next = document.querySelector('.public-footer')!.getBoundingClientRect();
     return next.top - card.bottom;
   });
   await search.fill('DEMO-REF-001');
@@ -48,7 +48,7 @@ test('typing opens a clean floating dropdown without changing the card height', 
       belowField: rect.top >= searchField.getBoundingClientRect().bottom,
       cardHeight: element.getBoundingClientRect().height,
       dropdownOutsideCard: rect.bottom > element.getBoundingClientRect().bottom,
-      nextGap: document.querySelector('#public-how-it-works')!.getBoundingClientRect().top - element.getBoundingClientRect().bottom,
+      nextGap: document.querySelector('.public-footer')!.getBoundingClientRect().top - element.getBoundingClientRect().bottom,
     };
   });
   expect(geometry.position).toBe('absolute');
@@ -117,7 +117,7 @@ test('dropdown overlays following content without resizing the card or overflowi
     const geometry = await page.evaluate(() => {
       const section = document.querySelector<HTMLElement>('.public-record-discovery')!;
       const dropdown = document.querySelector<HTMLElement>('.public-record-suggestions')!;
-      const following = document.querySelector<HTMLElement>('#public-how-it-works')!;
+      const following = document.querySelector<HTMLElement>('.public-footer')!;
       const bounds = dropdown.getBoundingClientRect();
       return {
         left: bounds.left, right: bounds.right,
