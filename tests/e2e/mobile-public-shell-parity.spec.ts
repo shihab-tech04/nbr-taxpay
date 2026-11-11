@@ -43,9 +43,13 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
   await expect(helpPanel).toBeVisible();
   await expect(page.locator('.public-help-launch__close')).toBeHidden();
   const panelBox=await helpPanel.boundingBox();
-  const dockBox=await dock.boundingBox();
-  expect(panelBox).not.toBeNull();expect(dockBox).not.toBeNull();
-  expect(panelBox!.y+panelBox!.height).toBeLessThanOrEqual(dockBox!.y+1);
+  expect(panelBox).not.toBeNull();
+  expect(Math.abs(panelBox!.y+panelBox!.height-812)).toBeLessThanOrEqual(2);
+  expect(panelBox!.height).toBeLessThan(812*.8);
+  await expect(page.locator('.public-help-backdrop')).toBeVisible();
+  await expect(helpPanel).toHaveAttribute('aria-modal','true');
+  await expect(dock).toBeVisible();
+  expect(await page.evaluate(()=>getComputedStyle(document.body).overflow)).toBe('hidden');
   await page.getByRole('textbox',{name:'Your question'}).focus();
   await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeHidden();
   await page.getByRole('button',{name:'Close chat'}).click();
@@ -78,7 +82,11 @@ test('mobile guest shell shares signed-in compact-on-scroll behavior, without du
   await page.goto('/?action=landing');
   await page.evaluate(()=>window.scrollTo(0,600));
   const corners=page.locator('.taxpay-public-mobile-navigation .citizen-corners');
-  if (await corners.getByRole('button',{name:'Open menu'}).isVisible()) {
+  // Scroll-driven compact UI is updated asynchronously. Check actual scroll
+  // depth and wait for the correct state, rather than racing isVisible().
+  const actualScroll=await page.evaluate(()=>window.scrollY);
+  if (actualScroll > 145) {
+    await expect(corners.getByRole('button',{name:'Open menu'})).toBeVisible();
     await expect(corners.getByRole('button',{name:'Notifications'})).toHaveCount(0);
     await expect(corners.getByRole('button',{name:'Home'})).toHaveCount(0);
     await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toHaveClass(/citizen-header--hidden/);
@@ -129,6 +137,63 @@ test('public mobile footer stays compact and the floating Pay action remains rea
     const box=await choice.boundingBox();
     return box?.height??Infinity;
   }).toBeLessThan(812*.8);
+});
+
+test('mobile Pay Tax sheet stays bottom-fixed and grows with each existing choice',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/?action=landing');
+  await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  const choice=page.getByRole('dialog',{name:'Pay Tax'});
+  const bottom=async()=>{
+    const box=await choice.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.height).toBeLessThanOrEqual(844);
+    return {height:box!.height,offset:Math.abs(box!.y+box!.height-844)};
+  };
+  // Shared sheet entrance scales from 99%; test its settled bottom edge,
+  // not intermediate animation frames (the strict 2px gate is preserved).
+  await expect.poll(async()=>(await bottom()).offset).toBeLessThanOrEqual(2);
+  await expect.poll(async()=>(await bottom()).height).toBeLessThan(844*.8);
+  const initial=(await bottom()).height;
+  await choice.locator('[data-payer-relationship="SELF"]').click();
+  await expect(choice.locator('[data-payment-entry]')).toHaveCount(2);
+  await expect.poll(async()=> {
+    const measurement=await bottom();
+    return measurement.offset<=2 ? measurement.height : initial;
+  }).toBeGreaterThan(initial);
+  await choice.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await expect(choice.locator('[data-payment-access]')).toHaveCount(2);
+  await expect.poll(async()=>(await bottom()).offset).toBeLessThanOrEqual(2);
+  const expanded=(await bottom()).height;
+  expect(expanded).toBeGreaterThan(initial);
+  await choice.locator('[data-payment-access="GUEST"]').click();
+  await choice.getByRole('button',{name:'Continue',exact:true}).click();
+  await expect(choice.getByRole('progressbar',{name:'Payment progress'})).toBeVisible();
+  await expect.poll(async()=>(await bottom()).offset).toBeLessThanOrEqual(2);
+  await choice.getByRole('button',{name:'Close payment services'}).click();
+});
+
+test('mobile Help bottom sheet closes by Escape and backdrop without changing navigation',async({page})=>{
+  await page.setViewportSize({width:375,height:812});
+  await page.goto('/?action=landing');
+  const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
+  await expect(dock).toBeVisible();
+  const help=page.getByRole('button',{name:'Chat support'});
+  await help.click();
+  const dialog=page.locator('#public-help-panel');
+  await expect(dialog).toBeVisible();
+  const rect=await dialog.boundingBox();
+  expect(rect).not.toBeNull();
+  expect(Math.abs(rect!.y+rect!.height-812)).toBeLessThanOrEqual(2);
+  await expect(dialog.getByRole('button',{name:'Close chat'})).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(dock).toBeVisible();
+  await help.click();
+  await expect(dialog).toBeVisible();
+  await page.locator('.public-help-backdrop').click({position:{x:5,y:5}});
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
 });
 
 test('public desktop header is unchanged, with no mobile navigation duplication',async ({page})=>{
