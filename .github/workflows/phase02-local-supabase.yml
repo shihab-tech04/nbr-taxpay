@@ -332,7 +332,13 @@ jobs:
           VITE_SUPABASE_DISABLED: "false"
           VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
-        run: npx playwright test tests/e2e/account-payment-draft-browser-ui-real-local.spec.ts --project=desktop-1280 --project=mobile-375 --workers=2
+        run: |
+          set -euo pipefail
+          # user27–30 owner pairs are isolated by project, so these can run together.
+          npx playwright test tests/e2e/account-payment-draft-browser-ui-real-local.spec.ts --project=desktop-1280 --project=mobile-375 --workers=2 --grep 'payment form drafts survive another browser'
+          # The Overview case necessarily exercises user1 in both projects.
+          # Serializing only this case prevents cross-project writes to one owner.
+          npx playwright test tests/e2e/account-payment-draft-browser-ui-real-local.spec.ts --project=desktop-1280 --project=mobile-375 --workers=1 --grep 'user1 Overview shows account-scoped saved drafts'
 
       - name: Verify SQL profiles and all eight service types render for real preview identities
         env:

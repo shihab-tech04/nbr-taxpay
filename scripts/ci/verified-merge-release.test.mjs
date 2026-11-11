@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {safeReleasePaths,exactMergeTree,checkPassed} from './verified-merge-release.mjs';
+import {safeReleasePaths,exactMergeTree,exactSquashTree,exactPRTree,checkPassed} from './verified-merge-release.mjs';
 const h='a'.repeat(40),b='b'.repeat(40),m='c'.repeat(40);
 test('exact-head verified UI plus regression specs can reuse an immutable artifact',()=>{
  assert.ok(safeReleasePaths(['src/components/screens/PublicReport.tsx','docs/RELEASES.md']));
@@ -17,6 +17,19 @@ test('merge must have exactly two parents and byte-identical tested tree',()=>{
  assert.equal(exactMergeTree([m,h,b],h,b),false);
  assert.equal(exactMergeTree([m,h],h,h),false);
  assert.equal(exactMergeTree([m,h,b,b],h,h),false);
+});
+test('squash merge must preserve exact reviewed source tree and an identified PR head',()=>{
+ assert.equal(exactSquashTree([m,b],h,h),true);
+ assert.equal(exactSquashTree([m,b],h,b),false);
+ assert.equal(exactSquashTree([m,b,h],h,h),false);
+ assert.equal(exactSquashTree([m,'not-a-sha'],h,h),false);
+ assert.equal(exactPRTree([m,b],h,h,h),true);
+ assert.equal(exactPRTree([m,b],h,h,b),false);
+ assert.equal(exactPRTree([m,b],'not-a-sha',h,h),false);
+ // Two-parent merge still requires the GitHub-identified PR head as parent 2.
+ assert.equal(exactPRTree([m,b,h],h,h,h),true);
+ assert.equal(exactPRTree([m,b,h],b,h,h),false);
+ assert.equal(exactPRTree([m,b,h,h],h,h,h),false);
 });
 test('security check must be completed by Actions on exact SHA before merge',()=>{
  const mergeTime='2026-11-07T10:00:00Z';

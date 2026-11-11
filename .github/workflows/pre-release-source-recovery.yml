@@ -5,6 +5,14 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+# Superseded PR commits cannot be released; only the newest exact-head archive
+# must pass. Cancel stale full-history backups within the *same PR* so parallel
+# feature work does not repeatedly consume runners or GitHub artifact storage.
+# Manual recovery runs remain independent, and neither Main releases nor another
+# PR's backup can be cancelled by this group.
+concurrency:
+  group: taxpay-source-recovery-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   source-backup:
     runs-on: ubuntu-latest
