@@ -4,7 +4,7 @@
  * Only an authorized, independently verified server source may populate it.
  */
 export type TaxpayerTinProfile = {
-  source: 'NBR_TIN' | 'REVIEWED_CERTIFICATE';
+  source: 'NBR_TIN' | 'REVIEWED_CERTIFICATE' | 'SYNTHETIC';
   sourceUpdatedAt: string;
   tin: string;
   taxpayerName: string | null;
@@ -36,8 +36,10 @@ export type TaxpayerTinField = Exclude<keyof TaxpayerTinProfile, 'source' | 'sou
 
 /** A 13-digit fictional scenario identifier is never accepted as an issued e-TIN. */
 export function isWellFormedTinProfile(value: TaxpayerTinProfile | null | undefined): value is TaxpayerTinProfile {
-  return Boolean(value && /^[0-9]{12}$/.test(value.tin) &&
-    (value.source === 'NBR_TIN' || value.source === 'REVIEWED_CERTIFICATE') &&
+  return Boolean(value &&
+    ((value.source === 'SYNTHETIC' && /^[0-9]{13}$/.test(value.tin)) ||
+     ((value.source === 'NBR_TIN' || value.source === 'REVIEWED_CERTIFICATE') &&
+      /^[0-9]{12}$/.test(value.tin))) &&
     typeof value.sourceUpdatedAt === 'string' &&
     Number.isFinite(Date.parse(value.sourceUpdatedAt)));
 }

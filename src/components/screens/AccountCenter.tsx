@@ -8,6 +8,7 @@ import { useDemoSqlProfileAndServiceRecords } from '../../services/demoSqlProfil
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {AccountRecentActivity} from './AccountRecentActivity';
 import {TaxpayerTinInformation} from './TaxpayerTinInformation';
+import {USER1_FICTIONAL_TIN_PROFILE} from '../../data/user1FictionalTinProfile';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
@@ -238,7 +239,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                       <div><dt>{language === 'bn' ? 'কর সার্কেল' : 'Tax circle'}</dt><dd>{previewAccount?.taxCircle ?? demoSql.profile?.jurisdictionLabel ?? '—'}</dd></div>
                     </>}
                 </dl>
-                {previewAccount && <TaxpayerTinInformation language={language} />}
+                {previewAccount && <TaxpayerTinInformation language={language} record={previewAccount.id==='user1'?USER1_FICTIONAL_TIN_PROFILE:null} />}
               </>
             )}
             {sampleOnly && page === 'settings' && (
