@@ -750,11 +750,11 @@
   color: var(--citizen-text);
 }
 .public-benefits__item[data-benefit="payments"] { --benefit-icon: #1c5eaa; --benefit-tint: #e9f1fc; }
-.public-benefits__item[data-benefit="documents"] { --benefit-icon: #6654ad; --benefit-tint: #f1edfc; }
+.public-benefits__item[data-benefit="certificates"] { --benefit-icon: #6654ad; --benefit-tint: #f1edfc; }
 .public-benefits__item[data-benefit="corrections"] { --benefit-icon: #bd682f; --benefit-tint: #fff2e7; }
 .public-benefits__item[data-benefit="history"] { --benefit-icon: #147caa; --benefit-tint: #e8f5fc; }
 .public-benefits__item[data-benefit="beneficiaries"] { --benefit-icon: #ac527a; --benefit-tint: #fbedf3; }
-.public-benefits__item[data-benefit="faster"] { --benefit-icon: #485fb7; --benefit-tint: #edf0fc; }
+.public-benefits__item[data-benefit="repeat-drafts"] { --benefit-icon: #485fb7; --benefit-tint: #edf0fc; }
 .public-benefits__icon {
   display: grid;
   place-items: center;

@@ -25,7 +25,12 @@ test('public header, user-guide topics, footer links, language and browser histo
   await page.reload();
   await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
   // This destination is the same route with a different tab; it must select the target tab.
-  await page.getByRole('contentinfo',{name:'Korbritto footer'}).getByRole('button',{name:'Security & support'}).click();
+  const footer = page.getByRole('contentinfo',{name:'Korbritto footer'});
+  if(page.viewportSize()!.width<=900) {
+    await page.evaluate(() => window.scrollTo(0,document.documentElement.scrollHeight));
+    await footer.locator('.public-footer__mobile-more > summary').click();
+  }
+  await footer.getByRole('button',{name:'Security & support'}).click();
   await expect(page).toHaveURL(/action=user_guide&category=security/);
   await expect(page.getByRole('heading',{name:'Security & support'})).toBeVisible();
   await page.reload();
@@ -45,10 +50,20 @@ test('public header, user-guide topics, footer links, language and browser histo
 test('public footer utility links open their actual destinations without copying the top navigation', async ({page}) => {
   await page.goto('/?action=landing&lang=en');
   const footer = page.getByRole('contentinfo',{name:'Korbritto footer'});
+  const revealMobileFooterLinks = async () => {
+    if(page.viewportSize()!.width<=900){
+      await page.evaluate(() => window.scrollTo(0,document.documentElement.scrollHeight));
+      const details=footer.locator('.public-footer__mobile-more');
+      if(!(await details.evaluate(element => (element as HTMLDetailsElement).open)))
+        await details.locator('summary').click();
+    }
+  };
+  await revealMobileFooterLinks();
   await footer.getByRole('button',{name:'Receipts & corrections'}).click();
   await expect.poll(() => new URL(page.url()).searchParams.get('action')).toBe('user_guide');
   await expect.poll(() => new URL(page.url()).searchParams.get('category')).toBe('records');
   await expect(page.getByRole('heading',{name:'Receipts & corrections'})).toBeVisible();
+  await revealMobileFooterLinks();
   await footer.getByRole('button',{name:'Payment status & receipt'}).click();
   await expect(page).toHaveURL(/action=verify/);
   await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toBeVisible();
