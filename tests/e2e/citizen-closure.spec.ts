@@ -80,7 +80,12 @@ test('public mobile keeps routes in the menu and uses a top-right Help icon with
  await page.goto('/?action=landing');
  await expect(page.locator('.public-home-header')).toBeHidden();
  await expect(page.locator('.citizen-header')).toBeVisible();
- await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toHaveCount(0);
+ const publicDock=page.getByRole('navigation',{name:'Mobile primary navigation'});
+ await expect(publicDock).toBeVisible();
+ await expect(publicDock.getByRole('button',{name:'Home'})).toBeVisible();
+ await expect(publicDock.getByRole('button',{name:'Payment Status'})).toBeVisible();
+ await expect(publicDock.getByRole('button',{name:'Help'})).toBeVisible();
+ await expect(publicDock.locator('.citizen-bottom-nav__item')).toHaveCount(3);
  await expect(page.getByRole('button',{name:'Chat support'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveClass(/citizen-pay--guest-floating/);
  await page.getByRole('button',{name:'Open menu'}).click();

@@ -14,6 +14,16 @@ export function PublicHelpChat(){
  const [selectedTopic,setSelectedTopic]=useState<string|null>(null);
  const selectedGuide=GUIDE_CONTENT.find(g=>g.id===selectedTopic);
  const last=useRef<HTMLDivElement>(null);
+ const launchRef=useRef<HTMLButtonElement>(null);
+ const closePanel=()=>{setOpen(false);launchRef.current?.focus();};
+ useEffect(()=>{
+  if(!open)return;
+  const onKeyDown=(event:KeyboardEvent)=>{
+   if(event.key==='Escape'){event.preventDefault();closePanel();}
+  };
+  document.addEventListener('keydown',onKeyDown);
+  return ()=>document.removeEventListener('keydown',onKeyDown);
+ },[open]);
  useEffect(()=>{ last.current?.scrollIntoView({block:'nearest'}); },[messages,open]);
  const respond=(text:string)=>{
   const query=text.trim();
@@ -29,9 +39,9 @@ export function PublicHelpChat(){
   setInput('');
  };
  return <aside className="public-help-widget" aria-label={bn?'করবৃত্ত সহায়তা':'Korbritto help'}>
-  {open&&<section className="public-help-panel" aria-labelledby="public-help-title">
+  {open&&<section id="public-help-panel" className="public-help-panel" role="dialog" aria-modal="false" aria-labelledby="public-help-title">
    <header><div><h2 id="public-help-title">{taxpayerBrandName(language)} {bn?'সহায়তা':'help'}</h2><p>{bn?'নির্দেশনাভিত্তিক উত্তর':'Guide-based answers'}</p></div>
-     <button onClick={()=>setOpen(false)} type="button" aria-label={bn?'চ্যাট বন্ধ করুন':'Close chat'}><X size={18}/></button></header>
+     <button onClick={closePanel} type="button" aria-label={bn?'চ্যাট বন্ধ করুন':'Close chat'}><X size={18}/></button></header>
    <div className="public-help-messages" role="log" aria-live="polite">
     <p className="public-help-opening">{bn?'কী জানতে চান? নিচের কোনো বিষয় বেছে নিন।':'How can we help? Choose a topic or type a question.'}</p>
     {messages.map((m,i)=><p className={'public-help-message public-help-message--'+m.from} key={i}>{m.value}</p>)}
@@ -48,7 +58,7 @@ export function PublicHelpChat(){
    <a className="public-help-more" href={import.meta.env.BASE_URL+'?action=user_guide&lang='+language}><BookOpen size={15}/>{bn?'ব্যবহার নির্দেশিকা':'Open user guide'}</a>
    <p className="public-help-limit">{bn?'স্বয়ংক্রিয় আইন বা কর হিসাব নয়।':'Not tax advice or a calculation service.'}</p>
   </section>}
-  <button className="public-help-launch" type="button" aria-label={open?(bn?'সহায়তা বন্ধ করুন':'Close help'):(bn?'চ্যাট সহায়তা':'Chat support')}
-    aria-expanded={open} onClick={()=>setOpen(v=>!v)}>{open?<X size={23}/>:<MessageCircle size={23}/>}<span>{bn?'সহায়তা':'Help'}</span></button>
+  <button ref={launchRef} className="public-help-launch" type="button" aria-label={open?(bn?'সহায়তা বন্ধ করুন':'Close help'):(bn?'চ্যাট সহায়তা':'Chat support')}
+    aria-controls="public-help-panel" aria-expanded={open} onClick={()=>setOpen(v=>!v)}>{open?<><X className="public-help-launch__close" size={23}/><MessageCircle className="public-help-launch__chat" size={23}/></>:<MessageCircle size={23}/>}<span>{bn?'সহায়তা':'Help'}</span></button>
  </aside>;
 }

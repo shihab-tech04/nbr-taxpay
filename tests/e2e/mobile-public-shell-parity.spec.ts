@@ -22,9 +22,12 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
   expect(bounds.menu).toBeLessThan(bounds.logo);
   expect(Math.abs(bounds.logo-bounds.center)).toBeLessThanOrEqual(3);
   expect(bounds.width-bounds.viewport).toBeLessThanOrEqual(2);
-  // Public navigation remains available in the menu and footer, not as a four-slot dock.
+  // Preserve the original three navigation actions. Pay is independent.
   const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
-  await expect(dock).toHaveCount(0);
+  await expect(dock).toBeVisible();
+  for(const item of ['Home','Payment Status','Help'])
+    await expect(dock.getByRole('button',{name:item})).toBeVisible();
+  await expect(dock.locator('.citizen-bottom-nav__item')).toHaveCount(3);
   const chat=page.getByRole('button',{name:'Chat support'});
   await expect(chat).toBeVisible();
   const chatBounds=await chat.boundingBox();
@@ -36,9 +39,16 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
   await expect(chat.locator('span')).toBeHidden();
   await chat.click();
   await expect(page.locator('#public-help-title')).toBeVisible();
+  const helpPanel=page.locator('#public-help-panel');
+  await expect(helpPanel).toBeVisible();
+  await expect(page.locator('.public-help-launch__close')).toBeHidden();
+  const panelBox=await helpPanel.boundingBox();
+  const dockBox=await dock.boundingBox();
+  expect(panelBox).not.toBeNull();expect(dockBox).not.toBeNull();
+  expect(panelBox!.y+panelBox!.height).toBeLessThanOrEqual(dockBox!.y+1);
   await page.getByRole('textbox',{name:'Your question'}).focus();
   await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeHidden();
-  await page.getByRole('button',{name:'Close help'}).click();
+  await page.getByRole('button',{name:'Close chat'}).click();
   await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeVisible();
   const pay=page.getByRole('button',{name:'Pay — select payment type'});
   await expect(pay).toBeVisible();
@@ -70,13 +80,13 @@ test('mobile guest shell shares signed-in compact-on-scroll behavior, without du
   const corners=page.locator('.taxpay-public-mobile-navigation .citizen-corners');
   if (await corners.getByRole('button',{name:'Open menu'}).isVisible()) {
     await expect(corners.getByRole('button',{name:'Notifications'})).toHaveCount(0);
-    await expect(corners.getByRole('button',{name:'Home'})).toBeVisible();
+    await expect(corners.getByRole('button',{name:'Home'})).toHaveCount(0);
     await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toHaveClass(/citizen-header--hidden/);
-    await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toHaveCount(0);
+    await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toBeVisible();
   } else {
     // A shorter Home page may not scroll far enough to trigger compact navigation.
     await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeVisible();
-    await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toHaveCount(0);
+    await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toBeVisible();
   }
   await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(1);
   // The floating Pay action remains anchored above the safe area after scrolling.
@@ -99,16 +109,26 @@ test('public mobile footer stays compact and the floating Pay action remains rea
   const inner=footer.locator('.public-footer__inner');
   const padding=await inner.evaluate(node=>getComputedStyle(node).paddingBottom);
   expect(parseFloat(padding)).toBeLessThan(30);
-  await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toHaveCount(0);
+  const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
+  await expect(dock).toBeVisible();
   const pay=page.getByRole('button',{name:'Pay — select payment type'});
   await expect(pay).toBeVisible();
   const bounds=await pay.boundingBox();
   expect(bounds).not.toBeNull();
   expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(375);
   expect(bounds!.y+bounds!.height).toBeLessThanOrEqual(812);
+  const dockBounds=await dock.boundingBox();
+  expect(dockBounds).not.toBeNull();
+  expect(bounds!.y+bounds!.height).toBeLessThan(dockBounds!.y);
   await expect(page.getByRole('button',{name:'Chat support'})).toBeVisible();
   await pay.click();
-  await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
+  const choice=page.getByRole('dialog',{name:'Pay Tax'});
+  await expect(choice).toBeVisible();
+  await expect(choice.locator('[data-payer-relationship]')).toHaveCount(2);
+  await expect.poll(async()=>{
+    const box=await choice.boundingBox();
+    return box?.height??Infinity;
+  }).toBeLessThan(812*.8);
 });
 
 test('public desktop header is unchanged, with no mobile navigation duplication',async ({page})=>{
