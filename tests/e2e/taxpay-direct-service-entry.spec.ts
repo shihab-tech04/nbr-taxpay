@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-// Published synthetic CMS response: each payment banner now has its own
-// service-specific CTA. Never infer publication from bundled artwork.
+// Published synthetic CMS response: images and themes remain service-specific,
+// but the visible heading and two payment buttons are fixed across slides.
 const serviceCatalog = [
   { id: 'intro', code: null, label: 'Pay Tax' },
   { id: 'return', code: 'TAX_WITH_RETURN', label: 'Pay Tax with Return' },
@@ -32,8 +32,9 @@ test.beforeEach(async ({ page }) => {
   }));
 });
 
+
 for (const [index, service] of serviceCatalog.entries()) {
-  test(`banner ${index + 1} opens its own existing payment journey: ${service.id}`, async ({ page }) => {
+  test(`banner ${index + 1} changes artwork without changing the two payment journeys: ${service.id}`, async ({ page }) => {
     await page.goto('/?action=landing');
     const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
     await carousel.focus();
@@ -42,85 +43,34 @@ for (const [index, service] of serviceCatalog.entries()) {
 
     const active = carousel.locator('.public-hero-carousel__slide[aria-hidden="false"]');
     await expect(active).toHaveCount(1);
-    await expect(active.getByRole('button', { name: service.label, exact: true })).toBeVisible();
-    // Production uses published SQL text; this offline browser lane uses the
-    // same approved service category defaults, without claiming an SQL readback.
+    await expect(active).toHaveAttribute('data-fixed-left', 'true');
     if (service.code) await expect(active).toHaveAttribute('data-payment-service', service.code);
     else await expect(active).not.toHaveAttribute('data-payment-service');
-    await active.getByRole('button', { name: service.label, exact: true }).click();
+    await expect(active.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
+    await expect(active.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
+    await expect(active.locator('.public-guest-action')).toHaveCount(2);
 
-    if (service.id === 'travel') {
-      await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
-    } else {
-      const modal = page.getByRole('dialog', { name: 'Pay Tax' });
-      await expect(modal).toBeVisible();
-      await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
-      await expect(modal.locator('[data-payer-relationship="SELF"]'))
-        .toContainText('My Tax Liability');
-      await expect(modal.locator('[data-payer-relationship="OTHER"]'))
-        .toContainText('Facilitate another taxpayer’s payment');
-      if (service.id === 'intro') {
-        await modal.getByRole('button', { name: 'Close payment services' }).click();
-        await active.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
-        await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
-      }
-    }
+    await active.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+    const modal = page.getByRole('dialog', { name: 'Pay Tax' });
+    await expect(modal).toBeVisible();
+    await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
+    await expect(modal.locator('.tax-service-choice__selected-service')).toHaveCount(0);
+    await modal.getByRole('button', { name: 'Close payment services' }).click();
+    await active.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
   });
 }
 
-
-test('Source Tax banner uses the current full-width payment modal without changing withholding service rules', async ({ page }, info) => {
-  test.skip(info.project.name !== 'desktop-1280', 'Desktop multi-head banner payment acceptance');
+test('Source Tax image never bypasses the current generic Pay Tax chooser', async ({ page }) => {
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
   await carousel.focus();
   for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
   const active = carousel.locator('.public-hero-carousel__slide[data-active="true"]');
-  await active.getByRole('button', { name: 'Deposit Source Tax' }).click();
+  await expect(active).toHaveAttribute('data-payment-service', 'SOURCE_TAX_DEPOSIT');
+  await active.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await dialog.locator('[data-payer-relationship="SELF"]').click();
-  await dialog.locator('[data-payment-access="GUEST"]').click();
-  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(dialog.locator('.tax-service-choice')).toHaveAttribute('data-banner-entry', 'true');
-  await expect(dialog.locator('.tax-service-choice__selected-service strong'))
-    .toHaveAttribute('data-payment-service', 'SOURCE_TAX_DEPOSIT');
-  await dialog.locator('#guest-tin').fill('123456789012');
-  await dialog.locator('#guest-phone').fill('01712345678');
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  const legacy = dialog.locator('.payment-flow-embedded__payment');
-  await expect(legacy.locator('.payment-form-layout__sections')).toBeVisible();
-  await expect(legacy.locator('.payment-form-summary')).toBeVisible();
-  await expect(legacy.locator('#guest-head-search')).toBeVisible();
-  await expect(legacy.locator('#guest-assessment-year')).toBeVisible();
-  const geometry = await legacy.evaluate(root => {
-    const sections = root.querySelector<HTMLElement>('.payment-form-layout__sections')!.getBoundingClientRect();
-    const summary = root.querySelector<HTMLElement>('.payment-form-summary')!.getBoundingClientRect();
-    return { sectionsLeft: sections.left, sectionsRight: sections.right,
-      summaryLeft: summary.left, summaryTop: summary.top,
-      sectionsBottom: sections.bottom, summaryWidth: summary.width };
-  });
-  expect(geometry.summaryTop).toBeGreaterThanOrEqual(geometry.sectionsBottom - 3);
-  expect(Math.abs(geometry.summaryLeft - geometry.sectionsLeft)).toBeLessThan(3);
-  expect(geometry.summaryWidth).toBeGreaterThan(380);
-  // Multi-head payment amounts use the full form width. Each amount input
-  // stays to the left of its own head description, even in a banner journey.
-  const eligibleHeads = legacy.locator('input[name="guest-payment-head"]:not(:disabled)');
-  await expect.poll(() => eligibleHeads.count()).toBeGreaterThanOrEqual(2);
-  await eligibleHeads.nth(0).check();
-  await eligibleHeads.nth(1).check();
-  const amountRows = legacy.locator('.payment-head-amount--multi');
-  await expect(amountRows).toHaveCount(2);
-  for (const row of await amountRows.all()) {
-    const input = await row.locator('input[id^="guest-tax-amount"]').boundingBox();
-    const description = await row.locator('.payment-head-amount__label').boundingBox();
-    expect(input).not.toBeNull();
-    expect(description).not.toBeNull();
-    expect(description!.x).toBeGreaterThanOrEqual(input!.x + input!.width + 4);
-    expect(Math.abs(description!.y - input!.y)).toBeLessThan(65);
-  }
-  expect(await dialog.locator('.taxpay-modal__body').evaluate(node => node.scrollWidth - node.clientWidth))
-    .toBeLessThanOrEqual(1);
-  // The withholding category is not silently converted into the Other Tax
-  // payment category; this protects its separate eTDS allocation treatment.
-  await expect(dialog.locator('.tax-service-choice__selected-service strong')).toHaveText('Source Tax Deposit');
+  await expect(dialog.locator('[data-payer-relationship="SELF"]')).toBeVisible();
+  await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toBeVisible();
+  await expect(dialog.locator('.tax-service-choice__selected-service')).toHaveCount(0);
 });
