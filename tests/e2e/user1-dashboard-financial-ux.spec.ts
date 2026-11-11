@@ -92,3 +92,48 @@ test('bento layout, Travel Tax and action controls remain usable from 320px to w
     expect(before.width,'Bento bounds should be nonempty at '+width).toBeGreaterThan(250);
   }
 });
+
+test('overview summary, corrections and recent activity use full readable grid tracks',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','One representative desktop and mobile layout matrix');
+  test.setTimeout(120000);
+  for(const width of [375,768,1024,1199,1200,1280,1600]){
+    await page.setViewportSize({width,height:900});
+    await page.goto(dashboard);
+    const grid=page.getByTestId('taxpayer-overview-bento');
+    const summary=grid.locator(':scope > .taxpay-bento-summary');
+    const corrections=grid.locator(':scope > .taxpay-bento-corrections');
+    const recent=grid.locator(':scope > .taxpay-bento-recent');
+    const drafts=grid.locator(':scope > .taxpay-bento-drafts');
+    await expect(summary).toBeVisible();
+    await expect(corrections).toBeVisible();
+    await expect(summary.getByRole('button',{name:/Completed Payments/})).toBeVisible();
+    await expect(corrections.getByRole('button',{name:'View correction requests'})).toBeVisible();
+    // The draft component stays mounted to load the account-specific count.
+    // Once zero is known, its empty wrapper must no longer occupy a grid track.
+    await expect(summary.getByRole('button',{name:/Saved Drafts\\s*0/})).toBeVisible();
+    await expect(drafts).toBeEmpty();
+    await expect(drafts).toBeHidden();
+
+    const [box,left,right,activity]=await Promise.all([
+      grid.boundingBox(),summary.boundingBox(),corrections.boundingBox(),recent.boundingBox()
+    ]);
+    expect(box&&left&&right&&activity,'Missing dashboard card bounds at '+width).toBeTruthy();
+    const container=box!,summaryBox=left!,correctionBox=right!,recentBox=activity!;
+    if(width>=1200){
+      expect(summaryBox.width,'Summary cramped at '+width).toBeGreaterThan(330);
+      expect(correctionBox.width,'Correction card cramped at '+width).toBeGreaterThan(265);
+      expect(Math.abs(summaryBox.y-correctionBox.y),'Cards must share a row').toBeLessThan(4);
+      expect(correctionBox.x,'Correction card must follow summary').toBeGreaterThan(summaryBox.x+summaryBox.width-2);
+    }else{
+      expect(summaryBox.width,'Summary should stack at '+width).toBeGreaterThan(container.width-4);
+      expect(correctionBox.width,'Corrections should stack at '+width).toBeGreaterThan(container.width-4);
+      expect(correctionBox.y).toBeGreaterThan(summaryBox.y);
+    }
+    expect(recentBox.width,'Recent activity must use the empty-draft space at '+width)
+      .toBeGreaterThan(container.width-4);
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(overflow,'Dashboard overflows at '+width).toBeLessThanOrEqual(2);
+    if(width===375||width===1600)
+      await page.screenshot({path:'test-results/screenshots/dashboard-layout-fixed-'+width+'.png',fullPage:true});
+  }
+});
