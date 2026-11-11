@@ -159,14 +159,14 @@ test('taxpayer desktop rail keeps compact primary navigation and its menu routes
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
-  const pay=rail.getByRole('button',{name:'Pay — select payment type'});
+  const pay=rail.getByRole('button',{name:'Pay Tax menu'});
   await expect(pay).toBeVisible();
   await expect(pay).toContainText('Pay Tax');
   await expect(page.locator('.citizen-pay')).toBeHidden();
   await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveCSS('font-size','16px');
   await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveCSS('min-height','44px');
   await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveCSS('box-shadow','none');
-  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(5);
+  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(7);
   await expect(rail.locator('.taxpayer-reference-links > button').nth(1)).toHaveText('Beneficiaries');
   const bottom=rail.locator('.taxpayer-reference-rail-bottom');
   await expect(bottom.getByRole('button')).toHaveCount(3);
@@ -199,7 +199,8 @@ test('desktop sidebar Pay Tax action opens service choice then the embedded paym
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
-  await rail.getByRole('button',{name:'Pay — select payment type'}).click();
+  await rail.getByRole('button',{name:'Pay Tax menu'}).click();
+   await rail.getByRole('button',{name:'Pay Tax',exact:true}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
   await expect(page).toHaveURL(/action=taxpayer_home/);
