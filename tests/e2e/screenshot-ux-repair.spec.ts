@@ -1,6 +1,7 @@
 import { fillTravelDetails } from './travel-tax-test-helper';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import {expect,test,type Page} from '@playwright/test';
+import {openTaxpayerTravelTax} from './taxpayer-travel-menu-helper';
 
 async function enterUser1(page:Page){
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=*',route=>route.fulfill({
@@ -161,7 +162,7 @@ test('mobile bento retains separate travel tax and opens its approved payment mo
   const position=page.locator('.taxpay-bento-position');
   await expect(position).toContainText('Travel tax (separate)');
   await expect(position).toContainText('৳ 6,500');
-  await page.locator('.taxpay-bento-hero').getByRole('button',{name:'Travel tax'}).click();
+  await openTaxpayerTravelTax(page);
   const dialog=page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   const bounds=await dialog.boundingBox();
