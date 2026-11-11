@@ -98,7 +98,8 @@ test('activity filters share one desktop row and details use the shared wide mod
   await page.goto(history);
   await page.getByRole('button',{name:'Filter',exact:true}).click();
   const controls=page.locator('.taxpayer-transaction-panel .taxpayer-transaction-filters > label');
-  await expect(controls).toHaveCount(4);
+  await expect(controls).toHaveCount(5);
+  await expect(page.getByRole('combobox',{name:'Filter transactions by beneficiary',exact:true})).toBeVisible();
   const positions=await controls.evaluateAll(nodes=>nodes.map(el=>Math.round(el.getBoundingClientRect().top)));
   expect(new Set(positions).size).toBe(1);
   await page.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-ETDS-SAL-01');
