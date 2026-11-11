@@ -729,7 +729,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const documentNeedle=documentSearch.trim().toLocaleLowerCase();
   const documentRecords=allDocumentRecords.filter(x=>(x.title+' '+x.ref+' '+(x.challan||'')+' '+tr(...labels[x.kind]))
     .toLocaleLowerCase().includes(documentNeedle));
-  const documents=<section className={panel+' taxpayer-records-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-documents-heading">
+  const documents=<>
+    <section className={panel} data-testid="issued-tax-credit-certificates" aria-labelledby="sample-tax-credit-certificates-title">
+      <h2 id="sample-tax-credit-certificates-title" className="text-base font-semibold">{tr('Tax Credit Certificates','কর ক্রেডিট সনদপত্র')}</h2>
+      <p className="mt-2 text-sm text-taxpay-muted" role="status">{tr('No issuer-verified tax credit certificates are linked to this fictional account. Payment records below are not issued tax credit certificates.', 'এই কাল্পনিক অ্যাকাউন্টে ইস্যুকারী কর্তৃপক্ষের যাচাইকৃত কর ক্রেডিট সনদপত্র নেই। নিচের পেমেন্ট রেকর্ড ইস্যুকৃত কর ক্রেডিট সনদপত্র নয়।')}</p>
+    </section>
+    <section className={panel+' taxpayer-records-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-documents-heading">
     <TaxPayOfficeRegisterToolbar id="taxpayer-documents-heading"
       title={tr('Payment records and supporting references','পেমেন্ট রেকর্ড ও সহায়ক রেফারেন্স')}
       description={tr('Open a record to check its payment details. A recorded entry is not itself an issued certificate.','পেমেন্টের বিস্তারিত দেখতে রেকর্ড খুলুন। নথিভুক্ত তথ্য নিজে কোনো ইস্যুকৃত সনদ নয়।')}
@@ -756,7 +761,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     </div>:<p role="status" className="taxpay-table-state mt-4">{documentSearch?tr('No payment records match this search.','এই অনুসন্ধানে কোনো পেমেন্ট রেকর্ড পাওয়া যায়নি।'):tr('No recorded payment references for this assessment year.','এই করবর্ষে কোনো পেমেন্ট রেফারেন্স নেই।')}</p>}
     <TaxPayOfficeRegisterFooter shown={documentRecords.length} total={allDocumentRecords.length}
       labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('records','রেকর্ড')}}/>
-  </section>;
+  </section></>;
   const allCorrectionRecords=scoped.filter(x=>['PENDING','FAILED','REVERSED','DISPUTED','REQUESTED'].includes(x.state));
   const caseNeedle=caseSearch.trim().toLocaleLowerCase();
   const correctionRecords=allCorrectionRecords.filter(x=>(caseStatus==='all'||x.state===caseStatus)&&
