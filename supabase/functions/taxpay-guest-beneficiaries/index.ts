@@ -25,6 +25,7 @@ type RpcName =
   | 'taxpay_guest_beneficiary_delete_list'
   | 'taxpay_demo_profile_login'
   | 'taxpay_demo_profile_settings'
+  | 'taxpay_demo_registration_profile'
   | 'taxpay_demo_recover_story1_session'
   | 'taxpay_demo_payment_form_drafts';
 
@@ -135,6 +136,8 @@ Deno.serve(async (request: Request) => {
       data = await rpc(client, 'taxpay_guest_beneficiary_open', { p_capability_hash });
     } else if (action === 'lists') {
       data = await rpc(client, 'taxpay_guest_beneficiary_lists', { p_capability_hash });
+    } else if (action === 'demo-registration') {
+      data = await rpc(client, 'taxpay_demo_registration_profile', { p_capability_hash });
     } else if (action === 'demo-settings') {
       const key = body.key ?? null;
       const value = body.value ?? null;
