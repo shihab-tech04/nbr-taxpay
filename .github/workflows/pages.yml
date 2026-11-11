@@ -77,7 +77,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
       - name: Compile public review-only application with scoped hosted Auth / RLS
@@ -152,7 +152,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify preserved ledger and receipt contracts
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -208,7 +208,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify Beneficiaries Excel template in desktop and mobile Chromium
         env:
           VITE_SUPABASE_DISABLED: 'false'
@@ -261,7 +261,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify direct-service banner referral retains service and skips duplicate chooser
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -299,7 +299,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify payment wizard UX and large-amount precision
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -336,7 +336,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify four-stage payment progress in English and Bengali
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -372,7 +372,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify purposeful public homepage and selected navigation state
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -424,7 +424,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for full Travel Tax browser checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify all Travel Tax 2026 journeys on original responsive projects
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -465,7 +465,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify distinct calendar years in taxpayer monthly charts and mobile containment
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -515,7 +515,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       # Check newly changed recovery first for fast failure feedback; retain
       # all existing signed-in payment/beneficiary acceptance unchanged.
       - name: Verify stable fictional login data across fresh browsers
@@ -561,7 +561,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify synthetic receipts and simulated bank slips
         env:
           VITE_SUPABASE_DISABLED: 'false'
@@ -607,7 +607,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Check public routes and disconnected backend state
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -781,7 +781,7 @@ jobs:
       - name: Install deployed browser verification dependencies
         run: |
           npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium --only-shell
+          npx playwright install chromium --only-shell
 
       - name: Verify deployed private-route authentication boundary in Chromium
         env:
