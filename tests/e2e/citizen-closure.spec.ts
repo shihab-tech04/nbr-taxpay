@@ -29,7 +29,7 @@ test('root is a public information hub with a header Login and no payment action
  if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
  else await expect(page.locator('.citizen-pay')).toBeHidden();
  await expect(page.locator('.office-auth')).toHaveCount(0);
- await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
+ await expect(page.locator('#public-how-it-works')).toBeHidden();
 });
 
 test('sample taxpayer home never invents personal ledger credit',async({page})=>{
@@ -155,7 +155,7 @@ test('certificate previews stay non-official, match the selected type and locali
 
 test('home explains the payment stages without an inline transaction form',async({page})=>{
  await page.goto('/');
- await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
+ await expect(page.locator('#public-how-it-works')).toBeHidden();
  await expect(page.locator('.public-payment-path__steps > li')).toHaveCount(4);
  await expect(page.locator('.public-info-topic')).toHaveCount(0);
  if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
