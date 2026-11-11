@@ -2809,3 +2809,25 @@
   outline: 2px solid #738196;
   outline-offset: -2px;
 }
+
+/* Taxpayer-only split Pay popup. The approved mobile dock remains unchanged. */
+.citizen-pay-popover {
+  position:fixed; z-index:51;
+  right:calc(16px + env(safe-area-inset-right));
+  bottom:calc(98px + env(safe-area-inset-bottom));
+  width:min(220px,calc(100vw - 32px)); padding:7px;
+  display:grid; gap:3px; background:var(--citizen-surface,#fff);
+  border:1px solid var(--citizen-border); border-radius:12px;
+  box-shadow:0 6px 20px rgba(0,0,0,.12);
+}
+.citizen-pay-popover button {
+  display:flex; align-items:center; gap:10px; width:100%;
+  min-height:44px; border-radius:9px; padding:9px 12px;
+  text-align:start; font-size:14px; color:var(--citizen-primary-dark);
+}
+.citizen-pay-popover button:hover { background:var(--citizen-primary-light); }
+.citizen-pay-popover button:focus-visible { outline:2px solid var(--citizen-primary); outline-offset:1px; }
+@media(min-width:901px) {
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .citizen-pay-popover { display:none; }
+}
+@media print { .citizen-pay-popover { display:none!important; } }
