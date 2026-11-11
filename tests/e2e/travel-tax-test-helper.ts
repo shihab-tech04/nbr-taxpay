@@ -6,7 +6,10 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
 }) {
   // Travel Tax is lazy-loaded. Wait for the stage UI before any isVisible()
   // probe, otherwise a fast test skips passenger confirmation during chunk load.
-  await root.locator('#travel-passport-first, #travel-tax-route-1').first().waitFor({ state: 'attached' });
+  // The passport editor may disappear once a passenger is confirmed.
+  // Receipt contact exists throughout the passenger stage; route options exist
+  // on the travel stage. Wait for either stable stage anchor after lazy mount.
+  await root.locator('#travel-mobile, #travel-tax-route-1').first().waitFor({ state: 'attached' });
   const passport = root.locator('#travel-passport-first');
   if (await passport.isVisible() && !(await passport.inputValue())) {
     await passport.fill('TEST123456');
