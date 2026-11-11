@@ -139,7 +139,11 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
       await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'}).click();
       await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Close'}).click();
     } else await page.getByRole('button',{name:'EN'}).first().click();
-    await page.getByRole('button',{name:'Pay — select payment type'}).click();
+    if (width<=900) await page.locator('.citizen-pay:visible').click();
+    else {
+      await page.getByRole('button',{name:'Pay Tax menu'}).click();
+      await page.locator('.taxpayer-reference-pay-options').getByRole('button',{name:'Tax with Return / Other Tax'}).click();
+    }
     const services=page.getByRole('dialog',{name:'Pay Tax'});
     await enterTaxPayService(services, 'TAX_WITH_RETURN');
     await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();

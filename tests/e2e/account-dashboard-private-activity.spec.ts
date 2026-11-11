@@ -216,7 +216,7 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByRole('heading',{name:'যে বিষয়ে খেয়াল রাখা দরকার'})).toBeVisible();
   await expect(phase.getByRole('heading',{name:'দ্রুত কাজ'})).toBeVisible();
   await expect(phase.getByRole('button',{name:'অনুরোধ ও খসড়া'})).toBeVisible();
-  await expect(page.getByText('এই করবর্ষের যাচাইকৃত করের পরিমাণ ও নথিভুক্ত কর ক্রেডিট এই অ্যাকাউন্টে যুক্ত নেই। পাওয়া তথ্য দেখতে নিচের কর লেজার দেখুন।')).toBeVisible();
+  await expect(page.getByText('এই করবর্ষের যাচাইকৃত করের পরিমাণ ও নথিভুক্ত কর ক্রেডিট এই অ্যাকাউন্টে যুক্ত নেই। পাওয়া তথ্য দেখতে নিচের কর লেজার দেখুন।')).toHaveCount(0);
   await expect(phase).toContainText('যাচাইকৃত পরিশোধের শেষ তারিখ এখনও পাওয়া যায়নি');
   await expect(dashboard.getByRole('heading',{name:'আমার অ্যাকাউন্টের কার্যক্রম'})).toBeVisible();
   await expect(dashboard).toContainText('৳ ৩৪.৫০');
