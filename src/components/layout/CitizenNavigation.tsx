@@ -243,7 +243,7 @@ export function CitizenNavigation() {
           )}
         </div>
       </header>
-      {!inTransaction && currentRoute !== 'wizard' && !compact && !overlayOpen && !isPaymentServiceChoiceOpen && (
+      {isTaxpayer && !inTransaction && currentRoute !== 'wizard' && !compact && !overlayOpen && !isPaymentServiceChoiceOpen && (
         <nav className="citizen-bottom-nav" aria-label={bn ? 'মোবাইল প্রধান নেভিগেশন' : 'Mobile primary navigation'}>
           {links.map(item => {
             const Icon = item.route === home ? Home : item.route === 'ledger' ? BookOpen :
@@ -271,9 +271,9 @@ export function CitizenNavigation() {
         </div>
       )}
       {showPay && !overlayOpen && (
-        <button type="button" className={compact ? "citizen-pay citizen-pay--compact" : "citizen-pay citizen-pay--expanded"} onClick={openPay}
+        <button type="button" className={`${compact ? "citizen-pay citizen-pay--compact" : "citizen-pay citizen-pay--expanded"}${!isTaxpayer ? " citizen-pay--guest-floating" : ""}`} onClick={openPay}
           aria-label={bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type'}>
-          <Plus aria-hidden="true" size={22}/><span>{bn ? 'পরিশোধ' : 'Pay'}</span>
+          <Plus aria-hidden="true" size={22}/><span>{!isTaxpayer ? (bn ? 'কর পরিশোধ' : 'Pay now') : (bn ? 'পরিশোধ' : 'Pay')}</span>
         </button>
       )}
       {overlayOpen && (
