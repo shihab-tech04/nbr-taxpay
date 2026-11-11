@@ -466,20 +466,10 @@ jobs:
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
         run: npx playwright install --with-deps chromium --only-shell
-      - name: Verify distinct calendar years in taxpayer monthly charts and mobile containment
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/taxpayer-month-year-timeline.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
       - name: Verify the separate two-field TaxPay login popup
         env:
           VITE_SUPABASE_DISABLED: 'true'
         run: npx playwright test tests/e2e/taxpayer-login-popup.spec.ts tests/e2e/beneficiary-deeplink-login.spec.ts tests/e2e/signed-in-payment-entry.spec.ts tests/e2e/signed-in-payment-access.spec.ts tests/e2e/payment-own-tax-prefill.spec.ts
-      - name: Verify payment footer Save Draft left and Continue right at all breakpoints
-        env:
-          VITE_SUPABASE_DISABLED: 'true'
-        run: npx playwright test tests/e2e/payment-draft-footer-layout.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
       - name: Upload responsive citizen screenshots and Playwright evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -490,6 +480,51 @@ jobs:
             playwright-report/
           if-no-files-found: ignore
 
+
+  public-responsive-e2e:
+    name: Taxpayer calendar and draft footer responsive acceptance
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js 24.21.0
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Restore Playwright headless browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
+      - name: Install Chromium for public-preview checks
+        run: npx playwright install --with-deps chromium --only-shell
+      - name: Verify distinct calendar years in taxpayer monthly charts and mobile containment
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/taxpayer-month-year-timeline.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
+      - name: Verify payment footer Save Draft left and Continue right at all breakpoints
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+        run: npx playwright test tests/e2e/payment-draft-footer-layout.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
+      - name: Upload calendar and footer responsive evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-responsive-calendar-and-footer-evidence
+          path: |
+            test-results/screenshots/
+            playwright-report/
+          if-no-files-found: ignore
 
   beneficiary-picker-e2e:
     name: Signed-in beneficiary picker acceptance
@@ -670,7 +705,7 @@ jobs:
   verification-gate:
     name: Build and verify static preview
     if: always()
-    needs: [preflight, compile, core-e2e, core-beneficiary-e2e, core-cms-e2e, payment-ux-e2e, payment-progress-e2e, public-e2e, public-travel-e2e, public-login-e2e, beneficiary-picker-e2e, public-support-e2e, route-e2e, reuse-reviewed-build]
+    needs: [preflight, compile, core-e2e, core-beneficiary-e2e, core-cms-e2e, payment-ux-e2e, payment-progress-e2e, public-e2e, public-travel-e2e, public-login-e2e, public-responsive-e2e, beneficiary-picker-e2e, public-support-e2e, route-e2e, reuse-reviewed-build]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -689,6 +724,7 @@ jobs:
           PUBLIC: ${{ needs.public-e2e.result }}
           PUBLIC_TRAVEL: ${{ needs.public-travel-e2e.result }}
           PUBLIC_LOGIN: ${{ needs.public-login-e2e.result }}
+          PUBLIC_RESPONSIVE: ${{ needs.public-responsive-e2e.result }}
           PICKER: ${{ needs.beneficiary-picker-e2e.result }}
           SUPPORT: ${{ needs.public-support-e2e.result }}
           ROUTES: ${{ needs.route-e2e.result }}
@@ -699,14 +735,14 @@ jobs:
           case "$MODE" in
             full)
               test "$REUSED" = skipped
-              for result in "$COMPILE" "$CORE" "$BENEFICIARY" "$CMS" "$PAYMENT" "$PROGRESS" "$PUBLIC" "$PUBLIC_TRAVEL" "$PUBLIC_LOGIN" "$PICKER" "$SUPPORT" "$ROUTES"; do
+              for result in "$COMPILE" "$CORE" "$BENEFICIARY" "$CMS" "$PAYMENT" "$PROGRESS" "$PUBLIC" "$PUBLIC_TRAVEL" "$PUBLIC_LOGIN" "$PUBLIC_RESPONSIVE" "$PICKER" "$SUPPORT" "$ROUTES"; do
                 test "$result" = success
               done
               echo 'PASS: every independent live-build and browser acceptance lane passed'
               ;;
             reuse)
               test "$REUSED" = success
-              for result in "$COMPILE" "$CORE" "$BENEFICIARY" "$CMS" "$PAYMENT" "$PROGRESS" "$PUBLIC" "$PUBLIC_TRAVEL" "$PUBLIC_LOGIN" "$PICKER" "$SUPPORT" "$ROUTES"; do
+              for result in "$COMPILE" "$CORE" "$BENEFICIARY" "$CMS" "$PAYMENT" "$PROGRESS" "$PUBLIC" "$PUBLIC_TRAVEL" "$PUBLIC_LOGIN" "$PUBLIC_RESPONSIVE" "$PICKER" "$SUPPORT" "$ROUTES"; do
                 test "$result" = skipped
               done
               echo 'PASS: byte-identical artifact from fully verified PR, without retesting unchanged source'
