@@ -105,32 +105,63 @@ type StoredCombinedRequest = {
   request: { payload: StoryPaymentInput; receipt: ChallanReceipt };
 };
 type CombinedStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
-/** Durable exact-key retry; only one combined SQL row may be created. */
+/** An unavailable sessionStorage must not block an otherwise valid, idempotent
+ * SQL submission. This memory fallback survives only while this tab is open. */
+const volatileRequests = new Map<string, StoredCombinedRequest>();
+const storageFor = (provided?: CombinedStorage): CombinedStorage | null => {
+  if (provided) return provided;
+  try { return typeof window !== 'undefined' ? window.sessionStorage : null; }
+  catch { return null; }
+};
+/** Durable exact-key retry. Returns false if the request is held in memory
+ * only; callers must warn that closing/reloading the tab loses recovery. */
 export function saveCombinedOtherTaxRequest(
   request: StoredCombinedRequest['request'],
   phase: StoredCombinedRequest['phase'],
-  storage: CombinedStorage = sessionStorage,
-): void {
+  storage?: CombinedStorage,
+): boolean {
   validateCombinedRequest(request);
-  storage.setItem(combinedKey(request.payload.sessionId),JSON.stringify({version:2,phase,request}));
+  const key = combinedKey(request.payload.sessionId);
+  const pending: StoredCombinedRequest = { version: 2, phase, request };
+  const encoded = JSON.stringify(pending);
+  const activeStorage = storageFor(storage);
+  if (activeStorage) {
+    try {
+      activeStorage.setItem(key, encoded);
+      volatileRequests.delete(key);
+      return true;
+    } catch { /* Storage denied, full, or private browsing: retain exact request in this tab. */ }
+  }
+  volatileRequests.set(key, pending);
+  return false;
 }
 export function loadCombinedOtherTaxRequest(
   sessionId: string,
-  storage: CombinedStorage = sessionStorage,
+  storage?: CombinedStorage,
 ): StoredCombinedRequest | null {
-  const raw=storage.getItem(combinedKey(sessionId));
-  if(!raw)return null;
-  let parsed:StoredCombinedRequest;
-  try{parsed=JSON.parse(raw) as StoredCombinedRequest;}catch{throw Error('INVALID_COMBINED_RECOVERY');}
-  if(parsed?.version!==2||!['READY','PENDING_BANK'].includes(parsed.phase)||
-    parsed.request?.payload?.sessionId!==sessionId)
+  const key = combinedKey(sessionId);
+  const cached = volatileRequests.get(key);
+  let raw: string | null = null;
+  if (!cached) {
+    try { raw = storageFor(storage)?.getItem(key) ?? null; }
+    catch { /* Fall back to current-tab request when storage is unavailable. */ }
+  }
+  if (!cached && !raw) return null;
+  let parsed: StoredCombinedRequest;
+  try { parsed = cached ?? JSON.parse(raw!) as StoredCombinedRequest; }
+  catch { throw Error('INVALID_COMBINED_RECOVERY'); }
+  if (parsed?.version !== 2 || !['READY','PENDING_BANK'].includes(parsed.phase) ||
+    parsed.request?.payload?.sessionId !== sessionId)
     throw Error('INVALID_COMBINED_RECOVERY');
   validateCombinedRequest(parsed.request);
   return parsed;
 }
-export function clearCombinedOtherTaxRequest(sessionId:string,storage: CombinedStorage = sessionStorage): void {
-  if(!UUID.test(sessionId))throw Error('INVALID_COMBINED_RECOVERY');
-  storage.removeItem(combinedKey(sessionId));
+export function clearCombinedOtherTaxRequest(sessionId: string, storage?: CombinedStorage): void {
+  if (!UUID.test(sessionId)) throw Error('INVALID_COMBINED_RECOVERY');
+  const key = combinedKey(sessionId);
+  volatileRequests.delete(key);
+  try { storageFor(storage)?.removeItem(key); }
+  catch { /* The exact in-memory key was cleared even when storage is unavailable. */ }
 }
 function validateCombinedRequest(request: StoredCombinedRequest['request']): void {
   const {payload,receipt}=request;
