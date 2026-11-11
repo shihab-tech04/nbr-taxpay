@@ -373,7 +373,8 @@
   display:none;
 }
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"]:not(:has(> .taxpay-bento-drafts:not(:empty))) > .taxpay-bento-recent{
-  grid-column:span 12;
+  /* Full-width on both 12-track desktop and 2-track mobile grids. */
+  grid-column:1 / -1;
 }
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-coverage__donut > div{
   inset:26px;
