@@ -246,7 +246,7 @@ export function CitizenNavigation() {
           )}
         </div>
       </header>
-      {isTaxpayer && !inTransaction && currentRoute !== 'wizard' && !compact && !overlayOpen && !isPaymentServiceChoiceOpen && (
+      {!inTransaction && currentRoute !== 'wizard' && !compact && !overlayOpen && !isPaymentServiceChoiceOpen && (
         <nav className="citizen-bottom-nav" aria-label={bn ? 'মোবাইল প্রধান নেভিগেশন' : 'Mobile primary navigation'}>
           {links.map(item => {
             const Icon = item.route === home ? Home : item.route === 'ledger' ? BookOpen :
