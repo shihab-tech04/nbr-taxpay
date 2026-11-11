@@ -712,3 +712,84 @@
   white-space: nowrap;
   text-wrap: initial;
 }
+
+
+/* Public home quick-access: compact service shortcuts, distinct from the hero's primary CTAs. */
+.public-quick-access { min-width: 0; }
+.public-quick-access > h2 {
+  margin: 0 0 .9rem;
+  color: var(--citizen-text);
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+.public-quick-access__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .75rem;
+}
+.public-quick-access__item {
+  display: flex;
+  align-items: flex-start;
+  gap: .7rem;
+  min-width: 0;
+  width: 100%;
+  min-height: 132px;
+  padding: 1rem;
+  border: 1px solid var(--citizen-border);
+  border-radius: 1rem;
+  background: var(--citizen-surface);
+  color: var(--citizen-text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.public-quick-access__item:hover {
+  border-color: var(--citizen-primary);
+  background: var(--citizen-primary-light);
+}
+.public-quick-access__item:focus-visible {
+  outline: 3px solid var(--citizen-primary);
+  outline-offset: 3px;
+}
+.public-quick-access__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border-radius: .7rem;
+  background: var(--citizen-primary-light);
+  color: var(--citizen-primary-dark);
+}
+.public-quick-access__copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: .4rem;
+  min-width: 0;
+}
+.public-quick-access__copy strong {
+  color: var(--citizen-text);
+  font-size: .9rem;
+  font-weight: 750;
+  line-height: 1.45;
+}
+.public-quick-access__copy > span {
+  color: var(--citizen-muted);
+  font-size: .8rem;
+  line-height: 1.55;
+}
+.public-quick-access__arrow {
+  flex: 0 0 18px;
+  margin-top: .1rem;
+  color: var(--citizen-primary);
+}
+@media (max-width: 1100px) {
+  .public-quick-access__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .public-quick-access > h2 { font-size: 1.05rem; }
+  .public-quick-access__grid { grid-template-columns: minmax(0, 1fr); gap: .6rem; }
+  .public-quick-access__item { min-height: 96px; padding: .9rem; }
+}
