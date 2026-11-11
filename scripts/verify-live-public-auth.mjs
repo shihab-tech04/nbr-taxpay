@@ -109,11 +109,21 @@ try {
       await expect(wordmark).toBeVisible();
       await expect(guestBell).toHaveCount(0);
       await expect(publicMobile.locator('.public-home-header')).toBeHidden();
-      const dock = publicMobile.getByRole('navigation',{name:'Mobile primary navigation'});
-      await expect(dock).toBeVisible();
-      await expect(dock.getByRole('button',{name:'Payment Status'})).toBeVisible();
-      await expect(dock.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
-      await expect(publicMobile.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+      // Guest dock was intentionally replaced by the approved floating Pay action.
+      // Retain accessible navigation through the existing menu and footer.
+      await expect(publicMobile.getByRole('navigation',{name:'Mobile primary navigation'})).toHaveCount(0);
+      const helpButton = publicMobile.getByRole('button',{name:'Chat support'});
+      await expect(helpButton).toBeVisible();
+      const payButton = publicMobile.getByRole('button',{name:'Pay — select payment type'});
+      await expect(payButton).toBeVisible();
+      await expect(payButton).toHaveClass(/citizen-pay--guest-floating/);
+      await menu.click();
+      const mobileMenu = publicMobile.getByRole('dialog',{name:'Services & menu'});
+      await expect(mobileMenu.getByRole('button',{name:'Payment Status'})).toBeVisible();
+      await expect(mobileMenu.getByRole('button',{name:'Help'})).toBeVisible();
+      await expect(mobileMenu.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
+      await publicMobile.keyboard.press('Escape');
+      await expect(mobileMenu).toHaveCount(0);
       const frame = await publicMobile.evaluate(()=>{
         const header = document.querySelector('.taxpay-public-mobile-navigation .citizen-header').getBoundingClientRect();
         const logo = document.querySelector('.taxpay-public-mobile-navigation .citizen-brand').getBoundingClientRect();
