@@ -167,7 +167,7 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(content.getByText('TIN type',{exact:true})).toHaveCount(0);
   await expect(profile.getByText('TIN type',{exact:true})).toHaveCount(1);
   await expect(profile.getByText('Taxes circle',{exact:true})).toHaveCount(1);
-  await expect(content).toContainText('Circle-245 (Company)'.replace('Circle-245 (Company)','Taxes Zone-12, Dhaka'));
+  await expect(content).toContainText('Taxes Zone-12, Dhaka');
   await expect(content).toContainText('04 Jun 2026, 05:06:20 PM');
   await expect(content).toContainText('3/4 Purana Paltan');
   await expect(content).toContainText('email@test.com');

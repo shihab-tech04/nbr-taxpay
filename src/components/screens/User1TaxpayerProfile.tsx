@@ -136,7 +136,7 @@ export function User1TaxpayerProfile({language}:{language:Language}){
         </div>)}
       </div>
     </section>
-    <main className="space-y-4" data-testid="user1-profile-unified-content" aria-label={tr(['Taxpayer information','করদাতার তথ্য'])}>
+    <section className="space-y-4" data-testid="user1-profile-unified-content" aria-label={tr(['Taxpayer information','করদাতার তথ্য'])}>
       <div className="grid items-start gap-4 lg:grid-cols-2" data-testid="user1-profile-detail-columns">
         <div className="flex min-w-0 flex-col gap-4">
           {panel(['Personal information','ব্যক্তিগত তথ্য'],details([
@@ -176,6 +176,6 @@ export function User1TaxpayerProfile({language}:{language:Language}){
           </div>)}
         </dl>
       </section>
-    </main>
+    </section>
   </div>;
 }
