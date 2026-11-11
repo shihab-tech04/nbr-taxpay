@@ -195,7 +195,11 @@ test('Return-only Pay Again rejects mixed heads and incomplete allocation snapsh
     allocationItems:receipt.allocationItems!};
   assert.throws(()=>reuseRecordedPayment([{...returnReceipt,
     items:[returnReceipt.items[0],{...returnReceipt.items[1],headId:121}]}],
-    'owner','1234567890123','source'),/cannot be reconciled|incomplete|Return/);
+    'owner','1234567890123','source'),/Tax with Return/);
+  assert.throws(()=>reuseRecordedPayment([{...returnReceipt,
+    taxpayerTin:'1234567890123',assessmentYear:'2026-27',allocationItems:undefined,
+    items:[{...returnReceipt.items[0],headId:121}],totalAmount:10}],
+    'owner','1234567890123','source'),/Tax with Return/);
   assert.throws(()=>reuseRecordedPayment([{...returnReceipt,
     allocationItems:receipt.allocationItems!.slice(0,1)}],
     'owner','1234567890123','source'),/incomplete|reconciled/);
