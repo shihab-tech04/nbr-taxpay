@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, FileCheck2, FilePenLine, ListChecks, Plane, ReceiptText, Search, UserRound, WalletCards } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, FilePenLine, Files, History, ListChecks, ReceiptText, Search, UserRound, UsersRound, WalletCards, Zap } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { PublicServiceModal, type PublicService } from './PublicServiceModal';
@@ -51,42 +51,46 @@ export const PublicLanding: React.FC = () => {
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
 
-  // Reuse the approved payment and travel flows and the account-only route gate.
-  const quickServices = [
+  // Citizen-value cards are informational, not duplicate payment CTAs.
+  // The approved Pay Tax / Pay Travel Tax journeys remain in the hero.
+  const citizenBenefits = [
     {
-      id: 'tax',
+      id: 'payments',
       Icon: WalletCards,
-      title: t('Tax payments', 'কর পরিশোধ সেবা'),
-      detail: t('Pay tax for yourself or others.', 'নিজের বা অন্যের কর পরিশোধ করুন।'),
-      open: () => openPaymentServiceChoice(),
+      title: t('All Tax Payments', 'সব ধরনের কর পরিশোধ'),
+      detail: t('Pay for yourself or others in one place.', 'নিজের বা অন্যের কর এক জায়গায় পরিশোধ করুন।'),
     },
     {
-      id: 'travel',
-      Icon: Plane,
-      title: t('Travel Tax', 'ভ্রমণ কর'),
-      detail: t('Use the dedicated travel tax journey.', 'নির্দিষ্ট ভ্রমণ কর সেবা ব্যবহার করুন।'),
-      open: () => setOpenService('travel'),
+      id: 'documents',
+      Icon: Files,
+      title: t('Tax Documents', 'কর সংক্রান্ত নথি'),
+      detail: t('Receipts, challans and available certificates.', 'রসিদ, চালান ও উপলব্ধ সনদ একসঙ্গে।'),
     },
     {
       id: 'corrections',
       Icon: FilePenLine,
-      title: t('Correction Requests', 'সংশোধনের আবেদন'),
-      detail: signedIn
-        ? t('Submit and track correction requests.', 'সংশোধনের আবেদন ও অগ্রগতি দেখুন।')
-        : t('Sign in to request a correction.', 'সংশোধনের আবেদন করতে লগইন করুন।'),
-      open: () => navigate('corrections'),
+      title: t('Corrections & Requests', 'সংশোধন ও আবেদন'),
+      detail: t('Request corrections and track progress.', 'সংশোধনের আবেদন ও অগ্রগতি দেখুন।'),
     },
     {
-      id: 'certificates',
-      Icon: FileCheck2,
-      title: t('Tax Credit Certificates', 'কর ক্রেডিট সনদ'),
-      detail: signedIn
-        ? t('View and download your certificates.', 'আপনার সনদ দেখুন ও ডাউনলোড করুন।')
-        : t('Sign in to view your certificates.', 'আপনার সনদ দেখতে লগইন করুন।'),
-      open: () => navigate('certificates'),
+      id: 'history',
+      Icon: History,
+      title: t('Payment History', 'পেমেন্টের ইতিহাস'),
+      detail: t('Find payments, tax years and receipts.', 'পেমেন্ট, করবর্ষ ও রসিদ খুঁজুন।'),
+    },
+    {
+      id: 'beneficiaries',
+      Icon: UsersRound,
+      title: t('Beneficiary Management', 'সুবিধাভোগী ব্যবস্থাপনা'),
+      detail: t('Organize people and their payment history.', 'ব্যক্তি ও তাঁদের পেমেন্টের ইতিহাস সাজিয়ে রাখুন।'),
+    },
+    {
+      id: 'faster',
+      Icon: Zap,
+      title: t('Faster Tax Management', 'সহজ ও দ্রুত কর ব্যবস্থাপনা'),
+      detail: t('Save drafts and reuse past payment details.', 'খসড়া রাখুন ও আগের পেমেন্টের তথ্য ব্যবহার করুন।'),
     },
   ];
-
 
   const stages = [
     {
@@ -261,20 +265,20 @@ export const PublicLanding: React.FC = () => {
       </div>
     </section>
 
-    <section className="public-quick-access" aria-labelledby="public-quick-access-title">
-      <h2 id="public-quick-access-title">{t('Quick access', 'দ্রুত সেবা')}</h2>
-      <div className="public-quick-access__grid">
-        {quickServices.map(({ id, Icon, title, detail, open }) => (
-          <button key={id} type="button" className="public-quick-access__item"
-            data-service={id} aria-labelledby={`public-quick-access-title-${id}`}
-            aria-describedby={`public-quick-access-detail-${id}`} onClick={open}>
-            <span className="public-quick-access__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
-            <span className="public-quick-access__copy">
-              <strong id={`public-quick-access-title-${id}`}>{title}</strong>
-              <span id={`public-quick-access-detail-${id}`}>{detail}</span>
-            </span>
-            <ArrowRight className="public-quick-access__arrow" size={18} aria-hidden="true" />
-          </button>
+    <section className="public-benefits" aria-labelledby="public-benefits-title">
+      <div className="public-benefits__heading">
+        <h2 id="public-benefits-title">{t('Why use Korbritto?', 'করবৃত্ত কেন ব্যবহার করবেন?')}</h2>
+        <p>{t('Pay. Manage. Track. All in one place.', 'কর পরিশোধ, ব্যবস্থাপনা ও রেকর্ড—সব এক জায়গায়।')}</p>
+      </div>
+      <div className="public-benefits__grid">
+        {citizenBenefits.map(({ id, Icon, title, detail }) => (
+          <article key={id} className="public-benefits__item" data-benefit={id}>
+            <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
+            <div className="public-benefits__copy">
+              <h3>{title}</h3>
+              <p>{detail}</p>
+            </div>
+          </article>
         ))}
       </div>
     </section>
