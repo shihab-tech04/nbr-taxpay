@@ -234,6 +234,18 @@ test('multiple Other Tax heads retain their amounts inside ONE combined payment 
   await expect(dialog.locator('.receipt-view__amount strong')).toHaveText('৳ 1,500');
   await expect(dialog.locator('.receipt-view__paper')).toContainText('1,200');
   await expect(dialog.locator('.receipt-view__paper')).toContainText('300');
+  // Receipt details remain readable without changing the saved allocations:
+  // generous vertical row spacing and a clear boundary to reference details.
+  const receiptPaper = dialog.locator('.receipt-view__paper');
+  const partyDetails = receiptPaper.locator('.receipt-view__parties');
+  const detailRow = partyDetails.locator('.receipt-view__detail').first();
+  await expect(detailRow).toHaveCSS('padding-top', '8px');
+  const partyBounds = await partyDetails.boundingBox();
+  const referenceBounds = await receiptPaper.locator('.receipt-view__reference-strip').boundingBox();
+  expect(partyBounds).not.toBeNull();
+  expect(referenceBounds).not.toBeNull();
+  expect(partyBounds!.y).toBeGreaterThanOrEqual(referenceBounds!.y + referenceBounds!.height - 1);
+  expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
   const allocationTable = dialog.getByTestId('receipt-allocation-table');
   const allocationCards = dialog.getByTestId('receipt-allocation-mobile');
   await expect(allocationTable.locator('tbody tr')).toHaveCount(2);
