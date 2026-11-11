@@ -117,6 +117,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       setSavedTagPeople([]);setTagLoadState('ready');
       return()=>{active=false;};
     }
+    // Beneficiary tag data is only rendered in the overview and Transactions.
+    // Do not fetch the full address book on Settings, Profile, Ledger, etc.
+    // Returning to a tag-dependent route reloads fresh account-scoped data.
+    if(route!=='taxpayer_home'&&route!=='dashboard'&&route!=='history'){
+      setSavedTagPeople([]);setTagLoadState('ready');
+      return()=>{active=false;};
+    }
     setTagLoadState('loading');
     void loadBeneficiaries(null).then(result=>{
       if(active){setSavedTagPeople(result.people);setTagLoadState('ready');}
