@@ -190,7 +190,15 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
     await page.screenshot({path:'test-results/screenshots/taxpayer-expanded-'+width+'.png',fullPage:false});
     const documentWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
     expect(documentWidth).toBeLessThanOrEqual(width+2);
-    await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+    if(width<=900){
+      const menu=page.locator('.citizen-mobile-menu-trigger');
+      await expect(menu).toBeVisible();
+      await menu.click();
+      await expect(page.locator('#citizen-menu-dialog').getByRole('button',{name:'Travel Tax',exact:true})).toBeVisible();
+      await page.locator('#citizen-menu-dialog').getByRole('button',{name:'Close'}).click();
+    }else{
+      await expect(page.getByRole('button',{name:'Pay Tax menu'})).toBeVisible();
+    }
     if(width<=900) {
       await page.evaluate(()=>window.scrollTo(0,450));
       await expect(page.locator('.citizen-header')).toHaveClass(/citizen-header--hidden/);

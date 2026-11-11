@@ -18,12 +18,12 @@ const taxpayerLinks: CitizenAction[] = [
 ];
 const taxpayerMenuLinks: CitizenAction[] = [
   ...taxpayerLinks,
+  { route: 'certificates', en: 'Tax Credit Certificates', bn: 'কর ক্রেডিট সনদপত্র' },
+  { route: 'corrections', en: 'Correction Requests', bn: 'সংশোধনের আবেদন' },
   { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি' }
 ];
 const serviceLinks: CitizenAction[] = [
   { route: 'services', en: 'Payment services', bn: 'কর পরিশোধ সেবা' },
-  { route: 'certificates', en: 'Certificates', bn: 'সনদ' },
-  { route: 'corrections', en: 'Corrections', bn: 'সংশোধন' },
   { route: 'journey', en: 'Tax Journey', bn: 'কর যাত্রা' }
 ];
 const accountLinks: CitizenAction[] = [
@@ -39,7 +39,7 @@ const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
-  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, demoUser, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, demoUser, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, openPaymentServiceChoice } = useTaxState();
   const { user: applicationUser } = useAccountIdentity();
   const [signOutError, setSignOutError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
@@ -288,6 +288,17 @@ export function CitizenNavigation() {
                 <nav className="citizen-dialog__navigation" aria-label={bn ? 'সেবার নেভিগেশন' : 'Services navigation'}>
                   <p className="citizen-dialog__section-label">{bn ? 'প্রধান নেভিগেশন' : 'Navigation'}</p>
                   <div className="citizen-dialog__links">{(isTaxpayer ? taxpayerMenuLinks : guestLinks).map(menuAction)}</div>
+                  {isTaxpayer && <div>
+                    <p className="citizen-dialog__section-label">{bn ? 'কর পরিশোধ' : 'Pay Tax'}</p>
+                    <div className="citizen-dialog__links">
+                      <button type="button" className="citizen-dialog__link" onClick={() => {setMenuOpen(false);openPaymentServiceChoice();}}>
+                        <CreditCard size={19} aria-hidden="true"/><span>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</span>
+                      </button>
+                      <button type="button" className="citizen-dialog__link" onClick={() => {setMenuOpen(false);openPaymentServiceChoice('TRAVEL_TAX');}}>
+                        <Route size={19} aria-hidden="true"/><span>{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</span>
+                      </button>
+                    </div>
+                  </div>}
                   {isTaxpayer ? <div className="citizen-dialog__desktop-only">
                     <p className="citizen-dialog__section-label">{bn ? 'সেবা' : 'Services'}</p>
                     <div className="citizen-dialog__links">{serviceLinks.map(menuAction)}</div>
