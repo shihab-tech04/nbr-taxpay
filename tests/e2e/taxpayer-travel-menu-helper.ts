@@ -5,7 +5,7 @@ export async function openTaxpayerTravelTax(page:Page):Promise<void>{
   const rail=page.locator('.taxpayer-reference-rail');
   if(await rail.isVisible()){
     await rail.getByRole('button',{name:'Pay Tax menu'}).click();
-    await rail.getByRole('button',{name:'Travel Tax',exact:true}).click();
+    await rail.getByRole('menuitem',{name:'Travel Tax',exact:true}).click();
   }else{
     // After a year-chart interaction the mobile header can compact on scroll.
     // Open whichever real menu trigger is visible, rather than clicking a hidden header.
@@ -24,8 +24,9 @@ export async function openTaxpayerPayTax(page:Page):Promise<void>{
   const rail=page.locator('.taxpayer-reference-rail');
   if(await rail.isVisible()){
     await rail.getByRole('button',{name:'Pay Tax menu'}).click();
-    await rail.getByRole('button',{name:'Pay Tax',exact:true}).click();
+    await rail.getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
   }else{
     await page.getByRole('button',{name:'Pay — select payment type'}).click();
+    await page.getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
   }
 }

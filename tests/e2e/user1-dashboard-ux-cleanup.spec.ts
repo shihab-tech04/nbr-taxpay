@@ -17,8 +17,15 @@ test('Overview hides unverified external tax position but retains analytics, dra
   await expect(bento.getByRole('heading',{name:'Recent activity'})).toHaveCount(1);
   await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   await expect(bento.getByRole('heading',{name:'Correction Requests'})).toBeVisible();
-  await bento.getByRole('button',{name:'View correction requests'}).click();
-  await expect(page.getByRole('heading',{name:'Corrections & exceptions'})).toBeVisible();
+  const requests=bento.getByTestId('dashboard-correction-request-list');
+  await expect(requests.locator('li')).toHaveCount(2);
+  await expect(requests).toContainText('Refund inquiry');
+  await expect(requests).toContainText('Credit reassignment inquiry');
+  await expect(requests).toContainText('Not approved and not disbursed');
+  await bento.getByRole('button',{name:/^Correction Requests/}).click();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await requests.getByRole('button',{name:/View request details for Refund inquiry/}).click();
+  await expect(page.locator('.taxpay-modal')).toBeVisible();
 });
 
 test('when external tax data is absent the coverage and year chart move into the first row',async({page})=>{

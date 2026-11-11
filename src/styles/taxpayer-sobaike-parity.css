@@ -405,6 +405,10 @@
     background: var(--color-taxpay-background);
   }
 }
+/* Desktop chat keeps its existing launch X; mobile uses one panel X. */
+.taxpay-citizen-shell .public-help-launch[aria-expanded="true"] .public-help-launch__chat {
+  display:none;
+}
 @media (max-width: 900px) {
   /* Sobaike Public mobile bar: edge-to-edge, quiet surface, four equal actions.
      Retain the real TaxPay fourth slot / Pay action and its brand color. */
@@ -539,6 +543,74 @@
   }
   .taxpay-citizen-shell.taxpay-public-mobile-shell .public-footer__inner {
     padding:.85rem 1rem 1rem;
+  }
+  /* Restore the original public mobile navigation. Help in the dock opens the
+     existing User Guide; the header icon opens chat; Pay floats independently. */
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-bottom-nav {
+    inset:auto 0 0;
+    width:100%;
+    min-height:64px;
+    padding:0 8px max(0px,env(safe-area-inset-bottom));
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    border:0;
+    border-top:1px solid var(--color-taxpay-border);
+    border-radius:0;
+    background:var(--color-taxpay-surface);
+    box-shadow:none;
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-bottom-nav__pay-space {
+    display:none;
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-bottom-nav__item {
+    min-height:52px;
+    padding:4px;
+    border-radius:12px;
+    color:var(--color-taxpay-muted);
+    font-size:12px;
+    line-height:16px;
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-bottom-nav__item[aria-current="page"] {
+    background:var(--color-taxpay-surface);
+    color:var(--color-taxpay-text);
+    font-weight:700;
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-pay--guest-floating {
+    bottom:calc(80px + env(safe-area-inset-bottom));
+  }
+  /* Keep the single-row footer fully above the independent Pay button.
+     The original 64px allowance cleared only the bottom dock, not Pay. */
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-footer {
+    padding-bottom:calc(160px + env(safe-area-inset-bottom)) !important;
+  }
+  /* Compact mobile Help panel: keep it below the header, above the preserved
+     bottom navigation, inside the viewport and scroll its message content. */
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-panel {
+    position:fixed;
+    top:auto;
+    right:calc(12px + env(safe-area-inset-right));
+    bottom:calc(72px + env(safe-area-inset-bottom));
+    left:calc(12px + env(safe-area-inset-left));
+    width:auto;
+    max-width:420px;
+    max-height:min(60dvh,440px);
+    margin-left:auto;
+    margin-right:auto;
+    border-radius:16px;
+    z-index:86;
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-messages {
+    min-height:0;
+    flex:1 1 auto;
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell:has(.public-help-panel) .citizen-pay--guest-floating {
+    display:none;
+  }
+  /* Keep one visible close X in the chat panel, not two simultaneous X icons. */
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-launch[aria-expanded="true"] .public-help-launch__close {
+    display:none;
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-launch[aria-expanded="true"] .public-help-launch__chat {
+    display:block;
   }
 
 }

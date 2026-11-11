@@ -44,7 +44,13 @@ test('flat wordmark footer stays readable without horizontal overflow', async ({
     await page.goto('/?action=landing&lang=bn');
     const footer = page.getByRole('contentinfo', { name: 'করবৃত্ত ফুটার' });
     await expect(footer.locator('.public-footer__wordmark')).toBeVisible();
-    await expect(footer.getByRole('button', { name: 'পেমেন্টের অবস্থা ও রসিদ' })).toBeVisible();
+    if(width<=900) {
+      await page.evaluate(() => window.scrollTo(0,document.documentElement.scrollHeight));
+      await footer.locator('.public-footer__mobile-more > summary').click();
+      await expect(footer.getByRole('navigation',{name:'ফুটারের আরও লিংক'}).getByRole('button',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toBeVisible();
+    } else {
+      await expect(footer.getByRole('navigation',{name:'ফুটার নেভিগেশন'}).getByRole('button',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toBeVisible();
+    }
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   }

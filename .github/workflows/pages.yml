@@ -19,7 +19,7 @@ jobs:
 
   preflight:
     name: Verified PR and immutable build provenance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -52,7 +52,7 @@ jobs:
     name: Compile, typecheck, domain and production bundle
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     permissions:
       contents: read
@@ -77,7 +77,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
       - name: Compile public review-only application with scoped hosted Auth / RLS
@@ -132,7 +132,7 @@ jobs:
     name: Payment, ledger and beneficiaries acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -152,7 +152,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify preserved ledger and receipt contracts
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -188,7 +188,7 @@ jobs:
     name: Beneficiary records and table visual acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -208,7 +208,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify Beneficiaries Excel template in desktop and mobile Chromium
         env:
           VITE_SUPABASE_DISABLED: 'false'
@@ -241,7 +241,7 @@ jobs:
     name: CMS banner and direct-service acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -261,7 +261,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify direct-service banner referral retains service and skips duplicate chooser
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -279,7 +279,7 @@ jobs:
     name: Payment wizard and calculation acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -299,7 +299,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify payment wizard UX and large-amount precision
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -316,7 +316,7 @@ jobs:
     name: Payment progress and v11 input acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -336,7 +336,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify four-stage payment progress in English and Bengali
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -352,7 +352,7 @@ jobs:
     name: Public and signed-in journey acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -372,13 +372,13 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify purposeful public homepage and selected navigation state
         env:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/public-homepage-redesign.spec.ts
+        run: npx playwright test tests/e2e/public-homepage-redesign.spec.ts tests/e2e/public-home-quick-access.spec.ts
       - name: Verify screenshot-reported responsive UX repairs
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -404,7 +404,7 @@ jobs:
     name: Travel Tax progressive journey acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -424,7 +424,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for full Travel Tax browser checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify all Travel Tax 2026 journeys on original responsive projects
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -445,7 +445,7 @@ jobs:
     name: Taxpayer signed-in desktop and mobile acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -465,13 +465,19 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify distinct calendar years in taxpayer monthly charts and mobile containment
         env:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/taxpayer-month-year-timeline.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
+      - name: Verify Outlook-style Pay Tax overlay and inline correction requests
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/taxpayer-pay-popover-dashboard-corrections.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
       - name: Verify the separate two-field TaxPay login popup
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -495,7 +501,7 @@ jobs:
     name: Signed-in beneficiary picker acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -515,7 +521,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       # Check newly changed recovery first for fast failure feedback; retain
       # all existing signed-in payment/beneficiary acceptance unchanged.
       - name: Verify stable fictional login data across fresh browsers
@@ -541,7 +547,7 @@ jobs:
     name: Public receipts and workspace acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -561,7 +567,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Verify synthetic receipts and simulated bank slips
         env:
           VITE_SUPABASE_DISABLED: 'false'
@@ -583,7 +589,7 @@ jobs:
     name: Public routes (shard ${{ matrix.shard }}/8)
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -607,7 +613,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Chromium for public-preview checks
-        run: npx playwright install --with-deps chromium --only-shell
+        run: npx playwright install chromium --only-shell
       - name: Check public routes and disconnected backend state
         env:
           VITE_SUPABASE_DISABLED: 'true'
@@ -619,7 +625,7 @@ jobs:
     name: Reuse exact-source verified PR bundle
     needs: preflight
     if: needs.preflight.outputs.mode == 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 8
     permissions:
       contents: read
@@ -671,7 +677,7 @@ jobs:
     name: Build and verify static preview
     if: always()
     needs: [preflight, compile, core-e2e, core-beneficiary-e2e, core-cms-e2e, payment-ux-e2e, payment-progress-e2e, public-e2e, public-travel-e2e, public-login-e2e, beneficiary-picker-e2e, public-support-e2e, route-e2e, reuse-reviewed-build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -722,7 +728,7 @@ jobs:
     name: Publish verified static build
     if: always() && needs.verification-gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: verification-gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -781,7 +787,7 @@ jobs:
       - name: Install deployed browser verification dependencies
         run: |
           npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium --only-shell
+          npx playwright install chromium --only-shell
 
       - name: Verify deployed private-route authentication boundary in Chromium
         env:

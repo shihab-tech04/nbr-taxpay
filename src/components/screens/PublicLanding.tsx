@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, ListChecks, ReceiptText, Search, UserRound, WalletCards } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, FileCheck2, FilePenLine, History, ListChecks, ReceiptText, Repeat2, Search, UserRound, UsersRound, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { PublicServiceModal, type PublicService } from './PublicServiceModal';
@@ -50,6 +50,47 @@ export const PublicLanding: React.FC = () => {
   }, []);
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
+
+  // Citizen-value cards are informational, not duplicate payment CTAs.
+  // The approved Pay Tax / Pay Travel Tax journeys remain in the hero.
+  const citizenBenefits = [
+    {
+      id: 'payments',
+      Icon: WalletCards,
+      title: t('All Tax Payments', 'সব ধরনের কর পরিশোধ'),
+      detail: t('Pay different taxes for yourself or others.', 'নিজের বা অন্যের বিভিন্ন ধরনের কর পরিশোধ করুন।'),
+    },
+    {
+      id: 'corrections',
+      Icon: FilePenLine,
+      title: t('Corrections & Requests', 'সংশোধন ও আবেদন'),
+      detail: t('Request payment corrections and track progress.', 'পেমেন্ট সংশোধনের আবেদন করুন ও অগ্রগতি দেখুন।'),
+    },
+    {
+      id: 'certificates',
+      Icon: FileCheck2,
+      title: t('Tax Certificates', 'কর সনদ'),
+      detail: t('View and download available certificates.', 'উপলব্ধ কর সনদ দেখুন ও ডাউনলোড করুন।'),
+    },
+    {
+      id: 'history',
+      Icon: History,
+      title: t('Payment History', 'পেমেন্টের ইতিহাস'),
+      detail: t('Review past payments, tax years and receipts.', 'আগের পেমেন্ট, করবর্ষ ও রসিদ দেখুন।'),
+    },
+    {
+      id: 'beneficiaries',
+      Icon: UsersRound,
+      title: t('Beneficiary Management', 'সুবিধাভোগী ব্যবস্থাপনা'),
+      detail: t('Organize people you pay for and their payment records.', 'যাঁদের কর পরিশোধ করেন, তাঁদের তথ্য ও পেমেন্ট রেকর্ড গুছিয়ে রাখুন।'),
+    },
+    {
+      id: 'repeat-drafts',
+      Icon: Repeat2,
+      title: t('Pay Again & Saved Drafts', 'আবার পরিশোধ ও সংরক্ষিত খসড়া'),
+      detail: t('Repeat past payments or resume unfinished ones.', 'আগের পেমেন্ট আবার করুন বা অসমাপ্ত খসড়া চালিয়ে যান।'),
+    },
+  ];
 
   const stages = [
     {
@@ -221,6 +262,24 @@ export const PublicLanding: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
+    </section>
+
+    <section className="public-benefits" aria-labelledby="public-benefits-title">
+      <div className="public-benefits__heading">
+        <h2 id="public-benefits-title">{t('Why use Korbritto?', 'করবৃত্ত কেন ব্যবহার করবেন?')}</h2>
+        <p>{t('Pay, manage and track your tax payments—all in one place.', 'এক জায়গায় কর পরিশোধ, ব্যবস্থাপনা ও পেমেন্টের তথ্য দেখুন।')}</p>
+      </div>
+      <div className="public-benefits__grid">
+        {citizenBenefits.map(({ id, Icon, title, detail }) => (
+          <article key={id} className="public-benefits__item" data-benefit={id}>
+            <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
+            <div className="public-benefits__copy">
+              <h3>{title}</h3>
+              <p>{detail}</p>
+            </div>
+          </article>
+        ))}
       </div>
     </section>
 

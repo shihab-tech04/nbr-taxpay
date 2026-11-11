@@ -176,7 +176,7 @@ for(const language of ['en','bn'] as const){
     await expect(screen.locator('.beneficiary-directory__selected-count')).toContainText('1');
     await expect(screen.getByRole('button',{name:t('Clear','মুছুন'),exact:true})).toBeVisible();
     await screen.getByRole('button',{name:t('Add beneficiary','উপকারভোগী যোগ'),exact:true}).click();
-    await page.getByRole('button',{name:t('Add one beneficiary','একজন উপকারভোগী যোগ')}).click();
+    // The existing add action now opens the single-entry modal directly.
     await chooseBeneficiaryOption(page,'beneficiary-tag','others');
     const otherInput=page.locator('#beneficiary-other-label');
     await expect(otherInput).toBeVisible();
@@ -189,3 +189,32 @@ for(const language of ['en','bn'] as const){
     await expect(otherInput).toHaveValue('');
   });
 }
+
+test('User1 loads beneficiary tags for overview and Activity, not Profile or Settings',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Representative account navigation regression');
+  let addressBookReads=0;
+  page.on('request',request=>{
+    if(!request.url().includes('/functions/v1/taxpay-guest-beneficiaries'))return;
+    try {
+      const body=request.postDataJSON() as {action?:string};
+      if(body.action==='people')addressBookReads++;
+    }catch {/* Ignore unrelated requests. */}
+  });
+  await mountBeneficiaryLists(page);
+  await page.goto('/?action=account_profile&demoUser=user1');
+  await expect(page.getByTestId('user1-taxpayer-profile')).toBeVisible();
+  expect(addressBookReads,'Profile should not fetch beneficiary records').toBe(0);
+
+  await page.goto('/?action=history&demoUser=user1');
+  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
+  await expect.poll(()=>addressBookReads).toBeGreaterThan(0);
+  const historyReads=addressBookReads;
+
+  await page.goto('/?action=account_settings&demoUser=user1');
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  expect(addressBookReads,'Settings should not fetch beneficiary records').toBe(historyReads);
+
+  await page.goto('/?action=taxpayer_home&demoUser=user1');
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect.poll(()=>addressBookReads).toBeGreaterThan(historyReads);
+});
