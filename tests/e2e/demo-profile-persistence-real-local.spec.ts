@@ -94,8 +94,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await expect(selectedListButton(first)).toContainText(listName);
 
     await first.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-    await first.getByRole('dialog',{name:'Choose how to add beneficiaries'})
-      .getByRole('button',{name:'Add one beneficiary'}).click();
+    // Direct Add Beneficiary opens the single-entry modal.
     dialog=first.getByRole('dialog',{name:'Beneficiary entry'});
     await dialog.locator('#beneficiary-tin').fill(tin);
     await dialog.locator('#beneficiary-name').fill(personName);
