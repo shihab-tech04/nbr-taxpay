@@ -14,7 +14,7 @@ export function PublicHelpChat(){
  const [selectedTopic,setSelectedTopic]=useState<string|null>(null);
  const selectedGuide=GUIDE_CONTENT.find(g=>g.id===selectedTopic);
  const last=useRef<HTMLDivElement>(null);
- useEffect(()=>last.current?.scrollIntoView({block:'nearest'}),[messages,open]);
+ useEffect(()=>{ last.current?.scrollIntoView({block:'nearest'}); },[messages,open]);
  const respond=(text:string)=>{
   const query=text.trim();
   if(!query)return;

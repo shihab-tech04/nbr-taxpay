@@ -96,8 +96,11 @@ export function CitizenNavigation() {
   const label = (item: CitizenAction) => bn ? item.bn : item.en;
   // Keep taxpayer Pay mounted behind the modal; preserve the approved guest
   // navigation rule, which hides its floating Pay action while the modal is open.
+  // Guest floating Pay is hidden by actual focused-input CSS, not an async
+  // focus flag that can stay stale when the separate Help panel unmounts.
+  // The approved signed-in keyboard and dialog rules remain unchanged.
   const showPay = !inTransaction && currentRoute !== 'wizard'
-    && (!inputFocused || (isTaxpayer && isPaymentServiceChoiceOpen))
+    && (!isTaxpayer || !inputFocused || isPaymentServiceChoiceOpen)
     && (isTaxpayer || !isPaymentServiceChoiceOpen);
   const go = (route: string, params: Record<string, string> = {}) => {
     setMenuOpen(false);
@@ -243,7 +246,7 @@ export function CitizenNavigation() {
           )}
         </div>
       </header>
-      {!inTransaction && currentRoute !== 'wizard' && !compact && !overlayOpen && !isPaymentServiceChoiceOpen && (
+      {isTaxpayer && !inTransaction && currentRoute !== 'wizard' && !compact && !overlayOpen && !isPaymentServiceChoiceOpen && (
         <nav className="citizen-bottom-nav" aria-label={bn ? 'মোবাইল প্রধান নেভিগেশন' : 'Mobile primary navigation'}>
           {links.map(item => {
             const Icon = item.route === home ? Home : item.route === 'ledger' ? BookOpen :
@@ -271,9 +274,9 @@ export function CitizenNavigation() {
         </div>
       )}
       {showPay && !overlayOpen && (
-        <button type="button" className={compact ? "citizen-pay citizen-pay--compact" : "citizen-pay citizen-pay--expanded"} onClick={openPay}
+        <button type="button" className={`${compact ? "citizen-pay citizen-pay--compact" : "citizen-pay citizen-pay--expanded"}${!isTaxpayer ? " citizen-pay--guest-floating" : ""}`} onClick={openPay}
           aria-label={bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type'}>
-          <Plus aria-hidden="true" size={22}/><span>{bn ? 'পরিশোধ' : 'Pay'}</span>
+          <Plus aria-hidden="true" size={22}/><span>{!isTaxpayer ? (bn ? 'কর পরিশোধ' : 'Pay now') : (bn ? 'পরিশোধ' : 'Pay')}</span>
         </button>
       )}
       {overlayOpen && (

@@ -75,21 +75,22 @@ test('sample payment activity retains filtering and does not assert tax-credit o
 });
 
 
-test('public mobile navigation reuses the taxpayer dock with public-only routes and Pay',async({page})=>{
+test('public mobile keeps routes in the menu and uses a top-right Help icon with floating Pay',async({page})=>{
  await page.setViewportSize({width:390,height:844});
  await page.goto('/?action=landing');
  await expect(page.locator('.public-home-header')).toBeHidden();
  await expect(page.locator('.citizen-header')).toBeVisible();
- const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
- await expect(dock).toBeVisible();
- await expect(dock.getByRole('button',{name:'Payment Status'})).toBeVisible();
- await expect(dock.getByRole('button',{name:'Help'})).toBeVisible();
- await expect(dock.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
- await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Chat support'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveClass(/citizen-pay--guest-floating/);
  await page.getByRole('button',{name:'Open menu'}).click();
- await expect(page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Help'})).toBeVisible();
+ const menu=page.getByRole('dialog',{name:'Services & menu'});
+ await expect(menu.getByRole('button',{name:'Home'})).toBeVisible();
+ await expect(menu.getByRole('button',{name:'Payment Status'})).toBeVisible();
+ await expect(menu.getByRole('button',{name:'Help'})).toBeVisible();
+ await expect(menu.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
  await page.keyboard.press('Escape');
- await expect(page.getByRole('dialog',{name:'Services & menu'})).toHaveCount(0);
+ await expect(menu).toHaveCount(0);
 });
 
 test('obligations dashboard cannot assert fictional credits, demand or paid instalments',async({page})=>{
