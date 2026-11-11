@@ -57,7 +57,7 @@ test('reference desktop rail preserves contextual demo routes and selected state
   const bottom = rail.locator('.taxpayer-reference-rail-bottom');
   await expect(bottom.getByRole('button').first()).toHaveText('Profile');
   await expect(bottom.getByRole('button').last()).toHaveText('Exit workspace');
-  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(7);
+  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(6);
   await expect(rail.locator('.taxpayer-reference-links > button').nth(1)).toHaveText('Beneficiaries');
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
   await expect(rail.locator('.taxpayer-reference-account')).toHaveCount(0);
@@ -174,10 +174,10 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     await expect(nav.getByText('Services',{exact:true})).toBeHidden();
     await expect(nav.getByText('Support',{exact:true})).toHaveCount(0);
     const items = nav.locator('.citizen-dialog__link:visible');
-    await expect(items).toHaveCount(10);
+    await expect(items).toHaveCount(9);
     await expect(nav.getByRole('button',{name:'Travel Tax',exact:true})).toBeVisible();
     await expect(nav.getByRole('button',{name:'Tax Credit Certificates'})).toBeVisible();
-    await expect(nav.getByRole('button',{name:'Correction Requests'})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Correction Requests'})).toHaveCount(0);
     const styles = await items.evaluateAll(buttons => buttons.map(button => {
       const style = getComputedStyle(button);
       return {text:button.textContent?.trim(), color:style.color, background:style.backgroundColor,
