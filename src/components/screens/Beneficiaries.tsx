@@ -28,7 +28,7 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
-  const {language,previewAccount,routeParams,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
+  const {language,previewAccount,routeParams,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -211,6 +211,14 @@ export function Beneficiaries(){
   const profileAccount=owner??previewAccount?.id??'';
   const profilePerson=profileSelection?.account===profileAccount&&profileAccount
     ?people.find(person=>person.id===profileSelection.id):undefined;
+  // A Payments & Activity row may deep-link to an already saved beneficiary.
+  // Select by exact TIN within this payer's own saved directory, never by name.
+  useEffect(()=>{
+    const requested=routeParams.profileBeneficiaryTin;
+    if(typeof requested!=='string'||!/^\d{12,13}$/.test(requested)||!profileAccount)return;
+    const match=people.find(person=>person.tin===requested);
+    if(match)setProfileSelection({id:match.id,account:profileAccount});
+  },[routeParams.profileBeneficiaryTin,people,profileAccount]);
   const activeListRecord=lists.find(list=>list.id===activeList);
   const editHasChanges=Boolean(editPerson && (
     editTargetList!==editPerson.list_id ||
@@ -470,6 +478,7 @@ export function Beneficiaries(){
     person={profilePerson} ownerUid={owner} previewId={owner?null:previewAccount?.id??null}
     language={language} onBack={()=>{
       setProfileSelection(null);
+      if(routeParams.profileBeneficiaryTin)navigate('beneficiaries',{});
       window.requestAnimationFrame(()=>document.getElementById('beneficiary-profile-link-'+profilePerson.id)?.focus());
     }} onMakePayment={()=>payWith([profilePerson])}/>;
 
