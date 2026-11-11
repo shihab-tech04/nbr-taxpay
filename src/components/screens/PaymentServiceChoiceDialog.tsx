@@ -8,6 +8,7 @@ import type { BannerPaymentService } from '../../services/taxState';
 import { TaxPayModal, type PaymentDraftExitAction } from '../ui/TaxPayModal';
 import { GuestPayment } from './GuestPayment';
 import { TravelTax } from './TravelTax';
+import {travelTaxModalTitle,travelTaxModalStages} from './travelTaxModalContract';
 import { TaxpayerLoginDialog, TaxpayerLoginFooter } from './TaxpayerLoginDialog';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import {recordAccountActivity} from '../../services/accountActivity';
@@ -122,7 +123,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const effectiveSelected: ServiceId | null = draftToResume?.service ?? initialReuse?.service ?? selected;
   const travelJourney = effectiveSelected === 'TRAVEL_TAX';
   const stages = travelJourney
-    ? [tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য'), tr('Travel details', 'ভ্রমণের তথ্য'), tr('Review and payment', 'পর্যালোচনা ও পেমেন্ট'), tr('Receipt', 'রসিদ')]
+    ? travelTaxModalStages(language)
     : [tr('Taxpayer details', 'করদাতার তথ্য'), tr('Purpose & amount', 'খাত ও পরিমাণ'), tr('Payment channel', 'পেমেন্ট চ্যানেল'), tr('Confirmation', 'নিশ্চিতকরণ')];
   const shortStages = travelJourney
     ? [tr('Passengers', 'যাত্রী'), tr('Travel', 'ভ্রমণ'), tr('Review', 'পর্যালোচনা'), tr('Receipt', 'রসিদ')]
@@ -161,14 +162,14 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     <TaxPayModal
       title={view === 'login'
         ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`)
-        : view === 'payment' && travelJourney ? tr('Travel Tax', 'ভ্রমণ কর')
+        : view === 'payment' && travelJourney ? stages[stage - 1]
         : view === 'payment' ? stages[stage - 1] : tr('Pay Tax', 'কর পরিশোধ')}
       progress={view === 'payment' ? { current: stage, total: 4, label: tr('Steps', 'ধাপ'),
-        subtitle: travelJourney ? tr('Travel Tax', 'ভ্রমণ কর')
+        subtitle: travelJourney ? travelTaxModalTitle(language)
           : chosenService && payerForSelf !== null
           ? `${tr(chosenService.en, chosenService.bn)} › ${payerForSelf ? tr('My Tax Liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}`
           : undefined } : undefined}
-      ariaLabel={view === 'login' ? undefined : travelJourney && view === 'payment' ? tr('Travel Tax', 'ভ্রমণ কর') : tr('Pay Tax', 'কর পরিশোধ')}
+      ariaLabel={view === 'login' ? undefined : travelJourney && view === 'payment' ? travelTaxModalTitle(language) : tr('Pay Tax', 'কর পরিশোধ')}
       onClose={requestClose}
       onBackdropClose={() => {
         // A backdrop click never discards draft-eligible payment data.
@@ -191,7 +192,15 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         }
         : view === 'payer' && draftEntryBlocking && draftEntryMode === 'list'
         ? () => setDraftEntryMode('choice')
-        : view === 'login' ? () => setView('payer') : view === 'payment' && stage !== 4 ? () => {
+        : view === 'login' ? () => setView('payer') : view === 'payment' && (travelJourney ? stage > 1 : stage !== 4) ? () => {
+        if (travelJourney && stage === 4) {
+          document.querySelector<HTMLButtonElement>('.taxpay-modal[data-public-service="travel"] [data-testid="travel-receipt-back"]')?.click();
+          return;
+        }
+        if (travelJourney && document.querySelector('.taxpay-modal[data-public-service="travel"] .travel-flow[data-receipt-review="true"]')) {
+          document.querySelector<HTMLButtonElement>('.taxpay-modal[data-public-service="travel"] .travel-flow__footer-actions .travel-flow__primary')?.click();
+          return;
+        }
         const back = document.querySelector<HTMLButtonElement>(
           '.taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions .tax-service-choice__cancel, ' +
           '.taxpay-modal[data-payment-stage="true"] .travel-flow__footer-actions .tax-service-choice__cancel'
@@ -216,7 +225,11 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         </div>
       )}
     >
-      <section key={view} ref={flowRef} data-view={view}
+      {view === 'payment' && travelJourney ? (
+        <TravelTax key={draftToResume ? 'travel-draft-' + draftToResume.id : initialReuse ? 'travel-reuse-' + initialReuse.sourcePaymentId : 'travel-tax-modal'}
+          embedded fourStepJourney initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
+          onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage} />
+      ) : <section key={view} ref={flowRef} data-view={view}
         data-banner-entry={initialService && view === 'payment' ? 'true' : undefined}
         className={`tax-service-choice${view === 'payment' && effectiveSelected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
         {view === 'payment' && <>
@@ -332,7 +345,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             isWithholdingMode={effectiveSelected === 'SOURCE_TAX_DEPOSIT'}
             onBackToService={returnToService} onStageChange={reportStage} />
         ) : null}
-      </section>
+      </section>}
       {exitPromptOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/50 px-4 py-6"
           data-testid="payment-draft-exit-overlay"
