@@ -175,6 +175,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [caseFiltersExpanded,setCaseFiltersExpanded]=useState(false);
   const [caseSearch,setCaseSearch]=useState('');
   const [caseStatus,setCaseStatus]=useState<State|'all'>('all');
+  const [savedDraftCount,setSavedDraftCount]=useState<number|null>(null);
   const [kind,setKind]=useState<Kind|'all'>('all');
   const [status,setStatus]=useState<State|'all'>('all');
   const [monthFilter,setMonthFilter]=useState('all');
@@ -496,14 +497,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     {key:'no-link',amount:noLinkedAmount,label:tr('No beneficiary link','উপকারভোগীর সংযোগ নেই'),color:'#8498b1'}
   ];
   const displayedSpendingTotal=spendingSegments.reduce((sum,item)=>sum+item.amount,0);
-  const attentionItems:{label:string;count:number;states:State[]}[]=[
-    {label:tr('Failed / reversed','ব্যর্থ / বাতিল'),count:scoped.filter(x=>x.state==='FAILED'||x.state==='REVERSED').length,states:['FAILED','REVERSED']},
-    {label:tr('Pending','অপেক্ষমাণ'),count:scoped.filter(x=>x.state==='PENDING').length,states:['PENDING']},
-    {label:tr('Unmatched','অমিল'),count:totals.disputed,states:['DISPUTED']},
-    {label:tr('Requests','আবেদন'),count:scoped.filter(x=>x.state==='REQUESTED').length,states:['REQUESTED']}
-  ];
-  const activeAttention=attentionItems.filter(item=>item.count>0);
+  // A fictional payment scenario does not constitute an external-system tax assessment.
+  // Fail closed until a verified per-owner assessment/credit response is integrated.
+  const verifiedExternalTaxPositionReady = false;
+  const completedPayments=historyScoped.filter(x=>x.state==='POSTED').length;
+  const correctionRequestCount=historyScoped.filter(x=>x.state==='REQUESTED').length;
   const overview=<div className="taxpay-bento-grid" data-testid="taxpayer-overview-bento">
+    {verifiedExternalTaxPositionReady && <>
     <section className={panel+' taxpay-bento-position'} aria-labelledby="taxpay-bento-position-title">
       <div className="flex items-center justify-between gap-2">
         <h2 id="taxpay-bento-position-title" className="text-base font-semibold">{tr('Current tax position','বর্তমান কর অবস্থান')}</h2>
@@ -531,19 +531,26 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <p className="text-sm">{tr('Review exceptions or start a payment.','ব্যতিক্রম দেখুন অথবা পেমেন্ট শুরু করুন।')}</p>
       <div className="taxpay-bento-hero__actions">
         <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16} aria-hidden="true"/></button>
-        <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice('TRAVEL_TAX')}>{tr('Travel tax','ভ্রমণ কর')}<ArrowRight size={16} aria-hidden="true"/></button>
+
       </div>
-      <div className="taxpay-bento-hero__status" aria-label={tr('Attention and exceptions','নজরদারি ও ব্যতিক্রম')}>
-        {activeAttention.length===0 && <p className="taxpay-bento-hero__clear" role="status">{tr('No payment exceptions for this assessment year.','এই করবর্ষে কোনো পেমেন্ট ব্যতিক্রম নেই।')}</p>}
-        {activeAttention.map(item=>
-          <button type="button" key={item.label} data-has-items={item.count>0?'true':'false'} onClick={()=>openReview(item.states)} aria-label={tr('View ','দেখুন: ')+item.label+': '+item.count}>
-            <span>{item.label}</span><strong className="tabular-nums">{item.count}</strong>
-          </button>)}
+      <div className="taxpay-bento-hero__status" aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
+        <button type="button" onClick={()=>navigate('history')}><span>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong className="tabular-nums">{completedPayments}</strong></button>
+        <button type="button" onClick={()=>document.getElementById('taxpayer-dashboard-draft-section')?.scrollIntoView({behavior:'smooth'})}><span>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span><strong className="tabular-nums">{savedDraftCount===null?'—':savedDraftCount}</strong></button>
+        <button type="button" onClick={()=>navigate('corrections')}><span>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong className="tabular-nums">{correctionRequestCount}</strong></button>
       </div>
       <button type="button" className="taxpay-bento-hero__review self-end min-h-10 px-2 text-sm font-medium text-taxpay-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary" onClick={()=>navigate('corrections')}>
         {tr('Review exceptions','ব্যতিক্রম দেখুন')}<ArrowRight size={15} className="ml-2 inline" aria-hidden="true"/>
       </button>
     </section>
+    </>}
+    {!verifiedExternalTaxPositionReady && <section className={panel+' taxpay-bento-hero'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
+      <h2 className="text-base font-semibold">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h2>
+      <div className="taxpay-bento-hero__status">
+        <button type="button" onClick={()=>navigate('history')}><span>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong>{completedPayments}</strong></button>
+        <button type="button" onClick={()=>document.getElementById('taxpayer-dashboard-draft-section')?.scrollIntoView({behavior:'smooth'})}><span>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span><strong>{savedDraftCount===null?'—':savedDraftCount}</strong></button>
+        <button type="button" onClick={()=>navigate('corrections')}><span>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong>{correctionRequestCount}</strong></button>
+      </div>
+    </section>}
     <div className="taxpay-bento-coverage">
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-coverage-title">
         <div className="flex items-center justify-between gap-2">
@@ -596,6 +603,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>
       <p className="mt-2 text-xs text-taxpay-muted">{tr('Only eligible posted credits count; travel tax is separate.','শুধু যোগ্য নথিভুক্ত ক্রেডিট গণনা হয়; ভ্রমণ কর পৃথক।')}</p>
     </section>
+    <section className={panel} aria-labelledby="dashboard-correction-requests-title">
+      <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
+      <p className="mt-2 text-sm text-taxpay-muted">{tr('Review your recorded requests and their current status.','আপনার সংরক্ষিত আবেদন ও বর্তমান অবস্থা দেখুন।')}</p>
+      <p className="mt-2 text-sm">{tr('Recorded requests for the selected year','নির্বাচিত করবর্ষে সংরক্ষিত আবেদন')}: <strong>{correctionRequestCount}</strong></p>
+      <button type="button" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-taxpay-primary" onClick={()=>navigate('corrections')}>{tr('View correction requests','সংশোধনের আবেদন দেখুন')}<ArrowRight size={16} aria-hidden="true"/></button>
+    </section>
     <div className="taxpay-bento-tags">
     <section className={panel} data-testid="beneficiary-spending-breakdown" aria-label={tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -633,8 +646,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>}
     </section>
     </div>
-    {onResumePaymentDraft && <div className="taxpay-bento-drafts">
-      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}/>
+    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section">
+      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft} onCountChange={setSavedDraftCount}/>
     </div>}
     <div className="taxpay-bento-recent">
     <section className={panel} aria-labelledby="taxpayer-recent-activity-title">
