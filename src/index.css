@@ -12,6 +12,7 @@
 @import './styles/taxpayer-sobaike-parity.css';
 @import './styles/taxpay-unified-table.css';
 @import './styles/taxpay-form-labels.css';
+@import './styles/taxpay-mobile-bottom-sheets.css';
 
 @theme {
   /* Locked Korbritto primary: never replace this with a service/status color. */

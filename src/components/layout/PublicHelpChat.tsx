@@ -9,12 +9,42 @@ export function PublicHelpChat(){
  const {language,navigate}=useTaxState();
  const bn=language==='bn';
  const [open,setOpen]=useState(false);
+ const [mobile,setMobile]=useState(false);
  const [input,setInput]=useState('');
  const [messages,setMessages]=useState<Message[]>([]);
  const [selectedTopic,setSelectedTopic]=useState<string|null>(null);
  const selectedGuide=GUIDE_CONTENT.find(g=>g.id===selectedTopic);
  const last=useRef<HTMLDivElement>(null);
  const launchRef=useRef<HTMLButtonElement>(null);
+ const panelRef=useRef<HTMLElement>(null);
+ useEffect(()=>{
+  const query=window.matchMedia('(max-width: 650px)');
+  const update=()=>setMobile(query.matches);
+  update();
+  query.addEventListener('change',update);
+  return ()=>query.removeEventListener('change',update);
+ },[]);
+ useEffect(()=>{
+  if(!open||!mobile)return;
+  const previousOverflow=document.body.style.overflow;
+  document.body.style.overflow='hidden';
+  panelRef.current?.focus();
+  const trap=(event:KeyboardEvent)=>{
+   if(event.key!=='Tab'||!panelRef.current)return;
+   const candidates=Array.from(panelRef.current.querySelectorAll<HTMLElement>(
+    'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+   )).filter(el=>el.getClientRects().length>0);
+   if(!candidates.length){event.preventDefault();return;}
+   const first=candidates[0], last=candidates[candidates.length-1];
+   if(event.shiftKey&&(document.activeElement===first||document.activeElement===panelRef.current)){
+    event.preventDefault();last.focus();
+   }else if(!event.shiftKey&&(document.activeElement===last||document.activeElement===panelRef.current)){
+    event.preventDefault();first.focus();
+   }
+  };
+  document.addEventListener('keydown',trap);
+  return ()=>{document.body.style.overflow=previousOverflow;document.removeEventListener('keydown',trap);};
+ },[open,mobile]);
  const closePanel=()=>{setOpen(false);launchRef.current?.focus();};
  useEffect(()=>{
   if(!open)return;
@@ -39,7 +69,8 @@ export function PublicHelpChat(){
   setInput('');
  };
  return <aside className="public-help-widget" aria-label={bn?'করবৃত্ত সহায়তা':'Korbritto help'}>
-  {open&&<section id="public-help-panel" className="public-help-panel" role="dialog" aria-modal="false" aria-labelledby="public-help-title">
+  {open&&<div className="public-help-backdrop" aria-hidden="true" onClick={closePanel}/>} 
+  {open&&<section ref={panelRef} tabIndex={-1} id="public-help-panel" className="public-help-panel" role="dialog" aria-modal={mobile} aria-labelledby="public-help-title">
    <header><div><h2 id="public-help-title">{taxpayerBrandName(language)} {bn?'সহায়তা':'help'}</h2><p>{bn?'নির্দেশনাভিত্তিক উত্তর':'Guide-based answers'}</p></div>
      <button onClick={closePanel} type="button" aria-label={bn?'চ্যাট বন্ধ করুন':'Close chat'}><X size={18}/></button></header>
    <div className="public-help-messages" role="log" aria-live="polite">
