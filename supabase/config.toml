@@ -383,6 +383,11 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
+[functions.taxpay-office-registration-profiles]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/taxpay-office-registration-profiles/index.ts"
+
 [functions.taxpay-guest-beneficiaries]
 enabled = true
 verify_jwt = false

@@ -64,8 +64,9 @@ export const USER1_FICTIONAL_TIN_BN: Readonly<Partial<Record<TaxpayerTinField,st
 });
 
 /** Presentation-only; never use supplied certificate data for payment ownership. */
-export function user1FictionalTinValue(field:TaxpayerTinField, language:'en'|'bn'):string {
-  return language==='bn' && USER1_FICTIONAL_TIN_BN[field]
-    ? USER1_FICTIONAL_TIN_BN[field] as string
-    : USER1_FICTIONAL_TIN_PROFILE[field] as string;
+export function user1FictionalTinValue(field:TaxpayerTinField,language:'en'|'bn',record:TaxpayerTinProfile=USER1_FICTIONAL_TIN_PROFILE):string {
+  const current=record[field];
+  if (typeof current!=='string'||!current.trim())return language==='bn'?'পাওয়া যায়নি':'Not available';
+  const translated=USER1_FICTIONAL_TIN_BN[field];
+  return language==='bn' && current===USER1_FICTIONAL_TIN_PROFILE[field] && translated?translated:current;
 }

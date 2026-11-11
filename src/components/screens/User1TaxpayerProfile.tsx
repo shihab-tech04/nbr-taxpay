@@ -1,11 +1,13 @@
-import React, {useState} from 'react';
+import React, {useEffect,useState} from 'react';
 import {Check, Clipboard, Download} from 'lucide-react';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {
-  USER1_FICTIONAL_TIN_PROFILE as record,
-  user1FictionalTinValue as value,
+  USER1_FICTIONAL_TIN_PROFILE as initialReference,
+  user1FictionalTinValue,
 } from '../../data/user1FictionalTinProfile';
-import type {TaxpayerTinField} from '../../contracts/taxpayerTinProfile';
+import type {TaxpayerTinField,TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
+import {activePreviewSession} from '../../services/previewAccountSession';
+import {loadTaxpayerRegistrationProfile} from '../../services/taxpayerRegistrationProfile';
 
 type Language='en'|'bn';
 type Label=readonly [string,string];
@@ -48,9 +50,27 @@ const allRows:readonly Row[]=[['tin',['TIN number','টিআইএন নম্
 export function User1TaxpayerProfile({language}:{language:Language}){
   const bn=language==='bn';
   const tr=(pair:Label)=>pair[bn?1:0];
+  const session=activePreviewSession();
+  const [reload,setReload]=useState(0);
+  const [recordState,setRecordState]=useState<{status:'loading'|'ready'|'error';profile:TaxpayerTinProfile|null}>(
+    {status:session?.profileId==='user1'?'loading':'ready',profile:null});
+  useEffect(()=>{
+    if(session?.profileId!=='user1')return;
+    let active=true;
+    setRecordState({status:'loading',profile:null});
+    loadTaxpayerRegistrationProfile('user1').then(snapshot=>{
+      if(active)setRecordState(snapshot?{status:'ready',profile:snapshot.profile}:{status:'error',profile:null});
+    }).catch(()=>{
+      if(active)setRecordState({status:'error',profile:null});
+    });
+    return()=>{active=false;};
+  },[session?.profileId,reload]);
+  const record=session?.profileId==='user1'?recordState.profile:initialReference;
+  const value=(field:TaxpayerTinField,language:Language)=>
+    user1FictionalTinValue(field,language,record??initialReference);
   const [copied,setCopied]=useState<'idle'|'done'|'failed'>('idle');
   const [downloadError,setDownloadError]=useState(false);
-  const tin=record.tin;
+  const tin=record?.tin??'';
   const details=(rows:readonly Row[])=><dl className="divide-y divide-taxpay-border">
     {rows.map(([field,label])=><div key={field} className="grid min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(135px,43%)_minmax(0,1fr)] sm:gap-4">
       <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
@@ -77,11 +97,9 @@ export function User1TaxpayerProfile({language}:{language:Language}){
         const escaped=/^[=+\-@\t\r]/.test(input)?"'"+input:input;
         return '"'+escaped.replaceAll('"','""')+'"';
       };
+      if(!record)throw Error('Profile SQL unavailable');
       const rows=[['Field','Value'],
-        ['Account','user1'],...allRows.map(([field,label])=>[label[0],String(record[field])]),
-        ['Income sources','Salary, bank interest and consultancy'],
-        ['Assessment years','2025-2026, 2024-2025, 2023-2024'],
-        ['Representative mandate','Not applicable'],
+        ['Account','user1'],...allRows.map(([field,label])=>[label[0],String(record?.[field]??'')]),
       ];
       const csv='\uFEFF'+rows.map(line=>line.map(safe).join(',')).join('\r\n');
       const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
@@ -96,6 +114,15 @@ export function User1TaxpayerProfile({language}:{language:Language}){
       setDownloadError(true);
     }
   };
+  if(session?.profileId==='user1'&&recordState.status!=='ready'){
+    return <section className="rounded-xl border border-taxpay-border bg-white p-5" data-testid="user1-taxpayer-profile">
+      {recordState.status==='loading'?<p role="status">{bn?'করদাতার প্রোফাইল লোড হচ্ছে…':'Loading taxpayer profile…'}</p>:
+      <div><p role="alert">{bn?'প্রোফাইলের তথ্য লোড করা যায়নি।':'Could not load taxpayer information.'}</p>
+      <button type="button" onClick={()=>setReload(v=>v+1)}
+        className="mt-3 min-h-11 rounded-lg border border-taxpay-border px-4 text-sm text-taxpay-primary">
+        {bn?'আবার চেষ্টা করুন':'Retry'}</button></div>}
+    </section>;
+  }
   return <div data-testid="user1-taxpayer-profile" className="space-y-4" aria-label={tr(['Taxpayer profile','করদাতার প্রোফাইল'])}>
     <section className="overflow-hidden rounded-2xl border border-taxpay-border bg-white">
       <div className="flex flex-col items-start gap-4 p-5 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:p-6">
@@ -104,7 +131,7 @@ export function User1TaxpayerProfile({language}:{language:Language}){
           <div className="min-w-0 space-y-1.5">
             <p className="text-xs text-taxpay-muted">{tr(['Account','অ্যাকাউন্ট'])}: user1</p>
             <h2 className="break-words text-xl font-semibold leading-snug text-taxpay-text sm:text-2xl">
-              {bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn}
+              {bn?DEMO_USERS.user1.nameBn:record?.taxpayerName??DEMO_USERS.user1.nameEn}
             </h2>
           </div>
         </div>
@@ -163,18 +190,8 @@ export function User1TaxpayerProfile({language}:{language:Language}){
         </div>
       </div>
       <section className="min-w-0 rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
-        <h3 className="mb-3 border-b border-taxpay-border pb-3 text-base font-semibold text-taxpay-text">{tr(['Account and tax history','অ্যাকাউন্ট ও কর ইতিহাস'])}</h3>
-        <dl className="grid gap-x-8 sm:grid-cols-2">
-          {([
-            [tr(['Income sources','আয়ের উৎস']),tr(['Salary, bank interest and consultancy','বেতন, ব্যাংক সুদ ও পরামর্শ সেবা'])],
-            [tr(['Assessment years','করবর্ষ']),'2025-2026, 2024-2025, 2023-2024'],
-            [tr(['Representative mandate','প্রতিনিধির অনুমোদন']),tr(['Not applicable','প্রযোজ্য নয়'])],
-            [tr(['Last account login','সর্বশেষ লগইন']),value('lastLoginAt',language)]
-          ] as const).map(([label,text])=><div key={label} className="grid min-w-0 gap-1 border-b border-taxpay-border py-3 last:border-b-0 sm:grid-cols-[minmax(125px,43%)_minmax(0,1fr)] sm:gap-3">
-            <dt className="text-sm font-normal text-taxpay-muted">{label}</dt>
-            <dd className="min-w-0 break-words text-sm font-medium text-taxpay-text">{text}</dd>
-          </div>)}
-        </dl>
+        <h3 className="mb-3 border-b border-taxpay-border pb-3 text-base font-semibold text-taxpay-text">{tr(['Account information','অ্যাকাউন্টের তথ্য'])}</h3>
+        {details([['lastLoginAt',['Last account login','সর্বশেষ লগইন']]])}
       </section>
     </section>
   </div>;
