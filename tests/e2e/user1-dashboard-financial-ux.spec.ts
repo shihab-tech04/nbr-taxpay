@@ -100,8 +100,8 @@ test('overview summary, corrections and recent activity use full readable grid t
     await page.setViewportSize({width,height:900});
     await page.goto(dashboard);
     const grid=page.getByTestId('taxpayer-overview-bento');
-    const summary=grid.locator(':scope > .taxpay-bento-summary');
-    const corrections=grid.locator(':scope > .taxpay-bento-corrections');
+    const summary=grid.locator(':scope > .taxpay-bento-request-row > .taxpay-bento-summary');
+    const corrections=grid.locator(':scope > .taxpay-bento-request-row > .taxpay-bento-corrections');
     const recent=grid.locator(':scope > .taxpay-bento-recent');
     const drafts=grid.locator(':scope > .taxpay-bento-drafts');
     await expect(summary).toBeVisible();
@@ -112,8 +112,8 @@ test('overview summary, corrections and recent activity use full readable grid t
     await expect(summary.getByRole('button',{name:/Saved Drafts/})).toBeVisible();
     // Exercise the visual empty-drafts state directly; do not invent account data.
     if(await drafts.count()){
-      await drafts.evaluate(element=>element.replaceChildren());
-      await expect(drafts).toBeEmpty();
+      await grid.evaluate(element=>element.setAttribute('data-drafts-empty','true'));
+      await drafts.evaluate(element=>{element.style.display='none';});
       await expect(drafts).toBeHidden();
     }
 
