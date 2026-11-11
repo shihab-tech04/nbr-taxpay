@@ -359,6 +359,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [batchRecoveryError, setBatchRecoveryError] = useState(false);
   const [showReceiptDetails, setShowReceiptDetails] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [paymentStorageWarning, setPaymentStorageWarning] = useState(false);
   const [errorField, setErrorField] = useState<GuestErrorField | null>(null);
   const [errorHeadId, setErrorHeadId] = useState<number | null>(null);
 
@@ -920,6 +921,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setAttemptReceipt(settledReceipt);
       setCreatedReceipt(settledReceipt);
       setOfficeMirrorPending(!confirmed.mirrored);
+      if (confirmed.mirrored) setPaymentStorageWarning(false);
       pendingConfirmationRetryable.current = false;
       setPaymentValidationBlocked(false);
       setErrorMessage('');
@@ -1021,6 +1023,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setPaymentPhase('processing');
     setLifecycleStages([]);
     setShowReceiptDetails(false);
+    setPaymentStorageWarning(false);
     clearValidationError();
 
     try {
@@ -1133,7 +1136,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               line:lineItems[index]};
           }),
         );
-        saveCombinedOtherTaxRequest(request,paymentChannel==='OTC'?'PENDING_BANK':'READY');
+        // Storage quota/private-browsing failures must not prevent the same
+        // idempotent SQL request from being submitted in the current tab.
+        const durable=saveCombinedOtherTaxRequest(request,paymentChannel==='OTC'?'PENDING_BANK':'READY');
+        setPaymentStorageWarning(!durable);
         pendingStoryRef.current=request;
         rememberBatch(null);
         setAttemptReceipt(request.receipt);
@@ -1148,10 +1154,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       rememberBatch(null);
       setIsProcessing(false);
       setPaymentPhase('review');
-      setErrorMessage(error instanceof Error && error.message === 'PAYMENT_DETAILS_TOO_LONG'
+      const detail=error instanceof Error ? error.message : '';
+      setErrorMessage(detail === 'PAYMENT_DETAILS_TOO_LONG'
         ? (language === 'bn' ? 'পেমেন্টের তথ্য অনেক দীর্ঘ। নাম বা রেফারেন্স ছোট করে আবার চেষ্টা করুন।' : 'Payment details are too long. Shorten the name or reference and try again.')
-        : (language === 'bn' ? 'অনুরোধ সংরক্ষণ করা যায়নি। ব্রাউজারের স্টোরেজ পরীক্ষা করে আবার চেষ্টা করুন।'
-          : 'The request could not be saved. Check browser storage and try again.'));
+        : /^(INVALID_COMBINED|DUPLICATE_COMBINED|COMBINED_TOTAL_MISMATCH|INVALID_BENEFICIARY)/.test(detail)
+          ? (language === 'bn' ? 'উপকারভোগী, কর খাত, করবর্ষ ও পরিমাণ যাচাই করে আবার চেষ্টা করুন।' : 'Check each beneficiary, payment head, assessment year and amount before retrying.')
+          : (language === 'bn' ? 'পেমেন্টের অনুরোধ শুরু করা যায়নি। বিস্তারিত যাচাই করে আবার চেষ্টা করুন।' : 'The payment request could not start. Review the details and retry.'));
     }
   };
 
@@ -1168,7 +1176,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       }
     }
     if (pendingStoryRef.current?.payload.details.combinedPayment === true) {
-      try { saveCombinedOtherTaxRequest(pendingStoryRef.current,'READY'); }
+      try { setPaymentStorageWarning(!saveCombinedOtherTaxRequest(pendingStoryRef.current,'READY')); }
       catch {
         setErrorMessage(language === 'bn' ? 'মূল পেমেন্ট অনুরোধ সংরক্ষণ করা যায়নি।' : 'Original payment request could not be saved.');
         return;
@@ -1235,6 +1243,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return;
     }
     rememberBatch(null);
+    setPaymentStorageWarning(false);
     setCreatedReceipt(null); setAttemptReceipt(null); setPaymentPhase('review'); setLifecycleStages([]);
     setAcknowledged(false); setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setOtherTaxLines([]); setAdditionalTaxpayers([]); setConfirmedOtherTaxTins({}); setAuthorizedTaxpayerIds({});
@@ -1320,6 +1329,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <p>{language === 'bn' ? 'ব্যাংক নিষ্পত্তি ও কর ক্রেডিট নিশ্চিত হয়নি।' : 'Bank settlement and tax credit are not confirmed.'}</p>
             </div>
           </div>}
+          {paymentStorageWarning && <p role="status" data-testid="payment-storage-warning" className="mx-4 my-3 rounded-lg border border-taxpay-border bg-taxpay-light p-3 text-sm text-taxpay-dark">
+            {language === 'bn' ? 'ব্রাউজার স্টোরেজ ব্যবহার করা যাচ্ছে না। এই ট্যাব খোলা রাখুন; বন্ধ বা রিফ্রেশ করলে অপেক্ষমাণ অনুরোধটি আবার উদ্ধার করা যাবে না। একই রেফারেন্স দিয়ে আবার চেষ্টা করুন।' : 'Browser storage is unavailable. Keep this tab open: reloading or closing it prevents recovery of this pending request. Retry using the same reference.'}
+          </p>}
           {bankPending && errorMessage && <p role="alert">{errorMessage}</p>}
           {declined && <div className="payment-lifecycle__result payment-lifecycle__result--failed"><AlertCircle size={20} aria-hidden="true" /><p>{errorMessage || (language === 'bn' ? 'পেমেন্ট মাধ্যমটি অনুরোধ প্রত্যাখ্যান করেছে। অন্য পদ্ধতিতে আবার চেষ্টা করুন।' : 'The payment channel declined the request. You can retry with another method.')}</p></div>}
           {completed && <div className="payment-lifecycle__result payment-lifecycle__result--complete"><CheckCircle size={20} aria-hidden="true" /><p>{officeMirrorPending
