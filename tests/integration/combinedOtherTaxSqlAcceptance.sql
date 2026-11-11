@@ -20,6 +20,9 @@ DECLARE
   blocked boolean;
   bad_key uuid;
   bad_payload jsonb;
+  mixed_key uuid;
+  mixed_payload jsonb;
+  mixed_saved_id uuid;
 BEGIN
   owner_login:=public.taxpay_demo_profile_login('user1','user1');
   other_login:=public.taxpay_demo_profile_login('user2','user2');
@@ -74,6 +77,36 @@ BEGIN
   THEN RAISE EXCEPTION 'COMBINED_TEST_IDEMPOTENCY_FAILED'; END IF;
   IF (SELECT count(*) FROM demo_payment.story_payments WHERE idempotency_key=payment_key)<>1
   THEN RAISE EXCEPTION 'COMBINED_TEST_DUPLICATE_ROW'; END IF;
+
+  -- The same payer and two owned TINs must combine Source Tax and Demand in
+  -- one SQL payment without forging an Office beneficiary or a Treasury credit.
+  mixed_key:=gen_random_uuid();
+  mixed_payload:=jsonb_set(payload,'{idempotencyKey}',to_jsonb(mixed_key::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptReference}',to_jsonb('SIM-'||mixed_key::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||mixed_key::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,allocations,0,headId}',to_jsonb(8));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,lines,0,headId}',to_jsonb(8));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,lines,0,economicCode}',to_jsonb('50'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,lines,0,headNameEn}',to_jsonb('Deduction from Salary'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptLines,0,headId}',to_jsonb(8));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptLines,0,economicCode}',to_jsonb('50'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptLines,0,headNameEn}',to_jsonb('Deduction from Salary'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,items,0,headId}',to_jsonb(8));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,items,0,economicCode}',to_jsonb('50'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,items,0,headNameEn}',to_jsonb('Deduction from Salary'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,allocationItems,0,economicCode}',to_jsonb('50'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,allocationItems,0,paymentServiceEn}',to_jsonb('Deduction from Salary'::text));
+  result:=public.taxpay_demo_story1_submit(owner_hash,mixed_payload);
+  mixed_saved_id:=(result->>'id')::uuid;
+  IF result->>'status' IS DISTINCT FROM 'SIMULATED_SUCCESS'
+    OR (SELECT count(*) FROM demo_payment.story_payments
+      WHERE id=mixed_saved_id AND amount_minor=5000 AND service_code='OTHER_TAX_PAYMENT')<>1
+    OR (SELECT count(*) FROM demo_payment.mirror_outbox
+      WHERE entity_type='PAYMENT' AND entity_id=mixed_saved_id)<>1
+  THEN RAISE EXCEPTION 'COMBINED_SOURCE_AND_DEMAND_NOT_ATOMIC'; END IF;
+  IF (SELECT count(*) FROM demo_payment.taxpay_combined_demo_heads
+      WHERE head_id=125)<>0
+  THEN RAISE EXCEPTION 'RETURN_MIXING_ALLOWED'; END IF;
 
   blocked:=false;
   bad_key:=gen_random_uuid();
