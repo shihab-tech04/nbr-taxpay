@@ -15,6 +15,7 @@ import { AccountActivitySummary } from './AccountActivitySummary';
 import {PreviewBeneficiarySpending} from './PreviewBeneficiarySpending';
 import {TaxpayerFinancialKpi} from './TaxpayerFinancialKpi';
 import {AuthenticatedDashboardPosition} from './AuthenticatedDashboardPosition';
+import {CorrectionInquiries} from './CorrectionInquiries';
 import { DashboardPaymentDrafts } from './DashboardPaymentDrafts';
 import type { PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
 import {getIllustrativeDashboardYear,illustrativeDashboardYears,formatIllustrativeTaka} from '../../data/dashboardIllustrativeExample';
@@ -171,11 +172,7 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
           : tr('Verified tax totals and posted tax credits for this year are not linked to this account. Check your tax ledger below for available records.',
             'এই করবর্ষের যাচাইকৃত করের পরিমাণ ও নথিভুক্ত কর ক্রেডিট এই অ্যাকাউন্টে যুক্ত নেই। পাওয়া তথ্য দেখতে নিচের কর লেজার দেখুন।')}
       </p>
-      <section className={card} aria-labelledby="dashboard-correction-requests-auth-title">
-        <h2 id="dashboard-correction-requests-auth-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
-        <p className="mt-2 text-sm text-taxpay-muted">{tr('Open your account-linked correction inquiries and review their current status.','অ্যাকাউন্টের সংশোধন অনুসন্ধান ও বর্তমান অবস্থা দেখুন।')}</p>
-        <button className={button+' mt-3'} type="button" onClick={()=>navigate('corrections')}>{tr('View correction requests','সংশোধনের আবেদন দেখুন')}<ArrowRight size={16} className="ml-2 inline" aria-hidden="true"/></button>
-      </section>
+      <CorrectionInquiries authenticatedUserId={user.id} language={language} dashboard />
       <AuthenticatedDashboardPosition language={language} year={year} years={accountYears} exampleMode={exampleMode}
         onSelectYear={setYear} onNavigate={(route)=>navigate(route)} />
       {onResumePaymentDraft && <div className="taxpay-bento-grid"><div className="taxpay-bento-drafts">

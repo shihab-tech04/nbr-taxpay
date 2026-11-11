@@ -472,6 +472,12 @@ jobs:
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/taxpayer-month-year-timeline.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
+      - name: Verify Outlook-style Pay Tax overlay and inline correction requests
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/taxpayer-pay-popover-dashboard-corrections.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
       - name: Verify the separate two-field TaxPay login popup
         env:
           VITE_SUPABASE_DISABLED: 'true'

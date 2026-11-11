@@ -10,7 +10,7 @@ type Row=Readonly<{
  reason:string; requested_outcome:string; change_kind:ProposedAttributionField|null; old_value:string|null; new_value:string|null;
  office_review_state:string|null; office_review_revision:number|null; office_review_updated_at:string|null;
 }>;
-type Props={readonly authenticatedUserId:string;readonly language:'en'|'bn'};
+type Props={readonly authenticatedUserId:string;readonly language:'en'|'bn';readonly dashboard?:boolean};
 const t={
  en:{
  title:'Request a review of an original reference',
@@ -60,7 +60,7 @@ const t={
  }
 } as const;
 
-export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language})=>{
+export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,dashboard=false})=>{
  const labels=t[language];
  const [originalReference,setOriginalReference]=useState('');
  const [reason,setReason]=useState('');
@@ -135,12 +135,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language}
  const needle=historySearch.trim().toLocaleLowerCase();
  const matchingRows=rows.filter(r=>!needle || [r.original_reference,r.reason,r.requested_outcome,r.evidence_state,
   r.office_review_state??''].some(value=>value.toLocaleLowerCase().includes(needle)));
- return <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-5" aria-labelledby="inquiry-title">
-  <header className="space-y-2">
-   <h2 id="inquiry-title" className="text-xl font-semibold text-taxpay-text">{labels.title}</h2>
-   <p className="text-sm leading-6 text-taxpay-muted">{labels.intro}</p>
-  </header>
-  <form onSubmit={submit} className="space-y-4">
+ const form=<form onSubmit={submit} className="space-y-4">
    <label className="block text-sm font-semibold text-slate-800">{labels.ref}
     <UiInput required minLength={6} maxLength={80} value={originalReference} onChange={e=>setOriginalReference(e.target.value)}
      className="mt-2" placeholder="e.g. TPAY-REF-123456" autoComplete="off"/>
@@ -169,7 +164,14 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language}
     </label>
    </div>}
    <UiButton type="submit" disabled={busy}>{labels.submit}</UiButton>
-  </form>
+  </form>;
+ return <section id={dashboard?'dashboard-correction-requests':undefined} tabIndex={dashboard?-1:undefined}
+  className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-5" aria-labelledby="inquiry-title">
+  <header className="space-y-2">
+   <h2 id="inquiry-title" className="text-xl font-semibold text-taxpay-text">{dashboard?(language==='bn'?'সংশোধনের আবেদন':'Correction Requests'):labels.title}</h2>
+   <p className="text-sm leading-6 text-taxpay-muted">{dashboard?(language==='bn'?'আপনার নিজের অ্যাকাউন্টের আবেদন, কারণ ও পর্যালোচনার অবস্থা এখানে দেখুন।':'View your account-linked requests, reasons and current review statuses here.'):labels.intro}</p>
+  </header>
+  {!dashboard && form}
   {message&&<p role="status" aria-live="polite" className="rounded-lg border border-slate-300 p-3 text-sm break-words">{message}</p>}
   <section aria-labelledby="inquiry-history-title" className="space-y-3">
    <h3 id="inquiry-history-title" className="text-lg font-semibold text-taxpay-text">{labels.history}</h3>
@@ -219,5 +221,12 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language}
           ]}/>}
     </div>}
   </section>
+  {dashboard && <details className="rounded-lg border border-taxpay-border p-3" data-testid="dashboard-new-correction-request">
+   <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-taxpay-primary">
+     {language==='bn'?'নতুন সংশোধনের আবেদন করুন':'New correction request'}
+   </summary>
+   <p className="mb-3 mt-2 text-sm text-taxpay-muted">{labels.intro}</p>
+   {form}
+  </details>}
  </section>;
 };

@@ -55,7 +55,9 @@ export const AuthenticatedDashboardPosition: React.FC<{
           {en:'Correction inquiries',bn:'সংশোধনের অনুসন্ধান',route:'corrections'},
           {en:'Payment history',bn:'পেমেন্টের ইতিহাস',route:'history'},
         ] as const).map(item=><button key={item.route} type="button" className={action+' justify-between'}
-          onClick={()=>onNavigate(item.route)}>
+          onClick={()=>item.route==='corrections'
+            ? document.getElementById('dashboard-correction-requests')?.scrollIntoView({behavior:'smooth',block:'start'})
+            : onNavigate(item.route)}>
           {tr(item.en,item.bn)}<ArrowRight size={15} aria-hidden="true"/>
         </button>)}
       </div>
