@@ -497,11 +497,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     {key:'no-link',amount:noLinkedAmount,label:tr('No beneficiary link','উপকারভোগীর সংযোগ নেই'),color:'#8498b1'}
   ];
   const displayedSpendingTotal=spendingSegments.reduce((sum,item)=>sum+item.amount,0);
-  // This sample-only dashboard deliberately retains its illustrated reference design.
-  // It must never be treated as external assessment data for a signed-in taxpayer.
+  // Sample records are not issuer-verified external tax position data.
+  // Do not render either first-row column unless a verified source is available.
+  const verifiedExternalTaxPositionReady = false;
   const completedPayments=historyScoped.filter(x=>x.state==='POSTED').length;
   const correctionRequestCount=historyScoped.filter(x=>x.state==='REQUESTED').length;
   const overview=<div className="taxpay-bento-grid" data-testid="taxpayer-overview-bento">
+    {verifiedExternalTaxPositionReady && <>
     <section className={panel+' taxpay-bento-position'} aria-labelledby="taxpay-bento-position-title">
       <div className="flex items-center justify-between gap-2">
         <h2 id="taxpay-bento-position-title" className="text-base font-semibold">{tr('Current tax position','বর্তমান কর অবস্থান')}</h2>
@@ -540,6 +542,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         {tr('Review exceptions','ব্যতিক্রম দেখুন')}<ArrowRight size={15} className="ml-2 inline" aria-hidden="true"/>
       </button>
     </section>
+    </>}
     <div className="taxpay-bento-coverage">
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-coverage-title">
         <div className="flex items-center justify-between gap-2">
