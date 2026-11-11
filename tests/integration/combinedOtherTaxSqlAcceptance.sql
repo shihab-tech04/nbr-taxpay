@@ -104,9 +104,19 @@ BEGIN
     OR (SELECT count(*) FROM demo_payment.mirror_outbox
       WHERE entity_type='PAYMENT' AND entity_id=mixed_saved_id)<>1
   THEN RAISE EXCEPTION 'COMBINED_SOURCE_AND_DEMAND_NOT_ATOMIC'; END IF;
+  -- Return head is now mapped only for the distinct TAX_WITH_RETURN journey.
+  -- Its presence in the canonical catalogue must never allow mixed Other Tax.
   IF (SELECT count(*) FROM demo_payment.taxpay_combined_demo_heads
-      WHERE head_id=125)<>0
-  THEN RAISE EXCEPTION 'RETURN_MIXING_ALLOWED'; END IF;
+      WHERE head_id=125 AND category='return')<>1
+  THEN RAISE EXCEPTION 'RETURN_ONLY_HEAD_NOT_REGISTERED'; END IF;
+  blocked:=false;
+  BEGIN
+    PERFORM demo_payment.assert_new_head_exclusivity(
+      jsonb_set(payload,'{details,lines,1,headId}',to_jsonb(125)));
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE '%RETURN_HEAD_EXCLUSIVE%' THEN blocked:=true; ELSE RAISE; END IF;
+  END;
+  IF NOT blocked THEN RAISE EXCEPTION 'RETURN_MIXING_ALLOWED'; END IF;
 
   blocked:=false;
   bad_key:=gen_random_uuid();
