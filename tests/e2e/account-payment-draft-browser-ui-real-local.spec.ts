@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
-type Account = 'user29' | 'user30';
+type Account = 'user27' | 'user28' | 'user29' | 'user30';
 
 /** Full React Save Draft → another browser → Continue Draft acceptance.
  * Uses the disposable local Supabase/Edge service, not intercepted REST routes.
@@ -18,6 +18,11 @@ test('payment form drafts survive another browser, protect owner isolation and r
   const contexts: BrowserContext[] = [];
   const viewport = info.project.name.startsWith('mobile')
     ? { width: 375, height: 812 } : { width: 1280, height: 800 };
+  // Independent synthetic owner pairs prevent cross-project drafts from racing.
+  // The older serial suite reused user29/user30 in both desktop and mobile.
+  const accounts: { owner: Account; other: Account } = info.project.name.startsWith('mobile')
+    ? { owner: 'user27', other: 'user28' }
+    : { owner: 'user29', other: 'user30' };
   const open = async (id: Account): Promise<Page> => {
     const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173', viewport });
     contexts.push(context);
@@ -38,7 +43,7 @@ test('payment form drafts survive another browser, protect owner isolation and r
     return page;
   };
   try {
-    const a = await open('user29');
+    const a = await open(accounts.owner);
     const marker = 'CROSS-BROWSER-DRAFT-' + Date.now();
     await a.locator('#guest-notice-ref').fill(marker);
     await a.getByRole('button', { name: 'Save Draft', exact: true }).click();
@@ -46,7 +51,7 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await expect(a.getByText('Draft saved to your account. You can continue in another browser.')).toHaveCount(0);
 
     // Dashboard uses the same owner-scoped SQL drafts, not local copies.
-    const dashboard = await open('user29');
+    const dashboard = await open(accounts.owner);
     await dashboard.goto('/?action=taxpayer_home');
     const cards = dashboard.getByTestId('dashboard-payment-drafts');
     const firstCard = cards.locator('[data-draft-id]').first();
@@ -62,7 +67,7 @@ test('payment form drafts survive another browser, protect owner isolation and r
     // The existing draft makes Pay Tax open its compact two-choice modal.
     // Regression: choosing Start new must EXPAND to the original complete payer
     // selection, never leave the second card clipped behind the footer.
-    const entry = await open('user29');
+    const entry = await open(accounts.owner);
     await entry.goto('/?action=landing');
     await entry.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
     const entryModal = entry.getByRole('dialog', { name: 'Pay Tax' });
@@ -152,7 +157,7 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await expect(entryModal.locator('[data-payer-relationship]')).toHaveCount(2);
     await entryModal.getByRole('button', { name: 'Close payment services' }).click();
 
-    const b = await open('user29');
+    const b = await open(accounts.owner);
     await b.locator('.payment-form-draft-controls__open').click();
     await expect(b.getByRole('button', { name: 'Continue', exact: true }).first()).toBeVisible();
     await b.getByRole('button', { name: 'Continue', exact: true }).first().click();
@@ -167,7 +172,7 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await a.getByRole('button', { name: 'Save Draft', exact: true }).click();
     await expect(a.getByRole('alert').filter({ hasText: /changed in another session/ })).toBeVisible();
 
-    const unrelated = await open('user30');
+    const unrelated = await open(accounts.other);
     await unrelated.locator('.payment-form-draft-controls__open').click();
     await expect(unrelated.getByText('Payment draft', { exact: true })).toHaveCount(0);
     await expect(unrelated.locator('#guest-notice-ref')).not.toHaveValue(marker + '-UPDATED');
@@ -195,7 +200,7 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await expect(b.getByText('Draft deleted.')).toBeVisible();
 
     // A fresh same-account browser does not recover a deleted draft.
-    const fresh = await open('user29');
+    const fresh = await open(accounts.owner);
     await fresh.locator('.payment-form-draft-controls__open').click();
     await expect(fresh.getByText('Payment draft', { exact: true })).toHaveCount(0);
     await dashboard.goto('/?action=taxpayer_home');
