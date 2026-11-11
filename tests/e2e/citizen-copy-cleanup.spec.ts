@@ -37,10 +37,10 @@ test('ten user1 routes avoid repetitive example labels and keep relevant year co
       await expect(main.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);
     else await expect(main.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
     if (route==='account_profile') {
-      // The newly requested fictional persona needs one explicit origin disclosure.
-      // Keep the old no-repetitive-demo-copy rule on every other route.
+      // Profile follows the approved certificate fields without redundant sample disclaimers.
       await expect(main.getByTestId('user1-taxpayer-profile')).toBeVisible();
-      await expect(main.getByText('Fictional sample profile',{exact:true})).toHaveCount(1);
+      await expect(main.getByText('Fictional sample profile',{exact:true})).toHaveCount(0);
+      expect(await main.innerText(),route+' exposes repetitive jargon').not.toMatch(banned);
     } else {
       expect(await main.innerText(),route+' exposes repetitive jargon').not.toMatch(banned);
     }
