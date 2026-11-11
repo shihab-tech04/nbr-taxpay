@@ -36,6 +36,8 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
   await expect(chat.locator('span')).toBeHidden();
   await chat.click();
   await expect(page.locator('#public-help-title')).toBeVisible();
+  await page.getByRole('textbox',{name:'Your question'}).focus();
+  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeHidden();
   await page.getByRole('button',{name:'Close help'}).click();
   const pay=page.getByRole('button',{name:'Pay — select payment type'});
   await expect(pay).toBeVisible();
