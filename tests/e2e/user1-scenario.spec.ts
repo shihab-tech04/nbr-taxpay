@@ -53,7 +53,7 @@ test('user1 year selection stays consistent across documents and correction scre
     await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Tax Credit Certificates',exact:true}).click();
   }
   await expect(page).toHaveURL(/scenarioYear=2024-2025/);
-  await expect(page.getByRole('heading',{name:'Tax Credit Certificates'})).toBeVisible();
+  await expect(page.getByTestId('tax-credit-certificates').getByRole('heading',{name:'Tax Credit Certificates'})).toBeVisible();
   await expect(page.getByText('DEMO-CH-24-01').first()).toBeVisible();
   await openTaxLedger(page);
   await expect(page.locator('table').getByText('DEMO-PAY-24-01')).toBeVisible();

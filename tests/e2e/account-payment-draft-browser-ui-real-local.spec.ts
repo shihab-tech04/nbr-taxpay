@@ -252,8 +252,9 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     expect(layoutBefore).not.toBeNull();
     const desktopPay = page.locator('.taxpayer-reference-main-action');
     if (page.viewportSize()!.width > 900) await expect(desktopPay).toBeVisible();
-    // Preserve existing user1 financial dashboard; insert cards after the heading.
-    await expect(workspace.getByRole('heading', { name: 'What needs your attention' })).toBeVisible();
+    // The unverified external position row must remain hidden even while draft actions work.
+    await expect(workspace.locator('.taxpay-bento-position')).toHaveCount(0);
+    await expect(workspace.getByTestId('dashboard-correction-requests')).toBeVisible();
     await savedCard.getByRole('button', { name: 'Continue' }).click();
     const payment = page.getByRole('dialog', { name: 'Pay Tax' });
     await expect(payment.locator('#guest-notice-ref')).toHaveValue(marker);

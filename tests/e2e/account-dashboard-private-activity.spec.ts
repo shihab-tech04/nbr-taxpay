@@ -126,16 +126,10 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await page.goto('/?action=taxpayer_home');
   const dashboard=page.getByTestId('account-workflow-summary');
   await expect(dashboard).toBeVisible();
-  // Verified account uses the same approved financial KPI cards as the static
-  // reference, but must never inherit user1's fabricated assessed balances.
+  // No official external assessment and posted-credit feeds: the entire first row is absent.
   const financialCards=page.locator('.taxpayer-dashboard-kpi');
-  await expect(financialCards).toHaveCount(4);
-  await expect(financialCards.nth(0)).toContainText('Total tax');
-  await expect(financialCards.nth(1)).toContainText('Tax already deducted or paid early');
-  await expect(financialCards.nth(2)).toContainText('Income tax paid directly');
-  await expect(financialCards.nth(3)).toContainText('Still remaining');
-  await expect(financialCards.nth(0)).toContainText('—');
-  await expect(financialCards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
+  await expect(financialCards).toHaveCount(0);
+  await expect(page.getByTestId('dashboard-correction-requests')).toBeVisible();
   const phase=page.getByTestId('authenticated-dashboard-v11');
   await expect(phase).toBeVisible();
   await expect(phase.getByText('Coverage details are not available yet')).toBeVisible();
@@ -146,7 +140,7 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByRole('button',{name:'Requests & drafts'})).toBeVisible();
   await expect(phase.getByRole('button',{name:'Correction inquiries'})).toBeVisible();
   await expect(phase).not.toContainText('Needs review');
-  await expect(page.getByText('Verified tax totals and posted tax credits for this year are not linked to this account. Check your tax ledger below for available records.')).toBeVisible();
+  await expect(page.getByText('Verified tax totals and posted tax credits for this year are not linked to this account. Check your tax ledger below for available records.')).toHaveCount(0);
   await expect(phase).toContainText('A deadline appears here only when a verified assessment or tax notice is linked to this account.');
   await expect(phase.getByText('Already covered').first()).toBeVisible();
   await expect(phase.getByText('Still remaining').first()).toBeVisible();
@@ -174,8 +168,8 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(examples).toContainText('not your tax records');
   await expect(examples.getByRole('button',{name:'Hide examples'})).toHaveAttribute('aria-pressed','true');
   await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2025-2026');
-  await expect(financialCards.nth(0)).toContainText('৳ 180,000');
-  await expect(financialCards.nth(3)).toContainText('৳ 25,000');
+  await expect(phase.getByRole('region',{name:'Tax summary for this year'})).toContainText('৳ 180,000');
+  await expect(phase.getByRole('region',{name:'Tax summary for this year'})).toContainText('৳ 25,000');
   await expect(phase.getByRole('table',{name:'Posted credit components'})).toContainText('৳ 155,000');
   await expect(phase.getByText('Tax credit details are not available yet')).toHaveCount(0);
   await expect(phase.getByRole('img',{name:'Illustrative liability coverage'})).toBeVisible();
@@ -184,11 +178,11 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByRole('region',{name:'Example monthly activity chart'})).toHaveCount(0);
   await expect(phase.getByRole('heading',{name:'By tax year'})).toBeVisible();
   await phase.getByRole('button',{name:'2024-2025'}).click();
-  await expect(financialCards.nth(3)).toContainText('৳ 10,000');
+  await expect(phase.getByRole('region',{name:'Tax summary for this year'})).toContainText('৳ 10,000');
   await examples.getByRole('button',{name:'Hide examples'}).click();
   await expect(examples.getByRole('button',{name:'View examples'})).toHaveAttribute('aria-pressed','false');
   await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2026-2027');
-  await expect(financialCards.nth(0)).toContainText('—');
+  await expect(financialCards).toHaveCount(0);
   await expect(phase.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
   await expect(phase.getByText('Tax credit details are not available yet')).toBeVisible();
   await expect(phase.getByText('A payment request or receipt alone does not confirm a posted tax credit. Only verified credits linked to this account appear here.')).toBeVisible();
@@ -215,10 +209,10 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByText('কর সমন্বয়ের তথ্য এখনও পাওয়া যায়নি')).toBeVisible();
   await expect(phase.getByText('কর ক্রেডিটের তথ্য এখনও পাওয়া যায়নি')).toBeVisible();
   await expect(phase.getByRole('heading',{name:'ইতোমধ্যে সমন্বিত কর'})).toBeVisible();
-  await expect(financialCards.nth(0)).toContainText('মোট আয়কর');
-  await expect(financialCards.nth(1)).toContainText('উৎসে কাটা বা অগ্রিম পরিশোধিত কর');
-  await expect(financialCards.nth(2)).toContainText('সরাসরি পরিশোধিত আয়কর');
-  await expect(financialCards.nth(3)).toContainText('এখনও বাকি কর');
+  await expect(financialCards).toHaveCount(0);
+  await expect(phase.getByRole('region',{name:'Tax summary for this year'})).toBeVisible();
+  await expect(financialCards).toHaveCount(0);
+  await expect(financialCards).toHaveCount(0);
   await expect(phase.getByRole('heading',{name:'যে বিষয়ে খেয়াল রাখা দরকার'})).toBeVisible();
   await expect(phase.getByRole('heading',{name:'দ্রুত কাজ'})).toBeVisible();
   await expect(phase.getByRole('button',{name:'অনুরোধ ও খসড়া'})).toBeVisible();
