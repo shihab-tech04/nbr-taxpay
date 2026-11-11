@@ -27,7 +27,7 @@ test('history uses one content panel and aligned, legible payment rows',async({p
   expect(visuals[0].background).not.toBe(visuals[1].background);
   expect(visuals[0].borderBottom).toBe('1px');
   await expect(rows).toHaveCount(10);
-  await expect(panel.getByRole('combobox',{name:'Filter transactions by beneficiary'})).toBeVisible();
+  await expect(panel.getByRole('combobox',{name:'Filter transactions by beneficiary',exact:true})).toBeVisible();
   await expect(panel.getByRole('combobox',{name:'Filter transactions by beneficiary tag'})).toBeVisible();
   await expect(panel.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveText(['Payment','Reference','Payment type','Beneficiary','Tag','Date','Amount','Status','Actions']);
   await expect(panel.getByRole('navigation',{name:'Page navigation'})).toBeVisible();
