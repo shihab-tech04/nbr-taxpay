@@ -1,0 +1,50 @@
+name: TaxPay dashboard pre-release Git history and source recovery
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/components/screens/TaxpayerDashboard.tsx'
+      - 'src/components/screens/User1DemoExperience.tsx'
+      - '.github/workflows/taxpay-dashboard-offgithub-recovery.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pre-release-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out full repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Create and restore-check exact protected main archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin '+refs/heads/main:refs/heads/taxpay-pre-release-original'
+          BASE_SHA=$(git rev-parse refs/heads/taxpay-pre-release-original)
+          BASE_TREE=$(git rev-parse "${BASE_SHA}^{tree}")
+          mkdir -p "$RUNNER_TEMP/recovery" "$RUNNER_TEMP/restored-git" "$RUNNER_TEMP/restored-source"
+          git bundle create "$RUNNER_TEMP/recovery/taxpay-pre-release-history.bundle" refs/heads/taxpay-pre-release-original
+          git bundle verify "$RUNNER_TEMP/recovery/taxpay-pre-release-history.bundle"
+          git archive --format=tar "$BASE_SHA" | gzip -n > "$RUNNER_TEMP/recovery/taxpay-pre-release-source.tar.gz"
+          git init -q "$RUNNER_TEMP/restored-git"
+          git -C "$RUNNER_TEMP/restored-git" fetch -q "$RUNNER_TEMP/recovery/taxpay-pre-release-history.bundle" refs/heads/taxpay-pre-release-original
+          test "$(git -C "$RUNNER_TEMP/restored-git" rev-parse FETCH_HEAD)" = "$BASE_SHA"
+          test "$(git -C "$RUNNER_TEMP/restored-git" rev-parse "FETCH_HEAD^{tree}")" = "$BASE_TREE"
+          tar -xzf "$RUNNER_TEMP/recovery/taxpay-pre-release-source.tar.gz" -C "$RUNNER_TEMP/restored-source"
+          mkdir -p "$RUNNER_TEMP/reference-source"
+          git archive --format=tar "$BASE_SHA" | tar -x -C "$RUNNER_TEMP/reference-source"
+          diff -qr "$RUNNER_TEMP/reference-source" "$RUNNER_TEMP/restored-source"
+          (cd "$RUNNER_TEMP/recovery" && sha256sum taxpay-pre-release-history.bundle taxpay-pre-release-source.tar.gz > SHA256SUMS.txt)
+          printf 'BASE_SHA=%s\nBASE_TREE=%s\nFULL_GIT_HISTORY=YES\nRESTORE_TEST=PASS\n' "$BASE_SHA" "$BASE_TREE" > "$RUNNER_TEMP/recovery/RESTORE_CHECK.txt"
+          cat "$RUNNER_TEMP/recovery/RESTORE_CHECK.txt"
+      - name: Retain recovery artifact for off-GitHub Drive transfer
+        uses: actions/upload-artifact@v4
+        with:
+          name: taxpay-dashboard-pre-release-recovery
+          path: ${{ runner.temp }}/recovery/
+          retention-days: 30
+          if-no-files-found: error
