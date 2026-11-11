@@ -16,6 +16,8 @@ import {PreviewBeneficiarySpending} from './PreviewBeneficiarySpending';
 import {TaxpayerFinancialKpi} from './TaxpayerFinancialKpi';
 import {AuthenticatedDashboardPosition} from './AuthenticatedDashboardPosition';
 import { DashboardPaymentDrafts } from './DashboardPaymentDrafts';
+import { DashboardCorrectionRequests } from './DashboardCorrectionRequests';
+import {canShowVerifiedExternalDashboardRow, currentVerifiedExternalDashboard} from '../../services/verifiedExternalDashboard';
 import type { PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
 import {getIllustrativeDashboardYear,illustrativeDashboardYears,formatIllustrativeTaka} from '../../data/dashboardIllustrativeExample';
 
@@ -43,6 +45,9 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
   const defaultYear=user ? '2026-2027' : (ASSESSMENT_YEARS[0] || '2026-2027');
   const year=yearChoice&&accountYears.includes(yearChoice) ? yearChoice : defaultYear;
   const setYear=(value:string)=>setYearChoice(value);
+  // No official external assessment/posted-credit feed has been connected yet.
+  // Keep both first-row cards hidden even when illustrative mode is enabled.
+  const showVerifiedExternalOverview=canShowVerifiedExternalDashboardRow(currentVerifiedExternalDashboard(),user?.id??null,year);
   const exampleYear=exampleMode?getIllustrativeDashboardYear(year):null;
   const toggleExample=()=>{
     if(!exampleMode){
@@ -125,14 +130,14 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
           {exampleMode?tr('Hide examples','উদাহরণ বন্ধ করুন'):tr('View examples','উদাহরণ দেখুন')}
         </button>
       </div>
-      <div className="taxpay-bento-grid" data-testid="authenticated-overview-bento">
+      {showVerifiedExternalOverview && <><div className="taxpay-bento-grid" data-testid="authenticated-overview-bento">
         <section className="taxpay-bento-hero" aria-labelledby="account-bento-hero-title">
           <p className="text-xs font-semibold">{tr('NEXT STEPS','পরবর্তী করণীয়')} · {year}</p>
           <h2 id="account-bento-hero-title">{tr('What would you like to do?','আপনি কী করতে চান?')}</h2>
           <p className="text-sm">{tr('Start a payment, continue saved work or review your transaction history. No unverified amount is treated as tax due.','পেমেন্ট শুরু করুন, সংরক্ষিত কাজ চালিয়ে যান অথবা লেনদেন দেখুন। যাচাই হয়নি এমন অর্থ বকেয়া কর হিসেবে দেখানো হয় না।')}</p>
           <div className="taxpay-bento-hero__actions">
             <button className="taxpay-bento-hero__secondary" type="button" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
-            <button className="taxpay-bento-hero__secondary" type="button" onClick={()=>openPaymentServiceChoice('TRAVEL_TAX')}>{tr('Travel tax','ভ্রমণ কর')}<ArrowRight size={16}/></button>
+
           </div>
           <p className="mt-auto text-xs">{tr('Your saved account records are kept separate from illustrative examples.','আপনার সংরক্ষিত রেকর্ড উদাহরণের পরিমাণ থেকে পৃথক রাখা হয়।')}</p>
         </section>
@@ -169,9 +174,10 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
             'উদাহরণভিত্তিক ড্যাশবোর্ড — নিচের সংরক্ষিত অ্যাকাউন্ট কার্যক্রম অপরিবর্তিত।')
           : tr('Verified tax totals and posted tax credits for this year are not linked to this account. Check your tax ledger below for available records.',
             'এই করবর্ষের যাচাইকৃত করের পরিমাণ ও নথিভুক্ত কর ক্রেডিট এই অ্যাকাউন্টে যুক্ত নেই। পাওয়া তথ্য দেখতে নিচের কর লেজার দেখুন।')}
-      </p>
+      </p></>}
       <AuthenticatedDashboardPosition language={language} year={year} years={accountYears} exampleMode={exampleMode}
         onSelectYear={setYear} onNavigate={(route)=>navigate(route)} />
+      <DashboardCorrectionRequests language={language} ownerUid={user.id} onOpen={()=>navigate('corrections')}/>
       {onResumePaymentDraft && <div className="taxpay-bento-grid"><div className="taxpay-bento-drafts">
         <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}/>
       </div></div>}
@@ -182,12 +188,13 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
     </> : <>
     {previewAccount && <section className="taxpay-bento-hero" aria-label={tr('Payment shortcuts','পেমেন্টের শর্টকাট')}>
       <h2>{tr('What would you like to do?','আপনি কী করতে চান?')}</h2>
-      <p>{tr('Use the existing payment journey or start separate travel tax.','বিদ্যমান পেমেন্ট যাত্রা অথবা পৃথক ভ্রমণ কর শুরু করুন।')}</p>
+      <p>{tr('Open the Pay Tax menu to choose the required payment service.','প্রয়োজনীয় কর পরিশোধ সেবা বেছে নিতে কর পরিশোধ মেনু খুলুন।')}</p>
       <div className="taxpay-bento-hero__actions">
         <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
-        <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice('TRAVEL_TAX')}>{tr('Travel tax','ভ্রমণ কর')}<ArrowRight size={16}/></button>
+
       </div>
     </section>}
+    {previewAccount && <DashboardCorrectionRequests language={language} onOpen={()=>navigate('corrections')}/>}
     {previewAccount && onResumePaymentDraft && <div className="taxpay-bento-drafts">
       <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}/>
     </div>}
