@@ -81,6 +81,36 @@ test('pending combined request is recoverable with same identity, and cannot lea
  clearCombinedOtherTaxRequest(session,storage);
  assert.equal(loadCombinedOtherTaxRequest(session,storage),null);
 });
+test('quota or security denial cannot block the same request while the tab remains open',()=>{
+ const request=mk(), disk=store();
+ assert.equal(saveCombinedOtherTaxRequest(request,'READY',disk),true);
+ const denied={
+   getItem:(key:string)=>disk.getItem(key),
+   setItem:(_key:string,_value:string)=>{throw new Error('QuotaExceededError');},
+   removeItem:(_key:string)=>{throw new Error('SecurityError');},
+ };
+ assert.equal(saveCombinedOtherTaxRequest(request,'PENDING_BANK',denied),false);
+ const held=loadCombinedOtherTaxRequest(session,denied);
+ assert.equal(held?.phase,'PENDING_BANK','volatile exact-key request must supersede stale storage');
+ assert.equal(held?.request.payload.idempotencyKey,id);
+ assert.equal(loadCombinedOtherTaxRequest('99999999-aaaa-4ccc-8ddd-eeeeeeeeeeee',denied),null);
+ clearCombinedOtherTaxRequest(session,denied);
+ assert.equal(loadCombinedOtherTaxRequest(session,denied)?.phase,'READY','stale persistent entry is not deleted when removal is denied');
+ clearCombinedOtherTaxRequest(session,disk);
+ assert.equal(loadCombinedOtherTaxRequest(session,disk),null);
+});
+
+test('missing browser storage uses a temporary exact-request retry rather than failing payment setup',()=>{
+ const denied={getItem:()=>{throw new Error('SecurityError');},
+   setItem:()=>{throw new Error('SecurityError');},
+   removeItem:()=>{throw new Error('SecurityError');}};
+ const request=mk();
+ assert.equal(saveCombinedOtherTaxRequest(request,'READY',denied),false);
+ assert.equal(loadCombinedOtherTaxRequest(session,denied)?.request.payload.idempotencyKey,id);
+ clearCombinedOtherTaxRequest(session,denied);
+ assert.equal(loadCombinedOtherTaxRequest(session,denied),null);
+});
+
 test('fail closed for amount mismatch, invalid TIN, duplicate allocation and altered references',()=>{
  assert.throws(()=>prepareCombinedOtherTaxPayment({...input,amountMinor:4999},receipt,allocations),/COMBINED_TOTAL_MISMATCH/);
  assert.throws(()=>prepareCombinedOtherTaxPayment(input,receipt,[{...allocations[0],taxpayerTin:'INVALID'},allocations[1]]),/INVALID_COMBINED_ALLOCATION/);
