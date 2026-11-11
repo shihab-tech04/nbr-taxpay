@@ -246,7 +246,7 @@ export function CitizenNavigation() {
           )}
         </div>
       </header>
-      {!inTransaction && currentRoute !== 'wizard' && !compact && !overlayOpen && !isPaymentServiceChoiceOpen && (
+      {!inTransaction && currentRoute !== 'wizard' && (!compact || !isTaxpayer) && !overlayOpen && !isPaymentServiceChoiceOpen && (
         <nav className="citizen-bottom-nav" aria-label={bn ? 'মোবাইল প্রধান নেভিগেশন' : 'Mobile primary navigation'}>
           {links.map(item => {
             const Icon = item.route === home ? Home : item.route === 'ledger' ? BookOpen :
@@ -269,8 +269,8 @@ export function CitizenNavigation() {
             aria-label={bn ? 'মেনু খুলুন' : 'Open menu'}><Menu aria-hidden="true"/></button>
           {showNotifications && <button className="citizen-corner citizen-corner--top-right" onClick={() => go(notificationRoute)}
             aria-label={bn ? 'বিজ্ঞপ্তি' : 'Notifications'}><Bell aria-hidden="true"/></button>}
-          <button className="citizen-corner citizen-corner--bottom-left" onClick={() => go(home)}
-            aria-label={bn ? 'মূল পাতা' : 'Home'}><Home aria-hidden="true"/></button>
+          {isTaxpayer && <button className="citizen-corner citizen-corner--bottom-left" onClick={() => go(home)}
+            aria-label={bn ? 'মূল পাতা' : 'Home'}><Home aria-hidden="true"/></button>}
         </div>
       )}
       {showPay && !overlayOpen && (
