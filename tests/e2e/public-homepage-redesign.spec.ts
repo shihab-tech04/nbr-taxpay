@@ -120,7 +120,7 @@ test('top navigation uses the approved blue pill for the current public route', 
   await expect(guide).not.toHaveAttribute('aria-current', 'page');
 });
 
-test('mobile banner preserves all five conceptual illustrations and readable wrapped service labels', async ({ page }) => {
+test('mobile banner preserves all five conceptual illustrations and fixed payment actions', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto('/?action=landing');
@@ -139,8 +139,9 @@ test('mobile banner preserves all five conceptual illustrations and readable wra
   await expect(carousel.locator('.public-hero-carousel__arrow').first()).toBeHidden();
   await carousel.focus();
   await page.keyboard.press('ArrowRight');
-  await expect(carousel.locator('.public-hero-carousel__slide').nth(1)
-    .getByRole('button', { name: 'Pay Tax with Return' })).toBeVisible();
+  const active = carousel.locator('.public-hero-carousel__slide').nth(1);
+  await expect(active.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
+  await expect(active.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 
