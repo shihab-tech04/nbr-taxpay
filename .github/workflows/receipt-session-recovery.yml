@@ -45,7 +45,7 @@ jobs:
           npm run lint
           npm run test:domain
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Verify receipt recovery and fail-closed errors at mobile and desktop widths
         env:
           VITE_SUPABASE_DISABLED: 'true'

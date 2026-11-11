@@ -64,7 +64,7 @@ jobs:
           npm run lint
           npm run test:domain
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Test grouped heads, individual records and retry recovery
         env:
           VITE_SUPABASE_DISABLED: 'true'
