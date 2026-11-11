@@ -45,7 +45,7 @@ on:
 
 concurrency:
   group: taxpay-other-tax-v11-${{ github.ref }}
-  # Cancel only obsolete PR attempts; never cancel production main runs.
+  # Cancel superseded PR checks only; production checks remain active.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -68,7 +68,7 @@ jobs:
         run: |
           npm run lint
           npm run test:domain
-      - name: Restore Playwright headless Chromium cache
+      - name: Restore headless Chromium browser cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
