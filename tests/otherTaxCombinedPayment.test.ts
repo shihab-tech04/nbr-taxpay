@@ -163,13 +163,23 @@ test('configured capacity is explicit and one above the capacity is rejected bef
  assert.throws(()=>prepareCombinedOtherTaxPayment(input,receipt,rows),/INVALID_COMBINED_PAYMENT/);
 });
 
-test('withholding and Tax With Return heads cannot impersonate an Other Tax liability',()=>{
- for (const head of [
-   {headId:68,economicCode:'68A',headNameEn:'Advance tax'},
-   {headId:125,economicCode:'74',headNameEn:'Tax With Return'},
- ]) {
-   assert.throws(()=>prepareCombinedOtherTaxPayment(input,receipt,[
-     {...allocations[0],line:{...items[0],...head}},allocations[1]
-   ]),/INVALID_COMBINED_HEAD/);
- }
+test('a mapped Source Tax head combines with an Advance/Demand head across distinct beneficiaries',()=>{
+ const sourceLine={...items[0],headId:8,economicCode:'50',headNameEn:'Deduction from Salary'};
+ const newReceipt={...receipt,items:[sourceLine,items[1]]};
+ const newInput={...input,details:{...input.details,lines:newReceipt.items}};
+ const result=prepareCombinedOtherTaxPayment(newInput,newReceipt,[
+   {...allocations[0],line:sourceLine},allocations[1],
+ ]);
+ assert.equal(result.payload.details.allocationCount,2);
+ assert.equal(result.payload.details.taxpayerCount,2);
+ assert.deepEqual(result.receipt.allocationItems?.map(a=>a.economicCode),['50','135']);
+ assert.equal(result.receipt.challanNo,'SIM-'+id);
+ assert.equal(result.payload.amountMinor,5000);
+});
+test('Tax with Return never mixes into the non-return combined-payment service',()=>{
+ const returnLine={...items[0],headId:125,economicCode:'74',headNameEn:'Tax with return'};
+ const newReceipt={...receipt,items:[returnLine,items[1]]};
+ assert.throws(()=>prepareCombinedOtherTaxPayment({...input,details:{...input.details,lines:newReceipt.items}},newReceipt,[
+   {...allocations[0],line:returnLine},allocations[1],
+ ]),/INVALID_COMBINED_HEAD/);
 });
