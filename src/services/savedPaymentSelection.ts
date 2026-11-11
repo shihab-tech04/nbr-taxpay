@@ -18,9 +18,10 @@ export function restorePaymentSelectionFromDrafts(
   const ordered = [...drafts].sort((a,b) => b.updated_at.localeCompare(a.updated_at));
   for (const draft of ordered) {
     const payload = draft.form_payload;
-    // Self-paid drafts do not contain a saved beneficiary selection.
-    if (payload.forSelf !== false) continue;
-    const candidates: unknown[] = [payload.tin];
+    if (payload.forSelf !== false && payload.forSelf !== true) continue;
+    // SELF drafts can include other saved beneficiaries, but the signed-in
+    // account itself is not one of their selectable saved-list entries.
+    const candidates: unknown[] = payload.forSelf === false ? [payload.tin] : [];
     if (allowMultiple && Array.isArray(payload.additionalTaxpayers)) {
       candidates.push(...payload.additionalTaxpayers.slice(0, 256).map(person =>
         person && typeof person === 'object' ? (person as Record<string,unknown>).tin : null));
