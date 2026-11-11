@@ -50,9 +50,10 @@ test('mobile transaction details use a contained sheet with a visible close cont
 test('mobile bento tax-position help opens fully within the dashboard width',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile tooltip geometry');
   await enterUser1(page);
-  const position=page.locator('.taxpay-bento-position');
-  await position.locator('.taxpayer-inline-help > summary').click();
-  const content=position.locator('.taxpayer-inline-help__content');
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
+  const coverage=page.locator('.taxpay-bento-coverage');
+  await coverage.locator('.taxpayer-inline-help > summary').click();
+  const content=coverage.locator('.taxpayer-inline-help__content');
   await expect(content).toBeVisible();
   const bounds=await content.boundingBox();
   expect(bounds).not.toBeNull();
@@ -159,9 +160,8 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
 test('mobile bento retains separate travel tax and opens its approved payment modal',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile travel-tax shortcut');
   await enterUser1(page);
-  const position=page.locator('.taxpay-bento-position');
-  await expect(position).toContainText('Travel tax (separate)');
-  await expect(position).toContainText('৳ 6,500');
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
+  await expect(page.getByTestId('beneficiary-spending-breakdown')).toBeVisible();
   await openTaxpayerTravelTax(page);
   const dialog=page.getByRole('dialog');
   await expect(dialog).toBeVisible();
