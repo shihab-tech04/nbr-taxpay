@@ -24,13 +24,13 @@ test('optional payer TIN requires lookup and explicit confirmation without chang
   await expect(next).toBeEnabled(); // Blank payer TIN retains existing walk-in flow.
   await payerTin.fill('123456789012');
   await expect(next).toBeDisabled();
-  await payer.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await payer.getByRole('button', { name: 'Search payer TIN' }).click();
   await expect(payer.getByRole('button',{ name:'Confirm payer' })).toHaveCount(0);
   await expect(next).toBeDisabled();
 
   await payerTin.fill('111111111111');
   await expect(next).toBeDisabled();
-  await payer.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await payer.getByRole('button', { name: 'Search payer TIN' }).click();
   await expect(payer.locator('#guest-payer-tin-name')).toHaveValue('User 1');
   await expect(next).toBeDisabled();
   await payer.getByRole('button', { name:'Confirm payer' }).click();
@@ -41,7 +41,7 @@ test('optional payer TIN requires lookup and explicit confirmation without chang
   await payerTin.fill('333333333333');
   await expect(next).toBeDisabled(); // A changed TIN cannot inherit confirmation.
   await payerTin.fill('111111111111');
-  await payer.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await payer.getByRole('button', { name: 'Search payer TIN' }).click();
   await payer.getByRole('button', { name:'Confirm payer' }).click();
   await next.click();
   await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
@@ -60,7 +60,7 @@ test('confirmed payer TIN stays distinct from allocations and receipt on one SQL
   const dialog = await openGuestOtherTax(page);
   const payer = dialog.getByTestId('walkin-payer-tin');
   await payer.locator('#guest-payer-tin').fill('111111111111');
-  await payer.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await payer.getByRole('button', { name: 'Search payer TIN' }).click();
   await payer.getByRole('button', { name:'Confirm payer' }).click();
   await dialog.getByRole('button', { name:'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
