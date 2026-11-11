@@ -1555,6 +1555,37 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 />
                 {fieldError('payerName')}
               </div>}
+
+
+                {(!signedInAccount || !signedInProfile?.receiptMobile) && <div>
+                <label htmlFor="guest-phone" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'রসিদের জন্য মোবাইল নম্বর' : 'Mobile number for receipt'} *</label>
+                <input
+                  id="guest-phone"
+                  type="tel"
+                  placeholder={copy.mobilePlaceholder}
+                  value={receiptPhone}
+                  aria-invalid={isFieldInvalid('phone') || undefined}
+                  aria-describedby={errorDescription('phone')}
+                  inputMode="numeric" maxLength={11} autoComplete="tel-national" required
+                  readOnly={Boolean(signedInProfile?.receiptMobile)} aria-readonly={Boolean(signedInProfile?.receiptMobile) || undefined}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                  className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${signedInProfile?.receiptMobile ? 'bg-slate-100 text-slate-800' : ''}`}
+                />
+                {fieldError('phone')}
+                </div>}
+
+
+
+              {!ownAccountTax && !simpleOwnOtherTax && receiptEmailControl}
+              {!isWithholdingMode && <div>
+                <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স' : 'NBR notice or payment reference'} {requiresNBRReference ? '*' : (language === 'bn' ? '(ঐচ্ছিক)' : '(optional)')}</label>
+                <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => { clearReferenceSelection(); setNoticeReference(event.target.value); }} required={requiresNBRReference}
+                  aria-invalid={isFieldInvalid('noticeReference') || undefined} aria-describedby={errorDescription('noticeReference')}
+                  placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
+                {fieldError('noticeReference')}
+                </div>}
+              {simpleOwnOtherTax && receiptEmailControl}
+              </div>}
               {otherBatch && forSelf === false && !signedInAccount && <div data-testid="walkin-payer-tin">
                 <TaxpayerTinLookup
                   language={language} tinId="guest-payer-tin" nameId="guest-payer-tin-name"
@@ -1592,37 +1623,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {confirmedWalkInPayer && <p className="text-xs text-slate-700" role="status">
                   {language === 'bn' ? 'বর্তমান নমুনা টিআইএন তালিকায় মিলেছে। অ্যাকাউন্টের মালিকানা যাচাই করা হয়নি।' : 'Matched the current sample TIN lookup. Account ownership is not verified.'}
                 </p>}
-              </div>}
-
-
-                {(!signedInAccount || !signedInProfile?.receiptMobile) && <div>
-                <label htmlFor="guest-phone" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'রসিদের জন্য মোবাইল নম্বর' : 'Mobile number for receipt'} *</label>
-                <input
-                  id="guest-phone"
-                  type="tel"
-                  placeholder={copy.mobilePlaceholder}
-                  value={receiptPhone}
-                  aria-invalid={isFieldInvalid('phone') || undefined}
-                  aria-describedby={errorDescription('phone')}
-                  inputMode="numeric" maxLength={11} autoComplete="tel-national" required
-                  readOnly={Boolean(signedInProfile?.receiptMobile)} aria-readonly={Boolean(signedInProfile?.receiptMobile) || undefined}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                  className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${signedInProfile?.receiptMobile ? 'bg-slate-100 text-slate-800' : ''}`}
-                />
-                {fieldError('phone')}
-                </div>}
-
-
-
-              {!ownAccountTax && !simpleOwnOtherTax && receiptEmailControl}
-              {!isWithholdingMode && <div>
-                <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স' : 'NBR notice or payment reference'} {requiresNBRReference ? '*' : (language === 'bn' ? '(ঐচ্ছিক)' : '(optional)')}</label>
-                <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => { clearReferenceSelection(); setNoticeReference(event.target.value); }} required={requiresNBRReference}
-                  aria-invalid={isFieldInvalid('noticeReference') || undefined} aria-describedby={errorDescription('noticeReference')}
-                  placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
-                {fieldError('noticeReference')}
-                </div>}
-              {simpleOwnOtherTax && receiptEmailControl}
               </div>}
             </div>
             {ownAccountTax && !isWithholdingMode && receiptEmailControl}
