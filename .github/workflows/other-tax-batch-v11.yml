@@ -43,6 +43,11 @@ on:
       - 'tests/e2e/other-tax-all-heads-visible.spec.ts'
       - '.github/workflows/other-tax-batch-v11.yml'
 
+concurrency:
+  group: taxpay-other-tax-v11-${{ github.ref }}
+  # Cancel only obsolete PR attempts; never cancel production main runs.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
@@ -63,8 +68,13 @@ jobs:
         run: |
           npm run lint
           npm run test:domain
+      - name: Restore Playwright headless Chromium cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium --only-shell
       - name: Test grouped heads, individual records and retry recovery
         env:
           VITE_SUPABASE_DISABLED: 'true'
