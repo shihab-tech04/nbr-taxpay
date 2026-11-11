@@ -30,13 +30,12 @@ export const PAYMENT_SERVICE_CHOICES = [
 ] as const;
 
 type ServiceId = typeof PAYMENT_SERVICE_CHOICES[number]['id'];
-type TopLevelService = 'TAX_WITH_RETURN' | 'OTHER_TAX' | 'TRAVEL_TAX';
+type TopLevelService = 'TAX_WITH_RETURN' | 'OTHER_TAX';
 
 /** Only two services appear at entry. The original service IDs stay intact underneath. */
 export const TAXPAY_ENTRY_CHOICES = [
   { id: 'TAX_WITH_RETURN', Icon: FileCheck2, en: 'Tax with Return', bn: 'রিটার্নসহ কর', detailEn: 'Section 173', detailBn: 'ধারা ১৭৩' },
-  { id: 'OTHER_TAX', Icon: WalletCards, en: 'Other Tax', bn: 'অন্যান্য কর', detailEn: 'Other tax payments.', detailBn: 'অন্যান্য কর পরিশোধ।' },
-  { id: 'TRAVEL_TAX', Icon: Plane, en: 'Travel Tax', bn: 'ভ্রমণ কর', detailEn: 'Travel tax for journeys and passengers.', detailBn: 'যাত্রা ও যাত্রীদের জন্য ভ্রমণ কর।' }
+  { id: 'OTHER_TAX', Icon: WalletCards, en: 'Other Tax', bn: 'অন্যান্য কর', detailEn: 'Other tax payments.', detailBn: 'অন্যান্য কর পরিশোধ।' }
 ] as const;
 
 export function PaymentServiceChoiceDialog({ initialService = null, initialDraft = null, initialReuse = null }: { initialService?: BannerPaymentService | null; initialDraft?: PaymentFormDraft | null; initialReuse?: PaymentReuse | null }) {
@@ -44,10 +43,9 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
   const multiBeneficiaryPrefill = (paymentBeneficiaryPrefill?.additional?.length ?? 0) > 0;
   const [payerForSelf, setPayerForSelf] = useState<boolean | null>(initialDraft ? (initialDraft.service === 'TRAVEL_TAX' ? true : initialDraft.form_payload.forSelf as boolean) : initialReuse ? initialReuse.formPayload.forSelf as boolean : paymentBeneficiaryPrefill ? false : null);
-  const entryFromService = (service:string):TopLevelService => service === 'TRAVEL_TAX' ? 'TRAVEL_TAX' : service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX';
-  const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialDraft ? entryFromService(initialDraft.service) : initialReuse ? entryFromService(initialReuse.service) : paymentBeneficiaryPrefill ? 'OTHER_TAX' : initialService ? entryFromService(initialService) : null);
-  // Preserve original service IDs and existing payer/draft/payment journeys.
-  const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'TRAVEL_TAX' ? 'TRAVEL_TAX' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' && initialService !== 'TRAVEL_TAX' ? initialService : 'OTHER_TAX_PAYMENT') : null;
+  const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialDraft ? (initialDraft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : initialReuse ? (initialReuse.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : paymentBeneficiaryPrefill ? 'OTHER_TAX' : initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
+  // Other Tax is one entry choice. No follow-up subtype selection is collected here.
+  const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
   const [view, setView] = useState<'payer' | 'login' | 'payment'>(initialDraft || initialReuse ? 'payment' : 'payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [useAccount, setUseAccount] = useState(Boolean(initialDraft || initialReuse));
@@ -245,7 +243,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
            }}
            onBlockingChange={setDraftEntryBlocking}
            onResume={draft => {
-             setTopLevel(entryFromService(draft.service));
+             setTopLevel(draft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX');
              setPayerForSelf(draft.service === 'TRAVEL_TAX' ? true : draft.form_payload.forSelf as boolean);
              setDraftToResume(draft);
              setEnteredFromDraftChoice(true);
