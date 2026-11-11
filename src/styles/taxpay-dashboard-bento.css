@@ -379,8 +379,8 @@
   gap:12px;
   align-items:stretch;
 }
-.taxpay-bento-request-row > .taxpay-bento-summary,
-.taxpay-bento-request-row > .taxpay-bento-corrections{
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-request-row > .taxpay-bento-summary,
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-request-row > .taxpay-bento-corrections{
   grid-column:auto;
   width:100%;
   min-width:0;
