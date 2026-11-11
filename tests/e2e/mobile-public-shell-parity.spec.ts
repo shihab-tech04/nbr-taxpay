@@ -167,7 +167,7 @@ test('320px Bengali public footer remains one row with accessible links',async({
   await expect(more).toContainText('আরও');
   await expect(footer.locator('.public-footer__bottom')).toContainText('© ২০২৬ করবৃত্ত');
   const moreRect=await more.boundingBox();
-  const floatingPayRect=await page.getByRole('button',{name:'Pay — select payment type'}).boundingBox();
+  const floatingPayRect=await page.locator('.taxpay-public-mobile-navigation .citizen-pay--guest-floating').boundingBox();
   expect(moreRect).not.toBeNull();
   expect(floatingPayRect).not.toBeNull();
   expect(moreRect!.y+moreRect!.height).toBeLessThanOrEqual(floatingPayRect!.y-4);
