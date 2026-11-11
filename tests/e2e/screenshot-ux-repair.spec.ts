@@ -21,6 +21,13 @@ test('mobile transaction details use a contained sheet with a visible close cont
   const dialog=page.locator('.taxpayer-transaction-detail');
   await expect(dialog).toHaveClass(/taxpay-modal/);
   await expect(dialog.getByRole('button',{name:'Close transaction details'})).toBeVisible();
+  // The modal enters with motion; visibility alone can precede the last
+  // fractional transform frame. Wait for stable in-viewport geometry without
+  // relaxing the original strict boundary expectation.
+  await expect.poll(async()=>{
+    const bounds=await dialog.boundingBox();
+    return bounds?bounds.y+bounds.height:Number.POSITIVE_INFINITY;
+  },{timeout:5000}).toBeLessThanOrEqual(page.viewportSize()!.height+1);
   const geometry=await dialog.evaluate(element=>{
     const rect=element.getBoundingClientRect();
     const body=element.querySelector('.taxpay-modal__body')!;
