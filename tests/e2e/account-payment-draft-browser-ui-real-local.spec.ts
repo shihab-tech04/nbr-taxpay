@@ -299,6 +299,7 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
       const mobilePay = page.locator('.citizen-pay');
       await expect(mobilePay).toBeVisible();
       await mobilePay.click();
+      await page.getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
       await expect(page.getByRole('dialog', { name: 'Pay Tax' })
         .getByRole('button', { name: 'Continue from draft' })).toBeVisible();
       await expect(mobilePay).toBeVisible();
