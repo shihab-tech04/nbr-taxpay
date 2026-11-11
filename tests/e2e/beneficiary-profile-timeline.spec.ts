@@ -41,6 +41,20 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   await login.getByLabel('Password',{exact:true}).fill('user1');
   await login.getByRole('button',{name:'Sign In'}).click();
   await expect(login).toHaveCount(0);
+  // Activity links must resolve back to the exact payer-owned saved profile.
+  await page.goto('/?action=history');
+  const activity=page.locator('.taxpayer-transaction-panel');
+  await expect(activity).toBeVisible();
+  await activity.getByRole('button',{name:'Filter'}).click();
+  await activity.getByRole('combobox',{name:'Filter transactions by beneficiary'}).selectOption('222222222222');
+  await expect(activity.getByTestId('taxpayer-transaction-table').locator('tbody tr')).toHaveCount(1);
+  await expect(activity.getByText('User Two · 222222222222').first()).toBeVisible();
+  await activity.getByRole('button',{name:'Profile'}).click();
+  await expect(page.getByTestId('beneficiary-profile')).toBeVisible();
+  await expect(page.getByTestId('beneficiary-payment-chronology')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'User Two'})).toBeVisible();
+  await page.getByRole('button',{name:'Back to beneficiaries'}).click();
+  await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await page.goto('/?action=beneficiaries');
   const listScreen=page.getByTestId('beneficiaries-page');
   await expect(listScreen).toBeVisible();
