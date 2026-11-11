@@ -497,13 +497,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     {key:'no-link',amount:noLinkedAmount,label:tr('No beneficiary link','উপকারভোগীর সংযোগ নেই'),color:'#8498b1'}
   ];
   const displayedSpendingTotal=spendingSegments.reduce((sum,item)=>sum+item.amount,0);
-  // A fictional payment scenario does not constitute an external-system tax assessment.
-  // Fail closed until a verified per-owner assessment/credit response is integrated.
-  const verifiedExternalTaxPositionReady = false;
+  // This sample-only dashboard deliberately retains its illustrated reference design.
+  // It must never be treated as external assessment data for a signed-in taxpayer.
   const completedPayments=historyScoped.filter(x=>x.state==='POSTED').length;
   const correctionRequestCount=historyScoped.filter(x=>x.state==='REQUESTED').length;
   const overview=<div className="taxpay-bento-grid" data-testid="taxpayer-overview-bento">
-    {verifiedExternalTaxPositionReady && <>
     <section className={panel+' taxpay-bento-position'} aria-labelledby="taxpay-bento-position-title">
       <div className="flex items-center justify-between gap-2">
         <h2 id="taxpay-bento-position-title" className="text-base font-semibold">{tr('Current tax position','বর্তমান কর অবস্থান')}</h2>
@@ -542,7 +540,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         {tr('Review exceptions','ব্যতিক্রম দেখুন')}<ArrowRight size={15} className="ml-2 inline" aria-hidden="true"/>
       </button>
     </section>
-    </>}
     <div className="taxpay-bento-coverage">
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-coverage-title">
         <div className="flex items-center justify-between gap-2">
@@ -595,14 +592,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>
       <p className="mt-2 text-xs text-taxpay-muted">{tr('Only eligible posted credits count; travel tax is separate.','শুধু যোগ্য নথিভুক্ত ক্রেডিট গণনা হয়; ভ্রমণ কর পৃথক।')}</p>
     </section>
-    {!verifiedExternalTaxPositionReady && <section className={panel+' taxpay-bento-hero'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
+    <section className={panel+' taxpay-bento-hero'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
       <h2 className="text-base font-semibold">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h2>
       <div className="taxpay-bento-hero__status">
         <button type="button" onClick={()=>navigate('history')}><span>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong>{completedPayments}</strong></button>
         <button type="button" onClick={()=>document.getElementById('taxpayer-dashboard-draft-section')?.scrollIntoView({behavior:'smooth'})}><span>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span><strong>{savedDraftCount===null?'—':savedDraftCount}</strong></button>
         <button type="button" onClick={()=>navigate('corrections')}><span>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong>{correctionRequestCount}</strong></button>
       </div>
-    </section>}
+    </section>
     <section className={panel} aria-labelledby="dashboard-correction-requests-title">
       <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
       <p className="mt-2 text-sm text-taxpay-muted">{tr('Review your recorded requests and their current status.','আপনার সংরক্ষিত আবেদন ও বর্তমান অবস্থা দেখুন।')}</p>
