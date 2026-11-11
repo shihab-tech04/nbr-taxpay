@@ -16,8 +16,8 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
   // Use distinct synthetic owners per viewport so desktop and mobile can run
   // concurrently without racing over the persisted selected-list/language state.
   // Each viewport still verifies the same two-account isolation journey.
-  const firstUser:DemoUserId=info.project.name.startsWith('mobile')?'user10':'user12';
-  const otherUser:DemoUserId=info.project.name.startsWith('mobile')?'user9':'user11';
+  const firstUser:DemoUserId=info.project.name.startsWith('mobile')?'user10':'user6';
+  const otherUser:DemoUserId=info.project.name.startsWith('mobile')?'user9':'user5';
   const contexts:BrowserContext[]=[];
   const makeContext=async()=>{
     const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
