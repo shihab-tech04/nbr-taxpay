@@ -20,7 +20,7 @@ const activityRoutes = new Set(['history', 'verify']);
 
 /** Taxpayer-only desktop layout. Demo navigation is not a verified-taxpayer entitlement. */
 export function TaxpayerReferenceRail() {
-  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, setPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, setPaymentServiceChoiceOpen, openPaymentServiceChoice } = useTaxState();
   const { user } = useAccountIdentity();
   const [signOutError, setSignOutError] = React.useState('');
   const [payMenuOpen, setPayMenuOpen] = React.useState(false);
@@ -63,7 +63,7 @@ export function TaxpayerReferenceRail() {
           </button>
           {payMenuOpen && <div id="taxpayer-pay-menu" className="rounded-lg border border-taxpay-border bg-white p-2 shadow-sm" role="group" aria-label={bn ? 'কর পরিশোধের বিকল্প' : 'Payment options'}>
             <button type="button" className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm hover:bg-slate-50" onClick={() => {setPayMenuOpen(false);setPaymentServiceChoiceOpen(true);}}><CirclePlus size={17} aria-hidden={true}/>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</button>
-            <button type="button" className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm hover:bg-slate-50" onClick={() => {setPayMenuOpen(false);navigate('travel');}}><Plane size={17} aria-hidden={true}/>{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</button>
+            <button type="button" className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm hover:bg-slate-50" onClick={() => {setPayMenuOpen(false);openPaymentServiceChoice('TRAVEL_TAX');}}><Plane size={17} aria-hidden={true}/>{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</button>
           </div>}
         </div>}
         <nav className="taxpayer-reference-links" aria-label={bn ? 'করদাতা সেবা' : 'Taxpayer services'}>
