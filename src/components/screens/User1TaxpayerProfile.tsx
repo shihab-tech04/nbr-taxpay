@@ -123,8 +123,8 @@ export function User1TaxpayerProfile({language,onNavigate}:{
   };
   return <div data-testid="user1-taxpayer-profile" className="space-y-4" aria-label={tr(['Taxpayer profile','করদাতার প্রোফাইল'])}>
     <section className="overflow-hidden rounded-2xl border border-taxpay-border bg-white">
-      <div className="flex flex-wrap items-start justify-between gap-4 p-5 sm:p-6">
-        <div className="flex min-w-0 flex-1 items-start gap-4">
+      <div className="flex flex-col items-start gap-4 p-5 sm:flex-row sm:flex-wrap sm:justify-between sm:p-6">
+        <div className="flex w-full min-w-0 items-start gap-4 sm:w-auto sm:flex-1">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-taxpay-light text-xl font-semibold text-taxpay-primary" aria-hidden="true">AR</div>
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -142,7 +142,7 @@ export function User1TaxpayerProfile({language,onNavigate}:{
           </div>
         </div>
         <button type="button" onClick={exportSample}
-          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light">
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light sm:w-auto">
           <Download size={17} aria-hidden="true"/>{tr(['Download sample profile','নমুনা প্রোফাইল ডাউনলোড'])}
         </button>
       </div>
