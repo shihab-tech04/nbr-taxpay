@@ -253,10 +253,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // this ID is still strictly demo-only and never a real taxpayer entitlement.
   const demoConsentActor = previewAccount?.id ?? (signedInProfile ? userIdForHostedTin(signedInProfile.tin) : null);
   const allowSyntheticDemoTin = Boolean(signedInAccount && forSelf === false && demoConsentActor);
-  const effectivePayerName = signedInAccount && signedInPayerName ? signedInPayerName
-    : forSelf === false && category === 'OTHER_TAX_PAYMENT' && confirmedWalkInPayer
-      ? (language === 'bn' ? confirmedWalkInPayer.nameBn : confirmedWalkInPayer.nameEn)
-      : payerName;
   const taxpayerTin = ownAccountTax ? ownProfile?.tin ?? '' : tin;
   const receiptPhone = signedInProfile?.receiptMobile || phone;
   const [authorizedTaxpayerId, setAuthorizedTaxpayerId] = useState<DemoUserId | null>(null);
@@ -285,6 +281,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       (initialCategory || (typeof routeParams?.initialCategory === 'string' && CATEGORY_LABELS[routeParams.initialCategory]
         ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN'))
   );
+  const effectivePayerName = signedInAccount && signedInPayerName ? signedInPayerName
+    : forSelf === false && category === 'OTHER_TAX_PAYMENT' && confirmedWalkInPayer
+      ? (language === 'bn' ? confirmedWalkInPayer.nameBn : confirmedWalkInPayer.nameEn)
+      : payerName;
   const [selectedHeadIds, setSelectedHeadIds] = useState<number[]>([]);
   // Both payer relationships use the same Other Tax selection and allocation UI.
   const otherBatch = !isWithholdingMode && forSelf !== null && category === 'OTHER_TAX_PAYMENT';
@@ -391,7 +391,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       throw new Error('Saved payer relationship is invalid.');
     setForSelf(saved.forSelf === null ? null : saved.forSelf as boolean);
     setTin(stringField('tin')); setPayerName(stringField('payerName'));
-    setWalkInPayerTin(stringField('walkInPayerTin').replace(/\\D/g, '').slice(0,12));
+    setWalkInPayerTin(stringField('walkInPayerTin').replace(/\D/g, '').slice(0,12));
     setWalkInPayerLookup(null); setWalkInPayerConfirmed(false);
     setOtherTaxpayerName(stringField('otherTaxpayerName')); setPhone(stringField('phone'));
     setReceiptEmail(stringField('receiptEmail')); setAssessmentYear(stringField('assessmentYear') || (initialReuse ? '' : '2026-27'));
