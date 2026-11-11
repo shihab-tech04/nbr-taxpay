@@ -368,6 +368,34 @@
   min-width:0;
   align-self:stretch;
 }
+/* Contain the new dashboard modules in a full-width row. Existing direct-grid
+   span rules must not squeeze Correction Requests into an auto-placed track. */
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-request-row{
+  grid-column:1 / -1;
+  width:100%;
+  min-width:0;
+  display:grid;
+  grid-template-columns:minmax(0,7fr) minmax(0,5fr);
+  gap:12px;
+  align-items:stretch;
+}
+.taxpay-bento-request-row > .taxpay-bento-summary,
+.taxpay-bento-request-row > .taxpay-bento-corrections{
+  grid-column:auto;
+  width:100%;
+  min-width:0;
+  max-width:none;
+  align-self:stretch;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"][data-drafts-empty="true"] > .taxpay-bento-recent{
+  grid-column:1 / -1;
+}
+@media(max-width:799px){
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-request-row{
+    grid-template-columns:minmax(0,1fr);
+  }
+}
+
 /* An empty draft component must not reserve half of the recent-activity row. */
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-drafts:empty{
   display:none;
