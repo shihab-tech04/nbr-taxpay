@@ -154,13 +154,13 @@ test('Overview puts financial position first, followed by exceptions, charts, sp
   const bento=page.getByTestId('taxpayer-overview-bento');
   const order=await bento.evaluate(element=>Array.from(element.children).map(child=>
     child.classList.contains('taxpay-bento-position')?'position':
-    child.classList.contains('taxpay-bento-hero')?'attention':
+    child.classList.contains('taxpay-bento-request-row')?'requests':
     child.classList.contains('taxpay-bento-coverage')?'coverage':
     child.classList.contains('taxpay-bento-years')?'years':
     child.classList.contains('taxpay-bento-tags')?'tags':
     child.classList.contains('taxpay-bento-drafts')?'drafts':
     child.classList.contains('taxpay-bento-recent')?'recent':'other'));
-  expect(order.slice(0,5)).toEqual(['coverage','years','attention','other','tags']);
+  expect(order.slice(0,4)).toEqual(['coverage','years','requests','tags']);
   if(order.includes('drafts')){
     expect(order.indexOf('drafts')).toBeGreaterThan(order.indexOf('tags'));
     expect(order.indexOf('drafts')).toBeLessThan(order.indexOf('recent'));
