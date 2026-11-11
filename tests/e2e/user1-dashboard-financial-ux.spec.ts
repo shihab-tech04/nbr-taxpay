@@ -110,7 +110,7 @@ test('overview summary, corrections and recent activity use full readable grid t
     await expect(corrections.getByRole('button',{name:'View correction requests'})).toBeVisible();
     // The draft component stays mounted to load the account-specific count.
     // Once zero is known, its empty wrapper must no longer occupy a grid track.
-    await expect(summary.getByRole('button',{name:/Saved Drafts\\s*0/})).toBeVisible();
+    await expect(summary.getByRole('button',{name:/Saved Drafts\s*0/})).toBeVisible();
     await expect(drafts).toBeEmpty();
     await expect(drafts).toBeHidden();
 
