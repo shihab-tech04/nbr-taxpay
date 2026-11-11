@@ -1,0 +1,141 @@
+/* Public and taxpayer mobile dialogs use one approved bottom-anchored,
+   content-sized shell. Desktop and the payment engine are unchanged.
+   Body content scrolls when it exceeds the safe viewport; headers and
+   existing action footers stay inside their own modal. */
+@media screen and (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal__overlay,
+  .taxpay-citizen-shell .taxpay-modal__overlay:has(.tax-service-choice[data-view="payer"]) {
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    padding:0;
+  }
+  .taxpay-citizen-shell .taxpay-modal,
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"],
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"],
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"],
+  .taxpay-citizen-shell .taxpay-modal[data-size-motion="true"],
+  .taxpay-citizen-shell .taxpay-modal.receipt-modal {
+    flex:0 1 auto;
+    width:100%;
+    max-width:100%;
+    min-height:0;
+    height:auto !important;
+    max-height:calc(100dvh - 12px - env(safe-area-inset-top));
+    border:1px solid var(--color-taxpay-border);
+    border-bottom:0;
+    border-radius:18px 18px 0 0;
+    overflow:hidden;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:has(.tax-service-choice[data-view="payer"]) {
+    width:100%;
+    max-width:100%;
+    min-height:0;
+    height:auto !important;
+    max-height:calc(100dvh - 12px - env(safe-area-inset-top));
+    border:1px solid var(--color-taxpay-border);
+    border-bottom:0;
+    border-radius:18px 18px 0 0;
+  }
+  .taxpay-citizen-shell .taxpay-modal .taxpay-modal__body,
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__body {
+    flex:0 1 auto;
+    min-height:0;
+    overflow-x:hidden;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+  }
+  .taxpay-citizen-shell .taxpay-modal .taxpay-modal__header {
+    flex-shrink:0;
+  }
+  .taxpay-citizen-shell .taxpay-modal .taxpay-modal__footer {
+    flex-shrink:0;
+    padding-bottom:calc(12px + env(safe-area-inset-bottom));
+  }
+
+  /* Help uses the same bottom-sheet rhythm and standard TaxPay chrome.
+     It is not a separate floating card above the dock. */
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-widget .public-help-backdrop {
+    display:block;
+    position:fixed;
+    inset:0;
+    z-index:0;
+    background:rgb(13 25 46 / 55%);
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-panel {
+    position:fixed;
+    inset:auto 0 0;
+    z-index:2;
+    box-sizing:border-box;
+    display:flex;
+    flex-direction:column;
+    width:100%;
+    max-width:100%;
+    height:auto;
+    max-height:calc(100dvh - 12px - env(safe-area-inset-top));
+    margin:0;
+    border:1px solid var(--color-taxpay-border);
+    border-bottom:0;
+    border-radius:18px 18px 0 0;
+    background:var(--color-taxpay-surface);
+    overflow:hidden;
+    box-shadow:var(--taxpay-shadow-modal);
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-panel header {
+    flex:0 0 auto;
+    min-height:64px;
+    align-items:center;
+    padding:12px 16px;
+    background:var(--color-taxpay-surface);
+    border-bottom:1px solid var(--color-taxpay-border);
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-panel header h2 {
+    font-size:16px;
+    line-height:1.4;
+    color:var(--color-taxpay-text);
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-panel header p {
+    font-size:14px;
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-panel header button {
+    flex:0 0 44px;
+    width:44px;
+    height:44px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--color-taxpay-border);
+    border-radius:10px;
+    background:var(--color-taxpay-surface);
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-messages {
+    flex:0 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    padding:16px;
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-opening,
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-message,
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-topics button,
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-panel form input,
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-more,
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-limit {
+    font-size:14px;
+    line-height:1.5;
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-panel form {
+    flex:0 0 auto;
+    min-height:48px;
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-panel .public-help-limit {
+    padding-bottom:calc(14px + env(safe-area-inset-bottom));
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-widget:has(.public-help-panel) .public-help-launch {
+    visibility:hidden;
+  }
+  .taxpay-citizen-shell.taxpay-public-mobile-shell:has(.public-help-panel) .citizen-pay--guest-floating {
+    display:none;
+  }
+}
+@media print {
+  .taxpay-citizen-shell .public-help-backdrop { display:none !important; }
+}
