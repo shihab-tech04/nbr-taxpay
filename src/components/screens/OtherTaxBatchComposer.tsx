@@ -19,11 +19,13 @@ export type OtherTaxAllocation = {
 };
 
 export const OTHER_TAX_YEARS = ['2027-28', '2026-27', '2025-26', '2024-25'] as const;
-// Return tax is a separate service. It must never be offered under Other Tax.
-const GROUP_ORDER = ['Advance Tax', 'Tax against Demand', 'Penalty', 'Appellate Tribunal', 'Others'] as const;
+// The owner's only head-mixing exception is Tax with Return. Source Tax
+// accounting heads can be combined with other supported non-return heads,
+// but never with Return (which has its own distinct service and journey).
+const GROUP_ORDER = ['Advance Tax', 'Tax against Demand', 'Penalty', 'Appellate Tribunal', 'Others', 'Source Tax'] as const;
 const liability = V11_SOURCE_HEADS.filter(head =>
-  head.journey === 'LIABILITY' && head.active &&
-  head.purpose !== 'return' && head.grpEn !== 'Tax with Return'
+  head.active && head.purpose !== 'return' && head.grpEn !== 'Tax with Return' &&
+  (head.journey === 'LIABILITY' || head.journey === 'WITHHOLDING')
 );
 const grouped = GROUP_ORDER.map(name => ({ name, rows: liability.filter(head => head.grpEn === name) }));
 const sourceOptions = new Map(V11_PAYMENT_OPTIONS.map(head => [head.id, head]));
@@ -263,8 +265,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
               </div>
             </div>
             <p className="other-tax-selection-status" role="status">
-              {tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' years · ' + count + ' available Other Tax heads',
-                 new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + 'টি অন্যান্য করের খাত')}
+              {tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' years · ' + count + ' available non-return payment heads',
+                 new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + 'টি রিটার্ন-বহির্ভূত করের খাত')}
             </p>
             {error && <div className="other-tax-error-summary" role="alert" data-testid="other-tax-validation-summary">
               <strong>{tx('Check highlighted payment entries', 'চিহ্নিত পরিশোধের তথ্য পরীক্ষা করুন')}</strong>
