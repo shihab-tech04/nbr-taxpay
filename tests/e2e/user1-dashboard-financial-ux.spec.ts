@@ -6,12 +6,9 @@ test('bento financial position reconciles with the unchanged account ledger and 
   await page.goto(dashboard);
   const bento=page.getByTestId('taxpayer-overview-bento');
   await expect(bento).toBeVisible();
-  const position=bento.locator('.taxpay-bento-position');
-  await expect(position).toContainText('৳ 180,000');
-  await expect(position).toContainText('৳ 155,000');
-  await expect(position).toContainText('৳ 25,000');
-  await expect(position).toContainText('Travel tax (separate)');
-  await expect(position).toContainText('৳ 6,500');
+  await expect(bento.locator('.taxpay-bento-position')).toHaveCount(0);
+  await expect(bento.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
+  await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
   await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   const tds=page.getByRole('button',{name:/TDS.*48,000/});
   await tds.focus();
@@ -21,7 +18,7 @@ test('bento financial position reconciles with the unchanged account ledger and 
   await page.keyboard.press('Space');
   await expect(tds).toHaveAttribute('aria-pressed','false');
   await expect(page.locator('[role="img"][aria-label^="Liability coverage"]')).toContainText('3 types');
-  await expect(position.getByRole('progressbar')).toHaveAttribute('aria-valuenow','86');
+  await expect(bento.getByRole('group',{name:'Liability and posted credits by tax year'}).getByRole('button',{name:/2025-2026: Total tax/})).toHaveAttribute('aria-label',/180,000.*155,000/);
   await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
 });
 
@@ -48,7 +45,7 @@ test('tax year bars remain keyboard-accessible selectors and do not invent month
   await page.keyboard.press('Enter');
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2024-2025');
   await expect(oldYear).toHaveAttribute('aria-current','true');
-  await expect(page.locator('.taxpay-bento-position')).toContainText('৳ 10,000');
+  await expect(page.getByRole('button',{name:/Still remaining.*10,000/})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   await page.getByRole('button',{name:'View all activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
