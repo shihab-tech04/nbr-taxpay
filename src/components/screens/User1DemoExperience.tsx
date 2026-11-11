@@ -264,7 +264,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         title:service,typeLabel:service,detail:'SQL-recorded simulated payment',
         beneficiaryTins:[...new Set(receipts.flatMap(receipt=>
           receipt.allocationItems?.map(a=>a.taxpayerTin).filter((tin):tin is string=>
-            typeof tin==='string'&&/^\\d{12,13}$/.test(tin))??[]))],
+            typeof tin==='string'&&/^\d{12,13}$/.test(tin))??[]))],
         channel:'Recorded simulated payment',sql:{receipts,reuse}};
     }).sort((a,b)=>b.date.localeCompare(a.date));
   },[sqlPayments]);
@@ -358,7 +358,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     const lines=[['Source','Reference','Assessment year','Payment type','Beneficiaries','TINs','Tags','Amount ৳','Status','Event date','Challan sample'],
       ...filtered.map(x=>[x.sql?'SQL-RECORDED SIMULATION':'NOT GOVERNMENT DATA',x.ref,x.year,x.typeLabel??x.kind,
         beneficiaryText(x),recordTins(x).join('; '),beneficiaryTagText(x),x.amount,x.state,x.date,x.challan||''])]
-      .map(x=>x.map(clean).join(',')).join('\\r\\n');
+      .map(x=>x.map(clean).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF'+lines],{type:'text/csv;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download='Korbritto_user1_SYNTHETIC_'+year+'.csv';a.click();URL.revokeObjectURL(url);
   };
