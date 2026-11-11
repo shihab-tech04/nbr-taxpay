@@ -129,3 +129,55 @@ test('a bank-branch request remains pending across reload until continued', asyn
   await dialog.getByRole('button',{name:'Receipt details'}).click();
   await expect(dialog.locator('.receipt-view__paper')).toContainText('৳ 25');
 });
+
+test('source-tax and demand heads combine across beneficiaries into one exact receipt', async ({ page }) => {
+  const submitted: Record<string, any>[]=[];
+  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
+    const request=route.request().postDataJSON() as Record<string,any>;
+    submitted.push(request);
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      success:true,id:'00000000-0000-4000-8000-000000000402',
+      status:'SIMULATED_SUCCESS',mirrored:true,simulationOnly:true
+    })});
+  });
+  const dialog=await openOtherTax(page);
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button',{name:/^Search(?: TIN)?$/}).click();
+  await dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button',{name:'Add taxpayer'}).click();
+  await dialog.locator('#guest-payer-name').fill('Payer Name');
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button',{name:'Add another taxpayer'}).click();
+  const second=dialog.getByTestId('other-tax-taxpayer');
+  await second.locator('input[id^="other-tax-tin"]').fill('222222222222');
+  await second.getByRole('button',{name:'Search',exact:true}).click();
+  await second.getByRole('button',{name:'Add taxpayer'}).click();
+  await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
+  const composer=dialog.getByTestId('other-tax-batch');
+  await composer.locator('[data-head-group="Source Tax"] summary').click();
+  await composer.getByRole('checkbox',{name:/Select 50 — Deduction from Salary/}).check();
+  await composer.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('12');
+  await composer.getByTestId('other-tax-taxpayer-tabs').getByRole('button').nth(1).click();
+  await composer.locator('[data-head-group="Tax against Demand"] summary').click();
+  await composer.getByRole('checkbox',{name:/Select 135 — Tax on notice of demand/}).check();
+  await composer.getByTestId('other-tax-line').locator('select[id^="other-tax-year"]').selectOption('2025-26');
+  await composer.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('18');
+  await expect(dialog.locator('.payment-form-summary__total')).toContainText('30');
+  await dialog.getByRole('button',{name:'Continue to payment channel'}).click();
+  await dialog.getByRole('button',{name:'Pay online'}).click();
+  await dialog.getByRole('button',{name:'Mobile banking'}).click();
+  await dialog.getByRole('radio',{name:'bKash'}).check();
+  await dialog.getByRole('checkbox',{name:/I confirm each taxpayer TIN/}).check();
+  await dialog.getByRole('button',{name:/Pay ৳ 30/}).click();
+  await expect(dialog.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:15000});
+  expect(submitted).toHaveLength(1);
+  expect(submitted[0].service).toBe('OTHER_TAX_PAYMENT');
+  expect(submitted[0].amountMinor).toBe(3000);
+  expect(submitted[0].details.lines.map((x:{headId:number})=>x.headId)).toEqual([8,145]);
+  expect(submitted[0].details.allocations.map((x:{taxpayerTin:string;assessmentYear:string})=>[x.taxpayerTin,x.assessmentYear]))
+    .toEqual([['111111111111','2026-27'],['222222222222','2025-26']]);
+  await dialog.getByRole('button',{name:'Receipt details'}).click();
+  const receipt=dialog.locator('.receipt-view__paper');
+  await expect(receipt).toContainText('Deduction from Salary');
+  await expect(receipt).toContainText('Tax on notice of demand');
+  await expect(receipt).toContainText('৳ 30');
+});
