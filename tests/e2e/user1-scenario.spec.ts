@@ -139,46 +139,53 @@ test('user1 Activity retains the approved transaction table and removes redundan
 });
 
 
-test('user1 profile uses supplied TIN fields without demonstration copy and remains responsive',async({page},info)=>{
-  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Profile desktop/mobile acceptance');
+test('user1 unified profile displays all distinct TIN fields with no tabs, duplicates or overflow',async({page},info)=>{
+  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Unified taxpayer profile desktop/mobile acceptance');
   await page.goto('/?action=account_profile&demoUser=user1');
   const profile=page.getByTestId('user1-taxpayer-profile');
+  const content=profile.getByTestId('user1-profile-unified-content');
   await expect(profile).toBeVisible();
+  await expect(content).toBeVisible();
   await expect(profile.getByRole('heading',{name:'Md. Arif Rahman'})).toBeVisible();
   await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577935451798');
-  await expect(profile.getByText(/Fictional sample profile|Sample TIN|Not an NBR-issued TIN/i)).toHaveCount(0);
-  await expect(profile.getByText('TIN',{exact:true})).toBeVisible();
-  await expect(profile.getByText('Taxpayer class',{exact:true})).toBeVisible();
-  await expect(profile.getByText('Individual',{exact:true}).first()).toBeVisible();
-  await expect(profile.getByText('Not available',{exact:true})).toHaveCount(0);
-  await expect(profile.getByTestId('user1-profile-detail-columns').locator(':scope > div')).toHaveCount(2);
-  await expect(profile.getByText('Need full registration and certificate details?')).toHaveCount(0);
-  await expect(profile.getByText('Illustrative taxpayer details only.')).toHaveCount(0);
-  await profile.getByRole('tab',{name:'TIN & certificate'}).click();
-  const tin=profile.getByTestId('taxpayer-tin-information');
-  await expect(tin).toBeVisible();
-  await expect(tin.getByTestId('user1-tin-detail-columns').locator(':scope > div')).toHaveCount(2);
-  for(const field of ['TIN number','Registered name','TIN type','TIN classification','TIN registration date',
-    'User type','Local taxpayer','Previous TIN','Taxes circle','Taxes zone','Taxes range',
-    'District','Country','Registered / permanent address','Current address','Mobile number','Email address',
+  await expect(profile.getByRole('tab')).toHaveCount(0);
+  await expect(profile.getByRole('tablist')).toHaveCount(0);
+  await expect(profile.getByRole('button',{name:'View payment activity'})).toHaveCount(0);
+  await expect(content.getByTestId('user1-profile-detail-columns').locator(':scope > div')).toHaveCount(2);
+  for(const section of ['Personal information','Contact and addresses','TIN registration and jurisdiction',
+    'Certificate details','Account and tax history'])
+    await expect(content.getByRole('heading',{name:section,exact:true})).toHaveCount(1);
+  for(const field of ['Taxpayer class','TIN classification','User type','Local taxpayer',
+    'Mobile number','Email address','Registered / permanent address','Current address',
+    'Taxes zone','Taxes range','District','Country','Previous TIN',
     'Certificate issue date','Certificate last updated','Issuing tax officer','Tax office address',
-    'Tax office phone']){
-    await expect(tin.getByText(field,{exact:true})).toHaveCount(1);
+    'Tax office phone','Income sources','Assessment years','Representative mandate','Last account login']){
+    await expect(content.getByText(field,{exact:true})).toHaveCount(1);
   }
-  await expect(tin.getByText('Not available',{exact:true})).toHaveCount(0);
-  await expect(tin.getByText('This fictional reference is not a downloadable NBR-issued certificate.')).toHaveCount(0);
-  await expect(tin).toContainText('Circle-245 (Company)');
-  await expect(tin).toContainText('Taxes Zone-12, Dhaka');
-  await expect(tin).toContainText('3/4 Purana Paltan');
-  await expect(tin).toContainText('04 Jun 2026, 05:06:20 PM');
-  await profile.getByRole('tab',{name:'Overview'}).click();
-  await expect(profile.getByRole('tab',{name:'Overview'})).toHaveAttribute('aria-selected','true');
-  await expect(profile.getByText('email@test.com')).toBeVisible();
+  await expect(content.getByText('Taxes circle',{exact:true})).toHaveCount(0);
+  await expect(content.getByText('Registered name',{exact:true})).toHaveCount(0);
+  await expect(content.getByText('TIN type',{exact:true})).toHaveCount(0);
+  await expect(profile.getByText('TIN type',{exact:true})).toHaveCount(1);
+  await expect(profile.getByText('Taxes circle',{exact:true})).toHaveCount(1);
+  await expect(content).toContainText('Taxes Zone-12, Dhaka');
+  await expect(content).toContainText('04 Jun 2026, 05:06:20 PM');
+  await expect(content).toContainText('3/4 Purana Paltan');
+  await expect(content).toContainText('email@test.com');
+  await expect(profile.getByText(/Fictional sample profile|Sample TIN|Not an NBR-issued TIN/i)).toHaveCount(0);
+  await expect(profile.getByText('Not available',{exact:true})).toHaveCount(0);
+  await expect(profile.getByRole('button',{name:'Copy TIN'})).toBeVisible();
+  await expect(profile.getByRole('button',{name:'Download profile'})).toBeVisible();
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  if(await rail.isVisible())await expect(rail.getByRole('button',{name:'Activity',exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await page.goto('/?action=account_profile&demoUser=user1&lang=bn');
-  await expect(page.getByTestId('user1-taxpayer-profile').getByRole('tab',{name:'টিআইএন ও সনদ'})).toBeVisible();
-  await page.getByTestId('user1-taxpayer-profile').getByRole('tab',{name:'টিআইএন ও সনদ'}).click();
-  await expect(page.getByTestId('taxpayer-tin-information').getByText('সনদ ইস্যুর তারিখ')).toBeVisible();
+  const bn=page.getByTestId('user1-profile-unified-content');
+  await expect(bn).toBeVisible();
+  await expect(bn.getByRole('heading',{name:'ব্যক্তিগত তথ্য'})).toBeVisible();
+  await expect(bn.getByRole('heading',{name:'টিআইএন নিবন্ধন ও কর অধিক্ষেত্র'})).toBeVisible();
+  await expect(bn.getByRole('heading',{name:'সনদের তথ্য'})).toBeVisible();
+  await expect(bn.getByText('সনদ ইস্যুর তারিখ')).toHaveCount(1);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 test('user1 profile export contains supplied TIN fields without unnecessary copy',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Download verification');

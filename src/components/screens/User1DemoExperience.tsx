@@ -836,7 +836,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </section>)}
     </div>
   </section>;
-  const profile=<User1TaxpayerProfile language={language} onNavigate={navigateTo}/>;
+  const profile=<User1TaxpayerProfile language={language}/>;
   const notifications=<section className={panel}><h2 className="text-base font-semibold">{tr('Recent updates','সাম্প্রতিক আপডেট')}</h2><div className="mt-3 space-y-3">{scoped.filter(x=>x.state!=='POSTED').map(x=><article className="rounded-xl border border-slate-200 p-3" key={x.id}><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{x.title}</h3>{tag(x.state)}</div><p className="mt-1 text-xs text-slate-500">{x.date} · {x.ref}</p><p className="mt-2 text-sm">{x.detail}</p><button className={action+' mt-2'} type="button" onClick={()=>setSelected(x)}>{tr('View reference','রেফারেন্স দেখুন')}</button></article>)}</div></section>;
   const settings=<section className={panel+' taxpayer-preferences'}>
     <h2 className="text-lg font-semibold">{tr('Display preferences','প্রদর্শনের পছন্দ')}</h2>
