@@ -80,18 +80,26 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
 test('mobile guest shell shares signed-in compact-on-scroll behavior, without duplicate Pay controls',async ({page})=>{
   await page.setViewportSize({width:375,height:812});
   await page.goto('/?action=landing');
-  await page.evaluate(()=>window.scrollTo(0,600));
+  const header=page.locator('.taxpay-public-mobile-navigation .citizen-header');
   const corners=page.locator('.taxpay-public-mobile-navigation .citizen-corners');
-  if (await corners.getByRole('button',{name:'Open menu'}).isVisible()) {
+  // Wait for the mounted header's scroll listener before triggering a large
+  // scroll; reading corner visibility immediately races the React scroll state.
+  await expect(header).toBeVisible();
+  await page.evaluate(async()=>{
+    window.scrollTo(0,0);
+    await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+    window.scrollTo(0,600);
+  });
+  if (await page.evaluate(()=>window.scrollY>145)) {
+    await expect(corners.getByRole('button',{name:'Open menu'})).toBeVisible();
     await expect(corners.getByRole('button',{name:'Notifications'})).toHaveCount(0);
     await expect(corners.getByRole('button',{name:'Home'})).toHaveCount(0);
-    await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toHaveClass(/citizen-header--hidden/);
-    await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toBeVisible();
+    await expect(header).toHaveClass(/citizen-header--hidden/);
   } else {
     // A shorter Home page may not scroll far enough to trigger compact navigation.
-    await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeVisible();
-    await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toBeVisible();
+    await expect(header).toBeVisible();
   }
+  await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveCount(1);
   // The floating Pay action remains anchored above the safe area after scrolling.
   const floatingPay=page.getByRole('button',{name:'Pay — select payment type'});
