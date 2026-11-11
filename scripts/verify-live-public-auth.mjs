@@ -144,16 +144,25 @@ try {
       });
       if(frame.center>3 || !frame.order || frame.overlaps || !frame.payClearsDock || !frame.dockAtBottom || frame.overflow>2)
         throw new Error('Live public mobile navigation parity regression: '+JSON.stringify(frame));
-      // The mobile Help panel must stay inside the viewport and above the
-      // restored nav; closing it must leave the page and Pay action mounted.
+      // Mobile Help is an approved bottom-anchored modal sheet with a
+      // backdrop, not the old floating panel above the dock. The unchanged
+      // bottom navigation remains mounted beneath the modal and is restored
+      // as soon as Help closes.
       await helpButton.click();
       const helpPanel=publicMobile.locator('#public-help-panel');
       await expect(helpPanel).toBeVisible();
+      await expect(helpPanel).toHaveAttribute('aria-modal','true');
+      await expect(publicMobile.locator('.public-help-backdrop')).toBeVisible();
+      await expect.poll(async()=>{
+        const rect=await helpPanel.boundingBox();
+        return rect ? Math.abs(rect.y+rect.height-viewport.height) : Infinity;
+      },{timeout:5000}).toBeLessThanOrEqual(2);
       const helpBox=await helpPanel.boundingBox();
-      const dockBox=await publicDock.boundingBox();
-      if(!helpBox || !dockBox || helpBox.y+helpBox.height>dockBox.y+2)
-        throw new Error('Live mobile Help panel overlaps bottom navigation');
+      if(!helpBox || helpBox.height>=viewport.height)
+        throw new Error('Live mobile Help sheet overflows available viewport');
       await helpPanel.getByRole('button',{name:'Close chat'}).click();
+      await expect(helpPanel).toHaveCount(0);
+      await expect(publicDock).toBeVisible();
       await expect(payButton).toBeVisible();
       await payButton.click();
       const payChoice=publicMobile.getByRole('dialog',{name:'Pay Tax'});
