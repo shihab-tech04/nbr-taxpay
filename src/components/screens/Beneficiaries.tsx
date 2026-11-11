@@ -580,8 +580,18 @@ export function Beneficiaries(){
               {selectedPeople.length>0&&<>
                 <p className="beneficiary-directory__selected-count" role="status">{tr(`${selectedPeople.length} selected`,`${selectedPeople.length} জন নির্বাচিত`)}</p>
                 <UiButton type="button" variant="primary" onClick={()=>payWith(selectedPeople)}><CreditCard size={17} aria-hidden="true"/>{tr('Pay Tax for Others','অন্যদের কর পরিশোধ')}</UiButton>
-                <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-taxpay-error" onClick={()=>{setBulkRemoveIds(selectedPeople.map(person=>person.id));setModalError('');}}><Trash2 size={16} aria-hidden="true"/>{tr('Remove selected','নির্বাচিতদের সরান')}</UiButton>
                 <UiButton type="button" variant="quiet" onClick={()=>setSelectedIds([])}>{tr('Clear','মুছুন')}</UiButton>
+                <details className="beneficiary-directory__bulk-more" data-testid="beneficiary-bulk-more">
+                  <summary className="beneficiary-directory__bulk-more-trigger">
+                    {tr('More actions','আরও বিকল্প')}<ChevronDown size={16} aria-hidden="true"/>
+                  </summary>
+                  <div className="beneficiary-directory__bulk-more-content">
+                    <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-taxpay-error"
+                      onClick={()=>{setBulkRemoveIds(selectedPeople.map(person=>person.id));setModalError('');}}>
+                      <Trash2 size={16} aria-hidden="true"/>{tr('Remove selected','নির্বাচিতদের সরান')}
+                    </UiButton>
+                  </div>
+                </details>
               </>}
             </div>
           </div>
