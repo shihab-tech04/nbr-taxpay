@@ -32,7 +32,7 @@ test('User1 bento keeps the blue year chart and keyboard selection with a light 
   await page.keyboard.press('Space');
   await expect(year).toHaveAttribute('aria-current','true');
   await expect(page.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+  await expect(page.locator('.taxpay-bento-hero__actions').getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
 });
 
 test('User1 overview preserves narrow screens and expands fluidly at 1400px and wider', async ({page},info) => {
