@@ -251,7 +251,8 @@ test('Guest retains its original font; signed-in taxpayer uses Sobaike Public No
   expect(taxpayerFont).toContain('Noto Sans');
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  await page.getByRole('button',{name:'Pay Tax menu'}).click();
+  await page.locator('.taxpayer-reference-pay-options').getByRole('button',{name:'Tax with Return / Other Tax'}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
   const field=services.locator('#guest-tin');

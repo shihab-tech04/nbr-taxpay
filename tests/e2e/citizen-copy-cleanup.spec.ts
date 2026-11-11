@@ -13,13 +13,13 @@ test('taxpayer dashboard contains no repeated demonstration badges, tooltips or 
   expect(await main.innerText()).not.toMatch(banned);
   await expect(main.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
   await expect(main.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
-  await expect(main.getByRole('heading',{name:'What needs your attention?'})).toBeVisible();
-  await expect(main.getByRole('heading',{name:'Current tax position'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'What needs your attention?'})).toHaveCount(0);
+  await expect(main.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
+  await expect(main.getByTestId('dashboard-correction-requests')).toBeVisible();
   await expect(main.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
   await expect(main.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
-  const position=main.locator('.taxpay-bento-position');
-  for(const number of ['৳ 180,000','৳ 155,000','৳ 25,000'])
-    await expect(position).toContainText(number);
+  await expect(main.locator('.taxpay-bento-position')).toHaveCount(0);
+  await expect(main.locator('.taxpay-bento-hero')).toHaveCount(0);
   // This boundary remains visible: records are fictional and must not be mistaken for an authenticated account.
   await expect(page.getByRole('button',{name:'Exit workspace'})).toBeVisible();
 });
