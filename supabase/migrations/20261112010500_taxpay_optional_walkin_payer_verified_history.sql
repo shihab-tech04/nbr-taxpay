@@ -110,6 +110,9 @@ BEGIN
   END IF;
   SELECT b.user_id INTO v_profile
   FROM public.sim_payment_account_bindings b
+  JOIN auth.users verified_account
+    ON verified_account.id = b.owner_uid
+   AND verified_account.email_confirmed_at IS NOT NULL
   WHERE b.owner_uid = v_owner;
   IF v_profile IS NULL THEN
     RETURN 0; -- Never automatically assign unlinked accounts.
