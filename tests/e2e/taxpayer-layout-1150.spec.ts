@@ -21,18 +21,17 @@ test('User1 dashboard omits the redundant register and lengthy data notice but p
   await expect(page.getByText('DEMO-PAY-PEND-01').filter({visible:true}).first()).toBeVisible();
 });
 
-test('User1 bento keeps the blue year chart and keyboard selection with a light hero surface',async({page})=>{
+test('User1 bento keeps keyboard-selectable years but hides the unverified hero and position',async({page})=>{
   await page.goto(url('taxpayer_home'));
-  const hero=page.locator('.taxpay-bento-hero');
-  await expect(hero).toHaveCSS('background-color','rgb(255, 255, 255)');
-  await expect(page.locator('.taxpay-bento-position__highlight')).toHaveCSS('background-color','rgb(245, 248, 252)');
+  await expect(page.locator('.taxpay-bento-hero')).toHaveCount(0);
+  await expect(page.locator('.taxpay-bento-position__highlight')).toHaveCount(0);
   const chart=page.getByRole('group',{name:'Liability and posted credits by tax year'});
   const year=chart.getByRole('button',{name:/2024-2025: Total tax/});
   await year.focus();
   await page.keyboard.press('Space');
   await expect(year).toHaveAttribute('aria-current','true');
   await expect(page.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+  await expect(page.getByTestId('dashboard-correction-requests')).toBeVisible();
 });
 
 test('User1 overview preserves narrow screens and expands fluidly at 1400px and wider', async ({page},info) => {

@@ -56,7 +56,7 @@ test('reference desktop rail preserves contextual demo routes and selected state
   const bottom = rail.locator('.taxpayer-reference-rail-bottom');
   await expect(bottom.getByRole('button').first()).toHaveText('Profile');
   await expect(bottom.getByRole('button').last()).toHaveText('Exit workspace');
-  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(5);
+  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(7);
   await expect(rail.locator('.taxpayer-reference-links > button').nth(1)).toHaveText('Beneficiaries');
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
   await expect(rail.locator('.taxpayer-reference-account')).toHaveCount(0);

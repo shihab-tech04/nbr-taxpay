@@ -31,15 +31,14 @@ test('all-year month filtering remains accessible in Activity after dashboard ch
   await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('2026-03');
 });
 
-test('Travel Tax remains separate and never reduces income-tax outstanding',async({page})=>{
+test('Travel Tax remains nested under Pay Tax without an unverified assessment balance',async({page})=>{
+  await page.setViewportSize({width:1600,height:900});
   await page.goto(dashboard);
-  const position=page.locator('.taxpay-bento-position');
-  await expect(position).toContainText('৳ 25,000');
-  await expect(position).toContainText('Travel tax (separate)');
-  await expect(position).toContainText('৳ 6,500');
-  await page.getByRole('button',{name:'Travel tax',exact:true}).click();
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  await rail.getByRole('button',{name:'Pay Tax menu'}).click();
+  await rail.getByRole('button',{name:'Travel Tax',exact:true}).click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(position).toContainText('৳ 25,000');
 });
 
 test('narrow year chart is keyboard operable and does not cause page overflow',async({page},info)=>{
