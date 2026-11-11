@@ -109,9 +109,13 @@ try {
       await expect(wordmark).toBeVisible();
       await expect(guestBell).toHaveCount(0);
       await expect(publicMobile.locator('.public-home-header')).toBeHidden();
-      // Guest dock was intentionally replaced by the approved floating Pay action.
-      // Retain accessible navigation through the existing menu and footer.
-      await expect(publicMobile.getByRole('navigation',{name:'Mobile primary navigation'})).toHaveCount(0);
+      // Preserve the original public bottom navigation, separate from Help chat
+      // and the floating Pay now action (the previous removal was unrequested).
+      const publicDock=publicMobile.getByRole('navigation',{name:'Mobile primary navigation'});
+      await expect(publicDock).toBeVisible();
+      for(const item of ['Home','Payment Status','Help'])
+        await expect(publicDock.getByRole('button',{name:item})).toBeVisible();
+      await expect(publicDock.locator('.citizen-bottom-nav__item')).toHaveCount(3);
       const helpButton = publicMobile.getByRole('button',{name:'Chat support'});
       await expect(helpButton).toBeVisible();
       const payButton = publicMobile.getByRole('button',{name:'Pay — select payment type'});
@@ -130,13 +134,35 @@ try {
         const menu = document.querySelector('.taxpay-public-mobile-navigation .citizen-mobile-menu-trigger').getBoundingClientRect();
         const help = document.querySelector('.public-help-launch')?.getBoundingClientRect();
         const pay = document.querySelector('.citizen-pay')?.getBoundingClientRect();
+        const dock = document.querySelector('.citizen-bottom-nav')?.getBoundingClientRect();
         const overlaps = help && pay && help.left < pay.right && help.right > pay.left && help.top < pay.bottom && help.bottom > pay.top;
         return {center:Math.abs(logo.x+logo.width/2-header.x-header.width/2),
           order:menu.x < logo.x,overlaps,
+          payClearsDock:Boolean(pay && dock && pay.bottom <= dock.top-2),
+          dockAtBottom:Boolean(dock && Math.abs(dock.bottom-innerHeight)<=2),
           overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
       });
-      if(frame.center>3 || !frame.order || frame.overlaps || frame.overflow>2)
+      if(frame.center>3 || !frame.order || frame.overlaps || !frame.payClearsDock || !frame.dockAtBottom || frame.overflow>2)
         throw new Error('Live public mobile navigation parity regression: '+JSON.stringify(frame));
+      // The mobile Help panel must stay inside the viewport and above the
+      // restored nav; closing it must leave the page and Pay action mounted.
+      await helpButton.click();
+      const helpPanel=publicMobile.locator('#public-help-panel');
+      await expect(helpPanel).toBeVisible();
+      const helpBox=await helpPanel.boundingBox();
+      const dockBox=await publicDock.boundingBox();
+      if(!helpBox || !dockBox || helpBox.y+helpBox.height>dockBox.y+2)
+        throw new Error('Live mobile Help panel overlaps bottom navigation');
+      await helpPanel.getByRole('button',{name:'Close chat'}).click();
+      await expect(payButton).toBeVisible();
+      await payButton.click();
+      const payChoice=publicMobile.getByRole('dialog',{name:'Pay Tax'});
+      await expect(payChoice).toBeVisible();
+      await expect(payChoice.locator('[data-payer-relationship]')).toHaveCount(2);
+      const choiceBox=await payChoice.boundingBox();
+      if(!choiceBox || choiceBox.height>=viewport.height*.8)
+        throw new Error('Live mobile Pay Tax first choice has excessive blank height');
+      await payChoice.getByRole('button',{name:'Close payment services'}).click();
       await publicMobile.screenshot({path:'test-results/live-auth-public-mobile-nav-'+name+'.png',fullPage:false});
       await publicMobile.close();
     }
