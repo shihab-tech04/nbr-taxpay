@@ -22,8 +22,8 @@ const taxpayerMenuLinks: CitizenAction[] = [
 ];
 const serviceLinks: CitizenAction[] = [
   { route: 'services', en: 'Payment services', bn: 'কর পরিশোধ সেবা' },
-  { route: 'certificates', en: 'Certificates', bn: 'সনদ' },
-  { route: 'corrections', en: 'Corrections', bn: 'সংশোধন' },
+  { route: 'certificates', en: 'Tax Credit Certificates', bn: 'কর ক্রেডিট সনদ' },
+  { route: 'corrections', en: 'Correction Requests', bn: 'সংশোধনের অনুরোধ' },
   { route: 'journey', en: 'Tax Journey', bn: 'কর যাত্রা' }
 ];
 const accountLinks: CitizenAction[] = [
