@@ -25,17 +25,17 @@ test('bento financial position reconciles with the unchanged account ledger and 
   await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
 });
 
-test('attention actions retain their filtered Activity and correction routes',async({page})=>{
-  for(const [label,count] of [['Pending',1],['Failed / reversed',2],['Unmatched',1],['Requests',2]] as const){
-    await page.goto(dashboard);
-    await page.getByRole('button',{name:'View '+label+': '+count}).click();
-    await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-    await expect(page.locator('.taxpay-office-register__count')).toContainText(String(count));
-    await page.getByRole('button',{name:'Clear review filter'}).click();
-    await expect(page.locator('.taxpay-office-register__count')).toContainText('14');
-  }
+test('dashboard shows the three requested counters with working destinations',async({page})=>{
   await page.goto(dashboard);
-  await page.getByRole('button',{name:'Review exceptions'}).click();
+  const summary=page.getByTestId('taxpayer-overview-bento').locator('.taxpay-bento-hero__status');
+  await expect(summary.getByRole('button',{name:/Completed Payments/})).toBeVisible();
+  await expect(summary.getByRole('button',{name:/Saved Drafts/})).toBeVisible();
+  await expect(summary.getByRole('button',{name:/Correction Requests/})).toBeVisible();
+  await summary.getByRole('button',{name:/Completed Payments/}).click();
+  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
+  await page.goto(dashboard);
+  await page.getByTestId('taxpayer-overview-bento').locator('.taxpay-bento-hero__status')
+    .getByRole('button',{name:/Correction Requests/}).click();
   await expect(page.getByRole('heading',{name:'Corrections & exceptions'})).toBeVisible();
 });
 
@@ -63,7 +63,7 @@ test('desktop navigation consolidates duplicate Overview/Tax summary and groups 
   await expect(rail).toBeVisible();
   await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveCount(1);
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
-  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(5);
+  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(7);
   const account=rail.locator('.taxpayer-reference-rail-bottom');
   await expect(rail.locator('.taxpayer-reference-account')).toHaveCount(0);
   await expect(account.getByRole('button',{name:'Profile',exact:true})).toBeVisible();
@@ -84,7 +84,7 @@ test('bento layout, Travel Tax and action controls remain usable from 320px to w
     await page.goto(dashboard);
     const bento=page.getByTestId('taxpayer-overview-bento');
     await expect(bento).toBeVisible();
-    await expect(bento.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+    await expect(bento.getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
     await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
     await expect(bento.getByRole('heading',{name:'Payments by beneficiary tag'})).toBeVisible();
     await expect(bento.getByRole('heading',{name:'Recent activity'})).toBeVisible();
