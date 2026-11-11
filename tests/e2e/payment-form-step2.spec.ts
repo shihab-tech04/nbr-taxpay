@@ -47,7 +47,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await footer.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(progress).toHaveAttribute('aria-valuenow', '2');
   const batch = dialog.getByTestId('other-tax-batch');
-  await expect(batch.locator('[data-head-group]')).toHaveCount(5);
+  await expect(batch.locator('[data-head-group]')).toHaveCount(6);
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2100');
