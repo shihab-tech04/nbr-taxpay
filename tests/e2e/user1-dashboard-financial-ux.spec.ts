@@ -33,7 +33,8 @@ test('dashboard shows the three requested counters with working destinations',as
   await page.goto(dashboard);
   await page.getByTestId('taxpayer-overview-bento').locator('.taxpay-bento-hero__status')
     .getByRole('button',{name:/Correction Requests/}).click();
-  await expect(page.getByRole('heading',{name:'Corrections & exceptions'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByTestId('dashboard-correction-request-list').getByRole('listitem')).toHaveCount(2);
 });
 
 test('tax year bars remain keyboard-accessible selectors and do not invent monthly trends',async({page})=>{
@@ -60,7 +61,7 @@ test('desktop navigation consolidates duplicate Overview/Tax summary and groups 
   await expect(rail).toBeVisible();
   await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveCount(1);
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
-  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(7);
+  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(6);
   const account=rail.locator('.taxpayer-reference-rail-bottom');
   await expect(rail.locator('.taxpayer-reference-account')).toHaveCount(0);
   await expect(account.getByRole('button',{name:'Profile',exact:true})).toBeVisible();
@@ -107,7 +108,7 @@ test('overview summary, corrections and recent activity use full readable grid t
     await expect(summary).toBeVisible();
     await expect(corrections).toBeVisible();
     await expect(summary.getByRole('button',{name:/Completed Payments/})).toBeVisible();
-    await expect(corrections.getByRole('button',{name:'View correction requests'})).toBeVisible();
+    await expect(corrections.getByTestId('dashboard-correction-request-list').getByRole('listitem')).toHaveCount(2);
     // Count may be unavailable in browser tests that intentionally disable SQL.
     await expect(summary.getByRole('button',{name:/Saved Drafts/})).toBeVisible();
     // Exercise the visual empty-drafts state directly; do not invent account data.
