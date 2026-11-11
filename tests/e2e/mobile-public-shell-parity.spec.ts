@@ -39,6 +39,14 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
   await page.getByRole('textbox',{name:'Your question'}).focus();
   await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeHidden();
   await page.getByRole('button',{name:'Close help'}).click();
+  console.log('MOBILE_PAY_AFTER_HELP',JSON.stringify(await page.evaluate(()=>({
+    route:location.href,
+    focus:document.activeElement?.tagName,
+    focusedInputs:[...document.querySelectorAll('input:focus,textarea:focus,select:focus')].map(x=>(x as HTMLElement).id),
+    header:document.querySelector('.taxpay-public-mobile-navigation .citizen-header')?.className,
+    pay:[...document.querySelectorAll('button.citizen-pay')].map(x=>({className:x.className,label:x.getAttribute('aria-label'),css:getComputedStyle(x).display,rect:x.getBoundingClientRect().toJSON()})),
+    help:document.querySelector('.public-help-launch')?.getAttribute('aria-label')
+  }))));
   const pay=page.getByRole('button',{name:'Pay — select payment type'});
   await expect(pay).toBeVisible();
   await expect(pay).toHaveClass(/citizen-pay--guest-floating/);
