@@ -15,6 +15,9 @@ export type CombinedOtherTaxLine = {
 
 const validTin = (value: string) => /^\d{12,13}$/.test(value);
 export const MAX_COMBINED_ALLOCATIONS = 256;
+/** Keep existing forms below the same immutable SQL allocation count limit. */
+export const fitsCombinedAllocationCapacity = (count: number) =>
+  Number.isSafeInteger(count) && count >= 0 && count <= MAX_COMBINED_ALLOCATIONS;
 export const MAX_COMBINED_PAYLOAD_CHARS = 750_000;
 const MAX_LINES = MAX_COMBINED_ALLOCATIONS;
 const eligibleHeads = new Map(V11_SOURCE_HEADS.filter(head =>
