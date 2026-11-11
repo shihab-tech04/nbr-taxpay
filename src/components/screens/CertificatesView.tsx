@@ -98,7 +98,8 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
   return (
     <div className={bn ? 'mx-auto max-w-6xl space-y-4 pb-12 font-bengali' : 'mx-auto max-w-6xl space-y-4 pb-12'}>
       <TaxpayerPageHeading id="certificate-preview-title"
-        title={label('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড')}
+        title={label('Tax Credit Certificates','কর ক্রেডিট সনদপত্র')}
+        description={label('View issued tax credit certificates and your separately recorded payment documents.','ইস্যুকৃত কর ক্রেডিট সনদপত্র ও পৃথকভাবে সংরক্ষিত পেমেন্ট নথি দেখুন।')}
         actions={
           <button type="button" onClick={() => setSummaryOpen(true)}
             className="no-print inline-flex min-h-11 items-center gap-2 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white hover:bg-taxpay-dark">
@@ -107,6 +108,12 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
           </button>
         } />
       {activityTabs && <TaxpayerActivityTabs />}
+      <section data-testid="issued-tax-credit-certificates" className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="issued-tax-credit-title">
+        <h2 id="issued-tax-credit-title" className="text-base font-semibold text-taxpay-text">{label('Issued tax credit certificates','ইস্যুকৃত কর ক্রেডিট সনদপত্র')}</h2>
+        <p className="mt-2 text-sm text-taxpay-muted" role="status">{label('No issuer-verified tax credit certificates are available for this account. Government-issued certificates can be viewed and downloaded only after the issuing service is connected and ownership is verified. Payment summaries below are not tax credit certificates.',
+          'এই অ্যাকাউন্টে ইস্যুকারী কর্তৃপক্ষের যাচাইকৃত কর ক্রেডিট সনদপত্র নেই। ইস্যুকারী সেবা সংযুক্ত ও মালিকানা যাচাই হলে সনদপত্র দেখা ও ডাউনলোড করা যাবে। নিচের পেমেন্ট সারসংক্ষেপ কর ক্রেডিট সনদপত্র নয়।')}</p>
+      </section>
+      <h2 className="text-base font-semibold text-taxpay-text">{label('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড')}</h2>
       <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="certificate-preview-title">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="group" aria-label={label('Choose a summary', 'সারসংক্ষেপ বাছুন')}>
           {previewOptions.map(option => (

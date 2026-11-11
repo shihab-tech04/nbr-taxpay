@@ -13,13 +13,12 @@ test('taxpayer dashboard contains no repeated demonstration badges, tooltips or 
   expect(await main.innerText()).not.toMatch(banned);
   await expect(main.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
   await expect(main.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
-  await expect(main.getByRole('heading',{name:'What needs your attention?'})).toBeVisible();
-  await expect(main.getByRole('heading',{name:'Current tax position'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'What needs your attention?'})).toHaveCount(0);
+  await expect(main.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
   await expect(main.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
   await expect(main.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
-  const position=main.locator('.taxpay-bento-position');
-  for(const number of ['৳ 180,000','৳ 155,000','৳ 25,000'])
-    await expect(position).toContainText(number);
+  await expect(main.locator('.taxpay-bento-position')).toHaveCount(0);
+  await expect(main.locator('.taxpay-bento-coverage')).toBeVisible();
   // This boundary remains visible: records are fictional and must not be mistaken for an authenticated account.
   await expect(page.getByRole('button',{name:'Exit workspace'})).toBeVisible();
 });
@@ -37,7 +36,14 @@ test('ten user1 routes avoid repetitive example labels and keep relevant year co
     } else if (['account_profile','account_settings','journey'].includes(route))
       await expect(main.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);
     else await expect(main.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
-    expect(await main.innerText(),route+' exposes repetitive jargon').not.toMatch(banned);
+    if (route==='account_profile') {
+      // Profile follows the approved certificate fields without redundant sample disclaimers.
+      await expect(main.getByTestId('user1-taxpayer-profile')).toBeVisible();
+      await expect(main.getByText('Fictional sample profile',{exact:true})).toHaveCount(0);
+      expect(await main.innerText(),route+' exposes repetitive jargon').not.toMatch(banned);
+    } else {
+      expect(await main.innerText(),route+' exposes repetitive jargon').not.toMatch(banned);
+    }
   }
 });
 

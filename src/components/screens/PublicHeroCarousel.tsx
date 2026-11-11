@@ -322,8 +322,9 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       </section>
     </div>;
   }
-  // SQL controls publication and order. Each published row owns its own
-  // bilingual copy, theme, CTA, and artwork; never replace these with intro text.
+  // Keep the canonical introductory copy and two payment actions stationary.
+  // SQL still controls each published slide's artwork, ordering, and image palette.
+  const fixedBanner = slides.find(slide => !slide.serviceCode) ?? fallbackSlides[0];
   const travelBanner = slides.find(slide => slide.serviceCode === 'TRAVEL_TAX') ?? fallbackSlides[4];
   // The carousel border follows the currently published service theme,
   // while the global brand controls and the main Pay Tax CTA remain fixed.
@@ -350,7 +351,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         role="region"
         aria-roledescription="carousel"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
-        aria-description={bn ? 'প্রতিটি সেবার তথ্য ও পেমেন্ট বোতাম দেখতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন।' : 'Swipe or use the arrow keys to move between service banners and their payment actions.'}
+        aria-description={bn ? 'ছবি ও রং পরিবর্তন করতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন। কর ও ভ্রমণ কর পরিশোধের বোতাম অপরিবর্তিত থাকবে।' : 'Swipe or use the arrow keys to change banner images and colors. Pay Tax and Pay Travel Tax stay available on every slide.'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
         data-dragging={isSwiping}
@@ -368,9 +369,9 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
           {slides.map((slide, index) => {
             const isActive = index === activeIndex;
             const intro = !slide.serviceCode;
-            const heading = bn ? slide.headingBn : slide.headingEn;
-            const mobileHeading = bn ? slide.mobileHeadingBn : slide.mobileHeadingEn;
-            const action = bn ? slide.actionBn : slide.actionEn;
+            const heading = bn ? fixedBanner.headingBn : fixedBanner.headingEn;
+            const mobileHeading = bn ? fixedBanner.mobileHeadingBn : fixedBanner.mobileHeadingEn;
+            const action = bn ? fixedBanner.actionBn : fixedBanner.actionEn;
             // NULL palette preserves the existing approved service tokens.
             const validHex = (value: string | null | undefined) =>
               typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
@@ -388,6 +389,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                 className="citizen-public-hero public-information-hero public-hero-carousel__slide"
                 data-banner-service={intro ? 'intro' : slide.id}
                 data-banner-kind={intro ? 'intro' : 'service'}
+                data-fixed-left="true"
                 data-active={isActive}
                 data-payment-service={slide.serviceCode}
                 data-banner-palette={hasPalette ? 'image' : undefined}
@@ -411,25 +413,23 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                     </h2>
                   )}
                   <p>
-                    <span className="public-hero-copy--desktop">{bn ? slide.descriptionBn : slide.descriptionEn}</span>
-                    <span className="public-hero-copy--mobile">{bn ? slide.mobileDescriptionBn : slide.mobileDescriptionEn}</span>
+                    <span className="public-hero-copy--desktop">{bn ? fixedBanner.descriptionBn : fixedBanner.descriptionEn}</span>
+                    <span className="public-hero-copy--mobile">{bn ? fixedBanner.mobileDescriptionBn : fixedBanner.mobileDescriptionEn}</span>
                   </p>
                   <div className="citizen-public-hero__actions public-guest-actions">
                     <button className="citizen-public-primary public-guest-action" type="button"
-                      onClick={() => onPayTax(slide.serviceCode)}
+                      onClick={() => onPayTax()}
                       aria-label={action}>
                       <WalletCards size={18} aria-hidden="true" />
-                      {intro ? (
-                        <>
+                      <>
                           <span className="public-hero-carousel__pay-full">{action}</span>
                           <span className="public-hero-carousel__pay-compact" aria-hidden="true">
                             {bn ? compactAction(action, fallbackSlides[0].actionBn, 'কর দিন')
                               : compactAction(action, fallbackSlides[0].actionEn, 'Pay Tax')}
                           </span>
-                        </>
-                      ) : action}
+                      </>
                     </button>
-                    {intro && (
+                    {(
                       <button className="public-guest-action public-hero-carousel__travel" type="button"
                         onClick={() => onPayTax('TRAVEL_TAX')}
                         aria-label={bn ? travelBanner.actionBn : travelBanner.actionEn}>

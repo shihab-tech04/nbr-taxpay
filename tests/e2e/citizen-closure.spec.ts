@@ -41,7 +41,9 @@ test('sample taxpayer home never invents personal ledger credit',async({page})=>
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
   await expect(page.getByText('Total Payments (FY 2024-26):')).toHaveCount(0);
   await expect(page.getByText('Q1 Deposited')).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  if(await rail.isVisible()) await expect(rail.getByRole('button',{name:'Pay Tax menu'})).toBeVisible();
+  else await expect(page.locator('.citizen-mobile-menu-trigger')).toBeVisible();
 });
 test('taxpayer mobile home and activity support Bangla without overflows',async({page})=>{
   await page.setViewportSize({width:320,height:740});
@@ -94,7 +96,7 @@ test('obligations dashboard cannot assert fictional credits, demand or paid inst
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+  await expect(page.locator('.taxpay-bento-hero__actions').getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'TDS & advance tax'})).toBeVisible();
   await expect(page.getByText('Available for e-Return AY 2025-2026')).toHaveCount(0);

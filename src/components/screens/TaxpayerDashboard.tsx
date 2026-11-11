@@ -95,6 +95,8 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
     const url=URL.createObjectURL(new Blob(['\uFEFF'+body],{type:'text/csv;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download='Korbritto_transactions.csv';a.click();URL.revokeObjectURL(url);
   };
+  // Fail closed: there is no verified owner/year-scoped external assessment response.
+  const verifiedExternalTaxPositionReady = false;
   const serviceShortcut=<section className="taxpayer-services-shortcut rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5" aria-labelledby="taxpayer-dashboard-services-title">
     <div>
       <h2 id="taxpayer-dashboard-services-title" className="text-lg font-semibold text-taxpay-text">{tr('Tax payment services','কর পরিশোধ সেবা')}</h2>
@@ -125,14 +127,13 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
           {exampleMode?tr('Hide examples','উদাহরণ বন্ধ করুন'):tr('View examples','উদাহরণ দেখুন')}
         </button>
       </div>
-      <div className="taxpay-bento-grid" data-testid="authenticated-overview-bento">
+      {verifiedExternalTaxPositionReady && <div className="taxpay-bento-grid" data-testid="authenticated-overview-bento">
         <section className="taxpay-bento-hero" aria-labelledby="account-bento-hero-title">
           <p className="text-xs font-semibold">{tr('NEXT STEPS','পরবর্তী করণীয়')} · {year}</p>
           <h2 id="account-bento-hero-title">{tr('What would you like to do?','আপনি কী করতে চান?')}</h2>
           <p className="text-sm">{tr('Start a payment, continue saved work or review your transaction history. No unverified amount is treated as tax due.','পেমেন্ট শুরু করুন, সংরক্ষিত কাজ চালিয়ে যান অথবা লেনদেন দেখুন। যাচাই হয়নি এমন অর্থ বকেয়া কর হিসেবে দেখানো হয় না।')}</p>
           <div className="taxpay-bento-hero__actions">
             <button className="taxpay-bento-hero__secondary" type="button" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
-            <button className="taxpay-bento-hero__secondary" type="button" onClick={()=>openPaymentServiceChoice('TRAVEL_TAX')}>{tr('Travel tax','ভ্রমণ কর')}<ArrowRight size={16}/></button>
           </div>
           <p className="mt-auto text-xs">{tr('Your saved account records are kept separate from illustrative examples.','আপনার সংরক্ষিত রেকর্ড উদাহরণের পরিমাণ থেকে পৃথক রাখা হয়।')}</p>
         </section>
@@ -162,7 +163,7 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
           priority={index===3}/>)}
           </div>
         </section>
-      </div>
+      </div>}
       <p className="text-sm text-taxpay-muted" role="status">
         {exampleMode
           ? tr('Illustrative dashboard — the saved account activity below remains unchanged.',
@@ -170,6 +171,11 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
           : tr('Verified tax totals and posted tax credits for this year are not linked to this account. Check your tax ledger below for available records.',
             'এই করবর্ষের যাচাইকৃত করের পরিমাণ ও নথিভুক্ত কর ক্রেডিট এই অ্যাকাউন্টে যুক্ত নেই। পাওয়া তথ্য দেখতে নিচের কর লেজার দেখুন।')}
       </p>
+      <section className={card} aria-labelledby="dashboard-correction-requests-auth-title">
+        <h2 id="dashboard-correction-requests-auth-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
+        <p className="mt-2 text-sm text-taxpay-muted">{tr('Open your account-linked correction inquiries and review their current status.','অ্যাকাউন্টের সংশোধন অনুসন্ধান ও বর্তমান অবস্থা দেখুন।')}</p>
+        <button className={button+' mt-3'} type="button" onClick={()=>navigate('corrections')}>{tr('View correction requests','সংশোধনের আবেদন দেখুন')}<ArrowRight size={16} className="ml-2 inline" aria-hidden="true"/></button>
+      </section>
       <AuthenticatedDashboardPosition language={language} year={year} years={accountYears} exampleMode={exampleMode}
         onSelectYear={setYear} onNavigate={(route)=>navigate(route)} />
       {onResumePaymentDraft && <div className="taxpay-bento-grid"><div className="taxpay-bento-drafts">
@@ -185,7 +191,6 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
       <p>{tr('Use the existing payment journey or start separate travel tax.','বিদ্যমান পেমেন্ট যাত্রা অথবা পৃথক ভ্রমণ কর শুরু করুন।')}</p>
       <div className="taxpay-bento-hero__actions">
         <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
-        <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice('TRAVEL_TAX')}>{tr('Travel tax','ভ্রমণ কর')}<ArrowRight size={16}/></button>
       </div>
     </section>}
     {previewAccount && onResumePaymentDraft && <div className="taxpay-bento-drafts">

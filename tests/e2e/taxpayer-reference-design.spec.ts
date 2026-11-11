@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import {openTaxpayerPayTax} from './taxpayer-travel-menu-helper';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
 /** Regression contract: preserve Korbritto primary while signed-in styling uses Sobaike Public tokens. */
@@ -56,7 +57,7 @@ test('reference desktop rail preserves contextual demo routes and selected state
   const bottom = rail.locator('.taxpayer-reference-rail-bottom');
   await expect(bottom.getByRole('button').first()).toHaveText('Profile');
   await expect(bottom.getByRole('button').last()).toHaveText('Exit workspace');
-  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(5);
+  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(7);
   await expect(rail.locator('.taxpayer-reference-links > button').nth(1)).toHaveText('Beneficiaries');
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
   await expect(rail.locator('.taxpayer-reference-account')).toHaveCount(0);
@@ -139,7 +140,7 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
       await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'}).click();
       await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Close'}).click();
     } else await page.getByRole('button',{name:'EN'}).first().click();
-    await page.getByRole('button',{name:'Pay — select payment type'}).click();
+    await openTaxpayerPayTax(page);
     const services=page.getByRole('dialog',{name:'Pay Tax'});
     await enterTaxPayService(services, 'TAX_WITH_RETURN');
     await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
@@ -173,7 +174,10 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     await expect(nav.getByText('Services',{exact:true})).toBeHidden();
     await expect(nav.getByText('Support',{exact:true})).toHaveCount(0);
     const items = nav.locator('.citizen-dialog__link:visible');
-    await expect(items).toHaveCount(6);
+    await expect(items).toHaveCount(10);
+    await expect(nav.getByRole('button',{name:'Travel Tax',exact:true})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Tax Credit Certificates'})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Correction Requests'})).toBeVisible();
     const styles = await items.evaluateAll(buttons => buttons.map(button => {
       const style = getComputedStyle(button);
       return {text:button.textContent?.trim(), color:style.color, background:style.backgroundColor,
@@ -247,7 +251,7 @@ test('Guest retains its original font; signed-in taxpayer uses Sobaike Public No
   expect(taxpayerFont).toContain('Noto Sans');
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  await openTaxpayerPayTax(page);
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
   const field=services.locator('#guest-tin');

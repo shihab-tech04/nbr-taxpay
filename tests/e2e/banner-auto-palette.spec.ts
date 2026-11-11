@@ -17,7 +17,8 @@ test('image palette overrides mismatched built-in service heading as in Office p
     await expect(slide).toHaveCSS('background-color','rgb(246, 241, 252)');
     await expect(slide.locator('h2')).toHaveCSS('color','rgb(78, 50, 123)');
     await expect(slide.locator('.citizen-public-hero__copy > p')).toHaveCSS('color','rgb(78, 50, 123)');
-    await expect(slide.locator('.citizen-public-primary')).toHaveCSS('border-color','rgb(78, 50, 123)');
+    await expect(slide.locator('.public-hero-carousel__travel')).toHaveCSS('border-color','rgb(78, 50, 123)');
+    await expect(slide.locator('.citizen-public-primary')).toHaveCSS('background-color','rgb(44, 94, 173)');
     await expect(slides.first()).not.toHaveAttribute('data-banner-palette','image');
   }
 });
@@ -61,8 +62,9 @@ test('all service headings, descriptions and outlines respect different Office c
       await expect(slide).toHaveCSS('background-color',rgb(palette.background_color));
       await expect(slide.locator('h2')).toHaveCSS('color',rgb(palette.heading_color));
       await expect(slide.locator('.citizen-public-hero__copy > p')).toHaveCSS('color',rgb(palette.body_color));
-      await expect(slide.locator('.citizen-public-primary')).toHaveCSS('color',rgb(palette.outline_color));
-      await expect(slide.locator('.citizen-public-primary')).toHaveCSS('border-color',rgb(palette.outline_color));
+      await expect(slide.locator('.public-hero-carousel__travel')).toHaveCSS('color',rgb(palette.outline_color));
+      await expect(slide.locator('.public-hero-carousel__travel')).toHaveCSS('border-color',rgb(palette.outline_color));
+      await expect(slide.locator('.citizen-public-primary')).toHaveCSS('background-color','rgb(44, 94, 173)');
       await expect(slide.locator('img')).toHaveCSS('object-fit','contain');
     }
   }
