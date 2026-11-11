@@ -223,6 +223,32 @@ jobs:
           path: test-results/screenshots/beneficiaries-*.png
           if-no-files-found: warn
           retention-days: 14
+
+  core-beneficiary-table-e2e:
+    name: Beneficiary unified table visual acceptance
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js 24.21.0
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Restore Playwright headless browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
+      - name: Install Chromium for public-preview checks
+        run: npx playwright install --with-deps chromium --only-shell
       - name: Check actual EN/BN table appearance and capture evidence
         env:
           VITE_SUPABASE_DISABLED: 'false'
@@ -553,12 +579,6 @@ jobs:
         run: npx playwright install --with-deps chromium --only-shell
       # Check newly changed recovery first for fast failure feedback; retain
       # all existing signed-in payment/beneficiary acceptance unchanged.
-      - name: Verify stable fictional login data across fresh browsers
-        env:
-          VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
-        run: npx playwright test tests/e2e/demo-profile-cross-browser.spec.ts tests/e2e/legacy-story-payment-recovery.spec.ts tests/e2e/preview-profile-pending-save.spec.ts --project=desktop-1280
       - name: Verify signed-in saved beneficiary selection with synthetic scoped backend
         env:
           VITE_SUPABASE_DISABLED: 'false'
@@ -571,6 +591,41 @@ jobs:
           VITE_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
         run: node scripts/verify-hosted-profile-persistence.mjs
+
+
+  public-recovery-e2e:
+    name: Taxpayer login and payment recovery acceptance
+    needs: preflight
+    if: needs.preflight.outputs.mode != 'reuse'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js 24.21.0
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Restore Playwright headless browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
+      - name: Install Chromium for public-preview checks
+        run: npx playwright install --with-deps chromium --only-shell
+      # Check newly changed recovery first for fast failure feedback; retain
+      # all existing signed-in payment/beneficiary acceptance unchanged.
+      - name: Verify stable fictional login data across fresh browsers
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/demo-profile-cross-browser.spec.ts tests/e2e/legacy-story-payment-recovery.spec.ts tests/e2e/preview-profile-pending-save.spec.ts --project=desktop-1280
 
   public-support-e2e:
     name: Public receipts and workspace acceptance
@@ -705,7 +760,7 @@ jobs:
   verification-gate:
     name: Build and verify static preview
     if: always()
-    needs: [preflight, compile, core-e2e, core-beneficiary-e2e, core-cms-e2e, payment-ux-e2e, payment-progress-e2e, public-e2e, public-travel-e2e, public-login-e2e, public-responsive-e2e, beneficiary-picker-e2e, public-support-e2e, route-e2e, reuse-reviewed-build]
+    needs: [preflight, compile, core-e2e, core-beneficiary-e2e, core-beneficiary-table-e2e, core-cms-e2e, payment-ux-e2e, payment-progress-e2e, public-e2e, public-travel-e2e, public-login-e2e, public-responsive-e2e, beneficiary-picker-e2e, public-recovery-e2e, public-support-e2e, route-e2e, reuse-reviewed-build]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -718,6 +773,7 @@ jobs:
           COMPILE: ${{ needs.compile.result }}
           CORE: ${{ needs.core-e2e.result }}
           BENEFICIARY: ${{ needs.core-beneficiary-e2e.result }}
+          BENEFICIARY_TABLE: ${{ needs.core-beneficiary-table-e2e.result }}
           CMS: ${{ needs.core-cms-e2e.result }}
           PAYMENT: ${{ needs.payment-ux-e2e.result }}
           PROGRESS: ${{ needs.payment-progress-e2e.result }}
@@ -726,6 +782,7 @@ jobs:
           PUBLIC_LOGIN: ${{ needs.public-login-e2e.result }}
           PUBLIC_RESPONSIVE: ${{ needs.public-responsive-e2e.result }}
           PICKER: ${{ needs.beneficiary-picker-e2e.result }}
+          RECOVERY: ${{ needs.public-recovery-e2e.result }}
           SUPPORT: ${{ needs.public-support-e2e.result }}
           ROUTES: ${{ needs.route-e2e.result }}
           REUSED: ${{ needs.reuse-reviewed-build.result }}
@@ -735,14 +792,14 @@ jobs:
           case "$MODE" in
             full)
               test "$REUSED" = skipped
-              for result in "$COMPILE" "$CORE" "$BENEFICIARY" "$CMS" "$PAYMENT" "$PROGRESS" "$PUBLIC" "$PUBLIC_TRAVEL" "$PUBLIC_LOGIN" "$PUBLIC_RESPONSIVE" "$PICKER" "$SUPPORT" "$ROUTES"; do
+              for result in "$COMPILE" "$CORE" "$BENEFICIARY" "$BENEFICIARY_TABLE" "$CMS" "$PAYMENT" "$PROGRESS" "$PUBLIC" "$PUBLIC_TRAVEL" "$PUBLIC_LOGIN" "$PUBLIC_RESPONSIVE" "$PICKER" "$RECOVERY" "$SUPPORT" "$ROUTES"; do
                 test "$result" = success
               done
               echo 'PASS: every independent live-build and browser acceptance lane passed'
               ;;
             reuse)
               test "$REUSED" = success
-              for result in "$COMPILE" "$CORE" "$BENEFICIARY" "$CMS" "$PAYMENT" "$PROGRESS" "$PUBLIC" "$PUBLIC_TRAVEL" "$PUBLIC_LOGIN" "$PUBLIC_RESPONSIVE" "$PICKER" "$SUPPORT" "$ROUTES"; do
+              for result in "$COMPILE" "$CORE" "$BENEFICIARY" "$BENEFICIARY_TABLE" "$CMS" "$PAYMENT" "$PROGRESS" "$PUBLIC" "$PUBLIC_TRAVEL" "$PUBLIC_LOGIN" "$PUBLIC_RESPONSIVE" "$PICKER" "$RECOVERY" "$SUPPORT" "$ROUTES"; do
                 test "$result" = skipped
               done
               echo 'PASS: byte-identical artifact from fully verified PR, without retesting unchanged source'
