@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {ArrowRight, Check, Clipboard, Download, Info} from 'lucide-react';
+import {ArrowRight, Check, Clipboard, Download} from 'lucide-react';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {
   USER1_FICTIONAL_TIN_PROFILE as record,
@@ -39,7 +39,6 @@ const certificateRows:readonly Row[]=[
   ['issuingOfficer',['Issuing tax officer','সনদ ইস্যুকারী কর কর্মকর্তা']],
   ['taxOfficeAddress',['Tax office address','কর অফিসের ঠিকানা']],
   ['taxOfficePhone',['Tax office phone','কর অফিসের ফোন']],
-  ['lastLoginAt',['Last account login','অ্যাকাউন্টে সর্বশেষ লগইন']],
 ];
 const contactRows:readonly Row[]=[
   ['mobileNumber',['Mobile number','মোবাইল নম্বর']],
@@ -56,7 +55,7 @@ export function User1TaxpayerProfile({language,onNavigate}:{
   const [tab,setTab]=useState<Tab>('overview');
   const [copied,setCopied]=useState<'idle'|'done'|'failed'>('idle');
   const [downloadError,setDownloadError]=useState(false);
-  const sampleTin=DEMO_USERS.user1.tin;
+  const tin=record.tin;
   const details=(rows:readonly Row[])=><dl className="divide-y divide-taxpay-border">
     {rows.map(([field,label])=><div key={field} className="grid min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(135px,43%)_minmax(0,1fr)] sm:gap-4">
       <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
@@ -70,7 +69,7 @@ export function User1TaxpayerProfile({language,onNavigate}:{
   const copyTin=async()=>{
     setCopied('idle');
     try {
-      await navigator.clipboard.writeText(sampleTin);
+      await navigator.clipboard.writeText(tin);
       setCopied('done');
     } catch {
       setCopied('failed');
@@ -83,18 +82,17 @@ export function User1TaxpayerProfile({language,onNavigate}:{
         const escaped=/^[=+\-@\t\r]/.test(input)?"'"+input:input;
         return '"'+escaped.replaceAll('"','""')+'"';
       };
-      const rows=[['Field','Sample value'],
+      const rows=[['Field','Value'],
         ['Account','user1'],...allRows.map(([field,label])=>[label[0],String(record[field])]),
         ['Income sources','Salary, bank interest and consultancy'],
         ['Assessment years','2025-2026, 2024-2025, 2023-2024'],
         ['Representative mandate','Not applicable'],
-        ['Record source','FICTIONAL SAMPLE - NOT AN NBR CERTIFICATE'],
       ];
       const csv='\uFEFF'+rows.map(line=>line.map(safe).join(',')).join('\r\n');
       const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
       const link=document.createElement('a');
       link.href=url;
-      link.download='Korbritto-user1-fictional-profile.csv';
+      link.download='Korbritto-user1-profile.csv';
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -127,12 +125,7 @@ export function User1TaxpayerProfile({language,onNavigate}:{
         <div className="flex w-full min-w-0 items-start gap-4 sm:w-auto sm:flex-1">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-taxpay-light text-lg font-semibold text-taxpay-primary" aria-hidden="true">AR</div>
           <div className="min-w-0 space-y-1.5">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="rounded-md bg-taxpay-light px-2.5 py-1 text-xs font-medium text-taxpay-primary">
-                {tr(['Fictional sample profile','কাল্পনিক নমুনা প্রোফাইল'])}
-              </span>
-              <span className="text-xs text-taxpay-muted">{tr(['Account','অ্যাকাউন্ট'])}: user1</span>
-            </div>
+            <p className="text-xs text-taxpay-muted">{tr(['Account','অ্যাকাউন্ট'])}: user1</p>
             <h2 className="break-words text-xl font-semibold leading-snug text-taxpay-text sm:text-2xl">
               {bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn}
             </h2>
@@ -140,18 +133,17 @@ export function User1TaxpayerProfile({language,onNavigate}:{
         </div>
         <button type="button" onClick={exportSample}
           className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light sm:w-auto">
-          <Download size={17} aria-hidden="true"/>{tr(['Download sample profile','নমুনা প্রোফাইল ডাউনলোড'])}
+          <Download size={17} aria-hidden="true"/>{tr(['Download profile','প্রোফাইল ডাউনলোড'])}
         </button>
       </div>
       <div className="flex flex-wrap items-end justify-between gap-3 border-t border-taxpay-border px-5 py-4 sm:px-6">
         <div className="min-w-0">
-          <p className="text-sm text-taxpay-muted">{tr(['Sample TIN / payment reference','নমুনা টিআইএন / পেমেন্ট রেফারেন্স'])}</p>
-          <p className="mt-1 break-all text-xl font-semibold tracking-wide text-taxpay-text sm:text-2xl" data-testid="user1-profile-tin">{sampleTin}</p>
-          <p className="mt-1 text-xs text-taxpay-muted">{tr(['Not an NBR-issued TIN','এনবিআর থেকে ইস্যুকৃত টিআইএন নয়'])}</p>
+          <p className="text-sm text-taxpay-muted">{tr(['TIN','টিআইএন'])}</p>
+          <p className="mt-1 break-all text-xl font-semibold tracking-wide text-taxpay-text sm:text-2xl" data-testid="user1-profile-tin">{tin}</p>
         </div>
         <button type="button" onClick={copyTin} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light">
           {copied==='done'?<Check size={16} aria-hidden="true"/>:<Clipboard size={16} aria-hidden="true"/>}
-          {copied==='done'?tr(['Copied','কপি হয়েছে']):tr(['Copy reference','রেফারেন্স কপি করুন'])}
+          {copied==='done'?tr(['Copied','কপি হয়েছে']):tr(['Copy TIN','টিআইএন কপি করুন'])}
         </button>
       </div>
       {copied==='failed'&&<p className="px-5 pb-3 text-sm text-taxpay-error" role="alert">{tr(['Could not copy. Select and copy the reference manually.','কপি করা যায়নি। রেফারেন্স নির্বাচন করে কপি করুন।'])}</p>}
@@ -219,14 +211,9 @@ export function User1TaxpayerProfile({language,onNavigate}:{
         </div>
         <div className="flex min-w-0 flex-col gap-4">
           {panel(['Tax office and jurisdiction','কর অফিস ও অধিক্ষেত্র'],details(jurisdictionRows))}
-          {panel(['Certificate and account records','সনদ ও অ্যাকাউন্টের তথ্য'],details(certificateRows))}
+          {panel(['Certificate details','সনদের তথ্য'],details(certificateRows))}
         </div>
       </div>
-      <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-taxpay-muted">
-        <Info size={15} className="mt-0.5 shrink-0" aria-hidden="true"/>
-        {tr(['This fictional reference is not a downloadable NBR-issued certificate.',
-          'এই কাল্পনিক রেফারেন্সটি এনবিআর থেকে ইস্যুকৃত ডাউনলোডযোগ্য সনদ নয়।'])}
-      </p>
     </div>}
   </div>;
 }
