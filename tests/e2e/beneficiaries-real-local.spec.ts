@@ -1,7 +1,6 @@
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
-import {readFileSync} from 'node:fs';
 
 // Real disposable Auth + PostgREST. Fail closed if pointed at any hosted database.
 test('real account saves private beneficiary, reopens it, isolates another owner and prefills Pay Tax',async({browser})=>{
@@ -80,24 +79,14 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(records).toContainText('Local Beneficiary One');
 
-  // Import a genuine compressed Excel workbook: one duplicate and one valid new beneficiary.
+  // Excel entry is intentionally hidden; add the second taxpayer through
+  // the existing individual form while retaining owner-isolation coverage.
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Import from Excel'}).click();
-  await page.locator('#beneficiary-file').setInputFiles({
-    name:'beneficiaries-two-rows.xlsx',
-    mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    buffer:Buffer.from(readFileSync('tests/fixtures/beneficiary-two-rows.xlsx.base64','utf8').trim(),'base64'),
-  });
-  const importAlerts=await page.locator('[role="alert"]').allTextContents();
-  const importDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
-  await expect(importDialog.getByText(/Upload ready:/),'Excel parser / import errors: '+JSON.stringify(importAlerts)).toBeVisible();
-  await chooseBeneficiaryOption(importDialog,'beneficiary-tag','clients');
-  await importDialog.getByRole('button',{name:'Next',exact:true}).click();
-  await expect(importDialog.getByText('Already saved in this list.')).toBeVisible();
-  await expect(importDialog.getByText('1 valid, 1 needing attention')).toBeVisible();
-  await importDialog.getByRole('button',{name:'Next',exact:true}).click();
-  await importDialog.getByRole('button',{name:'Finish import'}).click();
-  await expect(page.getByText('1 beneficiaries added to the list.')).toBeVisible({timeout:15000});
+  const individual=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await individual.locator('#beneficiary-tin').fill('987654321098');
+  await individual.locator('#beneficiary-name').fill('Local Beneficiary Two');
+  await chooseBeneficiaryOption(individual,'beneficiary-tag','clients');
+  await individual.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(records).toContainText('Local Beneficiary Two');
   await page.reload();
   await expect(records).toContainText('Local Beneficiary Two');
