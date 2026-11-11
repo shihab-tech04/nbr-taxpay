@@ -61,8 +61,9 @@ BEGIN
   END IF;
 
   -- Select by exact trusted lookup aliases, not a browser-supplied user ID.
-  SELECT n INTO v_number FROM pg_catalog.generate_series(1,30) n
-  WHERE taxpay_guest_private.walkin_sample_tin('user'||n::text) = v_tin;
+  SELECT profile_number.number INTO v_number
+  FROM pg_catalog.generate_series(1,30) AS profile_number(number)
+  WHERE taxpay_guest_private.walkin_sample_tin('user'||profile_number.number::text) = v_tin;
   IF v_number IS NULL THEN
     RAISE EXCEPTION 'UNMATCHED_WALKIN_PAYER_TIN';
   END IF;
