@@ -13,11 +13,11 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
   if(api.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(api.hostname))
     throw new Error('Refusing a hosted demo-profile persistence test.');
   const viewport=info.project.name.startsWith('mobile')?{width:375,height:812}:{width:1280,height:800};
-  // Keep the same fictional account pair for both viewport projects. The CI
-  // command runs projects sequentially so the persisted selected-list setting
-  // cannot race between desktop and mobile journeys.
-  const firstUser:DemoUserId='user10';
-  const otherUser:DemoUserId='user9';
+  // Use distinct synthetic owners per viewport so desktop and mobile can run
+  // concurrently without racing over the persisted selected-list/language state.
+  // Each viewport still verifies the same two-account isolation journey.
+  const firstUser:DemoUserId=info.project.name.startsWith('mobile')?'user10':'user12';
+  const otherUser:DemoUserId=info.project.name.startsWith('mobile')?'user9':'user11';
   const contexts:BrowserContext[]=[];
   const makeContext=async()=>{
     const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
