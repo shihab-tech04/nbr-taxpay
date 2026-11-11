@@ -54,7 +54,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
       const {data:before,error:beforeError}=await supabase.auth.getUser();
       if(beforeError||before.user?.id!==ownerUid)throw Error('Account session changed');
       const [drafts,requests,corrections,notifications]=await Promise.all([
-        supabase.from('taxpay_payment_drafts').select('id',{count:'exact',head:true}).eq('owner_uid',ownerUid),
+        supabase.from('taxpay_account_payment_form_drafts').select('id',{count:'exact',head:true}).eq('owner_uid',ownerUid),
         supabase.from('taxpay_payment_requests').select('id',{count:'exact',head:true}).eq('owner_uid',ownerUid),
         supabase.from('taxpay_correction_inquiries').select('inquiry_id',{count:'exact',head:true}).eq('requester_uid',ownerUid),
         supabase.from('taxpay_in_app_notifications').select('id',{count:'exact',head:true})
@@ -114,11 +114,15 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
   const accountName=user?.id===ownerUid&&typeof user.user_metadata?.taxpay_display_name==='string'
     ? user.user_metadata.taxpay_display_name.trim() : '';
   const accountEmail=user?.id===ownerUid&&typeof user.email==='string' ? user.email : '';
+  // Distinct SQL payments only: a beneficiary-only allocation is not a payment by this account.
+  // SIMULATED records are complete in the application, never certified Treasury settlements.
+  const completedCount=visibleScenario.phase==='linked'
+    ? new Set(visibleScenario.transactions.filter(row=>row.state==='SIMULATED' && row.participantView!=='beneficiary')
+        .map(row=>row.transactionId)).size : null;
   const items=[
-    {id:'drafts',label:tr('Saved payment drafts','সংরক্ষিত পরিশোধ খসড়া'),count:visible.counts?.drafts,route:'secure_workspace' as const},
-    {id:'review',label:tr('Payment requests','পেমেন্ট অনুরোধ'),count:visible.counts?.reviewRequests,route:'secure_workspace' as const},
-    {id:'corrections',label:tr('Correction inquiries','সংশোধনের অনুসন্ধান'),count:visible.counts?.correctionInquiries,route:'corrections' as const},
-    {id:'notifications',label:tr('Unread notifications','অপঠিত বিজ্ঞপ্তি'),count:visible.counts?.unreadNotifications,route:'account_notifications' as const}
+    {id:'completed',label:tr('Completed Payments','সম্পন্ন পেমেন্ট'),count:completedCount,route:'history' as const},
+    {id:'drafts',label:tr('Saved Drafts','সংরক্ষিত খসড়া'),count:visible.counts?.drafts??null,route:'secure_workspace' as const},
+    {id:'corrections',label:tr('Correction Requests','সংশোধনের আবেদন'),count:visible.counts?.correctionInquiries??null,route:'corrections' as const}
   ];
   const recentTransactions=yearTransactions.slice(0,5);
   const scenarioAmount=yearTransactions.reduce((sum,transaction)=>sum+BigInt(transaction.amountMinor),0n);
@@ -208,17 +212,18 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
       </div>
     </div>
     <p className="mt-1 text-sm text-taxpay-muted">
-      {tr('These are private application records, not completed payments, Treasury settlements, assessed liabilities or tax credits.',
-        'এগুলো ব্যক্তিগত অ্যাপ্লিকেশন রেকর্ড; সম্পন্ন পরিশোধ, ট্রেজারি নিষ্পত্তি, নির্ধারিত করদায় বা কর ক্রেডিট নয়।')}
+      {tr('These are account-owned application records. Completed simulations are not verified Treasury settlements, assessed liabilities or tax credits.',
+        'এগুলো অ্যাকাউন্টের নিজস্ব অ্যাপ রেকর্ড। সম্পন্ন সিমুলেশন ট্রেজারি নিষ্পত্তি, নির্ধারিত করদায় বা যাচাইকৃত কর ক্রেডিট নয়।')}
     </p>
     {visible.phase==='loading'&&<p className="mt-4 text-sm text-taxpay-muted" role="status">
       {tr('Loading account activity…','অ্যাকাউন্টের কার্যক্রম লোড হচ্ছে…')}</p>}
     {visible.phase==='error'&&<p className="mt-4 text-sm text-taxpay-error" role="alert">
       {tr('Account activity could not be verified. No totals are shown.', 'অ্যাকাউন্টের কার্যক্রম যাচাই করা যায়নি। কোনো সংখ্যা দেখানো হচ্ছে না।')}</p>}
-    {visible.phase==='ready'&&visible.counts&&<div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    {visible.phase==='ready'&&visible.counts&&<div className="mt-4 grid gap-3 sm:grid-cols-3" data-testid="account-dashboard-status-summary">
       {items.map(item=><article key={item.id} className="flex min-w-0 flex-col rounded-xl border border-taxpay-border bg-slate-50 p-3">
         <p className="text-sm text-taxpay-muted">{item.label}</p>
-        <p className="mt-2 text-2xl font-semibold tabular-nums text-taxpay-text">{item.count?.toLocaleString(bn?'bn-BD':'en-BD')}</p>
+        <p className="mt-2 text-2xl font-semibold tabular-nums text-taxpay-text">{typeof item.count==='number'?item.count.toLocaleString(bn?'bn-BD':'en-BD'):'—'}</p>
+        {item.id==='completed'&&<p className="mt-1 text-xs text-taxpay-muted">{tr('Application-recorded simulation; not a Treasury-confirmed credit.','অ্যাপে সংরক্ষিত সিমুলেশন; ট্রেজারি-নিশ্চিত কর ক্রেডিট নয়।')}</p>}
         <button type="button" onClick={()=>onNavigate(item.route)}
           className="mt-3 min-h-11 self-start rounded-lg border border-taxpay-border bg-white px-3 text-sm font-medium text-taxpay-primary">
           {tr('Open records','রেকর্ড দেখুন')}
