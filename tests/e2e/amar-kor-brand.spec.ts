@@ -45,6 +45,7 @@ test('flat wordmark footer stays readable without horizontal overflow', async ({
     const footer = page.getByRole('contentinfo', { name: 'করবৃত্ত ফুটার' });
     await expect(footer.locator('.public-footer__wordmark')).toBeVisible();
     if(width<=900) {
+      await page.evaluate(() => window.scrollTo(0,document.documentElement.scrollHeight));
       await footer.locator('.public-footer__mobile-more > summary').click();
       await expect(footer.getByRole('navigation',{name:'ফুটারের আরও লিংক'}).getByRole('button',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toBeVisible();
     } else {
