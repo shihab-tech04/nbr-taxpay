@@ -2310,6 +2310,15 @@
 .receipt-modal .receipt-lookup__found,.receipt-modal .receipt-lookup--embedded .receipt-lookup__found{margin:0}
 .receipt-modal .receipt-lookup__back{display:none}
 .receipt-modal .receipt-view__paper .font-mono-plex{overflow-wrap:anywhere}
+/* Payment confirmation receipt: the approved two-column layout needs room
+   between identity, reference and settlement details, especially with long TINs.
+   Keep mobile, printable receipts and non-payment dialogs unchanged. */
+@media screen and (min-width:651px){
+ .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has(.receipt-view__paper) .receipt-view__summary{padding-bottom:1.6rem}
+ .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has(.receipt-view__paper) .receipt-view__reference-strip{padding-block:1.5rem}
+ .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has(.receipt-view__paper) .receipt-view__parties{column-gap:2.5rem;padding-block:1.75rem}
+ .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has(.receipt-view__paper) .receipt-view__detail{padding-block:.5rem}
+}
 @media(max-width:650px){
  .taxpay-citizen-shell .taxpay-modal.receipt-modal{width:100%;max-width:100%;height:100dvh;max-height:100dvh}
  .taxpay-citizen-shell .taxpay-modal.receipt-modal .taxpay-modal__header{min-height:64px;padding:.75rem 1rem}
