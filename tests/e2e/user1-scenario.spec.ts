@@ -150,9 +150,13 @@ test('user1 profile has complete fictional data, clear source labeling and a res
   await expect(profile.getByText('Taxpayer class',{exact:true})).toBeVisible();
   await expect(profile.getByText('Individual',{exact:true}).first()).toBeVisible();
   await expect(profile.getByText('Not available',{exact:true})).toHaveCount(0);
+  await expect(profile.getByTestId('user1-profile-detail-columns').locator(':scope > div')).toHaveCount(2);
+  await expect(profile.getByText('Need full registration and certificate details?')).toHaveCount(0);
+  await expect(profile.getByText('Illustrative taxpayer details only.')).toHaveCount(0);
   await profile.getByRole('tab',{name:'TIN & certificate'}).click();
   const tin=profile.getByTestId('taxpayer-tin-information');
   await expect(tin).toBeVisible();
+  await expect(tin.getByTestId('user1-tin-detail-columns').locator(':scope > div')).toHaveCount(2);
   for(const field of ['TIN number','Registered name','TIN type','TIN classification','TIN registration date',
     'User type','Local taxpayer','Previous TIN','Taxes circle','Taxes zone','Taxes range',
     'District','Country','Registered / permanent address','Current address','Mobile number','Email address',
@@ -162,7 +166,7 @@ test('user1 profile has complete fictional data, clear source labeling and a res
   }
   await expect(tin.getByText('Not available',{exact:true})).toHaveCount(0);
   await expect(tin).toContainText('not a downloadable NBR-issued certificate');
-  await profile.getByRole('button',{name:'Back to profile overview'}).click();
+  await profile.getByRole('tab',{name:'Overview'}).click();
   await expect(profile.getByRole('tab',{name:'Overview'})).toHaveAttribute('aria-selected','true');
   await expect(profile.getByText('arif.rahman@example.com')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
