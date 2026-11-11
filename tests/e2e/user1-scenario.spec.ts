@@ -137,3 +137,24 @@ test('user1 Activity retains the approved transaction table and removes redundan
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth))
     .toBeLessThanOrEqual(2);
 });
+
+
+test('taxpayer profile includes all e-TIN source fields without claiming sample identity is NBR-linked',async({page},info)=>{
+  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Focused e-TIN profile parity');
+  await page.goto('/?action=account_profile&demoUser=user1');
+  const tin=page.getByTestId('taxpayer-tin-information');
+  await expect(tin).toBeVisible();
+  await expect(tin.getByRole('heading',{name:'e-TIN and taxpayer registration details'})).toBeVisible();
+  for(const field of ['TIN number','Registered taxpayer name','Taxpayer status','TIN type','TIN classification',
+    'TIN registration date','User type','Local taxpayer','Previous TIN','Taxes circle','Taxes zone','Taxes range',
+    'District','Country','Registered / permanent address','Current address','Mobile number','Email address',
+    'Certificate issue date','Certificate last updated','Issuing tax officer','Tax office address',
+    'Tax office phone','Last account login']){
+    await expect(tin.getByText(field,{exact:true})).toHaveCount(1);
+  }
+  await expect(tin).toContainText('Verified e-TIN data is not connected to this account.');
+  await expect(tin.getByText('1111111111111')).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  await page.goto('/?action=account_profile&demoUser=user1&lang=bn');
+  await expect(page.getByTestId('taxpayer-tin-information').getByRole('heading',{name:'ই-টিআইএন ও করদাতার নিবন্ধন তথ্য'})).toBeVisible();
+});

@@ -7,6 +7,7 @@ import { useTaxState } from '../../services/taxState';
 import { useDemoSqlProfileAndServiceRecords } from '../../services/demoSqlProfiles';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {AccountRecentActivity} from './AccountRecentActivity';
+import {TaxpayerTinInformation} from './TaxpayerTinInformation';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
@@ -237,6 +238,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                       <div><dt>{language === 'bn' ? 'কর সার্কেল' : 'Tax circle'}</dt><dd>{previewAccount?.taxCircle ?? demoSql.profile?.jurisdictionLabel ?? '—'}</dd></div>
                     </>}
                 </dl>
+                {previewAccount && <TaxpayerTinInformation language={language} />}
               </>
             )}
             {sampleOnly && page === 'settings' && (
@@ -279,6 +281,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
               </section>
             )}
             {page === 'profile' && <AccountRecentActivity ownerUid={user.id} language={language}/>}
+            {page === 'profile' && <TaxpayerTinInformation language={language} />}
             {(page === 'profile' || page === 'settings') && (
               <form className="taxpayer-account-panel taxpayer-account-fields" onSubmit={savePreferences}>
                 <h2>{t.preferences}</h2>
