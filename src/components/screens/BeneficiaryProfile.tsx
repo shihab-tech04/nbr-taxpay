@@ -165,8 +165,9 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
                 {tr('Recorded','নথিভুক্ত')}: {formatCurrency(yearTotal/100,language)}
               </span>
             </div>
-            <ol className="mt-2 space-y-2">
-              {entries.map(row=><li key={row.key} className="rounded-lg border border-taxpay-border p-3 sm:p-4">
+            <ol className="relative ml-2 mt-3 space-y-3 border-l-2 border-taxpay-primary/30 pl-5" data-testid="beneficiary-payment-chronology">
+              {entries.map(row=><li key={row.key} className="relative rounded-lg border border-taxpay-border p-3 sm:p-4">
+                <span aria-hidden="true" className="absolute -left-[29px] top-5 h-3.5 w-3.5 rounded-full border-[3px] border-white bg-taxpay-primary ring-1 ring-taxpay-primary/40"/>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-medium text-taxpay-text">{row.paymentHead}</p>
