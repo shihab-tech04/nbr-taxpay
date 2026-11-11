@@ -55,6 +55,19 @@
     padding-bottom:calc(12px + env(safe-area-inset-bottom));
   }
 
+  /* Long Travel Tax passenger and route stages naturally exceed the screen.
+     Give their existing internal form scroller a bounded height: keep the
+     approved fixed header/footer and avoid clipping Add passenger controls.
+     Short non-travel sheets still shrink to their actual content. */
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"][data-payment-stage="true"]:has(.travel-flow__main) {
+    height:calc(100dvh - 12px - env(safe-area-inset-top)) !important;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"][data-payment-stage="true"]:has(.travel-flow__main) .taxpay-modal__body {
+    flex:1 1 auto;
+    min-height:0;
+    overflow:hidden;
+  }
+
   /* Help uses the same bottom-sheet rhythm and standard TaxPay chrome.
      It is not a separate floating card above the dock. */
   .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-widget .public-help-backdrop {
