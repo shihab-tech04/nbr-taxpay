@@ -17,6 +17,13 @@ const ALLOWED=[
 export const safeReleasePaths=(paths)=>paths.length>0&&paths.every(p=>ALLOWED.some(r=>r.test(p))&&!p.includes('..'));
 export const exactMergeTree=(parents,mergeTree,headTree)=>parents.length===3&&
   parents.every(p=>HEX40.test(p))&&mergeTree===headTree&&HEX40.test(mergeTree);
+// A squash commit has only one parent; it is safe to reuse the reviewed PR
+// bundle only if its final Git tree is byte-identical to that PR's tested head.
+export const exactSquashTree=(parents,mergeTree,headTree)=>parents.length===2&&
+  parents.every(p=>HEX40.test(p))&&mergeTree===headTree&&HEX40.test(mergeTree);
+export const exactPRTree=(parents,head,mergeTree,headTree)=>
+  (parents.length===3&&parents[2]===head&&exactMergeTree(parents,mergeTree,headTree))||
+  (parents.length===2&&HEX40.test(head)&&exactSquashTree(parents,mergeTree,headTree));
 export const checkPassed=(checks,name,head,mergedAt)=>checks.some(c=>
   c.name===name&&c.head_sha===head&&c.app?.slug==='github-actions'&&
   c.status==='completed'&&c.conclusion==='success'&&
@@ -43,17 +50,28 @@ export async function discover(){
   const sha=process.env.GITHUB_SHA;
   if(!HEX40.test(sha||'')||cmd('rev-parse','HEAD')!==sha)return {mode:'full',reason:'Source HEAD mismatch'};
   const parents=cmd('rev-list','--parents','-n','1',sha).split(' ');
-  const head=parents[2];
-  if(!head||!exactMergeTree(parents,cmd('rev-parse',sha+'^{tree}'),cmd('rev-parse',head+'^{tree}')))return{mode:'full',reason:'Merge source tree not identical to PR head'};
+  // Only a two-parent merge or a one-parent GitHub squash is eligible.
+  // Ordinary pushes and cherry-picks have no matching merged PR below.
+  if(![2,3].includes(parents.length)||!parents.every(p=>HEX40.test(p)))
+    return{mode:'full',reason:'Not a supported GitHub PR merge or squash commit'};
   const base=parents[1];
   const files=cmd('diff','--name-only','--no-renames',base,sha).split('\n').filter(Boolean);
   if(!safeReleasePaths(files))return{mode:'full',reason:'Restricted or unrecognized source changes'};
   const linked=await api('commits/'+sha+'/pulls?per_page=50');
   const pr=Array.isArray(linked)&&linked.find(x=>x.merged_at&&
-    x.merge_commit_sha===sha&&x.head?.sha===head&&x.base?.sha===base&&x.base?.ref==='main'&&
+    x.merge_commit_sha===sha&&HEX40.test(x.head?.sha||'')&&x.base?.sha===base&&x.base?.ref==='main'&&
     x.base?.repo?.full_name===process.env.GITHUB_REPOSITORY&&
     x.head?.repo?.full_name===process.env.GITHUB_REPOSITORY);
-  if(!pr)return{mode:'full',reason:'No matching protected in-repository merge PR'};
+  if(!pr)return{mode:'full',reason:'No matching protected in-repository PR'};
+  const head=pr.head.sha;
+  // Git checkout fetches the PR head when the branch exists. A deleted squash
+  // branch can still be inspected by immutable commit SHA through GitHub's API.
+  let testedTree;
+  try{testedTree=cmd('rev-parse',head+'^{tree}');}
+  catch{testedTree=(await api('git/commits/'+head)).tree?.sha;}
+  const mergedTree=cmd('rev-parse',sha+'^{tree}');
+  if(!exactPRTree(parents,head,mergedTree,testedTree))
+    return{mode:'full',reason:'Production source tree not identical to reviewed PR head'};
   const runs=await api('actions/runs?event=pull_request&head_sha='+head+'&per_page=100');
   const findRun=(name)=>runs.workflow_runs?.find(r=>validRun(r,head,pr.head.ref,pr.merged_at,name));
   const pages=findRun('TaxPay - build and GitHub Pages');
