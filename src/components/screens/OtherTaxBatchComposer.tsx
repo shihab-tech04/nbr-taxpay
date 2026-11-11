@@ -6,6 +6,7 @@ import type { DemoUserId } from '../../data/demoUsers';
 import { V11_SOURCE_HEADS } from '../../data/v11SourceHeads';
 import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
 import { BLOCKED_HEAD_IDS } from '../../data/paymentHeads';
+import { fitsCombinedAllocationCapacity, MAX_COMBINED_ALLOCATIONS } from '../../services/otherTaxCombinedPayment';
 import { parseGuestAmount, sumGuestAmounts, normalizeGuestAmountInput } from '../../services/guestAmount';
 import type { Language } from '../../types/tax';
 
@@ -55,6 +56,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
+  const [allocationLimitError, setAllocationLimitError] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const taxpayerTabsRef = useRef<HTMLDivElement>(null);
   const [railEdges, setRailEdges] = useState({ left: false, right: false });
@@ -148,25 +150,34 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const visibleEligible = grouped.flatMap(group => group.rows).filter(head =>
     isOtherTaxHeadEligible(head.id) &&
     (!search || [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search)));
+  // Do not silently truncate Select All or let the UI exceed SQL's hard limit.
+  const applyLines = (candidate: OtherTaxAllocation[]) => {
+    if (!fitsCombinedAllocationCapacity(candidate.length)) {
+      setAllocationLimitError(true);
+      return;
+    }
+    setAllocationLimitError(false);
+    onChange(candidate);
+  };
   const selectAll = () => {
     if (!activeId) return;
     const additions = visibleEligible.filter(head => !activeLines.some(line => line.headId === head.id))
       .map(head => newLine(head.id));
-    if (additions.length) onChange([...lines, ...additions]);
+    if (additions.length) applyLines([...lines, ...additions]);
   };
   const unselectAll = () => {
-    if (activeId && activeLines.length) onChange(lines.filter(line => line.taxpayerId !== activeId));
+    if (activeId && activeLines.length) applyLines(lines.filter(line => line.taxpayerId !== activeId));
   };
   // A head may be selected once per assessment year for each taxpayer.
   const toggleHead = (headId: number, checked: boolean) => {
     if (!activeId || !isOtherTaxHeadEligible(headId)) return;
-    if (!checked) onChange(lines.filter(line => !(line.taxpayerId === activeId && line.headId === headId)));
-    else if (!activeLines.some(line => line.headId === headId)) onChange([...lines, newLine(headId)]);
+    if (!checked) applyLines(lines.filter(line => !(line.taxpayerId === activeId && line.headId === headId)));
+    else if (!activeLines.some(line => line.headId === headId)) applyLines([...lines, newLine(headId)]);
   };
   const addYear = (headId: number) => {
     const chosen = new Set(activeLines.filter(line => line.headId === headId).map(line => line.assessmentYear));
     const year = OTHER_TAX_YEARS.find(candidate => !chosen.has(candidate));
-    if (activeId && year && isOtherTaxHeadEligible(headId)) onChange([...lines, newLine(headId, year)]);
+    if (activeId && year && isOtherTaxHeadEligible(headId)) applyLines([...lines, newLine(headId, year)]);
   };
   const edit = (id: string, update: Partial<OtherTaxAllocation>) => {
     const current = lines.find(line => line.id === id);
@@ -178,7 +189,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
       ? suggestedFor(current.taxpayerId, current.headId, update.assessmentYear) : null;
     const amount = update.amount ?? (update.assessmentYear && suggestionTaxpayerIds?.[current.taxpayerId] === 'user1'
       ? nextSuggestion?.amount ?? '' : current.amount);
-    onChange(lines.map(line => line.id === id ? { ...line, ...update, amount } : line));
+    applyLines(lines.map(line => line.id === id ? { ...line, ...update, amount } : line));
   };
 
   return (
@@ -268,6 +279,10 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
               {tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' years · ' + count + ' available non-return payment heads',
                  new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + 'টি রিটার্ন-বহির্ভূত করের খাত')}
             </p>
+            {allocationLimitError && <p className="payment-form-field-error" role="alert" data-testid="combined-allocation-capacity-error">
+              {tx('This payment supports up to ' + MAX_COMBINED_ALLOCATIONS + ' beneficiary/head/year allocations. Remove some selections before adding more.',
+                  'এই পেমেন্টে সর্বোচ্চ ' + MAX_COMBINED_ALLOCATIONS + 'টি করদাতা/খাত/করবর্ষ বণ্টন রাখা যাবে। নতুন খাত যোগ করতে কিছু নির্বাচন সরান।')}
+            </p>}
             {error && <div className="other-tax-error-summary" role="alert" data-testid="other-tax-validation-summary">
               <strong>{tx('Check highlighted payment entries', 'চিহ্নিত পরিশোধের তথ্য পরীক্ষা করুন')}</strong>
               <p>{error}</p>
@@ -368,7 +383,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                               </p>}
                             </div>
                             {headLines.length > 1 && <button type="button" className="other-tax-year-remove"
-                              onClick={() => onChange(lines.filter(item => item.id !== line.id))}
+                              onClick={() => applyLines(lines.filter(item => item.id !== line.id))}
                               aria-label={tx('Remove assessment year', 'করবর্ষ মুছুন') + ': ' + line.assessmentYear}
                               title={tx('Remove assessment year', 'করবর্ষ মুছুন')}>
                               <Trash2 size={18} aria-hidden="true" />
