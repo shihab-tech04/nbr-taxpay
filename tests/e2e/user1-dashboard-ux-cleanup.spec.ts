@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import {openTaxpayerTravelTax} from './taxpayer-travel-menu-helper';
 
 const demo = '/?action=taxpayer_home&demoUser=user1';
 
@@ -16,7 +17,7 @@ test('the Overview has one tax position, one tax-year chart, the original draft 
   await expect(bento.getByRole('heading',{name:'Recent activity'})).toHaveCount(1);
   await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   await expect(bento.getByRole('button',{name:'Pay tax',exact:true})).toBeVisible();
-  await expect(bento.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+  await expect(bento.getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
   await expect(bento.locator('.taxpay-bento-position')).toContainText('৳ 180,000');
   await expect(bento.locator('.taxpay-bento-position')).toContainText('৳ 155,000');
   await expect(bento.locator('.taxpay-bento-position')).toContainText('৳ 25,000');
@@ -53,7 +54,7 @@ test('year chart switches assessment year and travel button uses the existing pa
   await page.keyboard.press('Enter');
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2024-2025');
   await expect(year).toHaveAttribute('aria-current','true');
-  await page.getByRole('button',{name:'Travel tax',exact:true}).click();
+  await openTaxpayerTravelTax(page);
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
 });
@@ -68,7 +69,7 @@ test('mobile and desktop bento stays unclipped, including visible help disclosur
     const bento=workspace.getByTestId('taxpayer-overview-bento');
     await expect(bento).toBeVisible();
     await expect(workspace.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
-    await expect(bento.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+    await expect(bento.getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
     if(width<=390){
@@ -153,7 +154,7 @@ test('dashboard only: calm card surfaces preserve action contrast and mobile con
     await expect(highlight).toHaveCSS('background-color','rgb(245, 248, 252)');
     await expect(hero.locator('.taxpay-bento-hero__status button').first()).toHaveCSS('background-color','rgb(247, 249, 252)');
     await expect(hero.getByRole('button',{name:'Pay tax',exact:true})).toBeVisible();
-    await expect(hero.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+    await expect(hero.getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
     const colors=await hero.evaluate(element=>{
       const heading=element.querySelector('h2');
       const buttons=Array.from(element.querySelectorAll<HTMLButtonElement>('.taxpay-bento-hero__actions button'));
@@ -208,7 +209,7 @@ test('Overview puts financial position first, followed by exceptions, charts, sp
   expect(positions.attentionHeight,'Compact attention card').toBeLessThan(370);
   expect(Math.abs(positions.coverageHeight-positions.yearsHeight),'Balanced analytics cards').toBeLessThan(3);
   await expect(bento.locator('.taxpay-bento-position__totals > div')).toHaveCount(2);
-  await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(4);
+  await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(3);
   await expect(bento.locator('.taxpay-bento-hero [aria-controls="dashboard-payment-drafts"]')).toHaveCount(0);
   await expect(bento.locator('.taxpay-tag-spending__track')).toBeVisible();
   await expect(bento.getByRole('button',{name:'Check tax ledger'})).toHaveCount(0);
