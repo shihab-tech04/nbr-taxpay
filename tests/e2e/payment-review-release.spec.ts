@@ -1,3 +1,4 @@
+import {openTaxpayerPayTax} from './taxpayer-travel-menu-helper';
 import { fillTravelDetails, fillForeignPassenger } from './travel-tax-test-helper';
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
@@ -270,7 +271,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   });
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
-  await page.getByRole('button', { name: 'Pay — select payment type' }).click();
+  await openTaxpayerPayTax(page);
   const services = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
   // The service and relationship appear once in the compact workflow summary.
