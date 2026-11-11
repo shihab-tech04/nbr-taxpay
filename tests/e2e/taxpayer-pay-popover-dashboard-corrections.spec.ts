@@ -26,6 +26,7 @@ test('desktop Pay Tax is an overlay that keeps navigation positions stable and c
  await trigger.click();
  await menu.getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
  await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
+ await expect(page.getByRole('dialog',{name:'Pay Tax'}).locator('[data-payer-relationship]')).toHaveCount(2);
 });
 
 test('desktop Travel Tax is a different payment selection and outside click dismisses dropdown',async({page},info)=>{
@@ -38,7 +39,12 @@ test('desktop Travel Tax is a different payment selection and outside click dism
  await expect(rail.locator('#taxpayer-pay-menu')).toHaveCount(0);
  await rail.getByRole('button',{name:'Pay Tax menu'}).click();
  await rail.getByRole('menuitem',{name:'Travel Tax',exact:true}).click();
- await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
+ const travel=page.getByRole('dialog',{name:'Travel Tax'});
+ await expect(travel).toBeVisible();
+ await expect(travel.getByTestId('travel-passenger-list')).toBeVisible();
+ await expect(travel.locator('.tax-service-choice__payer-grid')).toHaveCount(0);
+ await expect(travel.locator('[data-payment-entry]')).toHaveCount(0);
+ await expect(travel.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
 });
 
 test('mobile split Pay popup keeps approved dock visible and exposes both journeys',async({page},info)=>{
@@ -57,7 +63,12 @@ test('mobile split Pay popup keeps approved dock visible and exposes both journe
  expect(rect!.x).toBeGreaterThanOrEqual(0);
  expect(rect!.x+rect!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
  await menu.getByRole('menuitem',{name:'Travel Tax',exact:true}).click();
- await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
+ const travel=page.getByRole('dialog',{name:'Travel Tax'});
+ await expect(travel).toBeVisible();
+ await expect(travel.getByTestId('travel-passenger-list')).toBeVisible();
+ await expect(travel.locator('.tax-service-choice__payer-grid')).toHaveCount(0);
+ await expect(travel.locator('[data-payment-entry]')).toHaveCount(0);
+ await expect(travel.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
 });
 
 test('Bengali labels and dashboard correction details stay on the account overview',async({page},info)=>{
@@ -68,4 +79,17 @@ test('Bengali labels and dashboard correction details stay on the account overvi
  await expect(section.getByTestId('dashboard-correction-request-list').locator('li')).toHaveCount(2);
  await section.getByRole('button',{name:/আবেদনের বিস্তারিত/}).first().click();
  await expect(page.locator('.taxpay-modal')).toBeVisible();
+});
+
+test('Bengali Travel Tax menu enters passengers directly, not the income-tax payer selector',async({page},info)=>{
+ test.skip(info.project.name!=='mobile-375','Bengali mobile route acceptance');
+ await page.goto(demo+'&lang=bn');
+ await page.getByRole('button',{name:'কর পরিশোধের ধরন নির্বাচন'}).click();
+ const menu=page.getByRole('menu',{name:'পরিশোধের ধরন'});
+ await menu.getByRole('menuitem',{name:'ভ্রমণ কর'}).click();
+ const travel=page.getByRole('dialog',{name:'ভ্রমণ কর'});
+ await expect(travel).toBeVisible();
+ await expect(travel.getByTestId('travel-passenger-list')).toBeVisible();
+ await expect(travel.locator('[data-payer-relationship]')).toHaveCount(0);
+ await expect(travel.locator('.tax-service-choice__selected-service')).toContainText('ভ্রমণ কর');
 });
