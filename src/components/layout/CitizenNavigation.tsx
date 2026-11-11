@@ -19,7 +19,6 @@ const taxpayerLinks: CitizenAction[] = [
 const taxpayerMenuLinks: CitizenAction[] = [
   ...taxpayerLinks,
   { route: 'certificates', en: 'Tax Credit Certificates', bn: 'কর ক্রেডিট সনদপত্র' },
-  { route: 'corrections', en: 'Correction Requests', bn: 'সংশোধনের আবেদন' },
   { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি' }
 ];
 const serviceLinks: CitizenAction[] = [
@@ -89,6 +88,9 @@ export function CitizenNavigation() {
   const links = isTaxpayer ? taxpayerLinks : guestLinks;
   const [compact, setCompact] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [payPopoverOpen, setPayPopoverOpen] = useState(false);
+  const payPopoverRef = useRef<HTMLDivElement>(null);
+  const payButtonRef = useRef<HTMLButtonElement>(null);
   const [inputFocused, setInputFocused] = useState(false);
   const inputFocusedRef = useRef(false);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -104,13 +106,32 @@ export function CitizenNavigation() {
     && (isTaxpayer || !isPaymentServiceChoiceOpen);
   const go = (route: string, params: Record<string, string> = {}) => {
     setMenuOpen(false);
+    setPayPopoverOpen(false);
     setCompact(false);
     navigate(route, params);
   };
   const openPay = () => {
     setMenuOpen(false);
-    setPaymentServiceChoiceOpen(true);
+    if (isTaxpayer) setPayPopoverOpen(open => !open);
+    else setPaymentServiceChoiceOpen(true);
   };
+  useEffect(() => {
+    if (!payPopoverOpen) return;
+    payPopoverRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+    const closeOutside = (event: PointerEvent) => {
+      if (!payPopoverRef.current?.contains(event.target as Node) &&
+          !payButtonRef.current?.contains(event.target as Node)) setPayPopoverOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setPayPopoverOpen(false); payButtonRef.current?.focus(); }
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [payPopoverOpen]);
   const goHome = () => {
     if (inTransaction && !window.confirm(bn
       ? 'আপনি কি এই পেমেন্ট ধাপ থেকে বের হবেন? এখন পর্যন্ত দেওয়া তথ্য হারিয়ে যাবে।'
@@ -120,6 +141,7 @@ export function CitizenNavigation() {
   useEffect(() => {
     setCompact(false);
     setMenuOpen(false);
+    setPayPopoverOpen(false);
   }, [currentRoute, userRole]);
 
   useEffect(() => {
@@ -274,10 +296,22 @@ export function CitizenNavigation() {
         </div>
       )}
       {showPay && !overlayOpen && (
-        <button type="button" className={`${compact ? "citizen-pay citizen-pay--compact" : "citizen-pay citizen-pay--expanded"}${!isTaxpayer ? " citizen-pay--guest-floating" : ""}`} onClick={openPay}
+        <button ref={payButtonRef} type="button" className={`${compact ? "citizen-pay citizen-pay--compact" : "citizen-pay citizen-pay--expanded"}${!isTaxpayer ? " citizen-pay--guest-floating" : ""}`} onClick={openPay}
+          aria-haspopup={isTaxpayer ? 'menu' : undefined} aria-expanded={isTaxpayer ? payPopoverOpen : undefined} aria-controls={isTaxpayer ? 'citizen-pay-popover' : undefined}
           aria-label={bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type'}>
           <Plus aria-hidden="true" size={22}/><span>{!isTaxpayer ? (bn ? 'কর পরিশোধ' : 'Pay now') : (bn ? 'পরিশোধ' : 'Pay')}</span>
         </button>
+      )}
+      {showPay && !overlayOpen && isTaxpayer && payPopoverOpen && (
+        <div id="citizen-pay-popover" ref={payPopoverRef} role="menu"
+          className="citizen-pay-popover" aria-label={bn ? 'পরিশোধের ধরন' : 'Payment options'}>
+          <button type="button" role="menuitem" onClick={() => {setPayPopoverOpen(false);openPaymentServiceChoice();}}>
+            <Plus size={17} aria-hidden="true"/>{bn ? 'কর পরিশোধ' : 'Pay Tax'}
+          </button>
+          <button type="button" role="menuitem" onClick={() => {setPayPopoverOpen(false);openPaymentServiceChoice('TRAVEL_TAX');}}>
+            <Route size={17} aria-hidden="true"/>{bn ? 'ভ্রমণ কর' : 'Travel Tax'}
+          </button>
+        </div>
       )}
       {overlayOpen && (
         <div className="citizen-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setMenuOpen(false); }}>
