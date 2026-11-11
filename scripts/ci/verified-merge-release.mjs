@@ -8,6 +8,10 @@ const ALLOWED=[
   /^src\/components\/[A-Za-z0-9_./-]+\.(tsx|css)$/,
   /^src\/styles\/[A-Za-z0-9_./-]+\.css$/,
   /^src\/index\.css$/,
+  // UI-only PRs with regression tests have already passed the exact-head
+  // acceptance suite. Reuse that immutable bundle instead of repeating it on Main.
+  // Do not broaden this to SQL, services, workflow scripts or dependencies.
+  /^tests\/(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+\.(?:test|spec)\.ts$/,
   /^public\/[A-Za-z0-9_./-]+\.(svg|png|jpg|jpeg|webp|css)$/
 ];
 export const safeReleasePaths=(paths)=>paths.length>0&&paths.every(p=>ALLOWED.some(r=>r.test(p))&&!p.includes('..'));
