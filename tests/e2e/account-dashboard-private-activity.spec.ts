@@ -74,14 +74,14 @@ async function mockPrivateAccount(page:Page,profile:'user2'|null){
       })):[];
       return json(body.p_view==='beneficiary'?beneficiaryRows:[]);
     }
-    if(url.pathname==='/rest/v1/taxpay_payment_drafts'||
+    if(url.pathname==='/rest/v1/taxpay_account_payment_form_drafts'||
        url.pathname==='/rest/v1/taxpay_payment_requests'||
        url.pathname==='/rest/v1/taxpay_correction_inquiries'||
        url.pathname==='/rest/v1/taxpay_in_app_notifications'){
       expect(ownerFromToken()).toBe(owner.id);
       const ownerFilter=url.searchParams.get('owner_uid')??url.searchParams.get('requester_uid')??url.searchParams.get('recipient_uid');
       expect(ownerFilter).toBe(`eq.${owner.id}`);
-      const count=url.pathname.endsWith('payment_drafts')?1:url.pathname.endsWith('payment_requests')?2:url.pathname.endsWith('correction_inquiries')?1:1;
+      const count=url.pathname.endsWith('payment_form_drafts')?1:url.pathname.endsWith('payment_requests')?2:url.pathname.endsWith('correction_inquiries')?1:1;
       return route.fulfill({status:200,headers:{
         'content-range':`0-0/${count}`,
         'access-control-expose-headers':'content-range, x-total-count',
