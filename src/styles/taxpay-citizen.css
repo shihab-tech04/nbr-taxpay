@@ -2585,6 +2585,19 @@
 .beneficiary-directory__count {margin:18px 0 10px;}
 .beneficiary-directory__bulk-actions {display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;min-width:0;}
 .beneficiary-directory__selected-count {margin:0;color:var(--color-taxpay-text);font-size:14px;font-weight:600;}
+/* Keep destructive bulk removal accessible but out of the primary payment-action row. */
+.beneficiary-directory__bulk-more {min-width:0;}
+.beneficiary-directory__bulk-more-trigger {
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:44px;padding:7px 11px;cursor:pointer;list-style:none;
+  border:1px solid var(--color-taxpay-border);border-radius:9px;
+  background:var(--color-taxpay-surface);color:var(--color-taxpay-text);
+  font-size:14px;font-weight:500;
+}
+.beneficiary-directory__bulk-more-trigger::-webkit-details-marker {display:none;}
+.beneficiary-directory__bulk-more[open] .beneficiary-directory__bulk-more-trigger svg {transform:rotate(180deg);}
+.beneficiary-directory__bulk-more-trigger:focus-visible {outline:2px solid var(--color-taxpay-primary);outline-offset:2px;}
+.beneficiary-directory__bulk-more-content {display:flex;align-items:center;justify-content:flex-end;min-height:44px;padding:6px 0;}
 .beneficiary-directory__select-all {display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 8px;color:var(--color-taxpay-muted);font-size:14px;cursor:pointer;}
 .beneficiary-directory__select-all input,.beneficiary-directory__identity > input {
   flex:none;width:18px;height:18px;accent-color:var(--color-taxpay-primary);cursor:pointer;
