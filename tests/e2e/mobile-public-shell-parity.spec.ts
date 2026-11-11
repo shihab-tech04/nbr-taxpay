@@ -44,7 +44,10 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
   await expect(page.locator('.public-help-launch__close')).toBeHidden();
   const panelBox=await helpPanel.boundingBox();
   expect(panelBox).not.toBeNull();
-  expect(Math.abs(panelBox!.y+panelBox!.height-812)).toBeLessThanOrEqual(2);
+  const dockBox=await dock.boundingBox();
+  expect(dockBox).not.toBeNull();
+  expect(panelBox!.y+panelBox!.height).toBeLessThanOrEqual(dockBox!.y-2);
+  expect(panelBox!.y).toBeGreaterThanOrEqual(0);
   expect(panelBox!.height).toBeLessThan(812*.8);
   await expect(page.locator('.public-help-backdrop')).toBeVisible();
   await expect(helpPanel).toHaveAttribute('aria-modal','true');
@@ -180,7 +183,9 @@ test('mobile Help bottom sheet closes by Escape and backdrop without changing na
   await expect(dialog).toBeVisible();
   const rect=await dialog.boundingBox();
   expect(rect).not.toBeNull();
-  expect(Math.abs(rect!.y+rect!.height-812)).toBeLessThanOrEqual(2);
+  const dockRect=await dock.boundingBox();
+  expect(dockRect).not.toBeNull();
+  expect(rect!.y+rect!.height).toBeLessThanOrEqual(dockRect!.y-2);
   await expect(dialog.getByRole('button',{name:'Close chat'})).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
