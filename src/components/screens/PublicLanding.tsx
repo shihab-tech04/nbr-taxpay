@@ -224,7 +224,7 @@ export const PublicLanding: React.FC = () => {
       </div>
     </section>
 
-    <section id="public-how-it-works" className="citizen-hub-section public-info-section public-payment-path" aria-labelledby="steps-title">
+    <section id="public-how-it-works" style={{ display: 'none' }} className="citizen-hub-section public-info-section public-payment-path" aria-labelledby="steps-title">
       <div className="citizen-hub-section__heading">
         <div>
           <h2 id="steps-title">{t('How your payment works', 'যেভাবে কর পরিশোধ করবেন')}</h2>
@@ -247,7 +247,7 @@ export const PublicLanding: React.FC = () => {
       </ol>
     </section>
 
-    <section id="public-faq" className="citizen-hub-section public-info-section public-faq-layout" aria-labelledby="faq-title">
+    <section id="public-faq" style={{ display: 'none' }} className="citizen-hub-section public-info-section public-faq-layout" aria-labelledby="faq-title">
       <div className="public-faq-layout__heading">
         <div>
           <h2 id="faq-title">{t('Common questions', 'সাধারণ প্রশ্ন')}</h2>
