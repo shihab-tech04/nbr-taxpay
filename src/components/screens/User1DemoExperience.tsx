@@ -732,7 +732,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const documents=<>
     <section className={panel} data-testid="issued-tax-credit-certificates" aria-labelledby="sample-tax-credit-certificates-title">
       <h2 id="sample-tax-credit-certificates-title" className="text-base font-semibold">{tr('Tax Credit Certificates','কর ক্রেডিট সনদপত্র')}</h2>
-      <p className="mt-2 text-sm text-taxpay-muted" role="status">{tr('No issuer-verified tax credit certificates are linked to this fictional account. Payment records below are not issued tax credit certificates.', 'এই কাল্পনিক অ্যাকাউন্টে ইস্যুকারী কর্তৃপক্ষের যাচাইকৃত কর ক্রেডিট সনদপত্র নেই। নিচের পেমেন্ট রেকর্ড ইস্যুকৃত কর ক্রেডিট সনদপত্র নয়।')}</p>
+      <p className="mt-2 text-sm text-taxpay-muted" role="status">{tr('No issuer-verified tax credit certificates are linked to this account. Payment records below are not issued tax credit certificates.', 'এই অ্যাকাউন্টে ইস্যুকারী কর্তৃপক্ষের যাচাইকৃত কর ক্রেডিট সনদপত্র নেই। নিচের পেমেন্ট রেকর্ড ইস্যুকৃত কর ক্রেডিট সনদপত্র নয়।')}</p>
     </section>
     <section className={panel+' taxpayer-records-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-documents-heading">
     <TaxPayOfficeRegisterToolbar id="taxpayer-documents-heading"
