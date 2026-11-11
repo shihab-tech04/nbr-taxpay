@@ -69,7 +69,7 @@ test('user1 exceptions, profile and notifications are correlated but not governm
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
   await page.goto('/?action=account_profile&demoUser=user1');
-  await expect(page.getByText('1111111111111').first()).toBeVisible();
+  await expect(page.getByTestId('user1-profile-tin')).toHaveText('577935451798');
   await expect(page.getByText('Taxpayer class')).toBeVisible();
   await expect(page.getByTestId('user1-taxpayer-profile').getByText('Individual',{exact:true}).first()).toBeVisible();
 });
@@ -139,14 +139,15 @@ test('user1 Activity retains the approved transaction table and removes redundan
 });
 
 
-test('user1 profile has complete fictional data, clear source labeling and a responsive e-TIN journey',async({page},info)=>{
+test('user1 profile uses supplied TIN fields without demonstration copy and remains responsive',async({page},info)=>{
   test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Profile desktop/mobile acceptance');
   await page.goto('/?action=account_profile&demoUser=user1');
   const profile=page.getByTestId('user1-taxpayer-profile');
   await expect(profile).toBeVisible();
   await expect(profile.getByRole('heading',{name:'Md. Arif Rahman'})).toBeVisible();
-  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('1111111111111');
-  await expect(profile.getByText('Fictional sample profile')).toBeVisible();
+  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577935451798');
+  await expect(profile.getByText(/Fictional sample profile|Sample TIN|Not an NBR-issued TIN/i)).toHaveCount(0);
+  await expect(profile.getByText('TIN',{exact:true})).toBeVisible();
   await expect(profile.getByText('Taxpayer class',{exact:true})).toBeVisible();
   await expect(profile.getByText('Individual',{exact:true}).first()).toBeVisible();
   await expect(profile.getByText('Not available',{exact:true})).toHaveCount(0);
@@ -161,32 +162,37 @@ test('user1 profile has complete fictional data, clear source labeling and a res
     'User type','Local taxpayer','Previous TIN','Taxes circle','Taxes zone','Taxes range',
     'District','Country','Registered / permanent address','Current address','Mobile number','Email address',
     'Certificate issue date','Certificate last updated','Issuing tax officer','Tax office address',
-    'Tax office phone','Last account login']){
+    'Tax office phone']){
     await expect(tin.getByText(field,{exact:true})).toHaveCount(1);
   }
   await expect(tin.getByText('Not available',{exact:true})).toHaveCount(0);
-  await expect(tin).toContainText('not a downloadable NBR-issued certificate');
+  await expect(tin.getByText('This fictional reference is not a downloadable NBR-issued certificate.')).toHaveCount(0);
+  await expect(tin).toContainText('Circle-245 (Company)');
+  await expect(tin).toContainText('Taxes Zone-12, Dhaka');
+  await expect(tin).toContainText('3/4 Purana Paltan');
+  await expect(tin).toContainText('04 Jun 2026, 05:06:20 PM');
   await profile.getByRole('tab',{name:'Overview'}).click();
   await expect(profile.getByRole('tab',{name:'Overview'})).toHaveAttribute('aria-selected','true');
-  await expect(profile.getByText('arif.rahman@example.com')).toBeVisible();
+  await expect(profile.getByText('email@test.com')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await page.goto('/?action=account_profile&demoUser=user1&lang=bn');
   await expect(page.getByTestId('user1-taxpayer-profile').getByRole('tab',{name:'টিআইএন ও সনদ'})).toBeVisible();
   await page.getByTestId('user1-taxpayer-profile').getByRole('tab',{name:'টিআইএন ও সনদ'}).click();
   await expect(page.getByTestId('taxpayer-tin-information').getByText('সনদ ইস্যুর তারিখ')).toBeVisible();
 });
-test('user1 profile CSV exports populated synthetic fields, not a government certificate',async({page},info)=>{
+test('user1 profile export contains supplied TIN fields without unnecessary copy',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Download verification');
   await page.goto('/?action=account_profile&demoUser=user1');
   const [download]=await Promise.all([
     page.waitForEvent('download'),
-    page.getByRole('button',{name:'Download sample profile'}).click()
+    page.getByRole('button',{name:'Download profile'}).click()
   ]);
-  expect(download.suggestedFilename()).toBe('Korbritto-user1-fictional-profile.csv');
+  expect(download.suggestedFilename()).toBe('Korbritto-user1-profile.csv');
   const stream=await download.createReadStream();
   let text='';
   for await(const chunk of stream)text+=chunk.toString('utf8');
-  expect(text).toContain('1111111111111');
-  expect(text).toContain('arif.rahman@example.com');
-  expect(text).toContain('FICTIONAL SAMPLE - NOT AN NBR CERTIFICATE');
+  expect(text).toContain('577935451798');
+  expect(text).toContain('email@test.com');
+  expect(text).toContain('Taxes Zone-12, Dhaka');
+  expect(text).not.toContain('FICTIONAL SAMPLE');
 });

@@ -28,18 +28,29 @@ test('profile without source timestamp must not be presented as linked',()=>{
   assert.equal(isWellFormedTinProfile(null),false);
 });
 
-test('fictional user1 can populate a profile without ever qualifying as issued e-TIN',async()=>{
+test('user1 reference profile matches uploaded e-TIN and dashboard fields without changing payment identity',async()=>{
   const {USER1_FICTIONAL_TIN_PROFILE:sample}=await import('../src/data/user1FictionalTinProfile');
-  assert.equal(sample.source,'SYNTHETIC');
-  assert.equal(sample.tin.length,13);
+  assert.equal(sample.source,'REVIEWED_CERTIFICATE');
+  assert.equal(sample.tin,'577935451798');
   assert.equal(isWellFormedTinProfile(sample),true);
-  assert.equal(isWellFormedTinProfile({...sample,source:'NBR_TIN'}),false);
+  const {DEMO_USERS}=await import('../src/data/demoUsers');
+  assert.equal(DEMO_USERS.user1.tin,'1111111111111');
+  assert.notEqual(DEMO_USERS.user1.tin,sample.tin);
+  assert.equal(sample.taxesCircle,'Circle-245 (Company)');
+  assert.equal(sample.taxesZone,'Taxes Zone-12, Dhaka');
+  assert.equal(sample.registeredAddress,'Dhaka, 1122, Dhaka, Bangladesh');
+  assert.equal(sample.currentAddress,sample.registeredAddress);
+  assert.equal(sample.previousTin,'Not Applicable');
+  assert.equal(sample.certificateIssuedOn,'19 Jan 2026');
+  assert.equal(sample.certificateLastUpdatedOn,'04 Jun 2026, 05:06:20 PM');
+  assert.equal(sample.taxOfficePhone,'02-9588253');
+  assert.equal(sample.mobileNumber,'+8801857648765');
+  assert.equal(sample.emailAddress,'email@test.com');
   const fields=['taxpayerName','taxpayerStatus','tinType','tinSubtype','registeredOn','userType',
     'localTaxpayer','previousTin','taxesCircle','taxesZone','taxesRange','district',
     'country','registeredAddress','currentAddress','mobileNumber','emailAddress',
     'certificateIssuedOn','certificateLastUpdatedOn','issuingOfficer','taxOfficeAddress',
     'taxOfficePhone','lastLoginAt'];
   for(const field of fields)assert.ok(String((sample as unknown as Record<string,unknown>)[field]).trim(),field);
-  assert.equal(sample.emailAddress?.endsWith('@example.com'),true);
-  assert.equal(sample.tin,'1111111111111');
+  assert.ok(sample.taxOfficeAddress?.includes('Purana Paltan'));
 });
