@@ -171,6 +171,17 @@ test('guest beneficiary client persists one opaque capability per browser and ke
     assert.ok(previewList.id);
     assert.ok((await guest.loadGuestBeneficiaries()).lists.some(x=>x.id===previewList.id));
     assert.equal(requests.filter(x=>x.body.action==='lists').length,listReads+2);
+    // Payment-time verification must re-read even while navigation cache is hot.
+    const beforeFresh=requests.filter(x=>x.body.action==='lists').length;
+    await guest.loadGuestBeneficiaries({forceFresh:true});
+    assert.equal(requests.filter(x=>x.body.action==='lists').length,beforeFresh+1);
+    // An outage must not be hidden by a stale successful navigation snapshot.
+    transientReadFailures=8;
+    await assert.rejects(guest.loadGuestBeneficiaries({forceFresh:true}),/temporarily unavailable/);
+    transientReadFailures=0;
+    const afterFailure=requests.filter(x=>x.body.action==='lists').length;
+    await guest.loadGuestBeneficiaries();
+    assert.equal(requests.filter(x=>x.body.action==='lists').length,afterFailure+1);
     // Changing capability cannot expose the previous preview user's lists.
     const capabilityB=storageB.getItem('korbritto.guest-beneficiaries.capability.v1');
     assert.ok(capabilityB);
