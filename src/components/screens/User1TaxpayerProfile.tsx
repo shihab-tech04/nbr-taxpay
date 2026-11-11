@@ -100,9 +100,6 @@ export function User1TaxpayerProfile({language}:{language:Language}){
       if(!record)throw Error('Profile SQL unavailable');
       const rows=[['Field','Value'],
         ['Account','user1'],...allRows.map(([field,label])=>[label[0],String(record?.[field]??'')]),
-        ['Income sources','Salary, bank interest and consultancy'],
-        ['Assessment years','2025-2026, 2024-2025, 2023-2024'],
-        ['Representative mandate','Not applicable'],
       ];
       const csv='\uFEFF'+rows.map(line=>line.map(safe).join(',')).join('\r\n');
       const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
@@ -193,18 +190,8 @@ export function User1TaxpayerProfile({language}:{language:Language}){
         </div>
       </div>
       <section className="min-w-0 rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
-        <h3 className="mb-3 border-b border-taxpay-border pb-3 text-base font-semibold text-taxpay-text">{tr(['Account and tax history','অ্যাকাউন্ট ও কর ইতিহাস'])}</h3>
-        <dl className="grid gap-x-8 sm:grid-cols-2">
-          {([
-            [tr(['Income sources','আয়ের উৎস']),tr(['Salary, bank interest and consultancy','বেতন, ব্যাংক সুদ ও পরামর্শ সেবা'])],
-            [tr(['Assessment years','করবর্ষ']),'2025-2026, 2024-2025, 2023-2024'],
-            [tr(['Representative mandate','প্রতিনিধির অনুমোদন']),tr(['Not applicable','প্রযোজ্য নয়'])],
-            [tr(['Last account login','সর্বশেষ লগইন']),value('lastLoginAt',language)]
-          ] as const).map(([label,text])=><div key={label} className="grid min-w-0 gap-1 border-b border-taxpay-border py-3 last:border-b-0 sm:grid-cols-[minmax(125px,43%)_minmax(0,1fr)] sm:gap-3">
-            <dt className="text-sm font-normal text-taxpay-muted">{label}</dt>
-            <dd className="min-w-0 break-words text-sm font-medium text-taxpay-text">{text}</dd>
-          </div>)}
-        </dl>
+        <h3 className="mb-3 border-b border-taxpay-border pb-3 text-base font-semibold text-taxpay-text">{tr(['Account information','অ্যাকাউন্টের তথ্য'])}</h3>
+        {details([['lastLoginAt',['Last account login','সর্বশেষ লগইন']]])}
       </section>
     </section>
   </div>;

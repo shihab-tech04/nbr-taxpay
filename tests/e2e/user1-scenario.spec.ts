@@ -153,13 +153,13 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile.getByRole('button',{name:'View payment activity'})).toHaveCount(0);
   await expect(content.getByTestId('user1-profile-detail-columns').locator(':scope > div')).toHaveCount(2);
   for(const section of ['Personal information','Contact and addresses','TIN registration and jurisdiction',
-    'Certificate details','Account and tax history'])
+    'Certificate details','Account information'])
     await expect(content.getByRole('heading',{name:section,exact:true})).toHaveCount(1);
   for(const field of ['Taxpayer class','TIN classification','User type','Local taxpayer',
     'Mobile number','Email address','Registered / permanent address','Current address',
     'Taxes zone','Taxes range','District','Country','Previous TIN',
     'Certificate issue date','Certificate last updated','Issuing tax officer','Tax office address',
-    'Tax office phone','Income sources','Assessment years','Representative mandate','Last account login']){
+    'Tax office phone','Last account login']){
     await expect(content.getByText(field,{exact:true})).toHaveCount(1);
   }
   await expect(content.getByText('Taxes circle',{exact:true})).toHaveCount(0);
