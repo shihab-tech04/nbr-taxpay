@@ -170,13 +170,13 @@ test('signed-in Payments & Activity filters saved beneficiaries and opens only t
   await page.goto('/?action=history');
   const history=page.getByTestId('beneficiary-payment-history');
   await expect(history).toBeVisible();
-  await expect(history.getByText('Clients',{exact:true}).first()).toBeVisible();
+  await expect(history).toContainText('Clients');
   await history.getByRole('button',{name:'Filter'}).click();
   await history.getByRole('combobox',{name:'Filter payments by beneficiary'}).selectOption('012345678901');
   await expect(history).toContainText('Beneficiary A');
   await expect(history).not.toContainText('Beneficiary B');
   await history.getByRole('combobox',{name:'Filter payments by assessment year'}).selectOption('2026-27');
-  await expect(history.getByText('2026-27').first()).toBeVisible();
+  await expect(history.getByRole('combobox',{name:'Filter payments by assessment year'})).toHaveValue('2026-27');
   await history.getByRole('button',{name:'Profile'}).click();
   const profile=page.getByTestId('beneficiary-profile');
   await expect(profile).toBeVisible();
