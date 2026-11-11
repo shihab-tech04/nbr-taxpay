@@ -22,7 +22,7 @@ test('Overview hides unverified external tax position but retains analytics, dra
   await expect(requests).toContainText('Refund inquiry');
   await expect(requests).toContainText('Credit reassignment inquiry');
   await expect(requests).toContainText('Not approved and not disbursed');
-  await bento.getByRole('button',{name:'Correction Requests',exact:true}).click();
+  await bento.getByRole('button',{name:/^Correction Requests/}).click();
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await requests.getByRole('button',{name:/View request details for Refund inquiry/}).click();
   await expect(page.locator('.taxpay-modal')).toBeVisible();

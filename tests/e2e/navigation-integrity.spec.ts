@@ -143,7 +143,7 @@ test('guest navigation has no notification bell and keeps contextual payment cho
   await expect(page.locator('.citizen-header__notification')).toHaveCount(0);
   await expect(page.locator('.citizen-corner--top-right')).toHaveCount(0);
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
-  await page.getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
+  // Guests launch the original payment modal directly; only signed-in accounts see the two-option popover.
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'OTHER_TAX_PAYMENT');
   await expect(page).toHaveURL(/action=head_catalogue/);
@@ -239,6 +239,7 @@ test('taxpayer mobile menu and payment action link to the correct routes in both
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Tax Ledger'}).click();
   await expect(page).toHaveURL(/action=ledger/);
   await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  await page.getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
   // Payment services remain reachable through the Pay action without adding duplicate menu items.
