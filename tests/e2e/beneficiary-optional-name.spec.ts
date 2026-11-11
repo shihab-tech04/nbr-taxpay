@@ -55,7 +55,7 @@ async function setupGuestTransport(page:Page){
   return {saved:()=>Array.from(sessions.values()).flatMap(session=>session.people)};
 }
 
-test('local sample taxpayer preserves names when moving beneficiaries across lists, importing and prefilling',async({page})=>{
+test('local sample taxpayer preserves names when moving beneficiaries across lists and prefilling',async({page})=>{
   const transport=await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
 
@@ -71,7 +71,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Optional names',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
+  // Direct Add Beneficiary opens the single-entry modal; Excel entry is intentionally hidden.
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await expect(dialog.locator('#beneficiary-name')).not.toHaveAttribute('required','');
@@ -82,7 +82,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   expect(transport.saved().find(person=>person.tin==='012345678901')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
+  // Direct Add Beneficiary opens the single-entry modal; Excel entry is intentionally hidden.
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('987654321098');
   await dialog.locator('#beneficiary-name').fill('Editable Contact');
@@ -105,15 +105,11 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Optional names',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Import from Excel'}).click();
-  await page.locator('#beneficiary-file').setInputFiles('tests/fixtures/beneficiary-no-name.xlsx');
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
-  await dialog.getByRole('button',{name:'Next',exact:true}).click();
-  await expect(dialog.getByText('1 valid, 0 needing attention')).toBeVisible();
-  await dialog.getByRole('button',{name:'Next',exact:true}).click();
+  await dialog.locator('#beneficiary-tin').fill('123456789012');
   await chooseBeneficiaryOption(dialog,'beneficiary-tag','others');
   await dialog.locator('#beneficiary-other-label').fill('Other contact');
-  await dialog.getByRole('button',{name:'Finish import',exact:true}).click();
+  await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(2);
   expect(transport.saved().find(person=>person.tin==='123456789012')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
@@ -136,7 +132,7 @@ test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async(
   await dialog.locator('#beneficiary-create-list-name').fill('নাম ঐচ্ছিক');
   await dialog.getByRole('button',{name:'তালিকা তৈরি',exact:true}).click();
   await page.getByRole('button',{name:'উপকারভোগী যোগ',exact:true}).click();
-  await page.getByRole('dialog',{name:'কীভাবে উপকারভোগী যোগ করবেন'}).getByRole('button',{name:'একজন উপকারভোগী যোগ'}).click();
+  // বাংলা Add beneficiary directly opens the single-entry modal.
   dialog=page.getByRole('dialog',{name:'উপকারভোগী যোগ'});
   await dialog.locator('#beneficiary-tin').fill('123450987654');
   await chooseBeneficiaryOption(dialog,'beneficiary-tag','friends_family:mother');
@@ -147,7 +143,7 @@ test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async(
 });
 
 
-test('Excel import success notice updates immediately when the user changes language',async({page})=>{
+test.skip('Excel import success notice updates immediately when the user changes language',async({page})=>{
   await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
 
@@ -186,7 +182,7 @@ test('single beneficiary uses the shared TIN lookup card, clears lookup, and ret
   await create.getByRole('button',{name:'Create list',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
+  // Direct Add Beneficiary opens the single-entry modal; Excel entry is intentionally hidden.
   const dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   const lookup=dialog.getByTestId('shared-taxpayer-tin-lookup');
   await expect(lookup.getByRole('heading',{name:'Taxpayer Information'})).toBeVisible();
@@ -217,7 +213,7 @@ test('beneficiary suggestions match Other Tax and Search reveals the same taxpay
   await dialog.getByRole('button',{name:'Create list',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
+  // Direct Add Beneficiary opens the single-entry modal; Excel entry is intentionally hidden.
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   const lookup=dialog.getByTestId('shared-taxpayer-tin-lookup');
   await expect(dialog.getByTestId('searched-taxpayer-card')).toHaveCount(0);
@@ -243,7 +239,7 @@ test('beneficiary suggestions match Other Tax and Search reveals the same taxpay
   expect(transport.saved().find(person=>person.tin==='000000000000')?.display_name).toBe('User 10');
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
+  // Direct Add Beneficiary opens the single-entry modal; Excel entry is intentionally hidden.
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   const nextLookup=dialog.getByTestId('shared-taxpayer-tin-lookup');
   await nextLookup.locator('#beneficiary-tin').focus();

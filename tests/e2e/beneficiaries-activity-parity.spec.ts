@@ -176,7 +176,7 @@ for(const language of ['en','bn'] as const){
     await expect(screen.locator('.beneficiary-directory__selected-count')).toContainText('1');
     await expect(screen.getByRole('button',{name:t('Clear','মুছুন'),exact:true})).toBeVisible();
     await screen.getByRole('button',{name:t('Add beneficiary','উপকারভোগী যোগ'),exact:true}).click();
-    await page.getByRole('button',{name:t('Add one beneficiary','একজন উপকারভোগী যোগ')}).click();
+    // The existing add action now opens the single-entry modal directly.
     await chooseBeneficiaryOption(page,'beneficiary-tag','others');
     const otherInput=page.locator('#beneficiary-other-label');
     await expect(otherInput).toBeVisible();
