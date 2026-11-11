@@ -34,6 +34,9 @@ async function assertUnifiedTravel(modal:Locator, width:number) {
     expect(left.x+left.width,'Save Draft is left of Continue').toBeLessThanOrEqual(right.x+2);
     expect(right.x+right.width,'Continue stays inside modal').toBeLessThanOrEqual(bar.x+bar.width+2);
   }
+  const formWidth=await modal.locator('.travel-flow__main').evaluate(node=>node.getBoundingClientRect().width);
+  const bodyWidth=await modal.locator('.taxpay-modal__body').evaluate(node=>node.getBoundingClientRect().width);
+  expect(bodyWidth-formWidth,'Travel Tax passenger form uses the available modal width').toBeLessThanOrEqual(4);
   const overflow=await modal.evaluate(node=>node.scrollWidth-node.clientWidth);
   expect(overflow,'modal horizontal overflow').toBeLessThanOrEqual(2);
 }
@@ -49,7 +52,7 @@ for(const width of [320,375,1280]) {
   const publicModal=page.getByRole('dialog',{name:'Travel tax'});
   await assertUnifiedTravel(publicModal,width);
   const publicMain=await publicModal.locator('.travel-flow__main').boundingBox();
-  await page.screenshot({path:'test-results/travel-unified-public-'+width+'.png'});
+  await page.screenshot({path:'test-results/screenshots/travel-unified-public-'+width+'.png'});
   await page.goto('/?action=taxpayer_home');
   const enter=page.getByRole('button',{name:'Explore taxpayer workspace'});
   if(await enter.isVisible())await enter.click();
@@ -66,7 +69,7 @@ for(const width of [320,375,1280]) {
   const accountMain=await accountModal.locator('.travel-flow__main').boundingBox();
   expect(publicMain && accountMain).toBeTruthy();
   if(publicMain&&accountMain)expect(Math.abs(publicMain.width-accountMain.width),'both entry points have equal form widths').toBeLessThanOrEqual(3);
-  await page.screenshot({path:'test-results/travel-unified-account-'+width+'.png'});
+  await page.screenshot({path:'test-results/screenshots/travel-unified-account-'+width+'.png'});
  });
 }
 
