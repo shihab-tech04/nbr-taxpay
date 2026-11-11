@@ -34,7 +34,7 @@ test('all selected payment heads are discoverable for each taxpayer', async ({ p
   const showAll = first.getByRole('button', { name: `Show all ${selectableCount} selected heads` });
   await expect(showAll).toBeVisible();
   await showAll.click();
-  await expect(first.locator('.payment-form-summary__taxpayer-item')).toHaveCount(40);
+  await expect(first.locator('.payment-form-summary__taxpayer-item')).toHaveCount(selectableCount);
   await expect(first).not.toContainText('All heads listed — scroll to review');
   const headList = first.getByTestId('selected-taxpayer-head-list');
   await expect(headList).toHaveAttribute('role', 'region');
