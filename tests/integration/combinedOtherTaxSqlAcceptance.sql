@@ -23,6 +23,11 @@ DECLARE
   mixed_key uuid;
   mixed_payload jsonb;
   mixed_saved_id uuid;
+  return_key uuid;
+  return_payload jsonb;
+  return_lines jsonb;
+  return_id uuid;
+  return_replay jsonb;
 BEGIN
   owner_login:=public.taxpay_demo_profile_login('user1','user1');
   other_login:=public.taxpay_demo_profile_login('user2','user2');
@@ -104,9 +109,19 @@ BEGIN
     OR (SELECT count(*) FROM demo_payment.mirror_outbox
       WHERE entity_type='PAYMENT' AND entity_id=mixed_saved_id)<>1
   THEN RAISE EXCEPTION 'COMBINED_SOURCE_AND_DEMAND_NOT_ATOMIC'; END IF;
+  -- Return head is now mapped only for the distinct TAX_WITH_RETURN journey.
+  -- Its presence in the canonical catalogue must never allow mixed Other Tax.
   IF (SELECT count(*) FROM demo_payment.taxpay_combined_demo_heads
-      WHERE head_id=125)<>0
-  THEN RAISE EXCEPTION 'RETURN_MIXING_ALLOWED'; END IF;
+      WHERE head_id=125 AND category='return')<>1
+  THEN RAISE EXCEPTION 'RETURN_ONLY_HEAD_NOT_REGISTERED'; END IF;
+  blocked:=false;
+  BEGIN
+    PERFORM demo_payment.assert_new_head_exclusivity(
+      jsonb_set(payload,'{details,lines,1,headId}',to_jsonb(125)));
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE '%RETURN_HEAD_EXCLUSIVE%' THEN blocked:=true; ELSE RAISE; END IF;
+  END;
+  IF NOT blocked THEN RAISE EXCEPTION 'RETURN_MIXING_ALLOWED'; END IF;
 
   blocked:=false;
   bad_key:=gen_random_uuid();
@@ -142,6 +157,63 @@ BEGIN
     IF SQLERRM LIKE '%PROFILE_PAYMENT_SCOPE_MISMATCH%' THEN blocked:=true; ELSE RAISE; END IF;
   END;
   IF NOT blocked THEN RAISE EXCEPTION 'COMBINED_TEST_CROSS_ACCOUNT_ACCEPTED'; END IF;
+
+  -- Return-only may allocate one payment to two owned taxpayers and two AYs.
+  -- No Other Tax head is present; no synthetic beneficiary IDs are forged.
+  return_key:=gen_random_uuid();
+  return_lines:=jsonb_build_array(
+    jsonb_build_object('headId',125,'economicCode','74','headNameEn','Tax with return',
+      'taxAmount',15,'penaltyAmount',0,'surchargeAmount',0,'interestAmount',0,'totalAmount',15),
+    jsonb_build_object('headId',125,'economicCode','74','headNameEn','Tax with return',
+      'taxAmount',35,'penaltyAmount',0,'surchargeAmount',0,'interestAmount',0,'totalAmount',35));
+  return_payload:=payload || jsonb_build_object(
+    'service','TAX_WITH_RETURN','idempotencyKey',return_key);
+  return_payload:=jsonb_set(return_payload,'{details,lines}',return_lines);
+  return_payload:=jsonb_set(return_payload,'{details,receiptLines}',return_lines);
+  return_payload:=jsonb_set(return_payload,'{details,allocations}',
+    jsonb_build_array(
+      jsonb_build_object('taxpayerTin','909000000013','taxpayerName','First recipient',
+        'headId',125,'assessmentYear','2026-27','amountMinor',1500),
+      jsonb_build_object('taxpayerTin','000000000018','taxpayerName','Second recipient',
+        'headId',125,'assessmentYear','2025-26','amountMinor',3500)));
+  return_payload:=jsonb_set(return_payload,'{details,receiptReference}',
+    to_jsonb('SIM-'||return_key::text));
+  return_payload:=jsonb_set(return_payload,'{details,receiptSnapshot,challanNo}',
+    to_jsonb('SIM-'||return_key::text));
+  return_payload:=jsonb_set(return_payload,'{details,receiptSnapshot,paymentCategory}',
+    to_jsonb('TAX_WITH_RETURN'::text));
+  return_payload:=jsonb_set(return_payload,'{details,receiptSnapshot,items}',return_lines);
+  FOR v_i IN 0..1 LOOP
+    return_payload:=jsonb_set(return_payload,
+      ARRAY['details','receiptSnapshot','allocationItems',v_i::text,'paymentServiceEn'],
+      to_jsonb('Tax with return'::text));
+    return_payload:=jsonb_set(return_payload,
+      ARRAY['details','receiptSnapshot','allocationItems',v_i::text,'economicCode'],
+      to_jsonb('74'::text));
+  END LOOP;
+  result:=public.taxpay_demo_story1_submit(owner_hash,return_payload);
+  return_id:=(result->>'id')::uuid;
+  IF result->>'status' IS DISTINCT FROM 'SIMULATED_SUCCESS'
+    OR (SELECT count(*) FROM demo_payment.story_payments
+        WHERE id=return_id AND service_code='TAX_WITH_RETURN' AND amount_minor=5000)<>1
+    OR (SELECT count(*) FROM demo_payment.mirror_outbox
+        WHERE entity_type='PAYMENT' AND entity_id=return_id)<>1
+  THEN RAISE EXCEPTION 'RETURN_ONLY_TWO_BENEFICIARIES_NOT_ATOMIC'; END IF;
+  return_replay:=public.taxpay_demo_story1_submit(owner_hash,return_payload);
+  IF return_replay->>'id'<>return_id::text OR return_replay->>'replayed'<>'true'
+    OR (SELECT count(*) FROM demo_payment.story_payments
+        WHERE idempotency_key=return_key)<>1
+  THEN RAISE EXCEPTION 'RETURN_ONLY_IDEMPOTENCY_BROKEN'; END IF;
+
+  -- A Return payment cannot contain even one non-return head.
+  blocked:=false;
+  BEGIN
+    PERFORM demo_payment.assert_new_head_exclusivity(jsonb_set(
+      return_payload,'{details,lines,1,headId}',to_jsonb(121)));
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE '%RETURN_HEAD_EXCLUSIVE%' THEN blocked:=true; ELSE RAISE; END IF;
+  END;
+  IF NOT blocked THEN RAISE EXCEPTION 'RETURN_ONLY_MIXED_HEAD_ACCEPTED'; END IF;
 
   RAISE NOTICE 'PASS: one combined TaxPay SQL row, one Office outbox, one notice, two allocations, exactly-one retry and denied cross-account mutations';
 END

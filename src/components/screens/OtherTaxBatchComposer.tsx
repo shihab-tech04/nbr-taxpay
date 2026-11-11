@@ -29,6 +29,8 @@ const liability = V11_SOURCE_HEADS.filter(head =>
   (head.journey === 'LIABILITY' || head.journey === 'WITHHOLDING')
 );
 const grouped = GROUP_ORDER.map(name => ({ name, rows: liability.filter(head => head.grpEn === name) }));
+const returnHeads = V11_SOURCE_HEADS.filter(head => head.active && head.purpose === 'return' && head.grpEn === 'Tax with Return');
+const returnGroups = [{ name: 'Tax with Return', rows: returnHeads }];
 const sourceOptions = new Map(V11_PAYMENT_OPTIONS.map(head => [head.id, head]));
 
 export const otherTaxAllocationAmount = (line: OtherTaxAllocation) => parseGuestAmount(line.amount);
@@ -37,6 +39,12 @@ export const otherTaxAllocationTotal = (lines: OtherTaxAllocation[]) =>
 export const otherTaxAllocationHead = (id: number) => sourceOptions.get(id);
 export const isOtherTaxHeadEligible = (id: number) => {
   const source = liability.find(head => head.id === id);
+  return !!source && source.map === 'MAPPED' && !BLOCKED_HEAD_IDS.includes(id)
+    && sourceOptions.get(id)?.status === 'ACTIVE';
+};
+
+export const isReturnHeadEligible = (id: number) => {
+  const source = returnHeads.find(head => head.id === id);
   return !!source && source.map === 'MAPPED' && !BLOCKED_HEAD_IDS.includes(id)
     && sourceOptions.get(id)?.status === 'ACTIVE';
 };
@@ -50,9 +58,13 @@ type Props = {
   error?: string;
   summary?: React.ReactNode;
   focusRequest?: { lineId: string; requestId: number } | null;
+  returnOnly?: boolean;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, onChange, error, summary, focusRequest }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, onChange, error, summary, focusRequest, returnOnly = false }: Props) {
+  const activeGroups = returnOnly ? returnGroups : grouped;
+  const activeSource = returnOnly ? returnHeads : liability;
+  const isHeadEligible = returnOnly ? isReturnHeadEligible : isOtherTaxHeadEligible;
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -91,10 +103,10 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     ? activeTaxpayer : taxpayers[0]?.id;
   const activeLines = lines.filter(line => line.taxpayerId === activeId);
   const search = query.trim().toLocaleLowerCase();
-  const count = grouped.reduce((n, group) => n + group.rows.length, 0);
+  const count = activeGroups.reduce((n, group) => n + group.rows.length, 0);
   const usedTotal = otherTaxAllocationTotal(lines);
   const isIncomplete = (line: OtherTaxAllocation) =>
-    otherTaxAllocationAmount(line) === null || !isOtherTaxHeadEligible(line.headId) ||
+    otherTaxAllocationAmount(line) === null || !isHeadEligible(line.headId) ||
     !OTHER_TAX_YEARS.some(year => year === line.assessmentYear);
   const invalidLines = error ? lines.filter(isIncomplete) : [];
   const firstInvalid = invalidLines[0];
@@ -139,7 +151,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const suggestedFor = (taxpayerId: string, headId: number, year: string) =>
     paymentAmountSuggestionFor(
       suggestionTaxpayerIds?.[taxpayerId] ?? null,
-      liability.find(head => head.id === headId)?.grpEn,
+      activeSource.find(head => head.id === headId)?.grpEn,
       year,
       headId,
     );
@@ -147,8 +159,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     id: crypto.randomUUID(), taxpayerId: activeId!, headId, assessmentYear,
     amount: suggestedFor(activeId!, headId, assessmentYear)?.amount ?? '',
   });
-  const visibleEligible = grouped.flatMap(group => group.rows).filter(head =>
-    isOtherTaxHeadEligible(head.id) &&
+  const visibleEligible = activeGroups.flatMap(group => group.rows).filter(head =>
+    isHeadEligible(head.id) &&
     (!search || [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search)));
   // Do not silently truncate Select All or let the UI exceed SQL's hard limit.
   const applyLines = (candidate: OtherTaxAllocation[]) => {
@@ -170,14 +182,14 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   };
   // A head may be selected once per assessment year for each taxpayer.
   const toggleHead = (headId: number, checked: boolean) => {
-    if (!activeId || !isOtherTaxHeadEligible(headId)) return;
+    if (!activeId || !isHeadEligible(headId)) return;
     if (!checked) applyLines(lines.filter(line => !(line.taxpayerId === activeId && line.headId === headId)));
     else if (!activeLines.some(line => line.headId === headId)) applyLines([...lines, newLine(headId)]);
   };
   const addYear = (headId: number) => {
     const chosen = new Set(activeLines.filter(line => line.headId === headId).map(line => line.assessmentYear));
     const year = OTHER_TAX_YEARS.find(candidate => !chosen.has(candidate));
-    if (activeId && year && isOtherTaxHeadEligible(headId)) applyLines([...lines, newLine(headId, year)]);
+    if (activeId && year && isHeadEligible(headId)) applyLines([...lines, newLine(headId, year)]);
   };
   const edit = (id: string, update: Partial<OtherTaxAllocation>) => {
     const current = lines.find(line => line.id === id);
@@ -276,8 +288,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
               </div>
             </div>
             <p className="other-tax-selection-status" role="status">
-              {tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' years · ' + count + ' available non-return payment heads',
-                 new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + 'টি রিটার্ন-বহির্ভূত করের খাত')}
+              {tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' years · ' + count + (returnOnly ? ' available Tax with Return heads' : ' available non-return payment heads'),
+                 new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + (returnOnly ? 'টি রিটার্নসহ করের খাত' : 'টি রিটার্ন-বহির্ভূত করের খাত'))}
             </p>
             {allocationLimitError && <p className="payment-form-field-error" role="alert" data-testid="combined-allocation-capacity-error">
               {tx('This payment supports up to ' + MAX_COMBINED_ALLOCATIONS + ' beneficiary/head/year allocations. Remove some selections before adding more.',
@@ -292,7 +304,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
               }}>{tx('Show first incomplete payment', 'প্রথম অসম্পূর্ণ পরিশোধ দেখুন')}</button>}
             </div>}
             <div className={error ? 'rounded-lg border border-rose-400' : 'rounded-lg border border-slate-200'} data-testid="other-tax-head-catalogue">
-              {grouped.map(group => {
+              {activeGroups.map(group => {
                 const matched = group.rows.filter(head =>
                   !search || [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search));
                 if (!matched.length) return null;
@@ -310,7 +322,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                   </summary>
                   <ul className="divide-y divide-slate-200 list-none m-0 p-0">
                     {matched.map(head => {
-                      const blocked = !isOtherTaxHeadEligible(head.id);
+                      const blocked = !isHeadEligible(head.id);
                       const headLines = activeLines.filter(line => line.headId === head.id);
                       const invalid = Boolean(error && headLines.some(isIncomplete));
                       const focused = headLines.some(line => line.id === focusRequest?.lineId);
@@ -400,7 +412,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                   </ul>
                 </details>;
               })}
-              {!grouped.some(group => group.rows.some(head => !search ||
+              {!activeGroups.some(group => group.rows.some(head => !search ||
                 [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search))) &&
                 <p className="p-4 text-sm text-slate-600">{tx('No matching payment head', 'কোনো খাত পাওয়া যায়নি')}</p>}
             </div>
