@@ -1,7 +1,6 @@
 import {expect, test} from '@playwright/test';
 
 test('guest mobile uses the approved signed-in navigation geometry without exposing account features', async ({page}) => {
-  page.on('pageerror', error=>console.log('MOBILE_PAGE_ERROR',error.message));
   await page.setViewportSize({width:375,height:812});
   await page.goto('/?action=landing');
   const header=page.locator('.taxpay-public-mobile-navigation .citizen-header');
@@ -35,24 +34,12 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
   expect(chatBounds!.x).toBeGreaterThan(300);
   expect(Math.abs((chatBounds!.y+chatBounds!.height/2)-(headerBounds!.y+headerBounds!.height/2))).toBeLessThanOrEqual(8);
   await expect(chat.locator('span')).toBeHidden();
-  console.log('MOBILE_BEFORE_HELP',JSON.stringify(await page.evaluate(()=>({title:document.title,body:document.body.innerText.slice(0,110),root:document.getElementById('root')?.children.length,buttons:[...document.querySelectorAll('button.citizen-pay')].map(el=>el.className)}))));
   await chat.click();
   await expect(page.locator('#public-help-title')).toBeVisible();
   await page.getByRole('textbox',{name:'Your question'}).focus();
   await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeHidden();
   await page.getByRole('button',{name:'Close help'}).click();
-  console.log('MOBILE_PAY_AFTER_HELP',JSON.stringify(await page.evaluate(()=>({
-    route:location.href,
-    focus:document.activeElement?.tagName,
-    readyState:document.readyState,
-    body:document.body.innerText.slice(0,240),
-    rootChildren:document.getElementById('root')?.children.length,
-    rootStart:document.getElementById('root')?.innerHTML.slice(0,240),
-    focusedInputs:[...document.querySelectorAll('input:focus,textarea:focus,select:focus')].map(x=>(x as HTMLElement).id),
-    header:document.querySelector('.taxpay-public-mobile-navigation .citizen-header')?.className,
-    pay:[...document.querySelectorAll('button.citizen-pay')].map(x=>({className:x.className,label:x.getAttribute('aria-label'),css:getComputedStyle(x).display,rect:x.getBoundingClientRect().toJSON()})),
-    help:document.querySelector('.public-help-launch')?.getAttribute('aria-label')
-  }))));
+  await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeVisible();
   const pay=page.getByRole('button',{name:'Pay — select payment type'});
   await expect(pay).toBeVisible();
   await expect(pay).toHaveClass(/citizen-pay--guest-floating/);
