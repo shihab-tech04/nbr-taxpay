@@ -4,6 +4,7 @@ import { Search, FileText } from 'lucide-react';
 import { getAccountStoryPayments, beneficiaryPaymentEntries, type BeneficiaryPaymentEntry } from '../../services/story1AccountPaymentHistory';
 import { formatCurrency } from '../../services/numberFormat';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
+import {beneficiaryFinalTagLabel} from '../../services/beneficiaryTags';
 import {PAYMENT_TAG_GROUPS,paymentTagGroupForTin,paymentTagGroupLabels,type PaymentTagGroup} from '../../services/beneficiaryPaymentTags';
 import { TaxPayModal } from '../ui/TaxPayModal';
 import { ReceiptView } from '../common/ReceiptView';
@@ -17,7 +18,7 @@ import {reuseRecordedPayment} from '../../services/paymentReuse';
  */
 export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: string; language: 'en'|'bn' }) {
   const [rows,setRows]=useState<BeneficiaryPaymentEntry[]>([]);
-  const {startPaymentReuse}=useTaxState();
+  const {startPaymentReuse,navigate}=useTaxState();
   const profile=usePaymentAccountProfile(ownerUid,null);
   const [reuseError,setReuseError]=useState('');
   const [loading,setLoading]=useState(true);
@@ -26,6 +27,8 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
   const [search,setSearch]=useState('');
   const [filtersOpen,setFiltersOpen]=useState(false);
   const [tagFilter,setTagFilter]=useState<'all'|PaymentTagGroup>('all');
+  const [beneficiaryTinFilter,setBeneficiaryTinFilter]=useState('all');
+  const [yearFilter,setYearFilter]=useState('all');
   const [tags,setTags]=useState<{owner:string|null;status:'loading'|'ready'|'error';people:Beneficiary[]}>({owner:null,status:'loading',people:[]});
   const [selected,setSelected]=useState<BeneficiaryPaymentEntry|null>(null);
   const bn=language==='bn';
@@ -61,13 +64,27 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
   const canReuse=(row:BeneficiaryPaymentEntry)=>Boolean(row.receipt.items.length) &&
     (row.receipt.paymentCategory!=='TRAVEL_TAX' || Boolean(row.receipt.travelDetails?.passengers.length));
   const visibleTags=tags.owner===ownerUid?tags:{owner:ownerUid,status:'loading' as const,people:[]};
+  const savedForTin=(tin:string)=>visibleTags.people.filter(person=>person.tin===tin);
+  const tagText=(tin:string)=>{
+    if(visibleTags.status!=='ready')return tr('Tag unavailable','ট্যাগ পাওয়া যায়নি');
+    const tags=[...new Set(savedForTin(tin).map(person=>
+      beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)).filter(Boolean))];
+    return tags.length===1?tags[0]:tags.length>1?tr('Conflicting tags','বিরোধপূর্ণ ট্যাগ'):tr('Not tagged','ট্যাগ নেই');
+  };
+  const openProfile=(tin:string)=>{
+    if(savedForTin(tin).length)navigate('beneficiaries',{profileBeneficiaryTin:tin});
+  };
+  const filterTins=[...new Set(rows.map(row=>row.taxpayerTin).filter(Boolean))].sort();
+  const filterYears=[...new Set(rows.map(row=>row.assessmentYear))].sort().reverse();
   const filtered=useMemo(()=>{
     const q=search.trim().toLocaleLowerCase();
-    return rows.filter(row=>(tagFilter==='all'||(visibleTags.status==='ready'&&
+    return rows.filter(row=>(beneficiaryTinFilter==='all'||row.taxpayerTin===beneficiaryTinFilter)&&
+      (yearFilter==='all'||row.assessmentYear===yearFilter)&&
+      (tagFilter==='all'||(visibleTags.status==='ready'&&
       paymentTagGroupForTin(row.taxpayerTin,visibleTags.people)===tagFilter))&&
       (!q||[row.beneficiaryName,row.taxpayerTin,row.paymentHead,row.assessmentYear,
         row.paymentId,row.batchId||''].some(value=>value.toLocaleLowerCase().includes(q))));
-  },[rows,search,tagFilter,visibleTags]);
+  },[rows,search,tagFilter,beneficiaryTinFilter,yearFilter,visibleTags]);
   return <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" data-testid="beneficiary-payment-history"
     aria-label={tr('Individual beneficiary payment history','প্রতিটি উপকারভোগীর পেমেন্টের ইতিহাস')}>
     <TaxPayOfficeRegisterToolbar title={tr('Beneficiary payment history','উপকারভোগীর পেমেন্ট ইতিহাস')}
@@ -79,6 +96,24 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
       filterLabel={tr('Filter','ফিল্টার')}/>
     <TaxPayOfficeRegisterFilters open={filtersOpen}>
       <label className="taxpayer-transaction-filter">
+        <span>{tr('Beneficiary','উপকারভোগী')}</span>
+        <select value={beneficiaryTinFilter} onChange={event=>setBeneficiaryTinFilter(event.target.value)}
+          aria-label={tr('Filter payments by beneficiary','উপকারভোগী দিয়ে পেমেন্ট ফিল্টার')}
+          className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm">
+          <option value="all">{tr('All beneficiaries','সব উপকারভোগী')}</option>
+          {filterTins.map(tin=><option key={tin} value={tin}>{savedForTin(tin)[0]?.display_name||tin} · {tin}</option>)}
+        </select>
+      </label>
+      <label className="taxpayer-transaction-filter">
+        <span>{tr('Assessment year','করবর্ষ')}</span>
+        <select value={yearFilter} onChange={event=>setYearFilter(event.target.value)}
+          aria-label={tr('Filter payments by assessment year','করবর্ষ দিয়ে পেমেন্ট ফিল্টার')}
+          className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm">
+          <option value="all">{tr('All years','সব করবর্ষ')}</option>
+          {filterYears.map(year=><option key={year} value={year}>{year}</option>)}
+        </select>
+      </label>
+      <label className="taxpayer-transaction-filter">
         <span>{tr('Beneficiary tag','উপকারভোগীর ট্যাগ')}</span>
         <select value={tagFilter} onChange={event=>setTagFilter(event.target.value as 'all'|PaymentTagGroup)}
           aria-label={tr('Filter beneficiary payments by tag','ট্যাগ দিয়ে উপকারভোগীর পেমেন্ট ফিল্টার')}
@@ -89,10 +124,12 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
       </label>
     </TaxPayOfficeRegisterFilters>
     <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
-      onClear={()=>{setSearch('');setTagFilter('all');}}
+      onClear={()=>{setSearch('');setTagFilter('all');setBeneficiaryTinFilter('all');setYearFilter('all');}}
       filters={[
         ...(search.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+search.trim(),onRemove:()=>setSearch('')}]:[]),
-        ...(tagFilter!=='all'?[{key:'tag',label:paymentTagGroupLabels[tagFilter][language],onRemove:()=>setTagFilter('all')}]:[])
+        ...(tagFilter!=='all'?[{key:'tag',label:paymentTagGroupLabels[tagFilter][language],onRemove:()=>setTagFilter('all')}]:[]),
+        ...(beneficiaryTinFilter!=='all'?[{key:'beneficiary',label:beneficiaryTinFilter,onRemove:()=>setBeneficiaryTinFilter('all')}]:[]),
+        ...(yearFilter!=='all'?[{key:'year',label:yearFilter,onRemove:()=>setYearFilter('all')}]:[])
       ]}/>
     {visibleTags.status==='error'&&<p className="mt-2 text-sm text-taxpay-error" role="alert">{tr('Saved tags unavailable; categories were not guessed.','সংরক্ষিত ট্যাগ পাওয়া যায়নি; শ্রেণি অনুমান করা হয়নি।')}</p>}
     {reuseError&&<p className="mt-3 text-sm text-taxpay-error" role="alert">{reuseError}</p>}
@@ -115,6 +152,8 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
             <p className="font-semibold text-taxpay-text">{row.beneficiaryName}</p>
             <p className="break-all font-mono-plex text-sm text-taxpay-muted">{row.taxpayerTin||'—'}</p>
           </div>},
+          {key:'tag',header:tr('Tag','ট্যাগ'),renderCell:row=>
+            <span className="text-sm text-taxpay-muted">{tagText(row.taxpayerTin)}</span>},
           {key:'head',header:tr('Payment head / year','খাত / করবর্ষ'),renderCell:row=><div>
             <p className="text-taxpay-text">{row.paymentHead}</p>
             {row.economicCode&&<p className="text-sm text-taxpay-muted">{row.economicCode}</p>}
@@ -129,6 +168,9 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
           {key:'receipt',header:tr('Receipt','রসিদ'),renderCell:row=><div className="flex flex-wrap gap-2">
             <button type="button" className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
               onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View','দেখুন')}</button>
+            {savedForTin(row.taxpayerTin).length>0&&<button type="button"
+              className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+              onClick={()=>openProfile(row.taxpayerTin)}>{tr('Profile','প্রোফাইল')}</button>}
             {canReuse(row)&&<button type="button" data-testid="account-pay-again-desktop"
               className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
               onClick={()=>payAgain(row)}>{tr('Pay Again','আবার পরিশোধ')}</button>}
@@ -140,6 +182,7 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
             <p className="shrink-0 font-semibold tabular-nums">{formatCurrency(row.amountMinor/100,language)}</p>
           </div>
           <p className="taxpay-mobile-table-card__meta">{tr('TIN','টিআইএন')}: {row.taxpayerTin||'—'}</p>
+          <p className="taxpay-mobile-table-card__meta">{tr('Tag','ট্যাগ')}: {tagText(row.taxpayerTin)}</p>
           <p className="taxpay-mobile-table-card__meta">{row.paymentHead} · {row.assessmentYear}</p>
           {row.economicCode&&<p className="taxpay-mobile-table-card__meta">{row.economicCode}</p>}
           <p className="taxpay-mobile-table-card__meta">{tr('Reference','রেফারেন্স')}: {row.paymentId}</p>
@@ -147,6 +190,9 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
           <div className="taxpay-mobile-table-card__actions"><button type="button"
             className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
             onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>{tr('View receipt','রসিদ দেখুন')}</button>
+            {savedForTin(row.taxpayerTin).length>0&&<button type="button"
+              className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+              onClick={()=>openProfile(row.taxpayerTin)}>{tr('Profile','প্রোফাইল')}</button>}
             {canReuse(row)&&<button type="button" data-testid="account-pay-again-mobile"
               className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
               onClick={()=>payAgain(row)}>{tr('Pay Again','আবার পরিশোধ')}</button>}
