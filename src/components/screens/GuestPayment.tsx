@@ -1738,8 +1738,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </div>
             </div>
             <div className="payment-head-amount-grid">
-            {selectedHeads.map((head, index) => <div className="payment-head-amount" data-columns={amountRowColumns[index]} key={head.id}>
-              {selectedHeads.length > 1 && <p className="payment-head-amount__label">{head.economicCode} — {language === 'bn' ? head.nameBn : head.nameEn}</p>}
+            {selectedHeads.map((head, index) => <div className={`payment-head-amount${selectedHeads.length > 1 ? ' payment-head-amount--multi' : ''}`} data-columns={amountRowColumns[index]} key={head.id}>
+              <div className="payment-head-amount__control">
               <div className="mb-1 flex items-center gap-1">
                 <label htmlFor={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} className="text-slate-600 font-medium">{language === 'bn' ? 'পরিশোধের পরিমাণ (৳)' : 'Payment amount (৳)'} *</label>
                 {suggestedAmount && amountRawForHead(head.id) === suggestedAmount.amount &&
@@ -1755,6 +1755,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 }}
                 className="min-h-11 w-full px-3 py-2 rounded border border-slate-300 font-mono-plex" />
               {isFieldInvalid('taxAmount') && errorHeadId === head.id && fieldError('taxAmount')}
+              </div>
+              {selectedHeads.length > 1 && <p className="payment-head-amount__label">{head.economicCode} — {language === 'bn' ? head.nameBn : head.nameEn}</p>}
             </div>)}
             </div>
             {isFieldInvalid('taxAmount') && errorHeadId === null && fieldError('taxAmount')}

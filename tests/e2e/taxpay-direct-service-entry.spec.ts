@@ -102,6 +102,24 @@ test('Source Tax banner uses the current full-width payment modal without changi
   expect(geometry.summaryTop).toBeGreaterThanOrEqual(geometry.sectionsBottom - 3);
   expect(Math.abs(geometry.summaryLeft - geometry.sectionsLeft)).toBeLessThan(3);
   expect(geometry.summaryWidth).toBeGreaterThan(380);
+  // Multi-head payment amounts use the full form width. Each amount input
+  // stays to the left of its own head description, even in a banner journey.
+  const eligibleHeads = legacy.locator('input[name="guest-payment-head"]:not(:disabled)');
+  await expect.poll(() => eligibleHeads.count()).toBeGreaterThanOrEqual(2);
+  await eligibleHeads.nth(0).check();
+  await eligibleHeads.nth(1).check();
+  const amountRows = legacy.locator('.payment-head-amount--multi');
+  await expect(amountRows).toHaveCount(2);
+  for (const row of await amountRows.all()) {
+    const input = await row.locator('input[id^="guest-tax-amount"]').boundingBox();
+    const description = await row.locator('.payment-head-amount__label').boundingBox();
+    expect(input).not.toBeNull();
+    expect(description).not.toBeNull();
+    expect(description!.x).toBeGreaterThanOrEqual(input!.x + input!.width + 4);
+    expect(Math.abs(description!.y - input!.y)).toBeLessThan(65);
+  }
+  expect(await dialog.locator('.taxpay-modal__body').evaluate(node => node.scrollWidth - node.clientWidth))
+    .toBeLessThanOrEqual(1);
   // The withholding category is not silently converted into the Other Tax
   // payment category; this protects its separate eTDS allocation treatment.
   await expect(dialog.locator('.tax-service-choice__selected-service strong')).toHaveText('Source Tax Deposit');
