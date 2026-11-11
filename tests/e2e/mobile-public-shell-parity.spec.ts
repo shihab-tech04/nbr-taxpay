@@ -143,23 +143,29 @@ test('mobile Pay Tax sheet stays bottom-fixed and grows with each existing choic
   const bottom=async()=>{
     const box=await choice.boundingBox();
     expect(box).not.toBeNull();
-    expect(Math.abs(box!.y+box!.height-844)).toBeLessThanOrEqual(2);
     expect(box!.height).toBeLessThanOrEqual(844);
-    return box!.height;
+    return {height:box!.height,offset:Math.abs(box!.y+box!.height-844)};
   };
-  await expect.poll(bottom).toBeLessThan(844*.8);
-  const initial=await bottom();
+  // Shared sheet entrance scales from 99%; test its settled bottom edge,
+  // not intermediate animation frames (the strict 2px gate is preserved).
+  await expect.poll(async()=>(await bottom()).offset).toBeLessThanOrEqual(2);
+  await expect.poll(async()=>(await bottom()).height).toBeLessThan(844*.8);
+  const initial=(await bottom()).height;
   await choice.locator('[data-payer-relationship="SELF"]').click();
   await expect(choice.locator('[data-payment-entry]')).toHaveCount(2);
-  await expect.poll(bottom).toBeGreaterThan(initial);
+  await expect.poll(async()=> {
+    const measurement=await bottom();
+    return measurement.offset<=2 ? measurement.height : initial;
+  }).toBeGreaterThan(initial);
   await choice.locator('[data-payment-entry="OTHER_TAX"]').click();
   await expect(choice.locator('[data-payment-access]')).toHaveCount(2);
-  const expanded=await bottom();
+  await expect.poll(async()=>(await bottom()).offset).toBeLessThanOrEqual(2);
+  const expanded=(await bottom()).height;
   expect(expanded).toBeGreaterThan(initial);
   await choice.locator('[data-payment-access="GUEST"]').click();
   await choice.getByRole('button',{name:'Continue',exact:true}).click();
   await expect(choice.getByRole('progressbar',{name:'Payment progress'})).toBeVisible();
-  await bottom();
+  await expect.poll(async()=>(await bottom()).offset).toBeLessThanOrEqual(2);
   await choice.getByRole('button',{name:'Close payment services'}).click();
 });
 
