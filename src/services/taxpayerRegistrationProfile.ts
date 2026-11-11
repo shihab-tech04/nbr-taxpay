@@ -27,7 +27,7 @@ export async function loadTaxpayerRegistrationProfile(accountId:string):Promise<
     const result=await fetch(url.replace(/\/$/,'')+'/functions/v1/taxpay-guest-beneficiaries',{
       method:'POST',cache:'no-store',
       headers:{apikey:publishableKey,'content-type':'application/json','x-taxpay-guest-capability':preview.capability},
-      body:JSON.stringify({action:'demo-registration'}),
+      body:JSON.stringify({action:'demo-registration',profileId:accountId}),
     });
     const body=await result.json().catch(()=>null) as {success?:boolean;data?:unknown}|null;
     if(!result.ok || body?.success!==true)throw Error('Registration profile read failed');

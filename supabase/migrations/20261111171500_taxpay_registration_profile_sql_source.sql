@@ -30,25 +30,8 @@ insert into public.taxpay_taxpayer_registration_profiles (account_id,tin,profile
 values ('user1','577935451798','{"source":"REVIEWED_CERTIFICATE","sourceUpdatedAt":"2026-06-04T17:06:20+06:00","tin":"577935451798","taxpayerName":"Md. Arif Rahman","taxpayerStatus":"Individual","tinType":"Individual","tinSubtype":"Bangladeshi → Minor/Dependent","registeredOn":"19 Jan 2026","userType":"Public","localTaxpayer":"Yes","previousTin":"Not Applicable","taxesCircle":"Circle-245 (Company)","taxesZone":"Taxes Zone-12, Dhaka","taxesRange":"Range-1","district":"Dhaka","country":"Bangladesh","registeredAddress":"Dhaka, 1122, Dhaka, Bangladesh","currentAddress":"Dhaka, 1122, Dhaka, Bangladesh","mobileNumber":"+8801857648765","emailAddress":"email@test.com","certificateIssuedOn":"19 Jan 2026","certificateLastUpdatedOn":"04 Jun 2026, 05:06:20 PM","issuingOfficer":"Deputy Commissioner of Taxes","taxOfficeAddress":"3/4 Purana Paltan, Modina Tower (6th Floor), Dhaka","taxOfficePhone":"02-9588253","lastLoginAt":"11 Nov 2026, 11:23:40 AM"}'::jsonb)
 on conflict (account_id) do nothing;
 
-create or replace function public.taxpay_demo_registration_profile(p_capability_hash text)
-returns jsonb language plpgsql security definer
-set search_path = pg_catalog,public,taxpay_guest_private,extensions
-as $$
-declare v_demo_id text; v_profile public.taxpay_taxpayer_registration_profiles%rowtype;
-begin
- if p_capability_hash is null or p_capability_hash !~ '^[a-f0-9]{64}$' then
-   raise exception 'INVALID_CAPABILITY';
- end if;
- perform taxpay_guest_private.touch_session(p_capability_hash);
- select demo_id into v_demo_id from taxpay_guest_private.demo_profiles
- where encode(extensions.digest(convert_to(capability_token,'UTF8'),'sha256'),'hex') = p_capability_hash;
- if v_demo_id is null then raise exception 'INVALID_DEMO_PROFILE'; end if;
- select * into v_profile from public.taxpay_taxpayer_registration_profiles where account_id=v_demo_id;
- if not found then return null; end if;
- return jsonb_build_object('accountId',v_profile.account_id,'tin',v_profile.tin,
-   'profile',v_profile.profile,'revision',v_profile.revision,'updatedAt',v_profile.updated_at);
-end;
-$$;
-revoke all on function public.taxpay_demo_registration_profile(text) from public,anon,authenticated;
-grant execute on function public.taxpay_demo_registration_profile(text) to service_role;
+-- The approved Edge service-role reader uses the existing demo-login capability check.
+-- No additional SECURITY DEFINER entry point is introduced.
+grant select on public.taxpay_taxpayer_registration_profiles to service_role;
+
 commit;

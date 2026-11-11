@@ -26,8 +26,10 @@ test('registration is owner-scoped, Office read-only, and demo capability checke
  assert.match(migration,/sim_payment_account_bindings/);
  assert.match(migration,/taxpay_portal_admins/);
  assert.match(migration,/revoke all on public\.taxpay_taxpayer_registration_profiles from public, anon, authenticated/);
- assert.match(migration,/grant execute on function public\.taxpay_demo_registration_profile\(text\) to service_role/);
- assert.match(migration,/taxpay_guest_private\.touch_session\(p_capability_hash\)/);
+ assert.doesNotMatch(migration,/create or replace function.*security definer/is);
+ assert.match(migration,/grant select on public\.taxpay_taxpayer_registration_profiles to service_role/);
+ assert.match(gateway,/verified\.capability!==token/);
+ assert.match(gateway,/rpc\(client,'taxpay_demo_profile_login'/);
  assert.match(gateway,/action === 'demo-registration'/);
  assert.match(officeGateway,/office\.auth\.getUser\(token\)/);
  assert.match(officeGateway,/OFFICE_ADMIN_UID/);
