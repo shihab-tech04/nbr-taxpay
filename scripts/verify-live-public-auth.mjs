@@ -144,16 +144,20 @@ try {
       });
       if(frame.center>3 || !frame.order || frame.overlaps || !frame.payClearsDock || !frame.dockAtBottom || frame.overflow>2)
         throw new Error('Live public mobile navigation parity regression: '+JSON.stringify(frame));
-      // The mobile Help panel must stay inside the viewport and above the
-      // restored nav; closing it must leave the page and Pay action mounted.
+      // Help is the approved bottom-anchored modal. It covers the dock while
+      // open; after dismissal the original three-item dock must remain usable.
       await helpButton.click();
       const helpPanel=publicMobile.locator('#public-help-panel');
       await expect(helpPanel).toBeVisible();
       const helpBox=await helpPanel.boundingBox();
-      const dockBox=await publicDock.boundingBox();
-      if(!helpBox || !dockBox || helpBox.y+helpBox.height>dockBox.y+2)
-        throw new Error('Live mobile Help panel overlaps bottom navigation');
+      if(!helpBox || helpBox.y < -2 ||
+         Math.abs(helpBox.y+helpBox.height-viewport.height)>2 ||
+         helpBox.width>viewport.width+2)
+        throw new Error('Live mobile Help bottom sheet is outside the viewport');
       await helpPanel.getByRole('button',{name:'Close chat'}).click();
+      await expect(helpPanel).toHaveCount(0);
+      await expect(publicDock).toBeVisible();
+      await expect(publicDock.locator('.citizen-bottom-nav__item')).toHaveCount(3);
       await expect(payButton).toBeVisible();
       await payButton.click();
       const payChoice=publicMobile.getByRole('dialog',{name:'Pay Tax'});
