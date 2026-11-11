@@ -714,82 +714,83 @@
 }
 
 
-/* Public home quick-access: compact service shortcuts, distinct from the hero's primary CTAs. */
-.public-quick-access { min-width: 0; }
-.public-quick-access > h2 {
-  margin: 0 0 .9rem;
+/* Public home citizen benefits: information, not additional payment actions.
+   Only the six cards use these accents; existing site tokens remain unchanged. */
+.public-benefits { min-width: 0; }
+.public-benefits__heading { margin-bottom: .9rem; }
+.public-benefits__heading h2 {
+  margin: 0;
   color: var(--citizen-text);
   font-size: 1.15rem;
   font-weight: 800;
   line-height: 1.4;
 }
-.public-quick-access__grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: .75rem;
+.public-benefits__heading p {
+  margin: .2rem 0 0;
+  color: var(--citizen-muted);
+  font-size: .84rem;
+  line-height: 1.55;
 }
-.public-quick-access__item {
+.public-benefits__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .8rem;
+}
+.public-benefits__item {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  gap: .7rem;
+  gap: .65rem;
   min-width: 0;
-  width: 100%;
-  min-height: 132px;
-  padding: 1rem;
+  min-height: 155px;
+  padding: 1.1rem;
   border: 1px solid var(--citizen-border);
   border-radius: 1rem;
   background: var(--citizen-surface);
   color: var(--citizen-text);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 150ms ease, background-color 150ms ease;
 }
-.public-quick-access__item:hover {
-  border-color: var(--citizen-primary);
-  background: var(--citizen-primary-light);
-}
-.public-quick-access__item:focus-visible {
-  outline: 3px solid var(--citizen-primary);
-  outline-offset: 3px;
-}
-.public-quick-access__icon {
+.public-benefits__item[data-benefit="payments"] { --benefit-icon: #1c5eaa; --benefit-tint: #e9f1fc; }
+.public-benefits__item[data-benefit="documents"] { --benefit-icon: #6654ad; --benefit-tint: #f1edfc; }
+.public-benefits__item[data-benefit="corrections"] { --benefit-icon: #bd682f; --benefit-tint: #fff2e7; }
+.public-benefits__item[data-benefit="history"] { --benefit-icon: #147caa; --benefit-tint: #e8f5fc; }
+.public-benefits__item[data-benefit="beneficiaries"] { --benefit-icon: #ac527a; --benefit-tint: #fbedf3; }
+.public-benefits__item[data-benefit="faster"] { --benefit-icon: #485fb7; --benefit-tint: #edf0fc; }
+.public-benefits__icon {
   display: grid;
   place-items: center;
   flex: 0 0 42px;
   width: 42px;
   height: 42px;
   border-radius: .7rem;
-  background: var(--citizen-primary-light);
-  color: var(--citizen-primary-dark);
+  color: var(--benefit-icon, var(--citizen-primary));
+  background: var(--benefit-tint, var(--citizen-primary-light));
 }
-.public-quick-access__copy {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: .4rem;
-  min-width: 0;
-}
-.public-quick-access__copy strong {
+.public-benefits__copy { min-width: 0; }
+.public-benefits__copy h3 {
+  margin: 0 0 .25rem;
   color: var(--citizen-text);
-  font-size: .9rem;
+  font-size: .94rem;
   font-weight: 750;
-  line-height: 1.45;
+  line-height: 1.4;
 }
-.public-quick-access__copy > span {
+.public-benefits__copy p {
+  margin: 0;
   color: var(--citizen-muted);
-  font-size: .8rem;
-  line-height: 1.55;
+  font-size: .82rem;
+  line-height: 1.5;
 }
-.public-quick-access__arrow {
-  flex: 0 0 18px;
-  margin-top: .1rem;
-  color: var(--citizen-primary);
-}
-@media (max-width: 1100px) {
-  .public-quick-access__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 980px) {
+  .public-benefits__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
-  .public-quick-access > h2 { font-size: 1.05rem; }
-  .public-quick-access__grid { grid-template-columns: minmax(0, 1fr); gap: .6rem; }
-  .public-quick-access__item { min-height: 96px; padding: .9rem; }
+  .public-benefits__heading h2 { font-size: 1.05rem; }
+  .public-benefits__grid { grid-template-columns: minmax(0, 1fr); gap: .6rem; }
+  .public-benefits__item {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: center;
+    min-height: 94px;
+    padding: .85rem;
+    gap: .8rem;
+  }
 }
