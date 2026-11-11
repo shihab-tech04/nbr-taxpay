@@ -56,7 +56,7 @@ export const PublicLanding: React.FC = () => {
     {
       id: 'tax',
       Icon: WalletCards,
-      title: t('Tax payments', 'কর পরিশোধ'),
+      title: t('Tax payments', 'কর পরিশোধ সেবা'),
       detail: t('Pay tax for yourself or others.', 'নিজের বা অন্যের কর পরিশোধ করুন।'),
       open: () => openPaymentServiceChoice(),
     },
