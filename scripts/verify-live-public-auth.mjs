@@ -144,16 +144,20 @@ try {
       });
       if(frame.center>3 || !frame.order || frame.overlaps || !frame.payClearsDock || !frame.dockAtBottom || frame.overflow>2)
         throw new Error('Live public mobile navigation parity regression: '+JSON.stringify(frame));
-      // The mobile Help panel must stay inside the viewport and above the
-      // restored nav; closing it must leave the page and Pay action mounted.
+      // Approved mobile Help UI is now a content-sized, bottom-fixed sheet,
+      // not the former floating card above the dock. Check the actual released
+      // sheet geometry, its close action and restored navigation/Pay entry.
       await helpButton.click();
       const helpPanel=publicMobile.locator('#public-help-panel');
       await expect(helpPanel).toBeVisible();
       const helpBox=await helpPanel.boundingBox();
-      const dockBox=await publicDock.boundingBox();
-      if(!helpBox || !dockBox || helpBox.y+helpBox.height>dockBox.y+2)
-        throw new Error('Live mobile Help panel overlaps bottom navigation');
+      if(!helpBox || helpBox.y < -2 ||
+         Math.abs(helpBox.y+helpBox.height-viewport.height)>2 ||
+         helpBox.height>viewport.height-10)
+        throw new Error('Live mobile Help bottom sheet is not viewport-safe: '+JSON.stringify(helpBox));
       await helpPanel.getByRole('button',{name:'Close chat'}).click();
+      await expect(helpPanel).toHaveCount(0);
+      await expect(publicDock).toBeVisible();
       await expect(payButton).toBeVisible();
       await payButton.click();
       const payChoice=publicMobile.getByRole('dialog',{name:'Pay Tax'});
