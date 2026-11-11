@@ -507,6 +507,10 @@
   .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-pay--guest-floating:hover {
     background:var(--color-taxpay-dark);
   }
+  /* Actual DOM focus avoids a stale React focus flag after Help closes. */
+  .taxpay-citizen-shell.taxpay-public-mobile-shell:has(:is(input,textarea,select,[contenteditable="true"]):focus) .citizen-pay--guest-floating {
+    display:none;
+  }
   .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-widget {
     top:calc(6px + env(safe-area-inset-top));
     bottom:auto;
