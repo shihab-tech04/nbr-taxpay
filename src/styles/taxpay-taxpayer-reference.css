@@ -120,6 +120,21 @@
   font-weight: 600;
 }
 .taxpayer-reference-main-action:hover { background: var(--color-taxpay-dark); }
+.taxpayer-reference-pay-menu { width: 100%; }
+.taxpayer-reference-pay-menu .taxpayer-reference-main-action { margin-bottom: 6px; }
+.taxpayer-reference-pay-menu .taxpayer-reference-main-action > svg:last-child { margin-left: auto; transition: transform 160ms ease; }
+.taxpayer-reference-pay-chevron--open { transform: rotate(180deg); }
+.taxpayer-reference-pay-options { display: grid; gap: 4px; margin: 0 0 12px; padding-left: 12px; }
+.taxpayer-reference-pay-options button {
+  min-height: 44px; width: 100%; padding: 9px 12px; text-align: left;
+  border: 1px solid var(--color-taxpay-border); border-radius: 10px;
+  background: var(--color-taxpay-surface); color: var(--color-taxpay-text);
+  font-size: 14px; font-weight: 500; line-height: 1.5;
+}
+.taxpayer-reference-pay-options button:hover, .taxpayer-reference-pay-options button:focus-visible {
+  border-color: var(--color-taxpay-primary); color: var(--color-taxpay-primary);
+}
+
 .taxpayer-reference-links { display: grid; gap: 4px; }
 .taxpayer-reference-links button {
   display: flex;
