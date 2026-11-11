@@ -109,11 +109,16 @@ try {
       await expect(wordmark).toBeVisible();
       await expect(guestBell).toHaveCount(0);
       await expect(publicMobile.locator('.public-home-header')).toBeHidden();
-      const dock = publicMobile.getByRole('navigation',{name:'Mobile primary navigation'});
-      await expect(dock).toBeVisible();
-      await expect(dock.getByRole('button',{name:'Payment Status'})).toBeVisible();
-      await expect(dock.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
-      await expect(publicMobile.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+      // Public mobile intentionally has no redundant bottom dock. Navigation
+      // remains in the existing menu and footer; Pay and Help float separately.
+      await expect(publicMobile.getByRole('navigation',{name:'Mobile primary navigation'})).toHaveCount(0);
+      const helpButton=publicMobile.getByRole('button',{name:'Chat support'});
+      await expect(helpButton).toBeVisible();
+      await expect(helpButton.locator('span')).toBeHidden();
+      const payButton=publicMobile.getByRole('button',{name:'Pay — select payment type'});
+      await expect(payButton).toBeVisible();
+      await expect(payButton).toHaveClass(/citizen-pay--guest-floating/);
+      await expect(payButton).toContainText('Pay now');
       const frame = await publicMobile.evaluate(()=>{
         const header = document.querySelector('.taxpay-public-mobile-navigation .citizen-header').getBoundingClientRect();
         const logo = document.querySelector('.taxpay-public-mobile-navigation .citizen-brand').getBoundingClientRect();
@@ -121,11 +126,13 @@ try {
         const help = document.querySelector('.public-help-launch')?.getBoundingClientRect();
         const pay = document.querySelector('.citizen-pay')?.getBoundingClientRect();
         const overlaps = help && pay && help.left < pay.right && help.right > pay.left && help.top < pay.bottom && help.bottom > pay.top;
+        const helpCentered = Boolean(help) && Math.abs(help.y+help.height/2-header.y-header.height/2)<=8;
+        const helpRight = Boolean(help) && help.right<=header.right+2 && help.left>logo.right;
         return {center:Math.abs(logo.x+logo.width/2-header.x-header.width/2),
-          order:menu.x < logo.x,overlaps,
+          order:menu.x < logo.x,overlaps,helpCentered,helpRight,
           overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
       });
-      if(frame.center>3 || !frame.order || frame.overlaps || frame.overflow>2)
+      if(frame.center>3 || !frame.order || frame.overlaps || !frame.helpCentered || !frame.helpRight || frame.overflow>2)
         throw new Error('Live public mobile navigation parity regression: '+JSON.stringify(frame));
       await publicMobile.screenshot({path:'test-results/live-auth-public-mobile-nav-'+name+'.png',fullPage:false});
       await publicMobile.close();
