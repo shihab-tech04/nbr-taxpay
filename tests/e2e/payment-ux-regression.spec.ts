@@ -163,9 +163,8 @@ test('desktop Pay Tax steps size to content and align AY with amount without an 
   const outer = dialog.locator('.taxpay-modal__body');
   const stepOneBox = await dialog.boundingBox();
   expect(stepOneBox).not.toBeNull();
-  // Step 1 must remain compact and scroll-free; allow an 8px subpixel/font-rendering
-  // tolerance across browser runners instead of changing approved dialog CSS.
-  expect(stepOneBox!.height).toBeLessThanOrEqual(768);
+  // Step 1 contains one short taxpayer card and a summary, not a 92vh blank canvas.
+  expect(stepOneBox!.height).toBeLessThan(760);
   expect(await outer.evaluate(node => node.scrollHeight - node.clientHeight)).toBeLessThanOrEqual(2);
 
   await dialog.locator('#guest-tin').fill('123456789012');

@@ -79,8 +79,7 @@ export function bindPreviewStoryPayer(
   // explicitly reject records with BOTH beneficiary and explicit allocations.
   // The private SQL trigger independently verifies every saved TIN for this
   // payer's capability-scoped session before accepting the single payment.
-  if (details.combinedPayment === true &&
-      (input.service === 'OTHER_TAX_PAYMENT' || input.service === 'TAX_WITH_RETURN')) {
+  if (details.combinedPayment === true && input.service === 'OTHER_TAX_PAYMENT') {
     const allocations=details.allocations;
     const accounting=details.lines as Array<Record<string,unknown>>;
     const snapshot=details.receiptSnapshot as {items?:unknown}|undefined;
@@ -98,8 +97,6 @@ export function bindPreviewStoryPayer(
         typeof a.headId!=='number' || !Number.isSafeInteger(a.headId) || a.headId<=0 ||
         typeof a.amountMinor!=='number' || !Number.isSafeInteger(a.amountMinor) || a.amountMinor<=0 ||
         accounting[index].headId!==a.headId ||
-        (input.service==='TAX_WITH_RETURN' && a.headId!==125) ||
-        (input.service==='OTHER_TAX_PAYMENT' && a.headId===125) ||
         Math.round(Number(accounting[index].totalAmount)*100)!==a.amountMinor)
         throw new Error('INVALID_COMBINED_ALLOCATION');
       total+=a.amountMinor;

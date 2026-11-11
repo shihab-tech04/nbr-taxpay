@@ -11,7 +11,7 @@ export function acceptPaymentRequestSize(rawLength: number,input: unknown): bool
   const payload = input as Record<string, unknown>;
   if (!payload.details || typeof payload.details !== 'object' ||
       Array.isArray(payload.details)) return false;
-  return (payload.service === 'OTHER_TAX_PAYMENT' || payload.service === 'TAX_WITH_RETURN') &&
+  return payload.service === 'OTHER_TAX_PAYMENT' &&
     (payload.details as Record<string, unknown>).combinedPayment === true;
 }
 

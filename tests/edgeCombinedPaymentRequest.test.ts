@@ -8,14 +8,6 @@ test('large canonical combined payments accepted within SQL limit',()=>{
   assert.equal(acceptPaymentRequestSize(MAX_COMBINED_PAYMENT_PAYLOAD_CHARS,combined),true);
   assert.equal(acceptPaymentRequestSize(MAX_COMBINED_PAYMENT_PAYLOAD_CHARS+1,combined),false);
 });
-test('large Return-only combined requests share the same bounded 750k gate',()=>{
-  assert.equal(acceptPaymentRequestSize(MAX_LEGACY_PAYMENT_PAYLOAD_CHARS+1,
-    {service:'TAX_WITH_RETURN',details:{combinedPayment:true}}),true);
-  assert.equal(acceptPaymentRequestSize(MAX_COMBINED_PAYMENT_PAYLOAD_CHARS+1,
-    {service:'TAX_WITH_RETURN',details:{combinedPayment:true}}),false);
-  assert.equal(acceptPaymentRequestSize(MAX_LEGACY_PAYMENT_PAYLOAD_CHARS+1,
-    {service:'TAX_WITH_RETURN',details:{combinedPayment:false}}),false);
-});
 test('legacy limits and malformed shapes are not expanded',()=>{
   assert.equal(acceptPaymentRequestSize(MAX_LEGACY_PAYMENT_PAYLOAD_CHARS,{service:'ADVANCE_TAX'}),true);
   for(const x of [{service:'ADVANCE_TAX',details:{combinedPayment:true}},{service:'OTHER_TAX_PAYMENT',details:{combinedPayment:'true'}},{service:'OTHER_TAX_PAYMENT',details:{combinedPayment:false}},null])
