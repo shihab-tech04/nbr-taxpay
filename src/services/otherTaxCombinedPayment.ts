@@ -17,9 +17,11 @@ const validTin = (value: string) => /^\d{12,13}$/.test(value);
 export const MAX_COMBINED_ALLOCATIONS = 256;
 export const MAX_COMBINED_PAYLOAD_CHARS = 750_000;
 const MAX_LINES = MAX_COMBINED_ALLOCATIONS;
-const eligibleHeads = new Map(V11_SOURCE_HEADS.filter(head => head.journey === 'LIABILITY' && head.active &&
-  head.purpose !== 'return' && head.map === 'MAPPED' && !isV11HeadReviewBlocked(head) &&
-  !BLOCKED_HEAD_IDS.includes(head.id)).map(head => [head.id, head]));
+const eligibleHeads = new Map(V11_SOURCE_HEADS.filter(head =>
+  (head.journey === 'LIABILITY' || head.journey === 'WITHHOLDING') &&
+  head.active && head.purpose !== 'return' && head.map === 'MAPPED' &&
+  !isV11HeadReviewBlocked(head) && !BLOCKED_HEAD_IDS.includes(head.id)
+).map(head => [head.id, head]));
 export function prepareCombinedOtherTaxPayment(
   original: StoryPaymentInput,
   receipt: ChallanReceipt,
