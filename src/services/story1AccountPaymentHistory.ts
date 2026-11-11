@@ -89,6 +89,11 @@ export async function getAccountStoryPayments(ownerUid: string): Promise<OwnedSt
     p_session_id: getStorySessionId()
   });
   if (claimError) throw new Error('Unable to synchronize saved payment history');
+  // Guest Other Tax records may declare a payer TIN, but only this authenticated
+  // RPC can link them through the existing approver-verified account binding.
+  // Never pass the entered payer TIN or a browser-selected account identity.
+  const { error: payerClaimError } = await supabase.rpc('taxpay_claim_walkin_payer_payments');
+  if (payerClaimError) throw new Error('Unable to verify walk-in payer history');
   const all: OwnedStoryPayment[] = [];
   const seen = new Set<string>();
   for (let page=1; page<=2000; page++) {
