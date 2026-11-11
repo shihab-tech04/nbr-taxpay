@@ -153,6 +153,37 @@ test('unbound signed-in history retains review activity and SQL-owned beneficiar
   await expect(history).toContainText('Beneficiary B');
 });
 
+
+test('signed-in Payments & Activity filters saved beneficiaries and opens only the owner-scoped profile',async({page})=>{
+  await mockAccount(page,true,[sharedPayment]);
+  const listId='00000000-0000-4000-8000-000000000711';
+  const saved={id:'00000000-0000-4000-8000-000000000712',owner_uid:owner.id,list_id:listId,
+    tin:'012345678901',display_name:'Beneficiary A',tag:'clients',relationship:null,
+    other_label:null,created_at:'2026-10-20T10:00:00Z',updated_at:'2026-10-20T10:00:00Z'};
+  await page.route(backend+'/rest/v1/taxpay_beneficiaries**',route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify([saved])
+  }));
+  await page.route(backend+'/rest/v1/taxpay_beneficiary_lists**',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify([{id:listId,owner_uid:owner.id,name:'Clients',created_at:'2026-10-20T10:00:00Z'}])
+  }));
+  await page.goto('/?action=history');
+  const history=page.getByTestId('beneficiary-payment-history');
+  await expect(history).toBeVisible();
+  await expect(history.getByText('Clients',{exact:true}).first()).toBeVisible();
+  await history.getByRole('button',{name:'Filter'}).click();
+  await history.getByRole('combobox',{name:'Filter payments by beneficiary'}).selectOption('012345678901');
+  await expect(history).toContainText('Beneficiary A');
+  await expect(history).not.toContainText('Beneficiary B');
+  await history.getByRole('combobox',{name:'Filter payments by assessment year'}).selectOption('2026-27');
+  await expect(history.getByText('2026-27').first()).toBeVisible();
+  await history.getByRole('button',{name:'Profile'}).click();
+  const profile=page.getByTestId('beneficiary-profile');
+  await expect(profile).toBeVisible();
+  await expect(profile.getByRole('heading',{name:'Beneficiary A'})).toBeVisible();
+  await expect(profile.getByTestId('beneficiary-payment-chronology')).toBeVisible();
+  await expect(profile.getByText('012345678901')).toBeVisible();
+});
 for(const language of ['en','bn'] as const){
   test('authenticated Notifications and Corrections show shared searchable tables in '+language,async({page},info)=>{
     await mockAccount(page,true);
