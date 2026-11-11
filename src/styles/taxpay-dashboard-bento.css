@@ -390,7 +390,7 @@
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"][data-drafts-empty="true"] > .taxpay-bento-recent{
   grid-column:1 / -1;
 }
-@media(max-width:799px){
+@media(max-width:1199px){
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-request-row{
     grid-template-columns:minmax(0,1fr);
   }
