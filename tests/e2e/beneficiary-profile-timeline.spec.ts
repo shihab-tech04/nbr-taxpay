@@ -46,7 +46,7 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   const activity=page.locator('.taxpayer-transaction-panel');
   await expect(activity).toBeVisible();
   await activity.getByRole('button',{name:'Filter'}).click();
-  await activity.getByRole('combobox',{name:'Filter transactions by beneficiary'}).selectOption('222222222222');
+  await activity.getByRole('combobox',{name:'Filter transactions by beneficiary',exact:true}).selectOption('222222222222');
   await expect(activity.getByTestId('taxpayer-transaction-table').locator('tbody tr')).toHaveCount(1);
   await expect(activity.getByText('User Two · 222222222222').first()).toBeVisible();
   await activity.getByRole('button',{name:'Profile'}).click();
