@@ -595,7 +595,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>
       <p className="mt-2 text-xs text-taxpay-muted">{tr('Only eligible posted credits count; travel tax is separate.','শুধু যোগ্য নথিভুক্ত ক্রেডিট গণনা হয়; ভ্রমণ কর পৃথক।')}</p>
     </section>
-    <section className={panel+' taxpay-bento-hero'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
+    <section className={panel+' taxpay-bento-hero taxpay-bento-summary'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
       <h2 className="text-base font-semibold">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h2>
       <div className="taxpay-bento-hero__status">
         <button type="button" onClick={()=>navigate('history')}><span>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong>{completedPayments}</strong></button>
@@ -603,7 +603,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         <button type="button" onClick={()=>navigate('corrections')}><span>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong>{correctionRequestCount}</strong></button>
       </div>
     </section>
-    <section className={panel} aria-labelledby="dashboard-correction-requests-title">
+    <section className={panel+' taxpay-bento-corrections'} aria-labelledby="dashboard-correction-requests-title">
       <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
       <p className="mt-2 text-sm text-taxpay-muted">{tr('Review your recorded requests and their current status.','আপনার সংরক্ষিত আবেদন ও বর্তমান অবস্থা দেখুন।')}</p>
       <p className="mt-2 text-sm">{tr('Recorded requests for the selected year','নির্বাচিত করবর্ষে সংরক্ষিত আবেদন')}: <strong>{correctionRequestCount}</strong></p>

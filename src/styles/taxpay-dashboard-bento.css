@@ -359,12 +359,31 @@
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-recent li{
   gap:9px;
 }
-.taxpay-bento-grid[data-testid="taxpayer-overview-bento"]:not(:has(> .taxpay-bento-drafts)) > .taxpay-bento-recent{
-  grid-column:span 12;
+/* The summary and correction cards fill a complete 7/5 row after the external-data row is hidden. */
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-summary{
+  grid-column:span 7;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-corrections{
+  grid-column:span 5;
+  min-width:0;
+  align-self:stretch;
+}
+/* An empty draft component must not reserve half of the recent-activity row. */
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-drafts:empty{
+  display:none;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"]:not(:has(> .taxpay-bento-drafts:not(:empty))) > .taxpay-bento-recent{
+  /* Full-width on both 12-track desktop and 2-track mobile grids. */
+  grid-column:1 / -1;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-coverage__donut > div{
+  inset:26px;
+  padding:4px;
 }
 @media(max-width:1199px){
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-position,
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-hero,
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-corrections,
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-coverage,
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-years,
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-drafts,
@@ -381,6 +400,7 @@
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"]{gap:10px}
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-position,
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-hero,
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-corrections,
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-coverage,
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-years,
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-tags,
