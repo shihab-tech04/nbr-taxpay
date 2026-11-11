@@ -61,7 +61,7 @@ export async function discover(){
   const backup=findRun('Verified pre-release source recovery');
   if(!pages||!sql||!backup)return{mode:'full',reason:'All three original PR workflows not verified'};
   const checks=(await api('commits/'+head+'/check-runs?per_page=100')).check_runs||[];
-  for(const name of ['Build and verify static preview','Isolated local Supabase acceptance (no hosted credentials)','source-backup']){
+  for(const name of ['Build and verify static preview','Isolated local Supabase acceptance (no hosted credentials)','Current Office main contract and build','source-backup']){
     if(!checkPassed(checks,name,head,pr.merged_at))return{mode:'full',reason:'Required exact-head check missing: '+name};
   }
   const artifacts=(await api('actions/runs/'+pages.id+'/artifacts?per_page=100')).artifacts||[];
