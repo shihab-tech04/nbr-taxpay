@@ -1,3 +1,5 @@
+.taxpay-citizen-shell .public-help-backdrop {display:none;}
+
 /* Public and taxpayer mobile dialogs use one approved bottom-anchored,
    content-sized shell. Desktop and the payment engine are unchanged.
    Body content scrolls when it exceeds the safe viewport; headers and
