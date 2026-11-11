@@ -152,11 +152,12 @@ export function User1TaxpayerProfile({language}:{language:Language}){
       </div>
       {copied==='failed'&&<p className="px-5 pb-3 text-sm text-taxpay-error" role="alert">{tr(['Could not copy. Select and copy the reference manually.','কপি করা যায়নি। রেফারেন্স নির্বাচন করে কপি করুন।'])}</p>}
       {downloadError&&<p className="px-5 pb-3 text-sm text-taxpay-error" role="alert">{tr(['Download failed. Please retry.','ডাউনলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।'])}</p>}
-      <div className="grid border-t border-taxpay-border sm:grid-cols-3">
+      <div data-testid="user1-profile-summary" className="grid border-t border-taxpay-border sm:grid-cols-4">
         {([
           [tr(['TIN type','টিআইএন ধরন']),value('tinType',language)],
           [tr(['Taxes circle','কর সার্কেল']),value('taxesCircle',language)],
-          [tr(['Registered since','নিবন্ধিত হওয়ার তারিখ']),value('registeredOn',language)]
+          [tr(['Registered since','নিবন্ধিত হওয়ার তারিখ']),value('registeredOn',language)],
+          [tr(['Last account login','সর্বশেষ লগইন']),value('lastLoginAt',language)]
         ] as const).map(([label,text])=><div key={label} className="min-w-0 border-b border-taxpay-border px-5 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:px-6 sm:last:border-r-0">
           <p className="text-xs text-taxpay-muted">{label}</p>
           <p className="mt-1 break-words text-sm font-semibold text-taxpay-text">{text}</p>
@@ -189,10 +190,6 @@ export function User1TaxpayerProfile({language}:{language:Language}){
           {panel(['Certificate details','সনদের তথ্য'],details(certificateRows))}
         </div>
       </div>
-      <section className="min-w-0 rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
-        <h3 className="mb-3 border-b border-taxpay-border pb-3 text-base font-semibold text-taxpay-text">{tr(['Account information','অ্যাকাউন্টের তথ্য'])}</h3>
-        {details([['lastLoginAt',['Last account login','সর্বশেষ লগইন']]])}
-      </section>
     </section>
   </div>;
 }
