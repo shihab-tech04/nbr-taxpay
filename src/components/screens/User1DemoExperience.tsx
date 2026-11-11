@@ -5,6 +5,8 @@ import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditC
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
+import {DashboardCorrectionRequests} from './DashboardCorrectionRequests';
+import {canShowVerifiedExternalDashboardRow,currentVerifiedExternalDashboard} from '../../services/verifiedExternalDashboard';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
@@ -408,7 +410,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>}/>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
-  const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Overview','সংক্ষিপ্ত বিবরণ');
+  const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Tax Credit Certificates','কর ক্রেডিট সনদ'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Overview','সংক্ষিপ্ত বিবরণ');
   const header=<TaxpayerPageHeading title={pageTitle} className={'taxpayer-dashboard-header'+(overviewRoute?' taxpayer-dashboard-header--overview':'')}
     actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   const coveredBreakdown=[
@@ -434,14 +436,17 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     {key:'no-link',amount:noLinkedAmount,label:tr('No beneficiary link','উপকারভোগীর সংযোগ নেই'),color:'#8498b1'}
   ];
   const displayedSpendingTotal=spendingSegments.reduce((sum,item)=>sum+item.amount,0);
-  const attentionItems:{label:string;count:number;states:State[]}[]=[
-    {label:tr('Failed / reversed','ব্যর্থ / বাতিল'),count:scoped.filter(x=>x.state==='FAILED'||x.state==='REVERSED').length,states:['FAILED','REVERSED']},
-    {label:tr('Pending','অপেক্ষমাণ'),count:scoped.filter(x=>x.state==='PENDING').length,states:['PENDING']},
-    {label:tr('Unmatched','অমিল'),count:totals.disputed,states:['DISPUTED']},
-    {label:tr('Requests','আবেদন'),count:scoped.filter(x=>x.state==='REQUESTED').length,states:['REQUESTED']}
+  // Neither the fictional scenario nor saved payment records verify an external
+  // assessment and posted credits. This row is reserved for two successful external feeds.
+  const showVerifiedExternalOverview=canShowVerifiedExternalDashboardRow(
+    currentVerifiedExternalDashboard(),previewAccount?.id??null,year);
+  const overviewIndicators=[
+    {label:tr('Completed Payments','সম্পন্ন পেমেন্ট'),count:String(scoped.filter(x=>x.state==='POSTED'&&['income','ait','travel'].includes(x.kind)).length),route:'history'},
+    {label:tr('Saved Drafts','সংরক্ষিত খসড়া'),count:'—',route:'secure_workspace'},
+    {label:tr('Correction Requests','সংশোধনের অনুরোধ'),count:'—',route:'corrections'}
   ];
-  const activeAttention=attentionItems.filter(item=>item.count>0);
   const overview=<div className="taxpay-bento-grid" data-testid="taxpayer-overview-bento">
+    {showVerifiedExternalOverview && <>
     <section className={panel+' taxpay-bento-position'} aria-labelledby="taxpay-bento-position-title">
       <div className="flex items-center justify-between gap-2">
         <h2 id="taxpay-bento-position-title" className="text-base font-semibold">{tr('Current tax position','বর্তমান কর অবস্থান')}</h2>
@@ -469,19 +474,18 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <p className="text-sm">{tr('Review exceptions or start a payment.','ব্যতিক্রম দেখুন অথবা পেমেন্ট শুরু করুন।')}</p>
       <div className="taxpay-bento-hero__actions">
         <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16} aria-hidden="true"/></button>
-        <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice('TRAVEL_TAX')}>{tr('Travel tax','ভ্রমণ কর')}<ArrowRight size={16} aria-hidden="true"/></button>
       </div>
-      <div className="taxpay-bento-hero__status" aria-label={tr('Attention and exceptions','নজরদারি ও ব্যতিক্রম')}>
-        {activeAttention.length===0 && <p className="taxpay-bento-hero__clear" role="status">{tr('No payment exceptions for this assessment year.','এই করবর্ষে কোনো পেমেন্ট ব্যতিক্রম নেই।')}</p>}
-        {activeAttention.map(item=>
-          <button type="button" key={item.label} data-has-items={item.count>0?'true':'false'} onClick={()=>openReview(item.states)} aria-label={tr('View ','দেখুন: ')+item.label+': '+item.count}>
+      <div className="taxpay-bento-hero__status" aria-label={tr('Payment and correction shortcuts','পেমেন্ট ও সংশোধন শর্টকাট')}>
+        {overviewIndicators.map(item=>
+          <button type="button" key={item.label} onClick={()=>navigate(item.route)} aria-label={tr('View ','দেখুন: ')+item.label+': '+item.count}>
             <span>{item.label}</span><strong className="tabular-nums">{item.count}</strong>
           </button>)}
       </div>
       <button type="button" className="taxpay-bento-hero__review self-end min-h-10 px-2 text-sm font-medium text-taxpay-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary" onClick={()=>navigate('corrections')}>
-        {tr('Review exceptions','ব্যতিক্রম দেখুন')}<ArrowRight size={15} className="ml-2 inline" aria-hidden="true"/>
+        {tr('Correction Requests','সংশোধনের অনুরোধ')}<ArrowRight size={15} className="ml-2 inline" aria-hidden="true"/>
       </button>
     </section>
+    </>}
     <div className="taxpay-bento-coverage">
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-coverage-title">
         <div className="flex items-center justify-between gap-2">
@@ -571,6 +575,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>}
     </section>
     </div>
+    <div className="taxpay-bento-corrections"><DashboardCorrectionRequests language={language} onOpen={()=>navigate('corrections')}/></div>
     {onResumePaymentDraft && <div className="taxpay-bento-drafts">
       <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}/>
     </div>}
@@ -654,7 +659,15 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const documentNeedle=documentSearch.trim().toLocaleLowerCase();
   const documentRecords=allDocumentRecords.filter(x=>(x.title+' '+x.ref+' '+(x.challan||'')+' '+tr(...labels[x.kind]))
     .toLocaleLowerCase().includes(documentNeedle));
-  const documents=<section className={panel+' taxpayer-records-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-documents-heading">
+  const documents=<>
+    <section data-testid="tax-credit-certificates" className={panel} aria-labelledby="tax-credit-certificates-heading">
+      <h2 id="tax-credit-certificates-heading" className="text-lg font-semibold">{tr('Tax Credit Certificates','কর ক্রেডিট সনদ')}</h2>
+      <p className="mt-2 text-sm text-taxpay-muted" role="status">{tr(
+        'No verified government-issued tax credit certificates are available. Scenario payment references below are not certificates.',
+        'সরকারি যাচাইকৃত কর ক্রেডিট সনদ পাওয়া যায়নি। নিচের উদাহরণ পেমেন্ট রেফারেন্সগুলো সনদ নয়।'
+      )}</p>
+    </section>
+    <section className={panel+' taxpayer-records-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-documents-heading">
     <TaxPayOfficeRegisterToolbar id="taxpayer-documents-heading"
       title={tr('Payment records and supporting references','পেমেন্ট রেকর্ড ও সহায়ক রেফারেন্স')}
       description={tr('Open a record to check its payment details. A recorded entry is not itself an issued certificate.','পেমেন্টের বিস্তারিত দেখতে রেকর্ড খুলুন। নথিভুক্ত তথ্য নিজে কোনো ইস্যুকৃত সনদ নয়।')}
@@ -681,7 +694,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     </div>:<p role="status" className="taxpay-table-state mt-4">{documentSearch?tr('No payment records match this search.','এই অনুসন্ধানে কোনো পেমেন্ট রেকর্ড পাওয়া যায়নি।'):tr('No recorded payment references for this assessment year.','এই করবর্ষে কোনো পেমেন্ট রেফারেন্স নেই।')}</p>}
     <TaxPayOfficeRegisterFooter shown={documentRecords.length} total={allDocumentRecords.length}
       labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('records','রেকর্ড')}}/>
-  </section>;
+  </section></>;
   const allCorrectionRecords=scoped.filter(x=>['PENDING','FAILED','REVERSED','DISPUTED','REQUESTED'].includes(x.state));
   const caseNeedle=caseSearch.trim().toLocaleLowerCase();
   const correctionRecords=allCorrectionRecords.filter(x=>(caseStatus==='all'||x.state===caseStatus)&&
