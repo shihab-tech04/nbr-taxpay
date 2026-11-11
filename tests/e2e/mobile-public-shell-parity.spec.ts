@@ -82,8 +82,8 @@ test('mobile guest shell shares signed-in compact-on-scroll behavior, without du
   await page.goto('/?action=landing');
   await page.evaluate(()=>window.scrollTo(0,600));
   const corners=page.locator('.taxpay-public-mobile-navigation .citizen-corners');
-  // Scroll-driven compact UI is updated asynchronously. Check actual scroll
-  // depth and wait for the correct state, rather than racing isVisible().
+  // React scroll updates are asynchronous. Assert actual scroll depth and await
+  // the approved compact/expanded state; retain every current footer regression.
   const actualScroll=await page.evaluate(()=>window.scrollY);
   if (actualScroll > 145) {
     await expect(corners.getByRole('button',{name:'Open menu'})).toBeVisible();
@@ -114,7 +114,28 @@ test('public mobile footer stays compact and the floating Pay action remains rea
   await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
   const footer=page.locator('.public-footer');
   await expect(footer).toBeVisible();
+  await expect(footer.locator('.public-footer__navs')).toBeHidden();
+  const more=footer.locator('.public-footer__mobile-more > summary');
+  await expect(more).toBeVisible();
   const inner=footer.locator('.public-footer__inner');
+  const footerClearance=await footer.evaluate(element=>parseFloat(getComputedStyle(element).paddingBottom));
+  expect(footerClearance).toBeGreaterThanOrEqual(150);
+  const brandBox=await footer.locator('.public-footer__wordmark').boundingBox();
+  const copyBox=await footer.locator('.public-footer__bottom').boundingBox();
+  const moreBox=await more.boundingBox();
+  expect(brandBox).not.toBeNull();
+  expect(copyBox).not.toBeNull();
+  expect(moreBox).not.toBeNull();
+  expect(Math.abs(brandBox!.y+brandBox!.height/2-(copyBox!.y+copyBox!.height/2))).toBeLessThanOrEqual(12);
+  expect(Math.abs(brandBox!.y+brandBox!.height/2-(moreBox!.y+moreBox!.height/2))).toBeLessThanOrEqual(12);
+  expect((await inner.boundingBox())!.height).toBeLessThan(80);
+  await more.click();
+  const mobileLinks=footer.getByRole('navigation',{name:'More footer links'});
+  await expect(mobileLinks).toBeVisible();
+  await expect(mobileLinks.getByRole('button')).toHaveCount(3);
+  await expect(mobileLinks.getByRole('link',{name:'NBR publications'})).toHaveAttribute('href','https://nbr.gov.bd/');
+  await more.click();
+  await expect(mobileLinks).toBeHidden();
   const padding=await inner.evaluate(node=>getComputedStyle(node).paddingBottom);
   expect(parseFloat(padding)).toBeLessThan(30);
   const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
@@ -125,6 +146,7 @@ test('public mobile footer stays compact and the floating Pay action remains rea
   expect(bounds).not.toBeNull();
   expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(375);
   expect(bounds!.y+bounds!.height).toBeLessThanOrEqual(812);
+  expect(Math.max(brandBox!.y+brandBox!.height, copyBox!.y+copyBox!.height, moreBox!.y+moreBox!.height)).toBeLessThanOrEqual(bounds!.y-4);
   const dockBounds=await dock.boundingBox();
   expect(dockBounds).not.toBeNull();
   expect(bounds!.y+bounds!.height).toBeLessThan(dockBounds!.y);
@@ -137,6 +159,32 @@ test('public mobile footer stays compact and the floating Pay action remains rea
     const box=await choice.boundingBox();
     return box?.height??Infinity;
   }).toBeLessThan(812*.8);
+});
+
+test('320px Bengali public footer remains one row with accessible links',async({page})=>{
+  await page.setViewportSize({width:320,height:700});
+  await page.goto('/?action=landing&lang=bn');
+  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+  const footer=page.locator('.public-footer');
+  const more=footer.locator('.public-footer__mobile-more > summary');
+  await expect(more).toBeVisible();
+  await expect(more).toContainText('আরও');
+  await expect(footer.locator('.public-footer__bottom')).toContainText('© ২০২৬ করবৃত্ত');
+  const moreRect=await more.boundingBox();
+  const floatingPayRect=await page.locator('.taxpay-public-mobile-navigation .citizen-pay--guest-floating').boundingBox();
+  expect(moreRect).not.toBeNull();
+  expect(floatingPayRect).not.toBeNull();
+  expect(moreRect!.y+moreRect!.height).toBeLessThanOrEqual(floatingPayRect!.y-4);
+  const extent=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+  expect(extent).toBeLessThanOrEqual(2);
+  await more.click();
+  const links=footer.getByRole('navigation',{name:'ফুটারের আরও লিংক'});
+  await expect(links).toBeVisible();
+  await expect(links.getByRole('button',{name:'রসিদ ও সংশোধন'})).toBeVisible();
+  await expect(links.getByRole('button',{name:'নিরাপত্তা ও সহায়তা'})).toBeVisible();
+  await expect(links.getByRole('link',{name:'এনবিআর প্রকাশনা'})).toBeVisible();
+  await links.getByRole('button',{name:'রসিদ ও সংশোধন'}).click();
+  await expect(page).toHaveURL(/action=user_guide/);
 });
 
 test('mobile Pay Tax sheet stays bottom-fixed and grows with each existing choice',async({page})=>{
@@ -200,6 +248,9 @@ test('public desktop header is unchanged, with no mobile navigation duplication'
   await page.setViewportSize({width:1280,height:800});
   await page.goto('/?action=landing');
   await expect(page.locator('.public-home-header')).toBeVisible();
+  const desktopFooter=page.locator('.public-footer');
+  await expect(desktopFooter.locator('.public-footer__mobile-actions')).toBeHidden();
+  await expect(desktopFooter.getByRole('navigation',{name:'Footer navigation'})).toBeVisible();
   await expect(page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'})).toBeVisible();
   await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeHidden();
   await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toBeHidden();
