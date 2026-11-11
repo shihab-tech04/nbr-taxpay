@@ -258,7 +258,7 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     const desktopPay = page.locator('.taxpayer-reference-main-action');
     if (page.viewportSize()!.width > 900) await expect(desktopPay).toBeVisible();
     // Preserve existing user1 financial dashboard; insert cards after the heading.
-    await expect(workspace.getByRole('heading', { name: 'What needs your attention' })).toBeVisible();
+    await expect(workspace.getByRole('heading', { name: 'Payment and request summary' })).toBeVisible();
     await savedCard.getByRole('button', { name: 'Continue' }).click();
     const payment = page.getByRole('dialog', { name: 'Pay Tax' });
     await expect(payment.locator('#guest-notice-ref')).toHaveValue(marker);
@@ -271,7 +271,7 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     // Compare the card's dimensions, not its scroll-relative screen coordinate.
     expect(Math.abs(layoutUnderModal!.width - layoutBefore!.width)).toBeLessThanOrEqual(2);
     expect(Math.abs(layoutUnderModal!.height - layoutBefore!.height)).toBeLessThanOrEqual(2);
-    await expect(workspace.getByRole('heading', { name: 'What needs your attention' })).toBeVisible();
+    await expect(workspace.getByRole('heading', { name: 'Payment and request summary' })).toBeVisible();
     await payment.getByRole('button', { name: 'Close payment services' }).click();
     // A resumed, draft-eligible payment must not be silently dismissed.
     const exitPrompt = payment.getByRole('alertdialog');
