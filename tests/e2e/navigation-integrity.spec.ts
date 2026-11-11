@@ -26,7 +26,10 @@ test('public header, user-guide topics, footer links, language and browser histo
   await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
   // This destination is the same route with a different tab; it must select the target tab.
   const footer = page.getByRole('contentinfo',{name:'Korbritto footer'});
-  if(page.viewportSize()!.width<=900) await footer.locator('.public-footer__mobile-more > summary').click();
+  if(page.viewportSize()!.width<=900) {
+    await page.evaluate(() => window.scrollTo(0,document.documentElement.scrollHeight));
+    await footer.locator('.public-footer__mobile-more > summary').click();
+  }
   await footer.getByRole('button',{name:'Security & support'}).click();
   await expect(page).toHaveURL(/action=user_guide&category=security/);
   await expect(page.getByRole('heading',{name:'Security & support'})).toBeVisible();
@@ -49,6 +52,7 @@ test('public footer utility links open their actual destinations without copying
   const footer = page.getByRole('contentinfo',{name:'Korbritto footer'});
   const revealMobileFooterLinks = async () => {
     if(page.viewportSize()!.width<=900){
+      await page.evaluate(() => window.scrollTo(0,document.documentElement.scrollHeight));
       const details=footer.locator('.public-footer__mobile-more');
       if(!(await details.evaluate(element => (element as HTMLDetailsElement).open)))
         await details.locator('summary').click();
