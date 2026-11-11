@@ -36,7 +36,7 @@ for (const language of ['en','bn'] as const) {
     await page.getByRole('dialog').getByRole('button',{name:tr('Close transaction details','লেনদেনের বিস্তারিত বন্ধ করুন')}).click();
 
     await page.goto('/?action=certificates&demoUser=user1&lang='+language);
-    await expect(page.getByRole('heading',{name:tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড')})).toBeVisible();
+    await expect(page.getByTestId('tax-credit-certificates').getByRole('heading',{name:tr('Tax Credit Certificates','কর ক্রেডিট সনদ')})).toBeVisible();
     const records=page.locator('[data-record-layout="documents"]');
     await expect(records).toBeVisible();
     await expect(records.locator('.taxpay-record-list__heading')).toHaveText([

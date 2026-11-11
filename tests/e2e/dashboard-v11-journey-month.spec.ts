@@ -7,7 +7,8 @@ test('Overview tax-year chart replaces monthly chart while Activity retains its 
   const bento=page.getByTestId('taxpayer-overview-bento');
   await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
   await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
-  await expect(bento.getByRole('button',{name:'View Pending: 1'})).toBeVisible();
+  await expect(bento.locator('.taxpay-bento-hero')).toHaveCount(0);
+  await expect(bento.getByTestId('dashboard-correction-requests')).toBeVisible();
   await expect(bento.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
   await bento.getByRole('button',{name:'View all activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();

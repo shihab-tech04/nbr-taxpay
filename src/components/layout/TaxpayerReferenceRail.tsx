@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Bell, BookOpen, CirclePlus, CircleUserRound, Home, LogOut, UsersRound } from 'lucide-react';
+import { Activity, Bell, BookOpen, ChevronDown, CirclePlus, CircleUserRound, FileCheck2, Home, LogOut, RotateCcw, UsersRound } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { SiteLogo } from './SiteLogo';
@@ -11,16 +11,19 @@ const links: RailLink[] = [
   { route: 'beneficiaries', en: 'Beneficiaries', bn: 'উপকারভোগী', Icon: UsersRound },
   { route: 'history', en: 'Activity', bn: 'লেনদেন', Icon: Activity },
   { route: 'ledger', en: 'Tax ledger', bn: 'কর লেজার', Icon: BookOpen },
+  { route: 'certificates', en: 'Tax Credit Certificates', bn: 'কর ক্রেডিট সনদ', Icon: FileCheck2 },
+  { route: 'corrections', en: 'Correction Requests', bn: 'সংশোধনের অনুরোধ', Icon: RotateCcw },
   { route: 'account_notifications', en: 'Notifications', bn: 'বিজ্ঞপ্তি', Icon: Bell }
 ];
 
-const activityRoutes = new Set(['history', 'verify', 'corrections', 'certificates']);
+const activityRoutes = new Set(['history', 'verify']);
 
 /** Taxpayer-only desktop layout. Demo navigation is not a verified-taxpayer entitlement. */
 export function TaxpayerReferenceRail() {
-  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, setPaymentServiceChoiceOpen } = useTaxState();
+  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, openPaymentServiceChoice } = useTaxState();
   const { user } = useAccountIdentity();
   const [signOutError, setSignOutError] = React.useState('');
+  const [payMenuOpen, setPayMenuOpen] = React.useState(false);
   const [signingOut, setSigningOut] = React.useState(false);
   const logout = async () => {
     setSignOutError('');
@@ -53,11 +56,24 @@ export function TaxpayerReferenceRail() {
         <button className="taxpayer-reference-brand" type="button" onClick={() => navigate('landing')}>
           <SiteLogo className="taxpayer-reference-wordmark" alt={bn ? 'করবৃত্ত' : 'Korbritto'} />
         </button>
-        {(user || sampleProfile) && currentRoute !== 'wizard' && <button type="button" className="taxpayer-reference-main-action" onClick={() => setPaymentServiceChoiceOpen(true)}
-          aria-label={bn ? 'কর পরিশোধের ধরন নির্বাচন' : 'Pay — select payment type'}>
-          <CirclePlus size={20} aria-hidden={true} />
-          <span>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</span>
-        </button>}
+        {(user || sampleProfile) && currentRoute !== 'wizard' && <div className="taxpayer-reference-pay-menu">
+          <button type="button" className="taxpayer-reference-main-action"
+            onClick={() => setPayMenuOpen(open => !open)}
+            aria-expanded={payMenuOpen} aria-controls="taxpayer-reference-payment-options"
+            aria-label={bn ? 'কর পরিশোধের মেনু' : 'Pay Tax menu'}>
+            <CirclePlus size={20} aria-hidden={true} />
+            <span>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</span>
+            <ChevronDown size={17} aria-hidden={true} className={payMenuOpen ? 'taxpayer-reference-pay-chevron--open' : ''} />
+          </button>
+          {payMenuOpen && <div id="taxpayer-reference-payment-options" className="taxpayer-reference-pay-options">
+            <button type="button" onClick={() => { setPayMenuOpen(false); openPaymentServiceChoice(); }}>
+              {bn ? 'রিটার্নসহ কর / অন্যান্য কর' : 'Tax with Return / Other Tax'}
+            </button>
+            <button type="button" onClick={() => { setPayMenuOpen(false); openPaymentServiceChoice('TRAVEL_TAX'); }}>
+              {bn ? 'ভ্রমণ কর' : 'Travel Tax'}
+            </button>
+          </div>}
+        </div>}
         <nav className="taxpayer-reference-links" aria-label={bn ? 'করদাতা সেবা' : 'Taxpayer services'}>
           {links.map(({route,en,bn:bnLabel,Icon}) => (
             <button key={route} type="button" aria-current={(currentRoute === route || (route === 'taxpayer_home' && currentRoute === 'dashboard') || (route === 'history' && activityRoutes.has(currentRoute))) ? 'page' : undefined}

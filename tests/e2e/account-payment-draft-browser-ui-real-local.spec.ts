@@ -252,8 +252,9 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     expect(layoutBefore).not.toBeNull();
     const desktopPay = page.locator('.taxpayer-reference-main-action');
     if (page.viewportSize()!.width > 900) await expect(desktopPay).toBeVisible();
-    // Preserve existing user1 financial dashboard; insert cards after the heading.
-    await expect(workspace.getByRole('heading', { name: 'What needs your attention' })).toBeVisible();
+    // The unverified external position row must remain hidden even while draft actions work.
+    await expect(workspace.locator('.taxpay-bento-position')).toHaveCount(0);
+    await expect(workspace.getByTestId('dashboard-correction-requests')).toBeVisible();
     await savedCard.getByRole('button', { name: 'Continue' }).click();
     const payment = page.getByRole('dialog', { name: 'Pay Tax' });
     await expect(payment.locator('#guest-notice-ref')).toHaveValue(marker);
@@ -266,7 +267,8 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     // Compare the card's dimensions, not its scroll-relative screen coordinate.
     expect(Math.abs(layoutUnderModal!.width - layoutBefore!.width)).toBeLessThanOrEqual(2);
     expect(Math.abs(layoutUnderModal!.height - layoutBefore!.height)).toBeLessThanOrEqual(2);
-    await expect(workspace.getByRole('heading', { name: 'What needs your attention' })).toBeVisible();
+    await expect(workspace.getByTestId('dashboard-correction-requests')).toBeVisible();
+    await expect(workspace.locator('.taxpay-bento-position')).toHaveCount(0);
     await payment.getByRole('button', { name: 'Close payment services' }).click();
     // A resumed, draft-eligible payment must not be silently dismissed.
     const exitPrompt = payment.getByRole('alertdialog');
@@ -280,6 +282,7 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     // saved draft cards unchanged, including the background mobile Pay action.
     if (page.viewportSize()!.width > 900) {
       await desktopPay.click();
+      await page.locator('.taxpayer-reference-pay-options').getByRole('button', { name: 'Tax with Return / Other Tax' }).click();
       await expect(page.getByRole('dialog', { name: 'Pay Tax' })
         .getByRole('button', { name: 'Continue from draft' })).toBeVisible();
       await expect(desktopPay).toBeVisible();

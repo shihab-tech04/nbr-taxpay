@@ -107,6 +107,16 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
           </button>
         } />
       {activityTabs && <TaxpayerActivityTabs />}
+      <section data-testid="tax-credit-certificates" aria-labelledby="tax-credit-certificates-heading"
+        className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6">
+        <h2 id="tax-credit-certificates-heading" className="text-lg font-semibold text-taxpay-text">
+          {label('Tax Credit Certificates', 'কর ক্রেডিট সনদ')}
+        </h2>
+        <p role="status" className="mt-2 text-sm text-taxpay-muted">
+          {label('No verified government-issued tax credit certificates are available for this account. Once an authorized source provides a certificate, it can be viewed and downloaded here. Payment summaries below are not official certificates.',
+            'এই অ্যাকাউন্টের জন্য সরকারি যাচাইকৃত কর ক্রেডিট সনদ পাওয়া যায়নি। অনুমোদিত উৎস থেকে সনদ পাওয়া গেলে এখানে দেখা ও ডাউনলোড করা যাবে। নিচের পেমেন্ট সারসংক্ষেপগুলো সরকারি সনদ নয়।')}
+        </p>
+      </section>
       <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="certificate-preview-title">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="group" aria-label={label('Choose a summary', 'সারসংক্ষেপ বাছুন')}>
           {previewOptions.map(option => (
