@@ -186,9 +186,15 @@ function detachedSnapshot(data:GuestSnapshot):GuestSnapshot {
   return {lists:data.lists.map(row=>({...row})),people:data.people.map(row=>({...row}))};
 }
 /** Capability-isolated preview data: refetch after writes or 3s, coalesce simultaneous reads. */
-export function loadGuestBeneficiaries():Promise<GuestSnapshot>{
+export function loadGuestBeneficiaries(options:{forceFresh?:boolean}={}):Promise<GuestSnapshot>{
   const capability=activePreviewSession()?.capability;
   if(!capability)return loadFromSource('active');
+  // Payment authorization and other critical revalidation must bypass both
+  // the three-second snapshot and any already-pending navigation read.
+  if(options.forceFresh){
+    invalidatePreviewRead();
+    return loadFromSource('active').then(detachedSnapshot);
+  }
   if(previewRead?.capability===capability&&Date.now()<previewRead.expires)
     return Promise.resolve(detachedSnapshot(previewRead.value));
   if(previewReadPending?.capability===capability&&
