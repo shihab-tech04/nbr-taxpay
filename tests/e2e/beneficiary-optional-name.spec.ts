@@ -55,7 +55,7 @@ async function setupGuestTransport(page:Page){
   return {saved:()=>Array.from(sessions.values()).flatMap(session=>session.people)};
 }
 
-test.skip('local sample taxpayer preserves names when moving beneficiaries across lists, importing and prefilling',async({page})=>{
+test('local sample taxpayer preserves names when moving beneficiaries across lists and prefilling',async({page})=>{
   const transport=await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
 
@@ -105,15 +105,11 @@ test.skip('local sample taxpayer preserves names when moving beneficiaries acros
   await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Optional names',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Import from Excel'}).click();
-  await page.locator('#beneficiary-file').setInputFiles('tests/fixtures/beneficiary-no-name.xlsx');
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
-  await dialog.getByRole('button',{name:'Next',exact:true}).click();
-  await expect(dialog.getByText('1 valid, 0 needing attention')).toBeVisible();
-  await dialog.getByRole('button',{name:'Next',exact:true}).click();
+  await dialog.locator('#beneficiary-tin').fill('123456789012');
   await chooseBeneficiaryOption(dialog,'beneficiary-tag','others');
   await dialog.locator('#beneficiary-other-label').fill('Other contact');
-  await dialog.getByRole('button',{name:'Finish import',exact:true}).click();
+  await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(2);
   expect(transport.saved().find(person=>person.tin==='123456789012')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 

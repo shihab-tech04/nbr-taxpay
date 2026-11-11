@@ -170,7 +170,7 @@ test.skip('failed new-list import stays recoverable and retries against the same
   await expect(visibleRecords.getByText('Local Beneficiary Two',{exact:true})).toBeVisible();
 });
 
-test.skip('local sample taxpayer Beneficiaries supports independent lists, Excel import, list-only move, removal, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
+test('local sample taxpayer Beneficiaries supports independent lists, single entry, list-only move, removal, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
   await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
   const recordList=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
@@ -198,7 +198,7 @@ test.skip('local sample taxpayer Beneficiaries supports independent lists, Excel
   await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Guest Family',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
+  await expect(page.getByRole('dialog',{name:'Beneficiary entry'})).toBeVisible();
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await dialog.locator('#beneficiary-name').fill('Synthetic Guest One');
@@ -206,18 +206,15 @@ test.skip('local sample taxpayer Beneficiaries supports independent lists, Excel
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expectRecord('Synthetic Guest One');
 
-  const workbook=readFileSync('tests/fixtures/beneficiary-two-rows.xlsx.base64','utf8').trim();
+  // The Excel launcher is hidden; add the second taxpayer individually while
+  // keeping the comprehensive list, mobile, isolation and payment-prefill checks.
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Import from Excel'}).click();
-  await page.locator('#beneficiary-file').setInputFiles({name:'beneficiaries-two-rows.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(workbook,'base64')});
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
-  await dialog.getByRole('button',{name:'Next',exact:true}).click();
-  await expect(dialog.getByText('Already saved in this list.')).toBeVisible();
-  await expect(dialog.getByText('1 valid, 1 needing attention')).toBeVisible();
-  await dialog.getByRole('button',{name:'Next',exact:true}).click();
+  await dialog.locator('#beneficiary-tin').fill('987654321098');
+  await dialog.locator('#beneficiary-name').fill('Local Beneficiary Two');
   await chooseBeneficiaryOption(dialog,'beneficiary-tag','others');
   await dialog.locator('#beneficiary-other-label').fill('Other contact');
-  await dialog.getByRole('button',{name:'Finish import'}).click();
+  await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expectRecord('Local Beneficiary Two');
   // One set of records drives semantic desktop table columns and mobile action cards.
   await expect(page.getByTestId('beneficiary-records')).toHaveClass(/taxpayer-transaction-list/);
@@ -310,7 +307,7 @@ test('signed-out guest payment hides saved beneficiaries even with stored entrie
   await dialog.getByRole('button',{name:'Create list',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
+  await expect(page.getByRole('dialog',{name:'Beneficiary entry'})).toBeVisible();
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await dialog.locator('#beneficiary-name').fill('Saved Guest Taxpayer');

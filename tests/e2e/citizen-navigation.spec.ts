@@ -44,7 +44,10 @@ test('logged-out and signed-in mobile headers share the approved white shell wit
  await expect(page.locator('.public-home-header')).toBeHidden();
  await expect(publicHeader.getByRole('button',{name:'Open menu'})).toBeVisible();
  await expect(publicHeader.getByRole('button',{name:'Notifications'})).toHaveCount(0);
- await expect(page.getByRole('navigation',{name:'Mobile primary navigation'})).toHaveCount(0);
+ const guestDock=page.getByRole('navigation',{name:'Mobile primary navigation'});
+ await expect(guestDock).toBeVisible();
+ await expect(guestDock.locator('.citizen-bottom-nav__item')).toHaveCount(3);
+ await expect(guestDock.getByRole('button',{name:'Help'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Chat support'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveClass(/citizen-pay--guest-floating/);
  const guestColor=await publicHeader.evaluate(el=>getComputedStyle(el).backgroundColor);
