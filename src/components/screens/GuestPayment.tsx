@@ -40,7 +40,7 @@ import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
 import type {PaymentReuse} from '../../services/paymentReuse';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
-import { prepareCombinedOtherTaxPayment, saveCombinedOtherTaxRequest, loadCombinedOtherTaxRequest, clearCombinedOtherTaxRequest } from '../../services/otherTaxCombinedPayment';
+import { prepareCombinedOtherTaxPayment, saveCombinedOtherTaxRequest, loadCombinedOtherTaxRequest, clearCombinedOtherTaxRequest, fitsCombinedAllocationCapacity, MAX_COMBINED_ALLOCATIONS } from '../../services/otherTaxCombinedPayment';
 import { clearOtherTaxBatch, confirmedBatchReceipts, loadOtherTaxBatch,
   saveOtherTaxBatch, syncOtherTaxBatch, type OtherTaxBatch } from '../../services/otherTaxBatchSubmission';
 import { OtherTaxTaxpayerList } from './OtherTaxTaxpayerList';
@@ -285,7 +285,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const missingBatchTaxpayer = batchTaxpayers.find(person => !otherTaxLines.some(line => line.taxpayerId === person.id));
   const uniqueBatchAllocations = new Set(otherTaxLines.map(line =>
     `${line.taxpayerId}:${line.headId}:${line.assessmentYear}`)).size === otherTaxLines.length;
-  const batchValid = uniqueBatchAllocations && otherTaxLines.length > 0 && batchAmount !== null && batchAmount > 0
+  const batchValid = uniqueBatchAllocations && otherTaxLines.length > 0 && fitsCombinedAllocationCapacity(otherTaxLines.length) && batchAmount !== null && batchAmount > 0
     && !missingBatchTaxpayer
     && otherTaxLines.every(line => isOtherTaxHeadEligible(line.headId)
       && batchTaxpayers.some(person => person.id === line.taxpayerId)
@@ -850,7 +850,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         !batchTaxpayers.some(taxpayer => taxpayer.id === line.taxpayerId) ||
         otherTaxAllocationTotal([line]) === null);
       if (!batchValid || invalid) {
-        const message = otherTaxLines.length === 0
+        const message = otherTaxLines.length > MAX_COMBINED_ALLOCATIONS
+            ? language === 'bn' ? 'একটি পেমেন্টে সর্বোচ্চ ' + MAX_COMBINED_ALLOCATIONS + 'টি বণ্টন রাখা যাবে।' : 'This payment supports up to ' + MAX_COMBINED_ALLOCATIONS + ' allocation lines.'
+            : otherTaxLines.length === 0
           ? language === 'bn' ? 'এগোনোর আগে অন্তত একটি পরিশোধের খাত নির্বাচন করুন।' : 'Select at least one payment head to continue.'
           : invalid
             ? language === 'bn' ? 'লাল রঙে চিহ্নিত খাতগুলোর করবর্ষ ও শূন্যের বেশি পরিমাণ পূরণ করুন।' : 'Correct the highlighted payment heads: each needs a valid assessment year and positive amount.'
