@@ -42,7 +42,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await listDialog.locator('#beneficiary-create-list-name').fill('Family');
   await listDialog.getByRole('button',{name:'Create list',exact:true}).click();
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
+  // Add beneficiary opens the existing individual form directly while Excel import is hidden.
   const addDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await addDialog.locator('#beneficiary-tin').fill('012345678901');
   await addDialog.locator('#beneficiary-name').fill('Local Beneficiary One');
