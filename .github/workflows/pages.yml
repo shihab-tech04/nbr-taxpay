@@ -19,7 +19,7 @@ jobs:
 
   preflight:
     name: Verified PR and immutable build provenance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -52,7 +52,7 @@ jobs:
     name: Compile, typecheck, domain and production bundle
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     permissions:
       contents: read
@@ -132,7 +132,7 @@ jobs:
     name: Payment, ledger and beneficiaries acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -188,7 +188,7 @@ jobs:
     name: Beneficiary records and table visual acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -241,7 +241,7 @@ jobs:
     name: CMS banner and direct-service acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -279,7 +279,7 @@ jobs:
     name: Payment wizard and calculation acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -316,7 +316,7 @@ jobs:
     name: Payment progress and v11 input acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -352,7 +352,7 @@ jobs:
     name: Public and signed-in journey acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -404,7 +404,7 @@ jobs:
     name: Travel Tax progressive journey acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -445,7 +445,7 @@ jobs:
     name: Taxpayer signed-in desktop and mobile acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -501,7 +501,7 @@ jobs:
     name: Signed-in beneficiary picker acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -547,7 +547,7 @@ jobs:
     name: Public receipts and workspace acceptance
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -589,7 +589,7 @@ jobs:
     name: Public routes (shard ${{ matrix.shard }}/8)
     needs: preflight
     if: needs.preflight.outputs.mode != 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -625,7 +625,7 @@ jobs:
     name: Reuse exact-source verified PR bundle
     needs: preflight
     if: needs.preflight.outputs.mode == 'reuse'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 8
     permissions:
       contents: read
@@ -677,7 +677,7 @@ jobs:
     name: Build and verify static preview
     if: always()
     needs: [preflight, compile, core-e2e, core-beneficiary-e2e, core-cms-e2e, payment-ux-e2e, payment-progress-e2e, public-e2e, public-travel-e2e, public-login-e2e, beneficiary-picker-e2e, public-support-e2e, route-e2e, reuse-reviewed-build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -728,7 +728,7 @@ jobs:
     name: Publish verified static build
     if: always() && needs.verification-gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: verification-gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

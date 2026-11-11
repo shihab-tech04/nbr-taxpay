@@ -22,7 +22,7 @@ export const MAX_COMBINED_PAYLOAD_CHARS = 750_000;
 const MAX_LINES = MAX_COMBINED_ALLOCATIONS;
 const eligibleHeads = new Map(V11_SOURCE_HEADS.filter(head =>
   (head.journey === 'LIABILITY' || head.journey === 'WITHHOLDING') &&
-  head.active && head.purpose !== 'return' && head.map === 'MAPPED' &&
+  head.active && head.map === 'MAPPED' &&
   !isV11HeadReviewBlocked(head) && !BLOCKED_HEAD_IDS.includes(head.id)
 ).map(head => [head.id, head]));
 export function prepareCombinedOtherTaxPayment(
@@ -30,7 +30,9 @@ export function prepareCombinedOtherTaxPayment(
   receipt: ChallanReceipt,
   lines: CombinedOtherTaxLine[],
 ): { payload: StoryPaymentInput; receipt: ChallanReceipt } {
-  if (original.service !== 'OTHER_TAX_PAYMENT' || original.details.payerMode !== 'OTHER' &&
+  const returnOnly = original.service === 'TAX_WITH_RETURN';
+  if ((original.service !== 'OTHER_TAX_PAYMENT' && !returnOnly) || receipt.paymentCategory !== original.service ||
+    original.details.payerMode !== 'OTHER' &&
     original.details.payerMode !== 'SELF' || lines.length < 1 || lines.length > MAX_LINES ||
     receipt.isSimulatedDemo !== true || receipt.items.length !== lines.length ||
     new Set(lines.map(line => line.sourceId)).size !== lines.length)
@@ -40,7 +42,8 @@ export function prepareCombinedOtherTaxPayment(
   for (let i = 0; i < lines.length; i++) {
     const allocation = lines[i];
     const head = eligibleHeads.get(allocation.line.headId);
-    if (!head || allocation.line.headNameEn !== head.en || allocation.line.economicCode !== head.codeEn)
+    if (!head || (head.purpose === 'return') !== returnOnly ||
+      allocation.line.headNameEn !== head.en || allocation.line.economicCode !== head.codeEn)
       throw new Error('INVALID_COMBINED_HEAD');
     const uniqueKey = `${allocation.taxpayerTin}:${allocation.line.headId}:${allocation.assessmentYear}`;
     if (uniqueAllocationKeys.has(uniqueKey)) throw new Error('DUPLICATE_COMBINED_ALLOCATION');
@@ -173,7 +176,9 @@ function validateCombinedRequest(request: StoredCombinedRequest['request']): voi
   const allocations=payload?.details?.allocations;
   const snapshot=payload?.details?.receiptSnapshot as Partial<ChallanReceipt>|undefined;
   if(!payload||!receipt||!UUID.test(payload.sessionId)||!UUID.test(payload.idempotencyKey)||
-    payload.service!=='OTHER_TAX_PAYMENT'||payload.details.combinedPayment!==true||
+    !['OTHER_TAX_PAYMENT','TAX_WITH_RETURN'].includes(payload.service)||
+    receipt.paymentCategory!==payload.service||snapshot?.paymentCategory!==payload.service||
+    payload.details.combinedPayment!==true||
     !Array.isArray(allocations)||!allocations.length||allocations.length>MAX_LINES||
     !Array.isArray(payload.details.lines)||payload.details.lines.length!==allocations.length||
     !snapshot||snapshot.challanNo!==receipt.challanNo||receipt.isSimulatedDemo!==true||
@@ -185,6 +190,10 @@ function validateCombinedRequest(request: StoredCombinedRequest['request']): voi
   const sum=allocations.reduce((value,item,index)=>{
     const a=item as Record<string,unknown>;
     const r=receipt.allocationItems![index];
+    const head = (payload.details.lines as PaymentLineItem[])[index];
+    if ((payload.service === 'TAX_WITH_RETURN' && (a.headId !== 125 || head?.headId !== 125)) ||
+        (payload.service === 'OTHER_TAX_PAYMENT' && (a.headId === 125 || head?.headId === 125)))
+      throw Error('INVALID_COMBINED_RECOVERY');
     if(!a||typeof a!=='object'||!validTin(String(a.taxpayerTin??''))||
       typeof a.amountMinor!=='number'||!Number.isSafeInteger(a.amountMinor)||a.amountMinor<=0||
       typeof a.assessmentYear!=='string'||!a.assessmentYear||

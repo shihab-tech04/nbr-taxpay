@@ -156,15 +156,20 @@ test('saved-list read failures remain blocking even without beneficiary approval
   await expect(dialog.getByText(/Saved beneficiaries could not be verified/)).toBeVisible();
   await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
 });
-test('single beneficiary service keeps list selection but shows radio rather than free-form entry',async({page})=>{
+test('Tax with Return permits multiple saved beneficiaries but never free-form TIN entry',async({page})=>{
   await mockSavedBeneficiaries(page);await mockAuthorizations(page,null);
   const dialog=await openSignedInPayment(page,'TAX_WITH_RETURN');
   const picker=dialog.getByTestId('saved-beneficiary-picker');
-  await expect(picker.getByRole('radio',{name:'Select Meghna Trading Ltd.'})).toBeVisible();
-  await picker.getByRole('radio',{name:'Select Meghna Trading Ltd.'}).check();
+  await expect(picker.getByRole('checkbox',{name:'Select Meghna Trading Ltd.'})).toBeVisible();
+  await picker.getByRole('checkbox',{name:'Select Meghna Trading Ltd.'}).check();
+  await picker.getByRole('checkbox',{name:'Select Saved Taxpayer Three'}).check();
+  await expect(picker).toContainText('2 selected for this payment');
   await expect(dialog.locator('#guest-tin')).toHaveCount(0);
   await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('2/4 Steps');
+  const tabs=dialog.getByTestId('other-tax-taxpayer-tabs');
+  await expect(tabs.getByRole('button',{name:/2222222222222/})).toBeVisible();
+  await expect(tabs.getByRole('button',{name:/3333333333333/})).toBeVisible();
 });
 test('empty beneficiary lists direct signed-in payers to the dedicated management page',async({page})=>{
   await mockSavedBeneficiaries(page,true);await mockAuthorizations(page,[]);
