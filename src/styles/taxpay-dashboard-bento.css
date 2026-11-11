@@ -32,6 +32,7 @@
 .taxpay-bento-years{grid-column:span 4;min-width:0}
 .taxpay-bento-tags{grid-column:span 4;min-width:0}
 .taxpay-bento-drafts{grid-column:span 6;min-width:0}
+.taxpay-bento-corrections{grid-column:1 / -1;min-width:0}
 .taxpay-bento-recent{grid-column:span 6;min-width:0}
 .taxpay-bento-coverage>section,.taxpay-bento-tags>section,.taxpay-bento-drafts>section,.taxpay-bento-recent>section{height:100%;min-width:0}
 .taxpay-bento-coverage .taxpayer-coverage-row{font-size:13px}
