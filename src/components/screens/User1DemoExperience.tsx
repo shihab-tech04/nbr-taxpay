@@ -502,7 +502,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const verifiedExternalTaxPositionReady = false;
   const completedPayments=historyScoped.filter(x=>x.state==='POSTED').length;
   const correctionRequestCount=historyScoped.filter(x=>x.state==='REQUESTED').length;
-  const overview=<div className="taxpay-bento-grid" data-testid="taxpayer-overview-bento">
+  const overview=<div className="taxpay-bento-grid" data-testid="taxpayer-overview-bento" data-drafts-empty={savedDraftCount===0?'true':'false'}>
     {verifiedExternalTaxPositionReady && <>
     <section className={panel+' taxpay-bento-position'} aria-labelledby="taxpay-bento-position-title">
       <div className="flex items-center justify-between gap-2">
@@ -595,6 +595,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>
       <p className="mt-2 text-xs text-taxpay-muted">{tr('Only eligible posted credits count; travel tax is separate.','শুধু যোগ্য নথিভুক্ত ক্রেডিট গণনা হয়; ভ্রমণ কর পৃথক।')}</p>
     </section>
+    <div className="taxpay-bento-request-row">
     <section className={panel+' taxpay-bento-hero taxpay-bento-summary'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
       <h2 className="text-base font-semibold">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h2>
       <div className="taxpay-bento-hero__status">
@@ -609,6 +610,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <p className="mt-2 text-sm">{tr('Recorded requests for the selected year','নির্বাচিত করবর্ষে সংরক্ষিত আবেদন')}: <strong>{correctionRequestCount}</strong></p>
       <button type="button" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-taxpay-primary" onClick={()=>navigate('corrections')}>{tr('View correction requests','সংশোধনের আবেদন দেখুন')}<ArrowRight size={16} aria-hidden="true"/></button>
     </section>
+    </div>
     <div className="taxpay-bento-tags">
     <section className={panel} data-testid="beneficiary-spending-breakdown" aria-label={tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -646,7 +648,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>}
     </section>
     </div>
-    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section">
+    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" style={savedDraftCount===0?{display:'none'}:undefined}>
       <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft} onCountChange={setSavedDraftCount}/>
     </div>}
     <div className="taxpay-bento-recent">
