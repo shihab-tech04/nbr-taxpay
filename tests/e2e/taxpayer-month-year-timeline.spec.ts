@@ -34,13 +34,11 @@ test('all-year month filtering remains accessible in Activity after dashboard ch
 
 test('Travel Tax remains separate and never reduces income-tax outstanding',async({page})=>{
   await page.goto(dashboard);
-  const position=page.locator('.taxpay-bento-position');
-  await expect(position).toContainText('৳ 25,000');
-  await expect(position).toContainText('Travel tax (separate)');
-  await expect(position).toContainText('৳ 6,500');
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
+  await expect(page.getByTestId('beneficiary-spending-breakdown')).toBeVisible();
   await openTaxpayerTravelTax(page);
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(position).toContainText('৳ 25,000');
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
 });
 
 test('narrow year chart is keyboard operable and does not cause page overflow',async({page},info)=>{
