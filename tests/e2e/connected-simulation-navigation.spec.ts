@@ -14,6 +14,7 @@ test('Anonymous fictional payment entry requires authenticated profile before an
  await expect(page.getByRole('button',{name:'Simulate and save payment'})).toHaveCount(0);
  expect(paymentRpcCalls).toBe(0);
  await page.getByRole('button',{name:'Pay — select payment type'}).click();
+ await page.getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
  await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Simulate and save payment'})).toHaveCount(0);
  await expect(page.getByText('Simulated receipt reference:',{exact:false})).toHaveCount(0);
