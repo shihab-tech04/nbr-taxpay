@@ -79,7 +79,10 @@
   }
   .taxpay-citizen-shell.taxpay-public-mobile-shell .public-help-panel {
     position:fixed;
-    inset:auto 0 0;
+    /* Keep the content-sized sheet bottom-anchored above the existing
+       72px mobile navigation dock (12px bottom + safe-area padding).
+       Never cover Home, Payment Status or Help. */
+    inset:auto 0 calc(96px + env(safe-area-inset-bottom));
     z-index:2;
     box-sizing:border-box;
     display:flex;
@@ -87,11 +90,10 @@
     width:100%;
     max-width:100%;
     height:auto;
-    max-height:calc(100dvh - 12px - env(safe-area-inset-top));
+    max-height:calc(100dvh - 108px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     margin:0;
     border:1px solid var(--color-taxpay-border);
-    border-bottom:0;
-    border-radius:18px 18px 0 0;
+    border-radius:18px;
     background:var(--color-taxpay-surface);
     overflow:hidden;
     box-shadow:var(--taxpay-shadow-modal);
