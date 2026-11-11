@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, ListChecks, ReceiptText, Search, UserRound, WalletCards } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, FileCheck2, FilePenLine, ListChecks, Plane, ReceiptText, Search, UserRound, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { PublicServiceModal, type PublicService } from './PublicServiceModal';
@@ -50,6 +50,43 @@ export const PublicLanding: React.FC = () => {
   }, []);
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
+
+  // Reuse the approved payment and travel flows and the account-only route gate.
+  const quickServices = [
+    {
+      id: 'tax',
+      Icon: WalletCards,
+      title: t('Pay Tax', 'কর পরিশোধ'),
+      detail: t('Pay tax for yourself or others.', 'নিজের বা অন্যের কর পরিশোধ করুন।'),
+      open: () => openPaymentServiceChoice(),
+    },
+    {
+      id: 'travel',
+      Icon: Plane,
+      title: t('Travel Tax', 'ভ্রমণ কর'),
+      detail: t('Use the dedicated travel tax journey.', 'নির্দিষ্ট ভ্রমণ কর সেবা ব্যবহার করুন।'),
+      open: () => setOpenService('travel'),
+    },
+    {
+      id: 'corrections',
+      Icon: FilePenLine,
+      title: t('Correction Requests', 'সংশোধনের আবেদন'),
+      detail: signedIn
+        ? t('Submit and track correction requests.', 'সংশোধনের আবেদন ও অগ্রগতি দেখুন।')
+        : t('Sign in to request a correction.', 'সংশোধনের আবেদন করতে লগইন করুন।'),
+      open: () => navigate('corrections'),
+    },
+    {
+      id: 'certificates',
+      Icon: FileCheck2,
+      title: t('Tax Credit Certificates', 'কর ক্রেডিট সনদ'),
+      detail: signedIn
+        ? t('View and download your certificates.', 'আপনার সনদ দেখুন ও ডাউনলোড করুন।')
+        : t('Sign in to view your certificates.', 'আপনার সনদ দেখতে লগইন করুন।'),
+      open: () => navigate('certificates'),
+    },
+  ];
+
 
   const stages = [
     {
@@ -221,6 +258,23 @@ export const PublicLanding: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
+    </section>
+
+    <section className="public-quick-access" aria-labelledby="public-quick-access-title">
+      <h2 id="public-quick-access-title">{t('Quick access', 'দ্রুত সেবা')}</h2>
+      <div className="public-quick-access__grid">
+        {quickServices.map(({ id, Icon, title, detail, open }) => (
+          <button key={id} type="button" className="public-quick-access__item"
+            data-service={id} onClick={open}>
+            <span className="public-quick-access__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
+            <span className="public-quick-access__copy">
+              <strong>{title}</strong>
+              <span>{detail}</span>
+            </span>
+            <ArrowRight className="public-quick-access__arrow" size={18} aria-hidden="true" />
+          </button>
+        ))}
       </div>
     </section>
 
