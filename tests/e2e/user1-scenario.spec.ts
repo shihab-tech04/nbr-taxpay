@@ -14,17 +14,17 @@ test('user1 dashboard, payment history and ledger use one coherent synthetic bal
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByText('৳ 180,000').first()).toBeVisible();
-  await expect(page.locator('.taxpay-bento-position')).toContainText('৳ 155,000');
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
   // Equivalent posted TDS + AIT source figures remain in the coverage breakdown.
   await expect(page.getByRole('button',{name:/TDS.*48,000/})).toBeVisible();
   await expect(page.getByRole('button',{name:/Advance tax.*32,000/})).toBeVisible();
   await expect(page.getByText('৳ 75,000').first()).toBeVisible();
-  await expect(page.getByText('৳ 25,000').first()).toBeVisible();
+  await expect(page.getByRole('button',{name:/Still remaining.*25,000/})).toBeVisible();
   await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
   await expect(page.getByText('Sample',{exact:true})).toHaveCount(0);
   await expect(page.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Transaction and evidence register'})).toHaveCount(0);
-  await expect(page.getByText('Travel tax (separate)')).toBeVisible();
+  await expect(page.getByTestId('beneficiary-spending-breakdown')).toBeVisible();
   await page.getByRole('button',{name:'View all activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.locator('.taxpayer-transaction-table tbody td:nth-child(2)').getByText('DEMO-PAY-02',{exact:true}).first()).toBeVisible();
