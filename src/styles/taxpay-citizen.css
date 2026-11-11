@@ -1294,7 +1294,6 @@
    disclosure. Leave the floating Pay and the approved bottom dock untouched. */
 .public-footer__mobile-actions { display:none; }
 @media (max-width:900px) {
-  .public-footer { padding-bottom:calc(160px + env(safe-area-inset-bottom)) !important; }
   .public-footer__inner {
     display:grid;
     grid-template-columns:minmax(0,1fr) auto auto;
