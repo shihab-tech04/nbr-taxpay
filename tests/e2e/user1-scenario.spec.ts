@@ -71,7 +71,7 @@ test('user1 exceptions, profile and notifications are correlated but not governm
   await page.goto('/?action=account_profile&demoUser=user1');
   await expect(page.getByText('1111111111111').first()).toBeVisible();
   await expect(page.getByText('Taxpayer class')).toBeVisible();
-  await expect(page.getByText('Individual',{exact:true})).toBeVisible();
+  await expect(page.getByTestId('user1-taxpayer-profile').getByText('Individual',{exact:true}).first()).toBeVisible();
 });
 
 test('user1 mobile design is bilingual and has no horizontal overflow',async({page},info)=>{
@@ -139,22 +139,50 @@ test('user1 Activity retains the approved transaction table and removes redundan
 });
 
 
-test('taxpayer profile includes all e-TIN source fields without claiming sample identity is NBR-linked',async({page},info)=>{
-  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Focused e-TIN profile parity');
+test('user1 profile has complete fictional data, clear source labeling and a responsive e-TIN journey',async({page},info)=>{
+  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Profile desktop/mobile acceptance');
   await page.goto('/?action=account_profile&demoUser=user1');
-  const tin=page.getByTestId('taxpayer-tin-information');
+  const profile=page.getByTestId('user1-taxpayer-profile');
+  await expect(profile).toBeVisible();
+  await expect(profile.getByRole('heading',{name:'Md. Arif Rahman'})).toBeVisible();
+  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('1111111111111');
+  await expect(profile.getByText('Fictional sample profile')).toBeVisible();
+  await expect(profile.getByText('Taxpayer class',{exact:true})).toBeVisible();
+  await expect(profile.getByText('Individual',{exact:true}).first()).toBeVisible();
+  await expect(profile.getByText('Not available',{exact:true})).toHaveCount(0);
+  await profile.getByRole('tab',{name:'TIN & certificate'}).click();
+  const tin=profile.getByTestId('taxpayer-tin-information');
   await expect(tin).toBeVisible();
-  await expect(tin.getByRole('heading',{name:'e-TIN and taxpayer registration details'})).toBeVisible();
-  for(const field of ['TIN number','Registered taxpayer name','Taxpayer status','TIN type','TIN classification',
-    'TIN registration date','User type','Local taxpayer','Previous TIN','Taxes circle','Taxes zone','Taxes range',
+  for(const field of ['TIN number','Registered name','TIN type','TIN classification','TIN registration date',
+    'User type','Local taxpayer','Previous TIN','Taxes circle','Taxes zone','Taxes range',
     'District','Country','Registered / permanent address','Current address','Mobile number','Email address',
     'Certificate issue date','Certificate last updated','Issuing tax officer','Tax office address',
     'Tax office phone','Last account login']){
     await expect(tin.getByText(field,{exact:true})).toHaveCount(1);
   }
-  await expect(tin).toContainText('Verified e-TIN data is not connected to this account.');
-  await expect(tin.getByText('1111111111111')).toHaveCount(0);
+  await expect(tin.getByText('Not available',{exact:true})).toHaveCount(0);
+  await expect(tin).toContainText('not a downloadable NBR-issued certificate');
+  await profile.getByRole('button',{name:'Back to profile overview'}).click();
+  await expect(profile.getByRole('tab',{name:'Overview'})).toHaveAttribute('aria-selected','true');
+  await expect(profile.getByText('arif.rahman@example.com')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await page.goto('/?action=account_profile&demoUser=user1&lang=bn');
-  await expect(page.getByTestId('taxpayer-tin-information').getByRole('heading',{name:'ই-টিআইএন ও করদাতার নিবন্ধন তথ্য'})).toBeVisible();
+  await expect(page.getByTestId('user1-taxpayer-profile').getByRole('tab',{name:'টিআইএন ও সনদ'})).toBeVisible();
+  await page.getByTestId('user1-taxpayer-profile').getByRole('tab',{name:'টিআইএন ও সনদ'}).click();
+  await expect(page.getByTestId('taxpayer-tin-information').getByText('সনদ ইস্যুর তারিখ')).toBeVisible();
+});
+test('user1 profile CSV exports populated synthetic fields, not a government certificate',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Download verification');
+  await page.goto('/?action=account_profile&demoUser=user1');
+  const [download]=await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button',{name:'Download sample profile'}).click()
+  ]);
+  expect(download.suggestedFilename()).toBe('Korbritto-user1-fictional-profile.csv');
+  const stream=await download.createReadStream();
+  let text='';
+  for await(const chunk of stream)text+=chunk.toString('utf8');
+  expect(text).toContain('1111111111111');
+  expect(text).toContain('arif.rahman@example.com');
+  expect(text).toContain('FICTIONAL SAMPLE - NOT AN NBR CERTIFICATE');
 });

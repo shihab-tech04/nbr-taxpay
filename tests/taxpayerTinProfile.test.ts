@@ -27,3 +27,19 @@ test('profile without source timestamp must not be presented as linked',()=>{
   assert.equal(isWellFormedTinProfile({...certificate,sourceUpdatedAt:'not-a-date'}),false);
   assert.equal(isWellFormedTinProfile(null),false);
 });
+
+test('fictional user1 can populate a profile without ever qualifying as issued e-TIN',async()=>{
+  const {USER1_FICTIONAL_TIN_PROFILE:sample}=await import('../src/data/user1FictionalTinProfile');
+  assert.equal(sample.source,'SYNTHETIC');
+  assert.equal(sample.tin.length,13);
+  assert.equal(isWellFormedTinProfile(sample),true);
+  assert.equal(isWellFormedTinProfile({...sample,source:'NBR_TIN'}),false);
+  const fields=['taxpayerName','taxpayerStatus','tinType','tinSubtype','registeredOn','userType',
+    'localTaxpayer','previousTin','taxesCircle','taxesZone','taxesRange','district',
+    'country','registeredAddress','currentAddress','mobileNumber','emailAddress',
+    'certificateIssuedOn','certificateLastUpdatedOn','issuingOfficer','taxOfficeAddress',
+    'taxOfficePhone','lastLoginAt'];
+  for(const field of fields)assert.ok(String((sample as unknown as Record<string,unknown>)[field]).trim(),field);
+  assert.equal(sample.emailAddress?.endsWith('@example.com'),true);
+  assert.equal(sample.tin,'1111111111111');
+});

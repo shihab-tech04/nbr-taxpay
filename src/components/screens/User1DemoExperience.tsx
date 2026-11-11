@@ -14,6 +14,7 @@ import {ReceiptView} from '../common/ReceiptView';
 import type {ChallanReceipt} from '../../types/tax';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {DEMO_USERS} from '../../data/demoUsers';
+import {User1TaxpayerProfile} from './User1TaxpayerProfile';
 import {TaxpayerTinInformation} from './TaxpayerTinInformation';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
 import {activityPaymentBeneficiaries} from '../../services/activityPaymentBeneficiaries';
@@ -835,13 +836,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </section>)}
     </div>
   </section>;
-  const profile=<><section className={panel}><h2 className="text-base font-semibold">{tr('Account details','অ্যাকাউন্টের তথ্য')}</h2>
-    <div className="mt-4 grid gap-3 sm:grid-cols-2">{[
-      ['Account','user1'],['Display name',DEMO_USERS.user1.nameEn],['Identifier',DEMO_USERS.user1.tin],['Taxpayer class','Individual'],
-      ['Income sources','Salary, bank interest and consultancy'],['Address','Address unavailable'],
-      ['Assessment years',taxYears.map(x=>x.year).join(', ')],['Representative mandate','Not applicable']
-    ].map(x=><div key={x[0]} className="rounded-lg border border-slate-200 p-3"><p className="text-xs text-slate-500">{x[0]}</p><p className="mt-1 text-sm font-semibold">{x[1]}</p></div>)}</div>
-  </section><TaxpayerTinInformation language={language} /></>;
+  const profile=<User1TaxpayerProfile language={language} onNavigate={navigateTo}/>;
   const notifications=<section className={panel}><h2 className="text-base font-semibold">{tr('Recent updates','সাম্প্রতিক আপডেট')}</h2><div className="mt-3 space-y-3">{scoped.filter(x=>x.state!=='POSTED').map(x=><article className="rounded-xl border border-slate-200 p-3" key={x.id}><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{x.title}</h3>{tag(x.state)}</div><p className="mt-1 text-xs text-slate-500">{x.date} · {x.ref}</p><p className="mt-2 text-sm">{x.detail}</p><button className={action+' mt-2'} type="button" onClick={()=>setSelected(x)}>{tr('View reference','রেফারেন্স দেখুন')}</button></article>)}</div></section>;
   const settings=<section className={panel+' taxpayer-preferences'}>
     <h2 className="text-lg font-semibold">{tr('Display preferences','প্রদর্শনের পছন্দ')}</h2>

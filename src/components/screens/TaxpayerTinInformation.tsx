@@ -64,12 +64,14 @@ export function TaxpayerTinInformation({language,record}:Props){
       {bn?'এই অ্যাকাউন্টের জন্য যাচাইকৃত ই-টিআইএন তথ্য এখনো সংযুক্ত হয়নি। তথ্য পাওয়া গেলে নিচের ঘরগুলো পূরণ হবে।':'Verified e-TIN data is not connected to this account. These fields remain unavailable until an authorized source is linked.'}
     </p>}
     {sourced && <p className="mt-2 text-xs text-taxpay-muted">
-      {record.source==='NBR_TIN'
+      {record.source==='SYNTHETIC'
+        ? (bn?'কাল্পনিক নমুনা তথ্য — ইস্যুকৃত টিআইএন নয়':'Fictional sample information — not an issued TIN')
+        : record.source==='NBR_TIN'
         ? (bn?'উৎস: সংযুক্ত টিআইএন সিস্টেম':'Source: connected TIN system')
         : (bn?'উৎস: পর্যালোচিত সনদ; সরাসরি টিআইএন সিঙ্ক নয়':'Source: reviewed certificate; not a live TIN sync')}
       {' · '}{tr(['Record updated','তথ্য হালনাগাদ'])}: {record.sourceUpdatedAt}
     </p>}
-    <div className="mt-4 space-y-5">
+    {sourced && <div className="mt-4 space-y-5">
       {groups.map(group=><section key={group.title[0]}>
         <h3 className="text-sm font-semibold text-taxpay-text">{tr(group.title)}</h3>
         <dl className="mt-2 grid gap-3 sm:grid-cols-2">
@@ -79,6 +81,6 @@ export function TaxpayerTinInformation({language,record}:Props){
           </div>)}
         </dl>
       </section>)}
-    </div>
+    </div>}
   </section>;
 }
