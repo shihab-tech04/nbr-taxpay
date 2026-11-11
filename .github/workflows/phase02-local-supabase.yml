@@ -17,6 +17,48 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Independent current-Office contract and build acceptance has no dependency on
+  # the disposable TaxPay database. Run it alongside the complete SQL/RLS/browser
+  # job; both remain mandatory within this workflow and the release check.
+  current-office-contract:
+    name: Current Office main contract and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Verify current Office main source/build and shared TaxPay contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          OFFICE_CURRENT_DIR="$RUNNER_TEMP/office-current-main"
+          git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_CURRENT_DIR"
+          OFFICE_CURRENT_SHA="$(git -C "$OFFICE_CURRENT_DIR" rev-parse HEAD)"
+          git -C "$OFFICE_CURRENT_DIR" checkout --detach "$OFFICE_CURRENT_SHA"
+          test "$(git -C "$OFFICE_CURRENT_DIR" rev-parse HEAD)" = "$OFFICE_CURRENT_SHA"
+          cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_CURRENT_DIR/src/app/contracts/paymentSimulationContract.ts"
+          OFFICE_REPO="https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git"
+          OFFICE_BRIDGE_REF="main"
+          if git ls-remote --exit-code --heads "$OFFICE_REPO" codex/correction-bridge-20261029 >/dev/null 2>&1; then
+            OFFICE_BRIDGE_REF="codex/correction-bridge-20261029"
+          fi
+          OFFICE_BRIDGE_DIR="$RUNNER_TEMP/office-matching-bridge"
+          git clone --depth 1 --branch "$OFFICE_BRIDGE_REF" "$OFFICE_REPO" "$OFFICE_BRIDGE_DIR"
+          cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_BRIDGE_DIR/supabase/functions/payment-sync-bridge/index.ts"
+          cmp -s supabase/functions/payment-command-bridge/index.ts "$OFFICE_BRIDGE_DIR/supabase/functions/payment-command-bridge/index.ts"
+          npm ci --prefix "$OFFICE_CURRENT_DIR" --no-audit --no-fund
+          npm run build --prefix "$OFFICE_CURRENT_DIR"
+          echo "Current Office main: $OFFICE_CURRENT_SHA; shared contract and app build PASS"
+          echo "Matching Office bridge source: $OFFICE_BRIDGE_REF"
+          echo "### Current Office integration boundary" >> "$GITHUB_STEP_SUMMARY"
+          echo "Current Office main: \`$OFFICE_CURRENT_SHA\` — shared contract and Office production build PASS." >> "$GITHUB_STEP_SUMMARY"
+          echo "Matching Office bridge source: \`$OFFICE_BRIDGE_REF\`; the paired correction bridge files are byte-identical." >> "$GITHUB_STEP_SUMMARY"
+
+
   disposable-backend:
     name: Isolated local Supabase acceptance (no hosted credentials)
     runs-on: ubuntu-latest
@@ -306,33 +348,6 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
         run: npx playwright test tests/e2e/sim-private-real-local.spec.ts --project=mobile-375
 
-      - name: Verify current Office main source/build and shared TaxPay contracts
-        shell: bash
-        run: |
-          set -euo pipefail
-          OFFICE_CURRENT_DIR="$RUNNER_TEMP/office-current-main"
-          git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_CURRENT_DIR"
-          OFFICE_CURRENT_SHA="$(git -C "$OFFICE_CURRENT_DIR" rev-parse HEAD)"
-          git -C "$OFFICE_CURRENT_DIR" checkout --detach "$OFFICE_CURRENT_SHA"
-          test "$(git -C "$OFFICE_CURRENT_DIR" rev-parse HEAD)" = "$OFFICE_CURRENT_SHA"
-          cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_CURRENT_DIR/src/app/contracts/paymentSimulationContract.ts"
-          OFFICE_REPO="https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git"
-          OFFICE_BRIDGE_REF="main"
-          if git ls-remote --exit-code --heads "$OFFICE_REPO" codex/correction-bridge-20261029 >/dev/null 2>&1; then
-            OFFICE_BRIDGE_REF="codex/correction-bridge-20261029"
-          fi
-          OFFICE_BRIDGE_DIR="$RUNNER_TEMP/office-matching-bridge"
-          git clone --depth 1 --branch "$OFFICE_BRIDGE_REF" "$OFFICE_REPO" "$OFFICE_BRIDGE_DIR"
-          cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_BRIDGE_DIR/supabase/functions/payment-sync-bridge/index.ts"
-          cmp -s supabase/functions/payment-command-bridge/index.ts "$OFFICE_BRIDGE_DIR/supabase/functions/payment-command-bridge/index.ts"
-          npm ci --prefix "$OFFICE_CURRENT_DIR" --no-audit --no-fund
-          npm run build --prefix "$OFFICE_CURRENT_DIR"
-          echo "Current Office main: $OFFICE_CURRENT_SHA; shared contract and app build PASS"
-          echo "Matching Office bridge source: $OFFICE_BRIDGE_REF"
-          echo "### Current Office integration boundary" >> "$GITHUB_STEP_SUMMARY"
-          echo "Current Office main: \`$OFFICE_CURRENT_SHA\` — shared contract and Office production build PASS." >> "$GITHUB_STEP_SUMMARY"
-          echo "Matching Office bridge source: \`$OFFICE_BRIDGE_REF\`; the paired correction bridge files are byte-identical." >> "$GITHUB_STEP_SUMMARY"
-
       - name: Verify certified historical three-officer TaxPay Office E2E with real disposable SQL
         env:
           VITE_SUPABASE_DISABLED: 'false'
@@ -346,7 +361,7 @@ jobs:
           git clone --depth 1 --branch main https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
           # Freeze the original certified officer-capable Office revision for
           # the historical Maker/Reviewer/Approver browser assertions below.
-          # Current Office main is checked independently in the preceding step.
+          # Current Office main is independently verified by the parallel required job.
           OFFICE_SHA="96d766e4ff8b977e19d8c259c5f21c3424f81580"
           git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
