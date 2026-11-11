@@ -126,16 +126,9 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await page.goto('/?action=taxpayer_home');
   const dashboard=page.getByTestId('account-workflow-summary');
   await expect(dashboard).toBeVisible();
-  // Verified account uses the same approved financial KPI cards as the static
-  // reference, but must never inherit user1's fabricated assessed balances.
-  const financialCards=page.locator('.taxpayer-dashboard-kpi');
-  await expect(financialCards).toHaveCount(4);
-  await expect(financialCards.nth(0)).toContainText('Total tax');
-  await expect(financialCards.nth(1)).toContainText('Tax already deducted or paid early');
-  await expect(financialCards.nth(2)).toContainText('Income tax paid directly');
-  await expect(financialCards.nth(3)).toContainText('Still remaining');
-  await expect(financialCards.nth(0)).toContainText('—');
-  await expect(financialCards.nth(3)).toHaveClass(/taxpayer-dashboard-kpi--balance/);
+  // No verified external assessment: the first row must be absent, not placeholders or sample amounts.
+  await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(0);
+  await expect(page.getByTestId('authenticated-overview-bento')).toHaveCount(0);
   const phase=page.getByTestId('authenticated-dashboard-v11');
   await expect(phase).toBeVisible();
   await expect(phase.getByText('Coverage details are not available yet')).toBeVisible();
