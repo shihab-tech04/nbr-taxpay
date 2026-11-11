@@ -4,6 +4,9 @@ import type { Locator, Page } from '@playwright/test';
 export async function fillTravelDetails(root: Locator | Page, options?: {
   mode?: 'LAND' | 'WATER'; port?: string; destination?: string; date?: string;
 }) {
+  // Travel Tax is lazy-loaded. Wait for the stage UI before any isVisible()
+  // probe, otherwise a fast test skips passenger confirmation during chunk load.
+  await root.locator('#travel-passport-first, #travel-tax-route-1').first().waitFor({ state: 'attached' });
   const passport = root.locator('#travel-passport-first');
   if (await passport.isVisible() && !(await passport.inputValue())) {
     await passport.fill('TEST123456');
