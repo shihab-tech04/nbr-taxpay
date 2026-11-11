@@ -329,7 +329,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!isOptionalReceiptEmailValid(receiptEmail)) return false;
     if (forSelf === false && !signedInAccount && effectivePayerName.trim().length < 2) return false;
     if (otherBatch && forSelf === false && !signedInAccount && walkInPayerTin &&
-      (!/^\\d{12}$/.test(walkInPayerTin) || !confirmedWalkInPayer)) return false;
+      (!/^\d{12}$/.test(walkInPayerTin) || !confirmedWalkInPayer)) return false;
     const reference = noticeReference.trim();
     if (reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection) {
       const matched = findV11GuestNotice(taxpayerTin, reference);
@@ -1564,7 +1564,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   tinLabel={language === 'bn' ? 'পরিশোধকারীর নিজের টিআইএন (ঐচ্ছিক)' : 'Payer TIN (optional)'}
                   nameLabel={language === 'bn' ? 'মিলে যাওয়া পরিশোধকারীর নাম' : 'Matched payer name'}
                   requiredTin={false} maxTinLength={12}
-                  canSearch={/^\\d{12}$/.test(walkInPayerTin)}
+                  canSearch={/^\d{12}$/.test(walkInPayerTin)}
                   invalidTin={isFieldInvalid('payerTin')} tinDescribedBy={errorDescription('payerTin')}
                   onTinChange={value => {
                     setWalkInPayerTin(value); setWalkInPayerLookup(null);
@@ -1575,11 +1575,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                     setWalkInPayerConfirmed(false); clearValidationError();
                   }}
                   onSearch={() => {
-                    setWalkInPayerLookup(/^\\d{12}$/.test(walkInPayerTin)
+                    setWalkInPayerLookup(/^\d{12}$/.test(walkInPayerTin)
                       ? lookupSampleTaxpayer(walkInPayerTin) : null);
                     setWalkInPayerConfirmed(false);
                   }}
-                  status={walkInPayerTin && /^\\d{12}$/.test(walkInPayerTin) && !walkInPayerLookup
+                  status={walkInPayerTin && /^\d{12}$/.test(walkInPayerTin) && !walkInPayerLookup
                     ? <p className="text-xs text-slate-600">{language === 'bn' ? 'করদাতার তথ্য খুঁজুন।' : 'Search taxpayer information.'}</p>
                     : walkInPayerLookup ? <p className="sr-only">{language === 'bn' ? 'টিআইএন মিলে গেছে।' : 'TIN matched.'}</p> : null}
                   error={fieldError('payerTin')}
