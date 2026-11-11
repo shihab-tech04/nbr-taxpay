@@ -139,7 +139,17 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
             <button className="taxpay-bento-hero__secondary" type="button" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
 
           </div>
-          <p className="mt-auto text-xs">{tr('Your saved account records are kept separate from illustrative examples.','আপনার সংরক্ষিত রেকর্ড উদাহরণের পরিমাণ থেকে পৃথক রাখা হয়।')}</p>
+          <div className="taxpay-bento-hero__status" aria-label={tr('Payment and correction shortcuts','পেমেন্ট ও সংশোধন শর্টকাট')}>
+            {([
+              {en:'Completed Payments',bn:'সম্পন্ন পেমেন্ট',route:'history'},
+              {en:'Saved Drafts',bn:'সংরক্ষিত খসড়া',route:'secure_workspace'},
+              {en:'Correction Requests',bn:'সংশোধনের অনুরোধ',route:'corrections'}
+            ] as const).map(item=><button type="button" key={item.en} onClick={()=>navigate(item.route)}
+              aria-label={tr('View ','দেখুন: ')+tr(item.en,item.bn)}>
+              <span>{tr(item.en,item.bn)}</span><strong className="tabular-nums">—</strong>
+            </button>)}
+          </div>
+          <p className="mt-auto text-xs">{tr('Counts require independently verified account records.','সংখ্যা দেখাতে স্বতন্ত্রভাবে যাচাইকৃত অ্যাকাউন্ট রেকর্ড প্রয়োজন।')}</p>
         </section>
         <section className={card+' taxpay-bento-position'} aria-labelledby="account-bento-position-title">
           <h2 id="account-bento-position-title" className="text-base font-semibold text-taxpay-text">{tr('Current tax position','বর্তমান কর অবস্থান')}</h2>
