@@ -40,7 +40,7 @@ test('existing hero Pay Tax and Travel Tax actions still open separate journeys'
   await page.locator('.public-hero-carousel .citizen-public-primary.public-guest-action').first().click();
   const tax = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(tax).toBeVisible();
-  await tax.getByRole('button', { name: 'Close modal' }).click();
+  await tax.getByRole('button', { name: 'Close payment services' }).click();
 
   await page.getByRole('button', { name: 'Pay Travel Tax', exact: true }).first().click();
   const travel = page.getByRole('dialog', { name: /Travel tax/i });
@@ -67,7 +67,7 @@ test('benefit cards adapt to tablet and keep Bengali mobile bottom navigation in
   await expect(benefits.getByRole('heading', { name: 'করবৃত্ত কেন ব্যবহার করবেন?' })).toBeVisible();
   await expect(benefits.locator('.public-benefits__item')).toHaveCount(6);
   await expect(benefits.getByRole('heading', { name: 'সুবিধাভোগী ব্যবস্থাপনা' })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Mobile primary navigation' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'মোবাইল প্রধান নেভিগেশন' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড খুঁজুন' })).toBeVisible();
   const mobile = await benefits.locator('.public-benefits__item').evaluateAll(items =>
     items.map(item => {
