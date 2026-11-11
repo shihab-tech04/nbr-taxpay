@@ -7,6 +7,8 @@ import {copyPreviousPayment,canPayAgain,CURRENT_PAY_AGAIN_YEAR,PAY_AGAIN_YEAR_OP
 import {DEMO_USERS} from '../../data/demoUsers';
 import {sampleTinForUserNumber} from '../../data/sampleTinSuggestions';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
+import {beneficiaryFinalTagLabel} from '../../services/beneficiaryTags';
+import {beneficiaryNameForDisplay} from '../../services/beneficiaryNames';
 import {PAYMENT_TAG_GROUPS,paymentTagGroupLabels,paymentTagGroupForTin,type PaymentTagGroup} from '../../services/beneficiaryPaymentTags';
 import {activeAuthorizationFor,getHostedAuthorizations} from '../../services/hostedDemoAuthorizations';
 import {formatCurrency} from '../../services/numberFormat';
@@ -46,6 +48,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   const [recordFiltersExpanded,setRecordFiltersExpanded]=useState(false);
   const [recordYear,setRecordYear]=useState('all');
   const [recordTag,setRecordTag]=useState<'all'|PaymentTagGroup>('all');
+  const [recordBeneficiary,setRecordBeneficiary]=useState('all');
   const [savedTags,setSavedTags]=useState<{status:'loading'|'ready'|'error';people:Beneficiary[]}>({status:'loading',people:[]});
   const [revision,setRevision]=useState(0);
   const [lines,setLines]=useState<EditableLine[]>([freshLine('user1')]);
@@ -131,10 +134,29 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     }).catch(()=>{if(active)setSavedTags({status:'error',people:[]});});
     return()=>{active=false;};
   },[id,authenticatedUser?.id,revision]);
-  const allocationTag=(beneficiary:SimulationUser)=>{
+  const allocationTin=(beneficiary:SimulationUser)=>{
     const match=/^user(\d+)$/.exec(beneficiary);
-    const tin=match?sampleTinForUserNumber(Number(match[1])):null;
-    return paymentTagGroupForTin(tin??undefined,savedTags.people);
+    return match?sampleTinForUserNumber(Number(match[1])):null;
+  };
+  const allocationPerson=(beneficiary:SimulationUser)=>{
+    const tin=allocationTin(beneficiary);
+    return savedTags.status==='ready'&&tin?savedTags.people.find(person=>person.tin===tin):undefined;
+  };
+  const allocationTag=(beneficiary:SimulationUser)=>
+    paymentTagGroupForTin(allocationTin(beneficiary)??undefined,savedTags.people);
+  const allocationLabel=(beneficiary:SimulationUser)=>{
+    const person=allocationPerson(beneficiary);
+    const name=person?beneficiaryNameForDisplay(person.display_name,beneficiary):beneficiary;
+    const tag=person?beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label):null;
+    const canOpen=Boolean(person&&view==='payer'&&id);
+    return <span>
+      {canOpen?<button type="button" className="min-h-9 font-semibold text-taxpay-primary hover:underline"
+        onClick={event=>{event.stopPropagation();navigate('beneficiaries',{openBeneficiaryTin:person!.tin,returnTo:'history'});}}
+        aria-label={txt('Open beneficiary profile for ','উপকারভোগীর প্রোফাইল খুলুন: ')+name}>{name}</button>
+       :<span className="font-medium">{name}</span>}
+      {tag&&<span className="ml-2 text-xs text-taxpay-muted">· {tag}</span>}
+      {person&&<span className="ml-2 break-all text-xs text-taxpay-muted">{person.tin}</span>}
+    </span>;
   };
   const payAgain=(record:SimulationTransaction)=>{
     if(!id)return;
@@ -264,10 +286,15 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   </main>;
   const availableRecordYears=[...new Set(rows.flatMap(tx=>tx.allocations.map(a=>a.assessmentYear)))].sort((a,b)=>b.localeCompare(a));
   const needle=recordQuery.trim().toLocaleLowerCase();
+  const availableRecipients=[...new Set(rows.flatMap(tx=>tx.allocations.map(a=>a.beneficiary)))].sort();
   const visibleRows=rows.filter(tx=>(recordYear==='all'||tx.allocations.some(a=>a.assessmentYear===recordYear))&&
     (recordTag==='all'||(savedTags.status==='ready'&&tx.allocations.some(a=>allocationTag(a.beneficiary)===recordTag)))&&
-    (!needle||[tx.id,tx.transactionId,tx.payer,tx.state,tx.reviewStatus,...tx.allocations.flatMap(a=>
-      [a.beneficiary,a.category,a.assessmentYear])].some(v=>String(v).toLocaleLowerCase().includes(needle))));
+    (recordBeneficiary==='all'||tx.allocations.some(a=>a.beneficiary===recordBeneficiary))&&
+    (!needle||[tx.id,tx.transactionId,tx.payer,tx.state,tx.reviewStatus,...tx.allocations.flatMap(a=>{
+      const person=allocationPerson(a.beneficiary);
+      return [a.beneficiary,a.category,a.assessmentYear,person?.display_name??'',allocationTin(a.beneficiary)??'',
+        person?beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)??'':''];
+    })].some(v=>String(v).toLocaleLowerCase().includes(needle))));
   // Keep every SQL allocation and event in the existing detail modal after compacting table cells.
   const lifecycleParts=(tx:SimulationTransaction)=>({
     events:tx.events.map(e=>({id:String(e.id),title:e.action.replaceAll('_',' '),
@@ -397,6 +424,14 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
             <option value="all">{txt('All years','সব করবর্ষ')}</option>
             {availableRecordYears.map(y=><option key={y} value={y}>{y}</option>)}
           </select></label>
+        <label className="taxpayer-transaction-filter"><span>{txt('Beneficiary','উপকারভোগী')}</span>
+          <select value={recordBeneficiary} onChange={e=>setRecordBeneficiary(e.target.value)}
+            aria-label={txt('Filter transactions by beneficiary','উপকারভোগী অনুযায়ী লেনদেন ফিল্টার')}
+            className="min-h-11 w-full min-w-0 rounded-lg border border-taxpay-border bg-white px-3 text-base">
+            <option value="all">{txt('All beneficiaries','সব উপকারভোগী')}</option>
+            {availableRecipients.map(beneficiary=><option key={beneficiary} value={beneficiary}>{allocationPerson(beneficiary)?.display_name||beneficiary}</option>)}
+          </select>
+        </label>
         <label className="taxpayer-transaction-filter"><span>{txt('Beneficiary tag','উপকারভোগীর ট্যাগ')}</span>
           <select value={recordTag} onChange={event=>setRecordTag(event.target.value as 'all'|PaymentTagGroup)}
             aria-label={txt('Filter transactions by beneficiary tag','উপকারভোগীর ট্যাগ দিয়ে লেনদেন ফিল্টার')}
@@ -406,11 +441,12 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
           </select></label>
       </TaxPayOfficeRegisterFilters>
       <TaxPayActiveFilterChips clearLabel={txt('Clear filters','ফিল্টার মুছুন')}
-        onClear={()=>{setRecordQuery('');setRecordYear('all');setRecordTag('all');}}
+        onClear={()=>{setRecordQuery('');setRecordYear('all');setRecordTag('all');setRecordBeneficiary('all');}}
         filters={[
           ...(recordQuery.trim()?[{key:'search',label:txt('Search: ','অনুসন্ধান: ')+recordQuery.trim(),onRemove:()=>setRecordQuery('')}]:[]),
           ...(recordYear!=='all'?[{key:'year',label:recordYear,onRemove:()=>setRecordYear('all')}]:[]),
-          ...(recordTag!=='all'?[{key:'tag',label:paymentTagGroupLabels[recordTag][language],onRemove:()=>setRecordTag('all')}]:[])
+          ...(recordTag!=='all'?[{key:'tag',label:paymentTagGroupLabels[recordTag][language],onRemove:()=>setRecordTag('all')}]:[]),
+          ...(recordBeneficiary!=='all'?[{key:'beneficiary',label:allocationPerson(recordBeneficiary as SimulationUser)?.display_name||recordBeneficiary,onRemove:()=>setRecordBeneficiary('all')}]:[])
         ]}/>
       {loading?<TaxPayTableState>{txt('Loading transactions…','লেনদেন লোড হচ্ছে…')}</TaxPayTableState>:
        loadError?<div role="alert" className="rounded-xl border border-taxpay-border bg-white p-4">
@@ -433,7 +469,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
              <details onClick={event=>event.stopPropagation()} className="rounded-lg border border-taxpay-border p-2">
                <summary className="min-h-11 cursor-pointer text-sm font-medium">{txt('View allocations','বরাদ্দ দেখুন')}</summary>
                <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
-                 <p>{a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p>
+                 <p>{allocationLabel(a.beneficiary)} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p>
                  <p className="text-taxpay-muted">{a.assessmentYear}</p>
                  <p className="tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p>
                </li>)}</ul>
@@ -471,7 +507,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            <details className="rounded-lg border border-taxpay-border p-2">
              <summary className="min-h-11 cursor-pointer text-sm font-medium">{txt('View allocations','বরাদ্দ দেখুন')}</summary>
              <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
-               <p>{a.beneficiary} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p>
+               <p>{allocationLabel(a.beneficiary)} · {simulationCategoryLabels[a.category][bn?'bn':'en']}</p>
                <p className="text-taxpay-muted">{a.assessmentYear}</p>
                <p className="tabular-nums">{formatSimulatedAmount(a.amountMinor)}</p>
              </li>)}</ul>

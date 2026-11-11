@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 
 /** Owned preview capability, no production account data or financial writes. */
-test('beneficiary profile shows only this payer’s allocations, filters and returns to the unchanged list',async({page})=>{
+test('beneficiary profile shows only this payer’s allocations, filters and returns to the unchanged list',async({page},testInfo)=>{
   const now='2026-11-09T10:00:00.000Z';
   const list={id:'00000000-0000-4000-8000-000000000101',name:'Saved family',created_at:now};
   const person={id:'00000000-0000-4000-8000-000000000201',list_id:list.id,tin:'222222222222',
@@ -54,6 +54,10 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   await expect(profile.locator('ol li').getByText('Other tax payment',{exact:true})).toBeVisible();
   await expect(profile.locator('ol li').getByText('Penalty',{exact:true})).toHaveCount(0);
   await expect(profile.locator('ol li').getByText('record-1')).toHaveCount(2);
+  const timeline=profile.getByTestId('beneficiary-chronological-timeline');
+  await expect(timeline).toBeVisible();
+  await expect(timeline).toHaveCSS('border-left-width','2px');
+  await expect(timeline.locator('time')).toHaveCount(2);
   await profile.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
   await expect(profile.locator('ol li').getByText('Advance tax',{exact:true})).toHaveCount(0);
   await expect(profile.locator('ol li').getByText('Other tax payment',{exact:true})).toBeVisible();
@@ -62,4 +66,21 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   await expect(listScreen.getByRole('button',{name:'Edit',exact:true})).toBeVisible();
   await expect(listScreen.getByRole('button',{name:'Make payment'})).toBeVisible();
   await expect(listScreen.getByRole('link',{name:'Open profile for User Two'})).toBeVisible();
+
+  // The same saved beneficiary must be reachable from the Activity register.
+  await page.goto('/?action=history');
+  const register=page.locator('.taxpayer-transaction-panel');
+  await register.getByRole('button',{name:'Filter',exact:true}).click();
+  await register.getByRole('combobox',{name:'Filter transactions by beneficiary',exact:true}).selectOption('222222222222');
+  const activityRow=register.getByTestId('taxpayer-transaction-table').locator('tbody tr');
+  await expect(activityRow).toHaveCount(1);
+  const activityRecipient=testInfo.project.name.startsWith('mobile-')
+    ?register.getByTestId('taxpayer-transaction-mobile-cards')
+    :activityRow.first();
+  await expect(activityRecipient.getByRole('button',{name:'Open beneficiary profile for User Two'}).first()).toBeVisible();
+  await activityRecipient.getByRole('button',{name:'Open beneficiary profile for User Two'}).first().click();
+  await expect(page.getByTestId('beneficiary-profile')).toBeVisible();
+  await expect(page.getByTestId('beneficiary-chronological-timeline')).toBeVisible();
+  await page.getByRole('button',{name:'Back to activity'}).click();
+  await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
 });
