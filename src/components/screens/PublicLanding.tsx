@@ -56,15 +56,13 @@ export const PublicLanding: React.FC = () => {
     {
       id: 'tax',
       Icon: WalletCards,
-      ariaLabel: t('Start a general tax payment', 'সাধারণ কর পরিশোধ শুরু করুন'),
-      title: t('Pay Tax', 'কর পরিশোধ'),
+      title: t('Tax payments', 'কর পরিশোধ'),
       detail: t('Pay tax for yourself or others.', 'নিজের বা অন্যের কর পরিশোধ করুন।'),
       open: () => openPaymentServiceChoice(),
     },
     {
       id: 'travel',
       Icon: Plane,
-      ariaLabel: t('Open the travel tax service', 'ভ্রমণ কর সেবা খুলুন'),
       title: t('Travel Tax', 'ভ্রমণ কর'),
       detail: t('Use the dedicated travel tax journey.', 'নির্দিষ্ট ভ্রমণ কর সেবা ব্যবহার করুন।'),
       open: () => setOpenService('travel'),
@@ -72,7 +70,6 @@ export const PublicLanding: React.FC = () => {
     {
       id: 'corrections',
       Icon: FilePenLine,
-      ariaLabel: t('Open correction requests', 'সংশোধনের আবেদন খুলুন'),
       title: t('Correction Requests', 'সংশোধনের আবেদন'),
       detail: signedIn
         ? t('Submit and track correction requests.', 'সংশোধনের আবেদন ও অগ্রগতি দেখুন।')
@@ -82,7 +79,6 @@ export const PublicLanding: React.FC = () => {
     {
       id: 'certificates',
       Icon: FileCheck2,
-      ariaLabel: t('Open tax credit certificates', 'কর ক্রেডিট সনদ খুলুন'),
       title: t('Tax Credit Certificates', 'কর ক্রেডিট সনদ'),
       detail: signedIn
         ? t('View and download your certificates.', 'আপনার সনদ দেখুন ও ডাউনলোড করুন।')
@@ -268,13 +264,13 @@ export const PublicLanding: React.FC = () => {
     <section className="public-quick-access" aria-labelledby="public-quick-access-title">
       <h2 id="public-quick-access-title">{t('Quick access', 'দ্রুত সেবা')}</h2>
       <div className="public-quick-access__grid">
-        {quickServices.map(({ id, Icon, title, detail, ariaLabel, open }) => (
+        {quickServices.map(({ id, Icon, title, detail, open }) => (
           <button key={id} type="button" className="public-quick-access__item"
-            data-service={id} aria-label={ariaLabel}
+            data-service={id} aria-labelledby={`public-quick-access-title-${id}`}
             aria-describedby={`public-quick-access-detail-${id}`} onClick={open}>
             <span className="public-quick-access__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
             <span className="public-quick-access__copy">
-              <strong>{title}</strong>
+              <strong id={`public-quick-access-title-${id}`}>{title}</strong>
               <span id={`public-quick-access-detail-${id}`}>{detail}</span>
             </span>
             <ArrowRight className="public-quick-access__arrow" size={18} aria-hidden="true" />
