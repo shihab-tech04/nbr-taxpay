@@ -1,4 +1,5 @@
 import {expect,test} from '@playwright/test';
+import {openTaxpayerTravelTax} from './taxpayer-travel-menu-helper';
 
 const dashboard='/?action=taxpayer_home&demoUser=user1';
 
@@ -37,7 +38,7 @@ test('Travel Tax remains separate and never reduces income-tax outstanding',asyn
   await expect(position).toContainText('৳ 25,000');
   await expect(position).toContainText('Travel tax (separate)');
   await expect(position).toContainText('৳ 6,500');
-  await page.getByRole('button',{name:'Travel tax',exact:true}).click();
+  await openTaxpayerTravelTax(page);
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(position).toContainText('৳ 25,000');
 });
