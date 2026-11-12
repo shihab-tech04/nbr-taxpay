@@ -161,6 +161,24 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   const category=raw.paymentCategory;
   if(category===tx.service&&Math.round(numberValue(raw.totalAmount)*100)===tx.amountMinor
     &&Array.isArray(raw.items)){
+    // The receipt snapshot is display data, never an alternative accounting
+    // source. When durable SQL already supplies per-head facts, the snapshot
+    // must retain those exact head identities and amounts before display.
+    const accountingSource=Array.isArray(d.receiptLines)?d.receiptLines:d.lines;
+    const accounting=Array.isArray(accountingSource)&&accountingSource.length>0&&
+      accountingSource.every(line=>line&&typeof line==='object'&&!Array.isArray(line)&&
+        Number.isSafeInteger((line as Record<string,unknown>).headId))
+      ?accountingSource as Array<Record<string,unknown>>:null;
+    // Older combined receipts may have no head items in the snapshot;
+    // their independently reconciled SQL allocations remain authoritative.
+    if(accounting&&raw.items.length>0&&(raw.items.length!==accounting.length||
+      raw.items.some((item,index)=>{
+        if(!item||typeof item!=='object'||Array.isArray(item))return true;
+        const snapshotLine=item as Record<string,unknown>;
+        const sourceLine=accounting[index];
+        return ['headId','headNameEn','economicCode','totalAmount'].some(key=>
+          sourceLine[key]!==undefined&&sourceLine[key]!==snapshotLine[key]);
+      })))throw Error('Payment receipt lines could not be reconciled');
     return {
       ...(raw as unknown as ChallanReceipt),
       paymentTransactionId:tx.id,

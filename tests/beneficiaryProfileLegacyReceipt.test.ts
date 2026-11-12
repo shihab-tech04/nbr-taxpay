@@ -104,3 +104,35 @@ test('historic saved-TIN alias resolves only a valid literal TIN',()=>{
   }});
   assert.equal(invalid.allocationItems?.[0].taxpayerTin,undefined);
 });
+
+test('confirmed SQL receipt must not render a forged head from a conflicting snapshot',()=>{
+  const head={headId:121,economicCode:'64',headNameEn:'Advance Tax',taxAmount:15,
+    penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:15};
+  const tx={
+    id:'55555555-2222-4555-8555-555555555555',service:'OTHER_TAX_PAYMENT',
+    amountMinor:1500,status:'SIMULATED_SUCCESS',createdAt:'2026-11-12T10:00:00Z',
+    details:{
+      lines:[head],allocations:[{taxpayerTin:'909000000013',taxpayerName:'Recipient',
+        headId:121,assessmentYear:'2026-27',amountMinor:1500}],
+      receiptSnapshot:{paymentCategory:'OTHER_TAX_PAYMENT',totalAmount:15,
+        items:[{...head,headId:145,economicCode:'135',headNameEn:'Notice Tax'}]}
+    }
+  };
+  assert.throws(()=>makeConfirmedReceipt(tx),/receipt.*reconcil/i,
+    'A paid receipt must not show a different head from the immutable SQL accounting line');
+});
+
+test('confirmed SQL receipt preserves an authentic stored head and one combined receipt',()=>{
+ const head={headId:121,economicCode:'64',headNameEn:'Advance Tax',taxAmount:15,
+   penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:15};
+ const tx={id:'66666666-2222-4666-8666-666666666666',service:'OTHER_TAX_PAYMENT',
+   amountMinor:1500,status:'SIMULATED_SUCCESS',createdAt:'2026-11-12T10:00:00Z',
+   details:{lines:[head],allocations:[{taxpayerTin:'909000000013',taxpayerName:'Recipient',
+     headId:121,assessmentYear:'2026-27',amountMinor:1500}],
+     receiptSnapshot:{paymentCategory:'OTHER_TAX_PAYMENT',totalAmount:15,items:[head]}}};
+ const confirmed=makeConfirmedReceipt(tx);
+ assert.equal(confirmed.items[0].headId,121);
+ assert.equal(confirmed.allocationItems?.length,1);
+ assert.equal(confirmed.allocationItems?.[0].amountMinor,1500);
+ assert.equal(confirmed.paymentTransactionId,tx.id);
+});
