@@ -35,7 +35,7 @@ export const BentoPaymentAnalytics:React.FC<{
   selectedSource?:DashboardChartSource;
   onSourceChange?:(source:DashboardChartSource)=>void;
   onManageBeneficiaries?:()=>void;
-  onOpenHistory:(tag?:DashboardChartTag)=>void;
+  onOpenHistory:(tag?:DashboardChartTag,service?:DashboardChartService|'all')=>void;
 }>=({records,people,year,ownerTin,language,sourceLoadError,selectedSource,onSourceChange,onManageBeneficiaries,onOpenHistory})=>{
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -173,7 +173,7 @@ export const BentoPaymentAnalytics:React.FC<{
               </button>
             </div>}
           <button type="button" className="taxpay-bento-analytics__link"
-            onClick={()=>onOpenHistory(tag??undefined)}>
+            onClick={()=>onOpenHistory(tag??undefined,service)}>
             {tr('View payment records','পেমেন্টের রেকর্ড দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
           </button>
         </>:<p role="status" className="taxpay-bento-analytics__empty">{tr(
