@@ -1,3 +1,5 @@
+import '../../styles/taxpay-taxpayer-reference.css';
+import '../../styles/taxpay-unified-table.css';
 import React from 'react';
 import { Activity, Bell, BookOpen, ChevronDown, CirclePlus, CircleUserRound, FileCheck2, Home, LogOut, Plane, UsersRound } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';

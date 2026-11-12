@@ -1,3 +1,5 @@
+import '../../styles/taxpay-unified-table.css';
+import '../../styles/taxpay-service-choice.css';
 import React, { useEffect, useState } from 'react';
 import { useTaxState } from '../../services/taxState';
 import { ReceiptView } from '../common/ReceiptView';

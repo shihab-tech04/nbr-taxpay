@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { sampleJourneysEnabled, TaxStateProvider, useTaxState } from './services/taxState';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
-import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
 import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
 import { CitizenFooter } from './components/layout/CitizenFooter';
@@ -16,6 +15,9 @@ import { user1DemoRoutes } from './config/user1DemoRoutes';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
 import { validCertificateTransactionId } from './services/transactionId';
 import { safePrivateAuthReturnRoute } from './services/routeContract';
+
+// Defer the account-only navigation and record styles from public startup.
+const TaxpayerReferenceRail = React.lazy(() => import('./components/layout/TaxpayerReferenceRail').then(m => ({default: m.TaxpayerReferenceRail})));
 
 // Keep modal-only and preview-only code out of the initial public JavaScript.
 // These components retain their existing modal UI, permissions and routes.
@@ -226,7 +228,7 @@ const MainRouter: React.FC = () => {
         <div className="taxpay-public-desktop-navigation"><PublicHomeHeader /></div>
         <div className="taxpay-public-mobile-navigation"><CitizenNavigation /></div>
       </> : <CitizenNavigation />}
-      {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
+      {taxpayerReference && !transactionRoute && <React.Suspense fallback={null}><TaxpayerReferenceRail /></React.Suspense>}
       <main ref={mainContentRef} id="main-content" tabIndex={-1} className={`flex-1 ${publicInformationRoute ? 'public-information-main' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}${currentRoute === 'incident' ? ' public-information-main--report' : ''}`}>
         {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : beneficiaryLoginRequired ? <PublicLanding /> : (
           <section className="citizen-account-gate">
