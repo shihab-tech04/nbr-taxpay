@@ -621,7 +621,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             <h3 className="text-sm font-semibold text-taxpay-text">{request.title}</h3>
             {tag(request.state)}
           </div>
-          <p className="mt-1 break-all text-xs text-taxpay-muted"><time dateTime={request.date}>{formatDate(request.date)}</time> · {request.ref}</p>
+          <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={request.date}>{formatDate(request.date)}</time></p>
           <p className="mt-2 text-sm leading-5 text-taxpay-text">{request.detail}</p>
           <button type="button" className={action+' mt-2'} onClick={()=>setSelected(request)}
             aria-label={tr('View request details for ','আবেদনের বিস্তারিত: ')+request.title}>
@@ -649,9 +649,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])}</p>
           </div>
           <p className="whitespace-nowrap text-sm font-semibold tabular-nums">{money(item.amount)}</p>
-          <div>{overviewSource==='example'
-            ?<span className="text-xs text-taxpay-muted">{tr('Example','উদাহরণ')}</span>
-            :tag(item.state)}</div>
+          {overviewSource==='recorded'&&<div>{tag(item.state)}</div>}
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" className={action} onClick={()=>setSelected(item)} aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
             {item.sql?.reuse && <button type="button" className={action} onClick={()=>payAgain(item)}>

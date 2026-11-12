@@ -165,12 +165,23 @@ export const BentoPaymentAnalytics:React.FC<{
             <span>{TAG_LABELS[selectedTag.key][language]} · {selectedTag.paymentCount} {tr('payments','টি পেমেন্ট')}</span>
             <strong>{money(selectedTag.amountMinor)}</strong>
           </div>}
-          {filtered.byTag.some(item=>item.key==='unassigned'&&item.amountMinor>0n)&&onManageBeneficiaries&&
-            <div className="taxpay-bento-analytics__selection" role="status" data-testid="dashboard-unclassified-recovery">
-              <span>{tr('Some recipients have no matching saved relationship tag.','কিছু প্রাপকের সংরক্ষিত সম্পর্কের ট্যাগ মেলেনি।')}</span>
-              <button type="button" className="taxpay-bento-analytics__link" onClick={onManageBeneficiaries}>
-                {tr('Manage beneficiary tags','উপকারভোগীর ট্যাগ পরিচালনা')}
-              </button>
+          {filtered.byTag.some(item=>item.key==='unassigned'&&item.amountMinor>0n)&&
+            <div className="taxpay-bento-analytics__unclassified-details" role="status" data-testid="dashboard-unclassified-recovery">
+              <p>{tr('Why some spending is unclassified','কিছু ব্যয় শ্রেণিবিহীন কেন')}</p>
+              <dl>
+                {filtered.unclassified.recipientKnownMinor>0n&&<div>
+                  <dt>{new Intl.NumberFormat(bn?'bn-BD':'en-BD').format(filtered.unclassified.untaggedRecipientCount)} {tr('recipients without a matching saved relationship','জন প্রাপকের সংরক্ষিত সম্পর্ক মেলেনি')}</dt>
+                  <dd className="tabular-nums">{money(filtered.unclassified.recipientKnownMinor)}</dd>
+                </div>}
+                {filtered.unclassified.recipientMissingMinor>0n&&<div>
+                  <dt>{new Intl.NumberFormat(bn?'bn-BD':'en-BD').format(filtered.unclassified.missingRecipientPaymentCount)} {tr('payments without a recorded recipient','টি পেমেন্টে প্রাপকের তথ্য নেই')}</dt>
+                  <dd className="tabular-nums">{money(filtered.unclassified.recipientMissingMinor)}</dd>
+                </div>}
+              </dl>
+              {filtered.unclassified.recipientKnownMinor>0n&&onManageBeneficiaries&&
+                <button type="button" className="taxpay-bento-analytics__link" onClick={onManageBeneficiaries}>
+                  {tr('Manage beneficiary tags','উপকারভোগীর ট্যাগ পরিচালনা')}
+                </button>}
             </div>}
           <button type="button" className="taxpay-bento-analytics__link"
             onClick={()=>onOpenHistory(tag??undefined,service)}>
@@ -180,9 +191,5 @@ export const BentoPaymentAnalytics:React.FC<{
           'No beneficiary allocations for this selection.','এই বাছাইয়ের জন্য কোনো উপকারভোগী বরাদ্দ নেই।')}</p>}
       </section>
     </div>
-    {source==='example'&&<p className="taxpay-bento-analytics__footnote">
-      {tr('Example figures are fictional and separate from recorded account payments.',
-        'নমুনার অর্থ কাল্পনিক; অ্যাকাউন্টে সংরক্ষিত পেমেন্ট থেকে পৃথক।')}
-    </p>}
   </section>;
 };
