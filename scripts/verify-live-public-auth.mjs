@@ -199,6 +199,19 @@ try {
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
     const beneficiaryModal = beneficiaries.locator('.taxpay-modal.taxpayer-login-modal');
     const requireBeneficiaryModal = process.env.TAXPAY_REQUIRE_BENEFICIARIES_MODAL === '1';
+    // The approved guest login is lazy-loaded. Don't mistake the brief loading
+    // frame for the legacy gate; never permit private beneficiary data here.
+    const waitForSignedOutGate = async (language) => {
+      const legacyHeading = beneficiaries.getByRole('heading', {
+        name: language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace'
+      });
+      await expect.poll(async () => {
+        if (await beneficiaryModal.isVisible()) return 'login-modal';
+        if (!requireBeneficiaryModal && await legacyHeading.isVisible()) return 'legacy-gate';
+        return 'still-loading';
+      }, { timeout: 30_000 }).not.toBe('still-loading');
+    };
+    await waitForSignedOutGate('en');
     if (requireBeneficiaryModal || await beneficiaryModal.isVisible()) {
       await expect(beneficiaryModal).toBeVisible({ timeout: 30_000 });
       await expect(beneficiaryModal).toHaveCount(1);
@@ -215,6 +228,7 @@ try {
     await expect(beneficiaries.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Beneficiaries' })).toHaveCount(0);
     beneficiariesUrl.searchParams.set('lang', 'bn');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await waitForSignedOutGate('bn');
     if (requireBeneficiaryModal || await beneficiaryModal.isVisible()) {
       await expect(beneficiaryModal).toBeVisible({ timeout: 30_000 });
       await expect(beneficiaryModal.getByRole('textbox', { name: 'ইউজার আইডি' })).toBeVisible();
