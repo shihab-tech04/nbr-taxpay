@@ -281,7 +281,7 @@ test('benefits bento appears at the actual 1310px desktop screenshot size in EN 
           return { x:r.x, y:r.y, width:r.width, height:r.height };
         };
         return {
-          gridColumns:getComputedStyle(document.querySelector('.public-benefits__grid')!).gridTemplateColumns.trim().split(/\\s+/).length,
+          gridColumns:getComputedStyle(document.querySelector('.public-benefits__grid')!).gridTemplateColumns.trim().split(' ').filter(Boolean).length,
           payments:box('.public-benefits__item[data-benefit="payments"]'),
           corrections:box('.public-benefits__item[data-benefit="corrections"]'),
           certificates:box('.public-benefits__item[data-benefit="certificates"]'),
