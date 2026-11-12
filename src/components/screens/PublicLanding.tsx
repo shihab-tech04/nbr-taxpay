@@ -2,12 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, BookOpen, ChevronDown, FileCheck2, FilePenLine, History, ListChecks, ReceiptText, Repeat2, Search, UserRound, UsersRound, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
-import { PublicServiceModal, type PublicService } from './PublicServiceModal';
+import type { PublicService } from './PublicServiceModal';
 import { PublicHeroCarousel } from './PublicHeroCarousel';
 import { INITIAL_RECEIPTS } from '../../data/mockData';
 
 // Only publicly shipped fictional fixtures may appear in public autocomplete.
 // Never suggest account receipts or hosted payment records.
+// The status/Travel Tax modal pulls in the checkout and receipt modules.
+// Keep the public landing light until the user explicitly opens that service.
+const PublicServiceModal = React.lazy(() => import('./PublicServiceModal').then(module => ({default: module.PublicServiceModal})));
+
 const sampleReceipts = INITIAL_RECEIPTS.filter(receipt => receipt.isSimulatedDemo && !receipt.receiptMobile).slice(0, 3);
 const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
   { value: receipt.challanNo, kind: 'challan' as const },
@@ -329,6 +333,6 @@ export const PublicLanding: React.FC = () => {
         </details>)}
       </div>
     </section>
-    {openService && <PublicServiceModal service={openService} onClose={() => setOpenService(null)} />}
+    {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} /></React.Suspense>}
   </div>;
 };
