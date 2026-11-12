@@ -950,11 +950,12 @@
   }
 }
 
-/* Balanced bento: two substantial benefit cards flank four legible compact
-   cards. Feature labels reuse approved meaning; no fake data or placeholders.
-   Keep original 3x2 and mobile grid below the roomy desktop breakpoint. */
+/* Balanced bento: activate at actual laptop/desktop widths, including the
+   approved 1310px screenshot, not only very wide screens. Two featured cards
+   flank four concise cards. Short desktops and mobile retain 3x2/2x3/1-col.
+   Do not change search, CTA, footer, or data/behavior contracts. */
 .public-benefits__highlights { display: none; }
-@media (min-width: 1440px) and (min-height: 840px) {
+@media (min-width: 1200px) and (min-height: 820px) {
   .public-home-sections .public-benefits__heading {
     margin-bottom: .7rem;
   }
