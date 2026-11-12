@@ -278,7 +278,7 @@ test('wide desktop bento has six readable benefits and non-data illustration pre
   expect(boxes[1].height).toBeGreaterThan(boxes[0].height * 1.6);
   expect(boxes[3].height).toBeGreaterThan(boxes[0].height * 1.6);
   expect(boxes[5].height).toBeGreaterThan(boxes[2].height * 1.6);
-  expect(boxes.every(b => b.scrollHeight <= b.clientHeight + 2)).toBe(true);
+  expect(boxes.every(b => b.scrollHeight <= b.clientHeight + 2), JSON.stringify(boxes)).toBe(true);
   for (const kind of ['corrections','history','repeat-drafts']) {
     const preview = page.locator('.public-benefits__item[data-benefit="' + kind + '"] .public-benefits__preview');
     await expect(preview).toBeVisible();
