@@ -43,6 +43,19 @@ test('public homepage explains six citizen benefits without duplicate CTAs', asy
     items.map(item => item.getBoundingClientRect().height)
   );
   expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(2);
+  expect(Math.max(...heights)).toBeLessThanOrEqual(145);
+
+  for (const card of await benefits.locator('.public-benefits__item').all()) {
+    const icon = card.locator('.public-benefits__icon');
+    const copy = card.locator('.public-benefits__copy');
+    await expect(card).toHaveCSS('display', 'grid');
+    const iconBox = await icon.boundingBox();
+    const copyBox = await copy.boundingBox();
+    expect(iconBox).not.toBeNull();
+    expect(copyBox).not.toBeNull();
+    expect(copyBox!.x).toBeGreaterThan(iconBox!.x + iconBox!.width + 6);
+    expect(Math.abs((iconBox!.y + iconBox!.height / 2) - (copyBox!.y + copyBox!.height / 2))).toBeLessThanOrEqual(2);
+  }
 });
 
 test('existing hero Pay Tax and Travel Tax actions still open separate journeys', async ({ page }) => {
@@ -92,6 +105,11 @@ test('benefit cards adapt to tablet and keep Bengali mobile bottom navigation in
   );
   expect(mobile[0].x).toBe(mobile[1].x);
   expect(mobile[1].y).toBeGreaterThan(mobile[0].y);
+  const iconBounds = await benefits.locator('.public-benefits__item').first().locator('.public-benefits__icon').boundingBox();
+  const copyBounds = await benefits.locator('.public-benefits__item').first().locator('.public-benefits__copy').boundingBox();
+  expect(iconBounds).not.toBeNull();
+  expect(copyBounds).not.toBeNull();
+  expect(copyBounds!.x).toBeGreaterThan(iconBounds!.x + iconBounds!.width);
   const sizes = await page.evaluate(() => ({
     document: document.documentElement.scrollWidth,
     viewport: document.documentElement.clientWidth,
