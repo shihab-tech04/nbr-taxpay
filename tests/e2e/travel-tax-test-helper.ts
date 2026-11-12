@@ -1,5 +1,8 @@
 import type { Locator, Page } from '@playwright/test';
 
+export const futureTravelDate = new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Dhaka'})
+  .format(new Date(Date.now() + 86_400_000));
+
 /** Completes the primary passenger first, then travel details. Only simulated passport lookup is available. */
 export async function fillTravelDetails(root: Locator | Page, options?: {
   mode?: 'LAND' | 'WATER'; port?: string; destination?: string; date?: string;
@@ -30,7 +33,7 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
     await root.locator('#travel-port').selectOption(options?.port ?? 'Benapole');
   }
   await root.locator('#travel-destination').fill(options?.destination ?? 'India');
-  await root.locator('#travel-departure-date').fill(options?.date ?? '2026-11-20');
+  await root.locator('#travel-departure-date').fill(options?.date ?? futureTravelDate);
 }
 /** Can be called on first stage or after continuing to the group-passenger stage. */
 export async function fillForeignPassenger(root: Locator | Page, options?: {
