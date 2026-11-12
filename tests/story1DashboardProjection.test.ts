@@ -54,11 +54,27 @@ test('unattributed legacy and duplicate SQL readbacks cannot fabricate annual ch
     details:{assessmentYear:'2025-26, 2026-27'},
   };
   const projected=projectStoredDashboardAllocations([
-    unknown,payment('000000000005','2026-27',1250),
-    payment('000000000005','2026-27',1250),
+    unknown,payment('000000000005','2026-27',1250,{batchItemIndex:1,batchItemCount:1}),
+    payment('000000000005','2026-27',1250,{batchItemIndex:1,batchItemCount:1}),
   ]);
   assert.equal(projected.incompleteCount,2);
   assert.equal(projected.allocations.length,1);
   assert.equal(summarizeStoredDashboardYear(projected,'2025-2026').completedBatches,0);
   assert.equal(summarizeStoredDashboardYear(projected,'2026-2027').amountMinor,1250n);
+});
+
+test('partial or repeated members of a combined batch cannot appear in dashboard totals',()=>{
+  const partial=projectStoredDashboardAllocations([
+    payment('000000000011','2026-27',1000,{batchItemIndex:1,batchItemCount:2}),
+  ]);
+  assert.equal(partial.allocations.length,0);
+  assert.equal(summarizeStoredDashboardYear(partial,'2026-2027').completedBatches,0);
+  assert.equal(partial.incompleteCount,1);
+
+  const duplicateIndex=projectStoredDashboardAllocations([
+    payment('000000000021','2026-27',1000,{batchItemIndex:1,batchItemCount:2}),
+    payment('000000000022','2026-27',2000,{batchItemIndex:1,batchItemCount:2}),
+  ]);
+  assert.equal(duplicateIndex.allocations.length,0);
+  assert.equal(duplicateIndex.incompleteCount,1);
 });
