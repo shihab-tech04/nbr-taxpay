@@ -78,3 +78,14 @@ test('partial or repeated members of a combined batch cannot appear in dashboard
   assert.equal(duplicateIndex.allocations.length,0);
   assert.equal(duplicateIndex.incompleteCount,1);
 });
+
+test('one malformed member invalidates every sibling in the same original batch',()=>{
+  const valid=payment('000000000031','2026-27',1000,{batchItemIndex:1,batchItemCount:2});
+  const invalid=payment('000000000032','2026-27',2000,{batchItemIndex:2,batchItemCount:2,
+    lines:[{beneficiary:'user3',category:'OTHER_TAX_PAYMENT',assessmentYear:'unverified',amountMinor:2000}],
+  });
+  const year=summarizeStoredDashboardYear(projectStoredDashboardAllocations([valid,invalid]),'2026-2027');
+  assert.equal(year.completedBatches,0);
+  assert.equal(year.amountMinor,0n);
+  assert.deepEqual(year.allocations,[]);
+});
