@@ -211,7 +211,7 @@ test('Selecting a topic takes mobile readers directly to its instructions', asyn
   await expect(topic).toHaveAttribute('aria-current','true');
 });
 
-test('Landing uses a wider desktop canvas while Guide and Report remain centered and readable', async ({ page }) => {
+test('Home, Guide and Report retain the same approved desktop width and alignment', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   const views = [
     { path: '/?action=landing', selector: '.public-information-hub' },
@@ -224,15 +224,9 @@ test('Landing uses a wider desktop canvas while Guide and Report remain centered
     const box = await page.locator(view.selector).boundingBox();
     expect(box, `${view.path} should have a content container`).not.toBeNull();
     bounds.push({ x: box!.x, width: box!.width });
-    if (view.path.includes('landing')) {
-      // Home intentionally uses the widened public service canvas on desktop.
-      expect(box!.width).toBeGreaterThanOrEqual(1200);
-      expect(box!.width).toBeLessThanOrEqual(1280);
-    } else {
-      // The readable Guide/Report widths and their child layouts stay frozen.
-      expect(box!.width).toBeGreaterThanOrEqual(1099);
-      expect(box!.width).toBeLessThanOrEqual(1101);
-    }
+    // No route-specific widening of the approved public 1100px canvas.
+    expect(box!.width).toBeGreaterThanOrEqual(1099);
+    expect(box!.width).toBeLessThanOrEqual(1101);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `Horizontal overflow on ${view.path}`).toBeLessThanOrEqual(2);
   }
