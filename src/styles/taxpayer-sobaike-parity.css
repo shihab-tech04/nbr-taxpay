@@ -542,7 +542,9 @@
     max-height:calc(100dvh - 80px - env(safe-area-inset-top));
   }
   .taxpay-citizen-shell.taxpay-public-mobile-shell .public-footer__inner {
-    padding:.85rem 1rem 1rem;
+    padding:.55rem .875rem;
+    background:var(--color-taxpay-surface);
+    border-top:1px solid var(--color-taxpay-border);
   }
   /* Restore the original public mobile navigation. Help in the dock opens the
      existing User Guide; the header icon opens chat; Pay floats independently. */
@@ -577,10 +579,13 @@
   .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-pay--guest-floating {
     bottom:calc(80px + env(safe-area-inset-bottom));
   }
-  /* Keep the single-row footer fully above the independent Pay button.
-     The original 64px allowance cleared only the bottom dock, not Pay. */
+  /* Keep Pay and the fixed bottom dock clear with a STABLE footer size.
+     The reserved area is page-colored, never an empty white footer extension.
+     Do not resize the footer on header-collapse: it destabilizes scroll anchoring. */
   .taxpay-citizen-shell.taxpay-public-mobile-shell .public-footer {
-    padding-bottom:calc(160px + env(safe-area-inset-bottom)) !important;
+    padding-bottom:calc(148px + env(safe-area-inset-bottom)) !important;
+    background:var(--color-taxpay-background);
+    border-top:0;
   }
   /* Compact mobile Help panel: keep it below the header, above the preserved
      bottom navigation, inside the viewport and scroll its message content. */

@@ -122,8 +122,17 @@ test('public mobile footer stays compact and the floating Pay action remains rea
   const more=footer.locator('.public-footer__mobile-more > summary');
   await expect(more).toBeVisible();
   const inner=footer.locator('.public-footer__inner');
-  const footerClearance=await footer.evaluate(element=>parseFloat(getComputedStyle(element).paddingBottom));
-  expect(footerClearance).toBeGreaterThanOrEqual(150);
+  // The footer must keep a stable Pay/dock clearance, painted in the page
+  // background rather than as an empty white extension of the footer.
+  await expect(page.locator('.taxpay-public-mobile-navigation .citizen-corners')).toHaveCount(1);
+  const footerColors=await footer.evaluate(element=>({
+    clearance:parseFloat(getComputedStyle(element).paddingBottom),
+    footerBackground:getComputedStyle(element).backgroundColor,
+    rowBackground:getComputedStyle(element.querySelector('.public-footer__inner')!).backgroundColor,
+  }));
+  expect(footerColors.clearance).toBeGreaterThanOrEqual(140);
+  expect(footerColors.clearance).toBeLessThanOrEqual(160);
+  expect(footerColors.footerBackground).not.toBe(footerColors.rowBackground);
   const brandBox=await footer.locator('.public-footer__wordmark').boundingBox();
   const copyBox=await footer.locator('.public-footer__bottom').boundingBox();
   const moreBox=await more.boundingBox();
@@ -163,6 +172,46 @@ test('public mobile footer stays compact and the floating Pay action remains rea
     const box=await choice.boundingBox();
     return box?.height??Infinity;
   }).toBeLessThan(812*.8);
+});
+
+test('426px scrolled mobile footer is one compact white row above the floating Pay control',async({page})=>{
+  await page.setViewportSize({width:426,height:882});
+  await page.goto('/?action=landing&lang=en');
+  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+  await expect(page.locator('.taxpay-public-mobile-navigation .citizen-corners')).toHaveCount(1);
+  const footer=page.locator('.public-footer');
+  await expect(footer).toBeVisible();
+  const result=await page.evaluate(()=>{
+    const footer=document.querySelector('.public-footer')!;
+    const row=document.querySelector('.public-footer__inner')!;
+    const pay=document.querySelector('.citizen-pay--guest-floating')!;
+    const footerStyle=getComputedStyle(footer);
+    const rowStyle=getComputedStyle(row);
+    const copyStyle=getComputedStyle(document.querySelector('.public-footer__bottom p')!);
+    return {
+      clearance:parseFloat(footerStyle.paddingBottom),
+      rowHeight:row.getBoundingClientRect().height,
+      footerBackground:footerStyle.backgroundColor,
+      rowBackground:rowStyle.backgroundColor,
+      rowToPayGap:pay.getBoundingClientRect().top-row.getBoundingClientRect().bottom,
+      copySize:parseFloat(copyStyle.fontSize),
+      overflow:document.documentElement.scrollWidth-window.innerWidth,
+    };
+  });
+  expect(result.clearance).toBeGreaterThanOrEqual(140);
+  expect(result.clearance).toBeLessThanOrEqual(160);
+  expect(result.rowHeight).toBeLessThanOrEqual(72);
+  expect(result.footerBackground).not.toBe(result.rowBackground);
+  expect(result.rowToPayGap).toBeGreaterThanOrEqual(8);
+  expect(result.rowToPayGap).toBeLessThanOrEqual(110);
+  expect(result.copySize).toBeGreaterThanOrEqual(14);
+  expect(result.overflow).toBeLessThanOrEqual(2);
+  const more=footer.locator('.public-footer__mobile-more > summary');
+  await more.click();
+  await expect(footer.getByRole('navigation',{name:'More footer links'})).toBeVisible();
+  await more.click();
+  await expect(footer.getByRole('navigation',{name:'More footer links'})).toBeHidden();
+  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
 });
 
 test('320px Bengali public footer remains one row with accessible links',async({page})=>{
