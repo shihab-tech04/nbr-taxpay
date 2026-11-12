@@ -89,7 +89,9 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
         run: npm run build
       - name: Enforce approved public startup transfer budget
-        run: node scripts/ci/check-public-startup-budget.mjs
+        run: |
+          node scripts/ci/check-public-startup-budget.mjs
+          node --check scripts/measure-live-performance.mjs
       - name: Verify Pages base, scoped public endpoint and financial safety
         shell: bash
         run: |
@@ -820,6 +822,11 @@ jobs:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
         run: node scripts/verify-live-table.mjs
 
+      - name: Sample deployed Core Web Vitals without authenticated writes
+        env:
+          TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/measure-live-performance.mjs
+
       - name: Upload live signed-out browser evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -830,4 +837,5 @@ jobs:
             test-results/live-search-*.png
             test-results/live-travel-passport-*.png
             test-results/live-table-*.png
+            test-results/sohojkor-live-performance.json
           if-no-files-found: ignore
