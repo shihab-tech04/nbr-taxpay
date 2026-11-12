@@ -198,6 +198,8 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/combinedOtherTaxSqlAcceptance.sql
           # Verify session knowledge alone cannot claim another account's payment.
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/story1OwnerClaimIsolation.sql
+          # F-167: guest payer TIN guards reject forged IDs and receipt data.
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/walkinPayerTinGuard.sql
       - name: Verify TaxPay correction intake, Office review state transitions and owner readback
         run: |
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
