@@ -47,7 +47,7 @@ test('initial banner request does not download hidden images before the visible 
   const requests: string[] = [];
   let releaseFirst!: () => void;
   const heldFirst = new Promise<void>(resolve => { releaseFirst = resolve; });
-  await page.route(/taxpay-hero-(intro|return|advance|withholding|travel)-v9\\.webp/, async route => {
+  await page.route(/taxpay-hero-(intro|return|advance|withholding|travel)-v9[.]webp/, async route => {
     const url = route.request().url();
     requests.push(url);
     if (url.includes('taxpay-hero-intro-v9.webp')) await heldFirst;
