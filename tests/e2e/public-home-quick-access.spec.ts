@@ -191,6 +191,13 @@ test('reported tall desktop: homepage footer follows content with no blank space
           footerTop:rect('.public-footer').top,
           footerHeight:rect('.public-footer').height,
           shellHeight:rect('.taxpay-citizen-shell').height,
+          shellTop:rect('.taxpay-citizen-shell').top,
+          shellBottom:rect('.taxpay-citizen-shell').bottom,
+          footerBottom:rect('.public-footer').bottom,
+          mainBottom:rect('#main-content').bottom,
+          backgroundColor:getComputedStyle(document.querySelector('.taxpay-citizen-shell')!).backgroundColor,
+          centerBottomCovered:document.elementFromPoint(innerWidth/2,innerHeight-2)
+            ?.closest('.taxpay-citizen-shell')!==null,
           footerOverflow:boxes.some((r,i) => overlap(r,identity) || overlap(r,copyright) ||
             boxes.some((other,j)=>i!==j && overlap(r,other))),
           linkGap:boxes.slice(1).flatMap((r,i)=>
@@ -201,7 +208,17 @@ test('reported tall desktop: homepage footer follows content with no blank space
       expect(layout.homeWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(1099);
       expect(layout.homeWidth).toBeLessThanOrEqual(1101);
       expect(layout.footerTop-layout.benefitsBottom,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(0);
-      expect(layout.footerTop-layout.benefitsBottom,JSON.stringify({viewport,lang,layout})).toBeLessThanOrEqual(70);
+      // Full-height shell must remain the page canvas, including the bottommost
+      // screen pixel. Previous tests checked only that the footer followed the cards,
+      // allowing the 300px exposed body background seen in production.
+      expect(layout.shellTop).toBeGreaterThanOrEqual(-1);
+      expect(layout.shellBottom,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(viewport.height-2);
+      expect(layout.shellHeight,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(viewport.height-2);
+      expect(layout.mainBottom).toBeLessThanOrEqual(layout.footerTop+2);
+      expect(layout.footerBottom,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(viewport.height-2);
+      expect(layout.footerBottom,JSON.stringify({viewport,lang,layout})).toBeLessThanOrEqual(viewport.height+2);
+      expect(layout.centerBottomCovered).toBe(true);
+      expect(layout.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
       expect(layout.footerHeight).toBeLessThanOrEqual(140);
       expect(layout.footerOverflow,JSON.stringify({viewport,lang,layout})).toBe(false);
       expect(layout.linkGap.every(gap=>gap>=10)).toBe(true);
@@ -214,6 +231,46 @@ test('reported tall desktop: homepage footer follows content with no blank space
   const reportFooter=await page.locator('.public-footer').boundingBox();
   expect(reportFooter).not.toBeNull();
   expect(Math.abs(reportFooter!.y+reportFooter!.height-1254)).toBeLessThanOrEqual(4);
+});
+
+test('homepage viewport integrity survives 1024px breakpoint and zoom-equivalent tall screens', async ({page}) => {
+  const viewports = [
+    {width: 1024,height: 1023},
+    {width: 1024,height: 1024},
+    {width: 1024,height: 1025},
+    {width: 1186,height: 940},
+    {width: 1186,height: 1175}, // 80% browser zoom equivalent of a 940px physical screen
+    {width: 1440,height: 900},
+    {width: 1440,height: 1125}, // 80% browser zoom equivalent of a 900px physical screen
+    {width: 1775,height: 1254},
+    {width: 1775,height: 1567}, // tall zoom-equivalent desktop
+  ];
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    await page.goto('/?action=landing&lang=en');
+    await page.evaluate(async()=>{await document.fonts.ready;});
+    const bounds=await page.evaluate(()=>{
+      const rect=(selector:string)=>document.querySelector(selector)!.getBoundingClientRect();
+      const shell=rect('.taxpay-citizen-shell');
+      const footer=rect('.public-footer');
+      const benefits=rect('.public-benefits');
+      return {
+        viewportHeight:innerHeight,
+        shellBottom:shell.bottom,
+        footerBottom:footer.bottom,
+        footerTop:footer.top,
+        benefitsBottom:benefits.bottom,
+        horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
+        atBottom:document.elementFromPoint(innerWidth/2,innerHeight-2)
+          ?.closest('.taxpay-citizen-shell')!==null,
+      };
+    });
+    expect(bounds.shellBottom,JSON.stringify({viewport,bounds})).toBeGreaterThanOrEqual(viewport.height-2);
+    expect(bounds.footerBottom,JSON.stringify({viewport,bounds})).toBeGreaterThanOrEqual(viewport.height-2);
+    expect(bounds.footerTop).toBeGreaterThanOrEqual(bounds.benefitsBottom);
+    expect(bounds.atBottom).toBe(true);
+    expect(bounds.horizontalOverflow).toBeLessThanOrEqual(2);
+  }
 });
 
 test('record search and benefits share a restrained, left-aligned desktop heading hierarchy', async ({ page }) => {
