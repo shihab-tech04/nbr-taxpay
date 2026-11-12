@@ -102,8 +102,17 @@ type BannerSlide = {
 const fallbackSlides: BannerSlide[] = defaultSlides.map(slide => ({ ...slide }));
 
 /** Keep the approved v9 media and layout even if a published Storage object is missing. */
-function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolean }) {
+function BannerPicture({ slide, visible, preload, onVisibleReady }: {
+  slide: BannerSlide; visible: boolean; preload: boolean; onVisibleReady: () => void;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
+  // Never give the browser a URL for unpublished/inactive artwork at startup.
+  // Once visited or prepared, retain the image through the approved dissolve.
+  const [requested, setRequested] = useState(visible || preload);
+  const shouldRequest = requested || visible || preload;
+  useEffect(() => {
+    if (visible || preload) setRequested(true);
+  }, [visible, preload]);
   // The keyed picture already retries when CMS changes its image URL. Also
   // retry an unchanged URL after a temporary network/storage outage recovers.
   useEffect(() => {
@@ -118,11 +127,15 @@ function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolea
   }, [imageFailed]);
   const fallbackImage = fallbackSlides.find(value =>
     (value.serviceCode || null) === (slide.serviceCode || null))?.image || heroPaymentIllustration;
+  const resolvedImage = imageFailed ? fallbackImage : slide.image;
   return <picture className="public-hero-carousel__image-layer" data-visible={visible}>
-    {!imageFailed && slide.mobileImage && <source media="(max-width: 640px)" srcSet={slide.mobileImage} />}
+    {!imageFailed && slide.mobileImage && <source media="(max-width: 640px)"
+      srcSet={shouldRequest ? slide.mobileImage : undefined} />}
     <img className="public-information-hero__image public-hero-carousel__service-image"
-      src={imageFailed ? fallbackImage : slide.image} alt="" decoding="async"
-      fetchPriority={visible ? 'high' : 'auto'}
+      src={shouldRequest ? resolvedImage : undefined} data-deferred-src={resolvedImage}
+      alt="" decoding="async" loading={visible || preload ? 'eager' : 'lazy'}
+      fetchPriority={visible ? 'high' : 'low'}
+      onLoad={() => { if (visible) onVisibleReady(); }}
       onError={() => setImageFailed(true)} />
   </picture>;
 }
@@ -183,6 +196,9 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   const [slides, setSlides] = useState<BannerSlide[]>([]);
   const [bannerStatus, setBannerStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const [retryNonce, setRetryNonce] = useState(0);
+  // The next slide may preload only after the visible banner's image finishes.
+  // This prevents five simultaneous images from competing for first paint on 4G.
+  const [visibleImageReady, setVisibleImageReady] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [hasFocus, setHasFocus] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -447,7 +463,10 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                   </div>
                 </div>
                 <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
-                  <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`} slide={slide} visible={isActive} />
+                  <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`}
+                    slide={slide} visible={isActive}
+                    preload={visibleImageReady && index === (activeIndex + 1) % slides.length}
+                    onVisibleReady={() => setVisibleImageReady(true)} />
                 </div>
               </article>
             );
