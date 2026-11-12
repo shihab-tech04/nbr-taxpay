@@ -149,30 +149,31 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile.getByRole('heading',{name:'Md. Arif Rahman'})).toBeVisible();
   await expect(profile.getByTestId('user1-profile-tin')).toHaveText('*********798');
   await expect(profile.getByRole('tab')).toHaveCount(0);
-  // All 24 source fields appear exactly once: name/TIN in the identity, four in
-  // summary, and the remaining fields in their appropriate sections.
+  // All 24 source fields appear exactly once: name/TIN in the identity, the
+  // approved four-field summary, and the remaining fields in their sections.
   const rendered=await profile.locator('[data-profile-field]').evaluateAll(nodes=>
     nodes.map(node=>node.getAttribute('data-profile-field')));
   expect(rendered).toHaveLength(24);
   expect(new Set(rendered).size).toBe(24);
   expect(rendered).toEqual([
-    'taxpayerName','tin','tinType','registeredOn','previousTin','lastLoginAt',
+    'taxpayerName','tin','tinType','taxesCircle','registeredOn','lastLoginAt',
     'taxpayerStatus','tinSubtype','userType','localTaxpayer',
     'mobileNumber','emailAddress','registeredAddress','currentAddress',
-    'taxesCircle','taxesZone','taxesRange','district','country',
-    'certificateIssuedOn','certificateLastUpdatedOn','issuingOfficer',
+    'taxesZone','taxesRange','district','country',
+    'previousTin','certificateIssuedOn','certificateLastUpdatedOn','issuingOfficer',
     'taxOfficeAddress','taxOfficePhone'
   ]);
   await expect(profile.getByRole('tablist')).toHaveCount(0);
   await expect(profile.getByRole('button',{name:'View payment activity'})).toHaveCount(0);
   const cards=content.getByTestId('user1-profile-detail-columns');
   await expect(cards.locator(':scope > div')).toHaveCount(4);
-  // Keep tax circle together with zone and range, no repeated field labels.
+  // Keep the approved top summary and jurisdiction grouping, with no repeated labels.
   const jurisdiction=content.getByTestId('profile-jurisdiction-card');
-  for(const field of ['Taxes circle','Taxes zone','Taxes range'])
+  for(const field of ['Taxes zone','Taxes range'])
     await expect(jurisdiction.getByText(field,{exact:true})).toHaveCount(1);
-  await expect(profile.getByTestId('user1-profile-summary').getByText('Previous TIN',{exact:true})).toHaveCount(1);
-  await expect(jurisdiction.getByText('Previous TIN',{exact:true})).toHaveCount(0);
+  const profileSummary=profile.getByTestId('user1-profile-summary');
+  await expect(profileSummary.getByText('Previous TIN',{exact:true})).toHaveCount(0);
+  await expect(content.getByTestId('profile-certificate-card').getByText('Previous TIN',{exact:true})).toHaveCount(1);
   if(info.project.name==='desktop-1280'){
     const personal=await content.getByTestId('profile-personal-card').boundingBox();
     const tax=await jurisdiction.boundingBox();
@@ -218,12 +219,12 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
     await expect(content.getByRole('heading',{name:section,exact:true})).toHaveCount(1);
   for(const field of ['Taxpayer status','TIN classification','User type','Local taxpayer',
     'Mobile number','Email address','Registered / permanent address','Current address',
-    'Taxes circle','Taxes zone','Taxes range','District','Country',
+    'Taxes zone','Taxes range','District','Country','Previous TIN',
     'Certificate issue date','Certificate last updated','Issuing tax officer','Tax office address',
     'Tax office phone']){
     await expect(content.getByText(field,{exact:true})).toHaveCount(1);
   }
-  await expect(content.getByText('Taxes circle',{exact:true})).toHaveCount(1);
+  await expect(content.getByText('Taxes circle',{exact:true})).toHaveCount(0);
   await expect(content.getByText('Registered name',{exact:true})).toHaveCount(0);
   await expect(content.getByText('TIN type',{exact:true})).toHaveCount(0);
   await expect(profile.getByText('TIN type',{exact:true})).toHaveCount(1);
@@ -233,7 +234,11 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile.getByRole('heading',{name:'Account information'})).toHaveCount(0);
   const summary=profile.getByTestId('user1-profile-summary');
   await expect(summary.locator(':scope > div')).toHaveCount(4);
-  await expect(summary.getByText('Taxes circle',{exact:true})).toHaveCount(0);
+  const summaryFields=await summary.locator(':scope > div').evaluateAll(nodes=>
+    nodes.map(node=>node.getAttribute('data-profile-field')));
+  expect(summaryFields).toEqual(['tinType','taxesCircle','registeredOn','lastLoginAt']);
+  for(const field of ['TIN type','Taxes circle','Registered since','Last account login'])
+    await expect(summary.getByText(field,{exact:true})).toHaveCount(1);
   await expect(summary).toContainText('11 Nov 2026, 11:23:40 AM');
   await expect(content).toContainText('Taxes Zone-12, Dhaka');
   await expect(content).toContainText('04 Jun 2026, 05:06:20 PM');
