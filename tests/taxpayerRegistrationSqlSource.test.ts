@@ -36,4 +36,9 @@ test('registration is owner-scoped, Office read-only, and demo capability checke
  assert.match(officeGateway,/OFFICE_ADMIN_EMAIL/);
  assert.match(officeGateway,/from\('taxpay_taxpayer_registration_profiles'\)/);
  assert.doesNotMatch(officeGateway,/insert\(|update\(|delete\(/);
+ assert.match(officeGateway,/\.gt\('account_id',cursor\)/);
+ assert.match(officeGateway,/\.limit\(PAGE_SIZE\)/);
+ assert.match(officeGateway,/PROFILE_RESULT_LIMIT/);
+ assert.doesNotMatch(officeGateway,/\.limit\(100\);/);
+
 });
