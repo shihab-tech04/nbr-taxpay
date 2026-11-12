@@ -12,6 +12,7 @@ import {loadPrivateDashboardPaymentActivity} from '../../services/privateDashboa
 import type {PrivateDashboardPaymentActivity} from '../../services/privateDashboardPayments';
 import {simulationCategories, simulationCategoryLabels, type SimulationCategory, type SimulationUser} from '../../contracts/paymentSimulationContract';
 import {filterPrivateDashboardTransactionsByYear, type DashboardSimulationTransaction} from '../../services/accountDashboardProjection';
+import {DashboardScenarioTrends} from './DashboardScenarioTrends';
 
 type DashboardRoute = 'secure_workspace'|'corrections'|'account_notifications'|'account_profile'|'history'|'journey'|'ledger'|'certificates'|'beneficiaries'|'manage_authorization';
 type Props = {
@@ -233,18 +234,6 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         </button>
       </article>)}
     </div>}
-    <nav className="mt-4" aria-label={tr('Account shortcuts','অ্যাকাউন্ট শর্টকাট')}>
-      <p className="mb-2 text-sm font-semibold text-taxpay-text">{tr('Account shortcuts','অ্যাকাউন্ট শর্টকাট')}</p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-        {shortcutItems.map(item=><button key={item.route} type="button" onClick={()=>item.route==='corrections'
-          ? (document.getElementById('dashboard-correction-requests')?.scrollIntoView({behavior:'smooth',block:'start'}),
-             document.getElementById('dashboard-correction-requests')?.focus({preventScroll:true}))
-          : onNavigate(item.route)}
-          className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-left text-sm font-medium text-taxpay-primary hover:bg-slate-50">
-          {item.label}
-        </button>)}
-      </div>
-    </nav>
     <section className="mt-5 border-t border-taxpay-border pt-4" aria-labelledby="account-payment-activity-title"
       data-testid="account-payment-activity" aria-busy={visibleScenario.phase==='loading'}>
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -288,6 +277,9 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
             <p className="mt-1 break-words text-xl font-semibold tabular-nums text-taxpay-text">{scenarioAmountLabel(scenarioAmount)}</p>
           </div>
         </div>}
+        <div className="mt-4">
+          <DashboardScenarioTrends transactions={yearTransactions} assessmentYear={selectedYear} language={language}/>
+        </div>
         {categoryRows.length>0&&<figure className="mt-4 rounded-xl border border-taxpay-border bg-white p-3" data-testid="account-payment-category-breakdown">
           <figcaption className="text-sm font-semibold text-taxpay-text">{tr('Scenario activity by payment category','পেমেন্ট খাত অনুযায়ী সিনারিও কার্যক্রম')}</figcaption>
           <div role="img" aria-label={tr('Category amounts for private scenario records','ব্যক্তিগত সিনারিও রেকর্ডের খাতভিত্তিক পরিমাণ')} className="mt-3 space-y-3">
@@ -339,5 +331,17 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         </ul>}
       </>}
     </section>
+    <nav className="mt-4" aria-label={tr('Account shortcuts','অ্যাকাউন্ট শর্টকাট')}>
+      <p className="mb-2 text-sm font-semibold text-taxpay-text">{tr('Account shortcuts','অ্যাকাউন্ট শর্টকাট')}</p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+        {shortcutItems.map(item=><button key={item.route} type="button" onClick={()=>item.route==='corrections'
+          ? (document.getElementById('dashboard-correction-requests')?.scrollIntoView({behavior:'smooth',block:'start'}),
+             document.getElementById('dashboard-correction-requests')?.focus({preventScroll:true}))
+          : onNavigate(item.route)}
+          className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-left text-sm font-medium text-taxpay-primary hover:bg-slate-50">
+          {item.label}
+        </button>)}
+      </div>
+    </nav>
   </section>;
 };
