@@ -10,6 +10,10 @@ test('bento analytics never display unverified tax-liability charts and separate
   const analytics=bento.getByTestId('dashboard-payment-analytics');
   await expect(analytics).toBeVisible();
   const sources=analytics.getByTestId('dashboard-chart-source');
+  // The available illustrated payment history must be visible by default.
+  // The account-backed view stays explicit, reversible and never combines sources.
+  await expect(sources.getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
+  await sources.getByRole('button',{name:'Recorded'}).click();
   await expect(sources.getByRole('button',{name:'Recorded'})).toHaveAttribute('aria-pressed','true');
   await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('No itemized recorded payments');
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
