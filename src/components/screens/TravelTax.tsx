@@ -74,6 +74,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const [bankSlipPending, setBankSlipPending] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [selectedAccountDraft, setSelectedAccountDraft] = useState<PaymentFormDraft | null>(null);
+  const [draftFooterTarget, setDraftFooterTarget] = useState<HTMLDivElement | null>(null);
   const [paymentNonce, setPaymentNonce] = useState(() => crypto.randomUUID());
 
 
@@ -692,9 +693,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     </button>
   ) : (
     <button type="button" className="travel-flow__primary"
+      aria-label={step === 0 ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান') : tr('Continue to review','পেমেন্ট পর্যালোচনায় যান')}
       disabled={step === 0 && !canContinueToTravel} onClick={continueStep}>
-      {step === 0 ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান')
-        : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}
+      <span className="travel-flow__action-long">{step === 0 ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান')
+        : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}</span>
+      <span className="travel-flow__action-short" aria-hidden="true">{tr('Continue', 'এগিয়ে যান')}</span>
       <ArrowRight size={17} aria-hidden="true"/>
     </button>
   );
@@ -735,7 +738,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
           {(authenticatedUser || previewAccount) && !createdReceipt &&
             <AccountPaymentDraftControls service="TRAVEL_TAX" language={language}
               snapshot={snapshotTravelDraft} restore={restoreTravelDraft}
-              selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft} />}
+              selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft}
+              guardOnly={step >= 2} actionTarget={embedded ? draftFooterTarget : undefined} />}
 
           {step === 0 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য')}>
             <PaymentFormSection number={1} title={tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য')} hideHeading={embedded}>
@@ -1007,6 +1011,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </dl>
           </details>}
           <PaymentJourneyFooter className="travel-flow__footer-actions"
+            leading={(authenticatedUser || previewAccount) && !createdReceipt && step < 2
+              ? <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />
+              : null}
             back={!createdReceipt && step > 0 && <button type="button" className="tax-service-choice__cancel"
               onClick={step === 0 ? onBackToService : () => stepTo((step-1) as 0 | 1 | 2 | 3)}>
               <ArrowLeft size={16} aria-hidden="true"/>{tr('Back','ফিরুন')}
