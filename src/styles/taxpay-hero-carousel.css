@@ -868,8 +868,10 @@
     min-height: 0;
     max-height: none;
     overflow: visible;
+    padding: 1.5rem;
     border: 0;
-    background: transparent;
+    border-radius: 1rem;
+    background: var(--citizen-surface);
   }
   .public-home-sections .public-benefits__heading {
     display: flex;
@@ -878,7 +880,7 @@
     justify-content: flex-start;
     flex-wrap: nowrap;
     gap: .15rem;
-    margin-bottom: .65rem;
+    margin-bottom: 1rem;
     padding: 0;
     border: 0;
   }
@@ -894,33 +896,37 @@
     font-weight: 400;
     line-height: 1.4;
   }
+  /* The proposed design uses one panel with six connected cells and
+     1px shared dividers, not six individual rounded cards. */
   .public-home-sections .public-benefits__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-rows: repeat(2, minmax(0, 1fr));
-    gap: .65rem .75rem;
+    gap: 1px;
+    padding: 1px;
+    background: var(--citizen-border);
   }
   .public-home-sections .public-benefits__item {
     grid-template-columns: 40px minmax(0, 1fr);
-    gap: .78rem;
-    min-height: 98px;
-    padding: .7rem .85rem;
-    border: 1px solid var(--citizen-border);
-    border-radius: .8rem;
+    gap: .85rem;
+    min-height: clamp(96px, 10.8dvh, 136px);
+    padding: 1rem 1.125rem;
+    border: 0;
+    border-radius: 0;
+    background: var(--citizen-surface);
   }
 }
-/* Tall desktop: retain the approved 3x2, icon-left cards and CMS banner.
-   The grid grows modestly with CSS viewport height while the shared flex
-   container distributes the remaining room as balanced vertical breathing space.
-   No fixed 328px cap, giant empty block, content cropping or new homepage UI. */
 @media (min-width: 981px) and (min-height: 960px) {
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 16px; }
-  .public-home-sections .public-benefits__grid { gap: .85rem 1rem; }
+  .public-home-sections .public-benefits__copy p { line-height: 1.5; }
+}
+/* Medium-height desktop: retain the connected panel, but avoid unnecessary
+   vertical scrolling. Tall screenshots keep the approved 24px / 136px rhythm. */
+@media (min-width: 981px) and (min-height: 821px) and (max-height: 959px) {
+  .public-home-sections .public-benefits { padding: 1rem; }
+  .public-home-sections .public-benefits__heading { margin-bottom: .75rem; }
   .public-home-sections .public-benefits__item {
-    min-height: clamp(108px, 10.8dvh, 174px);
-    padding: clamp(.9rem, 1.5dvh, 1.25rem) 1.05rem;
-  }
-  .public-home-sections .public-benefits__copy p {
-    line-height: 1.5;
+    min-height: 88px;
+    padding: .65rem .9rem;
   }
 }
 @media (min-width: 1280px) {
@@ -972,11 +978,11 @@
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 5px; }
   .public-home-sections .public-record-discovery { padding: .4rem .85rem .5rem; }
   .public-home-sections .public-record-discovery__heading { margin-bottom: .25rem; }
-  .public-home-sections .public-benefits__heading { margin-bottom: .35rem; }
-  .public-home-sections .public-benefits__grid { row-gap: .35rem; }
+  .public-home-sections .public-benefits { padding: 1rem; }
+  .public-home-sections .public-benefits__heading { margin-bottom: .5rem; }
   .public-home-sections .public-benefits__item {
     min-height: 84px;
-    padding: .45rem .7rem;
+    padding: .5rem .75rem;
   }
 }
 @media (min-width: 981px) and (max-width: 1120px) and (max-height: 820px) {
@@ -988,7 +994,7 @@
   .public-home-sections .public-benefits__item {
     grid-template-columns: 36px minmax(0, 1fr);
     gap: .6rem;
-    padding: .45rem .55rem;
+    padding: .5rem .65rem;
   }
   .public-home-sections .public-benefits__icon { width: 36px; height: 36px; }
 }
