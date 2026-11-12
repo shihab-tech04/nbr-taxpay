@@ -16,7 +16,7 @@ test('Overview keeps compact metrics, saved drafts, corrections and interactive 
   const charts=dashboard.getByTestId('dashboard-payment-analytics');
   await expect(charts.getByTestId('dashboard-service-breakdown')).toBeVisible();
   await expect(charts.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
-  await expect(charts.getByTestId('dashboard-chart-source').getByRole('button',{name:'Recorded'})).toHaveAttribute('aria-pressed','true');
+  await expect(charts.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
   await expect(dashboard.getByTestId('dashboard-monthly-payments')).toHaveCount(0);
   const [metricBox,caseBox]=await Promise.all([metrics.boundingBox(),cases.boundingBox()]);
   expect(metricBox&&caseBox).toBeTruthy();
@@ -84,4 +84,32 @@ test('Bangla chart headings and source tabs remain accessible and interactive',a
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'নমুনা'}).click();
   await expect(chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'নমুনা'})).toHaveAttribute('aria-pressed','true');
   await expect(page.getByTestId('taxpayer-overview-bento').locator('.taxpay-bento-summary').getByRole('button')).toHaveCount(3);
+});
+
+test('2025-2026 overview defaults to available example charts, never imaginary recorded allocations',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Dashboard screenshot source regression');
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto(demo);
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  const overview=page.getByTestId('taxpayer-overview-bento');
+  const analytics=overview.getByTestId('dashboard-payment-analytics');
+  const sources=analytics.getByTestId('dashboard-chart-source');
+  await expect(sources.getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
+  await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
+  await expect(analytics.getByTestId('dashboard-beneficiary-breakdown')).toContainText('113,500');
+  await expect(analytics).toContainText('Example payer spending for this year');
+  await expect(overview.getByRole('button',{name:/Completed Payments/}).first()).toContainText('8');
+  await sources.getByRole('button',{name:'Recorded'}).click();
+  await expect(sources.getByRole('button',{name:'Recorded'})).toHaveAttribute('aria-pressed','true');
+  await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('No itemized recorded payments');
+  await expect(analytics.getByTestId('dashboard-service-breakdown').locator('.taxpay-bento-analytics__total')).toHaveText('—');
+  await expect(analytics.getByTestId('dashboard-beneficiary-breakdown').locator('.taxpay-bento-analytics__total')).toHaveText('—');
+  await sources.getByRole('button',{name:'Examples'}).click();
+  await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-2025');
+  await expect(sources.getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
+  await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('90,000');
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2026-2027');
+  await expect(sources.getByRole('button',{name:'Recorded'})).toHaveAttribute('aria-pressed','true');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });

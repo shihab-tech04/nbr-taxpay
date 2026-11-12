@@ -36,37 +36,55 @@ export const BentoPaymentAnalytics:React.FC<{
 }>=({records,people,year,ownerTin,language,sourceLoadError,onOpenHistory})=>{
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
-  const [source,setSource]=useState<DashboardChartSource>('recorded');
+  // Use the selected year's available source by default. A year with no
+  // account-backed allocations must not show two misleading zero-value charts
+  // while the same Overview displays illustrative activity for that year.
+  // The manual source choice remains explicit and applies only to its year.
+  const [sourceChoice,setSourceChoice]=useState<{year:string;source:DashboardChartSource}|null>(null);
   const [service,setService]=useState<DashboardChartService|'all'>('all');
   const [tag,setTag]=useState<DashboardChartTag|null>(null);
-  const all=projectDashboardChartRecords(records,year,source,people,ownerTin);
+  const recorded=projectDashboardChartRecords(records,year,'recorded',people,ownerTin);
+  const examples=projectDashboardChartRecords(records,year,'example',people,ownerTin);
+  const defaultSource:DashboardChartSource=recorded.totalMinor>0n||recorded.omittedRecords>0
+    ? 'recorded' : examples.totalMinor>0n ? 'example' : 'recorded';
+  const source=sourceChoice?.year===year?sourceChoice.source:defaultSource;
+  const selectSource=(next:DashboardChartSource)=>{
+    setSourceChoice({year,source:next});setService('all');setTag(null);
+  };
+  const all=source==='recorded'?recorded:examples;
   const filtered=projectDashboardChartRecords(records,year,source,people,ownerTin,service);
   const money=(minor:bigint)=>formatDashboardChartMoney(minor,language);
   const hasData=all.totalMinor>0n;
   const selectedTag=tag===null?null:filtered.byTag.find(item=>item.key===tag);
   return <section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
-    data-testid="dashboard-payment-analytics">
+    data-testid="dashboard-payment-analytics" data-chart-source={source}>
     <div className="taxpay-bento-analytics__header">
       <div>
         <h2 id="dashboard-payment-analytics-title">{tr('Payment breakdown','পেমেন্টের বিস্তারিত')}</h2>
-        <p>{tr('Recorded payment allocations for the selected assessment year. Not official tax credits.',
-          'নির্বাচিত করবর্ষের সংরক্ষিত পেমেন্ট বরাদ্দ। সরকারি কর ক্রেডিট নয়।')}</p>
+        <p>{source==='recorded'
+          ? tr('Recorded payment allocations for the selected assessment year. Not official tax credits.',
+              'নির্বাচিত করবর্ষের সংরক্ষিত পেমেন্ট বরাদ্দ। সরকারি কর ক্রেডিট নয়।')
+          : tr('Example payer spending for this year. Withholding by others is excluded.',
+              'এই করবর্ষে উদাহরণভিত্তিক পরিশোধকারীর ব্যয়। অন্যদের উৎসে কাটা কর অন্তর্ভুক্ত নয়।')}</p>
       </div>
       <div className="taxpay-bento-analytics__sources" role="group"
         aria-label={tr('Payment data source','পেমেন্ট তথ্যের উৎস')} data-testid="dashboard-chart-source">
         <button type="button" aria-pressed={source==='recorded'}
-          onClick={()=>{setSource('recorded');setService('all');setTag(null);}}>
+          onClick={()=>selectSource('recorded')}>
           {tr('Recorded','সংরক্ষিত')}
         </button>
         <button type="button" aria-pressed={source==='example'}
-          onClick={()=>{setSource('example');setService('all');setTag(null);}}>
+          onClick={()=>selectSource('example')}>
           {tr('Examples','নমুনা')}
         </button>
       </div>
     </div>
-    {sourceLoadError&&source==='recorded'&&<p role="alert" className="taxpay-bento-analytics__warning">
-      {tr('Recorded payments could not be loaded. Do not use sample entries as account totals.',
-        'সংরক্ষিত পেমেন্ট লোড হয়নি। নমুনা এন্ট্রিকে অ্যাকাউন্টের মোট অর্থ মনে করবেন না।')}
+    {sourceLoadError&&<p role="alert" className="taxpay-bento-analytics__warning">
+      {source==='recorded'
+        ? tr('Recorded payments could not be loaded. Do not use sample entries as account totals.',
+            'সংরক্ষিত পেমেন্ট লোড হয়নি। নমুনা এন্ট্রিকে অ্যাকাউন্টের মোট অর্থ মনে করবেন না।')
+        : tr('Account records could not be loaded. Only separate example figures are shown.',
+            'অ্যাকাউন্টের রেকর্ড লোড হয়নি। শুধু পৃথক উদাহরণের পরিমাণ দেখানো হচ্ছে।')}
     </p>}
     <div className="taxpay-bento-analytics__cards">
       <section className="taxpay-bento-analytics__card" data-testid="dashboard-service-breakdown"
@@ -76,7 +94,7 @@ export const BentoPaymentAnalytics:React.FC<{
             <h3 id="dashboard-service-breakdown-title">{tr('By payment service','পেমেন্টের ধরন অনুযায়ী')}</h3>
             <p>{tr('Select a service to filter beneficiary spending','উপকারভোগীর ব্যয় ফিল্টার করতে ধরন বাছুন')}</p>
           </div>
-          <strong className="taxpay-bento-analytics__total tabular-nums">{money(all.totalMinor)}</strong>
+          <strong className="taxpay-bento-analytics__total tabular-nums">{hasData?money(all.totalMinor):'—'}</strong>
         </div>
         {hasData?<div className="taxpay-bento-analytics__bars" role="group"
           aria-label={tr('Select payment service','পেমেন্টের ধরন নির্বাচন')}>
@@ -117,7 +135,7 @@ export const BentoPaymentAnalytics:React.FC<{
             <h3 id="dashboard-beneficiary-breakdown-title">{tr('By beneficiary relationship','উপকারভোগীর সম্পর্ক অনুযায়ী')}</h3>
             <p>{service==='all'?tr('All payment services','সব ধরনের পেমেন্ট'):SERVICE_LABELS[service][language]}</p>
           </div>
-          <strong className="taxpay-bento-analytics__total tabular-nums">{money(filtered.totalMinor)}</strong>
+          <strong className="taxpay-bento-analytics__total tabular-nums">{filtered.totalMinor>0n?money(filtered.totalMinor):'—'}</strong>
         </div>
         {filtered.totalMinor>0n?<>
           <div className="taxpay-bento-analytics__segments" role="img"

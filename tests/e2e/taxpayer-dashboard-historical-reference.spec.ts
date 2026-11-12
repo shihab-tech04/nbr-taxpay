@@ -42,7 +42,7 @@ test('service filter is keyboard accessible and updates selected beneficiary tot
 test('year filtering cannot promote example liabilities to official credit',async({page})=>{
   await page.goto(dashboard);
   const analytics=page.getByTestId('dashboard-payment-analytics');
-  await expect(analytics.getByTestId('dashboard-chart-source').getByRole('button',{name:'Recorded'}))
+  await expect(analytics.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}))
     .toHaveAttribute('aria-pressed','true');
   await expect(page.getByRole('group',{name:'Coverage details'})).toHaveCount(0);
   await expect(page.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
