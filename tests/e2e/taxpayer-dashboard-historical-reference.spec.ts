@@ -32,7 +32,7 @@ test('320px year chart remains contained within the Overview without document ov
   await page.goto(dashboard);
   const chart=page.getByRole('group',{name:'Liability and posted credits by tax year'});
   await expect(chart).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'By payment service'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 
