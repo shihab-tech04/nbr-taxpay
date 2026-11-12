@@ -19,6 +19,7 @@ import {User1TaxpayerProfile} from './User1TaxpayerProfile';
 import {TaxpayerTinInformation} from './TaxpayerTinInformation';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
 import {activityPaymentBeneficiaries} from '../../services/activityPaymentBeneficiaries';
+import {activityPaymentPayer} from '../../services/activityPaymentPayer';
 import {PAYMENT_TAG_GROUPS,paymentTagGroupLabels,paymentTagGroupForTin,type PaymentTagGroup} from '../../services/beneficiaryPaymentTags';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {taxpayerGreeting} from '../../services/taxpayerGreeting';
@@ -135,16 +136,22 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const paymentTag=(item:RecordItem)=>paymentTagGroupForTin(item.beneficiaryTin,savedTagPeople);
   // Only link exact TINs saved under this payer's currently selected profile.
   const transactionBeneficiaries=(item:RecordItem)=>activityPaymentBeneficiaries(item,savedTagPeople,language);
+  // User1's own fictional income-tax rows explicitly know their payer.
+  // Other example events and SQL receipts never inherit that payer by assumption.
+  const transactionPayer=(item:RecordItem)=>activityPaymentPayer(item,
+    item.kind==='income'?{name:bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,
+      tin:DEMO_USERS.user1.tin}:null);
+  const payerName=(item:RecordItem)=>transactionPayer(item)?.name??tr('Not recorded','তথ্য নেই');
   const matchesTransactionTag=(item:RecordItem,group:PaymentTagGroup)=>{
     const recipients=transactionBeneficiaries(item);
     return recipients.length
       ?recipients.some(person=>paymentTagGroupForTin(person.tin,savedTagPeople)===group)
       :group==='unassigned';
   };
-  const transactionBeneficiaryCell=(item:RecordItem)=>{
+  const transactionBeneficiaryCell=(item:RecordItem,compact=false)=>{
     const recipients=transactionBeneficiaries(item);
-    return <div className="mt-2 space-y-1 border-t border-taxpay-border pt-2 text-sm"
-      data-testid="transaction-beneficiaries" aria-label={tr('Beneficiaries','উপকারভোগী')}>
+    return <div className={compact?'space-y-1 text-sm':'mt-2 space-y-1 border-t border-taxpay-border pt-2 text-sm'}
+      data-testid="transaction-beneficiaries" aria-label={tr('Paid for','যার কর পরিশোধ করা হয়েছে')}>
       {!recipients.length?<p className="text-xs text-taxpay-muted">{tr('No beneficiary linked','উপকারভোগীর তথ্য সংযুক্ত নেই')}</p>:
        recipients.map(person=><div key={person.tin} className="min-w-0 break-words">
          {person.saved&&previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1'
@@ -155,9 +162,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
            :<span className="font-medium text-taxpay-text">{person.name}</span>}
          <span className="ml-2 text-xs text-taxpay-muted">· {person.tag??tr('Tag not saved','ট্যাগ সংরক্ষিত নেই')}</span>
          <p className="break-all text-xs text-taxpay-muted">{person.tin}
-           {person.amountMinor!==null&&<span> · {tr('Allocated','বরাদ্দ')}: ৳ {(person.amountMinor/100).toLocaleString(bn?'bn-BD':'en-BD')}</span>}
+           {!compact&&person.amountMinor!==null&&<span> · {tr('Allocated','বরাদ্দ')}: ৳ {(person.amountMinor/100).toLocaleString(bn?'bn-BD':'en-BD')}</span>}
          </p>
-         {person.heads.length>0&&<p className="text-xs text-taxpay-muted">{person.heads.join(', ')}
+         {!compact&&person.heads.length>0&&<p className="text-xs text-taxpay-muted">{person.heads.join(', ')}
            {person.assessmentYears.length>0?' · '+person.assessmentYears.join(', '):''}</p>}
        </div>)}
     </div>;
@@ -295,7 +302,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     .sort((a,b)=>a.name.localeCompare(b.name));
   const filtered=historyScoped.filter(x=>{
     const people=transactionBeneficiaries(x);
-    const searchFields=[x.ref,x.title,x.challan||'',x.detail,x.typeLabel||'',...people.flatMap(p=>
+    const searchFields=[x.ref,x.title,x.challan||'',x.detail,x.typeLabel||'',payerName(x),...people.flatMap(p=>
       [p.name,p.tin,p.tag||'',...p.heads,...p.assessmentYears])];
     return (kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&
       (monthFilter==='all'||x.date.startsWith(monthFilter))&&
@@ -365,16 +372,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   }).format(new Date(date+'T00:00:00Z'));
   const csv=()=>{
     const clean=(v:string|number)=>{let s=String(v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
-    const lines=[['Record source','Reference','Assessment year','Kind','Amount ৳','Status','Event date','Challan sample','Beneficiaries','Beneficiary TINs','Beneficiary tags','Tax heads'],
+    const lines=[['Record source','Reference','Assessment year','Kind','Amount ৳','Status','Event date','Challan sample','Paid by','Paid for','Beneficiary TINs','Beneficiary tags','Tax heads'],
       ...filtered.map(x=>{
         const recipients=transactionBeneficiaries(x);
         return [x.sql?'SQL-RECORDED SIMULATION':'NOT GOVERNMENT DATA',x.ref,x.year,x.kind,x.amount,x.state,x.date,x.challan||'',
-          recipients.map(p=>p.name).join('; '),recipients.map(p=>p.tin).join('; '),
+          payerName(x),recipients.map(p=>p.name).join('; '),recipients.map(p=>p.tin).join('; '),
           recipients.map(p=>p.tag||tr('Not saved','সংরক্ষিত নেই')).join('; '),
           recipients.flatMap(p=>p.heads).join('; ')];
       })].map(x=>x.map(clean).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF'+lines],{type:'text/csv;charset=utf-8'}));
-    const a=document.createElement('a');a.href=url;a.download='Korbritto_user1_SYNTHETIC_'+year+'.csv';a.click();URL.revokeObjectURL(url);
+    const a=document.createElement('a');a.href=url;a.download='Sohojkor_user1_SYNTHETIC_'+year+'.csv';a.click();URL.revokeObjectURL(url);
   };
   const years=<label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
     <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={year} onChange={e=>changeYear(e.target.value)}>{(route==='history'?availableYears:taxYears.map(x=>x.year)).map(value=>
@@ -449,8 +456,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             <p className="taxpayer-transaction-reference">{item.ref}</p>
             <p>{tr(...labels[item.kind])} · <time dateTime={item.date}>{formatDate(item.date)}</time></p>
           </div>
-          {transactionBeneficiaryCell(item)}
         </div>},
+        {key:'paid-by',header:tr('Paid by','পরিশোধকারী'),renderCell:item=>
+          <p className="taxpayer-transaction-identity">{payerName(item)}</p>},
+        {key:'paid-for',header:tr('Paid for','যার জন্য পরিশোধ'),renderCell:item=>
+          <div className="taxpayer-transaction-identity">{transactionBeneficiaryCell(item,true)}</div>},
         {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:item=>
           <span className="taxpayer-transaction-reference">{item.ref}</span>},
         {key:'type',header:tr('Payment type','পেমেন্টের ধরন'),renderCell:item=>
@@ -471,7 +481,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         </div>
         <p className="taxpayer-transaction-reference">{item.ref}</p>
         <p className="taxpayer-transaction-mobile-record__meta">{item.typeLabel??tr(...labels[item.kind])} · <time dateTime={item.date}>{formatDate(item.date)}</time></p>
-        {transactionBeneficiaryCell(item)}
+        <p className="taxpayer-transaction-mobile-record__meta"><strong>{tr('Paid by','পরিশোধকারী')}:</strong> {payerName(item)}</p>
+        <div className="taxpayer-transaction-mobile-record__meta">
+          <strong>{tr('Paid for','যার জন্য পরিশোধ')}:</strong>
+          {transactionBeneficiaryCell(item)}
+        </div>
         <div className="taxpayer-transaction-mobile-record__footer">
           <div className="taxpayer-transaction-row__status">{tag(item.state)}</div>
           {rowActions(item)}

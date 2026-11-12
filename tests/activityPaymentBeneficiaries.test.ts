@@ -66,6 +66,7 @@ test('fallback legacy single-recipient receipt has no invented head allocations 
   assert.equal(rows.length,1);
   assert.equal(rows[0].tin,'909000000013');
   assert.equal(rows[0].amountMinor,null);
+  assert.equal(rows[0].name,'909000000013','never show the payer name as a beneficiary');
   assert.deepEqual(rows[0].heads,[]);
 });
 
