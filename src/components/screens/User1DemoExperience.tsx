@@ -818,7 +818,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           <p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Unable to reconcile category totals. Please refresh.','শ্রেণির মোট অর্থ মিলছে না। অনুগ্রহ করে রিফ্রেশ করুন।')}</p>}
         {(needsTagAmount>0||missingSavedAmount>0||noLinkedAmount>0)&&
           <div className="taxpay-tag-spending__notice" data-testid="dashboard-tag-review">
-          <p>{tr('Example payments have missing beneficiary links or tags. Review saved people; payments without a beneficiary TIN cannot be assigned automatically.','উদাহরণভিত্তিক পেমেন্টে কিছু উপকারভোগীর সংযোগ বা ট্যাগ নেই। সংরক্ষিত ব্যক্তিদের পর্যালোচনা করুন; টিআইএন ছাড়া স্বয়ংক্রিয়ভাবে সম্পর্ক নির্ধারণ করা যায় না।')}</p>
+          <p>{needsTagAmount>0
+            ?tr('Some saved beneficiaries need a tag before their payments can be classified.','কিছু সংরক্ষিত উপকারভোগীর ট্যাগ প্রয়োজন, তারপর তাদের পেমেন্ট শ্রেণিবদ্ধ হবে।')
+            :tr('Example payments have missing beneficiary links. Review saved people; payments without a beneficiary TIN cannot be assigned automatically.','উদাহরণভিত্তিক পেমেন্টে কিছু উপকারভোগীর সংযোগ নেই। সংরক্ষিত ব্যক্তিদের পর্যালোচনা করুন; টিআইএন ছাড়া স্বয়ংক্রিয়ভাবে সম্পর্ক নির্ধারণ করা যায় না।')}</p>
           <button type="button" className="taxpay-tag-spending__review"
             onClick={()=>navigate('beneficiaries',reviewTins.length?{reviewBeneficiaryTins:reviewTins}:{})}>
             {tr('Review beneficiary tags','উপকারভোগীর ট্যাগ পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/>
