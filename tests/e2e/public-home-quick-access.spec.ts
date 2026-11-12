@@ -58,6 +58,46 @@ test('public homepage explains six citizen benefits without duplicate CTAs', asy
   }
 });
 
+test('desktop benefits are one coherent surface with a horizontal record lookup', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/?action=landing&lang=en');
+  await page.evaluate(async () => { await document.fonts.ready; });
+
+  const layout = await page.evaluate(() => {
+    const panel = document.querySelector('.public-benefits')!;
+    const cards = [...document.querySelectorAll('.public-benefits__item')];
+    const grid = document.querySelector('.public-benefits__grid')!;
+    const heading = document.querySelector('.public-record-discovery__heading')!;
+    const input = document.querySelector('.public-record-search')!;
+    const footer = document.querySelector('.public-footer')!;
+    const icons = [...document.querySelectorAll('.public-benefits__icon')];
+    const cardStyle = getComputedStyle(cards[0]);
+    return {
+      panelBorder: getComputedStyle(panel).borderTopWidth,
+      panelBackground: getComputedStyle(panel).backgroundColor,
+      cardRadius: cardStyle.borderTopLeftRadius,
+      cardLeftBorder: cardStyle.borderLeftWidth,
+      columnGap: getComputedStyle(grid).columnGap,
+      searchHeadingRight: heading.getBoundingClientRect().right,
+      searchFieldLeft: input.getBoundingClientRect().left,
+      rowHeight: cards[0].getBoundingClientRect().height,
+      iconColors: icons.map(icon => getComputedStyle(icon).color),
+      footerGap: footer.getBoundingClientRect().top - panel.getBoundingClientRect().bottom,
+      scrollOverflow: document.documentElement.scrollHeight - window.innerHeight,
+    };
+  });
+  expect(layout.panelBorder).toBe('1px');
+  expect(layout.panelBackground).not.toBe('rgba(0, 0, 0, 0)');
+  expect(layout.cardRadius).toBe('0px');
+  expect(layout.cardLeftBorder).toBe('0px');
+  expect(layout.columnGap).toBe('0px');
+  expect(layout.searchFieldLeft).toBeGreaterThan(layout.searchHeadingRight + 8);
+  expect(layout.rowHeight).toBeGreaterThanOrEqual(105);
+  expect(new Set(layout.iconColors).size).toBe(1);
+  expect(layout.footerGap).toBeLessThanOrEqual(75);
+  expect(layout.scrollOverflow).toBeLessThanOrEqual(2);
+});
+
 test('existing hero Pay Tax and Travel Tax actions still open separate journeys', async ({ page }) => {
   await page.goto('/?action=landing&lang=en');
 
