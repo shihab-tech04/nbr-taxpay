@@ -151,3 +151,19 @@
 @media(prefers-reduced-motion:reduce){
   .taxpay-bento-analytics__bar-track>span{transition:none}
 }
+
+/* Explain unclassified allocations without inventing relationships or
+   adding a new card/visual hierarchy to the approved dashboard. */
+.taxpay-bento-analytics__unclassified-details{
+  display:grid;gap:8px;min-width:0;padding-top:10px;
+  border-top:1px solid var(--color-taxpay-border,#dbe4f0);
+  color:var(--color-taxpay-text,#17243c);font-size:14px;line-height:1.5;
+}
+.taxpay-bento-analytics__unclassified-details>p{font-weight:600}
+.taxpay-bento-analytics__unclassified-details dl{display:grid;gap:8px}
+.taxpay-bento-analytics__unclassified-details dl>div{
+  display:flex;flex-wrap:wrap;align-items:baseline;
+  justify-content:space-between;gap:4px 12px;
+}
+.taxpay-bento-analytics__unclassified-details dt{color:var(--color-taxpay-muted,#64748b)}
+.taxpay-bento-analytics__unclassified-details dd{font-weight:600;white-space:nowrap}
