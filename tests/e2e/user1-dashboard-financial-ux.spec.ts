@@ -101,7 +101,7 @@ test('overview summary, corrections and recent activity use full readable grid t
     await page.setViewportSize({width,height:900});
     await page.goto(dashboard);
     const grid=page.getByTestId('taxpayer-overview-bento');
-    const summary=grid.locator(':scope > .taxpay-bento-request-row > .taxpay-bento-summary');
+    const summary=grid.locator(':scope > .taxpay-bento-request-row > .taxpay-bento-summary-column > .taxpay-bento-summary');
     const corrections=grid.locator(':scope > .taxpay-bento-request-row > .taxpay-bento-corrections');
     const recent=grid.locator(':scope > .taxpay-bento-recent');
     const drafts=grid.locator(':scope > .taxpay-bento-drafts');
