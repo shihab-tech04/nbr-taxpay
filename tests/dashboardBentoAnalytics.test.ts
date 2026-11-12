@@ -25,8 +25,8 @@ const owner='111111111111';
 const family='222222222222';
 const friend='333333333333';
 const people=[
-  {tin:family,tag:'friends_family' as const,relationship:'father'},
-  {tin:friend,tag:'friends_family' as const,relationship:'friends'}
+  {tin:family,tag:'friends_family' as const,relationship:'father' as const},
+  {tin:friend,tag:'friends_family' as const,relationship:'friends' as const}
 ];
 
 test('combined payments reconcile by recipient and assessment year, not entire batch total',()=>{
