@@ -307,7 +307,7 @@ test('benefits bento appears at the actual 1310px desktop screenshot size in EN 
   await page.setViewportSize({width:1310,height:768});
   await page.goto('/?action=landing&lang=en');
   const compact = await page.locator('.public-benefits__grid').evaluate(el =>
-    getComputedStyle(el).gridTemplateColumns.trim().split(/\\s+/).length
+    getComputedStyle(el).gridTemplateColumns.trim().split(' ').filter(Boolean).length
   );
   expect(compact).toBe(3);
   await expect(page.locator('.public-benefits__highlights').first()).toBeHidden();
