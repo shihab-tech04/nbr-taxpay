@@ -12,6 +12,7 @@ import { ReceiptView } from '../common/ReceiptView';
 import {useTaxState} from '../../services/taxState';
 import {usePaymentAccountProfile} from '../../services/paymentAccountProfile';
 import {reuseRecordedPayment} from '../../services/paymentReuse';
+import {paymentDateInRange} from '../../services/paymentDateFilter';
 
 /** History of SQL-recorded payments initiated by this signed-in payer.
  * Each beneficiary allocation keeps its own TIN, assessment year, head and
@@ -31,6 +32,8 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
   const [beneficiaryFilter,setBeneficiaryFilter]=useState('all');
   const [yearFilter,setYearFilter]=useState('all');
   const [headFilter,setHeadFilter]=useState('all');
+  const [dateFrom,setDateFrom]=useState('');
+  const [dateTo,setDateTo]=useState('');
   const [tags,setTags]=useState<{owner:string|null;status:'loading'|'ready'|'error';people:Beneficiary[]}>({owner:null,status:'loading',people:[]});
   const [selected,setSelected]=useState<BeneficiaryPaymentEntry|null>(null);
   const bn=language==='bn';
@@ -84,9 +87,11 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
   const years=[...new Set(rows.map(row=>row.assessmentYear))].sort().reverse();
   const heads=[...new Set(rows.map(row=>row.paymentHead))].sort();
   const recipientTins=[...new Set(rows.map(row=>row.taxpayerTin).filter(Boolean))];
+  const invalidDateRange=Boolean(dateFrom&&dateTo&&dateFrom>dateTo);
   const filtered=useMemo(()=>{
     const q=search.trim().toLocaleLowerCase();
-    return rows.filter(row=>(tagFilter==='all'||(visibleTags.status==='ready'&&
+    return rows.filter(row=>!invalidDateRange&&paymentDateInRange(row.receipt.createdAt,dateFrom,dateTo)&&
+      (tagFilter==='all'||(visibleTags.status==='ready'&&
       paymentTagGroupForTin(row.taxpayerTin,visibleTags.people)===tagFilter))&&
       (beneficiaryFilter==='all'||row.taxpayerTin===beneficiaryFilter)&&
       (yearFilter==='all'||row.assessmentYear===yearFilter)&&
@@ -97,7 +102,7 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
           .flatMap(person=>[person.display_name,
             beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)||'']):[])
       ].some(value=>value.toLocaleLowerCase().includes(q))));
-  },[rows,search,tagFilter,visibleTags,beneficiaryFilter,yearFilter,headFilter,language]);
+  },[rows,search,tagFilter,visibleTags,beneficiaryFilter,yearFilter,headFilter,language,dateFrom,dateTo,invalidDateRange]);
   return <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" data-testid="beneficiary-payment-history"
     aria-label={tr('Individual beneficiary payment history','প্রতিটি উপকারভোগীর পেমেন্টের ইতিহাস')}>
     <TaxPayOfficeRegisterToolbar title={tr('Beneficiary payment history','উপকারভোগীর পেমেন্ট ইতিহাস')}
@@ -144,15 +149,33 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
           {heads.map(head=><option key={head} value={head}>{head}</option>)}
         </select>
       </label>
+      <label className="taxpayer-transaction-filter">
+        <span>{tr('From date','শুরুর তারিখ')}</span>
+        <input type="date" value={dateFrom} max={dateTo||undefined}
+          aria-label={tr('Filter payments from date','শুরুর তারিখ থেকে পেমেন্ট ফিল্টার করুন')}
+          onChange={event=>setDateFrom(event.target.value)}
+          className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"/>
+      </label>
+      <label className="taxpayer-transaction-filter">
+        <span>{tr('To date','শেষ তারিখ')}</span>
+        <input type="date" value={dateTo} min={dateFrom||undefined}
+          aria-label={tr('Filter payments to date','শেষ তারিখ পর্যন্ত পেমেন্ট ফিল্টার করুন')}
+          onChange={event=>setDateTo(event.target.value)}
+          className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"/>
+      </label>
     </TaxPayOfficeRegisterFilters>
+    {invalidDateRange&&<p className="mt-2 text-sm text-taxpay-error" role="alert">
+      {tr('From date must be on or before the to date.','শুরুর তারিখ শেষ তারিখের পরে হতে পারবে না।')}
+    </p>}
     <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
-      onClear={()=>{setSearch('');setTagFilter('all');setBeneficiaryFilter('all');setYearFilter('all');setHeadFilter('all');}}
+      onClear={()=>{setSearch('');setTagFilter('all');setBeneficiaryFilter('all');setYearFilter('all');setHeadFilter('all');setDateFrom('');setDateTo('');}}
       filters={[
         ...(search.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+search.trim(),onRemove:()=>setSearch('')}]:[]),
         ...(tagFilter!=='all'?[{key:'tag',label:paymentTagGroupLabels[tagFilter][language],onRemove:()=>setTagFilter('all')}]:[]),
         ...(beneficiaryFilter!=='all'?[{key:'beneficiary',label:beneficiaryFilter,onRemove:()=>setBeneficiaryFilter('all')}]:[]),
         ...(yearFilter!=='all'?[{key:'year',label:yearFilter,onRemove:()=>setYearFilter('all')}]:[]),
-        ...(headFilter!=='all'?[{key:'head',label:headFilter,onRemove:()=>setHeadFilter('all')}]:[])
+        ...(headFilter!=='all'?[{key:'head',label:headFilter,onRemove:()=>setHeadFilter('all')}]:[]),
+        ...(dateFrom||dateTo?[{key:'date',label:tr('Date: ','তারিখ: ')+(dateFrom||'…')+' – '+(dateTo||'…'),onRemove:()=>{setDateFrom('');setDateTo('');}}]:[])
       ]}/>
     {visibleTags.status==='error'&&<p className="mt-2 text-sm text-taxpay-error" role="alert">{tr('Saved tags unavailable; categories were not guessed.','সংরক্ষিত ট্যাগ পাওয়া যায়নি; শ্রেণি অনুমান করা হয়নি।')}</p>}
     {reuseError&&<p className="mt-3 text-sm text-taxpay-error" role="alert">{reuseError}</p>}

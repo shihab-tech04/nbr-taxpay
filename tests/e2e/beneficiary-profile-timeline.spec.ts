@@ -58,6 +58,15 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   await expect(timeline).toBeVisible();
   await expect(timeline).toHaveCSS('border-left-width','2px');
   await expect(timeline.locator('time')).toHaveCount(2);
+  const dateFrom=profile.getByLabel('Filter history from date');
+  const dateTo=profile.getByLabel('Filter history to date');
+  await dateFrom.fill('2026-11-09');
+  await dateTo.fill('2026-11-09');
+  await expect(timeline.locator('li')).toHaveCount(2);
+  await dateFrom.fill('2026-11-10');
+  await expect(profile.getByText('No payments match these filters.')).toBeVisible();
+  await profile.getByRole('button',{name:'Clear filters'}).click();
+  await expect(timeline.locator('li')).toHaveCount(2);
   await profile.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
   await expect(profile.locator('ol li').getByText('Advance tax',{exact:true})).toHaveCount(0);
   await expect(profile.locator('ol li').getByText('Other tax payment',{exact:true})).toBeVisible();
