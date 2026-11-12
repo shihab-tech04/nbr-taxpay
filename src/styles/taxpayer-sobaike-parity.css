@@ -553,15 +553,19 @@
     width:100%;
     min-height:64px;
     padding:0 8px max(0px,env(safe-area-inset-bottom));
-    grid-template-columns:repeat(3,minmax(0,1fr));
+    grid-template-columns:repeat(3,minmax(0,1fr)) 120px;
     border:0;
     border-top:1px solid var(--color-taxpay-border);
     border-radius:0;
     background:var(--color-taxpay-surface);
     box-shadow:none;
   }
+  /* Keep all three approved navigation items. Their existing fourth spacer
+     places the separate fixed Pay button beside them, not over their labels. */
   .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-bottom-nav__pay-space {
-    display:none;
+    display:block;
+    min-height:52px;
+    pointer-events:none;
   }
   .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-bottom-nav__item {
     min-height:52px;
@@ -577,13 +581,22 @@
     font-weight:700;
   }
   .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-pay--guest-floating {
-    bottom:calc(80px + env(safe-area-inset-bottom));
+    right:calc(8px + env(safe-area-inset-right));
+    bottom:calc(7px + env(safe-area-inset-bottom));
+    width:116px;
+    min-width:116px;
+    height:50px;
+    min-height:50px;
+    gap:4px;
+    padding:0 6px;
+    border-radius:14px;
   }
-  /* Keep Pay and the fixed bottom dock clear with a STABLE footer size.
-     The reserved area is page-colored, never an empty white footer extension.
-     Do not resize the footer on header-collapse: it destabilizes scroll anchoring. */
+  /* A single 76px dock clearance replaces the previous 148px empty band.
+     The footer row ends above the 64px dock, while the fixed Pay remains
+     independently actionable in the dock's reserved right-hand slot.
+     A constant clearance prevents scroll-anchor jumps on header collapse. */
   .taxpay-citizen-shell.taxpay-public-mobile-shell .public-footer {
-    padding-bottom:calc(148px + env(safe-area-inset-bottom)) !important;
+    padding-bottom:calc(76px + env(safe-area-inset-bottom)) !important;
     background:var(--color-taxpay-background);
     border-top:0;
   }
