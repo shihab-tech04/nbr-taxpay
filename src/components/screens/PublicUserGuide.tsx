@@ -6,6 +6,7 @@ import '../../styles/public-guide-actions.css';
 import { GUIDE_CONTENT, type Category, type Pair } from '../../data/publicGuideContent';
 export { GUIDE_CONTENT } from '../../data/publicGuideContent';
 type Device = 'web'|'mobile';
+type GuideAction={id:string;label:Pair;run?:()=>void;href?:string};
 
 export const PublicUserGuide:React.FC=()=>{
  const {language,routeParams,navigate,openPaymentServiceChoice}=useTaxState();
@@ -43,19 +44,26 @@ export const PublicUserGuide:React.FC=()=>{
  }).filter(item=>item.steps.length||item.faqs.length):[];
  const resultCount=results.reduce((count,item)=>count+item.steps.length+item.faqs.length,0);
  const labels=bn?['ওয়েব','মোবাইল']:['Web','Mobile'];
- const actionsFor=(category:Category)=>{
-  if(category==='travel') return [{id:'travel',label:['Pay Travel Tax','ভ্রমণ কর পরিশোধ করুন'] as Pair,run:()=>openPaymentServiceChoice('TRAVEL_TAX')}];
-  if(category==='status'||category==='records') return [{id:'records',label:['Find a payment record','পেমেন্ট রেকর্ড খুঁজুন'] as Pair,run:()=>navigate('verify')}];
-  if(category==='withholding') return [{id:'withholding',label:['Start source tax deposit','উৎসে কর জমা শুরু করুন'] as Pair,run:()=>openPaymentServiceChoice('SOURCE_TAX_DEPOSIT')}];
-  if(category==='security') return [{id:'support',label:['Report a payment issue','পেমেন্টের সমস্যা জানান'] as Pair,run:()=>navigate('incident')}];
+ const actionsFor=(category:Category):GuideAction[]=>{
+  if(category==='travel') return [{id:'travel',label:['Pay Travel Tax','ভ্রমণ কর পরিশোধ করুন'],run:()=>openPaymentServiceChoice('TRAVEL_TAX')}];
+  if(category==='status'||category==='records') return [{id:'records',label:['Find a payment record','পেমেন্ট রেকর্ড খুঁজুন'],run:()=>navigate('verify')}];
+  if(category==='withholding') return [{id:'withholding',label:['Start source tax deposit','উৎসে কর জমা শুরু করুন'],run:()=>openPaymentServiceChoice('SOURCE_TAX_DEPOSIT')}];
+  if(category==='security') return [
+   {id:'support',label:['Report a payment issue','পেমেন্টের সমস্যা জানান'],run:()=>navigate('incident')},
+   {id:'nbr-support',label:['NBR e-Return support','এনবিআর ই-রিটার্ন সহায়তা'],href:bn?'https://nbr.gov.bd/all-faq/ban':'https://nbr.gov.bd/all-faq/eng'}
+  ];
   const actions=[{id:'payment',label:['Open payment services','পরিশোধ সেবাসমূহ খুলুন'] as Pair,run:()=>openPaymentServiceChoice()}];
   if(category==='payments') actions.push({id:'travel',label:['Pay Travel Tax','ভ্রমণ কর পরিশোধ করুন'] as Pair,run:()=>openPaymentServiceChoice('TRAVEL_TAX')});
   return actions;
  };
  const actionLinks=(category:Category)=><div className="public-guide-actions" role="group" aria-label={bn?'সম্পর্কিত সেবা':'Related services'}>
-  {actionsFor(category).map((action,index)=><button key={action.id} type="button" className={index===0?'public-guide-action-primary':'public-guide-action-link'} onClick={action.run}>
-   {t(action.label)}<ArrowRight size={16} aria-hidden="true"/>
-  </button>)}
+  {actionsFor(category).map((action,index)=>action.href
+   ?<a key={action.id} href={action.href} target="_blank" rel="noopener noreferrer" className={index===0?'public-guide-action-primary':'public-guide-action-link'}>
+     {t(action.label)}<ExternalLink size={16} aria-hidden="true"/>
+    </a>
+   :<button key={action.id} type="button" className={index===0?'public-guide-action-primary':'public-guide-action-link'} onClick={action.run}>
+     {t(action.label)}<ArrowRight size={16} aria-hidden="true"/>
+    </button>)}
  </div>;
  const officialSource=<aside className="public-guide-source" aria-label={bn?'সরকারি তথ্যের উৎস':'Official information'}>
    <div className="public-guide-source-copy">

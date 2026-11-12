@@ -76,6 +76,11 @@ test('public guide links open the existing payment and receipt journeys',async({
  await page.locator('.public-guide-actions').getByRole('button',{name:'Find a payment record'}).click();
  await expect(page).toHaveURL(/action=verify/);
  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toBeVisible();
+
+ await page.goto('/?action=user_guide&category=security');
+ await expect(page.getByRole('link',{name:'NBR e-Return support'})).toHaveAttribute('href','https://nbr.gov.bd/all-faq/eng');
+ await setWorkspaceLanguage(page,'bn');
+ await expect(page.getByRole('link',{name:'এনবিআর ই-রিটার্ন সহায়তা'})).toHaveAttribute('href','https://nbr.gov.bd/all-faq/ban');
 });
 
 test('Help Center typography and interactions remain usable at each viewport', async ({ page }) => {
