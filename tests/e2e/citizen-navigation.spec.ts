@@ -90,7 +90,7 @@ test('public information header and sections fit all requested widths',async({pa
   await page.goto('/?action=landing');
   if(width<=900) {
     await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeVisible();
-    await expect(page.getByRole('button',{name:'Korbritto home'})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Sohojkor home'})).toBeVisible();
     await expect(page.locator('.public-home-header')).toBeHidden();
   } else {
     await expect(page.locator('.public-home-header')).toBeVisible();
@@ -155,7 +155,7 @@ test('public guide remains reachable through the active desktop or mobile naviga
  } else {
    await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'}).click();
  }
- await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
 });
 
@@ -164,7 +164,7 @@ test('leaving an active payment through the logo confirms before discarding ente
   await page.getByRole('radio', { name: 'My tax liability' }).check();
   await page.getByLabel('Taxpayer TIN').fill('123456789012');
   const prompt = page.waitForEvent('dialog');
-  const clickHome = page.getByRole('button', { name: 'Korbritto home' }).click();
+  const clickHome = page.getByRole('button', { name: 'Sohojkor home' }).click();
   const dialog = await prompt;
   expect(dialog.type()).toBe('confirm');
   expect(dialog.message()).toContain('information entered so far will be lost');
@@ -174,7 +174,7 @@ test('leaving an active payment through the logo confirms before discarding ente
   await expect(page.getByLabel('Taxpayer TIN')).toHaveValue('123456789012');
 
   const confirmExit = page.waitForEvent('dialog');
-  const clickHomeAgain = page.getByRole('button', { name: 'Korbritto home' }).click();
+  const clickHomeAgain = page.getByRole('button', { name: 'Sohojkor home' }).click();
   await (await confirmExit).accept();
   await clickHomeAgain;
   await expect(page.locator('#public-home-title')).toBeVisible();
@@ -243,7 +243,7 @@ test('public header centers icons at 1100px content width and routes to User Gui
  expect(bounds!.width).toBeGreaterThanOrEqual(1099);
  expect(bounds!.width).toBeLessThanOrEqual(1101);
  await faq.click();
- await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
  await expect(faq).toHaveAttribute('aria-current','page');
  await expect(home).not.toHaveAttribute('aria-current','page');
  await report.click();
@@ -259,7 +259,7 @@ test('public mobile menu opens guide and report in EN/BN without exposing privat
  const sheet=page.getByRole('dialog',{name:'Services & menu'});
  await expect(sheet.getByRole('button',{name:'Sign in'})).toBeVisible();
  await sheet.getByRole('button',{name:'Help'}).click();
- await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
  await page.getByRole('button',{name:'Open menu'}).click();
  const next=page.getByRole('dialog',{name:'Services & menu'});
  await next.getByRole('button',{name:'বাংলা'}).click();
