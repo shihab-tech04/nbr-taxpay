@@ -702,12 +702,20 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         </div>
         {displayedSpendingTotal!==taggedPaymentTotal&&
           <p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Unable to reconcile category totals. Please refresh.','শ্রেণির মোট অর্থ মিলছে না। অনুগ্রহ করে রিফ্রেশ করুন।')}</p>}
-        {needsTagAmount>0&&<div className="taxpay-tag-spending__notice" data-testid="dashboard-tag-review">
-          <p>{tr('Some saved beneficiaries need a tag before their payments can be classified.','কিছু সংরক্ষিত উপকারভোগীর ট্যাগ প্রয়োজন, তারপর তাদের পেমেন্ট শ্রেণিবদ্ধ হবে।')}</p>
-          {reviewTins.length>0&&<button type="button" className="taxpay-tag-spending__review"
-            onClick={()=>navigate('beneficiaries',{reviewBeneficiaryTins:reviewTins})}>
-            {tr('Review beneficiary tags','উপকারভোগীর ট্যাগ পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/>
-          </button>}
+        {(needsTagAmount>0||missingSavedAmount>0||noLinkedAmount>0)&&<div className="taxpay-tag-spending__notice" data-testid="dashboard-tag-review">
+          <p>{needsTagAmount>0
+            ?tr('Some saved beneficiaries need a tag before their payments can be classified.','কিছু সংরক্ষিত উপকারভোগীর ট্যাগ প্রয়োজন, তারপর তাদের পেমেন্ট শ্রেণিবদ্ধ হবে।')
+            :tr('Some payments have no saved beneficiary or beneficiary link. Review the original payment records before adding or assigning a beneficiary.','কিছু পেমেন্টে সংরক্ষিত উপকারভোগী বা উপকারভোগীর সংযোগ নেই। নতুন উপকারভোগী যোগ বা বরাদ্দ করার আগে মূল পেমেন্ট রেকর্ড দেখুন।')}</p>
+          <div className="flex flex-wrap gap-2">
+            {reviewTins.length>0&&<button type="button" className="taxpay-tag-spending__review"
+              onClick={()=>navigate('beneficiaries',{reviewBeneficiaryTins:reviewTins})}>
+              {tr('Review beneficiary tags','উপকারভোগীর ট্যাগ পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/>
+            </button>}
+            {(missingSavedAmount>0||noLinkedAmount>0)&&<button type="button" className="taxpay-tag-spending__review"
+              onClick={()=>navigate('history')}>
+              {tr('Review payment records','পেমেন্টের রেকর্ড পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/>
+            </button>}
+          </div>
         </div>}
       </div>}
     </section>
@@ -739,6 +747,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           </div>
         </li>)}
       </ul>
+      {!historyScoped.some(item=>item.state==='POSTED')&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('No completed payment activity for the selected assessment year.','নির্বাচিত করবর্ষে সম্পন্ন পেমেন্ট নেই।')}</p>}
+      {sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-recorded payments could not be loaded. Sample activity remains visible.','অ্যাকাউন্টে সংরক্ষিত পেমেন্ট লোড হয়নি। নমুনা কার্যক্রম দেখা যাচ্ছে।')}</p>}
     </section>
     </div>
   </div>;
