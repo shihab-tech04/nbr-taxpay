@@ -240,10 +240,9 @@ test('public header centers icons within the approved width and routes to User G
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  const bounds=await page.locator('.public-information-hub').boundingBox();
  expect(bounds).not.toBeNull();
- // The public homepage now uses a wider service canvas, while the Guide
- // and Report keep their narrower reading measure.
- expect(bounds!.width).toBeGreaterThanOrEqual(1200);
- expect(bounds!.width).toBeLessThanOrEqual(1280);
+ // Home, Guide and Report share the original 1100px public content width.
+ expect(bounds!.width).toBeGreaterThanOrEqual(1099);
+ expect(bounds!.width).toBeLessThanOrEqual(1101);
  await faq.click();
  await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
  await expect(faq).toHaveAttribute('aria-current','page');
