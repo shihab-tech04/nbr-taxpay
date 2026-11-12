@@ -22,7 +22,7 @@ test('profile-scoped tags reconcile dashboard family/friends/clients and filter 
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
   await page.goto('/?action=taxpayer_login');
-  const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
   await login.getByLabel('Password',{exact:true}).fill('user1');
   await login.getByRole('button',{name:'Sign In'}).click();
@@ -76,7 +76,7 @@ test('unclassified saved beneficiary payments remain unassigned with an actionab
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
   await page.goto('/?action=taxpayer_login');
-  const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
   await login.getByLabel('Password',{exact:true}).fill('user1');
   await login.getByRole('button',{name:'Sign In'}).click();
