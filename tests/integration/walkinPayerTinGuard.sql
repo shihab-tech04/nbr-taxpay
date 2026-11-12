@@ -103,4 +103,63 @@ BEGIN
   RAISE NOTICE 'PASS: verified and blank guest payer cases, preview-session separation, forged-ID/TIN/name rejection and authenticated-only claim grant';
 END $walkin_guard_acceptance$;
 
+-- Verify the real owner-claim RPC under two distinct synthetic authenticated users.
+-- All Auth, binding, payment, outbox and ownership rows disappear on ROLLBACK.
+INSERT INTO auth.users(id,instance_id,aud,role,email,email_confirmed_at,created_at,updated_at)
+VALUES
+ ('84000000-0000-4000-8000-000000000001','00000000-0000-0000-0000-000000000000',
+  'authenticated','authenticated','walkin-verified-owner@example.invalid',now(),now(),now()),
+ ('84000000-0000-4000-8000-000000000002','00000000-0000-0000-0000-000000000000',
+  'authenticated','authenticated','walkin-unrelated-owner@example.invalid',now(),now(),now());
+INSERT INTO public.sim_payment_account_bindings(user_id,owner_uid,assigned_by)
+VALUES('user1','84000000-0000-4000-8000-000000000001','84000000-0000-4000-8000-000000000001');
+
+CREATE TEMP TABLE walkin_claim_fixture(payment_id uuid NOT NULL) ON COMMIT DROP;
+GRANT SELECT ON walkin_claim_fixture TO authenticated;
+
+WITH created AS (
+  INSERT INTO demo_payment.story_payments(idempotency_key,session_id,service_code,amount_minor,data,status)
+  VALUES(gen_random_uuid(),gen_random_uuid(),'OTHER_TAX_PAYMENT',2500,
+    jsonb_build_object('origin','TAXPAY_UI','details',jsonb_build_object(
+      'payerMode','OTHER','payerTin','111111111111','payerName','User 1',
+      'receiptSnapshot',jsonb_build_object('payerTin','111111111111','payerName','User 1')
+    )), 'SIMULATED_SUCCESS')
+  RETURNING id
+)
+INSERT INTO walkin_claim_fixture(payment_id) SELECT id FROM created;
+
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','84000000-0000-4000-8000-000000000002',true);
+DO $unrelated_claim$
+BEGIN
+  IF public.taxpay_claim_walkin_payer_payments() <> 0 THEN
+    RAISE EXCEPTION 'UNRELATED_ACCOUNT_CLAIMED_WALKIN_PAYMENT';
+  END IF;
+END $unrelated_claim$;
+SELECT set_config('request.jwt.claim.sub','84000000-0000-4000-8000-000000000001',true);
+DO $verified_claim$
+BEGIN
+  IF public.taxpay_claim_walkin_payer_payments() <> 1 THEN
+    RAISE EXCEPTION 'VERIFIED_WALKIN_OWNER_CLAIM_MISSING';
+  END IF;
+  IF public.taxpay_claim_walkin_payer_payments() <> 0 THEN
+    RAISE EXCEPTION 'DUPLICATE_WALKIN_CLAIM';
+  END IF;
+END $verified_claim$;
+RESET ROLE;
+
+DO $verify_claim$
+BEGIN
+  IF (SELECT count(*) FROM public.taxpay_story1_payment_owners o
+      JOIN walkin_claim_fixture f ON f.payment_id=o.payment_id
+      WHERE o.owner_uid='84000000-0000-4000-8000-000000000001') <> 1 THEN
+    RAISE EXCEPTION 'WALKIN_PAYMENT_OWNER_MAPPING_WRONG';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.taxpay_story1_payment_owners
+             WHERE owner_uid='84000000-0000-4000-8000-000000000002') THEN
+    RAISE EXCEPTION 'UNRELATED_ACCOUNT_RECEIVED_WALKIN_HISTORY';
+  END IF;
+  RAISE NOTICE 'PASS: verified owner claims original walk-in transaction once; unrelated account receives none';
+END $verify_claim$;
+
 ROLLBACK;
