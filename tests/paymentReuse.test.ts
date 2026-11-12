@@ -216,3 +216,33 @@ test('single-recipient legacy Return receipt retains its original form instead o
   assert.deepEqual(copy.formPayload.otherTaxLines,[]);
   assert.deepEqual(copy.formPayload.selectedHeadIds,[125]);
 });
+
+test('Pay Again never merges two independent SQL receipts into a fabricated payment batch',()=>{
+  const second={...receipt,
+    id:'r2', paymentTransactionId:'different-original-payment', challanNo:'SIM-2',
+    items:receipt.items.map((item,index)=>({...item,headId:index+31,
+      headNameEn:'Second head '+index,economicCode:'H'+(index+31)})),
+    allocationItems:receipt.allocationItems!.map((allocation,index)=>({
+      ...allocation, taxpayerTin:index===0?'8888888888888':'7777777777777',
+      paymentServiceEn:'Second head '+index,
+      assessmentYear:'2027-28'})),
+  } as ChallanReceipt;
+  assert.throws(()=>reuseRecordedPayment([receipt,second],'payer','1234567890123',
+    'r1'),/complete original batch|independent|source/i,
+    'Separate original payment IDs must not silently become one repeatable receipt');
+});
+
+test('Pay Again keeps a genuine complete two-row batch as one editable copy',()=>{
+ const first={...receipt,batchId:'batch-checked',batchItemCount:2,batchItemIndex:1};
+ const second={...receipt,id:'r-batch-2',batchId:'batch-checked',batchItemCount:2,
+   batchItemIndex:2,items:receipt.items.map((item,i)=>({...item,headId:i+51})),
+   allocationItems:receipt.allocationItems!.map((item,i)=>({...item,
+     taxpayerTin:i===0?'8888888888888':'7777777777777',assessmentYear:'2027-28'}))};
+ const copy=reuseRecordedPayment([second,first],'payer','1234567890123','batch-checked');
+ const lines=copy.formPayload.otherTaxLines as Array<{headId:number;assessmentYear:string;amount:string}>;
+ assert.equal(lines.length,4);
+ assert.deepEqual(lines.map(l=>l.headId),[1,2,51,52]);
+ assert.deepEqual(lines.map(l=>l.assessmentYear),['2026-27','','','']);
+ assert.equal(lines.reduce((total,line)=>total+Number(line.amount),0),60);
+ assert.equal(copy.sourcePaymentId,'batch-checked');
+});
