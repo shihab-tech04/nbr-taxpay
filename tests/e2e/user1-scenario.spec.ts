@@ -204,6 +204,9 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   const eyeButton=profile.getByRole('button',{name:'Show TIN'});
   await expect(copyButton).toBeVisible();
   await expect(copyButton).toHaveAttribute('title','Copy TIN');
+  // Use the familiar overlapping-pages Copy glyph, not the Clipboard/Paste glyph.
+  await expect(copyButton.locator('svg.lucide-copy')).toHaveCount(1);
+  await expect(copyButton.locator('svg.lucide-clipboard')).toHaveCount(0);
   const copyBox=await copyButton.boundingBox();
   const eyeBox=await eyeButton.boundingBox();
   expect(copyBox).not.toBeNull();
