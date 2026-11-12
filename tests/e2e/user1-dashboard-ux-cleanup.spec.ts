@@ -28,6 +28,21 @@ test('Overview hides unverified external tax position but retains analytics, dra
   await expect(page.locator('.taxpay-modal')).toBeVisible();
 });
 
+test('Overview recent activity is completed-payment focused and unlinked beneficiaries have a recovery action',async({page})=>{
+  await page.goto(demo);
+  const bento=page.getByTestId('taxpayer-overview-bento');
+  const recent=bento.locator('.taxpay-bento-recent');
+  await expect(recent).toContainText('Completed payment activity');
+  await expect(recent).not.toContainText('Refund inquiry');
+  await expect(recent).not.toContainText('Credit reassignment inquiry');
+  const tags=bento.getByTestId('beneficiary-spending-breakdown');
+  await expect(tags.getByTestId('dashboard-tag-review').getByRole('button',{name:'Review payment records'})).toBeVisible();
+  const stats=bento.getByRole('button',{name:/^Saved Drafts/});
+  await expect(stats).toBeVisible();
+  await tags.getByRole('button',{name:'Review payment records'}).click();
+  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
+});
+
 test('when external tax data is absent the coverage and year chart move into the first row',async({page})=>{
   await page.goto(demo);
   const bento=page.getByTestId('taxpayer-overview-bento');
@@ -204,7 +219,7 @@ test('selected assessment year controls recent activity and compact spending on 
     const bento=page.getByTestId('taxpayer-overview-bento');
     await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
     const recent=bento.locator('.taxpay-bento-recent');
-    await expect(recent).toContainText('Assessment year: 2023-2024');
+    await expect(recent).toContainText('assessment year: 2023-2024');
     await expect(recent).toContainText('20 Aug 2024');
     await expect(recent).not.toContainText('Pending bank reconciliation');
     const tags=bento.getByTestId('beneficiary-spending-breakdown');
@@ -229,5 +244,6 @@ test('dashboard residual breakdown reconciles linked and unlinked payments witho
   await expect(spending.getByTestId('tag-spend-own')).toContainText('0');
   await expect(spending.getByTestId('tag-spend-needs-tag')).toContainText('0');
   await expect(spending.getByTestId('tag-spend-no-link')).toContainText('60,000');
-  await expect(spending.getByTestId('dashboard-tag-review')).toHaveCount(0);
+  await expect(spending.getByTestId('dashboard-tag-review')
+    .getByRole('button',{name:'Review payment records'})).toBeVisible();
 });

@@ -319,6 +319,14 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     // Other user1 saved drafts must not be deleted or changed by this action.
     await page.reload();
     await expect(workspace.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="' + id + '"]')).toHaveCount(0);
+    // Zero records must remain a navigable, recoverable dashboard feature.
+    const empty = workspace.getByTestId('dashboard-payment-drafts');
+    await expect(empty).toBeVisible();
+    await expect(empty.getByTestId('dashboard-drafts-empty')).toBeVisible();
+    await expect(empty.getByRole('button',{name:'Start a payment'})).toBeVisible();
+    await empty.getByRole('button',{name:'Start a payment'}).click();
+    await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
+
   } finally {
     await context.close();
   }

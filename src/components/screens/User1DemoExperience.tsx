@@ -222,7 +222,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [sqlPayments,setSqlPayments]=useState<OwnedStoryPayment[]>([]);
   const [sqlLoadError,setSqlLoadError]=useState(false);
   useEffect(()=>{
-    if(route!=='history'||previewAccount?.id!=='user1'||activePreviewSession()?.profileId!=='user1'){
+    if(!['history','taxpayer_home','dashboard'].includes(route)||previewAccount?.id!=='user1'||activePreviewSession()?.profileId!=='user1'){
       setSqlPayments([]);setSqlLoadError(false);return;
     }
     let active=true;
@@ -316,7 +316,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const visibleHistoryRows=filtered.slice((currentHistoryPage-1)*historyPerPage,currentHistoryPage*historyPerPage);
   useEffect(()=>setHistoryPage(1),[year,query,kind,status,monthFilter,reviewFilter,paymentTagFilter,beneficiaryFilter]);
   const availableHistoryMonths=[...new Set(historyScoped.map(x=>x.date.slice(0,7)))].sort();
-  const recordedDirectPayments=scoped.filter(item=>item.state==='POSTED'&&(['income','ait','travel'] as Kind[]).includes(item.kind));
+  // Use the same selected-year, owner-owned projection as the Activity table.
+  // Keep demo events identifiable; SQL records are simulation payments, not certified credits.
+  const recordedDirectPayments=historyScoped.filter(item=>item.state==='POSTED'&&
+    (['income','ait','travel'] as Kind[]).includes(item.kind));
   const taggedPaymentTotal=recordedDirectPayments.reduce((sum,item)=>sum+item.amount,0);
   const taggedPaymentBreakdown=PAYMENT_TAG_GROUPS.map(group=>({
     group,amount:recordedDirectPayments.filter(item=>paymentTag(item)===group).reduce((sum,item)=>sum+item.amount,0)
@@ -527,7 +530,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const correctionRequestCount=correctionRequests.length;
   const openSavedDrafts=()=>{
     const list=document.getElementById('taxpayer-dashboard-draft-section');
-    if(savedDraftCount!==null && savedDraftCount>0 && list){
+    if(list && previewAccount?.id==='user1' && activePreviewSession()?.profileId==='user1'){
       list.scrollIntoView({behavior:'smooth',block:'start'});
       list.focus({preventScroll:true});
     }else setDraftHelpVisible(visible=>!visible);
@@ -677,7 +680,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">{tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}</h2>
-          <p className="mt-1 text-xs text-taxpay-muted">{tr('Recorded direct and advance payments and travel tax; pending, failed, reversed and unmatched entries excluded.','নথিভুক্ত সরাসরি ও অগ্রিম পরিশোধ এবং ভ্রমণ কর; অপেক্ষমাণ, ব্যর্থ, বাতিল ও অমিল লেনদেন বাদ।')}</p>
+          <p className="mt-1 text-xs text-taxpay-muted">{tr('Example account entries and separately recorded SQL simulations; not verified tax credits. Pending, failed, reversed and unmatched entries excluded.','নমুনা অ্যাকাউন্টের ঘটনা ও পৃথক SQL সিমুলেশন; যাচাইকৃত কর ক্রেডিট নয়। অপেক্ষমাণ, ব্যর্থ, বাতিল ও অমিল লেনদেন বাদ।')}</p>
         </div>
         <p className="text-lg font-semibold tabular-nums" data-testid="tagged-payment-total">{tagLoadState==='ready'?money(taggedPaymentTotal):'—'}</p>
       </div>
@@ -699,18 +702,27 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         </div>
         {displayedSpendingTotal!==taggedPaymentTotal&&
           <p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Unable to reconcile category totals. Please refresh.','শ্রেণির মোট অর্থ মিলছে না। অনুগ্রহ করে রিফ্রেশ করুন।')}</p>}
-        {needsTagAmount>0&&<div className="taxpay-tag-spending__notice" data-testid="dashboard-tag-review">
-          <p>{tr('Some saved beneficiaries need a tag before their payments can be classified.','কিছু সংরক্ষিত উপকারভোগীর ট্যাগ প্রয়োজন, তারপর তাদের পেমেন্ট শ্রেণিবদ্ধ হবে।')}</p>
-          {reviewTins.length>0&&<button type="button" className="taxpay-tag-spending__review"
-            onClick={()=>navigate('beneficiaries',{reviewBeneficiaryTins:reviewTins})}>
-            {tr('Review beneficiary tags','উপকারভোগীর ট্যাগ পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/>
-          </button>}
+        {(needsTagAmount>0||missingSavedAmount>0||noLinkedAmount>0)&&<div className="taxpay-tag-spending__notice" data-testid="dashboard-tag-review">
+          <p>{needsTagAmount>0
+            ?tr('Some saved beneficiaries need a tag before their payments can be classified.','কিছু সংরক্ষিত উপকারভোগীর ট্যাগ প্রয়োজন, তারপর তাদের পেমেন্ট শ্রেণিবদ্ধ হবে।')
+            :tr('Some payments have no saved beneficiary or beneficiary link. Review the original payment records before adding or assigning a beneficiary.','কিছু পেমেন্টে সংরক্ষিত উপকারভোগী বা উপকারভোগীর সংযোগ নেই। নতুন উপকারভোগী যোগ বা বরাদ্দ করার আগে মূল পেমেন্ট রেকর্ড দেখুন।')}</p>
+          <div className="flex flex-wrap gap-2">
+            {reviewTins.length>0&&<button type="button" className="taxpay-tag-spending__review"
+              onClick={()=>navigate('beneficiaries',{reviewBeneficiaryTins:reviewTins})}>
+              {tr('Review beneficiary tags','উপকারভোগীর ট্যাগ পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/>
+            </button>}
+            {(missingSavedAmount>0||noLinkedAmount>0)&&<button type="button" className="taxpay-tag-spending__review"
+              onClick={()=>navigate('history')}>
+              {tr('Review payment records','পেমেন্টের রেকর্ড পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/>
+            </button>}
+          </div>
         </div>}
       </div>}
     </section>
     </div>
-    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1} style={savedDraftCount===0?{display:'none'}:undefined}>
-      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft} onCountChange={setSavedDraftCount}/>
+    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1}>
+      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
+        onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
     </div>}
     <div className="taxpay-bento-recent">
     <section className={panel} aria-labelledby="taxpayer-recent-activity-title">
@@ -718,18 +730,25 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         <h2 id="taxpayer-recent-activity-title" className="text-base font-semibold">{tr('Recent activity','সাম্প্রতিক কার্যক্রম')}</h2>
         {view('history','View all activity','সব কার্যক্রম দেখুন')}
       </div>
-      <p className="mt-1 text-xs text-taxpay-muted">{tr('Assessment year','করবর্ষ')}: {year}</p>
+      <p className="mt-1 text-xs text-taxpay-muted">{tr('Completed payment activity · assessment year','সম্পন্ন পেমেন্ট কার্যক্রম · করবর্ষ')}: {year}</p>
       <ul className="mt-3 divide-y divide-taxpay-border" aria-label={tr('Latest transactions in selected year','নির্বাচিত করবর্ষের সাম্প্রতিক লেনদেন')}>
-        {[...scoped].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+        {[...historyScoped].filter(item=>item.state==='POSTED').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-taxpay-text">{item.title}</p>
             <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])}</p>
           </div>
           <p className="whitespace-nowrap text-sm font-semibold tabular-nums">{money(item.amount)}</p>
           <div>{tag(item.state)}</div>
-          <button type="button" className={action} onClick={()=>setSelected(item)} aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" className={action} onClick={()=>setSelected(item)} aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
+            {item.sql?.reuse && <button type="button" className={action} onClick={()=>payAgain(item)}>
+              {tr('Pay Again','আবার পরিশোধ')}
+            </button>}
+          </div>
         </li>)}
       </ul>
+      {!historyScoped.some(item=>item.state==='POSTED')&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('No completed payment activity for the selected assessment year.','নির্বাচিত করবর্ষে সম্পন্ন পেমেন্ট নেই।')}</p>}
+      {sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-recorded payments could not be loaded. Sample activity remains visible.','অ্যাকাউন্টে সংরক্ষিত পেমেন্ট লোড হয়নি। নমুনা কার্যক্রম দেখা যাচ্ছে।')}</p>}
     </section>
     </div>
   </div>;
