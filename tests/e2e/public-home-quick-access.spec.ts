@@ -153,6 +153,66 @@ test('wide desktop uses the available canvas without crushing the footer or look
   expect(visual.horizontalOverflow).toBeLessThanOrEqual(2);
 });
 
+test('record search and benefits share a restrained, left-aligned desktop heading hierarchy', async ({ page }) => {
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1440, height: 900 },
+    { width: 1775, height: 864 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/?action=landing&lang=en');
+    await page.evaluate(async () => { await document.fonts.ready; });
+
+    const measurements = await page.evaluate(() => {
+      const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+      const css = (selector: string) => getComputedStyle(document.querySelector(selector)!);
+      const recordTitle = rect('.public-record-discovery__heading h2');
+      const recordDescription = rect('.public-record-discovery__heading p');
+      const benefitsTitle = rect('.public-benefits__heading h2');
+      const benefitsDescription = rect('.public-benefits__heading p');
+      const search = rect('.public-record-search');
+      const searchSection = rect('.public-record-discovery');
+      return {
+        recordTitleX: recordTitle.left,
+        recordDescriptionX: recordDescription.left,
+        benefitTitleX: benefitsTitle.left,
+        benefitDescriptionX: benefitsDescription.left,
+        recordDescriptionY: recordDescription.top,
+        recordTitleBottom: recordTitle.bottom,
+        benefitDescriptionY: benefitsDescription.top,
+        benefitTitleBottom: benefitsTitle.bottom,
+        searchY: search.top,
+        recordDescriptionBottom: recordDescription.bottom,
+        searchWidth: search.width,
+        sectionWidth: searchSection.width,
+        weights: [
+          Number(css('.public-record-discovery__heading h2').fontWeight),
+          Number(css('.public-benefits__heading h2').fontWeight),
+          Number(css('.public-benefits__heading p').fontWeight),
+        ],
+        fontSizes: [
+          css('.public-record-discovery__heading h2').fontSize,
+          css('.public-benefits__heading h2').fontSize,
+          css('.public-record-discovery__heading p').fontSize,
+          css('.public-benefits__heading p').fontSize,
+        ],
+        documentHeightOverflow: document.documentElement.scrollHeight - innerHeight,
+        documentWidthOverflow: document.documentElement.scrollWidth - innerWidth,
+      };
+    });
+    expect(Math.abs(measurements.recordTitleX - measurements.recordDescriptionX)).toBeLessThanOrEqual(2);
+    expect(Math.abs(measurements.benefitTitleX - measurements.benefitDescriptionX)).toBeLessThanOrEqual(2);
+    expect(measurements.recordDescriptionY).toBeGreaterThanOrEqual(measurements.recordTitleBottom);
+    expect(measurements.benefitDescriptionY).toBeGreaterThanOrEqual(measurements.benefitTitleBottom);
+    expect(measurements.searchY).toBeGreaterThan(measurements.recordDescriptionBottom);
+    expect(measurements.searchWidth).toBeGreaterThanOrEqual(measurements.sectionWidth * .9);
+    expect(measurements.weights).toEqual([600, 600, 400]);
+    expect(measurements.fontSizes).toEqual(['18px', '18px', '14px', '14px']);
+    expect(measurements.documentHeightOverflow).toBeLessThanOrEqual(2);
+    expect(measurements.documentWidthOverflow).toBeLessThanOrEqual(2);
+  }
+});
+
 test('existing hero Pay Tax and Travel Tax actions still open separate journeys', async ({ page }) => {
   await page.goto('/?action=landing&lang=en');
 
