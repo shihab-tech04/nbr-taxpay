@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { sampleJourneysEnabled, TaxStateProvider, useTaxState } from './services/taxState';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
-import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
 import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
+import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
 import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
 import { CitizenFooter } from './components/layout/CitizenFooter';
