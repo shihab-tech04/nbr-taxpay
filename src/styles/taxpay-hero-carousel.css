@@ -728,22 +728,23 @@
 .public-benefits__heading p {
   margin: .2rem 0 0;
   color: var(--citizen-muted);
-  font-size: .84rem;
+  font-size: .875rem;
   line-height: 1.55;
 }
 .public-benefits__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: .8rem;
+  grid-auto-rows: 1fr;
+  gap: .875rem;
 }
 .public-benefits__item {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: .65rem;
+  gap: .55rem;
   min-width: 0;
-  min-height: 155px;
-  padding: 1.1rem;
+  min-height: 144px;
+  padding: 1rem;
   border: 1px solid var(--citizen-border);
   border-radius: 1rem;
   background: var(--citizen-surface);
@@ -767,16 +768,16 @@
 }
 .public-benefits__copy { min-width: 0; }
 .public-benefits__copy h3 {
-  margin: 0 0 .25rem;
+  margin: 0 0 .2rem;
   color: var(--citizen-text);
-  font-size: .94rem;
-  font-weight: 750;
+  font-size: .97rem;
+  font-weight: 700;
   line-height: 1.4;
 }
 .public-benefits__copy p {
   margin: 0;
   color: var(--citizen-muted);
-  font-size: .82rem;
+  font-size: .875rem;
   line-height: 1.5;
 }
 @media (max-width: 980px) {
@@ -784,12 +785,12 @@
 }
 @media (max-width: 600px) {
   .public-benefits__heading h2 { font-size: 1.05rem; }
-  .public-benefits__grid { grid-template-columns: minmax(0, 1fr); gap: .6rem; }
+  .public-benefits__grid { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; gap: .6rem; }
   .public-benefits__item {
     display: grid;
     grid-template-columns: 42px minmax(0, 1fr);
     align-items: center;
-    min-height: 94px;
+    min-height: 90px;
     padding: .85rem;
     gap: .8rem;
   }

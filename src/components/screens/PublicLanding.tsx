@@ -62,37 +62,37 @@ export const PublicLanding: React.FC = () => {
       id: 'payments',
       Icon: WalletCards,
       title: t('All Tax Payments', 'সব ধরনের কর পরিশোধ'),
-      detail: t('Pay different taxes for yourself or others.', 'নিজের বা অন্যের বিভিন্ন ধরনের কর পরিশোধ করুন।'),
+      detail: t('Pay taxes for yourself, family or clients.', 'নিজের, পরিবারের বা ক্লায়েন্টের কর পরিশোধ করুন।'),
     },
     {
       id: 'corrections',
       Icon: FilePenLine,
       title: t('Corrections & Requests', 'সংশোধন ও আবেদন'),
-      detail: t('Request payment corrections and track progress.', 'পেমেন্ট সংশোধনের আবেদন করুন ও অগ্রগতি দেখুন।'),
+      detail: t('Request corrections and follow their progress.', 'সংশোধনের আবেদন করুন ও অগ্রগতি দেখুন।'),
     },
     {
       id: 'certificates',
       Icon: FileCheck2,
       title: t('Tax Certificates', 'কর সনদ'),
-      detail: t('View and download available certificates.', 'উপলব্ধ কর সনদ দেখুন ও ডাউনলোড করুন।'),
+      detail: t('Find and download available tax certificates.', 'উপলব্ধ কর সনদ খুঁজুন ও ডাউনলোড করুন।'),
     },
     {
       id: 'history',
       Icon: History,
       title: t('Payment History', 'পেমেন্টের ইতিহাস'),
-      detail: t('Review past payments, tax years and receipts.', 'আগের পেমেন্ট, করবর্ষ ও রসিদ দেখুন।'),
+      detail: t('See past payments, tax years and receipts.', 'আগের পেমেন্ট, করবর্ষ ও রসিদ দেখুন।'),
     },
     {
       id: 'beneficiaries',
       Icon: UsersRound,
       title: t('Beneficiary Management', 'সুবিধাভোগী ব্যবস্থাপনা'),
-      detail: t('Organize people you pay for and their payment records.', 'যাঁদের কর পরিশোধ করেন, তাঁদের তথ্য ও পেমেন্ট রেকর্ড গুছিয়ে রাখুন।'),
+      detail: t('Keep people and their payment records organized.', 'যাঁদের কর পরিশোধ করেন, তাঁদের রেকর্ড গুছিয়ে রাখুন।'),
     },
     {
       id: 'repeat-drafts',
       Icon: Repeat2,
       title: t('Pay Again & Saved Drafts', 'আবার পরিশোধ ও সংরক্ষিত খসড়া'),
-      detail: t('Repeat past payments or resume unfinished ones.', 'আগের পেমেন্ট আবার করুন বা অসমাপ্ত খসড়া চালিয়ে যান।'),
+      detail: t('Reuse a payment or resume a saved draft.', 'আগের পেমেন্টের তথ্য ব্যবহার করুন বা খসড়া চালিয়ে যান।'),
     },
   ];
 
@@ -272,7 +272,7 @@ export const PublicLanding: React.FC = () => {
     <section className="public-benefits" aria-labelledby="public-benefits-title">
       <div className="public-benefits__heading">
         <h2 id="public-benefits-title">{t('Why use Korbritto?', 'করবৃত্ত কেন ব্যবহার করবেন?')}</h2>
-        <p>{t('Pay, manage and track your tax payments—all in one place.', 'এক জায়গায় কর পরিশোধ, ব্যবস্থাপনা ও পেমেন্টের তথ্য দেখুন।')}</p>
+        <p>{t('Pay, organize and track your taxes in one place.', 'কর পরিশোধ, তথ্য গুছিয়ে রাখা ও অগ্রগতি দেখা—সব এক জায়গায়।')}</p>
       </div>
       <div className="public-benefits__grid">
         {citizenBenefits.map(({ id, Icon, title, detail }) => (

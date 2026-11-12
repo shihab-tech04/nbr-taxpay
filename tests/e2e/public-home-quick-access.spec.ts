@@ -6,15 +6,15 @@ test('public homepage explains six citizen benefits without duplicate CTAs', asy
 
   const benefits = page.locator('.public-benefits');
   await expect(benefits.getByRole('heading', { name: 'Why use Korbritto?' })).toBeVisible();
-  await expect(benefits.locator('.public-benefits__heading p')).toHaveText('Pay, manage and track your tax payments—all in one place.');
+  await expect(benefits.locator('.public-benefits__heading p')).toHaveText('Pay, organize and track your taxes in one place.');
   await expect(benefits.locator('.public-benefits__item')).toHaveCount(6);
   const expectedCards = [
-    ['payments', 'All Tax Payments', 'Pay different taxes for yourself or others.'],
-    ['corrections', 'Corrections & Requests', 'Request payment corrections and track progress.'],
-    ['certificates', 'Tax Certificates', 'View and download available certificates.'],
-    ['history', 'Payment History', 'Review past payments, tax years and receipts.'],
-    ['beneficiaries', 'Beneficiary Management', 'Organize people you pay for and their payment records.'],
-    ['repeat-drafts', 'Pay Again & Saved Drafts', 'Repeat past payments or resume unfinished ones.'],
+    ['payments', 'All Tax Payments', 'Pay taxes for yourself, family or clients.'],
+    ['corrections', 'Corrections & Requests', 'Request corrections and follow their progress.'],
+    ['certificates', 'Tax Certificates', 'Find and download available tax certificates.'],
+    ['history', 'Payment History', 'See past payments, tax years and receipts.'],
+    ['beneficiaries', 'Beneficiary Management', 'Keep people and their payment records organized.'],
+    ['repeat-drafts', 'Pay Again & Saved Drafts', 'Reuse a payment or resume a saved draft.'],
   ] as const;
   for (const [index, [id, heading, description]] of expectedCards.entries()) {
     const card = benefits.locator('.public-benefits__item').nth(index);
@@ -22,6 +22,7 @@ test('public homepage explains six citizen benefits without duplicate CTAs', asy
     await expect(card.getByRole('heading', { name: heading })).toBeVisible();
     await expect(card.locator('p')).toHaveText(description);
     await expect(card.locator('svg')).toHaveCount(1);
+    await expect(card.locator('p')).toHaveCSS('font-size', '14px');
   }
   await expect(benefits.getByRole('button')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Find a payment record' })).toBeVisible();
@@ -38,6 +39,10 @@ test('public homepage explains six citizen benefits without duplicate CTAs', asy
   expect(positions[1].x).toBeLessThan(positions[2].x);
   expect(positions[3].y).toBeGreaterThan(positions[0].y);
   expect(positions[3].x).toBe(positions[0].x);
+  const heights = await benefits.locator('.public-benefits__item').evaluateAll(items =>
+    items.map(item => item.getBoundingClientRect().height)
+  );
+  expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(2);
 });
 
 test('existing hero Pay Tax and Travel Tax actions still open separate journeys', async ({ page }) => {
@@ -75,7 +80,8 @@ test('benefit cards adapt to tablet and keep Bengali mobile bottom navigation in
   await expect(benefits.getByRole('heading', { name: 'সুবিধাভোগী ব্যবস্থাপনা' })).toBeVisible();
   await expect(benefits.locator('[data-benefit="certificates"] h3')).toHaveText('কর সনদ');
   await expect(benefits.locator('[data-benefit="repeat-drafts"] h3')).toHaveText('আবার পরিশোধ ও সংরক্ষিত খসড়া');
-  await expect(benefits.locator('[data-benefit="repeat-drafts"] p')).toHaveText('আগের পেমেন্ট আবার করুন বা অসমাপ্ত খসড়া চালিয়ে যান।');
+  await expect(benefits.locator('[data-benefit="repeat-drafts"] p')).toHaveText('আগের পেমেন্টের তথ্য ব্যবহার করুন বা খসড়া চালিয়ে যান।');
+  await expect(benefits.locator('.public-benefits__heading p')).toHaveText('কর পরিশোধ, তথ্য গুছিয়ে রাখা ও অগ্রগতি দেখা—সব এক জায়গায়।');
   await expect(page.getByRole('navigation', { name: 'মোবাইল প্রধান নেভিগেশন' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড খুঁজুন' })).toBeVisible();
   const mobile = await benefits.locator('.public-benefits__item').evaluateAll(items =>
