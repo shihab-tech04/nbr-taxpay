@@ -244,5 +244,6 @@ test('dashboard residual breakdown reconciles linked and unlinked payments witho
   await expect(spending.getByTestId('tag-spend-own')).toContainText('0');
   await expect(spending.getByTestId('tag-spend-needs-tag')).toContainText('0');
   await expect(spending.getByTestId('tag-spend-no-link')).toContainText('60,000');
-  await expect(spending.getByTestId('dashboard-tag-review')).toHaveCount(0);
+  await expect(spending.getByTestId('dashboard-tag-review')
+    .getByRole('button',{name:'Review payment records'})).toBeVisible();
 });
