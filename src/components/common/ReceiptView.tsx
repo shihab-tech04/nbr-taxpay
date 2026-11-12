@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Printer,
@@ -25,6 +25,21 @@ interface ReceiptViewProps {
 
 export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment }) => {
   const { language, navigate } = useTaxState();
+  const paperRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
+  async function downloadCertificate() {
+    if (!paperRef.current) return;
+    setDownloading(true);
+    setDownloadError(false);
+    try {
+      await downloadDisplayedCertificate(receipt, paperRef.current);
+    } catch {
+      setDownloadError(true);
+    } finally {
+      setDownloading(false);
+    }
+  }
   const footerTarget = useContext(TaxPayModalFooterTarget);
   const travelPreview = receipt.paymentCategory === 'TRAVEL_TAX' && !!receipt.isSimulatedDemo;
   const recordedAt = new Date(receipt.completedAt || receipt.createdAt);
@@ -176,7 +191,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         onClick={onNewPayment}>{bn ? 'নতুন পেমেন্ট' : 'New payment'}</button>}
       <div className="receipt-view__action-group">
         <button type="button" className="receipt-view__action receipt-view__action--secondary"
-          onClick={() => downloadDisplayedCertificate(receipt)}>
+          disabled={downloading} onClick={downloadCertificate}>
           <Download size={18} aria-hidden="true" /><span>{labels.export}</span>
         </button>
         <button type="button" className="receipt-view__action receipt-view__action--primary"
@@ -199,8 +214,10 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     <div className={`receipt-view receipt-view--embedded${bn ? ' font-bengali' : ''}`} lang={language}>
       {footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions}
 
-      {/* Payment record generated from the app's local transaction state. */}
-      <div className="receipt-view__paper print-card" lang={language}>
+      {downloadError && <p role="alert" className="no-print">
+        {bn ? 'সনদ ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।' : 'Unable to download the certificate. Try again.'}
+      </p>}
+      <div ref={paperRef} className="receipt-view__paper print-card" lang={language}>
         {batchLabel&&<div className="receipt-view__batch-meta" data-testid="receipt-batch-identity">
           <strong>{batchLabel}</strong><span className="break-all">{receipt.batchId}</span>
         </div>}
