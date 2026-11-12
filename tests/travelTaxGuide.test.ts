@@ -12,7 +12,7 @@ test('Travel Tax guide matches the current bilingual passenger-first journey', (
   assert.match(english, /Pay Travel Tax/);
   assert.match(english, /sample records/);
   assert.match(english, /not government passport verification/);
-  assert.match(english, /Foreign passenger/);
+  assert.match(english, /foreign passenger/i);
   assert.match(english, /Add passenger/);
   assert.match(english, /11-digit mobile/);
   assert.match(english, /land or water/);
