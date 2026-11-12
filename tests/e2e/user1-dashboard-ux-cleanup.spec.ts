@@ -169,7 +169,8 @@ test('Overview puts financial position first, followed by exceptions, charts, sp
     child.classList.contains('taxpay-bento-recent')?'recent':'other'));
   expect(order.slice(0,4)).toEqual(['coverage','years','requests','tags']);
   if(order.includes('drafts')){
-    expect(order.indexOf('drafts')).toBeGreaterThan(order.indexOf('tags'));
+    expect(order.indexOf('drafts')).toBeGreaterThan(order.indexOf('requests'));
+    expect(order.indexOf('drafts')).toBeLessThan(order.indexOf('tags'));
     expect(order.indexOf('drafts')).toBeLessThan(order.indexOf('recent'));
   }
   const positions=await bento.evaluate(element=>{
