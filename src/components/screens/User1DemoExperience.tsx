@@ -393,7 +393,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     const a=document.createElement('a');a.href=url;a.download='Korbritto_user1_SYNTHETIC_'+year+'.csv';a.click();URL.revokeObjectURL(url);
   };
   const years=<label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
-    <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={year} onChange={e=>changeYear(e.target.value)}>{(route==='history'?availableYears:taxYears.map(x=>x.year)).map(value=>
+    <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={year} onChange={e=>changeYear(e.target.value)}>{(['history','taxpayer_home','dashboard'].includes(route)?availableYears:taxYears.map(x=>x.year)).map(value=>
       <option key={value} value={value}>{value==='—'?tr('Unknown assessment year','অজ্ঞাত করবর্ষ'):value}</option>)}</select>
   </label>;
   const transactionList=<section className={panel+' taxpayer-transaction-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-transaction-heading">
@@ -699,6 +699,84 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </ul> : <p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No correction requests for this assessment year.','এই করবর্ষে কোনো সংশোধনের আবেদন নেই।')}</p>}
     </section>
     </div>
+    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section">
+      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
+        showEmptyState onStartPayment={()=>openPaymentServiceChoice()} onCountChange={setSavedDraftCount}/>
+    </div>
+    {(sqlLoading||sqlLoadError||storedProjection.allocations.length>0||storedProjection.incompleteCount>0)&&
+      <section className={panel+' taxpay-bento-account-records'} data-testid="dashboard-account-records"
+        aria-labelledby="dashboard-account-records-title">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 id="dashboard-account-records-title" className="text-base font-semibold">
+              {tr('My recorded payment activity','আমার সংরক্ষিত পেমেন্ট কার্যক্রম')}
+            </h2>
+            <p className="mt-1 text-xs text-taxpay-muted">
+              {tr('Owner-session SQL payment records · assessment year ','নিজের সেশনের SQL পেমেন্ট রেকর্ড · করবর্ষ ')}{year}
+              {tr('. Simulations only; kept separate from the illustrations above.',
+                '। শুধু সিমুলেশন; ওপরের উদাহরণ থেকে আলাদা।')}
+            </p>
+          </div>
+          {view('history','View payment history','পেমেন্টের ইতিহাস দেখুন')}
+        </div>
+        {sqlLoading&&<p className="mt-3 text-sm text-taxpay-muted" role="status">
+          {tr('Refreshing saved payment history…','সংরক্ষিত পেমেন্টের ইতিহাস হালনাগাদ হচ্ছে…')}</p>}
+        {sqlLoadError&&<div className="mt-3 flex flex-wrap items-center gap-3">
+          <p className="text-sm text-taxpay-error" role="alert">
+            {tr('Could not verify recorded payments. No stored amounts are shown.',
+              'সংরক্ষিত পেমেন্ট যাচাই করা যায়নি। কোনো পরিমাণ দেখানো হচ্ছে না।')}</p>
+          <button type="button" className={action} onClick={()=>setSqlRevision(value=>value+1)}>
+            {tr('Retry','আবার চেষ্টা করুন')}</button>
+        </div>}
+        {!sqlLoadError&&storedForYear.completedBatches>0&&<>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="rounded-lg border border-taxpay-border p-3">
+              <p className="text-xs text-taxpay-muted">{tr('Completed recorded batches','সম্পন্ন সংরক্ষিত ব্যাচ')}</p>
+              <strong className="text-xl tabular-nums">{storedForYear.completedBatches.toLocaleString(bn?'bn-BD':'en-BD')}</strong>
+            </div>
+            <div className="rounded-lg border border-taxpay-border p-3">
+              <p className="text-xs text-taxpay-muted">{tr('Recorded amount for this year','এই করবর্ষে সংরক্ষিত পরিমাণ')}</p>
+              <strong className="text-xl tabular-nums">{formatMinor(storedForYear.amountMinor)}</strong>
+            </div>
+          </div>
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+            <DashboardMonthlyPayments payments={storedForYear.monthlyPayments} assessmentYear={year}
+              language={language} chartId="dashboard-stored-monthly-title" testId="dashboard-stored-monthly"
+              title={{en:'Monthly account payments',bn:'অ্যাকাউন্টের মাসভিত্তিক পেমেন্ট'}}
+              note={{en:'Only session-recorded simulated direct, advance and travel payments. No Treasury settlement or tax credit is implied.',
+                bn:'শুধু সেশনে সংরক্ষিত সিমুলেটেড সরাসরি, অগ্রিম ও ভ্রমণ কর। ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট নয়।'}}/>
+            <section className="min-w-0 rounded-xl border border-taxpay-border bg-white p-3"
+              aria-label={tr('Recorded beneficiary classification','সংরক্ষিত উপকারভোগীর শ্রেণি')}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h3 className="text-sm font-semibold">{tr('By beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী')}</h3>
+                <strong className="text-sm tabular-nums">{formatMinor(recordedDirectTotal)}</strong>
+              </div>
+              {tagLoadState!=='ready'?
+                <p className="mt-2 text-sm text-taxpay-muted">{tr('Checking beneficiary tags…','উপকারভোগীর ট্যাগ যাচাই হচ্ছে…')}</p>:
+                <div className="mt-3 grid grid-cols-2 gap-2" data-testid="dashboard-sql-tags">
+                  {storedSpendingRows.filter(row=>row.amount>0n).map(row=>
+                    <div key={row.key} className="min-w-0 rounded-lg bg-taxpay-light p-2">
+                      <p className="break-words text-xs text-taxpay-muted">{row.label}</p>
+                      <strong className="mt-1 block break-all text-sm tabular-nums">{formatMinor(row.amount)}</strong>
+                    </div>)}
+                </div>}
+              {(savedNoTagAmount>0n||savedUnlinkedAmount>0n)&&tagLoadState==='ready'&&
+                <button type="button" className={action+' mt-3'} onClick={()=>navigate('beneficiaries')}>
+                  {tr('Review beneficiaries','উপকারভোগী পর্যালোচনা করুন')}<ArrowRight size={15} aria-hidden="true"/>
+                </button>}
+            </section>
+          </div>
+        </>}
+        {!sqlLoadError&&!sqlLoading&&storedForYear.completedBatches===0&&
+          <p className="mt-3 text-sm text-taxpay-muted" role="status">
+            {tr('No attributable stored payments for this assessment year.',
+              'এই করবর্ষে নির্ভরযোগ্যভাবে বরাদ্দ করা সংরক্ষিত পেমেন্ট পাওয়া যায়নি।')}
+          </p>}
+        {storedProjection.incompleteCount>0&&<p className="mt-2 text-xs text-taxpay-muted">
+          {tr('Some historical payment items lacked reconciled year or allocation metadata and were excluded from these charts.',
+            'কিছু পুরোনো পেমেন্টের করবর্ষ বা বরাদ্দ তথ্য মেলেনি, তাই চার্টে অন্তর্ভুক্ত হয়নি।')}
+        </p>}
+      </section>}
     <div className="taxpay-bento-tags">
     <section className={panel} data-testid="beneficiary-spending-breakdown" aria-label={tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -737,10 +815,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>}
     </section>
     </div>
-    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section">
-      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
-        showEmptyState onStartPayment={()=>openPaymentServiceChoice()} onCountChange={setSavedDraftCount}/>
-    </div>
+
     <div className="taxpay-bento-recent">
     <section className={panel} aria-labelledby="taxpayer-recent-activity-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
