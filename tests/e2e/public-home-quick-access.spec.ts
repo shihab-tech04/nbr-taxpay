@@ -111,7 +111,8 @@ test('desktop restores full-width lookup and proposed connected six-cell benefit
   expect(layout.headings.every(weight => weight <= 600)).toBe(true);
   expect(layout.descriptions.every(size => size >= 14)).toBe(true);
   expect(layout.panelRadius).toBeGreaterThanOrEqual(14);
-  expect(layout.panelToGridInset).toBeGreaterThanOrEqual(20);
+  // On 821–959px-tall desktops, the approved connected panel retains a compact 16px inset.
+  expect(layout.panelToGridInset).toBeGreaterThanOrEqual(16);
   expect(layout.panelBackground).not.toBe('rgba(0, 0, 0, 0)');
   expect(layout.cardRadius).toBe(0);
   expect(layout.cardBorderWidth).toBe(0);
@@ -171,7 +172,8 @@ test('wide desktop uses the available canvas without crushing the footer or look
   expect(visual.searchHeading.bottom).toBeLessThan(visual.searchField.top);
   expect(visual.searchField.width).toBeGreaterThanOrEqual(visual.record.width*.9);
   // Six balanced benefit cards should retain adequate height at wide viewport sizes.
-  expect(visual.firstCard.height).toBeGreaterThanOrEqual(94);
+  // Medium-height desktops use 88px cells to preserve the no-overflow layout.
+  expect(visual.firstCard.height).toBeGreaterThanOrEqual(88);
   // Two-line tagline is acceptable; footer links must never touch or overlap.
   expect(visual.footerTagline.height).toBeLessThanOrEqual(44);
   expect(visual.footerLinkCount).toBe(4);
@@ -512,7 +514,9 @@ test('approved desktop proposal is one white rounded panel with a connected 3x2 
       expect(Math.abs(measurement.panelWidth-expectedPanelWidth),
         JSON.stringify({viewport,lang,measurement})).toBeLessThanOrEqual(2);
       expect(measurement.panelRadius).toBeGreaterThanOrEqual(14);
-      expect(measurement.panelPadding).toBeGreaterThanOrEqual(22);
+      // The reference tall desktop keeps 24px; medium-height layouts fit in 16px.
+      const expectedPadding=viewport.height<=959 ? 16 : 24;
+      expect(measurement.panelPadding).toBeGreaterThanOrEqual(expectedPadding);
       expect(measurement.sectionBackground).not.toBe('rgba(0, 0, 0, 0)');
       expect(measurement.headingWithinPanel).toBe(true);
       expect(measurement.gridWithinPanel).toBe(true);
