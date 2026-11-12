@@ -218,7 +218,7 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
 });
 
 
-test('public header centers icons in the widened homepage and routes to User Guide',async({page},info)=>{
+test('public header centers icons within the approved width and routes to User Guide',async({page},info)=>{
  test.skip(info.project.name!=='desktop-1280','Desktop at 1600px');
  await page.setViewportSize({width:1600,height:900});
  await page.goto('/?action=landing');
