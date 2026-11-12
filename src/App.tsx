@@ -8,13 +8,10 @@ import {AccountIdentityProvider,useAccountIdentity} from './services/accountIden
 import { CitizenFooter } from './components/layout/CitizenFooter';
 import { TaxpayerLoginDialog } from './components/screens/TaxpayerLoginDialog';
 import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
-import { PaymentServiceChoiceDialog } from './components/screens/PaymentServiceChoiceDialog';
 import type { PaymentFormDraft } from './services/accountPaymentFormDrafts';
 
 // Screens
 import { PublicUserGuide } from './components/screens/PublicUserGuide';
-import { GuestPayment } from './components/screens/GuestPayment';
-import { TravelTax } from './components/screens/TravelTax';
 import { PublicLanding } from './components/screens/PublicLanding';
 import { PublicReport } from './components/screens/PublicReport';
 import { PublicServiceModal } from './components/screens/PublicServiceModal';
@@ -29,6 +26,10 @@ import { validCertificateTransactionId } from './services/confirmedPaymentCertif
 import { safePrivateAuthReturnRoute } from './services/routeContract';
 
 // Defer non-entry screens until visited, preserving the public shell and auth gates.
+// Do not load the large payment forms for public visitors who have not started a payment.
+const GuestPayment = React.lazy(() => import('./components/screens/GuestPayment').then(module => ({ default: module.GuestPayment })));
+const TravelTax = React.lazy(() => import('./components/screens/TravelTax').then(module => ({ default: module.TravelTax })));
+const PaymentServiceChoiceDialog = React.lazy(() => import('./components/screens/PaymentServiceChoiceDialog').then(module => ({ default: module.PaymentServiceChoiceDialog })));
 const Beneficiaries = React.lazy(() => import('./components/screens/Beneficiaries').then(module => ({ default: module.Beneficiaries })));
 const ArchitectureView = React.lazy(() => import('./components/screens/ArchitectureView').then(module => ({ default: module.ArchitectureView })));
 const TaxpayerDashboard = React.lazy(() => import('./components/screens/TaxpayerDashboard').then(module => ({ default: module.TaxpayerDashboard })));
@@ -264,7 +265,9 @@ const MainRouter: React.FC = () => {
             <PaymentDetailView embedded />
           </TaxPayModal>)}
       <ParityRegisterModal />
-      {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} />}
+      {isPaymentServiceChoiceOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেমেন্ট সেবা লোড হচ্ছে…' : 'Loading payment service…'}</p>}>
+        <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} />
+      </React.Suspense>}
       {loginOverlay && <TaxpayerLoginDialog />}
       {beneficiaryLoginRequired && <TaxpayerLoginDialog
         preservePaymentJourney
