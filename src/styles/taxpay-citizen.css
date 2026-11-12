@@ -1218,14 +1218,15 @@
 .public-footer__navs a:hover,.public-footer__navs button:hover{text-decoration:underline;color:var(--citizen-primary-dark);}
 .public-footer__bottom{flex:0 0 auto;display:flex;align-items:center;min-height:32px;padding-left:clamp(.7rem,1.5vw,1.25rem);border-left:1px solid var(--citizen-border);}
 .public-footer__bottom p{margin:0;font-size:.875rem;color:var(--citizen-muted);line-height:1.5;white-space:nowrap;}
-/* Home desktop footer: retain the original shared 1100px content measure while
-   keeping the tagline and navigation on one readable row. No mobile changes. */
-@media (min-width: 1440px) {
+/* Public Home only: keep the 1100px approved page width, but let footer
+   navigation wrap instead of overflowing or touching the identity. */
+@media (min-width: 1121px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    column-gap: 12px;
+    column-gap: 16px;
+    row-gap: 8px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity {
     gap: .5rem;
@@ -1234,12 +1235,15 @@
     width: 96px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
-    max-width: none;
-    white-space: nowrap;
+    max-width: 150px;
+    white-space: normal;
+    overflow-wrap: normal;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
-    flex-wrap: nowrap;
-    gap: 12px;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px 14px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs a,
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs button {
@@ -1247,6 +1251,15 @@
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
     padding-left: 10px;
+  }
+}
+/* Home has three finite sections; on tall desktop screens, do not stretch
+   its main element into a several-hundred-pixel empty spacer before the footer.
+   Other public routes retain their existing bottom-aligned footer behavior. */
+@media (min-width: 981px) and (min-height: 1024px) {
+  .taxpay-citizen-shell:has(.public-home-sections) { min-height: 0; }
+  .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
+    flex: 0 0 auto;
   }
 }
 
