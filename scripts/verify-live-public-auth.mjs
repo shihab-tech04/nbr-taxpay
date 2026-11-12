@@ -103,7 +103,7 @@ try {
       await publicMobile.goto(mobileUrl.toString(), {waitUntil:'domcontentloaded',timeout:45_000});
       const mobileNav = publicMobile.locator('.taxpay-public-mobile-navigation');
       const menu = mobileNav.getByRole('button',{name:'Open menu'});
-      const wordmark = mobileNav.getByRole('button',{name:'Korbritto home'});
+      const wordmark = mobileNav.getByRole('button',{name:'Sohojkor home'});
       const guestBell = mobileNav.getByRole('button',{name:'Notifications'});
       await expect(menu).toBeVisible({timeout:30_000});
       await expect(wordmark).toBeVisible();
