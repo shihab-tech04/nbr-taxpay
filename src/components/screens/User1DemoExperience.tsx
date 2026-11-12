@@ -173,7 +173,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [year,setYear]=useState<string>(()=>{
     const initial=new URLSearchParams(window.location.search).get('scenarioYear');
     return typeof initial==='string'&&/^20\d{2}-20\d{2}$/.test(initial)
-      ? initial : '2026-2027';
+      ? initial : '2025-2026';
   });
   const changeYear=(nextYear:string)=>{
     setYear(nextYear);
