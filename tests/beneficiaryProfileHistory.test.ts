@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {beneficiaryProfilePayments,countsTowardBeneficiaryPaidTotal,missingOptionalSimulationBinding} from '../src/services/beneficiaryProfileHistory';
+import {beneficiaryProfilePayments,countsTowardBeneficiaryPaidTotal,missingOptionalSimulationBinding,requireCurrentBeneficiaryHistoryOwner} from '../src/services/beneficiaryProfileHistory';
 import {sampleTinForUserNumber} from '../src/data/sampleTinSuggestions';
 import type {SimulationTransaction} from '../src/contracts/paymentSimulationContract';
 import type {OwnedStoryPayment} from '../src/services/story1AccountPaymentHistory';
@@ -131,4 +131,17 @@ test('duplicate simulation recovery cannot bypass payer account isolation',()=>{
   assert.equal(result.length,1);
   assert.equal(result[0].amountMinor,15000);
   assert.equal(result[0].transactionId,'tx-a');
+});
+
+
+test('authenticated beneficiary history rejects sign-out or account switch after asynchronous reads',()=>{
+  const owner='00000000-0000-4000-8000-000000000101';
+  const other='00000000-0000-4000-8000-000000000102';
+  assert.doesNotThrow(()=>requireCurrentBeneficiaryHistoryOwner(owner,owner));
+  assert.throws(()=>requireCurrentBeneficiaryHistoryOwner(owner,other),/Account changed/);
+  assert.throws(()=>requireCurrentBeneficiaryHistoryOwner(owner,null),/Account changed/);
+  assert.throws(()=>requireCurrentBeneficiaryHistoryOwner(owner,undefined),/Account changed/);
+  assert.throws(()=>requireCurrentBeneficiaryHistoryOwner('',owner),/Account changed/);
+  const loader=readFileSync('src/services/beneficiaryProfileHistory.ts','utf8');
+  assert.match(loader,/const simulations=boundId\?await getPrivateSimulationHistory\('payer'\):\[\];[\s\S]*await supabase\.auth\.getUser\(\);[\s\S]*requireCurrentBeneficiaryHistoryOwner\(ownerUid,data\.user\?\.id\)/);
 });

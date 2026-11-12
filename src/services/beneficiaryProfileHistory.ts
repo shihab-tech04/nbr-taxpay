@@ -3,6 +3,7 @@ import type {SimulationTransaction,SimulationUser} from '../contracts/paymentSim
 import {simulationCategoryLabels} from '../contracts/paymentSimulationContract';
 import {sampleTinForUserNumber} from '../data/sampleTinSuggestions';
 import {activePreviewSession} from './previewAccountSession';
+import {supabase} from './supabaseClient';
 import {getAccountStoryPayments,getDetailedStorySessionPayments,beneficiaryPaymentEntries,type OwnedStoryPayment} from './story1AccountPaymentHistory';
 import {getBoundSimulationUser,getPrivateSimulationHistory,getDemoStoryPaymentHistory} from './simulatedPaymentsApi';
 
@@ -15,6 +16,12 @@ export type BeneficiaryProfilePayment = {
 };
 export const countsTowardBeneficiaryPaidTotal=(row:BeneficiaryProfilePayment):boolean=>
   row.status==='SIMULATED_SUCCESS'||row.status==='SIMULATED';
+
+/** Never render a previous account's asynchronous history under a new session. */
+export function requireCurrentBeneficiaryHistoryOwner(expectedUid:string,actualUid:string|null|undefined):void {
+  if(!expectedUid||actualUid!==expectedUid)
+    throw Error('Account changed while loading beneficiary history');
+}
 
 /** Read-model only; exact TIN and payer scope. Never join by a mutable name or tag. */
 export function beneficiaryProfilePayments(
@@ -113,6 +120,12 @@ export async function loadBeneficiaryProfilePayments(
   if(ownerUid){
     const [story,boundId]=await Promise.all([getAccountStoryPayments(ownerUid),optionalSimulationProfile()]);
     const simulations=boundId?await getPrivateSimulationHistory('payer'):[];
+    // The simulator read is a second asynchronous request. A sign-out or
+    // account switch during it must never expose the previous owner's records.
+    if(!supabase)throw Error('Authenticated beneficiary history unavailable');
+    const {data,error}=await supabase.auth.getUser();
+    if(error)throw Error('Account changed while loading beneficiary history');
+    requireCurrentBeneficiaryHistoryOwner(ownerUid,data.user?.id);
     return beneficiaryProfilePayments(tin,story,simulations,boundId,language);
   }
   const before=activePreviewSession();
