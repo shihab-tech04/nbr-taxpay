@@ -187,7 +187,7 @@ test('Overview puts financial position first, followed by exceptions, charts, sp
   expect(Math.abs(positions.coverageHeight-positions.yearsHeight),'Balanced analytics cards').toBeLessThan(3);
   await expect(bento.locator('.taxpay-bento-position__totals > div')).toHaveCount(0);
   await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(3);
-  await expect(bento.locator('.taxpay-bento-hero [aria-controls="dashboard-payment-drafts"]')).toHaveCount(0);
+  await expect(bento.locator('.taxpay-bento-summary [aria-controls="dashboard-payment-drafts"]')).toBeVisible();
   await expect(bento.locator('.taxpay-tag-spending__track')).toBeVisible();
   await expect(bento.getByRole('button',{name:'Check tax ledger'})).toHaveCount(0);
   await expect(bento.getByRole('button',{name:'View tax ledger'})).toHaveCount(0);
