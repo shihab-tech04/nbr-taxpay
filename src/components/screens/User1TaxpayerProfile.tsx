@@ -38,11 +38,11 @@ export function User1TaxpayerProfile({language}:{language:Language}){
   const [copied,setCopied]=useState<'idle'|'done'|'failed'>('idle');
   const [downloadError,setDownloadError]=useState(false);
   const tin=record?.tin??'';
-  const details=(rows:readonly Row[])=><dl className="divide-y divide-taxpay-border lg:flex lg:flex-1 lg:flex-col">
+  const details=(rows:readonly Row[])=><dl className="divide-y divide-taxpay-border">
     {rows.map(([field,label])=>{
       const raw=record?.[field];
       const kind=typeof raw==='string'?sensitiveProfileKind(field,raw):null;
-      return <div key={field} data-profile-field={field} className="grid min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(135px,43%)_minmax(0,1fr)] sm:gap-4 lg:flex-1 lg:items-center lg:py-1.5">
+      return <div key={field} data-profile-field={field} className="grid min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(135px,43%)_minmax(0,1fr)] sm:gap-4">
         <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
         <dd className="min-w-0 break-words text-sm font-medium leading-relaxed text-taxpay-text">
           {kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
@@ -51,8 +51,8 @@ export function User1TaxpayerProfile({language}:{language:Language}){
       </div>;
     })}
   </dl>;
-  const panel=(title:Label,children:React.ReactNode)=><section className="flex h-full min-w-0 flex-col rounded-xl border border-taxpay-border bg-white p-4 lg:py-3">
-    <h3 className="mb-3 border-b border-taxpay-border pb-2 text-base font-semibold text-taxpay-text">{tr(title)}</h3>
+  const panel=(title:Label,children:React.ReactNode)=><section className="flex h-full min-w-0 flex-col rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
+    <h3 className="mb-4 border-b border-taxpay-border pb-3 text-base font-semibold text-taxpay-text">{tr(title)}</h3>
     {children}
   </section>;
   const copyTin=async()=>{
@@ -97,9 +97,9 @@ export function User1TaxpayerProfile({language}:{language:Language}){
         {bn?'আবার চেষ্টা করুন':'Retry'}</button></div>}
     </section>;
   }
-  return <div data-testid="user1-taxpayer-profile" className="space-y-3" aria-label={tr(['Taxpayer profile','করদাতার প্রোফাইল'])}>
+  return <div data-testid="user1-taxpayer-profile" className="space-y-4" aria-label={tr(['Taxpayer profile','করদাতার প্রোফাইল'])}>
     <section className="overflow-hidden rounded-2xl border border-taxpay-border bg-white">
-      <div className="flex flex-col items-start gap-3 p-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:p-5 lg:py-3">
+      <div className="flex flex-col items-start gap-4 p-5 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:p-6">
         <div className="flex w-full min-w-0 items-start gap-4 sm:w-auto sm:flex-1">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-taxpay-light text-lg font-semibold text-taxpay-primary" aria-hidden="true">AR</div>
           <div className="min-w-0 space-y-1.5">
@@ -114,7 +114,7 @@ export function User1TaxpayerProfile({language}:{language:Language}){
           <Download size={17} aria-hidden="true"/>{tr(['Download profile','প্রোফাইল ডাউনলোড'])}
         </button>
       </div>
-      <div className="border-t border-taxpay-border px-4 py-3 sm:px-5">
+      <div className="border-t border-taxpay-border px-5 py-4 sm:px-6">
         <div className="min-w-0">
           <p className="text-sm text-taxpay-muted">{tr(['TIN','টিআইএন'])}</p>
           <div data-profile-field="tin" className="mt-1 flex min-w-0 flex-wrap items-center gap-0.5 break-all text-xl font-semibold tracking-wide text-taxpay-text sm:text-2xl">
@@ -132,14 +132,14 @@ export function User1TaxpayerProfile({language}:{language:Language}){
       {copied==='failed'&&<p className="px-5 pb-3 text-sm text-taxpay-error" role="alert">{tr(['Could not copy. Select and copy the reference manually.','কপি করা যায়নি। রেফারেন্স নির্বাচন করে কপি করুন।'])}</p>}
       {downloadError&&<p className="px-5 pb-3 text-sm text-taxpay-error" role="alert">{tr(['Download failed. Please retry.','ডাউনলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।'])}</p>}
       <div data-testid="user1-profile-summary" className="grid border-t border-taxpay-border sm:grid-cols-4">
-        {TAXPAYER_PROFILE_LAYOUT.summary.map(([field,label])=><div key={field} data-profile-field={field} className="min-w-0 border-b border-taxpay-border px-4 py-2.5 last:border-b-0 sm:border-b-0 sm:border-r sm:px-5 sm:last:border-r-0">
+        {TAXPAYER_PROFILE_LAYOUT.summary.map(([field,label])=><div key={field} data-profile-field={field} className="min-w-0 border-b border-taxpay-border px-5 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:px-6 sm:last:border-r-0">
           <p className="text-xs text-taxpay-muted">{tr(label)}</p>
           <p className="mt-1 break-words text-sm font-semibold text-taxpay-text">{value(field,language)}</p>
         </div>)}
       </div>
     </section>
-    <section className="space-y-3" data-testid="user1-profile-unified-content" aria-label={tr(['Taxpayer information','করদাতার তথ্য'])}>
-      <div className="grid items-stretch gap-3 lg:grid-cols-2" data-testid="user1-profile-detail-columns">
+    <section className="space-y-4" data-testid="user1-profile-unified-content" aria-label={tr(['Taxpayer information','করদাতার তথ্য'])}>
+      <div className="grid items-stretch gap-4 lg:grid-cols-2" data-testid="user1-profile-detail-columns">
         <div data-testid="profile-personal-card" className="min-w-0 lg:col-start-1 lg:row-start-1">
           {panel(['Personal information','ব্যক্তিগত তথ্য'],details(TAXPAYER_PROFILE_LAYOUT.personal))}
         </div>
