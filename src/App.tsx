@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { sampleJourneysEnabled, TaxStateProvider, useTaxState } from './services/taxState';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
+import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
 import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
 import { CitizenFooter } from './components/layout/CitizenFooter';
@@ -20,7 +21,6 @@ import { safePrivateAuthReturnRoute } from './services/routeContract';
 // These components retain their existing modal UI, permissions and routes.
 const PublicUserGuide = React.lazy(() => import('./components/screens/PublicUserGuide').then(m => ({default: m.PublicUserGuide})));
 const PublicReport = React.lazy(() => import('./components/screens/PublicReport').then(m => ({default: m.PublicReport})));
-const TaxpayerReferenceRail = React.lazy(() => import('./components/layout/TaxpayerReferenceRail').then(m => ({default: m.TaxpayerReferenceRail})));
 const TaxPayModal = React.lazy(() => import('./components/ui/TaxPayModal').then(m => ({default: m.TaxPayModal})));
 const User1DemoExperience = React.lazy(() => import('./components/screens/User1DemoExperience').then(m => ({default: m.User1DemoExperience})));
 const TaxpayerLoginDialog = React.lazy(() => import('./components/screens/TaxpayerLoginDialog').then(m => ({default: m.TaxpayerLoginDialog})));
@@ -226,7 +226,7 @@ const MainRouter: React.FC = () => {
         <div className="taxpay-public-desktop-navigation"><PublicHomeHeader /></div>
         <div className="taxpay-public-mobile-navigation"><CitizenNavigation /></div>
       </> : <CitizenNavigation />}
-      {taxpayerReference && !transactionRoute && <React.Suspense fallback={null}><TaxpayerReferenceRail /></React.Suspense>}
+      {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
       <main ref={mainContentRef} id="main-content" tabIndex={-1} className={`flex-1 ${publicInformationRoute ? 'public-information-main' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}${currentRoute === 'incident' ? ' public-information-main--report' : ''}`}>
         {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : beneficiaryLoginRequired ? <PublicLanding /> : (
           <section className="citizen-account-gate">
