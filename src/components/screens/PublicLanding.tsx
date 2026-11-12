@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, FileCheck2, FilePenLine, History, ListChecks, ReceiptText, Repeat2, Search, UserRound, UsersRound, WalletCards } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, FileCheck2, FilePenLine, History, ListChecks, ReceiptText, Repeat2, Save, Search, UserRound, UsersRound, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import type { PublicService } from './PublicServiceModal';
@@ -65,16 +65,16 @@ export const PublicLanding: React.FC = () => {
       detail: t('Pay taxes for yourself, family or clients.', 'নিজের, পরিবারের বা ক্লায়েন্টের কর পরিশোধ করুন।'),
     },
     {
-      id: 'corrections',
-      Icon: FilePenLine,
-      title: t('Corrections & Requests', 'সংশোধন ও আবেদন'),
-      detail: t('Request corrections and follow their progress.', 'সংশোধনের আবেদন করুন ও অগ্রগতি দেখুন।'),
-    },
-    {
       id: 'certificates',
       Icon: FileCheck2,
       title: t('Tax Certificates', 'কর সনদ'),
       detail: t('Find and download available tax certificates.', 'উপলব্ধ কর সনদ খুঁজুন ও ডাউনলোড করুন।'),
+    },
+    {
+      id: 'corrections',
+      Icon: FilePenLine,
+      title: t('Corrections & Requests', 'সংশোধন ও আবেদন'),
+      detail: t('Request corrections and follow their progress.', 'সংশোধনের আবেদন করুন ও অগ্রগতি দেখুন।'),
     },
     {
       id: 'history',
@@ -83,16 +83,16 @@ export const PublicLanding: React.FC = () => {
       detail: t('See past payments, tax years and receipts.', 'আগের পেমেন্ট, করবর্ষ ও রসিদ দেখুন।'),
     },
     {
-      id: 'beneficiaries',
-      Icon: UsersRound,
-      title: t('Beneficiary Management', 'সুবিধাভোগী ব্যবস্থাপনা'),
-      detail: t('Keep people and their payment records organized.', 'যাঁদের কর পরিশোধ করেন, তাঁদের রেকর্ড গুছিয়ে রাখুন।'),
+      id: 'pay-again',
+      Icon: Repeat2,
+      title: t('Pay Again', 'আবার পরিশোধ'),
+      detail: t('Reuse and edit a previous payment.', 'আগের পেমেন্টের তথ্য বদলে আবার পরিশোধ করুন।'),
     },
     {
-      id: 'repeat-drafts',
-      Icon: Repeat2,
-      title: t('Pay Again & Saved Drafts', 'আবার পরিশোধ ও সংরক্ষিত খসড়া'),
-      detail: t('Reuse a payment or resume a saved draft.', 'আগের পেমেন্টের তথ্য ব্যবহার করুন বা খসড়া চালিয়ে যান।'),
+      id: 'saved-drafts',
+      Icon: Save,
+      title: t('Saved Drafts', 'সংরক্ষিত খসড়া'),
+      detail: t('Save a payment and continue it later.', 'পেমেন্ট খসড়া সংরক্ষণ করে পরে চালিয়ে যান।'),
     },
   ];
 
@@ -282,19 +282,6 @@ export const PublicLanding: React.FC = () => {
               <h3>{title}</h3>
               <p>{detail}</p>
             </div>
-            {id === 'payments' && (
-              <div className="public-benefits__highlights" aria-hidden="true">
-                <span>{t('Self', 'নিজের')}</span>
-                <span>{t('Family', 'পরিবার')}</span>
-                <span>{t('Clients', 'ক্লায়েন্ট')}</span>
-              </div>
-            )}
-            {id === 'repeat-drafts' && (
-              <div className="public-benefits__highlights" aria-hidden="true">
-                <span>{t('Pay Again', 'আবার পরিশোধ')}</span>
-                <span>{t('Saved Drafts', 'সংরক্ষিত খসড়া')}</span>
-              </div>
-            )}
           </article>
         ))}
       </div>
