@@ -50,7 +50,7 @@ test('user guide supports responsive search, FAQs and languages',async({page},in
  await expect(page.getByRole('button',{name:'Payment basics'})).toHaveAttribute('aria-current','true');
  await expect(page.locator('.public-guide-topics')).toHaveCSS('display', 'grid');
  await page.getByRole('button',{name:'Travel tax'}).click();
- await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Mobile'}).click();
  await expect(page.getByRole('button',{name:'Mobile'})).toHaveAttribute('aria-pressed','true');
  await page.getByRole('searchbox',{name:'Search the guide'}).fill('rates');
@@ -84,7 +84,7 @@ test('Help Center typography and interactions remain usable at each viewport', a
   expect(fontSizes.every(size => size >= 16), `Small UI text: ${fontSizes.join(', ')}`).toBe(true);
 
   await guide.getByRole('button', { name: 'Travel tax' }).click();
-  await expect(guide.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
+  await expect(guide.getByRole('heading', { name: 'Travel tax', exact: true })).toBeVisible();
   await guide.getByRole('searchbox', { name: 'Search the guide' }).fill('rates');
   await expect(guide.getByText('Are the rates final?')).toBeVisible();
   await guide.getByText('Are the rates final?').click();
@@ -143,16 +143,16 @@ test('User guide search and text weights follow the citizen typography contract'
 test('User guide has real platform-specific steps and searches across all topics', async ({ page }) => {
   await page.goto('/?action=user_guide');
   const guide = page.locator('.public-guide-page');
-  await expect(guide.getByText('On Home, click Pay Tax', { exact: false })).toBeVisible();
+  await expect(guide.getByText('On Home, choose Pay Tax', { exact: false })).toBeVisible();
   await guide.getByRole('button', { name: 'Mobile', exact: true }).click();
-  await expect(guide.getByText('On Home, tap Pay Tax', { exact: false })).toBeVisible();
-  await expect(guide.getByText('On Home, click Pay Tax', { exact: false })).toHaveCount(0);
+  await expect(guide.getByText('Tap Pay Tax on Home', { exact: false })).toBeVisible();
+  await expect(guide.getByText('On Home, choose Pay Tax', { exact: false })).toHaveCount(0);
 
   const search = guide.getByRole('searchbox', { name: 'Search the guide' });
   await search.fill('rates');
   const travelQuestion = guide.locator('.public-guide-result-faq').filter({ hasText: 'Are the rates final?' });
   await expect(travelQuestion).toBeVisible();
-  await expect(guide.locator('.public-guide-result-group').getByRole('heading',{name:'Travel tax'})).toBeVisible();
+  await expect(guide.locator('.public-guide-result-group').getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
   await search.fill('this-question-does-not-exist');
   await expect(guide.getByText('No results found')).toBeVisible();
   await search.fill('');
@@ -173,11 +173,12 @@ test('Guide search covers steps and answers, while topic FAQs stay contextual', 
   await field.fill('passport');
   await expect(guide.getByRole('heading',{name:'Search results'})).toBeVisible();
   await expect(guide.getByRole('link',{name:'NBR publications'})).toBeVisible();
-  await expect(guide.locator('.public-guide-result-step').first()).toContainText('Enter passenger details');
+  await expect(guide.locator('.public-guide-result-step').first()).toContainText('Find and add passengers');
+  await expect(guide.locator('.public-guide-result-step').first()).toContainText('not government passport verification');
   await expect(guide.locator('.public-guide-layout')).toHaveCount(0);
   await field.fill('tap Pay Tax');
   await expect(guide.locator('.public-guide-result-step').first()).toContainText('Step 1 · Mobile');
-  await expect(guide.locator('.public-guide-result-step').first()).toContainText('On Home, tap Pay Tax');
+  await expect(guide.locator('.public-guide-result-step').first()).toContainText('Tap Pay Tax on Home');
   const clear=guide.getByRole('button',{name:'Clear search'});
   await expect(clear).toHaveCount(1);
   await expect(guide.locator('.public-guide-find-controls > .public-guide-clear')).toHaveCount(0);
