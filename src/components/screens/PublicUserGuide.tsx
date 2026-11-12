@@ -50,7 +50,9 @@ export const PublicUserGuide:React.FC=()=>{
   if(category==='withholding') return [{id:'withholding',label:['Start source tax deposit','উৎসে কর জমা শুরু করুন'],run:()=>openPaymentServiceChoice('SOURCE_TAX_DEPOSIT')}];
   if(category==='security') return [
    {id:'support',label:['Report a payment issue','পেমেন্টের সমস্যা জানান'],run:()=>navigate('incident')},
-   {id:'nbr-support',label:['NBR e-Return support','এনবিআর ই-রিটার্ন সহায়তা'],href:bn?'https://nbr.gov.bd/all-faq/ban':'https://nbr.gov.bd/all-faq/eng'}
+   {id:'nbr-support',label:['NBR e-Return support','এনবিআর ই-রিটার্ন সহায়তা'],href:bn?'https://nbr.gov.bd/all-faq/ban':'https://nbr.gov.bd/all-faq/eng'},
+   {id:'nbr-terms',label:['NBR VAT Portal terms (English)','NBR VAT Portal-এর ব্যবহারের শর্ত (ইংরেজি)'],href:'https://nbr.gov.bd/terms-of-use/eng'},
+   {id:'nbr-privacy',label:['NBR VAT Portal privacy policy (English)','NBR VAT Portal-এর গোপনীয়তা নীতি (ইংরেজি)'],href:'https://nbr.gov.bd/privacy-policy/eng'}
   ];
   const actions=[{id:'payment',label:['Open payment services','পরিশোধ সেবাসমূহ খুলুন'] as Pair,run:()=>openPaymentServiceChoice()}];
   if(category==='payments') actions.push({id:'glossary',label:['Browse tax terms','কর বিষয়ক শব্দ দেখুন'] as Pair,run:()=>navigate('glossary')});

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MessageCircle, X, Send, BookOpen } from 'lucide-react';
 import type { GuideEntry } from '../../data/publicGuideContent';
+import { getMaintainedGuideAnswer } from '../../services/publicGuideAnswer';
 import {useTaxState} from '../../services/taxState';
 import { taxpayerBrandName } from '../../config/brand';
 
@@ -72,13 +73,8 @@ export function PublicHelpChat(){
  const respond=(text:string)=>{
   const query=text.trim();
   if(!query)return;
-  const normalized=query.toLowerCase();
-  const terms=GUIDE_CONTENT.flatMap(group=>[{
-   keywords:[group.en,group.bn,...group.faqs.flatMap(x=>x.q)],
-   answer:group.faqs[0]?.a[bn?1:0] || group.description[bn?1:0]
-  }]);
-  const best=terms.find(row=>row.keywords.some(k=>normalized.includes(k.toLowerCase())||k.toLowerCase().includes(normalized)));
-  const answer=best?.answer||(bn?'পেমেন্ট, রসিদ বা ভ্রমণ কর সম্পর্কে প্রশ্ন করুন। বিস্তারিত User guide-এ দেখুন।':'Ask about payment, receipts or travel tax. See the user guide for more.');
+  const answer=getMaintainedGuideAnswer(query,GUIDE_CONTENT,bn?'bn':'en')
+   ||(bn?'পেমেন্ট, রসিদ বা ভ্রমণ কর সম্পর্কে প্রশ্ন করুন। বিস্তারিত User guide-এ দেখুন।':'Ask about payment, receipts or travel tax. See the user guide for more.');
   setMessages(prev=>[...prev,{from:'user',value:query},{from:'assistant',value:answer}]);
   setInput('');
  };

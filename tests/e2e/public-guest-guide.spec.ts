@@ -78,14 +78,25 @@ test('public guide links open the existing payment and receipt journeys',async({
  await expect(travel.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
 
  await page.goto('/?action=user_guide&category=status');
+ await page.locator('.public-guide-questions').getByText('Does a receipt confirm tax credit?').click();
+ await expect(page.locator('.public-guide-questions')).toContainText('An example payment record does not prove that funds settled to government.');
  await page.locator('.public-guide-actions').getByRole('button',{name:'Find a payment record'}).click();
  await expect(page).toHaveURL(/action=verify/);
  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toBeVisible();
 
  await page.goto('/?action=user_guide&category=security');
  await expect(page.getByRole('link',{name:'NBR e-Return support'})).toHaveAttribute('href','https://nbr.gov.bd/all-faq/eng');
+ await expect(page.getByRole('link',{name:'NBR VAT Portal terms (English)'})).toHaveAttribute('href','https://nbr.gov.bd/terms-of-use/eng');
+ await expect(page.getByRole('link',{name:'NBR VAT Portal privacy policy (English)'})).toHaveAttribute('href','https://nbr.gov.bd/privacy-policy/eng');
+ await page.locator('.public-guide-questions').getByText('Where can I read the available terms and privacy information?').click();
+ await expect(page.locator('.public-guide-questions')).toContainText('NBR VAT Portal');
+ await expect(page.locator('.public-guide-questions')).toContainText('May 2012');
  await setWorkspaceLanguage(page,'bn');
  await expect(page.getByRole('link',{name:'এনবিআর ই-রিটার্ন সহায়তা'})).toHaveAttribute('href','https://nbr.gov.bd/all-faq/ban');
+ await expect(page.getByRole('link',{name:'NBR VAT Portal-এর ব্যবহারের শর্ত (ইংরেজি)'})).toHaveAttribute('href','https://nbr.gov.bd/terms-of-use/eng');
+ await expect(page.getByRole('link',{name:'NBR VAT Portal-এর গোপনীয়তা নীতি (ইংরেজি)'})).toHaveAttribute('href','https://nbr.gov.bd/privacy-policy/eng');
+ await page.locator('.public-guide-questions').getByText('প্রকাশিত ব্যবহারের শর্ত ও গোপনীয়তার তথ্য কোথায় পড়ব?').click();
+ await expect(page.locator('.public-guide-questions')).toContainText('মে ২০১২');
 });
 
 test('Help Center typography and interactions remain usable at each viewport', async ({ page }) => {
@@ -273,6 +284,9 @@ test('floating help uses guide answers and report offers an editable review with
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'Chat support'}).click();
  await expect(page.getByRole('heading',{name:'Korbritto help'})).toBeVisible();
+ await page.getByLabel('Your question').fill('Where can I read the available terms and privacy information?');
+ await page.getByRole('button',{name:'Send'}).click();
+ await expect(page.locator('.public-help-message--assistant').last()).toContainText('NBR VAT Portal');
  await page.getByRole('button',{name:'Payment status',exact:true}).click();
  await expect(page.locator('.public-help-message--assistant')).toContainText('verified reconciliation');
  await page.getByRole('link',{name:'Open user guide'}).click();
