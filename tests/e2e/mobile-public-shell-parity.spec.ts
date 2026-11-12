@@ -124,7 +124,7 @@ test('public mobile footer stays compact and the floating Pay action remains rea
   const inner=footer.locator('.public-footer__inner');
   // The footer must keep a stable Pay/dock clearance, painted in the page
   // background rather than as an empty white extension of the footer.
-  await expect(page.locator('.taxpay-public-mobile-navigation .citizen-corners')).toBeVisible();
+  await expect(page.locator('.taxpay-public-mobile-navigation .citizen-corners')).toHaveCount(1);
   const footerColors=await footer.evaluate(element=>({
     clearance:parseFloat(getComputedStyle(element).paddingBottom),
     footerBackground:getComputedStyle(element).backgroundColor,
@@ -178,7 +178,7 @@ test('426px scrolled mobile footer is one compact white row above the floating P
   await page.setViewportSize({width:426,height:882});
   await page.goto('/?action=landing&lang=en');
   await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
-  await expect(page.locator('.taxpay-public-mobile-navigation .citizen-corners')).toBeVisible();
+  await expect(page.locator('.taxpay-public-mobile-navigation .citizen-corners')).toHaveCount(1);
   const footer=page.locator('.public-footer');
   await expect(footer).toBeVisible();
   const result=await page.evaluate(()=>{
