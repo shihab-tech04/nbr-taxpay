@@ -47,8 +47,20 @@ BEGIN
   IF NEW.service_code IS DISTINCT FROM 'OTHER_TAX_PAYMENT'
      OR NEW.data->>'origin' IS DISTINCT FROM 'TAXPAY_UI'
      OR NEW.data->'details'->>'payerMode' IS DISTINCT FROM 'OTHER'
-     OR nullif(NEW.data->'details'->>'payerId','') IS NOT NULL
   THEN
+    RETURN NEW;
+  END IF;
+
+  -- Only the existing capability-scoped preview submitter may supply payerId.
+  -- An ordinary guest cannot bypass payer TIN validation with a made-up ID.
+  IF nullif(NEW.data->'details'->>'payerId','') IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM taxpay_guest_private.demo_profiles p
+      WHERE p.demo_id = NEW.data->'details'->>'payerId'
+        AND p.payment_session_id = NEW.session_id
+    ) THEN
+      RAISE EXCEPTION 'UNAUTHORIZED_WALKIN_PAYER_ID';
+    END IF;
     RETURN NEW;
   END IF;
 
