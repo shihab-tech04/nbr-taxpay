@@ -8,7 +8,9 @@ test('one shared table stylesheet and React layout primitives own the table visu
   const css=read('src/styles/taxpay-unified-table.css');
   const component=read('src/components/ui/TaxPayDataTable.tsx');
   const entry=read('src/index.css');
-  assert.match(entry, /@import ['"]\.\/styles\/taxpay-unified-table\.css['"]/);
+  assert.doesNotMatch(entry, /@import ['"]\.\/styles\/taxpay-unified-table\.css['"]/, 'Public startup must not fetch account-only table styles');
+  assert.match(read('src/components/layout/TaxpayerReferenceRail.tsx'),/import ['"]\.\.\/\.\.\/styles\/taxpay-unified-table\.css['"]/, 'Authorized taxpayer shell supplies table stylesheet');
+  assert.match(read('src/components/screens/Beneficiaries.tsx'),/import ['"]\.\.\/\.\.\/styles\/taxpay-unified-table\.css['"]/, 'Beneficiary route independently owns its table stylesheet');
   for(const key of ['--taxpay-table-border','--taxpay-table-heading','--taxpay-table-stripe',
     '--taxpay-table-hover','--taxpay-table-row-height','taxpay-table-toolbar',
     'taxpay-mobile-table-card','taxpay-table-state','prefers-reduced-motion'])
