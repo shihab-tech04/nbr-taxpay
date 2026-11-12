@@ -434,7 +434,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           value={paymentTagFilter} onChange={event=>setPaymentTagFilter(event.target.value as 'all'|PaymentTagGroup|'own')}>
           <option value="all">{tr('All tags','সব ট্যাগ')}</option>
           <option value="own">{paymentTagLabel('own')}</option>
-          {PAYMENT_TAG_GROUPS.map(group=><option key={group} value={group}>{paymentTagLabel(group)}</option>}
+          {PAYMENT_TAG_GROUPS.map(group=><option key={group} value={group}>{paymentTagLabel(group)}</option>)}
         </select>
       </label>
     </TaxPayOfficeRegisterFilters>
