@@ -634,7 +634,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         </div>
         {draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0) &&
           <p className="taxpay-summary-draft-hint" role="status">{savedDraftCount===null
-            ?tr('Checking your saved drafts…','সংরক্ষিত খসড়া দেখা হচ্ছে…')
+            ?tr('Draft count unavailable. Sign in or refresh to check again.','খসড়ার সংখ্যা পাওয়া যায়নি। সাইন ইন করুন অথবা রিফ্রেশ করে আবার দেখুন।')
             :tr('No saved drafts yet. Use Save Draft during a payment to continue it later.','এখনও সংরক্ষিত খসড়া নেই। পরে চালু করতে পেমেন্টের সময় খসড়া সংরক্ষণ করুন।')}</p>}
       </section>
       <DashboardMonthlyPayments payments={recordedDirectPayments} assessmentYear={year} language={language}/>
