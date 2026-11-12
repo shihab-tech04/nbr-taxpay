@@ -238,7 +238,7 @@ test('account selection preserves payer and tax choices through the shared login
   await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   await dialog.locator('[data-payment-access="ACCOUNT"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await expect(login.locator('.taxpay-modal__back')).toBeVisible();
   await login.locator('.taxpay-modal__back').click();
   await expect(dialog.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
