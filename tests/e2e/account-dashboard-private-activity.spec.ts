@@ -295,3 +295,40 @@ test('bound SQL ledger keeps historical and new mixed-year allocations independe
   await expect(page.getByTestId('tax-event-details')).not.toContainText('৳ 65.50');
   await expect(ledger).not.toContainText('৳ 164.50');
 });
+
+test('completed summary and amounts count only successful payer records in the selected year',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.route(`${supabaseUrl}/rest/v1/rpc/sim_my_payment_history`,async route=>{
+    const body=route.request().postDataJSON() as {p_view:'payer'|'beneficiary'};
+    if(body.p_view!=='payer')return route.fallback();
+    const second={
+      ...privateHistory[0],id:'SIM-PAY-2025-SECOND',
+      transactionId:'00000000-0000-4000-8000-000000000903',
+      totalMinor:2500,createdAt:'2026-01-10T09:00:00Z',
+      allocations:[{id:'second-2025',lineNo:1,beneficiary:'user2',
+        category:'PENALTY',assessmentYear:'2025-26',amountMinor:2500}],
+    };
+    const failed={
+      ...second,id:'SIM-PAY-2025-FAILED',
+      transactionId:'00000000-0000-4000-8000-000000000904',
+      state:'FAILED',totalMinor:5000,
+      allocations:[{id:'failed-2025',lineNo:1,beneficiary:'user2',
+        category:'PENALTY',assessmentYear:'2025-26',amountMinor:5000}],
+    };
+    await route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},
+      body:JSON.stringify([...privateHistory,second,failed])});
+  });
+  await page.goto('/?action=taxpayer_home');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  const completed=dashboard.getByTestId('account-dashboard-status-summary')
+    .getByText('Completed Payments',{exact:true}).locator('..');
+  await expect(completed.locator('p').nth(1)).toHaveText('1');
+  await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
+  await expect(completed.locator('p').nth(1)).toHaveText('2');
+  await expect(dashboard.getByText('Recorded amount in scenario').locator('..').locator('p').last())
+    .toHaveText('৳ 59.50');
+  await setWorkspaceLanguage(page,'bn');
+  await expect(dashboard.getByTestId('account-dashboard-status-summary')
+    .getByText('সম্পন্ন পেমেন্ট',{exact:true}).locator('..').locator('p').nth(1)).toHaveText('২');
+});

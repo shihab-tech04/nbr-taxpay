@@ -117,8 +117,11 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
   const accountEmail=user?.id===ownerUid&&typeof user.email==='string' ? user.email : '';
   // Distinct SQL payments only: a beneficiary-only allocation is not a payment by this account.
   // SIMULATED records are complete in the application, never certified Treasury settlements.
+  // Count completed payer-owned transactions for the selected assessment year,
+  // not every year in the account or allocations received from another payer.
+  const completedTransactions=yearTransactions.filter(row=>row.state==='SIMULATED');
   const completedCount=visibleScenario.phase==='linked'
-    ? new Set(visibleScenario.transactions.filter(row=>row.state==='SIMULATED' && row.participantView!=='beneficiary')
+    ? new Set(completedTransactions.filter(row=>row.participantView!=='beneficiary')
         .map(row=>row.transactionId)).size : null;
   const items=[
     {id:'completed',label:tr('Completed Payments','সম্পন্ন পেমেন্ট'),count:completedCount,route:'history' as const},
@@ -126,9 +129,10 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
     {id:'corrections',label:tr('Correction Requests','সংশোধনের আবেদন'),count:visible.counts?.correctionInquiries??null,route:'corrections' as const}
   ];
   const recentTransactions=yearTransactions.slice(0,5);
-  const scenarioAmount=yearTransactions.reduce((sum,transaction)=>sum+BigInt(transaction.amountMinor),0n);
+  // Failed, pending and reversed attempts are activity, not completed amounts.
+  const scenarioAmount=completedTransactions.reduce((sum,transaction)=>sum+BigInt(transaction.amountMinor),0n);
   const categoryTotals=new Map<SimulationCategory,bigint>(simulationCategories.map(category=>[category,0n]));
-  for(const transaction of yearTransactions){
+  for(const transaction of completedTransactions){
     for(const allocation of transaction.allocations){
       categoryTotals.set(allocation.category,(categoryTotals.get(allocation.category)??0n)+BigInt(allocation.amountMinor));
     }
