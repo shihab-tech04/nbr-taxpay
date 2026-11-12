@@ -583,15 +583,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </ul> : <p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No correction requests for this assessment year.','এই করবর্ষে কোনো সংশোধনের আবেদন নেই।')}</p>}
     </section>
     </div>
-    <BentoPaymentAnalytics
-      records={[...events,...sqlRows]}
-      people={savedTagPeople}
-      year={year}
-      ownerTin={DEMO_USERS.user1.tin}
-      language={language}
-      sourceLoadError={sqlLoadError}
-      onOpenHistory={tag=>navigate('history',tag&&tag!=='own'?{dashboardTagFilter:tag}:undefined)}
-    />
     <div className="taxpay-bento-recent">
     <section className={panel} aria-labelledby="taxpayer-recent-activity-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -619,6 +610,15 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       {sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-recorded payments could not be loaded. Sample activity remains visible.','অ্যাকাউন্টে সংরক্ষিত পেমেন্ট লোড হয়নি। নমুনা কার্যক্রম দেখা যাচ্ছে।')}</p>}
     </section>
     </div>
+    <BentoPaymentAnalytics
+      records={[...events,...sqlRows]}
+      people={savedTagPeople}
+      year={year}
+      ownerTin={DEMO_USERS.user1.tin}
+      language={language}
+      sourceLoadError={sqlLoadError}
+      onOpenHistory={tag=>navigate('history',tag&&tag!=='own'?{dashboardTagFilter:tag}:undefined)}
+    />
   </div>;
   // A single event projection powers every supported assessment year; a record is
   // never promoted into an official balance just because its scenario state is POSTED.
