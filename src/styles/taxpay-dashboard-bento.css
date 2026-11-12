@@ -271,8 +271,14 @@
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-year__legend{
   font-size:14px;
 }
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-monthly,
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-tags{
-  grid-column:span 12;align-self:start;
+  grid-column:span 6;
+  align-self:start;
+  min-width:0;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-monthly > section{
+  width:100%;
 }
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-tags>section{
   height:auto;
@@ -285,7 +291,7 @@
   display:block;min-width:0;height:100%;
 }
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-tag-spending__legend{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 14px;margin-top:14px;
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;margin-top:14px;
 }
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-tag-spending__item{
   min-width:0;display:flex;flex-direction:column;gap:5px;
@@ -324,9 +330,14 @@
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-tag-spending__review:focus-visible{
   outline:2px solid var(--color-taxpay-primary,#085587);outline-offset:2px;
 }
-.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-drafts,
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-drafts{
+  grid-column:1;
+  min-width:0;
+  align-self:start;
+}
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-recent{
-  grid-column:span 6;align-self:start;
+  grid-column:1 / -1;
+  align-self:start;
 }
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-drafts>section,
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-recent>section{
@@ -359,8 +370,8 @@
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-recent li{
   gap:9px;
 }
-/* Content-led layout: metrics and monthly chart occupy the left column, case
-   detail keeps its natural height on the right. Nothing stretches to its neighbor. */
+/* Primary account tasks appear before analytics: summary and recoverable drafts
+   on the left, case details on the right. Panels keep their natural height. */
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-request-row{
   grid-column:1 / -1;
   width:100%;
@@ -376,6 +387,11 @@
   align-content:start;
   gap:12px;
   min-width:0;
+}
+.taxpay-bento-request-row > .taxpay-bento-summary-column > .taxpay-bento-drafts{
+  grid-column:1;
+  min-width:0;
+  width:100%;
 }
 .taxpay-bento-request-row > .taxpay-bento-summary-column > .taxpay-bento-summary,
 .taxpay-bento-request-row > .taxpay-bento-corrections{
@@ -457,6 +473,10 @@
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-request-row{
     grid-template-columns:minmax(0,1fr);
   }
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-monthly,
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-tags{
+    grid-column:1 / -1;
+  }
 }
 @media(max-width:719px){
   .taxpay-bento-request-row .taxpay-bento-corrections li{
@@ -483,14 +503,6 @@
   .taxpay-monthly-card__bar-space{padding:0 3px}
 }
 
-/* An empty draft component must not reserve half of the recent-activity row. */
-.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-drafts:empty{
-  display:none;
-}
-.taxpay-bento-grid[data-testid="taxpayer-overview-bento"]:not(:has(> .taxpay-bento-drafts:not(:empty))) > .taxpay-bento-recent{
-  /* Full-width on both 12-track desktop and 2-track mobile grids. */
-  grid-column:1 / -1;
-}
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-coverage__donut > div{
   inset:26px;
   padding:4px;
