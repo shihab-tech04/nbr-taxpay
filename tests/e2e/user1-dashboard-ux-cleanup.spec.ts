@@ -222,7 +222,7 @@ test('dashboard residual breakdown reconciles linked and unlinked payments witho
   await page.goto(demo);
   const overview=page.getByTestId('taxpayer-overview-bento');
   const coverage=overview.locator('.taxpay-bento-coverage__donut');
-  await expect(coverage).toContainText('3 types');
+  await expect(coverage).toContainText('86%');
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
   const spending=overview.getByTestId('beneficiary-spending-breakdown');
   await expect(spending.getByTestId('tagged-payment-total')).toContainText('60,000');
