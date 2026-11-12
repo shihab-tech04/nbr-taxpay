@@ -110,7 +110,7 @@ test('mobile banner preserves all five conceptual illustrations and fixed paymen
   await expect(carousel.locator('.public-information-hero__image')).toHaveCount(5);
   const expectedAssets = ['intro-v9', 'return-v9', 'advance-v9', 'withholding-v9', 'travel-v9'];
   const images = await carousel.locator('.public-information-hero__image').evaluateAll(elements =>
-    elements.map(element => (element as HTMLImageElement).src),
+    elements.map(element => (element as HTMLImageElement).dataset.deferredSrc),
   );
   expectedAssets.forEach((name, index) => expect(images[index]).toContain(`taxpay-hero-${name}`));
 
