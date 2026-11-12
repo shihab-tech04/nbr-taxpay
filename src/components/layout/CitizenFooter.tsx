@@ -20,7 +20,7 @@ export function CitizenFooter(){
     {!signedIn && <button onClick={()=>navigate('user_guide',{category:'security'})} type="button">{bn?'নিরাপত্তা ও সহায়তা':'Security & support'}</button>}
     <a href="https://nbr.gov.bd/" target="_blank" rel="noopener noreferrer">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ArrowUpRight size={14} aria-hidden="true"/></a>
   </>;
-  if(isPublic) return <footer className="public-footer no-print" aria-label={bn?'করবৃত্ত ফুটার':'Korbritto footer'}>
+  if(isPublic) return <footer className="public-footer no-print" aria-label={bn?'সহজকর ফুটার':'Sohojkor footer'}>
     <div className="public-footer__inner">
       <div className="public-footer__identity">
         <SiteLogo className="public-footer__wordmark" alt={taxpayerBrandName(language)}/>
@@ -38,7 +38,7 @@ export function CitizenFooter(){
         </details>
       </div>
       <div className="public-footer__bottom">
-        <p>{bn?'© ২০২৬ করবৃত্ত':'© 2026 Korbritto'}</p>
+        <p>{bn?'© ২০২৬ সহজকর':'© 2026 Sohojkor'}</p>
       </div>
     </div>
   </footer>;
@@ -48,7 +48,7 @@ export function CitizenFooter(){
     {route:'user_guide',en:'Help',bn:'সহায়তা'},
     {route:'incident',en:'Report a security concern',bn:'নিরাপত্তা সমস্যা জানান'},
   ];
-  return <footer className={`citizen-footer no-print ${currentRoute==='landing'?'citizen-footer--public':''}`} aria-label={bn?'করবৃত্ত সহায়তা ও তথ্য':'Korbritto support and information'}>
+  return <footer className={`citizen-footer no-print ${currentRoute==='landing'?'citizen-footer--public':''}`} aria-label={bn?'সহজকর সহায়তা ও তথ্য':'Sohojkor support and information'}>
     <div className="citizen-footer__inner">
       <div className="citizen-footer__intro">
         <div><SiteLogo className="citizen-footer__wordmark" alt={taxpayerBrandName(language)}/><p>{currentRoute==='landing' ? (bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information') : (bn?'কর পরিশোধ ওয়ার্কস্পেস':'Tax payment workspace')}</p></div>
