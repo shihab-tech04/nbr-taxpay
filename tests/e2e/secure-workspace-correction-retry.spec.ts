@@ -18,6 +18,8 @@ test('owner can recover a failed private inquiry history load without duplicatin
   const expiresAt = Math.floor(Date.now() / 1000) + 3600;
   const accessToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ sub: userId, aud: 'authenticated', role: 'authenticated', exp: expiresAt }))}.synthetic-signature`;
   let inquiryReads = 0;
+  let sessionClaimCalls = 0;
+  let walkinClaimCalls = 0;
   let allowHistorySuccess = false;
   let failPostSaveRefresh = false;
   let allowPostSaveHistoryRetry = false;
@@ -68,6 +70,16 @@ test('owner can recover a failed private inquiry history load without duplicatin
 
     if (request.method() === 'OPTIONS') return json({}, 200);
     if (url.pathname === '/auth/v1/user' && request.method() === 'GET') return json(authUser);
+    if (url.pathname === '/rest/v1/rpc/taxpay_claim_story1_session' && request.method() === 'POST') {
+      sessionClaimCalls++;
+      expect(request.postDataJSON()).toMatchObject({ p_session_id: expect.any(String) });
+      return json(1);
+    }
+    if (url.pathname === '/rest/v1/rpc/taxpay_claim_walkin_payer_payments' && request.method() === 'POST') {
+      walkinClaimCalls++;
+      expect(request.postDataJSON()).toEqual({});
+      return json(0);
+    }
     if (url.pathname === '/rest/v1/taxpay_correction_inquiries' && request.method() === 'GET') {
       inquiryReads++;
       if (!allowHistorySuccess) return json({ message: 'Synthetic temporary read failure.' }, 503);
@@ -111,7 +123,7 @@ test('owner can recover a failed private inquiry history load without duplicatin
   expect(inquiryReads).toBe(failedReadCount + 1);
   await page.waitForLoadState('networkidle');
 
-  await page.getByLabel('Original receipt or payment reference (user supplied, not verified)').fill('SYN-REF-123456');
+  await page.getByLabel('Original payment reference (must match your linked payment history)').fill('SYN-REF-123456');
   await page.getByLabel('Reason for requesting a correction review').fill('Synthetic request for review.');
   await page.getByLabel('What outcome are you requesting?').fill('Please review this synthetic sample.');
   await page.getByLabel('Proposed attribution field (optional)').selectOption('ASSESSMENT_YEAR');
@@ -121,6 +133,8 @@ test('owner can recover a failed private inquiry history load without duplicatin
   await expect(page.getByRole('status').filter({ hasText: 'Inquiry saved, but its private history could not be refreshed' })).toBeVisible();
   await page.waitForLoadState('networkidle');
   expect(insertCount).toBe(1);
+  expect(sessionClaimCalls).toBe(1);
+  expect(walkinClaimCalls).toBe(1);
   expect(postSaveRefreshFailures).toBeGreaterThan(0);
   expect(insertPayload).toMatchObject({
     requester_uid: userId,
@@ -131,7 +145,7 @@ test('owner can recover a failed private inquiry history load without duplicatin
     old_value: '2024-25',
     new_value: '2025-26',
   });
-  await expect(page.getByLabel('Original receipt or payment reference (user supplied, not verified)')).toHaveValue('');
+  await expect(page.getByLabel('Original payment reference (must match your linked payment history)')).toHaveValue('');
   await expect(history.getByRole('button', { name: 'Retry loading inquiries' })).toBeVisible();
   expect(inquiryReads).toBeGreaterThan(failedReadCount + 1);
   allowPostSaveHistoryRetry = true;
