@@ -21,6 +21,8 @@ export interface TaxpayerTinLookupProps {
   heading?: string;
   tinLabel?: string;
   nameLabel?: string;
+  /** Optional accessible name when two separate TIN lookups share a form. */
+  searchLabel?: string;
   tinPlaceholder?: string;
   namePlaceholder?: string;
   maxTinLength?: number;
@@ -46,7 +48,7 @@ export interface TaxpayerTinLookupProps {
 
 export function TaxpayerTinLookup({
   language, tinId, nameId, tin, name, onTinChange, onSearch, onClear, canSearch,
-  heading, tinLabel, nameLabel, tinPlaceholder, namePlaceholder, maxTinLength = 12, maxNameLength = 160,
+  heading, tinLabel, nameLabel, searchLabel, tinPlaceholder, namePlaceholder, maxTinLength = 12, maxNameLength = 160,
   readonlyTin = false, editableName = false, onNameChange, disabled = false, requiredTin = true,
   autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false,
 }: TaxpayerTinLookupProps) {
@@ -165,7 +167,7 @@ export function TaxpayerTinLookup({
           </button>}
         </div>
         <button type="button" className="tin-lookup__search taxpayer-tin-lookup__search"
-          disabled={disabled || !canSearch} onClick={() => { setShowSuggestions(false); onSearch(); }}>
+          disabled={disabled || !canSearch} aria-label={searchLabel} onClick={() => { setShowSuggestions(false); onSearch(); }}>
           <Search size={17} aria-hidden="true" />{bn ? 'খুঁজুন' : 'Search'}
         </button>
         {Boolean(suggestedTins?.length) && showSuggestions && tin && !locked && suggestionLayout && createPortal(<div
