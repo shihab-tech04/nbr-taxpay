@@ -88,6 +88,8 @@ jobs:
           # Publishable key only. NEVER use service_role, secret or JWT signing keys in a web bundle.
           VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
         run: npm run build
+      - name: Enforce approved public startup transfer budget
+        run: node scripts/ci/check-public-startup-budget.mjs
       - name: Verify Pages base, scoped public endpoint and financial safety
         shell: bash
         run: |

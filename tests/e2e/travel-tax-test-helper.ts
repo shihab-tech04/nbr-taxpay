@@ -36,6 +36,11 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
 export async function fillForeignPassenger(root: Locator | Page, options?: {
   name?: string; passport?: string; birthDate?: string; country?: string;
 }) {
+  // The parent Travel Tax modal may exist before its lazy-loaded passenger
+  // form has mounted. Wait for a real stage anchor before examining visibility;
+  // do not misinterpret an unmounted form as a request to navigate Back.
+  await root.locator('#travel-passenger-tab-first-FOREIGN, #travel-tax-route-1, .travel-flow__review')
+    .first().waitFor({state:'attached'});
   let returnedToTravel = false;
   if (!(await root.locator('#travel-passenger-tab-first-FOREIGN').isVisible())) {
     const editPassengers = root.getByRole('button', { name: /Edit passengers|যাত্রী সম্পাদনা|Edit passengers and receipt contact/ }).first();
