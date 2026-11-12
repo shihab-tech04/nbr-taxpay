@@ -8,7 +8,7 @@ for (const width of [320, 375, 1280]) {
     test.skip(info.project.name !== expectedProject, 'The targeted viewport belongs to its own device project');
     await page.setViewportSize({ width, height: 850 });
     await page.goto('/?action=taxpayer_login');
-    const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
+    const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
     await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
     await login.getByLabel('Password', { exact: true }).fill('user2');
     await login.getByRole('button', { name: 'Sign In' }).click();
@@ -123,7 +123,7 @@ test('Pay Tax header reserves the Back column without overlapping the title in E
 test('draft-eligible account payment protects backdrop, Escape and X at every payment breakpoint', async ({ page }) => {
   // No hosted writes: this suite explicitly runs with the backend disabled.
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();
