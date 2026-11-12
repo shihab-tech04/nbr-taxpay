@@ -15,13 +15,14 @@ import { PublicReport } from './components/screens/PublicReport';
 import { TaxPayModal } from './components/ui/TaxPayModal';
 import { receiptReturnRoute } from './services/routeContract';
 import { IncidentReporting } from './components/screens/IncidentReporting';
-import { User1DemoExperience, user1DemoRoutes } from './components/screens/User1DemoExperience';
+import { user1DemoRoutes } from './config/user1DemoRoutes';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
 import { validCertificateTransactionId } from './services/confirmedPaymentCertificate';
 import { safePrivateAuthReturnRoute } from './services/routeContract';
 
 // Keep modal-only and preview-only code out of the initial public JavaScript.
 // These components retain their existing modal UI, permissions and routes.
+const User1DemoExperience = React.lazy(() => import('./components/screens/User1DemoExperience').then(m => ({default: m.User1DemoExperience})));
 const TaxpayerLoginDialog = React.lazy(() => import('./components/screens/TaxpayerLoginDialog').then(m => ({default: m.TaxpayerLoginDialog})));
 const ParityRegisterModal = React.lazy(() => import('./components/screens/ParityRegisterModal').then(m => ({default: m.ParityRegisterModal})));
 const PublicServiceModal = React.lazy(() => import('./components/screens/PublicServiceModal').then(m => ({default: m.PublicServiceModal})));
