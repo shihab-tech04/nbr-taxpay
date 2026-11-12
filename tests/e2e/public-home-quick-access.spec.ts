@@ -124,6 +124,14 @@ test('wide desktop uses the available canvas without crushing the footer or look
     };
     const footerLinks=[...document.querySelectorAll('.public-footer__navs > *')]
       .map(link=>link.getBoundingClientRect());
+    const overlapping=(a:DOMRect,b:DOMRect) =>
+      a.left < b.right - 1 && a.right > b.left + 1 &&
+      a.top < b.bottom - 1 && a.bottom > b.top + 1;
+    const identity=document.querySelector('.public-footer__identity')!.getBoundingClientRect();
+    const copyright=document.querySelector('.public-footer__bottom')!.getBoundingClientRect();
+    const footerCollision=footerLinks.some((link,index) =>
+      overlapping(link,identity) || overlapping(link,copyright) ||
+      footerLinks.some((other,j)=>j!==index && overlapping(link,other)));
     return {
       hero:box('.public-hero-carousel'),
       record:box('.public-record-discovery'),
@@ -133,7 +141,10 @@ test('wide desktop uses the available canvas without crushing the footer or look
       searchHeading:box('.public-record-discovery__heading'),
       searchField:box('.public-record-search'),
       firstCard:box('.public-benefits__item'),
-      footerGaps:footerLinks.slice(1).map((link,index)=>link.left-footerLinks[index].right),
+      footerGaps:footerLinks.slice(1).flatMap((link,index)=>
+        Math.abs(link.top-footerLinks[index].top)<=2 ? [link.left-footerLinks[index].right] : []),
+      footerLinkCount:footerLinks.length,
+      footerCollision,
       scrollOverflow:document.documentElement.scrollHeight-window.innerHeight,
       horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
     };
@@ -146,14 +157,63 @@ test('wide desktop uses the available canvas without crushing the footer or look
   expect(visual.searchField.width).toBeGreaterThanOrEqual(visual.record.width*.9);
   // Six balanced benefit cards should retain adequate height at wide viewport sizes.
   expect(visual.firstCard.height).toBeGreaterThanOrEqual(94);
-  // The footer tagline should not collapse into the three-line column seen
-  // in the live screenshot, and its navigation links should not run together.
-  expect(visual.footerTagline.height).toBeLessThanOrEqual(24);
-  expect(visual.footerGaps.length).toBeGreaterThanOrEqual(3);
+  // Two-line tagline is acceptable; footer links must never touch or overlap.
+  expect(visual.footerTagline.height).toBeLessThanOrEqual(44);
+  expect(visual.footerLinkCount).toBe(4);
+  expect(visual.footerCollision).toBe(false);
   expect(visual.footerGaps.every(gap=>gap>=10)).toBe(true);
   expect(visual.footer.top-visual.benefits.bottom).toBeLessThanOrEqual(48);
   expect(visual.scrollOverflow).toBeLessThanOrEqual(2);
   expect(visual.horizontalOverflow).toBeLessThanOrEqual(2);
+});
+
+
+test('reported tall desktop: homepage footer follows content with no blank spacer or touching links', async ({page}) => {
+  for (const viewport of [
+    {width:1186,height:1254},
+    {width:1440,height:1254},
+    {width:1775,height:1254},
+  ]) {
+    for (const lang of ['en','bn']) {
+      await page.setViewportSize(viewport);
+      await page.goto('/?action=landing&lang=' + lang);
+      await page.evaluate(async () => { await document.fonts.ready; });
+      const layout=await page.evaluate(() => {
+        const rect=(selector:string)=>document.querySelector(selector)!.getBoundingClientRect();
+        const boxes=[...document.querySelectorAll('.public-footer__navs > *')].map(el=>el.getBoundingClientRect());
+        const identity=rect('.public-footer__identity');
+        const copyright=rect('.public-footer__bottom');
+        const overlap=(a:DOMRect,b:DOMRect)=>a.left < b.right - 1 &&
+          a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
+        return {
+          homeWidth:rect('.public-information-hub').width,
+          benefitsBottom:rect('.public-benefits').bottom,
+          footerTop:rect('.public-footer').top,
+          footerHeight:rect('.public-footer').height,
+          shellHeight:rect('.taxpay-citizen-shell').height,
+          footerOverflow:boxes.some((r,i) => overlap(r,identity) || overlap(r,copyright) ||
+            boxes.some((other,j)=>i!==j && overlap(r,other))),
+          linkGap:boxes.slice(1).flatMap((r,i)=>
+            Math.abs(r.top-boxes[i].top)<=2 ? [r.left-boxes[i].right] : []),
+          horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
+        };
+      });
+      expect(layout.homeWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(1099);
+      expect(layout.homeWidth).toBeLessThanOrEqual(1101);
+      expect(layout.footerTop-layout.benefitsBottom,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(0);
+      expect(layout.footerTop-layout.benefitsBottom,JSON.stringify({viewport,lang,layout})).toBeLessThanOrEqual(70);
+      expect(layout.footerHeight).toBeLessThanOrEqual(140);
+      expect(layout.footerOverflow,JSON.stringify({viewport,lang,layout})).toBe(false);
+      expect(layout.linkGap.every(gap=>gap>=10)).toBe(true);
+      expect(layout.horizontalOverflow).toBeLessThanOrEqual(2);
+    }
+  }
+  // Report's approved bottom-aligned footer is outside the Home-only fix.
+  await page.setViewportSize({width:1186,height:1254});
+  await page.goto('/?action=incident');
+  const reportFooter=await page.locator('.public-footer').boundingBox();
+  expect(reportFooter).not.toBeNull();
+  expect(Math.abs(reportFooter!.y+reportFooter!.height-1254)).toBeLessThanOrEqual(4);
 });
 
 test('record search and benefits share a restrained, left-aligned desktop heading hierarchy', async ({ page }) => {
