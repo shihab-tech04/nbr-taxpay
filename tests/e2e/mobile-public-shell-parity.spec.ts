@@ -169,12 +169,15 @@ test('public mobile footer stays compact and the floating Pay action remains rea
   expect(bounds!.x).toBeGreaterThanOrEqual(slot!.x-3);
   expect(bounds!.y).toBeGreaterThanOrEqual(dockBounds!.y);
   expect(bounds!.y+bounds!.height).toBeLessThanOrEqual(dockBounds!.y+dockBounds!.height);
-  const navBoxes=await dock.locator('.citizen-bottom-nav__item').allBoundingBoxes();
+  const navBoxes=await Promise.all(
+    (await dock.locator('.citizen-bottom-nav__item').all()).map(item=>item.boundingBox())
+  );
   expect(navBoxes).toHaveLength(3);
   for(const navBox of navBoxes){
-    expect(navBox.x+navBox.width).toBeLessThanOrEqual(bounds!.x-3);
+    expect(navBox).not.toBeNull();
+    expect(navBox!.x+navBox!.width).toBeLessThanOrEqual(bounds!.x-3);
   }
-  expect(dockBounds!.bottom).toBeLessThanOrEqual(812);
+  expect(dockBounds!.y+dockBounds!.height).toBeLessThanOrEqual(812);
   await expect(page.getByRole('button',{name:'Chat support'})).toBeVisible();
   await pay.click();
   const choice=page.getByRole('dialog',{name:'Pay Tax'});
