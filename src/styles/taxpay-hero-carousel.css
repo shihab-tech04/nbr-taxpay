@@ -789,6 +789,10 @@
   line-height: 1.36;
 }
 
+/* Preserve the original 24px separation on tablet/mobile. Only desktop
+   receives the tighter vertical rhythm below. */
+.public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem; }
+
 /* Desktop landing uses a single compact, complete first viewport.
    Scope the spacing to the landing section; do not alter other public routes,
    the shared navigation, payment modals, or the public footer. */
