@@ -148,18 +148,20 @@ export function User1TaxpayerProfile({language}:{language:Language}){
           <Download size={17} aria-hidden="true"/>{tr(['Download profile','প্রোফাইল ডাউনলোড'])}
         </button>
       </div>
-      <div className="flex flex-wrap items-end justify-between gap-3 border-t border-taxpay-border px-5 py-4 sm:px-6">
+      <div className="border-t border-taxpay-border px-5 py-4 sm:px-6">
         <div className="min-w-0">
           <p className="text-sm text-taxpay-muted">{tr(['TIN','টিআইএন'])}</p>
-          <div className="mt-1 break-all text-xl font-semibold tracking-wide text-taxpay-text sm:text-2xl">
+          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-0.5 break-all text-xl font-semibold tracking-wide text-taxpay-text sm:text-2xl">
             <MaskedProfileValue key={tin} value={tin} kind="tin" label={tr(['TIN','টিআইএন'])}
               language={language} testId="user1-profile-tin"/>
+            <button type="button" onClick={copyTin}
+              aria-label={copied==='done'?tr(['Copied TIN','টিআইএন কপি হয়েছে']):tr(['Copy TIN','টিআইএন কপি করুন'])}
+              title={copied==='done'?tr(['Copied','কপি হয়েছে']):tr(['Copy TIN','টিআইএন কপি করুন'])}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">
+              {copied==='done'?<Check size={18} aria-hidden="true"/>:<Clipboard size={18} aria-hidden="true"/>}
+            </button>
           </div>
         </div>
-        <button type="button" onClick={copyTin} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light">
-          {copied==='done'?<Check size={16} aria-hidden="true"/>:<Clipboard size={16} aria-hidden="true"/>}
-          {copied==='done'?tr(['Copied','কপি হয়েছে']):tr(['Copy TIN','টিআইএন কপি করুন'])}
-        </button>
       </div>
       {copied==='failed'&&<p className="px-5 pb-3 text-sm text-taxpay-error" role="alert">{tr(['Could not copy. Select and copy the reference manually.','কপি করা যায়নি। রেফারেন্স নির্বাচন করে কপি করুন।'])}</p>}
       {downloadError&&<p className="px-5 pb-3 text-sm text-taxpay-error" role="alert">{tr(['Download failed. Please retry.','ডাউনলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।'])}</p>}

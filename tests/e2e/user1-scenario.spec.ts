@@ -200,7 +200,27 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(content).not.toContainText('email@test.com');
   await expect(profile.getByRole('button',{name:'Show Tax office phone'})).toBeVisible();
   await expect(profile.getByRole('button',{name:'Show Previous TIN'})).toHaveCount(0);
-  await expect(profile.getByRole('button',{name:'Copy TIN'})).toBeVisible();
+  const copyButton=profile.getByRole('button',{name:'Copy TIN'});
+  const eyeButton=profile.getByRole('button',{name:'Show TIN'});
+  await expect(copyButton).toBeVisible();
+  await expect(copyButton).toHaveAttribute('title','Copy TIN');
+  const copyBox=await copyButton.boundingBox();
+  const eyeBox=await eyeButton.boundingBox();
+  expect(copyBox).not.toBeNull();
+  expect(eyeBox).not.toBeNull();
+  // Compact icon actions remain next to each other, not at opposite ends of the TIN row.
+  expect(copyBox!.x-eyeBox!.x).toBeGreaterThanOrEqual(eyeBox!.width-2);
+  expect(copyBox!.x-eyeBox!.x).toBeLessThanOrEqual(eyeBox!.width+16);
+  expect(Math.abs(copyBox!.y-eyeBox!.y)).toBeLessThanOrEqual(2);
+  await page.evaluate(()=>{
+    Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+      writeText:async(text:string)=>{(window as typeof window & {__lastCopiedTin?:string}).__lastCopiedTin=text;}
+    }});
+  });
+  await copyButton.click();
+  await expect(profile.getByRole('button',{name:'Copied TIN'})).toBeVisible();
+  expect(await page.evaluate(()=>(window as typeof window & {__lastCopiedTin?:string}).__lastCopiedTin)).toBe('577935451798');
+  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('*********798');
   await expect(profile.getByRole('button',{name:'Download profile'})).toBeVisible();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   if(await rail.isVisible())await expect(rail.getByRole('button',{name:'Activity',exact:true})).toBeVisible();
@@ -215,6 +235,7 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(page.getByTestId('user1-profile-summary').getByText('সর্বশেষ লগইন')).toHaveCount(1);
   await expect(page.getByTestId('user1-profile-tin')).toHaveText('*********798');
   await expect(page.getByRole('button',{name:'টিআইএন দেখান'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'টিআইএন কপি করুন'})).toBeVisible();
   await expect(bn.getByRole('button',{name:'মোবাইল নম্বর দেখান'})).toBeVisible();
   await expect(bn.getByRole('button',{name:'ইমেইল ঠিকানা দেখান'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
