@@ -196,8 +196,8 @@ test('reported tall desktop: homepage footer follows content with no blank space
           footerBottom:rect('.public-footer').bottom,
           mainBottom:rect('#main-content').bottom,
           backgroundColor:getComputedStyle(document.querySelector('.taxpay-citizen-shell')!).backgroundColor,
-          centerBottomCovered:document.elementFromPoint(innerWidth/2,innerHeight-2)
-            ?.closest('.taxpay-citizen-shell')!==null,
+          centerBottomCovered:Boolean(document.elementFromPoint(innerWidth/2,innerHeight-2)
+            ?.closest('.taxpay-citizen-shell')),
           footerOverflow:boxes.some((r,i) => overlap(r,identity) || overlap(r,copyright) ||
             boxes.some((other,j)=>i!==j && overlap(r,other))),
           linkGap:boxes.slice(1).flatMap((r,i)=>
@@ -261,8 +261,8 @@ test('homepage viewport integrity survives 1024px breakpoint and zoom-equivalent
         footerTop:footer.top,
         benefitsBottom:benefits.bottom,
         horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
-        atBottom:document.elementFromPoint(innerWidth/2,innerHeight-2)
-          ?.closest('.taxpay-citizen-shell')!==null,
+        atBottom:Boolean(document.elementFromPoint(innerWidth/2,innerHeight-2)
+          ?.closest('.taxpay-citizen-shell')),
       };
     });
     expect(bounds.shellBottom,JSON.stringify({viewport,bounds})).toBeGreaterThanOrEqual(viewport.height-2);
