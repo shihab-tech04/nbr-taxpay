@@ -1,6 +1,6 @@
 import {TaxPayDataGrid,TaxPayTableState,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter,TaxPayActiveFilterChips} from '../ui/TaxPayDataTable';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, FileText } from 'lucide-react';
+import { Search, FileText, Download } from 'lucide-react';
 import { getAccountStoryPayments, beneficiaryPaymentEntries, type BeneficiaryPaymentEntry } from '../../services/story1AccountPaymentHistory';
 import { formatCurrency } from '../../services/numberFormat';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
@@ -13,6 +13,7 @@ import {useTaxState} from '../../services/taxState';
 import {usePaymentAccountProfile} from '../../services/paymentAccountProfile';
 import {reuseRecordedPayment} from '../../services/paymentReuse';
 import {paymentDateInRange} from '../../services/paymentDateFilter';
+import {buildAccountBeneficiaryHistoryCsv} from '../../services/accountBeneficiaryHistoryCsv';
 
 /** History of SQL-recorded payments initiated by this signed-in payer.
  * Each beneficiary allocation keeps its own TIN, assessment year, head and
@@ -25,6 +26,7 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
   const [reuseError,setReuseError]=useState('');
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState('');
+  const [exportError,setExportError]=useState('');
   const [revision,setRevision]=useState(0);
   const [search,setSearch]=useState('');
   const [filtersOpen,setFiltersOpen]=useState(false);
@@ -103,6 +105,19 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
             beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)||'']):[])
       ].some(value=>value.toLocaleLowerCase().includes(q))));
   },[rows,search,tagFilter,visibleTags,beneficiaryFilter,yearFilter,headFilter,language,dateFrom,dateTo,invalidDateRange]);
+  const exportHistory=()=>{
+    setExportError('');
+    try{
+      const csv=buildAccountBeneficiaryHistoryCsv(filtered,language);
+      const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+      const link=document.createElement('a');
+      link.href=url;link.download='Korbritto_payment_history.csv';
+      document.body.appendChild(link);link.click();link.remove();
+      window.setTimeout(()=>URL.revokeObjectURL(url),0);
+    }catch{
+      setExportError(tr('Export could not be prepared. Try again.','রপ্তানি তৈরি করা যায়নি। আবার চেষ্টা করুন।'));
+    }
+  };
   return <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5" data-testid="beneficiary-payment-history"
     aria-label={tr('Individual beneficiary payment history','প্রতিটি উপকারভোগীর পেমেন্টের ইতিহাস')}>
     <TaxPayOfficeRegisterToolbar title={tr('Beneficiary payment history','উপকারভোগীর পেমেন্ট ইতিহাস')}
@@ -111,7 +126,13 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
       searchLabel={tr('Search beneficiary, TIN or payment reference','উপকারভোগী, টিআইএন বা রেফারেন্স খুঁজুন')}
       searchPlaceholder={tr('Search beneficiary, TIN or reference','নাম, টিআইএন বা রেফারেন্স খুঁজুন')}
       filtersOpen={filtersOpen} onToggleFilters={()=>setFiltersOpen(open=>!open)}
-      filterLabel={tr('Filter','ফিল্টার')}/>
+      filterLabel={tr('Filter','ফিল্টার')}
+      actions={<button type="button" data-testid="account-beneficiary-history-export"
+        aria-label={tr('Export filtered payment history as CSV','ফিল্টার করা পেমেন্টের ইতিহাস CSV হিসেবে নিন')}
+        disabled={loading||Boolean(error)||filtered.length===0} onClick={exportHistory}
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light disabled:cursor-not-allowed disabled:opacity-50">
+        <Download size={16} aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}
+      </button>}/>
     <TaxPayOfficeRegisterFilters open={filtersOpen}>
       <label className="taxpayer-transaction-filter">
         <span>{tr('Beneficiary tag','উপকারভোগীর ট্যাগ')}</span>
@@ -179,6 +200,7 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
       ]}/>
     {visibleTags.status==='error'&&<p className="mt-2 text-sm text-taxpay-error" role="alert">{tr('Saved tags unavailable; categories were not guessed.','সংরক্ষিত ট্যাগ পাওয়া যায়নি; শ্রেণি অনুমান করা হয়নি।')}</p>}
     {reuseError&&<p className="mt-3 text-sm text-taxpay-error" role="alert">{reuseError}</p>}
+    {exportError&&<p className="mt-3 text-sm text-taxpay-error" role="alert">{exportError}</p>}
     {loading&&<p className="mt-4 text-sm text-taxpay-muted" role="status">{tr('Loading saved payments…','সংরক্ষিত পেমেন্ট লোড হচ্ছে…')}</p>}
     {error&&<div className="mt-4" role="alert">
       <p className="text-sm text-taxpay-error">{tr('Payment history could not be verified.','পেমেন্টের ইতিহাস যাচাই করা যায়নি।')}</p>

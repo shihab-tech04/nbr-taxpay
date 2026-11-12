@@ -1,4 +1,5 @@
 import {expect,test,type Page} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
 
 const backend='https://nbr-taxpay-test.invalid';
 const owner={id:'00000000-0000-4000-8000-000000000202',email:'history-owner@example.invalid',
@@ -77,9 +78,37 @@ for(const language of ['en','bn'] as const){
     await expect(history).toContainText('Beneficiary C');
     await expect(history).not.toContainText('Beneficiary A');
     await expect(history).not.toContainText('Beneficiary B');
+    const exportButton=history.getByRole('button',{
+      name:language==='bn'?'ফিল্টার করা পেমেন্টের ইতিহাস CSV হিসেবে নিন':'Export filtered payment history as CSV'
+    });
+    await expect(exportButton).toBeEnabled();
+    const interruptedDownload=page.waitForEvent('download');
+    await exportButton.click();
+    await (await interruptedDownload).cancel();
+    const firstDownloadEvent=page.waitForEvent('download');
+    await exportButton.click();
+    const firstDownload=await firstDownloadEvent;
+    expect(firstDownload.suggestedFilename()).toBe('Korbritto_payment_history.csv');
+    const firstCsv=await readFile((await firstDownload.path())!,'utf8');
+    const secondDownloadEvent=page.waitForEvent('download');
+    await exportButton.click();
+    const secondDownload=await secondDownloadEvent;
+    const secondCsv=await readFile((await secondDownload.path())!,'utf8');
+    expect(secondCsv).toBe(firstCsv);
+    const lines=firstCsv.replace(/^\uFEFF/,'').split('\r\n');
+    expect(lines).toHaveLength(2);
+    expect(firstCsv).toContain('Beneficiary C');
+    expect(firstCsv).toContain('012345678903');
+    expect(firstCsv).toContain('2024-25');
+    expect(firstCsv).toContain('00000000-0000-4000-8000-000000000912');
+    expect(firstCsv).not.toContain('Beneficiary A');
+    expect(firstCsv).not.toContain('Beneficiary B');
+    expect(firstCsv).not.toContain('history-owner@example.invalid');
+    expect(firstCsv).not.toContain('access_token');
     await to.fill('2026-10-27');
     await from.fill('2026-10-27');
     await expect(history).not.toContainText('Beneficiary C');
+    await expect(exportButton).toBeDisabled();
     await history.getByRole('button',{name:language==='bn'?'সব ফিল্টার মুছুন':'Clear all',exact:true}).click();
     await expect(history).toContainText('Beneficiary A');
     await expect(history).toContainText('Beneficiary B');
