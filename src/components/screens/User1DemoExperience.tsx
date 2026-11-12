@@ -110,6 +110,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [savedTagPeople,setSavedTagPeople]=useState<Beneficiary[]>([]);
   const [tagLoadState,setTagLoadState]=useState<'loading'|'ready'|'error'>('loading');
+  const [tagRevision,setTagRevision]=useState(0);
   const [paymentTagFilter,setPaymentTagFilter]=useState<'all'|PaymentTagGroup>('all');
   const [beneficiaryFilter,setBeneficiaryFilter]=useState('all');
   const [transactionFiltersExpanded,setTransactionFiltersExpanded]=useState(false);
@@ -132,7 +133,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       if(active){setSavedTagPeople([]);setTagLoadState('error');}
     });
     return()=>{active=false;};
-  },[route]);
+  },[route,tagRevision]);
   const paymentTag=(item:RecordItem)=>paymentTagGroupForTin(item.beneficiaryTin,savedTagPeople);
   // Only link exact TINs saved under this payer's currently selected profile.
   const transactionBeneficiaries=(item:RecordItem)=>activityPaymentBeneficiaries(item,savedTagPeople,language);
@@ -752,7 +753,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
                 <strong className="text-sm tabular-nums">{formatMinor(recordedDirectTotal)}</strong>
               </div>
               {tagLoadState!=='ready'?
-                <p className="mt-2 text-sm text-taxpay-muted">{tr('Checking beneficiary tags…','উপকারভোগীর ট্যাগ যাচাই হচ্ছে…')}</p>:
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <p className="text-sm text-taxpay-muted" role={tagLoadState==='error'?'alert':'status'}>
+                    {tagLoadState==='error'?tr('Beneficiary tags could not be loaded.','উপকারভোগীর ট্যাগ লোড করা যায়নি।'):
+                      tr('Checking beneficiary tags…','উপকারভোগীর ট্যাগ যাচাই হচ্ছে…')}
+                  </p>
+                  {tagLoadState==='error'&&<button type="button" className={action} onClick={()=>setTagRevision(x=>x+1)}>
+                    {tr('Retry','আবার চেষ্টা করুন')}</button>}
+                </div>:
                 <div className="mt-3 grid grid-cols-2 gap-2" data-testid="dashboard-sql-tags">
                   {storedSpendingRows.filter(row=>row.amount>0n).map(row=>
                     <div key={row.key} className="min-w-0 rounded-lg bg-taxpay-light p-2">
@@ -787,7 +795,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         <p className="text-lg font-semibold tabular-nums" data-testid="tagged-payment-total">{tagLoadState==='ready'?money(taggedPaymentTotal):'—'}</p>
       </div>
       {tagLoadState==='loading'&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('Loading saved beneficiary categories…','সংরক্ষিত উপকারভোগীর শ্রেণি লোড হচ্ছে…')}</p>}
-      {tagLoadState==='error'&&<p role="alert" className="mt-3 text-sm text-taxpay-error">{tr('Spending categories are unavailable. Amounts were not attributed.','ব্যয়ের শ্রেণি পাওয়া যায়নি। কোনো অর্থ শ্রেণিবদ্ধ করা হয়নি।')}</p>}
+      {tagLoadState==='error'&&<div className="mt-3 flex flex-wrap items-center gap-2">
+        <p role="alert" className="text-sm text-taxpay-error">{tr('Spending categories are unavailable. Amounts were not attributed.','ব্যয়ের শ্রেণি পাওয়া যায়নি। কোনো অর্থ শ্রেণিবদ্ধ করা হয়নি।')}</p>
+        <button type="button" className={action} onClick={()=>setTagRevision(x=>x+1)}>
+          {tr('Retry','আবার চেষ্টা করুন')}</button>
+      </div>}
       {tagLoadState==='ready'&&<div className="taxpay-tag-spending mt-3">
         <div className="taxpay-tag-spending__track" role="img" data-testid="beneficiary-spending-segments"
           aria-label={tr('Recorded payments by category','শ্রেণি অনুযায়ী নথিভুক্ত পেমেন্ট')+': '+spendingSegments.map(item=>item.label+' '+money(item.amount)).join(', ')}>
