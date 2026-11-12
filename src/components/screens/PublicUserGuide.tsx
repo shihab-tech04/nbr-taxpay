@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Monitor, Smartphone, Search, ChevronDown, ExternalLink, X, ArrowRight } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import '../../styles/public-guide-actions.css';
 
 import { GUIDE_CONTENT, type Category, type Pair } from '../../data/publicGuideContent';
 export { GUIDE_CONTENT } from '../../data/publicGuideContent';
