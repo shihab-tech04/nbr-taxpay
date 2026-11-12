@@ -805,7 +805,7 @@
   .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
     display: flex;
     flex-direction: column;
-    padding-top: 14px;
+    padding-top: 10px;
     padding-bottom: 12px;
   }
   .public-home-sections {
@@ -814,13 +814,17 @@
     flex-direction: column;
     min-height: 0;
   }
-  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 14px; }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 12px; }
   .public-home-sections .public-record-discovery {
     display: block;
-    padding: .8rem 1rem .9rem;
+    padding: .75rem 1rem .8rem;
   }
   .public-home-sections .public-record-discovery__heading {
-    margin-bottom: .55rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .15rem;
+    margin-bottom: .6rem;
   }
   .public-home-sections .public-record-discovery__heading h2 {
     font-size: 1.125rem;
@@ -828,8 +832,9 @@
     line-height: 1.35;
   }
   .public-home-sections .public-record-discovery__heading p {
-    margin-top: .15rem;
+    margin: 0;
     font-size: .875rem;
+    font-weight: 400;
     line-height: 1.4;
   }
   .public-home-sections .public-record-search {
@@ -854,14 +859,27 @@
     background: transparent;
   }
   .public-home-sections .public-benefits__heading {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: .15rem;
     margin-bottom: .65rem;
     padding: 0;
     border: 0;
   }
   .public-home-sections .public-benefits__heading h2 {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 600;
+    line-height: 1.35;
     letter-spacing: 0;
+  }
+  .public-home-sections .public-benefits__heading p {
+    margin: 0;
+    font-size: .875rem;
+    font-weight: 400;
+    line-height: 1.4;
   }
   .public-home-sections .public-benefits__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -941,9 +959,9 @@
     padding-bottom: 4px;
   }
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 8px; }
-  .public-home-sections .public-record-discovery { padding: .3rem .85rem .4rem; }
-  .public-home-sections .public-record-discovery__heading { margin-bottom: .2rem; }
-  .public-home-sections .public-benefits__heading { margin-bottom: .2rem; }
+  .public-home-sections .public-record-discovery { padding: .4rem .85rem .5rem; }
+  .public-home-sections .public-record-discovery__heading { margin-bottom: .25rem; }
+  .public-home-sections .public-benefits__heading { margin-bottom: .35rem; }
   .public-home-sections .public-benefits__grid { row-gap: .35rem; }
   .public-home-sections .public-benefits__item {
     min-height: 84px;
