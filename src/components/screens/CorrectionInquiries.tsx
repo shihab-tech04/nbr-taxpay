@@ -1,5 +1,6 @@
 import React, {useEffect,useState} from 'react';
 import {supabase} from '../../services/supabaseClient';
+import {getStorySessionId} from '../../services/simulatedPaymentStory';
 import {sameAuthenticatedOwner} from '../../services/secureWorkspacePolicy';
 import {validateCorrectionInquiry, type ProposedAttributionField} from '../../services/correctionInquiryValidation';
 import {UiButton,UiInput,UiTextarea,UiSelect} from '../ui/Controls';
@@ -15,7 +16,7 @@ const t={
  en:{
  title:'Request a review of an original reference',
  intro:'Private, unverified inquiry only. This does not open a financial correction case or change a payment, challan, withholding credit or ledger.',
- ref:'Original receipt or payment reference (user supplied, not verified)',
+ ref:'Original payment reference (must match your linked payment history)',
  reason:'Reason for requesting a correction review',
  outcome:'What outcome are you requesting?',
  select:'Proposed attribution field (optional)', none:'No attribution change', old:'Original value (user supplied)', newValue:'Requested value (unverified)',
@@ -33,12 +34,12 @@ const t={
  statusUnavailable:'Status unavailable',details:'Request details',reasonLabel:'Reason provided',outcomeLabel:'Requested outcome',
  changeLabel:'Unverified attribution proposal',oldValueLabel:'Previous value (unverified)',newValueLabel:'Requested value (unverified)',
  changeKinds:{ASSESSMENT_YEAR:'Assessment year',CIRCLE:'Circle',PAYMENT_HEAD:'Payment head',ATTRIBUTION:'Payment attribution'},
- loading:'Loading private inquiries…',retry:'Retry loading inquiries',historyRefreshed:'Private inquiry history refreshed.'
+ loading:'Loading private inquiries…',retry:'Retry loading inquiries',historyRefreshed:'Private inquiry history refreshed.',notLinked:'No payment in your linked account matches this reference. Check it or use the account that owns the payment.'
  },
  bn:{
  title:'মূল রেফারেন্স পর্যালোচনার অনুরোধ',
  intro:'শুধু ব্যক্তিগত যাচাইবিহীন অনুসন্ধান। এটি আর্থিক সংশোধনী মামলা নয়; অর্থ পরিশোধ, চালান বা লেজার ক্রেডিট পরিবর্তন করে না।',
- ref:'মূল রসিদ/পরিশোধ রেফারেন্স (নিজের দেওয়া, যাচাই হয়নি)',
+ ref:'মূল পরিশোধ রেফারেন্স (আপনার সংযুক্ত পেমেন্ট ইতিহাসের সঙ্গে মিলতে হবে)',
  reason:'সংশোধন পর্যালোচনার কারণ',
  outcome:'কী ফলাফল চান?',
  select:'পরিবর্তনের ক্ষেত্র (ঐচ্ছিক)', none:'পরিশোধের তথ্য পরিবর্তনের অনুরোধ নেই',old:'পূর্বের তথ্য (নিজের দেওয়া)', newValue:'প্রস্তাবিত তথ্য (যাচাই হয়নি)',
@@ -56,7 +57,7 @@ const t={
  statusUnavailable:'অবস্থা অনুপলব্ধ',details:'অনুরোধের বিবরণ',reasonLabel:'প্রদত্ত কারণ',outcomeLabel:'অনুরোধের ফলাফল',
  changeLabel:'যাচাই না হওয়া পরিচিতি প্রস্তাব',oldValueLabel:'পূর্বের মান (যাচাই হয়নি)',newValueLabel:'অনুরোধের মান (যাচাই হয়নি)',
  changeKinds:{ASSESSMENT_YEAR:'করবর্ষ',CIRCLE:'কর সার্কেল',PAYMENT_HEAD:'কর খাত',ATTRIBUTION:'পরিশোধের পরিচিতি'},
- loading:'ব্যক্তিগত অনুসন্ধান লোড হচ্ছে…',retry:'অনুসন্ধান আবার লোড করুন',historyRefreshed:'ব্যক্তিগত অনুসন্ধানের ইতিহাস হালনাগাদ হয়েছে।'
+ loading:'ব্যক্তিগত অনুসন্ধান লোড হচ্ছে…',retry:'অনুসন্ধান আবার লোড করুন',historyRefreshed:'ব্যক্তিগত অনুসন্ধানের ইতিহাস হালনাগাদ হয়েছে।',notLinked:'আপনার সংযুক্ত অ্যাকাউন্টে এই রেফারেন্সের কোনো পরিশোধ পাওয়া যায়নি। রেফারেন্স যাচাই করুন অথবা যে অ্যাকাউন্টে পেমেন্টটি রয়েছে সেটিতে সাইন ইন করুন।'
  }
 } as const;
 
@@ -117,6 +118,10 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   try{
    const {data:who,error:idError}=await supabase.auth.getUser();
    if(idError||!sameAuthenticatedOwner(who.user?.id,authenticatedUserId)){setMessage(labels.auth);return;}
+   const {error:sessionClaimError}=await supabase.rpc('taxpay_claim_story1_session',{p_session_id:getStorySessionId()});
+   if(sessionClaimError){setMessage(labels.fail);return;}
+   const {error:walkinClaimError}=await supabase.rpc('taxpay_claim_walkin_payer_payments');
+   if(walkinClaimError){setMessage(labels.fail);return;}
    const {error}=await supabase.from('taxpay_correction_inquiries').insert({
      requester_uid:authenticatedUserId,
      original_reference:originalReference.trim(),
@@ -124,7 +129,11 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
      requested_outcome:desiredOutcome.trim(),
      ...(change ? {change_kind:change.field,old_value:change.previousValue.trim(),new_value:change.proposedValue.trim()}: {})
    });
-   if(error){setMessage(labels.fail);return;}
+   if(error){
+    const detail=typeof error.message==='string'?error.message:'';
+    setMessage(detail.includes('CORRECTION_ORIGINAL_PAYMENT_NOT_LINKED')?labels.notLinked:labels.fail);
+    return;
+   }
    persisted=true;
    setOriginalReference('');setReason('');setDesiredOutcome('');setChangeKind('');setPreviousValue('');setProposedValue('');
    try{await load(()=>true);setLoadError(false)}
