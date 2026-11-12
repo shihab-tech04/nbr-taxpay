@@ -58,44 +58,52 @@ test('public homepage explains six citizen benefits without duplicate CTAs', asy
   }
 });
 
-test('desktop benefits are one coherent surface with a horizontal record lookup', async ({ page }) => {
+test('desktop restores the approved full-width lookup and six distinct, legible benefit cards', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/?action=landing&lang=en');
   await page.evaluate(async () => { await document.fonts.ready; });
 
   const layout = await page.evaluate(() => {
-    const panel = document.querySelector('.public-benefits')!;
-    const cards = [...document.querySelectorAll('.public-benefits__item')];
-    const grid = document.querySelector('.public-benefits__grid')!;
-    const heading = document.querySelector('.public-record-discovery__heading')!;
-    const input = document.querySelector('.public-record-search')!;
-    const footer = document.querySelector('.public-footer')!;
-    const icons = [...document.querySelectorAll('.public-benefits__icon')];
-    const cardStyle = getComputedStyle(cards[0]);
+    const rect = (s: string) => document.querySelector(s)!.getBoundingClientRect();
+    const style = (s: string) => getComputedStyle(document.querySelector(s)!);
+    const cardNodes = [...document.querySelectorAll('.public-benefits__item')];
+    const cards = cardNodes.map(element => element.getBoundingClientRect());
     return {
-      panelBorder: getComputedStyle(panel).borderTopWidth,
-      panelBackground: getComputedStyle(panel).backgroundColor,
-      cardRadius: cardStyle.borderTopLeftRadius,
-      cardLeftBorder: cardStyle.borderLeftWidth,
-      columnGap: getComputedStyle(grid).columnGap,
-      searchHeadingRight: heading.getBoundingClientRect().right,
-      searchFieldLeft: input.getBoundingClientRect().left,
-      rowHeight: cards[0].getBoundingClientRect().height,
-      iconColors: icons.map(icon => getComputedStyle(icon).color),
-      footerGap: footer.getBoundingClientRect().top - panel.getBoundingClientRect().bottom,
+      search: rect('.public-record-discovery'),
+      heading: rect('.public-record-discovery__heading'),
+      input: rect('.public-record-search'),
+      headings: [
+        Number(style('.public-record-discovery__heading h2').fontWeight),
+        Number(style('.public-benefits__heading h2').fontWeight),
+        Number(style('.public-benefits__copy h3').fontWeight),
+      ],
+      descriptions: [
+        parseFloat(style('.public-record-discovery__heading p').fontSize),
+        parseFloat(style('.public-benefits__copy p').fontSize),
+        parseFloat(style('.public-footer__bottom p').fontSize),
+      ],
+      cardBackground: style('.public-benefits__item').backgroundColor,
+      cardRadius: parseFloat(style('.public-benefits__item').borderTopLeftRadius),
+      gridGap: parseFloat(style('.public-benefits__grid').columnGap),
+      firstCard: cards[0],
+      secondCard: cards[1],
+      sectionBottom: rect('.public-benefits').bottom,
+      footerTop: rect('.public-footer').top,
       scrollOverflow: document.documentElement.scrollHeight - window.innerHeight,
+      horizontalOverflow: document.documentElement.scrollWidth - window.innerWidth,
     };
   });
-  expect(layout.panelBorder).toBe('1px');
-  expect(layout.panelBackground).not.toBe('rgba(0, 0, 0, 0)');
-  expect(layout.cardRadius).toBe('0px');
-  expect(layout.cardLeftBorder).toBe('0px');
-  expect(layout.columnGap).toBe('0px');
-  expect(layout.searchFieldLeft).toBeGreaterThan(layout.searchHeadingRight + 8);
-  expect(layout.rowHeight).toBeGreaterThanOrEqual(105);
-  expect(new Set(layout.iconColors).size).toBe(1);
-  expect(layout.footerGap).toBeLessThanOrEqual(75);
+  expect(layout.heading.bottom).toBeLessThan(layout.input.top);
+  expect(layout.input.width).toBeGreaterThanOrEqual(layout.search.width * .9);
+  expect(layout.headings.every(weight => weight <= 600)).toBe(true);
+  expect(layout.descriptions.every(size => size >= 14)).toBe(true);
+  expect(layout.cardRadius).toBeGreaterThanOrEqual(10);
+  expect(layout.gridGap).toBeGreaterThanOrEqual(8);
+  expect(layout.firstCard.right + 8).toBeLessThanOrEqual(layout.secondCard.left);
+  expect(layout.cardBackground).not.toBe('rgba(0, 0, 0, 0)');
   expect(layout.scrollOverflow).toBeLessThanOrEqual(2);
+  expect(layout.horizontalOverflow).toBeLessThanOrEqual(2);
+  expect(layout.footerTop - layout.sectionBottom).toBeLessThanOrEqual(110);
 });
 
 test('existing hero Pay Tax and Travel Tax actions still open separate journeys', async ({ page }) => {
