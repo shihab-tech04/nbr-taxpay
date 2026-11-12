@@ -579,19 +579,13 @@
   .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-pay--guest-floating {
     bottom:calc(80px + env(safe-area-inset-bottom));
   }
-  /* Footer is ONE white row. Keep dock/Pay clearance outside that row,
-     painted in the page background, rather than 160px of empty white footer.
-     While the fixed bottom dock is visible, retain its original safe clearance. */
+  /* Keep Pay and the fixed bottom dock clear with a STABLE footer size.
+     The reserved area is page-colored, never an empty white footer extension.
+     Do not resize the footer on header-collapse: it destabilizes scroll anchoring. */
   .taxpay-citizen-shell.taxpay-public-mobile-shell .public-footer {
-    --public-footer-pay-clearance:160px;
-    padding-bottom:calc(var(--public-footer-pay-clearance) + env(safe-area-inset-bottom)) !important;
+    padding-bottom:calc(148px + env(safe-area-inset-bottom)) !important;
     background:var(--color-taxpay-background);
     border-top:0;
-  }
-  /* On scroll, mobile navigation collapses and Pay moves to the bottom.
-     Use the clearance needed for that smaller fixed control instead. */
-  .taxpay-citizen-shell.taxpay-public-mobile-shell:has(.citizen-corners) .public-footer {
-    --public-footer-pay-clearance:96px;
   }
   /* Compact mobile Help panel: keep it below the header, above the preserved
      bottom navigation, inside the viewport and scroll its message content. */
