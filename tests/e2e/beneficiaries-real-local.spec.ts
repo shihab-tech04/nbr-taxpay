@@ -128,7 +128,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(modal.getByRole('button',{name:'Continue',exact:true})).toBeEnabled();
   await modal.getByRole('button',{name:'Continue',exact:true}).click();
   await expect(modal.getByText('Continuing with your account')).toHaveCount(0);
-  await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
   const picker=modal.getByTestId('saved-beneficiary-picker');
   await expect(picker.getByRole('button',{name:'Manage beneficiaries'})).toBeVisible({timeout:15000});
   await expect(picker.getByRole('button',{name:/Family/})).toHaveAttribute('aria-expanded','true');
