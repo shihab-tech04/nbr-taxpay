@@ -27,6 +27,12 @@ export type DashboardChartProjection={
   omittedRecords:number;
   byService:DashboardChartSlice<DashboardChartService>[];
   byTag:DashboardChartSlice<DashboardChartTag>[];
+  unclassified:{
+    recipientKnownMinor:bigint;
+    recipientMissingMinor:bigint;
+    untaggedRecipientCount:number;
+    missingRecipientPaymentCount:number;
+  };
 };
 
 export const DASHBOARD_SERVICE_KEYS:readonly DashboardChartService[]=['income','ait','tds','other','travel'];
@@ -139,12 +145,25 @@ export function projectDashboardChartRecords(
     if(!row.tin)return 'unassigned';
     return paymentTagGroupForTin(row.tin,people);
   });
+  // Retain the full unclassified financial amount, but distinguish payments
+  // with an exact recipient identifier from payments with no recipient at all.
+  // A known TIN is not evidence of a family/client relationship.
+  const untagged=included.filter(row=>row.tin && row.tin!==ownerTin &&
+    paymentTagGroupForTin(row.tin,people)==='unassigned');
+  const missingRecipient=included.filter(row=>!row.tin);
+  const unclassified={
+    recipientKnownMinor:untagged.reduce((sum,row)=>sum+row.amountMinor,0n),
+    recipientMissingMinor:missingRecipient.reduce((sum,row)=>sum+row.amountMinor,0n),
+    untaggedRecipientCount:new Set(untagged.map(row=>row.tin)).size,
+    missingRecipientPaymentCount:new Set(missingRecipient.map(row=>row.rowId)).size
+  };
   return {
     totalMinor:included.reduce((sum,row)=>sum+row.amountMinor,0n),
     paymentCount:new Set(included.map(row=>row.rowId)).size,
     omittedRecords,
     byService,
-    byTag
+    byTag,
+    unclassified
   };
 }
 
