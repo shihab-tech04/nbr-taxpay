@@ -557,3 +557,18 @@
     grid-column:1;grid-row:4;margin-top:8px;justify-content:flex-start;
   }
 }
+
+/* Account work is a full-width dashboard task, never a blank half-column.
+   Keep scope local to the approved user1 Overview; all other screens untouched. */
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-drafts,
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-account-records,
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-recent{
+  grid-column:1 / -1;
+  min-width:0;
+}
+.taxpay-bento-account-records .taxpay-monthly-card{
+  min-width:0;
+}
+.taxpay-bento-account-records .taxpay-monthly-card__plot{
+  min-width:0;
+}

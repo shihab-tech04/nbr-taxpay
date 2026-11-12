@@ -30,18 +30,20 @@ test('overview uses compact metrics and a distinct calendar-month chart with exi
  await expect(page.locator('.taxpay-modal')).toBeVisible();
 });
 
-test('Saved Drafts zero-state control gives useful feedback instead of scrolling to a hidden section',async({page},info)=>{
- test.skip(info.project.name!=='desktop-1280','Single zero-state check');
+test('Saved Drafts always opens a visible account-scoped recovery section including empty states',async({page},info)=>{
+ test.skip(info.project.name!=='desktop-1280','Single draft-state check');
  await page.goto(demo);
- const metrics=page.getByTestId('taxpayer-overview-bento').locator('.taxpay-bento-summary');
- const drafts=metrics.getByRole('button',{name:/Saved Drafts/});
- const count=await drafts.innerText();
- await expect(drafts).toContainText(/0|—/);
- await drafts.click();
- await expect(metrics.getByRole('status')).toContainText(count.includes('0') ? 'No saved drafts yet' : 'Draft count unavailable');
+ const overview=page.getByTestId('taxpayer-overview-bento');
+ const tile=overview.locator('.taxpay-bento-summary').getByRole('button',{name:/Saved Drafts/});
+ const drafts=overview.getByTestId('dashboard-payment-drafts');
+ await expect(tile).toBeVisible();
+ await expect(drafts).toBeVisible();
+ await tile.click();
+ await expect(drafts).toBeInViewport();
+ await expect(drafts.getByRole('heading',{name:'Saved payment drafts'})).toBeVisible();
+ await expect(drafts.getByRole('status')).toBeVisible();
+ await expect(drafts.getByRole('button',{name:'Start a payment'})).toBeVisible();
  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
- await drafts.click();
- await expect(metrics.getByRole('status')).toHaveCount(0);
 });
 
 test('changing assessment year recomputes payment chart from that year instead of retaining previous amounts',async({page},info)=>{

@@ -124,7 +124,8 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
         onNavigate={(route) => navigate(route)} />
       <CorrectionInquiries authenticatedUserId={user.id} language={language} dashboard />
       {onResumePaymentDraft && <div className="taxpay-bento-grid"><div className="taxpay-bento-drafts">
-        <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}/>
+        <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
+          showEmptyState onStartPayment={()=>openPaymentServiceChoice()}/>
       </div></div>}
       {serviceShortcut}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-taxpay-border bg-white px-4 py-3" data-testid="dashboard-example-controls">
@@ -191,7 +192,8 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
       </div>
     </section>}
     {previewAccount && onResumePaymentDraft && <div className="taxpay-bento-drafts">
-      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}/>
+      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
+          showEmptyState onStartPayment={()=>openPaymentServiceChoice()}/>
     </div>}
     {previewAccount && demoUser && !user && <>
       <PreviewBeneficiarySpending profileId={previewAccount.id} language={language}/>

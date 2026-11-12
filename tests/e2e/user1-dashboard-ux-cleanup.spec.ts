@@ -167,9 +167,10 @@ test('Overview puts financial position first, followed by exceptions, charts, sp
     child.classList.contains('taxpay-bento-tags')?'tags':
     child.classList.contains('taxpay-bento-drafts')?'drafts':
     child.classList.contains('taxpay-bento-recent')?'recent':'other'));
-  expect(order.slice(0,4)).toEqual(['coverage','years','requests','tags']);
+  expect(order.slice(0,5)).toEqual(['coverage','years','requests','drafts','tags']);
   if(order.includes('drafts')){
-    expect(order.indexOf('drafts')).toBeGreaterThan(order.indexOf('tags'));
+    expect(order.indexOf('drafts')).toBeGreaterThan(order.indexOf('requests'));
+    expect(order.indexOf('drafts')).toBeLessThan(order.indexOf('tags'));
     expect(order.indexOf('drafts')).toBeLessThan(order.indexOf('recent'));
   }
   const positions=await bento.evaluate(element=>{
@@ -186,7 +187,7 @@ test('Overview puts financial position first, followed by exceptions, charts, sp
   expect(Math.abs(positions.coverageHeight-positions.yearsHeight),'Balanced analytics cards').toBeLessThan(3);
   await expect(bento.locator('.taxpay-bento-position__totals > div')).toHaveCount(0);
   await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(3);
-  await expect(bento.locator('.taxpay-bento-hero [aria-controls="dashboard-payment-drafts"]')).toHaveCount(0);
+  await expect(bento.locator('.taxpay-bento-summary [aria-controls="dashboard-payment-drafts"]')).toBeVisible();
   await expect(bento.locator('.taxpay-tag-spending__track')).toBeVisible();
   await expect(bento.getByRole('button',{name:'Check tax ledger'})).toHaveCount(0);
   await expect(bento.getByRole('button',{name:'View tax ledger'})).toHaveCount(0);
@@ -229,5 +230,6 @@ test('dashboard residual breakdown reconciles linked and unlinked payments witho
   await expect(spending.getByTestId('tag-spend-own')).toContainText('0');
   await expect(spending.getByTestId('tag-spend-needs-tag')).toContainText('0');
   await expect(spending.getByTestId('tag-spend-no-link')).toContainText('60,000');
-  await expect(spending.getByTestId('dashboard-tag-review')).toHaveCount(0);
+  await expect(spending.getByTestId('dashboard-tag-review')).toBeVisible();
+  await expect(spending.getByRole('button',{name:'Review beneficiary tags'})).toBeVisible();
 });

@@ -5,6 +5,10 @@ type Props = {
   payments: readonly RecordedPayment[];
   assessmentYear: string;
   language: 'en' | 'bn';
+  chartId?: string;
+  testId?: string;
+  title?: {en:string;bn:string};
+  note?: {en:string;bn:string};
 };
 
 /**
@@ -12,10 +16,11 @@ type Props = {
  * Only the parent-supplied settled direct/advance/travel payments are counted;
  * withholding, requests, pending and failed attempts are never added.
  */
-export function DashboardMonthlyPayments({payments,assessmentYear,language}:Props) {
+export function DashboardMonthlyPayments({payments,assessmentYear,language,chartId='dashboard-monthly-title',
+  testId='dashboard-monthly-payments',title,note}:Props) {
   const bn=language==='bn';
   const tr=(en:string,bnText:string)=>bn?bnText:en;
-  const money=(n:number)=>'৳ '+new Intl.NumberFormat(bn?'bn-BD':'en-BD',{maximumFractionDigits:0}).format(n);
+  const money=(n:number)=>'৳ '+new Intl.NumberFormat(bn?'bn-BD':'en-BD',{maximumFractionDigits:2}).format(n);
   const dated=payments.filter(item=>/^20\d{2}-(0[1-9]|1[0-2])-\d{2}$/.test(item.date)
     && Number.isFinite(item.amount) && item.amount>=0);
   const latest=dated.map(item=>item.date).sort().at(-1);
@@ -29,17 +34,18 @@ export function DashboardMonthlyPayments({payments,assessmentYear,language}:Prop
   }):[];
   const maximum=Math.max(1,...months.map(item=>item.amount));
   const total=months.reduce((sum,item)=>sum+item.amount,0);
-  return <section className="taxpay-monthly-card" aria-labelledby="dashboard-monthly-title"
-    data-testid="dashboard-monthly-payments">
+  return <section className="taxpay-monthly-card" aria-labelledby={chartId}
+    data-testid={testId}>
     <div className="taxpay-monthly-card__heading">
       <div>
-        <h2 id="dashboard-monthly-title">{tr('Recorded payments by month','মাস অনুযায়ী নথিভুক্ত পেমেন্ট')}</h2>
+        <h2 id={chartId}>{title?tr(title.en,title.bn):tr('Recorded payments by month','মাস অনুযায়ী নথিভুক্ত পেমেন্ট')}</h2>
         <p>{tr('Calendar months · selected assessment year','ক্যালেন্ডার মাস · নির্বাচিত করবর্ষ')} {assessmentYear}</p>
       </div>
       {months.length>0&&<strong className="taxpay-monthly-card__total" aria-label={tr('Last six months total: ','শেষ ছয় মাসে মোট: ')+money(total)}>{money(total)}</strong>}
     </div>
     {months.length ? <>
-      <div className="taxpay-monthly-card__plot" role="img" data-testid="monthly-payment-bars"
+      <div className="taxpay-monthly-card__plot" role="img"
+        data-testid={testId==='dashboard-monthly-payments'?'monthly-payment-bars':testId+'-bars'}
         aria-label={tr('Recorded payments for the six calendar months ending ','শেষ ছয় ক্যালেন্ডার মাসে নথিভুক্ত পেমেন্ট, শেষ মাস ')+latest!.slice(0,7)+': '+months.map(item=>item.key+' '+money(item.amount)).join(', ')}>
         {months.map(item=><div className="taxpay-monthly-card__month" key={item.key}
           data-month={item.key} data-amount={item.amount}>
@@ -49,7 +55,7 @@ export function DashboardMonthlyPayments({payments,assessmentYear,language}:Prop
           <span className="taxpay-monthly-card__month-label">{item.label}</span>
         </div>)}
       </div>
-      <p className="taxpay-monthly-card__note">{tr('Recorded direct, advance and travel payments only. Travel tax does not count toward income-tax credits.','শুধু নথিভুক্ত সরাসরি, অগ্রিম ও ভ্রমণ কর। ভ্রমণ কর আয়কর ক্রেডিটের অন্তর্ভুক্ত নয়।')}</p>
+      <p className="taxpay-monthly-card__note">{note?tr(note.en,note.bn):tr('Recorded direct, advance and travel payments only. Travel tax does not count toward income-tax credits.','শুধু নথিভুক্ত সরাসরি, অগ্রিম ও ভ্রমণ কর। ভ্রমণ কর আয়কর ক্রেডিটের অন্তর্ভুক্ত নয়।')}</p>
     </> : <p className="taxpay-monthly-card__empty" role="status">{tr('No recorded direct, advance or travel payments for this year.','এই করবর্ষে নথিভুক্ত সরাসরি, অগ্রিম বা ভ্রমণ কর নেই।')}</p>}
   </section>;
 }

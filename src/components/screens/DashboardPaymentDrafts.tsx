@@ -22,7 +22,9 @@ export const DashboardPaymentDrafts: React.FC<{
   language: 'en' | 'bn';
   onResume: (draft: PaymentFormDraft) => void;
   onCountChange?: (count: number | null) => void;
-}> = ({ language, onResume, onCountChange }) => {
+  showEmptyState?: boolean;
+  onStartPayment?: () => void;
+}> = ({ language, onResume, onCountChange, showEmptyState = false, onStartPayment }) => {
   const { user, loading: authLoading } = useAccountIdentity();
   const { previewAccount, isPaymentServiceChoiceOpen } = useTaxState();
   const actor: PaymentDraftActor | null = user
@@ -65,8 +67,23 @@ export const DashboardPaymentDrafts: React.FC<{
     onCountChange?.(catalog.ownerKey === ownerKey && catalog.status === 'ready' ? catalog.rows.length : null);
   }, [catalog.ownerKey, catalog.status, catalog.rows.length, ownerKey, onCountChange]);
 
-  if (!actor || authLoading ||
-      (catalog.ownerKey !== ownerKey && catalog.status !== 'loading')) return null;
+  if (!actor || authLoading) {
+    if (!showEmptyState) return null;
+    return <section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts"
+      className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5">
+      <h2 className="text-base font-semibold text-taxpay-text">{tr('Saved payment drafts','সংরক্ষিত পেমেন্ট খসড়া')}</h2>
+      <p className="mt-2 text-sm text-taxpay-muted" role="status">
+        {authLoading?tr('Checking your saved drafts…','সংরক্ষিত খসড়া যাচাই হচ্ছে…'):
+          tr('Sign in to a taxpayer account to load and continue its saved drafts.',
+            'সংরক্ষিত খসড়া দেখতে ও আবার চালু করতে করদাতা অ্যাকাউন্টে সাইন ইন করুন।')}
+      </p>
+      {onStartPayment&&<button type="button" onClick={onStartPayment}
+        className="mt-3 min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-medium text-taxpay-primary">
+        {tr('Start a payment','পেমেন্ট শুরু করুন')}
+      </button>}
+    </section>;
+  }
+  if (catalog.ownerKey !== ownerKey && catalog.status !== 'loading') return null;
 
   const retry = () => {
     if (busyId) return;
@@ -112,7 +129,7 @@ export const DashboardPaymentDrafts: React.FC<{
   };
 
   const loading = catalog.ownerKey !== ownerKey || catalog.status === 'loading';
-  if (!loading && catalog.status === 'ready' && catalog.rows.length === 0) return null;
+  if (!showEmptyState && !loading && catalog.status === 'ready' && catalog.rows.length === 0) return null;
 
   return <section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
     className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5">
@@ -135,7 +152,16 @@ export const DashboardPaymentDrafts: React.FC<{
       {tr('Loading saved drafts…', 'সংরক্ষিত খসড়া লোড হচ্ছে…')}
     </p> : catalog.status === 'error' ? <p role="alert" className="mt-3 text-sm text-taxpay-error">
       {tr('Drafts could not be loaded. Try again.', 'খসড়াগুলো লোড করা যায়নি। আবার চেষ্টা করুন।')}
-    </p> : <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="list">
+    </p> : catalog.rows.length===0 ? <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-taxpay-border bg-taxpay-light p-3" data-testid="dashboard-drafts-empty">
+      <p className="min-w-0 text-sm text-taxpay-muted" role="status">
+        {tr('No saved drafts yet. Save an unfinished payment to continue it here or in another browser.',
+          'এখনও সংরক্ষিত খসড়া নেই। অসমাপ্ত পেমেন্ট সংরক্ষণ করলে এখান থেকে বা অন্য ব্রাউজারে আবার চালু করতে পারবেন।')}
+      </p>
+      {onStartPayment && <button type="button" onClick={onStartPayment}
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-medium text-taxpay-primary hover:bg-taxpay-light">
+        {tr('Start a payment','নতুন পেমেন্ট শুরু করুন')}<ArrowRight size={16} aria-hidden="true"/>
+      </button>}
+    </div> : <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="list">
       {catalog.rows.map((draft,index) => {
         const updatedAt = new Date(draft.updated_at);
         const updated = Number.isNaN(updatedAt.getTime()) ? draft.updated_at
