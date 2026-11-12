@@ -57,10 +57,25 @@ test('user guide supports responsive search, FAQs and languages',async({page},in
  await expect(page.getByText('Are the rates final?')).toBeVisible();
  await setWorkspaceLanguage(page,'bn');
  await expect(page.getByRole('heading',{name:'সহজকর ব্যবহার নির্দেশিকা'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'ভ্রমণ কর পরিশোধ করুন'})).toBeVisible();
  await page.getByRole('button',{name:'মুছুন'}).click();
  await expect(page.getByRole('button',{name:'মোবাইল'})).toHaveAttribute('aria-pressed','true');
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
  expect(overflow).toBeLessThanOrEqual(2);
+});
+
+test('public guide links open the existing payment and receipt journeys',async({page})=>{
+ await page.goto('/?action=user_guide');
+ const guide=page.locator('.public-guide-page');
+ await expect(guide.getByRole('button',{name:'Open payment services'})).toBeVisible();
+ await guide.getByRole('button',{name:'Pay Travel Tax'}).click();
+ const travel=page.getByRole('dialog',{name:'Travel tax'});
+ await expect(travel.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
+
+ await page.goto('/?action=user_guide&category=status');
+ await page.locator('.public-guide-actions').getByRole('button',{name:'Find a payment record'}).click();
+ await expect(page).toHaveURL(/action=verify/);
+ await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toBeVisible();
 });
 
 test('Help Center typography and interactions remain usable at each viewport', async ({ page }) => {
@@ -76,6 +91,7 @@ test('Help Center typography and interactions remain usable at each viewport', a
     const selectors = [
       '.public-guide-topics button',
       '.public-guide-steps li p',
+      '.public-guide-actions button',
       '.public-guide-search input',
       '.public-guide-questions summary',
     ];

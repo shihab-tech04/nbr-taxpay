@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Monitor, Smartphone, Search, ChevronDown, ExternalLink, X } from 'lucide-react';
+import { Monitor, Smartphone, Search, ChevronDown, ExternalLink, X, ArrowRight } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 
 import { GUIDE_CONTENT, type Category, type Pair } from '../../data/publicGuideContent';
@@ -7,7 +7,7 @@ export { GUIDE_CONTENT } from '../../data/publicGuideContent';
 type Device = 'web'|'mobile';
 
 export const PublicUserGuide:React.FC=()=>{
- const {language,routeParams,navigate}=useTaxState();
+ const {language,routeParams,navigate,openPaymentServiceChoice}=useTaxState();
  const bn=language==='bn';
  const t=(pair:Pair)=>pair[bn?1:0];
  const initial=GUIDE_CONTENT.some(x=>x.id===routeParams.category)?routeParams.category:'payments';
@@ -42,6 +42,20 @@ export const PublicUserGuide:React.FC=()=>{
  }).filter(item=>item.steps.length||item.faqs.length):[];
  const resultCount=results.reduce((count,item)=>count+item.steps.length+item.faqs.length,0);
  const labels=bn?['ওয়েব','মোবাইল']:['Web','Mobile'];
+ const actionsFor=(category:Category)=>{
+  if(category==='travel') return [{id:'travel',label:['Pay Travel Tax','ভ্রমণ কর পরিশোধ করুন'] as Pair,run:()=>openPaymentServiceChoice('TRAVEL_TAX')}];
+  if(category==='status'||category==='records') return [{id:'records',label:['Find a payment record','পেমেন্ট রেকর্ড খুঁজুন'] as Pair,run:()=>navigate('verify')}];
+  if(category==='withholding') return [{id:'withholding',label:['Start source tax deposit','উৎসে কর জমা শুরু করুন'] as Pair,run:()=>openPaymentServiceChoice('SOURCE_TAX_DEPOSIT')}];
+  if(category==='security') return [{id:'support',label:['Report a payment issue','পেমেন্টের সমস্যা জানান'] as Pair,run:()=>navigate('incident')}];
+  const actions=[{id:'payment',label:['Open payment services','পরিশোধ সেবাসমূহ খুলুন'] as Pair,run:()=>openPaymentServiceChoice()}];
+  if(category==='payments') actions.push({id:'travel',label:['Pay Travel Tax','ভ্রমণ কর পরিশোধ করুন'] as Pair,run:()=>openPaymentServiceChoice('TRAVEL_TAX')});
+  return actions;
+ };
+ const actionLinks=(category:Category)=><div className="public-guide-actions" role="group" aria-label={bn?'সম্পর্কিত সেবা':'Related services'}>
+  {actionsFor(category).map((action,index)=><button key={action.id} type="button" className={index===0?'public-guide-action-primary':'public-guide-action-link'} onClick={action.run}>
+   {t(action.label)}<ArrowRight size={16} aria-hidden="true"/>
+  </button>)}
+ </div>;
  const officialSource=<aside className="public-guide-source" aria-label={bn?'সরকারি তথ্যের উৎস':'Official information'}>
    <div className="public-guide-source-copy">
      <h3>{bn?'সরকারি তথ্য':'Official information'}</h3>
@@ -87,6 +101,7 @@ export const PublicUserGuide:React.FC=()=>{
         <summary><span>{t(item.q)}</span><ChevronDown size={18} aria-hidden="true"/></summary>
         <p>{t(item.a)}</p>
       </details>)}
+      {actionLinks(category.id)}
     </section>):<div className="public-guide-no-results" role="status">
       <h3>{bn?'কোনো ফল পাওয়া যায়নি':'No results found'}</h3>
       <p>{bn?'অন্য শব্দ দিয়ে খুঁজুন বা অনুসন্ধান মুছে বিষয়গুলো দেখুন।':'Try a different term, or clear the search to browse by topic.'}</p>
@@ -118,6 +133,7 @@ export const PublicUserGuide:React.FC=()=>{
           </li>)}
         </ol>
       </section>
+      {actionLinks(selected)}
       <section className="public-guide-questions" aria-labelledby="guide-questions-title">
         <div className="public-guide-section-head"><h3 id="guide-questions-title">{bn?'সাধারণ প্রশ্ন':'Common questions'}</h3><p>{bn?'এই বিষয় সম্পর্কে সংক্ষিপ্ত উত্তর।':'Quick answers about this topic.'}</p></div>
         {current.faqs.map(item=><details key={item.q[0]}>
