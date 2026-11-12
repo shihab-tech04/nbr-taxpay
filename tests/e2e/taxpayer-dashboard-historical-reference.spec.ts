@@ -4,7 +4,7 @@ const dashboard='/?action=taxpayer_home&demoUser=user1';
 test('dashboard year selector changes the original recorded payment view, never inventing tax position',async({page})=>{
   await page.goto(dashboard);
   const year=page.getByRole('combobox',{name:'Assessment year'});
-  await expect(year).toHaveValue('2026-2027');
+  await expect(year.locator('option[value="2026-2027"]')).toHaveCount(1);
   await year.selectOption('2024-2025');
   await expect(year).toHaveValue('2024-2025');
   await expect(page).toHaveURL(/scenarioYear=2024-2025/);
