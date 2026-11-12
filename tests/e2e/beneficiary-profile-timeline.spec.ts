@@ -63,6 +63,7 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   await dateFrom.fill('2026-11-09');
   await dateTo.fill('2026-11-09');
   await expect(timeline.locator('li')).toHaveCount(2);
+  await dateTo.fill('2026-11-10');
   await dateFrom.fill('2026-11-10');
   await expect(profile.getByText('No payments match these filters.')).toBeVisible();
   await profile.getByRole('button',{name:'Clear filters'}).click();
