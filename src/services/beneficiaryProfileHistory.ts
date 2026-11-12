@@ -22,8 +22,22 @@ export function beneficiaryProfilePayments(
   payerId:SimulationUser|null, language:'en'|'bn'
 ):BeneficiaryProfilePayment[] {
   if(!/^\d{12,13}$/.test(tin))throw Error('Invalid beneficiary TIN');
-  const storyDates=new Map(story.map(record=>[record.id,record.createdAt]));
-  const stored=beneficiaryPaymentEntries([...story]).filter(entry=>entry.taxpayerTin===tin)
+  // Paginated recovery can replay an immutable SQL record. Count it once;
+  // if the same ID carries two different snapshots, do not invent a total.
+  const recordedIds=new Map<string,string>();
+  const uniqueStory:OwnedStoryPayment[]=[];
+  for(const record of story){
+    const fingerprint=JSON.stringify(record);
+    const previous=recordedIds.get(record.id);
+    if(previous!==undefined){
+      if(previous!==fingerprint)throw Error('Conflicting recorded beneficiary payment history');
+      continue;
+    }
+    recordedIds.set(record.id,fingerprint);
+    uniqueStory.push(record);
+  }
+  const storyDates=new Map(uniqueStory.map(record=>[record.id,record.createdAt]));
+  const stored=beneficiaryPaymentEntries(uniqueStory).filter(entry=>entry.taxpayerTin===tin)
     .map(entry=>({
       key:'recorded:'+entry.key,paymentId:entry.paymentId,
       transactionId:entry.batchId??entry.paymentId,
@@ -34,7 +48,7 @@ export function beneficiaryProfilePayments(
       receipt:entry.receipt,batchId:entry.batchId,
       batchItemIndex:entry.batchItemIndex,batchItemCount:entry.batchItemCount
     }));
-  const knownStoryIds=new Set(story.map(record=>record.id));
+  const knownStoryIds=new Set(uniqueStory.map(record=>record.id));
   const ledger:BeneficiaryProfilePayment[]=[];
   for(const tx of simulations){
     if(!payerId || tx.payer!==payerId || tx.simulationOnly!==true ||

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {beneficiaryProfilePayments,countsTowardBeneficiaryPaidTotal,missingOptionalSimulationBinding} from '../src/services/beneficiaryProfileHistory';
 import {sampleTinForUserNumber} from '../src/data/sampleTinSuggestions';
 import type {SimulationTransaction} from '../src/contracts/paymentSimulationContract';
+import type {OwnedStoryPayment} from '../src/services/story1AccountPaymentHistory';
 import {readFileSync} from 'node:fs';
 
 const tin2=sampleTinForUserNumber(2)!;
@@ -70,4 +71,35 @@ test('only an explicitly unbound synthetic profile is optional for signed-in sto
   assert.equal(missingOptionalSimulationBinding(new Error('Permission denied')),false);
   assert.equal(missingOptionalSimulationBinding(new Error('Payment service unavailable')),false);
   assert.equal(missingOptionalSimulationBinding('No approved synthetic profile binding'),false);
+});
+
+test('replayed recorded payment is counted once in a beneficiary profile and retains original IDs',()=>{
+  const sqlPayment:OwnedStoryPayment={
+    id:'00000000-0000-4000-8000-000000000901',
+    service:'ADVANCE_TAX',amountMinor:7500,status:'SIMULATED_SUCCESS',
+    createdAt:'2026-11-12T00:00:00Z',
+    details:{taxpayerTin:tin2,taxpayerName:'Two',payerName:'One',assessmentYear:'2026-27'}
+  };
+  const history=beneficiaryProfilePayments(tin2,[sqlPayment,{...sqlPayment}],[],'user1','en');
+  assert.equal(history.length,1,'same immutable recorded payment must not be counted twice');
+  assert.equal(history[0].amountMinor,7500);
+  assert.equal(history[0].paymentId,sqlPayment.id);
+  assert.equal(history[0].transactionId,sqlPayment.id);
+  assert.equal(history[0].taxpayerTin,tin2);
+});
+
+test('conflicting recorded snapshots fail closed; a corrected later retry succeeds',()=>{
+  const original:OwnedStoryPayment={
+    id:'00000000-0000-4000-8000-000000000902',
+    service:'ADVANCE_TAX',amountMinor:8500,status:'SIMULATED_SUCCESS',
+    createdAt:'2026-11-12T00:00:00Z',
+    details:{taxpayerTin:tin2,taxpayerName:'Two',payerName:'One',assessmentYear:'2026-27'}
+  };
+  assert.throws(()=>beneficiaryProfilePayments(tin2,[original,{...original,amountMinor:18500}],[],'user1','en'),
+    /Conflicting recorded beneficiary payment history/);
+  const corrected=beneficiaryProfilePayments(tin2,[original,{...original}],[],'user1','en');
+  assert.equal(corrected.length,1);
+  assert.equal(corrected[0].amountMinor,8500);
+  assert.deepEqual(beneficiaryProfilePayments('000000000000',[original],[],'user1','en'),[],
+    'even the same payer must never display a different recipient TIN as their own');
 });
