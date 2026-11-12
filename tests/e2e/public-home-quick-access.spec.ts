@@ -64,10 +64,14 @@ test('desktop restores the approved full-width lookup and six distinct, legible 
   await page.evaluate(async () => { await document.fonts.ready; });
 
   const layout = await page.evaluate(() => {
-    const rect = (s: string) => document.querySelector(s)!.getBoundingClientRect();
+    const bounds = (element: Element) => {
+      const r = element.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width };
+    };
+    const rect = (s: string) => bounds(document.querySelector(s)!);
     const style = (s: string) => getComputedStyle(document.querySelector(s)!);
     const cardNodes = [...document.querySelectorAll('.public-benefits__item')];
-    const cards = cardNodes.map(element => element.getBoundingClientRect());
+    const cards = cardNodes.map(bounds);
     return {
       search: rect('.public-record-discovery'),
       heading: rect('.public-record-discovery__heading'),
