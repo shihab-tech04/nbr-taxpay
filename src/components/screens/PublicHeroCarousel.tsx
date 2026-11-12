@@ -122,6 +122,7 @@ function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolea
     {!imageFailed && slide.mobileImage && <source media="(max-width: 640px)" srcSet={slide.mobileImage} />}
     <img className="public-information-hero__image public-hero-carousel__service-image"
       src={imageFailed ? fallbackImage : slide.image} alt="" decoding="async"
+      fetchPriority={visible ? 'high' : 'auto'}
       onError={() => setImageFailed(true)} />
   </picture>;
 }
