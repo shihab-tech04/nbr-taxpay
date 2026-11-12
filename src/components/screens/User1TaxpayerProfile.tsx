@@ -1,5 +1,5 @@
 import React, {useEffect,useState} from 'react';
-import {Check, Clipboard, Download} from 'lucide-react';
+import {Check, Copy, Download} from 'lucide-react';
 import {MaskedProfileValue, sensitiveProfileKind} from '../ui/MaskedProfileValue';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {
@@ -158,7 +158,7 @@ export function User1TaxpayerProfile({language}:{language:Language}){
               aria-label={copied==='done'?tr(['Copied TIN','টিআইএন কপি হয়েছে']):tr(['Copy TIN','টিআইএন কপি করুন'])}
               title={copied==='done'?tr(['Copied','কপি হয়েছে']):tr(['Copy TIN','টিআইএন কপি করুন'])}
               className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">
-              {copied==='done'?<Check size={18} aria-hidden="true"/>:<Clipboard size={18} aria-hidden="true"/>}
+              {copied==='done'?<Check size={18} aria-hidden="true"/>:<Copy size={18} aria-hidden="true"/>}
             </button>
           </div>
         </div>
