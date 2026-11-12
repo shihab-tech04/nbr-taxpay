@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
 
 test('compact desktop homepage explains six benefits without duplicate CTAs', async ({ page }) => {
   // This 3x2 parity test intentionally uses the compact desktop breakpoint.
@@ -208,6 +209,10 @@ test('reported tall desktop: homepage footer follows content with no blank space
       expect(layout.homeWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(1099);
       expect(layout.homeWidth).toBeLessThanOrEqual(1101);
       expect(layout.footerTop-layout.benefitsBottom,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(0);
+      // A full-height shell is insufficient: the page must not leave the
+      // 300px+ blank chasm shown between the benefits and footer.
+      expect(layout.footerTop-layout.benefitsBottom,JSON.stringify({viewport,lang,layout}))
+        .toBeLessThanOrEqual(Math.min(190,viewport.height*.12+20));
       // Full-height shell must remain the page canvas, including the bottommost
       // screen pixel. Previous tests checked only that the footer followed the cards,
       // allowing the 300px exposed body background seen in production.
@@ -270,6 +275,77 @@ test('homepage viewport integrity survives 1024px breakpoint and zoom-equivalent
     expect(bounds.footerTop).toBeGreaterThanOrEqual(bounds.benefitsBottom);
     expect(bounds.atBottom).toBe(true);
     expect(bounds.horizontalOverflow).toBeLessThanOrEqual(2);
+  }
+});
+
+test('professionally balanced Home padding and vertical rhythm at normal and zoom-equivalent widths', async ({page}) => {
+  const screens = [
+    {width:1186,height:1254},
+    {width:1440,height:1254},
+    {width:1775,height:1254},
+    {width:2048,height:1016},
+    {width:3072,height:1524}, // approximates the supplied 2048x1016 screenshot at 67% zoom
+  ];
+  for(const viewport of screens) {
+    for (const lang of ['en','bn']) {
+      await page.setViewportSize(viewport);
+      await page.goto('/?action=landing&lang='+lang);
+      await page.evaluate(async()=>{await document.fonts.ready;});
+      const layout=await page.evaluate(() => {
+        const rect=(selector:string)=>document.querySelector(selector)!.getBoundingClientRect();
+        const css=(selector:string)=>getComputedStyle(document.querySelector(selector)!);
+        const cards=[...document.querySelectorAll('.public-benefits__item')].map(el=>el.getBoundingClientRect());
+        const hero=rect('.public-hero-carousel');
+        const search=rect('.public-record-discovery');
+        const benefits=rect('.public-benefits');
+        const footer=rect('.public-footer');
+        const header=rect('.public-home-header');
+        const grid=rect('.public-benefits__grid');
+        return {
+          contentWidth:rect('.public-information-hub').width,
+          headingToFooter:footer.top-benefits.bottom,
+          headerToHero:hero.top-header.bottom,
+          heroToSearch:search.top-hero.bottom,
+          searchToBenefits:benefits.top-search.bottom,
+          footerBottom:footer.bottom,
+          cardsCount:cards.length,
+          equalRowHeights:Math.max(...cards.map(c=>c.height))-Math.min(...cards.map(c=>c.height)),
+          cardHeight:cards[0].height,
+          cardPadding:parseFloat(css('.public-benefits__item').paddingTop),
+          gridRowGap:parseFloat(css('.public-benefits__grid').rowGap),
+          layoutWidth:grid.width,
+          horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
+        };
+      });
+      expect(layout.contentWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(1099);
+      expect(layout.contentWidth).toBeLessThanOrEqual(1101);
+      expect(layout.cardsCount).toBe(6);
+      expect(layout.equalRowHeights).toBeLessThanOrEqual(2);
+      expect(layout.cardPadding).toBeGreaterThanOrEqual(14);
+      expect(layout.gridRowGap).toBeGreaterThanOrEqual(12);
+      expect(layout.cardHeight).toBeGreaterThanOrEqual(108);
+      expect(layout.cardHeight).toBeLessThanOrEqual(210);
+      expect(layout.headingToFooter).toBeGreaterThanOrEqual(0);
+      expect(layout.headingToFooter,JSON.stringify({viewport,lang,layout}))
+        .toBeLessThanOrEqual(Math.min(190,viewport.height*.12+20));
+      expect(layout.headerToHero).toBeGreaterThanOrEqual(0);
+      expect(layout.headerToHero).toBeLessThanOrEqual(190);
+      expect(layout.heroToSearch).toBeGreaterThanOrEqual(12);
+      expect(layout.searchToBenefits).toBeGreaterThanOrEqual(12);
+      expect(layout.footerBottom).toBeGreaterThanOrEqual(viewport.height-2);
+      expect(layout.footerBottom).toBeLessThanOrEqual(viewport.height+2);
+      expect(layout.horizontalOverflow).toBeLessThanOrEqual(2);
+      // Preserve a real pixel artifact for independent visual review, not only
+      // numeric box-geometry assertions. Separate per project to avoid races.
+      if (lang === 'en' && (viewport.width === 1440 || viewport.width === 3072)) {
+        await mkdir('test-results/screenshots', { recursive: true });
+        const project = test.info().project.name.replace(/[^a-z0-9-]/gi, '-');
+        await page.screenshot({
+          path: `test-results/screenshots/sohojkor-home-rhythm-${viewport.width}x${viewport.height}-${project}.png`,
+          fullPage: true,
+        });
+      }
+    }
   }
 });
 
