@@ -17,7 +17,7 @@ import { receiptReturnRoute } from './services/routeContract';
 import { IncidentReporting } from './components/screens/IncidentReporting';
 import { user1DemoRoutes } from './config/user1DemoRoutes';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
-import { validCertificateTransactionId } from './services/confirmedPaymentCertificate';
+import { validCertificateTransactionId } from './services/transactionId';
 import { safePrivateAuthReturnRoute } from './services/routeContract';
 
 // Keep modal-only and preview-only code out of the initial public JavaScript.
