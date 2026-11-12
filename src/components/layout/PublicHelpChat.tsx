@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MessageCircle, X, Send, BookOpen } from 'lucide-react';
-import { GUIDE_CONTENT } from '../screens/PublicUserGuide';
+import { GUIDE_CONTENT } from '../../data/publicGuideContent';
 import {useTaxState} from '../../services/taxState';
 import { taxpayerBrandName } from '../../config/brand';
 
