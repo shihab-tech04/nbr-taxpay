@@ -49,4 +49,4 @@ export const TAXPAYER_PROFILE_LAYOUT={
 } as const satisfies Record<string,readonly ProfileFieldRow[]>;
 
 export const TAXPAYER_PROFILE_FIELD_ORDER:readonly ProfileFieldRow[]=
-  Object.values(TAXPAYER_PROFILE_LAYOUT).flatMap(rows=>rows);
+  (Object.values(TAXPAYER_PROFILE_LAYOUT) as readonly (readonly ProfileFieldRow[])[]).flatMap(rows=>rows);
