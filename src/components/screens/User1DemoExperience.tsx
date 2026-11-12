@@ -576,8 +576,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           aria-label={tr('Liability coverage: ','করদায়ের বিভাজন: ')+Math.round(meter(totals.applied,totals.liability))+'%. '+tr('Remaining ','অবশিষ্ট ')+money(totals.outstanding)}
           style={{background:'conic-gradient('+gradients.parts.join(',')+')'}}>
           <div className="absolute inset-[34px] flex flex-col items-center justify-center rounded-full bg-white p-2 text-center">
-            <p className="text-xs text-taxpay-muted">{selectedCoverage===null?tr('Payment sources','পরিশোধের উৎস'):coveredBreakdown[selectedCoverage].label}</p>
-            <p className={'font-semibold tabular-nums '+(selectedCoverage===null?'text-xl':'text-base')}>{selectedCoverage===null?tr(String(coveredBreakdown.slice(0,3).filter(item=>item.value>0).length)+' types',String(coveredBreakdown.slice(0,3).filter(item=>item.value>0).length)+' ধরন'):money(coveredBreakdown[selectedCoverage].value)}</p>
+            <p className="text-xs text-taxpay-muted">{selectedCoverage===null?tr('Covered','সমন্বিত'):coveredBreakdown[selectedCoverage].label}</p>
+            <p className={'font-semibold tabular-nums '+(selectedCoverage===null?'text-xl':'text-base')}>{selectedCoverage===null?Math.round(meter(totals.applied,totals.liability))+'%':money(coveredBreakdown[selectedCoverage].value)}</p>
           </div>
         </div>
         <div className="taxpay-bento-coverage__details divide-y divide-taxpay-border" role="group" aria-label={tr('Coverage details','করদায়ের বিস্তারিত')}>{coveredBreakdown.map((x,i)=>
@@ -614,7 +614,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           </button>;
         })}
       </div>
-      <p className="mt-2 text-xs text-taxpay-muted">{tr('Only eligible posted credits count; travel tax is separate.','শুধু যোগ্য নথিভুক্ত ক্রেডিট গণনা হয়; ভ্রমণ কর পৃথক।')}</p>
+      <p className="mt-2 text-xs text-taxpay-muted">{tr('Illustrative recorded account data, not an official tax assessment. Travel tax is separate.','নমুনা অ্যাকাউন্টের রেকর্ড; এটি সরকারি কর নির্ধারণ নয়। ভ্রমণ কর পৃথক।')}</p>
     </section>
     <div className="taxpay-bento-request-row">
     <div className="taxpay-bento-summary-column">
