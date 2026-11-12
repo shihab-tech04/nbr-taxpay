@@ -23,10 +23,16 @@ try {
     await expect(section).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#public-how-it-works')).toBeHidden();
     await expect(page.locator('#public-faq')).toBeHidden();
+    await expect(page.locator('.public-benefits__item')).toHaveCount(6);
+    await page.evaluate(async () => { await document.fonts.ready; });
+    // Measure the immediate following section, not the footer. On mobile the
+    // footer follows six responsive benefit cards and can move independently
+    // while CMS artwork or fonts finish loading. That movement does not mean
+    // the absolutely positioned search popover has resized its own card.
     const cardHeightBefore = await section.evaluate(element => element.getBoundingClientRect().height);
     const gapBefore = await page.evaluate(() => {
       const card = document.querySelector('.public-record-discovery').getBoundingClientRect();
-      return document.querySelector('.public-footer').getBoundingClientRect().top - card.bottom;
+      return document.querySelector('.public-benefits').getBoundingClientRect().top - card.bottom;
     });
     await search.focus();
     await expect(section.getByRole('heading', { name: 'Example reference numbers' })).toBeVisible();
@@ -46,7 +52,7 @@ try {
         floating: getComputedStyle(list).position === 'absolute',
         belowInput: list.getBoundingClientRect().top >= field.getBoundingClientRect().bottom,
         cardHeight: element.getBoundingClientRect().height,
-        gapToNext: document.querySelector('.public-footer').getBoundingClientRect().top - element.getBoundingClientRect().bottom,
+        gapToNext: document.querySelector('.public-benefits').getBoundingClientRect().top - element.getBoundingClientRect().bottom,
         dropdownOutsideCard: list.getBoundingClientRect().bottom > element.getBoundingClientRect().bottom,
       };
     });
