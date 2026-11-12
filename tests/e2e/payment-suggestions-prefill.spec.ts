@@ -3,7 +3,7 @@ import { enterTaxPayService } from './pay-tax-entry-helper';
 
 async function startOwnPayment(page: Page, user: 'user1' | 'user2', service: 'TAX_WITH_RETURN' | 'OTHER_TAX_PAYMENT') {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill(user);
   await login.getByLabel('Password', { exact: true }).fill(user);
   await login.getByRole('button', { name: 'Sign In' }).click();
