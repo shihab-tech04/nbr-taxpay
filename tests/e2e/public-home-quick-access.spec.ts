@@ -110,6 +110,49 @@ test('desktop restores the approved full-width lookup and six distinct, legible 
   expect(layout.footerTop - layout.sectionBottom).toBeLessThanOrEqual(110);
 });
 
+test('wide desktop uses the available canvas without crushing the footer or lookup', async ({ page }) => {
+  await page.setViewportSize({width:1775,height:864});
+  await page.goto('/?action=landing&lang=en');
+  await page.evaluate(async()=>{await document.fonts.ready;});
+  const visual = await page.evaluate(()=>{
+    const box=(selector:string)=>{
+      const el=document.querySelector(selector)!;
+      const r=el.getBoundingClientRect();
+      return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};
+    };
+    const footerLinks=[...document.querySelectorAll('.public-footer__navs > *')]
+      .map(link=>link.getBoundingClientRect());
+    return {
+      hero:box('.public-hero-carousel'),
+      record:box('.public-record-discovery'),
+      benefits:box('.public-benefits'),
+      footer:box('.public-footer'),
+      footerTagline:box('.public-footer__identity p'),
+      searchHeading:box('.public-record-discovery__heading'),
+      searchField:box('.public-record-search'),
+      firstCard:box('.public-benefits__item'),
+      footerGaps:footerLinks.slice(1).map((link,index)=>link.left-footerLinks[index].right),
+      scrollOverflow:document.documentElement.scrollHeight-window.innerHeight,
+      horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
+    };
+  });
+  // At the supplied 1775px reference size the old ~1020px island is not approved.
+  expect(visual.hero.width).toBeGreaterThanOrEqual(1200);
+  expect(visual.hero.width).toBeLessThan(1380);
+  expect(Math.abs(visual.hero.width-visual.record.width)).toBeLessThanOrEqual(2);
+  expect(visual.searchHeading.bottom).toBeLessThan(visual.searchField.top);
+  expect(visual.searchField.width).toBeGreaterThanOrEqual(visual.record.width*.9);
+  expect(visual.firstCard.height).toBeGreaterThanOrEqual(94);
+  // The footer tagline should not collapse into the three-line column seen
+  // in the live screenshot, and its navigation links should not run together.
+  expect(visual.footerTagline.height).toBeLessThanOrEqual(24);
+  expect(visual.footerGaps.length).toBeGreaterThanOrEqual(3);
+  expect(visual.footerGaps.every(gap=>gap>=10)).toBe(true);
+  expect(visual.footer.top-visual.benefits.bottom).toBeLessThanOrEqual(48);
+  expect(visual.scrollOverflow).toBeLessThanOrEqual(2);
+  expect(visual.horizontalOverflow).toBeLessThanOrEqual(2);
+});
+
 test('existing hero Pay Tax and Travel Tax actions still open separate journeys', async ({ page }) => {
   await page.goto('/?action=landing&lang=en');
 
