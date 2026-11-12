@@ -553,15 +553,19 @@
     width:100%;
     min-height:64px;
     padding:0 8px max(0px,env(safe-area-inset-bottom));
-    grid-template-columns:repeat(3,minmax(0,1fr));
+    grid-template-columns:repeat(3,minmax(0,1fr)) 118px;
     border:0;
     border-top:1px solid var(--color-taxpay-border);
     border-radius:0;
     background:var(--color-taxpay-surface);
     box-shadow:none;
   }
+  /* Keep all three approved navigation items. Their existing fourth spacer
+     places the separate fixed Pay button beside them, not over their labels. */
   .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-bottom-nav__pay-space {
-    display:none;
+    display:block;
+    min-height:52px;
+    pointer-events:none;
   }
   .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-bottom-nav__item {
     min-height:52px;
@@ -577,15 +581,22 @@
     font-weight:700;
   }
   .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-pay--guest-floating {
-    bottom:calc(80px + env(safe-area-inset-bottom));
+    right:calc(10px + env(safe-area-inset-right));
+    bottom:calc(7px + env(safe-area-inset-bottom));
+    width:114px;
+    min-width:114px;
+    height:50px;
+    min-height:50px;
+    gap:5px;
+    padding:0 8px;
+    border-radius:14px;
   }
-  /* Reserve only the compact bottom controls at the end of the public page.
-     When the footer is reached, the scrolling shell uses corner navigation and
-     the independent Pay button at bottom:16px (52px high). 84px leaves 16px
-     between the footer row and Pay, without a second empty footer panel.
-     Keep this constant across header collapse to avoid scroll-anchor jumps. */
+  /* A single 76px dock clearance replaces the previous 148px empty band.
+     The footer row ends above the 64px dock, while the fixed Pay remains
+     independently actionable in the dock's reserved right-hand slot.
+     A constant clearance prevents scroll-anchor jumps on header collapse. */
   .taxpay-citizen-shell.taxpay-public-mobile-shell .public-footer {
-    padding-bottom:calc(84px + env(safe-area-inset-bottom)) !important;
+    padding-bottom:calc(76px + env(safe-area-inset-bottom)) !important;
     background:var(--color-taxpay-background);
     border-top:0;
   }
