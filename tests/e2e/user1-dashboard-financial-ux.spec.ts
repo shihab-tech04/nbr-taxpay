@@ -17,7 +17,7 @@ test('bento financial position reconciles with the unchanged account ledger and 
   await expect(page.locator('[role="img"][aria-label^="Liability coverage"]')).toContainText('৳ 48,000');
   await page.keyboard.press('Space');
   await expect(tds).toHaveAttribute('aria-pressed','false');
-  await expect(page.locator('[role="img"][aria-label^="Liability coverage"]')).toContainText('3 types');
+  await expect(page.locator('[role="img"][aria-label^="Liability coverage"]')).toContainText('86%');
   await expect(bento.getByRole('group',{name:'Liability and posted credits by tax year'}).getByRole('button',{name:/2025-2026: Total tax/})).toHaveAttribute('aria-label',/180,000.*155,000/);
   await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
 });
