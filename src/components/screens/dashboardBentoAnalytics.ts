@@ -159,3 +159,16 @@ export function formatDashboardChartMoney(amountMinor:bigint,language:'en'|'bn')
 export function dashboardChartPercentage(amountMinor:bigint,totalMinor:bigint){
   return totalMinor>0n?Number(amountMinor*10000n/totalMinor)/100:0;
 }
+
+
+/** The entire overview and its chart use one assessment-year-scoped source.
+ * Never silently merge fictional records with persisted payment allocations. */
+export function chooseDashboardChartSource(
+  rows:readonly DashboardChartRecord[],year:string,
+  people:readonly Pick<Beneficiary,'tin'|'tag'|'relationship'>[],ownerTin:string
+):DashboardChartSource{
+  const saved=projectDashboardChartRecords(rows,year,'recorded',people,ownerTin);
+  const examples=projectDashboardChartRecords(rows,year,'example',people,ownerTin);
+  return saved.totalMinor>0n||saved.omittedRecords>0 ? 'recorded'
+    : examples.totalMinor>0n ? 'example' : 'recorded';
+}
