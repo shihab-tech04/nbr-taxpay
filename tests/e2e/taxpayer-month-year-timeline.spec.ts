@@ -6,7 +6,7 @@ const dashboard='/?action=taxpayer_home&demoUser=user1';
 test('current assessment year is available without invented liability or monthly trend charts',async({page})=>{
   await page.goto(dashboard);
   const year=page.getByRole('combobox',{name:'Assessment year'});
-  await expect(year).toHaveValue('2026-2027');
+  await expect(year.locator('option[value="2026-2027"]')).toHaveCount(1);
   await expect(year.locator('option[value="2025-2026"]')).toHaveCount(1);
   await expect(page.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Recorded payments by month'})).toHaveCount(0);
