@@ -51,7 +51,7 @@ test('mobile bento tax-position help opens fully within the dashboard width',asy
   test.skip(info.project.name==='desktop-1280','Mobile tooltip geometry');
   await enterUser1(page);
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
-  const coverage=page.locator('.taxpay-bento-coverage');
+  const coverage=page.getByTestId('dashboard-payment-analytics');
   await coverage.locator('.taxpayer-inline-help > summary').click();
   const content=coverage.locator('.taxpayer-inline-help__content');
   await expect(content).toBeVisible();
@@ -161,7 +161,7 @@ test('mobile bento retains separate travel tax and opens its approved payment mo
   test.skip(info.project.name==='desktop-1280','Mobile travel-tax shortcut');
   await enterUser1(page);
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
-  await expect(page.getByTestId('beneficiary-spending-breakdown')).toBeVisible();
+  await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
   await openTaxpayerTravelTax(page);
   const dialog=page.getByRole('dialog');
   await expect(dialog).toBeVisible();
