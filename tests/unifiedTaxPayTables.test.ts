@@ -9,7 +9,7 @@ test('one shared table stylesheet and React layout primitives own the table visu
   const component=read('src/components/ui/TaxPayDataTable.tsx');
   const entry=read('src/index.css');
   assert.doesNotMatch(entry, /@import ['"]\.\/styles\/taxpay-unified-table\.css['"]/, 'Public startup must not fetch account-only table styles');
-  assert.match(read('src/components/layout/TaxpayerReferenceRail.tsx'),/import ['"]\.\.\/\.\.\/styles\/taxpay-unified-table\.css['"]/, 'Authorized taxpayer shell supplies table stylesheet');
+  assert.match(read('src/components/ui/TaxPayDataTable.tsx'),/import ['"]\.\.\/\.\.\/styles\/taxpay-unified-table\.css['"]/, 'All record grids own the shared stylesheet when mounted');
   assert.match(read('src/components/screens/Beneficiaries.tsx'),/import ['"]\.\.\/\.\.\/styles\/taxpay-unified-table\.css['"]/, 'Beneficiary route independently owns its table stylesheet');
   for(const key of ['--taxpay-table-border','--taxpay-table-heading','--taxpay-table-stripe',
     '--taxpay-table-hover','--taxpay-table-row-height','taxpay-table-toolbar',

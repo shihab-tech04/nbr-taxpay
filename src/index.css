@@ -2,6 +2,7 @@
 @import './styles/taxpayer-login-dialog.css';
 @import "tailwindcss";
 @import "./styles/taxpay-citizen.css";
+@import "./styles/taxpay-taxpayer-reference.css";
 @import "./styles/taxpay-design-transfer.css";
 @import "./styles/taxpay-hero-carousel.css";
 @import './styles/taxpayer-tin-lookup.css';

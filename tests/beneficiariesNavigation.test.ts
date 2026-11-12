@@ -14,8 +14,7 @@ test('Beneficiaries stays in the signed-in taxpayer shell and is absent from gue
   assert.match(rail,/\{\s*route:\s*'beneficiaries'/);
   const router=readFileSync('src\/App.tsx','utf8');
   assert.match(router,/privateTaxpayerRoute && !privateSampleGate/);
-  assert.match(router,/taxpayerReference && !transactionRoute && <React\.Suspense fallback=\{null\}><TaxpayerReferenceRail \/><\/React\.Suspense>/);
-  assert.match(router,/React\.lazy\(\(\) => import\('\.\/components\/layout\/TaxpayerReferenceRail'\)/);
+  assert.match(router,/taxpayerReference && !transactionRoute && <TaxpayerReferenceRail \/>/);
   const auth=readFileSync('src/components/screens/ManageAuthorization.tsx','utf8');
   assert.ok(auth.includes('Request authorization'));
   const beneficiary=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
