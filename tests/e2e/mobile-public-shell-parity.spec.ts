@@ -7,7 +7,7 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
   await expect(header).toBeVisible();
   await expect(page.locator('.public-home-header')).toBeHidden();
   const menu=header.getByRole('button',{name:'Open menu'});
-  const logo=header.getByRole('button',{name:'Korbritto home'});
+  const logo=header.getByRole('button',{name:'Sohojkor home'});
   const bell=header.getByRole('button',{name:'Notifications'});
   await expect(menu).toBeVisible();
   await expect(logo).toBeVisible();
@@ -173,7 +173,7 @@ test('320px Bengali public footer remains one row with accessible links',async({
   const more=footer.locator('.public-footer__mobile-more > summary');
   await expect(more).toBeVisible();
   await expect(more).toContainText('আরও');
-  await expect(footer.locator('.public-footer__bottom')).toContainText('© ২০২৬ করবৃত্ত');
+  await expect(footer.locator('.public-footer__bottom')).toContainText('© ২০২৬ সহজকর');
   const moreRect=await more.boundingBox();
   const floatingPayRect=await page.locator('.taxpay-public-mobile-navigation .citizen-pay--guest-floating').boundingBox();
   expect(moreRect).not.toBeNull();

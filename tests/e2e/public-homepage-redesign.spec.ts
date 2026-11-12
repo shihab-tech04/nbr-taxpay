@@ -26,7 +26,7 @@ test('hidden homepage FAQ remains available via the existing User Guide page', a
   await expect(page.locator('#public-faq')).toBeHidden();
   const guide = page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('link', { name: 'User guide' });
   await guide.click();
-  await expect(page.getByRole('heading', { name: 'Korbritto user guide' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Sohojkor user guide' })).toBeVisible();
 });
 
 test('Report follows heading then compact content with no redundant warnings', async ({ page }) => {

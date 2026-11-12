@@ -3,7 +3,6 @@ import { ArrowRight, Bell, CircleHelp, Globe2, House, LayoutDashboard, LogOut, M
 import { useTaxState } from '../../services/taxState';
 import { signOutApplicationAccount, useAccountIdentity } from '../../services/accountIdentity';
 import { SiteLogo } from './SiteLogo';
-import { taxpayerBrandName } from '../../config/brand';
 
 const ACCOUNT_ACCESS_ROUTE = 'taxpayer_login';
 const LINKS = [
@@ -103,7 +102,7 @@ export function PublicHomeHeader() {
         event.preventDefault();go('landing');
       }}>
         <span className="public-home-brand__copy">
-          <SiteLogo className="public-home-wordmark" alt={taxpayerBrandName(language)}/>
+          <SiteLogo className="public-home-wordmark" alt={bn?'সহজকর':'Sohojkor'}/>
         </span>
       </a>
       <nav ref={menuNavRef} className={menuOpen?'public-home-nav public-home-nav--open':'public-home-nav'} aria-label={bn?'প্রধান নেভিগেশন':'Primary navigation'} id="public-home-nav">

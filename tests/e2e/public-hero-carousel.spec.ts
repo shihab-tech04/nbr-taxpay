@@ -145,7 +145,7 @@ test('CMS artwork is never CSS-cropped or zoomed in the taxpayer banner at deskt
   }
 });
 
-test('desktop keeps full-width service artwork, equal intro buttons, and a single 270px hero', async ({ page }, info) => {
+test('desktop keeps full-width service artwork, equal intro buttons, and a consistent viewport-adaptive hero', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Desktop geometry');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
@@ -164,13 +164,14 @@ test('desktop keeps full-width service artwork, equal intro buttons, and a singl
       background: getComputedStyle(element).backgroundColor,
     };
   });
-  expect(metrics.height).toBe(270);
+  const expectedHeroHeight = page.viewportSize()!.height <= 820 ? 220 : 270;
+  expect(metrics.height).toBe(expectedHeroHeight);
   expect(metrics.imageWidthRatio).toBeCloseTo(1, 2);
   expect(metrics.buttonsEqual).toBe(true);
   await carousel.focus();
   await page.keyboard.press('ArrowRight');
   const second = carousel.locator('.public-hero-carousel__slide').nth(1);
-  await expect(second).toHaveCSS('height', '270px');
+  await expect(second).toHaveCSS('height', `${expectedHeroHeight}px`);
   await expect(second.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
 });
 

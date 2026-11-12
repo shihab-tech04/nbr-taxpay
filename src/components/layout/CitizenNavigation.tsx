@@ -242,7 +242,7 @@ export function CitizenNavigation() {
             <Menu size={23} aria-hidden="true" />
           </button>}
           <button type="button" className="citizen-brand" onClick={goHome}
-            aria-label={bn ? 'করবৃত্ত মূল পাতা' : 'Korbritto home'}>
+            aria-label={bn ? 'সহজকর মূল পাতা' : 'Sohojkor home'}>
             <SiteLogo className="citizen-brand__wordmark" alt="" aria-hidden="true" />
           </button>
           {inTransaction ? (
