@@ -7,7 +7,7 @@ test('guest mobile uses the approved signed-in navigation geometry without expos
   await expect(header).toBeVisible();
   await expect(page.locator('.public-home-header')).toBeHidden();
   const menu=header.getByRole('button',{name:'Open menu'});
-  const logo=header.getByRole('button',{name:'Korbritto home'});
+  const logo=header.getByRole('button',{name:'Sohojkor home'});
   const bell=header.getByRole('button',{name:'Notifications'});
   await expect(menu).toBeVisible();
   await expect(logo).toBeVisible();
