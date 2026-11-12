@@ -953,16 +953,16 @@
   .public-home-sections .public-benefits__grid {
     display: grid;
     flex: 1 1 auto;
-    min-height: 224px;
-    max-height: 250px;
+    min-height: 190px;
+    max-height: 210px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-rows: repeat(3, minmax(0, 1fr));
     gap: .625rem .875rem;
   }
   .public-home-sections .public-benefits__item {
     min-height: 0;
-    padding: .65rem .8rem;
-    gap: .55rem .7rem;
+    padding: .4rem .75rem;
+    gap: .45rem .65rem;
     border-radius: .875rem;
     grid-template-columns: 38px minmax(0, 1fr);
     align-content: center;
@@ -990,8 +990,8 @@
     justify-content: space-evenly;
     gap: .55rem;
     width: 100%;
-    min-height: 47px;
-    padding: .5rem .8rem;
+    min-height: 38px;
+    padding: .35rem .75rem;
     border: 1px solid #e3ebf4;
     border-radius: .65rem;
     background: #fff;
