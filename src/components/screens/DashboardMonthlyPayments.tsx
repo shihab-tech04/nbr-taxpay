@@ -44,7 +44,8 @@ export function DashboardMonthlyPayments({payments,assessmentYear,language,chart
       {months.length>0&&<strong className="taxpay-monthly-card__total" aria-label={tr('Last six months total: ','শেষ ছয় মাসে মোট: ')+money(total)}>{money(total)}</strong>}
     </div>
     {months.length ? <>
-      <div className="taxpay-monthly-card__plot" role="img" data-testid="monthly-payment-bars"
+      <div className="taxpay-monthly-card__plot" role="img"
+        data-testid={testId==='dashboard-monthly-payments'?'monthly-payment-bars':testId+'-bars'}
         aria-label={tr('Recorded payments for the six calendar months ending ','শেষ ছয় ক্যালেন্ডার মাসে নথিভুক্ত পেমেন্ট, শেষ মাস ')+latest!.slice(0,7)+': '+months.map(item=>item.key+' '+money(item.amount)).join(', ')}>
         {months.map(item=><div className="taxpay-monthly-card__month" key={item.key}
           data-month={item.key} data-amount={item.amount}>
