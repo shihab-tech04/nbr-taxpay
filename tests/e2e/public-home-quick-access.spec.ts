@@ -61,7 +61,7 @@ test('compact desktop homepage explains six benefits without duplicate CTAs', as
   }
 });
 
-test('desktop restores the approved full-width lookup and six distinct, legible benefit cards', async ({ page }) => {
+test('desktop restores full-width lookup and proposed connected six-cell benefits panel', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/?action=landing&lang=en');
   await page.evaluate(async () => { await document.fonts.ready; });
@@ -91,7 +91,13 @@ test('desktop restores the approved full-width lookup and six distinct, legible 
       ],
       cardBackground: style('.public-benefits__item').backgroundColor,
       cardRadius: parseFloat(style('.public-benefits__item').borderTopLeftRadius),
+      cardBorderWidth: parseFloat(style('.public-benefits__item').borderLeftWidth),
+      panelBackground: style('.public-benefits').backgroundColor,
+      panelRadius: parseFloat(style('.public-benefits').borderTopLeftRadius),
       gridGap: parseFloat(style('.public-benefits__grid').columnGap),
+      rowGap: parseFloat(style('.public-benefits__grid').rowGap),
+      gridPadding: parseFloat(style('.public-benefits__grid').paddingTop),
+      panelToGridInset: rect('.public-benefits__grid').left - rect('.public-benefits').left,
       firstCard: cards[0],
       secondCard: cards[1],
       sectionBottom: rect('.public-benefits').bottom,
@@ -104,10 +110,18 @@ test('desktop restores the approved full-width lookup and six distinct, legible 
   expect(layout.input.width).toBeGreaterThanOrEqual(layout.search.width * .9);
   expect(layout.headings.every(weight => weight <= 600)).toBe(true);
   expect(layout.descriptions.every(size => size >= 14)).toBe(true);
-  expect(layout.cardRadius).toBeGreaterThanOrEqual(10);
-  expect(layout.gridGap).toBeGreaterThanOrEqual(8);
-  expect(layout.firstCard.right + 8).toBeLessThanOrEqual(layout.secondCard.left);
-  expect(layout.cardBackground).not.toBe('rgba(0, 0, 0, 0)');
+  expect(layout.panelRadius).toBeGreaterThanOrEqual(14);
+  expect(layout.panelToGridInset).toBeGreaterThanOrEqual(20);
+  expect(layout.panelBackground).not.toBe('rgba(0, 0, 0, 0)');
+  expect(layout.cardRadius).toBe(0);
+  expect(layout.cardBorderWidth).toBe(0);
+  expect(layout.gridGap).toBeGreaterThanOrEqual(.9);
+  expect(layout.gridGap).toBeLessThanOrEqual(1.1);
+  expect(layout.rowGap).toBeGreaterThanOrEqual(.9);
+  expect(layout.rowGap).toBeLessThanOrEqual(1.1);
+  expect(layout.gridPadding).toBe(1);
+  expect(Math.abs(layout.secondCard.left - layout.firstCard.right - 1)).toBeLessThanOrEqual(1);
+  expect(layout.cardBackground).toBe(layout.panelBackground);
   expect(layout.scrollOverflow).toBeLessThanOrEqual(2);
   expect(layout.horizontalOverflow).toBeLessThanOrEqual(2);
   expect(layout.footerTop - layout.sectionBottom).toBeLessThanOrEqual(110);
@@ -323,7 +337,8 @@ test('professionally balanced Home padding and vertical rhythm at normal and zoo
       expect(layout.cardsCount).toBe(6);
       expect(layout.equalRowHeights).toBeLessThanOrEqual(2);
       expect(layout.cardPadding).toBeGreaterThanOrEqual(14);
-      expect(layout.gridRowGap).toBeGreaterThanOrEqual(12);
+      expect(layout.gridRowGap).toBeGreaterThanOrEqual(.9);
+      expect(layout.gridRowGap).toBeLessThanOrEqual(1.1);
       expect(layout.cardHeight).toBeGreaterThanOrEqual(108);
       expect(layout.cardHeight).toBeLessThanOrEqual(210);
       // A short Home does not need to consume every pixel of a tall monitor:
@@ -453,6 +468,71 @@ test('approved payment-record lookup keeps the compact reference composition', a
   expect(layout.formShadow).not.toBe('none');
   await expect(panel.getByRole('searchbox')).toHaveAttribute('placeholder',
     'Enter challan, token or transaction reference');
+});
+
+test('approved desktop proposal is one white rounded panel with a connected 3x2 grid', async ({ page }) => {
+  for (const viewport of [
+    { width: 1136, height: 1264 },
+    { width: 1194, height: 1268 },
+    { width: 1440, height: 900 },
+  ]) {
+    for (const lang of ['en', 'bn']) {
+      await page.setViewportSize(viewport);
+      await page.goto('/?action=landing&lang=' + lang);
+      await page.evaluate(async () => { await document.fonts.ready; });
+      const measurement = await page.evaluate(() => {
+        const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+        const css = (selector: string) => getComputedStyle(document.querySelector(selector)!);
+        const section = rect('.public-benefits');
+        const heading = rect('.public-benefits__heading');
+        const grid = rect('.public-benefits__grid');
+        const cells = [...document.querySelectorAll('.public-benefits__item')].map(el => {
+          const r = el.getBoundingClientRect();
+          const style = getComputedStyle(el);
+          return { left:r.left, right:r.right, top:r.top, bottom:r.bottom,
+            height:r.height, radius:style.borderTopLeftRadius,
+            border:style.borderTopWidth,
+            background:style.backgroundColor, scrollHeight:el.scrollHeight, clientHeight:el.clientHeight };
+        });
+        return {
+          panelWidth:section.width, panelRadius:parseFloat(css('.public-benefits').borderTopLeftRadius),
+          panelPadding:parseFloat(css('.public-benefits').paddingLeft),
+          sectionBackground:css('.public-benefits').backgroundColor,
+          headingWithinPanel:heading.left>=section.left && heading.top>section.top,
+          gridWithinPanel:grid.left>=section.left && grid.right<=section.right,
+          gridLeft:grid.left, gridTop:grid.top,
+          columnGap:parseFloat(css('.public-benefits__grid').columnGap),
+          rowGap:parseFloat(css('.public-benefits__grid').rowGap),
+          cells, horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
+        };
+      });
+      expect(measurement.panelWidth,JSON.stringify({viewport,lang,measurement})).toBeGreaterThanOrEqual(1099);
+      expect(measurement.panelWidth).toBeLessThanOrEqual(1101);
+      expect(measurement.panelRadius).toBeGreaterThanOrEqual(14);
+      expect(measurement.panelPadding).toBeGreaterThanOrEqual(22);
+      expect(measurement.sectionBackground).not.toBe('rgba(0, 0, 0, 0)');
+      expect(measurement.headingWithinPanel).toBe(true);
+      expect(measurement.gridWithinPanel).toBe(true);
+      expect(measurement.columnGap).toBe(1);
+      expect(measurement.rowGap).toBe(1);
+      expect(measurement.cells).toHaveLength(6);
+      const c=measurement.cells;
+      expect(Math.abs(c[0].top-c[1].top)).toBeLessThanOrEqual(2);
+      expect(Math.abs(c[1].top-c[2].top)).toBeLessThanOrEqual(2);
+      expect(Math.abs(c[3].top-c[4].top)).toBeLessThanOrEqual(2);
+      expect(c[3].top).toBeGreaterThan(c[0].top);
+      expect(Math.abs(c[1].left-c[0].right-1)).toBeLessThanOrEqual(1);
+      expect(Math.abs(c[3].top-c[0].bottom-1)).toBeLessThanOrEqual(1);
+      expect(c.every(x => x.radius === '0px' && x.border === '0px' &&
+        x.background === measurement.sectionBackground && x.scrollHeight<=x.clientHeight+2)).toBe(true);
+      expect(measurement.horizontalOverflow).toBeLessThanOrEqual(2);
+      if (lang==='en' && viewport.height===1264) {
+        await mkdir('test-results/screenshots', {recursive:true});
+        const project=test.info().project.name.replace(/[^a-z0-9-]/gi,'-');
+        await page.screenshot({path:`test-results/screenshots/sohojkor-approved-connected-benefits-${project}.png`,fullPage:true});
+      }
+    }
+  }
 });
 
 test('desktop widths preserve the approved 3-by-2 equal-benefit layout in EN and BN', async ({ page }) => {
