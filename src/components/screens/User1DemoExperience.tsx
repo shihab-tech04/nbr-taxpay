@@ -614,7 +614,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           </button>;
         })}
       </div>
-      <p className="mt-2 text-xs text-taxpay-muted">{tr('Illustrative recorded account data, not an official tax assessment. Travel tax is separate.','নমুনা অ্যাকাউন্টের রেকর্ড; এটি সরকারি কর নির্ধারণ নয়। ভ্রমণ কর পৃথক।')}</p>
+      <p className="mt-2 text-xs text-taxpay-muted">{tr('Recorded account entries are not an official NBR tax assessment. Travel tax is separate.','অ্যাকাউন্টের রেকর্ড সরকারি কর নির্ধারণ হিসেবে নিশ্চিত নয়। ভ্রমণ কর পৃথক।')}</p>
     </section>
     <div className="taxpay-bento-request-row">
     <div className="taxpay-bento-summary-column">
