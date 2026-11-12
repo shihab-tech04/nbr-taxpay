@@ -48,6 +48,9 @@ test('initial banner request does not download hidden images before the visible 
   let releaseFirst!: () => void;
   const heldFirst = new Promise<void>(resolve => { releaseFirst = resolve; });
   await page.route(/taxpay-hero-(intro|return|advance|withholding|travel)-v9[.]webp/, async route => {
+    // Vite also imports the asset URL as a JavaScript module. Intercept only
+    // the image bytes; pausing the module would deadlock initial navigation.
+    if (route.request().resourceType() !== 'image') { await route.continue(); return; }
     const url = route.request().url();
     requests.push(url);
     if (url.includes('taxpay-hero-intro-v9.webp')) await heldFirst;
