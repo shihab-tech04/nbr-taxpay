@@ -114,7 +114,7 @@ test('public mobile header stays in shared Korbritto shell without account imper
  await page.setViewportSize({width:375,height:812});
  await page.goto('/?action=landing');
  const header=page.locator('.taxpay-public-mobile-navigation .citizen-header');
- await expect(header.getByRole('button',{name:'Korbritto home'})).toBeVisible();
+ await expect(header.getByRole('button',{name:'Sohojkor home'})).toBeVisible();
  await expect(header.getByRole('button',{name:'Open menu'})).toBeVisible();
  await header.getByRole('button',{name:'Open menu'}).click();
  const sheet=page.getByRole('dialog',{name:'Services & menu'});
