@@ -1,5 +1,4 @@
-@import './styles/office-design.css';
-@import './styles/office-auth-source.css';
+/* Office-owned styles are loaded by OfficeTheme and OfficeLoginPage, not every public visitor. */
 @import './styles/taxpayer-login-dialog.css';
 @import "tailwindcss";
 @import "./styles/taxpay-citizen.css";

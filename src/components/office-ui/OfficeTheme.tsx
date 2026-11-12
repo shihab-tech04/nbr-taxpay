@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
+import '../../styles/office-design.css';
 import { THEMES, THEME_ORDER, type ThemeId } from './themes';
 
 export type OfficeFont = 'inter' | 'poppins' | 'noto-sans' | 'google-sans';
