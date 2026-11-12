@@ -29,15 +29,19 @@ test('overview summary and correction requests occupy a readable responsive row'
   }
 });
 
-test('empty draft data never leaves recent activity stranded in half a row',async({page})=>{
+test('saved drafts and recent activity each occupy full responsive width, including empty state',async({page})=>{
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home&demoUser=user1');
   const grid=page.getByTestId('taxpayer-overview-bento');
-  await expect(grid.locator('.taxpay-bento-recent')).toBeVisible();
-  if(await grid.getAttribute('data-drafts-empty')==='true'){
-    const [recent,container]=await Promise.all([grid.locator('.taxpay-bento-recent').boundingBox(),grid.boundingBox()]);
-    expect(recent&&container).toBeTruthy();
-    if(recent&&container)expect(recent.width).toBeGreaterThan(container.width*.9);
-    await expect(grid.locator('.taxpay-bento-drafts')).toBeHidden();
+  const drafts=grid.locator(':scope > .taxpay-bento-drafts');
+  const recent=grid.locator(':scope > .taxpay-bento-recent');
+  await expect(drafts.getByTestId('dashboard-payment-drafts')).toBeVisible();
+  await expect(recent).toBeVisible();
+  const [draftBox,recentBox,container]=await Promise.all([drafts.boundingBox(),recent.boundingBox(),grid.boundingBox()]);
+  expect(draftBox&&recentBox&&container).toBeTruthy();
+  if(draftBox&&recentBox&&container){
+    expect(draftBox.width).toBeGreaterThan(container.width*.9);
+    expect(recentBox.width).toBeGreaterThan(container.width*.9);
+    expect(recentBox.y).toBeGreaterThan(draftBox.y);
   }
 });
