@@ -1,7 +1,7 @@
 import React, {useEffect,useState} from 'react';
 import {Check, Copy, Download} from 'lucide-react';
 import {MaskedProfileValue, sensitiveProfileKind} from '../ui/MaskedProfileValue';
-import {DEMO_USERS} from '../../data/demoUsers';
+import {TAXPAYER_PROFILE_LAYOUT,TAXPAYER_PROFILE_FIELD_ORDER,type ProfileFieldRow} from '../../contracts/taxpayerProfileFieldLayout';
 import {
   USER1_FICTIONAL_TIN_PROFILE as initialReference,
   user1FictionalTinValue,
@@ -12,41 +12,7 @@ import {loadTaxpayerRegistrationProfile} from '../../services/taxpayerRegistrati
 
 type Language='en'|'bn';
 type Label=readonly [string,string];
-type Row=readonly [TaxpayerTinField,Label];
-
-const identityRows:readonly Row[]=[
-  ['taxpayerName',['Registered name','নিবন্ধিত নাম']],
-  ['taxpayerStatus',['Taxpayer class','করদাতার শ্রেণি']],
-  ['tinType',['TIN type','টিআইএন ধরন']],
-  ['tinSubtype',['TIN classification','টিআইএন শ্রেণি']],
-  ['userType',['User type','ব্যবহারকারীর ধরন']],
-  ['localTaxpayer',['Local taxpayer','স্থানীয় করদাতা']],
-];
-const jurisdictionRows:readonly Row[]=[
-  ['taxesCircle',['Taxes circle','কর সার্কেল']],
-  ['taxesZone',['Taxes zone','কর অঞ্চল']],
-  ['taxesRange',['Taxes range','কর রেঞ্জ']],
-  ['district',['District','জেলা']],
-  ['country',['Country','দেশ']],
-];
-const registrationRows:readonly Row[]=[
-  ['registeredOn',['TIN registration date','টিআইএন নিবন্ধনের তারিখ']],
-  ['previousTin',['Previous TIN','পূর্ববর্তী টিআইএন']],
-  ['registeredAddress',['Registered / permanent address','নিবন্ধিত / স্থায়ী ঠিকানা']],
-  ['currentAddress',['Current address','বর্তমান ঠিকানা']],
-];
-const certificateRows:readonly Row[]=[
-  ['certificateIssuedOn',['Certificate issue date','সনদ ইস্যুর তারিখ']],
-  ['certificateLastUpdatedOn',['Certificate last updated','সনদ সর্বশেষ হালনাগাদ']],
-  ['issuingOfficer',['Issuing tax officer','সনদ ইস্যুকারী কর কর্মকর্তা']],
-  ['taxOfficeAddress',['Tax office address','কর অফিসের ঠিকানা']],
-  ['taxOfficePhone',['Tax office phone','কর অফিসের ফোন']],
-];
-const contactRows:readonly Row[]=[
-  ['mobileNumber',['Mobile number','মোবাইল নম্বর']],
-  ['emailAddress',['Email address','ইমেইল ঠিকানা']],
-];
-const allRows:readonly Row[]=[['tin',['TIN number','টিআইএন নম্বর']],...identityRows,...jurisdictionRows,...registrationRows,...contactRows,...certificateRows];
+type Row=ProfileFieldRow;
 
 export function User1TaxpayerProfile({language}:{language:Language}){
   const bn=language==='bn';
@@ -76,7 +42,7 @@ export function User1TaxpayerProfile({language}:{language:Language}){
     {rows.map(([field,label])=>{
       const raw=record?.[field];
       const kind=typeof raw==='string'?sensitiveProfileKind(field,raw):null;
-      return <div key={field} className="grid min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(135px,43%)_minmax(0,1fr)] sm:gap-4">
+      return <div key={field} data-profile-field={field} className="grid min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(135px,43%)_minmax(0,1fr)] sm:gap-4">
         <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
         <dd className="min-w-0 break-words text-sm font-medium leading-relaxed text-taxpay-text">
           {kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
@@ -107,13 +73,13 @@ export function User1TaxpayerProfile({language}:{language:Language}){
       };
       if(!record)throw Error('Profile SQL unavailable');
       const rows=[['Field','Value'],
-        ['Account','user1'],...allRows.map(([field,label])=>[label[0],String(record?.[field]??'')]),
+        ...TAXPAYER_PROFILE_FIELD_ORDER.map(([field,label])=>[label[0],String(record[field]??'')]),
       ];
       const csv='\uFEFF'+rows.map(line=>line.map(safe).join(',')).join('\r\n');
       const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
       const link=document.createElement('a');
       link.href=url;
-      link.download='Korbritto-user1-profile.csv';
+      link.download='Sohojkor-user1-profile.csv';
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -138,8 +104,8 @@ export function User1TaxpayerProfile({language}:{language:Language}){
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-taxpay-light text-lg font-semibold text-taxpay-primary" aria-hidden="true">AR</div>
           <div className="min-w-0 space-y-1.5">
             <p className="text-xs text-taxpay-muted">{tr(['Account','অ্যাকাউন্ট'])}: user1</p>
-            <h2 className="break-words text-xl font-semibold leading-snug text-taxpay-text sm:text-2xl">
-              {bn?DEMO_USERS.user1.nameBn:record?.taxpayerName??DEMO_USERS.user1.nameEn}
+            <h2 data-profile-field="taxpayerName" className="break-words text-xl font-semibold leading-snug text-taxpay-text sm:text-2xl">
+              {value('taxpayerName',language)}
             </h2>
           </div>
         </div>
@@ -151,7 +117,7 @@ export function User1TaxpayerProfile({language}:{language:Language}){
       <div className="border-t border-taxpay-border px-5 py-4 sm:px-6">
         <div className="min-w-0">
           <p className="text-sm text-taxpay-muted">{tr(['TIN','টিআইএন'])}</p>
-          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-0.5 break-all text-xl font-semibold tracking-wide text-taxpay-text sm:text-2xl">
+          <div data-profile-field="tin" className="mt-1 flex min-w-0 flex-wrap items-center gap-0.5 break-all text-xl font-semibold tracking-wide text-taxpay-text sm:text-2xl">
             <MaskedProfileValue key={tin} value={tin} kind="tin" label={tr(['TIN','টিআইএন'])}
               language={language} testId="user1-profile-tin"/>
             <button type="button" onClick={copyTin}
@@ -166,41 +132,21 @@ export function User1TaxpayerProfile({language}:{language:Language}){
       {copied==='failed'&&<p className="px-5 pb-3 text-sm text-taxpay-error" role="alert">{tr(['Could not copy. Select and copy the reference manually.','কপি করা যায়নি। রেফারেন্স নির্বাচন করে কপি করুন।'])}</p>}
       {downloadError&&<p className="px-5 pb-3 text-sm text-taxpay-error" role="alert">{tr(['Download failed. Please retry.','ডাউনলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।'])}</p>}
       <div data-testid="user1-profile-summary" className="grid border-t border-taxpay-border sm:grid-cols-4">
-        {([
-          [tr(['TIN type','টিআইএন ধরন']),value('tinType',language)],
-          [tr(['Taxes circle','কর সার্কেল']),value('taxesCircle',language)],
-          [tr(['Registered since','নিবন্ধিত হওয়ার তারিখ']),value('registeredOn',language)],
-          [tr(['Last account login','সর্বশেষ লগইন']),value('lastLoginAt',language)]
-        ] as const).map(([label,text])=><div key={label} className="min-w-0 border-b border-taxpay-border px-5 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:px-6 sm:last:border-r-0">
-          <p className="text-xs text-taxpay-muted">{label}</p>
-          <p className="mt-1 break-words text-sm font-semibold text-taxpay-text">{text}</p>
+        {TAXPAYER_PROFILE_LAYOUT.summary.map(([field,label])=><div key={field} data-profile-field={field} className="min-w-0 border-b border-taxpay-border px-5 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:px-6 sm:last:border-r-0">
+          <p className="text-xs text-taxpay-muted">{tr(label)}</p>
+          <p className="mt-1 break-words text-sm font-semibold text-taxpay-text">{value(field,language)}</p>
         </div>)}
       </div>
     </section>
     <section className="space-y-4" data-testid="user1-profile-unified-content" aria-label={tr(['Taxpayer information','করদাতার তথ্য'])}>
       <div className="grid items-start gap-4 lg:grid-cols-2" data-testid="user1-profile-detail-columns">
         <div className="flex min-w-0 flex-col gap-4">
-          {panel(['Personal information','ব্যক্তিগত তথ্য'],details([
-            ['taxpayerStatus',['Taxpayer class','করদাতার শ্রেণি']],
-            ['tinSubtype',['TIN classification','টিআইএন শ্রেণি']],
-            ['userType',['User type','ব্যবহারকারীর ধরন']],
-            ['localTaxpayer',['Local taxpayer','স্থানীয় করদাতা']],
-          ]))}
-          {panel(['Contact and addresses','যোগাযোগ ও ঠিকানা'],details([
-            ...contactRows,
-            ['registeredAddress',['Registered / permanent address','নিবন্ধিত / স্থায়ী ঠিকানা']],
-            ['currentAddress',['Current address','বর্তমান ঠিকানা']],
-          ]))}
+          {panel(['Personal information','ব্যক্তিগত তথ্য'],details(TAXPAYER_PROFILE_LAYOUT.personal))}
+          {panel(['Contact and addresses','যোগাযোগ ও ঠিকানা'],details(TAXPAYER_PROFILE_LAYOUT.contact))}
         </div>
         <div className="flex min-w-0 flex-col gap-4">
-          {panel(['TIN registration and jurisdiction','টিআইএন নিবন্ধন ও কর অধিক্ষেত্র'],details([
-            ['taxesZone',['Taxes zone','কর অঞ্চল']],
-            ['taxesRange',['Taxes range','কর রেঞ্জ']],
-            ['district',['District','জেলা']],
-            ['country',['Country','দেশ']],
-            ['previousTin',['Previous TIN','পূর্ববর্তী টিআইএন']],
-          ]))}
-          {panel(['Certificate details','সনদের তথ্য'],details(certificateRows))}
+          {panel(['TIN registration and jurisdiction','টিআইএন নিবন্ধন ও কর অধিক্ষেত্র'],details(TAXPAYER_PROFILE_LAYOUT.jurisdiction))}
+          {panel(['Certificate details','সনদের তথ্য'],details(TAXPAYER_PROFILE_LAYOUT.certificate))}
         </div>
       </div>
     </section>

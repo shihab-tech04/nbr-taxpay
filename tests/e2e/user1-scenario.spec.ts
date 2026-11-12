@@ -149,13 +149,27 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile.getByRole('heading',{name:'Md. Arif Rahman'})).toBeVisible();
   await expect(profile.getByTestId('user1-profile-tin')).toHaveText('*********798');
   await expect(profile.getByRole('tab')).toHaveCount(0);
+  // All 24 source fields appear exactly once: name/TIN in the identity, four in
+  // summary, and the remaining fields in their appropriate sections.
+  const rendered=await profile.locator('[data-profile-field]').evaluateAll(nodes=>
+    nodes.map(node=>node.getAttribute('data-profile-field')));
+  expect(rendered).toHaveLength(24);
+  expect(new Set(rendered).size).toBe(24);
+  expect(rendered).toEqual([
+    'taxpayerName','tin','tinType','taxesCircle','registeredOn','lastLoginAt',
+    'taxpayerStatus','tinSubtype','userType','localTaxpayer',
+    'mobileNumber','emailAddress','registeredAddress','currentAddress',
+    'taxesZone','taxesRange','district','country','previousTin',
+    'certificateIssuedOn','certificateLastUpdatedOn','issuingOfficer',
+    'taxOfficeAddress','taxOfficePhone'
+  ]);
   await expect(profile.getByRole('tablist')).toHaveCount(0);
   await expect(profile.getByRole('button',{name:'View payment activity'})).toHaveCount(0);
   await expect(content.getByTestId('user1-profile-detail-columns').locator(':scope > div')).toHaveCount(2);
   for(const section of ['Personal information','Contact and addresses','TIN registration and jurisdiction',
     'Certificate details'])
     await expect(content.getByRole('heading',{name:section,exact:true})).toHaveCount(1);
-  for(const field of ['Taxpayer class','TIN classification','User type','Local taxpayer',
+  for(const field of ['Taxpayer status','TIN classification','User type','Local taxpayer',
     'Mobile number','Email address','Registered / permanent address','Current address',
     'Taxes zone','Taxes range','District','Country','Previous TIN',
     'Certificate issue date','Certificate last updated','Issuing tax officer','Tax office address',
@@ -234,6 +248,10 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(bn.getByRole('heading',{name:'ব্যক্তিগত তথ্য'})).toBeVisible();
   await expect(bn.getByRole('heading',{name:'টিআইএন নিবন্ধন ও কর অধিক্ষেত্র'})).toBeVisible();
   await expect(bn.getByRole('heading',{name:'সনদের তথ্য'})).toBeVisible();
+  await expect(bn.getByText('করদাতার অবস্থা',{exact:true})).toHaveCount(1);
+  const bnKeys=await page.getByTestId('user1-taxpayer-profile').locator('[data-profile-field]')
+    .evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-profile-field')));
+  expect(bnKeys).toEqual(rendered);
   await expect(bn.getByText('সনদ ইস্যুর তারিখ')).toHaveCount(1);
   await expect(page.getByTestId('user1-profile-summary').getByText('সর্বশেষ লগইন')).toHaveCount(1);
   await expect(page.getByTestId('user1-profile-tin')).toHaveText('*********798');
@@ -250,12 +268,15 @@ test('user1 profile export contains supplied TIN fields without unnecessary copy
     page.waitForEvent('download'),
     page.getByRole('button',{name:'Download profile'}).click()
   ]);
-  expect(download.suggestedFilename()).toBe('Korbritto-user1-profile.csv');
+  expect(download.suggestedFilename()).toBe('Sohojkor-user1-profile.csv');
   const stream=await download.createReadStream();
   let text='';
   for await(const chunk of stream)text+=chunk.toString('utf8');
   expect(text).toContain('577935451798');
   expect(text).toContain('email@test.com');
   expect(text).toContain('Taxes Zone-12, Dhaka');
+  expect(text).toContain('Taxpayer status');
+  expect(text).not.toContain('"Account","user1"');
+  expect((text.match(/"TIN","577935451798"/g)??[])).toHaveLength(1);
   expect(text).not.toContain('FICTIONAL SAMPLE');
 });
