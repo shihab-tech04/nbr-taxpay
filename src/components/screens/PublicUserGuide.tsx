@@ -53,7 +53,7 @@ export const PublicUserGuide:React.FC=()=>{
    {id:'nbr-support',label:['NBR e-Return support','এনবিআর ই-রিটার্ন সহায়তা'],href:bn?'https://nbr.gov.bd/all-faq/ban':'https://nbr.gov.bd/all-faq/eng'}
   ];
   const actions=[{id:'payment',label:['Open payment services','পরিশোধ সেবাসমূহ খুলুন'] as Pair,run:()=>openPaymentServiceChoice()}];
-  if(category==='payments') actions.push({id:'travel',label:['Pay Travel Tax','ভ্রমণ কর পরিশোধ করুন'] as Pair,run:()=>openPaymentServiceChoice('TRAVEL_TAX')});
+  if(category==='payments') actions.push({id:'glossary',label:['Browse tax terms','কর বিষয়ক শব্দ দেখুন'] as Pair,run:()=>navigate('glossary')});
   return actions;
  };
  const actionLinks=(category:Category)=><div className="public-guide-actions" role="group" aria-label={bn?'সম্পর্কিত সেবা':'Related services'}>

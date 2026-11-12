@@ -1,523 +1,71 @@
-import { fillTravelDetails, fillForeignPassenger } from './travel-tax-test-helper';
-import { mockPublishedBannerCms } from './mock-published-banners';
-import { setWorkspaceLanguage } from './workspace-language';
-import {expect,test} from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
-import { openTravelTaxFromBanner } from './public-travel-tax-entry';
-
-test('public hero opens receipt lookup and its Travel Tax banner starts the journey',async({page},info)=>{
- test.skip(info.project.name!=='desktop-1280','Full guest modal journey in desktop suite');
- const hosted:string[]=[];
- page.on('request',r=>{if(new URL(r.url()).hostname.endsWith('.supabase.co'))hosted.push(r.url());});
- await page.goto('/?action=landing');
- const header=page.locator('.public-home-header');
- await expect(header.getByRole('link',{name:'Login'})).toHaveAttribute('href','?action=taxpayer_login');
- await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
- const homeSearch=page.getByRole('searchbox',{name:'Search payment records by reference'});
- await expect(homeSearch).toBeVisible();
- await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
- await homeSearch.fill('NO-SUCH-DEMO-REFERENCE-12345');
- await page.locator('.public-record-search').getByRole('button',{name:'Search records'}).click();
- await expect(page).toHaveURL(/action=verify/);
- await expect(page.getByRole('heading',{name:'No matching record'})).toBeVisible();
- await page.goto('/?action=landing');
- await openTravelTaxFromBanner(page);
- const travel=page.getByRole('dialog',{name:'Travel tax'});
- await expect(travel.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
- await expect(travel.locator('.public-service-dialog__notice')).toHaveCount(0);
- await expect(travel.getByText('Rates and exemptions are not verified.',{exact:false})).toHaveCount(0);
- await expect(travel.locator('.travel-flow__summary')).toBeHidden();
- await fillTravelDetails(travel);
- await expect(travel.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
- await travel.getByRole('button',{name:'Continue to review'}).click();
- await expect(travel.getByRole('heading',{name:'Review & payment'})).toBeVisible();
-  await travel.getByRole('button',{name:'Pay online'}).click();
-  await travel.getByRole('button',{name:'Mobile banking'}).click();
- await travel.getByRole('radio',{name:'bKash'}).check();
- await travel.locator('.travel-flow__channel-option input[type="checkbox"]').check();
- await travel.getByRole('button',{name:'Confirm preview payment'}).click();
- await expect(travel.getByRole('heading',{name:'Combined Travel Tax details'})).toBeVisible();
- await expect(travel.getByText('Not valid for travel or proof of payment.',{exact:false})).toHaveCount(0);
- await page.keyboard.press('Escape');
- await expect(travel).toHaveCount(0);
- expect(hosted).toEqual([]);
-});
-
-test('user guide supports responsive search, FAQs and languages',async({page},info)=>{
- test.skip(info.project.name!=='mobile-375','Guide journey on mobile');
- await page.goto('/?action=user_guide');
- await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
- await expect(page.getByRole('button',{name:'Payment basics'})).toHaveAttribute('aria-current','true');
- await expect(page.locator('.public-guide-topics')).toHaveCSS('display', 'grid');
- await page.getByRole('button',{name:'Travel tax'}).click();
- await expect(page.getByRole('heading',{name:'Travel tax'})).toBeVisible();
- await page.getByRole('button',{name:'Mobile'}).click();
- await expect(page.getByRole('button',{name:'Mobile'})).toHaveAttribute('aria-pressed','true');
- await page.getByRole('searchbox',{name:'Search the guide'}).fill('rates');
- await expect(page.getByText('Are the rates final?')).toBeVisible();
- await setWorkspaceLanguage(page,'bn');
- await expect(page.getByRole('heading',{name:'à¦¸à¦¹à¦œà¦•à¦° à¦¬à§à¦¯à¦¬à¦¹à¦¾à¦° à¦¨à¦¿à¦°à§à¦¦à§‡à¦¶à¦¿à¦•à¦¾'})).toBeVisible();
- await expect(page.getByRole('button',{name:'à¦­à§à¦°à¦®à¦£ à¦•à¦° à¦ªà¦°à¦¿à¦¶à§‹à¦§ à¦•à¦°à§à¦¨'})).toBeVisible();
- await page.getByRole('button',{name:'à¦®à§à¦›à§à¦¨'}).click();
- await expect(page.getByRole('button',{name:'à¦®à§‹à¦¬à¦¾à¦‡à¦²'})).toHaveAttribute('aria-pressed','true');
- const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
- expect(overflow).toBeLessThanOrEqual(2);
-});
-
-test('public guide links open the existing payment and receipt journeys',async({page})=>{
- await page.goto('/?action=user_guide');
- const guide=page.locator('.public-guide-page');
- await expect(guide.getByRole('button',{name:'Open payment services'})).toBeVisible();
- await guide.getByRole('button',{name:'Pay Travel Tax'}).click();
- const travel=page.getByRole('dialog',{name:'Travel tax'});
- await expect(travel.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
-
- await page.goto('/?action=user_guide&category=status');
- await page.locator('.public-guide-actions').getByRole('button',{name:'Find a payment record'}).click();
- await expect(page).toHaveURL(/action=verify/);
- await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toBeVisible();
-
- await page.goto('/?action=user_guide&category=security');
- await expect(page.getByRole('link',{name:'NBR e-Return support'})).toHaveAttribute('href','https://nbr.gov.bd/all-faq/eng');
- await setWorkspaceLanguage(page,'bn');
- await expect(page.getByRole('link',{name:'à¦à¦¨à¦¬à¦¿à¦†à¦° à¦‡-à¦°à¦¿à¦Ÿà¦¾à¦°à§à¦¨ à¦¸à¦¹à¦¾à§Ÿà¦¤à¦¾'})).toHaveAttribute('href','https://nbr.gov.bd/all-faq/ban');
-});
-
-test('Help Center typography and interactions remain usable at each viewport', async ({ page }) => {
-  await page.goto('/?action=user_guide');
-  const guide = page.locator('.public-guide-page');
-  await expect(guide.getByRole('heading', { name: 'Sohojkor user guide' })).toBeVisible();
-  await expect(guide.getByRole('button', { name: 'Back to home' })).toHaveCount(0);
-  const homeLink = page.locator('.public-home-nav a').filter({ hasText: 'Home' });
-  await expect(homeLink).toHaveCount(1);
-  await expect(homeLink).toHaveAttribute('href', /\/$/);
-
-  const fontSizes = await guide.evaluate(element => {
-    const selectors = [
-      '.public-guide-topics button',
-      '.public-guide-steps li p',
-      '.public-guide-actions button',
-      '.public-guide-search input',
-      '.public-guide-questions summary',
-    ];
-    return selectors.map(selector => Number.parseFloat(getComputedStyle(element.querySelector(selector)!).fontSize));
-  });
-  expect(fontSizes.every(size => size >= 16), `Small UI text: ${fontSizes.join(', ')}`).toBe(true);
-
-  await guide.getByRole('button', { name: 'Travel tax' }).click();
-  await expect(guide.getByRole('heading', { name: 'Travel tax' })).toBeVisible();
-  await guide.getByRole('searchbox', { name: 'Search the guide' }).fill('rates');
-  await expect(guide.getByText('Are the rates final?')).toBeVisible();
-  await guide.getByText('Are the rates final?').click();
-  await expect(guide.getByText('Rates and exemptions must be checked', { exact: false })).toBeVisible();
-
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(2);
-});
-
-test('User guide search and text weights follow the citizen typography contract', async ({ page }, info) => {
-  await page.goto('/?action=user_guide');
-  const guide = page.locator('.public-guide-page');
-  const typography = await guide.evaluate(element => {
-    const style = (selector: string) => getComputedStyle(element.querySelector(selector)!);
-    return {
-      fontFamily: style('.public-guide-content').fontFamily,
-      title: style('.public-guide-intro h1').fontWeight,
-      topic: style('.public-guide-topics button:not([aria-current="true"])').fontWeight,
-      stepTitle: style('.public-guide-steps h4').fontWeight,
-      stepBody: style('.public-guide-steps p').fontWeight,
-      faq: style('.public-guide-questions summary').fontWeight,
-      search: style('.public-guide-search input').fontWeight,
-    };
-  });
-  expect(typography.fontFamily).toContain('Poppins');
-  expect(typography).toMatchObject({title:'700',topic:'500',stepTitle:'600',stepBody:'400',faq:'600',search:'400'});
-
-  const field = guide.locator('.public-guide-search');
-  const fieldBox = await field.boundingBox();
-  const findBox = await guide.locator('.public-guide-find-controls').boundingBox();
-  expect(fieldBox).not.toBeNull();
-  expect(findBox).not.toBeNull();
-  expect(fieldBox!.width).toBeGreaterThanOrEqual(findBox!.width - 2);
-  if (info.project.name === 'desktop-1280') {
-    expect(fieldBox!.width).toBeGreaterThan(700);
-  }
-  const introBox = await guide.locator('.public-guide-intro').boundingBox();
-  const searchSectionBox = await guide.locator('.public-guide-find').boundingBox();
-  const overviewBox = await guide.locator('.public-guide-overview').boundingBox();
-  const layoutBox = await guide.locator('.public-guide-layout').boundingBox();
-  expect(introBox && searchSectionBox && overviewBox && layoutBox).toBeTruthy();
-  expect(searchSectionBox!.y).toBeGreaterThanOrEqual(introBox!.y + introBox!.height - 1);
-  expect(layoutBox!.y).toBeGreaterThan(overviewBox!.y + overviewBox!.height);
-
-  const input = guide.getByRole('searchbox', { name: 'Search the guide' });
-  await field.locator('svg').first().click();
-  await expect(input).toBeFocused();
-  await expect(field).toHaveCSS('border-color', 'rgb(44, 94, 173)');
-  await expect(input).toHaveCSS('outline-style', 'none');
-  await input.fill('receipt');
-  await expect(guide.getByText('Does a receipt confirm tax credit?')).toBeVisible();
-  await expect(guide.locator('.public-guide-layout')).toHaveCount(0);
-});
-
-
-test('User guide has real platform-specific steps and searches across all topics', async ({ page }) => {
-  await page.goto('/?action=user_guide');
-  const guide = page.locator('.public-guide-page');
-  await expect(guide.getByText('On Home, click Pay Tax', { exact: false })).toBeVisible();
-  await guide.getByRole('button', { name: 'Mobile', exact: true }).click();
-  await expect(guide.getByText('On Home, tap Pay Tax', { exact: false })).toBeVisible();
-  await expect(guide.getByText('On Home, click Pay Tax', { exact: false })).toHaveCount(0);
-
-  const search = guide.getByRole('searchbox', { name: 'Search the guide' });
-  await search.fill('rates');
-  const travelQuestion = guide.locator('.public-guide-result-faq').filter({ hasText: 'Are the rates final?' });
-  await expect(travelQuestion).toBeVisible();
-  await expect(guide.locator('.public-guide-result-group').getByRole('heading',{name:'Travel tax'})).toBeVisible();
-  await search.fill('this-question-does-not-exist');
-  await expect(guide.getByText('No results found')).toBeVisible();
-  await search.fill('');
-  await expect(guide.getByText('What should I check before payment?')).toBeVisible();
-  await expect(travelQuestion).toHaveCount(0);
-
-  await setWorkspaceLanguage(page,'bn');
-  await expect(guide.getByText('à¦†à¦ªà¦¨à¦¾à¦° à¦¡à¦¿à¦­à¦¾à¦‡à¦¸ à¦…à¦¨à§à¦¯à¦¾à§Ÿà§€ à¦¨à¦¿à¦°à§à¦¦à§‡à¦¶à¦¨à¦¾ à¦¦à§‡à¦–à§à¦¨à¥¤')).toBeVisible();
-  await expect(guide.getByRole('heading', { name: 'à¦¸à¦¹à¦œà¦•à¦° à¦¬à§à¦¯à¦¬à¦¹à¦¾à¦° à¦¨à¦¿à¦°à§à¦¦à§‡à¦¶à¦¿à¦•à¦¾' })).toBeVisible();
-});
-
-test('Guide search covers steps and answers, while topic FAQs stay contextual', async ({ page }) => {
-  await page.goto('/?action=user_guide');
-  const guide=page.locator('.public-guide-page');
-  await expect(guide.locator('.public-guide-questions details')).toHaveCount(1);
-  await expect(guide.getByText('Are the rates final?')).toHaveCount(0);
-  const field=guide.getByRole('searchbox',{name:'Search the guide'});
-  await field.fill('passport');
-  await expect(guide.getByRole('heading',{name:'Search results'})).toBeVisible();
-  await expect(guide.getByRole('link',{name:'NBR publications'})).toBeVisible();
-  await expect(guide.locator('.public-guide-result-step').first()).toContainText('Enter passenger details');
-  await expect(guide.locator('.public-guide-layout')).toHaveCount(0);
-  await field.fill('tap Pay Tax');
-  await expect(guide.locator('.public-guide-result-step').first()).toContainText('Step 1 Â· Mobile');
-  await expect(guide.locator('.public-guide-result-step').first()).toContainText('On Home, tap Pay Tax');
-  const clear=guide.getByRole('button',{name:'Clear search'});
-  await expect(clear).toHaveCount(1);
-  await expect(guide.locator('.public-guide-find-controls > .public-guide-clear')).toHaveCount(0);
-  await clear.click();
-  await expect(field).toBeFocused();
-  await expect(clear).toHaveCount(0);
-  await expect(guide.getByRole('navigation',{name:'Guide topics'})).toBeVisible();
-  await guide.getByRole('button',{name:'Travel tax'}).click();
-  await expect(guide.locator('.public-guide-questions')).toContainText('Are the rates final?');
-  await expect(guide.getByRole('button',{name:'Travel tax'})).toHaveAttribute('aria-current','true');
-});
-
-test('User guide official reference belongs to the reading card, not a separate floating strip', async ({ page }) => {
-  await page.goto('/?action=user_guide');
-  const guide=page.locator('.public-guide-page');
-  const article=guide.locator('.public-guide-content');
-  await expect(guide.locator(':scope > .public-guide-source')).toHaveCount(0);
-  await expect(article.locator('.public-guide-source').getByRole('heading',{name:'Official information'})).toBeVisible();
-  await expect(article.locator('.public-guide-source').getByRole('link',{name:'NBR publications'})).toBeVisible();
-  await guide.getByRole('searchbox',{name:'Search the guide'}).fill('challan');
-  await expect(guide.locator('.public-guide-results .public-guide-source')).toBeVisible();
-  await expect(guide.locator('.public-guide-content')).toHaveCount(0);
-});
-
-test('Selecting a topic takes mobile readers directly to its instructions', async ({ page }, info) => {
-  test.skip(info.project.name!=='mobile-375','Mobile reading flow');
-  await page.goto('/?action=user_guide');
-  const topic=page.locator('.public-guide-topics').getByRole('button',{name:'Receipts & corrections'});
-  await topic.click();
-  await expect(page.locator('.public-guide-content-head').getByRole('heading',{name:'Receipts & corrections'})).toBeInViewport();
-  await expect(topic).toHaveAttribute('aria-current','true');
-});
-
-test('Home, Guide and Report retain the same approved desktop width and alignment', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 });
-  const views = [
-    { path: '/?action=landing', selector: '.public-information-hub' },
-    { path: '/?action=user_guide', selector: '.public-guide-page' },
-    { path: '/?action=incident', selector: '.public-report-page' },
-  ];
-  const bounds: { x: number; width: number }[] = [];
-  for (const view of views) {
-    await page.goto(view.path);
-    const box = await page.locator(view.selector).boundingBox();
-    expect(box, `${view.path} should have a content container`).not.toBeNull();
-    bounds.push({ x: box!.x, width: box!.width });
-    // No route-specific widening of the approved public 1100px canvas.
-    expect(box!.width).toBeGreaterThanOrEqual(1099);
-    expect(box!.width).toBeLessThanOrEqual(1101);
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    expect(overflow, `Horizontal overflow on ${view.path}`).toBeLessThanOrEqual(2);
-  }
-  for (const item of bounds) {
-    expect(Math.abs(item.x + item.width / 2 - 800), 'Public page should remain centered').toBeLessThanOrEqual(2);
-  }
-  await page.goto('/?action=landing');
-  const headerBrand = await page.locator('.public-home-brand').boundingBox();
-  const footerLogo = await page.locator('.public-footer__wordmark').boundingBox();
-  expect(headerBrand).not.toBeNull();
-  expect(footerLogo).not.toBeNull();
-  expect(Math.abs(headerBrand!.x - bounds[0].x), 'Header aligns with main content').toBeLessThanOrEqual(2);
-  expect(Math.abs(footerLogo!.x - bounds[0].x), 'Footer aligns with main content').toBeLessThanOrEqual(2);
-});
-
-test('floating help uses guide answers and report offers an editable review without extra notices',async({page},info)=>{
- test.skip(info.project.name!=='desktop-1280','One assistant and report E2E journey');
- await page.goto('/?action=landing');
- await page.getByRole('button',{name:'Chat support'}).click();
- await expect(page.getByRole('heading',{name:'Korbritto help'})).toBeVisible();
- await page.getByRole('button',{name:'Payment status',exact:true}).click();
- await expect(page.locator('.public-help-message--assistant')).toContainText('verified reconciliation');
- await page.getByRole('link',{name:'Open user guide'}).click();
- await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
- await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Report'}).click();
- await expect(page.getByRole('heading',{name:'Report a problem'})).toBeVisible();
- await expect(page.getByText('This form does not send reports or create official tickets.')).toHaveCount(0);
- await expect(page.getByText('If money was debited, contact your bank or payment provider.')).toHaveCount(0);
- await page.getByLabel('Short description').fill('Example payment record mismatch, using fake data.');
- await page.getByRole('button',{name:'Review details'}).click();
- await expect(page.getByRole('heading',{name:'Review your details'})).toBeVisible();
- await expect(page.locator('.public-report-review')).toContainText('Example payment record mismatch, using fake data.');
- await page.getByRole('button',{name:'Edit details'}).click();
- await expect(page.getByLabel('Short description')).toHaveValue('Example payment record mismatch, using fake data.');
-});
-test('public guide and guest launcher pass WCAG automated A/AA',async({page},info)=>{
- test.skip(info.project.name==='desktop-1280','Mobile a11y suite');
- await page.goto('/?action=user_guide');
- const results=await new AxeBuilder({page}).include('.public-guide-page').include('.taxpay-public-mobile-navigation .citizen-header').include('.public-footer').withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
- expect(results.violations).toEqual([]);
-});
-
-
-test('guest receipt search is under the banner and opens receipt results in the shared modal',async({page})=>{
- await page.goto('/?action=landing');
- const search=page.getByRole('searchbox',{name:'Search payment records by reference'});
- await expect(search).toBeVisible();
- await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
- await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
- await search.fill('NO-SUCH-DEMO-REFERENCE-12345');
- await page.locator('.public-record-search').getByRole('button',{name:'Search records'}).click();
- await expect(page).toHaveURL(/action=verify/);
- const lookup=page.getByRole('dialog',{name:'Payment status & receipt'});
- await expect(lookup).toBeVisible();
- await expect(lookup.getByLabel('Challan, token or transaction reference')).toHaveValue('NO-SUCH-DEMO-REFERENCE-12345');
- await expect(lookup.getByRole('heading',{name:'No matching record'})).toBeVisible();
- const samples=lookup.locator('.receipt-lookup__sample');
- await expect(samples).toHaveCount(3);
- await samples.first().click();
- await expect(lookup.locator('.receipt-view--embedded')).toBeVisible();
- await expect(lookup.getByRole('button',{name:'Print receipt'})).toBeVisible();
- await expect(lookup.getByRole('button',{name:'Download',exact:true})).toBeVisible();
- await expect(lookup.locator('.receipt-view__paper')).toBeVisible();
- await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toHaveCount(1);
- const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
- expect(overflow).toBeLessThanOrEqual(2);
-});
-
-test('Bangla homepage reference search keeps keyboard access and modal receipt details',async({page},info)=>{
- test.skip(info.project.name!=='mobile-320','Bilingual modal receipt at smallest viewport');
- await page.goto('/?action=landing');
- await setWorkspaceLanguage(page,'bn');
- const search=page.getByRole('searchbox',{name:'à¦°à§‡à¦«à¦¾à¦°à§‡à¦¨à§à¦¸ à¦¦à¦¿à§Ÿà§‡ à¦ªà§‡à¦®à§‡à¦¨à§à¦Ÿ à¦°à§‡à¦•à¦°à§à¦¡ à¦–à§à¦à¦œà§à¦¨'});
- await expect(search).toBeVisible();
- await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
- await expect(page.getByRole('dialog',{name:'à¦ªà§‡à¦®à§‡à¦¨à§à¦Ÿà§‡à¦° à¦…à¦¬à¦¸à§à¦¥à¦¾ à¦“ à¦°à¦¸à¦¿à¦¦'})).toHaveCount(0);
- await search.fill('SYNTHETIC-NO-MATCH-2026');
- await search.press('Enter');
- await expect(page).toHaveURL(/action=verify/);
- const lookup=page.getByRole('dialog',{name:'à¦ªà§‡à¦®à§‡à¦¨à§à¦Ÿà§‡à¦° à¦…à¦¬à¦¸à§à¦¥à¦¾ à¦“ à¦°à¦¸à¦¿à¦¦'});
- await expect(lookup).toBeVisible();
- await expect(lookup.getByLabel('à¦šà¦¾à¦²à¦¾à¦¨, à¦Ÿà§‹à¦•à§‡à¦¨ à¦¬à¦¾ à¦²à§‡à¦¨à¦¦à§‡à¦¨à§‡à¦° à¦°à§‡à¦«à¦¾à¦°à§‡à¦¨à§à¦¸')).toHaveValue('SYNTHETIC-NO-MATCH-2026');
- await expect(lookup.getByText('à¦•à§‹à¦¨à§‹ à¦®à¦¿à¦² à¦ªà¦¾à¦“à§Ÿà¦¾ à¦¯à¦¾à§Ÿà¦¨à¦¿')).toBeVisible();
- await lookup.locator('.receipt-lookup__sample').first().click();
- await expect(lookup.getByRole('button',{name:'à¦°à¦¸à¦¿à¦¦ à¦ªà§à¦°à¦¿à¦¨à§à¦Ÿ'})).toBeVisible();
- await expect(lookup.locator('.receipt-view__paper')).toBeVisible();
- const dimensions=await lookup.locator('.receipt-view__paper').evaluate(el=>({paper:el.getBoundingClientRect().width,viewport:innerWidth}));
- expect(dimensions.paper).toBeLessThanOrEqual(dimensions.viewport);
- const a11y=await new AxeBuilder({page}).include('.receipt-modal').withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
- expect(a11y.violations).toEqual([]);
- await expect(lookup).toBeVisible();
-});
-
-test('Travel Tax modal has a top-right close and one fixed workflow action footer',async({page})=>{
-  await page.goto('/?action=landing');
-  await openTravelTaxFromBanner(page);
-  const modal=page.getByRole('dialog',{name:'Travel tax'});
-  const header=modal.locator('.taxpay-modal__header');
-  const body=modal.locator('.taxpay-modal__body');
-  const footer=modal.locator('.taxpay-modal__footer');
-  const closeIcon=header.getByRole('button',{name:'Close modal'});
-  await expect(header.getByRole('heading',{name:'Passengers and receipt details',level:2})).toBeVisible();
-  await expect(closeIcon).toBeVisible();
-  await expect(header).toHaveCSS('border-bottom-style','solid');
-  await expect(footer).toHaveCSS('border-top-style','solid');
-  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
-  await expect(modal.locator('.travel-flow__steps')).toHaveCount(0);
-  if (page.viewportSize()!.width <= 650) {
-    await expect(footer.locator('[data-testid="mobile-payment-calculation"]')).toHaveCount(0);
-    await expect(body.locator('.travel-flow__summary')).toBeHidden();
-  } else {
-    await expect(body.locator('.travel-flow__summary')).toBeHidden();
-  }
-  await expect(footer.locator('.taxpay-modal__footer-close')).toHaveCount(0);
-  await expect(footer.getByRole('button',{name:'Continue to travel details'})).toBeVisible();
-  const positions=await modal.evaluate(el=>{
-    const h=el.querySelector('.taxpay-modal__header')!.getBoundingClientRect();
-    const f=el.querySelector('.taxpay-modal__footer')!.getBoundingClientRect();
-    const b=el.querySelector('.taxpay-modal__body')!.getBoundingClientRect();
-    return {headerBottom:h.bottom,bodyTop:b.top,bodyBottom:b.bottom,footerTop:f.top};
-  });
-  expect(positions.headerBottom).toBeLessThanOrEqual(positions.bodyTop+1);
-  expect(positions.bodyBottom).toBeLessThanOrEqual(positions.footerTop+1);
-  await closeIcon.click();
-  await expect(modal).toHaveCount(0);
-});
-
-test('travel tax uses same modal header/body/footer without changing its flow',async({page})=>{
-  await page.goto('/?action=landing');
-  await openTravelTaxFromBanner(page);
-  const modal=page.getByRole('dialog',{name:'Travel tax'});
-  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
-  await expect(modal.locator('.taxpay-modal__header')).toHaveCSS('border-bottom-style','solid');
-  await expect(modal.locator('.taxpay-modal__footer')).toHaveCSS('border-top-style','solid');
-  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
-  await expect(modal.locator('.travel-flow__steps')).toHaveCount(0);
-  if (page.viewportSize()!.width <= 650) {
-    await expect(modal.locator('.taxpay-modal__footer [data-testid="mobile-payment-calculation"]')).toHaveCount(0);
-  } else {
-    await expect(modal.locator('.travel-flow__summary')).toBeHidden();
-  }
-    await fillTravelDetails(modal);
-  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
-  await expect(modal.locator('#travel-tax-route-results')).toBeVisible();
-  await expect(modal.locator('.taxpay-modal__footer-close')).toHaveCount(0);
-  await page.keyboard.press('Escape');
-  await expect(modal).toHaveCount(0);
-});
-
-
-test('travel tax desktop summary stays anchored during the wizard, then full-width receipt takes over',async({page},info)=>{
-  test.skip(info.project.name!=='desktop-1280','Desktop split-view geometry');
-  await page.goto('/?action=landing');
-  await openTravelTaxFromBanner(page);
-  const modal=page.getByRole('dialog',{name:'Travel tax'});
-  const left=modal.locator('.travel-flow__main');
-  const side=modal.locator('.travel-flow__summary');
-  await expect(side).toBeHidden();
-    await fillTravelDetails(modal);
-  await expect(side.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
-  const initial=await side.evaluate(el=>el.getBoundingClientRect().top);
-  await left.evaluate(el=>el.scrollTop=el.scrollHeight);
-  expect(Math.abs((await side.evaluate(el=>el.getBoundingClientRect().top))-initial)).toBeLessThan(2);
-  await modal.getByRole('button',{name:'Continue to review'}).click();
-  await modal.getByRole('button',{name:'Pay online'}).click();
-  await modal.getByRole('button',{name:'Mobile banking'}).click();
-  await modal.getByRole('radio',{name:'bKash'}).check();
-  await modal.locator('.travel-flow__channel-option input[type="checkbox"]').check();
-  await modal.getByRole('button',{name:'Confirm preview payment'}).click();
-  await expect(modal.getByRole('heading',{name:'Combined Travel Tax details'})).toBeVisible({timeout:12000});
-  await expect(modal.locator('.travel-flow__summary')).toHaveCount(0);
-  await expect(modal.locator('.taxpay-modal__body > .receipt-view--embedded')).toBeVisible();
-  await expect(modal.getByRole('button',{name:'Print receipt'})).toBeVisible();
-  await expect(modal.getByRole('button',{name:'Download'})).toBeVisible();
-});
-
-test('travel tax mobile keeps a compact anchored estimate and Bengali step navigation',async({page},info)=>{
- test.skip(info.project.name!=='mobile-320','Smallest viewport EN/BN stepper');
- await page.goto('/?action=landing');
- await setWorkspaceLanguage(page,'bn');
- await openTravelTaxFromBanner(page);
- const modal=page.getByRole('dialog',{name:'à¦­à§à¦°à¦®à¦£ à¦•à¦°'});
- await expect(modal.locator('.taxpay-modal__title')).toHaveText('à¦¯à¦¾à¦¤à§à¦°à§€ à¦“ à¦°à¦¸à¦¿à¦¦à§‡à¦° à¦¤à¦¥à§à¦¯');
- await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
- await expect(modal.locator('.travel-flow__steps')).toHaveCount(0);
- await expect(modal.getByRole('button',{name:'à¦­à§à¦°à¦®à¦£à§‡à¦° à¦¤à¦¥à§à¦¯ à¦¦à¦¿à¦¤à§‡ à¦à¦—à¦¿à§Ÿà§‡ à¦¯à¦¾à¦¨'})).toBeVisible();
- await expect(modal.locator('.public-service-dialog__notice')).toHaveCount(0);
-   await fillTravelDetails(modal);
- await expect(modal.locator('.taxpay-modal__title')).toHaveText('à¦­à§à¦°à¦®à¦£à§‡à¦° à¦¤à¦¥à§à¦¯');
- await expect(modal.locator('#travel-tax-route-results')).toBeVisible();
-
- await modal.getByRole('button',{name:'à¦ªà§‡à¦®à§‡à¦¨à§à¦Ÿ à¦ªà¦°à§à¦¯à¦¾à¦²à§‹à¦šà¦¨à¦¾à§Ÿ à¦¯à¦¾à¦¨'}).click();
- await expect(modal.getByRole('heading',{name:'à¦ªà¦°à§à¦¯à¦¾à¦²à§‹à¦šà¦¨à¦¾ à¦“ à¦ªà§‡à¦®à§‡à¦¨à§à¦Ÿ'})).toBeVisible();
- const width=await modal.evaluate(el=>({viewport:innerWidth,paper:el.getBoundingClientRect().width,scroll:document.documentElement.scrollWidth}));
- expect(width.paper).toBeLessThanOrEqual(width.viewport);
- expect(width.scroll).toBeLessThanOrEqual(width.viewport+2);
- await expect(modal.locator('.travel-flow__summary')).toBeHidden();
- await expect(modal.locator('.taxpay-modal__footer [data-testid="mobile-payment-calculation"]')).toBeVisible();
-});
-
-
-test('Travel Tax keeps workflow actions separate from receipt Download and Print',async({page})=>{
-  await page.goto('/?action=landing');
-  await openTravelTaxFromBanner(page);
-  const modal=page.getByRole('dialog',{name:'Travel tax'});
-  const footer=modal.locator('.taxpay-modal__footer');
-  const actions=footer.locator('.taxpay-modal__footer-actions');
-  await expect(footer.locator('.taxpay-modal__footer-close')).toHaveCount(0);
-  await expect(actions.getByRole('button',{name:'Continue to travel details'})).toBeVisible();
-    await fillTravelDetails(modal);
-  await actions.getByRole('button',{name:'Continue to review'}).click();
-
-    // Receipt mobile was collected in the passenger stage.
-  await modal.getByRole('button',{name:'Pay online'}).click();
-  await modal.getByRole('button',{name:'Mobile banking'}).click();
-  await modal.getByRole('radio',{name:'bKash'}).check();
-  await modal.locator('.travel-flow__channel-option input[type="checkbox"]').check();
-  await actions.getByRole('button',{name:'Confirm preview payment'}).click();
-  await expect(modal.getByRole('heading',{name:'Combined Travel Tax details'})).toBeVisible({timeout:12000});
-  await expect(footer.locator('.travel-flow__footer-actions')).toHaveCount(0);
-  await expect(footer.locator('.receipt-view__actions')).toHaveCount(1);
-  await expect(actions.getByRole('button',{name:'Download'})).toBeVisible();
-  await expect(actions.getByRole('button',{name:'Print receipt'})).toBeVisible();
-  await expect(actions.getByRole('button',{name:'New payment'})).toHaveCount(0);
-});
-
-test('Travel Tax displays only two mode cards without fixed prices and calculates after passport lookup',async({page})=>{
-  await page.goto('/?action=landing');
-  await openTravelTaxFromBanner(page);
-  const modal=page.getByRole('dialog',{name:'Travel tax'});
-  const routes=modal.locator('#travel-tax-route-results');
-  const summary=modal.locator('.travel-flow__summary');
-  await expect(routes).toHaveCount(0);
-  await expect(summary.locator('.travel-flow__total')).toContainText('â€”');
-  await fillTravelDetails(modal,{mode:'WATER'});
-  await expect(routes.locator('input[type="radio"]')).toHaveCount(2);
-  await expect(routes.locator('#travel-tax-route-1')).toBeChecked();
-  await expect(routes).toContainText('By water');
-  await expect(routes).not.toContainText('1,000');
-  await expect(summary.locator('.travel-flow__total')).toContainText('1,000');
-  await modal.getByRole('button',{name:'Continue to review'}).click();
-  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Review & payment');
-});
-
-test('Travel Tax Bengali passenger tabs remain accessible at 320px',async({page},info)=>{
-  test.skip(info.project.name!=='mobile-320','Small mobile Bengali mode and tabs');
-  await page.goto('/?action=landing');
-  await setWorkspaceLanguage(page,'bn');
-  await openTravelTaxFromBanner(page);
-  const modal=page.getByRole('dialog',{name:'à¦­à§à¦°à¦®à¦£ à¦•à¦°'});
-  const routes=modal.locator('#travel-tax-route-results');
-  await expect(routes).toHaveCount(0);
-  await expect(modal.getByRole('tab',{name:'à¦¬à¦¾à¦‚à¦²à¦¾à¦¦à§‡à¦¶à¦¿ à¦¯à¦¾à¦¤à§à¦°à§€'})).toHaveAttribute('aria-selected','true');
-  await modal.getByRole('tab',{name:'à¦¬à¦¿à¦¦à§‡à¦¶à¦¿ à¦¯à¦¾à¦¤à§à¦°à§€'}).click();
-  await expect(modal.locator('#travel-country-first')).toBeVisible();
-  await fillForeignPassenger(modal);
-  await fillTravelDetails(modal);
-  await expect(routes.locator('input[type="radio"]')).toHaveCount(2);
-  await expect(routes.locator('#travel-tax-route-0')).toBeChecked();
-  await expect(routes).not.toContainText('By land');
-  await expect(routes).toContainText('à¦¸à§à¦¥à¦²à¦ªà¦¥à§‡');
-  const sizes=await routes.evaluate(el=>{
-    const box=el.getBoundingClientRect();
-    return {left:box.left,right:box.right,width:window.innerWidth,scroll:document.documentElement.scrollWidth};
-  });
-  expect(sizes.left).toBeGreaterThanOrEqual(-1);
-  expect(sizes.right).toBeLessThanOrEqual(sizes.width+1);
-  expect(sizes.scroll).toBeLessThanOrEqual(sizes.width+2);
-});
-
-// Banner-dependent browser checks use explicitly published CMS rows;
-// unavailable CMS must not revive unpublished bundled artwork.
-test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éí×]:á:-jZ.¶›­–)Þ³V–×÷'B²f–ÆÅG&fVÄFWF–Ç2Âf–ÆÄf÷&V–vå76VævW"Òg&öÒrâ÷G&fVÂ×F‚×FW7BÖ†VÇW"s°¦–×÷'B²Öö6µV&Æ—6†VD&ææW$6×2Òg&öÒrâöÖö6²×V&Æ—6†VBÖ&ææW'2s°¦–×÷'B²6WEv÷&·76TÆæwVvRÒg&öÒrâ÷v÷&·76RÖÆæwVvRs°¦–×÷'B¶W‡V7BÇFW7GÒg&öÒtÆ—w&–v‡B÷FW7Bs°¦–×÷'B†T'V–ÆFW"g&öÒt†RÖ6÷&R÷Æ—w&–v‡Bs°¦–×÷'B²÷VåG&fVÅF„g&öÔ&ææW"Òg&öÒrâ÷V&Æ–2×G&fVÂ×F‚ÖVçG'’s° §FW7B‚wV&Æ–2†W&ò÷Vç2&V6V—BÆöö·WæB—G2G&fVÂF‚&ææW"7F'G2F†R¦÷W&æW’rÆ7–æ2‡·vWÒÆ–æfò“Óç°¢FW7Bç6¶—†–æfòç&ö¦V7BææÖRÓÒvFW6·F÷Ó#ƒrÂtgVÆÂwVW7BÖöFÂ¦÷W&æW’–âFW6·F÷7V—FRr“°¢6öç7B†÷7FVC§7G&–æuµÓÕµÓ°¢vRæöâ‚w&WVW7BrÇ#Óç¶–b†æWrU$Â‡"çW&Â‚’’æ†÷7FæÖRæVæG5v—F‚‚rç7W&6Ræ6òr’–†÷7FVBçW6‚‡"çW&Â‚’“·Ò“°¢v—BvRæv÷Fò‚róö7F–öãÖÆæF–ærr“°¢6öç7B†VFW#×vRæÆö6F÷"‚rçV&Æ–2Ö†öÖRÖ†VFW"r“°¢v—BW‡V7B††VFW"ævWD'•&öÆR‚vÆ–æ²rÇ¶æÖS¢tÆöv–âwÒ’’çFô†fTGG&–'WFR‚v‡&VbrÂsö7F–öã×F‡–W%öÆöv–âr“°¢v—BW‡V7B‡vRæÆö6F÷"‚ræ6—F—¦Vâ×V&Æ–2Ö†W&õõö7F–öç2r’ævWD'•&öÆR‚vÆ–æ²rÇ¶æÖS¢tÆöv–âwÒ’’çFô†fT6÷VçBƒ“°¢6öç7B†öÖU6V&6ƒ×vRævWD'•&öÆR‚w6V&6†&÷‚rÇ¶æÖS¢u6V&6‚–ÖVçB&V6÷&G2'’&VfW&Væ6RwÒ“°¢v—BW‡V7B††öÖU6V&6‚’çFô&Uf—6–&ÆR‚“°¢v—BW‡V7B‡vRævWD'•&öÆR‚vF–ÆörrÇ¶æÖS¢u–ÖVçB7FGW2b&V6V—BwÒ’’çFô†fT6÷VçBƒ“°¢v—B†öÖU6V&6‚æf–ÆÂ‚täòÕ5T4‚ÔDTÔòÕ$TdU$Tä4RÓ#3CRr“°¢v—BvRæÆö6F÷"‚rçV&Æ–2×&V6÷&B×6V&6‚r’ævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢u6V&6‚&V6÷&G2wÒ’æ6Æ–6²‚“°¢v—BW‡V7B‡vR’çFô†fUU$Â‚ö7F–öã×fW&–g’ò“°¢v—BW‡V7B‡vRævWD'•&öÆR‚v†VF–ærrÇ¶æÖS¢tæòÖF6†–ær&V6÷&BwÒ’’çFô&Uf—6–&ÆR‚“°¢v—BvRæv÷Fò‚róö7F–öãÖÆæF–ærr“°¢v—B÷VåG&fVÅF„g&öÔ&ææW"‡vR“°¢6öç7BG&fVÃ×vRævWD'•&öÆR‚vF–ÆörrÇ¶æÖS¢uG&fVÂF‚wÒ“°¢v—BW‡V7B‡G&fVÂæÆö6F÷"‚rçF‡’ÖÖöFÅõ÷F—FÆRr’’çFô†fUFW‡B‚u76VævW'2æB&V6V—BFWF–Ç2r“°¢v—BW‡V7B‡G&fVÂæÆö6F÷"‚rçV&Æ–2×6W'f–6RÖF–Æöuõöæ÷F–6Rr’’çFô†fT6÷VçBƒ“°¢v—BW‡V7B‡G&fVÂævWD'•FW‡B‚u&FW2æBW†V×F–öç2&Ræ÷BfW&–f–VBârÇ¶W†7C¦fÇ6WÒ’’çFô†fT6÷VçBƒ“°¢v—BW‡V7B‡G&fVÂæÆö6F÷"‚rçG&fVÂÖfÆ÷uõ÷7VÖÖ'’r’’çFô&T†–FFVâ‚“°¢v—Bf–ÆÅG&fVÄFWF–Ç2‡G&fVÂ“°¢v—BW‡V7B‡G&fVÂævWD'•&öÆR‚v†VF–ærrÇ¶æÖS¢u–ÖVçB6Æ7VÆF–öâwÒ’’çFô&Uf—6–&ÆR‚“°¢v—BG&fVÂævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢t6öçF–çVRFò&Wf–WrwÒ’æ6Æ–6²‚“°¢v—BW‡V7B‡G&fVÂævWD'•&öÆR‚v†VF–ærrÇ¶æÖS¢u&Wf–Wrb–ÖVçBwÒ’’çFô&Uf—6–&ÆR‚“°¢v—BG&fVÂævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢u’öæÆ–æRwÒ’æ6Æ–6²‚“°¢v—BG&fVÂævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢tÖö&–ÆR&æ¶–ærwÒ’æ6Æ–6²‚“°¢v—BG&fVÂævWD'•&öÆR‚w&F–òrÇ¶æÖS¢v$¶6‚wÒ’æ6†V6²‚“°¢v—BG&fVÂæÆö6F÷"‚rçG&fVÂÖfÆ÷uõö6†ææVÂÖ÷F–öâ–çWE·G—SÒ&6†V6¶&÷‚%Òr’æ6†V6²‚“°¢v—BG&fVÂævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢t6öæf—&Ò&Wf–Wr–ÖVçBwÒ’æ6Æ–6²‚“°¢v—BW‡V7B‡G&fVÂævWD'•&öÆR‚v†VF–ærrÇ¶æÖS¢t6öÖ&–æVBG&fVÂF‚FWF–Ç2wÒ’’çFô&Uf—6–&ÆR‚“°¢v—BW‡V7B‡G&fVÂævWD'•FW‡B‚tæ÷BfÆ–Bf÷"G&fVÂ÷"&ööböb–ÖVçBârÇ¶W†7C¦fÇ6WÒ’’çFô†fT6÷VçBƒ“°¢v—BvRæ¶W–&ö&Bç&W72‚tW66Rr“°¢v—BW‡V7B‡G&fVÂ’çFô†fT6÷VçBƒ“°¢W‡V7B††÷7FVB’çFôWVÂ…µÒ“°§Ò“° §FW7B‚wW6W"wV–FR7W÷'G2&W7öç6—fR6V&6‚Âd2æBÆæwVvW2rÆ7–æ2‡·vWÒÆ–æfò“Óç°¢FW7Bç6¶—†–æfòç&ö¦V7BææÖRÓÒvÖö&–ÆRÓ3sRrÂtwV–FR¦÷W&æW’öâÖö&–ÆRr“°¢v—BvRæv÷Fò‚róö7F–öã×W6W%öwV–FRr“°¢v—BW‡V7B‡vRævWD'•&öÆR‚v†VF–ærrÇ¶æÖS¢u6ö†ö¦¶÷"W6W"wV–FRwÒ’’çFô&Uf—6–&ÆR‚“°¢v—BW‡V7B‡vRævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢u–ÖVçB&6–72wÒ’’çFô†fTGG&–'WFR‚v&–Ö7W'&VçBrÂwG'VRr“°¢v—BW‡V7B‡vRæÆö6F÷"‚rçV&Æ–2ÖwV–FR×F÷–72r’’çFô†fT552‚vF—7Æ’rÂvw&–Br“°¢v—BvRævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢uG&fVÂF‚wÒ’æ6Æ–6²‚“°¢v—BW‡V7B‡vRævWD'•&öÆR‚v†VF–ærrÇ¶æÖS¢uG&fVÂF‚wÒ’’çFô&Uf—6–&ÆR‚“°¢v—BvRævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢tÖö&–ÆRwÒ’æ6Æ–6²‚“°¢v—BW‡V7B‡vRævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢tÖö&–ÆRwÒ’’çFô†fTGG&–'WFR‚v&–×&W76VBrÂwG'VRr“°¢v—BvRævWD'•&öÆR‚w6V&6†&÷‚rÇ¶æÖS¢u6V&6‚F†RwV–FRwÒ’æf–ÆÂ‚w&FW2r“°¢v—BW‡V7B‡vRævWD'•FW‡B‚t&RF†R&FW2f–æÃòr’’çFô&Uf—6–&ÆR‚“°¢v—B6WEv÷&·76TÆæwVvR‡vRÂv&âr“°¢v—BW‡V7B‡vRævWD'•&öÆR‚v†VF–ærrÇ¶æÖS¢~
+kŽ
+kž
+iÎ
+i^
+k
+jÎ
+xÞ
+jþ
+jÎ
+kž
+kî
+k
+jŽ
+kþ
+k
+xÞ
+jn
+x~
+kn
+kþ
+i^
+kâwÒ’’çFô&Uf—6–&ÆR‚“°¢v—BW‡V7B‡vRævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢~
+jÞ
+xÞ
+k
+jî
+j2
+i^
+k
+j®
+k
+kþ
+kn
+x¾
+jr
+i^
+k
+x
+j‚wÒ’’çFô&Uf—6–&ÆR‚“°¢v—BvRævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢~
+jî
+x
+i¾
+x
+j‚wÒ’æ6Æ–6²‚“°¢v—BW‡V7B‡vRævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢~
+jî
+x¾
+jÎ
+kî
+h~
+k"wÒ’’çFô†fTGG&–'WFR‚v&–×&W76VBrÂwG'VRr“°¢6öç7B÷fW&fÆ÷sÖv—BvRæWfÇVFR‚‚“ÓæFö7VÖVçBæFö7VÖVçDVÆVÖVçBç67&öÆÅv–GF‚ÖFö7VÖVçBæFö7VÖVçDVÆVÖVçBæ6Æ–VçEv–GF‚“°¢W‡V7B†÷fW&fÆ÷r’çFô&TÆW75F†ä÷$WVÂƒ"“°§Ò“° §FW7B‚wV&Æ–2wV–FRÆ–æ·2÷VâF†RW†—7F–ær–ÖVçBæB&V6V—B¦÷W&æW—2rÆ7–æ2‡·vWÒ“Óç°¢v—BvRæv÷Fò‚róö7F–öã×W6W%öwV–FRr“°¢6öç7BwV–FS×vRæÆö6F÷"‚rçV&Æ–2ÖwV–FR×vRr“°¢v—BW‡V7B†wV–FRævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢t÷Vâ–ÖVçB6W'f–6W2wÒ’’çFô&Uf—6–&ÆR‚“°¢v—BwV–FRævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢t'&÷w6RF‚FW&×2wÒ’æ6Æ–6²‚“°¢v—BW‡V7B‡vR’çFô†fUU$Â‚ö7F–öãÖvÆ÷76'’ò“°¢v—BW‡V7B‡vRævWD'•&öÆR‚v†VF–ærrÇ¶æÖS¢u7FGWF÷'’F‚bf–ææ6–ÂvÆ÷76'’wÒ’’çFô&Uf—6–&ÆR‚“° ¢v—BvRæv÷Fò‚róö7F–öã×W6W%öwV–FRf6FVv÷'“×G&fVÂr“°¢v—BvRæÆö6F÷"‚rçV&Æ–2ÖwV–FRÖ7F–öç2r’ævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢u’G&fVÂF‚wÒ’æ6Æ–6²‚“°¢6öç7BG&fVÃ×vRævWD'•&öÆR‚vF–ÆörrÇ¶æÖS¢uG&fVÂF‚wÒ“°¢v—BW‡V7B‡G&fVÂæÆö6F÷"‚rçF‡’ÖÖöFÅõ÷F—FÆRr’’çFô†fUFW‡B‚u76VævW'2æB&V6V—BFWF–Ç2r“° ¢v—BvRæv÷Fò‚róö7F–öã×W6W%öwV–FRf6FVv÷'“×7FGW2r“°¢v—BvRæÆö6F÷"‚rçV&Æ–2ÖwV–FRÖ7F–öç2r’ævWD'•&öÆR‚v'WGFöârÇ¶æÖS¢tf–æB–ÖVçB&V6÷&BwÒ’æ6Æ–6²‚“°¢v—BW‡V7B‡vR’çFô†fUU$Â‚ö7F–öã×fW&–g’ò“°¢v—BW‡V7B‡vRævWD'•&öÆR‚vF–ÆörrÇ¶æÖS¢u–ÖVçB7FGW2b&V6V—BwÒ’’çFô&Uf—6–&ÆR‚“° ¢v—BvRæv÷Fò‚róö7F–öã×W6W%öwV–FRf6FVv÷'“×6V7W&—G’r“°¢v—BW‡V7B‡vRævWD'•&öÆR‚vÆ–æ²rÇ¶æÖS¢tä%"RÕ&WGW&â7W÷'BwÒ’’çFô†fTGG&–'WFR‚v‡&VbrÂv‡GG3¢òöæ'"æv÷bæ&BöÆÂÖföVærr“°¢v—B6WEv÷&·76TÆæwVvR‡vRÂv&âr“°¢v—BW‡V7B‡vRævWD'•&öÆR‚vÆ–æ²rÇ¶æÖS¢~
+hþ
+jŽ
+jÎ
+kþ
+hn
+k
+hrÞ
+k
+kþ
+iþ
+kî
+k
+xÞ
+j‚
+kŽ
+kž
+kî
+yþ
+jN
+kâwÒ’’çFô†fTGG&–'WFR‚v‡&VbrÂv‡GG3¢òöæ'"æv÷bæ&BöÆÂÖfö&âr“°§Ò“° §FW7B‚t†VÇ6VçFW"G—öw&‡’æB–çFW&7F–öç2&VÖ–âW6&ÆRBV6‚f–Ww÷'BrÂ7–æ2‡²vRÒ’Óâ°¢v—BvRæv÷Fò‚róö7F–öã×W6W%öwV–FRr“°¢6öç7BwV–FRÒvRæÆö6F÷"‚rçV&Æ–2ÖwV–FR×vRr“°¢v—BW‡V7B†wV–FRævWD'•&öÆR‚v†VF–ærrÂ²æÖS¢u6ö†ö¦¶÷"W6W"wV–FRrÒ’’çFô&Uf—6–&ÆR‚“°¢v—BW‡V7B†wV–FRævWD'•&öÆR‚v'WGFöârÂ²æÖS¢t&6²Fò†öÖRrÒ’’çFô†fT6÷VçBƒ“°¢6öç7B†öÖTÆ–æ²ÒvRæÆö6F÷"‚rçV&Æ–2Ö†öÖRÖæbr’æf–ÇFW"‡²†5FW‡C¢t†öÖRrÒ“°¢v—BW‡V7B††öÖTÆ–æ²’çFô†fT6÷VçBƒ“°¢v—BW‡V7B††öÖTÆ–æ²’çFô†fTGG&–'WFR‚v‡&VbrÂõÂòBò“° ¢6öç7BföçE6—¦W2Òv—BwV–FRæWfÇVFR†VÆVÖVçBÓâ°¢6öç7B6VÆV7F÷'2Ò°¢rçV&Æ–2ÖwV–FR×F÷–72'WGFöârÀ¢rçV&Æ–2ÖwV–FR×7FW2Æ’rÀ¢rçV&Æ–2ÖwV–FRÖ7F–öç2'WGFöârÀ¢rçV&Æ–2ÖwV–FR×6V&6‚–çWBrÀ¢rçV&Æ–2ÖwV–FR×VW7F–öç27VÖÖ'’rÀ¢Ó°¢&WGW&â6VÆV7F÷'2æÖ‡6VÆV7F÷"ÓâçVÖ&W"ç'6TfÆöB†vWD6ö×WFVE7G–ÆR†VÆVÖVçBçVW'•6VÆV7F÷"‡6VÆV7F÷"’’æföçE6—¦R’“°¢Ò“°¢W‡V7B†föçE6—¦W2æWfW'’‡6—¦RÓâ6—¦RãÒb’Â6ÖÆÂT’FW‡C¢G¶föçE6—¦W2æ¦ö–â‚rÂr—Ö’çFô&R‡G'VR“° ¢v—BwV–FRævWD'•&öÆR‚v'WGFöârÂ²æÖS¢uG&fVÂF‚rÒ’æ6Æ–6²‚“°¢v—BW‡V7B†wV–FRævWD'•&öÆR‚v†VF–ærrÂ²æÖS¢uG&fVÂF‚rÒ’’çFô&Uf—6–&ÆR‚“°¢v—BwV–FRævWD'•&öÆR‚w6V&6†&÷‚rÂ²æÖS¢u6V&6‚F†RwV–FRrÒ’æf–ÆÂ‚w&FW2r“°¢v—BW‡V7B†wV–FRævWD'•FW‡B‚t&RF†R&FW2f–æÃòr’’çFô&Uf—6–&ÆR‚“°¢v—BwV–FRævWD'•FW‡B‚t&RF†R&FW2f–æÃòr’æ6Æ–6²‚“°¢v—BW‡V7B†wV–FRævWD'•FW‡B‚u&FW2æBW†V×F–öç2×W7B&R6†V6¶VBrÂ²W†7C¢fÇ6RÒ’’çFô&Uf—6–&ÆR‚“° ¢6öç>´ë‹h‘éì¶»§q«^u¼ œ¼ý…Ñ¥½¸õ±…¹‘¥¹œœ¤ì(€…Ý…¥Ð½Á•¹QÉ…Ù•±Q…áÉ½µ	…¹¹•È¡Á…”¤ì(€½¹ÍÐµ½‘…°õÁ…”¹•Ñ	åI½±” ‘¥…±½œœ±í¹…µ”èQÉ…Ù•°Ñ…àô¤ì(€½¹ÍÐ±•™Ðõµ½‘…°¹±½…Ñ½È œ¹ÑÉ…Ù•°µ™±½Ý}}µ…¥¸œ¤ì(€½¹ÍÐÍ¥‘”õµ½‘…°¹±½…Ñ½È œ¹ÑÉ…Ù•°µ™±½Ý}}ÍÕµµ…Éäœ¤ì(€…Ý…¥Ð•áÁ•Ð¡Í¥‘”¤¹Ñ½	•!¥‘‘•¸ ¤ì(€€€…Ý…¥Ð™¥±±QÉ…Ù•±•Ñ…¥±Ì¡µ½‘…°¤ì(€…Ý…¥Ð•áÁ•Ð¡Í¥‘”¹•Ñ	åI½±” ¡•…‘¥¹œœ±í¹…µ”èA…åµ•¹Ð…±Õ±…Ñ¥½¸ô¤¤¹Ñ½	•Y¥Í¥‰±” ¤ì(€½¹ÍÐ¥¹¥Ñ¥…°õ…Ý…¥ÐÍ¥‘”¹•Ù…±Õ…Ñ”¡•°ôù•°¹•Ñ	½Õ¹‘¥¹±¥•¹ÑI•Ð ¤¹Ñ½À¤ì(€…Ý…¥Ð±•™Ð¹•Ù…±Õ…Ñ”¡•°ôù•°¹ÍÉ½±±Q½Àõ•°¹ÍÉ½±±!•¥¡Ð¤ì(€•áÁ•Ð¡5…Ñ ¹…‰Ì ¡…Ý…¥ÐÍ¥‘”¹•Ù…±Õ…Ñ”¡•°ôù•°¹•Ñ	½Õ¹‘¥¹±¥•¹ÑI•Ð ¤¹Ñ½À¤¤µ¥¹¥Ñ¥…°¤¤¹Ñ½	•1•ÍÍQ¡…¸ È¤ì(€…Ý…¥Ðµ½‘…°¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”è½¹Ñ¥¹Õ”Ñ¼É•Ù¥•Üô¤¹±¥¬ ¤ì(€…Ý…¥Ðµ½‘…°¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”èA…ä½¹±¥¹”ô¤¹±¥¬ ¤ì(€…Ý…¥Ðµ½‘…°¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”è5½‰¥±”‰…¹­¥¹œô¤¹±¥¬ ¤ì(€…Ý…¥Ðµ½‘…°¹•Ñ	åI½±” É…‘¥¼œ±í¹…µ”è‰-…Í ô¤¹¡•¬ ¤ì(€…Ý…¥Ðµ½‘…°¹±½…Ñ½È œ¹ÑÉ…Ù•°µ™±½Ý}}¡…¹¹•°µ½ÁÑ¥½¸¥¹ÁÕÑmÑåÁ”ô‰¡•­‰½à‰tœ¤¹¡•¬ ¤ì(€…Ý…¥Ðµ½‘…°¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”è½¹™¥É´ÁÉ•Ù¥•ÜÁ…åµ•¹Ðô¤¹±¥¬ ¤ì(€…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹•Ñ	åI½±” ¡•…‘¥¹œœ±í¹…µ”è½µ‰¥¹•QÉ…Ù•°Q…à‘•Ñ…¥±Ìô¤¤¹Ñ½	•Y¥Í¥‰±”¡íÑ¥µ•½ÕÐèÄÈÀÀÁô¤ì(€…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹±½…Ñ½È œ¹ÑÉ…Ù•°µ™±½Ý}}ÍÕµµ…Éäœ¤¤¹Ñ½!…Ù•½Õ¹Ð À¤ì(€…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹±½…Ñ½È œ¹Ñ…áÁ…äµµ½‘…±}}‰½‘ä€ø€¹É••¥ÁÐµÙ¥•Ü´µ•µ‰•‘‘•œ¤¤¹Ñ½	•Y¥Í¥‰±” ¤ì(€…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”èAÉ¥¹ÐÉ••¥ÁÐô¤¤¹Ñ½	•Y¥Í¥‰±” ¤ì(€…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”è½Ý¹±½…ô¤¤¹Ñ½	•Y¥Í¥‰±” ¤ì)ô¤ì()Ñ•ÍÐ ÑÉ…Ù•°Ñ…àµ½‰¥±”­••ÁÌ„½µÁ…Ð…¹¡½É••ÍÑ¥µ…Ñ”…¹	•¹…±¤ÍÑ•À¹…Ù¥…Ñ¥½¸œ±…Íå¹Œ¡íÁ…•ô±¥¹™¼¤ôùì(Ñ•ÍÐ¹Í­¥À¡¥¹™¼¹ÁÉ½©•Ð¹¹…µ”„ôôµ½‰¥±”´ÌÈÀœ°Mµ…±±•ÍÐÙ¥•ÝÁ½ÉÐ8½	8ÍÑ•ÁÁ•Èœ¤ì(…Ý…¥ÐÁ…”¹½Ñ¼ œ¼ý…Ñ¥½¸õ±…¹‘¥¹œœ¤ì(…Ý…¥ÐÍ•Ñ]½É­ÍÁ…•1…¹Õ…”¡Á…”°‰¸œ¤ì(…Ý…¥Ð½Á•¹QÉ…Ù•±Q…áÉ½µ	…¹¹•È¡Á…”¤ì(½¹ÍÐµ½‘…°õÁ…”¹•Ñ	åI½±” ‘¥…±½œœ±í¹…µ”èŸ‚š·‚ž7‚šÃ‚š»‚šŒƒ‚šW‚šÀô¤ì(…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹±½…Ñ½È œ¹Ñ…áÁ…äµµ½‘…±}}Ñ¥Ñ±”œ¤¤¹Ñ½!…Ù•Q•áÐ Ÿ‚š¿‚šû‚š“‚ž7‚šÃ‚ž ƒ‚šLƒ‚šÃ‚šã‚šÿ‚š›‚ž‚šÀƒ‚š“‚š—‚ž7‚š¼œ¤ì(…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹±½…Ñ½È œ¹Ñ…áÁ…äµµ½‘…±}}ÁÉ½É•ÍÌœ¤¤¹Ñ½!…Ù•ÑÑÉ¥‰ÕÑ” …É¥„µÙ…±Õ•¹½Üœ°œÄœ¤ì(…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹±½…Ñ½È œ¹ÑÉ…Ù•°µ™±½Ý}}ÍÑ•ÁÌœ¤¤¹Ñ½!…Ù•½Õ¹Ð À¤ì(…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”èŸ‚š·‚ž7‚šÃ‚š»‚š‚ž‚šÀƒ‚š“‚š—‚ž7‚š¼ƒ‚š›‚šÿ‚š“‚žƒ‚š?‚š_‚šÿ‚ž‚žƒ‚š¿‚šû‚š ô¤¤¹Ñ½	•Y¥Í¥‰±” ¤ì(…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹±½…Ñ½È œ¹ÁÕ‰±¥ŒµÍ•ÉÙ¥”µ‘¥…±½}}¹½Ñ¥”œ¤¤¹Ñ½!…Ù•½Õ¹Ð À¤ì(€€…Ý…¥Ð™¥±±QÉ…Ù•±•Ñ…¥±Ì¡µ½‘…°¤ì(…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹±½…Ñ½È œ¹Ñ…áÁ…äµµ½‘…±}}Ñ¥Ñ±”œ¤¤¹Ñ½!…Ù•Q•áÐ Ÿ‚š·‚ž7‚šÃ‚š»‚š‚ž‚šÀƒ‚š“‚š—‚ž7‚š¼œ¤ì(…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹±½…Ñ½È œÑÉ…Ù•°µÑ…àµÉ½ÕÑ”µÉ•ÍÕ±ÑÌœ¤¤¹Ñ½	•Y¥Í¥‰±” ¤ì((…Ý…¥Ðµ½‘…°¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”èŸ‚š«‚ž‚š»‚ž‚š£‚ž7‚š|ƒ‚š«‚šÃ‚ž7‚š¿‚šû‚šË‚ž/‚šk‚š£‚šû‚ž|ƒ‚š¿‚šû‚š ô¤¹±¥¬ ¤ì(…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹•Ñ	åI½±” ¡•…‘¥¹œœ±í¹…µ”èŸ‚š«‚šÃ‚ž7‚š¿‚šû‚šË‚ž/‚šk‚š£‚šøƒ‚šLƒ‚š«‚ž‚š»‚ž‚š£‚ž7‚š|ô¤¤¹Ñ½	•Y¥Í¥‰±” ¤ì(½¹ÍÐÝ¥‘Ñ õ…Ý…¥Ðµ½‘…°¹•Ù…±Õ…Ñ”¡•°ôø¡íÙ¥•ÝÁ½ÉÐé¥¹¹•É]¥‘Ñ ±Á…Á•Èé•°¹•Ñ	½Õ¹‘¥¹±¥•¹ÑI•Ð ¤¹Ý¥‘Ñ ±ÍÉ½±°é‘½Õµ•¹Ð¹‘½Õµ•¹Ñ±•µ•¹Ð¹ÍÉ½±±]¥‘Ñ¡ô¤¤ì(•áÁ•Ð¡Ý¥‘Ñ ¹Á…Á•È¤¹Ñ½	•1•ÍÍQ¡…¹=ÉÅÕ…°¡Ý¥‘Ñ ¹Ù¥•ÝÁ½ÉÐ¤ì(•áÁ•Ð¡Ý¥‘Ñ ¹ÍÉ½±°¤¹Ñ½	•1•ÍÍQ¡…¹=ÉÅÕ…°¡Ý¥‘Ñ ¹Ù¥•ÝÁ½ÉÐ¬È¤ì(…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹±½…Ñ½È œ¹ÑÉ…Ù•°µ™±½Ý}}ÍÕµµ…Éäœ¤¤¹Ñ½	•!¥‘‘•¸ ¤ì(…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹±½…Ñ½È œ¹Ñ…áÁ…äµµ½‘…±}}™½½Ñ•Èm‘…Ñ„µÑ•ÍÑ¥ô‰µ½‰¥±”µÁ…åµ•¹Ðµ…±Õ±…Ñ¥½¸‰tœ¤¤¹Ñ½	•Y¥Í¥‰±” ¤ì)ô¤ì(()Ñ•ÍÐ QÉ…Ù•°Q…à­••ÁÌÝ½É­™±½Ü…Ñ¥½¹ÌÍ•Á…É…Ñ”™É½´É••¥ÁÐ½Ý¹±½……¹AÉ¥¹Ðœ±…Íå¹Œ¡íÁ…•ô¤ôùì(€…Ý…¥ÐÁ…”¹½Ñ¼ œ¼ý…Ñ¥½¸õ±…¹‘¥¹œœ¤ì(€…Ý…¥Ð½Á•¹QÉ…Ù•±Q…áÉ½µ	…¹¹•È¡Á…”¤ì(€½¹ÍÐµ½‘…°õÁ…”¹•Ñ	åI½±” ‘¥…±½œœ±í¹…µ”èQÉ…Ù•°Ñ…àô¤ì(€½¹ÍÐ™½½Ñ•Èõµ½‘…°¹±½…Ñ½È œ¹Ñ…áÁ…äµµ½‘…±}}™½½Ñ•Èœ¤ì(€½¹ÍÐ…Ñ¥½¹Ìõ™½½Ñ•È¹±½…Ñ½È œ¹Ñ…áÁ…äµµ½‘…±}}™½½Ñ•Èµ…Ñ¥½¹Ìœ¤ì(€…Ý…¥Ð•áÁ•Ð¡™½½Ñ•È¹±½…Ñ½È œ¹Ñ…áÁ…äµµ½‘…±}}™½½Ñ•Èµ±½Í”œ¤¤¹Ñ½!…Ù•½Õ¹Ð À¤ì(€…Ý…¥Ð•áÁ•Ð¡…Ñ¥½¹Ì¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”è½¹Ñ¥¹Õ”Ñ¼ÑÉ…Ù•°‘•Ñ…¥±Ìô¤¤¹Ñ½	•Y¥Í¥‰±” ¤ì(€€€…Ý…¥Ð™¥±±QÉ…Ù•±•Ñ…¥±Ì¡µ½‘…°¤ì(€…Ý…¥Ð…Ñ¥½¹Ì¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”è½¹Ñ¥¹Õ”Ñ¼É•Ù¥•Üô¤¹±¥¬ ¤ì((€€€€¼¼I••¥ÁÐµ½‰¥±”Ý…Ì½±±•Ñ•¥¸Ñ¡”Á…ÍÍ•¹•ÈÍÑ…”¸(€…Ý…¥Ðµ½‘…°¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”èA…ä½¹±¥¹”ô¤¹±¥¬ ¤ì(€…Ý…¥Ðµ½‘…°¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”è5½‰¥±”‰…¹­¥¹œô¤¹±¥¬ ¤ì(€…Ý…¥Ðµ½‘…°¹•Ñ	åI½±” É…‘¥¼œ±í¹…µ”è‰-…Í ô¤¹¡•¬ ¤ì(€…Ý…¥Ðµ½‘…°¹±½…Ñ½È œ¹ÑÉ…Ù•°µ™±½Ý}}¡…¹¹•°µ½ÁÑ¥½¸¥¹ÁÕÑmÑåÁ”ô‰¡•­‰½à‰tœ¤¹¡•¬ ¤ì(€…Ý…¥Ð…Ñ¥½¹Ì¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”è½¹™¥É´ÁÉ•Ù¥•ÜÁ…åµ•¹Ðô¤¹±¥¬ ¤ì(€…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹•Ñ	åI½±” ¡•…‘¥¹œœ±í¹…µ”è½µ‰¥¹•QÉ…Ù•°Q…à‘•Ñ…¥±Ìô¤¤¹Ñ½	•Y¥Í¥‰±”¡íÑ¥µ•½ÕÐèÄÈÀÀÁô¤ì(€…Ý…¥Ð•áÁ•Ð¡™½½Ñ•È¹±½…Ñ½È œ¹ÑÉ…Ù•°µ™±½Ý}}™½½Ñ•Èµ…Ñ¥½¹Ìœ¤¤¹Ñ½!…Ù•½Õ¹Ð À¤ì(€…Ý…¥Ð•áÁ•Ð¡™½½Ñ•È¹±½…Ñ½È œ¹É••¥ÁÐµÙ¥•Ý}}…Ñ¥½¹Ìœ¤¤¹Ñ½!…Ù•½Õ¹Ð Ä¤ì(€…Ý…¥Ð•áÁ•Ð¡…Ñ¥½¹Ì¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”è½Ý¹±½…ô¤¤¹Ñ½	•Y¥Í¥‰±” ¤ì(€…Ý…¥Ð•áÁ•Ð¡…Ñ¥½¹Ì¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”èAÉ¥¹ÐÉ••¥ÁÐô¤¤¹Ñ½	•Y¥Í¥‰±” ¤ì(€…Ý…¥Ð•áÁ•Ð¡…Ñ¥½¹Ì¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”è9•ÜÁ…åµ•¹Ðô¤¤¹Ñ½!…Ù•½Õ¹Ð À¤ì)ô¤ì()Ñ•ÍÐ QÉ…Ù•°Q…à‘¥ÍÁ±…åÌ½¹±äÑÝ¼µ½‘”…É‘ÌÝ¥Ñ¡½ÕÐ™¥á•ÁÉ¥•Ì…¹…±Õ±…Ñ•Ì…™Ñ•ÈÁ…ÍÍÁ½ÉÐ±½½­ÕÀœ±…Íå¹Œ¡íÁ…•ô¤ôùì(€…Ý…¥ÐÁ…”¹½Ñ¼ œ¼ý…Ñ¥½¸õ±…¹‘¥¹œœ¤ì(€…Ý…¥Ð½Á•¹QÉ…Ù•±Q…áÉ½µ	…¹¹•È¡Á…”¤ì(€½¹ÍÐµ½‘…°õÁ…”¹•Ñ	åI½±” ‘¥…±½œœ±í¹…µ”èQÉ…Ù•°Ñ…àô¤ì(€½¹ÍÐÉ½ÕÑ•Ìõµ½‘…°¹±½…Ñ½È œÑÉ…Ù•°µÑ…àµÉ½ÕÑ”µÉ•ÍÕ±ÑÌœ¤ì(€½¹ÍÐÍÕµµ…Éäõµ½‘…°¹±½…Ñ½È œ¹ÑÉ…Ù•°µ™±½Ý}}ÍÕµµ…Éäœ¤ì(€…Ý…¥Ð•áÁ•Ð¡É½ÕÑ•Ì¤¹Ñ½!…Ù•½Õ¹Ð À¤ì(€…Ý…¥Ð•áÁ•Ð¡ÍÕµµ…Éä¹±½…Ñ½È œ¹ÑÉ…Ù•°µ™±½Ý}}Ñ½Ñ…°œ¤¤¹Ñ½½¹Ñ…¥¹Q•áÐ ŸŠPœ¤ì(€…Ý…¥Ð™¥±±QÉ…Ù•±•Ñ…¥±Ì¡µ½‘…°±íµ½‘”è]QHô¤ì(€…Ý…¥Ð•áÁ•Ð¡É½ÕÑ•Ì¹±½…Ñ½È ¥¹ÁÕÑmÑåÁ”ô‰É…‘¥¼‰tœ¤¤¹Ñ½!…Ù•½Õ¹Ð È¤ì(€…Ý…¥Ð•áÁ•Ð¡É½ÕÑ•Ì¹±½…Ñ½È œÑÉ…Ù•°µÑ…àµÉ½ÕÑ”´Äœ¤¤¹Ñ½	•¡•­• ¤ì(€…Ý…¥Ð•áÁ•Ð¡É½ÕÑ•Ì¤¹Ñ½½¹Ñ…¥¹Q•áÐ 	äÝ…Ñ•Èœ¤ì(€…Ý…¥Ð•áÁ•Ð¡É½ÕÑ•Ì¤¹¹½Ð¹Ñ½½¹Ñ…¥¹Q•áÐ œÄ°ÀÀÀœ¤ì(€…Ý…¥Ð•áÁ•Ð¡ÍÕµµ…Éä¹±½…Ñ½È œ¹ÑÉ…Ù•°µ™±½Ý}}Ñ½Ñ…°œ¤¤¹Ñ½½¹Ñ…¥¹Q•áÐ œÄ°ÀÀÀœ¤ì(€…Ý…¥Ðµ½‘…°¹•Ñ	åI½±” ‰ÕÑÑ½¸œ±í¹…µ”è½¹Ñ¥¹Õ”Ñ¼É•Ù¥•Üô¤¹±¥¬ ¤ì(€…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹±½…Ñ½È œ¹Ñ…áÁ…äµµ½‘…±}}Ñ¥Ñ±”œ¤¤¹Ñ½!…Ù•Q•áÐ I•Ù¥•Ü€˜Á…åµ•¹Ðœ¤ì)ô¤ì()Ñ•ÍÐ QÉ…Ù•°Q…à	•¹…±¤Á…ÍÍ•¹•ÈÑ…‰ÌÉ•µ…¥¸…•ÍÍ¥‰±”…Ð€ÌÈÁÁàœ±…Íå¹Œ¡íÁ…•ô±¥¹™¼¤ôùì(€Ñ•ÍÐ¹Í­¥À¡¥¹™¼¹ÁÉ½©•Ð¹¹…µ”„ôôµ½‰¥±”´ÌÈÀœ°Mµ…±°µ½‰¥±”	•¹…±¤µ½‘”…¹Ñ…‰Ìœ¤ì(€…Ý…¥ÐÁ…”¹½Ñ¼ œ¼ý…Ñ¥½¸õ±…¹‘¥¹œœ¤ì(€…Ý…¥ÐÍ•Ñ]½É­ÍÁ…•1…¹Õ…”¡Á…”°‰¸œ¤ì(€…Ý…¥Ð½Á•¹QÉ…Ù•±Q…áÉ½µ	…¹¹•È¡Á…”¤ì(€½¹ÍÐµ½‘…°õÁ…”¹•Ñ	åI½±” ‘¥…±½œœ±í¹…µ”èŸ‚š·‚ž7‚šÃ‚š»‚šŒƒ‚šW‚šÀô¤ì(€½¹ÍÐÉ½ÕÑ•Ìõµ½‘…°¹±½…Ñ½È œÑÉ…Ù•°µÑ…àµÉ½ÕÑ”µÉ•ÍÕ±ÑÌœ¤ì(€…Ý…¥Ð•áÁ•Ð¡É½ÕÑ•Ì¤¹Ñ½!…Ù•½Õ¹Ð À¤ì(€…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹•Ñ	åI½±” Ñ…ˆœ±í¹…µ”èŸ‚š³‚šû‚š‚šË‚šû‚š›‚ž‚šÛ‚šüƒ‚š¿‚šû‚š“‚ž7‚šÃ‚ž ô¤¤¹Ñ½!…Ù•ÑÑÉ¥‰ÕÑ” …É¥„µÍ•±•Ñ•œ°ÑÉÕ”œ¤ì(€…Ý…¥Ðµ½‘…°¹•Ñ	åI½±” Ñ…ˆœ±í¹…µ”èŸ‚š³‚šÿ‚š›‚ž‚šÛ‚šüƒ‚š¿‚šû‚š“‚ž7‚šÃ‚ž ô¤¹±¥¬ ¤ì(€…Ý…¥Ð•áÁ•Ð¡µ½‘…°¹±½…Ñ½È œÑÉ…Ù•°µ½Õ¹ÑÉäµ™¥ÉÍÐœ¤¤¹Ñ½	•Y¥Í¥‰±” ¤ì(€…Ý…¥Ð™¥±±½É•¥¹A…ÍÍ•¹•È¡µ½‘…°¤ì(€…Ý…¥Ð™¥±±QÉ…Ù•±•Ñ…¥±Ì¡µ½‘…°¤ì(€…Ý…¥Ð•áÁ•Ð¡É½ÕÑ•Ì¹±½…Ñ½È ¥¹ÁÕÑmÑåÁ”ô‰É…‘¥¼‰tœ¤¤¹Ñ½!…Ù•½Õ¹Ð È¤ì(€…Ý…¥Ð•áÁ•Ð¡É½ÕÑ•Ì¹±½…Ñ½È œÑÉ…Ù•°µÑ…àµÉ½ÕÑ”´Àœ¤¤¹Ñ½	•¡•­• ¤ì(€…Ý…¥Ð•áÁ•Ð¡É½ÕÑ•Ì¤¹¹½Ð¹Ñ½½¹Ñ…¥¹Q•áÐ 	ä±…¹œ¤ì(€…Ý…¥Ð•áÁ•Ð¡É½ÕÑ•Ì¤¹Ñ½½¹Ñ…¥¹Q•áÐ Ÿ‚šã‚ž7‚š—‚šË‚š«‚š—‚žœ¤ì(€½¹ÍÐÍ¥é•Ìõ…Ý…¥ÐÉ½ÕÑ•Ì¹•Ù…±Õ…Ñ”¡•°ôùì(€€€½¹ÍÐ‰½àõ•°¹•Ñ	½Õ¹‘¥¹±¥•¹ÑI•Ð ¤ì(€€€É•ÑÕÉ¸í±•™Ðé‰½à¹±•™Ð±É¥¡Ðé‰½à¹É¥¡Ð±Ý¥‘Ñ éÝ¥¹‘½Ü¹¥¹¹•É]¥‘Ñ ±ÍÉ½±°é‘½Õµ•¹Ð¹‘½Õµ•¹Ñ±•µ•¹Ð¹ÍÉ½±±]¥‘Ñ¡ôì(€ô¤ì(€•áÁ•Ð¡Í¥é•Ì¹±•™Ð¤¹Ñ½	•É•…Ñ•ÉQ¡…¹=ÉÅÕ…° ´Ä¤ì(€•áÁ•Ð¡Í¥é•Ì¹É¥¡Ð¤¹Ñ½	•1•ÍÍQ¡…¹=ÉÅÕ…°¡Í¥é•Ì¹Ý¥‘Ñ ¬Ä¤ì(€•áÁ•Ð¡Í¥é•Ì¹ÍÉ½±°¤¹Ñ½	•1•ÍÍQ¡…¹=ÉÅÕ…°¡Í¥é•Ì¹Ý¥‘Ñ ¬È¤ì)ô¤ì((¼¼	…¹¹•Èµ‘•Á•¹‘•¹Ð‰É½ÝÍ•È¡•­ÌÕÍ”•áÁ±¥¥Ñ±äÁÕ‰±¥Í¡•5LÉ½ÝÌì(¼¼Õ¹…Ù…¥±…‰±”5LµÕÍÐ¹½ÐÉ•Ù¥Ù”Õ¹ÁÕ‰±¥Í¡•‰Õ¹‘±•…ÉÑÝ½É¬¸)Ñ•ÍÐ¹‰•™½É•… ¡…Íå¹Œ€¡ìÁ…”ô¤€ôøì…Ý…¥Ðµ½­AÕ‰±¥Í¡•‘	…¹¹•ÉµÌ¡Á…”¤ìô¤ì(
