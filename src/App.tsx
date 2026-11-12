@@ -2,17 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { sampleJourneysEnabled, TaxStateProvider, useTaxState } from './services/taxState';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
-import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
+import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
 import { CitizenFooter } from './components/layout/CitizenFooter';
 import type { PaymentFormDraft } from './services/accountPaymentFormDrafts';
 
 // Screens
-import { PublicUserGuide } from './components/screens/PublicUserGuide';
 import { PublicLanding } from './components/screens/PublicLanding';
-import { PublicReport } from './components/screens/PublicReport';
-import { TaxPayModal } from './components/ui/TaxPayModal';
 import { receiptReturnRoute } from './services/routeContract';
 import { IncidentReporting } from './components/screens/IncidentReporting';
 import { user1DemoRoutes } from './config/user1DemoRoutes';
@@ -22,6 +19,9 @@ import { safePrivateAuthReturnRoute } from './services/routeContract';
 
 // Keep modal-only and preview-only code out of the initial public JavaScript.
 // These components retain their existing modal UI, permissions and routes.
+const PublicUserGuide = React.lazy(() => import('./components/screens/PublicUserGuide').then(m => ({default: m.PublicUserGuide})));
+const PublicReport = React.lazy(() => import('./components/screens/PublicReport').then(m => ({default: m.PublicReport})));
+const TaxPayModal = React.lazy(() => import('./components/ui/TaxPayModal').then(m => ({default: m.TaxPayModal})));
 const User1DemoExperience = React.lazy(() => import('./components/screens/User1DemoExperience').then(m => ({default: m.User1DemoExperience})));
 const TaxpayerLoginDialog = React.lazy(() => import('./components/screens/TaxpayerLoginDialog').then(m => ({default: m.TaxpayerLoginDialog})));
 const ParityRegisterModal = React.lazy(() => import('./components/screens/ParityRegisterModal').then(m => ({default: m.ParityRegisterModal})));

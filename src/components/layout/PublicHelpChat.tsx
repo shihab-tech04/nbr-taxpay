@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MessageCircle, X, Send, BookOpen } from 'lucide-react';
-import { GUIDE_CONTENT } from '../screens/PublicUserGuide';
+import type { GuideEntry } from '../../data/publicGuideContent';
 import {useTaxState} from '../../services/taxState';
 import { taxpayerBrandName } from '../../config/brand';
 
@@ -13,7 +13,21 @@ export function PublicHelpChat(){
  const [input,setInput]=useState('');
  const [messages,setMessages]=useState<Message[]>([]);
  const [selectedTopic,setSelectedTopic]=useState<string|null>(null);
+ // Guide answers are only fetched when the visitor opens Help. Its launcher
+ // and focusable control remain available immediately on every public route.
+ const [guideContent,setGuideContent]=useState<GuideEntry[]>([]);
+ const [guideLoadError,setGuideLoadError]=useState(false);
+ const GUIDE_CONTENT=guideContent;
  const selectedGuide=GUIDE_CONTENT.find(g=>g.id===selectedTopic);
+ useEffect(()=>{
+  if(!open||guideContent.length)return;
+  let active=true;
+  setGuideLoadError(false);
+  void import('../../data/publicGuideContent')
+   .then(m=>{if(active)setGuideContent(m.GUIDE_CONTENT);})
+   .catch(()=>{if(active)setGuideLoadError(true);});
+  return()=>{active=false;};
+ },[open,guideContent.length]);
  const last=useRef<HTMLDivElement>(null);
  const launchRef=useRef<HTMLButtonElement>(null);
  const panelRef=useRef<HTMLElement>(null);
@@ -80,11 +94,14 @@ export function PublicHelpChat(){
     <div ref={last}/>
    </div>
    <div className="public-help-topics">
+    {!GUIDE_CONTENT.length && <p role="status">{guideLoadError
+      ? (bn?'বিষয়গুলো লোড করা যায়নি। ব্যবহার নির্দেশিকা খুলুন।':'Topics unavailable. Open the user guide.')
+      : (bn?'সহায়তার বিষয় লোড হচ্ছে…':'Loading help topics…')}</p>}
     {GUIDE_CONTENT.slice(0,3).map(g=><button type="button" key={g.id} onClick={()=>{setSelectedTopic(g.id);setInput('');}}>{bn?g.bn:g.en}</button>)}
    </div>
    <form onSubmit={e=>{e.preventDefault();respond(input);}}><label className="sr-only" htmlFor="taxpay-help-message">{bn?'আপনার প্রশ্ন':'Your question'}</label>
     <input id="taxpay-help-message" value={input} onChange={e=>setInput(e.target.value)} placeholder={bn?'প্রশ্ন লিখুন':'Ask a question'} maxLength={250}/>
-    <button type="submit" disabled={!input.trim()} aria-label={bn?'পাঠান':'Send'}><Send size={17}/></button>
+    <button type="submit" disabled={!input.trim()||(!GUIDE_CONTENT.length&&!guideLoadError)} aria-label={bn?'পাঠান':'Send'}><Send size={17}/></button>
    </form>
    <a className="public-help-more" href={import.meta.env.BASE_URL+'?action=user_guide&lang='+language}><BookOpen size={15}/>{bn?'ব্যবহার নির্দেশিকা':'Open user guide'}</a>
    <p className="public-help-limit">{bn?'স্বয়ংক্রিয় আইন বা কর হিসাব নয়।':'Not tax advice or a calculation service.'}</p>
