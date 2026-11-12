@@ -16,8 +16,13 @@ async function mountBeneficiaryLists(page:Page){
     status:401,contentType:'application/json',body:JSON.stringify({message:'No session'})
   }));
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',route=>{
-    const body=route.request().postDataJSON() as {action?:string;offset?:number;limit?:number};
-    const data=body.action==='open'?{active:true}
+    const body=route.request().postDataJSON() as {action?:string;offset?:number;limit?:number;userId?:string;password?:string};
+    const demoSession={profileId:'user1',capability:'A'.repeat(43),paymentSessionId:'00000000-0000-4000-8000-000000000777',language:'en',selectedListId:null};
+    if(body.action==='demo-login'&&(body.userId!=='user1'||body.password!=='user1'))
+      return route.fulfill({status:401,contentType:'application/json',body:'{"success":false,"code":"INVALID_DEMO_LOGIN"}'});
+    const data=body.action==='demo-login'?demoSession
+      :body.action==='demo-settings'?{language:'en',selectedListId:null,paymentSessionId:demoSession.paymentSessionId}
+      :body.action==='open'?{active:true}
       :body.action==='lists'?lists
       :body.action==='people'?people.slice(body.offset??0,(body.offset??0)+(body.limit??500))
       :[];
@@ -189,3 +194,42 @@ for(const language of ['en','bn'] as const){
     await expect(otherInput).toHaveValue('');
   });
 }
+
+test('User1 loads beneficiary tags for overview and Activity, not Profile or Settings',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Representative account navigation regression');
+  let addressBookReads=0;
+  page.on('request',request=>{
+    if(!request.url().includes('/functions/v1/taxpay-guest-beneficiaries'))return;
+    try {
+      const body=request.postDataJSON() as {action?:string};
+      if(body.action==='people')addressBookReads++;
+    }catch {/* Ignore unrelated requests. */}
+  });
+  await mountBeneficiaryLists(page);
+  // Establish the server-issued fictional profile capability. A demoUser query
+  // parameter alone is never authentication and must not authorize reads.
+  await page.goto('/?action=taxpayer_login');
+  await page.getByRole('textbox',{name:'User ID'}).fill('user1');
+  await page.getByLabel('Password',{exact:true}).fill('user1');
+  await page.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await expect.poll(()=>addressBookReads).toBeGreaterThan(0);
+  const initialOverviewReads=addressBookReads;
+
+  await page.goto('/?action=account_profile');
+  await expect(page.getByTestId('user1-taxpayer-profile')).toBeVisible();
+  expect(addressBookReads,'Profile should not fetch beneficiary records').toBe(initialOverviewReads);
+
+  await page.goto('/?action=history');
+  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
+  await expect.poll(()=>addressBookReads).toBeGreaterThan(initialOverviewReads);
+  const historyReads=addressBookReads;
+
+  await page.goto('/?action=account_settings&demoUser=user1');
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+  expect(addressBookReads,'Settings should not fetch beneficiary records').toBe(historyReads);
+
+  await page.goto('/?action=taxpayer_home&demoUser=user1');
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect.poll(()=>addressBookReads).toBeGreaterThan(historyReads);
+});
