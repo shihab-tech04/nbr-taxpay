@@ -91,7 +91,9 @@ test('Overview summary and charts use the same year/source, and unknown benefici
   await advance.click();
   await chart.getByRole('button',{name:'View payment records'}).click();
   await expect(page).toHaveURL(/action=history/);
-  const records=page.getByTestId('taxpayer-transaction-table');
+  const desktopRecords=page.getByTestId('taxpayer-transaction-table');
+  const mobileRecords=page.getByTestId('taxpayer-transaction-mobile-cards');
+  const records=await desktopRecords.isVisible()?desktopRecords:mobileRecords;
   await expect(records).toBeVisible();
   await expect(records).toContainText('Advance income tax');
   await expect(records).not.toContainText('Tax with return — part 1');
