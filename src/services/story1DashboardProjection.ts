@@ -16,9 +16,13 @@ export type StoredDashboardProjection = {
   incompleteCount: number;
 };
 
-const validYear=(year:unknown):year is string=>
-  typeof year==='string'&&/^20\d{2}-(?:20)?\d{2}$/.test(year)&&
-  Number(year.slice(0,4))+1===Number(year.slice(-2))+(year.includes('-20')?0:2000);
+const validYear=(year:unknown):year is string=>{
+  if(typeof year!=='string')return false;
+  const match=/^(20\d{2})-(20\d{2}|\d{2})$/.exec(year);
+  if(!match)return false;
+  const end=match[2].length===2?Number(match[1].slice(0,2)+match[2]):Number(match[2]);
+  return Number(match[1])+1===end;
+};
 export const normalizedAssessmentYear=(year:string):string=>
   /^20\d{2}-\d{2}$/.test(year) ? year.slice(0,5)+'20'+year.slice(-2):year;
 const validTin=(tin:unknown):tin is string=>typeof tin==='string'&&/^\d{12,13}$/.test(tin);
