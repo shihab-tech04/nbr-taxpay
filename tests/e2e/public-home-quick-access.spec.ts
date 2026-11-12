@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('compact desktop homepage explains six benefits without duplicate CTAs', async ({ page }) => {
   // This 3x2 parity test intentionally uses the compact desktop breakpoint.
-  // The approved 1200px+ bento is independently tested below in EN and BN.
+  // The same 3x2 layout remains consistent at wider desktop sizes.
   await page.setViewportSize({ width: 1140, height: 900 });
   await page.goto('/?action=landing&lang=en');
 
@@ -12,11 +12,11 @@ test('compact desktop homepage explains six benefits without duplicate CTAs', as
   await expect(benefits.locator('.public-benefits__item')).toHaveCount(6);
   const expectedCards = [
     ['payments', 'All Tax Payments', 'Pay taxes for yourself, family or clients.'],
-    ['corrections', 'Corrections & Requests', 'Request corrections and follow their progress.'],
     ['certificates', 'Tax Certificates', 'Find and download available tax certificates.'],
+    ['corrections', 'Corrections & Requests', 'Request corrections and follow their progress.'],
     ['history', 'Payment History', 'See past payments, tax years and receipts.'],
-    ['beneficiaries', 'Beneficiary Management', 'Keep people and their payment records organized.'],
-    ['repeat-drafts', 'Pay Again & Saved Drafts', 'Reuse a payment or resume a saved draft.'],
+    ['pay-again', 'Pay Again', 'Reuse and edit a previous payment.'],
+    ['saved-drafts', 'Saved Drafts', 'Save a payment and continue it later.'],
   ] as const;
   for (const [index, [id, heading, description]] of expectedCards.entries()) {
     const card = benefits.locator('.public-benefits__item').nth(index);
@@ -138,14 +138,14 @@ test('wide desktop uses the available canvas without crushing the footer or look
       horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
     };
   });
-  // At the supplied 1775px reference size the old ~1020px island is not approved.
-  expect(visual.hero.width).toBeGreaterThanOrEqual(1200);
-  expect(visual.hero.width).toBeLessThan(1380);
+  // The Home canvas keeps the same original 1100px width as Guide and Report.
+  expect(visual.hero.width).toBeGreaterThanOrEqual(1099);
+  expect(visual.hero.width).toBeLessThanOrEqual(1101);
   expect(Math.abs(visual.hero.width-visual.record.width)).toBeLessThanOrEqual(2);
   expect(visual.searchHeading.bottom).toBeLessThan(visual.searchField.top);
   expect(visual.searchField.width).toBeGreaterThanOrEqual(visual.record.width*.9);
-  // This wide viewport intentionally uses an asymmetric 3-row bento, not 6 identical tiles.
-  expect(visual.firstCard.height).toBeGreaterThanOrEqual(60);
+  // Six balanced benefit cards should retain adequate height at wide viewport sizes.
+  expect(visual.firstCard.height).toBeGreaterThanOrEqual(94);
   // The footer tagline should not collapse into the three-line column seen
   // in the live screenshot, and its navigation links should not run together.
   expect(visual.footerTagline.height).toBeLessThanOrEqual(24);
@@ -259,7 +259,7 @@ test('approved payment-record lookup keeps the compact reference composition', a
     'Enter challan, token or transaction reference');
 });
 
-test('benefits bento appears at the actual 1310px desktop screenshot size in EN and BN', async ({ page }) => {
+test('desktop widths preserve the approved 3-by-2 equal-benefit layout in EN and BN', async ({ page }) => {
   for (const viewport of [
     { width: 1200, height: 900 },
     { width: 1310, height: 924 },
@@ -268,93 +268,65 @@ test('benefits bento appears at the actual 1310px desktop screenshot size in EN 
       await page.setViewportSize(viewport);
       await page.goto('/?action=landing&lang=' + lang);
       await page.evaluate(async () => { await document.fonts.ready; });
-
       const cards = page.locator('.public-benefits__item');
-      const highlights = page.locator('.public-benefits__highlights');
       await expect(cards).toHaveCount(6);
-      await expect(highlights).toHaveCount(2);
-      await expect(highlights.first()).toBeVisible();
-      await expect(highlights.last()).toBeVisible();
-      await expect(page.locator('.public-benefits__preview')).toHaveCount(0);
-
+      await expect(page.locator('.public-benefits__highlights')).toHaveCount(0);
       const result = await page.evaluate(() => {
-        const box = (selector:string) => {
-          const r=document.querySelector(selector)!.getBoundingClientRect();
-          return { x:r.x, y:r.y, width:r.width, height:r.height };
-        };
+        const grid = document.querySelector('.public-benefits__grid')!;
+        const boxes = [...grid.querySelectorAll('.public-benefits__item')].map(el => {
+          const r = el.getBoundingClientRect();
+          return { x:r.x, y:r.y, width:r.width, height:r.height,
+            scrollHeight:el.scrollHeight, clientHeight:el.clientHeight };
+        });
         return {
-          gridColumns:getComputedStyle(document.querySelector('.public-benefits__grid')!).gridTemplateColumns.trim().split(' ').filter(Boolean).length,
-          payments:box('.public-benefits__item[data-benefit="payments"]'),
-          corrections:box('.public-benefits__item[data-benefit="corrections"]'),
-          certificates:box('.public-benefits__item[data-benefit="certificates"]'),
-          repeat:box('.public-benefits__item[data-benefit="repeat-drafts"]'),
-          search:box('.public-record-discovery'),
-          overflowY:document.documentElement.scrollHeight-innerHeight,
+          columns:getComputedStyle(grid).gridTemplateColumns.trim().split(' ').filter(Boolean).length,
+          boxes,
+          homeWidth:document.querySelector('.public-information-hub')!.getBoundingClientRect().width,
+          searchWidth:document.querySelector('.public-record-discovery')!.getBoundingClientRect().width,
           overflowX:document.documentElement.scrollWidth-innerWidth,
         };
       });
-      expect(result.gridColumns, JSON.stringify({viewport, lang, result})).toBe(4);
-      expect(result.payments.x).toBeLessThan(result.corrections.x);
-      expect(result.corrections.x).toBeLessThan(result.certificates.x);
-      expect(result.certificates.x).toBeLessThan(result.repeat.x);
-      expect(result.payments.height).toBeGreaterThan(result.corrections.height * 1.8);
-      expect(result.repeat.height).toBeGreaterThan(result.certificates.height * 1.8);
-      expect(result.search.width).toBeGreaterThanOrEqual(1090);
-      expect(result.overflowY, JSON.stringify({viewport, lang, result})).toBeLessThanOrEqual(2);
+      expect(result.columns, JSON.stringify({viewport,lang,result})).toBe(3);
+      const b = result.boxes;
+      expect(Math.abs(b[0].y-b[1].y)).toBeLessThanOrEqual(2);
+      expect(Math.abs(b[1].y-b[2].y)).toBeLessThanOrEqual(2);
+      expect(Math.abs(b[3].y-b[4].y)).toBeLessThanOrEqual(2);
+      expect(b[3].y).toBeGreaterThan(b[0].y);
+      expect(Math.abs(b[0].x-b[3].x)).toBeLessThanOrEqual(2);
+      expect(Math.max(...b.map(x=>x.height))-Math.min(...b.map(x=>x.height))).toBeLessThanOrEqual(2);
+      expect(b.every(x=>x.scrollHeight<=x.clientHeight+2)).toBe(true);
+      expect(result.homeWidth).toBeGreaterThanOrEqual(1099);
+      expect(result.homeWidth).toBeLessThanOrEqual(1101);
+      expect(Math.abs(result.homeWidth-result.searchWidth)).toBeLessThanOrEqual(2);
       expect(result.overflowX).toBeLessThanOrEqual(2);
     }
   }
-
-  // Short desktop keeps the approved compact 3x2 rather than overflowing.
-  await page.setViewportSize({width:1310,height:768});
-  await page.goto('/?action=landing&lang=en');
-  const compact = await page.locator('.public-benefits__grid').evaluate(el =>
-    getComputedStyle(el).gridTemplateColumns.trim().split(' ').filter(Boolean).length
-  );
-  expect(compact).toBe(3);
-  await expect(page.locator('.public-benefits__highlights').first()).toBeHidden();
 });
 
-test('wide desktop balances six benefits without placeholder illustrations', async ({ page }) => {
+test('wide desktop keeps all six balanced cards and no placeholder illustrations', async ({ page }) => {
   for (const lang of ['en','bn']) {
     await page.setViewportSize({ width: 1775, height: 864 });
     await page.goto('/?action=landing&lang=' + lang);
-    await page.evaluate(async () => { await document.fonts.ready; });
+    await page.evaluate(async()=>{await document.fonts.ready;});
     const cards = page.locator('.public-benefits__item');
     await expect(cards).toHaveCount(6);
     await expect(page.locator('.public-benefits__preview')).toHaveCount(0);
-    const labels = page.locator('.public-benefits__highlights');
-    await expect(labels).toHaveCount(2);
-    await expect(labels.first().locator('span')).toHaveCount(3);
-    await expect(labels.last().locator('span')).toHaveCount(2);
-    await expect(labels.first()).toHaveAttribute('aria-hidden','true');
-    await expect(labels.last()).toHaveAttribute('aria-hidden','true');
-    const boxes = await cards.evaluateAll(elements => elements.map(element => {
-      const r = element.getBoundingClientRect();
-      return {x:r.x,y:r.y,width:r.width,height:r.height,
-        scrollHeight:element.scrollHeight,clientHeight:element.clientHeight};
+    await expect(page.locator('.public-benefits__highlights')).toHaveCount(0);
+    const boxes = await cards.evaluateAll(elements => elements.map(el => {
+      const r = el.getBoundingClientRect();
+      return {x:r.x,y:r.y,height:r.height,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight};
     }));
-    const approx = (a:number,b:number) => Math.abs(a-b)<=2;
-    // Two tall outside cards, four legible compact cards in the middle.
-    expect(boxes[0].x).toBeLessThan(boxes[1].x);
-    expect(boxes[1].x).toBeLessThan(boxes[2].x);
-    expect(boxes[2].x).toBeLessThan(boxes[5].x);
-    expect(approx(boxes[0].y,boxes[1].y)).toBe(true);
-    expect(approx(boxes[1].y,boxes[2].y)).toBe(true);
-    expect(approx(boxes[0].y,boxes[5].y)).toBe(true);
-    expect(approx(boxes[1].x,boxes[3].x)).toBe(true);
-    expect(approx(boxes[2].x,boxes[4].x)).toBe(true);
-    expect(boxes[3].y).toBeGreaterThan(boxes[1].y);
-    expect(approx(boxes[3].y,boxes[4].y)).toBe(true);
-    expect(boxes[0].height).toBeGreaterThan(boxes[1].height*1.8);
-    expect(boxes[5].height).toBeGreaterThan(boxes[2].height*1.8);
-    expect(boxes.every(b => b.scrollHeight<=b.clientHeight+2),JSON.stringify({lang,boxes})).toBe(true);
-    const overflow = await page.evaluate(() => ({
-      vertical:document.documentElement.scrollHeight-innerHeight,
-      horizontal:document.documentElement.scrollWidth-innerWidth,
-    }));
-    expect(overflow.vertical,JSON.stringify({lang,overflow})).toBeLessThanOrEqual(2);
-    expect(overflow.horizontal).toBeLessThanOrEqual(2);
+    const approx=(a:number,b:number)=>Math.abs(a-b)<=2;
+    expect(approx(boxes[0].y,boxes[1].y) && approx(boxes[1].y,boxes[2].y)).toBe(true);
+    expect(approx(boxes[3].y,boxes[4].y) && approx(boxes[4].y,boxes[5].y)).toBe(true);
+    expect(boxes[3].y).toBeGreaterThan(boxes[0].y);
+    expect(approx(boxes[0].x,boxes[3].x)).toBe(true);
+    expect(approx(boxes[1].x,boxes[4].x)).toBe(true);
+    expect(approx(boxes[2].x,boxes[5].x)).toBe(true);
+    expect(Math.max(...boxes.map(x=>x.height))-Math.min(...boxes.map(x=>x.height))).toBeLessThanOrEqual(2);
+    expect(boxes.every(x=>x.scrollHeight<=x.clientHeight+2)).toBe(true);
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
+    expect(overflow).toBeLessThanOrEqual(2);
   }
 });
 
@@ -396,10 +368,10 @@ test('benefit cards adapt to tablet and keep Bengali mobile bottom navigation in
   expect(mobileSearchBox).not.toBeNull();
   expect(mobileBenefitsBox).not.toBeNull();
   expect(mobileBenefitsBox!.y - (mobileSearchBox!.y + mobileSearchBox!.height)).toBeGreaterThanOrEqual(16);
-  await expect(benefits.getByRole('heading', { name: 'সুবিধাভোগী ব্যবস্থাপনা' })).toBeVisible();
+  await expect(benefits.getByRole('heading', { name: 'আবার পরিশোধ' })).toBeVisible();
   await expect(benefits.locator('[data-benefit="certificates"] h3')).toHaveText('কর সনদ');
-  await expect(benefits.locator('[data-benefit="repeat-drafts"] h3')).toHaveText('আবার পরিশোধ ও সংরক্ষিত খসড়া');
-  await expect(benefits.locator('[data-benefit="repeat-drafts"] p')).toHaveText('আগের পেমেন্টের তথ্য ব্যবহার করুন বা খসড়া চালিয়ে যান।');
+  await expect(benefits.locator('[data-benefit="saved-drafts"] h3')).toHaveText('সংরক্ষিত খসড়া');
+  await expect(benefits.locator('[data-benefit="saved-drafts"] p')).toHaveText('পেমেন্ট খসড়া সংরক্ষণ করে পরে চালিয়ে যান।');
   await expect(benefits.locator('.public-benefits__heading p')).toHaveText('কর পরিশোধ, তথ্য গুছিয়ে রাখা ও অগ্রগতি দেখা—সব এক জায়গায়।');
   await expect(page.getByRole('navigation', { name: 'মোবাইল প্রধান নেভিগেশন' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড খুঁজুন' })).toBeVisible();

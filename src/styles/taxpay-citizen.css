@@ -1218,6 +1218,38 @@
 .public-footer__navs a:hover,.public-footer__navs button:hover{text-decoration:underline;color:var(--citizen-primary-dark);}
 .public-footer__bottom{flex:0 0 auto;display:flex;align-items:center;min-height:32px;padding-left:clamp(.7rem,1.5vw,1.25rem);border-left:1px solid var(--citizen-border);}
 .public-footer__bottom p{margin:0;font-size:.875rem;color:var(--citizen-muted);line-height:1.5;white-space:nowrap;}
+/* Home desktop footer: retain the original shared 1100px content measure while
+   keeping the tagline and navigation on one readable row. No mobile changes. */
+@media (min-width: 1440px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    column-gap: 12px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity {
+    gap: .5rem;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity img.public-footer__wordmark {
+    width: 96px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
+    max-width: none;
+    white-space: nowrap;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs a,
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs button {
+    padding-inline: 0;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
+    padding-left: 10px;
+  }
+}
+
 @media(max-width:980px){
  .public-footer__inner{flex-wrap:wrap;justify-content:center;gap:.35rem 1rem;}
  .public-footer__navs{justify-content:flex-end;}
@@ -2932,48 +2964,3 @@
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .citizen-pay-popover { display:none; }
 }
 @media print { .citizen-pay-popover { display:none!important; } }
-
-
-/* Public landing desktop composition: one shared responsive content measure.
-   Scope to landing only, not signed-in, report, payment, or mobile routes.
-   The shared token aligns the approved header, CMS hero/search and footer. */
-@media (min-width: 981px) {
-  .taxpay-citizen-shell:has(main.public-information-main .public-home-sections) {
-    --public-content-max: clamp(1100px, 78vw, 1260px);
-  }
-}
-
-/* On spacious desktops, give branding and footer content real breathing room.
-   No links, descriptions or actions are removed. Keep smaller desktop and
-   mobile footer geometry unchanged, including the fixed mobile Pay dock. */
-@media (min-width: 1440px) {
-  .taxpay-citizen-shell:has(.public-home-sections) .public-home-brand img.public-home-wordmark {
-    width: 136px;
-    max-width: 136px;
-    height: 46px;
-  }
-  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    align-items: center;
-    column-gap: clamp(1.25rem, 2vw, 2.25rem);
-  }
-  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity {
-    gap: .85rem;
-  }
-  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
-    max-width: none;
-    white-space: nowrap;
-  }
-  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
-    flex-wrap: nowrap;
-    gap: clamp(.8rem, 1.25vw, 1.4rem);
-  }
-  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs a,
-  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs button {
-    padding-inline: .15rem;
-  }
-  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
-    padding-left: 1rem;
-  }
-}
