@@ -803,7 +803,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // or persisting a simulated payment; never rely on a route prefill or stale UI state.
   const areCurrentSavedBeneficiaries = async (tins: string[]): Promise<boolean> => {
     if (!tins.length || tins.some(tin => !tin)) return false;
-    const saved = await loadBeneficiaries(authenticatedUser?.id ?? null);
+    // Payment validation bypasses the short navigation cache and fails closed on stale ownership.
+    const saved = await loadBeneficiaries(authenticatedUser?.id ?? null,{forceFresh:true});
     const ownedListIds = new Set(saved.lists.map(list => list.id));
     const allowed = new Set(saved.people.filter(person => ownedListIds.has(person.list_id)).map(person => person.tin));
     return tins.every(tin => tin === signedInProfile?.tin || allowed.has(tin));

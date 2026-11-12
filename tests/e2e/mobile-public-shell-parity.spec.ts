@@ -82,7 +82,11 @@ test('mobile guest shell shares signed-in compact-on-scroll behavior, without du
   await page.goto('/?action=landing');
   await page.evaluate(()=>window.scrollTo(0,600));
   const corners=page.locator('.taxpay-public-mobile-navigation .citizen-corners');
-  if (await corners.getByRole('button',{name:'Open menu'}).isVisible()) {
+  // React scroll updates are asynchronous. Assert actual scroll depth and await
+  // the approved compact/expanded state; retain every current footer regression.
+  const actualScroll=await page.evaluate(()=>window.scrollY);
+  if (actualScroll > 145) {
+    await expect(corners.getByRole('button',{name:'Open menu'})).toBeVisible();
     await expect(corners.getByRole('button',{name:'Notifications'})).toHaveCount(0);
     await expect(corners.getByRole('button',{name:'Home'})).toHaveCount(0);
     await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toHaveClass(/citizen-header--hidden/);
