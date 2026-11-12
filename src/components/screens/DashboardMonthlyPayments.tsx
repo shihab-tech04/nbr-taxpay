@@ -49,7 +49,7 @@ export function DashboardMonthlyPayments({payments,assessmentYear,language}:Prop
           <span className="taxpay-monthly-card__month-label">{item.label}</span>
         </div>)}
       </div>
-      <p className="taxpay-monthly-card__note">{tr('Shows eligible illustrative entries and stored scenario transactions in the selected assessment year, for these six calendar months only. Not a Treasury-confirmed balance or tax credit; travel tax remains separate.','নির্বাচিত করবর্ষের এই ছয় ক্যালেন্ডার মাসে নমুনা এন্ট্রি এবং সংরক্ষিত সিনারিও লেনদেন দেখানো হয়েছে। এটি ট্রেজারি-নিশ্চিত ব্যালেন্স বা কর ক্রেডিট নয়; ভ্রমণ কর পৃথক।')}</p>
+      <p className="taxpay-monthly-card__note">{tr('Shows example entries and stored scenario transactions in the selected assessment year, for these six calendar months only. Not a Treasury-confirmed balance or tax credit; travel tax remains separate.','নির্বাচিত করবর্ষের এই ছয় ক্যালেন্ডার মাসে নমুনা এন্ট্রি এবং সংরক্ষিত সিনারিও লেনদেন দেখানো হয়েছে। এটি ট্রেজারি-নিশ্চিত ব্যালেন্স বা কর ক্রেডিট নয়; ভ্রমণ কর পৃথক।')}</p>
     </> : <p className="taxpay-monthly-card__empty" role="status">{tr('No recorded direct, advance or travel payments for this year.','এই করবর্ষে নথিভুক্ত সরাসরি, অগ্রিম বা ভ্রমণ কর নেই।')}</p>}
   </section>;
 }
