@@ -482,6 +482,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Overview','সংক্ষিপ্ত বিবরণ');
   const header=<TaxpayerPageHeading title={pageTitle} className={'taxpayer-dashboard-header'+(overviewRoute?' taxpayer-dashboard-header--overview':'')}
     actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
+  // Keep the existing external-data UI gated until a verified, nonempty source is linked.
+  const verifiedExternalTaxPositionReady=false;
   const completedPayments=historyScoped.filter(x=>x.state==='POSTED').length;
   const correctionRequests=historyScoped.filter(x=>x.state==='REQUESTED' && (x.kind==='refund'||x.kind==='adjustment'));
   const correctionRequestCount=correctionRequests.length;
