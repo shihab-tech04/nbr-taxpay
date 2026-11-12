@@ -2946,7 +2946,7 @@
 /* On spacious desktops, give branding and footer content real breathing room.
    No links, descriptions or actions are removed. Keep smaller desktop and
    mobile footer geometry unchanged, including the fixed mobile Pay dock. */
-@media (min-width: 1280px) {
+@media (min-width: 1440px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-home-brand img.public-home-wordmark {
     width: 136px;
     max-width: 136px;
