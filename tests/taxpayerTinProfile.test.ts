@@ -73,7 +73,7 @@ test('profile and e-TIN certificate fields match the canonical UI/export field m
   assert.deepEqual(
     TAXPAYER_PROFILE_FIELD_ORDER.filter(row=>row[2]==='certificate').map(row=>row[0]).sort(),
     fromCertificate.sort(),'all certificate fields appear once in the combined profile');
-  assert.equal(TAXPAYER_PROFILE_LAYOUT.summary[2][2],'tin_profile',
+  assert.equal(TAXPAYER_PROFILE_LAYOUT.summary[1][2],'tin_profile',
     'registered since is a separate TIN profile field, not falsely a certificate date');
   assert.equal(TAXPAYER_PROFILE_LAYOUT.summary[3][2],'account',
     'last account login does not come from the certificate');
