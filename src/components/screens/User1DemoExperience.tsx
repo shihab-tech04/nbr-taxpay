@@ -530,7 +530,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const correctionRequestCount=correctionRequests.length;
   const openSavedDrafts=()=>{
     const list=document.getElementById('taxpayer-dashboard-draft-section');
-    if(list){
+    if(list && previewAccount?.id==='user1' && activePreviewSession()?.profileId==='user1'){
       list.scrollIntoView({behavior:'smooth',block:'start'});
       list.focus({preventScroll:true});
     }else setDraftHelpVisible(visible=>!visible);
