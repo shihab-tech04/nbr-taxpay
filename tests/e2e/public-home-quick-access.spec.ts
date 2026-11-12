@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-test('public homepage explains six citizen benefits without duplicate CTAs', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
+test('compact desktop homepage explains six benefits without duplicate CTAs', async ({ page }) => {
+  // This 3x2 parity test intentionally uses the compact desktop breakpoint.
+  // The approved 1200px+ bento is independently tested below in EN and BN.
+  await page.setViewportSize({ width: 1140, height: 900 });
   await page.goto('/?action=landing&lang=en');
 
   const benefits = page.locator('.public-benefits');
