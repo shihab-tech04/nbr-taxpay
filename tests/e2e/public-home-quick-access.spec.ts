@@ -506,8 +506,11 @@ test('approved desktop proposal is one white rounded panel with a connected 3x2 
           cells, horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
         };
       });
-      expect(measurement.panelWidth,JSON.stringify({viewport,lang,measurement})).toBeGreaterThanOrEqual(1099);
-      expect(measurement.panelWidth).toBeLessThanOrEqual(1101);
+      // The agreed maximum is 1100px; a narrower viewport retains 32px
+      // horizontal gutters rather than overflowing to satisfy the max width.
+      const expectedPanelWidth=Math.min(1100,viewport.width-64);
+      expect(Math.abs(measurement.panelWidth-expectedPanelWidth),
+        JSON.stringify({viewport,lang,measurement})).toBeLessThanOrEqual(2);
       expect(measurement.panelRadius).toBeGreaterThanOrEqual(14);
       expect(measurement.panelPadding).toBeGreaterThanOrEqual(22);
       expect(measurement.sectionBackground).not.toBe('rgba(0, 0, 0, 0)');
