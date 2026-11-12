@@ -264,7 +264,7 @@ test('public desktop header is unchanged, with no mobile navigation duplication'
 test('signed-in mobile continues to use its existing private shell after login', async ({page})=>{
   await page.setViewportSize({width:375,height:812});
   await page.goto('/?action=taxpayer_login');
-  const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
   await login.getByLabel('Password',{exact:true}).fill('user1');
   await login.getByRole('button',{name:'Sign In'}).click();
