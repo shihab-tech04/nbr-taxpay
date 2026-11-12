@@ -38,6 +38,7 @@ export function projectStoredDashboardAllocations(
 ):StoredDashboardProjection {
   const allocations:StoredDashboardAllocation[]=[];
   const seen=new Set<string>();
+  const batchParts=new Map<string,{expected:number;indices:Set<number>;invalid:boolean}>();
   let incompleteCount=0;
   for(const payment of payments) {
     if(seen.has(payment.id)) {incompleteCount++;continue;}
@@ -45,6 +46,17 @@ export function projectStoredDashboardAllocations(
     try {
       const receipt=makeConfirmedReceipt(payment);
       const batchId=receipt.batchId??payment.id;
+      if(receipt.batchId){
+        const expected=receipt.batchItemCount??0;
+        const index=receipt.batchItemIndex??0;
+        const prior=batchParts.get(batchId);
+        if(prior){
+          if(!expected||!index||prior.expected!==expected||prior.indices.has(index))prior.invalid=true;
+          prior.indices.add(index);
+        }else batchParts.set(batchId,{
+          expected,indices:new Set(index?[index]:[]),invalid:!expected||!index||index>expected,
+        });
+      }
       const date=payment.createdAt.slice(0,10);
       if(!/^20\d{2}-(0[1-9]|1[0-2])-\d{2}$/.test(date))throw Error('Invalid date');
       const parts=receipt.allocationItems?.length
@@ -67,7 +79,12 @@ export function projectStoredDashboardAllocations(
       });
     }catch{incompleteCount++;}
   }
-  return {allocations,incompleteCount};
+  // Never publish partial totals for a grouped payment if a head or original
+  // batch member is absent, repeated or inconsistent across SQL readbacks.
+  const incompleteBatches=new Set([...batchParts].filter(([,part])=>
+    part.invalid||part.indices.size!==part.expected).map(([batchId])=>batchId));
+  if(incompleteBatches.size)incompleteCount+=incompleteBatches.size;
+  return {allocations:allocations.filter(item=>!incompleteBatches.has(item.batchId)),incompleteCount};
 }
 export function summarizeStoredDashboardYear(
   projection:StoredDashboardProjection,year:string,
