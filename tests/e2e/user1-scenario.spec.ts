@@ -156,27 +156,45 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   expect(rendered).toHaveLength(24);
   expect(new Set(rendered).size).toBe(24);
   expect(rendered).toEqual([
-    'taxpayerName','tin','tinType','taxesCircle','registeredOn','lastLoginAt',
+    'taxpayerName','tin','tinType','registeredOn','previousTin','lastLoginAt',
     'taxpayerStatus','tinSubtype','userType','localTaxpayer',
     'mobileNumber','emailAddress','registeredAddress','currentAddress',
-    'taxesZone','taxesRange','district','country','previousTin',
+    'taxesCircle','taxesZone','taxesRange','district','country',
     'certificateIssuedOn','certificateLastUpdatedOn','issuingOfficer',
     'taxOfficeAddress','taxOfficePhone'
   ]);
   await expect(profile.getByRole('tablist')).toHaveCount(0);
   await expect(profile.getByRole('button',{name:'View payment activity'})).toHaveCount(0);
-  await expect(content.getByTestId('user1-profile-detail-columns').locator(':scope > div')).toHaveCount(2);
+  const cards=content.getByTestId('user1-profile-detail-columns');
+  await expect(cards.locator(':scope > div')).toHaveCount(4);
+  // Keep tax circle together with zone and range, no repeated field labels.
+  const jurisdiction=content.getByTestId('profile-jurisdiction-card');
+  for(const field of ['Taxes circle','Taxes zone','Taxes range'])
+    await expect(jurisdiction.getByText(field,{exact:true})).toHaveCount(1);
+  await expect(profile.getByTestId('user1-profile-summary').getByText('Previous TIN',{exact:true})).toHaveCount(1);
+  await expect(jurisdiction.getByText('Previous TIN',{exact:true})).toHaveCount(0);
+  if(info.project.name==='desktop-1280'){
+    const personal=await content.getByTestId('profile-personal-card').boundingBox();
+    const tax=await jurisdiction.boundingBox();
+    const contact=await content.getByTestId('profile-contact-card').boundingBox();
+    const certificate=await content.getByTestId('profile-certificate-card').boundingBox();
+    expect(personal&&tax&&contact&&certificate).toBeTruthy();
+    expect(Math.abs(personal!.y-tax!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(personal!.height-tax!.height)).toBeLessThanOrEqual(2);
+    expect(Math.abs(contact!.y-certificate!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(contact!.height-certificate!.height)).toBeLessThanOrEqual(2);
+  }
   for(const section of ['Personal information','Contact and addresses','TIN registration and jurisdiction',
     'Certificate details'])
     await expect(content.getByRole('heading',{name:section,exact:true})).toHaveCount(1);
   for(const field of ['Taxpayer status','TIN classification','User type','Local taxpayer',
     'Mobile number','Email address','Registered / permanent address','Current address',
-    'Taxes zone','Taxes range','District','Country','Previous TIN',
+    'Taxes circle','Taxes zone','Taxes range','District','Country',
     'Certificate issue date','Certificate last updated','Issuing tax officer','Tax office address',
     'Tax office phone']){
     await expect(content.getByText(field,{exact:true})).toHaveCount(1);
   }
-  await expect(content.getByText('Taxes circle',{exact:true})).toHaveCount(0);
+  await expect(content.getByText('Taxes circle',{exact:true})).toHaveCount(1);
   await expect(content.getByText('Registered name',{exact:true})).toHaveCount(0);
   await expect(content.getByText('TIN type',{exact:true})).toHaveCount(0);
   await expect(profile.getByText('TIN type',{exact:true})).toHaveCount(1);
@@ -186,6 +204,7 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile.getByRole('heading',{name:'Account information'})).toHaveCount(0);
   const summary=profile.getByTestId('user1-profile-summary');
   await expect(summary.locator(':scope > div')).toHaveCount(4);
+  await expect(summary.getByText('Taxes circle',{exact:true})).toHaveCount(0);
   await expect(summary).toContainText('11 Nov 2026, 11:23:40 AM');
   await expect(content).toContainText('Taxes Zone-12, Dhaka');
   await expect(content).toContainText('04 Jun 2026, 05:06:20 PM');

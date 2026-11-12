@@ -16,8 +16,8 @@ export const TAXPAYER_PROFILE_LAYOUT={
   ],
   summary:[
     ['tinType',['TIN type','টিআইএন ধরন'],'tin_profile'],
-    ['taxesCircle',['Taxes circle','কর সার্কেল'],'certificate'],
     ['registeredOn',['Registered since','নিবন্ধিত হওয়ার তারিখ'],'tin_profile'],
+    ['previousTin',['Previous TIN','পূর্ববর্তী টিআইএন'],'certificate'],
     ['lastLoginAt',['Last account login','সর্বশেষ লগইন'],'account']
   ],
   personal:[
@@ -33,11 +33,11 @@ export const TAXPAYER_PROFILE_LAYOUT={
     ['currentAddress',['Current address','বর্তমান ঠিকানা'],'certificate']
   ],
   jurisdiction:[
+    ['taxesCircle',['Taxes circle','কর সার্কেল'],'certificate'],
     ['taxesZone',['Taxes zone','কর অঞ্চল'],'certificate'],
     ['taxesRange',['Taxes range','কর রেঞ্জ'],'tin_profile'],
     ['district',['District','জেলা'],'tin_profile'],
-    ['country',['Country','দেশ'],'tin_profile'],
-    ['previousTin',['Previous TIN','পূর্ববর্তী টিআইএন'],'certificate']
+    ['country',['Country','দেশ'],'tin_profile']
   ],
   certificate:[
     ['certificateIssuedOn',['Certificate issue date','সনদ ইস্যুর তারিখ'],'certificate'],
