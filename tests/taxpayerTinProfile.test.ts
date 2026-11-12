@@ -64,7 +64,9 @@ test('profile and e-TIN certificate fields match the canonical UI/export field m
   assert.equal(new Set(all).size,all.length,'no repeated profile, date, circle, or address field');
   assert.deepEqual([...all].sort(),expected.sort(),'no source field omitted and no new unsupported field');
   assert.deepEqual(TAXPAYER_PROFILE_LAYOUT.identity.map(([key])=>key),['taxpayerName','tin']);
-  assert.deepEqual(TAXPAYER_PROFILE_LAYOUT.summary.map(([key])=>key),['tinType','taxesCircle','registeredOn','lastLoginAt']);
+  assert.deepEqual(TAXPAYER_PROFILE_LAYOUT.summary.map(([key])=>key),['tinType','registeredOn','previousTin','lastLoginAt']);
+  assert.deepEqual(TAXPAYER_PROFILE_LAYOUT.jurisdiction.slice(0,3).map(([key])=>key),
+    ['taxesCircle','taxesZone','taxesRange']);
   const fromCertificate=['tin','taxpayerName','taxpayerStatus','previousTin',
     'registeredAddress','currentAddress','taxesCircle','taxesZone','certificateIssuedOn',
     'certificateLastUpdatedOn','issuingOfficer','taxOfficeAddress','taxOfficePhone'];
