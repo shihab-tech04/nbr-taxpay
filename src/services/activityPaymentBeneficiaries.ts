@@ -27,7 +27,29 @@ export function activityPaymentBeneficiaries(
       heads:new Set(head?[head]:[])});
   };
   if(row.sql){
+    // A receipt is one immutable payment item. The same item may be returned
+    // twice during history recovery, but must never double a beneficiary's
+    // allocation. Different items in one batch remain independently counted.
+    const seen=new Map<string,string>();
     for(const receipt of row.sql.receipts){
+      const id=[receipt.paymentTransactionId,receipt.id].find(value=>
+        typeof value==='string'&&value.trim().length>0);
+      if(id){
+        const financialIdentity=JSON.stringify({
+          batchId:receipt.batchId??null,batchItemIndex:receipt.batchItemIndex??null,
+          taxpayerTin:receipt.taxpayerTin??null,payerName:receipt.payerName??null,
+          assessmentYear:receipt.assessmentYear??null,
+          allocations:receipt.allocationItems??null
+        });
+        const previous=seen.get(id);
+        if(previous!==undefined){
+          // Conflicting readbacks for one payment identity are not evidence of
+          // distinct allocations. Fail closed rather than choose an amount.
+          if(previous!==financialIdentity)return [];
+          continue;
+        }
+        seen.set(id,financialIdentity);
+      }
       if(receipt.allocationItems?.length){
         for(const allocation of receipt.allocationItems){
           if(!validTin(allocation.taxpayerTin))continue;

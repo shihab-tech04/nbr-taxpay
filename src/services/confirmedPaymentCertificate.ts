@@ -1,4 +1,6 @@
 import { CATEGORY_LABELS, MASTER_PAYMENT_HEADS } from '../data/paymentHeads';
+import { validCertificateTransactionId } from './transactionId';
+export { validCertificateTransactionId } from './transactionId';
 import type { ChallanReceipt, PaymentCategory, PaymentLineItem, ReceiptAllocationItem } from '../types/tax';
 import {sampleTinForUserNumber} from '../data/sampleTinSuggestions';
 
@@ -13,8 +15,6 @@ const methods=new Set<ChallanReceipt['paymentMethod']>([
  'BKASH','NAGAD','ROCKET','SONALI_E_SHEBA','A_CHALLAN_CARD',
  'BEFTN_RTGS','INTERNET_BANKING','VISA','MASTERCARD','BANK_BRANCH','SIMULATED'
 ]);
-export const validCertificateTransactionId=(id:unknown):id is string=>
- typeof id==='string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 interface StoredPayment {
  id:string;service:string;amountMinor:number;status:string;createdAt:string;
  details?:Record<string,unknown>;
