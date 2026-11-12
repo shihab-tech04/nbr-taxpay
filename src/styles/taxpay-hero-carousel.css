@@ -805,7 +805,7 @@
   .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
     display: flex;
     flex-direction: column;
-    padding-top: 14px;
+    padding-top: 10px;
     padding-bottom: 12px;
   }
   .public-home-sections {
@@ -814,7 +814,7 @@
     flex-direction: column;
     min-height: 0;
   }
-  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 14px; }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 12px; }
   .public-home-sections .public-record-discovery {
     display: block;
     padding: .75rem 1rem .8rem;
