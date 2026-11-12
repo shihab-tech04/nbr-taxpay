@@ -169,7 +169,9 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
       accountingSource.every(line=>line&&typeof line==='object'&&!Array.isArray(line)&&
         Number.isSafeInteger((line as Record<string,unknown>).headId))
       ?accountingSource as Array<Record<string,unknown>>:null;
-    if(accounting&&(raw.items.length!==accounting.length||
+    // Older combined receipts may have no head items in the snapshot;
+    // their independently reconciled SQL allocations remain authoritative.
+    if(accounting&&raw.items.length>0&&(raw.items.length!==accounting.length||
       raw.items.some((item,index)=>{
         if(!item||typeof item!=='object'||Array.isArray(item))return true;
         const snapshotLine=item as Record<string,unknown>;
