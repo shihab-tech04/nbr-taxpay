@@ -103,3 +103,32 @@ test('conflicting recorded snapshots fail closed; a corrected later retry succee
   assert.deepEqual(beneficiaryProfilePayments('000000000000',[original],[],'user1','en'),[],
     'even the same payer must never display a different recipient TIN as their own');
 });
+
+
+test('replayed payer simulation history counts each allocation once and keeps original transaction identity',()=>{
+  const history=beneficiaryProfilePayments(tin2,[],[transaction,{...transaction}],'user1','en');
+  assert.equal(history.length,2);
+  assert.equal(history.reduce((sum,item)=>sum+item.amountMinor,0),15000);
+  assert.deepEqual(new Set(history.map(item=>item.transactionId)),new Set(['tx-a']));
+  assert.deepEqual(new Set(history.map(item=>item.assessmentYear)),new Set(['2026-27','2024-25']));
+});
+
+test('simulation history mismatches fail closed and corrected retry restores original allocations',()=>{
+  const altered={...transaction,totalMinor:40000};
+  assert.throws(()=>beneficiaryProfilePayments(tin2,[],[transaction,altered],'user1','en'),
+    /Conflicting payer-scoped simulation history/);
+  assert.throws(()=>beneficiaryProfilePayments(tin2,[],[altered],'user1','en'),
+    /Unreconciled beneficiary allocation total/);
+  const repaired=beneficiaryProfilePayments(tin2,[],[transaction,{...transaction}],'user1','en');
+  assert.deepEqual(repaired.map(item=>item.amountMinor),[10000,5000]);
+});
+
+test('duplicate simulation recovery cannot bypass payer account isolation',()=>{
+  assert.throws(()=>beneficiaryProfilePayments(tin2,[],[transaction,{...transaction}],'user2','en'),
+    /Invalid payer-scoped payment activity/);
+  const otherTin=sampleTinForUserNumber(3)!;
+  const result=beneficiaryProfilePayments(otherTin,[],[transaction,{...transaction}],'user1','en');
+  assert.equal(result.length,1);
+  assert.equal(result[0].amountMinor,15000);
+  assert.equal(result[0].transactionId,'tx-a');
+});

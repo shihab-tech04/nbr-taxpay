@@ -50,16 +50,30 @@ export function beneficiaryProfilePayments(
     }));
   const knownStoryIds=new Set(uniqueStory.map(record=>record.id));
   const ledger:BeneficiaryProfilePayment[]=[];
+  const seenSimulations=new Map<string,string>();
   for(const tx of simulations){
     if(!payerId || tx.payer!==payerId || tx.simulationOnly!==true ||
       !Number.isSafeInteger(tx.totalMinor)||tx.totalMinor<=0 ||
       !Number.isFinite(Date.parse(tx.createdAt)) ||
       !['SIMULATED','PENDING','FAILED','REVERSED'].includes(tx.state))
       throw Error('Invalid payer-scoped payment activity');
+    if(!Array.isArray(tx.allocations))throw Error('Invalid beneficiary allocation list');
+    const fingerprint=JSON.stringify(tx);
+    const earlier=seenSimulations.get(tx.transactionId);
+    if(earlier!==undefined){
+      if(earlier!==fingerprint)throw Error('Conflicting payer-scoped simulation history');
+      continue;
+    }
+    seenSimulations.set(tx.transactionId,fingerprint);
     if(knownStoryIds.has(tx.transactionId))continue;
-    for(const [index,entry] of tx.allocations.entries()){
+    const sumMinor=tx.allocations.reduce((sum,entry)=>{
       if(!Number.isSafeInteger(entry.amountMinor)||entry.amountMinor<=0)
         throw Error('Invalid beneficiary allocation amount');
+      return sum+entry.amountMinor;
+    },0);
+    if(!Number.isSafeInteger(sumMinor)||sumMinor!==tx.totalMinor)
+      throw Error('Unreconciled beneficiary allocation total');
+    for(const [index,entry] of tx.allocations.entries()){
       const match=/^user(\d+)$/.exec(entry.beneficiary);
       const matchedTin=match?sampleTinForUserNumber(Number(match[1])):null;
       if(matchedTin!==tin)continue;
