@@ -242,8 +242,8 @@ test('approved payment-record lookup keeps the compact reference composition', a
       formShadow: getComputedStyle(el.querySelector('.public-record-search')!).boxShadow,
     };
   });
-  expect(layout.panelHeight).toBeGreaterThanOrEqual(100);
-  expect(layout.panelHeight).toBeLessThanOrEqual(136);
+  expect(layout.panelHeight).toBeGreaterThanOrEqual(108);
+  expect(layout.panelHeight).toBeLessThanOrEqual(128);
   expect(layout.panelRadius).toBeGreaterThanOrEqual(11);
   expect(layout.panelRadius).toBeLessThanOrEqual(13);
   expect(layout.headingBottom).toBeLessThan(layout.formTop);
@@ -257,41 +257,47 @@ test('approved payment-record lookup keeps the compact reference composition', a
     'Enter challan, token or transaction reference');
 });
 
-test('wide desktop bento has six readable benefits and non-data illustration previews', async ({ page }) => {
-  await page.setViewportSize({ width: 1775, height: 864 });
-  await page.goto('/?action=landing&lang=en');
-  await page.evaluate(async () => { await document.fonts.ready; });
-  const cards = page.locator('.public-benefits__item');
-  await expect(cards).toHaveCount(6);
-  await expect(page.locator('.public-benefits__preview')).toHaveCount(3);
-  const boxes = await cards.evaluateAll(elements => elements.map(element => {
-    const r = element.getBoundingClientRect();
-    return {x:r.x,y:r.y,width:r.width,height:r.height,scrollHeight:element.scrollHeight,clientHeight:element.clientHeight};
-  }));
-  const approx = (a:number,b:number) => Math.abs(a-b) <= 2;
-  // Short / tall / short, then tall / short / tall across three columns.
-  expect(approx(boxes[0].y,boxes[1].y)).toBe(true);
-  expect(approx(boxes[0].y,boxes[2].y)).toBe(true);
-  expect(approx(boxes[0].x,boxes[3].x)).toBe(true);
-  expect(approx(boxes[1].x,boxes[4].x)).toBe(true);
-  expect(approx(boxes[2].x,boxes[5].x)).toBe(true);
-  expect(boxes[1].height).toBeGreaterThan(boxes[0].height * 1.6);
-  expect(boxes[3].height).toBeGreaterThan(boxes[0].height * 1.6);
-  expect(boxes[5].height).toBeGreaterThan(boxes[2].height * 1.6);
-  expect(boxes.every(b => b.scrollHeight <= b.clientHeight + 2), JSON.stringify(boxes)).toBe(true);
-  for (const kind of ['corrections','history','repeat-drafts']) {
-    const preview = page.locator('.public-benefits__item[data-benefit="' + kind + '"] .public-benefits__preview');
-    await expect(preview).toBeVisible();
-    await expect(preview.locator('span')).toHaveCount(3);
-    await expect(preview).toHaveAttribute('aria-hidden','true');
+test('wide desktop balances six benefits without placeholder illustrations', async ({ page }) => {
+  for (const lang of ['en','bn']) {
+    await page.setViewportSize({ width: 1775, height: 864 });
+    await page.goto('/?action=landing&lang=' + lang);
+    await page.evaluate(async () => { await document.fonts.ready; });
+    const cards = page.locator('.public-benefits__item');
+    await expect(cards).toHaveCount(6);
+    await expect(page.locator('.public-benefits__preview')).toHaveCount(0);
+    const labels = page.locator('.public-benefits__highlights');
+    await expect(labels).toHaveCount(2);
+    await expect(labels.first().locator('span')).toHaveCount(3);
+    await expect(labels.last().locator('span')).toHaveCount(2);
+    await expect(labels.first()).toHaveAttribute('aria-hidden','true');
+    await expect(labels.last()).toHaveAttribute('aria-hidden','true');
+    const boxes = await cards.evaluateAll(elements => elements.map(element => {
+      const r = element.getBoundingClientRect();
+      return {x:r.x,y:r.y,width:r.width,height:r.height,
+        scrollHeight:element.scrollHeight,clientHeight:element.clientHeight};
+    }));
+    const approx = (a:number,b:number) => Math.abs(a-b)<=2;
+    // Two tall outside cards, four legible compact cards in the middle.
+    expect(boxes[0].x).toBeLessThan(boxes[1].x);
+    expect(boxes[1].x).toBeLessThan(boxes[2].x);
+    expect(boxes[2].x).toBeLessThan(boxes[5].x);
+    expect(approx(boxes[0].y,boxes[1].y)).toBe(true);
+    expect(approx(boxes[1].y,boxes[2].y)).toBe(true);
+    expect(approx(boxes[0].y,boxes[5].y)).toBe(true);
+    expect(approx(boxes[1].x,boxes[3].x)).toBe(true);
+    expect(approx(boxes[2].x,boxes[4].x)).toBe(true);
+    expect(boxes[3].y).toBeGreaterThan(boxes[1].y);
+    expect(approx(boxes[3].y,boxes[4].y)).toBe(true);
+    expect(boxes[0].height).toBeGreaterThan(boxes[1].height*1.8);
+    expect(boxes[5].height).toBeGreaterThan(boxes[2].height*1.8);
+    expect(boxes.every(b => b.scrollHeight<=b.clientHeight+2),JSON.stringify({lang,boxes})).toBe(true);
+    const overflow = await page.evaluate(() => ({
+      vertical:document.documentElement.scrollHeight-innerHeight,
+      horizontal:document.documentElement.scrollWidth-innerWidth,
+    }));
+    expect(overflow.vertical,JSON.stringify({lang,overflow})).toBeLessThanOrEqual(2);
+    expect(overflow.horizontal).toBeLessThanOrEqual(2);
   }
-  await expect(page.locator('.public-benefits').getByRole('button')).toHaveCount(0);
-  const overflow = await page.evaluate(() => ({
-    vertical: document.documentElement.scrollHeight - innerHeight,
-    horizontal: document.documentElement.scrollWidth - innerWidth,
-  }));
-  expect(overflow.vertical).toBeLessThanOrEqual(2);
-  expect(overflow.horizontal).toBeLessThanOrEqual(2);
 });
 
 test('existing hero Pay Tax and Travel Tax actions still open separate journeys', async ({ page }) => {
