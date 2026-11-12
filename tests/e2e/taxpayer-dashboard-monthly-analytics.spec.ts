@@ -16,7 +16,7 @@ test('Overview keeps compact metrics, saved drafts, corrections and interactive 
   const charts=dashboard.getByTestId('dashboard-payment-analytics');
   await expect(charts.getByTestId('dashboard-service-breakdown')).toBeVisible();
   await expect(charts.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
-  await expect(charts.getByTestId('dashboard-chart-source').getByRole('button',{name:'Recorded'})).toHaveAttribute('aria-pressed','true');
+  await expect(charts.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
   await expect(dashboard.getByTestId('dashboard-monthly-payments')).toHaveCount(0);
   const [metricBox,caseBox]=await Promise.all([metrics.boundingBox(),cases.boundingBox()]);
   expect(metricBox&&caseBox).toBeTruthy();
