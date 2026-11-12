@@ -6,7 +6,7 @@ import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
 import {BentoPaymentAnalytics} from './BentoPaymentAnalytics';
-import {chooseDashboardChartSource,type DashboardChartSource} from './dashboardBentoAnalytics';
+import {chooseDashboardChartSource,serviceForCategory,type DashboardChartSource,type DashboardChartService} from './dashboardBentoAnalytics';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
@@ -209,6 +209,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   };
   const [reviewFilter,setReviewFilter]=useState<State[]|null>(null);
   const [dashboardHistorySource,setDashboardHistorySource]=useState<DashboardChartSource|'all'>('all');
+  const [dashboardHistoryService,setDashboardHistoryService]=useState<DashboardChartService|'all'>('all');
   const [dashboardHistoryCompletedOnly,setDashboardHistoryCompletedOnly]=useState(false);
   useEffect(()=>{
     if(route!=='history')return;
@@ -227,6 +228,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     setDashboardHistorySource(['recorded','example'].includes(String(routeParams.dashboardSource))
       ?routeParams.dashboardSource as DashboardChartSource:'all');
     setDashboardHistoryCompletedOnly(routeParams.dashboardOnlyCompleted===true);
+    setDashboardHistoryService(['income','tds','ait','other','travel'].includes(String(routeParams.dashboardService))
+      ?routeParams.dashboardService as DashboardChartService:'all');
   },[route,routeParams]);
   const openReview=(states:State[])=>navigate('history',{reviewStatuses:states});
   const [query,setQuery]=useState('');
@@ -328,6 +331,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     const searchFields=[x.ref,x.title,x.challan||'',x.detail,x.typeLabel||'',payerName(x),...people.flatMap(p=>
       [p.name,p.tin,p.tag||'',...p.heads,...p.assessmentYears])];
     return (dashboardHistorySource==='all'||((dashboardHistorySource==='recorded')===Boolean(x.sql)))&&
+      (dashboardHistoryService==='all'||(x.sql
+        ?x.sql.receipts.some(receipt=>serviceForCategory(receipt.paymentCategory)===dashboardHistoryService)
+        :x.kind===dashboardHistoryService))&&
       (!dashboardHistoryCompletedOnly||(x.state==='POSTED'&&
         (Boolean(x.sql)||['income','ait','travel'].includes(x.kind))))&&
       (kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&
@@ -340,7 +346,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const historyPerPage=10;
   const currentHistoryPage=Math.min(historyPage,Math.max(1,Math.ceil(filtered.length/historyPerPage)));
   const visibleHistoryRows=filtered.slice((currentHistoryPage-1)*historyPerPage,currentHistoryPage*historyPerPage);
-  useEffect(()=>setHistoryPage(1),[year,query,kind,status,monthFilter,reviewFilter,paymentTagFilter,beneficiaryFilter,dashboardHistorySource,dashboardHistoryCompletedOnly]);
+  useEffect(()=>setHistoryPage(1),[year,query,kind,status,monthFilter,reviewFilter,paymentTagFilter,beneficiaryFilter,dashboardHistorySource,dashboardHistoryCompletedOnly,dashboardHistoryService]);
   const availableHistoryMonths=[...new Set(historyScoped.map(x=>x.date.slice(0,7)))].sort();
   // Use the same selected-year, owner-owned projection as the Activity table.
   // Keep demo events identifiable; SQL records are simulation payments, not certified credits.
@@ -433,7 +439,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </label>
     </TaxPayOfficeRegisterFilters>
     <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
-      onClear={()=>{setQuery('');setKind('all');setStatus('all');chooseHistoryMonth('all');setPaymentTagFilter('all');setBeneficiaryFilter('all');setReviewFilter(null);setDashboardHistorySource('all');setDashboardHistoryCompletedOnly(false);}}
+      onClear={()=>{setQuery('');setKind('all');setStatus('all');chooseHistoryMonth('all');setPaymentTagFilter('all');setBeneficiaryFilter('all');setReviewFilter(null);setDashboardHistorySource('all');setDashboardHistoryCompletedOnly(false);setDashboardHistoryService('all');}}
       filters={[
         ...(query.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+query.trim(),onRemove:()=>setQuery('')}]:[]),
         ...(kind!=='all'?[{key:'kind',label:tr(...labels[kind]),onRemove:()=>setKind('all')}]:[]),
@@ -441,6 +447,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         ...(status!=='all'?[{key:'status',label:tr(...stateLabels[status]),onRemove:()=>setStatus('all')}]:[]),
         ...(paymentTagFilter!=='all'?[{key:'tag',label:paymentTagLabel(paymentTagFilter),onRemove:()=>setPaymentTagFilter('all')}]:[]),
         ...(dashboardHistorySource!=='all'?[{key:'source',label:dashboardHistorySource==='recorded'?tr('Saved payments','সংরক্ষিত পেমেন্ট'):tr('Examples','উদাহরণ'),onRemove:()=>setDashboardHistorySource('all')}]:[]),
+        ...(dashboardHistoryService!=='all'?[{key:'service',label:tr('Service: ','সেবা: ')+dashboardHistoryService,onRemove:()=>setDashboardHistoryService('all')}]:[]),
         ...(dashboardHistoryCompletedOnly?[{key:'completed',label:tr('Completed only','শুধু সম্পন্ন'),onRemove:()=>setDashboardHistoryCompletedOnly(false)}]:[]),
         ...(beneficiaryFilter!=='all'?[{key:'beneficiary',label:tr('Beneficiary: ','উপকারভোগী: ')+(availableTransactionBeneficiaries.find(p=>p.tin===beneficiaryFilter)?.name??beneficiaryFilter),onRemove:()=>setBeneficiaryFilter('all')}]:[])
       ]}/>
@@ -667,8 +674,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       selectedSource={overviewSource}
       onSourceChange={source=>setOverviewSourceChoice({year,source})}
       onManageBeneficiaries={()=>navigate('beneficiaries')}
-      onOpenHistory={tag=>navigate('history',{
-        dashboardSource:overviewSource,...(tag?{dashboardTagFilter:tag}:{})
+      onOpenHistory={(tag,service)=>navigate('history',{
+        dashboardSource:overviewSource,dashboardOnlyCompleted:true,
+        ...(tag?{dashboardTagFilter:tag}:{}),
+        ...(service&&service!=='all'?{dashboardService:service}:{})
       })}
     />
   </div>;
