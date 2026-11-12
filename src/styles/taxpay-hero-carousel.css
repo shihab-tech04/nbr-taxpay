@@ -813,9 +813,9 @@
     flex: 1 1 auto;
     flex-direction: column;
     min-height: 0;
-    /* Share unused tall-screen space around the three existing sections,
-       rather than leaving one large empty block above the footer. */
-    justify-content: space-evenly;
+    /* Keep the three existing blocks together at a predictable vertical rhythm.
+       Do not distribute spare viewport height between the banner, lookup and cards. */
+    justify-content: flex-start;
   }
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 12px; }
   .public-home-sections > .public-hero-carousel-shell,
