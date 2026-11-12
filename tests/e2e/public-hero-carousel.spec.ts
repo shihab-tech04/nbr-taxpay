@@ -53,7 +53,8 @@ test('initial banner request does not download hidden images before the visible 
     if (url.includes('taxpay-hero-intro-v9.webp')) await heldFirst;
     await route.continue();
   });
-  await page.goto('/?action=landing');
+  // A deliberately held image must not block the navigation lifecycle under test.
+  await page.goto('/?action=landing', { waitUntil: 'domcontentloaded' });
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
   await expect(carousel.locator('.public-hero-carousel__slide')).toHaveCount(5);
   await expect.poll(() => requests.length).toBe(1);
