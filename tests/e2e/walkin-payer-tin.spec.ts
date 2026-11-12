@@ -35,7 +35,7 @@ test('optional payer TIN requires lookup and explicit confirmation without chang
   await expect(next).toBeDisabled();
   await payer.getByRole('button', { name:'Confirm payer' }).click();
   await expect(dialog.locator('#guest-payer-name')).toHaveValue('User 1');
-  await expect(dialog.locator('#guest-tin')).toHaveValue('222222222222');
+  await expect(dialog.getByTestId('other-tax-primary-taxpayer').getByTestId('confirmed-taxpayer-summary')).toContainText('222222222222');
   await expect(next).toBeEnabled();
 
   await payerTin.fill('333333333333');
