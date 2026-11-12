@@ -1,0 +1,153 @@
+/* Sohojkor Overview: interactive, allocation-backed bento reports only.
+   Do not alter other screens, navigation, modals, inputs, or saved drafts. */
+.taxpay-bento-analytics{
+  grid-column:1/-1;
+  display:grid;
+  gap:12px;
+  min-width:0;
+}
+.taxpay-bento-analytics__header{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+  min-width:0;
+}
+.taxpay-bento-analytics__header h2{
+  font-size:18px;font-weight:600;line-height:1.4;
+  color:var(--color-taxpay-text,#17243c);
+}
+.taxpay-bento-analytics__header p{
+  font-size:14px;line-height:1.5;color:var(--color-taxpay-muted,#64748b);
+}
+.taxpay-bento-analytics__sources{
+  display:inline-flex;align-items:center;gap:4px;
+  border:1px solid var(--color-taxpay-border,#dbe4f0);
+  border-radius:10px;background:#fff;padding:4px;
+}
+.taxpay-bento-analytics__sources button{
+  border:0;border-radius:7px;min-height:40px;padding:7px 13px;
+  color:var(--color-taxpay-text,#17243c);background:transparent;
+  font-size:14px;font-weight:500;
+}
+.taxpay-bento-analytics__sources button[aria-pressed="true"]{
+  background:var(--color-taxpay-primary,#085587);color:white;
+}
+.taxpay-bento-analytics__cards{
+  display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);
+  align-items:start;gap:12px;min-width:0;
+}
+.taxpay-bento-analytics__card{
+  min-width:0;border:1px solid var(--color-taxpay-border,#dbe4f0);
+  border-radius:16px;background:var(--color-taxpay-surface,#fff);
+  padding:18px;display:grid;align-content:start;gap:14px;
+}
+.taxpay-bento-analytics__card-header{
+  display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;
+  gap:8px 12px;min-width:0;
+}
+.taxpay-bento-analytics__card h3{
+  font-size:16px;line-height:1.4;font-weight:600;color:var(--color-taxpay-text,#17243c);
+}
+.taxpay-bento-analytics__card-header p{
+  margin-top:3px;color:var(--color-taxpay-muted,#64748b);font-size:14px;line-height:1.45;
+}
+.taxpay-bento-analytics__total{font-size:16px;font-weight:600;white-space:nowrap}
+.taxpay-bento-analytics__bars{display:grid;gap:11px;min-width:0}
+.taxpay-bento-analytics__bar-item{
+  display:grid;gap:6px;width:100%;text-align:left;
+  border:1px solid transparent;border-radius:9px;
+  padding:8px 9px;background:transparent;min-height:54px;
+  color:var(--color-taxpay-text,#17243c);
+}
+.taxpay-bento-analytics__bar-item:hover{background:#f3f7fc}
+.taxpay-bento-analytics__bar-item[aria-pressed="true"]{
+  background:#eef5fd;border-color:#9dbde3;
+}
+.taxpay-bento-analytics__bar-top{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;font-size:14px;line-height:1.3;
+}
+.taxpay-bento-analytics__bar-top strong{font-weight:600;white-space:nowrap}
+.taxpay-bento-analytics__bar-track{
+  display:block;width:100%;height:10px;border-radius:100px;
+  background:#e6edf6;overflow:hidden;
+}
+.taxpay-bento-analytics__bar-track>span{
+  display:block;height:100%;min-width:3px;border-radius:100px;
+  background:var(--color-taxpay-primary,#085587);
+}
+.taxpay-bento-analytics__clear,.taxpay-bento-analytics__link{
+  justify-self:start;display:inline-flex;align-items:center;gap:7px;
+  min-height:40px;border:0;background:none;padding:5px 0;
+  color:var(--color-taxpay-primary,#085587);font-size:14px;font-weight:600;
+}
+.taxpay-bento-analytics__clear:hover,.taxpay-bento-analytics__link:hover{text-decoration:underline}
+.taxpay-bento-analytics__segments{
+  display:flex;overflow:hidden;min-height:15px;width:100%;
+  border-radius:100px;background:#e6edf6;
+}
+.taxpay-bento-analytics__segment{display:block;min-width:0}
+.taxpay-bento-analytics__segment--family,
+.taxpay-bento-analytics__dot--family{background:#2f66af}
+.taxpay-bento-analytics__segment--friends,
+.taxpay-bento-analytics__dot--friends{background:#6aa7d4}
+.taxpay-bento-analytics__segment--clients,
+.taxpay-bento-analytics__dot--clients{background:#214a83}
+.taxpay-bento-analytics__segment--others,
+.taxpay-bento-analytics__dot--others{background:#ba8940}
+.taxpay-bento-analytics__segment--own,
+.taxpay-bento-analytics__dot--own{background:#52839d}
+.taxpay-bento-analytics__segment--unassigned,
+.taxpay-bento-analytics__dot--unassigned{background:#8a93a6}
+.taxpay-bento-analytics__tags{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;min-width:0;
+}
+.taxpay-bento-analytics__tags button{
+  display:grid;grid-template-columns:10px minmax(0,1fr);
+  gap:5px 8px;align-content:center;
+  min-width:0;min-height:58px;text-align:left;
+  border:1px solid var(--color-taxpay-border,#dbe4f0);
+  border-radius:10px;padding:10px;background:#fff;
+  font-size:14px;color:var(--color-taxpay-text,#17243c);
+}
+.taxpay-bento-analytics__tags button:hover{background:#f4f7fc}
+.taxpay-bento-analytics__tags button[aria-pressed="true"]{
+  background:#eef5fd;border-color:#9dbde3;
+}
+.taxpay-bento-analytics__dot{
+  display:block;width:9px;height:9px;border-radius:50%;margin-top:5px;
+}
+.taxpay-bento-analytics__tag-label{min-width:0;overflow-wrap:anywhere}
+.taxpay-bento-analytics__tags strong{
+  grid-column:2;min-width:0;font-size:14px;font-weight:600;
+}
+.taxpay-bento-analytics__selection{
+  display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;
+  padding:10px 12px;border-radius:9px;background:#f1f5fa;font-size:14px;
+}
+.taxpay-bento-analytics__selection strong{font-weight:600}
+.taxpay-bento-analytics__empty{
+  border:1px dashed var(--color-taxpay-border,#dbe4f0);
+  border-radius:10px;padding:18px 14px;line-height:1.5;
+  font-size:14px;color:var(--color-taxpay-muted,#64748b);
+}
+.taxpay-bento-analytics__footnote,.taxpay-bento-analytics__warning{
+  color:var(--color-taxpay-muted,#64748b);font-size:14px;line-height:1.5;
+}
+.taxpay-bento-analytics__warning{color:#9b2424}
+.taxpay-bento-analytics button:focus-visible{
+  outline:3px solid var(--color-taxpay-primary,#085587);outline-offset:2px;
+}
+@media(max-width:1099px){
+  .taxpay-bento-analytics__cards{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:479px){
+  .taxpay-bento-analytics__header{align-items:stretch}
+  .taxpay-bento-analytics__sources{width:100%}
+  .taxpay-bento-analytics__sources button{flex:1}
+  .taxpay-bento-analytics__card{padding:14px}
+  .taxpay-bento-analytics__tags{grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce){
+  .taxpay-bento-analytics__bar-track>span{transition:none}
+}

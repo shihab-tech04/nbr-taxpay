@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 const routes = ['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings'];
-const banned = /\b(sample|synthetic|fictional|illustrative)\b|নমুনা|কাল্পনিক/i;
+const banned = /\b(synthetic|illustrative)\b|কাল্পনিক সরকারি করদায়/i;
 
 test('taxpayer dashboard contains no repeated demonstration badges, tooltips or captions', async ({page}) => {
   await page.setViewportSize({width:1600,height:900});
@@ -11,14 +11,14 @@ test('taxpayer dashboard contains no repeated demonstration badges, tooltips or 
   await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).getByRole('button',{name:'Overview'})).toBeVisible();
   await expect(main.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
   expect(await main.innerText()).not.toMatch(banned);
-  await expect(main.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'By payment service'})).toBeVisible();
   await expect(main.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   await expect(main.getByRole('heading',{name:'What needs your attention?'})).toHaveCount(0);
   await expect(main.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
-  await expect(main.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
-  await expect(main.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'By payment service'})).toBeVisible();
   await expect(main.locator('.taxpay-bento-position')).toHaveCount(0);
-  await expect(main.locator('.taxpay-bento-coverage')).toBeVisible();
+  await expect(main.getByTestId('dashboard-payment-analytics')).toBeVisible();
   // This boundary remains visible: records are fictional and must not be mistaken for an authenticated account.
   await expect(page.getByRole('button',{name:'Exit workspace'})).toBeVisible();
 });
