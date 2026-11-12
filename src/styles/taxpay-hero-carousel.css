@@ -714,8 +714,9 @@
 }
 
 
-/* Citizen benefits: six compact, scannable service outcomes. This component
-   is informational; the two payment journeys remain exclusively in the hero. */
+/* Benefits remain informational; all payment actions stay in the original hero.
+   Preserve tablet/mobile card design; desktop uses one cohesive, well-spaced panel.
+   This replaces the previous miniature, rainbow-edged desktop cards. */
 .public-benefits { min-width: 0; }
 .public-benefits__heading {
   display: flex;
@@ -789,26 +790,127 @@
   line-height: 1.36;
 }
 
-/* Preserve the original 24px separation on tablet/mobile. Only desktop
-   receives the tighter vertical rhythm below. */
+/* Public home keeps a natural scroll on tablet/mobile. On desktop,
+   distribute available height instead of shrinking cards then leaving
+   a blank slab between the benefits and the pinned footer. */
 .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem; }
 
-/* Desktop landing uses a single compact, complete first viewport.
-   Scope the spacing to the landing section; do not alter other public routes,
-   the shared navigation, payment modals, or the public footer. */
 @media (min-width: 981px) {
   .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
+    display: flex;
+    flex-direction: column;
     padding-top: 14px;
-    padding-bottom: 10px;
+    padding-bottom: 12px;
+  }
+  .public-home-sections {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
   }
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 14px; }
-  .public-home-sections .public-record-discovery { padding: .85rem 1rem; }
-  .public-home-sections .public-record-discovery__heading { margin-bottom: .5rem; }
-  .public-home-sections .public-record-search { min-height: 52px; padding: .2rem; }
+
+  /* Give the record lookup one clear horizontal entry row; keep its
+     original label, keyboard, suggestions and submit behavior. */
+  .public-home-sections .public-record-discovery {
+    display: grid;
+    grid-template-columns: minmax(410px, .8fr) minmax(0, 1fr);
+    gap: 1.1rem;
+    align-items: center;
+    padding: .8rem 1rem;
+  }
+  .public-home-sections .public-record-discovery__heading { margin: 0; }
+  .public-home-sections .public-record-discovery__heading h2 {
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 750;
+  }
+  .public-home-sections .public-record-discovery__heading p {
+    margin-top: .2rem;
+    font-size: .8125rem;
+    line-height: 1.45;
+  }
+  .public-home-sections .public-record-search {
+    min-height: 51px;
+    padding: .2rem;
+    box-shadow: none;
+  }
+  .public-home-sections .public-record-search input { padding: .55rem .8rem; }
+  .public-home-sections .public-record-search button {
+    flex-basis: 44px;
+    min-height: 42px;
+  }
+
+  /* One composed surface and measured 3-by-2 grid, not six rainbow cards. */
+  .public-home-sections .public-benefits {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 248px;
+    max-height: 340px;
+    overflow: hidden;
+    border: 1px solid var(--citizen-border);
+    border-radius: 1rem;
+    background: var(--citizen-surface);
+  }
+  .public-home-sections .public-benefits__heading {
+    flex: 0 0 auto;
+    align-items: center;
+    gap: .8rem 1.25rem;
+    margin: 0;
+    padding: .88rem 1.1rem;
+    border-bottom: 1px solid var(--citizen-border);
+  }
+  .public-home-sections .public-benefits__heading h2 {
+    font-size: 1.1875rem;
+    line-height: 1.35;
+    letter-spacing: -.012em;
+  }
+  .public-home-sections .public-benefits__heading p {
+    font-size: .875rem;
+    line-height: 1.4;
+  }
+  .public-home-sections .public-benefits__grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 0;
+  }
+  .public-home-sections .public-benefits__item {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: .78rem;
+    min-height: 0;
+    padding: .82rem .96rem;
+    border: 0;
+    border-right: 1px solid var(--citizen-border);
+    border-bottom: 1px solid var(--citizen-border);
+    border-radius: 0;
+    background: transparent;
+  }
+  .public-home-sections .public-benefits__item:nth-child(3n) { border-right: 0; }
+  .public-home-sections .public-benefits__item:nth-child(n+4) { border-bottom: 0; }
+  .public-home-sections .public-benefits__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: .7rem;
+    background: var(--citizen-primary-light);
+    color: var(--citizen-primary-dark);
+  }
+  .public-home-sections .public-benefits__copy h3 {
+    margin-bottom: .2rem;
+    font-size: .96875rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+  .public-home-sections .public-benefits__copy p {
+    font-size: .875rem;
+    line-height: 1.45;
+  }
 }
+
 @media (min-width: 981px) and (max-height: 820px) {
-  /* Short desktop displays: retain all artwork (object-fit:contain), copy,
-     two approved CTAs and slider navigation while avoiding page scrolling. */
+  /* Short laptop displays retain the original full artwork and two CTAs. */
   .public-home-sections .public-hero-carousel__slide.public-information-hero {
     height: 220px;
     min-height: 220px;
@@ -834,10 +936,11 @@
     padding-bottom: 8px;
   }
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 10px; }
+  .public-home-sections .public-benefits { min-height: 232px; max-height: 300px; }
+  .public-home-sections .public-benefits__heading { padding: .65rem 1rem; }
+  .public-home-sections .public-benefits__item { padding: .55rem .78rem; }
 }
-/* 1024px laptop widths wrap some descriptions onto extra lines. Keep the
-   whole landing and footer visible on 768px-tall desktop screens without
-   shrinking text below the 14px copy minimum or clipping banner artwork. */
+
 @media (min-width: 981px) and (max-width: 1120px) and (max-height: 820px) {
   .public-home-sections .public-hero-carousel__slide.public-information-hero {
     height: 210px;
@@ -848,10 +951,18 @@
     padding-bottom: 6px;
   }
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 8px; }
-  .public-home-sections .public-record-discovery { padding: .65rem .85rem; }
-  .public-home-sections .public-record-discovery__heading { margin-bottom: .35rem; }
-  .public-home-sections .public-record-search { min-height: 49px; padding: .15rem; }
-  .public-benefits__grid { row-gap: .35rem; }
+  .public-home-sections .public-record-discovery {
+    grid-template-columns: minmax(400px, .8fr) minmax(0, 1fr);
+    gap: .8rem;
+    padding: .65rem .85rem;
+  }
+  .public-home-sections .public-benefits { min-height: 224px; }
+  .public-home-sections .public-benefits__item {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: .6rem;
+    padding: .48rem .65rem;
+  }
+  .public-home-sections .public-benefits__icon { width: 36px; height: 36px; }
 }
 @media (max-width: 980px) {
   .public-benefits__heading { display: block; margin-bottom: .75rem; }
