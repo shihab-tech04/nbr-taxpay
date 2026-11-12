@@ -1,4 +1,5 @@
 import React,{useState} from 'react';
+import '../../styles/taxpay-dashboard-interactive.css';
 import {ArrowRight} from 'lucide-react';
 import type {Beneficiary} from '../../services/beneficiaries';
 import {
