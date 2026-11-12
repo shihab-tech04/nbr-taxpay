@@ -23,7 +23,7 @@ export function CitizenFooter(){
   if(isPublic) return <footer className="public-footer no-print" aria-label={bn?'সহজকর ফুটার':'Sohojkor footer'}>
     <div className="public-footer__inner">
       <div className="public-footer__identity">
-        <SiteLogo className="public-footer__wordmark" alt={taxpayerBrandName(language)}/>
+        <SiteLogo className="public-footer__wordmark" alt={bn?'সহজকর':'Sohojkor'}/>
         <p>{bn?'আয়কর পরিশোধের তথ্য':'Income tax payment information'}</p>
       </div>
       <nav className="public-footer__navs" aria-label={bn?'ফুটার নেভিগেশন':'Footer navigation'}>
