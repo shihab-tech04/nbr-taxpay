@@ -7,7 +7,7 @@ test('Overview hides unverified external tax position and keeps drafts, correcti
   await page.goto(demo);
   const bento=page.getByTestId('taxpayer-overview-bento');
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
-  await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2026-2027');
+  await expect(page.getByRole('combobox',{name:'Assessment year'}).locator('option[value="2026-2027"]')).toHaveCount(1);
   await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
   await expect(bento.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
   await expect(bento.getByTestId('dashboard-payment-analytics')).toBeVisible();
