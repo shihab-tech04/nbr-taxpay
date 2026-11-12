@@ -183,6 +183,35 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
     expect(Math.abs(personal!.height-tax!.height)).toBeLessThanOrEqual(2);
     expect(Math.abs(contact!.y-certificate!.y)).toBeLessThanOrEqual(2);
     expect(Math.abs(contact!.height-certificate!.height)).toBeLessThanOrEqual(2);
+    // Keep the established roomy profile spacing. Grid stretch may align card
+    // borders, but must not compress card padding or distribute field rows.
+    const spacing=await page.evaluate(()=>{
+      const root=document.querySelector('[data-testid="user1-taxpayer-profile"]')!;
+      const header=root.querySelector(':scope > section > div:first-child') as HTMLElement;
+      const tin=root.querySelector('[data-profile-field="tin"]')!.parentElement!.parentElement as HTMLElement;
+      const summaryCell=root.querySelector('[data-testid="user1-profile-summary"] > div') as HTMLElement;
+      const card=root.querySelector('[data-testid="profile-personal-card"] > section') as HTMLElement;
+      const heading=card.querySelector('h3') as HTMLElement;
+      const field=root.querySelector('[data-profile-field="tinSubtype"]') as HTMLElement;
+      const px=(element:HTMLElement,side:'paddingTop'|'paddingBottom'|'paddingLeft')=>
+        Number.parseFloat(getComputedStyle(element)[side]);
+      return {
+        headerPadding:px(header,'paddingTop'),
+        tinPadding:px(tin,'paddingTop'),
+        summaryPadding:px(summaryCell,'paddingTop'),
+        cardPadding:px(card,'paddingTop'),
+        headingPadding:px(heading,'paddingBottom'),
+        rowPadding:px(field,'paddingTop'),
+        rowDisplay:getComputedStyle(field).display
+      };
+    });
+    expect(spacing.headerPadding).toBeGreaterThanOrEqual(24);
+    expect(spacing.tinPadding).toBeGreaterThanOrEqual(16);
+    expect(spacing.summaryPadding).toBeGreaterThanOrEqual(12);
+    expect(spacing.cardPadding).toBeGreaterThanOrEqual(20);
+    expect(spacing.headingPadding).toBeGreaterThanOrEqual(12);
+    expect(spacing.rowPadding).toBeGreaterThanOrEqual(12);
+    expect(spacing.rowDisplay).toBe('grid');
   }
   for(const section of ['Personal information','Contact and addresses','TIN registration and jurisdiction',
     'Certificate details'])
