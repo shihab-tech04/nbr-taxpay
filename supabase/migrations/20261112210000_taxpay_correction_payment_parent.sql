@@ -45,11 +45,8 @@ BEGIN
     AND p.data->>'origin'='TAXPAY_UI'
     AND (
       p.id::text=NEW.original_reference
-      OR p.data->>'receiptReference'=NEW.original_reference
-      OR p.data->'receiptReference'->>'value'=NEW.original_reference
       OR p.data->'details'->>'receiptReference'=NEW.original_reference
       OR p.data->'details'->'receiptSnapshot'->>'challanNo'=NEW.original_reference
-      OR p.data->'receiptSnapshot'->>'challanNo'=NEW.original_reference
     );
 
   IF v_match_count<>1 OR v_parent IS NULL THEN
