@@ -64,11 +64,28 @@ try {
         await expect(bento.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
         await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
         const sources=chart.getByTestId('dashboard-chart-source');
+        await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+        // Source-aware Overview defaults to recorded allocations when present,
+        // otherwise to available examples. Live evidence must accept either
+        // truthful source, not demand an empty Recorded chart as the default.
+        const initialSource=await chart.getAttribute('data-chart-source');
+        if(initialSource!=='recorded'&&initialSource!=='example')
+          throw new Error('Live dashboard has no explicit source selection: '+initialSource);
+        await expect(sources.getByRole('button',{name:initialSource==='recorded'?'Recorded':'Examples'}))
+          .toHaveAttribute('aria-pressed','true');
+        // Keep the manually selected account-recorded view available, including
+        // its honest missing-data state, without inventing a zero balance.
+        await sources.getByRole('button',{name:'Recorded'}).click();
         await expect(sources.getByRole('button',{name:'Recorded'}))
           .toHaveAttribute('aria-pressed','true');
-        await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
-        // Example mode is opt-in and explicitly separate from the recorded SQL
-        // data. Never use an example total to assert bank settlement.
+        const noItemized=await chart.getByTestId('dashboard-service-breakdown')
+          .getByText('No itemized recorded payments',{exact:false}).count();
+        if(noItemized){
+          await expect(chart.getByTestId('dashboard-service-breakdown')
+            .locator('.taxpay-bento-analytics__total')).toHaveText('—');
+        }
+        // Example amounts are independently selected and must never be
+        // asserted as bank settlements or combined with SQL-recorded totals.
         await sources.getByRole('button',{name:'Examples'}).click();
         await expect(sources.getByRole('button',{name:'Examples'}))
           .toHaveAttribute('aria-pressed','true');
