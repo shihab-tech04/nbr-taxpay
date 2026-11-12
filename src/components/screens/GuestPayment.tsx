@@ -133,7 +133,7 @@ const GUEST_COPY = {
   },
 } as const;
 
-type GuestErrorField = 'payerChoice' | 'tin' | 'payerName' | 'phone' | 'email' | 'noticeReference' | 'incomeTaxType' | 'headId' | 'taxAmount';
+type GuestErrorField = 'payerChoice' | 'tin' | 'payerName' | 'payerTin' | 'phone' | 'email' | 'noticeReference' | 'incomeTaxType' | 'headId' | 'taxAmount';
 const ERROR_ID = 'guest-payment-error';
 
 type LifecycleStage = 'INITIATED' | 'AUTHORIZED' | 'ACS_REFERENCE_CREATED' | 'PROCESSING' | 'TREASURY_SETTLED' | 'NBR_LEDGER_POSTED' | 'CREDITED' | 'FAILED';
@@ -220,6 +220,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // Form inputs
   const [tin, setTin] = useState(initialBeneficiary?.tin ?? '');
   const [payerName, setPayerName] = useState('');
+  // Guest payer identity is independent of all recipient TINs and allocations.
+  const [walkInPayerTin, setWalkInPayerTin] = useState('');
+  const [walkInPayerLookup, setWalkInPayerLookup] = useState<ReturnType<typeof lookupSampleTaxpayer>>(null);
+  const [walkInPayerConfirmed, setWalkInPayerConfirmed] = useState(false);
+  const confirmedWalkInPayer = walkInPayerConfirmed && walkInPayerLookup?.tin === walkInPayerTin
+    ? walkInPayerLookup : null;
   const [otherTaxpayerName, setOtherTaxpayerName] = useState(initialBeneficiary?.name ?? '');
   const [additionalTaxpayers, setAdditionalTaxpayers] = useState<OtherTaxTaxpayer[]>(() =>
     (initialBeneficiary?.additional ?? []).map(person => ({ ...person, id: crypto.randomUUID() }))
@@ -247,7 +253,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // this ID is still strictly demo-only and never a real taxpayer entitlement.
   const demoConsentActor = previewAccount?.id ?? (signedInProfile ? userIdForHostedTin(signedInProfile.tin) : null);
   const allowSyntheticDemoTin = Boolean(signedInAccount && forSelf === false && demoConsentActor);
-  const effectivePayerName = signedInAccount && signedInPayerName ? signedInPayerName : payerName;
   const taxpayerTin = ownAccountTax ? ownProfile?.tin ?? '' : tin;
   const receiptPhone = signedInProfile?.receiptMobile || phone;
   const [authorizedTaxpayerId, setAuthorizedTaxpayerId] = useState<DemoUserId | null>(null);
@@ -276,6 +281,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       (initialCategory || (typeof routeParams?.initialCategory === 'string' && CATEGORY_LABELS[routeParams.initialCategory]
         ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN'))
   );
+  const effectivePayerName = signedInAccount && signedInPayerName ? signedInPayerName
+    : forSelf === false && category === 'OTHER_TAX_PAYMENT' && confirmedWalkInPayer
+      ? (language === 'bn' ? confirmedWalkInPayer.nameBn : confirmedWalkInPayer.nameEn)
+      : payerName;
   const [selectedHeadIds, setSelectedHeadIds] = useState<number[]>([]);
   // Both payer relationships use the same Other Tax selection and allocation UI.
   const otherBatch = !isWithholdingMode && forSelf !== null && category === 'OTHER_TAX_PAYMENT';
@@ -319,6 +328,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!/^01\d{9}$/.test(receiptPhone)) return false;
     if (!isOptionalReceiptEmailValid(receiptEmail)) return false;
     if (forSelf === false && !signedInAccount && effectivePayerName.trim().length < 2) return false;
+    if (otherBatch && forSelf === false && !signedInAccount && walkInPayerTin &&
+      (!/^\d{12}$/.test(walkInPayerTin) || !confirmedWalkInPayer)) return false;
     const reference = noticeReference.trim();
     if (reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection) {
       const matched = findV11GuestNotice(taxpayerTin, reference);
@@ -368,7 +379,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // gateway status and payment authorizations must be re-established on resume.
   const snapshotAccountDraft = (): Record<string, unknown> => ({
     schemaVersion: 1, category, step: Math.min(step, 2),
-    forSelf, tin, payerName, otherTaxpayerName, additionalTaxpayers,
+    forSelf, tin, payerName, walkInPayerTin, otherTaxpayerName, additionalTaxpayers,
     otherTaxLines, phone, receiptEmail, assessmentYear, noticeReference,
     incomeTaxType, selectedHeadIds, amountInputs,
   });
@@ -380,6 +391,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       throw new Error('Saved payer relationship is invalid.');
     setForSelf(saved.forSelf === null ? null : saved.forSelf as boolean);
     setTin(stringField('tin')); setPayerName(stringField('payerName'));
+    setWalkInPayerTin(stringField('walkInPayerTin').replace(/\D/g, '').slice(0,12));
+    setWalkInPayerLookup(null); setWalkInPayerConfirmed(false);
     setOtherTaxpayerName(stringField('otherTaxpayerName')); setPhone(stringField('phone'));
     setReceiptEmail(stringField('receiptEmail')); setAssessmentYear(stringField('assessmentYear') || (initialReuse ? '' : '2026-27'));
     setNoticeReference(stringField('noticeReference'));
@@ -545,7 +558,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   useEffect(() => {
     if (!errorField || !errorMessage) return;
     const id: Record<GuestErrorField, string> = {
-      payerChoice: 'guest-payer-self', tin: invalidBatchTaxpayerId && invalidBatchTaxpayerId !== 'primary' ? `other-tax-tin-${invalidBatchTaxpayerId}` : 'guest-tin', payerName: 'guest-payer-name', phone: 'guest-phone', email: 'guest-receipt-email',
+      payerChoice: 'guest-payer-self', tin: invalidBatchTaxpayerId && invalidBatchTaxpayerId !== 'primary' ? `other-tax-tin-${invalidBatchTaxpayerId}` : 'guest-tin', payerName: 'guest-payer-name', payerTin: 'guest-payer-tin', phone: 'guest-phone', email: 'guest-receipt-email',
       noticeReference: 'guest-notice-ref', incomeTaxType: 'guest-income-type-NON_COMPANY',
       headId: 'guest-head-static', taxAmount: errorHeadId && selectedHeadIds.length > 0 && selectedHeadIds[0] !== errorHeadId ? `guest-tax-amount-${errorHeadId}` : 'guest-tax-amount'
     };
@@ -767,6 +780,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!/^01\d{9}$/.test(receiptPhone)) {
       setValidationError(language === 'bn' ? 'রসিদের জন্য ১১ সংখ্যার মোবাইল নম্বর দিন।' :
         'Enter an 11-digit Bangladeshi mobile number for the receipt.', 'phone');
+      return false;
+    }
+    if (otherBatch && forSelf === false && !signedInAccount && walkInPayerTin && !confirmedWalkInPayer) {
+      setValidationError(language === 'bn'
+        ? 'পরিশোধকারীর ১২ সংখ্যার টিআইএন খুঁজে মিল পাওয়ার পর নিশ্চিত করুন, অথবা খালি রাখুন।'
+        : 'Search and confirm the payer’s matching 12-digit TIN, or leave it blank.', 'payerTin');
       return false;
     }
     if (!forSelf && !signedInAccount && effectivePayerName.trim().length < 2) {
@@ -1069,7 +1088,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         paymentCategory: category,
         assessmentYear: otherBatch && otherTaxLines.length !== 1 ? 'Multiple years' : otherBatch ? otherTaxLines[0].assessmentYear : assessmentYear,
         payerName: forSelf ? accountName || '—' : effectivePayerName.trim(),
-        payerTin: signedInProfile?.tin ?? (ownAccountTax ? taxpayerTin : 'GUEST'),
+        payerTin: otherBatch && forSelf === false && !signedInAccount && confirmedWalkInPayer
+          ? confirmedWalkInPayer.tin
+          : signedInProfile?.tin ?? (ownAccountTax ? taxpayerTin : 'GUEST'),
         taxpayerTin,
         receiptMobile: receiptPhone,
         receiptEmail: normaliseReceiptEmail(receiptEmail),
@@ -1437,7 +1458,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <div className="payment-radio-card-grid">
                   {[{ value: true, en: isWithholdingMode ? 'I am the withholding agent' : 'My tax liability', bn: isWithholdingMode ? 'আমি উৎসে কর কর্তনকারী' : 'আমার করদায়' }, { value: false, en: isWithholdingMode ? 'Paying for the agent' : 'Facilitate another taxpayer’s payment', bn: isWithholdingMode ? 'এজেন্টের পক্ষে পরিশোধ' : 'অন্য করদাতার কর পরিশোধে সহায়তা করুন' }].map(choice =>
                     <PaymentRadioCard key={String(choice.value)} id={choice.value ? 'guest-payer-self' : 'guest-payer-other'} name="guest-payer-relationship" value={String(choice.value)} checked={forSelf === choice.value}
-                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); if (signedInAccount && !choice.value) { setTin(''); setOtherTaxpayerName(''); } setAdditionalTaxpayers([]); setOtherTaxLines([]); setConfirmedOtherTaxTins({}); setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
+                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); setWalkInPayerTin(''); setWalkInPayerLookup(null); setWalkInPayerConfirmed(false); if (signedInAccount && !choice.value) { setTin(''); setOtherTaxpayerName(''); } setAdditionalTaxpayers([]); setOtherTaxLines([]); setConfirmedOtherTaxTins({}); setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
                 </div>
                 {forSelf === null && <p className="payment-radio-card__empty">{language === 'bn' ? 'এগিয়ে যেতে একটি বিকল্প নির্বাচন করুন।' : 'No option selected. Choose one to continue.'}</p>}
                 {fieldError('payerChoice')}
@@ -1528,7 +1549,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   aria-describedby={errorDescription('payerName')}
                   placeholder={copy.payerNamePlaceholder}
                   value={effectivePayerName}
-                  readOnly={Boolean(signedInPayerName)} aria-readonly={Boolean(signedInPayerName)}
+                  readOnly={Boolean(signedInPayerName || confirmedWalkInPayer)} aria-readonly={Boolean(signedInPayerName || confirmedWalkInPayer)}
                   required autoComplete="name"
                   onChange={(e) => setPayerName(e.target.value)}
                   className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
@@ -1565,6 +1586,45 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {fieldError('noticeReference')}
                 </div>}
               {simpleOwnOtherTax && receiptEmailControl}
+              </div>}
+              {otherBatch && forSelf === false && !signedInAccount && <div data-testid="walkin-payer-tin">
+                <TaxpayerTinLookup
+                  language={language} tinId="guest-payer-tin" nameId="guest-payer-tin-name"
+                  tin={walkInPayerTin}
+                  name={walkInPayerLookup?.tin === walkInPayerTin
+                    ? (language === 'bn' ? walkInPayerLookup.nameBn : walkInPayerLookup.nameEn) : ''}
+                  tinLabel={language === 'bn' ? 'পরিশোধকারীর নিজের টিআইএন (ঐচ্ছিক)' : 'Payer TIN (optional)'}
+                  nameLabel={language === 'bn' ? 'মিলে যাওয়া পরিশোধকারীর নাম' : 'Matched payer name'}
+                  searchLabel={language === 'bn' ? 'পরিশোধকারীর টিআইএন খুঁজুন' : 'Search payer TIN'}
+                  requiredTin={false} maxTinLength={12}
+                  canSearch={/^\d{12}$/.test(walkInPayerTin)}
+                  invalidTin={isFieldInvalid('payerTin')} tinDescribedBy={errorDescription('payerTin')}
+                  onTinChange={value => {
+                    setWalkInPayerTin(value); setWalkInPayerLookup(null);
+                    setWalkInPayerConfirmed(false); clearValidationError();
+                  }}
+                  onClear={() => {
+                    setWalkInPayerTin(''); setWalkInPayerLookup(null);
+                    setWalkInPayerConfirmed(false); clearValidationError();
+                  }}
+                  onSearch={() => {
+                    setWalkInPayerLookup(/^\d{12}$/.test(walkInPayerTin)
+                      ? lookupSampleTaxpayer(walkInPayerTin) : null);
+                    setWalkInPayerConfirmed(false);
+                  }}
+                  status={walkInPayerTin && /^\d{12}$/.test(walkInPayerTin) && !walkInPayerLookup
+                    ? <p className="text-xs text-slate-600">{language === 'bn' ? 'করদাতার তথ্য খুঁজুন।' : 'Search taxpayer information.'}</p>
+                    : walkInPayerLookup ? <p className="sr-only">{language === 'bn' ? 'টিআইএন মিলে গেছে।' : 'TIN matched.'}</p> : null}
+                  error={fieldError('payerTin')}
+                />
+                {walkInPayerLookup?.tin === walkInPayerTin && !confirmedWalkInPayer &&
+                  <button type="button" className="min-h-11 rounded-lg border border-taxpay-primary px-4 py-2 text-sm text-taxpay-primary"
+                    onClick={() => { setWalkInPayerConfirmed(true); clearValidationError(); }}>
+                    {language === 'bn' ? 'পরিশোধকারীর তথ্য নিশ্চিত করুন' : 'Confirm payer'}
+                  </button>}
+                {confirmedWalkInPayer && <p className="text-xs text-slate-700" role="status">
+                  {language === 'bn' ? 'বর্তমান নমুনা টিআইএন তালিকায় মিলেছে। অ্যাকাউন্টের মালিকানা যাচাই করা হয়নি।' : 'Matched the current sample TIN lookup. Account ownership is not verified.'}
+                </p>}
               </div>}
             </div>
             {ownAccountTax && !isWithholdingMode && receiptEmailControl}
