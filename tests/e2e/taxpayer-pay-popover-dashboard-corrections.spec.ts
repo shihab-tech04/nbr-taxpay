@@ -39,7 +39,7 @@ test('desktop Travel Tax is a different payment selection and outside click dism
  await expect(rail.locator('#taxpayer-pay-menu')).toHaveCount(0);
  await rail.getByRole('button',{name:'Pay Tax menu'}).click();
  await rail.getByRole('menuitem',{name:'Travel Tax',exact:true}).click();
- const travel=page.getByRole('dialog',{name:'Travel Tax'});
+ const travel=page.getByRole('dialog',{name:'Travel tax'});
  await expect(travel).toBeVisible();
  await expect(travel.getByTestId('travel-passenger-list')).toBeVisible();
  await expect(travel.locator('.tax-service-choice__payer-grid')).toHaveCount(0);
@@ -63,7 +63,7 @@ test('mobile split Pay popup keeps approved dock visible and exposes both journe
  expect(rect!.x).toBeGreaterThanOrEqual(0);
  expect(rect!.x+rect!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
  await menu.getByRole('menuitem',{name:'Travel Tax',exact:true}).click();
- const travel=page.getByRole('dialog',{name:'Travel Tax'});
+ const travel=page.getByRole('dialog',{name:'Travel tax'});
  await expect(travel).toBeVisible();
  await expect(travel.getByTestId('travel-passenger-list')).toBeVisible();
  await expect(travel.locator('.tax-service-choice__payer-grid')).toHaveCount(0);
@@ -91,5 +91,8 @@ test('Bengali Travel Tax menu enters passengers directly, not the income-tax pay
  await expect(travel).toBeVisible();
  await expect(travel.getByTestId('travel-passenger-list')).toBeVisible();
  await expect(travel.locator('[data-payer-relationship]')).toHaveCount(0);
- await expect(travel.locator('.tax-service-choice__selected-service')).toContainText('ভ্রমণ কর');
+ await expect(travel.locator('.tax-service-choice__selected-service')).toHaveCount(0);
+ await expect(travel.locator('.taxpay-modal__title')).toHaveText('যাত্রী ও রসিদের তথ্য');
+ await expect(travel.locator('.travel-flow')).toBeVisible();
+ await expect(travel.locator('.tax-service-choice--travel')).toHaveCount(0);
 });
