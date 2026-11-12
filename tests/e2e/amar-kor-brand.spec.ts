@@ -22,7 +22,7 @@ test('approved Korbritto branding stays consistent across public and taxpayer sh
   await setWorkspaceLanguage(page, 'en');
   await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'Sohojkor');
   await page.goto('/?action=office_login&lang=en');
-  await expect(page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toBeVisible();
 });
 
 test('Korbritto primary logo stays solid brand blue and 20 percent smaller across header breakpoints', async ({ page }) => {
