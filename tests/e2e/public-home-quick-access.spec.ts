@@ -90,6 +90,12 @@ test('benefit cards adapt to tablet and keep Bengali mobile bottom navigation in
   await page.goto('/?action=landing&lang=bn');
   await expect(benefits.getByRole('heading', { name: 'সহজকর কেন ব্যবহার করবেন?' })).toBeVisible();
   await expect(benefits.locator('.public-benefits__item')).toHaveCount(6);
+  const mobileSearch = page.locator('.public-record-discovery');
+  const mobileSearchBox = await mobileSearch.boundingBox();
+  const mobileBenefitsBox = await benefits.boundingBox();
+  expect(mobileSearchBox).not.toBeNull();
+  expect(mobileBenefitsBox).not.toBeNull();
+  expect(mobileBenefitsBox!.y - (mobileSearchBox!.y + mobileSearchBox!.height)).toBeGreaterThanOrEqual(16);
   await expect(benefits.getByRole('heading', { name: 'সুবিধাভোগী ব্যবস্থাপনা' })).toBeVisible();
   await expect(benefits.locator('[data-benefit="certificates"] h3')).toHaveText('কর সনদ');
   await expect(benefits.locator('[data-benefit="repeat-drafts"] h3')).toHaveText('আবার পরিশোধ ও সংরক্ষিত খসড়া');
