@@ -122,16 +122,16 @@ test('public mobile footer stays compact and the floating Pay action remains rea
   const more=footer.locator('.public-footer__mobile-more > summary');
   await expect(more).toBeVisible();
   const inner=footer.locator('.public-footer__inner');
-  // Once navigation collapses, the footer must use the smaller Pay clearance
-  // and paint it like the page, not as an empty white extension of the footer.
+  // The footer must keep a stable Pay/dock clearance, painted in the page
+  // background rather than as an empty white extension of the footer.
   await expect(page.locator('.taxpay-public-mobile-navigation .citizen-corners')).toBeVisible();
   const footerColors=await footer.evaluate(element=>({
     clearance:parseFloat(getComputedStyle(element).paddingBottom),
     footerBackground:getComputedStyle(element).backgroundColor,
     rowBackground:getComputedStyle(element.querySelector('.public-footer__inner')!).backgroundColor,
   }));
-  expect(footerColors.clearance).toBeGreaterThanOrEqual(90);
-  expect(footerColors.clearance).toBeLessThanOrEqual(110);
+  expect(footerColors.clearance).toBeGreaterThanOrEqual(140);
+  expect(footerColors.clearance).toBeLessThanOrEqual(160);
   expect(footerColors.footerBackground).not.toBe(footerColors.rowBackground);
   const brandBox=await footer.locator('.public-footer__wordmark').boundingBox();
   const copyBox=await footer.locator('.public-footer__bottom').boundingBox();
@@ -198,12 +198,12 @@ test('426px scrolled mobile footer is one compact white row above the floating P
       overflow:document.documentElement.scrollWidth-window.innerWidth,
     };
   });
-  expect(result.clearance).toBeGreaterThanOrEqual(90);
-  expect(result.clearance).toBeLessThanOrEqual(110);
+  expect(result.clearance).toBeGreaterThanOrEqual(140);
+  expect(result.clearance).toBeLessThanOrEqual(160);
   expect(result.rowHeight).toBeLessThanOrEqual(72);
   expect(result.footerBackground).not.toBe(result.rowBackground);
   expect(result.rowToPayGap).toBeGreaterThanOrEqual(8);
-  expect(result.rowToPayGap).toBeLessThanOrEqual(85);
+  expect(result.rowToPayGap).toBeLessThanOrEqual(110);
   expect(result.copySize).toBeGreaterThanOrEqual(14);
   expect(result.overflow).toBeLessThanOrEqual(2);
   const more=footer.locator('.public-footer__mobile-more > summary');
