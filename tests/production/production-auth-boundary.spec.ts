@@ -5,7 +5,7 @@ const privateRoutes = ['taxpayer_home', 'dashboard', 'history', 'ledger', 'accou
 
 test('the public TaxPay login restores the approved User ID/password modal', async ({ page }) => {
   await page.goto(site + '?action=taxpayer_login');
-  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
+  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByLabel('User ID',{exact:true})).toBeVisible();
   await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
@@ -21,7 +21,7 @@ test('query strings cannot sign in a taxpayer or reveal private Beneficiaries',a
   for(const route of privateRoutes){
     await page.goto(site+'?action='+route+'&demoUser=user1');
     if(route==='beneficiaries'){
-      await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toBeVisible();
+      await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toBeVisible();
       await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
     }else{
       await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
@@ -34,7 +34,7 @@ test('query strings cannot sign in a taxpayer or reveal private Beneficiaries',a
 
 test('User ID login continues into the taxpayer workspace and survives refresh',async({page})=>{
   await page.goto(site+'?action=taxpayer_login');
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
   await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
@@ -42,7 +42,7 @@ test('User ID login continues into the taxpayer workspace and survives refresh',
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.goto(site+'?action=beneficiaries');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
-  await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
   await page.reload();
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
 });
