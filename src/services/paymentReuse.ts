@@ -131,15 +131,14 @@ export function reuseRecordedPayment(
       throw Error('The complete original batch is unavailable.');
   }
   const sorted = [...source].sort((a,b) => (a.batchItemIndex ?? 0) - (b.batchItemIndex ?? 0));
-  // Return-only can now have a complete multi-taxpayer allocation snapshot.
-  // Distinguish it from legacy one-taxpayer Return receipts: never reconstruct
-  // a beneficiary or assessment year from a summary label alone.
+  // Explicit allocation data takes precedence over legacy receipt summaries.
   const returnWithAllocations = service === 'TAX_WITH_RETURN' &&
     sorted.some(receipt => (receipt.allocationItems?.length ?? 0) > 0);
-  const isAllocationPayment = service === 'OTHER_TAX_PAYMENT' || returnWithAllocations;
+  const hasAllocationSnapshot = service === 'OTHER_TAX_PAYMENT' || returnWithAllocations;
+  const isAllocationPayment = service === 'OTHER_TAX_PAYMENT';
   const allocations: SourceAllocation[] = [];
   for (const receipt of sorted) {
-    if (isAllocationPayment) {
+    if (hasAllocationSnapshot) {
       if (!receipt.allocationItems?.length || receipt.items.length !== receipt.allocationItems.length)
         throw Error('Original taxpayer/head/year allocations are incomplete.');
       for (let index = 0; index < receipt.items.length; index++) {
@@ -170,6 +169,8 @@ export function reuseRecordedPayment(
   }
   if (!allocations.length || allocations.length > MAX_COMBINED_ALLOCATIONS)
     throw Error('The original payment exceeds the supported allocation limit.');
+  if (service === 'TAX_WITH_RETURN' && allocations.length !== 1)
+    throw Error('Tax with Return requires exactly one taxpayer and one assessment year.');
   const exactAllocations = allocations.map(item => item.tin + ':' + item.headId + ':' + item.year);
   if (new Set(exactAllocations).size !== allocations.length)
     throw Error('The original payment contains duplicate taxpayer/head/year allocations.');
@@ -188,7 +189,6 @@ export function reuseRecordedPayment(
     tin: ownerIsPayee ? '' : first.tin,
     payerName: '', otherTaxpayerName: first.name,
     additionalTaxpayers: others,
-    returnBatchRequested: returnWithAllocations,
     otherTaxLines: isAllocationPayment
       ? allocations.map((item,index) => ({
           id:`repeat-line-${index + 1}`,

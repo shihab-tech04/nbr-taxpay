@@ -169,26 +169,27 @@ test('legacy reuse refuses mixed Tax-with-Return, multiple lines, mismatched amo
   },'user1','1111111111111'));
 });
 
-test('Pay Again copies a Return-only receipt with multiple beneficiaries and years into the same editable allocation journey',()=>{
+test('Pay Again rejects multi-allocation Return receipts without changing the original',()=>{
   const returnReceipt={...receipt,paymentCategory:'TAX_WITH_RETURN' as const,
-    items:receipt.items.map(item=>({...item,headId:125,economicCode:'74',headNameEn:'Tax with return'})),
-    allocationItems:receipt.allocationItems!.map(item=>({...item,paymentServiceEn:'Tax with return',economicCode:'74'}))};
+    items:receipt.items.map(item=>({...item,headId:125})),
+    allocationItems:receipt.allocationItems!};
   const original=JSON.stringify(returnReceipt);
-  const again=reuseRecordedPayment([returnReceipt],'ownerUid','1234567890123','return-payment-id');
-  assert.equal(again.service,'TAX_WITH_RETURN');
-  assert.equal(again.formPayload.returnBatchRequested,true);
-  assert.equal(again.formPayload.forSelf,true);
-  assert.deepEqual((again.formPayload.otherTaxLines as Array<{headId:number;assessmentYear:string;amount:string}>)
-    .map(line=>[line.headId,line.assessmentYear,line.amount]),
-    [[125,'2026-27','10.00'],[125,'','20.00']]);
-  assert.equal((again.formPayload.additionalTaxpayers as unknown[]).length,1);
-  assert.deepEqual(again.formPayload.selectedHeadIds,[]);
-  assert.deepEqual(again.formPayload.amountInputs,{});
-  assert.equal(again.formPayload.incomeTaxType,null);
-  assert.equal(again.formPayload.noticeReference,'');
-  assert.equal(JSON.stringify(again.formPayload).includes('SIM-token'),false);
+  assert.throws(()=>reuseRecordedPayment([returnReceipt],'ownerUid','1234567890123','return-payment-id'),
+    /exactly one taxpayer and one assessment year/);
   assert.equal(JSON.stringify(returnReceipt),original);
 });
+
+test('Pay Again uses the single explicit Return allocation in the standard wizard',()=>{
+  const single={...receipt,paymentCategory:'TAX_WITH_RETURN' as const,
+    items:[{...receipt.items[0],headId:125}],totalAmount:10,
+    allocationItems:[{...receipt.allocationItems![0],assessmentYear:'2025-26'}]};
+  const copy=reuseRecordedPayment([single],'owner','1234567890123','single-source');
+  assert.equal(copy.formPayload.assessmentYear,'');
+  assert.deepEqual(copy.formPayload.otherTaxLines,[]);
+  assert.deepEqual(copy.formPayload.selectedHeadIds,[125]);
+  assert.deepEqual(copy.formPayload.amountInputs,{125:'10.00'});
+});
+
 test('Return-only Pay Again rejects mixed heads and incomplete allocation snapshots',()=>{
   const returnReceipt={...receipt,paymentCategory:'TAX_WITH_RETURN' as const,
     items:receipt.items.map(item=>({...item,headId:125})),
@@ -212,7 +213,6 @@ test('single-recipient legacy Return receipt retains its original form instead o
     taxpayerTin:'1234567890123',assessmentYear:'2026-27',
     items:[{...receipt.items[0],headId:125}],allocationItems:undefined,totalAmount:10};
   const copy=reuseRecordedPayment([single],'owner','1234567890123','single-source');
-  assert.equal(copy.formPayload.returnBatchRequested,false);
   assert.deepEqual(copy.formPayload.otherTaxLines,[]);
   assert.deepEqual(copy.formPayload.selectedHeadIds,[125]);
 });
