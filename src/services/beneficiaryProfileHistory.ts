@@ -3,6 +3,7 @@ import type {SimulationTransaction,SimulationUser} from '../contracts/paymentSim
 import {simulationCategoryLabels} from '../contracts/paymentSimulationContract';
 import {sampleTinForUserNumber} from '../data/sampleTinSuggestions';
 import {activePreviewSession} from './previewAccountSession';
+import {supabase} from './supabaseClient';
 import {getAccountStoryPayments,getDetailedStorySessionPayments,beneficiaryPaymentEntries,type OwnedStoryPayment} from './story1AccountPaymentHistory';
 import {getBoundSimulationUser,getPrivateSimulationHistory,getDemoStoryPaymentHistory} from './simulatedPaymentsApi';
 
@@ -16,14 +17,34 @@ export type BeneficiaryProfilePayment = {
 export const countsTowardBeneficiaryPaidTotal=(row:BeneficiaryProfilePayment):boolean=>
   row.status==='SIMULATED_SUCCESS'||row.status==='SIMULATED';
 
+/** Never render a previous account's asynchronous history under a new session. */
+export function requireCurrentBeneficiaryHistoryOwner(expectedUid:string,actualUid:string|null|undefined):void {
+  if(!expectedUid||actualUid!==expectedUid)
+    throw Error('Account changed while loading beneficiary history');
+}
+
 /** Read-model only; exact TIN and payer scope. Never join by a mutable name or tag. */
 export function beneficiaryProfilePayments(
   tin:string, story:readonly OwnedStoryPayment[], simulations:readonly SimulationTransaction[],
   payerId:SimulationUser|null, language:'en'|'bn'
 ):BeneficiaryProfilePayment[] {
   if(!/^\d{12,13}$/.test(tin))throw Error('Invalid beneficiary TIN');
-  const storyDates=new Map(story.map(record=>[record.id,record.createdAt]));
-  const stored=beneficiaryPaymentEntries([...story]).filter(entry=>entry.taxpayerTin===tin)
+  // Paginated recovery can replay an immutable SQL record. Count it once;
+  // if the same ID carries two different snapshots, do not invent a total.
+  const recordedIds=new Map<string,string>();
+  const uniqueStory:OwnedStoryPayment[]=[];
+  for(const record of story){
+    const fingerprint=JSON.stringify(record);
+    const previous=recordedIds.get(record.id);
+    if(previous!==undefined){
+      if(previous!==fingerprint)throw Error('Conflicting recorded beneficiary payment history');
+      continue;
+    }
+    recordedIds.set(record.id,fingerprint);
+    uniqueStory.push(record);
+  }
+  const storyDates=new Map(uniqueStory.map(record=>[record.id,record.createdAt]));
+  const stored=beneficiaryPaymentEntries(uniqueStory).filter(entry=>entry.taxpayerTin===tin)
     .map(entry=>({
       key:'recorded:'+entry.key,paymentId:entry.paymentId,
       transactionId:entry.batchId??entry.paymentId,
@@ -34,18 +55,32 @@ export function beneficiaryProfilePayments(
       receipt:entry.receipt,batchId:entry.batchId,
       batchItemIndex:entry.batchItemIndex,batchItemCount:entry.batchItemCount
     }));
-  const knownStoryIds=new Set(story.map(record=>record.id));
+  const knownStoryIds=new Set(uniqueStory.map(record=>record.id));
   const ledger:BeneficiaryProfilePayment[]=[];
+  const seenSimulations=new Map<string,string>();
   for(const tx of simulations){
     if(!payerId || tx.payer!==payerId || tx.simulationOnly!==true ||
       !Number.isSafeInteger(tx.totalMinor)||tx.totalMinor<=0 ||
       !Number.isFinite(Date.parse(tx.createdAt)) ||
       !['SIMULATED','PENDING','FAILED','REVERSED'].includes(tx.state))
       throw Error('Invalid payer-scoped payment activity');
+    if(!Array.isArray(tx.allocations))throw Error('Invalid beneficiary allocation list');
+    const fingerprint=JSON.stringify(tx);
+    const earlier=seenSimulations.get(tx.transactionId);
+    if(earlier!==undefined){
+      if(earlier!==fingerprint)throw Error('Conflicting payer-scoped simulation history');
+      continue;
+    }
+    seenSimulations.set(tx.transactionId,fingerprint);
     if(knownStoryIds.has(tx.transactionId))continue;
-    for(const [index,entry] of tx.allocations.entries()){
+    const sumMinor=tx.allocations.reduce((sum,entry)=>{
       if(!Number.isSafeInteger(entry.amountMinor)||entry.amountMinor<=0)
         throw Error('Invalid beneficiary allocation amount');
+      return sum+entry.amountMinor;
+    },0);
+    if(!Number.isSafeInteger(sumMinor)||sumMinor!==tx.totalMinor)
+      throw Error('Unreconciled beneficiary allocation total');
+    for(const [index,entry] of tx.allocations.entries()){
       const match=/^user(\d+)$/.exec(entry.beneficiary);
       const matchedTin=match?sampleTinForUserNumber(Number(match[1])):null;
       if(matchedTin!==tin)continue;
@@ -85,6 +120,12 @@ export async function loadBeneficiaryProfilePayments(
   if(ownerUid){
     const [story,boundId]=await Promise.all([getAccountStoryPayments(ownerUid),optionalSimulationProfile()]);
     const simulations=boundId?await getPrivateSimulationHistory('payer'):[];
+    // The simulator read is a second asynchronous request. A sign-out or
+    // account switch during it must never expose the previous owner's records.
+    if(!supabase)throw Error('Authenticated beneficiary history unavailable');
+    const {data,error}=await supabase.auth.getUser();
+    if(error)throw Error('Account changed while loading beneficiary history');
+    requireCurrentBeneficiaryHistoryOwner(ownerUid,data.user?.id);
     return beneficiaryProfilePayments(tin,story,simulations,boundId,language);
   }
   const before=activePreviewSession();
