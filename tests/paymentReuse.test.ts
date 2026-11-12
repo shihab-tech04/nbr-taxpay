@@ -246,3 +246,17 @@ test('Pay Again keeps a genuine complete two-row batch as one editable copy',()=
  assert.equal(lines.reduce((total,line)=>total+Number(line.amount),0),60);
  assert.equal(copy.sourcePaymentId,'batch-checked');
 });
+
+test('Pay Again must bind the selected source ID to the original immutable SQL payment or complete batch',()=>{
+ const originalId='11111111-2222-4333-8444-555555555555';
+ const otherId='aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+ const recorded={...receipt,paymentTransactionId:originalId};
+ assert.equal(reuseRecordedPayment([recorded],'owner','1234567890123',originalId).sourcePaymentId,originalId);
+ assert.throws(()=>reuseRecordedPayment([recorded],'owner','1234567890123',otherId),
+   /original payment|source payment|identity/i,'a different source ID must never be attached to a real recorded receipt');
+ const batchId='99999999-aaaa-4ccc-8ddd-eeeeeeeeeeee';
+ const batch={...recorded,batchId,batchItemCount:1,batchItemIndex:1};
+ assert.equal(reuseRecordedPayment([batch],'owner','1234567890123',batchId).sourcePaymentId,batchId);
+ assert.throws(()=>reuseRecordedPayment([batch],'owner','1234567890123',otherId),
+  /original payment|source payment|batch/i,'a mismatched batch ID must never be attached to a receipt');
+});

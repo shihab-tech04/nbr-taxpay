@@ -42,6 +42,15 @@ export function reuseRecordedPayment(
 ): PaymentReuse {
   if (!ownerUid || !sourcePaymentId || !source.length || source.length > MAX_COMBINED_ALLOCATIONS)
     throw Error('A complete owned payment is required.');
+  // A selected payer-history row may only reconstruct its own immutable SQL
+  // payment, or the exact already-verified parent batch. Never attach another
+  // payment's ID to an otherwise valid receipt/draft.
+  const batchIdentity = source[0].batchId;
+  if (batchIdentity && sourcePaymentId !== batchIdentity)
+    throw Error('The complete original payment batch identity does not match.');
+  if (!batchIdentity && source.length === 1 && source[0].paymentTransactionId &&
+      sourcePaymentId !== source[0].paymentTransactionId)
+    throw Error('The original payment identity does not match the selected receipt.');
   const service = source[0].paymentCategory;
   // Travel receipts deliberately contain only masked passports. Copy the
   // itinerary and passenger names, but require fresh identity and travel-date
