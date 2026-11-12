@@ -111,6 +111,9 @@ export function projectDashboardChartRecords(
       if(omitted)omittedRecords++;
       continue;
     }
+    // Example withholding lines were recorded by employers/deductors, not
+    // initiated by this payer. They are not the payer's spending by recipient.
+    if(row.kind==='tds')continue;
     if(assessmentYear(row.year)!==targetYear)continue;
     const amountMinor=Math.round(row.amount*100);
     if(!Number.isSafeInteger(amountMinor)||amountMinor<=0){omittedRecords++;continue;}
