@@ -68,7 +68,7 @@ export function PublicHelpChat(){
   setMessages(prev=>[...prev,{from:'user',value:query},{from:'assistant',value:answer}]);
   setInput('');
  };
- return <aside className="public-help-widget" aria-label={bn?'করবৃত্ত সহায়তা':'Korbritto help'}>
+ return <aside className="public-help-widget" aria-label={bn?'সহজকর সহায়তা':'Sohojkor help'}>
   {open&&<div className="public-help-backdrop" aria-hidden="true" onClick={closePanel}/>} 
   {open&&<section ref={panelRef} tabIndex={-1} id="public-help-panel" className="public-help-panel" role="dialog" aria-modal={mobile} aria-labelledby="public-help-title">
    <header><div><h2 id="public-help-title">{taxpayerBrandName(language)} {bn?'সহায়তা':'help'}</h2><p>{bn?'নির্দেশনাভিত্তিক উত্তর':'Guide-based answers'}</p></div>
