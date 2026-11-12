@@ -728,14 +728,6 @@
     font-weight: 500;
   }
 }
-.taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p,
-.taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs a,
-.taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs button,
-.taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom p {
-  font-size: .875rem;
-  font-weight: 400;
-}
-
 /* Six benefits: concise and legible, with cards rather than a faux table.
    They are informational, not additional competing payment actions. */
 .public-benefits { min-width: 0; }
