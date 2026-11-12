@@ -1,3 +1,4 @@
+import '../../styles/taxpay-unified-table.css';
 import {type ComponentPropsWithoutRef,type ReactNode} from 'react';
 import {ChevronLeft,ChevronRight,Filter,Search,X} from 'lucide-react';
 
