@@ -919,6 +919,16 @@
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 16px; }
   .public-home-sections .public-benefits__copy p { line-height: 1.5; }
 }
+/* Medium-height desktop: retain the connected panel, but avoid unnecessary
+   vertical scrolling. Tall screenshots keep the approved 24px / 136px rhythm. */
+@media (min-width: 981px) and (min-height: 821px) and (max-height: 959px) {
+  .public-home-sections .public-benefits { padding: 1rem; }
+  .public-home-sections .public-benefits__heading { margin-bottom: .75rem; }
+  .public-home-sections .public-benefits__item {
+    min-height: 88px;
+    padding: .65rem .9rem;
+  }
+}
 @media (min-width: 1280px) {
   .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
     font-weight: 700;
