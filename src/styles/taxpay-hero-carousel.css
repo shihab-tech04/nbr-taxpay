@@ -814,7 +814,7 @@
      original label, keyboard, suggestions and submit behavior. */
   .public-home-sections .public-record-discovery {
     display: grid;
-    grid-template-columns: minmax(210px, .4fr) minmax(0, 1fr);
+    grid-template-columns: minmax(410px, .8fr) minmax(0, 1fr);
     gap: 1.1rem;
     align-items: center;
     padding: .8rem 1rem;
@@ -952,7 +952,7 @@
   }
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 8px; }
   .public-home-sections .public-record-discovery {
-    grid-template-columns: minmax(180px, .37fr) minmax(0, 1fr);
+    grid-template-columns: minmax(400px, .8fr) minmax(0, 1fr);
     gap: .8rem;
     padding: .65rem .85rem;
   }
