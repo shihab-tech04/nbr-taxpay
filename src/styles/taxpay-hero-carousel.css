@@ -974,10 +974,10 @@
     margin-top: .55rem;
   }
   .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
-    padding-top: 6px;
-    padding-bottom: 4px;
+    padding-top: 3px;
+    padding-bottom: 0;
   }
-  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 8px; }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 5px; }
   .public-home-sections .public-record-discovery { padding: .4rem .85rem .5rem; }
   .public-home-sections .public-record-discovery__heading { margin-bottom: .25rem; }
   .public-home-sections .public-benefits__heading { margin-bottom: .35rem; }
