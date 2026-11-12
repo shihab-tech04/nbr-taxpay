@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
 
 test('compact desktop homepage explains six benefits without duplicate CTAs', async ({ page }) => {
   // This 3x2 parity test intentionally uses the compact desktop breakpoint.
@@ -334,6 +335,16 @@ test('professionally balanced Home padding and vertical rhythm at normal and zoo
       expect(layout.footerBottom).toBeGreaterThanOrEqual(viewport.height-2);
       expect(layout.footerBottom).toBeLessThanOrEqual(viewport.height+2);
       expect(layout.horizontalOverflow).toBeLessThanOrEqual(2);
+      // Preserve a real pixel artifact for independent visual review, not only
+      // numeric box-geometry assertions. Separate per project to avoid races.
+      if (lang === 'en' && (viewport.width === 1440 || viewport.width === 3072)) {
+        await mkdir('test-results/screenshots', { recursive: true });
+        const project = test.info().project.name.replace(/[^a-z0-9-]/gi, '-');
+        await page.screenshot({
+          path: `test-results/screenshots/sohojkor-home-rhythm-${viewport.width}x${viewport.height}-${project}.png`,
+          fullPage: true,
+        });
+      }
     }
   }
 });
