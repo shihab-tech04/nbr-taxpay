@@ -25,6 +25,9 @@ test('search uses the established icon-free section heading and concise single-l
 
 test('typing opens a clean floating dropdown without changing the card height', async ({ page }) => {
   await page.goto('/?action=landing');
+  // Compare settled layout to settled layout: swapping in Poppins after the
+  // initial measurement can change wrapped helper text by one line on 375px.
+  await page.evaluate(async () => { await document.fonts.ready; });
   const section = page.getByRole('region', { name: 'Find a payment record' });
   const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
   const cardHeightBefore = await section.evaluate(element => element.getBoundingClientRect().height);
