@@ -282,10 +282,18 @@ export const PublicLanding: React.FC = () => {
               <h3>{title}</h3>
               <p>{detail}</p>
             </div>
-            {(id === 'corrections' || id === 'history' || id === 'repeat-drafts') && (
-              <span className="public-benefits__preview" aria-hidden="true">
-                <span /><span /><span />
-              </span>
+            {id === 'payments' && (
+              <div className="public-benefits__highlights" aria-hidden="true">
+                <span>{t('Self', 'নিজের')}</span>
+                <span>{t('Family', 'পরিবার')}</span>
+                <span>{t('Clients', 'ক্লায়েন্ট')}</span>
+              </div>
+            )}
+            {id === 'repeat-drafts' && (
+              <div className="public-benefits__highlights" aria-hidden="true">
+                <span>{t('Pay Again', 'আবার পরিশোধ')}</span>
+                <span>{t('Saved Drafts', 'সংরক্ষিত খসড়া')}</span>
+              </div>
             )}
           </article>
         ))}
