@@ -200,10 +200,11 @@ function validateCombinedRequest(request: StoredCombinedRequest['request']): voi
   const tins=new Set<string>();
   for(let index=0;index<allocations.length;index++){
     const a=allocations[index] as Record<string,unknown>;
+    const tin=a?.taxpayerTin;
     const r=receipt.allocationItems[index];
     const line=receipt.items[index];
     if(!a||typeof a!=='object'||Array.isArray(a)||!r||!line||
-      !validTin(String(a.taxpayerTin??''))||
+      typeof tin!=='string'||!validTin(tin)||
       typeof a.taxpayerName!=='string'||
       typeof a.amountMinor!=='number'||!Number.isSafeInteger(a.amountMinor)||a.amountMinor<=0||
       typeof a.headId!=='number'||!Number.isSafeInteger(a.headId)||a.headId<=0||
@@ -215,10 +216,10 @@ function validateCombinedRequest(request: StoredCombinedRequest['request']): voi
       r.economicCode!==line.economicCode||r.paymentServiceEn!==line.headNameEn||
       Math.round(line.totalAmount*100)!==a.amountMinor)
       throw Error('INVALID_COMBINED_RECOVERY');
-    const key=a.taxpayerTin+':'+a.headId+':'+a.assessmentYear;
+    const key=tin+':'+a.headId+':'+a.assessmentYear;
     if(unique.has(key))throw Error('INVALID_COMBINED_RECOVERY');
     unique.add(key);
-    tins.add(a.taxpayerTin);
+    tins.add(tin);
     sum+=a.amountMinor;
     if(!Number.isSafeInteger(sum))throw Error('INVALID_COMBINED_RECOVERY');
   }
