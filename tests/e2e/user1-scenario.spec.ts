@@ -24,7 +24,7 @@ test('user1 dashboard, payment history and ledger use one coherent synthetic bal
   await expect(page.getByText('Sample',{exact:true})).toHaveCount(0);
   await expect(page.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Transaction and evidence register'})).toHaveCount(0);
-  await expect(page.getByTestId('beneficiary-spending-breakdown')).toBeVisible();
+  await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
   await page.getByRole('button',{name:'View all activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.locator('.taxpayer-transaction-table tbody td:nth-child(4)').getByText('DEMO-PAY-02',{exact:true}).first()).toBeVisible();
