@@ -956,7 +956,9 @@
     min-height: 190px;
     max-height: 210px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(3, minmax(0, 1fr));
+    /* Two full-height outer rows and a shorter middle row fit copy and art
+       within the same 210px grid: short cards 75px, tall cards 125px. */
+    grid-template-rows: minmax(0, 1fr) minmax(0, .5fr) minmax(0, 1fr);
     gap: .625rem .875rem;
   }
   .public-home-sections .public-benefits__item {
