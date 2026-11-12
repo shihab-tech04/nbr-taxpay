@@ -881,8 +881,8 @@
    Compact only unused spacing; do not reduce text below the helper size. */
 @media (min-width: 981px) and (max-height: 820px) {
   .public-home-sections .public-hero-carousel__slide.public-information-hero {
-    height: 220px;
-    min-height: 220px;
+    height: 208px;
+    min-height: 208px;
   }
   .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy {
     padding-top: .7rem;
@@ -905,19 +905,19 @@
     padding-bottom: 6px;
   }
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 10px; }
-  .public-home-sections .public-record-discovery { padding: .55rem .85rem .65rem; }
+  .public-home-sections .public-record-discovery { padding: .45rem .85rem .55rem; }
   .public-home-sections .public-record-discovery__heading { margin-bottom: .35rem; }
-  .public-home-sections .public-benefits__heading { margin-bottom: .4rem; }
-  .public-home-sections .public-benefits__grid { row-gap: .45rem; }
+  .public-home-sections .public-benefits__heading { margin-bottom: .25rem; }
+  .public-home-sections .public-benefits__grid { row-gap: .35rem; }
   .public-home-sections .public-benefits__item {
-    min-height: 92px;
-    padding: .5rem .7rem;
+    min-height: 84px;
+    padding: .45rem .7rem;
   }
 }
 @media (min-width: 981px) and (max-width: 1120px) and (max-height: 820px) {
   .public-home-sections .public-hero-carousel__slide.public-information-hero {
-    height: 210px;
-    min-height: 210px;
+    height: 198px;
+    min-height: 198px;
   }
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 8px; }
   .public-home-sections .public-benefits__item {
