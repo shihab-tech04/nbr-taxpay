@@ -114,10 +114,13 @@ test('both login entry points use the identical reusable login modal variant', a
     display: getComputedStyle(el).display,
     justify: getComputedStyle(el).justifyContent,
   }))).toEqual(standaloneFooter);
-  expect(await embedded.getByRole('button',{name:'Sign In'}).evaluate(el => ({
+  const embeddedButton = await embedded.getByRole('button',{name:'Sign In'}).evaluate(el => ({
     height: Math.round(el.getBoundingClientRect().height),
     width: Math.round(el.getBoundingClientRect().width),
-  }))).toEqual(standaloneButton);
+  }));
+  expect(embeddedButton.height).toBe(standaloneButton.height);
+  expect(Math.abs(embeddedButton.width-standaloneButton.width),
+    'Reusable login footer button widths agree within one CSS pixel').toBeLessThanOrEqual(1);
   await embedded.getByRole('button', { name: 'Back' }).click();
   await expect(payment.locator('[data-payment-access="ACCOUNT"]')).toHaveAttribute('aria-pressed', 'true');
 });

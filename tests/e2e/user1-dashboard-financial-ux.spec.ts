@@ -17,7 +17,7 @@ test('bento financial position reconciles with the unchanged account ledger and 
   await expect(page.locator('[role="img"][aria-label^="Liability coverage"]')).toContainText('৳ 48,000');
   await page.keyboard.press('Space');
   await expect(tds).toHaveAttribute('aria-pressed','false');
-  await expect(page.locator('[role="img"][aria-label^="Liability coverage"]')).toContainText('3 types');
+  await expect(page.locator('[role="img"][aria-label^="Liability coverage"]')).toContainText('86%');
   await expect(bento.getByRole('group',{name:'Liability and posted credits by tax year'}).getByRole('button',{name:/2025-2026: Total tax/})).toHaveAttribute('aria-label',/180,000.*155,000/);
   await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
 });
@@ -101,7 +101,7 @@ test('overview summary, corrections and recent activity use full readable grid t
     await page.setViewportSize({width,height:900});
     await page.goto(dashboard);
     const grid=page.getByTestId('taxpayer-overview-bento');
-    const summary=grid.locator(':scope > .taxpay-bento-request-row > .taxpay-bento-summary');
+    const summary=grid.locator(':scope > .taxpay-bento-request-row > .taxpay-bento-summary-column > .taxpay-bento-summary');
     const corrections=grid.locator(':scope > .taxpay-bento-request-row > .taxpay-bento-corrections');
     const recent=grid.locator(':scope > .taxpay-bento-recent');
     const drafts=grid.locator(':scope > .taxpay-bento-drafts');
