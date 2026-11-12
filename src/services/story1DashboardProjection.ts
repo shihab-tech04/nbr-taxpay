@@ -1,4 +1,5 @@
 import {makeConfirmedReceipt} from './confirmedPaymentCertificate';
+import {validCertificateTransactionId} from './transactionId';
 import type {OwnedStoryPayment} from './story1AccountPaymentHistory';
 
 export type StoredDashboardAllocation = {
@@ -40,6 +41,11 @@ export function projectStoredDashboardAllocations(
   const seen=new Set<string>();
   const batchParts=new Map<string,{expected:number;indices:Set<number>;invalid:boolean}>();
   let incompleteCount=0;
+  const rejectBatch=(id:string)=>{
+    const record=batchParts.get(id);
+    if(record)record.invalid=true;
+    else batchParts.set(id,{expected:0,indices:new Set<number>(),invalid:true});
+  };
   for(const payment of payments) {
     if(seen.has(payment.id)) {incompleteCount++;continue;}
     seen.add(payment.id);
@@ -69,7 +75,9 @@ export function projectStoredDashboardAllocations(
       if(!parts.length || parts.some(item=>!validYear(item.year) ||
           !Number.isSafeInteger(item.amountMinor)||item.amountMinor<=0) ||
           parts.reduce((total,item)=>total+item.amountMinor,0)!==payment.amountMinor) {
-        incompleteCount++;continue;
+        incompleteCount++;
+        if(receipt.batchId)rejectBatch(receipt.batchId);
+        continue;
       }
       for(const item of parts)allocations.push({
         key:item.key,transactionId:payment.id,batchId,date,
@@ -77,7 +85,13 @@ export function projectStoredDashboardAllocations(
         category:payment.service,amountMinor:item.amountMinor,
         taxpayerTin:validTin(item.taxpayerTin)?item.taxpayerTin:null,
       });
-    }catch{incompleteCount++;}
+    }catch{
+      incompleteCount++;
+      // A malformed sibling must invalidate the whole known batch, not leave
+      // its otherwise-valid siblings looking like a complete financial total.
+      const batchId=payment.details?.batchId;
+      if(validCertificateTransactionId(batchId))rejectBatch(batchId);
+    }
   }
   // Never publish partial totals for a grouped payment if a head or original
   // batch member is absent, repeated or inconsistent across SQL readbacks.
