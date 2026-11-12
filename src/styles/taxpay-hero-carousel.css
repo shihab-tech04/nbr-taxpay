@@ -817,7 +817,7 @@
        rather than leaving one large empty block above the footer. */
     justify-content: space-evenly;
   }
-  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 16px; }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 12px; }
   .public-home-sections > .public-hero-carousel-shell,
   .public-home-sections > .public-record-discovery { flex: 0 0 auto; }
   /* Reference screenshot: compact white lookup card, not a stretched banner. */
@@ -897,13 +897,13 @@
   .public-home-sections .public-benefits__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-rows: repeat(2, minmax(0, 1fr));
-    gap: .85rem 1rem;
+    gap: .65rem .75rem;
   }
   .public-home-sections .public-benefits__item {
     grid-template-columns: 40px minmax(0, 1fr);
-    gap: .85rem;
-    min-height: 108px;
-    padding: .9rem 1rem;
+    gap: .78rem;
+    min-height: 98px;
+    padding: .7rem .85rem;
     border: 1px solid var(--citizen-border);
     border-radius: .8rem;
   }
@@ -913,6 +913,8 @@
    container distributes the remaining room as balanced vertical breathing space.
    No fixed 328px cap, giant empty block, content cropping or new homepage UI. */
 @media (min-width: 981px) and (min-height: 960px) {
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 16px; }
+  .public-home-sections .public-benefits__grid { gap: .85rem 1rem; }
   .public-home-sections .public-benefits__item {
     min-height: clamp(108px, 10.8dvh, 174px);
     padding: clamp(.9rem, 1.5dvh, 1.25rem) 1.05rem;
