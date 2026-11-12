@@ -27,8 +27,8 @@ test('user1 dashboard, payment history and ledger use one coherent synthetic bal
   await expect(page.getByTestId('beneficiary-spending-breakdown')).toBeVisible();
   await page.getByRole('button',{name:'View all activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-  await expect(page.locator('.taxpayer-transaction-table tbody td:nth-child(2)').getByText('DEMO-PAY-02',{exact:true}).first()).toBeVisible();
-  await expect(page.locator('.taxpayer-transaction-table tbody td:nth-child(2)').getByText('DEMO-PAY-PEND-01',{exact:true}).first()).toBeVisible();
+  await expect(page.locator('.taxpayer-transaction-table tbody td:nth-child(4)').getByText('DEMO-PAY-02',{exact:true}).first()).toBeVisible();
+  await expect(page.locator('.taxpayer-transaction-table tbody td:nth-child(4)').getByText('DEMO-PAY-PEND-01',{exact:true}).first()).toBeVisible();
   await expect(page.getByRole('heading',{name:'Sign in to make a payment'})).toHaveCount(0);
   await openTaxLedger(page);
   await expect(page.getByRole('heading',{name:'Tax ledger'})).toBeVisible();
