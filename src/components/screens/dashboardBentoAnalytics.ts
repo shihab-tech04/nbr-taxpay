@@ -37,7 +37,7 @@ const assessmentYear=(raw:string):string=>{
   const short=/^(20\d{2})-(\d{2})$/.exec(value);
   return short?short[1]+'-20'+short[2]:value;
 };
-const serviceForCategory=(category:ChallanReceipt['paymentCategory']):DashboardChartService=>{
+export const serviceForCategory=(category:ChallanReceipt['paymentCategory']):DashboardChartService=>{
   switch(category){
     case 'TAX_WITH_RETURN':return 'income';
     case 'SOURCE_TAX_DEPOSIT':return 'tds';
