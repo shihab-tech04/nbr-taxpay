@@ -111,12 +111,8 @@ test('overview summary, corrections and recent activity use full readable grid t
     await expect(corrections.getByTestId('dashboard-correction-request-list').getByRole('listitem')).toHaveCount(2);
     // Count may be unavailable in browser tests that intentionally disable SQL.
     await expect(summary.getByRole('button',{name:/Saved Drafts/})).toBeVisible();
-    // Exercise the visual empty-drafts state directly; do not invent account data.
-    if(await drafts.count()){
-      await grid.evaluate(element=>element.setAttribute('data-drafts-empty','true'));
-      await drafts.evaluate(element=>{element.style.display='none';});
-      await expect(drafts).toBeHidden();
-    }
+    // Saved Drafts remains visible even when no account draft exists.
+    await expect(drafts.getByTestId('dashboard-payment-drafts')).toBeVisible();
 
     const [box,left,right,activity]=await Promise.all([
       grid.boundingBox(),summary.boundingBox(),corrections.boundingBox(),recent.boundingBox()
