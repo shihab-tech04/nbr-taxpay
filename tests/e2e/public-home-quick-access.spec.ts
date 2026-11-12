@@ -5,7 +5,7 @@ test('public homepage explains six citizen benefits without duplicate CTAs', asy
   await page.goto('/?action=landing&lang=en');
 
   const benefits = page.locator('.public-benefits');
-  await expect(benefits.getByRole('heading', { name: 'Why use Korbritto?' })).toBeVisible();
+  await expect(benefits.getByRole('heading', { name: 'Why choose Sohojkor?' })).toBeVisible();
   await expect(benefits.locator('.public-benefits__heading p')).toHaveText('Pay, organize and track your taxes in one place.');
   await expect(benefits.locator('.public-benefits__item')).toHaveCount(6);
   const expectedCards = [
@@ -88,8 +88,14 @@ test('benefit cards adapt to tablet and keep Bengali mobile bottom navigation in
 
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/?action=landing&lang=bn');
-  await expect(benefits.getByRole('heading', { name: 'করবৃত্ত কেন ব্যবহার করবেন?' })).toBeVisible();
+  await expect(benefits.getByRole('heading', { name: 'সহজকর কেন ব্যবহার করবেন?' })).toBeVisible();
   await expect(benefits.locator('.public-benefits__item')).toHaveCount(6);
+  const mobileSearch = page.locator('.public-record-discovery');
+  const mobileSearchBox = await mobileSearch.boundingBox();
+  const mobileBenefitsBox = await benefits.boundingBox();
+  expect(mobileSearchBox).not.toBeNull();
+  expect(mobileBenefitsBox).not.toBeNull();
+  expect(mobileBenefitsBox!.y - (mobileSearchBox!.y + mobileSearchBox!.height)).toBeGreaterThanOrEqual(16);
   await expect(benefits.getByRole('heading', { name: 'সুবিধাভোগী ব্যবস্থাপনা' })).toBeVisible();
   await expect(benefits.locator('[data-benefit="certificates"] h3')).toHaveText('কর সনদ');
   await expect(benefits.locator('[data-benefit="repeat-drafts"] h3')).toHaveText('আবার পরিশোধ ও সংরক্ষিত খসড়া');
@@ -116,3 +122,41 @@ test('benefit cards adapt to tablet and keep Bengali mobile bottom navigation in
   }));
   expect(sizes.document - sizes.viewport).toBeLessThanOrEqual(2);
 });
+
+
+for (const { width, height, lang } of [
+  { width: 1440, height: 900, lang: 'en' },
+  { width: 1366, height: 768, lang: 'en' },
+  { width: 1366, height: 768, lang: 'bn' },
+  { width: 1024, height: 768, lang: 'en' },
+]) {
+  test(`public desktop landing fits one viewport ${width}×${height} (${lang})`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto(`/?action=landing&lang=${lang}`);
+    await page.evaluate(async () => { await document.fonts.ready; });
+    const benefits = page.locator('.public-benefits');
+    await expect(benefits.locator('.public-benefits__item')).toHaveCount(6);
+    await expect(benefits.getByRole('heading', {
+      name: lang === 'bn' ? 'সহজকর কেন ব্যবহার করবেন?' : 'Why choose Sohojkor?',
+    })).toBeVisible();
+    await expect(page.getByRole('heading', {
+      name: lang === 'bn' ? 'পেমেন্ট রেকর্ড খুঁজুন' : 'Find a payment record',
+    })).toBeVisible();
+    const metrics = await page.evaluate(() => {
+      const footer = document.querySelector('.public-footer')?.getBoundingClientRect();
+      const benefit = document.querySelector('.public-benefits')?.getBoundingClientRect();
+      const banner = document.querySelector('.public-hero-carousel')?.getBoundingClientRect();
+      return {
+        overflow: document.documentElement.scrollHeight - window.innerHeight,
+        footerBottom: footer?.bottom,
+        benefitsBottom: benefit?.bottom,
+        bannerHeight: banner?.height,
+      };
+    });
+    expect(metrics.overflow).toBeLessThanOrEqual(2);
+    expect(metrics.footerBottom).toBeLessThanOrEqual(height + 2);
+    expect(metrics.benefitsBottom).toBeLessThan(height - 30);
+    expect(metrics.bannerHeight).toBeGreaterThan(200);
+    await expect(page.locator('.public-home-header')).toBeVisible();
+  });
+}

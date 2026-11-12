@@ -12,7 +12,7 @@ test('public header, user-guide topics, footer links, language and browser histo
     await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'}).click();
   }
   await expect(page).toHaveURL(/action=user_guide/);
-  await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
   // Mobile Help targets Security & support; desktop User guide opens Payment basics.
   if (page.viewportSize()!.width <= 900) {
     await expect(page.getByRole('heading', { name: 'Security & support' })).toBeVisible();
@@ -25,7 +25,7 @@ test('public header, user-guide topics, footer links, language and browser histo
   await page.reload();
   await expect(page.getByRole('heading',{name:'Travel tax',exact:true})).toBeVisible();
   // This destination is the same route with a different tab; it must select the target tab.
-  const footer = page.getByRole('contentinfo',{name:'Korbritto footer'});
+  const footer = page.getByRole('contentinfo',{name:'Sohojkor footer'});
   if(page.viewportSize()!.width<=900) {
     await page.evaluate(() => window.scrollTo(0,document.documentElement.scrollHeight));
     await footer.locator('.public-footer__mobile-more > summary').click();
@@ -43,13 +43,13 @@ test('public header, user-guide topics, footer links, language and browser histo
   await setWorkspaceLanguage(page,'bn');
   await expect(page).toHaveURL(/lang=bn/);
   await page.reload();
-  await expect(page.getByRole('heading',{name:'করবৃত্ত ব্যবহার নির্দেশিকা'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'সহজকর ব্যবহার নির্দেশিকা'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'নিরাপত্তা ও সহায়তা'})).toBeVisible();
 });
 
 test('public footer utility links open their actual destinations without copying the top navigation', async ({page}) => {
   await page.goto('/?action=landing&lang=en');
-  const footer = page.getByRole('contentinfo',{name:'Korbritto footer'});
+  const footer = page.getByRole('contentinfo',{name:'Sohojkor footer'});
   const revealMobileFooterLinks = async () => {
     if(page.viewportSize()!.width<=900){
       await page.evaluate(() => window.scrollTo(0,document.documentElement.scrollHeight));

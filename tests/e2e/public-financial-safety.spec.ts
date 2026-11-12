@@ -18,10 +18,10 @@ test('public page does not claim real payment processing or grant account roles'
 
 test('legacy help URL resolves to maintained guide without an unverified tax calculator', async ({page}) => {
   await page.goto('/?action=guidance');
-  await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Proceed to Pay Estimated Tax'})).toHaveCount(0);
   await setWorkspaceLanguage(page,'bn');
-  await expect(page.getByRole('heading',{name:'করবৃত্ত ব্যবহার নির্দেশিকা'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'সহজকর ব্যবহার নির্দেশিকা'})).toBeVisible();
 });
 
 test('travel tax simulation cannot be presented as a real immigration challan',async ({page})=>{
@@ -37,7 +37,7 @@ test('public mobile shared navigation keeps public information, EN/BN, and acces
  test.skip(info.project.name==='desktop-1280','Mobile navigation only');
  await page.goto('/?action=landing');
  const header=page.locator('.taxpay-public-mobile-navigation .citizen-header');
- const home=header.getByRole('button',{name:'Korbritto home'});
+ const home=header.getByRole('button',{name:'Sohojkor home'});
  await expect(home).toBeVisible();
  await home.focus();await expect(home).toBeFocused();
  const menu=header.getByRole('button',{name:'Open menu'});

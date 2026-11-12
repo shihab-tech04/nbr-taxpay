@@ -293,7 +293,7 @@ test('Public keyboard Tab order and skip link remain operable with hidden FAQ',a
 });
 test('Hidden homepage FAQ does not remove the separately accessible User Guide route',async({page})=>{
   await page.goto('/?action=user_guide');
-  await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
   await expect(page.locator('main#main-content')).toHaveAttribute('tabindex','-1');
   await expect(page.locator('.taxpay-citizen-shell p[tabindex="0"]')).toHaveCount(0);
 });
