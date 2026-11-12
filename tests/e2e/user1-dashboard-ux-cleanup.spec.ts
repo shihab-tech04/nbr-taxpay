@@ -43,15 +43,16 @@ test('Overview recent activity is completed-payment focused and unlinked benefic
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
 });
 
-test('when external tax data is absent the coverage and year chart move into the first row',async({page})=>{
+test('when external tax data is absent account work comes first and the two comparison charts stay paired',async({page})=>{
   await page.goto(demo);
   const bento=page.getByTestId('taxpayer-overview-bento');
   await expect(bento.locator('.taxpay-bento-position')).toHaveCount(0);
   await expect(bento.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
   await expect(bento.getByRole('heading',{name:'What needs your attention?'})).toHaveCount(0);
-  const children=await bento.evaluate(element=>Array.from(element.children).slice(0,2).map(child=>child.className));
-  expect(children[0]).toContain('taxpay-bento-coverage');
-  expect(children[1]).toContain('taxpay-bento-years');
+  const children=await bento.evaluate(element=>Array.from(element.children).slice(0,3).map(child=>child.className));
+  expect(children[0]).toContain('taxpay-bento-request-row');
+  expect(children[1]).toContain('taxpay-bento-coverage');
+  expect(children[2]).toContain('taxpay-bento-years');
 });
 
 test('year chart switches assessment year and travel button uses the existing payment modal',async({page})=>{
@@ -170,7 +171,7 @@ test('dashboard only: calm card surfaces preserve action contrast and mobile con
   }
 });
 
-test('Overview puts financial position first, followed by exceptions, charts, spending and draft work',async({page})=>{
+test('Overview places saved payment work and requests before charts, keeping reports below the first task row',async({page})=>{
   await page.setViewportSize({width:1440,height:900});
   await page.goto(demo);
   const bento=page.getByTestId('taxpayer-overview-bento');
@@ -179,24 +180,27 @@ test('Overview puts financial position first, followed by exceptions, charts, sp
     child.classList.contains('taxpay-bento-request-row')?'requests':
     child.classList.contains('taxpay-bento-coverage')?'coverage':
     child.classList.contains('taxpay-bento-years')?'years':
+    child.classList.contains('taxpay-bento-monthly')?'monthly':
     child.classList.contains('taxpay-bento-tags')?'tags':
     child.classList.contains('taxpay-bento-drafts')?'drafts':
     child.classList.contains('taxpay-bento-recent')?'recent':'other'));
-  expect(order.slice(0,4)).toEqual(['coverage','years','requests','tags']);
-  if(order.includes('drafts')){
-    expect(order.indexOf('drafts')).toBeGreaterThan(order.indexOf('tags'));
-    expect(order.indexOf('drafts')).toBeLessThan(order.indexOf('recent'));
-  }
+  expect(order.slice(0,5)).toEqual(['requests','coverage','years','monthly','tags']);
+  expect(order.at(-1)).toBe('recent');
+  // Drafts belong to the primary payment-work column rather than after analytics.
+  const nestedDraft=bento.locator('.taxpay-bento-request-row > .taxpay-bento-summary-column > .taxpay-bento-drafts');
+  await expect(nestedDraft).toHaveCount(1);
   const positions=await bento.evaluate(element=>{
     const rect=(selector:string)=>element.querySelector(selector)!.getBoundingClientRect();
     const coverage=rect('.taxpay-bento-coverage'),years=rect('.taxpay-bento-years');
-    const attention=rect('.taxpay-bento-hero'),tags=rect('.taxpay-bento-tags'),recent=rect('.taxpay-bento-recent');
-    return {coverageY:coverage.y,yearsY:years.y,attentionY:attention.y,
+    const work=rect('.taxpay-bento-request-row'),monthly=rect('.taxpay-bento-monthly');
+    const tags=rect('.taxpay-bento-tags'),recent=rect('.taxpay-bento-recent');
+    return {coverageY:coverage.y,yearsY:years.y,workY:work.y,monthlyY:monthly.y,
       tagsY:tags.y,recentY:recent.y,coverageHeight:coverage.height,yearsHeight:years.height};
   });
   expect(Math.abs(positions.coverageY-positions.yearsY)).toBeLessThan(3);
-  expect(positions.attentionY).toBeGreaterThan(positions.coverageY);
-  expect(positions.tagsY).toBeGreaterThan(positions.coverageY);
+  expect(positions.workY,'Payment work must appear before charts').toBeLessThan(positions.coverageY);
+  expect(positions.monthlyY).toBeGreaterThan(positions.coverageY);
+  expect(Math.abs(positions.monthlyY-positions.tagsY),'Analytics share a balanced row').toBeLessThan(3);
   expect(positions.recentY).toBeGreaterThan(positions.tagsY);
   expect(Math.abs(positions.coverageHeight-positions.yearsHeight),'Balanced analytics cards').toBeLessThan(3);
   await expect(bento.locator('.taxpay-bento-position__totals > div')).toHaveCount(0);

@@ -581,6 +581,51 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </button>
     </section>
     </>}
+    <div className="taxpay-bento-request-row">
+    <div className="taxpay-bento-summary-column">
+      <section className={panel+' taxpay-bento-hero taxpay-bento-summary'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
+        <h2 className="text-base font-semibold">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h2>
+        <div className="taxpay-bento-hero__status">
+          <button type="button" className="taxpay-summary-metric taxpay-summary-metric--completed" onClick={()=>navigate('history')}>
+            <span className="taxpay-summary-metric__label"><FileCheck2 size={17} aria-hidden="true"/>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong>{completedPayments}</strong>
+          </button>
+          <button type="button" className="taxpay-summary-metric taxpay-summary-metric--drafts" onClick={openSavedDrafts}
+            aria-expanded={draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0)}>
+            <span className="taxpay-summary-metric__label"><FilePenLine size={17} aria-hidden="true"/>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span><strong>{savedDraftCount===null?'—':savedDraftCount}</strong>
+          </button>
+          <button type="button" className="taxpay-summary-metric taxpay-summary-metric--requests" onClick={focusCorrectionRequests}>
+            <span className="taxpay-summary-metric__label"><ReceiptText size={17} aria-hidden="true"/>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong>{correctionRequestCount}</strong>
+          </button>
+        </div>
+        {draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0) &&
+          <p className="taxpay-summary-draft-hint" role="status">{savedDraftCount===null
+            ?tr('Draft count unavailable. Sign in or refresh to check again.','খসড়ার সংখ্যা পাওয়া যায়নি। সাইন ইন করুন অথবা রিফ্রেশ করে আবার দেখুন।')
+            :tr('No saved drafts yet. Use Save Draft during a payment to continue it later.','এখনও সংরক্ষিত খসড়া নেই। পরে চালু করতে পেমেন্টের সময় খসড়া সংরক্ষণ করুন।')}</p>}
+      </section>
+    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1}>
+      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
+        onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
+    </div>}
+    </div>
+    <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} aria-labelledby="dashboard-correction-requests-title">
+      <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
+      <p className="mt-2 text-sm text-taxpay-muted">{tr('Review your recorded requests and their current status.','আপনার সংরক্ষিত আবেদন ও বর্তমান অবস্থা দেখুন।')}</p>
+      {correctionRequests.length ? <ul data-testid="dashboard-correction-request-list" className="mt-3 space-y-2">
+        {correctionRequests.map(request=><li key={request.id} className="min-w-0 rounded-lg border border-taxpay-border bg-white p-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <h3 className="text-sm font-semibold text-taxpay-text">{request.title}</h3>
+            {tag(request.state)}
+          </div>
+          <p className="mt-1 break-all text-xs text-taxpay-muted"><time dateTime={request.date}>{formatDate(request.date)}</time> · {request.ref}</p>
+          <p className="mt-2 text-sm leading-5 text-taxpay-text">{request.detail}</p>
+          <button type="button" className={action+' mt-2'} onClick={()=>setSelected(request)}
+            aria-label={tr('View request details for ','আবেদনের বিস্তারিত: ')+request.title}>
+            {tr('View details','বিস্তারিত দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
+          </button>
+        </li>)}
+      </ul> : <p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No correction requests for this assessment year.','এই করবর্ষে কোনো সংশোধনের আবেদন নেই।')}</p>}
+    </section>
+    </div>
     <div className="taxpay-bento-coverage">
       <section className={panel+' taxpayer-dashboard-chart'} aria-labelledby="taxpayer-coverage-title">
         <div className="flex items-center justify-between gap-2">
@@ -633,47 +678,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>
       <p className="mt-2 text-xs text-taxpay-muted">{tr('Recorded account entries are not an official NBR tax assessment. Travel tax is separate.','অ্যাকাউন্টের রেকর্ড সরকারি কর নির্ধারণ হিসেবে নিশ্চিত নয়। ভ্রমণ কর পৃথক।')}</p>
     </section>
-    <div className="taxpay-bento-request-row">
-    <div className="taxpay-bento-summary-column">
-      <section className={panel+' taxpay-bento-hero taxpay-bento-summary'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
-        <h2 className="text-base font-semibold">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h2>
-        <div className="taxpay-bento-hero__status">
-          <button type="button" className="taxpay-summary-metric taxpay-summary-metric--completed" onClick={()=>navigate('history')}>
-            <span className="taxpay-summary-metric__label"><FileCheck2 size={17} aria-hidden="true"/>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong>{completedPayments}</strong>
-          </button>
-          <button type="button" className="taxpay-summary-metric taxpay-summary-metric--drafts" onClick={openSavedDrafts}
-            aria-expanded={draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0)}>
-            <span className="taxpay-summary-metric__label"><FilePenLine size={17} aria-hidden="true"/>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span><strong>{savedDraftCount===null?'—':savedDraftCount}</strong>
-          </button>
-          <button type="button" className="taxpay-summary-metric taxpay-summary-metric--requests" onClick={focusCorrectionRequests}>
-            <span className="taxpay-summary-metric__label"><ReceiptText size={17} aria-hidden="true"/>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong>{correctionRequestCount}</strong>
-          </button>
-        </div>
-        {draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0) &&
-          <p className="taxpay-summary-draft-hint" role="status">{savedDraftCount===null
-            ?tr('Draft count unavailable. Sign in or refresh to check again.','খসড়ার সংখ্যা পাওয়া যায়নি। সাইন ইন করুন অথবা রিফ্রেশ করে আবার দেখুন।')
-            :tr('No saved drafts yet. Use Save Draft during a payment to continue it later.','এখনও সংরক্ষিত খসড়া নেই। পরে চালু করতে পেমেন্টের সময় খসড়া সংরক্ষণ করুন।')}</p>}
-      </section>
+    <div className="taxpay-bento-monthly">
       <DashboardMonthlyPayments payments={recordedDirectPayments} assessmentYear={year} language={language}/>
-    </div>
-    <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} aria-labelledby="dashboard-correction-requests-title">
-      <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
-      <p className="mt-2 text-sm text-taxpay-muted">{tr('Review your recorded requests and their current status.','আপনার সংরক্ষিত আবেদন ও বর্তমান অবস্থা দেখুন।')}</p>
-      {correctionRequests.length ? <ul data-testid="dashboard-correction-request-list" className="mt-3 space-y-2">
-        {correctionRequests.map(request=><li key={request.id} className="min-w-0 rounded-lg border border-taxpay-border bg-white p-3">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <h3 className="text-sm font-semibold text-taxpay-text">{request.title}</h3>
-            {tag(request.state)}
-          </div>
-          <p className="mt-1 break-all text-xs text-taxpay-muted"><time dateTime={request.date}>{formatDate(request.date)}</time> · {request.ref}</p>
-          <p className="mt-2 text-sm leading-5 text-taxpay-text">{request.detail}</p>
-          <button type="button" className={action+' mt-2'} onClick={()=>setSelected(request)}
-            aria-label={tr('View request details for ','আবেদনের বিস্তারিত: ')+request.title}>
-            {tr('View details','বিস্তারিত দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
-          </button>
-        </li>)}
-      </ul> : <p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No correction requests for this assessment year.','এই করবর্ষে কোনো সংশোধনের আবেদন নেই।')}</p>}
-    </section>
     </div>
     <div className="taxpay-bento-tags">
     <section className={panel} data-testid="beneficiary-spending-breakdown" aria-label={tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}>
@@ -720,10 +726,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>}
     </section>
     </div>
-    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1}>
-      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
-        onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
-    </div>}
+
     <div className="taxpay-bento-recent">
     <section className={panel} aria-labelledby="taxpayer-recent-activity-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
