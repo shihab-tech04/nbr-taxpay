@@ -38,15 +38,29 @@ Deno.serve(async(request:Request)=>{
    const filter=new URL(request.url).searchParams.get('tin');
    if(filter!==null && !/^[0-9]{12}$/.test(filter))
      return respond({success:false,code:'INVALID_TIN'},400,origin);
-   let query=db.from('taxpay_taxpayer_registration_profiles')
-     .select('account_id,tin,profile,revision,updated_at').order('account_id').limit(100);
-   if(filter)query=query.eq('tin',filter);
-   const {data:rows,error:readError}=await query;
-   if(readError)throw readError;
-   const profiles=(rows??[]).map(item=>({
-     accountId:item.account_id,tin:item.tin,profile:item.profile,
-     revision:item.revision,updatedAt:item.updated_at
-   }));
+   // Keyset pagination protects the authorized Office read from silent 100-row loss.
+   // No Office-side copy: every request reads the canonical TaxPay SQL.
+   const PAGE_SIZE=100,MAX_PROFILES=10000;
+   let cursor:string|null=null;
+   const profiles:Array<{accountId:string;tin:string;profile:unknown;revision:number;updatedAt:string}>=[];
+   while(true){
+     let page=db.from('taxpay_taxpayer_registration_profiles')
+       .select('account_id,tin,profile,revision,updated_at')
+       .order('account_id',{ascending:true}).limit(PAGE_SIZE);
+     if(filter)page=page.eq('tin',filter);
+     if(cursor)page=page.gt('account_id',cursor);
+     const {data:rows,error:readError}=await page;
+     if(readError)throw readError;
+     if(!rows?.length)break;
+     if(profiles.length+rows.length>MAX_PROFILES)
+       return respond({success:false,code:'PROFILE_RESULT_LIMIT'},503,origin);
+     for(const item of rows){
+       profiles.push({accountId:item.account_id,tin:item.tin,profile:item.profile,
+         revision:item.revision,updatedAt:item.updated_at});
+     }
+     cursor=rows[rows.length-1].account_id;
+     if(rows.length<PAGE_SIZE)break;
+   }
    return respond({success:true,profiles},200,origin);
  }catch(error){
    console.error('taxpayer profile Office read failed',error instanceof Error?error.message:'Unknown');
