@@ -31,7 +31,7 @@ test('User1 bento keeps the blue year chart and keyboard selection with a light 
   await year.focus();
   await page.keyboard.press('Space');
   await expect(year).toHaveAttribute('aria-current','true');
-  await expect(page.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'By payment service'})).toBeVisible();
   await expect(page.locator('.taxpay-bento-hero__actions').getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
 });
 
