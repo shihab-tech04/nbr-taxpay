@@ -6,24 +6,27 @@ import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
 import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
 import { CitizenFooter } from './components/layout/CitizenFooter';
-import { TaxpayerLoginDialog } from './components/screens/TaxpayerLoginDialog';
-import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
 import type { PaymentFormDraft } from './services/accountPaymentFormDrafts';
 
 // Screens
 import { PublicUserGuide } from './components/screens/PublicUserGuide';
 import { PublicLanding } from './components/screens/PublicLanding';
 import { PublicReport } from './components/screens/PublicReport';
-import { PublicServiceModal } from './components/screens/PublicServiceModal';
 import { TaxPayModal } from './components/ui/TaxPayModal';
 import { receiptReturnRoute } from './services/routeContract';
 import { IncidentReporting } from './components/screens/IncidentReporting';
 import { User1DemoExperience, user1DemoRoutes } from './components/screens/User1DemoExperience';
-import { PaymentDetailView } from './components/screens/PaymentDetailView';
-import { AuthorizationRequestPopup } from './components/screens/AuthorizationRequestPopup';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
 import { validCertificateTransactionId } from './services/confirmedPaymentCertificate';
 import { safePrivateAuthReturnRoute } from './services/routeContract';
+
+// Keep modal-only and preview-only code out of the initial public JavaScript.
+// These components retain their existing modal UI, permissions and routes.
+const TaxpayerLoginDialog = React.lazy(() => import('./components/screens/TaxpayerLoginDialog').then(m => ({default: m.TaxpayerLoginDialog})));
+const ParityRegisterModal = React.lazy(() => import('./components/screens/ParityRegisterModal').then(m => ({default: m.ParityRegisterModal})));
+const PublicServiceModal = React.lazy(() => import('./components/screens/PublicServiceModal').then(m => ({default: m.PublicServiceModal})));
+const PaymentDetailView = React.lazy(() => import('./components/screens/PaymentDetailView').then(m => ({default: m.PaymentDetailView})));
+const AuthorizationRequestPopup = React.lazy(() => import('./components/screens/AuthorizationRequestPopup').then(m => ({default: m.AuthorizationRequestPopup})));
 
 // Defer non-entry screens until visited, preserving the public shell and auth gates.
 // Do not load the large payment forms for public visitors who have not started a payment.
@@ -58,7 +61,7 @@ const previewReadOnlyRoutes = new Set([
 const activityRoutes = new Set(['history', 'journey', 'verify', 'corrections', 'certificates']);
 
 const MainRouter: React.FC = () => {
-  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, paymentServiceInitialSelection, paymentReuse } = useTaxState();
+  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, isParityModalOpen, paymentServiceInitialSelection, paymentReuse } = useTaxState();
   const [dashboardPaymentDraft, setDashboardPaymentDraft] = useState<PaymentFormDraft | null>(null);
   // Close always clears the one-shot resume request. No draft IDs in URLs or storage.
   useEffect(() => {
@@ -257,23 +260,23 @@ const MainRouter: React.FC = () => {
       </main>
       {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
       {publicInformationRoute && !receiptOverlayRoute && !verifiedApplicationUser && !previewAccount && <PublicHelpChat />}
-      {receiptOverlayRoute && (currentRoute === 'verify'
+      {receiptOverlayRoute && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'রসিদ লোড হচ্ছে…' : 'Loading receipt…'}</p>}>{currentRoute === 'verify'
         ? <PublicServiceModal service="status" onClose={() => navigate('landing')} />
         : <TaxPayModal title={language === 'bn' ? 'পেমেন্ট রসিদের বিবরণ' : 'Payment receipt details'}
             service="status" className="receipt-modal" footer={<></>}
             onClose={() => navigate(receiptReturnRoute(routeParams.returnTo))}>
             <PaymentDetailView embedded />
-          </TaxPayModal>)}
-      <ParityRegisterModal />
+          </TaxPayModal>}</React.Suspense>}
+      {isParityModalOpen && <React.Suspense fallback={null}><ParityRegisterModal /></React.Suspense>}
       {isPaymentServiceChoiceOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেমেন্ট সেবা লোড হচ্ছে…' : 'Loading payment service…'}</p>}>
         <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} />
       </React.Suspense>}
-      {loginOverlay && <TaxpayerLoginDialog />}
-      {beneficiaryLoginRequired && <TaxpayerLoginDialog
+      {loginOverlay && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog /></React.Suspense>}
+      {beneficiaryLoginRequired && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog
         preservePaymentJourney
         onClose={() => navigate('landing')}
-      />}
-      <AuthorizationRequestPopup />
+      /></React.Suspense>}
+      {previewAccount && <React.Suspense fallback={null}><AuthorizationRequestPopup /></React.Suspense>}
     </div>
   );
 };
