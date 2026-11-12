@@ -26,10 +26,10 @@ test('Overview links recent payments to Activity and filters interactive benefic
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const bento=page.getByTestId('taxpayer-overview-bento');
   const recent=bento.locator('.taxpay-bento-recent');
-  await expect(recent).toContainText('Completed payment activity');
-  await expect(recent).not.toContainText('Refund inquiry');
   const sources=bento.getByTestId('dashboard-chart-source');
   await sources.getByRole('button',{name:'Examples'}).click();
+  await expect(recent).toContainText('Example payer-initiated activity');
+  await expect(recent).not.toContainText('Refund inquiry');
   const beneficiary=bento.getByTestId('dashboard-beneficiary-breakdown');
   await expect(beneficiary.locator('[data-tag="unassigned"]')).toBeVisible();
   await beneficiary.getByRole('button',{name:'View payment records'}).click();

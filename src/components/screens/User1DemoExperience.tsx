@@ -6,6 +6,7 @@ import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
 import {BentoPaymentAnalytics} from './BentoPaymentAnalytics';
+import {chooseDashboardChartSource,serviceForCategory,type DashboardChartSource,type DashboardChartService} from './dashboardBentoAnalytics';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
@@ -110,7 +111,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [savedTagPeople,setSavedTagPeople]=useState<Beneficiary[]>([]);
   const [tagLoadState,setTagLoadState]=useState<'loading'|'ready'|'error'>('loading');
-  const [paymentTagFilter,setPaymentTagFilter]=useState<'all'|PaymentTagGroup>('all');
+  const [paymentTagFilter,setPaymentTagFilter]=useState<'all'|PaymentTagGroup|'own'>('all');
   const [beneficiaryFilter,setBeneficiaryFilter]=useState('all');
   const [transactionFiltersExpanded,setTransactionFiltersExpanded]=useState(false);
   useEffect(()=>{
@@ -142,8 +143,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     item.kind==='income'?{name:bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,
       tin:DEMO_USERS.user1.tin}:null);
   const payerName=(item:RecordItem)=>transactionPayer(item)?.name??tr('Not recorded','তথ্য নেই');
-  const matchesTransactionTag=(item:RecordItem,group:PaymentTagGroup)=>{
+  const matchesTransactionTag=(item:RecordItem,group:PaymentTagGroup|'own')=>{
     const recipients=transactionBeneficiaries(item);
+    if(group==='own')return recipients.some(person=>person.tin===DEMO_USERS.user1.tin);
     return recipients.length
       ?recipients.some(person=>paymentTagGroupForTin(person.tin,savedTagPeople)===group)
       :group==='unassigned';
@@ -169,12 +171,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
        </div>)}
     </div>;
   };
-  const paymentTagLabel=(group:PaymentTagGroup)=>paymentTagGroupLabels[group][language];
+  const paymentTagLabel=(group:PaymentTagGroup|'own')=>group==='own'
+    ?tr('My tax','নিজের কর'):paymentTagGroupLabels[group][language];
   const [year,setYear]=useState<string>(()=>{
     const initial=new URLSearchParams(window.location.search).get('scenarioYear');
     return typeof initial==='string'&&/^20\d{2}-20\d{2}$/.test(initial)
       ? initial : '2025-2026';
   });
+  const [overviewSourceChoice,setOverviewSourceChoice]=useState<{year:string;source:DashboardChartSource}|null>(null);
   const changeYear=(nextYear:string)=>{
     setYear(nextYear);
     setLedgerYear(nextYear);
@@ -204,6 +208,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     window.history.replaceState(window.history.state,'',url);
   };
   const [reviewFilter,setReviewFilter]=useState<State[]|null>(null);
+  const [dashboardHistorySource,setDashboardHistorySource]=useState<DashboardChartSource|'all'>('all');
+  const [dashboardHistoryService,setDashboardHistoryService]=useState<DashboardChartService|'all'>('all');
+  const [dashboardHistoryCompletedOnly,setDashboardHistoryCompletedOnly]=useState(false);
   useEffect(()=>{
     if(route!=='history')return;
     const category=routeParams.categoryFilter;
@@ -216,8 +223,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       setStatus('all');
     } else setReviewFilter(null);
     const tag=routeParams.dashboardTagFilter;
-    if(['family','friends','clients','others','unassigned'].includes(String(tag)))
-      setPaymentTagFilter(tag as PaymentTagGroup);
+    setPaymentTagFilter(['family','friends','clients','others','own','unassigned'].includes(String(tag))
+      ?tag as PaymentTagGroup|'own':'all');
+    setDashboardHistorySource(['recorded','example'].includes(String(routeParams.dashboardSource))
+      ?routeParams.dashboardSource as DashboardChartSource:'all');
+    setDashboardHistoryCompletedOnly(routeParams.dashboardOnlyCompleted===true);
+    setDashboardHistoryService(['income','tds','ait','other','travel'].includes(String(routeParams.dashboardService))
+      ?routeParams.dashboardService as DashboardChartService:'all');
   },[route,routeParams]);
   const openReview=(states:State[])=>navigate('history',{reviewStatuses:states});
   const [query,setQuery]=useState('');
@@ -301,6 +313,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     applied:0,outstanding:0,pending:0,failed:0,disputed:0,posted:0};
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
   const historyScoped=useMemo(()=>[...scoped,...sqlRows.filter(row=>row.years?.includes(year))],[scoped,sqlRows,year]);
+  // One assessment-year/source selection drives KPIs, recent activity and charts.
+  // Do not merge example events with owner-session SQL payments.
+  const dashboardChartRecords=useMemo(()=>[...events,...sqlRows],[sqlRows]);
+  const defaultOverviewSource=chooseDashboardChartSource(
+    dashboardChartRecords,year,savedTagPeople,DEMO_USERS.user1.tin);
+  const overviewSource=overviewSourceChoice?.year===year
+    ?overviewSourceChoice.source:defaultOverviewSource;
+  const overviewCompletedRows=overviewSource==='recorded'
+    ?sqlRows.filter(item=>item.state==='POSTED'&&item.years?.includes(year))
+    :scoped.filter(item=>item.state==='POSTED'&&['income','ait','travel'].includes(item.kind));
   const availableTransactionBeneficiaries=[...new Map(historyScoped.flatMap(item=>
     transactionBeneficiaries(item)).map(person=>[person.tin,person])).values()]
     .sort((a,b)=>a.name.localeCompare(b.name));
@@ -308,7 +330,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     const people=transactionBeneficiaries(x);
     const searchFields=[x.ref,x.title,x.challan||'',x.detail,x.typeLabel||'',payerName(x),...people.flatMap(p=>
       [p.name,p.tin,p.tag||'',...p.heads,...p.assessmentYears])];
-    return (kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&
+    return (dashboardHistorySource==='all'||((dashboardHistorySource==='recorded')===Boolean(x.sql)))&&
+      (dashboardHistoryService==='all'||(x.sql
+        ?x.sql.receipts.some(receipt=>serviceForCategory(receipt.paymentCategory)===dashboardHistoryService)
+        :x.kind===dashboardHistoryService))&&
+      (!dashboardHistoryCompletedOnly||(x.state==='POSTED'&&
+        (Boolean(x.sql)||['income','ait','travel'].includes(x.kind))))&&
+      (kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&
       (monthFilter==='all'||x.date.startsWith(monthFilter))&&
       (!reviewFilter||reviewFilter.includes(x.state))&&
       (beneficiaryFilter==='all'||people.some(person=>person.tin===beneficiaryFilter))&&
@@ -318,7 +346,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const historyPerPage=10;
   const currentHistoryPage=Math.min(historyPage,Math.max(1,Math.ceil(filtered.length/historyPerPage)));
   const visibleHistoryRows=filtered.slice((currentHistoryPage-1)*historyPerPage,currentHistoryPage*historyPerPage);
-  useEffect(()=>setHistoryPage(1),[year,query,kind,status,monthFilter,reviewFilter,paymentTagFilter,beneficiaryFilter]);
+  useEffect(()=>setHistoryPage(1),[year,query,kind,status,monthFilter,reviewFilter,paymentTagFilter,beneficiaryFilter,dashboardHistorySource,dashboardHistoryCompletedOnly,dashboardHistoryService]);
   const availableHistoryMonths=[...new Set(historyScoped.map(x=>x.date.slice(0,7)))].sort();
   // Use the same selected-year, owner-owned projection as the Activity table.
   // Keep demo events identifiable; SQL records are simulation payments, not certified credits.
@@ -403,20 +431,24 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </label>
       <label className="taxpayer-transaction-filter"><span>{tr('Beneficiary tag','উপকারভোগীর ট্যাগ')}</span>
         <select aria-label={tr('Filter transactions by beneficiary tag','উপকারভোগীর ট্যাগ দিয়ে লেনদেন ফিল্টার')}
-          value={paymentTagFilter} onChange={event=>setPaymentTagFilter(event.target.value as 'all'|PaymentTagGroup)}>
+          value={paymentTagFilter} onChange={event=>setPaymentTagFilter(event.target.value as 'all'|PaymentTagGroup|'own')}>
           <option value="all">{tr('All tags','সব ট্যাগ')}</option>
+          <option value="own">{paymentTagLabel('own')}</option>
           {PAYMENT_TAG_GROUPS.map(group=><option key={group} value={group}>{paymentTagLabel(group)}</option>)}
         </select>
       </label>
     </TaxPayOfficeRegisterFilters>
     <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
-      onClear={()=>{setQuery('');setKind('all');setStatus('all');chooseHistoryMonth('all');setPaymentTagFilter('all');setBeneficiaryFilter('all');setReviewFilter(null);}}
+      onClear={()=>{setQuery('');setKind('all');setStatus('all');chooseHistoryMonth('all');setPaymentTagFilter('all');setBeneficiaryFilter('all');setReviewFilter(null);setDashboardHistorySource('all');setDashboardHistoryCompletedOnly(false);setDashboardHistoryService('all');}}
       filters={[
         ...(query.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+query.trim(),onRemove:()=>setQuery('')}]:[]),
         ...(kind!=='all'?[{key:'kind',label:tr(...labels[kind]),onRemove:()=>setKind('all')}]:[]),
         ...(monthFilter!=='all'?[{key:'month',label:monthFilter,onRemove:()=>chooseHistoryMonth('all')}]:[]),
         ...(status!=='all'?[{key:'status',label:tr(...stateLabels[status]),onRemove:()=>setStatus('all')}]:[]),
         ...(paymentTagFilter!=='all'?[{key:'tag',label:paymentTagLabel(paymentTagFilter),onRemove:()=>setPaymentTagFilter('all')}]:[]),
+        ...(dashboardHistorySource!=='all'?[{key:'source',label:dashboardHistorySource==='recorded'?tr('Saved payments','সংরক্ষিত পেমেন্ট'):tr('Examples','উদাহরণ'),onRemove:()=>setDashboardHistorySource('all')}]:[]),
+        ...(dashboardHistoryService!=='all'?[{key:'service',label:tr('Service: ','সেবা: ')+dashboardHistoryService,onRemove:()=>setDashboardHistoryService('all')}]:[]),
+        ...(dashboardHistoryCompletedOnly?[{key:'completed',label:tr('Completed only','শুধু সম্পন্ন'),onRemove:()=>setDashboardHistoryCompletedOnly(false)}]:[]),
         ...(beneficiaryFilter!=='all'?[{key:'beneficiary',label:tr('Beneficiary: ','উপকারভোগী: ')+(availableTransactionBeneficiaries.find(p=>p.tin===beneficiaryFilter)?.name??beneficiaryFilter),onRemove:()=>setBeneficiaryFilter('all')}]:[])
       ]}/>
     {tagLoadState==='error'&&<p className="px-3 text-sm text-taxpay-error" role="alert">{tr('Saved beneficiary tags could not be loaded.','সংরক্ষিত উপকারভোগীর ট্যাগ লোড করা যায়নি।')}</p>}
@@ -484,9 +516,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   // Keep the existing external-data UI gated until a verified, nonempty source is linked.
   const verifiedExternalTaxPositionReady=false;
-  const completedPayments=historyScoped.filter(x=>x.state==='POSTED').length;
-  const correctionRequests=historyScoped.filter(x=>x.state==='REQUESTED' && (x.kind==='refund'||x.kind==='adjustment'));
-  const correctionRequestCount=correctionRequests.length;
+  // Employer/deductor withholding belongs in Activity, not payer-initiated
+  // Completed Payments. The lower payer-spending chart uses the same definition.
+  const completedPayments=overviewCompletedRows.length;
+  const correctionRequests=overviewSource==='example'
+    ?scoped.filter(x=>x.state==='REQUESTED'&&(x.kind==='refund'||x.kind==='adjustment')):[];
+  // There is no owner-verified correction source in this preview SQL projection.
+  const correctionRequestCount:number|null=overviewSource==='example'?correctionRequests.length:null;
+  const openOverviewPayments=()=>navigate('history',{
+    dashboardSource:overviewSource,dashboardOnlyCompleted:true
+  });
   const openSavedDrafts=()=>{
     const list=document.getElementById('taxpayer-dashboard-draft-section');
     if(list && previewAccount?.id==='user1' && activePreviewSession()?.profileId==='user1'){
@@ -531,9 +570,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
 
       </div>
       <div className="taxpay-bento-hero__status" aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
-        <button type="button" onClick={()=>navigate('history')}><span>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong className="tabular-nums">{completedPayments}</strong></button>
+        <button type="button" onClick={openOverviewPayments}><span>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong className="tabular-nums">{completedPayments}</strong></button>
         <button type="button" onClick={openSavedDrafts}><span>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span><strong className="tabular-nums">{savedDraftCount===null?'—':savedDraftCount}</strong></button>
-        <button type="button" onClick={focusCorrectionRequests}><span>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong className="tabular-nums">{correctionRequestCount}</strong></button>
+        <button type="button" onClick={focusCorrectionRequests}><span>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong className="tabular-nums">{correctionRequestCount===null?'—':correctionRequestCount}</strong></button>
       </div>
       <button type="button" className="taxpay-bento-hero__review self-end min-h-10 px-2 text-sm font-medium text-taxpay-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary" onClick={()=>navigate('corrections')}>
         {tr('Review exceptions','ব্যতিক্রম দেখুন')}<ArrowRight size={15} className="ml-2 inline" aria-hidden="true"/>
@@ -544,8 +583,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     <div className="taxpay-bento-summary-column">
       <section className={panel+' taxpay-bento-hero taxpay-bento-summary'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
         <h2 className="text-base font-semibold">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h2>
+        <p className="mt-1 text-xs text-taxpay-muted" data-testid="dashboard-source-indicator">
+          {overviewSource==='example'
+            ?tr('Example activity — not saved account payments','উদাহরণভিত্তিক কার্যক্রম — সংরক্ষিত অ্যাকাউন্ট পেমেন্ট নয়')
+            :tr('Saved session payment activity','সংরক্ষিত সেশন পেমেন্ট কার্যক্রম')}
+        </p>
         <div className="taxpay-bento-hero__status">
-          <button type="button" className="taxpay-summary-metric taxpay-summary-metric--completed" onClick={()=>navigate('history')}>
+          <button type="button" className="taxpay-summary-metric taxpay-summary-metric--completed" onClick={openOverviewPayments}>
             <span className="taxpay-summary-metric__label"><FileCheck2 size={17} aria-hidden="true"/>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong>{completedPayments}</strong>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--drafts" onClick={openSavedDrafts}
@@ -553,7 +597,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             <span className="taxpay-summary-metric__label"><FilePenLine size={17} aria-hidden="true"/>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span><strong>{savedDraftCount===null?'—':savedDraftCount}</strong>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--requests" onClick={focusCorrectionRequests}>
-            <span className="taxpay-summary-metric__label"><ReceiptText size={17} aria-hidden="true"/>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong>{correctionRequestCount}</strong>
+            <span className="taxpay-summary-metric__label"><ReceiptText size={17} aria-hidden="true"/>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong>{correctionRequestCount===null?'—':correctionRequestCount}</strong>
           </button>
         </div>
         {draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0) &&
@@ -568,7 +612,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     </div>
     <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} aria-labelledby="dashboard-correction-requests-title">
       <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
-      <p className="mt-2 text-sm text-taxpay-muted">{tr('Review your recorded requests and their current status.','আপনার সংরক্ষিত আবেদন ও বর্তমান অবস্থা দেখুন।')}</p>
+      <p className="mt-2 text-sm text-taxpay-muted">{overviewSource==='example'
+        ?tr('Example requests and their displayed status.','উদাহরণভিত্তিক আবেদন ও প্রদর্শিত অবস্থা।')
+        :tr('Verified correction request data is not linked to this preview session.','এই সেশনের সঙ্গে যাচাইকৃত সংশোধনের আবেদন যুক্ত নেই।')}</p>
       {correctionRequests.length ? <ul data-testid="dashboard-correction-request-list" className="mt-3 space-y-2">
         {correctionRequests.map(request=><li key={request.id} className="min-w-0 rounded-lg border border-taxpay-border bg-white p-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -582,7 +628,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             {tr('View details','বিস্তারিত দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
           </button>
         </li>)}
-      </ul> : <p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No correction requests for this assessment year.','এই করবর্ষে কোনো সংশোধনের আবেদন নেই।')}</p>}
+      </ul> : <p className="mt-3 text-sm text-taxpay-muted" role="status">{overviewSource==='recorded'
+        ?tr('Request status is unavailable from this payment source.','এই পেমেন্ট উৎস থেকে আবেদনের অবস্থা পাওয়া যাচ্ছে না।')
+        :tr('No example requests for this assessment year.','এই করবর্ষে কোনো উদাহরণভিত্তিক আবেদন নেই।')}</p>}
     </section>
     </div>
     <div className="taxpay-bento-recent">
@@ -591,15 +639,19 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         <h2 id="taxpayer-recent-activity-title" className="text-base font-semibold">{tr('Recent activity','সাম্প্রতিক কার্যক্রম')}</h2>
         {view('history','View all activity','সব কার্যক্রম দেখুন')}
       </div>
-      <p className="mt-1 text-xs text-taxpay-muted">{tr('Completed payment activity · assessment year','সম্পন্ন পেমেন্ট কার্যক্রম · করবর্ষ')}: {year}</p>
+      <p className="mt-1 text-xs text-taxpay-muted">{overviewSource==='example'
+        ?tr('Example payer-initiated activity','উদাহরণভিত্তিক পরিশোধকারীর কার্যক্রম')
+        :tr('Saved session payment activity','সংরক্ষিত সেশন পেমেন্ট কার্যক্রম')} · {tr('Assessment year','করবর্ষ')}: {year}</p>
       <ul className="mt-3 divide-y divide-taxpay-border" aria-label={tr('Latest transactions in selected year','নির্বাচিত করবর্ষের সাম্প্রতিক লেনদেন')}>
-        {[...historyScoped].filter(item=>item.state==='POSTED').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+        {[...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-taxpay-text">{item.title}</p>
             <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])}</p>
           </div>
           <p className="whitespace-nowrap text-sm font-semibold tabular-nums">{money(item.amount)}</p>
-          <div>{tag(item.state)}</div>
+          <div>{overviewSource==='example'
+            ?<span className="text-xs text-taxpay-muted">{tr('Example','উদাহরণ')}</span>
+            :tag(item.state)}</div>
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" className={action} onClick={()=>setSelected(item)} aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
             {item.sql?.reuse && <button type="button" className={action} onClick={()=>payAgain(item)}>
@@ -608,18 +660,25 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           </div>
         </li>)}
       </ul>
-      {!historyScoped.some(item=>item.state==='POSTED')&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('No completed payment activity for the selected assessment year.','নির্বাচিত করবর্ষে সম্পন্ন পেমেন্ট নেই।')}</p>}
+      {!overviewCompletedRows.length&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('No completed payment activity for the selected assessment year.','নির্বাচিত করবর্ষে সম্পন্ন পেমেন্ট নেই।')}</p>}
       {sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-recorded payments could not be loaded. Sample activity remains visible.','অ্যাকাউন্টে সংরক্ষিত পেমেন্ট লোড হয়নি। নমুনা কার্যক্রম দেখা যাচ্ছে।')}</p>}
     </section>
     </div>
     <BentoPaymentAnalytics
-      records={[...events,...sqlRows]}
+      records={dashboardChartRecords}
       people={savedTagPeople}
       year={year}
       ownerTin={DEMO_USERS.user1.tin}
       language={language}
       sourceLoadError={sqlLoadError}
-      onOpenHistory={tag=>navigate('history',tag&&tag!=='own'?{dashboardTagFilter:tag}:undefined)}
+      selectedSource={overviewSource}
+      onSourceChange={source=>setOverviewSourceChoice({year,source})}
+      onManageBeneficiaries={()=>navigate('beneficiaries')}
+      onOpenHistory={(tag,service)=>navigate('history',{
+        dashboardSource:overviewSource,dashboardOnlyCompleted:true,
+        ...(tag?{dashboardTagFilter:tag}:{}),
+        ...(service&&service!=='all'?{dashboardService:service}:{})
+      })}
     />
   </div>;
   // A single event projection powers every supported assessment year; a record is

@@ -1,10 +1,10 @@
-import React,{useState} from 'react';
+import React,{useEffect,useState} from 'react';
 import '../../styles/taxpay-dashboard-interactive.css';
 import {ArrowRight} from 'lucide-react';
 import type {Beneficiary} from '../../services/beneficiaries';
 import {
   DASHBOARD_SERVICE_KEYS,DASHBOARD_TAG_KEYS,
-  projectDashboardChartRecords,formatDashboardChartMoney,dashboardChartPercentage,
+  projectDashboardChartRecords,chooseDashboardChartSource,formatDashboardChartMoney,dashboardChartPercentage,
   type DashboardChartRecord,type DashboardChartService,type DashboardChartTag,
   type DashboardChartSource
 } from './dashboardBentoAnalytics';
@@ -32,8 +32,11 @@ export const BentoPaymentAnalytics:React.FC<{
   ownerTin:string;
   language:'en'|'bn';
   sourceLoadError?:boolean;
-  onOpenHistory:(tag?:DashboardChartTag)=>void;
-}>=({records,people,year,ownerTin,language,sourceLoadError,onOpenHistory})=>{
+  selectedSource?:DashboardChartSource;
+  onSourceChange?:(source:DashboardChartSource)=>void;
+  onManageBeneficiaries?:()=>void;
+  onOpenHistory:(tag?:DashboardChartTag,service?:DashboardChartService|'all')=>void;
+}>=({records,people,year,ownerTin,language,sourceLoadError,selectedSource,onSourceChange,onManageBeneficiaries,onOpenHistory})=>{
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   // Use the selected year's available source by default. A year with no
@@ -45,12 +48,15 @@ export const BentoPaymentAnalytics:React.FC<{
   const [tag,setTag]=useState<DashboardChartTag|null>(null);
   const recorded=projectDashboardChartRecords(records,year,'recorded',people,ownerTin);
   const examples=projectDashboardChartRecords(records,year,'example',people,ownerTin);
-  const defaultSource:DashboardChartSource=recorded.totalMinor>0n||recorded.omittedRecords>0
-    ? 'recorded' : examples.totalMinor>0n ? 'example' : 'recorded';
-  const source=sourceChoice?.year===year?sourceChoice.source:defaultSource;
+  const defaultSource=chooseDashboardChartSource(records,year,people,ownerTin);
+  const source=selectedSource??(sourceChoice?.year===year?sourceChoice.source:defaultSource);
   const selectSource=(next:DashboardChartSource)=>{
-    setSourceChoice({year,source:next});setService('all');setTag(null);
+    if(onSourceChange)onSourceChange(next);
+    else setSourceChoice({year,source:next});
+    setService('all');setTag(null);
   };
+  // A service/tag selection from a previous year must not silently filter a new year.
+  useEffect(()=>{setService('all');setTag(null);},[year]);
   const all=source==='recorded'?recorded:examples;
   const filtered=projectDashboardChartRecords(records,year,source,people,ownerTin,service);
   const money=(minor:bigint)=>formatDashboardChartMoney(minor,language);
@@ -159,8 +165,15 @@ export const BentoPaymentAnalytics:React.FC<{
             <span>{TAG_LABELS[selectedTag.key][language]} · {selectedTag.paymentCount} {tr('payments','টি পেমেন্ট')}</span>
             <strong>{money(selectedTag.amountMinor)}</strong>
           </div>}
+          {filtered.byTag.some(item=>item.key==='unassigned'&&item.amountMinor>0n)&&onManageBeneficiaries&&
+            <div className="taxpay-bento-analytics__selection" role="status" data-testid="dashboard-unclassified-recovery">
+              <span>{tr('Some recipients have no matching saved relationship tag.','কিছু প্রাপকের সংরক্ষিত সম্পর্কের ট্যাগ মেলেনি।')}</span>
+              <button type="button" className="taxpay-bento-analytics__link" onClick={onManageBeneficiaries}>
+                {tr('Manage beneficiary tags','উপকারভোগীর ট্যাগ পরিচালনা')}
+              </button>
+            </div>}
           <button type="button" className="taxpay-bento-analytics__link"
-            onClick={()=>onOpenHistory(tag??undefined)}>
+            onClick={()=>onOpenHistory(tag??undefined,service)}>
             {tr('View payment records','পেমেন্টের রেকর্ড দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
           </button>
         </>:<p role="status" className="taxpay-bento-analytics__empty">{tr(

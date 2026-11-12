@@ -37,7 +37,7 @@ const assessmentYear=(raw:string):string=>{
   const short=/^(20\d{2})-(\d{2})$/.exec(value);
   return short?short[1]+'-20'+short[2]:value;
 };
-const serviceForCategory=(category:ChallanReceipt['paymentCategory']):DashboardChartService=>{
+export const serviceForCategory=(category:ChallanReceipt['paymentCategory']):DashboardChartService=>{
   switch(category){
     case 'TAX_WITH_RETURN':return 'income';
     case 'SOURCE_TAX_DEPOSIT':return 'tds';
@@ -158,4 +158,17 @@ export function formatDashboardChartMoney(amountMinor:bigint,language:'en'|'bn')
 }
 export function dashboardChartPercentage(amountMinor:bigint,totalMinor:bigint){
   return totalMinor>0n?Number(amountMinor*10000n/totalMinor)/100:0;
+}
+
+
+/** The entire overview and its chart use one assessment-year-scoped source.
+ * Never silently merge fictional records with persisted payment allocations. */
+export function chooseDashboardChartSource(
+  rows:readonly DashboardChartRecord[],year:string,
+  people:readonly Pick<Beneficiary,'tin'|'tag'|'relationship'>[],ownerTin:string
+):DashboardChartSource{
+  const saved=projectDashboardChartRecords(rows,year,'recorded',people,ownerTin);
+  const examples=projectDashboardChartRecords(rows,year,'example',people,ownerTin);
+  return saved.totalMinor>0n||saved.omittedRecords>0 ? 'recorded'
+    : examples.totalMinor>0n ? 'example' : 'recorded';
 }

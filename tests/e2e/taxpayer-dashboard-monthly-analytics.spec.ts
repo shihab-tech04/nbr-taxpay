@@ -10,7 +10,7 @@ test('Overview keeps compact metrics, saved drafts, corrections and interactive 
   const metrics=dashboard.locator('.taxpay-bento-summary');
   const cases=dashboard.locator('#dashboard-correction-requests');
   await expect(metrics.getByRole('button')).toHaveCount(3);
-  await expect(metrics.getByRole('button',{name:/Completed Payments/})).toContainText('8');
+  await expect(metrics.getByRole('button',{name:/Completed Payments/})).toContainText('5');
   await expect(metrics.getByRole('button',{name:/Correction Requests/})).toContainText('2');
   await expect(cases.getByTestId('dashboard-correction-request-list').locator('li')).toHaveCount(2);
   const charts=dashboard.getByTestId('dashboard-payment-analytics');
@@ -97,8 +97,10 @@ test('2025-2026 overview defaults to available example charts, never imaginary r
   await expect(sources.getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
   await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
   await expect(analytics.getByTestId('dashboard-beneficiary-breakdown')).toContainText('113,500');
+  await expect(overview.getByTestId('dashboard-source-indicator')).toContainText('Example activity');
+  await expect(analytics.getByTestId('dashboard-unclassified-recovery')).toContainText('Manage beneficiary tags');
   await expect(analytics).toContainText('Example payer spending for this year');
-  await expect(overview.getByRole('button',{name:/Completed Payments/}).first()).toContainText('8');
+  await expect(overview.getByRole('button',{name:/Completed Payments/}).first()).toContainText('5');
   await sources.getByRole('button',{name:'Recorded'}).click();
   await expect(sources.getByRole('button',{name:'Recorded'})).toHaveAttribute('aria-pressed','true');
   await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('No itemized recorded payments');

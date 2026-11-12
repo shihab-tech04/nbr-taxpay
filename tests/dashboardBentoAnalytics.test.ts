@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type {ChallanReceipt} from '../src/types/tax';
 import {
-  projectDashboardChartRecords,formatDashboardChartMoney,dashboardChartPercentage,
+  projectDashboardChartRecords,chooseDashboardChartSource,formatDashboardChartMoney,dashboardChartPercentage,
   type DashboardChartRecord
 } from '../src/components/screens/dashboardBentoAnalytics';
 
@@ -94,4 +94,27 @@ test('display percentages stay bounded and minor-unit arithmetic remains exact',
   assert.equal(dashboardChartPercentage(1n,3n),33.33);
   assert.equal(dashboardChartPercentage(0n,0n),0);
   assert.deepEqual(projectDashboardChartRecords([], '2026-2027','recorded',[],owner).byService.map(x=>x.amountMinor),[0n,0n,0n,0n,0n]);
+});
+
+
+test('overview selects recorded data first, otherwise explicitly identified examples',()=>{
+  const examples:DashboardChartRecord[]=[
+    {id:'example-direct',year:'2025-2026',kind:'income',amount:300,
+      state:'POSTED',beneficiaryTin:family},
+    {id:'employer-withholding',year:'2025-2026',kind:'tds',amount:500,
+      state:'POSTED',beneficiaryTin:family},
+    {id:'failed-attempt',year:'2025-2026',kind:'income',amount:100,
+      state:'FAILED',beneficiaryTin:family}
+  ];
+  assert.equal(chooseDashboardChartSource(examples,'2025-2026',people,owner),'example');
+  const illustrative=projectDashboardChartRecords(examples,'2025-2026','example',people,owner);
+  assert.equal(illustrative.paymentCount,1);
+  assert.equal(illustrative.totalMinor,30000n);
+  const stored=recorded('sql-1',[receipt('receipt-9','TRAVEL_TAX',[
+    {tin:family,year:'2025-2026',minor:2500}
+  ])]);
+  assert.equal(chooseDashboardChartSource([...examples,stored],'2025-2026',people,owner),'recorded');
+  const real=projectDashboardChartRecords([...examples,stored],'2025-2026','recorded',people,owner);
+  assert.equal(real.totalMinor,2500n);
+  assert.equal(real.paymentCount,1);
 });

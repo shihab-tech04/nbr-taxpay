@@ -59,3 +59,42 @@ test('interactive bento cards fit a 320px mobile viewport',async({page})=>{
   await expect(page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+
+test('Overview summary and charts use the same year/source, and unknown beneficiary tags have recovery',async({page})=>{
+  await page.goto(dashboard);
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  const chart=page.getByTestId('dashboard-payment-analytics');
+  const source=chart.getByTestId('dashboard-chart-source');
+  await source.getByRole('button',{name:'Examples'}).click();
+  await expect(chart).toHaveAttribute('data-chart-source','example');
+  const summary=page.locator('.taxpay-bento-summary');
+  await expect(summary.getByTestId('dashboard-source-indicator')).toContainText('Example activity');
+  await expect(summary.locator('.taxpay-summary-metric--completed strong')).toHaveText('5');
+  await expect(summary.locator('.taxpay-summary-metric--requests strong')).toHaveText('2');
+  await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
+  await expect(page.locator('.taxpay-bento-recent')).not.toContainText('Professional fee withholding');
+  await expect(page.locator('.taxpay-bento-recent')).toContainText('Example');
+  await expect(chart.getByTestId('dashboard-unclassified-recovery')).toContainText('Manage beneficiary tags');
+
+  // Record-only mode never silently keeps example payment counts or requests.
+  await source.getByRole('button',{name:'Recorded'}).click();
+  await expect(chart).toHaveAttribute('data-chart-source','recorded');
+  await expect(summary.locator('.taxpay-summary-metric--completed strong')).toHaveText('0');
+  await expect(summary.locator('.taxpay-summary-metric--requests strong')).toHaveText('—');
+  await expect(page.locator('.taxpay-bento-recent')).toContainText('No completed payment activity');
+  await source.getByRole('button',{name:'Examples'}).click();
+  await expect(summary.locator('.taxpay-summary-metric--completed strong')).toHaveText('5');
+
+  // A source-aware drilldown must match the selected service, not all tax events.
+  const advance=chart.getByTestId('dashboard-service-breakdown').locator('[data-service="ait"]');
+  await advance.click();
+  await chart.getByRole('button',{name:'View payment records'}).click();
+  await expect(page).toHaveURL(/action=history/);
+  const desktopRecords=page.getByTestId('taxpayer-transaction-table');
+  const mobileRecords=page.getByTestId('taxpayer-transaction-mobile-cards');
+  const records=await desktopRecords.isVisible()?desktopRecords:mobileRecords;
+  await expect(records).toBeVisible();
+  await expect(records).toContainText('Advance income tax');
+  await expect(records).not.toContainText('Tax with return — part 1');
+});
