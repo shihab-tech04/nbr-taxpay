@@ -118,3 +118,37 @@ test('overview selects recorded data first, otherwise explicitly identified exam
   assert.equal(real.totalMinor,2500n);
   assert.equal(real.paymentCount,1);
 });
+
+test('unclassified amounts distinguish known untagged recipients from missing recipients',()=>{
+  const rows:DashboardChartRecord[]=[
+    {id:'recipient-a',year:'2025-2026',kind:'income',amount:300,state:'POSTED',beneficiaryTin:family},
+    {id:'recipient-b',year:'2025-2026',kind:'travel',amount:65,state:'POSTED',beneficiaryTin:'888888888888'},
+    {id:'missing-a',year:'2025-2026',kind:'ait',amount:120,state:'POSTED'},
+    {id:'missing-b',year:'2025-2026',kind:'ait',amount:200,state:'POSTED'},
+    {id:'pending',year:'2025-2026',kind:'income',amount:1000,state:'FAILED'},
+    {id:'other-year',year:'2026-2027',kind:'income',amount:1000,state:'POSTED'}
+  ];
+  const result=projectDashboardChartRecords(rows,'2025-2026','example',[],owner);
+  assert.equal(result.totalMinor,68500n);
+  assert.equal(result.unclassified.recipientKnownMinor,36500n);
+  assert.equal(result.unclassified.recipientMissingMinor,32000n);
+  assert.equal(result.unclassified.untaggedRecipientCount,2);
+  assert.equal(result.unclassified.missingRecipientPaymentCount,2);
+  assert.equal(result.byTag.find(slice=>slice.key==='unassigned')?.amountMinor,
+    result.unclassified.recipientKnownMinor+result.unclassified.recipientMissingMinor);
+
+  // A saved relationship classifies only the matching TIN; never allocate
+  // the unrelated, missing-recipient advances to the same relationship.
+  const classified=projectDashboardChartRecords(rows,'2025-26','example',
+    [{tin:family,tag:'friends_family',relationship:'father'}],owner);
+  assert.equal(classified.byTag.find(slice=>slice.key==='family')?.amountMinor,30000n);
+  assert.equal(classified.unclassified.recipientKnownMinor,6500n);
+  assert.equal(classified.unclassified.recipientMissingMinor,32000n);
+  assert.equal(classified.unclassified.untaggedRecipientCount,1);
+
+  const travel=projectDashboardChartRecords(rows,'2025-26','example',[],owner,'travel');
+  assert.equal(travel.totalMinor,6500n);
+  assert.equal(travel.unclassified.recipientKnownMinor,6500n);
+  assert.equal(travel.unclassified.recipientMissingMinor,0n);
+  assert.equal(travel.unclassified.missingRecipientPaymentCount,0);
+});
