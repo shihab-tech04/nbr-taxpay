@@ -6,6 +6,7 @@ import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
 import {DashboardMonthlyPayments} from './DashboardMonthlyPayments';
+import {projectStoredDashboardAllocations,summarizeStoredDashboardYear} from '../../services/story1DashboardProjection';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
@@ -183,8 +184,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [caseSearch,setCaseSearch]=useState('');
   const [caseStatus,setCaseStatus]=useState<State|'all'>('all');
   const [savedDraftCount,setSavedDraftCount]=useState<number|null>(null);
-  const [draftHelpVisible,setDraftHelpVisible]=useState(false);
-  const [kind,setKind]=useState<Kind|'all'>('all');
+   const [kind,setKind]=useState<Kind|'all'>('all');
   const [status,setStatus]=useState<State|'all'>('all');
   const [monthFilter,setMonthFilter]=useState('all');
   const chooseHistoryMonth=(month:string)=>{
@@ -214,20 +214,26 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [selected,setSelected]=useState<RecordItem|null>(null);
   const [sqlPayments,setSqlPayments]=useState<OwnedStoryPayment[]>([]);
   const [sqlLoadError,setSqlLoadError]=useState(false);
+  const [sqlLoading,setSqlLoading]=useState(false);
+  const [sqlRevision,setSqlRevision]=useState(0);
   useEffect(()=>{
-    if(route!=='history'||previewAccount?.id!=='user1'||activePreviewSession()?.profileId!=='user1'){
-      setSqlPayments([]);setSqlLoadError(false);return;
+    // The account dashboard and History must read the same owner-session SQL
+    // payments. Previously Overview never fetched them at all.
+    if(!['history','taxpayer_home','dashboard'].includes(route)||
+      previewAccount?.id!=='user1'||activePreviewSession()?.profileId!=='user1'){
+      setSqlPayments([]);setSqlLoadError(false);setSqlLoading(false);return;
     }
     let active=true;
     const load=()=>{
+      setSqlLoading(true);
       void getDetailedStorySessionPayments().then(payments=>{
-        if(active){setSqlPayments(payments);setSqlLoadError(false);}
-      }).catch(()=>{if(active){setSqlPayments([]);setSqlLoadError(true);}});
+        if(active){setSqlPayments(payments);setSqlLoadError(false);setSqlLoading(false);}
+      }).catch(()=>{if(active){setSqlPayments([]);setSqlLoadError(true);setSqlLoading(false);}});
     };
     load();
     window.addEventListener('taxpay:story-payments-recovered',load);
     return()=>{active=false;window.removeEventListener('taxpay:story-payments-recovered',load);};
-  },[route,previewAccount?.id]);
+  },[route,previewAccount?.id,sqlRevision]);
   // SQL records are never matched to illustrative DEMO-* rows by their labels.
   // Every complete multi-head batch is one transaction and repeats as a whole.
   const sqlRows=useMemo<RecordItem[]>(()=>{
@@ -290,6 +296,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     applied:0,outstanding:0,pending:0,failed:0,disputed:0,posted:0};
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
   const historyScoped=useMemo(()=>[...scoped,...sqlRows.filter(row=>row.years?.includes(year))],[scoped,sqlRows,year]);
+  const storedProjection=useMemo(()=>projectStoredDashboardAllocations(sqlPayments),[sqlPayments]);
+  const storedForYear=useMemo(()=>summarizeStoredDashboardYear(storedProjection,year),[storedProjection,year]);
+  const recordedByBatch=new Map<string,number>();
+  for(const entry of storedForYear.allocations){
+    recordedByBatch.set(entry.batchId,(recordedByBatch.get(entry.batchId)??0)+entry.amountMinor);
+  }
+  const recordedDashboardRows=sqlRows.filter(row=>recordedByBatch.has(row.ref))
+    .map(row=>({...row,year,amount:(recordedByBatch.get(row.ref)??0)/100}));
+  const recentOverviewRows=[...scoped.filter(item=>item.state!=='REQUESTED'),...recordedDashboardRows]
+    .sort((a,b)=>b.date.localeCompare(a.date)||a.id.localeCompare(b.id)).slice(0,5);
   const availableTransactionBeneficiaries=[...new Map(historyScoped.flatMap(item=>
     transactionBeneficiaries(item)).map(person=>[person.tin,person])).values()]
     .sort((a,b)=>a.name.localeCompare(b.name));
@@ -508,15 +524,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   // Sample records are not issuer-verified external tax position data.
   // Do not render either first-row column unless a verified source is available.
   const verifiedExternalTaxPositionReady = false;
-  const completedPayments=historyScoped.filter(x=>x.state==='POSTED').length;
+  const completedExamples=scoped.filter(x=>x.state==='POSTED').length;
+  const completedPayments=completedExamples+storedForYear.completedBatches;
   const correctionRequests=historyScoped.filter(x=>x.state==='REQUESTED' && (x.kind==='refund'||x.kind==='adjustment'));
   const correctionRequestCount=correctionRequests.length;
   const openSavedDrafts=()=>{
-    const list=document.getElementById('taxpayer-dashboard-draft-section');
-    if(savedDraftCount!==null && savedDraftCount>0 && list){
-      list.scrollIntoView({behavior:'smooth',block:'start'});
-      list.focus({preventScroll:true});
-    }else setDraftHelpVisible(visible=>!visible);
+    const list=document.getElementById('dashboard-payment-drafts');
+    list?.scrollIntoView({behavior:'smooth',block:'start'});
+    list?.focus({preventScroll:true});
   };
   const focusCorrectionRequests=()=>{
     const target=document.getElementById('dashboard-correction-requests');
@@ -625,17 +640,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             <span className="taxpay-summary-metric__label"><FileCheck2 size={17} aria-hidden="true"/>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong>{completedPayments}</strong>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--drafts" onClick={openSavedDrafts}
-            aria-expanded={draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0)}>
+            aria-controls="dashboard-payment-drafts">
             <span className="taxpay-summary-metric__label"><FilePenLine size={17} aria-hidden="true"/>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span><strong>{savedDraftCount===null?'—':savedDraftCount}</strong>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--requests" onClick={focusCorrectionRequests}>
             <span className="taxpay-summary-metric__label"><ReceiptText size={17} aria-hidden="true"/>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong>{correctionRequestCount}</strong>
           </button>
         </div>
-        {draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0) &&
-          <p className="taxpay-summary-draft-hint" role="status">{savedDraftCount===null
-            ?tr('Draft count unavailable. Sign in or refresh to check again.','খসড়ার সংখ্যা পাওয়া যায়নি। সাইন ইন করুন অথবা রিফ্রেশ করে আবার দেখুন।')
-            :tr('No saved drafts yet. Use Save Draft during a payment to continue it later.','এখনও সংরক্ষিত খসড়া নেই। পরে চালু করতে পেমেন্টের সময় খসড়া সংরক্ষণ করুন।')}</p>}
+
       </section>
       <DashboardMonthlyPayments payments={recordedDirectPayments} assessmentYear={year} language={language}/>
     </div>
@@ -695,9 +707,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>}
     </section>
     </div>
-    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1} style={savedDraftCount===0?{display:'none'}:undefined}>
-      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft} onCountChange={setSavedDraftCount}/>
-    </div>}
+    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section">
+      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
+        showEmptyState onStartPayment={()=>openPaymentServiceChoice()} onCountChange={setSavedDraftCount}/>
+    </div>
     <div className="taxpay-bento-recent">
     <section className={panel} aria-labelledby="taxpayer-recent-activity-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -706,7 +719,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </div>
       <p className="mt-1 text-xs text-taxpay-muted">{tr('Assessment year','করবর্ষ')}: {year}</p>
       <ul className="mt-3 divide-y divide-taxpay-border" aria-label={tr('Latest transactions in selected year','নির্বাচিত করবর্ষের সাম্প্রতিক লেনদেন')}>
-        {[...scoped].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+        {recentOverviewRows.map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-taxpay-text">{item.title}</p>
             <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])}</p>
