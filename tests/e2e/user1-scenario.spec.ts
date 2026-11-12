@@ -121,7 +121,7 @@ test('user1 Activity retains the approved transaction table and removes redundan
     ? transactions.getByTestId('taxpayer-transaction-mobile-cards')
     : transactions.getByRole('table',{name:'Payment transactions'});
   if(info.project.name==='desktop-1280')
-    await expect(visibleRows.locator('tbody td:nth-child(2)').getByText('DEMO-PAY-02',{exact:true}).first()).toBeVisible();
+    await expect(visibleRows.locator('tbody td:nth-child(4)').getByText('DEMO-PAY-02',{exact:true}).first()).toBeVisible();
   else
     await expect(visibleRows.getByText('DEMO-PAY-02').first()).toBeVisible();
   await search.fill('not-an-existing-reference');
