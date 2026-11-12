@@ -150,7 +150,7 @@ export const PublicLanding: React.FC = () => {
     },
   ];
 
-  return <div className={'citizen-public-hub public-information-hub mx-auto w-full space-y-6' + (bn ? ' font-bengali' : '')}>
+  return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
       onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
@@ -271,7 +271,7 @@ export const PublicLanding: React.FC = () => {
 
     <section className="public-benefits" aria-labelledby="public-benefits-title">
       <div className="public-benefits__heading">
-        <h2 id="public-benefits-title">{t('Why use Korbritto?', 'করবৃত্ত কেন ব্যবহার করবেন?')}</h2>
+        <h2 id="public-benefits-title">{t('Why choose Sohojkor?', 'সহজকর কেন ব্যবহার করবেন?')}</h2>
         <p>{t('Pay, organize and track your taxes in one place.', 'কর পরিশোধ, তথ্য গুছিয়ে রাখা ও অগ্রগতি দেখা—সব এক জায়গায়।')}</p>
       </div>
       <div className="public-benefits__grid">
