@@ -185,9 +185,6 @@ const paymentSessionId = runDirectSql(
 );
 assert.match(paymentSessionId, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
   'Disposable user1 payment profile fixture is missing');
-runDirectSql(`insert into public.sim_payment_account_bindings(user_id,owner_uid,assigned_by)
-  values ('user1','${ownerA.id}'::uuid,'${ownerA.id}'::uuid)
-  on conflict (user_id) do update set owner_uid=excluded.owner_uid,assigned_by=excluded.assigned_by;`);
 const insertedParent = runDirectSql(`insert into demo_payment.story_payments(
   id,idempotency_key,session_id,service_code,amount_minor,data,status
 )
