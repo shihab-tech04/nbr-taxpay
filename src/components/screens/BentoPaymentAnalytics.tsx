@@ -94,7 +94,7 @@ export const BentoPaymentAnalytics:React.FC<{
             <h3 id="dashboard-service-breakdown-title">{tr('By payment service','পেমেন্টের ধরন অনুযায়ী')}</h3>
             <p>{tr('Select a service to filter beneficiary spending','উপকারভোগীর ব্যয় ফিল্টার করতে ধরন বাছুন')}</p>
           </div>
-          <strong className="taxpay-bento-analytics__total tabular-nums">{money(all.totalMinor)}</strong>
+          <strong className="taxpay-bento-analytics__total tabular-nums">{hasData?money(all.totalMinor):'—'}</strong>
         </div>
         {hasData?<div className="taxpay-bento-analytics__bars" role="group"
           aria-label={tr('Select payment service','পেমেন্টের ধরন নির্বাচন')}>
@@ -135,7 +135,7 @@ export const BentoPaymentAnalytics:React.FC<{
             <h3 id="dashboard-beneficiary-breakdown-title">{tr('By beneficiary relationship','উপকারভোগীর সম্পর্ক অনুযায়ী')}</h3>
             <p>{service==='all'?tr('All payment services','সব ধরনের পেমেন্ট'):SERVICE_LABELS[service][language]}</p>
           </div>
-          <strong className="taxpay-bento-analytics__total tabular-nums">{money(filtered.totalMinor)}</strong>
+          <strong className="taxpay-bento-analytics__total tabular-nums">{filtered.totalMinor>0n?money(filtered.totalMinor):'—'}</strong>
         </div>
         {filtered.totalMinor>0n?<>
           <div className="taxpay-bento-analytics__segments" role="img"
