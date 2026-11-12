@@ -25,8 +25,11 @@ ALTER TABLE public.taxpay_in_app_notifications
 GRANT SELECT (correction_inquiry_id,correction_decision_id)
   ON TABLE public.taxpay_in_app_notifications TO authenticated;
 
+CREATE INDEX taxpay_notifications_correction_inquiry_idx
+  ON public.taxpay_in_app_notifications(correction_inquiry_id)
+  WHERE correction_inquiry_id IS NOT NULL;
 CREATE UNIQUE INDEX taxpay_notifications_correction_decision_unique_idx
-  ON public.taxpay_in_app_notifications(recipient_uid,correction_decision_id)
+  ON public.taxpay_in_app_notifications(correction_decision_id)
   WHERE correction_decision_id IS NOT NULL;
 
 CREATE OR REPLACE FUNCTION public.taxpay_notify_correction_review_decision()
@@ -47,7 +50,7 @@ BEGIN
     recipient_uid,request_id,event_id,message_code,is_read,
     correction_inquiry_id,correction_decision_id)
   VALUES(v_recipient,NULL,NULL,v_message_code,false,NEW.inquiry_id,NEW.message_id)
-  ON CONFLICT (recipient_uid,correction_decision_id)
+  ON CONFLICT (correction_decision_id)
     WHERE correction_decision_id IS NOT NULL DO NOTHING;
   RETURN NEW;
 END;
