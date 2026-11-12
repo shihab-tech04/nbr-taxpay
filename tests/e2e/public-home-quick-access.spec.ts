@@ -142,7 +142,8 @@ test('wide desktop uses the available canvas without crushing the footer or look
   expect(Math.abs(visual.hero.width-visual.record.width)).toBeLessThanOrEqual(2);
   expect(visual.searchHeading.bottom).toBeLessThan(visual.searchField.top);
   expect(visual.searchField.width).toBeGreaterThanOrEqual(visual.record.width*.9);
-  expect(visual.firstCard.height).toBeGreaterThanOrEqual(94);
+  // This wide viewport intentionally uses an asymmetric 3-row bento, not 6 identical tiles.
+  expect(visual.firstCard.height).toBeGreaterThanOrEqual(60);
   // The footer tagline should not collapse into the three-line column seen
   // in the live screenshot, and its navigation links should not run together.
   expect(visual.footerTagline.height).toBeLessThanOrEqual(24);
@@ -207,10 +208,90 @@ test('record search and benefits share a restrained, left-aligned desktop headin
     expect(measurements.searchY).toBeGreaterThan(measurements.recordDescriptionBottom);
     expect(measurements.searchWidth).toBeGreaterThanOrEqual(measurements.sectionWidth * .9);
     expect(measurements.weights).toEqual([600, 600, 400]);
-    expect(measurements.fontSizes).toEqual(['18px', '18px', '14px', '14px']);
+    expect(measurements.fontSizes).toEqual(['16px', '20px', '14px', '14px']);
     expect(measurements.documentHeightOverflow).toBeLessThanOrEqual(2);
     expect(measurements.documentWidthOverflow).toBeLessThanOrEqual(2);
   }
+});
+
+test('approved payment-record lookup keeps the compact reference composition', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/?action=landing&lang=en');
+  await page.evaluate(async () => { await document.fonts.ready; });
+
+  const panel = page.locator('.public-record-discovery');
+  await expect(panel.getByRole('heading', { name: 'Find a payment record' })).toBeVisible();
+  await expect(panel.locator('.public-record-discovery__heading p')).toHaveText(
+    'Search by challan, token or transaction reference.'
+  );
+  const layout = await panel.evaluate(el => {
+    const r = el.getBoundingClientRect();
+    const heading = el.querySelector('.public-record-discovery__heading')!.getBoundingClientRect();
+    const form = el.querySelector('.public-record-search')!.getBoundingClientRect();
+    const button = el.querySelector('.public-record-search button')!.getBoundingClientRect();
+    return {
+      panelHeight: r.height,
+      panelRadius: parseFloat(getComputedStyle(el).borderRadius),
+      bg: getComputedStyle(el).backgroundColor,
+      headingBottom: heading.bottom,
+      formTop: form.top,
+      formHeight: form.height,
+      formWidth: form.width,
+      panelWidth: r.width,
+      buttonWidth: button.width,
+      formShadow: getComputedStyle(el.querySelector('.public-record-search')!).boxShadow,
+    };
+  });
+  expect(layout.panelHeight).toBeGreaterThanOrEqual(100);
+  expect(layout.panelHeight).toBeLessThanOrEqual(136);
+  expect(layout.panelRadius).toBeGreaterThanOrEqual(11);
+  expect(layout.panelRadius).toBeLessThanOrEqual(13);
+  expect(layout.headingBottom).toBeLessThan(layout.formTop);
+  expect(layout.formHeight).toBeGreaterThanOrEqual(46);
+  expect(layout.formHeight).toBeLessThanOrEqual(52);
+  expect(layout.formWidth).toBeGreaterThanOrEqual(layout.panelWidth * .95);
+  expect(layout.buttonWidth).toBeGreaterThanOrEqual(40);
+  expect(layout.bg).not.toBe('rgba(0, 0, 0, 0)');
+  expect(layout.formShadow).not.toBe('none');
+  await expect(panel.getByRole('searchbox')).toHaveAttribute('placeholder',
+    'Enter challan, token or transaction reference');
+});
+
+test('wide desktop bento has six readable benefits and non-data illustration previews', async ({ page }) => {
+  await page.setViewportSize({ width: 1775, height: 864 });
+  await page.goto('/?action=landing&lang=en');
+  await page.evaluate(async () => { await document.fonts.ready; });
+  const cards = page.locator('.public-benefits__item');
+  await expect(cards).toHaveCount(6);
+  await expect(page.locator('.public-benefits__preview')).toHaveCount(3);
+  const boxes = await cards.evaluateAll(elements => elements.map(element => {
+    const r = element.getBoundingClientRect();
+    return {x:r.x,y:r.y,width:r.width,height:r.height,scrollHeight:element.scrollHeight,clientHeight:element.clientHeight};
+  }));
+  const approx = (a:number,b:number) => Math.abs(a-b) <= 2;
+  // Short / tall / short, then tall / short / tall across three columns.
+  expect(approx(boxes[0].y,boxes[1].y)).toBe(true);
+  expect(approx(boxes[0].y,boxes[2].y)).toBe(true);
+  expect(approx(boxes[0].x,boxes[3].x)).toBe(true);
+  expect(approx(boxes[1].x,boxes[4].x)).toBe(true);
+  expect(approx(boxes[2].x,boxes[5].x)).toBe(true);
+  expect(boxes[1].height).toBeGreaterThan(boxes[0].height * 1.6);
+  expect(boxes[3].height).toBeGreaterThan(boxes[0].height * 1.6);
+  expect(boxes[5].height).toBeGreaterThan(boxes[2].height * 1.6);
+  expect(boxes.every(b => b.scrollHeight <= b.clientHeight + 2), JSON.stringify(boxes)).toBe(true);
+  for (const kind of ['corrections','history','repeat-drafts']) {
+    const preview = page.locator('.public-benefits__item[data-benefit="' + kind + '"] .public-benefits__preview');
+    await expect(preview).toBeVisible();
+    await expect(preview.locator('span')).toHaveCount(3);
+    await expect(preview).toHaveAttribute('aria-hidden','true');
+  }
+  await expect(page.locator('.public-benefits').getByRole('button')).toHaveCount(0);
+  const overflow = await page.evaluate(() => ({
+    vertical: document.documentElement.scrollHeight - innerHeight,
+    horizontal: document.documentElement.scrollWidth - innerWidth,
+  }));
+  expect(overflow.vertical).toBeLessThanOrEqual(2);
+  expect(overflow.horizontal).toBeLessThanOrEqual(2);
 });
 
 test('existing hero Pay Tax and Travel Tax actions still open separate journeys', async ({ page }) => {

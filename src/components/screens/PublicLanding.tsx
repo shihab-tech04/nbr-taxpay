@@ -282,6 +282,11 @@ export const PublicLanding: React.FC = () => {
               <h3>{title}</h3>
               <p>{detail}</p>
             </div>
+            {(id === 'corrections' || id === 'history' || id === 'repeat-drafts') && (
+              <span className="public-benefits__preview" aria-hidden="true">
+                <span /><span /><span />
+              </span>
+            )}
           </article>
         ))}
       </div>
