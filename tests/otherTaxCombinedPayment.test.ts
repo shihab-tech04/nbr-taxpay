@@ -119,6 +119,45 @@ test('fail closed for amount mismatch, invalid TIN, duplicate allocation and alt
  assert.throws(()=>saveCombinedOtherTaxRequest({payload:request.payload,receipt:{...request.receipt,challanNo:'SIM-FORGED'}},'READY',storage),/INVALID_COMBINED_RECOVERY/);
 });
 
+test('pending combined retries reject altered beneficiary-head identities and receipt projections',()=>{
+ const mutations: Array<[string,(request:ReturnType<typeof mk>)=>void]> = [
+  ['changed SQL allocation head', request => {
+    const entries=request.payload.details.allocations as Array<Record<string,unknown>>;
+    entries[0].headId=145;
+  }],
+  ['changed visible receipt economic code', request => {
+    request.receipt.allocationItems![0].economicCode='FORGED';
+  }],
+  ['changed Office-bound accounting head', request => {
+    const lines=request.payload.details.lines as Array<Record<string,unknown>>;
+    lines[0].headNameEn='Tax on notice of demand';
+  }],
+  ['changed persisted receipt allocation', request => {
+    const snapshot=request.payload.details.receiptSnapshot as ChallanReceipt;
+    snapshot.allocationItems![0].economicCode='FORGED';
+  }],
+  ['changed allocation count', request => {
+    request.payload.details.allocationCount=99;
+  }],
+  ['changed persisted receipt total', request => {
+    const snapshot=request.payload.details.receiptSnapshot as ChallanReceipt;
+    snapshot.totalAmount=51;
+  }],
+ ];
+ for (const [description,mutate] of mutations) {
+  const request=structuredClone(mk());
+  mutate(request);
+  assert.throws(()=>saveCombinedOtherTaxRequest(request,'READY',store()),/INVALID_COMBINED_RECOVERY/,description);
+ }
+ const storage=store();
+ saveCombinedOtherTaxRequest(mk(),'READY',storage);
+ const key='taxpay-other-tax-combined-v2:'+session;
+ const saved=JSON.parse(storage.getItem(key)!);
+ saved.request.payload.details.allocations[0].headId=145;
+ storage.setItem(key,JSON.stringify(saved));
+ assert.throws(()=>loadCombinedOtherTaxRequest(session,storage),/INVALID_COMBINED_RECOVERY/, 'tampered persistent retry must fail on load');
+});
+
 test('one combined transaction supports more than twenty allocations without splitting',()=>{
  const heads = Array.from({length:21},(_,index)=>({
    sourceId:'bulk-'+index,

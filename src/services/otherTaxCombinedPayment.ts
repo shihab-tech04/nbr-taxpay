@@ -170,28 +170,61 @@ export function clearCombinedOtherTaxRequest(sessionId: string, storage?: Combin
 }
 function validateCombinedRequest(request: StoredCombinedRequest['request']): void {
   const {payload,receipt}=request;
-  const allocations=payload?.details?.allocations;
-  const snapshot=payload?.details?.receiptSnapshot as Partial<ChallanReceipt>|undefined;
-  if(!payload||!receipt||!UUID.test(payload.sessionId)||!UUID.test(payload.idempotencyKey)||
-    payload.service!=='OTHER_TAX_PAYMENT'||payload.details.combinedPayment!==true||
+  const details=payload?.details;
+  const allocations=details?.allocations;
+  const lines=details?.lines;
+  const snapshot=details?.receiptSnapshot as Partial<ChallanReceipt>|undefined;
+  // Recovery is a copy of the exact pending SQL request, not a new editable
+  // allocation. Recheck every cross-projection identity before retrying it.
+  if(!payload||!receipt||!details||!UUID.test(payload.sessionId)||!UUID.test(payload.idempotencyKey)||
+    payload.service!=='OTHER_TAX_PAYMENT'||details.combinedPayment!==true||
     !Array.isArray(allocations)||!allocations.length||allocations.length>MAX_LINES||
-    !Array.isArray(payload.details.lines)||payload.details.lines.length!==allocations.length||
-    !snapshot||snapshot.challanNo!==receipt.challanNo||receipt.isSimulatedDemo!==true||
-    receipt.challanNo!=='SIM-'+payload.idempotencyKey||
+    !Array.isArray(lines)||lines.length!==allocations.length||
+    !Array.isArray(receipt.items)||receipt.items.length!==allocations.length||
     !Array.isArray(receipt.allocationItems)||receipt.allocationItems.length!==allocations.length||
+    !snapshot||!Array.isArray(snapshot.items)||!Array.isArray(snapshot.allocationItems)||
+    snapshot.challanNo!==receipt.challanNo||receipt.challanNo!=='SIM-'+payload.idempotencyKey||
+    receipt.isSimulatedDemo!==true||receipt.paymentCategory!=='OTHER_TAX_PAYMENT'||
+    snapshot.paymentCategory!=='OTHER_TAX_PAYMENT'||
+    !Number.isSafeInteger(payload.amountMinor)||payload.amountMinor<=0||
     Math.round(receipt.totalAmount*100)!==payload.amountMinor||
-    !Number.isSafeInteger(payload.amountMinor)||payload.amountMinor<=0)
+    Math.round(Number(snapshot.totalAmount)*100)!==payload.amountMinor||
+    Math.round(Number(details.totalAmount)*100)!==payload.amountMinor||
+    details.allocationCount!==allocations.length||
+    JSON.stringify(lines)!==JSON.stringify(receipt.items)||
+    JSON.stringify(snapshot.items)!==JSON.stringify(receipt.items)||
+    JSON.stringify(snapshot.allocationItems)!==JSON.stringify(receipt.allocationItems))
     throw Error('INVALID_COMBINED_RECOVERY');
-  const sum=allocations.reduce((value,item,index)=>{
-    const a=item as Record<string,unknown>;
-    const r=receipt.allocationItems![index];
-    if(!a||typeof a!=='object'||!validTin(String(a.taxpayerTin??''))||
+  let sum=0;
+  const unique=new Set<string>();
+  const tins=new Set<string>();
+  for(let index=0;index<allocations.length;index++){
+    const a=allocations[index] as Record<string,unknown>;
+    const tin=a?.taxpayerTin;
+    const r=receipt.allocationItems[index];
+    const line=receipt.items[index];
+    if(!a||typeof a!=='object'||Array.isArray(a)||!r||!line||
+      typeof tin!=='string'||!validTin(tin)||
+      typeof a.taxpayerName!=='string'||
       typeof a.amountMinor!=='number'||!Number.isSafeInteger(a.amountMinor)||a.amountMinor<=0||
-      typeof a.assessmentYear!=='string'||!a.assessmentYear||
-      a.taxpayerTin!==r.taxpayerTin||a.assessmentYear!==r.assessmentYear||
-      a.amountMinor!==r.amountMinor)
+      typeof a.headId!=='number'||!Number.isSafeInteger(a.headId)||a.headId<=0||
+      typeof a.assessmentYear!=='string'||!/^20\d{2}-\d{2}$/.test(a.assessmentYear)||
+      Number(a.assessmentYear.slice(5))!==(Number(a.assessmentYear.slice(0,4))+1)%100||
+      a.headId!==line.headId||a.taxpayerTin!==r.taxpayerTin||
+      a.assessmentYear!==r.assessmentYear||a.amountMinor!==r.amountMinor||
+      r.taxpayerName!==(a.taxpayerName.trim()||'TIN '+a.taxpayerTin)||
+      r.economicCode!==line.economicCode||r.paymentServiceEn!==line.headNameEn||
+      Math.round(line.totalAmount*100)!==a.amountMinor)
       throw Error('INVALID_COMBINED_RECOVERY');
-    return value+(a.amountMinor as number);
-  },0);
-  if(sum!==payload.amountMinor||!Number.isSafeInteger(sum))throw Error('INVALID_COMBINED_RECOVERY');
+    const key=tin+':'+a.headId+':'+a.assessmentYear;
+    if(unique.has(key))throw Error('INVALID_COMBINED_RECOVERY');
+    unique.add(key);
+    tins.add(tin);
+    sum+=a.amountMinor;
+    if(!Number.isSafeInteger(sum))throw Error('INVALID_COMBINED_RECOVERY');
+  }
+  const oneTin=tins.size===1?[...tins][0]:'';
+  if(sum!==payload.amountMinor||details.taxpayerCount!==tins.size||
+    details.taxpayerTin!==oneTin||receipt.taxpayerTin!==(oneTin||undefined))
+    throw Error('INVALID_COMBINED_RECOVERY');
 }
