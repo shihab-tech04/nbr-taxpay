@@ -135,14 +135,24 @@ try {
         const help = document.querySelector('.public-help-launch')?.getBoundingClientRect();
         const pay = document.querySelector('.citizen-pay')?.getBoundingClientRect();
         const dock = document.querySelector('.citizen-bottom-nav')?.getBoundingClientRect();
+        const paySpace = document.querySelector('.citizen-bottom-nav__pay-space')?.getBoundingClientRect();
+        const navTargets = [...document.querySelectorAll('.citizen-bottom-nav__item')]
+          .map(item=>item.getBoundingClientRect());
         const overlaps = help && pay && help.left < pay.right && help.right > pay.left && help.top < pay.bottom && help.bottom > pay.top;
+        const payInsideReservedDock = Boolean(pay && dock && paySpace &&
+          pay.left >= paySpace.left-2 && pay.right <= paySpace.right+2 &&
+          pay.top >= dock.top-2 && pay.bottom <= dock.bottom+2);
+        const payClearsNavTargets = Boolean(pay && navTargets.length===3 &&
+          navTargets.every(target=>pay.left >= target.right+2));
         return {center:Math.abs(logo.x+logo.width/2-header.x-header.width/2),
           order:menu.x < logo.x,overlaps,
-          payClearsDock:Boolean(pay && dock && pay.bottom <= dock.top-2),
+          payInsideReservedDock,payClearsNavTargets,
           dockAtBottom:Boolean(dock && Math.abs(dock.bottom-innerHeight)<=2),
           overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
       });
-      if(frame.center>3 || !frame.order || frame.overlaps || !frame.payClearsDock || !frame.dockAtBottom || frame.overflow>2)
+      if(frame.center>3 || !frame.order || frame.overlaps ||
+         !frame.payInsideReservedDock || !frame.payClearsNavTargets ||
+         !frame.dockAtBottom || frame.overflow>2)
         throw new Error('Live public mobile navigation parity regression: '+JSON.stringify(frame));
       // Mobile Help is an approved bottom-anchored modal sheet with a
       // backdrop, not the old floating panel above the dock. The unchanged
