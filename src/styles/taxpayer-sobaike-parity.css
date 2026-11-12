@@ -579,11 +579,13 @@
   .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-pay--guest-floating {
     bottom:calc(80px + env(safe-area-inset-bottom));
   }
-  /* Keep Pay and the fixed bottom dock clear with a STABLE footer size.
-     The reserved area is page-colored, never an empty white footer extension.
-     Do not resize the footer on header-collapse: it destabilizes scroll anchoring. */
+  /* Reserve only the compact bottom controls at the end of the public page.
+     When the footer is reached, the scrolling shell uses corner navigation and
+     the independent Pay button at bottom:16px (52px high). 84px leaves 16px
+     between the footer row and Pay, without a second empty footer panel.
+     Keep this constant across header collapse to avoid scroll-anchor jumps. */
   .taxpay-citizen-shell.taxpay-public-mobile-shell .public-footer {
-    padding-bottom:calc(148px + env(safe-area-inset-bottom)) !important;
+    padding-bottom:calc(84px + env(safe-area-inset-bottom)) !important;
     background:var(--color-taxpay-background);
     border-top:0;
   }
