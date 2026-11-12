@@ -36,6 +36,10 @@ test('walk-in payer SQL contract never assigns ownership from a typed TIN', () =
   assert.match(migration,/GRANT EXECUTE ON FUNCTION public\.taxpay_claim_walkin_payer_payments\(\)[\s\S]*TO authenticated/);
   assert.match(migration,/CREATE TRIGGER story1_walkin_payer_tin_guard/);
   assert.match(migration,/UNMATCHED_WALKIN_PAYER_TIN/);
+  // Guest-supplied payer IDs must not bypass matching via the public submit RPC.
+  assert.match(migration,/UNAUTHORIZED_WALKIN_PAYER_ID/);
+  assert.match(migration,/FROM taxpay_guest_private\.demo_profiles p/);
+  assert.match(migration,/p\.payment_session_id = NEW\.session_id/);
   assert.match(migration,/UNCONFIRMED_WALKIN_PAYER/);
   assert.match(migration,/payment\.data->'details'->>'payerMode' = 'OTHER'/);
 });
