@@ -222,7 +222,7 @@ test('User1 loads beneficiary tags for overview and Activity, not Profile or Set
 
   await page.goto('/?action=history');
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-  await expect.poll(()=>addressBookReads).toBeGreaterThan(0);
+  await expect.poll(()=>addressBookReads).toBeGreaterThan(initialOverviewReads);
   const historyReads=addressBookReads;
 
   await page.goto('/?action=account_settings&demoUser=user1');
