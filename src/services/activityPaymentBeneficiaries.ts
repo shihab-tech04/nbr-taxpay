@@ -60,7 +60,8 @@ export function activityPaymentBeneficiaries(
       }else if(validTin(receipt.taxpayerTin)&&!receipt.batchId){
         // A legacy single-recipient receipt has no verified head-level split.
         // Show its identity, never manufacture separate beneficiary allocations.
-        add(receipt.taxpayerTin,receipt.payerName,null,receipt.assessmentYear,'');
+        // Payer name is never proof of beneficiary identity.
+        add(receipt.taxpayerTin,'',null,receipt.assessmentYear,'');
       }
     }
   }else if(validTin(row.beneficiaryTin)){
