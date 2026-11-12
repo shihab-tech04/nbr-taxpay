@@ -119,6 +119,14 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
         {!user && <button type="button" className={button} disabled={!records.length} onClick={csv}><Download size={15} className="mr-2 inline" aria-hidden="true"/>{tr('Export CSV','CSV রপ্তানি')}</button>}
       </div>} />
     {user ? <>
+      <AccountActivitySummary ownerUid={user.id} language={language}
+        dashboardYear={year} onDashboardYearChange={setYear}
+        onNavigate={(route) => navigate(route)} />
+      <CorrectionInquiries authenticatedUserId={user.id} language={language} dashboard />
+      {onResumePaymentDraft && <div className="taxpay-bento-grid"><div className="taxpay-bento-drafts">
+        <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}/>
+      </div></div>}
+      {serviceShortcut}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-taxpay-border bg-white px-4 py-3" data-testid="dashboard-example-controls">
         <p className="min-w-0 text-sm text-taxpay-muted">{exampleMode
           ? tr('Example figures — not your tax records or confirmed payments.','উদাহরণের পরিমাণ — আপনার কর রেকর্ড বা নিশ্চিত পরিশোধ নয়।')
@@ -172,16 +180,8 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
           : tr('Verified tax totals and posted tax credits for this year are not linked to this account. Check your tax ledger below for available records.',
             'এই করবর্ষের যাচাইকৃত করের পরিমাণ ও নথিভুক্ত কর ক্রেডিট এই অ্যাকাউন্টে যুক্ত নেই। পাওয়া তথ্য দেখতে নিচের কর লেজার দেখুন।')}
       </p>
-      <CorrectionInquiries authenticatedUserId={user.id} language={language} dashboard />
       <AuthenticatedDashboardPosition language={language} year={year} years={accountYears} exampleMode={exampleMode}
         onSelectYear={setYear} onNavigate={(route)=>navigate(route)} />
-      {onResumePaymentDraft && <div className="taxpay-bento-grid"><div className="taxpay-bento-drafts">
-        <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}/>
-      </div></div>}
-      <AccountActivitySummary ownerUid={user.id} language={language}
-        dashboardYear={year} onDashboardYearChange={setYear}
-        onNavigate={(route) => navigate(route)} />
-      {serviceShortcut}
     </> : <>
     {previewAccount && <section className="taxpay-bento-hero" aria-label={tr('Payment shortcuts','পেমেন্টের শর্টকাট')}>
       <h2>{tr('What would you like to do?','আপনি কী করতে চান?')}</h2>

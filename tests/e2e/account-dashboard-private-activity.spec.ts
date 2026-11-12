@@ -35,7 +35,7 @@ const privateHistory=[{
   ],
 }];
 
-async function mockPrivateAccount(page:Page,profile:'user2'|null){
+async function mockPrivateAccount(page:Page,profile:'user1'|'user2'|null){
   const session=sessionFor(owner);
   await page.addInitScript(({key,value})=>{
     localStorage.setItem(key,JSON.stringify(value));
@@ -72,7 +72,7 @@ async function mockPrivateAccount(page:Page,profile:'user2'|null){
       const beneficiaryRows=profile==='user2'?privateHistory.map(row=>({
         ...row,allocations:row.allocations.filter(allocation=>allocation.beneficiary===profile),
       })):[];
-      return json(body.p_view==='beneficiary'?beneficiaryRows:[]);
+      return json(body.p_view==='beneficiary'?beneficiaryRows:(profile==='user1'?privateHistory:[]));
     }
     if(url.pathname==='/rest/v1/taxpay_account_payment_form_drafts'||
        url.pathname==='/rest/v1/taxpay_payment_requests'||
@@ -93,6 +93,27 @@ async function mockPrivateAccount(page:Page,profile:'user2'|null){
     return json({message:'Blocked by the account-dashboard browser test'},403);
   });
 }
+
+test('payer-owned monthly chart uses selected assessment-year allocations without crediting recipients',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.setViewportSize({width:375,height:820});
+  await page.goto('/?action=taxpayer_home');
+  const summary=page.getByTestId('account-workflow-summary');
+  const monthly=summary.getByTestId('account-scenario-monthly');
+  await expect(monthly).toBeVisible();
+  await expect(monthly.getByRole('heading',{name:'Monthly payment activity'})).toBeVisible();
+  await expect(monthly.locator('[data-month="2026-10"]')).toHaveAttribute('data-amount-minor','13000');
+  await expect(monthly).toContainText('not Treasury-confirmed payments or tax credits');
+  const correction=page.locator('#dashboard-correction-requests');
+  const [activityBox,correctionBox]=await Promise.all([summary.boundingBox(),correction.boundingBox()]);
+  expect(activityBox&&correctionBox).toBeTruthy();
+  expect(activityBox!.y).toBeLessThan(correctionBox!.y);
+  await summary.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
+  await expect(monthly.locator('[data-month="2026-10"]')).toHaveAttribute('data-amount-minor','3450');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  await setWorkspaceLanguage(page,'bn');
+  await expect(monthly.getByRole('heading',{name:'মাসভিত্তিক পেমেন্ট কার্যক্রম'})).toBeVisible();
+});
 
 test('record count follows the selected assessment year, not the all-year total',async({page})=>{
   await mockPrivateAccount(page,'user2');
