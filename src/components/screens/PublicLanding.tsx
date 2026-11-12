@@ -62,7 +62,7 @@ export const PublicLanding: React.FC = () => {
       id: 'payments',
       Icon: WalletCards,
       title: t('All Tax Payments', 'সব ধরনের কর পরিশোধ'),
-      detail: t('Pay different taxes for yourself or others.', 'নিজের বা অন্যের বিভিন্ন ধরনের কর পরিশোধ করুন।'),
+      detail: t('Pay taxes for yourself, family or clients.', 'নিজের বা অন্যের বিভিন্ন ধরনের কর পরিশোধ করুন।'),
     },
     {
       id: 'corrections',
