@@ -102,6 +102,8 @@ test('2025-2026 overview defaults to available example charts, never imaginary r
   await sources.getByRole('button',{name:'Recorded'}).click();
   await expect(sources.getByRole('button',{name:'Recorded'})).toHaveAttribute('aria-pressed','true');
   await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('No itemized recorded payments');
+  await expect(analytics.getByTestId('dashboard-service-breakdown').locator('.taxpay-bento-analytics__total')).toHaveText('—');
+  await expect(analytics.getByTestId('dashboard-beneficiary-breakdown').locator('.taxpay-bento-analytics__total')).toHaveText('—');
   await sources.getByRole('button',{name:'Examples'}).click();
   await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-2025');
