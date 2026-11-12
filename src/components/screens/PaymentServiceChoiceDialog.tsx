@@ -211,7 +211,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
       backLabel={tr('Back', 'ফিরুন')}
       hideFooter={view === 'payer' && draftEntryBlocking}
       service={view === 'login' ? 'login' : view === 'payment' && effectiveSelected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
-      closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
+      closeIconLabel={travelJourney && view === 'payment' ? tr('Close modal', 'মডাল বন্ধ করুন') : tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={view === 'login'
         ? <TaxpayerLoginFooter formId="taxpay-embedded-login-form" disabled={!loginReady} language={language} />
         : (
