@@ -198,8 +198,9 @@ select '${correctionPaymentId}'::uuid,'${correctionIdempotencyKey}'::uuid,
     'sessionId',profile.payment_session_id,
     'service','OTHER_TAX_PAYMENT','amountMinor',100,'origin','TAXPAY_UI',
     'details',jsonb_build_object(
-      'payerMode','SELF','payerId','user1','payerTin','909000000001',
-      'payerName','User 1','receiptReference','${correctionReference}',
+      'payerMode','SELF','payerId','user1',
+      'lines',jsonb_build_array(jsonb_build_object('beneficiary','user1','amountMinor',100)),
+      'payerTin','909000000001','payerName','User 1','receiptReference','${correctionReference}',
       'receiptSnapshot',jsonb_build_object(
         'challanNo','${correctionReference}','payerTin','909000000001','payerName','User 1'
       )
