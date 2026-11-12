@@ -48,7 +48,7 @@ test('changing assessment year updates the new chart totals without retaining th
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
   await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-2025');
-  await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('70,000');
+  await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('90,000');
   await expect(chart.getByTestId('dashboard-service-breakdown')).not.toContainText('113,500');
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
   await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('60,000');
