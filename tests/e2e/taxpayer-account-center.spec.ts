@@ -82,7 +82,7 @@ test('a signed-in account returning to public home sees notification and profile
   const guideLink=header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'});
   await expect(guideLink).toBeVisible();
   await guideLink.click();
-  await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
   await header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Home'}).click();
   await expect(page.getByRole('button',{name:'Help'})).toHaveCount(0);
   await header.getByRole('button',{name:'Profile menu'}).click();
@@ -112,7 +112,7 @@ test('signed-in public mobile uses the existing private-style header, shared she
     await page.goto('/?action=landing');
     const header=page.locator('.taxpay-public-mobile-navigation .citizen-header');
     await expect(header.getByRole('button',{name:'Notifications'})).toBeVisible();
-    await expect(header.getByRole('button',{name:'Korbritto home'})).toBeVisible();
+    await expect(header.getByRole('button',{name:'Sohojkor home'})).toBeVisible();
     await header.getByRole('button',{name:'Open menu'}).click();
     const menu=page.getByRole('dialog',{name:'Services & menu'});
     await expect(menu.getByRole('button',{name:'Beneficiaries'})).toBeVisible();
