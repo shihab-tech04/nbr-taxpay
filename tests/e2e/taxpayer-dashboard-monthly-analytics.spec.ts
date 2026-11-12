@@ -99,6 +99,13 @@ test('2025-2026 overview defaults to available example charts, never imaginary r
   await expect(analytics.getByTestId('dashboard-beneficiary-breakdown')).toContainText('113,500');
   await expect(overview.getByTestId('dashboard-source-indicator')).toContainText('Example activity');
   await expect(analytics.getByTestId('dashboard-unclassified-recovery')).toContainText('Manage beneficiary tags');
+  const unknown=analytics.getByTestId('dashboard-unclassified-recovery');
+  await expect(unknown).toContainText('Why some spending is unclassified');
+  await expect(unknown).toContainText('3 recipients without a matching saved relationship');
+  await expect(unknown).toContainText('81,500');
+  await expect(unknown).toContainText('2 payments without a recorded recipient');
+  await expect(unknown).toContainText('32,000');
+  await expect(overview.getByTestId('dashboard-correction-request-list')).not.toContainText('DEMO-REFUND-01');
   await expect(analytics).toContainText('Example payer spending for this year');
   await expect(overview.getByRole('button',{name:/Completed Payments/}).first()).toContainText('5');
   await sources.getByRole('button',{name:'Recorded'}).click();
