@@ -1212,12 +1212,12 @@
 .public-footer__inner{max-width:calc(var(--public-content-max) + 4rem);margin:0 auto;padding:.8rem clamp(1rem,3vw,2rem);display:flex;align-items:center;justify-content:space-between;gap:clamp(.8rem,1.8vw,1.5rem);}
 .public-footer__identity{display:flex;align-items:center;gap:.7rem;flex:0 0 auto;min-width:0;}
 .public-footer__identity img.public-footer__wordmark{display:block;width:112px;max-width:100%;height:37px;object-fit:contain;object-position:left center;}
-.public-footer__identity p{max-width:145px;font-size:.69rem;color:var(--citizen-muted);margin:0;line-height:1.45;}
+.public-footer__identity p{max-width:145px;font-size:.875rem;color:var(--citizen-muted);margin:0;line-height:1.45;}
 .public-footer__navs{display:flex;flex:1 1 auto;align-items:center;justify-content:center;flex-wrap:wrap;gap:.1rem clamp(.65rem,1.2vw,1rem);min-width:0;}
-.public-footer__navs a,.public-footer__navs button{display:inline-flex;align-items:center;gap:.25rem;text-align:left;min-height:40px;padding:.35rem 0;font-size:.75rem;color:var(--citizen-muted);white-space:nowrap;}
+.public-footer__navs a,.public-footer__navs button{display:inline-flex;align-items:center;gap:.25rem;text-align:left;min-height:40px;padding:.35rem 0;font-size:.875rem;color:var(--citizen-muted);white-space:nowrap;}
 .public-footer__navs a:hover,.public-footer__navs button:hover{text-decoration:underline;color:var(--citizen-primary-dark);}
 .public-footer__bottom{flex:0 0 auto;display:flex;align-items:center;min-height:32px;padding-left:clamp(.7rem,1.5vw,1.25rem);border-left:1px solid var(--citizen-border);}
-.public-footer__bottom p{margin:0;font-size:.71rem;color:var(--citizen-muted);line-height:1.5;white-space:nowrap;}
+.public-footer__bottom p{margin:0;font-size:.875rem;color:var(--citizen-muted);line-height:1.5;white-space:nowrap;}
 @media(max-width:1120px){
  .public-footer__inner{flex-wrap:wrap;justify-content:center;gap:.35rem 1rem;}
  .public-footer__navs{justify-content:flex-end;}
@@ -1319,7 +1319,7 @@
     padding:0;
     border:0;
   }
-  .public-footer__bottom p { font-size:.69rem; }
+  .public-footer__bottom p { font-size:.875rem; }
   .public-footer__mobile-actions {
     display:block;
     grid-column:3;
