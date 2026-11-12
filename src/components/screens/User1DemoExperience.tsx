@@ -702,7 +702,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section">
       <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
         showEmptyState onStartPayment={()=>openPaymentServiceChoice()} onCountChange={setSavedDraftCount}/>
-    </div>
+    </div>}
     {(sqlLoading||sqlLoadError||storedProjection.allocations.length>0||storedProjection.incompleteCount>0)&&
       <section className={panel+' taxpay-bento-account-records'} data-testid="dashboard-account-records"
         aria-labelledby="dashboard-account-records-title">
