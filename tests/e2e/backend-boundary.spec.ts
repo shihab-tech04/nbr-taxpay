@@ -96,10 +96,10 @@ test('secure workspace starts without a presumed legal AY and remains usable on 
 
 test('legacy help URL uses the current guide and cannot offer unverified calculated payments', async ({ page }) => {
   await page.goto('/?action=guidance');
-  await expect(page.getByRole('heading', { name: 'Korbritto user guide' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Sohojkor user guide' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Proceed to Pay Estimated Tax' })).toHaveCount(0);
   await page.getByRole('button', { name: 'বাংলা' }).click();
-  await expect(page.getByRole('heading', { name: 'করবৃত্ত ব্যবহার নির্দেশিকা' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'সহজকর ব্যবহার নির্দেশিকা' })).toBeVisible();
 });
 
 test('travel-tax page presents the service without repeated prototype disclaimers', async ({ page }) => {
