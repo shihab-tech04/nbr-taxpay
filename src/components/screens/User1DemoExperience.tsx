@@ -843,9 +843,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           </div>
           <p className="whitespace-nowrap text-sm font-semibold tabular-nums">{money(item.amount)}</p>
           <div>{tag(item.state)}</div>
-          <button type="button" className={action} onClick={()=>setSelected(item)} aria-label={tr('Details for ','বিস্তারিত: ')+item.title}>{tr('Details','বিস্তারিত')}</button>
-          {item.sql?.reuse&&previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1'&&
-            <button type="button" className={action} onClick={()=>payAgain(item)}>{tr('Pay Again','আবার পরিশোধ')}</button> 
+          {rowActions(item)}
         </li>)}
       </ul>
     </section>
