@@ -94,7 +94,7 @@ test('public information header and sections fit all requested widths',async({pa
     await expect(page.locator('.public-home-header')).toBeHidden();
   } else {
     await expect(page.locator('.public-home-header')).toBeVisible();
-    await expect(page.locator('.public-home-header').getByRole('img',{name:'Korbritto'})).toBeVisible();
+    await expect(page.locator('.public-home-header').getByRole('img',{name:'Sohojkor'})).toBeVisible();
   }
   await expect(page.locator('#public-home-title')).toBeVisible();
   await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
