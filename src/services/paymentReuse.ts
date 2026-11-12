@@ -105,6 +105,11 @@ export function reuseRecordedPayment(
   // A single fetched row may still belong to a larger multi-item batch.
   // Never treat a partial history page or missing item as an entire payment.
   const isBatch = source.some(r => r.batchId || r.batchItemCount || r.batchItemIndex);
+  // A modern combined SQL payment has ONE receipt with several allocations.
+  // Multiple receipt rows are related only when all carry one complete batch.
+  // Never manufacture a combined draft out of unrelated recorded payments.
+  if (!isBatch && source.length !== 1)
+    throw Error('The complete original batch is unavailable.');
   if (isBatch) {
     const batchId = source[0].batchId;
     const total = source[0].batchItemCount;
