@@ -257,6 +257,62 @@ test('approved payment-record lookup keeps the compact reference composition', a
     'Enter challan, token or transaction reference');
 });
 
+test('benefits bento appears at the actual 1310px desktop screenshot size in EN and BN', async ({ page }) => {
+  for (const viewport of [
+    { width: 1200, height: 900 },
+    { width: 1310, height: 924 },
+  ]) {
+    for (const lang of ['en', 'bn']) {
+      await page.setViewportSize(viewport);
+      await page.goto('/?action=landing&lang=' + lang);
+      await page.evaluate(async () => { await document.fonts.ready; });
+
+      const cards = page.locator('.public-benefits__item');
+      const highlights = page.locator('.public-benefits__highlights');
+      await expect(cards).toHaveCount(6);
+      await expect(highlights).toHaveCount(2);
+      await expect(highlights.first()).toBeVisible();
+      await expect(highlights.last()).toBeVisible();
+      await expect(page.locator('.public-benefits__preview')).toHaveCount(0);
+
+      const result = await page.evaluate(() => {
+        const box = (selector:string) => {
+          const r=document.querySelector(selector)!.getBoundingClientRect();
+          return { x:r.x, y:r.y, width:r.width, height:r.height };
+        };
+        return {
+          gridColumns:getComputedStyle(document.querySelector('.public-benefits__grid')!).gridTemplateColumns.trim().split(/\\s+/).length,
+          payments:box('.public-benefits__item[data-benefit="payments"]'),
+          corrections:box('.public-benefits__item[data-benefit="corrections"]'),
+          certificates:box('.public-benefits__item[data-benefit="certificates"]'),
+          repeat:box('.public-benefits__item[data-benefit="repeat-drafts"]'),
+          search:box('.public-record-discovery'),
+          overflowY:document.documentElement.scrollHeight-innerHeight,
+          overflowX:document.documentElement.scrollWidth-innerWidth,
+        };
+      });
+      expect(result.gridColumns, JSON.stringify({viewport, lang, result})).toBe(4);
+      expect(result.payments.x).toBeLessThan(result.corrections.x);
+      expect(result.corrections.x).toBeLessThan(result.certificates.x);
+      expect(result.certificates.x).toBeLessThan(result.repeat.x);
+      expect(result.payments.height).toBeGreaterThan(result.corrections.height * 1.8);
+      expect(result.repeat.height).toBeGreaterThan(result.certificates.height * 1.8);
+      expect(result.search.width).toBeGreaterThanOrEqual(1090);
+      expect(result.overflowY, JSON.stringify({viewport, lang, result})).toBeLessThanOrEqual(2);
+      expect(result.overflowX).toBeLessThanOrEqual(2);
+    }
+  }
+
+  // Short desktop keeps the approved compact 3x2 rather than overflowing.
+  await page.setViewportSize({width:1310,height:768});
+  await page.goto('/?action=landing&lang=en');
+  const compact = await page.locator('.public-benefits__grid').evaluate(el =>
+    getComputedStyle(el).gridTemplateColumns.trim().split(/\\s+/).length
+  );
+  expect(compact).toBe(3);
+  await expect(page.locator('.public-benefits__highlights').first()).toBeHidden();
+});
+
 test('wide desktop balances six benefits without placeholder illustrations', async ({ page }) => {
   for (const lang of ['en','bn']) {
     await page.setViewportSize({ width: 1775, height: 864 });
