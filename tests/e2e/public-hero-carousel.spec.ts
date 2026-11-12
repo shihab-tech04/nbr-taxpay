@@ -19,7 +19,8 @@ test('five published images and palettes retain fixed copy and the same two paym
   for (let index = 0; index < 5; index++) {
     const slide = carousel.locator('.public-hero-carousel__slide').nth(index);
     await expect(slide).toHaveAttribute('aria-hidden', index === 0 ? 'false' : 'true');
-    await expect(slide.locator('img')).toHaveAttribute('src', new RegExp(`taxpay-hero-${illustrations[index]}`));
+    await expect(slide.locator('img')).toHaveAttribute('data-deferred-src', new RegExp(`taxpay-hero-${illustrations[index]}`));
+    if (index === 0) await expect(slide.locator('img')).toHaveAttribute('src', /taxpay-hero-intro-v9/);
     await expect(slide).toHaveAttribute('data-banner-kind', index === 0 ? 'intro' : 'service');
   }
   await expect(carousel.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
@@ -32,6 +33,7 @@ test('five published images and palettes retain fixed copy and the same two paym
     const slide = carousel.locator('.public-hero-carousel__slide').nth(index);
     await expect(slide).toHaveAttribute('aria-hidden', 'false');
     await expect(slide).not.toHaveAttribute('inert', '');
+    await expect(slide.locator('img')).toHaveAttribute('src', new RegExp(`taxpay-hero-${illustrations[index]}`));
     await expect(slide.getByRole('heading', {
       name: info.project.name === 'desktop-1280' ? 'Tax payments, without the confusion' : 'Pay tax with confidence',
     })).toBeVisible();
@@ -39,6 +41,32 @@ test('five published images and palettes retain fixed copy and the same two paym
     await expect(slide.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
     await expect(slide.locator('.public-guest-action')).toHaveCount(2);
   }
+});
+
+test('initial banner request does not download hidden images before the visible image finishes', async ({ page }) => {
+  const requests: string[] = [];
+  let releaseFirst!: () => void;
+  const heldFirst = new Promise<void>(resolve => { releaseFirst = resolve; });
+  await page.route(/taxpay-hero-(intro|return|advance|withholding|travel)-v9\\.webp/, async route => {
+    const url = route.request().url();
+    requests.push(url);
+    if (url.includes('taxpay-hero-intro-v9.webp')) await heldFirst;
+    await route.continue();
+  });
+  await page.goto('/?action=landing');
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  await expect(carousel.locator('.public-hero-carousel__slide')).toHaveCount(5);
+  await expect.poll(() => requests.length).toBe(1);
+  expect(requests[0]).toContain('taxpay-hero-intro-v9.webp');
+  for (const index of [1, 2, 3, 4]) {
+    await expect(carousel.locator('.public-hero-carousel__slide').nth(index).locator('img'))
+      .toHaveAttribute('data-deferred-src', new RegExp(`taxpay-hero-${illustrations[index]}`));
+    if (index > 1) await expect(carousel.locator('.public-hero-carousel__slide').nth(index).locator('img'))
+      .not.toHaveAttribute('src', /taxpay-hero/);
+  }
+  releaseFirst();
+  await expect.poll(() => requests.some(url => url.includes('taxpay-hero-return-v9.webp'))).toBe(true);
+  expect(requests.some(url => url.includes('taxpay-hero-travel-v9.webp'))).toBe(false);
 });
 
 test('published service palettes follow existing choice tokens without changing global brand', async ({ page }) => {
