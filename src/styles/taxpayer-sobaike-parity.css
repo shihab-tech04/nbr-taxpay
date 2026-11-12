@@ -581,7 +581,7 @@
     font-weight:700;
   }
   .taxpay-citizen-shell.taxpay-public-mobile-shell .citizen-pay--guest-floating {
-    right:calc(10px + env(safe-area-inset-right));
+    right:calc(8px + env(safe-area-inset-right));
     bottom:calc(7px + env(safe-area-inset-bottom));
     width:114px;
     min-width:114px;
