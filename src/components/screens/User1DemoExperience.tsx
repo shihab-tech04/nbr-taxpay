@@ -680,7 +680,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">{tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}</h2>
-          <p className="mt-1 text-xs text-taxpay-muted">{tr('Illustrative account events and separately recorded SQL simulations; not verified tax credits. Pending, failed, reversed and unmatched entries excluded.','নমুনা অ্যাকাউন্টের ঘটনা ও পৃথক SQL সিমুলেশন; যাচাইকৃত কর ক্রেডিট নয়। অপেক্ষমাণ, ব্যর্থ, বাতিল ও অমিল লেনদেন বাদ।')}</p>
+          <p className="mt-1 text-xs text-taxpay-muted">{tr('Example account entries and separately recorded SQL simulations; not verified tax credits. Pending, failed, reversed and unmatched entries excluded.','নমুনা অ্যাকাউন্টের ঘটনা ও পৃথক SQL সিমুলেশন; যাচাইকৃত কর ক্রেডিট নয়। অপেক্ষমাণ, ব্যর্থ, বাতিল ও অমিল লেনদেন বাদ।')}</p>
         </div>
         <p className="text-lg font-semibold tabular-nums" data-testid="tagged-payment-total">{tagLoadState==='ready'?money(taggedPaymentTotal):'—'}</p>
       </div>
