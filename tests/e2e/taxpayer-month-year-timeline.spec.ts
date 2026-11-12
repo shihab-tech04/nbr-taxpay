@@ -3,19 +3,19 @@ import {openTaxpayerTravelTax} from './taxpayer-travel-menu-helper';
 
 const dashboard='/?action=taxpayer_home&demoUser=user1';
 
-test('year comparison shows only actual assessment years, without a monthly dashboard chart',async({page})=>{
+test('current assessment year is available without invented liability or monthly trend charts',async({page})=>{
   await page.goto(dashboard);
-  const chart=page.getByRole('group',{name:'Liability and posted credits by tax year'});
-  await expect(chart).toBeVisible();
-  await expect(chart.getByRole('button')).toHaveCount(3);
-  await expect(chart.getByRole('button',{name:/2025-2026: Total tax.*180,000/})).toBeVisible();
-  await expect(chart.getByRole('button',{name:/2024-2025: Total tax.*125,000/})).toBeVisible();
-  await expect(chart.getByRole('button',{name:/2023-2024: Total tax.*90,000/})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
+  const year=page.getByRole('combobox',{name:'Assessment year'});
+  await expect(year).toHaveValue('2026-2027');
+  await expect(year.locator('option[value="2025-2026"]')).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Recorded payments by month'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'By payment service'})).toBeVisible();
 });
 
 test('all-year month filtering remains accessible in Activity after dashboard chart removal',async({page})=>{
   await page.goto(dashboard);
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await page.getByRole('button',{name:'View all activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await page.getByRole('button',{name:'Filter',exact:true}).click();
@@ -32,24 +32,25 @@ test('all-year month filtering remains accessible in Activity after dashboard ch
   await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('2026-03');
 });
 
-test('Travel Tax remains separate and never reduces income-tax outstanding',async({page})=>{
+test('Travel Tax remains its separate payment journey and never appears as an official tax credit',async({page})=>{
   await page.goto(dashboard);
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
-  await expect(page.getByTestId('beneficiary-spending-breakdown')).toBeVisible();
+  await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
   await openTaxpayerTravelTax(page);
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
 });
 
-test('narrow year chart is keyboard operable and does not cause page overflow',async({page},info)=>{
-  test.skip(info.project.name!=='mobile-320','Narrow-mobile year chart acceptance');
+test('narrow payment-service chart is keyboard operable without horizontal overflow',async({page},info)=>{
+  test.skip(info.project.name!=='mobile-320','Narrow-mobile interactive chart acceptance');
   await page.goto(dashboard);
-  const chart=page.getByRole('group',{name:'Liability and posted credits by tax year'});
-  const year=chart.getByRole('button',{name:/2024-2025: Total tax/});
-  await year.focus();
-  await expect(year).toBeFocused();
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  await page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
+  const item=page.getByTestId('dashboard-service-breakdown').locator('[data-service="income"]');
+  await item.focus();
+  await expect(item).toBeFocused();
   await page.keyboard.press('Enter');
-  await expect(year).toHaveAttribute('aria-current','true');
-  await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2024-2025');
+  await expect(item).toHaveAttribute('aria-pressed','true');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
