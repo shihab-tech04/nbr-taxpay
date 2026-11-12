@@ -67,8 +67,23 @@ export const DashboardPaymentDrafts: React.FC<{
     onCountChange?.(catalog.ownerKey === ownerKey && catalog.status === 'ready' ? catalog.rows.length : null);
   }, [catalog.ownerKey, catalog.status, catalog.rows.length, ownerKey, onCountChange]);
 
-  if (!actor || authLoading ||
-      (catalog.ownerKey !== ownerKey && catalog.status !== 'loading')) return null;
+  if (!actor || authLoading) {
+    if (!showEmptyState) return null;
+    return <section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts"
+      className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5">
+      <h2 className="text-base font-semibold text-taxpay-text">{tr('Saved payment drafts','সংরক্ষিত পেমেন্ট খসড়া')}</h2>
+      <p className="mt-2 text-sm text-taxpay-muted" role="status">
+        {authLoading?tr('Checking your saved drafts…','সংরক্ষিত খসড়া যাচাই হচ্ছে…'):
+          tr('Sign in to a taxpayer account to load and continue its saved drafts.',
+            'সংরক্ষিত খসড়া দেখতে ও আবার চালু করতে করদাতা অ্যাকাউন্টে সাইন ইন করুন।')}
+      </p>
+      {onStartPayment&&<button type="button" onClick={onStartPayment}
+        className="mt-3 min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-medium text-taxpay-primary">
+        {tr('Start a payment','পেমেন্ট শুরু করুন')}
+      </button>}
+    </section>;
+  }
+  if (catalog.ownerKey !== ownerKey && catalog.status !== 'loading') return null;
 
   const retry = () => {
     if (busyId) return;
