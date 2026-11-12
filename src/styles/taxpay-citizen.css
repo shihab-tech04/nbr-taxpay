@@ -1253,16 +1253,6 @@
     padding-left: 10px;
   }
 }
-/* Home has three finite sections; on tall desktop screens, do not stretch
-   its main element into a several-hundred-pixel empty spacer before the footer.
-   Other public routes retain their existing bottom-aligned footer behavior. */
-@media (min-width: 981px) and (min-height: 1024px) {
-  .taxpay-citizen-shell:has(.public-home-sections) { min-height: 0; }
-  .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
-    flex: 0 0 auto;
-  }
-}
-
 @media(max-width:980px){
  .public-footer__inner{flex-wrap:wrap;justify-content:center;gap:.35rem 1rem;}
  .public-footer__navs{justify-content:flex-end;}
