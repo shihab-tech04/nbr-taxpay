@@ -1,10 +1,10 @@
 import {expect,test} from '@playwright/test';
 
-test('Activity keeps its seven-column table and shows beneficiary filters without inventing identities',async({page})=>{
+test('Activity keeps its nine-column table and shows beneficiary filters without inventing identities',async({page})=>{
   await page.goto('/?action=history&demoUser=user1');
   const panel=page.locator('.taxpayer-transaction-panel');
   await expect(panel.getByRole('heading',{name:'Transaction history'})).toBeVisible();
-  await expect(panel.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(7);
+  await expect(panel.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(9);
   await panel.getByRole('button',{name:'Filter',exact:true}).click();
   await expect(panel.getByRole('combobox',{name:'Filter transactions by beneficiary'})).toBeVisible();
   await expect(panel.getByRole('combobox',{name:'Filter transactions by beneficiary tag'})).toBeVisible();
