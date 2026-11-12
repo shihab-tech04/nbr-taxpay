@@ -654,7 +654,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           </button>;
         })}
       </div>
-      <p className="mt-2 text-xs text-taxpay-muted">{tr('Illustrative assessment-year entries, not your issued NBR assessment or tax credit. Travel tax is separate.','শুধু উদাহরণভিত্তিক করবর্ষের রেকর্ড; সরকারি নির্ধারিত কর বা কর ক্রেডিট নয়। ভ্রমণ কর পৃথক।')}</p>
+      <p className="mt-2 text-xs text-taxpay-muted">{tr('Example figures, not an issued NBR assessment or confirmed tax credit. Travel tax is separate.','শুধু উদাহরণভিত্তিক করবর্ষের রেকর্ড; সরকারি নির্ধারিত কর বা কর ক্রেডিট নয়। ভ্রমণ কর পৃথক।')}</p>
     </section>
     <div className="taxpay-bento-request-row">
     <div className="taxpay-bento-summary-column">
@@ -714,7 +714,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             </h2>
             <p className="mt-1 text-xs text-taxpay-muted">
               {tr('Owner-session SQL payment records · assessment year ','নিজের সেশনের SQL পেমেন্ট রেকর্ড · করবর্ষ ')}{year}
-              {tr('. Simulations only; kept separate from the illustrations above.',
+              {tr('. Recorded in the app; shown separately from the examples above. Not a Treasury settlement.',
                 '। শুধু সিমুলেশন; ওপরের উদাহরণ থেকে আলাদা।')}
             </p>
           </div>
@@ -790,7 +790,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">{tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}</h2>
-          <p className="mt-1 text-xs text-taxpay-muted">{tr('Illustrative payments for the full selected assessment year. The monthly chart shows only six calendar months.','নির্বাচিত পুরো করবর্ষের উদাহরণভিত্তিক পেমেন্ট; মাসভিত্তিক চার্টে শুধু ছয় ক্যালেন্ডার মাস।')}</p>
+          <p className="mt-1 text-xs text-taxpay-muted">{tr('Example payments for the whole assessment year. The monthly chart shows only six calendar months.','নির্বাচিত পুরো করবর্ষের উদাহরণভিত্তিক পেমেন্ট; মাসভিত্তিক চার্টে শুধু ছয় ক্যালেন্ডার মাস।')}</p>
         </div>
         <p className="text-lg font-semibold tabular-nums" data-testid="tagged-payment-total">{tagLoadState==='ready'?money(taggedPaymentTotal):'—'}</p>
       </div>
@@ -834,12 +834,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         <h2 id="taxpayer-recent-activity-title" className="text-base font-semibold">{tr('Recent activity','সাম্প্রতিক কার্যক্রম')}</h2>
         {view('history','View all activity','সব কার্যক্রম দেখুন')}
       </div>
-      <p className="mt-1 text-xs text-taxpay-muted">{tr('Assessment year','করবর্ষ')}: {year} · {tr('Illustrative and verified session-recorded simulated activity are labelled separately.','উদাহরণ ও সেশনে সংরক্ষিত সিমুলেশন আলাদাভাবে চিহ্নিত।')}</p>
+      <p className="mt-1 text-xs text-taxpay-muted">{tr('Assessment year','করবর্ষ')}: {year} · {tr('Example and saved payment activity are shown separately.','উদাহরণ ও সেশনে সংরক্ষিত সিমুলেশন আলাদাভাবে চিহ্নিত।')}</p>
       <ul className="mt-3 divide-y divide-taxpay-border" aria-label={tr('Latest transactions in selected year','নির্বাচিত করবর্ষের সাম্প্রতিক লেনদেন')}>
         {recentOverviewRows.map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-taxpay-text">{item.title}</p>
-            <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])} · {item.sql?tr('Account-recorded simulation','অ্যাকাউন্টে সংরক্ষিত সিমুলেশন'):tr('Illustrative example','উদাহরণভিত্তিক রেকর্ড')}</p>
+            <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])} · {item.sql?tr('Account-recorded simulation','অ্যাকাউন্টে সংরক্ষিত সিমুলেশন'):tr('Example record','উদাহরণভিত্তিক রেকর্ড')}</p>
           </div>
           <p className="whitespace-nowrap text-sm font-semibold tabular-nums">{money(item.amount)}</p>
           <div>{tag(item.state)}</div>
