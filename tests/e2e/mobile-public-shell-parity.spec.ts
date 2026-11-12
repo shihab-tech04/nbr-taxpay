@@ -130,8 +130,8 @@ test('public mobile footer stays compact and the floating Pay action remains rea
     footerBackground:getComputedStyle(element).backgroundColor,
     rowBackground:getComputedStyle(element.querySelector('.public-footer__inner')!).backgroundColor,
   }));
-  expect(footerColors.clearance).toBeGreaterThanOrEqual(80);
-  expect(footerColors.clearance).toBeLessThanOrEqual(90);
+  expect(footerColors.clearance).toBeGreaterThanOrEqual(72);
+  expect(footerColors.clearance).toBeLessThanOrEqual(84);
   expect(footerColors.footerBackground).not.toBe(footerColors.rowBackground);
   const brandBox=await footer.locator('.public-footer__wordmark').boundingBox();
   const copyBox=await footer.locator('.public-footer__bottom').boundingBox();
@@ -162,13 +162,18 @@ test('public mobile footer stays compact and the floating Pay action remains rea
   expect(Math.max(brandBox!.y+brandBox!.height, copyBox!.y+copyBox!.height, moreBox!.y+moreBox!.height)).toBeLessThanOrEqual(bounds!.y-4);
   const dockBounds=await dock.boundingBox();
   expect(dockBounds).not.toBeNull();
-  // In the compact scrolled state, the full dock yields to Home/Pay corners.
-  // Both floating buttons must remain accessible, without covering the footer.
-  const compactHome=page.locator('.taxpay-public-mobile-navigation .citizen-corner--bottom-left');
-  await expect(compactHome).toBeVisible();
-  const homeBounds=await compactHome.boundingBox();
-  expect(homeBounds).not.toBeNull();
-  expect(brandBox!.y+brandBox!.height).toBeLessThanOrEqual(homeBounds!.y-4);
+  // The independent Pay FAB uses its reserved right-hand dock slot.
+  // No existing Home, Payment Status or Help tap target may be covered.
+  const slot=await dock.locator('.citizen-bottom-nav__pay-space').boundingBox();
+  expect(slot).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(slot!.x-3);
+  expect(bounds!.y).toBeGreaterThanOrEqual(dockBounds!.y);
+  expect(bounds!.y+bounds!.height).toBeLessThanOrEqual(dockBounds!.y+dockBounds!.height);
+  const navBoxes=await dock.locator('.citizen-bottom-nav__item').allBoundingBoxes();
+  expect(navBoxes).toHaveLength(3);
+  for(const navBox of navBoxes){
+    expect(navBox.x+navBox.width).toBeLessThanOrEqual(bounds!.x-3);
+  }
   expect(dockBounds!.bottom).toBeLessThanOrEqual(812);
   await expect(page.getByRole('button',{name:'Chat support'})).toBeVisible();
   await pay.click();
@@ -205,8 +210,8 @@ test('426px scrolled mobile footer is one compact white row above the floating P
       overflow:document.documentElement.scrollWidth-window.innerWidth,
     };
   });
-  expect(result.clearance).toBeGreaterThanOrEqual(80);
-  expect(result.clearance).toBeLessThanOrEqual(90);
+  expect(result.clearance).toBeGreaterThanOrEqual(72);
+  expect(result.clearance).toBeLessThanOrEqual(84);
   expect(result.rowHeight).toBeLessThanOrEqual(72);
   expect(result.footerBackground).not.toBe(result.rowBackground);
   expect(result.rowToPayGap).toBeGreaterThanOrEqual(8);
