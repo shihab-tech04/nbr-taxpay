@@ -1,5 +1,6 @@
 import React, {useEffect,useState} from 'react';
 import {Check, Clipboard, Download} from 'lucide-react';
+import {MaskedProfileValue, sensitiveProfileKind} from '../ui/MaskedProfileValue';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {
   USER1_FICTIONAL_TIN_PROFILE as initialReference,
@@ -72,10 +73,17 @@ export function User1TaxpayerProfile({language}:{language:Language}){
   const [downloadError,setDownloadError]=useState(false);
   const tin=record?.tin??'';
   const details=(rows:readonly Row[])=><dl className="divide-y divide-taxpay-border">
-    {rows.map(([field,label])=><div key={field} className="grid min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(135px,43%)_minmax(0,1fr)] sm:gap-4">
-      <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
-      <dd className="min-w-0 break-words text-sm font-medium leading-relaxed text-taxpay-text">{value(field,language)}</dd>
-    </div>)}
+    {rows.map(([field,label])=>{
+      const raw=record?.[field];
+      const kind=typeof raw==='string'?sensitiveProfileKind(field,raw):null;
+      return <div key={field} className="grid min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(135px,43%)_minmax(0,1fr)] sm:gap-4">
+        <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
+        <dd className="min-w-0 break-words text-sm font-medium leading-relaxed text-taxpay-text">
+          {kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
+            label={tr(label)} language={language}/>:value(field,language)}
+        </dd>
+      </div>;
+    })}
   </dl>;
   const panel=(title:Label,children:React.ReactNode)=><section className="min-w-0 rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
     <h3 className="mb-4 border-b border-taxpay-border pb-3 text-base font-semibold text-taxpay-text">{tr(title)}</h3>
@@ -143,7 +151,10 @@ export function User1TaxpayerProfile({language}:{language:Language}){
       <div className="flex flex-wrap items-end justify-between gap-3 border-t border-taxpay-border px-5 py-4 sm:px-6">
         <div className="min-w-0">
           <p className="text-sm text-taxpay-muted">{tr(['TIN','টিআইএন'])}</p>
-          <p className="mt-1 break-all text-xl font-semibold tracking-wide text-taxpay-text sm:text-2xl" data-testid="user1-profile-tin">{tin}</p>
+          <div className="mt-1 break-all text-xl font-semibold tracking-wide text-taxpay-text sm:text-2xl">
+            <MaskedProfileValue key={tin} value={tin} kind="tin" label={tr(['TIN','টিআইএন'])}
+              language={language} testId="user1-profile-tin"/>
+          </div>
         </div>
         <button type="button" onClick={copyTin} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light">
           {copied==='done'?<Check size={16} aria-hidden="true"/>:<Clipboard size={16} aria-hidden="true"/>}

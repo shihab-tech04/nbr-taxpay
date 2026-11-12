@@ -69,7 +69,7 @@ test('user1 exceptions, profile and notifications are correlated but not governm
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
   await page.goto('/?action=account_profile&demoUser=user1');
-  await expect(page.getByTestId('user1-profile-tin')).toHaveText('577935451798');
+  await expect(page.getByTestId('user1-profile-tin')).toHaveText('*********798');
   await expect(page.getByText('Taxpayer class')).toBeVisible();
   await expect(page.getByTestId('user1-taxpayer-profile').getByText('Individual',{exact:true}).first()).toBeVisible();
 });
@@ -147,7 +147,7 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile).toBeVisible();
   await expect(content).toBeVisible();
   await expect(profile.getByRole('heading',{name:'Md. Arif Rahman'})).toBeVisible();
-  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577935451798');
+  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('*********798');
   await expect(profile.getByRole('tab')).toHaveCount(0);
   await expect(profile.getByRole('tablist')).toHaveCount(0);
   await expect(profile.getByRole('button',{name:'View payment activity'})).toHaveCount(0);
@@ -176,9 +176,30 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(content).toContainText('Taxes Zone-12, Dhaka');
   await expect(content).toContainText('04 Jun 2026, 05:06:20 PM');
   await expect(content).toContainText('3/4 Purana Paltan');
-  await expect(content).toContainText('email@test.com');
+  await expect(content).toContainText('em***@****.***');
+  await expect(content).not.toContainText('email@test.com');
+  await expect(content).toContainText('+**********765');
+  await expect(content).toContainText('**-****253');
   await expect(profile.getByText(/Fictional sample profile|Sample TIN|Not an NBR-issued TIN/i)).toHaveCount(0);
   await expect(profile.getByText('Not available',{exact:true})).toHaveCount(0);
+  // Full values never appear on screen until an individual, accessible Show action.
+  await expect(profile.getByRole('button',{name:'Show TIN'})).toHaveAttribute('aria-pressed','false');
+  await profile.getByRole('button',{name:'Show TIN'}).click();
+  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577935451798');
+  await expect(content).not.toContainText('email@test.com');
+  await profile.getByRole('button',{name:'Hide TIN'}).click();
+  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('*********798');
+  await profile.getByRole('button',{name:'Show Mobile number'}).click();
+  await expect(content).toContainText('+8801857648765');
+  await expect(content).not.toContainText('email@test.com');
+  await profile.getByRole('button',{name:'Hide Mobile number'}).click();
+  await expect(content).not.toContainText('+8801857648765');
+  await profile.getByRole('button',{name:'Show Email address'}).click();
+  await expect(content).toContainText('email@test.com');
+  await profile.getByRole('button',{name:'Hide Email address'}).click();
+  await expect(content).not.toContainText('email@test.com');
+  await expect(profile.getByRole('button',{name:'Show Tax office phone'})).toBeVisible();
+  await expect(profile.getByRole('button',{name:'Show Previous TIN'})).toHaveCount(0);
   await expect(profile.getByRole('button',{name:'Copy TIN'})).toBeVisible();
   await expect(profile.getByRole('button',{name:'Download profile'})).toBeVisible();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
@@ -192,6 +213,10 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(bn.getByRole('heading',{name:'সনদের তথ্য'})).toBeVisible();
   await expect(bn.getByText('সনদ ইস্যুর তারিখ')).toHaveCount(1);
   await expect(page.getByTestId('user1-profile-summary').getByText('সর্বশেষ লগইন')).toHaveCount(1);
+  await expect(page.getByTestId('user1-profile-tin')).toHaveText('*********798');
+  await expect(page.getByRole('button',{name:'টিআইএন দেখান'})).toBeVisible();
+  await expect(bn.getByRole('button',{name:'মোবাইল নম্বর দেখান'})).toBeVisible();
+  await expect(bn.getByRole('button',{name:'ইমেইল ঠিকানা দেখান'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 test('user1 profile export contains supplied TIN fields without unnecessary copy',async({page},info)=>{
