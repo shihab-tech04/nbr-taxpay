@@ -70,7 +70,7 @@ test('user1 exceptions, profile and notifications are correlated but not governm
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
   await page.goto('/?action=account_profile&demoUser=user1');
   await expect(page.getByTestId('user1-profile-tin')).toHaveText('*********798');
-  await expect(page.getByText('Taxpayer class')).toBeVisible();
+  await expect(page.getByText('Taxpayer status')).toBeVisible();
   await expect(page.getByTestId('user1-taxpayer-profile').getByText('Individual',{exact:true}).first()).toBeVisible();
 });
 
