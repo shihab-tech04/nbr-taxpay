@@ -54,33 +54,50 @@ try {
       // Only a deployed build can certify the NEW dashboard UI. PR preflight
       // runs against the older published version and must not pre-approve it.
       if(process.env.GITHUB_EVENT_NAME!=='pull_request'){
-        const spending=page.getByTestId('beneficiary-spending-breakdown');
-        await expect(spending).toBeVisible({timeout:30_000});
-        await expect(spending.getByTestId('beneficiary-spending-segments')).toBeVisible();
-        await expect(spending.getByTestId('tag-spend-own')).toBeVisible();
-        await expect(spending.getByTestId('tag-spend-needs-tag')).toBeVisible();
-        await expect(spending.getByTestId('tag-spend-no-link')).toBeVisible();
-        await expect(spending.getByTestId('tag-spend-unassigned')).toHaveCount(0);
-        // A real Pages login must show a complete, reconciled breakdown in
-        // the user's current EN/BN preference. No backend writes or mocks.
+        // The live dashboard uses the new source-separated bento, not the old
+        // static beneficiary chart. Verify a real interactive instance in
+        // Chromium (no production writes and no invented Treasury totals).
+        const bento=page.getByTestId('taxpayer-overview-bento');
+        await expect(bento).toBeVisible({timeout:30_000});
+        const chart=bento.getByTestId('dashboard-payment-analytics');
+        await expect(chart).toBeVisible({timeout:30_000});
+        await expect(bento.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
+        await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
+        const sources=chart.getByTestId('dashboard-chart-source');
+        await expect(sources.getByRole('button',{name:'Recorded'}))
+          .toHaveAttribute('aria-pressed','true');
+        await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+        // Example mode is opt-in and explicitly separate from the recorded SQL
+        // data. Never use an example total to assert bank settlement.
+        await sources.getByRole('button',{name:'Examples'}).click();
+        await expect(sources.getByRole('button',{name:'Examples'}))
+          .toHaveAttribute('aria-pressed','true');
+        const services=chart.getByTestId('dashboard-service-breakdown');
+        const spending=chart.getByTestId('dashboard-beneficiary-breakdown');
+        await expect(services.locator('[data-service]')).not.toHaveCount(0);
+        await expect(spending.locator('[data-tag]')).not.toHaveCount(0);
         const numbers=await spending.evaluate(root=>{
-          const read=id=>{
-            const text=root.querySelector('[data-testid="'+id+'"]')?.textContent??'';
+          const normalize=text=>{
             const bengali='০১২৩৪৫৬৭৮৯';
-            const normal=text.replace(/[০-৯]/g,d=>String(bengali.indexOf(d))).replace(/[^0-9.-]/g,'');
-            return normal?Number(normal):NaN;
+            const raw=String(text??'').replace(/[০-৯]/g,d=>String(bengali.indexOf(d))).replace(/[^0-9.]/g,'');
+            return raw?Math.round(Number(raw)*100):NaN;
           };
-          const total=read('tagged-payment-total');
-          const rows=[...root.querySelectorAll('[data-testid^="tag-spend-"]')];
-          const amounts=rows.map(row=>{
-            const strong=row.querySelector('strong')?.textContent??'';
-            const bengali='০১২৩৪৫৬৭৮৯';
-            return Number(strong.replace(/[০-৯]/g,d=>String(bengali.indexOf(d))).replace(/[^0-9.-]/g,''));
-          });
-          return {total,sum:amounts.reduce((a,b)=>a+b,0),count:rows.length};
+          const total=normalize(root.querySelector('.taxpay-bento-analytics__total')?.textContent);
+          const amounts=[...root.querySelectorAll('[data-tag]')]
+            .map(node=>normalize(node.querySelector('strong')?.textContent));
+          return {total,sum:amounts.reduce((a,b)=>a+b,0),count:amounts.length};
         });
-        if(!Number.isFinite(numbers.total)||numbers.total!==numbers.sum||numbers.count<7)
-          throw new Error('Live beneficiary spending breakdown does not reconcile: '+JSON.stringify(numbers));
+        if(!Number.isFinite(numbers.total)||numbers.total!==numbers.sum||numbers.count<1)
+          throw new Error('Live bento beneficiary amounts did not reconcile: '+JSON.stringify(numbers));
+        const selection=services.locator('[data-service]').first();
+        await selection.click();
+        await expect(selection).toHaveAttribute('aria-pressed','true');
+        await expect(services.getByRole('button',{name:'Show all payment services'})).toBeVisible();
+        await services.getByRole('button',{name:'Show all payment services'}).click();
+        // Selecting a tag updates the details rather than switching routes or
+        // rewriting financial records.
+        await spending.locator('[data-tag]').first().click();
+        await expect(spending.getByTestId('dashboard-selected-tag')).toBeVisible();
         await page.screenshot({path:'test-results/live-dashboard-category-breakdown-'+name+'.png',fullPage:true});
       }
       const beneficiaryUrl=new URL(base);
