@@ -205,11 +205,22 @@ select '${correctionPaymentId}'::uuid,'${correctionIdempotencyKey}'::uuid,
   ),'SIMULATED_SUCCESS'
 from taxpay_guest_private.demo_profiles profile where profile.demo_id='user1';`);
 assert.match(insertedParent, /INSERT 0 1/, 'Disposable owner-linked payment fixture was not inserted');
+// Keep this temporary ownership fixture on the existing demo identity, then remove
+// only the binding after the payment ownership row has been recorded. Later isolated
+// officer tests reuse user1 and must not inherit this test's temporary account link.
+assert.equal(runDirectSql("select count(*) from public.sim_payment_account_bindings where user_id='user1';"), '0',
+  'The disposable correction profile must start unbound');
+const correctionBinding = runDirectSql(`insert into public.sim_payment_account_bindings(user_id,owner_uid,assigned_by)
+  values('user1','${ownerA.id}'::uuid,'${ownerA.id}'::uuid);`);
+assert.match(correctionBinding, /INSERT 0 1/, 'Synthetic owner binding fixture was not inserted');
 const sessionClaim = await request('/rest/v1/rpc/taxpay_claim_story1_session', {
   method: 'POST', token: ownerA.access_token, body: { p_session_id: paymentSessionId },
 });
 assert.equal(sessionClaim.response.status, 200, `Synthetic owner claim returned HTTP ${sessionClaim.response.status}`);
 assert.equal(sessionClaim.data, 1, 'The authenticated owner did not claim the synthetic payment');
+const correctionBindingCleanup = runDirectSql(`delete from public.sim_payment_account_bindings
+  where user_id='user1' and owner_uid='${ownerA.id}'::uuid;`);
+assert.equal(correctionBindingCleanup, 'DELETE 1', 'Temporary correction binding was not isolated after the claim');
 const walkinClaim = await request('/rest/v1/rpc/taxpay_claim_walkin_payer_payments', {
   method: 'POST', token: ownerA.access_token, body: {},
 });
