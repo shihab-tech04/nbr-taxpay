@@ -50,6 +50,30 @@ CREATE TEMP TABLE correction_bridge_test_state(
 ) ON COMMIT DROP;
 GRANT SELECT,INSERT,UPDATE ON correction_bridge_test_state TO authenticated,service_role;
 
+-- Synthetic walk-in parent, inserted before the no-mutation snapshot.
+INSERT INTO demo_payment.story_payments(
+  id,idempotency_key,session_id,service_code,amount_minor,data,status
+) VALUES (
+  '80000000-0000-4000-8000-000000000041',
+  '80000000-0000-4000-8000-000000000042',
+  '80000000-0000-4000-8000-000000000043',
+  'OTHER_TAX_PAYMENT',100,
+  jsonb_build_object(
+    'idempotencyKey','80000000-0000-4000-8000-000000000042',
+    'sessionId','80000000-0000-4000-8000-000000000043',
+    'service','OTHER_TAX_PAYMENT','amountMinor',100,'origin','TAXPAY_UI',
+    'details',jsonb_build_object(
+      'payerMode','OTHER','payerTin','909000000030',
+      'payerName','Taxpayer Account 30','receiptReference','SYN-REF-003',
+      'receiptSnapshot',jsonb_build_object(
+        'challanNo','SYN-REF-003','payerTin','909000000030',
+        'payerName','Taxpayer Account 30'
+      )
+    )
+  ),
+  'SIMULATED_SUCCESS'
+);
+
 CREATE TEMP TABLE correction_financial_guard(
   relation_name text PRIMARY KEY,row_count bigint NOT NULL,content_digest text NOT NULL
 ) ON COMMIT DROP;
@@ -73,14 +97,33 @@ BEGIN
 END;
 $snapshot_financial$;
 
-INSERT INTO auth.users(id,email,raw_user_meta_data)
+INSERT INTO auth.users(id,email,raw_user_meta_data,email_confirmed_at)
 VALUES
-  ('80000000-0000-4000-8000-000000000001','correction-bridge-test@example.invalid','{}'::jsonb),
-  ('80000000-0000-4000-8000-000000000002','correction-outsider-test@example.invalid','{}'::jsonb)
+  ('80000000-0000-4000-8000-000000000001','correction-bridge-test@example.invalid','{}'::jsonb,now()),
+  ('80000000-0000-4000-8000-000000000002','correction-outsider-test@example.invalid','{}'::jsonb,now())
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.sim_payment_users(id) VALUES ('user30')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO taxpay_guest_private.demo_profiles(demo_id,payment_session_id)
+VALUES ('user30','80000000-0000-4000-8000-000000000043')
+ON CONFLICT (demo_id) DO UPDATE SET payment_session_id=EXCLUDED.payment_session_id;
+INSERT INTO public.sim_payment_account_bindings(user_id,owner_uid,assigned_by)
+VALUES ('user30','80000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')
+ON CONFLICT (user_id) DO UPDATE SET
+  owner_uid=EXCLUDED.owner_uid,assigned_by=EXCLUDED.assigned_by;
 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000001',true);
+DO $walkin_claim$
+DECLARE v_claimed integer;
+BEGIN
+  v_claimed := public.taxpay_claim_walkin_payer_payments();
+  IF v_claimed<>1 THEN
+    RAISE EXCEPTION 'The verified bound account did not claim its synthetic walk-in payment';
+  END IF;
+END;
+$walkin_claim$;
 WITH inserted AS (
   INSERT INTO public.taxpay_correction_inquiries
     (requester_uid,original_reference,reason,requested_outcome,change_kind,old_value,new_value)
@@ -93,16 +136,43 @@ WITH inserted AS (
 INSERT INTO correction_bridge_test_state SELECT inquiry_id FROM inserted;
 
 DO $owner_initial$
-DECLARE v_count integer; v_state text; v_revision integer;
+DECLARE v_count integer; v_state text; v_revision integer; v_parent uuid; v_kind text;
 BEGIN
-  SELECT count(*),min(office_review_state),min(office_review_revision)
-    INTO v_count,v_state,v_revision FROM public.taxpay_correction_inquiries
+  SELECT count(*),min(office_review_state),min(office_review_revision),
+         min(original_payment_id::text)::uuid,min(original_payment_kind)
+    INTO v_count,v_state,v_revision,v_parent,v_kind
+    FROM public.taxpay_correction_inquiries
     WHERE inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state);
-  IF v_count<>1 OR v_state IS DISTINCT FROM 'PENDING_OFFICER' OR v_revision<>1 THEN
-    RAISE EXCEPTION 'Initial owner correction readback failed';
+  IF v_count<>1 OR v_state IS DISTINCT FROM 'PENDING_OFFICER' OR v_revision<>1
+     OR v_parent IS DISTINCT FROM '80000000-0000-4000-8000-000000000041'
+     OR v_kind IS DISTINCT FROM 'TAXPAY_STORY_PAYMENT' THEN
+    RAISE EXCEPTION 'Initial owner correction status or original payment parent link failed';
   END IF;
 END;
 $owner_initial$;
+
+SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000002',true);
+DO $outsider_parent$
+DECLARE v_visible integer;
+BEGIN
+  SELECT count(*) INTO v_visible FROM public.taxpay_correction_inquiries
+    WHERE inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state);
+  IF v_visible<>0 THEN RAISE EXCEPTION 'Unrelated account read a correction inquiry'; END IF;
+  BEGIN
+    INSERT INTO public.taxpay_correction_inquiries(
+      requester_uid,original_reference,reason,requested_outcome
+    ) VALUES (
+      '80000000-0000-4000-8000-000000000002','909000000030',
+      'Synthetic unlinked TIN attempt','Review must not infer payment ownership from a typed TIN'
+    );
+    RAISE EXCEPTION 'TEST_UNEXPECTED_UNLINKED_CORRECTION';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM='TEST_UNEXPECTED_UNLINKED_CORRECTION' THEN RAISE; END IF;
+    IF SQLERRM NOT LIKE '%CORRECTION_ORIGINAL_PAYMENT_NOT_LINKED%' THEN RAISE; END IF;
+  END;
+END;
+$outsider_parent$;
+SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000001',true);
 
 -- Exercise the durable TaxPay outbox through a network failure and retry.
 RESET ROLE;
@@ -428,9 +498,11 @@ BEGIN
   SELECT inquiry_id INTO v_inquiry FROM correction_bridge_test_state;
   SELECT event_payload INTO v_payload FROM payment_sync.correction_outbox WHERE inquiry_id=v_inquiry;
   IF v_payload->>'originalReference'<>'SYN-REF-003'
+     OR v_payload->>'originalPaymentId'<>'80000000-0000-4000-8000-000000000041'
+     OR v_payload->>'originalPaymentKind'<>'TAXPAY_STORY_PAYMENT'
      OR v_payload ? 'requesterUid' OR v_payload ? 'requester_uid'
      OR v_payload ? 'taxpayerTin' OR v_payload ? 'tin' THEN
-    RAISE EXCEPTION 'Correction outbox payload contains missing or over-scoped fields';
+    RAISE EXCEPTION 'Correction outbox parent link is missing or payload is over-scoped';
   END IF;
   IF (SELECT count(*) FROM public.taxpay_correction_review_decisions WHERE inquiry_id=v_inquiry)<>3 THEN
     RAISE EXCEPTION 'Expected three persisted Office review decisions';
