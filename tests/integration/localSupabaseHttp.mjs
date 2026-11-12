@@ -52,7 +52,9 @@ function runDirectSql(query) {
     encoding: 'utf8', timeout: 12000,
   });
   if (result.error || result.status !== 0) {
-    throw new Error('BLOCKED: direct loopback PostgreSQL fixture failed; verify local disposable database setup.');
+    const detail = String(result.error?.message || result.stderr || 'psql exited without diagnostic output')
+      .replace(/\\s+/g, ' ').trim().slice(0, 600);
+    throw new Error(`BLOCKED: direct loopback PostgreSQL fixture failed (exit ${result.status ?? 'unknown'}): ${detail}`);
   }
   return result.stdout.trim();
 }
