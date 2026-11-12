@@ -47,15 +47,15 @@ test('mobile transaction details use a contained sheet with a visible close cont
   await expect(dialog).toHaveCount(0);
 });
 
-test('mobile bento tax-position help opens fully within the dashboard width',async({page},info)=>{
-  test.skip(info.project.name==='desktop-1280','Mobile tooltip geometry');
+test('mobile bento source controls remain visible without clipped focus targets',async({page},info)=>{
+  test.skip(info.project.name==='desktop-1280','Mobile chart geometry');
   await enterUser1(page);
+  const chart=page.getByTestId('dashboard-payment-analytics');
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
-  const coverage=page.getByTestId('dashboard-payment-analytics');
-  await coverage.locator('.taxpayer-inline-help > summary').click();
-  const content=coverage.locator('.taxpayer-inline-help__content');
-  await expect(content).toBeVisible();
-  const bounds=await content.boundingBox();
+  const source=chart.getByTestId('dashboard-chart-source');
+  await source.getByRole('button',{name:'Examples'}).click();
+  await expect(source.getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
+  const bounds=await source.boundingBox();
   expect(bounds).not.toBeNull();
   expect(bounds!.x).toBeGreaterThanOrEqual(0);
   expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
