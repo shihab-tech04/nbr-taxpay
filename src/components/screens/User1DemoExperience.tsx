@@ -117,6 +117,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       setSavedTagPeople([]);setTagLoadState('ready');
       return()=>{active=false;};
     }
+    // Only overview and Activity render beneficiary-tag data. Profile, Settings,
+    // Ledger and other routes must not read the private address book unnecessarily.
+    if(route!=='taxpayer_home'&&route!=='dashboard'&&route!=='history'){
+      setSavedTagPeople([]);setTagLoadState('ready');
+      return()=>{active=false;};
+    }
     setTagLoadState('loading');
     void loadBeneficiaries(null).then(result=>{
       if(active){setSavedTagPeople(result.people);setTagLoadState('ready');}
