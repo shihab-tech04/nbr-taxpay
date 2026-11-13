@@ -54,6 +54,7 @@ import { loadBeneficiaries } from '../../services/beneficiaries';
 import { userIdForHostedTin } from '../../services/hostedDemoAuthorizations';
 import { isSupportedBeneficiaryTin } from '../../services/taxpayerTinValidation';
 import { lookupSampleTaxpayer } from '../../services/sampleTaxpayerLookup';
+import { resolvePaymentPartyIdentity } from '../../services/paymentPartyIdentity';
 import { V11_SOURCE_HEADS } from '../../data/v11SourceHeads';
 import type { DemoUserId } from '../../data/demoUsers';
 import { OtherTaxBatchComposer, otherTaxAllocationTotal, otherTaxAllocationHead, isOtherTaxHeadEligible, OTHER_TAX_YEARS, type OtherTaxTaxpayer, type OtherTaxAllocation } from './OtherTaxBatchComposer';
@@ -1081,6 +1082,19 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         };
       });
 
+      const recipientName = ownAccountTax ? accountName
+        : sampleTaxpayer ? (language === 'bn' ? sampleTaxpayer.nameBn : sampleTaxpayer.nameEn)
+        : forSelf ? '' : otherTaxpayerName.trim();
+      const paymentParty = resolvePaymentPartyIdentity({
+        isSelf: forSelf === true,
+        recipientTin: taxpayerTin,
+        recipientName,
+        accountName: ownAccountTax ? accountName : undefined,
+        payerName: effectivePayerName,
+        payerTin: otherBatch && forSelf === false && !signedInAccount && confirmedWalkInPayer
+          ? confirmedWalkInPayer.tin : signedInProfile?.tin,
+        combinedPayment: otherBatch,
+      });
       const newReceipt: ChallanReceipt = {
         id: `rcpt-${Date.now()}`,
         taxEventId: `SIM-EVENT-${attemptId}`,
@@ -1089,14 +1103,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         tokenNumber: `SIM-TOKEN-${attemptId}`,
         paymentCategory: category,
         assessmentYear: otherBatch && otherTaxLines.length !== 1 ? 'Multiple years' : otherBatch ? otherTaxLines[0].assessmentYear : assessmentYear,
-        payerName: forSelf ? accountName || '—' : effectivePayerName.trim(),
-        payerTin: otherBatch && forSelf === false && !signedInAccount && confirmedWalkInPayer
-          ? confirmedWalkInPayer.tin
-          : signedInProfile?.tin ?? (ownAccountTax ? taxpayerTin : 'GUEST'),
+        payerName: paymentParty.payerName,
+        payerTin: paymentParty.payerTin,
         taxpayerTin,
-        taxpayerName: otherBatch ? undefined
-          : ownAccountTax ? accountName || undefined
-          : otherTaxpayerName.trim() || undefined,
+        taxpayerName: paymentParty.taxpayerName,
         receiptMobile: receiptPhone,
         receiptEmail: normaliseReceiptEmail(receiptEmail),
         noticeReference: noticeReference.trim() || undefined,

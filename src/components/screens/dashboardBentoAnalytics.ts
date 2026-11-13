@@ -6,6 +6,16 @@ export type DashboardChartSource='recorded'|'example';
 export type DashboardChartService='income'|'tds'|'ait'|'other'|'travel';
 export type DashboardChartTag=PaymentTagGroup|'own';
 
+export type DashboardRecipientProfile=Pick<Beneficiary,'tin'|'tag'|'relationship'> & Partial<Pick<Beneficiary,'display_name'>>;
+export type DashboardTopBeneficiary={
+  tin:string;
+  name:string|null;
+  saved:boolean;
+  tag:DashboardChartTag;
+  amountMinor:bigint;
+  paymentCount:number;
+};
+
 export type DashboardChartRecord={
   id:string;
   year:string;
@@ -27,6 +37,7 @@ export type DashboardChartProjection={
   omittedRecords:number;
   byService:DashboardChartSlice<DashboardChartService>[];
   byTag:DashboardChartSlice<DashboardChartTag>[];
+  byBeneficiary:DashboardTopBeneficiary[];
   unclassified:{
     recipientKnownMinor:bigint;
     recipientMissingMinor:bigint;
@@ -59,6 +70,7 @@ type ChartAllocation={
   rowId:string;
   service:DashboardChartService;
   tin:string|undefined;
+  name?:string;
   amountMinor:bigint;
 };
 
@@ -73,9 +85,10 @@ export function projectDashboardChartRecords(
   rows:readonly DashboardChartRecord[],
   year:string,
   source:DashboardChartSource,
-  people:readonly Pick<Beneficiary,'tin'|'tag'|'relationship'>[],
+  people:readonly DashboardRecipientProfile[],
   ownerTin:string,
-  serviceFilter:DashboardChartService|'all'='all'
+  serviceFilter:DashboardChartService|'all'='all',
+  recipientFilter?:string
 ):DashboardChartProjection{
   const targetYear=assessmentYear(year);
   const allocations:ChartAllocation[]=[];
@@ -109,7 +122,8 @@ export function projectDashboardChartRecords(
           allocations.push({
             rowId:row.id,
             service:serviceForCategory(receipt.paymentCategory),
-            tin:typeof item.taxpayerTin==='string'?item.taxpayerTin:undefined,
+            tin:typeof item.taxpayerTin==='string'?item.taxpayerTin.trim():undefined,
+            name:typeof item.taxpayerName==='string'?item.taxpayerName.trim():undefined,
             amountMinor:BigInt(item.amountMinor)
           });
         }
@@ -128,7 +142,9 @@ export function projectDashboardChartRecords(
       tin:row.beneficiaryTin,amountMinor:BigInt(amountMinor)
     });
   }
-  const included=serviceFilter==='all'?allocations:allocations.filter(row=>row.service===serviceFilter);
+  const included=allocations.filter(row=>
+    (serviceFilter==='all'||row.service===serviceFilter)&&
+    (!recipientFilter||row.tin===recipientFilter));
   const aggregate=<Key extends string>(
     keys:readonly Key[],getKey:(row:ChartAllocation)=>Key
   ):DashboardChartSlice<Key>[]=>keys.map(key=>{
@@ -145,6 +161,30 @@ export function projectDashboardChartRecords(
     if(!row.tin)return 'unassigned';
     return paymentTagGroupForTin(row.tin,people);
   });
+  // Group by actual recipient TIN. Never assume two people with the same name
+  // are the same taxpayer or count receipt lines as separate payments.
+  const groups=new Map<string,ChartAllocation[]>();
+  for(const allocation of included){
+    const tin=allocation.tin?.trim();
+    if(!tin)continue;
+    const existing=groups.get(tin)||[];
+    existing.push(allocation);
+    groups.set(tin,existing);
+  }
+  const byBeneficiary:DashboardTopBeneficiary[]=[...groups.entries()].map(([tin,rows])=>{
+    const matching=people.filter(p=>p.tin===tin);
+    const savedNames=[...new Set(matching.map(p=>p.display_name?.trim()).filter((x):x is string=>Boolean(x)))];
+    const receiptNames=[...new Set(rows.map(p=>p.name?.trim()).filter((x):x is string=>Boolean(x)))];
+    const name=savedNames.length===1?savedNames[0]
+      :savedNames.length>1?null:receiptNames.length===1?receiptNames[0]:null;
+    const tag:DashboardChartTag=tin===ownerTin?'own':paymentTagGroupForTin(tin,people);
+    return {
+      tin,name,saved:matching.length>0,
+      tag,
+      amountMinor:rows.reduce((sum,row)=>sum+row.amountMinor,0n),
+      paymentCount:new Set(rows.map(row=>row.rowId)).size
+    };
+  }).sort((a,b)=>a.amountMinor>b.amountMinor?-1:a.amountMinor<b.amountMinor?1:a.tin.localeCompare(b.tin));
   // Retain the full unclassified financial amount, but distinguish payments
   // with an exact recipient identifier from payments with no recipient at all.
   // A known TIN is not evidence of a family/client relationship.
@@ -163,6 +203,7 @@ export function projectDashboardChartRecords(
     omittedRecords,
     byService,
     byTag,
+    byBeneficiary,
     unclassified
   };
 }
@@ -184,10 +225,29 @@ export function dashboardChartPercentage(amountMinor:bigint,totalMinor:bigint){
  * Never silently merge fictional records with persisted payment allocations. */
 export function chooseDashboardChartSource(
   rows:readonly DashboardChartRecord[],year:string,
-  people:readonly Pick<Beneficiary,'tin'|'tag'|'relationship'>[],ownerTin:string
+  people:readonly DashboardRecipientProfile[],ownerTin:string
 ):DashboardChartSource{
   const saved=projectDashboardChartRecords(rows,year,'recorded',people,ownerTin);
   const examples=projectDashboardChartRecords(rows,year,'example',people,ownerTin);
   return saved.totalMinor>0n||saved.omittedRecords>0 ? 'recorded'
     : examples.totalMinor>0n ? 'example' : 'recorded';
+}
+
+
+/** Apply the exact same allocation guards as the visible dashboard chart
+ * before opening filtered history. A multi-year combined payment must not
+ * appear merely because a different head or recipient matched that batch. */
+export function matchesDashboardChartDrilldown(
+  row:DashboardChartRecord,
+  year:string,
+  source:DashboardChartSource,
+  people:readonly DashboardRecipientProfile[],
+  ownerTin:string,
+  service:DashboardChartService|'all'='all',
+  recipientTin?:string,
+  relationship?:DashboardChartTag
+):boolean{
+  const projection=projectDashboardChartRecords([row],year,source,people,ownerTin,service,recipientTin);
+  if(projection.totalMinor<=0n)return false;
+  return !relationship||projection.byTag.some(item=>item.key===relationship&&item.amountMinor>0n);
 }

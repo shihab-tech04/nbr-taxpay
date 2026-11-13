@@ -56,12 +56,22 @@ function legacySyntheticTin(beneficiary:string):string|undefined {
 
 function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
  const d=tx.details??{};
+ const contractVersion=d.allocationContractVersion;
+ if(contractVersion!==undefined&&contractVersion!==2&&contractVersion!==3)return undefined;
+ const version3=contractVersion===3;
  const lines=Array.isArray(d.lines)
   ?d.lines.filter(line=>line&&typeof line==='object'&&!Array.isArray(line)) as Array<Record<string,unknown>>
   :[];
  const explicit=Array.isArray(d.allocations)
   ?d.allocations.filter(item=>item&&typeof item==='object'&&!Array.isArray(item)) as Array<Record<string,unknown>>
   :[];
+ const allocationIds=new Set<string>();
+ if(version3&&(explicit.length===0||explicit.some(allocation=>{
+   const id=allocation.allocationId;
+   if(typeof id!=='string'||!id.trim()||allocationIds.has(id))return true;
+   allocationIds.add(id);
+   return false;
+ })))return undefined;
  const synthetic=lines.some(line=>typeof line.beneficiary==='string');
  let items:ReceiptAllocationItem[]=[];
  if(synthetic && explicit.length){
@@ -93,7 +103,8 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
     const head=receiptLines[index];
     const name=stringValue(allocation.taxpayerName).trim();
     const serviceEn=stringValue(head.headNameEn).trim()||CATEGORY_LABELS[tx.service]?.en||tx.service;
-    return {taxpayerName:name||'TIN '+stringValue(allocation.taxpayerTin),
+    return {...(version3?{allocationId:stringValue(allocation.allocationId)}:{}),
+      taxpayerName:name||'TIN '+stringValue(allocation.taxpayerTin),
       taxpayerTin:stringValue(allocation.taxpayerTin),
       paymentServiceEn:serviceEn,
       paymentServiceBn:stringValue(head.headNameBn).trim()||MASTER_PAYMENT_HEADS.find(item=>item.id===head.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn,
@@ -122,19 +133,52 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
  }else if(explicit.length){
   if(explicit.some(item=>!validTin(item.taxpayerTin)||typeof item.headId!=='number'||
     !Number.isSafeInteger(item.headId)||!validMinorAmount(item.amountMinor)||
-    typeof item.assessmentYear!=='string'||!item.assessmentYear.trim()))return undefined;
+    typeof item.assessmentYear!=='string'||!item.assessmentYear.trim())||
+    (version3&&(lines.length!==explicit.length||explicit.some((item,index)=>{
+      const line=lines[index];
+      return !line||line.headId!==item.headId||
+        !validMinorAmount(item.amountMinor)||
+        Math.round(numberValue(line.totalAmount)*100)!==item.amountMinor;
+    }))))return undefined;
   items=explicit.map(item=>{
    const head=lines.find(line=>line.headId===item.headId);
    const name=stringValue(item.taxpayerName);
    const serviceEn=stringValue(head?.headNameEn).trim()||CATEGORY_LABELS[tx.service]?.en||tx.service;
    const serviceBn=stringValue(head?.headNameBn).trim()||MASTER_PAYMENT_HEADS.find(item=>item.id===head?.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn;
-   return {taxpayerName:name||'TIN '+stringValue(item.taxpayerTin),
+   return {...(version3?{allocationId:stringValue(item.allocationId)}:{}),
+    taxpayerName:name||'TIN '+stringValue(item.taxpayerTin),
     taxpayerTin:stringValue(item.taxpayerTin),paymentServiceEn:serviceEn,paymentServiceBn:serviceBn,
     assessmentYear:stringValue(item.assessmentYear),amountMinor:item.amountMinor as number,
     ...(stringValue(head?.economicCode)?{economicCode:stringValue(head?.economicCode)}:{})};
   });
  }else return undefined;
  if(!items.length)return undefined;
+ if(version3){
+  const rawSnapshot=d.receiptSnapshot;
+  if(!rawSnapshot||typeof rawSnapshot!=='object'||Array.isArray(rawSnapshot))return undefined;
+  const snapshot=rawSnapshot as Record<string,unknown>;
+  const snapshotItems=snapshot.allocationItems;
+  const savedLines=Array.isArray(d.receiptLines)
+    ?d.receiptLines.filter(line=>line&&typeof line==='object'&&!Array.isArray(line)) as Array<Record<string,unknown>>
+    :lines;
+  if(snapshot.paymentCategory!==tx.service||
+    Math.round(numberValue(snapshot.totalAmount)*100)!==tx.amountMinor||
+    !Array.isArray(snapshot.items)||snapshot.items.length!==savedLines.length||
+    snapshot.items.some((raw,index)=>{
+      if(!raw||typeof raw!=='object'||Array.isArray(raw))return true;
+      const saved=raw as Record<string,unknown>,line=savedLines[index];
+      return ['headId','headNameEn','economicCode','totalAmount'].some(key=>
+        line[key]!==undefined&&line[key]!==saved[key]);
+    })||!Array.isArray(snapshotItems)||snapshotItems.length!==items.length||
+    snapshotItems.some((raw,index)=>{
+      if(!raw||typeof raw!=='object'||Array.isArray(raw))return true;
+      const saved=raw as Record<string,unknown>,item=items[index];
+      return saved.allocationId!==item.allocationId||saved.taxpayerTin!==item.taxpayerTin||
+        saved.taxpayerName!==item.taxpayerName||saved.paymentServiceEn!==item.paymentServiceEn||
+        saved.paymentServiceBn!==item.paymentServiceBn||saved.assessmentYear!==item.assessmentYear||
+        saved.amountMinor!==item.amountMinor||saved.economicCode!==item.economicCode;
+    }))return undefined;
+ }
  let total=0;
  for(const item of items){total+=item.amountMinor;if(!Number.isSafeInteger(total))return undefined;}
  return total===tx.amountMinor?items:undefined;
@@ -199,7 +243,6 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   challanNo:stringValue(d.receiptReference)||tx.id,tokenNumber:'—',
   paymentCategory:category,assessmentYear:allocationYears.length?allocationYears.join(', '):stringValue(d.assessmentYear)||'—',
   payerName:stringValue(d.payerName)||'—',payerTin:stringValue(d.payerTin)||'—',
-  taxpayerName:stringValue(d.taxpayerName)||stringValue(d.recipientName)||undefined,
   taxpayerTin:stringValue(d.taxpayerTin),receiptMobile:stringValue(d.receiptMobile),
   noticeReference:stringValue(d.noticeReference),
   isRepresentativePayment:d.payerMode==='OTHER',

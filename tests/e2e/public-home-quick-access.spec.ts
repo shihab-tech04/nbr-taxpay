@@ -472,6 +472,95 @@ test('approved payment-record lookup keeps the compact reference composition', a
     'Enter challan, token or transaction reference');
 });
 
+test('desktop search keeps compact inset below the 960px height breakpoint', async ({page}) => {
+  for (const {height,padLeft,padTop,padBottom} of [
+    {height:959,padLeft:16,padTop:10,padBottom:11},
+    {height:960,padLeft:24,padTop:24,padBottom:24},
+  ]) {
+    for (const lang of ['en','bn']) {
+      await page.setViewportSize({width:1151,height});
+      await page.goto('/?action=landing&lang='+lang);
+      await page.evaluate(async()=>{await document.fonts.ready;});
+      const measurements=await page.locator('.public-record-discovery').evaluate(el=>{
+        const style=getComputedStyle(el);
+        return {
+          top:parseFloat(style.paddingTop),
+          bottom:parseFloat(style.paddingBottom),
+          left:parseFloat(style.paddingLeft),
+          overflow:document.documentElement.scrollWidth-innerWidth,
+        };
+      });
+      expect(measurements.left,JSON.stringify({lang,height,measurements})).toBe(padLeft);
+      expect(Math.abs(measurements.top-padTop)).toBeLessThanOrEqual(1);
+      expect(Math.abs(measurements.bottom-padBottom)).toBeLessThanOrEqual(1);
+      expect(measurements.overflow).toBeLessThanOrEqual(2);
+    }
+  }
+});
+
+test('reference screenshot: tall desktop payment search matches approved padding and vertical composition', async ({page}) => {
+  for (const viewport of [
+    {width:1151,height:1263}, // exact supplied approved-reference PNG
+    {width:1194,height:1268},
+  ]) {
+    for (const lang of ['en','bn']) {
+      await page.setViewportSize(viewport);
+      await page.goto('/?action=landing&lang=' + lang);
+      await page.evaluate(async()=>{ await document.fonts.ready; });
+      const metrics=await page.evaluate(()=>{
+        const rect=(selector:string)=>document.querySelector(selector)!.getBoundingClientRect();
+        const style=(selector:string)=>getComputedStyle(document.querySelector(selector)!);
+        const hero=rect('.public-hero-carousel');
+        const search=rect('.public-record-discovery');
+        const input=rect('.public-record-search');
+        const benefits=rect('.public-benefits');
+        const footer=rect('.public-footer');
+        const panel=style('.public-record-discovery');
+        return {
+          heroHeight:hero.height,
+          heroToSearch:search.top-hero.bottom,
+          searchHeight:search.height,
+          searchPadLeft:parseFloat(panel.paddingLeft),
+          searchPadRight:parseFloat(panel.paddingRight),
+          searchPadTop:parseFloat(panel.paddingTop),
+          searchPadBottom:parseFloat(panel.paddingBottom),
+          headingGap:parseFloat(style('.public-record-discovery__heading').marginBottom),
+          searchToBenefits:benefits.top-search.bottom,
+          inputWidth:input.width,
+          panelWidth:search.width,
+          footerBottom:footer.bottom,
+          viewportHeight:innerHeight,
+          horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
+        };
+      });
+      expect(metrics.searchPadLeft,JSON.stringify({lang,viewport,metrics})).toBe(24);
+      expect(metrics.searchPadRight).toBe(24);
+      expect(metrics.searchPadTop).toBe(24);
+      expect(metrics.searchPadBottom).toBe(24);
+      expect(metrics.headingGap).toBeGreaterThanOrEqual(12);
+      expect(metrics.searchHeight,JSON.stringify({lang,viewport,metrics})).toBeGreaterThanOrEqual(148);
+      expect(metrics.searchHeight).toBeLessThanOrEqual(158);
+      expect(metrics.heroHeight).toBeGreaterThanOrEqual(260);
+      expect(metrics.heroHeight).toBeLessThanOrEqual(284);
+      expect(metrics.heroToSearch).toBeGreaterThanOrEqual(12);
+      expect(metrics.heroToSearch).toBeLessThanOrEqual(20);
+      expect(metrics.searchToBenefits).toBeGreaterThanOrEqual(12);
+      expect(metrics.searchToBenefits).toBeLessThanOrEqual(20);
+      expect(metrics.inputWidth).toBeGreaterThanOrEqual(metrics.panelWidth-60);
+      expect(metrics.footerBottom).toBeGreaterThanOrEqual(metrics.viewportHeight-2);
+      expect(metrics.horizontalOverflow).toBeLessThanOrEqual(2);
+      if (lang==='en' && viewport.width===1151) {
+        await mkdir('test-results/screenshots',{recursive:true});
+        const project=test.info().project.name.replace(/[^a-z0-9-]/gi,'-');
+        await page.screenshot({
+          path:`test-results/screenshots/sohojkor-home-rhythm-reference-1151x1263-${project}.png`,
+          fullPage:true,
+        });
+      }
+    }
+  }
+});
+
 test('approved desktop proposal is one white rounded panel with a connected 3x2 grid', async ({ page }) => {
   for (const viewport of [
     { width: 1136, height: 1264 },

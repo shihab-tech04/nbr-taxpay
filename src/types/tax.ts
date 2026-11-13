@@ -90,6 +90,8 @@ export interface PaymentLineItem {
 }
 
 export interface ReceiptAllocationItem {
+  /** Stable original source allocation identifier, when persisted by the payment contract. */
+  allocationId?: string;
   taxpayerName: string;
   taxpayerTin?: string;
   paymentServiceEn: string;
