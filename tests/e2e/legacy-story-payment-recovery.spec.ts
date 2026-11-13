@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-import {fillTravelDetails} from './travel-tax-test-helper';
+import {fillTravelDetails,futureTravelDate} from './travel-tax-test-helper';
 
 /** Browser journey uses intercepted fictional transport; SQL ownership is tested
  * separately against disposable PostgreSQL. No hosted payment rows are created. */
@@ -265,7 +265,7 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await travelRow.getByTestId('recorded-pay-again').click();
   const travelDialog=page.getByRole('dialog',{name:'Travel tax'});
   await expect(page.getByTestId('travel-pay-again-notice')).toContainText(travelPayment);
-  await fillTravelDetails(travelDialog,{date:'2026-11-14'});
+  await fillTravelDetails(travelDialog,{date:futureTravelDate});
   await travelDialog.getByRole('button',{name:'Continue to review'}).click();
   await travelDialog.getByRole('button',{name:'Pay online'}).click();
   await travelDialog.getByRole('button',{name:'Mobile banking'}).click();
