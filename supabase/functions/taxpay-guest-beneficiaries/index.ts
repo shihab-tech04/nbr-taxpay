@@ -26,7 +26,8 @@ type RpcName =
   | 'taxpay_demo_profile_login'
   | 'taxpay_demo_profile_settings'
   | 'taxpay_demo_recover_story1_session'
-  | 'taxpay_demo_payment_form_drafts';
+  | 'taxpay_demo_payment_form_drafts'
+  | 'taxpay_guest_payment_form_drafts';
 
 function response(value: unknown, status: number, origin: string): Response {
   return new Response(status === 204 ? null : JSON.stringify(value), {
@@ -162,8 +163,12 @@ Deno.serve(async (request: Request) => {
       data = await rpc(client, 'taxpay_demo_profile_settings', {
         p_capability_hash, p_key: key, p_value: value,
       });
-    } else if (typeof action === 'string' && action.startsWith('payment-draft-')) {
-      const draftAction = action.slice('payment-draft-'.length);
+    } else if (typeof action === 'string' &&
+      (action.startsWith('payment-draft-') || action.startsWith('guest-payment-draft-'))) {
+      // Keep the existing demo-profile draft action unchanged. Unsigned guests
+      // use their same opaque capability but a different session-scoped SQL RPC.
+      const isUnsignedGuestDraft = action.startsWith('guest-payment-draft-');
+      const draftAction = action.slice((isUnsignedGuestDraft ? 'guest-payment-draft-' : 'payment-draft-').length);
       if (!['list', 'get', 'create', 'update', 'delete'].includes(draftAction))
         throw new Error('INVALID_DRAFT_ACTION');
       const id = body.id ?? null;
@@ -186,7 +191,8 @@ Deno.serve(async (request: Request) => {
       if (draftAction === 'create' && (id !== null || revision !== null)) throw new Error('INVALID_DRAFT_PAYLOAD');
       if (draftAction === 'update' && (!id || revision === null)) throw new Error('INVALID_DRAFT_PAYLOAD');
       if (draftAction === 'delete' && (!id || revision === null)) throw new Error('INVALID_DRAFT_PAYLOAD');
-      data = await rpc(client, 'taxpay_demo_payment_form_drafts', {
+      data = await rpc(client,
+        isUnsignedGuestDraft ? 'taxpay_guest_payment_form_drafts' : 'taxpay_demo_payment_form_drafts', {
         p_capability_hash, p_action: draftAction, p_draft_id: id,
         p_service: service, p_payload: payload, p_revision: revision,
       });
