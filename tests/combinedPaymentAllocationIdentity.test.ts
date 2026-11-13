@@ -34,6 +34,7 @@ function details(version: 2 | 3 | undefined): Record<string, unknown> {
     allocations: savedAllocations,
     receiptSnapshot: {
       paymentCategory: 'OTHER_TAX_PAYMENT',
+      challanNo: 'COMBINED-WS1-779',
       totalAmount: 30,
       items: structuredClone(lines),
       allocationItems: snapshotItems,
