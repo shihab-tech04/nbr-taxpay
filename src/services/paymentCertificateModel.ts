@@ -5,6 +5,8 @@ import { validCertificateTransactionId } from './transactionId';
 export interface PaymentCertificateLine {
   recipientName: string;
   recipientTin?: string;
+  /** Stable source allocation identity for reconciliation; never rendered as certificate content. */
+  allocationId?: string;
   descriptionEn: string;
   descriptionBn: string;
   economicCode?: string;
@@ -113,6 +115,8 @@ export function buildPaymentCertificateModel(receipt: ChallanReceipt): PaymentCe
       if (!recipientTin || !validYear(assessmentYear) || !descriptionEn ||
           !Number.isSafeInteger(amountMinor) || amountMinor < 0) return null;
       return {
+        ...(typeof allocation.allocationId === 'string' && allocation.allocationId.trim()
+          ? { allocationId: allocation.allocationId } : {}),
         recipientName: allocation.taxpayerName.trim() || 'TIN ' + recipientTin,
         recipientTin,
         descriptionEn,
