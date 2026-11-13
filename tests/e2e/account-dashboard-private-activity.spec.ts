@@ -411,3 +411,52 @@ test('role totals count each payer parent once and follow the selected-year allo
   await expect(totals).toContainText('অন্য পরিশোধকারীর কাছ থেকে প্রাপ্ত');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+test('linked empty account shows verified no-data guidance without fictional amounts',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.route(supabaseUrl+'/rest/v1/**',async route=>{
+    const request=route.request();
+    const url=new URL(request.url());
+    if(request.method()==='OPTIONS')return route.fallback();
+    const token=request.headers().authorization?.replace(/^Bearer\s+/i,'').split('.')[1];
+    expect(token).toBeTruthy();
+    expect((JSON.parse(atob(token!)) as {sub?:string}).sub).toBe(owner.id);
+    if(url.pathname==='/rest/v1/rpc/sim_my_payment_history'){
+      return route.fulfill({status:200,contentType:'application/json',
+        headers:{'access-control-allow-origin':'*'},body:'[]'});
+    }
+    if([
+      '/rest/v1/taxpay_account_payment_form_drafts',
+      '/rest/v1/taxpay_payment_requests',
+      '/rest/v1/taxpay_correction_inquiries',
+      '/rest/v1/taxpay_in_app_notifications',
+    ].includes(url.pathname)){
+      const ownerFilter=url.searchParams.get('owner_uid')??url.searchParams.get('requester_uid')??url.searchParams.get('recipient_uid');
+      expect(ownerFilter).toBe('eq.'+owner.id);
+      return route.fulfill({status:200,headers:{
+        'content-range':'*/0','access-control-expose-headers':'content-range, x-total-count',
+        'access-control-allow-origin':'*',
+      },body:''});
+    }
+    return route.fallback();
+  });
+  await page.goto('/?action=taxpayer_home');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  await expect(dashboard).toContainText('No stored payment activity is linked to this scenario profile.');
+  await expect(dashboard.getByTestId('account-scenario-monthly'))
+    .toContainText('No completed payments initiated by this account');
+  await expect(dashboard.getByTestId('dashboard-payment-role-totals')).toHaveCount(0);
+  await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
+  await expect(dashboard.getByTestId('account-beneficiary-spending')).toHaveCount(0);
+  await expect(dashboard.getByRole('list',{name:'Recent scenario transactions'})).toHaveCount(0);
+  await expect(dashboard.getByTestId('account-dashboard-status-summary')).toContainText('Completed Payments');
+  await expect(dashboard.getByTestId('account-dashboard-status-summary').locator('article').first())
+    .toContainText('0');
+  await expect(dashboard.getByText(/৳/)).toHaveCount(0);
+  await setWorkspaceLanguage(page,'bn');
+  await expect(dashboard).toContainText('এই সিনারিও প্রোফাইলে কোনো সংরক্ষিত পেমেন্ট কার্যক্রম নেই।');
+  await expect(dashboard.getByTestId('account-scenario-monthly'))
+    .toContainText('নির্বাচিত করবর্ষে এই অ্যাকাউন্ট থেকে সম্পন্ন কোনো পেমেন্ট নেই।');
+  await expect(dashboard.getByText(/৳/)).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
