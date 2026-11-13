@@ -249,7 +249,12 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
 
   // Travel Tax Pay Again retains the original parent only as provenance; the
   // replacement is a fresh request/parent and cannot mutate the saved source.
-  await page.goto('/?action=history');
+  // Re-enter the existing Transactions register through the approved Activity
+  // navigation so the signed-in User1 workspace mounts its SQL-backed rows.
+  await page.goto('/?action=taxpayer_home');
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await page.getByRole('navigation',{name:'Taxpayer services'}).getByRole('button',{name:'Activity'}).click();
+  await expect(page).toHaveURL(/action=history/);
   const travelRegister=page.getByTestId('taxpayer-transaction-table');
   const travelRow=travelRegister.getByRole('row').filter({hasText:travelPayment});
   await expect(travelRow).toBeVisible({timeout:15000});
