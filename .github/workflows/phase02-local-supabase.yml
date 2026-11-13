@@ -282,12 +282,30 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
         run: npx playwright test tests/e2e/secure-workspace-real-local.spec.ts --project=mobile-375
 
+      - name: Recheck mobile account sign-out and Beneficiaries navigation
+        env:
+          TAXPAY_LOCAL_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          TAXPAY_LOCAL_SUPABASE_ANON_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/account-preferences-real-local.spec.ts --project=mobile-375 --workers=1
+
       - name: Verify real saved beneficiaries, account isolation and Pay Tax prefill
         env:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
         run: npx playwright test tests/e2e/beneficiaries-real-local.spec.ts tests/e2e/beneficiary-list-management-real-local.spec.ts tests/e2e/beneficiary-move-list-real-local.spec.ts tests/e2e/account-preferences-real-local.spec.ts --project=mobile-375
+
+      - name: Verify history beneficiary save with real Auth, SQL persistence and owner isolation
+        env:
+          TAXPAY_LOCAL_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          TAXPAY_LOCAL_SUPABASE_ANON_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/account-history-save-beneficiary.spec.ts --project=mobile-375 --workers=1 --grep 'real Auth payer saves one history allocation'
 
       - name: Verify guest beneficiary persistence, isolation, XLSX and Pay Tax prefill
         env:

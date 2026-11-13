@@ -1,4 +1,5 @@
 import {expect,test,type Page} from '@playwright/test';
+import {randomBytes,randomUUID} from 'node:crypto';
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 
 const backend='https://nbr-taxpay-test.invalid';
@@ -155,5 +156,103 @@ for(const language of ['en','bn'] as const){
     await expect(savedReceipt).toContainText('Beneficiary B');
     expect(payment.details.allocations).toHaveLength(2);
     expect(payment.amountMinor).toBe(5000);
+  });
+}
+
+for(const language of ['en','bn'] as const){
+  test(`real Auth payer saves one history allocation to owner-scoped SQL (${language})`,async({browser})=>{
+    test.setTimeout(120_000);
+    const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL;
+    const key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+    if(!raw||!key)throw new Error('Disposable local Supabase credentials are required.');
+    const endpoint=new URL(raw);
+    if(endpoint.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(endpoint.hostname))
+      throw new Error('Refusing hosted account-history beneficiary acceptance.');
+    const createOwner=async(label:string)=>{
+      const email=`history-${label}-${randomUUID()}@example.invalid`;
+      const password=randomBytes(32).toString('base64url');
+      const response=await fetch(new URL('/auth/v1/signup',endpoint.origin),{
+        method:'POST',headers:{apikey:key,'content-type':'application/json'},
+        body:JSON.stringify({email,password}),
+      });
+      expect(response.status).toBe(200);
+      const body=await response.json() as {
+        user?:{id?:string};session?:{access_token?:string;refresh_token?:string;expires_at?:number};
+        access_token?:string;refresh_token?:string;expires_at?:number;
+      };
+      const session=body.session??body;
+      expect(body.user?.id).toBeTruthy();
+      expect(session.access_token).toBeTruthy();
+      return {id:body.user!.id!,session:session as {access_token:string;refresh_token:string;expires_at?:number}};
+    };
+    const owner=await createOwner('owner');
+    const other=await createOwner('other');
+    const appUrl=(action:string,session:{access_token:string;refresh_token:string;expires_at?:number})=>
+      `/?action=${action}&lang=${language}#access_token=${encodeURIComponent(session.access_token)}`+
+      `&refresh_token=${encodeURIComponent(session.refresh_token)}&token_type=bearer&expires_in=3600&expires_at=`+
+      (session.expires_at??Math.floor(Date.now()/1000)+3600);
+    const readBeneficiaries=async(token:string)=>{
+      const url=new URL('/rest/v1/taxpay_beneficiaries',endpoint.origin);
+      url.searchParams.set('select','owner_uid,tin,display_name,tag,relationship');
+      const response=await fetch(url,{headers:{apikey:key,Authorization:'Bearer '+token}});
+      expect(response.status).toBe(200);
+      return await response.json() as Array<Record<string,unknown>>;
+    };
+    const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:375,height:812}});
+    try{
+      const page=await context.newPage();
+      page.setDefaultTimeout(10_000);
+      await page.goto(appUrl('beneficiaries',owner.session));
+      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      await page.getByRole('button',{name:language==='bn'?'তালিকা তৈরি':'Create list',exact:true}).first().click();
+      const list=page.getByRole('dialog',{name:language==='bn'?'তালিকা তৈরি':'Create list'});
+      await list.locator('#beneficiary-create-list-name').fill('Family');
+      await list.getByRole('button',{name:language==='bn'?'তালিকা তৈরি':'Create list',exact:true}).click();
+      await expect(page.getByText(language==='bn'?'তালিকা তৈরি হয়েছে।':'List created.')).toBeVisible();
+
+      // The payment list is a controlled synthetic receipt response; claim,
+      // sign-in, beneficiary CRUD, persistence and RLS use real disposable SQL.
+      await page.route(endpoint.origin+'/rest/v1/rpc/taxpay_my_story1_payments',route=>route.fulfill({
+        status:200,contentType:'application/json',body:JSON.stringify({items:[payment],total:1,page:1}),
+      }));
+      await page.goto(appUrl('history',owner.session));
+      const history=page.getByTestId('beneficiary-payment-history');
+      await expect(history).toBeVisible();
+      await expect(history).toContainText('Beneficiary A');
+      await history.getByRole('button',{name:language==='bn'?'দেখুন':'View',exact:true}).first().click();
+      const receipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
+      await expect(receipt).toBeVisible();
+      await receipt.getByRole('button',{name:language==='bn'?'উপকারভোগী সংরক্ষণ করুন':'Save Beneficiary',exact:true}).click();
+      const entry=page.getByRole('dialog',{name:language==='bn'?'উপকারভোগী যোগ':'Beneficiary entry'});
+      await expect(entry.locator('#beneficiary-tin')).toHaveValue('012345678901');
+      await expect(entry.locator('#beneficiary-name')).toHaveValue('Beneficiary A');
+      await chooseBeneficiaryOption(entry,'beneficiary-target-list',{label:'Family'});
+      await chooseBeneficiaryOption(entry,'beneficiary-tag','clients');
+      await entry.getByRole('button',{name:language==='bn'?'উপকারভোগী যোগ':'Add beneficiary',exact:true}).click();
+      await expect(page.getByText(language==='bn'?'উপকারভোগী সংরক্ষিত হয়েছে।':'Beneficiary saved.')).toBeVisible();
+
+      const saved=await readBeneficiaries(owner.session.access_token);
+      expect(saved).toHaveLength(1);
+      expect(saved[0]).toMatchObject({
+        owner_uid:owner.id,tin:'012345678901',display_name:'Beneficiary A',tag:'clients',relationship:null,
+      });
+      expect(await readBeneficiaries(other.session.access_token)).toEqual([]);
+
+      const otherContext=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:375,height:812}});
+      try{
+        const otherPage=await otherContext.newPage();
+        await otherPage.goto(appUrl('beneficiaries',other.session));
+        await expect(otherPage.getByTestId('beneficiaries-page')).toBeVisible();
+        await expect(otherPage.getByText('Beneficiary A',{exact:true})).toHaveCount(0);
+      }finally{await otherContext.close();}
+
+      await page.goto(appUrl('history',owner.session));
+      const reloaded=page.getByTestId('beneficiary-payment-history');
+      await expect(reloaded).toContainText(payment.id);
+      await reloaded.getByRole('button',{name:language==='bn'?'দেখুন':'View',exact:true}).first().click();
+      const savedReceipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
+      await expect(savedReceipt.getByTestId('account-save-beneficiary-receipt')).toHaveCount(0);
+      await expect(savedReceipt).toContainText('012345678901');
+    }finally{await context.close();}
   });
 }

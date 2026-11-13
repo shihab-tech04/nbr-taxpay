@@ -592,18 +592,20 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   }, [step, createdReceipt, embedded, showReceiptDetails]);
 
   useEffect(() => {
-    if (isWithholdingMode) {
+    if (isWithholdingMode && category !== 'SOURCE_TAX_DEPOSIT') {
       setCategory('SOURCE_TAX_DEPOSIT');
       setSelectedHeadIds([]);
     }
-  }, [isWithholdingMode]);
+  }, [isWithholdingMode, category]);
 
   useEffect(() => {
     const requestedCategory = initialCategory || routeParams?.initialCategory;
     if (!isWithholdingMode && requestedCategory && CATEGORY_LABELS[requestedCategory]) {
       const next = requestedCategory as PaymentCategory;
-      setCategory(next);
-      setSelectedHeadIds([]);
+      if (next !== category) {
+        setCategory(next);
+        setSelectedHeadIds([]);
+      }
     }
   }, [routeParams, initialCategory, isWithholdingMode]);
 

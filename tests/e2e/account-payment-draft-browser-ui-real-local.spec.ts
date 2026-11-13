@@ -482,7 +482,7 @@ for (const language of ['en', 'bn'] as const) {
     const draftId = firstRows[0].id;
     expect(firstRows[0]).toMatchObject({ owner_uid: owner.id, revision: 1 });
     expect(firstRows[0].form_payload).toMatchObject({
-      step: 2, noticeReference: marker, forSelf: false, tin: '012345678901',
+      category: 'ADVANCE_TAX', step: 2, noticeReference: marker, forSelf: false, tin: '012345678901',
       otherTaxpayerName: 'Local Draft Beneficiary', phone: receiptPhone, receiptEmail,
       incomeTaxType: 'NON_COMPANY', assessmentYear: '2025-26', selectedHeadIds: [selectedHeadId],
       amountInputs: { [selectedHeadId]: '125.75' },
@@ -521,7 +521,7 @@ for (const language of ['en', 'bn'] as const) {
     expect(updatedRows).toHaveLength(1);
     expect(updatedRows[0]).toMatchObject({ id: draftId, owner_uid: owner.id, revision: 2 });
     expect(updatedRows[0].form_payload).toMatchObject({
-      step: 2, noticeReference: marker, forSelf: false, tin: '012345678901',
+      category: 'ADVANCE_TAX', step: 2, noticeReference: marker, forSelf: false, tin: '012345678901',
       otherTaxpayerName: 'Local Draft Beneficiary', phone: receiptPhone, receiptEmail,
       incomeTaxType: 'NON_COMPANY', assessmentYear: '2025-26', selectedHeadIds: [selectedHeadId],
       amountInputs: { [selectedHeadId]: '126.75' },
