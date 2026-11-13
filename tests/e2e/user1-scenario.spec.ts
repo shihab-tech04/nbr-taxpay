@@ -301,9 +301,10 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
     await page.setViewportSize({width:320,height:720});
     await expect(profile.getByTestId('user1-profile-summary').locator(':scope > div')).toHaveCount(4);
     await expect(profile.getByRole('button',{name:'Show TIN'})).toBeVisible();
-    await expect(profile.getByRole('button',{name:'Copy TIN'})).toBeVisible();
+    const narrowCopyButton=profile.getByRole('button',{name:/^(?:Copy|Copied) TIN$/});
+    await expect(narrowCopyButton).toBeVisible();
     const narrowEye=await profile.getByRole('button',{name:'Show TIN'}).boundingBox();
-    const narrowCopy=await profile.getByRole('button',{name:'Copy TIN'}).boundingBox();
+    const narrowCopy=await narrowCopyButton.boundingBox();
     expect(narrowEye&&narrowCopy).toBeTruthy();
     expect(narrowCopy!.x-narrowEye!.x).toBeGreaterThanOrEqual(narrowEye!.width-2);
     expect(narrowCopy!.x-narrowEye!.x).toBeLessThanOrEqual(narrowEye!.width+16);
