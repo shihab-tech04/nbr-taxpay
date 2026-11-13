@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+import { chooseBeneficiaryOption } from './beneficiarySearchableSelect';
 
 type Account = 'user27' | 'user28' | 'user29' | 'user30';
 
@@ -414,7 +415,36 @@ for (const language of ['en', 'bn'] as const) {
         id: string; owner_uid: string; service: string; form_payload: Record<string, unknown>; revision: number;
       }>;
     };
+    const readBeneficiaries = async (session: { access_token: string }) => {
+      const url = new URL('/rest/v1/taxpay_beneficiaries', endpoint.origin);
+      url.searchParams.set('select', 'owner_uid,tin,display_name,tag,relationship');
+      const response = await fetch(url, { headers: { apikey: key, Authorization: 'Bearer ' + session.access_token } });
+      expect(response.status).toBe(200);
+      return await response.json() as Array<{
+        owner_uid: string; tin: string; display_name: string; tag: string; relationship: string | null;
+      }>;
+    };
     try {
+    const beneficiarySetup = await open(owner.session, 'beneficiaries');
+    await expect(beneficiarySetup.getByTestId('beneficiaries-page')).toBeVisible();
+    await beneficiarySetup.getByRole('button', { name: bn ? 'তালিকা তৈরি' : 'Create list', exact: true }).first().click();
+    const listDialog = beneficiarySetup.getByRole('dialog', { name: bn ? 'তালিকা তৈরি' : 'Create list' });
+    await listDialog.locator('#beneficiary-create-list-name').fill('Draft beneficiaries');
+    await listDialog.getByRole('button', { name: bn ? 'তালিকা তৈরি' : 'Create list', exact: true }).click();
+    await beneficiarySetup.getByRole('button', { name: bn ? 'উপকারভোগী যোগ' : 'Add beneficiary', exact: true }).click();
+    const beneficiaryDialog = beneficiarySetup.getByRole('dialog', { name: bn ? 'উপকারভোগী যোগ' : 'Beneficiary entry' });
+    await beneficiaryDialog.locator('#beneficiary-tin').fill('012345678901');
+    await beneficiaryDialog.locator('#beneficiary-name').fill('Local Draft Beneficiary');
+    await chooseBeneficiaryOption(beneficiaryDialog, 'beneficiary-tag', 'clients');
+    await beneficiaryDialog.getByRole('button', { name: bn ? 'উপকারভোগী যোগ' : 'Add beneficiary', exact: true }).click();
+    await expect(beneficiarySetup.getByText(bn ? 'উপকারভোগী সংরক্ষিত হয়েছে।' : 'Beneficiary saved.')).toBeVisible();
+    const ownerBeneficiaries = await readBeneficiaries(owner.session);
+    expect(ownerBeneficiaries).toHaveLength(1);
+    expect(ownerBeneficiaries[0]).toMatchObject({
+      owner_uid: owner.id, tin: '012345678901', display_name: 'Local Draft Beneficiary', tag: 'clients', relationship: null,
+    });
+    expect(await readBeneficiaries(other.session)).toEqual([]);
+
     const payer = await open(owner.session, 'history');
     // A route reached through a real local Auth callback enables the existing
     // signed-in draft actor; no preview identity or mocked transport is used.
@@ -425,14 +455,25 @@ for (const language of ['en', 'bn'] as const) {
     const marker = `AUTH-DRAFT-${language}-${randomUUID()}`;
     const receiptPhone = '01712345678';
     const receiptEmail = `draft-${language}-${randomUUID()}@example.invalid`;
-    const payerChoice = payer.locator('#guest-payer-self');
-    await payerChoice.check();
+    await payer.locator('#guest-payer-other').check();
+    const beneficiaryPicker = payer.getByTestId('saved-beneficiary-picker');
+    await expect(beneficiaryPicker).toContainText('Local Draft Beneficiary');
+    await beneficiaryPicker.locator('input[type="radio"]').check();
     await expect(payer.locator('#guest-notice-ref')).toBeVisible();
     await expect(payer.locator('#guest-phone')).toBeVisible();
     await expect(payer.locator('#guest-receipt-email')).toBeVisible();
     await payer.locator('#guest-notice-ref').fill(marker);
     await payer.locator('#guest-phone').fill(receiptPhone);
     await payer.locator('#guest-receipt-email').fill(receiptEmail);
+    await payer.getByRole('button', { name: bn ? 'পেমেন্ট খাতে এগিয়ে যান' : 'Continue to Payment Head', exact: true }).click();
+    await payer.locator('#guest-income-type-NON_COMPANY').check();
+    const availableHead = payer.locator('input[name="guest-payment-head"]:not(:disabled)').first();
+    await expect(availableHead).toBeVisible();
+    const selectedHeadId = Number(await availableHead.getAttribute('value'));
+    expect(Number.isSafeInteger(selectedHeadId)).toBe(true);
+    await availableHead.check();
+    await payer.locator('#guest-assessment-year').selectOption('2025-26');
+    await payer.locator('#guest-tax-amount').fill('125.75');
     await payer.getByRole('button', { name: saveLabel, exact: true }).click();
     await expect(payer.getByRole('button', { name: savedLabel, exact: true })).toBeVisible();
 
@@ -441,7 +482,10 @@ for (const language of ['en', 'bn'] as const) {
     const draftId = firstRows[0].id;
     expect(firstRows[0]).toMatchObject({ owner_uid: owner.id, revision: 1 });
     expect(firstRows[0].form_payload).toMatchObject({
-      noticeReference: marker, forSelf: true, phone: receiptPhone, receiptEmail,
+      step: 2, noticeReference: marker, forSelf: false, tin: '012345678901',
+      otherTaxpayerName: 'Local Draft Beneficiary', phone: receiptPhone, receiptEmail,
+      incomeTaxType: 'NON_COMPANY', assessmentYear: '2025-26', selectedHeadIds: [selectedHeadId],
+      amountInputs: { [selectedHeadId]: '125.75' },
     });
 
     // A separate fresh form creates a sibling draft for the same owner. The
@@ -464,12 +508,12 @@ for (const language of ['en', 'bn'] as const) {
     const card = cards.locator('[data-draft-id="' + draftId + '"]');
     await expect(card).toBeVisible();
     await card.getByRole('button', { name: continueLabel, exact: true }).click();
-    const modal = resume.getByRole('dialog').filter({ has: resume.locator('#guest-notice-ref') });
-    await expect(modal.locator('#guest-notice-ref')).toHaveValue(marker);
-    await expect(modal.locator('#guest-phone')).toHaveValue(receiptPhone);
-    await expect(modal.locator('#guest-receipt-email')).toHaveValue(receiptEmail);
-    const updatedMarker = marker + '-UPDATED';
-    await modal.locator('#guest-notice-ref').fill(updatedMarker);
+    const modal = resume.getByRole('dialog', { name: 'Pay Tax' });
+    await expect(modal.locator('#guest-assessment-year')).toHaveValue('2025-26');
+    await expect(modal.locator('#guest-income-type-NON_COMPANY')).toBeChecked();
+    await expect(modal.locator('#guest-head-' + selectedHeadId)).toBeChecked();
+    await expect(modal.locator('#guest-tax-amount')).toHaveValue('125.75');
+    await modal.locator('#guest-tax-amount').fill('126.75');
     await modal.getByRole('button', { name: saveLabel, exact: true }).click();
     await expect(modal.getByRole('button', { name: savedLabel, exact: true })).toBeVisible();
 
@@ -477,24 +521,29 @@ for (const language of ['en', 'bn'] as const) {
     expect(updatedRows).toHaveLength(1);
     expect(updatedRows[0]).toMatchObject({ id: draftId, owner_uid: owner.id, revision: 2 });
     expect(updatedRows[0].form_payload).toMatchObject({
-      noticeReference: updatedMarker, forSelf: true, phone: receiptPhone, receiptEmail,
+      step: 2, noticeReference: marker, forSelf: false, tin: '012345678901',
+      otherTaxpayerName: 'Local Draft Beneficiary', phone: receiptPhone, receiptEmail,
+      incomeTaxType: 'NON_COMPANY', assessmentYear: '2025-26', selectedHeadIds: [selectedHeadId],
+      amountInputs: { [selectedHeadId]: '126.75' },
     });
 
     // The first browser retains revision 1; a stale update must be rejected.
+    await payer.getByRole('button', { name: bn ? 'পূর্ববর্তী ধাপ' : 'Back', exact: true }).click();
     await payer.locator('#guest-notice-ref').fill(marker + '-STALE');
     await payer.getByRole('button', { name: saveLabel, exact: true }).click();
     await expect(payer.getByRole('alert').filter({ hasText: /changed in another session/ })).toBeVisible();
     const afterConflict = await readRows(owner.session, { owner_uid: 'eq.' + owner.id, id: 'eq.' + draftId });
-    expect(afterConflict[0]?.form_payload.noticeReference).toBe(updatedMarker);
+    expect(afterConflict[0]?.form_payload.amountInputs).toEqual({ [selectedHeadId]: '126.75' });
 
     // Refresh then resume the exact updated value. Draft activity must not create a payment.
     await resume.goto(`/?action=taxpayer_home&lang=${language}`);
     await expect(cards.locator('[data-draft-id="' + draftId + '"]')).toBeVisible();
     await cards.locator('[data-draft-id="' + draftId + '"]').getByRole('button', { name: continueLabel, exact: true }).click();
-    const refreshedModal = resume.getByRole('dialog').filter({ has: resume.locator('#guest-notice-ref') });
-    await expect(refreshedModal.locator('#guest-notice-ref')).toHaveValue(updatedMarker);
-    await expect(refreshedModal.locator('#guest-phone')).toHaveValue(receiptPhone);
-    await expect(refreshedModal.locator('#guest-receipt-email')).toHaveValue(receiptEmail);
+    const refreshedModal = resume.getByRole('dialog', { name: 'Pay Tax' });
+    await expect(refreshedModal.locator('#guest-assessment-year')).toHaveValue('2025-26');
+    await expect(refreshedModal.locator('#guest-income-type-NON_COMPANY')).toBeChecked();
+    await expect(refreshedModal.locator('#guest-head-' + selectedHeadId)).toBeChecked();
+    await expect(refreshedModal.locator('#guest-tax-amount')).toHaveValue('126.75');
     await refreshedModal.locator('.taxpay-modal__header .taxpay-modal__close').click();
     const exitPrompt = refreshedModal.getByRole('alertdialog');
     await expect.poll(async () => await refreshedModal.count() === 0 || await exitPrompt.count() > 0).toBe(true);
@@ -509,6 +558,7 @@ for (const language of ['en', 'bn'] as const) {
     await expect(strangerCards.getByTestId('dashboard-drafts-empty')).toBeVisible();
     await expect(stranger.getByText(marker, { exact: false })).toHaveCount(0);
     expect(await readRows(other.session, { owner_uid: 'eq.' + other.id, id: 'eq.' + draftId })).toEqual([]);
+    expect(await readBeneficiaries(other.session)).toEqual([]);
 
     // Delete confirmation can be cancelled; confirming deletes this draft only.
     const finalCard = cards.locator('[data-draft-id="' + draftId + '"]');
