@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { MASTER_PAYMENT_HEADS } from '../src/data/paymentHeads.ts';
 import { makeConfirmedReceipt } from '../src/services/confirmedPaymentCertificate.ts';
 import type { ChallanReceipt, PaymentLineItem } from '../src/types/tax.ts';
 
@@ -12,9 +13,11 @@ const allocations = [
   { allocationId: 'one', taxpayerTin: '111111111111', taxpayerName: 'First beneficiary', headId: 8, assessmentYear: '2026-27', amountMinor: 1200 },
   { allocationId: 'two', taxpayerTin: '222222222222', taxpayerName: 'Second beneficiary', headId: 145, assessmentYear: '2025-26', amountMinor: 1800 },
 ];
+const serviceBn = (index: number) => MASTER_PAYMENT_HEADS.find(head =>
+  head.id === lines[index].headId && head.nameEn === lines[index].headNameEn)?.nameBn || lines[index].headNameEn;
 const savedAllocationItems = [
-  { ...allocations[0], paymentServiceEn: lines[0].headNameEn, paymentServiceBn: 'বেতন থেকে কর কর্তন', economicCode: lines[0].economicCode },
-  { ...allocations[1], paymentServiceEn: lines[1].headNameEn, paymentServiceBn: 'দাবিনামার কর', economicCode: lines[1].economicCode },
+  { ...allocations[0], paymentServiceEn: lines[0].headNameEn, paymentServiceBn: serviceBn(0), economicCode: lines[0].economicCode },
+  { ...allocations[1], paymentServiceEn: lines[1].headNameEn, paymentServiceBn: serviceBn(1), economicCode: lines[1].economicCode },
 ];
 
 function details(version: 2 | 3 | undefined = 3): Record<string, unknown> {
