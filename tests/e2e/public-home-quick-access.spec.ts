@@ -900,3 +900,28 @@ test('six benefit destinations work by pointer and keyboard in English and Bangl
     }
   }
 });
+
+
+test('homepage reference entry does not claim a missing SQL record before session verification', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1280', 'This case explicitly exercises mobile and desktop states.');
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const language of ['en', 'bn'] as const) {
+      await page.goto(`/?action=landing&lang=${language}`);
+      const reference = `UNVERIFIED-REFERENCE-${width}`;
+      const landing = page.locator('.public-record-discovery');
+      await landing.getByRole('searchbox').fill(reference);
+      await landing.getByRole('button', { name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
+      const modal = page.getByRole('dialog', { name: language === 'bn' ? 'পেমেন্টের অবস্থা ও রসিদ' : 'Payment status & receipt' });
+      await expect(modal).toBeVisible();
+      await expect(modal.getByRole('textbox', { name: language === 'bn'
+        ? 'চালান, টোকেন বা লেনদেনের রেফারেন্স' : 'Challan, token or transaction reference' }))
+        .toHaveValue(reference);
+      await expect(modal.getByTestId('receipt-mobile-required')).toBeVisible();
+      await expect(modal.getByRole('heading', { name: language === 'bn' ? 'কোনো মিল পাওয়া যায়নি' : 'No matching record' })).toHaveCount(0);
+      await modal.getByRole('button', { name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
+      await expect(modal.getByTestId('receipt-mobile-required')).toBeVisible();
+      await expect(modal.locator('.receipt-view')).toHaveCount(0);
+    }
+  }
+});

@@ -20,6 +20,8 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   const [searchResult, setSearchResult] = useState<ChallanReceipt | null | 'NOT_FOUND'>(null);
   const [lookupPending, setLookupPending] = useState(false);
   const [lookupError, setLookupError] = useState(false);
+  // A reference without required session verification is not a confirmed no-match.
+  const [needsReceiptMobile, setNeedsReceiptMobile] = useState(false);
   const lookupSequence = useRef(0);
   useEffect(() => () => { lookupSequence.current += 1; }, []);
   const resetLookup = () => {
@@ -27,6 +29,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
     setSearchResult(null);
     setLookupPending(false);
     setLookupError(false);
+    setNeedsReceiptMobile(false);
   };
   // Never suggest sample/session receipts in the signed-in account tracking journey.
   // Users must provide the actual reference; public lookup examples remain unchanged.
@@ -37,6 +40,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
     const sequence = ++lookupSequence.current;
     setSearchedReference(reference);
     setLookupError(false);
+    setNeedsReceiptMobile(false);
     const local = lookupReceipt(reference, mobile);
     if (local) {
       setLookupPending(false);
@@ -48,7 +52,8 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
     // recovery route only reads simulated records from this browser session.
     if (!/^01\d{9}$/.test(mobile)) {
       setLookupPending(false);
-      setSearchResult('NOT_FOUND');
+      setSearchResult(null);
+      setNeedsReceiptMobile(true);
       return;
     }
     setSearchResult(null);
@@ -158,6 +163,9 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             </div>
           )}
         </form>}
+        {needsReceiptMobile && <p role="status" className="receipt-lookup__hint" data-testid="receipt-mobile-required">
+          {t('Enter the 11-digit receipt mobile number to check this reference in saved session records.', 'সংরক্ষিত সেশন রেকর্ডে এই রেফারেন্স খুঁজতে রসিদের ১১ সংখ্যার মোবাইল নম্বর লিখুন।')}
+        </p>}
         {lookupPending && <p role="status" className="receipt-lookup__hint">
           {t('Checking records from this browser session…', 'এই ব্রাউজার সেশনের রেকর্ড খোঁজা হচ্ছে…')}
         </p>}
