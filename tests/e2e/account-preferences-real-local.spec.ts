@@ -127,8 +127,9 @@ test('real account restores its own language and selected beneficiary list in a 
   // Sign out immediately after selecting Bangla. The owner preference must
   // finish saving before the session is revoked: no waiting for SQL here.
   await page.locator('.citizen-mobile-menu-trigger').click();
+  const signedOutUrl=new URL('/',page.url()).href;
   await page.locator('.citizen-dialog-signout').click();
-  await expect(page).toHaveURL(/^(?!.*action=account_settings)/,{timeout:15000});
+  await page.waitForURL(signedOutUrl,{waitUntil:'load',timeout:15000});
   await first.close();
 
   const aSession=await signIn(a.email,a.password);
