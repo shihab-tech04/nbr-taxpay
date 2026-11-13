@@ -109,6 +109,12 @@ BEGIN
   mixed_payload:=jsonb_set(mixed_payload,'{details,sourcePaymentId}',to_jsonb(saved_id::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptReference}',to_jsonb('SIM-'||mixed_key::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||mixed_key::text));
+  -- Pay Again has an independent allocation identity namespace. Reuse the
+  -- head/year/recipient facts as editable inputs, never the paid allocation IDs.
+  mixed_payload:=jsonb_set(mixed_payload,'{details,allocations,0,allocationId}',to_jsonb('ws3-v3-repeat-one'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,allocations,1,allocationId}',to_jsonb('ws3-v3-repeat-two'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,allocationItems,0,allocationId}',to_jsonb('ws3-v3-repeat-one'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,allocationItems,1,allocationId}',to_jsonb('ws3-v3-repeat-two'::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,allocations,0,headId}',to_jsonb(8));
   mixed_payload:=jsonb_set(mixed_payload,'{details,allocations,0,serviceCode}',to_jsonb('SOURCE_TAX_DEPOSIT'::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,allocations,0,isWithholding}',to_jsonb(true));
@@ -150,7 +156,12 @@ BEGIN
         FROM demo_payment.story_payments p
         CROSS JOIN LATERAL jsonb_array_elements(p.data->'details'->'allocations')
           WITH ORDINALITY AS a(value,ordinality) WHERE p.id=mixed_saved_id)
-       IS DISTINCT FROM '["ws3-v3-one","ws3-v3-two"]'::jsonb
+       IS DISTINCT FROM '["ws3-v3-repeat-one","ws3-v3-repeat-two"]'::jsonb
+    OR (SELECT jsonb_agg(a.value->>'allocationId' ORDER BY a.ordinality)
+        FROM demo_payment.story_payments p
+        CROSS JOIN LATERAL jsonb_array_elements(p.data->'details'->'receiptSnapshot'->'allocationItems')
+          WITH ORDINALITY AS a(value,ordinality) WHERE p.id=mixed_saved_id)
+       IS DISTINCT FROM '["ws3-v3-repeat-one","ws3-v3-repeat-two"]'::jsonb
     OR (SELECT count(*) FROM demo_payment.story_payments
         WHERE id=saved_id AND idempotency_key=payment_key AND amount_minor=5000
           AND COALESCE(data->'details'->>'sourcePaymentId','')='')<>1
