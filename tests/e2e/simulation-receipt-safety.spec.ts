@@ -156,6 +156,13 @@ for (const language of ['en', 'bn'] as const) test(`legacy ${language} receipt s
   await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারি স্ক্রল রেফারেন্স' : 'Treasury scroll reference');
   await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারি স্ক্রল ইস্যু হয়নি' : 'No Treasury scroll issued');
   await expect(receipt).not.toContainText('BB-SCRL-2026-99999');
+  await page.goto('/?action=verify&lang=' + language);
+  await page.locator('#receipt-lookup-reference').fill('SK-PC-' + paymentId);
+  await page.locator('#receipt-lookup-mobile').fill('01712345678');
+  await page.locator('.receipt-lookup__submit').click();
+  await expect(receipt.getByTestId('payment-certificate-reference')).toContainText('SK-PC-' + paymentId);
+  await expect(receipt).toContainText(reference);
+  await expect(receipt).not.toContainText('BB-SCRL-2026-99999');
 });
 
 
