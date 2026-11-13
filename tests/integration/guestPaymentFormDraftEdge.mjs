@@ -70,3 +70,14 @@ assert.equal((await command(first, 'guest-payment-draft-delete', {
 assert.deepEqual((await command(first, 'guest-payment-draft-list')).data, []);
 
 console.log('PASS: disposable Edge guest draft create/list/get/update/delete, refresh, conflict and cross-session isolation');
+
+// The approved fictional profile uses its existing capability, never a
+// client-submitted recipient TIN or a newly created Supabase Auth identity.
+const demo = (await command(first, 'demo-login', {userId: 'user2', password: 'user2'})).data;
+assert.match(demo.capability, /^[A-Za-z0-9_-]{43}$/);
+const received = (await command(demo.capability, 'received-notices-unread')).data;
+assert.ok(Array.isArray(received.items));
+assert.equal(typeof received.total, 'number');
+assert.equal(typeof received.hasMore, 'boolean');
+await command(demo.capability, 'received-notices-ack', {eventId: 'unknown-notice'}, 404);
+console.log('PASS: real local Edge recipient feed and missing-event acknowledgement rejection');
