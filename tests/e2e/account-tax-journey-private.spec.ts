@@ -118,6 +118,41 @@ test('signed-in account with no records never invents financial events',async({p
   await expect(page.getByRole('navigation',{name:'করসেবা'})).toBeVisible();
 });
 
+test('shared review workspace scopes notification reads and acknowledgements to the signed-in recipient',async({page})=>{
+  await mockAccount(page,false);
+  const viewed=new Set<string>();
+  const notices=[
+    {id:'review-notice-1',request_id:request.id,message_code:'REQUEST_ACKNOWLEDGED',is_read:false,created_at:'2026-10-03T10:00:00Z'},
+    {id:'review-notice-2',request_id:request.id,message_code:'REQUEST_INFO_REQUESTED',is_read:false,created_at:'2026-10-04T10:00:00Z'}
+  ];
+  await page.route(backend+'/rest/v1/taxpay_in_app_notifications**',async route=>{
+    const req=route.request(),url=new URL(req.url());
+    const response=(data:unknown,status=200)=>route.fulfill({status,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*','access-control-allow-headers':'authorization, apikey, content-type, prefer, x-client-info',
+        'access-control-allow-methods':'GET,POST,PATCH,OPTIONS'},body:JSON.stringify(data)});
+    if(req.method()==='OPTIONS')return response({});
+    expect(url.searchParams.get('recipient_uid')).toBe('eq.'+owner.id);
+    if(req.method()==='PATCH'){
+      const idFilter=url.searchParams.get('id');
+      expect(idFilter).toBe('eq.review-notice-1');
+      viewed.add('review-notice-1');
+      return response([{id:'review-notice-1'}]);
+    }
+    return response(notices.map(notice=>({...notice,is_read:notice.is_read||viewed.has(notice.id)})));
+  });
+
+  await page.goto('/?action=secure_workspace');
+  await expect(page.getByRole('heading',{name:'Officer review requests'})).toBeVisible();
+  const first=page.locator('li').filter({hasText:'Officer acknowledged the request'});
+  await expect(first.getByRole('button',{name:'Mark read'})).toBeVisible();
+  await first.getByRole('button',{name:'Mark read'}).click();
+  await expect(first.getByRole('button',{name:'Mark read'})).toHaveCount(0);
+  const second=page.locator('li').filter({hasText:'Officer requested additional information'});
+  await expect(second.getByRole('button',{name:'Mark read'})).toBeVisible();
+  await expect(first).toContainText(request.id);
+  await expect(second).toContainText(request.id);
+});
+
 const sharedPayment={
   id:'00000000-0000-4000-8000-000000000911',service:'TAX_WITH_RETURN',
   amountMinor:5000,status:'SIMULATED_SUCCESS',createdAt:'2026-10-25T12:00:00Z',
