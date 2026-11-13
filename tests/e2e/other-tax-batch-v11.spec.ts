@@ -571,19 +571,10 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
   await expect(receipt).toContainText('111111111111');
   await expect(receipt).toContainText('222222222222');
   await expect(receipt).toContainText('৳ 50');
-  await dialog.getByRole('button', { name: 'View payment certificate' }).click();
-  const certificate = dialog.getByTestId('payment-certificate-document');
-  await expect(certificate.getByRole('heading', { name: 'Payment Certificate' })).toBeVisible();
-  await expect(dialog.getByTestId('payment-certificate-reference'))
-    .toContainText('SK-PC-00000000-0000-4000-8000-000000000102');
-  await expect(certificate).toContainText('111111111111');
-  await expect(certificate).toContainText('222222222222');
-  await expect(certificate).toContainText('2026-27');
-  await expect(certificate).toContainText('2025-26');
-  await expect(certificate).toContainText('৳ 15');
-  await expect(certificate).toContainText('৳ 35');
-  await expect(dialog.getByTestId('payment-certificate-total')).toContainText('৳ 50');
-  await expect(certificate).not.toContainText('SIMULATED_SUCCESS');
+  // The complete itemized Payment Certificate check (same parent, two TINs,
+  // two years, two amounts, total, and no technical labels) is preserved in
+  // #775's corresponding SELF+OTHER browser test, where that unmerged document
+  // UI is actually implemented. This payment-engine branch owns one receipt.
   expect(submitted).toHaveLength(1);
 });
 
