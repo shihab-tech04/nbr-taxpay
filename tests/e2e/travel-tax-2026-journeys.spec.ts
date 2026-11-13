@@ -669,7 +669,7 @@ test('Travel Tax: medical assessment option survives passport check and passenge
 test('Travel Tax: Bangla journey validates, edits and shows the shared receipt without clipping', async ({ page }) => {
   await page.goto('/?lang=bn');
   await openTravelTaxFromBanner(page);
-  const modal = page.locator('.taxpay-modal').filter({ has: page.locator('.travel-flow') });
+  const modal = page.locator('.taxpay-modal:visible').first();
   const flow = modal.locator('.travel-flow');
   await expect(modal).toBeVisible();
   await expect(flow).toHaveAttribute('lang', 'bn');
