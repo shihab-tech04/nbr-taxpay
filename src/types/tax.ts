@@ -79,6 +79,10 @@ export interface TaxpayerProfile {
 
 export interface PaymentLineItem {
   headId: number;
+  /** Original service category for this line inside a heterogeneous combined payment. */
+  serviceCode?: PaymentCategory;
+  /** The line's own withholding classification; a combined parent may contain both types. */
+  isWithholding?: boolean;
   economicCode: string;
   headNameEn: string;
   taxAmount: number;
