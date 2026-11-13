@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {filterPrivateDashboardTransactionsByYear,projectPrivateDashboardTransactions,selectCompletedPayerDashboardTransactions} from '../src/services/accountDashboardProjection';
+import {filterPrivateDashboardTransactionsByYear,projectPrivateDashboardTransactions,selectCompletedPayerDashboardTransactions,summarizePrivateDashboardPaymentTotals} from '../src/services/accountDashboardProjection';
 
 const transaction=(overrides:Record<string,unknown>={})=>({
   id:'SIM-PAY-001',transactionId:'00000000-0000-4000-8000-000000000001',payer:'user1',
@@ -81,4 +81,68 @@ test('completed dashboard payer totals exclude beneficiary-only payments but kee
   assert.equal(completed.reduce((sum,row)=>sum+row.amountMinor,0),30000);
   assert.equal(completed.some(row=>row.participantView==='beneficiary'),false);
   assert.deepEqual(selectCompletedPayerDashboardTransactions([both]).map(row=>row.participantView),['both']);
+});
+
+test('dashboard totals count each payer parent once and split self, other and received allocations',()=>{
+  const payer=transaction({totalMinor:30000,allocations:[
+    {id:'payer-self',lineNo:1,beneficiary:'user1',category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amountMinor:10000},
+    {id:'payer-other',lineNo:2,beneficiary:'user2',category:'ADVANCE_TAX',assessmentYear:'2026-27',amountMinor:20000},
+  ]});
+  const received=transaction({
+    id:'SIM-PAY-RECEIVED',transactionId:'00000000-0000-4000-8000-000000000003',
+    payer:'user2',totalMinor:9000,
+    allocations:[{id:'received-1',lineNo:1,beneficiary:'user1',category:'PENALTY',assessmentYear:'2026-27',amountMinor:4000}],
+  });
+  const rows=projectPrivateDashboardTransactions('user1',[payer],[
+    {...payer,allocations:[payer.allocations[0]]},received,
+  ]);
+  const totals=summarizePrivateDashboardPaymentTotals(
+    filterPrivateDashboardTransactionsByYear(rows,'2026-27'),'user1',
+  );
+  assert.equal(totals.payerTotalMinor,30000n);
+  assert.equal(totals.selfAllocationMinor,10000n);
+  assert.equal(totals.paidForOthersMinor,20000n);
+  assert.equal(totals.receivedTotalMinor,4000n);
+});
+
+test('dashboard totals follow the selected year and do not create payer totals for received-only activity',()=>{
+  const payer=transaction({totalMinor:50000,allocations:[
+    {id:'payer-current-self',lineNo:1,beneficiary:'user1',category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amountMinor:10000},
+    {id:'payer-current-other',lineNo:2,beneficiary:'user2',category:'ADVANCE_TAX',assessmentYear:'2026-27',amountMinor:20000},
+    {id:'payer-prior-self',lineNo:3,beneficiary:'user1',category:'PENALTY',assessmentYear:'2025-26',amountMinor:5000},
+    {id:'payer-prior-other',lineNo:4,beneficiary:'user3',category:'SOURCE_TAX_DEPOSIT',assessmentYear:'2025-26',amountMinor:15000},
+  ]});
+  const [projectedPayer]=projectPrivateDashboardTransactions('user1',[payer],[]);
+  const prior=summarizePrivateDashboardPaymentTotals(
+    filterPrivateDashboardTransactionsByYear([projectedPayer],'2025-26'),'user1',
+  );
+  assert.equal(prior.payerTotalMinor,20000n);
+  assert.equal(prior.selfAllocationMinor,5000n);
+  assert.equal(prior.paidForOthersMinor,15000n);
+  assert.equal(prior.receivedTotalMinor,0n);
+
+  const received=transaction({
+    id:'SIM-PAY-RECEIVED-ONLY',transactionId:'00000000-0000-4000-8000-000000000004',
+    payer:'user2',totalMinor:9000,
+    allocations:[{id:'received-only',lineNo:1,beneficiary:'user1',category:'PENALTY',assessmentYear:'2026-27',amountMinor:4000}],
+  });
+  const [recipient]=projectPrivateDashboardTransactions('user1',[],[received]);
+  const receivedOnly=summarizePrivateDashboardPaymentTotals([recipient],'user1');
+  assert.equal(receivedOnly.payerTotalMinor,0n);
+  assert.equal(receivedOnly.selfAllocationMinor,0n);
+  assert.equal(receivedOnly.paidForOthersMinor,0n);
+  assert.equal(receivedOnly.receivedTotalMinor,4000n);
+});
+
+test('failed or pending activity is excluded from completed payer and received totals',()=>{
+  const payer=transaction({state:'FAILED'});
+  const received=transaction({
+    id:'SIM-PAY-PENDING-RECEIVED',transactionId:'00000000-0000-4000-8000-000000000005',
+    payer:'user2',state:'PENDING',totalMinor:9000,
+    allocations:[{id:'pending-received',lineNo:1,beneficiary:'user1',category:'PENALTY',assessmentYear:'2026-27',amountMinor:4000}],
+  });
+  const rows=projectPrivateDashboardTransactions('user1',[payer],[received]);
+  const totals=summarizePrivateDashboardPaymentTotals(rows,'user1');
+  assert.equal(totals.payerTotalMinor,0n);
+  assert.equal(totals.receivedTotalMinor,0n);
 });

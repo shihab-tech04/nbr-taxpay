@@ -11,7 +11,7 @@ import {checkedOwnerRecordCount, type AccountActivityCounts} from '../../service
 import {loadPrivateDashboardPaymentActivity} from '../../services/privateDashboardPayments';
 import type {PrivateDashboardPaymentActivity} from '../../services/privateDashboardPayments';
 import {simulationCategories, simulationCategoryLabels, type SimulationCategory, type SimulationUser} from '../../contracts/paymentSimulationContract';
-import {filterPrivateDashboardTransactionsByYear,selectCompletedPayerDashboardTransactions,type DashboardSimulationTransaction} from '../../services/accountDashboardProjection';
+import {filterPrivateDashboardTransactionsByYear,selectCompletedPayerDashboardTransactions,summarizePrivateDashboardPaymentTotals,type DashboardSimulationTransaction} from '../../services/accountDashboardProjection';
 import {DashboardScenarioTrends} from './DashboardScenarioTrends';
 
 type DashboardRoute = 'secure_workspace'|'corrections'|'account_notifications'|'account_profile'|'history'|'journey'|'ledger'|'certificates'|'beneficiaries'|'manage_authorization';
@@ -120,6 +120,8 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
   // Count completed payer-owned transactions for the selected assessment year,
   // not every year in the account or allocations received from another payer.
   const completedTransactions=selectCompletedPayerDashboardTransactions(yearTransactions);
+  const dashboardPaymentTotals=visibleScenario.phase==='linked'&&visibleScenario.profileId
+    ?summarizePrivateDashboardPaymentTotals(yearTransactions,visibleScenario.profileId):null;
   const completedCount=visibleScenario.phase==='linked'
     ? new Set(completedTransactions.filter(row=>row.participantView!=='beneficiary')
         .map(row=>row.transactionId)).size : null;
@@ -130,7 +132,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
   ];
   const recentTransactions=yearTransactions.slice(0,5);
   // Failed, pending and reversed attempts are activity, not completed amounts.
-  const scenarioAmount=completedTransactions.reduce((sum,transaction)=>sum+BigInt(transaction.amountMinor),0n);
+  const scenarioAmount=dashboardPaymentTotals?.payerTotalMinor??0n;
   const categoryTotals=new Map<SimulationCategory,bigint>(simulationCategories.map(category=>[category,0n]));
   for(const transaction of completedTransactions){
     for(const allocation of transaction.allocations){
@@ -269,14 +271,36 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         <p className="mt-3 rounded-lg bg-taxpay-light p-3 text-xs text-taxpay-muted" role="note">
           {tr('These private scenario records are not government payments, Treasury settlements, assessed liabilities or tax credits.','এই ব্যক্তিগত সিনারিও রেকর্ড সরকারি পেমেন্ট, ট্রেজারি নিষ্পত্তি, নির্ধারিত করদায় বা কর ক্রেডিট নয়।')}
         </p>
-        {yearTransactions.length>0&&<div className="mt-3 grid gap-3 sm:grid-cols-2">
+        {yearTransactions.length>0&&dashboardPaymentTotals&&<div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-taxpay-border bg-white p-3">
             <p className="text-xs text-taxpay-muted">{tr('Scenario payment records','সিনারিও পেমেন্ট রেকর্ড')}</p>
             <p className="mt-1 text-xl font-semibold tabular-nums text-taxpay-text">{yearTransactions.length.toLocaleString(bn?'bn-BD':'en-BD')}</p>
           </div>
-          <div className="rounded-xl border border-taxpay-border bg-white p-3">
-            <p className="text-xs text-taxpay-muted">{tr('Recorded amount in scenario','সিনারিওতে নথিভুক্ত পরিমাণ')}</p>
-            <p className="mt-1 break-words text-xl font-semibold tabular-nums text-taxpay-text">{scenarioAmountLabel(scenarioAmount)}</p>
+          <div className="min-w-0 rounded-xl border border-taxpay-border bg-white p-3" data-testid="dashboard-payment-role-totals">
+            <p className="text-xs text-taxpay-muted">{tr('Payer total (parent counted once)','পরিশোধকারীর মোট (মূল পেমেন্ট একবার গণনা)')}</p>
+            <p className="mt-1 break-words text-xl font-semibold tabular-nums text-taxpay-text" data-testid="dashboard-payer-total">
+              {dashboardPaymentTotals.payerTotalMinor>0n?scenarioAmountLabel(dashboardPaymentTotals.payerTotalMinor):'—'}
+            </p>
+            <dl className="mt-3 space-y-2 border-t border-taxpay-border pt-3 text-sm">
+              <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <dt className="min-w-0 text-taxpay-muted">{tr('Allocated to this profile','এই প্রোফাইলে বরাদ্দ')}</dt>
+                <dd className="shrink-0 font-semibold tabular-nums text-taxpay-text" data-testid="dashboard-self-paid-total">
+                  {dashboardPaymentTotals.selfAllocationMinor>0n?scenarioAmountLabel(dashboardPaymentTotals.selfAllocationMinor):'—'}
+                </dd>
+              </div>
+              <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <dt className="min-w-0 text-taxpay-muted">{tr('Paid for other taxpayers','অন্য করদাতার জন্য পরিশোধ')}</dt>
+                <dd className="shrink-0 font-semibold tabular-nums text-taxpay-text" data-testid="dashboard-paid-for-others-total">
+                  {dashboardPaymentTotals.paidForOthersMinor>0n?scenarioAmountLabel(dashboardPaymentTotals.paidForOthersMinor):'—'}
+                </dd>
+              </div>
+              <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <dt className="min-w-0 text-taxpay-muted">{tr('Received from other payers','অন্য পরিশোধকারীর কাছ থেকে প্রাপ্ত')}</dt>
+                <dd className="shrink-0 font-semibold tabular-nums text-taxpay-text" data-testid="dashboard-received-total">
+                  {dashboardPaymentTotals.receivedTotalMinor>0n?scenarioAmountLabel(dashboardPaymentTotals.receivedTotalMinor):'—'}
+                </dd>
+              </div>
+            </dl>
           </div>
         </div>}
         <div className="mt-4">
@@ -299,7 +323,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
             })}
           </div>
         </figure>}
-        {yearTransactions.length>0&&<section className="mt-4 rounded-xl border border-taxpay-border bg-white p-3"
+        {completedTransactions.length>0&&<section className="mt-4 rounded-xl border border-taxpay-border bg-white p-3"
           data-testid="account-beneficiary-spending" aria-label={tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="text-sm font-semibold text-taxpay-text">{tr('Recorded scenario payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী নথিভুক্ত নমুনা পেমেন্ট')}</h3>

@@ -328,11 +328,15 @@ test('completed summary and amounts count only successful payer records in the s
   await expect(completed.locator('p').nth(1)).toHaveText('1');
   await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
   await expect(completed.locator('p').nth(1)).toHaveText('2');
-  await expect(dashboard.getByText('Recorded amount in scenario').locator('..').locator('p').last())
-    .toHaveText('৳ 59.50');
+  const totals=dashboard.getByTestId('dashboard-payment-role-totals');
+  await expect(totals.getByTestId('dashboard-payer-total')).toHaveText('৳ 59.50');
+  await expect(totals.getByTestId('dashboard-self-paid-total')).toHaveText('—');
+  await expect(totals.getByTestId('dashboard-paid-for-others-total')).toHaveText('৳ 59.50');
+  await expect(totals.getByTestId('dashboard-received-total')).toHaveText('—');
   await setWorkspaceLanguage(page,'bn');
   await expect(dashboard.getByTestId('account-dashboard-status-summary')
     .getByText('সম্পন্ন পেমেন্ট',{exact:true}).locator('..').locator('p').nth(1)).toHaveText('২');
+  await expect(totals).toContainText('পরিশোধকারীর মোট');
 });
 
 
@@ -344,15 +348,115 @@ test('beneficiary-only signed-in dashboard does not present payments made by som
   const completed=dashboard.getByTestId('account-dashboard-status-summary')
     .getByText('Completed Payments',{exact:true}).locator('..');
   await expect(completed.locator('p').nth(1)).toHaveText('0');
-  await expect(dashboard.getByText('Recorded amount in scenario').locator('..').locator('p').last())
-    .toHaveText('৳ 0.00');
+  const totals=dashboard.getByTestId('dashboard-payment-role-totals');
+  await expect(totals.getByTestId('dashboard-payer-total')).toHaveText('—');
+  await expect(totals.getByTestId('dashboard-self-paid-total')).toHaveText('—');
+  await expect(totals.getByTestId('dashboard-paid-for-others-total')).toHaveText('—');
+  await expect(totals.getByTestId('dashboard-received-total')).toHaveText('৳ 65.50');
   await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
-  // Tags are deliberately blocked by this mock transport. Unknown
-  // classifications must remain unavailable rather than fabricated as ৳0.
-  await expect(dashboard.getByTestId('account-beneficiary-spending')).toContainText('Cannot verify saved tags');
-  await expect(dashboard.getByTestId('account-beneficiary-spending')).toContainText('—');
+  // Received activity is not payer spending and therefore has no tag-spend panel.
+  await expect(dashboard.getByTestId('account-beneficiary-spending')).toHaveCount(0);
   await expect(dashboard.getByTestId('account-scenario-monthly'))
     .toContainText('No completed payments initiated by this account');
   // The received transaction is still visible in Activity.
   await expect(dashboard.getByRole('list',{name:'Recent scenario transactions'})).toBeVisible();
+});
+
+test('role totals count each payer parent once and follow the selected-year allocations',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  const payer={
+    id:'SIM-PAY-DASHBOARD-PARENT',transactionId:'00000000-0000-4000-8000-000000000951',
+    payer:'user1',state:'SIMULATED',createdAt:'2026-10-28T10:00:00Z',
+    simulationOnly:true,totalMinor:35000,reviewStatus:'PENDING_OFFICER',events:[],
+    allocations:[
+      {id:'dashboard-self-2026',lineNo:1,beneficiary:'user1',category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amountMinor:10000},
+      {id:'dashboard-other-2026',lineNo:2,beneficiary:'user2',category:'ADVANCE_TAX',assessmentYear:'2026-27',amountMinor:20000},
+      {id:'dashboard-self-2025',lineNo:3,beneficiary:'user1',category:'PENALTY',assessmentYear:'2025-26',amountMinor:3000},
+      {id:'dashboard-other-2025',lineNo:4,beneficiary:'user3',category:'SOURCE_TAX_DEPOSIT',assessmentYear:'2025-26',amountMinor:2000},
+    ],
+  };
+  const received={
+    id:'SIM-PAY-DASHBOARD-RECEIVED',transactionId:'00000000-0000-4000-8000-000000000952',
+    payer:'user2',state:'SIMULATED',createdAt:'2026-10-29T10:00:00Z',
+    simulationOnly:true,totalMinor:8500,reviewStatus:'PENDING_OFFICER',events:[],
+    allocations:[
+      {id:'dashboard-received-2026',lineNo:1,beneficiary:'user1',category:'PENALTY',assessmentYear:'2026-27',amountMinor:4500},
+      {id:'dashboard-received-2025',lineNo:2,beneficiary:'user1',category:'SOURCE_TAX_DEPOSIT',assessmentYear:'2025-26',amountMinor:2500},
+    ],
+  };
+  await page.route(supabaseUrl+'/rest/v1/rpc/sim_my_payment_history',async route=>{
+    const body=route.request().postDataJSON() as {p_view:'payer'|'beneficiary'};
+    const beneficiaryRows=[
+      {...payer,allocations:payer.allocations.filter(allocation=>allocation.beneficiary==='user1')},
+      received,
+    ];
+    await route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},
+      body:JSON.stringify(body.p_view==='payer'?[payer]:beneficiaryRows)});
+  });
+  await page.goto('/?action=taxpayer_home');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  const totals=dashboard.getByTestId('dashboard-payment-role-totals');
+  await expect(totals.getByTestId('dashboard-payer-total')).toHaveText('৳ 300.00');
+  await expect(totals.getByTestId('dashboard-self-paid-total')).toHaveText('৳ 100.00');
+  await expect(totals.getByTestId('dashboard-paid-for-others-total')).toHaveText('৳ 200.00');
+  await expect(totals.getByTestId('dashboard-received-total')).toHaveText('৳ 45.00');
+  await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
+  await expect(totals.getByTestId('dashboard-payer-total')).toHaveText('৳ 50.00');
+  await expect(totals.getByTestId('dashboard-self-paid-total')).toHaveText('৳ 30.00');
+  await expect(totals.getByTestId('dashboard-paid-for-others-total')).toHaveText('৳ 20.00');
+  await expect(totals.getByTestId('dashboard-received-total')).toHaveText('৳ 25.00');
+  await setWorkspaceLanguage(page,'bn');
+  await expect(totals).toContainText('পরিশোধকারীর মোট');
+  await expect(totals).toContainText('অন্য পরিশোধকারীর কাছ থেকে প্রাপ্ত');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('linked empty account shows verified no-data guidance without fictional amounts',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.route(supabaseUrl+'/rest/v1/**',async route=>{
+    const request=route.request();
+    const url=new URL(request.url());
+    if(request.method()==='OPTIONS')return route.fallback();
+    const token=request.headers().authorization?.replace(/^Bearer\s+/i,'').split('.')[1];
+    expect(token).toBeTruthy();
+    expect((JSON.parse(atob(token!)) as {sub?:string}).sub).toBe(owner.id);
+    if(url.pathname==='/rest/v1/rpc/sim_my_payment_history'){
+      return route.fulfill({status:200,contentType:'application/json',
+        headers:{'access-control-allow-origin':'*'},body:'[]'});
+    }
+    if([
+      '/rest/v1/taxpay_account_payment_form_drafts',
+      '/rest/v1/taxpay_payment_requests',
+      '/rest/v1/taxpay_correction_inquiries',
+      '/rest/v1/taxpay_in_app_notifications',
+    ].includes(url.pathname)){
+      const ownerFilter=url.searchParams.get('owner_uid')??url.searchParams.get('requester_uid')??url.searchParams.get('recipient_uid');
+      expect(ownerFilter).toBe('eq.'+owner.id);
+      return route.fulfill({status:200,headers:{
+        'content-range':'*/0','access-control-expose-headers':'content-range, x-total-count',
+        'access-control-allow-origin':'*',
+      },body:''});
+    }
+    return route.fallback();
+  });
+  await page.goto('/?action=taxpayer_home');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  await expect(dashboard).toContainText('No stored payment activity is linked to this scenario profile.');
+  await expect(dashboard.getByTestId('account-scenario-monthly'))
+    .toContainText('No completed payments initiated by this account');
+  await expect(dashboard.getByTestId('dashboard-payment-role-totals')).toHaveCount(0);
+  await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
+  await expect(dashboard.getByTestId('account-beneficiary-spending')).toHaveCount(0);
+  await expect(dashboard.getByRole('list',{name:'Recent scenario transactions'})).toHaveCount(0);
+  await expect(dashboard.getByTestId('account-dashboard-status-summary')).toContainText('Completed Payments');
+  await expect(dashboard.getByTestId('account-dashboard-status-summary').locator('article').first())
+    .toContainText('0');
+  await expect(dashboard.getByText(/৳/)).toHaveCount(0);
+  await setWorkspaceLanguage(page,'bn');
+  await expect(dashboard).toContainText('এই সিনারিও প্রোফাইলে কোনো সংরক্ষিত পেমেন্ট কার্যক্রম নেই।');
+  await expect(dashboard.getByTestId('account-scenario-monthly'))
+    .toContainText('নির্বাচিত করবর্ষে এই অ্যাকাউন্ট থেকে সম্পন্ন কোনো পেমেন্ট নেই।');
+  await expect(dashboard.getByText(/৳/)).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
