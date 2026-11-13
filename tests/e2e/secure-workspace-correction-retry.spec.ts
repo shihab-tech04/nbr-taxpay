@@ -191,8 +191,9 @@ test('owner can recover a failed private inquiry history load without duplicatin
   await expect(page.getByRole('heading',{name:'মূল রেফারেন্স পর্যালোচনার অনুরোধ'})).toHaveClass(/text-taxpay-text/);
   const historyBn = page.getByRole('region', { name: 'আমার পর্যালোচনার অনুসন্ধান' });
   await expect(historyBn.locator('summary:visible')).toHaveText('অনুরোধের বিবরণ');
-  await expect(historyBn.getByTestId('correction-history-panel')).toContainText('সংশোধনের ইতিহাস');
-  await expect(historyBn.getByTestId('correction-history-events')).toContainText('অফিস মেকার');
+  const historyPanelBn = historyBn.locator('details[open]').getByTestId('correction-history-panel');
+  await expect(historyPanelBn).toContainText('সংশোধনের ইতিহাস');
+  await expect(historyPanelBn.getByTestId('correction-history-events')).toContainText('অফিস মেকার');
   await expect(historyBn.getByText('প্রদত্ত কারণ: Synthetic request for review.').filter({visible:true})).toBeVisible();
   await expect(historyBn.getByText('অনুরোধের ফলাফল: Please review this synthetic sample.').filter({visible:true})).toBeVisible();
   await expect(historyBn.getByText('যাচাই না হওয়া পরিচিতি প্রস্তাব: করবর্ষ').filter({visible:true})).toBeVisible();
