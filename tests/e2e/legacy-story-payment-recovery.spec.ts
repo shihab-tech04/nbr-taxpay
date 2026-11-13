@@ -230,6 +230,11 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   expect(savedPaymentDraftPayload).toMatchObject({sourcePaymentId:payment});
   const draftId='00000000-0000-4000-8000-000000039001';
   await cloned.getByRole('button',{name:'Close payment services'}).click();
+  const draftExit=page.getByRole('alertdialog');
+  await expect(draftExit).toBeVisible();
+  await expect(draftExit.getByRole('button',{name:'Save Draft',exact:true})).toBeEnabled();
+  await expect(draftExit.getByRole('button',{name:'Keep editing'})).toBeEnabled();
+  await draftExit.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
   await page.goto('/?action=taxpayer_home');
   const savedDraftCard=page.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="'+draftId+'"]');
@@ -237,8 +242,12 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await savedDraftCard.getByRole('button',{name:'Continue'}).click();
   const resumed=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(resumed.getByTestId('pay-again-reuse-notice')).toContainText(payment);
-  await resumed.getByRole('button',{name:'Continue to purpose & amount'}).click();
-  await resumed.getByRole('button',{name:'Continue to payment channel'}).click();
+  const continueToAmount=resumed.getByRole('button',{name:'Continue to purpose & amount'});
+  await expect(continueToAmount,'Pay Again draft must restore a valid owner and beneficiary state').toBeEnabled({timeout:5000});
+  await continueToAmount.click();
+  const continueToChannel=resumed.getByRole('button',{name:'Continue to payment channel'});
+  await expect(continueToChannel,'Restored payment allocations must remain valid').toBeEnabled({timeout:5000});
+  await continueToChannel.click();
   await resumed.getByRole('button',{name:'Pay online'}).click();
   await resumed.getByRole('button',{name:'Mobile banking'}).click();
   await resumed.getByRole('radio',{name:'bKash'}).check();
