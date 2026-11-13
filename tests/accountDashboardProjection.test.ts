@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {filterPrivateDashboardTransactionsByYear,projectPrivateDashboardTransactions} from '../src/services/accountDashboardProjection';
+import {filterPrivateDashboardTransactionsByYear,projectPrivateDashboardTransactions,selectCompletedPayerDashboardTransactions} from '../src/services/accountDashboardProjection';
 
 const transaction=(overrides:Record<string,unknown>={})=>({
   id:'SIM-PAY-001',transactionId:'00000000-0000-4000-8000-000000000001',payer:'user1',
@@ -63,4 +63,21 @@ test('assessment-year filtering recalculates only the selected allocations',()=>
 
 test('assessment-year filtering rejects malformed year values',()=>{
   assert.throws(()=>filterPrivateDashboardTransactionsByYear([],'2026-2027'),/Invalid dashboard assessment year/);
+});
+
+
+test('completed dashboard payer totals exclude beneficiary-only payments but keep both-view payer transactions',()=>{
+  const [payer]=projectPrivateDashboardTransactions('user1',[transaction()],[]);
+  const [recipient]=projectPrivateDashboardTransactions('user2',[],[
+    transaction({allocations:[transaction().allocations[1]]})
+  ]);
+  const [both]=projectPrivateDashboardTransactions('user1',[transaction()],[transaction({
+    allocations:[transaction().allocations[0]]
+  })]);
+  const completed=selectCompletedPayerDashboardTransactions([payer,recipient,both,
+    {...payer,transactionId:'failed',state:'FAILED'}
+  ]);
+  assert.equal(completed.length,2);
+  assert.equal(completed.reduce((sum,row)=>sum+row.amountMinor,0),60000);
+  assert.equal(completed.some(row=>row.participantView==='beneficiary'),false);
 });
