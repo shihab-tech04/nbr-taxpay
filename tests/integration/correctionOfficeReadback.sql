@@ -7,7 +7,9 @@ DECLARE
   v_table text;
   v_privilege text;
 BEGIN
-  IF has_function_privilege('anon','public.taxpay_correction_internal_claim(integer)','EXECUTE')
+  IF has_function_privilege('anon','public.taxpay_correction_my_history(integer)','EXECUTE')
+     OR NOT has_function_privilege('authenticated','public.taxpay_correction_my_history(integer)','EXECUTE')
+     OR has_function_privilege('anon','public.taxpay_correction_internal_claim(integer)','EXECUTE')
      OR has_function_privilege('authenticated','public.taxpay_correction_internal_claim(integer)','EXECUTE')
      OR has_function_privilege('anon','public.taxpay_correction_internal_ack(uuid,uuid,boolean,text)','EXECUTE')
      OR has_function_privilege('authenticated','public.taxpay_correction_internal_ack(uuid,uuid,boolean,text)','EXECUTE')
@@ -433,6 +435,56 @@ BEGIN
 END;
 $owner_final$;
 
+DO $owner_correction_history$
+DECLARE
+  v_count integer;
+  v_order text[];
+  v_revisions integer[];
+  v_initial boolean;
+  v_maker boolean;
+  v_reviewer boolean;
+  v_approver boolean;
+  v_timestamps boolean;
+BEGIN
+  SELECT count(*),
+    array_agg(h.event_kind||':'||h.action_code ORDER BY h.occurred_at,h.revision,h.event_id),
+    array_agg(h.revision ORDER BY h.occurred_at,h.revision,h.event_id),
+    bool_or(h.event_kind='INQUIRY_SUBMITTED' AND h.actor_role='TAXPAYER'
+      AND h.source_system='TAXPAY_SQL' AND h.next_state='PENDING_OFFICER'
+      AND h.reason='Synthetic evidence-pending review request'),
+    bool_or(h.action_code='MAKER_ACKNOWLEDGE' AND h.actor_role='MAKER'
+      AND h.source_system='OFFICE_SQL' AND h.previous_state='PENDING_OFFICER'
+      AND h.next_state='MAKER_ACKNOWLEDGED'
+      AND h.reason='Synthetic maker acknowledgment for SQL contract test'),
+    bool_or(h.action_code='REVIEWER_VERIFY' AND h.actor_role='REVIEWER'
+      AND h.source_system='OFFICE_SQL' AND h.previous_state='MAKER_ACKNOWLEDGED'
+      AND h.next_state='REVIEWER_VERIFIED'
+      AND h.reason='Synthetic reviewer verification for SQL contract test'),
+    bool_or(h.action_code='APPROVER_CLOSE' AND h.actor_role='APPROVER'
+      AND h.source_system='OFFICE_SQL' AND h.previous_state='REVIEWER_VERIFIED'
+      AND h.next_state='APPROVER_CLOSED'
+      AND h.reason='Synthetic approver closure for SQL contract test'),
+    bool_and(h.occurred_at IS NOT NULL)
+  INTO v_count,v_order,v_revisions,v_initial,v_maker,v_reviewer,v_approver,v_timestamps
+  FROM public.taxpay_correction_my_history(50) h
+  WHERE h.inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state);
+
+  IF v_count<>4
+     OR v_order IS DISTINCT FROM ARRAY[
+       'INQUIRY_SUBMITTED:SUBMITTED',
+       'OFFICE_DECISION:MAKER_ACKNOWLEDGE',
+       'OFFICE_DECISION:REVIEWER_VERIFY',
+       'OFFICE_DECISION:APPROVER_CLOSE'
+     ]::text[]
+     OR v_revisions IS DISTINCT FROM ARRAY[1,2,3,4]::integer[]
+     OR v_initial IS DISTINCT FROM true OR v_maker IS DISTINCT FROM true
+     OR v_reviewer IS DISTINCT FROM true OR v_approver IS DISTINCT FROM true
+     OR v_timestamps IS DISTINCT FROM true THEN
+    RAISE EXCEPTION 'Owner correction history lost order, actor, source, state, reason or timestamp';
+  END IF;
+END;
+$owner_correction_history$;
+
 DO $owner_notices$
 DECLARE v_count integer; v_distinct integer; v_messages text[];
 BEGIN
@@ -468,15 +520,18 @@ END;
 $owner_notice_read$;
 SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000002',true);
 DO $outsider_notice$
-DECLARE v_visible integer; v_updated integer;
+DECLARE v_visible integer; v_updated integer; v_history_visible integer;
 BEGIN
   SELECT count(*) INTO v_visible FROM public.taxpay_in_app_notifications
     WHERE correction_inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state);
+  SELECT count(*) INTO v_history_visible
+    FROM public.taxpay_correction_my_history(50)
+    WHERE inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state);
   UPDATE public.taxpay_in_app_notifications SET is_read=false
     WHERE correction_inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state);
   GET DIAGNOSTICS v_updated = ROW_COUNT;
-  IF v_visible<>0 OR v_updated<>0 THEN
-    RAISE EXCEPTION 'Unrelated account could read or change a correction notification';
+  IF v_visible<>0 OR v_updated<>0 OR v_history_visible<>0 THEN
+    RAISE EXCEPTION 'Unrelated account could read or change correction history or notification';
   END IF;
 END;
 $outsider_notice$;
