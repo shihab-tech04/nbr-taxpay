@@ -151,6 +151,8 @@ test('real account restores its own language and selected beneficiary list in a 
   await expect(again.getByText('উপকারভোগীর তালিকা নির্বাচন করেছেন · উপকারভোগী')).toBeVisible();
 
   expect((await authUser(aSession.access_token)).user_metadata?.taxpay_last_beneficiary_list_id).toBe(familyId);
+  // Capture A's immutable user id before sign-out invalidates its old session.
+  const aUserId=(await authUser(aSession.access_token)).id;
   // Switch from A to B in the SAME browser context. This catches stale
   // React/account caches that separate-browser isolation alone would miss.
   const b=await signUp();
@@ -176,7 +178,7 @@ test('real account restores its own language and selected beneficiary list in a 
   const foreignActivity=await fetch(new URL('/rest/v1/taxpay_account_activity',api.origin),{
     method:'POST',headers:{apikey:key,Authorization:'Bearer '+b.session.access_token,
       'content-type':'application/json'},
-    body:JSON.stringify({owner_uid:(await authUser(aSession.access_token)).id,
+    body:JSON.stringify({owner_uid:aUserId,
       event_type:'PAGE_OPENED',route:'account_profile'})
   });
   expect(foreignActivity.status).toBeGreaterThanOrEqual(400);
