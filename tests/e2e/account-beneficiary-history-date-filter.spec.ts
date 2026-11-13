@@ -56,7 +56,14 @@ async function mockAccountHistory(page:Page){
       return response([{id:'list-family',owner_uid:owner.id,name:'Family',created_at:'2026-10-01T00:00:00Z'}],200,{'content-range':'0-0/1'});
     if(url.pathname==='/rest/v1/taxpay_beneficiaries'){
       expect(url.searchParams.get('owner_uid')).toBe('eq.'+owner.id);
-      return response([],200,{'content-range':'*/0'});
+      return response([
+        {id:'beneficiary-a',owner_uid:owner.id,list_id:'list-family',tin:'012345678901',display_name:'Beneficiary A',
+          tag:'friends_family',relationship:'brother',other_label:null,created_at:'2026-10-01T00:00:00Z',updated_at:'2026-10-01T00:00:00Z'},
+        {id:'beneficiary-b',owner_uid:owner.id,list_id:'list-family',tin:'012345678902',display_name:'Beneficiary B',
+          tag:'clients',relationship:null,other_label:null,created_at:'2026-10-01T00:00:00Z',updated_at:'2026-10-01T00:00:00Z'},
+        {id:'beneficiary-c',owner_uid:owner.id,list_id:'list-family',tin:'012345678903',display_name:'Beneficiary C',
+          tag:'others',relationship:null,other_label:'Consultant',created_at:'2026-10-01T00:00:00Z',updated_at:'2026-10-01T00:00:00Z'}
+      ],200,{'content-range':'0-2/3'});
     }
     return response({message:'Outside the isolated account-history scenario'},403);
   });
@@ -78,6 +85,39 @@ for(const language of ['en','bn'] as const){
     await expect(history).toContainText('Beneficiary C');
     await expect(history).not.toContainText('Beneficiary A');
     await expect(history).not.toContainText('Beneficiary B');
+    const tagFilter=history.getByLabel(language==='bn'?'ট্যাগ দিয়ে উপকারভোগীর পেমেন্ট ফিল্টার':'Filter beneficiary payments by tag');
+    await tagFilter.selectOption('others');
+    await expect(history).toContainText('Beneficiary C');
+    await expect(history).not.toContainText('Beneficiary A');
+    await expect(history).not.toContainText('Beneficiary B');
+
+    await history.getByRole('button',{
+      name:language==='bn'?'উপকারভোগীর প্রোফাইল খুলুন: Beneficiary C':'Open beneficiary profile for Beneficiary C'
+    }).click();
+    const profile=page.getByTestId('beneficiary-profile');
+    await expect(profile).toBeVisible();
+    await expect(profile.getByText('012345678903')).toBeVisible();
+    await expect(profile.locator('ol li')).toHaveCount(1);
+    await profile.getByRole('button',{
+      name:language==='bn'?'লেনদেনের তালিকায় ফিরুন':'Back to activity',exact:true
+    }).click();
+    await expect(history).toBeVisible();
+    await expect(history.getByLabel(language==='bn'?'শুরুর তারিখ থেকে পেমেন্ট ফিল্টার করুন':'Filter payments from date')).toHaveValue('2026-10-26');
+    await expect(history.getByLabel(language==='bn'?'শেষ তারিখ পর্যন্ত পেমেন্ট ফিল্টার করুন':'Filter payments to date')).toHaveValue('2026-10-26');
+    await expect(history.getByLabel(language==='bn'?'ট্যাগ দিয়ে উপকারভোগীর পেমেন্ট ফিল্টার':'Filter beneficiary payments by tag')).toHaveValue('others');
+    await expect(history).toContainText('Beneficiary C');
+    await expect(history).not.toContainText('Beneficiary A');
+    await expect(history).not.toContainText('Beneficiary B');
+
+    await page.reload();
+    await expect(history).toBeVisible();
+    await expect(history.getByLabel(language==='bn'?'শুরুর তারিখ থেকে পেমেন্ট ফিল্টার করুন':'Filter payments from date')).toHaveValue('2026-10-26');
+    await expect(history.getByLabel(language==='bn'?'শেষ তারিখ পর্যন্ত পেমেন্ট ফিল্টার করুন':'Filter payments to date')).toHaveValue('2026-10-26');
+    await expect(history.getByLabel(language==='bn'?'ট্যাগ দিয়ে উপকারভোগীর পেমেন্ট ফিল্টার':'Filter beneficiary payments by tag')).toHaveValue('others');
+    await expect(history).toContainText('Beneficiary C');
+    await expect(history).not.toContainText('Beneficiary A');
+    await expect(history).not.toContainText('Beneficiary B');
+
     const exportButton=history.getByRole('button',{
       name:language==='bn'?'ফিল্টার করা পেমেন্টের ইতিহাস CSV হিসেবে নিন':'Export filtered payment history as CSV'
     });
