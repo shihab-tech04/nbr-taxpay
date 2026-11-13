@@ -151,22 +151,23 @@ test('real account restores its own language and selected beneficiary list in a 
   await expect(again.getByText('উপকারভোগীর তালিকা নির্বাচন করেছেন · উপকারভোগী')).toBeVisible();
 
   expect((await authUser(aSession.access_token)).user_metadata?.taxpay_last_beneficiary_list_id).toBe(familyId);
-  await second.close();
-
+  // Switch from A to B in the SAME browser context. This catches stale
+  // React/account caches that separate-browser isolation alone would miss.
   const b=await signUp();
-  const third=await browser.newContext({baseURL:'http://127.0.0.1:4173'});
-  const another=await third.newPage();
-  await another.goto(url(b.session));
-  await expect(another.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
-  await expect(another.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
-  await expect(another.locator('#beneficiary-list')).toHaveCount(0);
-  await expect(another.getByTestId('beneficiary-records')).toHaveCount(0);
+  await again.locator('.citizen-mobile-menu-trigger').click();
+  await again.locator('.citizen-dialog-signout').click();
+  await expect(again).toHaveURL(/^(?!.*action=account_settings)/,{timeout:15000});
+  await again.goto(url(b.session));
+  await expect(again.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+  await expect(again.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
+  await expect(again.locator('#beneficiary-list')).toHaveCount(0);
+  await expect(again.getByTestId('beneficiary-records')).toHaveCount(0);
+  await expect(again.getByText('Sajid Khan')).toHaveCount(0);
+  await again.goto('/?action=account_profile');
+  await expect(again.getByRole('heading',{name:'My recent activity'})).toBeVisible();
+  await expect(again.getByText('No saved activity yet.')).toBeVisible();
+  await expect(again.getByText('Account A profile')).toHaveCount(0);
 
-  await expect(another.getByText('Sajid Khan')).toHaveCount(0);
-  await another.goto('/?action=account_profile');
-  await expect(another.getByRole('heading',{name:'My recent activity'})).toBeVisible();
-  await expect(another.getByText('No saved activity yet.')).toBeVisible();
-  await expect(another.getByText('Account A profile')).toHaveCount(0);
   const isolatedActivity=await fetch(new URL('/rest/v1/taxpay_account_activity?select=id',api.origin),{
     headers:{apikey:key,Authorization:'Bearer '+b.session.access_token}
   });
@@ -186,6 +187,5 @@ test('real account restores its own language and selected beneficiary list in a 
       event_type:'PAYMENT_CONFIRMED',route:'account_profile'})
   });
   expect(forgedActivity.status).toBeGreaterThanOrEqual(400);
-
-  await third.close();
+  await second.close();
 });
