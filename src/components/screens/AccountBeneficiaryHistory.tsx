@@ -29,7 +29,7 @@ const emptyHistoryFilters:StoredHistoryFilters={
 };
 const historyFiltersStorageKey=(ownerUid:string)=>'taxpay:beneficiary-history-filters:v1:'+ownerUid;
 function validHistoryDate(value:unknown):value is string {
-  if(typeof value!=='string'||!/^\\d{4}-\\d{2}-\\d{2}$/.test(value))return false;
+  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
   const [year,month,day]=value.split('-').map(Number);
   const parsed=new Date(year,month-1,day);
   return parsed.getFullYear()===year&&parsed.getMonth()===month-1&&parsed.getDate()===day;
@@ -45,13 +45,13 @@ function readHistoryFilters(ownerUid:string):StoredHistoryFilters {
       typeof tag==='string'&&(PAYMENT_TAG_GROUPS as readonly string[]).includes(tag)
         ?tag as StoredHistoryFilters['tagFilter']:'all';
     const beneficiaryFilter=stored.beneficiaryFilter==='all'||
-      typeof stored.beneficiaryFilter==='string'&&/^\\d{12,13}$/.test(stored.beneficiaryFilter)
+      typeof stored.beneficiaryFilter==='string'&&/^\d{12,13}$/.test(stored.beneficiaryFilter)
         ?stored.beneficiaryFilter:'all';
     return {
       search:typeof stored.search==='string'?stored.search.slice(0,160):'',
       tagFilter,
       beneficiaryFilter,
-      yearFilter:stored.yearFilter==='all'||typeof stored.yearFilter==='string'&&/^\\d{4}-\\d{2}$/.test(stored.yearFilter)
+      yearFilter:stored.yearFilter==='all'||typeof stored.yearFilter==='string'&&/^\d{4}-\d{2}$/.test(stored.yearFilter)
         ?stored.yearFilter:'all',
       headFilter:typeof stored.headFilter==='string'?stored.headFilter.slice(0,160):'all',
       dateFrom:validHistoryDate(stored.dateFrom)?stored.dateFrom:'',
