@@ -34,6 +34,7 @@ function validDetails():Record<string,unknown>{
     receiptSnapshot:{
       paymentCategory:'OTHER_TAX_PAYMENT',totalAmount:30,
       payerName:'Saved combined payer',payerTin:'9999999999999',
+      challanNo:'COMBINED-501',
       isRepresentativePayment:true,items:structuredClone(lines),
       allocationItems:structuredClone(allocationItems),
     },
