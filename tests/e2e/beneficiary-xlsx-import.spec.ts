@@ -130,13 +130,14 @@ test('Add beneficiary opens manual entry directly and hides Excel import in Engl
   for(const language of ['en','bn'] as const){
     const bn=language==='bn';
     const addLabel=bn?'উপকারভোগী যোগ':'Add beneficiary';
+    const entryLabel=bn?'উপকারভোগী যোগ':'Beneficiary entry';
     const importLabel=bn?'এক্সেল থেকে আমদানি':'Import from Excel';
     const choiceLabel=bn?'কীভাবে উপকারভোগী যোগ করবেন':'Choose how to add beneficiaries';
     const route=`/?action=beneficiaries&demoUser=user1${bn?'&lang=bn':''}`;
     await page.goto(route);
     await expect(page.getByText(importLabel,{exact:true})).toHaveCount(0);
     await page.getByRole('button',{name:addLabel,exact:true}).click();
-    let entry=page.getByRole('dialog',{name:addLabel});
+    let entry=page.getByRole('dialog',{name:entryLabel});
     await expect(entry).toBeVisible();
     await expect(page.getByRole('dialog',{name:choiceLabel})).toHaveCount(0);
     await expect(page.getByText(importLabel,{exact:true})).toHaveCount(0);
@@ -144,7 +145,7 @@ test('Add beneficiary opens manual entry directly and hides Excel import in Engl
     await page.reload();
     await expect(page.getByText(importLabel,{exact:true})).toHaveCount(0);
     await page.getByRole('button',{name:addLabel,exact:true}).click();
-    entry=page.getByRole('dialog',{name:addLabel});
+    entry=page.getByRole('dialog',{name:entryLabel});
     await expect(entry).toBeVisible();
     await expect(page.getByRole('dialog',{name:choiceLabel})).toHaveCount(0);
     await expect(page.getByText(importLabel,{exact:true})).toHaveCount(0);
