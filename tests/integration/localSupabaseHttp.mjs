@@ -43,6 +43,22 @@ function directSqlDraft(id, amountMinor) {
   return row.database;
 }
 
+function runDirectSql(query) {
+  const result = spawnSync('psql', ['--no-psqlrc', '--no-align', '--tuples-only', '--set=ON_ERROR_STOP=1', '--command', query], {
+    env: { ...process.env, PGHOST: directPgUrl.hostname, PGPORT: directPgUrl.port || '5432',
+      PGDATABASE: decodeURIComponent(directPgUrl.pathname.slice(1)),
+      PGUSER: decodeURIComponent(directPgUrl.username), PGPASSWORD: decodeURIComponent(directPgUrl.password),
+      PGCONNECT_TIMEOUT: '5' },
+    encoding: 'utf8', timeout: 12000,
+  });
+  if (result.error || result.status !== 0) {
+    const detail = String(result.error?.message || result.stderr || 'psql exited without diagnostic output')
+      .replace(/\\s+/g, ' ').trim().slice(0, 600);
+    throw new Error(`BLOCKED: direct loopback PostgreSQL fixture failed (exit ${result.status ?? 'unknown'}): ${detail}`);
+  }
+  return result.stdout.trim();
+}
+
 const base = new URL(rawUrl);
 if (base.protocol !== 'http:' || !['127.0.0.1', 'localhost', '[::1]'].includes(base.hostname)) {
   throw new Error('Refusing to run: the configured Supabase URL is not an HTTP loopback address.');
@@ -136,13 +152,15 @@ await expectDenied('/rest/v1/taxpay_payment_drafts', {
 });
 await expectDenied('/rest/v1/taxpay_head_change_proposals?select=proposal_id');
 await expectDenied('/rest/v1/taxpay_correction_inquiries?select=inquiry_id');
-await expectDenied('/rest/v1/taxpay_correction_inquiries', {
+const anonymousCorrection = await request('/rest/v1/taxpay_correction_inquiries', {
   method: 'POST',
   body: {
     requester_uid: randomUUID(), original_reference: 'SYN-REF-001',
     reason: 'Synthetic anonymous request', requested_outcome: 'Review this synthetic reference',
   },
 });
+assert.ok([400, 401, 403].includes(anonymousCorrection.response.status),
+  `Anonymous correction write was not rejected (HTTP ${anonymousCorrection.response.status})`);
 pass('anonymous HTTP reads and writes remain denied on private tables');
 
 const ownerA = await createAuthUser();
@@ -156,6 +174,59 @@ const refreshedSession = await refreshed.json();
 assert.ok(refreshed.ok && refreshedSession.access_token, `Synthetic Auth refresh returned HTTP ${refreshed.status}`);
 ownerA.access_token = refreshedSession.access_token;
 pass('local Supabase Auth issues and refreshes two synthetic owner sessions');
+
+// Create one isolated synthetic payment in the disposable local database, then
+// establish its existing profile/account ownership through the verified claim RPC.
+const correctionReference = `SYN-${randomUUID()}`;
+const correctionPaymentId = randomUUID();
+const correctionIdempotencyKey = randomUUID();
+const paymentSessionId = runDirectSql(
+  "select payment_session_id::text from taxpay_guest_private.demo_profiles where demo_id='user1';",
+);
+assert.match(paymentSessionId, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+  'Disposable user1 payment profile fixture is missing');
+const insertedParent = runDirectSql(`insert into demo_payment.story_payments(
+  id,idempotency_key,session_id,service_code,amount_minor,data,status
+)
+select '${correctionPaymentId}'::uuid,'${correctionIdempotencyKey}'::uuid,
+  profile.payment_session_id,'OTHER_TAX_PAYMENT',100,
+  jsonb_build_object(
+    'idempotencyKey','${correctionIdempotencyKey}',
+    'sessionId',profile.payment_session_id,
+    'service','OTHER_TAX_PAYMENT','amountMinor',100,'origin','TAXPAY_UI',
+    'details',jsonb_build_object(
+      'payerMode','SELF','payerId','user1',
+      'lines',jsonb_build_array(jsonb_build_object('beneficiary','user1','amountMinor',100)),
+      'payerTin','909000000001','payerName','User 1','receiptReference','${correctionReference}',
+      'receiptSnapshot',jsonb_build_object(
+        'challanNo','${correctionReference}','payerTin','909000000001','payerName','User 1'
+      )
+    )
+  ),'SIMULATED_SUCCESS'
+from taxpay_guest_private.demo_profiles profile where profile.demo_id='user1';`);
+assert.match(insertedParent, /INSERT 0 1/, 'Disposable owner-linked payment fixture was not inserted');
+// Keep this temporary ownership fixture on the existing demo identity, then remove
+// only the binding after the payment ownership row has been recorded. Later isolated
+// officer tests reuse user1 and must not inherit this test's temporary account link.
+assert.equal(runDirectSql("select count(*) from public.sim_payment_account_bindings where user_id='user1';"), '0',
+  'The disposable correction profile must start unbound');
+const correctionBinding = runDirectSql(`insert into public.sim_payment_account_bindings(user_id,owner_uid,assigned_by)
+  values('user1','${ownerA.id}'::uuid,'${ownerA.id}'::uuid);`);
+assert.match(correctionBinding, /INSERT 0 1/, 'Synthetic owner binding fixture was not inserted');
+const sessionClaim = await request('/rest/v1/rpc/taxpay_claim_story1_session', {
+  method: 'POST', token: ownerA.access_token, body: { p_session_id: paymentSessionId },
+});
+assert.equal(sessionClaim.response.status, 200, `Synthetic owner claim returned HTTP ${sessionClaim.response.status}`);
+assert.equal(sessionClaim.data, 1, 'The authenticated owner did not claim the synthetic payment');
+const correctionBindingCleanup = runDirectSql(`delete from public.sim_payment_account_bindings
+  where user_id='user1' and owner_uid='${ownerA.id}'::uuid;`);
+assert.equal(correctionBindingCleanup, 'DELETE 1', 'Temporary correction binding was not isolated after the claim');
+const walkinClaim = await request('/rest/v1/rpc/taxpay_claim_walkin_payer_payments', {
+  method: 'POST', token: ownerA.access_token, body: {},
+});
+assert.equal(walkinClaim.response.status, 200, `Optional walk-in claim returned HTTP ${walkinClaim.response.status}`);
+assert.ok(Number.isInteger(walkinClaim.data) && walkinClaim.data >= 0);
+pass('correction parent uses a synthetic payment claimed by the existing authenticated owner RPCs');
 
 async function createDraft(owner, amountMinor, memo) {
   const result = await request('/rest/v1/taxpay_payment_drafts?select=id,owner_uid,amount_minor,memo,record_status', {
@@ -234,16 +305,18 @@ await expectDenied(`/rest/v1/taxpay_head_change_proposals?proposal_id=eq.${propo
   body: { proposal_state: 'APPROVED', financial_execution_enabled: true, authority_reviewed: true },
 });
 
-const inquiry = await request('/rest/v1/taxpay_correction_inquiries?select=inquiry_id,requester_uid,evidence_state,claimant_verified,original_receipt_verified,may_change_financial_records,change_kind,old_value,new_value', {
+const inquiry = await request('/rest/v1/taxpay_correction_inquiries?select=inquiry_id,requester_uid,original_payment_id,original_payment_kind,evidence_state,claimant_verified,original_receipt_verified,may_change_financial_records,change_kind,old_value,new_value', {
   method: 'POST', token: ownerA.access_token, prefer: 'return=representation',
   body: {
-    requester_uid: ownerA.id, original_reference: `SYN-${randomUUID()}`,
+    requester_uid: ownerA.id, original_reference: correctionReference,
     reason: 'Synthetic evidence-pending inquiry for local integration verification',
     requested_outcome: 'Please review this synthetic reference only',
     change_kind: 'ASSESSMENT_YEAR', old_value: '2024-25', new_value: '2025-26',
   },
 });
 assert.equal(inquiry.response.status, 201, `Authenticated correction inquiry insert returned HTTP ${inquiry.response.status}`);
+assert.equal(inquiry.data[0].original_payment_id, correctionPaymentId);
+assert.equal(inquiry.data[0].original_payment_kind, 'TAXPAY_STORY_PAYMENT');
 assert.deepEqual({
   evidence_state: inquiry.data[0].evidence_state,
   claimant_verified: inquiry.data[0].claimant_verified,
@@ -256,13 +329,26 @@ assert.deepEqual(inquiryHidden.data, []);
 await expectDenied(`/rest/v1/taxpay_correction_inquiries?inquiry_id=eq.${inquiry.data[0].inquiry_id}`, {
   method: 'PATCH', token: ownerA.access_token, body: { may_change_financial_records: true },
 });
-await expectDenied('/rest/v1/taxpay_correction_inquiries', {
+const crossOwnerCorrection = await request('/rest/v1/taxpay_correction_inquiries', {
   method: 'POST', token: ownerA.access_token,
   body: {
-    requester_uid: ownerB.id, original_reference: `SYN-${randomUUID()}`,
+    requester_uid: ownerB.id, original_reference: correctionReference,
     reason: 'Synthetic cross-owner correction inquiry', requested_outcome: 'Not allowed for another owner',
   },
 });
+assert.ok([400, 401, 403].includes(crossOwnerCorrection.response.status),
+  `Cross-owner correction write was not rejected (HTTP ${crossOwnerCorrection.response.status})`);
+const unlinkedTinCorrection = await request('/rest/v1/taxpay_correction_inquiries', {
+  method: 'POST', token: ownerA.access_token,
+  body: {
+    requester_uid: ownerA.id, original_reference: '909000000030',
+    reason: 'Synthetic typed TIN without a linked payment',
+    requested_outcome: 'Typed TIN alone must not claim a payment',
+  },
+});
+assert.equal(unlinkedTinCorrection.response.status, 400,
+  `A typed TIN without an owner-linked payment returned HTTP ${unlinkedTinCorrection.response.status}`);
+assert.match(String(unlinkedTinCorrection.data?.message ?? ''), /CORRECTION_ORIGINAL_PAYMENT_NOT_LINKED/);
 pass('owner-only proposals and evidence-pending corrections cannot approve or mutate finances');
 
 // Private, temporary synthetic-only evidence for the separate post-restart test.

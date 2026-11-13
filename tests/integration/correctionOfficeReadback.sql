@@ -2,15 +2,128 @@
 -- Run only against the disposable Supabase database created by CI.
 BEGIN;
 
-CREATE TEMP TABLE correction_bridge_test_state(inquiry_id uuid NOT NULL) ON COMMIT DROP;
-GRANT SELECT,INSERT ON correction_bridge_test_state TO authenticated,service_role;
+DO $correction_privileges$
+DECLARE
+  v_table text;
+  v_privilege text;
+BEGIN
+  IF has_function_privilege('anon','public.taxpay_correction_internal_claim(integer)','EXECUTE')
+     OR has_function_privilege('authenticated','public.taxpay_correction_internal_claim(integer)','EXECUTE')
+     OR has_function_privilege('anon','public.taxpay_correction_internal_ack(uuid,uuid,boolean,text)','EXECUTE')
+     OR has_function_privilege('authenticated','public.taxpay_correction_internal_ack(uuid,uuid,boolean,text)','EXECUTE')
+     OR has_function_privilege('anon','public.taxpay_correction_record_office_decision(jsonb)','EXECUTE')
+     OR has_function_privilege('authenticated','public.taxpay_correction_record_office_decision(jsonb)','EXECUTE') THEN
+    RAISE EXCEPTION 'A public or authenticated role can execute an internal correction RPC';
+  END IF;
+  IF NOT has_function_privilege('service_role','public.taxpay_correction_internal_claim(integer)','EXECUTE')
+     OR NOT has_function_privilege('service_role','public.taxpay_correction_internal_ack(uuid,uuid,boolean,text)','EXECUTE')
+     OR NOT has_function_privilege('service_role','public.taxpay_correction_record_office_decision(jsonb)','EXECUTE') THEN
+    RAISE EXCEPTION 'The service role lacks an intended correction RPC grant';
+  END IF;
 
-INSERT INTO auth.users(id,email,raw_user_meta_data)
-VALUES ('80000000-0000-4000-8000-000000000001','correction-bridge-test@example.invalid','{}'::jsonb)
+  FOREACH v_table IN ARRAY ARRAY[
+    'payment_sync.correction_outbox',
+    'public.taxpay_correction_review_decisions'
+  ] LOOP
+    FOREACH v_privilege IN ARRAY ARRAY['SELECT','INSERT','UPDATE','DELETE'] LOOP
+      IF has_table_privilege('anon',v_table,v_privilege)
+         OR has_table_privilege('authenticated',v_table,v_privilege) THEN
+        RAISE EXCEPTION 'A public or authenticated role has % on private correction table %',
+          v_privilege,v_table;
+      END IF;
+    END LOOP;
+  END LOOP;
+
+  IF has_table_privilege('anon','public.taxpay_in_app_notifications','SELECT')
+     OR NOT has_table_privilege('authenticated','public.taxpay_in_app_notifications','SELECT')
+     OR has_column_privilege('anon','public.taxpay_in_app_notifications','correction_inquiry_id','SELECT')
+     OR has_column_privilege('anon','public.taxpay_in_app_notifications','correction_decision_id','SELECT')
+     OR NOT has_column_privilege('authenticated','public.taxpay_in_app_notifications','correction_inquiry_id','SELECT')
+     OR NOT has_column_privilege('authenticated','public.taxpay_in_app_notifications','correction_decision_id','SELECT') THEN
+    RAISE EXCEPTION 'Correction notification read grants do not match the owner-scoped contract';
+  END IF;
+END;
+$correction_privileges$;
+
+CREATE TEMP TABLE correction_bridge_test_state(
+  inquiry_id uuid NOT NULL,event_id uuid,claim_token uuid
+) ON COMMIT DROP;
+GRANT SELECT,INSERT,UPDATE ON correction_bridge_test_state TO authenticated,service_role;
+
+-- Synthetic walk-in parent, inserted before the no-mutation snapshot.
+INSERT INTO demo_payment.story_payments(
+  id,idempotency_key,session_id,service_code,amount_minor,data,status
+) VALUES (
+  '80000000-0000-4000-8000-000000000041',
+  '80000000-0000-4000-8000-000000000042',
+  '80000000-0000-4000-8000-000000000043',
+  'OTHER_TAX_PAYMENT',100,
+  jsonb_build_object(
+    'idempotencyKey','80000000-0000-4000-8000-000000000042',
+    'sessionId','80000000-0000-4000-8000-000000000043',
+    'service','OTHER_TAX_PAYMENT','amountMinor',100,'origin','TAXPAY_UI',
+    'details',jsonb_build_object(
+      'payerMode','OTHER','payerTin','909000000030',
+      'payerName','Taxpayer Account 30','receiptReference','SYN-REF-003',
+      'receiptSnapshot',jsonb_build_object(
+        'challanNo','SYN-REF-003','payerTin','909000000030',
+        'payerName','Taxpayer Account 30'
+      )
+    )
+  ),
+  'SIMULATED_SUCCESS'
+);
+
+CREATE TEMP TABLE correction_financial_guard(
+  relation_name text PRIMARY KEY,row_count bigint NOT NULL,content_digest text NOT NULL
+) ON COMMIT DROP;
+DO $snapshot_financial$
+DECLARE v_relation regclass; v_name text; v_count bigint; v_digest text;
+BEGIN
+  FOREACH v_name IN ARRAY ARRAY[
+    'public.taxpay_payment_requests','public.sim_payment_transactions',
+    'public.sim_payment_allocations','payment_sync.requests','payment_sync.events',
+    'payment_sync.request_mutations','payment_sync.notifications',
+    'demo_payment.story_payments','demo_payment.story_notifications'
+  ] LOOP
+    v_relation := pg_catalog.to_regclass(v_name);
+    IF v_relation IS NULL THEN CONTINUE; END IF;
+    EXECUTE pg_catalog.format(
+      'SELECT count(*)::bigint,pg_catalog.md5(coalesce(pg_catalog.string_agg(pg_catalog.md5(row_to_json(t)::text), '''' ORDER BY row_to_json(t)::text),'''')) FROM %s t',
+      v_relation
+    ) INTO v_count,v_digest;
+    INSERT INTO correction_financial_guard VALUES(v_relation::text,v_count,v_digest);
+  END LOOP;
+END;
+$snapshot_financial$;
+
+INSERT INTO auth.users(id,email,raw_user_meta_data,email_confirmed_at)
+VALUES
+  ('80000000-0000-4000-8000-000000000001','correction-bridge-test@example.invalid','{}'::jsonb,now()),
+  ('80000000-0000-4000-8000-000000000002','correction-outsider-test@example.invalid','{}'::jsonb,now())
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.sim_payment_users(id) VALUES ('user30')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO taxpay_guest_private.demo_profiles(demo_id,payment_session_id)
+VALUES ('user30','80000000-0000-4000-8000-000000000043')
+ON CONFLICT (demo_id) DO UPDATE SET payment_session_id=EXCLUDED.payment_session_id;
+INSERT INTO public.sim_payment_account_bindings(user_id,owner_uid,assigned_by)
+VALUES ('user30','80000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')
+ON CONFLICT (user_id) DO UPDATE SET
+  owner_uid=EXCLUDED.owner_uid,assigned_by=EXCLUDED.assigned_by;
 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000001',true);
+DO $walkin_claim$
+DECLARE v_claimed integer;
+BEGIN
+  v_claimed := public.taxpay_claim_walkin_payer_payments();
+  IF v_claimed<>1 THEN
+    RAISE EXCEPTION 'The verified bound account did not claim its synthetic walk-in payment';
+  END IF;
+END;
+$walkin_claim$;
 WITH inserted AS (
   INSERT INTO public.taxpay_correction_inquiries
     (requester_uid,original_reference,reason,requested_outcome,change_kind,old_value,new_value)
@@ -23,29 +136,261 @@ WITH inserted AS (
 INSERT INTO correction_bridge_test_state SELECT inquiry_id FROM inserted;
 
 DO $owner_initial$
-DECLARE v_count integer; v_state text; v_revision integer;
+DECLARE v_count integer; v_state text; v_revision integer; v_parent uuid; v_kind text;
 BEGIN
-  SELECT count(*),min(office_review_state),min(office_review_revision)
-    INTO v_count,v_state,v_revision FROM public.taxpay_correction_inquiries
+  SELECT count(*),min(office_review_state),min(office_review_revision),
+         min(original_payment_id::text)::uuid,min(original_payment_kind)
+    INTO v_count,v_state,v_revision,v_parent,v_kind
+    FROM public.taxpay_correction_inquiries
     WHERE inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state);
-  IF v_count<>1 OR v_state IS DISTINCT FROM 'PENDING_OFFICER' OR v_revision<>1 THEN
-    RAISE EXCEPTION 'Initial owner correction readback failed';
+  IF v_count<>1 OR v_state IS DISTINCT FROM 'PENDING_OFFICER' OR v_revision<>1
+     OR v_parent IS DISTINCT FROM '80000000-0000-4000-8000-000000000041'
+     OR v_kind IS DISTINCT FROM 'TAXPAY_STORY_PAYMENT' THEN
+    RAISE EXCEPTION 'Initial owner correction status or original payment parent link failed';
   END IF;
 END;
 $owner_initial$;
 
+SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000002',true);
+DO $outsider_parent$
+DECLARE v_visible integer;
+BEGIN
+  SELECT count(*) INTO v_visible FROM public.taxpay_correction_inquiries
+    WHERE inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state);
+  IF v_visible<>0 THEN RAISE EXCEPTION 'Unrelated account read a correction inquiry'; END IF;
+  BEGIN
+    INSERT INTO public.taxpay_correction_inquiries(
+      requester_uid,original_reference,reason,requested_outcome
+    ) VALUES (
+      '80000000-0000-4000-8000-000000000002','909000000030',
+      'Synthetic unlinked TIN attempt','Review must not infer payment ownership from a typed TIN'
+    );
+    RAISE EXCEPTION 'TEST_UNEXPECTED_UNLINKED_CORRECTION';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM='TEST_UNEXPECTED_UNLINKED_CORRECTION' THEN RAISE; END IF;
+    IF SQLERRM NOT LIKE '%CORRECTION_ORIGINAL_PAYMENT_NOT_LINKED%' THEN RAISE; END IF;
+  END;
+END;
+$outsider_parent$;
+SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000001',true);
+
+-- Exercise the durable TaxPay outbox through a network failure and retry.
 RESET ROLE;
 SET LOCAL ROLE service_role;
-SELECT public.taxpay_correction_record_office_decision(jsonb_build_object(
-  'schemaVersion','1.0.0','commandType','CORRECTION_REVIEW',
-  'messageId','80000000-0000-4000-8000-000000000011',
-  'requestId',(SELECT inquiry_id::text FROM correction_bridge_test_state),
-  'origin','OFFICE_SQL','action','MAKER_ACKNOWLEDGE',
-  'officerUid','80000000-0000-4000-8000-000000000021','officerRole','MAKER',
-  'reason','Synthetic maker acknowledgment for SQL contract test',
-  'idempotencyKey','80000000-0000-4000-8000-000000000031',
-  'expectedReviewState','PENDING_OFFICER','occurredAt','2026-10-29T17:00:00.000Z'
-));
+DO $outbox_first_claim$
+DECLARE v_batch jsonb; v_item jsonb; v_event uuid; v_token uuid;
+BEGIN
+  v_batch := public.taxpay_correction_internal_claim(10);
+  IF pg_catalog.jsonb_array_length(v_batch)<>1 THEN
+    RAISE EXCEPTION 'Expected one correction outbox claim';
+  END IF;
+  v_item := v_batch->0;
+  v_event := (v_item->'event'->>'eventId')::uuid;
+  v_token := (v_item->>'claimToken')::uuid;
+  UPDATE correction_bridge_test_state SET event_id=v_event,claim_token=v_token;
+  PERFORM public.taxpay_correction_internal_ack(v_event,v_token,false,'synthetic network failure');
+  BEGIN
+    PERFORM public.taxpay_correction_internal_ack(v_event,v_token,true,NULL);
+    RAISE EXCEPTION 'Stale correction claim was accepted';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM='Stale correction claim was accepted' THEN RAISE; END IF;
+  END;
+END;
+$outbox_first_claim$;
+
+RESET ROLE;
+DO $outbox_failed_state$
+DECLARE v_state text; v_attempts integer; v_token uuid; v_error text; v_retry timestamptz;
+BEGIN
+  SELECT delivery_state,attempts,claim_token,last_error,next_attempt_at
+    INTO v_state,v_attempts,v_token,v_error,v_retry
+    FROM payment_sync.correction_outbox
+    WHERE event_id=(SELECT event_id FROM correction_bridge_test_state);
+  IF v_state IS DISTINCT FROM 'FAILED' OR v_attempts<>1 OR v_token IS NOT NULL
+     OR v_error IS DISTINCT FROM 'synthetic network failure' OR v_retry<=now() THEN
+    RAISE EXCEPTION 'Correction delivery failure was not durably recorded for retry';
+  END IF;
+END;
+$outbox_failed_state$;
+UPDATE payment_sync.correction_outbox SET next_attempt_at=now()
+WHERE event_id=(SELECT event_id FROM correction_bridge_test_state);
+
+SET LOCAL ROLE service_role;
+DO $outbox_retry$
+DECLARE v_batch jsonb; v_item jsonb; v_event uuid; v_token uuid; v_previous uuid;
+BEGIN
+  SELECT claim_token INTO v_previous FROM correction_bridge_test_state;
+  v_batch := public.taxpay_correction_internal_claim(10);
+  IF pg_catalog.jsonb_array_length(v_batch)<>1 THEN RAISE EXCEPTION 'Correction retry was not claimed'; END IF;
+  v_item := v_batch->0;
+  v_event := (v_item->'event'->>'eventId')::uuid;
+  v_token := (v_item->>'claimToken')::uuid;
+  IF v_event IS DISTINCT FROM (SELECT event_id FROM correction_bridge_test_state)
+     OR v_token IS NULL OR v_token=v_previous THEN
+    RAISE EXCEPTION 'Correction retry did not issue a fresh claim token';
+  END IF;
+  UPDATE correction_bridge_test_state SET claim_token=v_token;
+  PERFORM public.taxpay_correction_internal_ack(v_event,v_token,true,NULL);
+END;
+$outbox_retry$;
+
+RESET ROLE;
+DO $outbox_acknowledged$
+DECLARE v_state text; v_attempts integer; v_ack timestamptz;
+BEGIN
+  SELECT delivery_state,attempts,acknowledged_at INTO v_state,v_attempts,v_ack
+    FROM payment_sync.correction_outbox
+    WHERE event_id=(SELECT event_id FROM correction_bridge_test_state);
+  IF v_state IS DISTINCT FROM 'ACKNOWLEDGED' OR v_attempts<>2 OR v_ack IS NULL THEN
+    RAISE EXCEPTION 'Correction retry did not persist acknowledgment';
+  END IF;
+END;
+$outbox_acknowledged$;
+
+SET LOCAL ROLE service_role;
+DO $command_rejections$
+DECLARE v_inquiry uuid := (SELECT inquiry_id FROM correction_bridge_test_state);
+BEGIN
+  BEGIN
+    PERFORM public.taxpay_correction_record_office_decision(pg_catalog.jsonb_build_object(
+      'schemaVersion','1.0.0','commandType','CORRECTION_REVIEW',
+      'messageId','80000000-0000-4000-8000-000000000014','requestId',v_inquiry,
+      'origin','OFFICE_SQL','action','MAKER_ACKNOWLEDGE',
+      'officerUid','80000000-0000-4000-8000-000000000024','officerRole','REVIEWER',
+      'reason','Incorrect role must not create a correction decision',
+      'idempotencyKey','80000000-0000-4000-8000-000000000034',
+      'expectedReviewState','PENDING_OFFICER'));
+    RAISE EXCEPTION 'Incorrect role was accepted';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'Invalid correction review action' THEN RAISE; END IF;
+  END;
+  BEGIN
+    PERFORM public.taxpay_correction_record_office_decision(pg_catalog.jsonb_build_object(
+      'schemaVersion','1.0.0','commandType','CORRECTION_REVIEW',
+      'messageId','80000000-0000-4000-8000-000000000015','requestId',v_inquiry,
+      'origin','OFFICE_SQL','action','MAKER_ACKNOWLEDGE',
+      'officerUid','80000000-0000-4000-8000-000000000024','officerRole','MAKER',
+      'reason','Stale correction command must be rejected',
+      'idempotencyKey','80000000-0000-4000-8000-000000000035',
+      'expectedReviewState','REVIEWER_VERIFIED'));
+    RAISE EXCEPTION 'Stale correction command was accepted';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'Correction review state changed' THEN RAISE; END IF;
+  END;
+  BEGIN
+    PERFORM public.taxpay_correction_record_office_decision(pg_catalog.jsonb_build_object(
+      'schemaVersion','1.0.0','commandType','CORRECTION_REVIEW',
+      'messageId','80000000-0000-4000-8000-000000000016','requestId','80000000-0000-4000-8000-000000000099',
+      'origin','OFFICE_SQL','action','MAKER_ACKNOWLEDGE',
+      'officerUid','80000000-0000-4000-8000-000000000024','officerRole','MAKER',
+      'reason','Missing correction inquiry must be rejected',
+      'idempotencyKey','80000000-0000-4000-8000-000000000036',
+      'expectedReviewState','PENDING_OFFICER'));
+    RAISE EXCEPTION 'Missing correction inquiry was accepted';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'Correction inquiry not found' THEN RAISE; END IF;
+  END;
+END;
+$command_rejections$;
+
+RESET ROLE;
+DO $command_rejections_persisted$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.taxpay_correction_review_decisions
+             WHERE inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state)) THEN
+    RAISE EXCEPTION 'Rejected commands changed persisted review state';
+  END IF;
+END;
+$command_rejections_persisted$;
+SET LOCAL ROLE service_role;
+
+DO $maker_replay$
+DECLARE v_command jsonb; v_first jsonb; v_second jsonb;
+BEGIN
+  v_command := pg_catalog.jsonb_build_object(
+    'schemaVersion','1.0.0','commandType','CORRECTION_REVIEW',
+    'messageId','80000000-0000-4000-8000-000000000011',
+    'requestId',(SELECT inquiry_id::text FROM correction_bridge_test_state),
+    'origin','OFFICE_SQL','action','MAKER_ACKNOWLEDGE',
+    'officerUid','80000000-0000-4000-8000-000000000021','officerRole','MAKER',
+    'reason','Synthetic maker acknowledgment for SQL contract test',
+    'idempotencyKey','80000000-0000-4000-8000-000000000031',
+    'expectedReviewState','PENDING_OFFICER','occurredAt','2026-10-29T17:00:00.000Z');
+  v_first := public.taxpay_correction_record_office_decision(v_command);
+  v_second := public.taxpay_correction_record_office_decision(v_command);
+  IF v_first->>'duplicate'<>'false' OR v_second->>'duplicate'<>'true' THEN
+    RAISE EXCEPTION 'TaxPay decision replay was not idempotent';
+  END IF;
+END;
+$maker_replay$;
+
+DO $conflicting_message_replay$
+BEGIN
+  BEGIN
+    PERFORM public.taxpay_correction_record_office_decision(pg_catalog.jsonb_build_object(
+      'schemaVersion','1.0.0','commandType','CORRECTION_REVIEW',
+      'messageId','80000000-0000-4000-8000-000000000011',
+      'requestId',(SELECT inquiry_id::text FROM correction_bridge_test_state),
+      'origin','OFFICE_SQL','action','MAKER_ACKNOWLEDGE',
+      'officerUid','80000000-0000-4000-8000-000000000021','officerRole','MAKER',
+      'reason','Changed body for an existing correction message ID',
+      'idempotencyKey','80000000-0000-4000-8000-000000000031',
+      'expectedReviewState','PENDING_OFFICER','occurredAt','2026-10-29T17:00:00.000Z'));
+    RAISE EXCEPTION 'Changed payload replay was accepted';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'Conflicting correction review replay' THEN RAISE; END IF;
+  END;
+END;
+$conflicting_message_replay$;
+
+-- Check the persisted state as the migration owner; service_role uses only
+-- the security-definer RPC and has no direct read grant on this private table.
+RESET ROLE;
+DO $conflicting_message_replay_persisted$
+BEGIN
+  IF (SELECT count(*) FROM public.taxpay_correction_review_decisions
+      WHERE message_id='80000000-0000-4000-8000-000000000011')<>1
+     OR (SELECT office_review_revision FROM public.taxpay_correction_inquiries
+         WHERE inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state))<>2 THEN
+    RAISE EXCEPTION 'Changed-payload replay altered the stored correction decision';
+  END IF;
+END;
+$conflicting_message_replay_persisted$;
+SET LOCAL ROLE service_role;
+
+DO $same_officer_denial$
+BEGIN
+  BEGIN
+    PERFORM public.taxpay_correction_record_office_decision(pg_catalog.jsonb_build_object(
+      'schemaVersion','1.0.0','commandType','CORRECTION_REVIEW',
+      'messageId','80000000-0000-4000-8000-000000000017',
+      'requestId',(SELECT inquiry_id::text FROM correction_bridge_test_state),
+      'origin','OFFICE_SQL','action','REVIEWER_VERIFY',
+      'officerUid','80000000-0000-4000-8000-000000000021','officerRole','REVIEWER',
+      'reason','One officer cannot review their own maker decision',
+      'idempotencyKey','80000000-0000-4000-8000-000000000037',
+      'expectedReviewState','MAKER_ACKNOWLEDGED'));
+    RAISE EXCEPTION 'Same-officer review was accepted';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'Correction reviewers must be separate officers' THEN RAISE; END IF;
+  END;
+  BEGIN
+    PERFORM public.taxpay_correction_record_office_decision(pg_catalog.jsonb_build_object(
+      'schemaVersion','1.0.0','commandType','CORRECTION_REVIEW',
+      'messageId','80000000-0000-4000-8000-000000000018',
+      'requestId',(SELECT inquiry_id::text FROM correction_bridge_test_state),
+      'origin','OFFICE_SQL','action','REVIEWER_VERIFY',
+      'officerUid','80000000-0000-4000-8000-000000000022','officerRole','REVIEWER',
+      'reason','Stale reviewer state must not be accepted',
+      'idempotencyKey','80000000-0000-4000-8000-000000000038',
+      'expectedReviewState','PENDING_OFFICER'));
+    RAISE EXCEPTION 'Stale reviewer state was accepted';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'Correction review state changed' THEN RAISE; END IF;
+  END;
+END;
+$same_officer_denial$;
+
 SELECT public.taxpay_correction_record_office_decision(jsonb_build_object(
   'schemaVersion','1.0.0','commandType','CORRECTION_REVIEW',
   'messageId','80000000-0000-4000-8000-000000000012',
@@ -88,6 +433,64 @@ BEGIN
 END;
 $owner_final$;
 
+DO $owner_notices$
+DECLARE v_count integer; v_distinct integer; v_messages text[];
+BEGIN
+  SELECT count(*),count(DISTINCT correction_decision_id),
+         array_agg(message_code ORDER BY message_code)
+    INTO v_count,v_distinct,v_messages
+    FROM public.taxpay_in_app_notifications
+    WHERE correction_inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state);
+  IF v_count<>3 OR v_distinct<>3
+     OR v_messages IS DISTINCT FROM ARRAY[
+       'CORRECTION_APPROVER_CLOSED','CORRECTION_MAKER_ACKNOWLEDGED',
+       'CORRECTION_REVIEWER_VERIFIED']::text[]
+     OR EXISTS (SELECT 1 FROM public.taxpay_in_app_notifications
+       WHERE correction_inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state)
+         AND (recipient_uid<>'80000000-0000-4000-8000-000000000001'
+           OR request_id IS NOT NULL OR event_id IS NOT NULL OR is_read IS DISTINCT FROM false)) THEN
+    RAISE EXCEPTION 'Correction decision notifications were missing, duplicated or malformed';
+  END IF;
+END;
+$owner_notices$;
+UPDATE public.taxpay_in_app_notifications SET is_read=true
+WHERE correction_inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state)
+  AND recipient_uid='80000000-0000-4000-8000-000000000001'
+  AND message_code='CORRECTION_APPROVER_CLOSED';
+DO $owner_notice_read$
+BEGIN
+  IF (SELECT count(*) FROM public.taxpay_in_app_notifications
+      WHERE correction_inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state)
+        AND is_read=true)<>1 THEN
+    RAISE EXCEPTION 'Taxpayer correction notification read state did not persist';
+  END IF;
+END;
+$owner_notice_read$;
+SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000002',true);
+DO $outsider_notice$
+DECLARE v_visible integer; v_updated integer;
+BEGIN
+  SELECT count(*) INTO v_visible FROM public.taxpay_in_app_notifications
+    WHERE correction_inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state);
+  UPDATE public.taxpay_in_app_notifications SET is_read=false
+    WHERE correction_inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state);
+  GET DIAGNOSTICS v_updated = ROW_COUNT;
+  IF v_visible<>0 OR v_updated<>0 THEN
+    RAISE EXCEPTION 'Unrelated account could read or change a correction notification';
+  END IF;
+END;
+$outsider_notice$;
+SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000001',true);
+DO $notice_refresh$
+BEGIN
+  IF (SELECT count(*) FROM public.taxpay_in_app_notifications
+      WHERE correction_inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state)
+        AND is_read=true)<>1 THEN
+    RAISE EXCEPTION 'Correction notification read state did not survive identity refresh';
+  END IF;
+END;
+$notice_refresh$;
+
 RESET ROLE;
 DO $test$
 DECLARE v_inquiry uuid; v_payload jsonb;
@@ -95,14 +498,40 @@ BEGIN
   SELECT inquiry_id INTO v_inquiry FROM correction_bridge_test_state;
   SELECT event_payload INTO v_payload FROM payment_sync.correction_outbox WHERE inquiry_id=v_inquiry;
   IF v_payload->>'originalReference'<>'SYN-REF-003'
+     OR v_payload->>'originalPaymentId'<>'80000000-0000-4000-8000-000000000041'
+     OR v_payload->>'originalPaymentKind'<>'TAXPAY_STORY_PAYMENT'
      OR v_payload ? 'requesterUid' OR v_payload ? 'requester_uid'
      OR v_payload ? 'taxpayerTin' OR v_payload ? 'tin' THEN
-    RAISE EXCEPTION 'Correction outbox payload contains missing or over-scoped fields';
+    RAISE EXCEPTION 'Correction outbox parent link is missing or payload is over-scoped';
   END IF;
   IF (SELECT count(*) FROM public.taxpay_correction_review_decisions WHERE inquiry_id=v_inquiry)<>3 THEN
     RAISE EXCEPTION 'Expected three persisted Office review decisions';
   END IF;
 END;
 $test$;
+
+DO $financial_unchanged$
+DECLARE v_relation regclass; v_name text; v_count bigint; v_digest text; v_expected record;
+BEGIN
+  FOREACH v_name IN ARRAY ARRAY[
+    'public.taxpay_payment_requests','public.sim_payment_transactions',
+    'public.sim_payment_allocations','payment_sync.requests','payment_sync.events',
+    'payment_sync.request_mutations','payment_sync.notifications',
+    'demo_payment.story_payments','demo_payment.story_notifications'
+  ] LOOP
+    v_relation := pg_catalog.to_regclass(v_name);
+    IF v_relation IS NULL THEN CONTINUE; END IF;
+    EXECUTE pg_catalog.format(
+      'SELECT count(*)::bigint,pg_catalog.md5(coalesce(pg_catalog.string_agg(pg_catalog.md5(row_to_json(t)::text), '''' ORDER BY row_to_json(t)::text),'''')) FROM %s t',
+      v_relation
+    ) INTO v_count,v_digest;
+    SELECT * INTO v_expected FROM correction_financial_guard
+      WHERE relation_name=v_relation::text;
+    IF NOT FOUND OR v_expected.row_count<>v_count OR v_expected.content_digest<>v_digest THEN
+      RAISE EXCEPTION 'Correction review unexpectedly mutated financial/payment rows in %',v_relation;
+    END IF;
+  END LOOP;
+END;
+$financial_unchanged$;
 
 ROLLBACK;
