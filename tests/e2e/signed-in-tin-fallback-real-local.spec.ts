@@ -78,7 +78,9 @@ for(const language of ['en','bn'] as const){
       ]);
 
       await page.goto('/?action=guest&lang='+language+'&initialCategory=OTHER_TAX_PAYMENT');
-      const dialog=page.locator('.taxpay-modal').first();
+      // The direct ?action=guest route renders standalone GuestPayment, not the embedded Pay Tax modal.
+      await expect(page.getByRole('heading',{name:language==='bn'?'অতিথি আয়কর পরিশোধ':'Guest Income Tax Payment'})).toBeVisible();
+      await expect(page.locator('.taxpay-modal')).toHaveCount(0);
       await expect(page.locator('#guest-payer-other')).toBeVisible({timeout:15_000});
       await page.locator('#guest-payer-other').click();
       const picker=page.getByTestId('saved-beneficiary-picker');
@@ -111,7 +113,7 @@ for(const language of ['en','bn'] as const){
       await expect(selected).toContainText(language==='bn'?'ইউজার 1':'User 1');
       await expect(selected).toContainText('111111111111');
       await expect(selected).toContainText(language==='bn'?'সংরক্ষিত নয়':'Not saved to your beneficiary lists');
-      await expect(dialog.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
+      await expect(page.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
 
       // Confirming a one-time sample must not create an address-book row or a payment.
       expect(await readBeneficiaries()).toEqual([
@@ -119,15 +121,15 @@ for(const language of ['en','bn'] as const){
       ]);
       expect(psql('SELECT count(*)::text FROM demo_payment.story_payments')).toBe(beforePaymentCount);
 
-      const receiptPhone=dialog.locator('#guest-phone');
+      const receiptPhone=page.locator('#guest-phone');
       if(await receiptPhone.count()===1&&await receiptPhone.isEditable())
         await receiptPhone.fill('01712345678');
-      const continueLabel=language==='bn'?'খাত ও পরিমাণে এগিয়ে যান':'Continue to purpose & amount';
-      await dialog.getByRole('button',{name:continueLabel,exact:true}).click();
-      const stepCount=dialog.locator('.taxpay-modal__step-count');
-      await expect.poll(async()=>await stepCount.innerText()).toMatch(/[2২]/);
+      const continueLabel=language==='bn'?'পেমেন্ট খাতে এগিয়ে যান':'Continue to Payment Head';
+      await page.getByRole('button',{name:continueLabel,exact:true}).click();
+      await expect(page.getByText(language==='bn'?'ধাপ 2 / ৪':'Step 2 of 4',{exact:true})).toBeVisible();
       const backLabel=language==='bn'?'পূর্ববর্তী ধাপ':'Back';
-      await dialog.getByRole('button',{name:backLabel,exact:true}).first().click();
+      await page.getByRole('button',{name:backLabel,exact:true}).first().click();
+      await expect(page.getByText(language==='bn'?'ধাপ 1 / ৪':'Step 1 of 4',{exact:true})).toBeVisible();
       await expect(picker.getByTestId('one-time-tin-selection')).toContainText('111111111111');
     }finally{
       await context.close().catch(()=>undefined);
