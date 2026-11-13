@@ -74,6 +74,9 @@ for(const language of ['en','bn'] as const){
     await mockAccountHistory(page);
     await page.goto('/?action=history&lang='+language);
     const history=page.getByTestId('beneficiary-payment-history');
+    const resultRows=()=>page.viewportSize()!.width>=768
+      ?history.locator('table tbody tr')
+      :history.getByTestId('beneficiary-payment-mobile-cards').locator(':scope > li');
     await expect(history).toContainText('Beneficiary A');
     await expect(history).toContainText('Beneficiary B');
     await expect(history).toContainText('Beneficiary C');
@@ -82,14 +85,15 @@ for(const language of ['en','bn'] as const){
     const to=history.getByLabel(language==='bn'?'শেষ তারিখ পর্যন্ত পেমেন্ট ফিল্টার করুন':'Filter payments to date');
     await from.fill('2026-10-26');
     await to.fill('2026-10-26');
-    await expect(history).toContainText('Beneficiary C');
-    await expect(history).not.toContainText('Beneficiary A');
-    await expect(history).not.toContainText('Beneficiary B');
+    await expect(resultRows()).toHaveCount(1);
+    await expect(resultRows()).toContainText('Beneficiary C');
+    await expect(resultRows()).not.toContainText('Beneficiary A');
+    await expect(resultRows()).not.toContainText('Beneficiary B');
     const tagFilter=history.getByLabel(language==='bn'?'ট্যাগ দিয়ে উপকারভোগীর পেমেন্ট ফিল্টার':'Filter beneficiary payments by tag');
     await tagFilter.selectOption('others');
     await expect(history).toContainText('Beneficiary C');
-    await expect(history).not.toContainText('Beneficiary A');
-    await expect(history).not.toContainText('Beneficiary B');
+    await expect(resultRows()).not.toContainText('Beneficiary A');
+    await expect(resultRows()).not.toContainText('Beneficiary B');
 
     await history.getByRole('button',{
       name:language==='bn'?'উপকারভোগীর প্রোফাইল খুলুন: Beneficiary C':'Open beneficiary profile for Beneficiary C'
@@ -106,8 +110,8 @@ for(const language of ['en','bn'] as const){
     await expect(history.getByLabel(language==='bn'?'শেষ তারিখ পর্যন্ত পেমেন্ট ফিল্টার করুন':'Filter payments to date')).toHaveValue('2026-10-26');
     await expect(history.getByLabel(language==='bn'?'ট্যাগ দিয়ে উপকারভোগীর পেমেন্ট ফিল্টার':'Filter beneficiary payments by tag')).toHaveValue('others');
     await expect(history).toContainText('Beneficiary C');
-    await expect(history).not.toContainText('Beneficiary A');
-    await expect(history).not.toContainText('Beneficiary B');
+    await expect(resultRows()).not.toContainText('Beneficiary A');
+    await expect(resultRows()).not.toContainText('Beneficiary B');
 
     await page.reload();
     await expect(history).toBeVisible();
@@ -115,8 +119,8 @@ for(const language of ['en','bn'] as const){
     await expect(history.getByLabel(language==='bn'?'শেষ তারিখ পর্যন্ত পেমেন্ট ফিল্টার করুন':'Filter payments to date')).toHaveValue('2026-10-26');
     await expect(history.getByLabel(language==='bn'?'ট্যাগ দিয়ে উপকারভোগীর পেমেন্ট ফিল্টার':'Filter beneficiary payments by tag')).toHaveValue('others');
     await expect(history).toContainText('Beneficiary C');
-    await expect(history).not.toContainText('Beneficiary A');
-    await expect(history).not.toContainText('Beneficiary B');
+    await expect(resultRows()).not.toContainText('Beneficiary A');
+    await expect(resultRows()).not.toContainText('Beneficiary B');
 
     const exportButton=history.getByRole('button',{
       name:language==='bn'?'ফিল্টার করা পেমেন্টের ইতিহাস CSV হিসেবে নিন':'Export filtered payment history as CSV'
@@ -147,7 +151,7 @@ for(const language of ['en','bn'] as const){
     expect(firstCsv).not.toContain('access_token');
     await to.fill('2026-10-27');
     await from.fill('2026-10-27');
-    await expect(history).not.toContainText('Beneficiary C');
+    await expect(resultRows()).toHaveCount(0);
     await expect(exportButton).toBeDisabled();
     await history.getByRole('button',{name:language==='bn'?'সব ফিল্টার মুছুন':'Clear all',exact:true}).click();
     await expect(history).toContainText('Beneficiary A');
