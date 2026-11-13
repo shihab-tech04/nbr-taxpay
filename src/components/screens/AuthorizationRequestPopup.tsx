@@ -2,6 +2,9 @@ import React,{useEffect,useState} from 'react';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {useTaxState} from '../../services/taxState';
+import {formatCurrency} from '../../services/numberFormat';
+import {unreadReceivedPaymentNotices,acknowledgeReceivedPaymentNotice,type ReceivedPaymentNotice}
+  from '../../services/demoReceivedPaymentNotices';
 import {
   getHostedAuthorizations,performHostedAuthorization,type HostedAuthorization
 } from '../../services/hostedDemoAuthorizations';
@@ -16,8 +19,13 @@ export function AuthorizationRequestPopup(){
   const [code,setCode]=useState<string|null>(null);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
+  const [received,setReceived]=useState<ReceivedPaymentNotice|null>(null);
+  const [dismissedReceived,setDismissedReceived]=useState<string[]>([]);
+  const [receivedBusy,setReceivedBusy]=useState(false);
+  const [receivedError,setReceivedError]=useState('');
   useEffect(()=>{
     setIncoming(null);setDismissed([]);setCode(null);setError('');
+    setReceived(null);setDismissedReceived([]);setReceivedError('');setReceivedBusy(false);
   },[actor]);
   useEffect(()=>{
     if(!actor)return;
@@ -38,7 +46,75 @@ export function AuthorizationRequestPopup(){
     void poll();const timer=window.setInterval(()=>void poll(),5000);
     return()=>{active=false;window.clearInterval(timer);};
   },[actor,dismissed,code]);
-  if(!actor||!incoming)return null;
+  // The canonical WS3 feed determines the recipient on the server. Keep the
+  // oldest unread notice first and acknowledge only after an explicit action.
+  useEffect(()=>{
+    if(!actor)return;
+    let active=true;
+    const refresh=async()=>{
+      try{
+        const notices=await unreadReceivedPaymentNotices(actor);
+        if(active&&!receivedBusy)
+          setReceived(notices.find(item=>!dismissedReceived.includes(item.eventId))??null);
+      }catch{
+        // A missing WS3 API does not bypass login or disturb authorization UI.
+        // Keep the last verified notice for explicit retry.
+      }
+    };
+    void refresh();
+    const timer=window.setInterval(()=>void refresh(),5000);
+    return()=>{active=false;window.clearInterval(timer);};
+  },[actor,dismissedReceived,receivedBusy]);
+
+  const dismissReceived=()=>{
+    if(!received||receivedBusy)return;
+    setDismissedReceived(previous=>[...previous,received.eventId]);
+    setReceived(null);setReceivedError('');
+  };
+  const acknowledgeReceived=async()=>{
+    if(!actor||!received||receivedBusy)return;
+    const eventId=received.eventId;
+    setReceivedBusy(true);setReceivedError('');
+    try{
+      await acknowledgeReceivedPaymentNotice(actor,eventId);
+      const remaining=await unreadReceivedPaymentNotices(actor);
+      if(remaining.some(item=>item.eventId===eventId))
+        throw new Error('Notice acknowledgement has not been confirmed.');
+      setReceived(remaining.find(item=>!dismissedReceived.includes(item.eventId))??null);
+    }catch(cause){
+      setReceivedError(cause instanceof Error?cause.message:'Could not confirm notice read state.');
+    }finally{setReceivedBusy(false);}
+  };
+
+  if(!actor)return null;
+  if(!incoming&&received){
+    const money=formatCurrency(received.amountMinor/100,language);
+    return <TaxPayModal
+      title={bn?'প্রাপ্ত কর পরিশোধের বিজ্ঞপ্তি':'Received tax payment notice'}
+      onClose={dismissReceived}
+      closeIconLabel={bn?'বন্ধ করুন':'Close modal'}
+      className="taxpayer-authorization-modal"
+      footer={<button type="button" disabled={receivedBusy}
+        className="tax-service-choice__continue" onClick={()=>void acknowledgeReceived()}>
+        {receivedBusy?(bn?'নিশ্চিত করা হচ্ছে…':'Confirming…'):(bn?'পড়েছি, পরেরটি দেখুন':'Acknowledge and continue')}
+      </button>}
+    >
+      <div className="mt-4 space-y-3" data-testid="received-payment-notice">
+        <p className="text-sm leading-6 text-taxpay-text">
+          {bn?'আপনার করদাতা প্রোফাইলের জন্য একটি পরিশোধ রেকর্ড হয়েছে।':'A payment has been recorded for your taxpayer profile.'}
+        </p>
+        <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+          <div><dt>{bn?'পরিমাণ':'Amount'}</dt><dd className="font-semibold">{money}</dd></div>
+          <div><dt>{bn?'করবর্ষ':'Assessment year'}</dt><dd>{received.assessmentYear}</dd></div>
+          <div><dt>{bn?'খাত':'Payment head'}</dt><dd>{received.headId??'—'}</dd></div>
+          <div><dt>{bn?'রেফারেন্স':'Reference'}</dt><dd className="break-all">{received.receiptReference??received.paymentId}</dd></div>
+        </dl>
+        <p className="text-xs text-taxpay-muted">{bn?'এটি নথিভুক্ত পেমেন্টের তথ্য; সরকারি নিষ্পত্তির প্রমাণ নয়।':'This is a recorded payment, not confirmation of government settlement.'}</p>
+        {receivedError&&<p role="alert" className="text-sm text-taxpay-error">{receivedError}</p>}
+      </div>
+    </TaxPayModal>;
+  }
+  if(!incoming)return null;
   const requester=DEMO_USERS[incoming.payerId];
   const displayedCode=code??(incoming.status==='CODE_ISSUED'?incoming.consentCode:null);
   const dismiss=()=>{setDismissed(before=>[...before,`${incoming.id}:${incoming.codeResends??0}`]);setIncoming(null);setCode(null);};
