@@ -82,6 +82,9 @@ BEGIN
   -- one SQL payment without forging an Office beneficiary or a Treasury credit.
   mixed_key:=gen_random_uuid();
   mixed_payload:=jsonb_set(payload,'{idempotencyKey}',to_jsonb(mixed_key::text));
+  -- Pay Again is a new independent payment, retaining the original ID only
+  -- as immutable provenance. The UI journey supplies this same JSON field.
+  mixed_payload:=jsonb_set(mixed_payload,'{details,sourcePaymentId}',to_jsonb(saved_id::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptReference}',to_jsonb('SIM-'||mixed_key::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||mixed_key::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,allocations,0,headId}',to_jsonb(8));
@@ -104,6 +107,21 @@ BEGIN
     OR (SELECT count(*) FROM demo_payment.mirror_outbox
       WHERE entity_type='PAYMENT' AND entity_id=mixed_saved_id)<>1
   THEN RAISE EXCEPTION 'COMBINED_SOURCE_AND_DEMAND_NOT_ATOMIC'; END IF;
+  -- Read the new source ID back from disposable Taxpayer SQL, not merely
+  -- an intercepted browser request. The original parent remains untouched.
+  IF mixed_saved_id=saved_id
+    OR (SELECT count(*) FROM demo_payment.story_payments
+        WHERE id=mixed_saved_id AND idempotency_key=mixed_key
+          AND data->'details'->>'sourcePaymentId'=saved_id::text)<>1
+    OR (SELECT count(*) FROM demo_payment.story_payments
+        WHERE id=saved_id AND idempotency_key=payment_key AND amount_minor=5000
+          AND COALESCE(data->'details'->>'sourcePaymentId','')='')<>1
+  THEN RAISE EXCEPTION 'PAY_AGAIN_SOURCE_ID_ORIGINAL_INTEGRITY_FAILED'; END IF;
+  replay:=public.taxpay_demo_story1_submit(owner_hash,mixed_payload);
+  IF replay->>'id' IS DISTINCT FROM mixed_saved_id::text OR replay->>'replayed' IS DISTINCT FROM 'true'
+    OR (SELECT count(*) FROM demo_payment.mirror_outbox
+        WHERE entity_type='PAYMENT' AND entity_id IN (saved_id,mixed_saved_id))<>2
+  THEN RAISE EXCEPTION 'PAY_AGAIN_SOURCE_ID_REPLAY_FAILED'; END IF;
   IF (SELECT count(*) FROM demo_payment.taxpay_combined_demo_heads
       WHERE head_id=125)<>0
   THEN RAISE EXCEPTION 'RETURN_MIXING_ALLOWED'; END IF;
