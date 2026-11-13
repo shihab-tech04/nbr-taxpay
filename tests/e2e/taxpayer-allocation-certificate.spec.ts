@@ -222,6 +222,11 @@ async function installCertificateAccountFixture(
       return;
     }
     expect(request.headers().authorization).toBe('Bearer ' + accessToken);
+    if (url.pathname === '/rest/v1/taxpay_site_logo') {
+      expect(request.method()).toBe('GET');
+      await route.fulfill({ status: 200, headers, body: '[]' });
+      return;
+    }
     if (url.pathname === '/auth/v1/user') {
       await route.fulfill({
         status: 200, headers,
