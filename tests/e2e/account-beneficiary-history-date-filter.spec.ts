@@ -33,7 +33,7 @@ function session(){
 
 async function mockAccountHistory(page:Page){
   await page.addInitScript(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),
-    {key:'sb-nbr-taxpay-test-auth-token',value:session()});
+    {key:`sb-${new URL(backend).hostname.split('.')[0]}-auth-token`,value:session()});
   await page.route(backend+'/**',async route=>{
     const request=route.request(),url=new URL(request.url());
     const response=(body:unknown,status=200,headers:Record<string,string>={})=>route.fulfill({
