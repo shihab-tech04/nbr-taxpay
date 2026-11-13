@@ -263,6 +263,29 @@ test('floating help uses guide answers and report offers an editable review with
  await page.getByRole('button',{name:'Edit details'}).click();
  await expect(page.getByLabel('Short description')).toHaveValue('Example payment record mismatch, using fake data.');
 });
+test('help chat answers the matched FAQ in both languages and retains the conversation after close/reopen',async({page})=>{
+ await page.goto('/?action=landing');
+ const launch=page.getByRole('button',{name:'Chat support'});
+ await launch.click();
+ await expect(page.getByRole('button',{name:'Payment status',exact:true})).toBeVisible();
+ const question=page.getByLabel('Your question');
+ await question.fill('Why is my reference not found?');
+ await page.getByRole('button',{name:'Send'}).click();
+ const answers=page.locator('.public-help-message--assistant');
+ await expect(answers.last()).toContainText('Check the reference for typing errors');
+
+ await setWorkspaceLanguage(page,'bn');
+ const banglaQuestion=page.getByLabel('আপনার প্রশ্ন');
+ await banglaQuestion.fill('রেফারেন্স পাওয়া যাচ্ছে না কেন?');
+ await page.getByRole('button',{name:'পাঠান'}).click();
+ await expect(answers.last()).toContainText('রেফারেন্সটি সঠিকভাবে লেখা হয়েছে কি না দেখুন');
+
+ await page.getByRole('button',{name:'চ্যাট বন্ধ করুন'}).click();
+ const banglaLaunch=page.getByRole('button',{name:'চ্যাট সহায়তা'});
+ await expect(banglaLaunch).toBeFocused();
+ await banglaLaunch.click();
+ await expect(answers.last()).toContainText('রেফারেন্সটি সঠিকভাবে লেখা হয়েছে কি না দেখুন');
+});
 test('public guide and guest launcher pass WCAG automated A/AA',async({page},info)=>{
  test.skip(info.project.name==='desktop-1280','Mobile a11y suite');
  await page.goto('/?action=user_guide');
