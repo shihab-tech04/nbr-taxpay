@@ -116,11 +116,7 @@ test('Travel Tax Pay Again certificate uses the new parent and reference while p
     gatewayTransactionId:id,treasuryStatus:'GATEWAY_SUCCESS',
     taxCreditStatus:'PENDING_RECONCILIATION',createdAt,completedAt:createdAt,
     isSimulatedDemo:true,
-    paymentCategory:'TRAVEL_TAX',assessmentYear:'2026-27',
-    payerName:'Travel payer',payerTin:'1111111111111',
     taxpayerName:undefined,taxpayerTin:undefined,receiptMobile:'01712345678',
-    isRepresentativePayment:false,items:[],totalAmount:1500,
-    gatewayTransactionId:id,createdAt,completedAt:createdAt,
     travelDetails:{
       mode:'LAND',departurePort:'Benapole',destination:'India',travelDate:'2026-11-20',
       economicCode:'1144102',passengers:[
