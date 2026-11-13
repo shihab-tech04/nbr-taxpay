@@ -1,5 +1,42 @@
 import { expect, test } from '@playwright/test';
 
+test('first fictional account sign-in rejects a non-demo TIN and requires demo OTP before opening the account',async({page},info)=>{
+ test.skip(info.project.name!=='desktop-1280','One isolated first-login OTP acceptance journey');
+ await page.addInitScript(()=>localStorage.removeItem('korbritto.demo-login-otp.v1:user1'));
+ const authRequests:string[]=[];
+ page.on('request',request=>{
+   const url=new URL(request.url());
+   if(url.pathname.includes('/auth/v1/'))authRequests.push(url.pathname);
+ });
+ await page.goto('/?action=taxpayer_login');
+ const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+
+ // A typed TIN and the public demo code cannot enter the fictional login flow.
+ await page.getByRole('textbox',{name:'User ID'}).fill('012345678901');
+ await page.getByLabel('Password',{exact:true}).fill('111111');
+ await page.getByTestId('taxpayer-login-submit').click();
+ await expect(dialog.getByTestId('demo-otp-input')).toHaveCount(0);
+ await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password.');
+
+ await page.getByRole('textbox',{name:'User ID'}).fill('user1');
+ await page.getByLabel('Password',{exact:true}).fill('user1');
+ await page.getByTestId('taxpayer-login-submit').click();
+ const otp=dialog.getByTestId('demo-otp-input');
+ await expect(otp).toBeVisible();
+ await otp.fill('000000');
+ await page.getByTestId('taxpayer-login-submit').click();
+ await expect(dialog.getByRole('alert')).toContainText('Incorrect demo code.');
+ await expect(page.getByRole('heading',{name:'Overview'})).toHaveCount(0);
+
+ await otp.fill('111111');
+ await page.getByTestId('taxpayer-login-submit').click();
+ await expect(dialog).toContainText('Sign-in successful. Opening your account…');
+ await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+ expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe('user1');
+ expect(await page.evaluate(()=>localStorage.getItem('korbritto.demo-login-otp.v1:user1'))).toBe('complete');
+ expect(authRequests).toEqual([]);
+});
+
 test('all ten matching User ID and password pairs open their own account views',async({page},info)=>{
  test.skip(info.project.name!=='desktop-1280','One complete user-ID routing matrix');
  const backendCalls:string[]=[];
