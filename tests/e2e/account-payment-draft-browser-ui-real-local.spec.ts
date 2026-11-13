@@ -1,4 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 
 type Account = 'user27' | 'user28' | 'user29' | 'user30';
 
@@ -331,3 +333,168 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     await context.close();
   }
 });
+
+for (const language of ['en', 'bn'] as const) {
+  test(`payment form drafts survive another browser with real Auth ownership, recovery and isolation (${language})`, async ({ browser }, info) => {
+    test.setTimeout(120_000);
+    const raw = process.env.TAXPAY_LOCAL_SUPABASE_URL;
+    const key = process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+    const dsn = process.env.TAXPAY_LOCAL_PG_DSN;
+    if (!raw || !key || !dsn) throw new Error('Disposable local Supabase is required.');
+    const endpoint = new URL(raw);
+    const database = new URL(dsn);
+    if (endpoint.protocol !== 'http:' || !['127.0.0.1', 'localhost', '[::1]'].includes(endpoint.hostname) ||
+        !['127.0.0.1', 'localhost', '[::1]'].includes(database.hostname)) {
+      throw new Error('Refusing hosted or non-loopback Auth/draft/payment test targets.');
+    }
+    const bn = language === 'bn';
+    const viewport = info.project.name.startsWith('mobile')
+      ? { width: 375, height: 812 } : { width: 1280, height: 800 };
+    const contexts: BrowserContext[] = [];
+    const query = (sql: string) => {
+      const result = spawnSync('psql', ['-X', '-At', '-v', 'ON_ERROR_STOP=1', '-c', sql], {
+        encoding: 'utf8', timeout: 10_000,
+        env: {
+          ...process.env,
+          PGHOST: database.hostname,
+          PGPORT: database.port || '5432',
+          PGUSER: decodeURIComponent(database.username),
+          PGPASSWORD: decodeURIComponent(database.password),
+          PGDATABASE: database.pathname.slice(1),
+        },
+      });
+      if (result.status !== 0) throw new Error('Disposable SQL read failed: ' + result.stderr.slice(0, 500));
+      return result.stdout.trim();
+    };
+    const createOwner = async (label: string) => {
+      const email = `${label}-${randomUUID()}@example.invalid`;
+      const password = randomBytes(32).toString('base64url');
+      const response = await fetch(new URL('/auth/v1/signup', endpoint.origin), {
+        method: 'POST', headers: { apikey: key, 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      expect(response.status).toBe(200);
+      const body = await response.json() as {
+        user?: { id?: string };
+        session?: { access_token?: string; refresh_token?: string; expires_at?: number };
+        access_token?: string; refresh_token?: string; expires_at?: number;
+      };
+      const session = body.session ?? body;
+      expect(body.user?.id).toBeTruthy();
+      expect(session.access_token).toBeTruthy();
+      expect(session.refresh_token).toBeTruthy();
+      return {
+        id: body.user!.id!,
+        session: session as { access_token: string; refresh_token: string; expires_at?: number },
+      };
+    };
+    const owner = await createOwner('account-draft-owner');
+    const other = await createOwner('account-draft-other');
+    const paymentCountBefore = query('select count(*) from public.sim_payment_transactions');
+    const appUrl = (action: string, session: { access_token: string; refresh_token: string; expires_at?: number }) =>
+      `/?action=${action}&lang=${language}#access_token=${encodeURIComponent(session.access_token)}` +
+      `&refresh_token=${encodeURIComponent(session.refresh_token)}&token_type=bearer&expires_in=3600&expires_at=` +
+      (session.expires_at ?? Math.floor(Date.now() / 1000) + 3600);
+    const open = async (session: { access_token: string; refresh_token: string; expires_at?: number }, action: string) => {
+      const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173', viewport });
+      contexts.push(context);
+      const page = await context.newPage();
+      page.setDefaultTimeout(10_000);
+      await page.goto(appUrl(action, session));
+      await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang', language);
+      return page;
+    };
+    const readRows = async (session: { access_token: string }, filters: Record<string, string>) => {
+      const url = new URL('/rest/v1/taxpay_account_payment_form_drafts', endpoint.origin);
+      url.searchParams.set('select', 'id,owner_uid,service,form_payload,revision,created_at,updated_at');
+      for (const [name, value] of Object.entries(filters)) url.searchParams.set(name, value);
+      const response = await fetch(url, { headers: { apikey: key, Authorization: 'Bearer ' + session.access_token } });
+      expect(response.status).toBe(200);
+      return await response.json() as Array<{
+        id: string; owner_uid: string; service: string; form_payload: Record<string, unknown>; revision: number;
+      }>;
+    };
+    try {
+    const payer = await open(owner.session, 'history');
+    // A route reached through a real local Auth callback enables the existing
+    // signed-in draft actor; no preview identity or mocked transport is used.
+    await payer.goto(`/?action=guest&lang=${language}`);
+    const saveLabel = bn ? 'খসড়া সংরক্ষণ করুন' : 'Save Draft';
+    const savedLabel = bn ? 'খসড়া সংরক্ষিত' : 'Draft Saved';
+    const continueLabel = bn ? 'চালিয়ে যান' : 'Continue';
+    const marker = `AUTH-DRAFT-${language}-${randomUUID()}`;
+    const payerChoice = payer.locator('#guest-payer-self');
+    await payerChoice.check();
+    await expect(payer.locator('#guest-notice-ref')).toBeVisible();
+    await payer.locator('#guest-notice-ref').fill(marker);
+    await payer.getByRole('button', { name: saveLabel, exact: true }).click();
+    await expect(payer.getByRole('button', { name: savedLabel, exact: true })).toBeVisible();
+
+    const firstRows = await readRows(owner.session, { owner_uid: 'eq.' + owner.id });
+    expect(firstRows).toHaveLength(1);
+    const draftId = firstRows[0].id;
+    expect(firstRows[0]).toMatchObject({ owner_uid: owner.id, revision: 1 });
+    expect(firstRows[0].form_payload).toMatchObject({ noticeReference: marker, forSelf: true });
+
+    // A second browser reloads the owner dashboard from Auth-backed SQL.
+    const resume = await open(owner.session, 'taxpayer_home');
+    const cards = resume.getByTestId('dashboard-payment-drafts');
+    const card = cards.locator('[data-draft-id="' + draftId + '"]');
+    await expect(card).toBeVisible();
+    await card.getByRole('button', { name: continueLabel, exact: true }).click();
+    const modal = resume.getByRole('dialog').filter({ has: resume.locator('#guest-notice-ref') });
+    await expect(modal.locator('#guest-notice-ref')).toHaveValue(marker);
+    const updatedMarker = marker + '-UPDATED';
+    await modal.locator('#guest-notice-ref').fill(updatedMarker);
+    await modal.getByRole('button', { name: saveLabel, exact: true }).click();
+    await expect(modal.getByRole('button', { name: savedLabel, exact: true })).toBeVisible();
+
+    const updatedRows = await readRows(owner.session, { owner_uid: 'eq.' + owner.id, id: 'eq.' + draftId });
+    expect(updatedRows).toHaveLength(1);
+    expect(updatedRows[0]).toMatchObject({ id: draftId, owner_uid: owner.id, revision: 2 });
+    expect(updatedRows[0].form_payload).toMatchObject({ noticeReference: updatedMarker, forSelf: true });
+
+    // The first browser retains revision 1; a stale update must be rejected.
+    await payer.locator('#guest-notice-ref').fill(marker + '-STALE');
+    await payer.getByRole('button', { name: saveLabel, exact: true }).click();
+    await expect(payer.getByRole('alert').filter({ hasText: /changed in another session/ })).toBeVisible();
+    const afterConflict = await readRows(owner.session, { owner_uid: 'eq.' + owner.id, id: 'eq.' + draftId });
+    expect(afterConflict[0]?.form_payload.noticeReference).toBe(updatedMarker);
+
+    // Refresh then resume the exact updated value. Draft activity must not create a payment.
+    await resume.goto(`/?action=taxpayer_home&lang=${language}`);
+    await expect(cards.locator('[data-draft-id="' + draftId + '"]')).toBeVisible();
+    await cards.locator('[data-draft-id="' + draftId + '"]').getByRole('button', { name: continueLabel, exact: true }).click();
+    const refreshedModal = resume.getByRole('dialog').filter({ has: resume.locator('#guest-notice-ref') });
+    await expect(refreshedModal.locator('#guest-notice-ref')).toHaveValue(updatedMarker);
+    await refreshedModal.locator('.taxpay-modal__header .taxpay-modal__close').click();
+    const exitPrompt = refreshedModal.getByRole('alertdialog');
+    await expect.poll(async () => await refreshedModal.count() === 0 || await exitPrompt.count() > 0).toBe(true);
+    if (await refreshedModal.count() > 0) {
+      await exitPrompt.getByRole('button', { name: saveLabel, exact: true }).click();
+    }
+    await expect(refreshedModal).toHaveCount(0);
+
+    // Another real Auth user cannot see the row in UI or PostgREST.
+    const stranger = await open(other.session, 'taxpayer_home');
+    const strangerCards = stranger.getByTestId('dashboard-payment-drafts');
+    await expect(strangerCards.getByTestId('dashboard-drafts-empty')).toBeVisible();
+    await expect(stranger.getByText(marker, { exact: false })).toHaveCount(0);
+    expect(await readRows(other.session, { owner_uid: 'eq.' + other.id, id: 'eq.' + draftId })).toEqual([]);
+
+    // Delete confirmation can be cancelled; confirming deletes this draft only.
+    const finalCard = cards.locator('[data-draft-id="' + draftId + '"]');
+    await finalCard.getByRole('button', { name: bn ? 'মুছুন' : 'Delete', exact: true }).click();
+    await expect(finalCard.getByRole('button', { name: bn ? 'মুছে ফেলা নিশ্চিত করুন' : 'Confirm delete', exact: true })).toBeVisible();
+    await finalCard.getByRole('button', { name: bn ? 'বাতিল' : 'Cancel', exact: true }).click();
+    await expect(finalCard).toBeVisible();
+    await finalCard.getByRole('button', { name: bn ? 'মুছুন' : 'Delete', exact: true }).click();
+    await finalCard.getByRole('button', { name: bn ? 'মুছে ফেলা নিশ্চিত করুন' : 'Confirm delete', exact: true }).click();
+    await expect(finalCard).toHaveCount(0);
+    expect(await readRows(owner.session, { owner_uid: 'eq.' + owner.id, id: 'eq.' + draftId })).toEqual([]);
+    expect(query('select count(*) from public.sim_payment_transactions')).toBe(paymentCountBefore);
+    } finally {
+      await Promise.allSettled(contexts.map(context => context.close()));
+    }
+  });
+}
