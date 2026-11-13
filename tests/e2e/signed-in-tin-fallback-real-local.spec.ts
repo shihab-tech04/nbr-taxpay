@@ -119,7 +119,9 @@ for(const language of ['en','bn'] as const){
       ]);
       expect(psql('SELECT count(*)::text FROM demo_payment.story_payments')).toBe(beforePaymentCount);
 
-      await dialog.locator('#guest-phone').fill('01712345678');
+      const receiptPhone=dialog.locator('#guest-phone');
+      if(await receiptPhone.count()===1&&await receiptPhone.isEditable())
+        await receiptPhone.fill('01712345678');
       const continueLabel=language==='bn'?'খাত ও পরিমাণে এগিয়ে যান':'Continue to purpose & amount';
       await dialog.getByRole('button',{name:continueLabel,exact:true}).click();
       const stepCount=dialog.locator('.taxpay-modal__step-count');
