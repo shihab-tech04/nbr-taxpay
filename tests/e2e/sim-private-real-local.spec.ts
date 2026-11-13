@@ -92,6 +92,16 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(transactionCard.getByText('৳23.50',{exact:true})).toBeVisible();
  await two.page.goto('/?action=notifications');
  await expect(two.page.getByRole('heading',{name:'Payment notifications'})).toBeVisible({timeout:15000});
+ await two.page.getByRole('button',{name:'View payment details'}).click();
+ const noticeDetails=two.page.getByTestId('payment-lifecycle-details');
+ await expect(noticeDetails).toContainText(tx!.transactionId);
+ await expect(noticeDetails).toContainText('৳23.50');
+ const ownAllocations=noticeDetails.locator('section').filter({has:noticeDetails.getByRole('heading',{name:'Taxpayer allocations'})});
+ await expect(ownAllocations).toContainText('user7');
+ await expect(ownAllocations).not.toContainText('user6');
+ await expect(ownAllocations).not.toContainText('৳150.25');
+ await expect(noticeDetails).not.toContainText('৳173.75');
+ await two.page.getByRole('button',{name:'Close modal'}).click();
  await expect(two.page.getByRole('button',{name:'Mark read'})).toBeVisible({timeout:15000});
  await two.page.getByRole('button',{name:'Mark read'}).click();
  await expect(two.page.getByRole('button',{name:'Mark unread'})).toBeVisible({timeout:10000});
