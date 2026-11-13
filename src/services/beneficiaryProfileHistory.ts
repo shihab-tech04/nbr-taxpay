@@ -8,7 +8,7 @@ import {getAccountStoryPayments,getDetailedStorySessionPayments,beneficiaryPayme
 import {getBoundSimulationUser,getPrivateSimulationHistory,getDemoStoryPaymentHistory} from './simulatedPaymentsApi';
 
 export type BeneficiaryProfilePayment = {
-  key:string; paymentId:string; transactionId:string; createdAt:string;
+  key:string; paymentId:string; transactionId:string; reference:string; createdAt:string;
   taxpayerTin:string; assessmentYear:string; paymentHead:string; amountMinor:number;
   status:'SIMULATED_SUCCESS'|'SIMULATED'|'PENDING'|'FAILED'|'REVERSED';
   source:'recorded'|'simulation'; receipt?:ChallanReceipt;
@@ -48,6 +48,7 @@ export function beneficiaryProfilePayments(
     .map(entry=>({
       key:'recorded:'+entry.key,paymentId:entry.paymentId,
       transactionId:entry.batchId??entry.paymentId,
+      reference:entry.batchId??entry.paymentId,
       createdAt:storyDates.get(entry.paymentId)??'',
       taxpayerTin:entry.taxpayerTin,assessmentYear:entry.assessmentYear,
       paymentHead:entry.paymentHead,amountMinor:entry.amountMinor,
@@ -86,7 +87,7 @@ export function beneficiaryProfilePayments(
       if(matchedTin!==tin)continue;
       ledger.push({
         key:'simulation:'+tx.transactionId+':'+(entry.id??index),
-        paymentId:tx.transactionId,transactionId:tx.transactionId,
+        paymentId:tx.transactionId,transactionId:tx.transactionId,reference:tx.id,
         createdAt:tx.createdAt,taxpayerTin:tin,
         assessmentYear:entry.assessmentYear,
         paymentHead:simulationCategoryLabels[entry.category]?.[language]??entry.category,

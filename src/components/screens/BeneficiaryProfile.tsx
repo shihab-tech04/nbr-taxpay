@@ -56,7 +56,7 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
     (year==='all'||row.assessmentYear===year)&&
     (head==='all'||row.paymentHead===head)&&
     (status==='all'||(status==='recorded'?countsTowardBeneficiaryPaidTotal(row):row.status===status))&&
-    (!search.trim()||[row.paymentId,row.transactionId,row.assessmentYear,row.paymentHead].some(
+    (!search.trim()||[row.reference,row.paymentId,row.transactionId,row.assessmentYear,row.paymentHead].some(
       value=>value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))
   ),[state.rows,search,year,head,status,dateFrom,dateTo,invalidDateRange]);
   const totalMinor=paidRows.reduce((total,row)=>total+BigInt(row.amountMinor),0n);
@@ -205,7 +205,7 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
                     </p>
                     <p className="mt-1 text-xs text-taxpay-muted">{tr('Assessment year','করবর্ষ')}: {row.assessmentYear}</p>
                     <p className="mt-1 break-all text-xs text-taxpay-muted">
-                      {tr('Reference','রেফারেন্স')}: {row.transactionId}
+                      {tr('Reference','রেফারেন্স')}: {row.reference}
                     </p>
                   </div>
                   <span className="font-semibold tabular-nums text-taxpay-text">{formatCurrency(row.amountMinor/100,language)}</span>
@@ -236,7 +236,7 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
         <p>{tr('Head','খাত')}: {selected.paymentHead}</p>
         <p>{tr('Assessment year','করবর্ষ')}: {selected.assessmentYear}</p>
         <p>{tr('Status','অবস্থা')}: {paymentStatus(selected.status,bn)}</p>
-        <p className="break-all">{tr('Transaction','লেনদেন')}: {selected.transactionId}</p>
+        <p className="break-all">{tr('Reference','রেফারেন্স')}: {selected.reference}</p>
         <p>{tr('Amount','পরিমাণ')}: {formatCurrency(selected.amountMinor/100,language)}</p>
       </div>}
     </TaxPayModal>}
