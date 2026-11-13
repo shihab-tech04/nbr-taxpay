@@ -387,6 +387,56 @@ for(const language of ['en','bn'] as const){
         {owner_uid:owner.id,tin:recipientTin,display_name:recipientId,tag:'clients'}
       ]);
       expect(await readSaved(other.session.access_token)).toEqual([]);
+
+      // Open the saved contact's profile from the existing list and verify that
+      // the timeline reads the exact recipient allocation from original SQL.
+      await page.goto(appUrl('beneficiaries',owner.session));
+      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      const openRecipientProfile=page.getByRole('link',{name:
+        (language==='bn'?'প্রোফাইল দেখুন: ':'Open profile for ')+recipientId});
+      await expect(openRecipientProfile).toBeVisible();
+      await openRecipientProfile.click();
+      const profile=page.getByTestId('beneficiary-profile');
+      await expect(profile).toBeVisible();
+      const timeline=profile.getByTestId('beneficiary-chronological-timeline');
+      await expect(timeline.locator(':scope > li')).toHaveCount(1);
+      const recipientEntry=timeline.locator(':scope > li').first();
+      await expect(recipientEntry).toContainText(paymentId);
+      await expect(recipientEntry).toContainText(/advance tax/i);
+      await expect(recipientEntry).toContainText('2026-27');
+      await expect(recipientEntry).not.toContainText('2025-26');
+      await expect(recipientEntry).toContainText(language==='bn'?'১৫.০০':'15.00');
+      await expect(recipientEntry).not.toContainText(selfTin);
+
+      // The profile opens the original combined receipt, retaining both
+      // recipients and both assessment years without turning the allocation
+      // into a second payment.
+      await recipientEntry.getByRole('button',{name:
+        language==='bn'?'মূল রেকর্ড দেখুন':'View original record',exact:true}).click();
+      const profileReceipt=page.getByRole('dialog',{name:
+        language==='bn'?'পেমেন্টের বিবরণ':'Payment details'});
+      await expect(profileReceipt).toContainText(paymentId);
+      await expect(profileReceipt).toContainText(recipientTin);
+      await expect(profileReceipt).toContainText(selfTin);
+      await expect(profileReceipt).toContainText('2026-27');
+      await expect(profileReceipt).toContainText('2025-26');
+
+      // Full navigation resets the transient profile view; reopening the saved
+      // contact must recover the same SQL-backed recipient timeline.
+      await page.goto(appUrl('beneficiaries',owner.session));
+      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      await page.reload();
+      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      const recoveredProfileLink=page.getByRole('link',{name:
+        (language==='bn'?'প্রোফাইল দেখুন: ':'Open profile for ')+recipientId});
+      await expect(recoveredProfileLink).toBeVisible();
+      await recoveredProfileLink.click();
+      const recoveredTimeline=page.getByTestId('beneficiary-profile')
+        .getByTestId('beneficiary-chronological-timeline');
+      await expect(recoveredTimeline.locator(':scope > li')).toHaveCount(1);
+      await expect(recoveredTimeline.locator(':scope > li').first())
+        .toContainText(paymentId);
+
       await page.goto(appUrl('history',owner.session));
       await expect(page.getByTestId('beneficiary-payment-history')).toContainText(paymentId);
       await page.getByTestId('beneficiary-payment-history')
