@@ -83,10 +83,14 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     // Use the existing desktop language control at its supported 1600px rail breakpoint,
     // then recover the same owner-scoped SQL draft in Bengali on a phone-sized viewport.
     await owner.setViewportSize({ width: 1600, height: 900 });
-    const desktopRail = owner.getByRole('complementary', { name: 'Taxpayer desktop navigation' });
+    // The rail's accessible name changes with the selected language. Keep the test locator structural
+    // so it still points to the same approved control after the interface changes to Bengali.
+    const desktopRail = owner.locator('.taxpayer-reference-rail');
+    await expect(desktopRail).toHaveAttribute('aria-label', 'Taxpayer desktop navigation');
     const languageSwitcher = desktopRail.locator('.taxpayer-reference-rail-bottom').getByRole('button').nth(1);
     await expect(languageSwitcher).toContainText('Language');
     await languageSwitcher.click();
+    await expect(desktopRail).toHaveAttribute('aria-label', 'করদাতা ডেস্কটপ নেভিগেশন');
     await expect(languageSwitcher).toContainText('English');
     await expect(owner).toHaveURL(/lang=bn/);
     await owner.setViewportSize({ width: 375, height: 812 });
