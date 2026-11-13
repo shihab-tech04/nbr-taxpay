@@ -421,8 +421,13 @@ for(const language of ['en','bn'] as const){
       await expect(profileReceipt).toContainText('2026-27');
       await expect(profileReceipt).toContainText('2025-26');
 
-      // Reloading the current beneficiaries route resets the transient profile
-      // view; reopening the saved contact must recover the SQL-backed timeline.
+      // Close the original-record modal, use the approved Back action, then
+      // reload the saved-contact list before recovering the same SQL timeline.
+      await profileReceipt.locator('.taxpay-modal__header .taxpay-modal__close').click();
+      await expect(profileReceipt).toHaveCount(0);
+      await profile.getByRole('button',{name:
+        language==='bn'?'উপকারভোগীর তালিকায় ফিরুন':'Back to beneficiaries',exact:true}).click();
+      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
       await page.reload();
       await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
       const recoveredProfileLink=page.getByRole('link',{name:
