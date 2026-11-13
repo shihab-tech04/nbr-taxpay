@@ -330,7 +330,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     passengers.some(item => item.id === pendingConfirmationId);
   const allPassengersComplete = firstIdentityIssue() === null &&
     passengers.every(item => confirmedPassengerIds.includes(item.id));
-  const receiptMobileComplete = /^01\\d{9}$/.test(phone);
+  const receiptMobileComplete = /^01\d{9}$/.test(phone);
   const canContinueToTravel = allPassengersComplete && receiptMobileComplete;
   const reportIdentityIssue = (issue: PassengerIdentityIssue) => {
     setEditingPassengerId(issue.id); setPassengerIssue(issue);
