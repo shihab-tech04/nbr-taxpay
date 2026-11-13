@@ -94,7 +94,7 @@ export interface PaymentLineItem {
 }
 
 export interface ReceiptAllocationItem {
-  /** Stable original composer line ID for source/Office reconciliation. */
+  /** Stable original composer allocation ID for source/Office reconciliation. */
   allocationId?: string;
   taxpayerName: string;
   taxpayerTin?: string;
@@ -115,6 +115,8 @@ export interface ChallanReceipt {
   assessmentYear: string;
   payerName: string;
   payerTin: string;
+  /** Recipient name from the saved payment parent when available. */
+  taxpayerName?: string;
   /** Account receiving the payment; never infer it from a guest payer. */
   taxpayerTin?: string;
   receiptMobile?: string;
