@@ -110,8 +110,8 @@ test('certificate retains every beneficiary head and year in its reconciled tota
   const certificate = page.getByTestId('payment-certificate-document');
   await expect(certificate).toContainText('1111111111111');
   await expect(certificate).toContainText('9999999999999');
-  await expect(certificate).toContainText('Tax with Return');
-  await expect(certificate).toContainText('Advance Income Tax');
+  await expect(certificate).toContainText('Penalty & Simple Interest');
+  await expect(certificate).toContainText('Advance Tax');
   await expect(certificate).toContainText('2025-26');
   await expect(page.getByTestId('payment-certificate-total')).toHaveText('৳ 160');
   if ((page.viewportSize()?.width ?? 0) <= 650) {
