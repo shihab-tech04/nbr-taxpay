@@ -77,7 +77,7 @@ for(const language of ['en','bn'] as const){
         {owner_uid:auth.user.id,tin:'012345678901',display_name:'Saved Contact'}
       ]);
 
-      await page.goto('/?action=guest&lang='+language);
+      await page.goto('/?action=guest&lang='+language+'&initialCategory=OTHER_TAX_PAYMENT');
       const dialog=page.locator('.taxpay-modal').first();
       await expect(page.locator('#guest-payer-other')).toBeVisible({timeout:15_000});
       await page.locator('#guest-payer-other').click();
@@ -119,8 +119,6 @@ for(const language of ['en','bn'] as const){
       ]);
       expect(psql('SELECT count(*)::text FROM demo_payment.story_payments')).toBe(beforePaymentCount);
 
-      await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
-      await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed','true');
       const receiptPhone=dialog.locator('#guest-phone');
       if(await receiptPhone.count()===1&&await receiptPhone.isEditable())
         await receiptPhone.fill('01712345678');
