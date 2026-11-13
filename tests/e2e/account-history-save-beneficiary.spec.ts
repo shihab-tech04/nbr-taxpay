@@ -405,7 +405,7 @@ for(const language of ['en','bn'] as const){
       await expect(recipientEntry).toContainText(/advance tax/i);
       await expect(recipientEntry).toContainText('2026-27');
       await expect(recipientEntry).not.toContainText('2025-26');
-      await expect(recipientEntry).toContainText(language==='bn'?'১৫.০০':'15.00');
+      await expect(recipientEntry.getByText(language==='bn'?'৳ ১৫':'৳ 15',{exact:true})).toBeVisible();
       await expect(recipientEntry).not.toContainText(selfTin);
 
       // The profile opens the original combined receipt, retaining both
@@ -444,7 +444,9 @@ for(const language of ['en','bn'] as const){
       await expect(page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'})
         .getByTestId('account-save-beneficiary-receipt')).toHaveCount(0);
       const persisted=psql("SELECT data::text FROM demo_payment.story_payments WHERE id="+quote(paymentId)+"::uuid");
-      expect(JSON.parse(persisted)).toMatchObject(sourceData);
+      const persistedData=JSON.parse(persisted) as typeof sourceData;
+      expect(persistedData).toEqual(sourceData);
+      expect(persistedData.details.lines).toEqual(lines);
     }finally{await context.close();}
   });
 }
