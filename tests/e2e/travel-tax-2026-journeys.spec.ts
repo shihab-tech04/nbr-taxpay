@@ -415,9 +415,7 @@ test('Travel Tax: duplicate passports cannot be confirmed or included in final t
   await expect(second.getByText('Passport already added.',{exact:true})).toBeVisible();
   await second.getByRole('button',{name:'Check Passport'}).click();
   await expect(modal.getByRole('alert')).toContainText('Passport already added.');
-  const invalidConfirm=second.getByRole('button',{name:'Add passenger',exact:true});
-  await expect(invalidConfirm).toBeEnabled();
-  await invalidConfirm.click();
+  await expect(modal.getByRole('button',{name:'Add passenger',exact:true})).toHaveCount(0);
   await expect(second.getByLabel('Passport number')).toHaveAttribute('aria-invalid','true');
   await expect(second.getByLabel('Passport number')).toBeFocused();
   await expect(second).toHaveAttribute('data-complete','false');
