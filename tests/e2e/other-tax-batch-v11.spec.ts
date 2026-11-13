@@ -563,6 +563,28 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
   });
   const details = submitted[0].details as {allocations: Array<{headId: number}>};
   expect(new Set(details.allocations.map(allocation => allocation.headId)).size).toBe(2);
+
+  // The same saved parent must supply a distinct, itemized certificate from
+  // the combined receipt; no second submission or independently summed total.
+  await dialog.getByRole('button', { name: 'Receipt details' }).click();
+  const receipt = dialog.locator('.receipt-view__paper');
+  await expect(receipt).toContainText('111111111111');
+  await expect(receipt).toContainText('222222222222');
+  await expect(receipt).toContainText('৳ 50');
+  await dialog.getByRole('button', { name: 'View payment certificate' }).click();
+  const certificate = dialog.getByTestId('payment-certificate-document');
+  await expect(certificate.getByRole('heading', { name: 'Payment Certificate' })).toBeVisible();
+  await expect(dialog.getByTestId('payment-certificate-reference'))
+    .toContainText('SK-PC-00000000-0000-4000-8000-000000000102');
+  await expect(certificate).toContainText('111111111111');
+  await expect(certificate).toContainText('222222222222');
+  await expect(certificate).toContainText('2026-27');
+  await expect(certificate).toContainText('2025-26');
+  await expect(certificate).toContainText('৳ 15');
+  await expect(certificate).toContainText('৳ 35');
+  await expect(dialog.getByTestId('payment-certificate-total')).toContainText('৳ 50');
+  await expect(certificate).not.toContainText('SIMULATED_SUCCESS');
+  expect(submitted).toHaveLength(1);
 });
 
 test('signed-in SELF Other Tax preserves the locked account identity and canonical head catalogue', async ({ page }) => {
