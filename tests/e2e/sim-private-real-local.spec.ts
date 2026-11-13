@@ -90,6 +90,48 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(transactionCard.getByText(tx!.id)).toBeVisible({timeout:15000});
  await transactionCard.getByText('View allocations',{exact:false}).click();
  await expect(transactionCard.getByText('৳23.50',{exact:true})).toBeVisible();
+
+ // A payer's saved beneficiary profile must project only that recipient's
+ // immutable allocation from the same combined transaction. The receiver's
+ // account must not inherit the payer's private address book.
+ await one.page.goto('/?action=beneficiaries');
+ await expect(one.page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+ await one.page.getByRole('button',{name:'Create list',exact:true}).first().click();
+ const listDialog=one.page.getByRole('dialog',{name:'Create list'});
+ await listDialog.locator('#beneficiary-create-list-name').fill('Profile acceptance');
+ await listDialog.getByRole('button',{name:'Create list',exact:true}).click();
+ await one.page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+ const beneficiaryDialog=one.page.getByRole('dialog',{name:'Beneficiary entry'});
+ const beneficiaryLookup=beneficiaryDialog.getByTestId('shared-taxpayer-tin-lookup');
+ await beneficiaryLookup.locator('#beneficiary-tin').fill('777777777777');
+ await beneficiaryLookup.getByRole('button',{name:'Search',exact:true}).click();
+ await expect(beneficiaryLookup.locator('#beneficiary-name')).toHaveValue('User 7');
+ await beneficiaryDialog.locator('#beneficiary-tag').click();
+ await beneficiaryDialog.locator('#beneficiary-tag-options [role="option"][data-option-value="clients"]').click();
+ await beneficiaryDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+ await expect(one.page.getByText('Beneficiary saved.',{exact:true})).toBeVisible({timeout:15000});
+
+ await one.page.goto('/?action=history');
+ await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
+ const payerCard=one.page.getByTestId('signed-in-payment-activity-cards')
+   .locator(':scope > li').filter({hasText:tx!.id}).first();
+ const profileLink=payerCard.getByRole('button',{name:'Open beneficiary profile for User 7'});
+ await expect(profileLink).toBeVisible({timeout:15000});
+ await profileLink.click();
+ const profile=one.page.getByTestId('beneficiary-profile');
+ await expect(profile).toBeVisible({timeout:15000});
+ const timeline=profile.getByTestId('beneficiary-chronological-timeline');
+ await expect(timeline.locator('li')).toHaveCount(1);
+ await expect(timeline).toContainText('Penalty');
+ await expect(timeline).toContainText('2025-26');
+ await expect(timeline).toContainText(tx!.id);
+ await expect(timeline).toContainText('৳ 23.50');
+ await expect(timeline).not.toContainText('Advance tax');
+ await expect(timeline).not.toContainText('৳ 150.25');
+
+ await two.page.goto('/?action=beneficiaries');
+ await expect(two.page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+ await expect(two.page.getByText('User 7',{exact:true})).toHaveCount(0);
  await two.page.goto('/?action=notifications');
  await expect(two.page.getByRole('heading',{name:'Payment notifications'})).toBeVisible({timeout:15000});
  await two.page.getByRole('button',{name:'View payment details'}).click();
