@@ -349,5 +349,5 @@ test('beneficiary-only signed-in dashboard does not present payments made by som
   await expect(dashboard.getByTestId('account-scenario-monthly'))
     .toContainText('No completed payments initiated by this account');
   // The received transaction is still visible in Activity.
-  await expect(dashboard.getByText('Recent scenario transactions').count()).resolves.toBeGreaterThanOrEqual(0);
+  await expect(dashboard.getByRole('list',{name:'Recent scenario transactions'})).toBeVisible();
 });
