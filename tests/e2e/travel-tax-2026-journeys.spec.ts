@@ -426,6 +426,56 @@ test('Travel Tax: duplicate passports cannot be confirmed or included in final t
   await modal.locator('#travel-mobile').fill('01712345678');
   await modal.getByRole('button',{name:'Continue to travel details'}).click();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
+  const completePassengers=modal.getByTestId('travel-passenger-list').locator('[data-complete="true"]');
+  await expect(completePassengers).toHaveCount(2);
+  const summaries=modal.getByTestId('travel-passenger-list').locator('.travel-flow__person-summary');
+  await expect(summaries).toHaveCount(2);
+  const maskedPassports=await Promise.all([
+    summaries.nth(0).locator('div').nth(1).locator('dd').innerText(),
+    summaries.nth(1).locator('div').nth(1).locator('dd').innerText(),
+  ]);
+  expect(maskedPassports[0]).not.toBe(maskedPassports[1]);
+  await fillTravelDetails(modal);
+  await modal.getByRole('button',{name:'Continue to review'}).click();
+  const reviewedPassengers=modal.locator('.travel-flow__passenger-table tbody tr');
+  await expect(reviewedPassengers).toHaveCount(2);
+  await expect(reviewedPassengers).toContainText('SAMPLE BANGLADESHI PASSENGER');
+});
+
+test('Travel Tax: incomplete foreign passenger shows a field error and recovers without losing the first passenger',async({page})=>{
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal=page.getByRole('dialog',{name:'Travel tax'});
+  await modal.locator('#travel-passport-first').fill('TEST123456');
+  await modal.locator('#travel-lookup-first').click();
+  await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
+  const passengerList=modal.getByTestId('travel-passenger-list');
+  await modal.getByRole('button',{name:'Add another passenger'}).click();
+  const second=passengerList.locator('.travel-flow__person').nth(1);
+  await second.getByRole('tab',{name:'Foreign passenger'}).click();
+  const passport=second.getByLabel('Passport number');
+  const name=second.getByLabel('Passenger name as on passport');
+  const birthDate=second.getByLabel('Date of birth');
+  const country=second.getByLabel('Country of nationality');
+  await passport.fill('FOREIGN123');
+  await name.fill('SAMPLE FOREIGN TRAVELLER');
+  await birthDate.fill('1992-05-10');
+  await expect(second.getByRole('button',{name:'Add passenger',exact:true})).toBeEnabled();
+  await second.getByRole('button',{name:'Add passenger',exact:true}).click();
+  await expect(country).toHaveAttribute('aria-invalid','true');
+  await expect(country).toBeFocused();
+  await expect(second.getByRole('status')).toContainText('country of nationality');
+  await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
+  await expect(passengerList.locator('[data-complete="true"]')).toHaveCount(1);
+  await country.fill('India');
+  await expect(country).not.toHaveAttribute('aria-invalid','true');
+  await second.getByRole('button',{name:'Add passenger',exact:true}).click();
+  await expect(passengerList.locator('[data-complete="true"]')).toHaveCount(2);
+  await expect(passengerList.locator('.travel-flow__person').nth(0)).toContainText('SAMPLE BANGLADESHI PASSENGER');
+  await expect(passengerList.locator('.travel-flow__person').nth(1)).toContainText('SAMPLE FOREIGN TRAVELLER');
+  await modal.locator('#travel-mobile').fill('01712345678');
+  await modal.getByRole('button',{name:'Continue to travel details'}).click();
+  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
 });
 
 test('Travel Tax: an invalid sample cannot fabricate a government passport lookup',async({page})=>{
