@@ -243,6 +243,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   challanNo:stringValue(d.receiptReference)||tx.id,tokenNumber:'—',
   paymentCategory:category,assessmentYear:allocationYears.length?allocationYears.join(', '):stringValue(d.assessmentYear)||'—',
   payerName:stringValue(d.payerName)||'—',payerTin:stringValue(d.payerTin)||'—',
+  taxpayerName:stringValue(d.taxpayerName)||undefined,
   taxpayerTin:stringValue(d.taxpayerTin),receiptMobile:stringValue(d.receiptMobile),
   noticeReference:stringValue(d.noticeReference),
   isRepresentativePayment:d.payerMode==='OTHER',
