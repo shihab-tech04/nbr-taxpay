@@ -6,7 +6,7 @@ import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
 import {BentoPaymentAnalytics} from './BentoPaymentAnalytics';
-import {chooseDashboardChartSource,serviceForCategory,type DashboardChartSource,type DashboardChartService} from './dashboardBentoAnalytics';
+import {chooseDashboardChartSource,matchesDashboardChartDrilldown,type DashboardChartSource,type DashboardChartService} from './dashboardBentoAnalytics';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
@@ -213,6 +213,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [dashboardHistoryCompletedOnly,setDashboardHistoryCompletedOnly]=useState(false);
   useEffect(()=>{
     if(route!=='history')return;
+    // A chart drill-down is a new scoped view, never inherit unrelated
+    // Activity filters from a previous search or payment head.
+    if(routeParams.dashboardSource==='recorded'||routeParams.dashboardSource==='example'){
+      setKind('all');setStatus('all');setQuery('');
+      setMonthFilter('all');setReviewFilter(null);
+    }
     const category=routeParams.categoryFilter;
     if(['income','tds','ait','travel'].includes(String(category)))setKind(category as Kind);
     const month=routeParams.monthFilter;
@@ -330,12 +336,20 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     .sort((a,b)=>a.name.localeCompare(b.name));
   const filtered=historyScoped.filter(x=>{
     const people=transactionBeneficiaries(x);
+    // Only an exact allocation match may satisfy a service/recipient/tag
+    // drilldown; parent-batch metadata can refer to other tax years.
+    const needsAllocationMatch=dashboardHistoryService!=='all'||(
+      dashboardHistorySource!=='all'&&
+      (beneficiaryFilter!=='all'||paymentTagFilter!=='all'));
+    const allocationMatch=!needsAllocationMatch||matchesDashboardChartDrilldown(
+      x,year,x.sql?'recorded':'example',savedTagPeople,DEMO_USERS.user1.tin,
+      dashboardHistoryService,
+      beneficiaryFilter==='all'?undefined:beneficiaryFilter,
+      paymentTagFilter==='all'?undefined:paymentTagFilter);
     const searchFields=[x.ref,x.title,x.challan||'',x.detail,x.typeLabel||'',payerName(x),...people.flatMap(p=>
       [p.name,p.tin,p.tag||'',...p.heads,...p.assessmentYears])];
     return (dashboardHistorySource==='all'||((dashboardHistorySource==='recorded')===Boolean(x.sql)))&&
-      (dashboardHistoryService==='all'||(x.sql
-        ?x.sql.receipts.some(receipt=>serviceForCategory(receipt.paymentCategory)===dashboardHistoryService)
-        :x.kind===dashboardHistoryService))&&
+      allocationMatch&&
       (!dashboardHistoryCompletedOnly||(x.state==='POSTED'&&
         (Boolean(x.sql)||['income','ait','travel'].includes(x.kind))))&&
       (kind==='all'||kind===x.kind)&&(status==='all'||status===x.state)&&

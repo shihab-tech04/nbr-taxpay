@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type {ChallanReceipt} from '../src/types/tax';
 import {
-  projectDashboardChartRecords,chooseDashboardChartSource,formatDashboardChartMoney,dashboardChartPercentage,
+  projectDashboardChartRecords,chooseDashboardChartSource,matchesDashboardChartDrilldown,formatDashboardChartMoney,dashboardChartPercentage,
   type DashboardChartRecord
 } from '../src/components/screens/dashboardBentoAnalytics';
 
@@ -218,4 +218,31 @@ test('ranked beneficiaries are never fabricated from missing recipient IDs or ex
   assert.equal(saved.byBeneficiary[0].amountMinor,2500n);
   const selected=projectDashboardChartRecords(rows,'2025-26','example',[],owner,'travel');
   assert.deepEqual(selected.byBeneficiary.map(item=>item.tin),[friend]);
+});
+
+
+test('chart-to-history drilldown requires the same year, service, recipient and relationship allocation',()=>{
+  const batch=recorded('combined-history',[
+    receipt('receipt-1','TRAVEL_TAX',[
+      {tin:family,year:'2025-26',minor:12500}
+    ]),
+    receipt('receipt-2','ADVANCE_TAX',[
+      {tin:friend,year:'2026-27',minor:30000},
+      {tin:family,year:'2026-27',minor:20000}
+    ])
+  ]);
+  const match=(year:string,service:'all'|'travel'|'ait',recipient?:string,tag?:'family'|'friends')=>
+    matchesDashboardChartDrilldown(batch,year,'recorded',people,owner,service,recipient,tag);
+  // Payment parent exists in both years, but its Travel Tax amount does not.
+  assert.equal(match('2026-27','travel'),false);
+  assert.equal(match('2025-26','travel',family,'family'),true);
+  assert.equal(match('2025-26','ait'),false);
+  assert.equal(match('2026-27','ait',family,'family'),true);
+  assert.equal(match('2026-27','ait',friend,'friends'),true);
+  // Distinct recipient and relationship matches in one batch are not the
+  // same allocation. This must not produce a false-positive history row.
+  assert.equal(match('2026-27','ait',friend,'family'),false);
+  assert.equal(match('2026-27','ait',family,'friends'),false);
+  assert.equal(match('2026-27','travel',family,'family'),false);
+  assert.equal(matchesDashboardChartDrilldown(batch,'2026-27','example',people,owner),false);
 });
