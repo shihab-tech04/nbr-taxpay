@@ -248,6 +248,7 @@ jobs:
             psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f "$migration" >/dev/null
           done < <(find "$OFFICE_DIR/supabase/migrations" -maxdepth 1 -name '*.sql' -type f | sort)
           node tests/integration/pairedTaxpayerOfficeSql.mjs
+          node tests/integration/pairedCorrectionOfficeSql.mjs
           echo "PASS: original source v3 payment and independent Office SQL readback, retry and officer state"
 
 
