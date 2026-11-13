@@ -91,8 +91,8 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await transactionCard.getByText('View allocations',{exact:false}).click();
  await expect(transactionCard.getByText('৳23.50',{exact:true})).toBeVisible();
 
- // A payer's saved beneficiary profile must project only that recipient's
- // immutable allocation from the same combined transaction. The receiver's
+ // Later saving a one-time TIN recipient from this payer's actual SQL-backed
+ // history must create only a private address-book row. The receiver's
  // account must not inherit the payer's private address book.
  await one.page.goto('/?action=beneficiaries');
  await expect(one.page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
@@ -100,12 +100,20 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  const listDialog=one.page.getByRole('dialog',{name:'Create list'});
  await listDialog.locator('#beneficiary-create-list-name').fill('Profile acceptance');
  await listDialog.getByRole('button',{name:'Create list',exact:true}).click();
- await one.page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+ await one.page.goto('/?action=history');
+ const payerHistory=one.page.getByTestId('beneficiary-payment-history');
+ await expect(payerHistory).toBeVisible({timeout:15000});
+ const mobileHistoryRows=payerHistory.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem');
+ const oneTimeRecipient=mobileHistoryRows.filter({hasText:'777777777777'}).filter({hasText:'Penalty'}).filter({hasText:'2025-26'});
+ await expect(oneTimeRecipient).toHaveCount(1,{timeout:15000});
+ await expect(oneTimeRecipient).toContainText(/৳\s*23\.50/);
+ await oneTimeRecipient.getByRole('button',{name:'View receipt'}).click();
+ const recipientReceipt=one.page.getByRole('dialog',{name:'Payment receipt'});
+ await expect(recipientReceipt).toContainText(tx!.id);
+ await recipientReceipt.getByTestId('account-save-beneficiary-receipt').click();
  const beneficiaryDialog=one.page.getByRole('dialog',{name:'Beneficiary entry'});
- const beneficiaryLookup=beneficiaryDialog.getByTestId('shared-taxpayer-tin-lookup');
- await beneficiaryLookup.locator('#beneficiary-tin').fill('777777777777');
- await beneficiaryLookup.getByRole('button',{name:'Search',exact:true}).click();
- await expect(beneficiaryLookup.locator('#beneficiary-name')).toHaveValue('User 7');
+ await expect(beneficiaryDialog.locator('#beneficiary-tin')).toHaveValue('777777777777');
+ await expect(beneficiaryDialog.locator('#beneficiary-name')).toHaveValue('User 7');
  await beneficiaryDialog.locator('#beneficiary-tag').click();
  await beneficiaryDialog.locator('#beneficiary-tag-options [role="option"][data-option-value="clients"]').click();
  await beneficiaryDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
@@ -122,14 +130,33 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(savedLists[0]).toMatchObject({owner_uid:payer.id,name:'Profile acceptance'});
  const savedListId=savedLists[0].id;
  const contactQuery=new URL('/rest/v1/taxpay_beneficiaries',u.origin);
- contactQuery.searchParams.set('select','id,owner_uid,list_id,tin');
+ contactQuery.searchParams.set('select','id,owner_uid,list_id,tin,display_name,tag,relationship,other_label');
  contactQuery.searchParams.set('owner_uid','eq.'+payer.id);
  contactQuery.searchParams.set('list_id','eq.'+savedListId);
  const contactResponse=await fetch(contactQuery,{headers:{apikey:anonKey,Authorization:'Bearer '+payer.session.access_token}});
  expect(contactResponse.status).toBe(200);
- const savedContacts=await contactResponse.json() as Array<{id:string;owner_uid:string;list_id:string;tin:string}>;
+ const savedContacts=await contactResponse.json() as Array<{id:string;owner_uid:string;list_id:string;tin:string;display_name:string;tag:string;relationship:string|null;other_label:string|null}>;
  expect(savedContacts).toHaveLength(1);
- expect(savedContacts[0]).toMatchObject({owner_uid:payer.id,list_id:savedListId,tin:'777777777777'});
+ expect(savedContacts[0]).toMatchObject({owner_uid:payer.id,list_id:savedListId,tin:'777777777777',display_name:'User 7',tag:'clients',relationship:null,other_label:null});
+ const recipientCannotReadPayerContact=await fetch(new URL('/rest/v1/taxpay_beneficiaries?select=id,tin&tin=eq.777777777777',u.origin),{
+  headers:{apikey:anonKey,Authorization:'Bearer '+beneficiary.session.access_token}
+ });
+ expect(recipientCannotReadPayerContact.status).toBe(200);
+ expect(await recipientCannotReadPayerContact.json()).toEqual([]);
+
+ // A separate browser with the same payer Auth session reads the SQL-backed
+ // list after navigation/refresh; the saved contact remains owner-scoped.
+ const payerSecondContext=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:320,height:720}});
+ const payerSecondPage=await payerSecondContext.newPage();
+ await payerSecondPage.goto('/?action=beneficiaries#access_token='+encodeURIComponent(payer.session.access_token)+
+  '&refresh_token='+encodeURIComponent(payer.session.refresh_token)+'&token_type=bearer&expires_in=3600&expires_at='+
+  (payer.session.expires_at||Math.floor(Date.now()/1000)+3600));
+ await expect(payerSecondPage.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+ await expect(payerSecondPage.getByText('User 7',{exact:true})).toBeVisible({timeout:15000});
+ await expect(payerSecondPage.getByText('777777777777',{exact:true})).toBeVisible();
+ await payerSecondPage.reload();
+ await expect(payerSecondPage.getByText('User 7',{exact:true})).toBeVisible({timeout:15000});
+ await payerSecondContext.close();
 
  await one.page.goto('/?action=history');
  await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
