@@ -152,7 +152,7 @@ test('real account restores its own language and selected beneficiary list in a 
   await expect(again.getByText('ভাষা পরিবর্তন করেছেন · বাংলা')).toBeVisible();
   await again.reload();
   await expect(again.getByRole('heading',{name:'আমার সাম্প্রতিক কার্যক্রম'})).toBeVisible();
-  await expect(again.getByText('উপকারভোগীর তালিকা নির্বাচন করেছেন · উপকারভোগী')).toBeVisible();
+  await expect(again.getByText('উপকারভোগীর তালিকা নির্বাচন করেছেন · উপকারভোগী').first()).toBeVisible();
 
   expect((await authUser(aSession.access_token)).user_metadata?.taxpay_last_beneficiary_list_id).toBe(familyId);
   await second.close();
