@@ -95,9 +95,10 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await expect(selectedListButton(first)).toContainText(listName);
 
     await first.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-    await first.getByRole('dialog',{name:'Choose how to add beneficiaries'})
-      .getByRole('button',{name:'Add one beneficiary'}).click();
     dialog=first.getByRole('dialog',{name:'Beneficiary entry'});
+    await expect(dialog).toBeVisible();
+    await expect(first.getByRole('dialog',{name:'Choose how to add beneficiaries'})).toHaveCount(0);
+    await expect(first.getByText('Import from Excel',{exact:true})).toHaveCount(0);
     await dialog.locator('#beneficiary-tin').fill(tin);
     await dialog.locator('#beneficiary-name').fill(personName);
     await chooseBeneficiaryOption(dialog,'beneficiary-tag','clients');
