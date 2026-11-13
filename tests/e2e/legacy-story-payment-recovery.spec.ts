@@ -246,7 +246,11 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(continueToAmount,'Pay Again draft must restore a valid owner and beneficiary state').toBeEnabled({timeout:5000});
   await continueToAmount.click();
   const continueToChannel=resumed.getByRole('button',{name:'Continue to payment channel'});
-  await expect(continueToChannel,'Restored payment allocations must remain valid').toBeEnabled({timeout:5000});
+  const resumedAllocation=resumed.getByTestId('other-tax-line').first();
+  await expect(resumedAllocation.locator('select')).toHaveValue('');
+  await expect(continueToChannel,'The prior assessment year must be reselected on Pay Again').toBeDisabled();
+  await resumedAllocation.locator('select').selectOption('2025-26');
+  await expect(continueToChannel,'Restored payment allocations must become valid after year selection').toBeEnabled({timeout:5000});
   await continueToChannel.click();
   await resumed.getByRole('button',{name:'Pay online'}).click();
   await resumed.getByRole('button',{name:'Mobile banking'}).click();
