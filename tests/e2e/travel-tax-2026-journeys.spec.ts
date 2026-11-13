@@ -409,6 +409,7 @@ test('Travel Tax: every passenger must be confirmed and Back preserves confirmat
   await modal.getByRole('button',{name:'Add another passenger'}).click();
 
   const people=modal.getByTestId('travel-passenger-list').locator('.travel-flow__person');
+  const completePeople=modal.getByTestId('travel-passenger-list').locator('.travel-flow__person[data-complete="true"]');
   await expect(people).toHaveCount(2);
   const first=people.nth(0), second=people.nth(1);
   await second.getByLabel('Passport number').fill('TEST230001');
