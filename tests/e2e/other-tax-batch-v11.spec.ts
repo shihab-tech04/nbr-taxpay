@@ -492,8 +492,7 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     if (relationship === 'OTHER') await dialog.locator('#guest-payer-name').fill('Sample Payer');
     await dialog.locator('#guest-phone').fill('01712345678');
     await expect(dialog.getByTestId('other-tax-taxpayer-list')).toBeVisible();
-    if (relationship === 'SELF') await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
-    else await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
     await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
     await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
     await expect(dialog.locator('[data-head-group]')).toHaveCount(6);
@@ -505,6 +504,25 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     await dialog.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('250');
     await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 250');
   }
+});
+
+test('walk-in self payer can include a confirmed second taxpayer', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+  const second = dialog.getByTestId('other-tax-taxpayer');
+  await second.locator('input[id^="other-tax-tin-"]').fill('222222222222');
+  await second.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  const next = dialog.getByRole('button', { name: 'Continue to purpose & amount' });
+  await expect(next).toBeDisabled();
+  await second.getByRole('button', { name: 'Add taxpayer', exact: true }).click();
+  await next.click();
+  await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
 });
 
 test('signed-in SELF Other Tax preserves the locked account identity and canonical head catalogue', async ({ page }) => {
