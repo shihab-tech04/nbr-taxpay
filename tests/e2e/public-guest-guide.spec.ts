@@ -83,7 +83,7 @@ test('Help Center typography and interactions remain usable at each viewport', a
   });
   expect(fontSizes.every(size => size >= 16), `Small UI text: ${fontSizes.join(', ')}`).toBe(true);
 
-  await guide.getByRole('button', { name: 'Travel tax' }).click();
+  await guide.locator('.public-guide-topics').getByRole('button', { name: 'Travel tax', exact: true }).click();
   await expect(guide.getByRole('heading', { name: 'Travel tax', exact: true })).toBeVisible();
   await guide.getByRole('searchbox', { name: 'Search the guide' }).fill('rates');
   await expect(guide.getByText('Are the rates final?')).toBeVisible();
@@ -186,9 +186,9 @@ test('Guide search covers steps and answers, while topic FAQs stay contextual', 
   await expect(field).toBeFocused();
   await expect(clear).toHaveCount(0);
   await expect(guide.getByRole('navigation',{name:'Guide topics'})).toBeVisible();
-  await guide.getByRole('button',{name:'Travel tax'}).click();
+  await guide.locator('.public-guide-topics').getByRole('button',{name:'Travel tax',exact:true}).click();
   await expect(guide.locator('.public-guide-questions')).toContainText('Are the rates final?');
-  await expect(guide.getByRole('button',{name:'Travel tax'})).toHaveAttribute('aria-current','true');
+  await expect(guide.locator('.public-guide-topics').getByRole('button',{name:'Travel tax',exact:true})).toHaveAttribute('aria-current','true');
 });
 
 test('User guide official reference belongs to the reading card, not a separate floating strip', async ({ page }) => {
