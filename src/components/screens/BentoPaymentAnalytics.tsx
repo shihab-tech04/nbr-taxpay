@@ -160,6 +160,11 @@ export const BentoPaymentAnalytics:React.FC<{
             {tr('Top 5','শীর্ষ ৫')}
           </button>
         </div>
+        {(service!=='all'||tag!==null)&&<button type="button" className="taxpay-bento-analytics__clear"
+          onClick={()=>{setService('all');setTag(null);}}
+          data-testid="dashboard-reset-filters">
+          {tr('Reset chart filters','চার্ট ফিল্টার মুছুন')}
+        </button>}
         {filtered.totalMinor>0n&&beneficiaryView==='top'&&<label className="taxpay-bento-analytics__relation-filter">
           <span>{tr('Relationship','সম্পর্ক')}</span>
           <select aria-label={tr('Filter top beneficiaries by relationship','সম্পর্ক অনুযায়ী শীর্ষ উপকারভোগী ফিল্টার')}
