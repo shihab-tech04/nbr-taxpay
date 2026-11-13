@@ -275,15 +275,18 @@ for (const [language, project] of [['en', 'desktop-1280'], ['bn', 'mobile-320']]
     const certificateAction = language === 'bn' ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate';
     const downloadAction = language === 'bn' ? 'ডাউনলোড' : 'Download';
     const register = page.getByTestId('account-certificate-record-register');
+    const visibleRecords = page.getByTestId(language === 'bn'
+      ? 'account-certificate-payment-cards' : 'account-certificate-payment-table');
     await expect(page.getByRole('heading', { name: pageHeading, exact: true })).toBeVisible();
     await expect(page.getByTestId('issued-tax-credit-certificates'))
       .toContainText(language === 'bn' ? 'ইস্যুকারী কর্তৃপক্ষের যাচাইকৃত কর ক্রেডিট সনদপত্র নেই' :
         'No issuer-verified tax credit certificates are available');
-    await expect(register.getByText(accountCertificateId, { exact: true })).toBeVisible();
+    await expect(visibleRecords).toBeVisible();
+    await expect(visibleRecords.getByText(accountCertificateId, { exact: true })).toBeVisible();
     await expect(register).toContainText('Nusrat Jahan');
     await expect(register).toContainText('2026-27');
     await expect(register).toContainText('৳');
-    await expect(register.getByRole('button', { name: receiptAction, exact: true })).toBeVisible();
+    await expect(visibleRecords.getByRole('button', { name: receiptAction, exact: true })).toBeVisible();
 
     await register.getByRole('button', { name: receiptAction, exact: true }).click();
     const paper = page.locator('.receipt-view__paper');
