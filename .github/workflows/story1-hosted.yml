@@ -1,3 +1,4 @@
+# Legacy workflow/check name retained for branch-protection compatibility; all checks below are local-only.
 name: Story 1 Hosted Payment Sync
 on:
   pull_request:
@@ -22,7 +23,23 @@ jobs:
         with: { node-version: '22' }
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
-      - name: Check both hosted Supabase simulations
-        run: node tests/external/story1-hosted.mjs
-      - name: Check two-item payment synchronization and retry
-        run: node --import tsx tests/external/story1-batch-hosted.ts
+      - name: Verify legacy hosted test entrypoints fail closed
+        shell: bash
+        run: |
+          set +e
+          node tests/external/story1-hosted.mjs >/tmp/story1-single.out 2>&1
+          single_status=$?
+          node --import tsx tests/external/story1-batch-hosted.ts >/tmp/story1-batch.out 2>&1
+          batch_status=$?
+          set -e
+          test "$single_status" -ne 0
+          test "$batch_status" -ne 0
+          grep -Fq 'Disabled: this hosted test previously wrote QA payment rows' /tmp/story1-single.out
+          grep -Fq 'Disabled: this hosted batch test previously wrote QA payment rows' /tmp/story1-batch.out
+          echo 'PASS: both legacy hosted scripts stop before any network request'
+      - name: Type-check application
+        run: npm run lint
+      - name: Test two-item sync and retry with in-memory fixtures
+        run: node --import tsx --test tests/otherTaxBatchSubmission.test.ts
+      - name: Build application
+        run: npm run build
