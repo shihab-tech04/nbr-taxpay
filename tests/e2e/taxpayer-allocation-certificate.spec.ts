@@ -67,6 +67,8 @@ test('shared receipt allocation labels and values stay in Bengali', async ({ pag
   const paper = page.locator('.receipt-view__paper');
   await expect(paper).toBeVisible();
   await expect(paper).toHaveAttribute('lang', 'bn');
+  await expect(paper.getByRole('heading', { name: 'পেমেন্ট সনদ' })).toBeVisible();
+  await expect(paper.getByTestId('payment-certificate-reference')).toContainText('SK-PC-' + transactionId);
   await expect(paper).toContainText('করদাতাভিত্তিক পেমেন্ট বরাদ্দ');
   await expect(paper).toContainText('user8');
   await expect(paper).toContainText('user9');

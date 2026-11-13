@@ -198,12 +198,6 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
         onClick={onNewPayment}>{bn ? 'নতুন পেমেন্ট' : 'New payment'}</button>}
       <div className="receipt-view__action-group">
-        {canViewCertificate && !certificate && <button type="button"
-          className="receipt-view__action receipt-view__action--secondary"
-          onClick={() => { setDownloadError(false); setShowCertificate(value => !value); }}>
-          {showCertificate ? (bn ? 'রসিদ দেখুন' : 'View receipt')
-            : (bn ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate')}
-        </button>}
         <button type="button" className="receipt-view__action receipt-view__action--secondary"
           disabled={downloading} onClick={downloadCertificate}>
           <Download size={18} aria-hidden="true" /><span>{labels.export}</span>
@@ -228,6 +222,12 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     <div className={`receipt-view receipt-view--embedded${bn ? ' font-bengali' : ''}`} lang={language}>
       {footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions}
 
+      {canViewCertificate && !certificate && <button type="button"
+        className="receipt-view__action receipt-view__action--secondary no-print"
+        onClick={() => { setDownloadError(false); setShowCertificate(value => !value); }}>
+        {showCertificate ? (bn ? 'রসিদ দেখুন' : 'View receipt')
+          : (bn ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate')}
+      </button>}
       {downloadError && <p role="alert" className="no-print">
         {bn ? 'সনদ ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।' : 'Unable to download the certificate. Try again.'}
       </p>}
