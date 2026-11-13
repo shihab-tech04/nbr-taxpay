@@ -69,13 +69,17 @@ test('NBR tax and VAT e-Payment help is current and bilingual on the public guid
     const source = page.locator('.public-guide-source').first();
     if (language === 'en') {
       await expect(page.getByRole('heading', { name: 'Sohojkor user guide' })).toBeVisible();
-      await expect(source).toContainText('For tax or VAT e-Payment problems, call 16555.');
-      await expect(source.getByRole('link', { name: 'Call NBR Tax and VAT e-Payment hotline (16555)' }))
+      await expect(source).toContainText('For Tax e-Payment challan problems, call 09611-777111; for VAT e-Payment challan problems, call 16555.');
+      await expect(source.getByRole('link', { name: 'Call NBR Tax e-Payment challan support (09611-777111)' }))
+        .toHaveAttribute('href', 'tel:09611777111');
+      await expect(source.getByRole('link', { name: 'Call NBR VAT e-Payment challan support (16555)' }))
         .toHaveAttribute('href', 'tel:16555');
     } else {
       await expect(page.getByRole('heading', { name: 'সহজকর ব্যবহার নির্দেশিকা' })).toBeVisible();
-      await expect(source).toContainText('কর বা ভ্যাট ই-পেমেন্ট সমস্যায় ১৬৫৫৫ নম্বরে কল করুন।');
-      await expect(source.getByRole('link', { name: 'এনবিআর কর ও ভ্যাট ই-পেমেন্ট হটলাইনে কল করুন (১৬৫৫৫)' }))
+      await expect(source).toContainText('আয়কর ই-পেমেন্ট চালান পেতে সমস্যায় ০৯৬১১-৭৭৭১১১ এবং ভ্যাট ই-পেমেন্ট চালান পেতে সমস্যায় ১৬৫৫৫ নম্বরে কল করুন।');
+      await expect(source.getByRole('link', { name: 'এনবিআর আয়কর ই-পেমেন্ট চালান সহায়তায় কল করুন (০৯৬১১-৭৭৭১১১)' }))
+        .toHaveAttribute('href', 'tel:09611777111');
+      await expect(source.getByRole('link', { name: 'এনবিআর ভ্যাট ই-পেমেন্ট চালান সহায়তায় কল করুন (১৬৫৫৫)' }))
         .toHaveAttribute('href', 'tel:16555');
     }
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
