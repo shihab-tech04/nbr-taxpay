@@ -38,6 +38,10 @@ test('User ID login continues into the taxpayer workspace and survives refresh',
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
   await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+  const demoOtp=dialog.getByTestId('demo-otp-input');
+  await expect(demoOtp).toBeVisible();
+  await demoOtp.fill('111111');
+  await dialog.getByTestId('taxpayer-login-submit').click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.goto(site+'?action=beneficiaries');
