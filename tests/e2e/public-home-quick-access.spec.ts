@@ -855,7 +855,17 @@ test('six benefit destinations work by pointer and keyboard in English and Bangl
             await card.click({ position: { x: box.width - 6, y: box.height - 6 } });
           }
           await expect(page).toHaveURL(new RegExp(`[?&]action=${item.destination}(?:&|$)`));
+          if (language === 'en') {
+            await expect(page.getByText('Sign in to your Sohojkor account to continue.')).toBeVisible();
+            await expect(page.getByText(/Korbritto/i)).toHaveCount(0);
+          } else {
+            await expect(page.getByText('আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন।')).toBeVisible();
+            await expect(page.getByText(/করবৃত্ত/)).toHaveCount(0);
+          }
         }
+        // Return to a fresh landing state so a modal or private-route gate from one
+        // destination cannot intercept the next card's real pointer interaction.
+        await page.goto(`/?action=landing&lang=${language}`);
       }
     }
   }
