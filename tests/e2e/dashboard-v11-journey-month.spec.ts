@@ -5,10 +5,11 @@ const preview='/?action=taxpayer_home&demoUser=user1';
 test('Overview tax-year chart replaces monthly chart while Activity retains its complete month filters',async({page})=>{
   await page.goto(preview);
   const bento=page.getByTestId('taxpayer-overview-bento');
-  await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
+  await expect(bento.getByRole('heading',{name:'By payment service'})).toBeVisible();
   await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
-  await expect(bento.getByRole('button',{name:'View Pending: 1'})).toBeVisible();
-  await expect(bento.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
+  await expect(bento.locator('.taxpay-bento-hero__status')).toContainText('Completed Payments');
+  await expect(bento.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await bento.getByRole('button',{name:'View all activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await page.getByRole('button',{name:'Filter',exact:true}).click();

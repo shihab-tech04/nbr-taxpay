@@ -1,3 +1,5 @@
+import '../../styles/taxpay-service-choice.css';
+import '../../styles/taxpay-payment-form.css';
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -5,12 +7,14 @@ import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, I
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
+import type { PaymentReuse } from '../../services/paymentReuse';
+import {activePreviewSession} from '../../services/previewAccountSession';
 import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
 import { deletePaymentFormDraft, type PaymentDraftActor, type PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
 import {
   LAND_PORT_NAMES, SAMPLE_BD_PASSPORTS, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_YEAR,
-  makeTravelPassenger, travelPartyTotal, validateTravelParty, assessTravelPassenger, travelPassengerAge,
+  makeTravelPassenger, travelPartyTotal, validateTravelParty, assessTravelPassenger, travelPassengerAge, dhakaTravelDate, isPlannedTravelDate,
   type TravelMode, type TravelPassenger, type TravellerNationality,
 } from '../../data/travelTax2026';
 import { formatCurrency } from '../../services/numberFormat';
@@ -26,6 +30,7 @@ interface TravelTaxProps {
   embedded?: boolean;
   /** Previously verified account-owned draft selected at Pay Tax entry. */
   initialDraft?: PaymentFormDraft;
+  initialReuse?: PaymentReuse;
   fourStepJourney?: boolean;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
@@ -40,7 +45,7 @@ function maskPassport(passport: string) {
  * This is a UX/reference-data preview, not a real passport verification or
  * government A-Challan integration. An API owner can replace those boundaries.
  */
-export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, onBackToService, onStageChange }) => {
+export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, initialReuse, onBackToService, onStageChange }) => {
   const { language, navigate, addPaymentReceipt, previewAccount } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
@@ -71,6 +76,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const [bankSlipPending, setBankSlipPending] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [selectedAccountDraft, setSelectedAccountDraft] = useState<PaymentFormDraft | null>(null);
+  const [draftFooterTarget, setDraftFooterTarget] = useState<HTMLDivElement | null>(null);
   const [paymentNonce, setPaymentNonce] = useState(() => crypto.randomUUID());
 
 
@@ -120,6 +126,20 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     // Reconfirm passenger identities; never restore prior approvals or gateway choices.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialDraft?.id]);
+  useEffect(() => {
+    if (!initialReuse) return;
+    const verifiedOwner = authenticatedUser?.id === initialReuse.ownerUid;
+    const previewOwner = !authenticatedUser && previewAccount?.id === initialReuse.ownerUid &&
+      activePreviewSession()?.profileId === initialReuse.ownerUid;
+    if (initialReuse.service !== 'TRAVEL_TAX' || (!verifiedOwner && !previewOwner)) {
+      setError('Account changed. Reopen your payment history before using Pay Again.');
+      return;
+    }
+    try { restoreTravelDraft(initialReuse.formPayload); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Previous travel payment could not be copied.'); }
+    // A different history record remounts this form.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialReuse?.sourcePaymentId,authenticatedUser?.id]);
   useEffect(() => {
     if (!selectedAccountDraft || !createdReceipt || bankSlipPending) return;
     const actor: PaymentDraftActor | null = authenticatedUser
@@ -225,6 +245,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     if (!selectedPort) return tr('Select a departure port.', 'যাত্রা শুরুর বন্দর নির্বাচন করুন।');
     if (!destination.trim()) return tr('Select or enter a destination.', 'গন্তব্য নির্বাচন বা লিখুন।');
     if (!travelDate) return tr('Select your travel date.', 'ভ্রমণের তারিখ নির্বাচন করুন।');
+    if (!isPlannedTravelDate(travelDate))
+      return tr('Select today or a future travel date.', 'আজকের বা ভবিষ্যতের ভ্রমণের তারিখ নির্বাচন করুন।');
     return null;
   };
   const firstIdentityIssue = (): {id: string; message: string} | null => {
@@ -675,9 +697,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     </button>
   ) : (
     <button type="button" className="travel-flow__primary"
+      aria-label={step === 0 ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান') : tr('Continue to review','পেমেন্ট পর্যালোচনায় যান')}
       disabled={step === 0 && !canContinueToTravel} onClick={continueStep}>
-      {step === 0 ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান')
-        : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}
+      <span className="travel-flow__action-long">{step === 0 ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান')
+        : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}</span>
+      <span className="travel-flow__action-short" aria-hidden="true">{tr('Continue', 'এগিয়ে যান')}</span>
       <ArrowRight size={17} aria-hidden="true"/>
     </button>
   );
@@ -709,11 +733,17 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
           ))}
         </nav>}
         <form id="travel-tax-form" onSubmit={submit} noValidate>
+          {initialReuse && !createdReceipt && <p role="status" data-testid="travel-pay-again-notice"
+            className="rounded-lg border border-taxpay-border bg-taxpay-light px-3 py-2 text-sm text-taxpay-dark">
+            {tr('Copied from your previous travel payment. Confirm each passenger again, enter passport and date of birth, and choose a new travel date before paying.',
+              'আগের ভ্রমণ করের তথ্য থেকে কপি করা হয়েছে। পরিশোধের আগে প্রতিটি যাত্রীর পাসপোর্ট ও জন্মতারিখ পুনরায় দিন, যাচাই করুন এবং নতুন ভ্রমণের তারিখ নির্বাচন করুন।')}
+          </p>}
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert" tabIndex={-1}>{error}</p>}
           {(authenticatedUser || previewAccount) && !createdReceipt &&
             <AccountPaymentDraftControls service="TRAVEL_TAX" language={language}
               snapshot={snapshotTravelDraft} restore={restoreTravelDraft}
-              selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft} />}
+              selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft}
+              guardOnly={step >= 2} actionTarget={embedded ? draftFooterTarget : undefined} />}
 
           {step === 0 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য')}>
             <PaymentFormSection number={1} title={tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য')} hideHeading={embedded}>
@@ -864,7 +894,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 </div>
                 <div className="travel-flow__field travel-flow__field--full">
                   <label htmlFor="travel-departure-date">{tr('Travel date','ভ্রমণের তারিখ')} *</label>
-                  <input id="travel-departure-date" type="date" value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); }}/>
+                  <input id="travel-departure-date" type="date" min={dhakaTravelDate()} value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); }}/>
                 </div>
               </div>
               <button type="button" className="travel-flow__edit-travel" onClick={() => stepTo(0)}>
@@ -985,6 +1015,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </dl>
           </details>}
           <PaymentJourneyFooter className="travel-flow__footer-actions"
+            leading={(authenticatedUser || previewAccount) && !createdReceipt && step < 2
+              ? <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />
+              : null}
             back={!createdReceipt && step > 0 && <button type="button" className="tax-service-choice__cancel"
               onClick={step === 0 ? onBackToService : () => stepTo((step-1) as 0 | 1 | 2 | 3)}>
               <ArrowLeft size={16} aria-hidden="true"/>{tr('Back','ফিরুন')}

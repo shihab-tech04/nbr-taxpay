@@ -21,6 +21,7 @@ on:
       - 'tests/e2e/other-tax-bulk-summary-ux.spec.ts'
       - 'tests/e2e/other-tax-all-heads-visible.spec.ts'
       - 'tests/e2e/other-tax-batch-submit.spec.ts'
+      - 'tests/e2e/walkin-payer-tin.spec.ts'
       - '.github/workflows/other-tax-batch-v11.yml'
   push:
     branches: [main]
@@ -40,8 +41,14 @@ on:
       - 'tests/e2e/shared-taxpayer-tin-lookup.spec.ts'
       - 'tests/e2e/payment-payer-email-layout.spec.ts'
       - 'tests/e2e/other-tax-batch-submit.spec.ts'
+      - 'tests/e2e/walkin-payer-tin.spec.ts'
       - 'tests/e2e/other-tax-all-heads-visible.spec.ts'
       - '.github/workflows/other-tax-batch-v11.yml'
+
+concurrency:
+  group: taxpay-other-tax-v11-${{ github.ref }}
+  # Cancel superseded PR checks only; production checks remain active.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -63,14 +70,19 @@ jobs:
         run: |
           npm run lint
           npm run test:domain
+      - name: Restore headless Chromium browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: taxpay-pw-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v1
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Test grouped heads, individual records and retry recovery
         env:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts tests/e2e/other-tax-travel-interaction-parity.spec.ts tests/e2e/shared-taxpayer-tin-lookup.spec.ts tests/e2e/other-tax-batch-submit.spec.ts tests/e2e/other-tax-bulk-summary-ux.spec.ts tests/e2e/other-tax-all-heads-visible.spec.ts tests/e2e/payment-payer-email-layout.spec.ts
+        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts tests/e2e/other-tax-travel-interaction-parity.spec.ts tests/e2e/shared-taxpayer-tin-lookup.spec.ts tests/e2e/other-tax-batch-submit.spec.ts tests/e2e/other-tax-bulk-summary-ux.spec.ts tests/e2e/other-tax-all-heads-visible.spec.ts tests/e2e/payment-payer-email-layout.spec.ts tests/e2e/walkin-payer-tin.spec.ts
       - name: Upload Playwright evidence on failure
         if: failure()
         uses: actions/upload-artifact@v4

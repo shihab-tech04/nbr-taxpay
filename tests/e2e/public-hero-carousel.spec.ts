@@ -4,18 +4,12 @@ import { setWorkspaceLanguage } from './workspace-language';
 
 const illustrations = ['intro-v9', 'return-v9', 'advance-v9', 'withholding-v9', 'travel-v9'];
 const services = [null, 'TAX_WITH_RETURN', 'ADVANCE_TAX', 'SOURCE_TAX_DEPOSIT', 'TRAVEL_TAX'];
-const headings = ['Tax payments, without the confusion', 'Tax with Return',
-  'Advance Income Tax', 'Source Tax Deposit (TDS/TCS)', 'Travel Tax'];
-const mobileHeadings = ['Pay tax with confidence', 'Tax with Return',
-  'Advance Income Tax', 'Source Tax (TDS/TCS)', 'Travel Tax'];
-const actions = ['Pay Tax', 'Pay Tax with Return',
-  'Pay Advance Income Tax', 'Deposit Source Tax', 'Pay Travel Tax'];
 const themeTokens = [null, '--service-return-bg', '--service-advance-bg',
   '--service-withholding-bg', '--service-other-bg'];
 
 test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
 
-test('five published records render as distinct complete slides with their own CTA and artwork', async ({ page }, info) => {
+test('five published images and palettes retain fixed copy and the same two payment actions', async ({ page }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
@@ -25,7 +19,8 @@ test('five published records render as distinct complete slides with their own C
   for (let index = 0; index < 5; index++) {
     const slide = carousel.locator('.public-hero-carousel__slide').nth(index);
     await expect(slide).toHaveAttribute('aria-hidden', index === 0 ? 'false' : 'true');
-    await expect(slide.locator('img')).toHaveAttribute('src', new RegExp(`taxpay-hero-${illustrations[index]}`));
+    await expect(slide.locator('img')).toHaveAttribute('data-deferred-src', new RegExp(`taxpay-hero-${illustrations[index]}`));
+    if (index === 0) await expect(slide.locator('img')).toHaveAttribute('src', /taxpay-hero-intro-v9/);
     await expect(slide).toHaveAttribute('data-banner-kind', index === 0 ? 'intro' : 'service');
   }
   await expect(carousel.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
@@ -38,13 +33,44 @@ test('five published records render as distinct complete slides with their own C
     const slide = carousel.locator('.public-hero-carousel__slide').nth(index);
     await expect(slide).toHaveAttribute('aria-hidden', 'false');
     await expect(slide).not.toHaveAttribute('inert', '');
+    await expect(slide.locator('img')).toHaveAttribute('src', new RegExp(`taxpay-hero-${illustrations[index]}`));
     await expect(slide.getByRole('heading', {
-      name: info.project.name === 'desktop-1280' ? headings[index] : mobileHeadings[index],
+      name: info.project.name === 'desktop-1280' ? 'Tax payments, without the confusion' : 'Pay tax with confidence',
     })).toBeVisible();
-    await expect(slide.getByRole('button', { name: actions[index] })).toBeVisible();
-    await expect(slide.locator('.public-guest-action')).toHaveCount(1);
-    await expect(carousel.getByRole('button', { name: 'Pay Tax', exact: true })).toHaveCount(0);
+    await expect(slide.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
+    await expect(slide.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
+    await expect(slide.locator('.public-guest-action')).toHaveCount(2);
   }
+});
+
+test('initial banner request does not download hidden images before the visible image finishes', async ({ page }) => {
+  const requests: string[] = [];
+  let releaseFirst!: () => void;
+  const heldFirst = new Promise<void>(resolve => { releaseFirst = resolve; });
+  await page.route(/taxpay-hero-(intro|return|advance|withholding|travel)-v9[.]webp/, async route => {
+    // Vite also imports the asset URL as a JavaScript module. Intercept only
+    // the image bytes; pausing the module would deadlock initial navigation.
+    if (route.request().resourceType() !== 'image') { await route.continue(); return; }
+    const url = route.request().url();
+    requests.push(url);
+    if (url.includes('taxpay-hero-intro-v9.webp')) await heldFirst;
+    await route.continue();
+  });
+  // A deliberately held image must not block the navigation lifecycle under test.
+  await page.goto('/?action=landing', { waitUntil: 'domcontentloaded' });
+  const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
+  await expect(carousel.locator('.public-hero-carousel__slide')).toHaveCount(5);
+  await expect.poll(() => requests.length).toBe(1);
+  expect(requests[0]).toContain('taxpay-hero-intro-v9.webp');
+  for (const index of [1, 2, 3, 4]) {
+    await expect(carousel.locator('.public-hero-carousel__slide').nth(index).locator('img'))
+      .toHaveAttribute('data-deferred-src', new RegExp(`taxpay-hero-${illustrations[index]}`));
+    if (index > 1) await expect(carousel.locator('.public-hero-carousel__slide').nth(index).locator('img'))
+      .not.toHaveAttribute('src', /taxpay-hero/);
+  }
+  releaseFirst();
+  await expect.poll(() => requests.some(url => url.includes('taxpay-hero-return-v9.webp'))).toBe(true);
+  expect(requests.some(url => url.includes('taxpay-hero-travel-v9.webp'))).toBe(false);
 });
 
 test('published service palettes follow existing choice tokens without changing global brand', async ({ page }) => {
@@ -114,7 +140,7 @@ test('full service panels dissolve in one stationary frame, without sideways mov
 
   await expect(second).toHaveCSS('opacity', '1');
   await expect(first).toHaveCSS('opacity', '0');
-  await expect(second.getByRole('button', { name: 'Pay Tax with Return' })).toBeVisible();
+  await expect(second.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
   await expect(second.locator('img')).toHaveCSS('object-fit', 'contain');
   await expect(second.locator('img')).toHaveCSS('transform', 'none');
 });
@@ -130,7 +156,7 @@ test('reduced-motion users change complete banners instantly, with the payment C
   await page.keyboard.press('ArrowRight');
   await expect(second).toHaveCSS('opacity', '1');
   await expect(first).toHaveCSS('opacity', '0');
-  await expect(second.getByRole('button', { name: 'Pay Tax with Return' })).toBeVisible();
+  await expect(second.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
   await page.keyboard.press('ArrowLeft');
   await expect(first).toHaveCSS('opacity', '1');
   await expect(second).toHaveCSS('opacity', '0');
@@ -151,7 +177,7 @@ test('CMS artwork is never CSS-cropped or zoomed in the taxpayer banner at deskt
   }
 });
 
-test('desktop keeps full-width service artwork, equal intro buttons, and a single 270px hero', async ({ page }, info) => {
+test('desktop keeps full-width service artwork, equal intro buttons, and a consistent viewport-adaptive hero', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Desktop geometry');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
@@ -170,14 +196,15 @@ test('desktop keeps full-width service artwork, equal intro buttons, and a singl
       background: getComputedStyle(element).backgroundColor,
     };
   });
-  expect(metrics.height).toBe(270);
+  const expectedHeroHeight = page.viewportSize()!.height <= 820 ? 220 : 270;
+  expect(metrics.height).toBe(expectedHeroHeight);
   expect(metrics.imageWidthRatio).toBeCloseTo(1, 2);
   expect(metrics.buttonsEqual).toBe(true);
   await carousel.focus();
   await page.keyboard.press('ArrowRight');
   const second = carousel.locator('.public-hero-carousel__slide').nth(1);
-  await expect(second).toHaveCSS('height', '270px');
-  await expect(second.getByRole('button', { name: 'Pay Tax with Return' })).toBeVisible();
+  await expect(second).toHaveCSS('height', `${expectedHeroHeight}px`);
+  await expect(second.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
 });
 
 test('mobile slides wrap bilingual text and service buttons without horizontal overflow', async ({ page }, info) => {
@@ -216,7 +243,7 @@ test('mobile slides wrap bilingual text and service buttons without horizontal o
   }
 });
 
-test('intro and service CTAs retain existing payment entry routes', async ({ page }) => {
+test('both fixed buttons keep the same two payment entry routes on every slide', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
@@ -229,7 +256,7 @@ test('intro and service CTAs retain existing payment entry routes', async ({ pag
   await page.getByRole('dialog', { name: 'Travel tax' }).getByRole('button', { name: /close/i }).first().click();
   await carousel.focus();
   await page.keyboard.press('ArrowRight');
-  await carousel.getByRole('button', { name: 'Pay Tax with Return' }).click();
+  await carousel.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Pay Tax' })).toBeVisible();
 });
 
@@ -252,7 +279,7 @@ test('touch swipes and keyboard arrows update the entire active service presenta
   });
   await expect(carousel).toHaveAttribute('data-active-slide', '1');
   await expect(carousel.locator('.public-hero-carousel__slide').nth(1)
-    .getByRole('button', { name: 'Pay Tax with Return' })).toBeVisible();
+    .getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
   await page.keyboard.press('ArrowLeft');
   await expect(carousel).toHaveAttribute('data-active-slide', '0');
   await page.keyboard.press('ArrowLeft');

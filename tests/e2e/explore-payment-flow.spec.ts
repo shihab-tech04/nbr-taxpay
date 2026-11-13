@@ -6,8 +6,9 @@ test('Dashboard omits redundant explore action and retains Pay Tax navigation',a
   await page.goto('/?action=taxpayer_home&demoUser=user1');
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByTestId('taxpayer-overview-bento')).toBeVisible();
-  await expect(page.locator('.taxpay-bento-position')).toContainText('৳ 25,000');
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Explore payment flow'})).toHaveCount(0);
-  await page.locator('.taxpay-bento-hero').getByRole('button',{name:'Pay tax'}).click();
+  await page.locator('.taxpayer-reference-main-action').click();
+   await page.locator('.taxpayer-reference-rail').getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
 });

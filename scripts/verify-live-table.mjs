@@ -32,19 +32,20 @@ try{
   await expect(panel.getByTestId('convay-table-filters')).toBeVisible();
   await expect(panel.getByRole('combobox',{name:'Transaction category'})).toBeVisible();
   await expect(panel.getByTestId('taxpayer-transaction-table').locator('thead th'))
-    .toHaveText(['Payment','Reference','Payment type','Date','Amount','Status','Actions']);
+    .toHaveText(['Payment','Paid by','Paid for','Reference','Payment type','Date','Amount','Status','Actions']);
   const rows=panel.getByTestId('taxpayer-transaction-table').locator('tbody tr');
   await expect(rows).toHaveCount(10);
   await expect(panel.getByRole('navigation',{name:'Page navigation'})).toBeVisible();
   await expect(panel.getByRole('button',{name:'Export CSV'})).toBeVisible();
   const action=rows.first().getByRole('button',{name:'Details for Pending bank reconciliation'});
+  await panel.locator('.taxpay-table-viewport').evaluate(el=>{el.scrollLeft=el.scrollWidth;});
   const [viewportBox,actionBox]=await Promise.all([
     panel.locator('.taxpay-table-viewport').boundingBox(),action.boundingBox()
   ]);
   if(!viewportBox||!actionBox||actionBox.x+actionBox.width>viewportBox.x+viewportBox.width+2)
     throw new Error('Published desktop Transactions Details action is cut off');
   // Desktop has a dedicated Reference column; the duplicate inline metadata is hidden.
-  await expect(rows.first().locator('td').nth(1).getByText('DEMO-PAY-PEND-01')).toBeVisible();
+  await expect(rows.first().locator('td').nth(3).getByText('DEMO-PAY-PEND-01')).toBeVisible();
   await page.screenshot({path:'test-results/live-table-desktop.png',fullPage:true});
   await panel.getByRole('navigation',{name:'Page navigation'}).getByRole('button',{name:'Next'}).click();
   await expect(rows).toHaveCount(4);
@@ -58,7 +59,7 @@ try{
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   if(overflow>2)throw new Error('Published mobile page overflows by '+overflow+' pixels');
   await page.screenshot({path:'test-results/live-table-mobile.png',fullPage:true});
-  console.log('PASS: published TaxPay user1 login, integrated toolbar, seven-column Transactions, paging, 375px mobile cards');
+  console.log('PASS: published TaxPay user1 login, integrated toolbar, nine-column Transactions, paging, 375px mobile cards');
 }finally{
   await browser.close();
 }

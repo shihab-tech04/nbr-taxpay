@@ -2,6 +2,7 @@
  * Protected payment_v1_* and sim_my_* APIs are unaffected.
  */
 import { createClient } from 'npm:@supabase/supabase-js@2.57.0';
+import { requiresVerifiedOfficeIdentity } from './officeGuard.ts';
 
 const HEADERS={
   'Access-Control-Allow-Origin':'*',
@@ -63,6 +64,9 @@ Deno.serve(async(request:Request)=>{
   const url=new URL(request.url);
   const path=url.pathname.replace(/^\/taxpay-handoff-api/,'')
     .replace(/^\/api\/v1/,'').replace(/\/$/,'')||'/';
+  if (requiresVerifiedOfficeIdentity(path)) {
+    return output({success:false,code:'OFFICE_IDENTITY_NOT_CONFIGURED'},403);
+  }
   const apiUrl=Deno.env.get('SUPABASE_URL');
   const key=Deno.env.get('SUPABASE_ANON_KEY')??Deno.env.get('SUPABASE_PUBLISHABLE_KEY');
   if(!apiUrl||!key)return output({success:false,code:'BACKEND_NOT_CONFIGURED'},503);

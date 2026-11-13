@@ -53,8 +53,8 @@ for(const language of ['en','bn'] as const){
         :root.locator('.taxpay-mobile-table-card').first();
       await expect(row).toBeVisible();
       if(view==='history'&&desktop){
-        await expect(root.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(7);
-        await expect(row.locator('td')).toHaveCount(7);
+        await expect(root.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(9);
+        await expect(row.locator('td')).toHaveCount(9);
       }
       if(view==='history'&&!desktop){
         await expect(root.getByTestId('taxpayer-transaction-mobile-cards')).toBeVisible();
@@ -261,15 +261,18 @@ test('Office-style record workspaces fill laptop width without hiding transactio
     }
     if(view==='history'){
       const table=page.locator('.taxpayer-transaction-panel table.taxpayer-transaction-table');
-      await expect(table.locator('thead th')).toHaveCount(7);
+      await expect(table.locator('thead th')).toHaveCount(9);
       for(const header of await table.locator('thead th').all())await expect(header).toBeVisible();
       const meta=page.locator('.taxpayer-transaction-panel .taxpayer-transaction-compact-meta').first();
       await expect(meta).toBeHidden();
       const viewport=page.locator('.taxpayer-transaction-panel .taxpay-table-viewport');
+      // New payer and beneficiary columns fit inside the existing locally scrollable table.
+      // Scrolling the table must not scroll the entire page or hide actions permanently.
+      await viewport.evaluate(node=>{node.scrollLeft=node.scrollWidth;});
       const action=table.locator('tbody tr').first().locator('td:last-child button');
       const [windowBox,actionBox]=await Promise.all([viewport.boundingBox(),action.boundingBox()]);
       expect(windowBox).not.toBeNull();expect(actionBox).not.toBeNull();
-      expect(actionBox!.x+actionBox!.width,'Transaction actions stay on-screen without horizontal scrolling')
+      expect(actionBox!.x+actionBox!.width,'Transaction actions remain accessible by table-only scrolling')
         .toBeLessThanOrEqual(windowBox!.x+windowBox!.width+2);
     }
     const horizontalOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);

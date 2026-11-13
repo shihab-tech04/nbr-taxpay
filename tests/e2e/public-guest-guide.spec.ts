@@ -46,7 +46,7 @@ test('public hero opens receipt lookup and its Travel Tax banner starts the jour
 test('user guide supports responsive search, FAQs and languages',async({page},info)=>{
  test.skip(info.project.name!=='mobile-375','Guide journey on mobile');
  await page.goto('/?action=user_guide');
- await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Payment basics'})).toHaveAttribute('aria-current','true');
  await expect(page.locator('.public-guide-topics')).toHaveCSS('display', 'grid');
  await page.getByRole('button',{name:'Travel tax'}).click();
@@ -56,7 +56,7 @@ test('user guide supports responsive search, FAQs and languages',async({page},in
  await page.getByRole('searchbox',{name:'Search the guide'}).fill('rates');
  await expect(page.getByText('Are the rates final?')).toBeVisible();
  await setWorkspaceLanguage(page,'bn');
- await expect(page.getByRole('heading',{name:'করবৃত্ত ব্যবহার নির্দেশিকা'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'সহজকর ব্যবহার নির্দেশিকা'})).toBeVisible();
  await page.getByRole('button',{name:'মুছুন'}).click();
  await expect(page.getByRole('button',{name:'মোবাইল'})).toHaveAttribute('aria-pressed','true');
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
@@ -66,7 +66,7 @@ test('user guide supports responsive search, FAQs and languages',async({page},in
 test('Help Center typography and interactions remain usable at each viewport', async ({ page }) => {
   await page.goto('/?action=user_guide');
   const guide = page.locator('.public-guide-page');
-  await expect(guide.getByRole('heading', { name: 'Korbritto user guide' })).toBeVisible();
+  await expect(guide.getByRole('heading', { name: 'Sohojkor user guide' })).toBeVisible();
   await expect(guide.getByRole('button', { name: 'Back to home' })).toHaveCount(0);
   const homeLink = page.locator('.public-home-nav a').filter({ hasText: 'Home' });
   await expect(homeLink).toHaveCount(1);
@@ -161,7 +161,7 @@ test('User guide has real platform-specific steps and searches across all topics
 
   await setWorkspaceLanguage(page,'bn');
   await expect(guide.getByText('আপনার ডিভাইস অনুযায়ী নির্দেশনা দেখুন।')).toBeVisible();
-  await expect(guide.getByRole('heading', { name: 'করবৃত্ত ব্যবহার নির্দেশিকা' })).toBeVisible();
+  await expect(guide.getByRole('heading', { name: 'সহজকর ব্যবহার নির্দেশিকা' })).toBeVisible();
 });
 
 test('Guide search covers steps and answers, while topic FAQs stay contextual', async ({ page }) => {
@@ -211,7 +211,7 @@ test('Selecting a topic takes mobile readers directly to its instructions', asyn
   await expect(topic).toHaveAttribute('aria-current','true');
 });
 
-test('Home, User guide and Report use matching content widths and alignment', async ({ page }) => {
+test('Home, Guide and Report retain the same approved desktop width and alignment', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   const views = [
     { path: '/?action=landing', selector: '.public-information-hub' },
@@ -224,14 +224,14 @@ test('Home, User guide and Report use matching content widths and alignment', as
     const box = await page.locator(view.selector).boundingBox();
     expect(box, `${view.path} should have a content container`).not.toBeNull();
     bounds.push({ x: box!.x, width: box!.width });
-    expect(box!.width, `${view.path} must respect the 1100px cap`).toBeGreaterThanOrEqual(1099);
-    expect(box!.width, `${view.path} must respect the 1100px cap`).toBeLessThanOrEqual(1101);
+    // No route-specific widening of the approved public 1100px canvas.
+    expect(box!.width).toBeGreaterThanOrEqual(1099);
+    expect(box!.width).toBeLessThanOrEqual(1101);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `Horizontal overflow on ${view.path}`).toBeLessThanOrEqual(2);
   }
-  for (const item of bounds.slice(1)) {
-    expect(Math.abs(item.x - bounds[0].x), 'Content left edges should align').toBeLessThanOrEqual(2);
-    expect(Math.abs(item.width - bounds[0].width), 'Content widths should match').toBeLessThanOrEqual(2);
+  for (const item of bounds) {
+    expect(Math.abs(item.x + item.width / 2 - 800), 'Public page should remain centered').toBeLessThanOrEqual(2);
   }
   await page.goto('/?action=landing');
   const headerBrand = await page.locator('.public-home-brand').boundingBox();
@@ -250,7 +250,7 @@ test('floating help uses guide answers and report offers an editable review with
  await page.getByRole('button',{name:'Payment status',exact:true}).click();
  await expect(page.locator('.public-help-message--assistant')).toContainText('verified reconciliation');
  await page.getByRole('link',{name:'Open user guide'}).click();
- await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
  await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Report'}).click();
  await expect(page.getByRole('heading',{name:'Report a problem'})).toBeVisible();
  await expect(page.getByText('This form does not send reports or create official tickets.')).toHaveCount(0);

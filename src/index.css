@@ -1,17 +1,14 @@
-@import './styles/office-design.css';
-@import './styles/office-auth-source.css';
+/* Office-owned styles are loaded by OfficeTheme and OfficeLoginPage, not every public visitor. */
 @import './styles/taxpayer-login-dialog.css';
 @import "tailwindcss";
 @import "./styles/taxpay-citizen.css";
 @import "./styles/taxpay-taxpayer-reference.css";
 @import "./styles/taxpay-design-transfer.css";
-@import "./styles/taxpay-service-choice.css";
 @import "./styles/taxpay-hero-carousel.css";
-@import './styles/taxpay-payment-form.css';
 @import './styles/taxpayer-tin-lookup.css';
 @import './styles/taxpayer-sobaike-parity.css';
-@import './styles/taxpay-unified-table.css';
 @import './styles/taxpay-form-labels.css';
+@import './styles/taxpay-mobile-bottom-sheets.css';
 
 @theme {
   /* Locked Korbritto primary: never replace this with a service/status color. */

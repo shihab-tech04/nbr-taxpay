@@ -25,7 +25,7 @@ const banners = serviceRows.map(({ id, service_code }, index) => ({
   desktop_image_path: null, mobile_image_path: null,
 }));
 
-test('SQL-backed banners keep independent copy, buttons and service category in published order', async ({ page }, info) => {
+test('SQL-backed banners preserve image order while keeping the published intro copy and two journeys fixed', async ({ page }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.route('**/rest/v1/taxpay_site_banners**', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify(banners),
@@ -39,15 +39,16 @@ test('SQL-backed banners keep independent copy, buttons and service category in 
   await expect(carousel.getByRole('button', { name: 'Start tax payment' })).toBeVisible();
   await expect(carousel.getByRole('button', { name: 'Start travel tax' })).toBeVisible();
   await carousel.focus();
-  const serviceActions = ['Pay return tax', 'Pay advance tax', 'Deposit source tax', 'Start travel tax'];
   for (let i = 1; i <= 4; i++) {
     await page.keyboard.press('ArrowRight');
     await expect(carousel).toHaveAttribute('data-active-slide', String(i));
     await expect(carousel.locator('.public-hero-carousel__slide').nth(i)
       .locator('img')).toHaveAttribute('src', /taxpay-hero-(return|advance|withholding|travel)-v9/);
-    await expect(carousel.locator('.public-hero-carousel__slide').nth(i)
-      .getByRole('button', { name: serviceActions[i - 1] })).toBeVisible();
-    await expect(carousel.getByRole('heading', { name: mobile ? 'SQL mobile heading' : 'Updated SQL-controlled headline' })).toHaveCount(0);
+    const active = carousel.locator('.public-hero-carousel__slide').nth(i);
+    await expect(active.getByRole('button', { name: 'Start tax payment' })).toBeVisible();
+    await expect(active.getByRole('button', { name: 'Start travel tax' })).toBeVisible();
+    await expect(active.locator('.public-guest-action')).toHaveCount(2);
+    await expect(carousel.getByRole('heading', { name: mobile ? 'SQL mobile heading' : 'Updated SQL-controlled headline' })).toBeVisible();
   }
 });
 

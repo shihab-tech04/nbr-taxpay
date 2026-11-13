@@ -41,6 +41,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await listDialog.locator('#beneficiary-create-list-name').fill('Family');
   await listDialog.getByRole('button',{name:'Create list',exact:true}).click();
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  // Add beneficiary opens the existing individual form directly while Excel import is hidden.
   const addDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await expect(addDialog).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Choose how to add beneficiaries'})).toHaveCount(0);
@@ -80,7 +81,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(records).toContainText('Local Beneficiary One');
 
-  // The approved manual-only entry opens directly; dormant Excel code remains covered by parser tests.
+  // Excel entry is hidden; adding the second taxpayer uses the existing form while retaining owner-isolation coverage.
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   const secondAddDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await expect(secondAddDialog).toBeVisible();

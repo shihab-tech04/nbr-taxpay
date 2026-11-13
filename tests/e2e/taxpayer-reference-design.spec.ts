@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import {openTaxpayerPayTax} from './taxpayer-travel-menu-helper';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
 /** Regression contract: preserve Korbritto primary while signed-in styling uses Sobaike Public tokens. */
@@ -56,7 +57,7 @@ test('reference desktop rail preserves contextual demo routes and selected state
   const bottom = rail.locator('.taxpayer-reference-rail-bottom');
   await expect(bottom.getByRole('button').first()).toHaveText('Profile');
   await expect(bottom.getByRole('button').last()).toHaveText('Exit workspace');
-  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(5);
+  await expect(rail.locator('.taxpayer-reference-links > button')).toHaveCount(6);
   await expect(rail.locator('.taxpayer-reference-links > button').nth(1)).toHaveText('Beneficiaries');
   await expect(rail.getByRole('button',{name:'Tax summary'})).toHaveCount(0);
   await expect(rail.locator('.taxpayer-reference-account')).toHaveCount(0);
@@ -139,7 +140,7 @@ test('mobile reference is full-width, bilingual and avoids scroll/keyboard overl
       await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'}).click();
       await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Close'}).click();
     } else await page.getByRole('button',{name:'EN'}).first().click();
-    await page.getByRole('button',{name:'Pay — select payment type'}).click();
+    await openTaxpayerPayTax(page);
     const services=page.getByRole('dialog',{name:'Pay Tax'});
     await enterTaxPayService(services, 'TAX_WITH_RETURN');
     await expect(page.locator('.taxpay-taxpayer-reference')).toBeVisible();
@@ -173,7 +174,10 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     await expect(nav.getByText('Services',{exact:true})).toBeHidden();
     await expect(nav.getByText('Support',{exact:true})).toHaveCount(0);
     const items = nav.locator('.citizen-dialog__link:visible');
-    await expect(items).toHaveCount(6);
+    await expect(items).toHaveCount(9);
+    await expect(nav.getByRole('button',{name:'Travel Tax',exact:true})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Tax Credit Certificates'})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Correction Requests'})).toHaveCount(0);
     const styles = await items.evaluateAll(buttons => buttons.map(button => {
       const style = getComputedStyle(button);
       return {text:button.textContent?.trim(), color:style.color, background:style.backgroundColor,
@@ -247,7 +251,7 @@ test('Guest retains its original font; signed-in taxpayer uses Sobaike Public No
   expect(taxpayerFont).toContain('Noto Sans');
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
-  await page.getByRole('button',{name:'Pay — select payment type'}).click();
+  await openTaxpayerPayTax(page);
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
   const field=services.locator('#guest-tin');
@@ -271,32 +275,25 @@ test('Guest numbers retain IBM Plex Mono, signed-in workspace uses Noto Sans',as
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCSS('font-family',/Noto Sans/);
 });
 
-test('Public homepage uses heading and description without duplicate eyebrow labels',async({page})=>{
+test('Public homepage hides only temporary payment steps and questions',async({page})=>{
   await page.goto('/?action=landing');
   await expect(page.locator('.citizen-hub-eyebrow')).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
-  await expect(page.getByText('Choose who you are paying for, then select one of two services and follow these four steps.')).toBeVisible();
+  await expect(page.locator('#public-how-it-works')).toBeHidden();
+  await expect(page.locator('#public-faq')).toBeHidden();
   await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
-  await expect(page.getByRole('heading',{name:'Common questions'})).toBeVisible();
+  await expect(page.getByRole('searchbox',{name:'Search payment records by reference'})).toBeVisible();
 });
-test('Public keyboard Tab order, skip link and FAQ disclosure remain operable',async({page})=>{
+test('Public keyboard Tab order and skip link remain operable with hidden FAQ',async({page})=>{
   await page.goto('/?action=landing');
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link',{name:/Skip to main content/})).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.locator('main#main-content')).toBeFocused();
-  const faq=page.locator('#public-faq summary').first();
-  await faq.focus();
-  await page.keyboard.press('Enter');
-  await expect(faq.locator('xpath=..')).toHaveAttribute('open','');
-  await page.keyboard.press('Enter');
-  await expect(faq.locator('xpath=..')).not.toHaveAttribute('open','');
+  await expect(page.locator('#public-faq')).toBeHidden();
 });
-test('citizen SPA navigation moves focus to main without making static content tabbable',async({page})=>{
-  await page.goto('/?action=landing');
-  await page.locator('#public-faq details').last().locator('summary').click();
-  await page.locator('#public-faq .public-faq-layout__guide-link').click();
-  await expect(page.locator('main#main-content')).toBeFocused();
+test('Hidden homepage FAQ does not remove the separately accessible User Guide route',async({page})=>{
+  await page.goto('/?action=user_guide');
+  await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
   await expect(page.locator('main#main-content')).toHaveAttribute('tabindex','-1');
   await expect(page.locator('.taxpay-citizen-shell p[tabindex="0"]')).toHaveCount(0);
 });

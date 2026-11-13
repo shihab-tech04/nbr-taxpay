@@ -135,6 +135,24 @@ Deno.serve(async (request: Request) => {
       data = await rpc(client, 'taxpay_guest_beneficiary_open', { p_capability_hash });
     } else if (action === 'lists') {
       data = await rpc(client, 'taxpay_guest_beneficiary_lists', { p_capability_hash });
+    } else if (action === 'demo-registration') {
+      const id=body.profileId;
+      if(typeof id!=='string'||!/^user(?:[1-9]|[12][0-9]|30)$/.test(id))
+        throw new Error('INVALID_DEMO_PROFILE');
+      // Reuse the existing verified demo account login RPC instead of adding
+      // a new privileged database function. It returns that exact account's
+      // stable capability; compare without exposing it in this response.
+      const verified=await rpc(client,'taxpay_demo_profile_login',{
+        p_demo_id:id,p_password:id,
+      }) as {capability?:string}|null;
+      if(!verified||verified.capability!==token)throw new Error('INVALID_DEMO_PROFILE');
+      const {data:stored,error:readError}=await client
+        .from('taxpay_taxpayer_registration_profiles')
+        .select('account_id,tin,profile,revision,updated_at')
+        .eq('account_id',id).maybeSingle();
+      if(readError)throw new Error('SERVICE_UNAVAILABLE');
+      data=stored?{accountId:stored.account_id,tin:stored.tin,
+        profile:stored.profile,revision:stored.revision,updatedAt:stored.updated_at}:null;
     } else if (action === 'demo-settings') {
       const key = body.key ?? null;
       const value = body.value ?? null;

@@ -47,7 +47,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await footer.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   await expect(progress).toHaveAttribute('aria-valuenow', '2');
   const batch = dialog.getByTestId('other-tax-batch');
-  await expect(batch.locator('[data-head-group]')).toHaveCount(5);
+  await expect(batch.locator('[data-head-group]')).toHaveCount(6);
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2100');
@@ -234,10 +234,24 @@ test('multiple Other Tax heads retain their amounts inside ONE combined payment 
   await expect(dialog.locator('.receipt-view__amount strong')).toHaveText('৳ 1,500');
   await expect(dialog.locator('.receipt-view__paper')).toContainText('1,200');
   await expect(dialog.locator('.receipt-view__paper')).toContainText('300');
+  // Receipt details remain readable without changing the saved allocations:
+  // generous vertical row spacing and a clear boundary to reference details.
+  const receiptPaper = dialog.locator('.receipt-view__paper');
+  const partyDetails = receiptPaper.locator('.receipt-view__parties');
+  const detailRow = partyDetails.locator('.receipt-view__detail').first();
+  await expect(detailRow).toHaveCSS('padding-top', '8px');
+  const partyBounds = await partyDetails.boundingBox();
+  const referenceBounds = await receiptPaper.locator('.receipt-view__reference-strip').boundingBox();
+  expect(partyBounds).not.toBeNull();
+  expect(referenceBounds).not.toBeNull();
+  expect(partyBounds!.y).toBeGreaterThanOrEqual(referenceBounds!.y + referenceBounds!.height - 1);
+  expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
   const allocationTable = dialog.getByTestId('receipt-allocation-table');
   const allocationCards = dialog.getByTestId('receipt-allocation-mobile');
   await expect(allocationTable.locator('tbody tr')).toHaveCount(2);
-  await expect(allocationCards.locator('article')).toHaveCount(2);
+  await expect(allocationCards.locator('article')).toHaveCount(1);
+  await expect(allocationCards.locator('article').first().getByTestId('receipt-taxpayer-head-row')).toHaveCount(2);
+  await expect(allocationCards.locator('article').first()).toContainText('Taxpayer subtotal');
   expect((await allocationTable.isVisible()) || (await allocationCards.isVisible()),
     'at least one responsive allocation view must be visible').toBe(true);
 });

@@ -102,8 +102,17 @@ type BannerSlide = {
 const fallbackSlides: BannerSlide[] = defaultSlides.map(slide => ({ ...slide }));
 
 /** Keep the approved v9 media and layout even if a published Storage object is missing. */
-function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolean }) {
+function BannerPicture({ slide, visible, preload, onVisibleReady }: {
+  slide: BannerSlide; visible: boolean; preload: boolean; onVisibleReady: () => void;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
+  // Never give the browser a URL for unpublished/inactive artwork at startup.
+  // Once visited or prepared, retain the image through the approved dissolve.
+  const [requested, setRequested] = useState(visible || preload);
+  const shouldRequest = requested || visible || preload;
+  useEffect(() => {
+    if (visible || preload) setRequested(true);
+  }, [visible, preload]);
   // The keyed picture already retries when CMS changes its image URL. Also
   // retry an unchanged URL after a temporary network/storage outage recovers.
   useEffect(() => {
@@ -118,10 +127,15 @@ function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolea
   }, [imageFailed]);
   const fallbackImage = fallbackSlides.find(value =>
     (value.serviceCode || null) === (slide.serviceCode || null))?.image || heroPaymentIllustration;
+  const resolvedImage = imageFailed ? fallbackImage : slide.image;
   return <picture className="public-hero-carousel__image-layer" data-visible={visible}>
-    {!imageFailed && slide.mobileImage && <source media="(max-width: 640px)" srcSet={slide.mobileImage} />}
+    {!imageFailed && slide.mobileImage && <source media="(max-width: 640px)"
+      srcSet={shouldRequest ? slide.mobileImage : undefined} />}
     <img className="public-information-hero__image public-hero-carousel__service-image"
-      src={imageFailed ? fallbackImage : slide.image} alt="" decoding="async"
+      src={shouldRequest ? resolvedImage : undefined} data-deferred-src={resolvedImage}
+      alt="" decoding="async" loading={visible || preload ? 'eager' : 'lazy'}
+      fetchPriority={visible ? 'high' : 'low'}
+      onLoad={() => { if (visible) onVisibleReady(); }}
       onError={() => setImageFailed(true)} />
   </picture>;
 }
@@ -182,6 +196,9 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   const [slides, setSlides] = useState<BannerSlide[]>([]);
   const [bannerStatus, setBannerStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const [retryNonce, setRetryNonce] = useState(0);
+  // The next slide may preload only after the visible banner's image finishes.
+  // This prevents five simultaneous images from competing for first paint on 4G.
+  const [visibleImageReady, setVisibleImageReady] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [hasFocus, setHasFocus] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -322,9 +339,18 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       </section>
     </div>;
   }
-  // SQL controls publication and order. Each published row owns its own
-  // bilingual copy, theme, CTA, and artwork; never replace these with intro text.
+  // Keep the canonical introductory copy and two payment actions stationary.
+  // SQL still controls each published slide's artwork, ordering, and image palette.
+  const fixedBanner = slides.find(slide => !slide.serviceCode) ?? fallbackSlides[0];
   const travelBanner = slides.find(slide => slide.serviceCode === 'TRAVEL_TAX') ?? fallbackSlides[4];
+  // The carousel border follows the currently published service theme,
+  // while the global brand controls and the main Pay Tax CTA remain fixed.
+  const activeSlide = slides[activeIndex];
+  const activeOutline = activeSlide.serviceCode && [
+    activeSlide.backgroundColor, activeSlide.headingColor,
+    activeSlide.bodyColor, activeSlide.outlineColor,
+  ].every(value => typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value))
+    ? activeSlide.outlineColor : null;
 
   return (
     <div
@@ -342,11 +368,13 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         role="region"
         aria-roledescription="carousel"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
-        aria-description={bn ? 'প্রতিটি সেবার তথ্য ও পেমেন্ট বোতাম দেখতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন।' : 'Swipe or use the arrow keys to move between service banners and their payment actions.'}
+        aria-description={bn ? 'ছবি ও রং পরিবর্তন করতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন। কর ও ভ্রমণ কর পরিশোধের বোতাম অপরিবর্তিত থাকবে।' : 'Swipe or use the arrow keys to change banner images and colors. Pay Tax and Pay Travel Tax stay available on every slide.'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
         data-dragging={isSwiping}
         data-payment-service={slides[activeIndex].serviceCode}
+        data-active-palette={activeOutline ? 'image' : undefined}
+        style={activeOutline ? { borderColor: activeOutline } : undefined}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onPointerDown={onSwipeStart}
@@ -358,9 +386,9 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
           {slides.map((slide, index) => {
             const isActive = index === activeIndex;
             const intro = !slide.serviceCode;
-            const heading = bn ? slide.headingBn : slide.headingEn;
-            const mobileHeading = bn ? slide.mobileHeadingBn : slide.mobileHeadingEn;
-            const action = bn ? slide.actionBn : slide.actionEn;
+            const heading = bn ? fixedBanner.headingBn : fixedBanner.headingEn;
+            const mobileHeading = bn ? fixedBanner.mobileHeadingBn : fixedBanner.mobileHeadingEn;
+            const action = bn ? fixedBanner.actionBn : fixedBanner.actionEn;
             // NULL palette preserves the existing approved service tokens.
             const validHex = (value: string | null | undefined) =>
               typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
@@ -378,6 +406,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                 className="citizen-public-hero public-information-hero public-hero-carousel__slide"
                 data-banner-service={intro ? 'intro' : slide.id}
                 data-banner-kind={intro ? 'intro' : 'service'}
+                data-fixed-left="true"
                 data-active={isActive}
                 data-payment-service={slide.serviceCode}
                 data-banner-palette={hasPalette ? 'image' : undefined}
@@ -401,25 +430,23 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                     </h2>
                   )}
                   <p>
-                    <span className="public-hero-copy--desktop">{bn ? slide.descriptionBn : slide.descriptionEn}</span>
-                    <span className="public-hero-copy--mobile">{bn ? slide.mobileDescriptionBn : slide.mobileDescriptionEn}</span>
+                    <span className="public-hero-copy--desktop">{bn ? fixedBanner.descriptionBn : fixedBanner.descriptionEn}</span>
+                    <span className="public-hero-copy--mobile">{bn ? fixedBanner.mobileDescriptionBn : fixedBanner.mobileDescriptionEn}</span>
                   </p>
                   <div className="citizen-public-hero__actions public-guest-actions">
                     <button className="citizen-public-primary public-guest-action" type="button"
-                      onClick={() => onPayTax(slide.serviceCode)}
+                      onClick={() => onPayTax()}
                       aria-label={action}>
                       <WalletCards size={18} aria-hidden="true" />
-                      {intro ? (
-                        <>
+                      <>
                           <span className="public-hero-carousel__pay-full">{action}</span>
                           <span className="public-hero-carousel__pay-compact" aria-hidden="true">
                             {bn ? compactAction(action, fallbackSlides[0].actionBn, 'কর দিন')
                               : compactAction(action, fallbackSlides[0].actionEn, 'Pay Tax')}
                           </span>
-                        </>
-                      ) : action}
+                      </>
                     </button>
-                    {intro && (
+                    {(
                       <button className="public-guest-action public-hero-carousel__travel" type="button"
                         onClick={() => onPayTax('TRAVEL_TAX')}
                         aria-label={bn ? travelBanner.actionBn : travelBanner.actionEn}>
@@ -436,7 +463,10 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                   </div>
                 </div>
                 <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
-                  <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`} slide={slide} visible={isActive} />
+                  <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`}
+                    slide={slide} visible={isActive}
+                    preload={visibleImageReady && index === (activeIndex + 1) % slides.length}
+                    onVisibleReady={() => setVisibleImageReady(true)} />
                 </div>
               </article>
             );

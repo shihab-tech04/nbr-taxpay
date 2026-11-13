@@ -61,6 +61,15 @@ async function setupGuestTransport(page:Page){
   return {failNextAdd:()=>{failNextAdd=true;},createListCount:()=>createListCount};
 }
 
+test('Beneficiaries hides Excel import entry but keeps regular Add beneficiary',async({page})=>{
+  await setupGuestTransport(page);
+  await page.goto('/?action=beneficiaries&demoUser=user1');
+  await expect(page.getByText('Import from Excel',{exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'Beneficiary entry'})).toBeVisible();
+  await expect(page.getByText('Import from Excel',{exact:true})).toHaveCount(0);
+});
+
 test('downloaded Beneficiaries Excel template opens in the supported import parser',async({page})=>{
   await setupGuestTransport(page);
   await page.goto('/');
@@ -202,6 +211,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, manual ent
   await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Guest Family',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'Beneficiary entry'})).toBeVisible();
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await dialog.locator('#beneficiary-name').fill('Synthetic Guest One');
@@ -209,6 +219,8 @@ test('local sample taxpayer Beneficiaries supports independent lists, manual ent
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expectRecord('Synthetic Guest One');
 
+  // The Excel launcher is hidden; add the second taxpayer individually while
+  // keeping the comprehensive list, mobile, isolation and payment-prefill checks.
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('987654321098');
@@ -310,6 +322,7 @@ test('signed-out guest payment hides saved beneficiaries even with stored entrie
   await dialog.getByRole('button',{name:'Create list',exact:true}).click();
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'Beneficiary entry'})).toBeVisible();
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   await dialog.locator('#beneficiary-tin').fill('012345678901');
   await dialog.locator('#beneficiary-name').fill('Saved Guest Taxpayer');

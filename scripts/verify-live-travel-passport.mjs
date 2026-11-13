@@ -149,7 +149,8 @@ try {
     await expect(modes).not.toContainText('স্থলপথে');
     await modal.locator('#travel-port').selectOption('Benapole');
     await modal.locator('#travel-destination').fill('India');
-    await modal.locator('#travel-departure-date').fill('2026-11-20');
+    await modal.locator('#travel-departure-date').fill(new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Dhaka'})
+      .format(new Date(Date.now() + 86_400_000)));
     await modal.getByRole('button', { name: 'Continue to review' }).click();
     await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
     await modal.getByRole('button', { name: 'Back', exact: true }).click();

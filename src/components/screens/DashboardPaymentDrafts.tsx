@@ -22,7 +22,8 @@ export const DashboardPaymentDrafts: React.FC<{
   language: 'en' | 'bn';
   onResume: (draft: PaymentFormDraft) => void;
   onCountChange?: (count: number | null) => void;
-}> = ({ language, onResume, onCountChange }) => {
+  onStartPayment?: () => void;
+}> = ({ language, onResume, onCountChange, onStartPayment }) => {
   const { user, loading: authLoading } = useAccountIdentity();
   const { previewAccount, isPaymentServiceChoiceOpen } = useTaxState();
   const actor: PaymentDraftActor | null = user
@@ -112,7 +113,6 @@ export const DashboardPaymentDrafts: React.FC<{
   };
 
   const loading = catalog.ownerKey !== ownerKey || catalog.status === 'loading';
-  if (!loading && catalog.status === 'ready' && catalog.rows.length === 0) return null;
 
   return <section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
     className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5">
@@ -135,7 +135,13 @@ export const DashboardPaymentDrafts: React.FC<{
       {tr('Loading saved drafts…', 'সংরক্ষিত খসড়া লোড হচ্ছে…')}
     </p> : catalog.status === 'error' ? <p role="alert" className="mt-3 text-sm text-taxpay-error">
       {tr('Drafts could not be loaded. Try again.', 'খসড়াগুলো লোড করা যায়নি। আবার চেষ্টা করুন।')}
-    </p> : <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="list">
+    </p> : catalog.rows.length === 0 ? <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-taxpay-border bg-slate-50 p-4" data-testid="dashboard-drafts-empty">
+      <p className="text-sm text-taxpay-muted">{tr('No saved payment drafts yet. Start a payment and select Save Draft to continue later.','এখনো কোনো পেমেন্ট খসড়া নেই। পেমেন্ট শুরু করে খসড়া সংরক্ষণ করলে পরে আবার চালু করতে পারবেন।')}</p>
+      {onStartPayment && <button type="button" onClick={onStartPayment}
+        className="min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light">
+        {tr('Start a payment','পেমেন্ট শুরু করুন')} <ArrowRight size={15} className="ml-1 inline" aria-hidden="true"/>
+      </button>}
+    </div> : <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="list">
       {catalog.rows.map((draft,index) => {
         const updatedAt = new Date(draft.updated_at);
         const updated = Number.isNaN(updatedAt.getTime()) ? draft.updated_at

@@ -1,13 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, ListChecks, ReceiptText, Search, UserRound, WalletCards } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, FileCheck2, FilePenLine, History, ListChecks, ReceiptText, Repeat2, Save, Search, UserRound, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
-import { PublicServiceModal, type PublicService } from './PublicServiceModal';
+import type { PublicService } from './PublicServiceModal';
 import { PublicHeroCarousel } from './PublicHeroCarousel';
 import { INITIAL_RECEIPTS } from '../../data/mockData';
 
 // Only publicly shipped fictional fixtures may appear in public autocomplete.
 // Never suggest account receipts or hosted payment records.
+// The status/Travel Tax modal pulls in the checkout and receipt modules.
+// Keep the public landing light until the user explicitly opens that service.
+const PublicServiceModal = React.lazy(() => import('./PublicServiceModal').then(module => ({default: module.PublicServiceModal})));
+
 const sampleReceipts = INITIAL_RECEIPTS.filter(receipt => receipt.isSimulatedDemo && !receipt.receiptMobile).slice(0, 3);
 const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
   { value: receipt.challanNo, kind: 'challan' as const },
@@ -50,6 +54,47 @@ export const PublicLanding: React.FC = () => {
   }, []);
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
+
+  // Citizen-value cards are informational, not duplicate payment CTAs.
+  // The approved Pay Tax / Pay Travel Tax journeys remain in the hero.
+  const citizenBenefits = [
+    {
+      id: 'payments',
+      Icon: WalletCards,
+      title: t('All Tax Payments', 'সব ধরনের কর পরিশোধ'),
+      detail: t('Pay taxes for yourself, family or clients.', 'নিজের, পরিবারের বা ক্লায়েন্টের কর পরিশোধ করুন।'),
+    },
+    {
+      id: 'certificates',
+      Icon: FileCheck2,
+      title: t('Tax Certificates', 'কর সনদ'),
+      detail: t('Find and download available tax certificates.', 'উপলব্ধ কর সনদ খুঁজুন ও ডাউনলোড করুন।'),
+    },
+    {
+      id: 'corrections',
+      Icon: FilePenLine,
+      title: t('Corrections & Requests', 'সংশোধন ও আবেদন'),
+      detail: t('Request corrections and follow their progress.', 'সংশোধনের আবেদন করুন ও অগ্রগতি দেখুন।'),
+    },
+    {
+      id: 'history',
+      Icon: History,
+      title: t('Payment History', 'পেমেন্টের ইতিহাস'),
+      detail: t('See past payments, tax years and receipts.', 'আগের পেমেন্ট, করবর্ষ ও রসিদ দেখুন।'),
+    },
+    {
+      id: 'pay-again',
+      Icon: Repeat2,
+      title: t('Pay Again', 'আবার পরিশোধ'),
+      detail: t('Reuse and edit a previous payment.', 'আগের পেমেন্টের তথ্য বদলে আবার পরিশোধ করুন।'),
+    },
+    {
+      id: 'saved-drafts',
+      Icon: Save,
+      title: t('Saved Drafts', 'সংরক্ষিত খসড়া'),
+      detail: t('Save a payment and continue it later.', 'পেমেন্ট খসড়া সংরক্ষণ করে পরে চালিয়ে যান।'),
+    },
+  ];
 
   const stages = [
     {
@@ -105,7 +150,7 @@ export const PublicLanding: React.FC = () => {
     },
   ];
 
-  return <div className={'citizen-public-hub public-information-hub mx-auto w-full space-y-6' + (bn ? ' font-bengali' : '')}>
+  return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
       onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
@@ -224,7 +269,25 @@ export const PublicLanding: React.FC = () => {
       </div>
     </section>
 
-    <section id="public-how-it-works" className="citizen-hub-section public-info-section public-payment-path" aria-labelledby="steps-title">
+    <section className="public-benefits" aria-labelledby="public-benefits-title">
+      <div className="public-benefits__heading">
+        <h2 id="public-benefits-title">{t('Why choose Sohojkor?', 'সহজকর কেন ব্যবহার করবেন?')}</h2>
+        <p>{t('Pay, organize and track your taxes in one place.', 'কর পরিশোধ, তথ্য গুছিয়ে রাখা ও অগ্রগতি দেখা—সব এক জায়গায়।')}</p>
+      </div>
+      <div className="public-benefits__grid">
+        {citizenBenefits.map(({ id, Icon, title, detail }) => (
+          <article key={id} className="public-benefits__item" data-benefit={id}>
+            <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
+            <div className="public-benefits__copy">
+              <h3>{title}</h3>
+              <p>{detail}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section id="public-how-it-works" style={{ display: 'none' }} className="citizen-hub-section public-info-section public-payment-path" aria-labelledby="steps-title">
       <div className="citizen-hub-section__heading">
         <div>
           <h2 id="steps-title">{t('How your payment works', 'যেভাবে কর পরিশোধ করবেন')}</h2>
@@ -247,7 +310,7 @@ export const PublicLanding: React.FC = () => {
       </ol>
     </section>
 
-    <section id="public-faq" className="citizen-hub-section public-info-section public-faq-layout" aria-labelledby="faq-title">
+    <section id="public-faq" style={{ display: 'none' }} className="citizen-hub-section public-info-section public-faq-layout" aria-labelledby="faq-title">
       <div className="public-faq-layout__heading">
         <div>
           <h2 id="faq-title">{t('Common questions', 'সাধারণ প্রশ্ন')}</h2>
@@ -270,6 +333,6 @@ export const PublicLanding: React.FC = () => {
         </details>)}
       </div>
     </section>
-    {openService && <PublicServiceModal service={openService} onClose={() => setOpenService(null)} />}
+    {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} /></React.Suspense>}
   </div>;
 };

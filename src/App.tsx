@@ -2,33 +2,38 @@ import React, { useEffect, useRef, useState } from 'react';
 import { sampleJourneysEnabled, TaxStateProvider, useTaxState } from './services/taxState';
 import { CitizenNavigation } from './components/layout/CitizenNavigation';
 import { PublicHomeHeader } from './components/layout/PublicHomeHeader';
-import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import { TaxpayerReferenceRail } from './components/layout/TaxpayerReferenceRail';
+import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
 import { CitizenFooter } from './components/layout/CitizenFooter';
-import { TaxpayerLoginDialog } from './components/screens/TaxpayerLoginDialog';
-import { ParityRegisterModal } from './components/screens/ParityRegisterModal';
-import { PaymentServiceChoiceDialog } from './components/screens/PaymentServiceChoiceDialog';
 import type { PaymentFormDraft } from './services/accountPaymentFormDrafts';
 
 // Screens
-import { PublicUserGuide } from './components/screens/PublicUserGuide';
-import { GuestPayment } from './components/screens/GuestPayment';
-import { TravelTax } from './components/screens/TravelTax';
 import { PublicLanding } from './components/screens/PublicLanding';
-import { PublicReport } from './components/screens/PublicReport';
-import { PublicServiceModal } from './components/screens/PublicServiceModal';
-import { TaxPayModal } from './components/ui/TaxPayModal';
 import { receiptReturnRoute } from './services/routeContract';
 import { IncidentReporting } from './components/screens/IncidentReporting';
-import { User1DemoExperience, user1DemoRoutes } from './components/screens/User1DemoExperience';
-import { PaymentDetailView } from './components/screens/PaymentDetailView';
-import { AuthorizationRequestPopup } from './components/screens/AuthorizationRequestPopup';
+import { user1DemoRoutes } from './config/user1DemoRoutes';
 import { isPrivateTaxpayerRoute, requiresTaxpayerSignIn } from './services/privateRoutePolicy';
-import { validCertificateTransactionId } from './services/confirmedPaymentCertificate';
+import { validCertificateTransactionId } from './services/transactionId';
 import { safePrivateAuthReturnRoute } from './services/routeContract';
 
+// Keep modal-only and preview-only code out of the initial public JavaScript.
+// These components retain their existing modal UI, permissions and routes.
+const PublicUserGuide = React.lazy(() => import('./components/screens/PublicUserGuide').then(m => ({default: m.PublicUserGuide})));
+const PublicReport = React.lazy(() => import('./components/screens/PublicReport').then(m => ({default: m.PublicReport})));
+const TaxPayModal = React.lazy(() => import('./components/ui/TaxPayModal').then(m => ({default: m.TaxPayModal})));
+const User1DemoExperience = React.lazy(() => import('./components/screens/User1DemoExperience').then(m => ({default: m.User1DemoExperience})));
+const TaxpayerLoginDialog = React.lazy(() => import('./components/screens/TaxpayerLoginDialog').then(m => ({default: m.TaxpayerLoginDialog})));
+const ParityRegisterModal = React.lazy(() => import('./components/screens/ParityRegisterModal').then(m => ({default: m.ParityRegisterModal})));
+const PublicServiceModal = React.lazy(() => import('./components/screens/PublicServiceModal').then(m => ({default: m.PublicServiceModal})));
+const PaymentDetailView = React.lazy(() => import('./components/screens/PaymentDetailView').then(m => ({default: m.PaymentDetailView})));
+const AuthorizationRequestPopup = React.lazy(() => import('./components/screens/AuthorizationRequestPopup').then(m => ({default: m.AuthorizationRequestPopup})));
+
 // Defer non-entry screens until visited, preserving the public shell and auth gates.
+// Do not load the large payment forms for public visitors who have not started a payment.
+const GuestPayment = React.lazy(() => import('./components/screens/GuestPayment').then(module => ({ default: module.GuestPayment })));
+const TravelTax = React.lazy(() => import('./components/screens/TravelTax').then(module => ({ default: module.TravelTax })));
+const PaymentServiceChoiceDialog = React.lazy(() => import('./components/screens/PaymentServiceChoiceDialog').then(module => ({ default: module.PaymentServiceChoiceDialog })));
 const Beneficiaries = React.lazy(() => import('./components/screens/Beneficiaries').then(module => ({ default: module.Beneficiaries })));
 const ArchitectureView = React.lazy(() => import('./components/screens/ArchitectureView').then(module => ({ default: module.ArchitectureView })));
 const TaxpayerDashboard = React.lazy(() => import('./components/screens/TaxpayerDashboard').then(module => ({ default: module.TaxpayerDashboard })));
@@ -57,7 +62,7 @@ const previewReadOnlyRoutes = new Set([
 const activityRoutes = new Set(['history', 'journey', 'verify', 'corrections', 'certificates']);
 
 const MainRouter: React.FC = () => {
-  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, paymentServiceInitialSelection } = useTaxState();
+  const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, isParityModalOpen, paymentServiceInitialSelection, paymentReuse } = useTaxState();
   const [dashboardPaymentDraft, setDashboardPaymentDraft] = useState<PaymentFormDraft | null>(null);
   // Close always clears the one-shot resume request. No draft IDs in URLs or storage.
   useEffect(() => {
@@ -256,21 +261,23 @@ const MainRouter: React.FC = () => {
       </main>
       {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
       {publicInformationRoute && !receiptOverlayRoute && !verifiedApplicationUser && !previewAccount && <PublicHelpChat />}
-      {receiptOverlayRoute && (currentRoute === 'verify'
+      {receiptOverlayRoute && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'রসিদ লোড হচ্ছে…' : 'Loading receipt…'}</p>}>{currentRoute === 'verify'
         ? <PublicServiceModal service="status" onClose={() => navigate('landing')} />
         : <TaxPayModal title={language === 'bn' ? 'পেমেন্ট রসিদের বিবরণ' : 'Payment receipt details'}
             service="status" className="receipt-modal" footer={<></>}
             onClose={() => navigate(receiptReturnRoute(routeParams.returnTo))}>
             <PaymentDetailView embedded />
-          </TaxPayModal>)}
-      <ParityRegisterModal />
-      {isPaymentServiceChoiceOpen && <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} />}
-      {loginOverlay && <TaxpayerLoginDialog />}
-      {beneficiaryLoginRequired && <TaxpayerLoginDialog
+          </TaxPayModal>}</React.Suspense>}
+      {isParityModalOpen && <React.Suspense fallback={null}><ParityRegisterModal /></React.Suspense>}
+      {isPaymentServiceChoiceOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেমেন্ট সেবা লোড হচ্ছে…' : 'Loading payment service…'}</p>}>
+        <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} />
+      </React.Suspense>}
+      {loginOverlay && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog /></React.Suspense>}
+      {beneficiaryLoginRequired && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog
         preservePaymentJourney
         onClose={() => navigate('landing')}
-      />}
-      <AuthorizationRequestPopup />
+      /></React.Suspense>}
+      {previewAccount && <React.Suspense fallback={null}><AuthorizationRequestPopup /></React.Suspense>}
     </div>
   );
 };

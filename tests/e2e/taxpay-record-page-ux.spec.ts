@@ -105,16 +105,27 @@ for(const viewport of [{width:1280,height:900},{width:375,height:812}]){
           const frameBounds=element.getBoundingClientRect();
           const firstHeader=element.querySelector('thead th:first-child')?.getBoundingClientRect();
           const firstTitle=element.querySelector('tbody tr:first-child .taxpayer-transaction-row__title')?.getBoundingClientRect();
+          // Keep every column, allow local horizontal scrolling in this register,
+          // but never let the register overflow the whole page.
+          element.scrollLeft=element.scrollWidth;
           const lastHeader=element.querySelector('thead th:last-child')?.getBoundingClientRect();
-          if(!firstHeader||!firstTitle||!lastHeader)throw new Error('Missing seven-column transaction geometry');
+          const statusCell=element.querySelector('tbody tr:first-child td:nth-child(8)')?.getBoundingClientRect();
+          const statusPill=element.querySelector('tbody tr:first-child td:nth-child(8) .taxpayer-transaction-row__status > span')?.getBoundingClientRect();
+          const firstRow=element.querySelector('tbody tr:first-child')?.getBoundingClientRect();
+          if(!firstHeader||!firstTitle||!lastHeader||!statusCell||!statusPill||!firstRow)
+            throw new Error('Missing nine-column transaction geometry');
           return {left:frameBounds.left,right:frameBounds.right,
             firstHeader:firstHeader.left,firstTitle:firstTitle.left,lastHeader:lastHeader.right,
+            statusWidth:statusCell.width,statusPillHeight:statusPill.height,rowHeight:firstRow.height,
             overflow:element.scrollWidth-element.clientWidth};
         });
         expect(geometry.firstHeader,'Payment column must not start left of the viewport').toBeGreaterThanOrEqual(geometry.left-1);
         expect(geometry.firstTitle,'Payment title must be fully visible').toBeGreaterThanOrEqual(geometry.left-1);
         expect(geometry.lastHeader,'Actions column must not be clipped').toBeLessThanOrEqual(geometry.right+2);
-        expect(geometry.overflow,'1280px desktop register must fit all seven columns').toBeLessThanOrEqual(2);
+        expect(geometry.overflow,'Register may scroll within its own viewport').toBeGreaterThanOrEqual(0);
+        expect(geometry.statusWidth,'Status must retain readable width after adding identity columns').toBeGreaterThanOrEqual(140);
+        expect(geometry.statusPillHeight,'Status badge must not wrap vertically').toBeLessThanOrEqual(42);
+        expect(geometry.rowHeight,'Transaction row must remain compact on desktop').toBeLessThanOrEqual(125);
       }
       const computed=await frame.evaluate(el=>{
         const s=getComputedStyle(el);

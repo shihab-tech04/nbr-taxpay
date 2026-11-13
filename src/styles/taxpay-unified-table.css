@@ -766,7 +766,7 @@ table.taxpay-unified-table {
   border-color: var(--taxpay-table-border, #e1e6ee);
 }
 .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table {
-  min-width: 1050px;
+  min-width: 1340px;
   width: 100%;
   border-collapse: collapse;
   table-layout: auto;
@@ -786,13 +786,15 @@ table.taxpay-unified-table {
   font-size: 16px;
   vertical-align: middle;
 }
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(1) {min-width: 198px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(2) {min-width: 168px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(3) {min-width: 155px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(4) {min-width: 116px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(5) {min-width: 124px;text-align: right;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(6) {min-width: 155px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):last-child {width: 1%;text-align: right;white-space: nowrap;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(1) {min-width: 170px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(2) {min-width: 130px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(3) {min-width: 175px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(4) {min-width: 145px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(5) {min-width: 138px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(6) {min-width: 105px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(7) {min-width: 115px;text-align:right;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(8) {min-width: 160px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):last-child {width:1%;text-align:right;white-space:nowrap;}
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table tbody tr[data-clickable-row="true"] {
   cursor: pointer;
 }
@@ -811,6 +813,12 @@ table.taxpay-unified-table {
   line-height: 1.45;
   color: var(--taxpay-table-muted, #5f6b7a);
 }
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-identity {
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-type,
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-date {
   color: var(--taxpay-table-text, #172033);
@@ -828,6 +836,8 @@ table.taxpay-unified-table {
 }
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table .taxpayer-transaction-row__status > span {
   font-size: 14px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpay-table-pagination {
   margin-top: 0;
@@ -1057,55 +1067,13 @@ table.taxpay-unified-table {
   }
 }
 
-/* Keep every action accessible when the taxpayer sidebar reduces desktop width.
- * The source-of-truth grid still has seven semantic columns; reference, type
- * and date consolidate visually into Payment at ordinary laptop widths. */
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-compact-meta { display: none; }
-@media (min-width:768px) and (max-width:1440px) {
-  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table {
-    min-width: 0;
-    width: 100%;
-    table-layout: fixed;
-  }
-  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(2),
-  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(3),
-  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(4) {
-    display: none;
-  }
-  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(1) {
-    min-width: 0;
-    width: 48%;
-  }
-  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(5) {
-    min-width: 0;
-    width: 17%;
-    text-align: right;
-  }
-  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(6) {
-    min-width: 0;
-    width: 21%;
-  }
-  .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(7) {
-    min-width: 0;
-    width: 14%;
-    text-align: right;
-  }
-  .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-compact-meta {
-    display: block;
-    margin-top: 3px;
-    font-size: 14px;
-    line-height: 1.45;
-    color: var(--taxpay-table-muted, #5f6b7a);
-  }
-  .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-compact-meta p {
-    margin: 2px 0 0;
-  }
-  .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table .taxpayer-transaction-row__status > span {
-    max-width: 100%;
-    white-space: normal;
-  }
+/* The Transactions table now has nine semantic columns. The desktop view
+ * keeps each identity, reference, type, date, status and action accessible
+ * through its OWN horizontal scroll, instead of hiding cells or forcing
+ * the previous seven-column percentages onto nine columns. */
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-compact-meta {
+  display: none;
 }
-
 
 /* Korbritto accessible record-interaction motion.
  * Appearance-only: never animate payment totals, table geometry or form validation.
@@ -1331,36 +1299,6 @@ table.taxpay-unified-table {
     min-width:0;
   }
 }
-/* At desktop laptop widths do not silently conceal Reference, Type and Date:
- * all seven semantic transaction columns stay present in a locally scrollable
- * register, matching Office Management. Mobile keeps the existing cards. */
-@media (min-width:1100px) and (max-width:1440px) {
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table {
-    min-width:0;
-    width:100%;
-    table-layout:fixed;
-  }
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td) {
-    min-width:0;
-    overflow-wrap:anywhere;
-  }
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(2),
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(3),
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(4) {
-    display:table-cell;
-  }
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(1) {width:21%;}
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(2) {width:17%;}
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(3) {width:15%;}
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(4) {width:12%;}
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(5) {width:11%;}
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(6) {width:15%;}
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel table.taxpayer-transaction-table :is(th,td):nth-child(7) {width:9%;}
-  .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .taxpayer-transaction-panel .taxpayer-transaction-compact-meta {
-    display:none;
-  }
-}
-
 /* Preserve a single horizontal action row in the full-width beneficiary register. */
 @media (min-width:1100px) {
   .taxpay-taxpayer-reference [data-taxpay-register-page="true"] .beneficiary-directory__table .taxpay-unified-table th:nth-child(1) {width:56%;}
@@ -1394,6 +1332,12 @@ table.taxpay-unified-table {
   border:1px solid var(--register-edge);
   border-radius:12px;box-shadow:0 1px 2px rgb(26 39 57 / 4%);
   overflow:hidden;
+}
+/* The beneficiary list picker is an anchored popover. Override the register's
+   later, more specific overflow rule only when that picker is present;
+   scrolling remains owned by each table viewport. */
+.taxpay-taxpayer-reference .taxpay-office-register-frame:has(.beneficiary-directory__list-toolbar) {
+  overflow:visible;
 }
 /* Older spacing utilities must not add a second gap between card sections. */
 .taxpay-taxpayer-reference .taxpay-office-register-frame > :not([hidden]) ~ :not([hidden]) {

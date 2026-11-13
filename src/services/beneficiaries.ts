@@ -29,8 +29,8 @@ export async function collectBeneficiaryPages<T>(
     if(page.length<pageSize)return all;
   }
 }
-export async function loadBeneficiaries(ownerUid: string | null = null): Promise<{lists:BeneficiaryList[]; people:Beneficiary[]}> {
-  if (!ownerUid) return loadGuestBeneficiaries();
+export async function loadBeneficiaries(ownerUid: string | null = null, options:{forceFresh?:boolean}={}): Promise<{lists:BeneficiaryList[]; people:Beneficiary[]}> {
+  if (!ownerUid) return loadGuestBeneficiaries(options);
   const db=client();
   // PostgREST truncates unpaged SELECT results at the project row limit.
   // Read both collections in stable pages; an omitted saved list must never

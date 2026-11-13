@@ -9,7 +9,9 @@ test('Public skip link and FAQ disclosure work with keyboard alone', async ({ pa
   await page.keyboard.press('Enter');
   await expect(page.locator('main#main-content')).toBeFocused();
 
-  const faq = page.locator('.public-info-faq details').first();
+  await expect(page.locator('#public-faq')).toBeHidden();
+  await page.goto('/?action=user_guide');
+  const faq = page.locator('.public-guide-questions details').first();
   const summary = faq.locator('summary');
   await summary.focus();
   await page.keyboard.press('Enter');

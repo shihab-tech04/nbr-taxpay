@@ -1,3 +1,5 @@
+import '../../styles/taxpay-service-choice.css';
+import '../../styles/taxpay-payment-form.css';
 import { TaxpayerTinLookup } from '../ui/TaxpayerTinLookup';
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -37,8 +39,10 @@ import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
 import { deletePaymentFormDraft, isPaymentDraftService, type PaymentFormDraft, type PaymentDraftActor } from '../../services/accountPaymentFormDrafts';
 import { isOptionalReceiptEmailValid, normaliseReceiptEmail } from '../../services/receiptEmail';
 import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
+import type {PaymentReuse} from '../../services/paymentReuse';
+import {activePreviewSession} from '../../services/previewAccountSession';
 import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
-import { prepareCombinedOtherTaxPayment, saveCombinedOtherTaxRequest, loadCombinedOtherTaxRequest, clearCombinedOtherTaxRequest } from '../../services/otherTaxCombinedPayment';
+import { prepareCombinedOtherTaxPayment, saveCombinedOtherTaxRequest, loadCombinedOtherTaxRequest, clearCombinedOtherTaxRequest, fitsCombinedAllocationCapacity, MAX_COMBINED_ALLOCATIONS } from '../../services/otherTaxCombinedPayment';
 import { clearOtherTaxBatch, confirmedBatchReceipts, loadOtherTaxBatch,
   saveOtherTaxBatch, syncOtherTaxBatch, type OtherTaxBatch } from '../../services/otherTaxBatchSubmission';
 import { OtherTaxTaxpayerList } from './OtherTaxTaxpayerList';
@@ -131,7 +135,7 @@ const GUEST_COPY = {
   },
 } as const;
 
-type GuestErrorField = 'payerChoice' | 'tin' | 'payerName' | 'phone' | 'email' | 'noticeReference' | 'incomeTaxType' | 'headId' | 'taxAmount';
+type GuestErrorField = 'payerChoice' | 'tin' | 'payerName' | 'payerTin' | 'phone' | 'email' | 'noticeReference' | 'incomeTaxType' | 'headId' | 'taxAmount';
 const ERROR_ID = 'guest-payment-error';
 
 type LifecycleStage = 'INITIATED' | 'AUTHORIZED' | 'ACS_REFERENCE_CREATED' | 'PROCESSING' | 'TREASURY_SETTLED' | 'NBR_LEDGER_POSTED' | 'CREDITED' | 'FAILED';
@@ -184,6 +188,7 @@ interface GuestPaymentProps {
   initialCategory?: PaymentCategory;
   /** Previously verified account-owned draft selected at Pay Tax entry. */
   initialDraft?: PaymentFormDraft;
+  initialReuse?: PaymentReuse;
   /** Payer relationship is chosen before service selection in the Pay Tax modal. */
   initialForSelf?: boolean;
   initialBeneficiary?: { tin: string; name: string; additional?: { tin: string; name: string }[] };
@@ -191,7 +196,7 @@ interface GuestPaymentProps {
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
 }
 
-export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialForSelf, initialBeneficiary, onBackToService, onStageChange }) => {
+export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialReuse, initialForSelf, initialBeneficiary, onBackToService, onStageChange }) => {
   const { language, navigate, addPaymentReceipt, routeParams, previewAccount, setPaymentServiceChoiceOpen } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // The standalone guest route can also be visited from a signed-in session.
@@ -217,6 +222,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // Form inputs
   const [tin, setTin] = useState(initialBeneficiary?.tin ?? '');
   const [payerName, setPayerName] = useState('');
+  // Guest payer identity is independent of all recipient TINs and allocations.
+  const [walkInPayerTin, setWalkInPayerTin] = useState('');
+  const [walkInPayerLookup, setWalkInPayerLookup] = useState<ReturnType<typeof lookupSampleTaxpayer>>(null);
+  const [walkInPayerConfirmed, setWalkInPayerConfirmed] = useState(false);
+  const confirmedWalkInPayer = walkInPayerConfirmed && walkInPayerLookup?.tin === walkInPayerTin
+    ? walkInPayerLookup : null;
   const [otherTaxpayerName, setOtherTaxpayerName] = useState(initialBeneficiary?.name ?? '');
   const [additionalTaxpayers, setAdditionalTaxpayers] = useState<OtherTaxTaxpayer[]>(() =>
     (initialBeneficiary?.additional ?? []).map(person => ({ ...person, id: crypto.randomUUID() }))
@@ -244,7 +255,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // this ID is still strictly demo-only and never a real taxpayer entitlement.
   const demoConsentActor = previewAccount?.id ?? (signedInProfile ? userIdForHostedTin(signedInProfile.tin) : null);
   const allowSyntheticDemoTin = Boolean(signedInAccount && forSelf === false && demoConsentActor);
-  const effectivePayerName = signedInAccount && signedInPayerName ? signedInPayerName : payerName;
   const taxpayerTin = ownAccountTax ? ownProfile?.tin ?? '' : tin;
   const receiptPhone = signedInProfile?.receiptMobile || phone;
   const [authorizedTaxpayerId, setAuthorizedTaxpayerId] = useState<DemoUserId | null>(null);
@@ -273,6 +283,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       (initialCategory || (typeof routeParams?.initialCategory === 'string' && CATEGORY_LABELS[routeParams.initialCategory]
         ? routeParams.initialCategory as PaymentCategory : 'TAX_WITH_RETURN'))
   );
+  const effectivePayerName = signedInAccount && signedInPayerName ? signedInPayerName
+    : forSelf === false && category === 'OTHER_TAX_PAYMENT' && confirmedWalkInPayer
+      ? (language === 'bn' ? confirmedWalkInPayer.nameBn : confirmedWalkInPayer.nameEn)
+      : payerName;
   const [selectedHeadIds, setSelectedHeadIds] = useState<number[]>([]);
   // Both payer relationships use the same Other Tax selection and allocation UI.
   const otherBatch = !isWithholdingMode && forSelf !== null && category === 'OTHER_TAX_PAYMENT';
@@ -282,7 +296,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const missingBatchTaxpayer = batchTaxpayers.find(person => !otherTaxLines.some(line => line.taxpayerId === person.id));
   const uniqueBatchAllocations = new Set(otherTaxLines.map(line =>
     `${line.taxpayerId}:${line.headId}:${line.assessmentYear}`)).size === otherTaxLines.length;
-  const batchValid = uniqueBatchAllocations && otherTaxLines.length > 0 && batchAmount !== null && batchAmount > 0
+  const batchValid = uniqueBatchAllocations && otherTaxLines.length > 0 && fitsCombinedAllocationCapacity(otherTaxLines.length) && batchAmount !== null && batchAmount > 0
     && !missingBatchTaxpayer
     && otherTaxLines.every(line => isOtherTaxHeadEligible(line.headId)
       && batchTaxpayers.some(person => person.id === line.taxpayerId)
@@ -294,6 +308,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (beneficiaryChecking || forSelf === null || (ownAccountTax && !ownProfile)) return false;
     if (signedInBeneficiarySelection && (!availableSavedTins ||
       !batchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) return false;
+    if (ownAccountTax && additionalTaxpayers.length && (!availableSavedTins ||
+      !additionalTaxpayers.every(person => availableSavedTins.includes(person.tin)))) return false;
     const tinValid = ownAccountTax
       ? /^\d{12,13}$/.test(taxpayerTin)
       : isSupportedBeneficiaryTin(taxpayerTin, allowSyntheticDemoTin);
@@ -314,6 +330,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!/^01\d{9}$/.test(receiptPhone)) return false;
     if (!isOptionalReceiptEmailValid(receiptEmail)) return false;
     if (forSelf === false && !signedInAccount && effectivePayerName.trim().length < 2) return false;
+    if (otherBatch && forSelf === false && !signedInAccount && walkInPayerTin &&
+      (!/^\d{12}$/.test(walkInPayerTin) || !confirmedWalkInPayer)) return false;
     const reference = noticeReference.trim();
     if (reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection) {
       const matched = findV11GuestNotice(taxpayerTin, reference);
@@ -354,6 +372,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [batchRecoveryError, setBatchRecoveryError] = useState(false);
   const [showReceiptDetails, setShowReceiptDetails] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [paymentStorageWarning, setPaymentStorageWarning] = useState(false);
   const [errorField, setErrorField] = useState<GuestErrorField | null>(null);
   const [errorHeadId, setErrorHeadId] = useState<number | null>(null);
 
@@ -362,7 +381,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // gateway status and payment authorizations must be re-established on resume.
   const snapshotAccountDraft = (): Record<string, unknown> => ({
     schemaVersion: 1, category, step: Math.min(step, 2),
-    forSelf, tin, payerName, otherTaxpayerName, additionalTaxpayers,
+    forSelf, tin, payerName, walkInPayerTin, otherTaxpayerName, additionalTaxpayers,
     otherTaxLines, phone, receiptEmail, assessmentYear, noticeReference,
     incomeTaxType, selectedHeadIds, amountInputs,
   });
@@ -374,8 +393,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       throw new Error('Saved payer relationship is invalid.');
     setForSelf(saved.forSelf === null ? null : saved.forSelf as boolean);
     setTin(stringField('tin')); setPayerName(stringField('payerName'));
+    setWalkInPayerTin(stringField('walkInPayerTin').replace(/\D/g, '').slice(0,12));
+    setWalkInPayerLookup(null); setWalkInPayerConfirmed(false);
     setOtherTaxpayerName(stringField('otherTaxpayerName')); setPhone(stringField('phone'));
-    setReceiptEmail(stringField('receiptEmail')); setAssessmentYear(stringField('assessmentYear') || '2026-27');
+    setReceiptEmail(stringField('receiptEmail')); setAssessmentYear(stringField('assessmentYear') || (initialReuse ? '' : '2026-27'));
     setNoticeReference(stringField('noticeReference'));
     setIncomeTaxType(saved.incomeTaxType === 'COMPANY' || saved.incomeTaxType === 'NON_COMPANY'
       ? saved.incomeTaxType : null);
@@ -415,6 +436,36 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     // A different draft remounts the form. Do not reset inputs on normal renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialDraft?.id]);
+  // A history copy is an independent editable form, not a saved draft or receipt.
+  useEffect(() => {
+    if (!initialReuse) return;
+    const verifiedOwner = authenticatedUser?.id === initialReuse.ownerUid;
+    const previewOwner = !authenticatedUser && previewAccount?.id === initialReuse.ownerUid &&
+      activePreviewSession()?.profileId === initialReuse.ownerUid;
+    if ((!verifiedOwner && !previewOwner) || initialReuse.service !== category) {
+      setErrorMessage('Your account or payment category changed. Reopen your payment history.');
+      return;
+    }
+    try { restoreAccountDraft(initialReuse.formPayload); }
+    catch (cause) { setErrorMessage(cause instanceof Error ? cause.message : 'Unable to reuse the previous payment.'); }
+    // A changed source remounts the payment form; do not reset on ordinary renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialReuse?.sourcePaymentId, authenticatedUser?.id]);
+  // A valid older SQL payment may know the amount but not the original head.
+  // Suggest that exact amount only after the user selects a new eligible head;
+  // all other validation, ownership and year checks stay in the payment wizard.
+  useEffect(()=>{
+    const original=initialReuse?.formPayload.legacySourceAmount;
+    if(typeof original!=='string'||!/^\d+\.\d{2}$/.test(original))return;
+    const eligible=V11_PAYMENT_OPTIONS.filter(head=>head.category===category &&
+      head.status==='ACTIVE'&&!BLOCKED_HEAD_IDS.includes(head.id));
+    const selected=selectedHeadIds.length===1?selectedHeadIds[0]:
+      eligible.length===1?eligible[0].id:null;
+    if(selected===null || !eligible.some(head=>head.id===selected))return;
+    setAmountInputs(previous=>Object.prototype.hasOwnProperty.call(previous,selected)
+      ?previous:{...previous,[selected]:original});
+  },[initialReuse?.sourcePaymentId,selectedHeadIds,category]);
+
   // A confirmed receipt is the only signal allowed to retire a draft.
   useEffect(() => {
     if (!selectedAccountDraft || !createdReceipt || paymentPhase !== 'settled') return;
@@ -509,7 +560,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   useEffect(() => {
     if (!errorField || !errorMessage) return;
     const id: Record<GuestErrorField, string> = {
-      payerChoice: 'guest-payer-self', tin: invalidBatchTaxpayerId && invalidBatchTaxpayerId !== 'primary' ? `other-tax-tin-${invalidBatchTaxpayerId}` : 'guest-tin', payerName: 'guest-payer-name', phone: 'guest-phone', email: 'guest-receipt-email',
+      payerChoice: 'guest-payer-self', tin: invalidBatchTaxpayerId && invalidBatchTaxpayerId !== 'primary' ? `other-tax-tin-${invalidBatchTaxpayerId}` : 'guest-tin', payerName: 'guest-payer-name', payerTin: 'guest-payer-tin', phone: 'guest-phone', email: 'guest-receipt-email',
       noticeReference: 'guest-notice-ref', incomeTaxType: 'guest-income-type-NON_COMPANY',
       headId: 'guest-head-static', taxAmount: errorHeadId && selectedHeadIds.length > 0 && selectedHeadIds[0] !== errorHeadId ? `guest-tax-amount-${errorHeadId}` : 'guest-tax-amount'
     };
@@ -664,7 +715,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   );
 
   const renderOtherTaxTaxpayerList = (singleSelf: boolean) => (
-    <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax} singleTaxpayerLayout={singleSelf} allowAdditional={!singleSelf && forSelf === false}
+    <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax} singleTaxpayerLayout={singleSelf} allowAdditional={!singleSelf && (forSelf === false || Boolean(initialReuse && ownAccountTax))}
                 requireConfirmation={otherBatch && forSelf === false && !signedInAccount}
                 confirmedTins={confirmedOtherTaxTins} onConfirmTaxpayer={(id, tin) => {
                   setConfirmedOtherTaxTins(current => ({...current, [id]: tin})); clearValidationError();
@@ -733,6 +784,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         'Enter an 11-digit Bangladeshi mobile number for the receipt.', 'phone');
       return false;
     }
+    if (otherBatch && forSelf === false && !signedInAccount && walkInPayerTin && !confirmedWalkInPayer) {
+      setValidationError(language === 'bn'
+        ? 'পরিশোধকারীর ১২ সংখ্যার টিআইএন খুঁজে মিল পাওয়ার পর নিশ্চিত করুন, অথবা খালি রাখুন।'
+        : 'Search and confirm the payer’s matching 12-digit TIN, or leave it blank.', 'payerTin');
+      return false;
+    }
     if (!forSelf && !signedInAccount && effectivePayerName.trim().length < 2) {
       setValidationError(copy.requiredPayer, 'payerName');
       return false;
@@ -767,10 +824,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // or persisting a simulated payment; never rely on a route prefill or stale UI state.
   const areCurrentSavedBeneficiaries = async (tins: string[]): Promise<boolean> => {
     if (!tins.length || tins.some(tin => !tin)) return false;
-    const saved = await loadBeneficiaries(authenticatedUser?.id ?? null);
+    // Payment validation bypasses the short navigation cache and fails closed on stale ownership.
+    const saved = await loadBeneficiaries(authenticatedUser?.id ?? null,{forceFresh:true});
     const ownedListIds = new Set(saved.lists.map(list => list.id));
     const allowed = new Set(saved.people.filter(person => ownedListIds.has(person.list_id)).map(person => person.tin));
-    return tins.every(tin => allowed.has(tin));
+    return tins.every(tin => tin === signedInProfile?.tin || allowed.has(tin));
   };
 
   const handleStep1Next = async () => {
@@ -780,7 +838,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return;
     }
     if (beneficiaryChecking || !validateIdentity()) return;
-    if (signedInBeneficiarySelection) {
+    if (signedInBeneficiarySelection || (ownAccountTax && additionalTaxpayers.length > 0)) {
       setBeneficiaryChecking(true);
       try {
         const tins = (otherBatch ? batchTaxpayers : batchTaxpayers.slice(0, 1)).map(person => person.tin);
@@ -814,7 +872,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         !batchTaxpayers.some(taxpayer => taxpayer.id === line.taxpayerId) ||
         otherTaxAllocationTotal([line]) === null);
       if (!batchValid || invalid) {
-        const message = otherTaxLines.length === 0
+        const message = otherTaxLines.length > MAX_COMBINED_ALLOCATIONS
+            ? language === 'bn' ? 'একটি পেমেন্টে সর্বোচ্চ ' + MAX_COMBINED_ALLOCATIONS + 'টি বণ্টন রাখা যাবে।' : 'This payment supports up to ' + MAX_COMBINED_ALLOCATIONS + ' allocation lines.'
+            : otherTaxLines.length === 0
           ? language === 'bn' ? 'এগোনোর আগে অন্তত একটি পরিশোধের খাত নির্বাচন করুন।' : 'Select at least one payment head to continue.'
           : invalid
             ? language === 'bn' ? 'লাল রঙে চিহ্নিত খাতগুলোর করবর্ষ ও শূন্যের বেশি পরিমাণ পূরণ করুন।' : 'Correct the highlighted payment heads: each needs a valid assessment year and positive amount.'
@@ -827,6 +887,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       }
       clearValidationError();
       setStep(3);
+      return;
+    }
+    if (initialReuse && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) {
+      setValidationError(language === 'bn' ? 'আবার পেমেন্টের আগে করবর্ষ নির্বাচন করুন।' : 'Select an assessment year before paying again.', 'headId');
       return;
     }
     if (!isWithholdingMode && !incomeTaxType) {
@@ -881,6 +945,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setAttemptReceipt(settledReceipt);
       setCreatedReceipt(settledReceipt);
       setOfficeMirrorPending(!confirmed.mirrored);
+      if (confirmed.mirrored) setPaymentStorageWarning(false);
       pendingConfirmationRetryable.current = false;
       setPaymentValidationBlocked(false);
       setErrorMessage('');
@@ -974,13 +1039,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   const handleExecutePayment = () => {
     if (batchRecoveryError || isProcessing || !acknowledged || !paymentChannel || !paymentMethod ||
-      !(otherBatch ? batchValid : amountsValid) || !storyAmountSupported || storyAmountMinor === null) return;
+      !(otherBatch ? batchValid : amountsValid) || (initialReuse && !otherBatch && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) ||
+      !storyAmountSupported || storyAmountMinor === null) return;
     pendingMirrorRetryCount.current = 0;
     pendingConfirmationRetryable.current = false;
     setIsProcessing(true);
     setPaymentPhase('processing');
     setLifecycleStages([]);
     setShowReceiptDetails(false);
+    setPaymentStorageWarning(false);
     clearValidationError();
 
     try {
@@ -1023,7 +1090,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         paymentCategory: category,
         assessmentYear: otherBatch && otherTaxLines.length !== 1 ? 'Multiple years' : otherBatch ? otherTaxLines[0].assessmentYear : assessmentYear,
         payerName: forSelf ? accountName || '—' : effectivePayerName.trim(),
-        payerTin: signedInProfile?.tin ?? (ownAccountTax ? taxpayerTin : 'GUEST'),
+        payerTin: otherBatch && forSelf === false && !signedInAccount && confirmedWalkInPayer
+          ? confirmedWalkInPayer.tin
+          : signedInProfile?.tin ?? (ownAccountTax ? taxpayerTin : 'GUEST'),
         taxpayerTin,
         receiptMobile: receiptPhone,
         receiptEmail: normaliseReceiptEmail(receiptEmail),
@@ -1059,7 +1128,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             taxpayerTin,
             payerName: newReceipt.payerName,
             payerTin: newReceipt.payerTin,
-            payerMode: forSelf ? 'SELF' : 'OTHER',
+            payerMode: otherBatch && additionalTaxpayers.length ? 'OTHER' : forSelf ? 'SELF' : 'OTHER',
             assessmentYear,
             taxZone, taxCircle,
             receiptMobile: receiptPhone,
@@ -1093,7 +1162,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               line:lineItems[index]};
           }),
         );
-        saveCombinedOtherTaxRequest(request,paymentChannel==='OTC'?'PENDING_BANK':'READY');
+        // Storage quota/private-browsing failures must not prevent the same
+        // idempotent SQL request from being submitted in the current tab.
+        const durable=saveCombinedOtherTaxRequest(request,paymentChannel==='OTC'?'PENDING_BANK':'READY');
+        setPaymentStorageWarning(!durable);
         pendingStoryRef.current=request;
         rememberBatch(null);
         setAttemptReceipt(request.receipt);
@@ -1108,10 +1180,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       rememberBatch(null);
       setIsProcessing(false);
       setPaymentPhase('review');
-      setErrorMessage(error instanceof Error && error.message === 'PAYMENT_DETAILS_TOO_LONG'
+      const detail=error instanceof Error ? error.message : '';
+      setErrorMessage(detail === 'PAYMENT_DETAILS_TOO_LONG'
         ? (language === 'bn' ? 'পেমেন্টের তথ্য অনেক দীর্ঘ। নাম বা রেফারেন্স ছোট করে আবার চেষ্টা করুন।' : 'Payment details are too long. Shorten the name or reference and try again.')
-        : (language === 'bn' ? 'অনুরোধ সংরক্ষণ করা যায়নি। ব্রাউজারের স্টোরেজ পরীক্ষা করে আবার চেষ্টা করুন।'
-          : 'The request could not be saved. Check browser storage and try again.'));
+        : /^(INVALID_COMBINED|DUPLICATE_COMBINED|COMBINED_TOTAL_MISMATCH|INVALID_BENEFICIARY)/.test(detail)
+          ? (language === 'bn' ? 'উপকারভোগী, কর খাত, করবর্ষ ও পরিমাণ যাচাই করে আবার চেষ্টা করুন।' : 'Check each beneficiary, payment head, assessment year and amount before retrying.')
+          : (language === 'bn' ? 'পেমেন্টের অনুরোধ শুরু করা যায়নি। বিস্তারিত যাচাই করে আবার চেষ্টা করুন।' : 'The payment request could not start. Review the details and retry.'));
     }
   };
 
@@ -1128,7 +1202,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       }
     }
     if (pendingStoryRef.current?.payload.details.combinedPayment === true) {
-      try { saveCombinedOtherTaxRequest(pendingStoryRef.current,'READY'); }
+      try { setPaymentStorageWarning(!saveCombinedOtherTaxRequest(pendingStoryRef.current,'READY')); }
       catch {
         setErrorMessage(language === 'bn' ? 'মূল পেমেন্ট অনুরোধ সংরক্ষণ করা যায়নি।' : 'Original payment request could not be saved.');
         return;
@@ -1195,6 +1269,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return;
     }
     rememberBatch(null);
+    setPaymentStorageWarning(false);
     setCreatedReceipt(null); setAttemptReceipt(null); setPaymentPhase('review'); setLifecycleStages([]);
     setAcknowledged(false); setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setOtherTaxLines([]); setAdditionalTaxpayers([]); setConfirmedOtherTaxTins({}); setAuthorizedTaxpayerIds({});
@@ -1280,6 +1355,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <p>{language === 'bn' ? 'ব্যাংক নিষ্পত্তি ও কর ক্রেডিট নিশ্চিত হয়নি।' : 'Bank settlement and tax credit are not confirmed.'}</p>
             </div>
           </div>}
+          {paymentStorageWarning && <p role="status" data-testid="payment-storage-warning" className="mx-4 my-3 rounded-lg border border-taxpay-border bg-taxpay-light p-3 text-sm text-taxpay-dark">
+            {language === 'bn' ? 'ব্রাউজার স্টোরেজ ব্যবহার করা যাচ্ছে না। এই ট্যাব খোলা রাখুন; বন্ধ বা রিফ্রেশ করলে অপেক্ষমাণ অনুরোধটি আবার উদ্ধার করা যাবে না। একই রেফারেন্স দিয়ে আবার চেষ্টা করুন।' : 'Browser storage is unavailable. Keep this tab open: reloading or closing it prevents recovery of this pending request. Retry using the same reference.'}
+          </p>}
           {bankPending && errorMessage && <p role="alert">{errorMessage}</p>}
           {declined && <div className="payment-lifecycle__result payment-lifecycle__result--failed"><AlertCircle size={20} aria-hidden="true" /><p>{errorMessage || (language === 'bn' ? 'পেমেন্ট মাধ্যমটি অনুরোধ প্রত্যাখ্যান করেছে। অন্য পদ্ধতিতে আবার চেষ্টা করুন।' : 'The payment channel declined the request. You can retry with another method.')}</p></div>}
           {completed && <div className="payment-lifecycle__result payment-lifecycle__result--complete"><CheckCircle size={20} aria-hidden="true" /><p>{officeMirrorPending
@@ -1320,6 +1398,17 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   return (
     <div lang={language === 'bn' ? 'bn' : 'en'} className={`${embedded ? 'payment-flow-embedded' : 'max-w-7xl mx-auto space-y-6 pb-12'} ${language === 'bn' ? 'font-bengali' : ''}`}>
+      {initialReuse && <p role="status" data-testid="pay-again-reuse-notice" className="rounded-lg border border-taxpay-border bg-taxpay-light p-3 text-sm text-taxpay-dark">
+        {language==='bn'?'আগের পেমেন্ট থেকে তথ্য কপি করা হয়েছে: ':'Copied from previous payment: '}
+        <strong className="break-all">{initialReuse.sourcePaymentId}</strong>.
+        {' '}{language==='bn'?'মূল পেমেন্ট অপরিবর্তিত। প্রতিটি করবর্ষ, পরিমাণ ও তথ্য যাচাই করুন।':'Original payment unchanged. Review every year, amount and taxpayer before submitting.'}
+        {typeof initialReuse.formPayload.legacySourceAmount==='string'&&
+          <span className="mt-2 block" data-testid="pay-again-legacy-note">
+            {language==='bn'
+              ? 'পুরোনো রেকর্ডে পেমেন্ট খাতের আইডি ও করদাতার ধরন ছিল না। এগুলো নতুন করে নির্বাচন করুন। রেকর্ডকৃত পরিমাণ ৳'+initialReuse.formPayload.legacySourceAmount+' — খাত নির্বাচন করলে পরিমাণ প্রস্তাব করা হবে।'
+              : 'This older record did not save the payment-head ID or income-tax classification. Choose them again. Original recorded amount: ৳'+initialReuse.formPayload.legacySourceAmount+'. The amount is suggested after selecting a head.'}
+          </span>}
+      </p>}
       {/* Title & Mode Banner */}
       <div className={embedded ? 'payment-flow-embedded__content' : 'bg-white border border-slate-200 rounded-xl p-6 shadow-sm'}>
         {!embedded && <>
@@ -1371,7 +1460,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <div className="payment-radio-card-grid">
                   {[{ value: true, en: isWithholdingMode ? 'I am the withholding agent' : 'My tax liability', bn: isWithholdingMode ? 'আমি উৎসে কর কর্তনকারী' : 'আমার করদায়' }, { value: false, en: isWithholdingMode ? 'Paying for the agent' : 'Facilitate another taxpayer’s payment', bn: isWithholdingMode ? 'এজেন্টের পক্ষে পরিশোধ' : 'অন্য করদাতার কর পরিশোধে সহায়তা করুন' }].map(choice =>
                     <PaymentRadioCard key={String(choice.value)} id={choice.value ? 'guest-payer-self' : 'guest-payer-other'} name="guest-payer-relationship" value={String(choice.value)} checked={forSelf === choice.value}
-                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); if (signedInAccount && !choice.value) { setTin(''); setOtherTaxpayerName(''); } setAdditionalTaxpayers([]); setOtherTaxLines([]); setConfirmedOtherTaxTins({}); setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
+                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); setWalkInPayerTin(''); setWalkInPayerLookup(null); setWalkInPayerConfirmed(false); if (signedInAccount && !choice.value) { setTin(''); setOtherTaxpayerName(''); } setAdditionalTaxpayers([]); setOtherTaxLines([]); setConfirmedOtherTaxTins({}); setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
                 </div>
                 {forSelf === null && <p className="payment-radio-card__empty">{language === 'bn' ? 'এগিয়ে যেতে একটি বিকল্প নির্বাচন করুন।' : 'No option selected. Choose one to continue.'}</p>}
                 {fieldError('payerChoice')}
@@ -1405,7 +1494,25 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               <p className="text-sm text-red-700" role="alert">{errorMessage}</p>}
             {simpleOwnOtherTax && renderOtherTaxTaxpayerList(true)}
             <div className="payment-identity__fields">
-              {ownAccountTax && <SignedInTaxpayerCard profile={ownProfile} language={language} id="signed-in-account-taxpayer-card" />}
+              {ownAccountTax && (initialReuse && otherBatch
+                ? renderOtherTaxTaxpayerList(false)
+                : <SignedInTaxpayerCard profile={ownProfile} language={language} id="signed-in-account-taxpayer-card" />)}
+              {ownAccountTax && otherBatch && <SavedBeneficiaryPicker key={beneficiaryRefreshKey} language={language} allowMultiple
+                selectedTins={additionalTaxpayers.map(person => person.tin).filter(Boolean)}
+                onAvailableTins={setAvailableSavedTins}
+                onChoose={selected => {
+                  const unique = selected.filter((person, index) => person.tin !== taxpayerTin &&
+                    selected.findIndex(candidate => candidate.tin === person.tin) === index);
+                  const additions = unique.map(person => {
+                    const previous = additionalTaxpayers.find(candidate => candidate.tin === person.tin);
+                    return { ...person, id: previous?.id ?? crypto.randomUUID() };
+                  });
+                  setAdditionalTaxpayers(additions);
+                  setOtherTaxLines(lines => lines.filter(line => line.taxpayerId === 'primary' ||
+                    additions.some(person => person.id === line.taxpayerId)));
+                  setAuthorizedTaxpayerIds({});
+                  clearValidationError();
+                }} />}
               {!ownAccountTax && <>
               {!signedInAccount && (!otherBatch || ownAccountTax) &&
                 <TaxpayerTinLookup language={language} className="payment-identity__tin" card
@@ -1444,7 +1551,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   aria-describedby={errorDescription('payerName')}
                   placeholder={copy.payerNamePlaceholder}
                   value={effectivePayerName}
-                  readOnly={Boolean(signedInPayerName)} aria-readonly={Boolean(signedInPayerName)}
+                  readOnly={Boolean(signedInPayerName || confirmedWalkInPayer)} aria-readonly={Boolean(signedInPayerName || confirmedWalkInPayer)}
                   required autoComplete="name"
                   onChange={(e) => setPayerName(e.target.value)}
                   className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
@@ -1481,6 +1588,45 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {fieldError('noticeReference')}
                 </div>}
               {simpleOwnOtherTax && receiptEmailControl}
+              </div>}
+              {otherBatch && forSelf === false && !signedInAccount && <div data-testid="walkin-payer-tin">
+                <TaxpayerTinLookup
+                  language={language} tinId="guest-payer-tin" nameId="guest-payer-tin-name"
+                  tin={walkInPayerTin}
+                  name={walkInPayerLookup?.tin === walkInPayerTin
+                    ? (language === 'bn' ? walkInPayerLookup.nameBn : walkInPayerLookup.nameEn) : ''}
+                  tinLabel={language === 'bn' ? 'পরিশোধকারীর নিজের টিআইএন (ঐচ্ছিক)' : 'Payer TIN (optional)'}
+                  nameLabel={language === 'bn' ? 'মিলে যাওয়া পরিশোধকারীর নাম' : 'Matched payer name'}
+                  searchLabel={language === 'bn' ? 'পরিশোধকারীর টিআইএন খুঁজুন' : 'Search payer TIN'}
+                  requiredTin={false} maxTinLength={12}
+                  canSearch={/^\d{12}$/.test(walkInPayerTin)}
+                  invalidTin={isFieldInvalid('payerTin')} tinDescribedBy={errorDescription('payerTin')}
+                  onTinChange={value => {
+                    setWalkInPayerTin(value); setWalkInPayerLookup(null);
+                    setWalkInPayerConfirmed(false); clearValidationError();
+                  }}
+                  onClear={() => {
+                    setWalkInPayerTin(''); setWalkInPayerLookup(null);
+                    setWalkInPayerConfirmed(false); clearValidationError();
+                  }}
+                  onSearch={() => {
+                    setWalkInPayerLookup(/^\d{12}$/.test(walkInPayerTin)
+                      ? lookupSampleTaxpayer(walkInPayerTin) : null);
+                    setWalkInPayerConfirmed(false);
+                  }}
+                  status={walkInPayerTin && /^\d{12}$/.test(walkInPayerTin) && !walkInPayerLookup
+                    ? <p className="text-xs text-slate-600">{language === 'bn' ? 'করদাতার তথ্য খুঁজুন।' : 'Search taxpayer information.'}</p>
+                    : walkInPayerLookup ? <p className="sr-only">{language === 'bn' ? 'টিআইএন মিলে গেছে।' : 'TIN matched.'}</p> : null}
+                  error={fieldError('payerTin')}
+                />
+                {walkInPayerLookup?.tin === walkInPayerTin && !confirmedWalkInPayer &&
+                  <button type="button" className="min-h-11 rounded-lg border border-taxpay-primary px-4 py-2 text-sm text-taxpay-primary"
+                    onClick={() => { setWalkInPayerConfirmed(true); clearValidationError(); }}>
+                    {language === 'bn' ? 'পরিশোধকারীর তথ্য নিশ্চিত করুন' : 'Confirm payer'}
+                  </button>}
+                {confirmedWalkInPayer && <p className="text-xs text-slate-700" role="status">
+                  {language === 'bn' ? 'বর্তমান নমুনা টিআইএন তালিকায় মিলেছে। অ্যাকাউন্টের মালিকানা যাচাই করা হয়নি।' : 'Matched the current sample TIN lookup. Account ownership is not verified.'}
+                </p>}
               </div>}
             </div>
             {ownAccountTax && !isWithholdingMode && receiptEmailControl}
@@ -1663,13 +1809,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   // A User1 amount belongs to its assessment year, not every year.
                   if (suggestionUserId === 'user1') setAmountInputs({});
                 }} className="min-h-11 w-full px-3 py-2 rounded border border-slate-300">
+                  <option value="" disabled>{language==='bn'?'করবর্ষ নির্বাচন করুন':'Select assessment year'}</option>
                   {['2027-28', '2026-27', '2025-26', '2024-25'].map(year => <option value={year} key={year}>{year}</option>)}
                 </select>
               </div>
             </div>
             <div className="payment-head-amount-grid">
-            {selectedHeads.map((head, index) => <div className="payment-head-amount" data-columns={amountRowColumns[index]} key={head.id}>
-              {selectedHeads.length > 1 && <p className="payment-head-amount__label">{head.economicCode} — {language === 'bn' ? head.nameBn : head.nameEn}</p>}
+            {selectedHeads.map((head, index) => <div className={`payment-head-amount${selectedHeads.length > 1 ? ' payment-head-amount--multi' : ''}`} data-columns={amountRowColumns[index]} key={head.id}>
+              <div className="payment-head-amount__control">
               <div className="mb-1 flex items-center gap-1">
                 <label htmlFor={index === 0 ? 'guest-tax-amount' : `guest-tax-amount-${head.id}`} className="text-slate-600 font-medium">{language === 'bn' ? 'পরিশোধের পরিমাণ (৳)' : 'Payment amount (৳)'} *</label>
                 {suggestedAmount && amountRawForHead(head.id) === suggestedAmount.amount &&
@@ -1685,6 +1832,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 }}
                 className="min-h-11 w-full px-3 py-2 rounded border border-slate-300 font-mono-plex" />
               {isFieldInvalid('taxAmount') && errorHeadId === head.id && fieldError('taxAmount')}
+              </div>
+              {selectedHeads.length > 1 && <p className="payment-head-amount__label">{head.economicCode} — {language === 'bn' ? head.nameBn : head.nameEn}</p>}
             </div>)}
             </div>
             {isFieldInvalid('taxAmount') && errorHeadId === null && fieldError('taxAmount')}
@@ -1748,7 +1897,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </aside>
             {!embedded && <div className="payment-review__standalone-actions">
               <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{commonCopy.btnBack}</button>
-              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={batchRecoveryError || !paymentChannel || !paymentMethod || !acknowledged || isProcessing || !storyAmountSupported || (otherBatch && !batchValid)}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
+              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={batchRecoveryError || !paymentChannel || !paymentMethod || !acknowledged || isProcessing || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
             </div>}
           </div>
         )}
@@ -1789,7 +1938,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             <button type="button" className="tax-service-choice__cancel" onClick={() => setStep(2)} disabled={isProcessing}>
               <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
             </button>
-            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={batchRecoveryError || isProcessing || !paymentChannel || !paymentMethod || !acknowledged || !storyAmountSupported || (otherBatch && !batchValid)} aria-busy={isProcessing}>
+            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={batchRecoveryError || isProcessing || !paymentChannel || !paymentMethod || !acknowledged || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))} aria-busy={isProcessing}>
               {paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}
             </button>
           </>) : null}

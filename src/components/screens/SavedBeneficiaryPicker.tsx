@@ -98,6 +98,13 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
   const normalized=search.trim().toLocaleLowerCase();
   const names=(person:Beneficiary)=>beneficiaryNameForDisplay(person.display_name,tr('Name not provided','নাম দেওয়া হয়নি'));
   const uniqueSelected=Array.from(new Set(selectedTins.filter(tin=>people.some(person=>person.tin===tin))));
+  // Saved lists are immutable here; only the payment chooser prioritizes preselected TINs.
+  const paymentOrder=(tin:string)=>{const index=uniqueSelected.indexOf(tin);return index<0?Number.MAX_SAFE_INTEGER:index;};
+  const orderedLists=[...lists].sort((left,right)=>{
+    const first=(listId:string)=>people.filter(person=>person.list_id===listId)
+      .reduce((index,person)=>Math.min(index,paymentOrder(person.tin)),Number.MAX_SAFE_INTEGER);
+    return first(left.id)-first(right.id);
+  });
   const manage=()=>{setPaymentServiceChoiceOpen(false);navigate('beneficiaries');};
   const change=(person:Beneficiary)=>{
     const next=allowMultiple
@@ -113,16 +120,12 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
 
   return <section className="col-span-full space-y-3" data-testid="saved-beneficiary-picker"
       aria-label={tr('Choose beneficiaries','উপকারভোগী নির্বাচন')}>
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <h3 className="text-sm font-semibold text-taxpay-text">{tr('Choose beneficiaries','উপকারভোগী নির্বাচন')}</h3>
+    {/* The parent PaymentFormSection owns the one heading and description. */}
+    <div className="flex justify-end">
       <UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold" onClick={manage}>
         {tr('Manage beneficiaries','উপকারভোগী পরিচালনা')}
       </UiButton>
     </div>
-    <p className="text-sm text-slate-600">{tr(
-      'Select saved beneficiaries from a list below. To add or edit a taxpayer, use Beneficiaries.',
-      'নিচের তালিকা থেকে সংরক্ষিত উপকারভোগী নির্বাচন করুন। কাউকে যোগ বা সম্পাদনা করতে উপকারভোগী পাতায় যান।'
-    )}</p>
     {(checkingIdentity||loading)&&<p role="status" className="text-sm text-slate-600">{tr('Loading beneficiary lists…','উপকারভোগীর তালিকা লোড হচ্ছে…')}</p>}
     {!checkingIdentity&&!loading&&!error&&restoreAvailable&&<UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold"
       disabled={restoring} onClick={restoreSavedLists}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore saved lists','সংরক্ষিত তালিকা ফিরিয়ে আনুন')}</UiButton>}
@@ -146,8 +149,9 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
           className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"/>
       </div>}
       <div className="overflow-hidden rounded-lg border border-taxpay-border" data-testid="beneficiary-list-accordion">
-        {lists.map(list=>{
-          const members=people.filter(person=>person.list_id===list.id);
+        {orderedLists.map(list=>{
+          const members=people.filter(person=>person.list_id===list.id)
+            .sort((left,right)=>paymentOrder(left.tin)-paymentOrder(right.tin));
           const matchesList=list.name.toLocaleLowerCase().includes(normalized);
           const filtered=normalized&&!matchesList
             ? members.filter(person=>(names(person)+' '+person.tin+' '+beneficiaryTagLabel(person.tag,person.relationship,language,person.other_label)).toLocaleLowerCase().includes(normalized))

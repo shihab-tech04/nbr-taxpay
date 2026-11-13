@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 const routes = ['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings'];
-const banned = /\b(sample|synthetic|fictional|illustrative)\b|নমুনা|কাল্পনিক/i;
+const banned = /\b(synthetic|illustrative)\b|কাল্পনিক সরকারি করদায়/i;
 
 test('taxpayer dashboard contains no repeated demonstration badges, tooltips or captions', async ({page}) => {
   await page.setViewportSize({width:1600,height:900});
@@ -11,15 +11,14 @@ test('taxpayer dashboard contains no repeated demonstration badges, tooltips or 
   await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).getByRole('button',{name:'Overview'})).toBeVisible();
   await expect(main.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
   expect(await main.innerText()).not.toMatch(banned);
-  await expect(main.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'By payment service'})).toBeVisible();
   await expect(main.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
-  await expect(main.getByRole('heading',{name:'What needs your attention?'})).toBeVisible();
-  await expect(main.getByRole('heading',{name:'Current tax position'})).toBeVisible();
-  await expect(main.getByRole('heading',{name:'Tax trend by year'})).toBeVisible();
-  await expect(main.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
-  const position=main.locator('.taxpay-bento-position');
-  for(const number of ['৳ 180,000','৳ 155,000','৳ 25,000'])
-    await expect(position).toContainText(number);
+  await expect(main.getByRole('heading',{name:'What needs your attention?'})).toHaveCount(0);
+  await expect(main.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
+  await expect(main.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'By payment service'})).toBeVisible();
+  await expect(main.locator('.taxpay-bento-position')).toHaveCount(0);
+  await expect(main.getByTestId('dashboard-payment-analytics')).toBeVisible();
   // This boundary remains visible: records are fictional and must not be mistaken for an authenticated account.
   await expect(page.getByRole('button',{name:'Exit workspace'})).toBeVisible();
 });
@@ -37,7 +36,14 @@ test('ten user1 routes avoid repetitive example labels and keep relevant year co
     } else if (['account_profile','account_settings','journey'].includes(route))
       await expect(main.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);
     else await expect(main.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
-    expect(await main.innerText(), route+' exposes repetitive jargon').not.toMatch(banned);
+    if (route==='account_profile') {
+      // Profile follows the approved certificate fields without redundant sample disclaimers.
+      await expect(main.getByTestId('user1-taxpayer-profile')).toBeVisible();
+      await expect(main.getByText('Fictional sample profile',{exact:true})).toHaveCount(0);
+      expect(await main.innerText(),route+' exposes repetitive jargon').not.toMatch(banned);
+    } else {
+      expect(await main.innerText(),route+' exposes repetitive jargon').not.toMatch(banned);
+    }
   }
 });
 

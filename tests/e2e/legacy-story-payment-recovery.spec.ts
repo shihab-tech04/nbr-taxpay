@@ -7,8 +7,26 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   const primary='00000000-0000-4000-8000-000000010001';
   const legacy='00000000-0000-4000-8000-000000020002';
   const payment='00000000-0000-4000-8000-000000030003';
+  const older='00000000-0000-4000-8000-000000030004';
+  const mixed='00000000-0000-4000-8000-000000030005';
+  const unsnapshottedMulti='00000000-0000-4000-8000-000000030006';
   const cap='A'.repeat(43);
   const date='2026-11-05T12:00:00Z';
+  const snapshot={
+    id:payment,challanNo:'SIM-RECOVER-1',tokenNumber:'SIM-TOKEN',
+    paymentCategory:'OTHER_TAX_PAYMENT',assessmentYear:'2025-26',
+    payerName:'Preview user1',payerTin:'1111111111111',taxpayerTin:'1111111111111',
+    receiptMobile:'01712345678',isRepresentativePayment:false,
+    taxZone:'—',taxCircle:'—',isWithholding:false,
+    items:[{headId:1,economicCode:'16A',headNameEn:'Surcharge',
+      taxAmount:100,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:100}],
+    allocationItems:[{taxpayerTin:'1111111111111',taxpayerName:'Preview user1',
+      paymentServiceEn:'Surcharge',paymentServiceBn:'সারচার্জ',
+      assessmentYear:'2025-26',amountMinor:10000}],
+    totalAmount:100,paymentMethod:'SIMULATED',gatewayTransactionId:'SIMULATED',
+    treasuryStatus:'GATEWAY_SUCCESS',taxCreditStatus:'PENDING_RECONCILIATION',
+    createdAt:date,isSimulatedDemo:true
+  };
   let recovered=false;
   let recoveryAttempts=0;
   const paymentRequests:string[]=[];
@@ -52,15 +70,35 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
     const url=new URL(route.request().url());
     paymentRequests.push(url.pathname+url.search);
-    const detail=url.pathname.includes('/payments/'+payment);
-    const record={id:payment,service:'OTHER_TAX_PAYMENT',amountMinor:10000,status:'SIMULATED_SUCCESS',createdAt:date};
-    if(detail){
+    const records=[
+      {id:payment,service:'OTHER_TAX_PAYMENT',amountMinor:10000,status:'SIMULATED_SUCCESS',createdAt:date},
+      {id:older,service:'TAX_WITH_RETURN',amountMinor:2500000,status:'SIMULATED_SUCCESS',createdAt:'2026-10-26T12:00:00Z'},
+      {id:mixed,service:'TAX_WITH_RETURN',amountMinor:5000,status:'SIMULATED_SUCCESS',createdAt:'2026-10-18T12:00:00Z'},
+      {id:unsnapshottedMulti,service:'ADVANCE_TAX',amountMinor:6500,status:'SIMULATED_SUCCESS',createdAt:'2026-10-17T12:00:00Z'}
+    ];
+    const chosen=records.find(item=>url.pathname.includes('/payments/'+item.id));
+    if(chosen){
+      const details=chosen.id===payment
+        ?{payerName:'Earlier payer',assessmentYear:'2025-26',paymentMethod:'SIMULATED',receiptSnapshot:snapshot}
+        :chosen.id===older
+          ?{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2025-26',
+            lines:[{category:'TAX_WITH_RETURN',beneficiary:'user1',assessmentYear:'2025-26',amountMinor:2500000,
+              headId:1,headNameEn:'Historic Tax with Return',economicCode:'1-1141-0010-0101'}]}
+          :chosen.id===unsnapshottedMulti
+          ?{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2025-26',
+            lines:[{category:'ADVANCE_TAX',beneficiary:'user1',assessmentYear:'2025-26',
+              amountMinor:3500,headId:11,headNameEn:'Old first quarter',economicCode:'1-1141-0015-0201'},
+              {category:'ADVANCE_TAX',beneficiary:'user1',assessmentYear:'2025-26',
+              amountMinor:3000,headId:12,headNameEn:'Old second quarter',economicCode:'1-1141-0015-0202'}]}
+          :{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2026-27',
+            lines:[{category:'TAX_WITH_RETURN',beneficiary:'user1',assessmentYear:'2026-27',amountMinor:3500},
+              {category:'ADVANCE_TAX',beneficiary:'user1',assessmentYear:'2025-26',amountMinor:1500}]};
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
-        success:true,simulationOnly:true,data:{id:payment,status:record.status,createdAt:date,
-          data:{service:record.service,amountMinor:10000,details:{payerName:'Earlier payer',assessmentYear:'2026-27',paymentMethod:'SIMULATED'}}}
+        success:true,simulationOnly:true,data:{id:chosen.id,status:chosen.status,createdAt:chosen.createdAt,
+          data:{service:chosen.service,amountMinor:chosen.amountMinor,details}}
       })});return;
     }
-    const items=recovered?[record]:[];
+    const items=recovered?records:[];
     console.log('Mock Story1 list:',JSON.stringify({recovered,items:items.length,pathname:url.pathname,session:url.searchParams.get('sessionId')}));
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
       success:true,simulationOnly:true,data:{items,total:items.length,page:1,perPage:100}
@@ -135,4 +173,39 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   expect(reread.body?.data?.items?.some((row:{id:string})=>row.id===payment)).toBe(true);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-guest-simulation-session'))).toBeNull();
   await expect(page.getByRole('button',{name:'Restore earlier payments'})).toHaveCount(0);
+  // Pay Again is attached only to each SQL-recorded transaction, not to the
+  // search/filter/export toolbar and never to synthetic DEMO-* example rows.
+  await expect(page.getByTestId('user1-pay-again-entry')).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Pay Again'})).toHaveCount(0);
+  const register=page.getByTestId('taxpayer-transaction-table');
+  const paid=register.getByRole('row').filter({hasText:payment});
+  await expect(paid).toBeVisible({timeout:15000});
+  await expect(paid.getByTestId('recorded-pay-again')).toBeEnabled();
+  const illustrative=register.getByRole('row').filter({hasText:'DEMO-PAY-PEND-01'});
+  await expect(illustrative.getByTestId('recorded-pay-again')).toHaveCount(0);
+  // Each payment also exposes the repeat action within its own Details modal.
+  await paid.getByRole('button',{name:'Details for Other Tax Payment'}).click();
+  const detail=page.getByRole('dialog',{name:'Other Tax Payment'});
+  await expect(detail).toBeVisible();
+  await expect(detail.getByTestId('recorded-pay-again-detail')).toBeEnabled();
+  await detail.getByTestId('recorded-pay-again-detail').click();
+  const cloned=page.getByRole('dialog',{name:'Pay Tax'});
+  await expect(cloned).toBeVisible();
+  await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText(payment);
+  await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText('Original payment unchanged.');
+  await page.reload({waitUntil:'domcontentloaded'});
+  const reg=page.getByTestId('taxpayer-transaction-table');
+  const original=reg.getByRole('row').filter({hasText:older});
+  const forbidden=reg.getByRole('row').filter({hasText:mixed});
+  await expect(original.getByTestId('recorded-pay-again')).toBeEnabled({timeout:15000});
+  await expect(forbidden.getByTestId('recorded-pay-again')).toBeDisabled();
+  // The fallback display receipt for older multi-line rows is not an input
+  // snapshot: head IDs in the old catalogue cannot silently become new heads.
+  const unverified=reg.getByRole('row').filter({hasText:unsnapshottedMulti});
+  await expect(unverified.getByTestId('recorded-pay-again')).toBeDisabled();
+  await original.getByTestId('recorded-pay-again').click();
+  const legacyCopy=page.getByRole('dialog',{name:'Pay Tax'});
+  await expect(legacyCopy.getByTestId('pay-again-reuse-notice')).toContainText(older);
+  await expect(legacyCopy.getByTestId('pay-again-legacy-note')).toContainText('25000.00');
+  await expect(legacyCopy.getByTestId('pay-again-legacy-note')).toContainText('Choose them again');
 });

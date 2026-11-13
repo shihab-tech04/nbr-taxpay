@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
-import { fillTravelDetails, fillForeignPassenger } from './travel-tax-test-helper';
+import { fillTravelDetails, fillForeignPassenger, futureTravelDate } from './travel-tax-test-helper';
 
 test('Pay Tax and Travel Tax keep the same modal width across passenger and travel stages', async ({page}, info) => {
   await page.goto('/');
@@ -52,7 +52,7 @@ test('Pay Tax and Travel Tax keep the same modal width across passenger and trav
   await checkWidth('Travel details');
   await travel.locator('#travel-port').selectOption('Benapole');
   await travel.locator('#travel-destination').fill('India');
-  await travel.locator('#travel-departure-date').fill('2026-11-20');
+  await travel.locator('#travel-departure-date').fill(futureTravelDate);
   await travel.getByRole('button',{name:'Continue to review'}).click();
   await checkWidth('Review & payment');
   if (info.project.name === 'desktop-1280' || info.project.name === 'mobile-375') {
@@ -103,7 +103,10 @@ test('Travel Tax: Step 1 collects passengers and contact, Step 2 starts with tra
   await modal.locator('#travel-destination').fill('India');
   await continueButton.click();
   await expect(modal.getByRole('alert')).toHaveText('Select your travel date.');
-  await modal.locator('#travel-departure-date').fill('2026-11-20');
+  await modal.locator('#travel-departure-date').fill('2000-01-01');
+  await continueButton.click();
+  await expect(modal.getByRole('alert')).toHaveText('Select today or a future travel date.');
+  await modal.locator('#travel-departure-date').fill(futureTravelDate);
   await continueButton.click();
   await expect(modal.locator('.taxpay-modal__title')).toHaveText('Review & payment');
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','3');
@@ -532,7 +535,7 @@ test('Travel Tax: full-width travel date and contained calculation panel', async
   expect(inputBox).not.toBeNull();
   expect(fieldBox!.width).toBeGreaterThan(gridBox!.width * 0.95);
   expect(inputBox!.width).toBeGreaterThan(fieldBox!.width * 0.95);
-  await expect(date).toHaveValue('2026-11-20');
+  await expect(date).toHaveValue(futureTravelDate);
   await expect(modal.getByRole('button', {name: 'Continue to review'})).toBeEnabled();
 
   if (info.project.name === 'desktop-1280') {

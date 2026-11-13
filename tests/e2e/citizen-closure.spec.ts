@@ -29,7 +29,7 @@ test('root is a public information hub with a header Login and no payment action
  if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
  else await expect(page.locator('.citizen-pay')).toBeHidden();
  await expect(page.locator('.office-auth')).toHaveCount(0);
- await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
+ await expect(page.locator('#public-how-it-works')).toBeHidden();
 });
 
 test('sample taxpayer home never invents personal ledger credit',async({page})=>{
@@ -41,7 +41,9 @@ test('sample taxpayer home never invents personal ledger credit',async({page})=>
   await expect(page.getByRole('heading',{name:'Payment composition'})).toBeVisible();
   await expect(page.getByText('Total Payments (FY 2024-26):')).toHaveCount(0);
   await expect(page.getByText('Q1 Deposited')).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
+  if(await rail.isVisible()) await expect(rail.getByRole('button',{name:'Pay Tax menu'})).toBeVisible();
+  else await expect(page.locator('.citizen-mobile-menu-trigger')).toBeVisible();
 });
 test('taxpayer mobile home and activity support Bangla without overflows',async({page})=>{
   await page.setViewportSize({width:320,height:740});
@@ -73,28 +75,34 @@ test('sample payment activity retains filtering and does not assert tax-credit o
 });
 
 
-test('public mobile navigation reuses the taxpayer dock with public-only routes and Pay',async({page})=>{
+test('public mobile keeps routes in the menu and uses a top-right Help icon with floating Pay',async({page})=>{
  await page.setViewportSize({width:390,height:844});
  await page.goto('/?action=landing');
  await expect(page.locator('.public-home-header')).toBeHidden();
  await expect(page.locator('.citizen-header')).toBeVisible();
- const dock=page.getByRole('navigation',{name:'Mobile primary navigation'});
- await expect(dock).toBeVisible();
- await expect(dock.getByRole('button',{name:'Payment Status'})).toBeVisible();
- await expect(dock.getByRole('button',{name:'Help'})).toBeVisible();
- await expect(dock.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
- await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+ const publicDock=page.getByRole('navigation',{name:'Mobile primary navigation'});
+ await expect(publicDock).toBeVisible();
+ await expect(publicDock.getByRole('button',{name:'Home'})).toBeVisible();
+ await expect(publicDock.getByRole('button',{name:'Payment Status'})).toBeVisible();
+ await expect(publicDock.getByRole('button',{name:'Help'})).toBeVisible();
+ await expect(publicDock.locator('.citizen-bottom-nav__item')).toHaveCount(3);
+ await expect(page.getByRole('button',{name:'Chat support'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Pay — select payment type'})).toHaveClass(/citizen-pay--guest-floating/);
  await page.getByRole('button',{name:'Open menu'}).click();
- await expect(page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'Help'})).toBeVisible();
+ const menu=page.getByRole('dialog',{name:'Services & menu'});
+ await expect(menu.getByRole('button',{name:'Home'})).toBeVisible();
+ await expect(menu.getByRole('button',{name:'Payment Status'})).toBeVisible();
+ await expect(menu.getByRole('button',{name:'Help'})).toBeVisible();
+ await expect(menu.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
  await page.keyboard.press('Escape');
- await expect(page.getByRole('dialog',{name:'Services & menu'})).toHaveCount(0);
+ await expect(menu).toHaveCount(0);
 });
 
 test('obligations dashboard cannot assert fictional credits, demand or paid instalments',async({page})=>{
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Travel tax',exact:true})).toBeVisible();
+  await expect(page.locator('.taxpay-bento-hero__actions').getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'TDS & advance tax'})).toBeVisible();
   await expect(page.getByText('Available for e-Return AY 2025-2026')).toHaveCount(0);
@@ -155,7 +163,7 @@ test('certificate previews stay non-official, match the selected type and locali
 
 test('home explains the payment stages without an inline transaction form',async({page})=>{
  await page.goto('/');
- await expect(page.getByRole('heading',{name:'How your payment works'})).toBeVisible();
+ await expect(page.locator('#public-how-it-works')).toBeHidden();
  await expect(page.locator('.public-payment-path__steps > li')).toHaveCount(4);
  await expect(page.locator('.public-info-topic')).toHaveCount(0);
  if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();

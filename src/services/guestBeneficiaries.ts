@@ -119,7 +119,14 @@ async function post<T>(action: string, fields: Record<string, unknown> = {}, sou
       // The capability itself remains stored; a later request retries registration.
     }
   }
-  return send(action, fields);
+  // Any attempted write invalidates the bounded read cache immediately and
+  // again on settlement. This prevents a pre-write read from populating stale
+  // data after a completed mutation (or a failed write requiring recovery).
+  if (action === 'lists' || action === 'people' || action === 'open')
+    return send(action, fields);
+  invalidatePreviewRead();
+  try { return await send(action, fields); }
+  finally { invalidatePreviewRead(); }
 }
 
 /** Only idempotent reads retry once on transport/service interruption. A failed
@@ -162,9 +169,47 @@ async function loadFromSource(source:GuestSource):Promise<{ lists: GuestList[]; 
   return { lists, people };
 }
 
-/** Active preview reads are always server-issued, profile-specific. */
-export function loadGuestBeneficiaries(){
-  return loadFromSource('active');
+// A very short capability-scoped read reuse avoids duplicate Edge calls while
+// navigating rapidly between Overview, Payments & Activity and Beneficiaries.
+// Never cache non-preview anonymous sessions, failed reads or writes.
+type GuestSnapshot = Awaited<ReturnType<typeof loadFromSource>>;
+const previewReadWindowMs = 3000;
+let previewRead: { capability:string; expires:number; value:GuestSnapshot }|null = null;
+let previewReadPending: { capability:string; generation:number; promise:Promise<GuestSnapshot> }|null = null;
+let previewReadGeneration = 0;
+function invalidatePreviewRead():void {
+  previewReadGeneration++;
+  previewRead = null;
+  previewReadPending = null;
+}
+function detachedSnapshot(data:GuestSnapshot):GuestSnapshot {
+  return {lists:data.lists.map(row=>({...row})),people:data.people.map(row=>({...row}))};
+}
+/** Capability-isolated preview data: refetch after writes or 3s, coalesce simultaneous reads. */
+export function loadGuestBeneficiaries(options:{forceFresh?:boolean}={}):Promise<GuestSnapshot>{
+  const capability=activePreviewSession()?.capability;
+  if(!capability)return loadFromSource('active');
+  // Payment authorization and other critical revalidation must bypass both
+  // the three-second snapshot and any already-pending navigation read.
+  if(options.forceFresh){
+    invalidatePreviewRead();
+    return loadFromSource('active').then(detachedSnapshot);
+  }
+  if(previewRead?.capability===capability&&Date.now()<previewRead.expires)
+    return Promise.resolve(detachedSnapshot(previewRead.value));
+  if(previewReadPending?.capability===capability&&
+     previewReadPending.generation===previewReadGeneration)
+    return previewReadPending.promise.then(detachedSnapshot);
+  const generation=previewReadGeneration;
+  const promise=loadFromSource('active').then(result=>{
+    if(previewReadGeneration===generation&&activePreviewSession()?.capability===capability)
+      previewRead={capability,expires:Date.now()+previewReadWindowMs,value:result};
+    return result;
+  }).finally(()=>{
+    if(previewReadPending?.promise===promise)previewReadPending=null;
+  });
+  previewReadPending={capability,generation,promise};
+  return promise.then(detachedSnapshot);
 }
 /** Old anonymous browser books stay available only for explicit recovery. */
 export function loadLegacyGuestBeneficiaries(){

@@ -58,6 +58,9 @@ async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[]
       }]:[]);
     }
     if(url.pathname==='/rest/v1/rpc/taxpay_claim_story1_session')return response(0);
+    // The new optional payer-history claim is authenticated and must not
+    // prevent the existing owner-scoped payment history fixture from loading.
+    if(url.pathname==='/rest/v1/rpc/taxpay_claim_walkin_payer_payments')return response(0);
     if(url.pathname==='/rest/v1/rpc/taxpay_my_story1_payments')return response({
       items:storedPayments,total:storedPayments.length,page:1,perPage:100
     });
