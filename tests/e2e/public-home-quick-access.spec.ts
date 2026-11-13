@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
-test('compact desktop homepage explains six benefits without duplicate CTAs', async ({ page }) => {
+test('compact desktop homepage keeps six balanced benefit destinations', async ({ page }) => {
   // This 3x2 parity test intentionally uses the compact desktop breakpoint.
   // The same 3x2 layout remains consistent at wider desktop sizes.
   await page.setViewportSize({ width: 1140, height: 900 });
@@ -24,10 +24,23 @@ test('compact desktop homepage explains six benefits without duplicate CTAs', as
     await expect(card).toHaveAttribute('data-benefit', id);
     await expect(card.getByRole('heading', { name: heading })).toBeVisible();
     await expect(card.locator('p')).toHaveText(description);
+    const control = id === 'payments'
+      ? card.getByRole('button', { name: heading })
+      : card.getByRole('link', { name: heading });
+    await expect(control).toHaveAttribute('aria-describedby', `public-benefit-detail-${id}`);
+    const destination: Record<string, string> = {
+      certificates: 'certificates',
+      corrections: 'corrections',
+      history: 'history',
+      'pay-again': 'history',
+      'saved-drafts': 'taxpayer_home',
+    };
+    if (id !== 'payments') await expect(control).toHaveAttribute('href', `?action=${destination[id]}`);
     await expect(card.locator('svg')).toHaveCount(1);
     await expect(card.locator('p')).toHaveCSS('font-size', '14px');
   }
-  await expect(benefits.getByRole('button')).toHaveCount(0);
+  await expect(benefits.getByRole('button')).toHaveCount(1);
+  await expect(benefits.getByRole('link')).toHaveCount(5);
   await expect(page.getByRole('heading', { name: 'Find a payment record' })).toBeVisible();
 
   const positions = await benefits.locator('.public-benefits__item').evaluateAll(items =>
@@ -804,3 +817,46 @@ for (const { width, height, lang } of [
     await expect(page.locator('.public-home-header')).toBeVisible();
   });
 }
+
+test('six benefit destinations work by pointer and keyboard in English and Bangla on mobile and desktop', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1280', 'The test covers its own explicit mobile and desktop viewports.');
+  const cases = [
+    { id: 'payments', en: 'All Tax Payments', bn: 'সব ধরনের কর পরিশোধ', destination: 'pay-choice' },
+    { id: 'certificates', en: 'Tax Certificates', bn: 'কর সনদ', destination: 'certificates' },
+    { id: 'corrections', en: 'Corrections & Requests', bn: 'সংশোধন ও আবেদন', destination: 'corrections' },
+    { id: 'history', en: 'Payment History', bn: 'পেমেন্টের ইতিহাস', destination: 'history' },
+    { id: 'pay-again', en: 'Pay Again', bn: 'আবার পরিশোধ', destination: 'history' },
+    { id: 'saved-drafts', en: 'Saved Drafts', bn: 'সংরক্ষিত খসড়া', destination: 'taxpayer_home' },
+  ] as const;
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const language of ['en', 'bn'] as const) {
+      await page.goto(`/?action=landing&lang=${language}`);
+      const benefits = page.locator('.public-benefits');
+      await expect(benefits.locator('.public-benefits__grid')).toBeVisible();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(2);
+
+      for (const item of cases) {
+        const card = benefits.locator(`[data-benefit="${item.id}"]`);
+        const label = item[language];
+        const box = await card.boundingBox();
+        if (!box) throw new Error(`Missing benefit card: ${item.id}`);
+        if (item.id === 'payments') {
+          await card.click({ position: { x: box.width - 6, y: box.height - 6 } });
+          await expect(page.locator('.tax-service-choice__card')).toHaveCount(2);
+        } else {
+          const control = card.getByRole('link', { name: label });
+          if (item.id === 'certificates' && width === 320 && language === 'bn') {
+            await control.focus();
+            await expect(control).toBeFocused();
+            await page.keyboard.press('Enter');
+          } else {
+            await card.click({ position: { x: box.width - 6, y: box.height - 6 } });
+          }
+          await expect(page).toHaveURL(new RegExp(`[?&]action=${item.destination}(?:&|$)`));
+        }
+      }
+    }
+  }
+});
