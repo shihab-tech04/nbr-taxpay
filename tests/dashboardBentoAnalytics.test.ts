@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type {ChallanReceipt} from '../src/types/tax';
 import {
-  projectDashboardChartRecords,chooseDashboardChartSource,formatDashboardChartMoney,dashboardChartPercentage,
+  projectDashboardChartRecords,chooseDashboardChartSource,matchesDashboardChartDrilldown,formatDashboardChartMoney,dashboardChartPercentage,
   type DashboardChartRecord
 } from '../src/components/screens/dashboardBentoAnalytics';
 
@@ -151,4 +151,98 @@ test('unclassified amounts distinguish known untagged recipients from missing re
   assert.equal(travel.unclassified.recipientKnownMinor,6500n);
   assert.equal(travel.unclassified.recipientMissingMinor,0n);
   assert.equal(travel.unclassified.missingRecipientPaymentCount,0);
+});
+
+test('ranking by recipient counts combined receipts once across payment heads',()=>{
+  const combined=recorded('combined-1',[
+    receipt('receipt-6','OTHER_TAX_PAYMENT',[
+      {tin:family,year:'2026-27',minor:12000},
+      {tin:family,year:'2026-27',minor:8000},
+      {tin:friend,year:'2026-27',minor:9000}]),
+    receipt('receipt-7','ADVANCE_TAX',[
+      {tin:family,year:'2026-27',minor:40000},
+      {year:'2026-27',minor:3000},
+      {tin:owner,year:'2025-26',minor:10000}])
+  ]);
+  const other=recorded('combined-2',[
+    receipt('receipt-8','TRAVEL_TAX',[{tin:friend,year:'2026-27',minor:20000}])
+  ]);
+  const peopleWithNames=[
+    {...people[0],display_name:'Saved relative'},
+    {...people[1],display_name:'Saved friend'}
+  ];
+  const projection=projectDashboardChartRecords([combined,other],'2026-27','recorded',peopleWithNames,owner);
+  assert.equal(projection.totalMinor,92000n);
+  assert.equal(projection.byBeneficiary.length,2);
+  assert.equal(projection.byBeneficiary[0].tin,family);
+  assert.equal(projection.byBeneficiary[0].name,'Saved relative');
+  assert.equal(projection.byBeneficiary[0].tag,'family');
+  assert.equal(projection.byBeneficiary[0].amountMinor,60000n);
+  assert.equal(projection.byBeneficiary[0].paymentCount,1);
+  assert.equal(projection.byBeneficiary[1].tin,friend);
+  assert.equal(projection.byBeneficiary[1].amountMinor,29000n);
+  assert.equal(projection.byBeneficiary[1].paymentCount,2);
+  assert.equal(projection.unclassified.recipientMissingMinor,3000n);
+  assert.equal(projection.byBeneficiary.reduce((sum,x)=>sum+x.amountMinor,0n)
+    +projection.unclassified.recipientMissingMinor,projection.totalMinor);
+  const travel=projectDashboardChartRecords([combined,other],'2026-27','recorded',peopleWithNames,owner,'travel');
+  assert.equal(travel.byBeneficiary.length,1);
+  assert.equal(travel.byBeneficiary[0].tin,friend);
+  assert.equal(travel.byBeneficiary[0].amountMinor,20000n);
+  const older=projectDashboardChartRecords([combined,other],'2025-26','recorded',peopleWithNames,owner);
+  assert.equal(older.byBeneficiary[0].tin,owner);
+  assert.equal(older.byBeneficiary[0].tag,'own');
+});
+
+test('ranked beneficiaries are never fabricated from missing recipient IDs or example payments',()=>{
+  const rows:DashboardChartRecord[]=[
+    {id:'example-one',year:'2025-2026',kind:'income',amount:450,state:'POSTED',beneficiaryTin:family},
+    {id:'example-two',year:'2025-2026',kind:'travel',amount:65,state:'POSTED',beneficiaryTin:friend},
+    {id:'no-recipient',year:'2025-2026',kind:'ait',amount:320,state:'POSTED'},
+    {id:'failed',year:'2025-2026',kind:'income',amount:100,state:'FAILED',beneficiaryTin:family},
+    recorded('sql-1',[receipt('receipt-9','OTHER_TAX_PAYMENT',[
+      {tin:owner,year:'2025-26',minor:2500}
+    ])])
+  ];
+  const shown=projectDashboardChartRecords(rows,'2025-26','example',[],owner);
+  assert.equal(shown.byBeneficiary.length,2);
+  assert.equal(shown.byBeneficiary[0].amountMinor,45000n);
+  assert.equal(shown.byBeneficiary[0].name,null);
+  assert.equal(shown.byBeneficiary[0].saved,false);
+  assert.equal(shown.byBeneficiary[1].amountMinor,6500n);
+  assert.equal(shown.unclassified.recipientMissingMinor,32000n);
+  assert.equal(shown.totalMinor,83500n);
+  const saved=projectDashboardChartRecords(rows,'2025-26','recorded',[],owner);
+  assert.equal(saved.byBeneficiary.length,1);
+  assert.equal(saved.byBeneficiary[0].tin,owner);
+  assert.equal(saved.byBeneficiary[0].amountMinor,2500n);
+  const selected=projectDashboardChartRecords(rows,'2025-26','example',[],owner,'travel');
+  assert.deepEqual(selected.byBeneficiary.map(item=>item.tin),[friend]);
+});
+
+
+test('chart-to-history drilldown requires the same year, service, recipient and relationship allocation',()=>{
+  const batch=recorded('combined-history',[
+    receipt('receipt-1','TRAVEL_TAX',[
+      {tin:family,year:'2025-26',minor:12500}
+    ]),
+    receipt('receipt-2','ADVANCE_TAX',[
+      {tin:friend,year:'2026-27',minor:30000},
+      {tin:family,year:'2026-27',minor:20000}
+    ])
+  ]);
+  const match=(year:string,service:'all'|'travel'|'ait',recipient?:string,tag?:'family'|'friends')=>
+    matchesDashboardChartDrilldown(batch,year,'recorded',people,owner,service,recipient,tag);
+  // Payment parent exists in both years, but its Travel Tax amount does not.
+  assert.equal(match('2026-27','travel'),false);
+  assert.equal(match('2025-26','travel',family,'family'),true);
+  assert.equal(match('2025-26','ait'),false);
+  assert.equal(match('2026-27','ait',family,'family'),true);
+  assert.equal(match('2026-27','ait',friend,'friends'),true);
+  // Distinct recipient and relationship matches in one batch are not the
+  // same allocation. This must not produce a false-positive history row.
+  assert.equal(match('2026-27','ait',friend,'family'),false);
+  assert.equal(match('2026-27','ait',family,'friends'),false);
+  assert.equal(match('2026-27','travel',family,'family'),false);
+  assert.equal(matchesDashboardChartDrilldown(batch,'2026-27','example',people,owner),false);
 });
