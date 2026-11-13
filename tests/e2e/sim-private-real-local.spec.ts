@@ -115,6 +115,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
  const payerCard=one.page.getByTestId('signed-in-payment-activity-cards')
    .locator(':scope > li').filter({hasText:tx!.id}).first();
+ await payerCard.getByText('View allocations',{exact:false}).click();
  const profileLink=payerCard.getByRole('button',{name:'Open beneficiary profile for User 7'});
  await expect(profileLink).toBeVisible({timeout:15000});
  await profileLink.click();
