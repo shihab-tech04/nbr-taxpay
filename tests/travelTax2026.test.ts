@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LAND_PORT_NAMES, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_ZONES,
+import { dhakaTravelDate, isPlannedTravelDate, LAND_PORT_NAMES, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_ZONES,
   makeTravelPassenger, travelPassengerAmount, travelPartyTotal, validateTravelParty, travelPassengerAge, assessTravelPassenger } from '../src/data/travelTax2026';
 
 test('client accounting reference has nine unique organizational codes and one economic code', () => {
@@ -45,4 +45,14 @@ test('travel-date DOB calculation explains the preview amount and safely handles
   assert.equal(assessTravelPassenger({...bd,identitySource:'PASSPORT_SAMPLE' as const},1000,'2026-11-20')?.amount,1000);
   assert.equal(validateTravelParty([foreign],'2026-11-20'),null);
   assert.match(validateTravelParty([{...foreign,birthDate:''}],'2026-11-20')??'',/date of birth/);
+});
+
+test('planned travel dates use Dhaka midnight and reject past or invalid dates', () => {
+  const now = new Date('2026-11-12T18:00:00Z');
+  assert.equal(dhakaTravelDate(now), '2026-11-13');
+  assert.equal(isPlannedTravelDate('2026-11-12', now), false);
+  assert.equal(isPlannedTravelDate('2026-11-13', now), true);
+  assert.equal(isPlannedTravelDate('2026-11-14', now), true);
+  assert.equal(isPlannedTravelDate('2027-02-29', now), false);
+  assert.equal(isPlannedTravelDate('2026-13-01', now), false);
 });
