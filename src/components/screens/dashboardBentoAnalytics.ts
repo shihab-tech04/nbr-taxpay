@@ -174,9 +174,10 @@ export function projectDashboardChartRecords(
     const receiptNames=[...new Set(rows.map(p=>p.name?.trim()).filter((x):x is string=>Boolean(x)))];
     const name=savedNames.length===1?savedNames[0]
       :savedNames.length>1?null:receiptNames.length===1?receiptNames[0]:null;
+    const tag:DashboardChartTag=tin===ownerTin?'own':paymentTagGroupForTin(tin,people);
     return {
       tin,name,saved:matching.length>0,
-      tag:tin===ownerTin?'own':paymentTagGroupForTin(tin,people),
+      tag,
       amountMinor:rows.reduce((sum,row)=>sum+row.amountMinor,0n),
       paymentCount:new Set(rows.map(row=>row.rowId)).size
     };
