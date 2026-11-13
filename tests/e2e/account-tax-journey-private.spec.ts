@@ -229,10 +229,13 @@ for(const language of ['en','bn'] as const){
   });
 }
 
-test('notification register keeps payment reviews available before correction columns are deployed',async({page})=>{
+test('notification register keeps payment reviews available before correction columns are deployed',async({page},info)=>{
   await mockAccount(page,true,[],false);
   await page.goto('/?action=account_notifications');
-  const reviews=page.getByTestId('authenticated-review-notification-register');
+  const mobile=info.project.name.startsWith('mobile-');
+  const reviews=page.getByTestId(mobile
+    ?'authenticated-review-notification-cards'
+    :'authenticated-review-notification-register');
   await expect(reviews).toBeVisible();
   await expect(reviews).toContainText(request.id);
   await expect(reviews).not.toContainText('case-a1');
