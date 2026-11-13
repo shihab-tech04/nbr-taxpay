@@ -69,7 +69,7 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     await owner.reload();
 
     const dashboard = owner.getByTestId('dashboard-payment-drafts');
-    const draftCard = dashboard.locator('[data-draft-id]').filter({ hasText: /travel tax/i }).first();
+    const draftCard = dashboard.locator('[data-draft-id]').filter({ hasText: /travel tax|ভ্রমণ কর/i }).first();
     await expect(draftCard).toBeVisible();
     const draftId = await draftCard.getAttribute('data-draft-id');
     expect(draftId).toBeTruthy();
@@ -78,13 +78,24 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     const other = await openAccount('user28');
     const otherDashboard = other.getByTestId('dashboard-payment-drafts');
     await expect(otherDashboard).toBeVisible();
-    await expect(otherDashboard.locator('[data-draft-id]').filter({ hasText: /travel tax/i })).toHaveCount(0);
+    await expect(otherDashboard.locator('[data-draft-id]').filter({ hasText: /travel tax|ভ্রমণ কর/i })).toHaveCount(0);
 
-    // Reloaded same-owner draft opens at the safe passenger stage. Preview identities are redacted and must be re-entered and checked.
-    await draftCard.getByRole('button', { name: 'Continue', exact: true }).click();
-    const resumed = owner.getByRole('dialog', { name: 'Travel tax' });
+    // Switch language through the existing control, then resume the SQL draft on a phone-sized viewport.
+    const languageSwitcher = owner.locator('.taxpayer-reference-rail-bottom')
+      .getByRole('button').filter({ hasText: 'Language' });
+    await languageSwitcher.click();
+    await expect(languageSwitcher).toContainText('English');
+    await expect(owner).toHaveURL(/lang=bn/);
+    await owner.setViewportSize({ width: 375, height: 812 });
+    await owner.reload();
+    await expect(draftCard).toBeVisible();
+
+    // Preview identity fields were redacted. Re-enter and recheck every passenger in the restored batch.
+    await draftCard.getByRole('button', { name: /Continue|চালিয়ে যান/ }).click();
+    const resumed = owner.locator('.taxpay-modal').filter({ has: owner.locator('.travel-flow') });
     const resumedFlow = resumed.locator('.travel-flow');
     await expect(resumedFlow).toHaveAttribute('data-step', '0');
+    await expect(resumedFlow).toHaveAttribute('lang', 'bn');
     const passengers = resumed.locator('[data-passenger-id]');
     await expect(passengers).toHaveCount(2);
     const first = passengers.nth(0);
@@ -92,32 +103,32 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     await expect(first).toHaveAttribute('data-complete', 'false');
     await first.locator('#travel-passport-first').fill('TEST123456');
     await first.locator('#travel-lookup-first').click();
-    await first.getByRole('button', { name: 'Add passenger', exact: true }).click();
+    await first.getByRole('button', { name: 'যাত্রী যোগ করুন', exact: true }).click();
 
     const resumedSecond = passengers.nth(1);
     const resumedSecondId = await resumedSecond.getAttribute('data-passenger-id');
     expect(resumedSecondId).toBeTruthy();
-    await resumedSecond.getByRole('button', { name: 'Edit', exact: true }).click();
+    await resumedSecond.getByRole('button', { name: 'সম্পাদনা', exact: true }).click();
     await expect(resumedSecond.locator('#travel-passport-' + resumedSecondId)).toHaveValue('');
     await expect(resumedSecond).toHaveAttribute('data-complete', 'false');
     await resumedSecond.locator('#travel-passport-' + resumedSecondId).fill('TEST230001');
     await resumedSecond.locator('#travel-lookup-' + resumedSecondId).click();
-    await resumedSecond.getByRole('button', { name: 'Add passenger', exact: true }).click();
+    await resumedSecond.getByRole('button', { name: 'যাত্রী যোগ করুন', exact: true }).click();
     await expect(resumed.locator('#travel-mobile')).toHaveValue('01712345678');
-    await resumed.getByRole('button', { name: 'Continue to travel details' }).click();
+    await resumed.getByRole('button', { name: 'ভ্রমণের তথ্য দিতে এগিয়ে যান' }).click();
     await expect(resumedFlow).toHaveAttribute('data-step', '1');
     await expect(resumed.locator('#travel-port')).toHaveValue('Benapole');
     await expect(resumed.locator('#travel-destination')).toHaveValue('India');
     await resumed.locator('#travel-departure-date').fill(futureTravelDate);
-    await resumed.getByRole('button', { name: 'Continue to review' }).click();
+    await resumed.getByRole('button', { name: 'পেমেন্ট পর্যালোচনায় যান' }).click();
     await expect(resumed.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(2);
 
     // Do not create a payment; discard the disposable draft after the full recovery journey.
     await resumed.locator('.taxpay-modal__header .taxpay-modal__close').click();
     const refreshedCard = dashboard.locator('[data-draft-id="' + draftId + '"]');
     await expect(refreshedCard).toBeVisible();
-    await refreshedCard.getByRole('button', { name: 'Delete', exact: true }).click();
-    await refreshedCard.getByRole('button', { name: 'Confirm delete', exact: true }).click();
+    await refreshedCard.getByRole('button', { name: 'মুছুন', exact: true }).click();
+    await refreshedCard.getByRole('button', { name: 'মুছে ফেলা নিশ্চিত করুন', exact: true }).click();
     await expect(refreshedCard).toHaveCount(0);
     await Promise.allSettled(contexts.slice(1).map(context => context.close()));
   } finally {

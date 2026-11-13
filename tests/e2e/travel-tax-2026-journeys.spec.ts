@@ -664,3 +664,61 @@ test('Travel Tax: medical assessment option survives passport check and passenge
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
   await expect(option).toBeVisible();
 });
+
+
+test('Travel Tax: Bangla journey validates, edits and shows the shared receipt without clipping', async ({ page }) => {
+  await page.goto('/?lang=bn');
+  await openTravelTaxFromBanner(page);
+  const modal = page.locator('.taxpay-modal').filter({ has: page.locator('.travel-flow') });
+  const flow = modal.locator('.travel-flow');
+  await expect(modal).toBeVisible();
+  await expect(flow).toHaveAttribute('lang', 'bn');
+
+  const assertContained = async () => {
+    const viewportWidth = page.viewportSize()?.width ?? 0;
+    const bounds = await modal.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(-1);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewportWidth + 1);
+    const overflow = await modal.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(2);
+  };
+
+  await expect(modal.locator('.taxpay-modal__title')).toContainText('যাত্রী ও রসিদের তথ্য');
+  await modal.locator('#travel-passport-first').fill('TEST123456');
+  await modal.locator('#travel-lookup-first').click();
+  await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE BANGLADESHI PASSENGER');
+  await modal.getByRole('button', { name: 'যাত্রী যোগ করুন', exact: true }).click();
+  await modal.locator('#travel-mobile').fill('01712345678');
+  await modal.getByRole('button', { name: 'ভ্রমণের তথ্য দিতে এগিয়ে যান' }).click();
+  await assertContained();
+
+  await modal.getByRole('button', { name: 'পেমেন্ট পর্যালোচনায় যান' }).click();
+  await expect(modal.getByRole('alert')).toHaveText('যাত্রা শুরুর বন্দর নির্বাচন করুন।');
+  await modal.locator('#travel-port').selectOption('Benapole');
+  await modal.locator('#travel-destination').fill('India');
+  await modal.locator('#travel-departure-date').fill(futureTravelDate);
+  await modal.getByRole('button', { name: 'পেমেন্ট পর্যালোচনায় যান' }).click();
+  await assertContained();
+  await expect(modal.locator('.travel-flow__passenger-table')).toContainText('মোট প্রদেয়');
+
+  await modal.getByRole('button', { name: 'ফিরুন', exact: true }).click();
+  await expect(flow).toHaveAttribute('data-step', '1');
+  await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
+  await modal.getByRole('button', { name: 'পেমেন্ট পর্যালোচনায় যান' }).click();
+  await modal.getByRole('button', { name: 'অনলাইনে পরিশোধ', exact: true }).click();
+  await modal.getByRole('button', { name: 'মোবাইল ব্যাংকিং', exact: true }).click();
+  await modal.getByRole('radio', { name: 'Nagad', exact: true }).check();
+  await modal.getByLabel('ভ্রমণের তথ্য, সকল যাত্রী এবং মোট টাকার পরিমাণ নিশ্চিত করছি।').check();
+  await modal.getByRole('button', { name: 'নমুনা পেমেন্ট নিশ্চিত করুন' }).click();
+
+  const receipt = modal.getByTestId('travel-family-challan');
+  await expect(receipt).toBeVisible();
+  await expect(receipt).toContainText('সম্মিলিত ভ্রমণ করের বিবরণ');
+  await expect(receipt).toContainText('যাত্রীভিত্তিক ভ্রমণ কর');
+  await expect(receipt).toContainText('SAMPLE BANGLADESHI PASSENGER');
+  await expect(receipt.locator('tbody tr')).toHaveCount(1);
+  await expect(modal.getByRole('button', { name: 'ডাউনলোড', exact: true })).toBeVisible();
+  await expect(modal.getByRole('button', { name: 'রসিদ প্রিন্ট', exact: true })).toBeVisible();
+  await assertContained();
+});
