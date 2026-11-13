@@ -245,8 +245,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [forSelf, setForSelf] = useState<boolean | null>(initialForSelf ?? null);
   const ownAccountTax = signedInAccount && forSelf === true;
   const signedInBeneficiarySelection = signedInAccount && forSelf === false;
-  // A saved TIN must be present in the current account's loaded lists; a route prefill is insufficient.
+  // Saved TINs must belong to this account; one-time sample entries require a separate confirmation.
   const [availableSavedTins,setAvailableSavedTins] = useState<string[] | null>(null);
+  const [oneTimeRecipient,setOneTimeRecipient]=useState<{ownerId:string;tin:string;nameEn:string;nameBn:string}|null>(null);
+  const paymentOwnerId=authenticatedUser?.id??previewAccount?.id??null;
+  const activeOneTimeRecipient=paymentOwnerId&&oneTimeRecipient?.ownerId===paymentOwnerId?oneTimeRecipient:null;
   const signedInProfile = signedInAccount ? accountTaxpayer.profile : null;
   const ownProfile = ownAccountTax ? signedInProfile : null;
   const accountName = ownProfile ? language === 'bn' ? ownProfile.nameBn : ownProfile.nameEn : '';
@@ -290,6 +293,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [selectedHeadIds, setSelectedHeadIds] = useState<number[]>([]);
   // Both payer relationships use the same Other Tax selection and allocation UI.
   const otherBatch = !isWithholdingMode && forSelf !== null && category === 'OTHER_TAX_PAYMENT';
+  useEffect(()=>{setOneTimeRecipient(null);},[paymentOwnerId,forSelf,category]);
+  const isConfirmedOneTimeFallback=(value:string)=>{
+    if(!activeOneTimeRecipient||activeOneTimeRecipient.tin!==value||!/^\d{12}$/.test(value))return false;
+    const match=lookupSampleTaxpayer(value);
+    return Boolean(match&&match.nameEn===activeOneTimeRecipient.nameEn&&match.nameBn===activeOneTimeRecipient.nameBn);
+  };
   const simpleOwnOtherTax = otherBatch && forSelf === true && !signedInAccount;
   const batchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: ownAccountTax ? accountName : otherTaxpayerName }, ...additionalTaxpayers];
   const batchAmount = otherTaxAllocationTotal(otherTaxLines);
@@ -307,7 +316,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const canContinueStep1 = (() => {
     if (beneficiaryChecking || forSelf === null || (ownAccountTax && !ownProfile)) return false;
     if (signedInBeneficiarySelection && (!availableSavedTins ||
-      !batchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) return false;
+      !batchTaxpayers.every(person=>Boolean(person.tin)&&
+        (availableSavedTins.includes(person.tin)||isConfirmedOneTimeFallback(person.tin))))) return false;
     if (ownAccountTax && additionalTaxpayers.length && (!availableSavedTins ||
       !additionalTaxpayers.every(person => availableSavedTins.includes(person.tin)))) return false;
     const tinValid = ownAccountTax
@@ -833,10 +843,33 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     return tins.every(tin => tin === signedInProfile?.tin || allowed.has(tin));
   };
 
+  const applySignedInBeneficiarySelection=(selected:{tin:string;name:string}[])=>{
+    clearReferenceSelection();
+    const unique=selected.filter((person,index)=>selected.findIndex(candidate=>candidate.tin===person.tin)===index);
+    const first=unique[0];
+    const priorPrimaryTin=taxpayerTin;
+    const additional=otherBatch?unique.slice(1).map(person=>{
+      const previous=additionalTaxpayers.find(candidate=>candidate.tin===person.tin);
+      return {...person,id:previous?.id??crypto.randomUUID()};
+    }):[];
+    setTin(first?.tin??'');
+    setOtherTaxpayerName(first?.name??'');
+    setAdditionalTaxpayers(additional);
+    setOtherTaxLines(lines=>lines.filter(line=>line.taxpayerId==='primary'
+      ? Boolean(first&&first.tin===priorPrimaryTin)
+      : additional.some(person=>person.id===line.taxpayerId)));
+    setAuthorizedTaxpayerId(null);
+    setAuthorizedTaxpayerIds({});
+    clearValidationError();
+  };
+
   const handleStep1Next = async () => {
     if (signedInBeneficiarySelection && (!availableSavedTins ||
-      !batchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) {
-      setValidationError(language === 'bn' ? 'এগোনোর আগে আপনার সংরক্ষিত তালিকা থেকে উপকারভোগী নির্বাচন করুন।' : 'Select beneficiaries from your saved lists before continuing.', 'tin');
+      !batchTaxpayers.every(person=>Boolean(person.tin)&&
+        (availableSavedTins.includes(person.tin)||isConfirmedOneTimeFallback(person.tin))))) {
+      setValidationError(language === 'bn'
+        ? 'সংরক্ষিত তালিকা থেকে উপকারভোগী নির্বাচন করুন, অথবা একবারের টিআইএন মিল নিশ্চিত করুন।'
+        : 'Select a saved beneficiary or confirm a one-time TIN lookup before continuing.', 'tin');
       return;
     }
     if (beneficiaryChecking || !validateIdentity()) return;
@@ -844,7 +877,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setBeneficiaryChecking(true);
       try {
         const tins = (otherBatch ? batchTaxpayers : batchTaxpayers.slice(0, 1)).map(person => person.tin);
-        if (!(await areCurrentSavedBeneficiaries(tins))) {
+        const savedTins=tins.filter(tin=>!isConfirmedOneTimeFallback(tin));
+        if (savedTins.length&&!(await areCurrentSavedBeneficiaries(savedTins))) {
           setBeneficiaryRefreshKey(key => key + 1);
           setValidationError(language === 'bn'
             ? 'নির্বাচিত উপকারভোগী আপনার সংরক্ষিত তালিকায় নেই। তালিকাটি আবার লোড করে নির্বাচন করুন।'
@@ -1473,24 +1507,24 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             {signedInBeneficiarySelection && <SavedBeneficiaryPicker key={beneficiaryRefreshKey} language={language} allowMultiple={otherBatch}
               selectedTins={(otherBatch ? batchTaxpayers : batchTaxpayers.slice(0,1)).map(person=>person.tin).filter(Boolean)}
               onAvailableTins={setAvailableSavedTins}
-              onChoose={selected => {
-                clearReferenceSelection();
-                const unique=selected.filter((person,index)=>selected.findIndex(candidate=>candidate.tin===person.tin)===index);
-                const first=unique[0];
-                const priorPrimaryTin=taxpayerTin;
-                const additional=otherBatch?unique.slice(1).map(person=>{
-                  const previous=additionalTaxpayers.find(candidate=>candidate.tin===person.tin);
-                  return {...person,id:previous?.id??crypto.randomUUID()};
-                }):[];
-                setTin(first?.tin??'');
-                setOtherTaxpayerName(first?.name??'');
-                setAdditionalTaxpayers(additional);
-                setOtherTaxLines(lines=>lines.filter(line=>line.taxpayerId==='primary'
-                  ? Boolean(first&&first.tin===priorPrimaryTin)
-                  : additional.some(person=>person.id===line.taxpayerId)));
-                setAuthorizedTaxpayerId(null);
-                setAuthorizedTaxpayerIds({});
-                clearValidationError();
+              allowOneTimeFallback={Boolean(paymentOwnerId)}
+              fallbackSelection={activeOneTimeRecipient?{tin:activeOneTimeRecipient.tin,name:language==='bn'?activeOneTimeRecipient.nameBn:activeOneTimeRecipient.nameEn}:null}
+              onFallbackClear={()=>setOneTimeRecipient(null)}
+              onFallbackSelect={person=>{
+                const ownerId=paymentOwnerId;
+                const match=lookupSampleTaxpayer(person.tin);
+                if(!ownerId||!match||person.name!==(language==='bn'?match.nameBn:match.nameEn))return;
+                const existing=otherBatch?batchTaxpayers
+                  .filter(candidate=>Boolean(candidate.tin)&&candidate.tin!==person.tin&&availableSavedTins?.includes(candidate.tin))
+                  .map(candidate=>({tin:candidate.tin,name:candidate.name})):[];
+                const selected=[...existing,{tin:match.tin,name:language==='bn'?match.nameBn:match.nameEn}];
+                setOneTimeRecipient({ownerId,tin:match.tin,nameEn:match.nameEn,nameBn:match.nameBn});
+                applySignedInBeneficiarySelection(selected);
+              }}
+              onChoose={selected=>{
+                if(!activeOneTimeRecipient||!selected.some(person=>person.tin===activeOneTimeRecipient.tin))
+                  setOneTimeRecipient(null);
+                applySignedInBeneficiarySelection(selected);
               }} />}
             {signedInBeneficiarySelection && isFieldInvalid('tin') &&
               <p className="text-sm text-red-700" role="alert">{errorMessage}</p>}

@@ -1,6 +1,9 @@
 import React, {useEffect, useState} from 'react';
 import {ChevronDown, ChevronRight} from 'lucide-react';
 import {UiButton} from '../ui/Controls';
+import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
+import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
+import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {loadBeneficiaries,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
@@ -15,10 +18,14 @@ interface SavedBeneficiaryPickerProps {
   selectedTins:string[];
   onChoose:(people:SelectedBeneficiary[])=>void;
   onAvailableTins:(tins:string[] | null)=>void;
+  allowOneTimeFallback?:boolean;
+  fallbackSelection?:SelectedBeneficiary|null;
+  onFallbackSelect?:(person:SelectedBeneficiary)=>void;
+  onFallbackClear?:()=>void;
 }
 
-/** Signed-in Step 1 uses the existing private beneficiary lists, never free-form taxpayer entry. */
-export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onChoose,onAvailableTins}:SavedBeneficiaryPickerProps){
+/** Saved contacts remain first; an explicit one-time sample lookup is available only when enabled by the payment flow. */
+export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onChoose,onAvailableTins,allowOneTimeFallback=false,fallbackSelection=null,onFallbackSelect,onFallbackClear}:SavedBeneficiaryPickerProps){
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const {navigate,previewAccount,setPaymentServiceChoiceOpen}=useTaxState();
   const bn=language==='bn';
@@ -33,6 +40,10 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
   const [restoring,setRestoring]=useState(false);
   const [recoveryDone,setRecoveryDone]=useState(false);
   const [restoreInfo,setRestoreInfo]=useState('');
+  const [fallbackOpen,setFallbackOpen]=useState(false);
+  const [fallbackTin,setFallbackTin]=useState('');
+  const [searchedFallbackTin,setSearchedFallbackTin]=useState('');
+  const [fallbackResult,setFallbackResult]=useState<ReturnType<typeof lookupSampleTaxpayer>>(null);
   useEffect(()=>{
     let cancelled=false;
     setLists([]);setPeople([]);setExpanded([]);setLoading(true);setError('');
@@ -111,12 +122,45 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       ? selectedTins.includes(person.tin)?selectedTins.filter(tin=>tin!==person.tin):[...selectedTins,person.tin]
       : [person.tin];
     const seen=new Set<string>();
-    const selected=next.map(tin=>people.find(candidate=>candidate.tin===tin))
-      .filter((candidate):candidate is Beneficiary=>Boolean(candidate))
-      .filter(candidate=>{if(seen.has(candidate.tin))return false;seen.add(candidate.tin);return true;})
-      .map(candidate=>({tin:candidate.tin,name:beneficiaryNameForPrefill(candidate.display_name)}));
+    const selected=next.map(tin=>{
+      const candidate=people.find(person=>person.tin===tin);
+      if(candidate)return {tin:candidate.tin,name:beneficiaryNameForPrefill(candidate.display_name)};
+      if(allowMultiple&&fallbackSelection?.tin===tin)return fallbackSelection;
+      return null;
+    }).filter((candidate):candidate is SelectedBeneficiary=>Boolean(candidate))
+      .filter(candidate=>{if(seen.has(candidate.tin))return false;seen.add(candidate.tin);return true;});
+    if(fallbackSelection&&!selected.some(person=>person.tin===fallbackSelection.tin))onFallbackClear?.();
     onChoose(selected);
   };
+  const beginFallbackSearch=(prefill='')=>{
+    setFallbackTin(prefill);setSearchedFallbackTin('');setFallbackResult(null);setFallbackOpen(true);
+  };
+  const runFallbackSearch=()=>{
+    const match=/^\d{12}$/.test(fallbackTin)?lookupSampleTaxpayer(fallbackTin):null;
+    setSearchedFallbackTin(fallbackTin);setFallbackResult(match);
+  };
+  const currentSavedSelection=()=>selectedTins.filter(tin=>tin!==fallbackSelection?.tin)
+    .map(tin=>people.find(person=>person.tin===tin))
+    .filter((person):person is Beneficiary=>Boolean(person))
+    .map(person=>({tin:person.tin,name:beneficiaryNameForPrefill(person.display_name)}));
+  const removeFallback=()=>{
+    const remaining=currentSavedSelection();
+    onFallbackClear?.();onChoose(remaining);
+  };
+  const changeFallback=()=>{
+    const currentTin=fallbackSelection?.tin??'';
+    removeFallback();beginFallbackSearch(currentTin);
+  };
+  const confirmFallback=()=>{
+    if(!fallbackResult||fallbackResult.tin!==fallbackTin)return;
+    onFallbackSelect?.({tin:fallbackResult.tin,name:bn?fallbackResult.nameBn:fallbackResult.nameEn});
+    setFallbackOpen(false);setFallbackTin('');setSearchedFallbackTin('');setFallbackResult(null);
+  };
+  const selectedFallback=fallbackSelection&&selectedTins.includes(fallbackSelection.tin)&&
+    !people.some(person=>person.tin===fallbackSelection.tin)?fallbackSelection:null;
+  const pendingFallbackTin=selectedTins.find(tin=>/^\d{12}$/.test(tin)&&
+    !people.some(person=>person.tin===tin)&&tin!==fallbackSelection?.tin)??null;
+  const selectionCount=uniqueSelected.length+(selectedFallback?1:0);
 
   return <section className="col-span-full space-y-3" data-testid="saved-beneficiary-picker"
       aria-label={tr('Choose beneficiaries','উপকারভোগী নির্বাচন')}>
@@ -136,11 +180,53 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     </div>}
     {!loading&&!checkingIdentity&&!error&&lists.length===0&&<div className="rounded-lg border border-dashed border-taxpay-border p-4">
       <p className="font-semibold text-taxpay-text">{tr('No beneficiary lists yet','এখনও কোনো উপকারভোগীর তালিকা নেই')}</p>
-      <p className="mt-1 text-sm text-slate-600">{tr('Create a list and add beneficiaries before continuing with this payment.','পেমেন্টে এগোনোর আগে একটি তালিকা তৈরি করে উপকারভোগী যোগ করুন।')}</p>
-      <UiButton type="button" variant="primary" className="mt-3 min-h-11 text-sm font-semibold" onClick={manage}>
-        {tr('Create your first list','প্রথম তালিকা তৈরি করুন')}
+      <p className="mt-1 text-sm text-slate-600">{allowOneTimeFallback?tr('Create a list for future payments, or search a TIN for this payment only.','ভবিষ্যৎ পেমেন্টের জন্য তালিকা তৈরি করুন, অথবা শুধু এই পেমেন্টের জন্য টিআইএন খুঁজুন।'):tr('Create a list and add beneficiaries before continuing with this payment.','পেমেন্টে এগোনোর আগে একটি তালিকা তৈরি করে উপকারভোগী যোগ করুন।')}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <UiButton type="button" variant="primary" className="min-h-11 text-sm font-semibold" onClick={manage}>
+          {tr('Create your first list','প্রথম তালিকা তৈরি করুন')}
+        </UiButton>
+        {allowOneTimeFallback&&!fallbackSelection&&!fallbackOpen&&<UiButton type="button" variant="outline" className="min-h-11 text-sm font-semibold" data-testid="one-time-tin-fallback-open" onClick={()=>beginFallbackSearch()}>
+          {tr('Look up a TIN once','একবারের জন্য টিআইএন খুঁজুন')}
+        </UiButton>}
+      </div>
+    </div>}
+    {!loading&&!checkingIdentity&&!error&&selectedFallback&&<div className="rounded-lg border border-taxpay-border bg-white p-3" data-testid="one-time-tin-selection">
+        <p className="font-semibold text-taxpay-text">{tr('One-time taxpayer','একবারের জন্য নির্বাচিত করদাতা')}</p>
+        <p className="mt-1 text-sm font-medium text-taxpay-text">{selectedFallback.name}</p>
+        <p className="text-sm text-slate-600">{selectedFallback.tin}</p>
+        <p className="mt-1 text-xs text-slate-600">{tr('Not saved to your beneficiary lists. This does not grant access to private records.','আপনার উপকারভোগীর তালিকায় সংরক্ষিত নয়। এতে ব্যক্তিগত রেকর্ড দেখার অনুমতি মেলে না।')}</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold" onClick={changeFallback}>{tr('Change taxpayer','করদাতা পরিবর্তন')}</UiButton>
+          <UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold" onClick={removeFallback}>{tr('Remove from this payment','এই পেমেন্ট থেকে সরান')}</UiButton>
+        </div>
+      </div>}
+    {!loading&&!checkingIdentity&&!error&&allowOneTimeFallback&&pendingFallbackTin&&!fallbackOpen&&<div className="rounded-lg border border-taxpay-border bg-white p-3" data-testid="one-time-tin-reconfirmation">
+      <p className="text-sm text-taxpay-text">{tr('This payment TIN is not in your saved lists. Search and confirm it before continuing.','এই পেমেন্টের টিআইএনটি সংরক্ষিত তালিকায় নেই। এগোনোর আগে খুঁজে নিশ্চিত করুন।')}</p>
+      <UiButton type="button" variant="outline" className="mt-2 min-h-10 text-sm font-semibold" onClick={()=>beginFallbackSearch(pendingFallbackTin)}>
+        {tr('Search and confirm this TIN','এই টিআইএন খুঁজে নিশ্চিত করুন')}
       </UiButton>
     </div>}
+    {!loading&&!checkingIdentity&&!error&&allowOneTimeFallback&&fallbackOpen&&<div className="space-y-3 rounded-lg border border-taxpay-border bg-white p-3" data-testid="one-time-tin-fallback">
+      <h3 className="text-sm font-semibold text-taxpay-text">{tr('One-time TIN lookup','একবারের জন্য টিআইএন অনুসন্ধান')}</h3>
+      <TaxpayerTinLookup language={language} tinId="payment-fallback-tin" nameId="payment-fallback-name"
+        tin={fallbackTin} name={fallbackResult?.tin===fallbackTin?(bn?fallbackResult.nameBn:fallbackResult.nameEn):''}
+        onTinChange={value=>{setFallbackTin(value);setSearchedFallbackTin('');setFallbackResult(null);}}
+        onSearch={runFallbackSearch} onClear={()=>{setFallbackTin('');setSearchedFallbackTin('');setFallbackResult(null);}}
+        canSearch={/^\d{12}$/.test(fallbackTin)} searchLabel={tr('Search TIN','টিআইএন খুঁজুন')}
+        suggestedTins={SAMPLE_TIN_SUGGESTIONS} nameLabel={tr('Matching taxpayer name','মিলে যাওয়া করদাতার নাম')}
+        tinPlaceholder={tr('Enter a 12-digit TIN','১২ সংখ্যার টিআইএন লিখুন')}
+        status={searchedFallbackTin===fallbackTin&&searchedFallbackTin?
+          fallbackResult?<p className="text-xs text-slate-600" role="status">{tr('A sample profile matches. Confirm it before using it for this payment.','একটি নমুনা প্রোফাইল মিলেছে। এই পেমেন্টে ব্যবহারের আগে নিশ্চিত করুন।')}</p>
+            :<p className="text-xs text-red-700" role="alert">{tr('No sample profile found. Check the TIN and try again.','কোনো নমুনা প্রোফাইল পাওয়া যায়নি। টিআইএন যাচাই করে আবার চেষ্টা করুন।')}</p>:null}
+        helper={<p className="text-xs text-slate-600">{tr('Suggestions and matches are sample profiles, not official NBR records. They do not prove identity or grant access to private history.','প্রস্তাবনা ও মিলগুলো নমুনা প্রোফাইল, NBR-এর সরকারি রেকর্ড নয়। এগুলো পরিচয় প্রমাণ করে না বা ব্যক্তিগত ইতিহাস দেখার অনুমতি দেয় না।')}</p>} />
+      {fallbackResult?.tin===fallbackTin&&<UiButton type="button" variant="primary" className="min-h-11 text-sm font-semibold" onClick={confirmFallback}>
+        {tr('Confirm this taxpayer','এই করদাতাকে নিশ্চিত করুন')}
+      </UiButton>}
+      <UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold" onClick={()=>setFallbackOpen(false)}>{tr('Cancel','বাতিল')}</UiButton>
+    </div>}
+    {!checkingIdentity&&!loading&&!error&&<p className="text-sm font-semibold text-taxpay-dark" role="status" aria-live="polite">
+      {tr(String(selectionCount)+' selected for this payment',String(selectionCount)+' জন এই পেমেন্টের জন্য নির্বাচিত')}
+    </p>}
     {!loading&&!checkingIdentity&&!error&&lists.length>0&&<>
       {people.length>0&&<div>
         <label htmlFor="payment-beneficiary-search" className="sr-only">{tr('Search beneficiaries','উপকারভোগী খুঁজুন')}</label>
@@ -148,6 +234,13 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
           placeholder={tr('Search list, name or TIN','তালিকা, নাম বা টিআইএন দিয়ে খুঁজুন')}
           className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"/>
       </div>}
+      {allowOneTimeFallback&&!fallbackSelection&&!fallbackOpen&&/^\d{12}$/.test(search.trim())&&!people.some(person=>person.tin===search.trim())&&
+        <div className="rounded-lg border border-taxpay-border bg-white p-3" data-testid="one-time-tin-fallback-open-panel">
+          <p className="text-sm text-taxpay-text">{tr('No saved beneficiary matches this TIN. You can look it up once for this payment.','এই টিআইএনটি সংরক্ষিত উপকারভোগীদের মধ্যে নেই। শুধু এই পেমেন্টের জন্য একবার খুঁজতে পারেন।')}</p>
+          <UiButton type="button" variant="outline" className="mt-2 min-h-10 text-sm font-semibold" data-testid="one-time-tin-fallback-open" onClick={()=>beginFallbackSearch(search.trim())}>
+            {tr('Search this TIN once','এই টিআইএন একবার খুঁজুন')}
+          </UiButton>
+        </div>}
       <div className="overflow-hidden rounded-lg border border-taxpay-border" data-testid="beneficiary-list-accordion">
         {orderedLists.map(list=>{
           const members=people.filter(person=>person.list_id===list.id)
@@ -191,10 +284,12 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
           </div>;
         })}
       </div>
-      {people.length===0&&<p className="text-sm text-slate-600">{tr('All lists are empty. Add a beneficiary from Manage beneficiaries.','সব তালিকা খালি। উপকারভোগী পরিচালনা থেকে সদস্য যোগ করুন।')}</p>}
-      <p className="text-sm font-semibold text-taxpay-dark" role="status" aria-live="polite">
-        {tr(String(uniqueSelected.length)+' selected for this payment',String(uniqueSelected.length)+' জন এই পেমেন্টের জন্য নির্বাচিত')}
-      </p>
+      {people.length===0&&<div className="space-y-2">
+        <p className="text-sm text-slate-600">{tr('All lists are empty. Add a beneficiary from Manage beneficiaries.','সব তালিকা খালি। উপকারভোগী পরিচালনা থেকে সদস্য যোগ করুন।')}</p>
+        {allowOneTimeFallback&&!fallbackSelection&&!fallbackOpen&&<UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold" data-testid="one-time-tin-fallback-open" onClick={()=>beginFallbackSearch()}>
+          {tr('Look up a TIN once','একবারের জন্য টিআইএন খুঁজুন')}
+        </UiButton>}
+      </div>}
     </>}
   </section>;
 }
