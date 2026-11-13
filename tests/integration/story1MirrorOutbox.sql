@@ -15,6 +15,8 @@ declare
   denied boolean := false;
   status_before text;
   submission jsonb;
+  payment_payload jsonb;
+  replay jsonb;
 begin
   perform set_config('request.jwt.claim.role','anon',true);
   begin
@@ -24,11 +26,23 @@ begin
   end;
   if not denied then raise exception 'Anonymous queue claim unexpectedly authorized';end if;
 
-  submission := public.demo_story1_submit(jsonb_build_object(
+  payment_payload := jsonb_build_object(
     'idempotencyKey',payment_key,'sessionId',session_id,
     'service','TRAVEL_TAX','amountMinor',12345,'origin','TAXPAY_UI',
-    'details',jsonb_build_object('travelRoute','Synthetic acceptance')));
+    'details',jsonb_build_object('travelRoute','Synthetic acceptance',
+      'passengers',jsonb_build_array(
+        jsonb_build_object('name','Test traveller A','passportMasked','••••1234','amount',100),
+        jsonb_build_object('name','Test traveller B','passportMasked','••••5678','amount',23.45))));
+  submission := public.demo_story1_submit(payment_payload);
   payment_id := (submission->>'id')::uuid;
+  replay := public.demo_story1_submit(payment_payload);
+  if replay->>'id' is distinct from payment_id::text
+    or replay->>'replayed' is distinct from 'true'
+    or (select count(*) from demo_payment.story_payments where idempotency_key=payment_key
+          and data=payment_payload and amount_minor=12345) <> 1
+    or (select count(*) from demo_payment.mirror_outbox where entity_type='PAYMENT' and entity_id=payment_id) <> 1
+  then raise exception 'Travel retry failed to recover the original payment and outbox item';end if;
+
   insert into public.demo_authorization_requests(payer_id,taxpayer_id)
     values('user10','user9') returning id into consent_id;
   if (select count(*) from demo_payment.mirror_outbox
