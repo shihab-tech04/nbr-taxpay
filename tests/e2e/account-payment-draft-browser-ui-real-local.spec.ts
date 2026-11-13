@@ -513,6 +513,22 @@ for (const language of ['en', 'bn'] as const) {
     await expect(modal.locator('#guest-income-type-NON_COMPANY')).toBeChecked();
     await expect(modal.locator('#guest-head-' + selectedHeadId)).toBeChecked();
     await expect(modal.locator('#guest-tax-amount')).toHaveValue('125.75');
+
+    // Resume must restore the original payer/recipient and receipt inputs too.
+    await modal.getByRole('button', { name: bn ? 'পূর্ববর্তী ধাপ' : 'Back', exact: true }).click();
+    await expect(modal.locator('#guest-payer-other')).toBeChecked();
+    await expect(modal.locator('#guest-notice-ref')).toHaveValue(marker);
+    await expect(modal.locator('#guest-phone')).toHaveValue(receiptPhone);
+    await expect(modal.locator('#guest-receipt-email')).toHaveValue(receiptEmail);
+    const restoredPicker = modal.getByTestId('saved-beneficiary-picker');
+    await expect(restoredPicker).toContainText('Local Draft Beneficiary');
+    await expect(restoredPicker.locator('input[name="payment-beneficiary"]')).toBeChecked();
+    await modal.getByRole('button', { name: bn ? 'পেমেন্ট খাতে এগিয়ে যান' : 'Continue to Payment Head', exact: true }).click();
+
+    await expect(modal.locator('#guest-assessment-year')).toHaveValue('2025-26');
+    await expect(modal.locator('#guest-income-type-NON_COMPANY')).toBeChecked();
+    await expect(modal.locator('#guest-head-' + selectedHeadId)).toBeChecked();
+    await expect(modal.locator('#guest-tax-amount')).toHaveValue('125.75');
     await modal.locator('#guest-tax-amount').fill('126.75');
     await modal.getByRole('button', { name: saveLabel, exact: true }).click();
     await expect(modal.getByRole('button', { name: savedLabel, exact: true })).toBeVisible();
