@@ -1,4 +1,5 @@
-import {describe,it,expect} from 'vitest';
+import test from 'node:test';
+import assert from 'node:assert/strict';
 import {parseReceivedPaymentNotice} from '../src/services/demoReceivedPaymentNotices';
 
 const valid={
@@ -10,20 +11,22 @@ const valid={
   isRead:false,
 };
 
-describe('WS2 recipient notice capability feed parsing',()=>{
-  it('retains only the recipient allocation and exact amount/year/reference',()=>{
-    const parsed=parseReceivedPaymentNotice({...valid,payerTin:'PRIVATE-FOREIGN-TIN',
-      allocations:[{taxpayerTin:'333333333333'}]});
-    expect(parsed).toMatchObject({eventId:valid.eventId,recipientTin:valid.recipientTin,
-      amountMinor:1500,assessmentYear:'2026-27',receiptReference:'SIM-123'});
-    expect(parsed).not.toHaveProperty('payerTin');
-    expect(parsed).not.toHaveProperty('allocations');
-  });
-  it('rejects unsafe amounts, malformed rows and pre-acknowledged feed items',()=>{
-    for(const changes of [{amountMinor:Number.MAX_SAFE_INTEGER+1},{amountMinor:0},
-      {amountMinor:-1},{amountMinor:1.5},{isRead:true},
-      {eventId:''},{paymentId:'wrong-id'},{createdAt:'not-a-date'}]){
-      expect(()=>parseReceivedPaymentNotice({...valid,...changes})).toThrow();
-    }
-  });
+test('recipient notice retains only own allocation/year and no foreign source details',()=>{
+  const parsed=parseReceivedPaymentNotice({...valid,payerTin:'PRIVATE-FOREIGN-TIN',
+    allocations:[{taxpayerTin:'333333333333'}]});
+  assert.equal(parsed.eventId,valid.eventId);
+  assert.equal(parsed.recipientTin,'222222222222');
+  assert.equal(parsed.amountMinor,1500);
+  assert.equal(parsed.assessmentYear,'2026-27');
+  assert.equal(parsed.receiptReference,'SIM-123');
+  assert.equal(Object.hasOwn(parsed,'payerTin'),false);
+  assert.equal(Object.hasOwn(parsed,'allocations'),false);
+});
+
+test('recipient notice rejects unsafe amounts, malformed and already-read events',()=>{
+  for(const changes of [{amountMinor:Number.MAX_SAFE_INTEGER+1},{amountMinor:0},
+    {amountMinor:-1},{amountMinor:1.5},{isRead:true},
+    {eventId:''},{paymentId:'wrong-id'},{createdAt:'not-a-date'}]){
+    assert.throws(()=>parseReceivedPaymentNotice({...valid,...changes}));
+  }
 });

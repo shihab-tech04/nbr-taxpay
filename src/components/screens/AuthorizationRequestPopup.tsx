@@ -49,7 +49,9 @@ export function AuthorizationRequestPopup(){
   // The canonical WS3 feed determines the recipient on the server. Keep the
   // oldest unread notice first and acknowledge only after an explicit action.
   useEffect(()=>{
-    if(!actor)return;
+    // WS3 #408 is not merged yet. Opt in only with the verified capability RPC;
+    // older preview/browser mocks must retain their existing behavior.
+    if(!actor || import.meta.env.VITE_RECIPIENT_NOTICE_FEED_ENABLED !== 'true')return;
     let active=true;
     const refresh=async()=>{
       try{
