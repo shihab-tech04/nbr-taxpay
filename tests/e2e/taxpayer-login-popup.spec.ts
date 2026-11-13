@@ -73,6 +73,8 @@ test('refresh keeps selected preview identity without turning URL into authentic
   await page.getByRole('textbox',{name:'User ID'}).fill('user8');
   await page.getByLabel('Password',{exact:true}).fill('user8');
   await page.getByRole('button',{name:'Sign In'}).click();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page).not.toHaveURL(/demoUser=/);
