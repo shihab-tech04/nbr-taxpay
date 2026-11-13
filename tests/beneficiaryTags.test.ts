@@ -13,6 +13,8 @@ test('fixed beneficiary category choices and all required family relationships',
   assert.equal(validNewBeneficiaryClassification('clients',null),true);
   assert.equal(validNewBeneficiaryClassification('friends_family','friends'),true);
   assert.equal(validNewBeneficiaryClassification('others',null,'Neighbour'),true);
+  assert.equal(validNewBeneficiaryClassification('others',null,'a'.repeat(80)),true);
+  assert.equal(validNewBeneficiaryClassification('others',null,'a'.repeat(81)),false);
   assert.equal(validBeneficiaryClassification('clients','father'),false);
   assert.equal(validBeneficiaryClassification('others','friends'),false);
   assert.equal(validBeneficiaryClassification('clients',null),true);
