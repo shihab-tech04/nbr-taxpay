@@ -17,6 +17,12 @@ declare
   submission jsonb;
   payment_payload jsonb;
   replay jsonb;
+  repeat_key uuid := gen_random_uuid();
+  repeat_session uuid := gen_random_uuid();
+  repeat_payload jsonb;
+  repeat_submission jsonb;
+  repeat_replay jsonb;
+  repeat_id uuid;
 begin
   perform set_config('request.jwt.claim.role','anon',true);
   begin
@@ -60,6 +66,34 @@ begin
           where stored.idempotency_key=payment_key) <> 150000
     or (select count(*) from demo_payment.mirror_outbox where entity_type='PAYMENT' and entity_id=payment_id) <> 1
   then raise exception 'Travel retry failed to recover the original payment and outbox item';end if;
+
+
+
+  -- Pay Again uses a fresh session, idempotency key, and parent while the
+  -- recorded Travel Tax source stays immutable. Replaying the new key creates
+  -- neither a second parent nor a second Office outbox item.
+  perform set_config('request.jwt.claim.role','anon',true);
+  repeat_payload := jsonb_set(payment_payload,'{idempotencyKey}',to_jsonb(repeat_key),false);
+  repeat_payload := jsonb_set(repeat_payload,'{sessionId}',to_jsonb(repeat_session),false);
+  repeat_payload := jsonb_set(repeat_payload,'{details,sourcePaymentId}',to_jsonb(payment_id::text),true);
+  repeat_submission := public.demo_story1_submit(repeat_payload);
+  repeat_id := (repeat_submission->>'id')::uuid;
+  repeat_replay := public.demo_story1_submit(repeat_payload);
+  if repeat_id is not distinct from payment_id
+    or repeat_replay->>'id' is distinct from repeat_id::text
+    or repeat_replay->>'replayed' is distinct from 'true'
+    or (select count(*) from demo_payment.story_payments
+        where idempotency_key=repeat_key and data=repeat_payload and amount_minor=150000) <> 1
+    or (select data->'details'->>'sourcePaymentId' from demo_payment.story_payments
+        where idempotency_key=repeat_key) is distinct from payment_id::text
+    or (select count(*) from demo_payment.story_payments where idempotency_key=payment_key
+        and id=payment_id and data=payment_payload and amount_minor=150000) <> 1
+    or (select count(*) from demo_payment.mirror_outbox
+        where entity_type='PAYMENT' and entity_id=payment_id) <> 1
+    or (select count(*) from demo_payment.mirror_outbox
+        where entity_type='PAYMENT' and entity_id=repeat_id) <> 1
+    or 'SK-PC-'||payment_id::text = 'SK-PC-'||repeat_id::text
+  then raise exception 'Travel Pay Again did not preserve one immutable source and one new idempotent parent';end if;
 
   insert into public.demo_authorization_requests(payer_id,taxpayer_id)
     values('user10','user9') returning id into consent_id;
