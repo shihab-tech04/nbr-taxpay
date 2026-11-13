@@ -398,6 +398,54 @@ test('Travel Tax: additional passengers are added in Step 1, share one receipt a
   await expect(modal.getByRole('button',{name:'Print receipt'})).toBeVisible();
 });
 
+test('Travel Tax: every passenger must be confirmed and Back preserves confirmations and amounts',async({page})=>{
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal=page.getByRole('dialog',{name:'Travel tax'});
+  await modal.locator('#travel-passport-first').fill('TEST123456');
+  await modal.locator('#travel-lookup-first').click();
+  await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
+  await modal.getByRole('button',{name:'Add another passenger'}).click();
+
+  const people=modal.getByTestId('travel-passenger-list').locator('.travel-flow__person');
+  await expect(people).toHaveCount(2);
+  const first=people.nth(0), second=people.nth(1);
+  await second.getByLabel('Passport number').fill('TEST230001');
+  await second.getByRole('button',{name:'Check Passport'}).click();
+  await modal.locator('#travel-mobile').fill('01712345678');
+
+  const continueButton=modal.getByRole('button',{name:'Continue to travel details'});
+  await expect(first).toHaveAttribute('data-complete','true');
+  await expect(second).toHaveAttribute('data-complete','false');
+  await expect(continueButton).toBeDisabled();
+  await expect(second.getByTestId('travel-passenger-name-'+(await second.getAttribute('data-passenger-id')))).toHaveText('SAMPLE PASSENGER TWO');
+
+  await second.getByRole('button',{name:'Add passenger',exact:true}).click();
+  await expect(people.locator('[data-complete="true"]')).toHaveCount(2);
+  await expect(continueButton).toBeEnabled();
+  await continueButton.click();
+  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
+  await expect(modal.getByRole('button',{name:'Edit passengers (2)'})).toBeVisible();
+
+  await fillTravelDetails(modal);
+  await expect(modal.getByTestId('travel-payment-total')).toContainText('2,000');
+  await modal.getByRole('button',{name:'Edit passengers (2)'}).click();
+  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
+  await expect(people.locator('[data-complete="true"]')).toHaveCount(2);
+  await expect(people.nth(0)).toContainText('SAMPLE BANGLADESHI PASSENGER');
+  await expect(people.nth(1)).toContainText('SAMPLE PASSENGER TWO');
+  await expect(continueButton).toBeEnabled();
+
+  await continueButton.click();
+  await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
+  await expect(modal.locator('#travel-destination')).toHaveValue('India');
+  await expect(modal.locator('#travel-departure-date')).toHaveValue(/\d{4}-\d{2}-\d{2}/);
+  await modal.getByRole('button',{name:'Continue to review'}).click();
+  const reviewed=modal.locator('.travel-flow__passenger-table');
+  await expect(reviewed.locator('tbody tr')).toHaveCount(2);
+  await expect(reviewed.locator('tfoot')).toContainText('2,000');
+});
+
 test('Travel Tax: duplicate passports cannot be confirmed or included in final total',async({page})=>{
   await page.goto('/');
   await openTravelTaxFromBanner(page);
