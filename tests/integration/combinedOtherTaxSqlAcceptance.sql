@@ -36,28 +36,34 @@ BEGIN
 
   ledger_lines:=jsonb_build_array(
     jsonb_build_object('headId',121,'economicCode','64','headNameEn','Advance Tax',
+      'serviceCode','ADVANCE_TAX','isWithholding',false,
       'taxAmount',15,'penaltyAmount',0,'surchargeAmount',0,'interestAmount',0,'totalAmount',15),
     jsonb_build_object('headId',145,'economicCode','135','headNameEn','Tax on notice of demand',
+      'serviceCode','ASSESSED_DEMAND','isWithholding',false,
       'taxAmount',35,'penaltyAmount',0,'surchargeAmount',0,'interestAmount',0,'totalAmount',35));
   allocations:=jsonb_build_array(
-    jsonb_build_object('taxpayerTin','909000000013','taxpayerName','First recipient',
-      'headId',121,'assessmentYear','2026-27','amountMinor',1500),
-    jsonb_build_object('taxpayerTin','000000000018','taxpayerName','Second recipient',
-      'headId',145,'assessmentYear','2025-26','amountMinor',3500));
+    jsonb_build_object('allocationId','ws3-v3-one','taxpayerTin','909000000013','taxpayerName','First recipient',
+      'headId',121,'assessmentYear','2026-27','amountMinor',1500,
+      'serviceCode','ADVANCE_TAX','isWithholding',false),
+    jsonb_build_object('allocationId','ws3-v3-two','taxpayerTin','000000000018','taxpayerName','Second recipient',
+      'headId',145,'assessmentYear','2025-26','amountMinor',3500,
+      'serviceCode','ASSESSED_DEMAND','isWithholding',false));
   -- Office and Taxpayer 360 read accounting heads plus explicit allocations.
   -- Never combine synthetic beneficiary lines and explicit allocations.
   lines:=ledger_lines;
   snapshot:=jsonb_build_object('challanNo','SIM-'||payment_key::text,
     'paymentCategory','OTHER_TAX_PAYMENT','totalAmount',50,'items',ledger_lines,
     'allocationItems',jsonb_build_array(
-      jsonb_build_object('taxpayerTin','909000000013','taxpayerName','First recipient',
-        'assessmentYear','2026-27','amountMinor',1500,'paymentServiceEn','Advance Tax','economicCode','64'),
-      jsonb_build_object('taxpayerTin','000000000018','taxpayerName','Second recipient',
-        'assessmentYear','2025-26','amountMinor',3500,'paymentServiceEn','Tax on notice of demand','economicCode','135')),
+      jsonb_build_object('allocationId','ws3-v3-one','taxpayerTin','909000000013','taxpayerName','First recipient',
+        'assessmentYear','2026-27','amountMinor',1500,'paymentServiceEn','Advance Tax',
+        'paymentServiceBn','Advance Tax','economicCode','64'),
+      jsonb_build_object('allocationId','ws3-v3-two','taxpayerTin','000000000018','taxpayerName','Second recipient',
+        'assessmentYear','2025-26','amountMinor',3500,'paymentServiceEn','Tax on notice of demand',
+        'paymentServiceBn','Tax on notice of demand','economicCode','135')),
     'isSimulatedDemo',true);
   payload:=jsonb_build_object('origin','TAXPAY_UI','service','OTHER_TAX_PAYMENT',
     'idempotencyKey',payment_key,'sessionId',session_id,'amountMinor',5000,
-    'details',jsonb_build_object('combinedPayment',true,'allocationCount',2,
+    'details',jsonb_build_object('combinedPayment',true,'allocationContractVersion',3,'allocationCount',2,
       'taxpayerCount',2,'payerId','user1','payerMode','OTHER',
       'receiptReference','SIM-'||payment_key::text,'paymentChannel','NOW','paymentMethod','BKASH',
       'payerName','First payer','totalAmount',50,'assessmentYear','2026-27, 2025-26',
@@ -68,7 +74,18 @@ BEGIN
   IF result->>'status' IS DISTINCT FROM 'SIMULATED_SUCCESS' OR result->>'replayed'<>'false'
   THEN RAISE EXCEPTION 'COMBINED_TEST_FIRST_SAVE_FAILED'; END IF;
   IF (SELECT count(*) FROM demo_payment.story_payments
-       WHERE id=saved_id AND amount_minor=5000 AND data->'details'->>'combinedPayment'='true')<>1
+       WHERE id=saved_id AND amount_minor=5000 AND data->'details'->>'combinedPayment'='true'
+         AND data->'details'->>'allocationContractVersion'='3')<>1
+    OR (SELECT jsonb_agg(a.value->>'allocationId' ORDER BY a.ordinality)
+        FROM demo_payment.story_payments p
+        CROSS JOIN LATERAL jsonb_array_elements(p.data->'details'->'allocations')
+          WITH ORDINALITY AS a(value,ordinality) WHERE p.id=saved_id)
+       IS DISTINCT FROM '["ws3-v3-one","ws3-v3-two"]'::jsonb
+    OR (SELECT jsonb_agg(a.value->>'allocationId' ORDER BY a.ordinality)
+        FROM demo_payment.story_payments p
+        CROSS JOIN LATERAL jsonb_array_elements(p.data->'details'->'receiptSnapshot'->'allocationItems')
+          WITH ORDINALITY AS a(value,ordinality) WHERE p.id=saved_id)
+       IS DISTINCT FROM '["ws3-v3-one","ws3-v3-two"]'::jsonb
     OR (SELECT count(*) FROM demo_payment.mirror_outbox WHERE entity_type='PAYMENT' AND entity_id=saved_id)<>1
     OR (SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=saved_id)<>1
   THEN RAISE EXCEPTION 'COMBINED_TEST_NOT_SINGLE_PAYMENT_OR_MIRROR'; END IF;
@@ -88,16 +105,25 @@ BEGIN
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptReference}',to_jsonb('SIM-'||mixed_key::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||mixed_key::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,allocations,0,headId}',to_jsonb(8));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,allocations,0,serviceCode}',to_jsonb('SOURCE_TAX_DEPOSIT'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,allocations,0,isWithholding}',to_jsonb(true));
   mixed_payload:=jsonb_set(mixed_payload,'{details,lines,0,headId}',to_jsonb(8));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,lines,0,serviceCode}',to_jsonb('SOURCE_TAX_DEPOSIT'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,lines,0,isWithholding}',to_jsonb(true));
   mixed_payload:=jsonb_set(mixed_payload,'{details,lines,0,economicCode}',to_jsonb('50'::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,lines,0,headNameEn}',to_jsonb('Deduction from Salary'::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptLines,0,headId}',to_jsonb(8));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptLines,0,serviceCode}',to_jsonb('SOURCE_TAX_DEPOSIT'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptLines,0,isWithholding}',to_jsonb(true));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptLines,0,economicCode}',to_jsonb('50'::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptLines,0,headNameEn}',to_jsonb('Deduction from Salary'::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,items,0,headId}',to_jsonb(8));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,items,0,serviceCode}',to_jsonb('SOURCE_TAX_DEPOSIT'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,items,0,isWithholding}',to_jsonb(true));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,items,0,economicCode}',to_jsonb('50'::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,items,0,headNameEn}',to_jsonb('Deduction from Salary'::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,allocationItems,0,economicCode}',to_jsonb('50'::text));
+  mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,allocationItems,0,paymentServiceBn}',to_jsonb('Deduction from Salary'::text));
   mixed_payload:=jsonb_set(mixed_payload,'{details,receiptSnapshot,allocationItems,0,paymentServiceEn}',to_jsonb('Deduction from Salary'::text));
   result:=public.taxpay_demo_story1_submit(owner_hash,mixed_payload);
   mixed_saved_id:=(result->>'id')::uuid;
@@ -112,7 +138,14 @@ BEGIN
   IF mixed_saved_id=saved_id
     OR (SELECT count(*) FROM demo_payment.story_payments
         WHERE id=mixed_saved_id AND idempotency_key=mixed_key
-          AND data->'details'->>'sourcePaymentId'=saved_id::text)<>1
+          AND data->'details'->>'sourcePaymentId'=saved_id::text
+          AND data->'details'->>'allocationContractVersion'='3')<>1
+    OR (SELECT data FROM demo_payment.story_payments WHERE id=saved_id) IS DISTINCT FROM payload
+    OR (SELECT jsonb_agg(a.value->>'allocationId' ORDER BY a.ordinality)
+        FROM demo_payment.story_payments p
+        CROSS JOIN LATERAL jsonb_array_elements(p.data->'details'->'allocations')
+          WITH ORDINALITY AS a(value,ordinality) WHERE p.id=mixed_saved_id)
+       IS DISTINCT FROM '["ws3-v3-one","ws3-v3-two"]'::jsonb
     OR (SELECT count(*) FROM demo_payment.story_payments
         WHERE id=saved_id AND idempotency_key=payment_key AND amount_minor=5000
           AND COALESCE(data->'details'->>'sourcePaymentId','')='')<>1
