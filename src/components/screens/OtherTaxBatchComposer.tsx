@@ -46,13 +46,14 @@ type Props = {
   taxpayers: OtherTaxTaxpayer[];
   lines: OtherTaxAllocation[];
   suggestionTaxpayerIds?: Readonly<Record<string, DemoUserId | null>>;
+  preserveSourcePaymentAmounts?: boolean;
   onChange: (lines: OtherTaxAllocation[]) => void;
   error?: string;
   summary?: React.ReactNode;
   focusRequest?: { lineId: string; requestId: number } | null;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, onChange, error, summary, focusRequest }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, preserveSourcePaymentAmounts = false, onChange, error, summary, focusRequest }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -187,7 +188,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     // A User1 example amount is tied to one year; other taxpayers keep manual values.
     const nextSuggestion = update.assessmentYear
       ? suggestedFor(current.taxpayerId, current.headId, update.assessmentYear) : null;
-    const amount = update.amount ?? (update.assessmentYear && suggestionTaxpayerIds?.[current.taxpayerId] === 'user1'
+    const amount = update.amount ?? (update.assessmentYear && !preserveSourcePaymentAmounts && suggestionTaxpayerIds?.[current.taxpayerId] === 'user1'
       ? nextSuggestion?.amount ?? '' : current.amount);
     applyLines(lines.map(line => line.id === id ? { ...line, ...update, amount } : line));
   };
