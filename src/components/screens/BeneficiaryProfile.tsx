@@ -6,6 +6,7 @@ import {beneficiaryNameForDisplay} from '../../services/beneficiaryNames';
 import {beneficiaryFinalTagLabel} from '../../services/beneficiaryTags';
 import {loadBeneficiaryProfilePayments,countsTowardBeneficiaryPaidTotal,type BeneficiaryProfilePayment} from '../../services/beneficiaryProfileHistory';
 import {formatCurrency,formatNumber} from '../../services/numberFormat';
+import {paymentDateInRange} from '../../services/paymentDateFilter';
 import {UiButton} from '../ui/Controls';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {ReceiptView} from '../common/ReceiptView';
@@ -31,6 +32,8 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
   const [year,setYear]=useState('all');
   const [head,setHead]=useState('all');
   const [status,setStatus]=useState('all');
+  const [dateFrom,setDateFrom]=useState('');
+  const [dateTo,setDateTo]=useState('');
   const [selected,setSelected]=useState<BeneficiaryProfilePayment|null>(null);
   const identity=(ownerUid??previewId??'')+':'+person.id+':'+person.tin;
   useEffect(()=>{
@@ -47,13 +50,15 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
   const paidRows=useMemo(()=>state.rows.filter(countsTowardBeneficiaryPaidTotal),[state.rows]);
   const years=useMemo(()=>Array.from(new Set(state.rows.map(row=>row.assessmentYear))).sort().reverse(),[state.rows]);
   const heads=useMemo(()=>Array.from(new Set(state.rows.map(row=>row.paymentHead))).sort(),[state.rows]);
+  const invalidDateRange=Boolean(dateFrom&&dateTo&&dateFrom>dateTo);
   const filtered=useMemo(()=>state.rows.filter(row=>
+    !invalidDateRange&&paymentDateInRange(row.createdAt,dateFrom,dateTo)&&
     (year==='all'||row.assessmentYear===year)&&
     (head==='all'||row.paymentHead===head)&&
     (status==='all'||(status==='recorded'?countsTowardBeneficiaryPaidTotal(row):row.status===status))&&
     (!search.trim()||[row.paymentId,row.transactionId,row.assessmentYear,row.paymentHead].some(
       value=>value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))
-  ),[state.rows,search,year,head,status]);
+  ),[state.rows,search,year,head,status,dateFrom,dateTo,invalidDateRange]);
   const totalMinor=paidRows.reduce((total,row)=>total+BigInt(row.amountMinor),0n);
   const totalMoney=totalMinor<=BigInt(Number.MAX_SAFE_INTEGER)
     ?formatCurrency(Number(totalMinor)/100,language):tr('Amount unavailable','পরিমাণ পাওয়া যায়নি');
@@ -152,12 +157,29 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
             </select>
           </label>
         </div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="text-sm text-taxpay-text">{tr('From date','শুরুর তারিখ')}
+            <input type="date" value={dateFrom} max={dateTo||undefined}
+              aria-label={tr('Filter history from date','শুরুর তারিখ থেকে ইতিহাস ফিল্টার করুন')}
+              onChange={e=>setDateFrom(e.target.value)}
+              className="mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"/>
+          </label>
+          <label className="text-sm text-taxpay-text">{tr('To date','শেষ তারিখ')}
+            <input type="date" value={dateTo} min={dateFrom||undefined}
+              aria-label={tr('Filter history to date','শেষ তারিখ পর্যন্ত ইতিহাস ফিল্টার করুন')}
+              onChange={e=>setDateTo(e.target.value)}
+              className="mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"/>
+          </label>
+        </div>
+        {invalidDateRange&&<p className="mt-2 text-sm text-taxpay-error" role="alert">
+          {tr('From date must be on or before the to date.','শুরুর তারিখ শেষ তারিখের পরে হতে পারবে না।')}
+        </p>}
         {state.rows.length===0&&<p data-testid="beneficiary-profile-empty" className="mt-5 rounded-lg border border-dashed border-taxpay-border p-5 text-sm text-taxpay-muted">
           {tr('No payment history yet for this beneficiary from your account.','আপনার অ্যাকাউন্ট থেকে এই উপকারভোগীর জন্য এখনো কোনো পেমেন্টের ইতিহাস নেই।')}
         </p>}
         {state.rows.length>0&&filtered.length===0&&<div className="mt-5 rounded-lg border border-taxpay-border p-5 text-sm text-taxpay-muted">
           {tr('No payments match these filters.','এই ফিল্টারে কোনো পেমেন্ট নেই।')}
-          <UiButton type="button" variant="quiet" onClick={()=>{setSearch('');setYear('all');setHead('all');setStatus('all');}}>
+          <UiButton type="button" variant="quiet" onClick={()=>{setSearch('');setYear('all');setHead('all');setStatus('all');setDateFrom('');setDateTo('');}}>
             {tr('Clear filters','ফিল্টার মুছুন')}</UiButton>
         </div>}
         {groups.map(item=>{

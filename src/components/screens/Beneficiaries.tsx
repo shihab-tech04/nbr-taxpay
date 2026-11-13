@@ -29,7 +29,8 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
-  const {language,previewAccount,routeParams,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen}=useTaxState();
+  const {language,previewAccount,routeParams,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,
+    pendingBeneficiarySave,clearPendingBeneficiarySave}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -62,6 +63,7 @@ export function Beneficiaries(){
   const [notice,setNotice]=useState<{en:string;bn:string}|null>(null);
   const [preferenceError,setPreferenceError]=useState<{en:string;bn:string}|null>(null);
   const [flow,setFlow]=useState<Flow|null>(null);
+  const [beneficiarySaveOwner,setBeneficiarySaveOwner]=useState<string|null>(null);
   const [entryChoiceOpen,setEntryChoiceOpen]=useState(false);
   const [createListOpen,setCreateListOpen]=useState(false);
   const [phase,setPhase]=useState<Phase>('upload');
@@ -292,11 +294,33 @@ export function Beneficiaries(){
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
   }
-  function open(next:Flow){
+  function open(next:Flow,prefill?:{tin:string;name:string},saveOwner:string|null=null){
     setEntryChoiceOpen(false);setFlow(next);setCreateListOpen(false);setPhase('upload');setTargetList(activeList==='all'?(lists[0]?.id??'new'):activeList||'new');setListName('');
-    setTin('');setName('');setTag('');setRelationship('');setOtherLabel('');setSearchedBeneficiaryTin(null);setRows([]);setFilename('');setModalError('');setNotice(null);
+    setBeneficiarySaveOwner(saveOwner);
+    setTin(prefill?.tin??'');setName(prefill?.name??'');setTag('');setRelationship('');setOtherLabel('');setSearchedBeneficiaryTin(null);setRows([]);setFilename('');setModalError('');setNotice(null);
   }
-  function closeFlow(){if(!busy){setFlow(null);setModalError('');}}
+  useEffect(()=>{
+    const request=pendingBeneficiarySave;
+    if(!request)return;
+    if(checkingIdentity||loading||initialRequestRef.current)return;
+    if(!owner||previewAccount||owner!==request.ownerUid){clearPendingBeneficiarySave();return;}
+    if(error)return;
+    if(!/^\d{12}$/.test(request.tin)){clearPendingBeneficiarySave();return;}
+    if(people.some(person=>person.tin===request.tin)){
+      clearPendingBeneficiarySave();
+      setNotice({en:'This beneficiary is already in your lists.',bn:'এই উপকারভোগী আপনার তালিকায় আগে থেকেই আছেন।'});
+      return;
+    }
+    open('single',{tin:request.tin,name:request.name},request.ownerUid);
+    clearPendingBeneficiarySave();
+  },[pendingBeneficiarySave,checkingIdentity,loading,error,owner,previewAccount,people,activeList,lists,clearPendingBeneficiarySave]);
+  useEffect(()=>{
+    if(!beneficiarySaveOwner||checkingIdentity||owner===beneficiarySaveOwner)return;
+    setFlow(null);setBeneficiarySaveOwner(null);setTin('');setName('');setTag('');setRelationship('');setOtherLabel('');
+    setSearchedBeneficiaryTin(null);setModalError('');
+    setNotice({en:'Your account changed. Reopen this payment from the account that made it.',bn:'আপনার অ্যাকাউন্ট বদলেছে। যে অ্যাকাউন্ট থেকে পেমেন্টটি করা হয়েছিল, সেই অ্যাকাউন্টে ফিরে এটি আবার খুলুন।'});
+  },[beneficiarySaveOwner,checkingIdentity,owner]);
+  function closeFlow(){if(!busy){setFlow(null);setBeneficiarySaveOwner(null);setTin('');setName('');setModalError('');}}
 
   async function saveList(event:React.FormEvent){
     event.preventDefault();
@@ -328,6 +352,11 @@ export function Beneficiaries(){
 
   async function saveSingle(event:React.FormEvent){
     event.preventDefault();
+    if(beneficiarySaveOwner&&(checkingIdentity||owner!==beneficiarySaveOwner)){
+      setFlow(null);setBeneficiarySaveOwner(null);setTin('');setName('');setModalError('');
+      setNotice({en:'Your account changed. Reopen this payment from the account that made it.',bn:'আপনার অ্যাকাউন্ট বদলেছে। যে অ্যাকাউন্ট থেকে পেমেন্টটি করা হয়েছিল, সেই অ্যাকাউন্টে ফিরে এটি আবার খুলুন।'});
+      return;
+    }
     if(!validBeneficiaryClassification(tag,relationship,otherLabel)){setModalError(tr('Select a tag and provide the required relationship or an Others description (maximum 80 characters).','ট্যাগ বাছুন এবং প্রয়োজনীয় সম্পর্ক অথবা অন্যান্য বর্ণনা (সর্বোচ্চ ৮০ অক্ষর) লিখুন।'));return;}
     if(!/^\d{12}$/.test(tin)||name.trim().length>160){
       setModalError(tr('Enter a valid 12-digit TIN and a name of up to 160 characters.','সঠিক ১২ সংখ্যার টিআইএন এবং সর্বোচ্চ ১৬০ অক্ষরের নাম লিখুন।'));return;
@@ -340,7 +369,7 @@ export function Beneficiaries(){
       if(!saved.people.some(person=>person.list_id===id&&person.tin===tin)){
         throw new Error(tr('Beneficiary was not saved. Please retry.','উপকারভোগী সংরক্ষিত হয়নি। আবার চেষ্টা করুন।'));
       }
-      setFlow(null);
+      setFlow(null);setBeneficiarySaveOwner(null);
       setNotice(count?{en:'Beneficiary saved.',bn:'উপকারভোগী সংরক্ষিত হয়েছে।'}:{en:'This beneficiary is already in the list.',bn:'এই উপকারভোগী তালিকায় আগে থেকেই আছেন।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
     finally{setBusy(false);}
