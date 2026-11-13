@@ -5,8 +5,8 @@ DO $unsigned_guest_draft$
 DECLARE
   owner_hash text := encode(extensions.digest(extensions.gen_random_bytes(32),'sha256'),'hex');
   outsider_hash text := encode(extensions.digest(extensions.gen_random_bytes(32),'sha256'),'hex');
-  session_id uuid;
-  outsider_session_id uuid;
+  v_owner_session uuid;
+  v_other_session uuid;
   old_payment_count bigint;
   old_notice_count bigint;
   old_outbox_count bigint;
@@ -26,9 +26,9 @@ BEGIN
   THEN RAISE EXCEPTION 'UNSIGNED_DRAFT_DIRECT_DATA_API_ACCESS'; END IF;
 
   INSERT INTO taxpay_guest_private.sessions(capability_hash)
-    VALUES(owner_hash) RETURNING id INTO session_id;
+    VALUES(owner_hash) RETURNING id INTO v_owner_session;
   INSERT INTO taxpay_guest_private.sessions(capability_hash)
-    VALUES(outsider_hash) RETURNING id INTO outsider_session_id;
+    VALUES(outsider_hash) RETURNING id INTO v_other_session;
   SELECT count(*) INTO old_payment_count FROM demo_payment.story_payments;
   SELECT count(*) INTO old_notice_count FROM demo_payment.story_notifications;
   SELECT count(*) INTO old_outbox_count FROM demo_payment.mirror_outbox;
@@ -41,7 +41,7 @@ BEGIN
     OR created->>'revision' IS DISTINCT FROM '1'
     OR created->'form_payload'->>'assessmentYear' IS DISTINCT FROM '2025-26'
     OR (SELECT session_id FROM taxpay_guest_private.guest_payment_form_drafts
-        WHERE id=draft_id) IS DISTINCT FROM session_id
+        WHERE id=draft_id) IS DISTINCT FROM v_owner_session
   THEN RAISE EXCEPTION 'UNSIGNED_DRAFT_CREATE_OR_OWNER_FAILED'; END IF;
   result:=public.taxpay_guest_payment_form_drafts(owner_hash,'list');
   IF jsonb_array_length(result)<>1 OR result->0->>'id' IS DISTINCT FROM draft_id::text
@@ -92,7 +92,7 @@ BEGIN
 
   -- Session expiry remains authoritative; no draft is usable after expiry.
   UPDATE taxpay_guest_private.sessions
-    SET expires_at=now()-interval '1 second' WHERE id=outsider_session_id;
+    SET expires_at=now()-interval '1 second' WHERE id=v_other_session;
   rejected:=false;
   BEGIN
     PERFORM public.taxpay_guest_payment_form_drafts(outsider_hash,'list');
