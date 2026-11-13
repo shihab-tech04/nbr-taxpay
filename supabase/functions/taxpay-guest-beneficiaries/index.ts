@@ -206,7 +206,8 @@ Deno.serve(async (request: Request) => {
       data = await rpc(client, 'taxpay_guest_beneficiary_delete_list', {
         p_capability_hash, p_list_id: body.id,
       });
-    } else if (action === 'add') {
+    } else if (action === 'add' || action === 'restore-legacy-add') {
+      const legacyRecovery = action === 'restore-legacy-add';
       if (!uuidPattern.test(String(body.listId ?? '')) || !Array.isArray(body.rows) || body.rows.length > 1000)
         throw new Error('INVALID_ROWS');
       const rows = body.rows.map((row) => {
@@ -217,11 +218,12 @@ Deno.serve(async (request: Request) => {
         if (typeof tin !== 'string' || !/^\d{12}$/.test(tin)) throw new Error('INVALID_BENEFICIARY');
         const tag = value.tag ?? null;
         const relationship = value.relationship ?? null;
+        if (!legacyRecovery && tag === null) throw new Error('INVALID_BENEFICIARY');
         const other_label = tag === 'others'
           ? validateName(value.other_label, 80, 'INVALID_BENEFICIARY')
           : null;
         if (tag !== 'others' && value.other_label != null) throw new Error('INVALID_BENEFICIARY');
-        if (!((tag === null && relationship === null) ||
+        if (!((legacyRecovery && tag === null && relationship === null) ||
           ((tag === 'clients' || tag === 'others') && relationship === null) ||
           (tag === 'friends_family' && typeof relationship === 'string' &&
             ['father','mother','siblings','son','daughter','spouse','friends'].includes(relationship))))

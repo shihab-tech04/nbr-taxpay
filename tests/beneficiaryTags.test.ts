@@ -1,13 +1,18 @@
 import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {BENEFICIARY_RELATIONS, BENEFICIARY_TAGS, beneficiaryTagLabel, beneficiaryFinalTagLabel, normalizeOtherLabel, validBeneficiaryClassification} from '../src/services/beneficiaryTags';
+import {BENEFICIARY_RELATIONS, BENEFICIARY_TAGS, beneficiaryTagLabel, beneficiaryFinalTagLabel, normalizeOtherLabel, validBeneficiaryClassification, validNewBeneficiaryClassification} from '../src/services/beneficiaryTags';
 
 test('fixed beneficiary category choices and all required family relationships',()=>{
   assert.deepEqual([...BENEFICIARY_TAGS],['clients','friends_family','others']);
   assert.deepEqual([...BENEFICIARY_RELATIONS],['father','mother','siblings','son','daughter','spouse','friends']);
   assert.equal(validBeneficiaryClassification('',null),false);
   assert.equal(validBeneficiaryClassification('friends_family',null),false);
+  assert.equal(validNewBeneficiaryClassification(null,null),false);
+  assert.equal(validNewBeneficiaryClassification(undefined,null),false);
+  assert.equal(validNewBeneficiaryClassification('clients',null),true);
+  assert.equal(validNewBeneficiaryClassification('friends_family','friends'),true);
+  assert.equal(validNewBeneficiaryClassification('others',null,'Neighbour'),true);
   assert.equal(validBeneficiaryClassification('clients','father'),false);
   assert.equal(validBeneficiaryClassification('others','friends'),false);
   assert.equal(validBeneficiaryClassification('clients',null),true);
@@ -86,4 +91,18 @@ test('payment beneficiary picker shows only leaf tag beside name and bare TIN on
   assert.ok(!picker.includes("{tr('TIN','টিআইএন')}: {person.tin}"));
   assert.ok(!picker.includes("{tr('Tag','ট্যাগ')}:"));
 
+});
+
+test('new beneficiary adds require a tag while explicit recovery preserves legacy untagged contacts',()=>{
+  const fs=(path:string)=>readFileSync(path,'utf8');
+  const service=fs('src/services/beneficiaries.ts');
+  const guest=fs('src/services/guestBeneficiaries.ts');
+  const edge=fs('supabase/functions/taxpay-guest-beneficiaries/index.ts');
+  assert.match(service,/validNewBeneficiaryClassification\(row\.tag,row\.relationship,row\.other_label\)/);
+  assert.match(service,/restoreLegacyGuestBeneficiaries\(listId,normalized\)/);
+  assert.match(service,/persistBeneficiaryRows\(ownerUid,destination\.id,rows\.slice\(offset,offset\+500\),true\)/);
+  assert.match(guest,/post\('restore-legacy-add'/);
+  assert.match(edge,/action === 'add' \|\| action === 'restore-legacy-add'/);
+  assert.match(edge,/if \(!legacyRecovery && tag === null\)/);
+  assert.match(edge,/legacyRecovery && tag === null && relationship === null/);
 });
