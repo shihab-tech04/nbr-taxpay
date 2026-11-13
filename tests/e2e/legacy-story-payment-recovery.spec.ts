@@ -29,6 +29,8 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   };
   let recovered=false;
   let recoveryAttempts=0;
+  let savedPaymentDraft:Record<string,unknown>|null=null;
+  let savedPaymentDraftPayload:Record<string,unknown>|null=null;
   const paymentRequests:string[]=[];
   const paymentSubmissions:Array<Record<string,unknown>>=[];
   const failedRequests:string[]=[];
@@ -49,8 +51,29 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
         return;
       }
       recovered=true;data={recovered:1};
-    }else if(action==='lists'||action==='people'||action==='payment-draft-list')data=[];
-    else if(action==='open')data={active:true};
+    }else if(action==='lists'||action==='people')data=[];
+    else if(action==='payment-draft-list')data=savedPaymentDraft?[savedPaymentDraft]:[];
+    else if(action==='payment-draft-create'||action==='payment-draft-update'){
+      const payload=body.payload;
+      if(!payload||typeof payload!=='object'||Array.isArray(payload))throw new Error('Invalid mock payment draft');
+      if(action==='payment-draft-update'&&(!savedPaymentDraft||body.id!==savedPaymentDraft.id))
+        throw new Error('Unexpected mock payment draft update');
+      savedPaymentDraftPayload=payload as Record<string,unknown>;
+      savedPaymentDraft={
+        id:'00000000-0000-4000-8000-000000039001',
+        service:body.service,
+        form_payload:savedPaymentDraftPayload,
+        revision:savedPaymentDraft?Number(savedPaymentDraft.revision)+1:1,
+        created_at:date,updated_at:date
+      };
+      data=savedPaymentDraft;
+    }else if(action==='payment-draft-get'){
+      if(!savedPaymentDraft||body.id!==savedPaymentDraft.id)throw new Error('Unexpected mock payment draft read');
+      data=savedPaymentDraft;
+    }else if(action==='payment-draft-delete'){
+      if(!savedPaymentDraft||body.id!==savedPaymentDraft.id)throw new Error('Unexpected mock payment draft delete');
+      savedPaymentDraft=null;data={deleted:'00000000-0000-4000-8000-000000039001'};
+    }else if(action==='open')data={active:true};
     else throw new Error('Unexpected action '+action);
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
@@ -202,14 +225,26 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(cloned).toBeVisible();
   await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText(payment);
   await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText('Original payment unchanged.');
-  await cloned.getByRole('button',{name:'Continue to purpose & amount'}).click();
-  await cloned.getByRole('button',{name:'Continue to payment channel'}).click();
-  await cloned.getByRole('button',{name:'Pay online'}).click();
-  await cloned.getByRole('button',{name:'Mobile banking'}).click();
-  await cloned.getByRole('radio',{name:'bKash'}).check();
-  await cloned.getByRole('checkbox',{name:/I confirm each taxpayer TIN/}).check();
-  await cloned.getByRole('button',{name:/^Pay/}).last().click();
-  await expect(cloned.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:12000});
+  await cloned.getByRole('button',{name:'Save Draft',exact:true}).click();
+  await expect(cloned.getByRole('button',{name:'Draft Saved'})).toBeVisible({timeout:12000});
+  expect(savedPaymentDraftPayload).toMatchObject({sourcePaymentId:payment});
+  const draftId='00000000-0000-4000-8000-000000039001';
+  await cloned.getByRole('button',{name:'Close payment services'}).click();
+  await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
+  await page.goto('/?action=taxpayer_home');
+  const savedDraftCard=page.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="'+draftId+'"]');
+  await expect(savedDraftCard).toBeVisible();
+  await savedDraftCard.getByRole('button',{name:'Continue'}).click();
+  const resumed=page.getByRole('dialog',{name:'Pay Tax'});
+  await expect(resumed.getByTestId('pay-again-reuse-notice')).toContainText(payment);
+  await resumed.getByRole('button',{name:'Continue to purpose & amount'}).click();
+  await resumed.getByRole('button',{name:'Continue to payment channel'}).click();
+  await resumed.getByRole('button',{name:'Pay online'}).click();
+  await resumed.getByRole('button',{name:'Mobile banking'}).click();
+  await resumed.getByRole('radio',{name:'bKash'}).check();
+  await resumed.getByRole('checkbox',{name:/I confirm each taxpayer TIN/}).check();
+  await resumed.getByRole('button',{name:/^Pay/}).last().click();
+  await expect(resumed.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:12000});
   expect(paymentSubmissions).toHaveLength(1);
   const payAgainSubmission=paymentSubmissions[0];
   expect(payAgainSubmission.details).toMatchObject({sourcePaymentId:payment});
