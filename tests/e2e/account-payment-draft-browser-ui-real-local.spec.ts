@@ -436,6 +436,20 @@ for (const language of ['en', 'bn'] as const) {
     expect(firstRows[0]).toMatchObject({ owner_uid: owner.id, revision: 1 });
     expect(firstRows[0].form_payload).toMatchObject({ noticeReference: marker, forSelf: true });
 
+    // A separate fresh form creates a sibling draft for the same owner. The
+    // later discard must remove only the selected draft, never this sibling.
+    const sibling = await open(owner.session, 'guest');
+    const siblingMarker = marker + '-SIBLING';
+    await sibling.locator('#guest-payer-self').check();
+    await sibling.locator('#guest-notice-ref').fill(siblingMarker);
+    await sibling.getByRole('button', { name: saveLabel, exact: true }).click();
+    await expect(sibling.getByRole('button', { name: savedLabel, exact: true })).toBeVisible();
+    const siblingRows = await readRows(owner.session, { owner_uid: 'eq.' + owner.id });
+    expect(siblingRows).toHaveLength(2);
+    const siblingDraft = siblingRows.find(row => row.form_payload.noticeReference === siblingMarker);
+    expect(siblingDraft).toMatchObject({ owner_uid: owner.id, revision: 1 });
+    expect(siblingDraft?.id).not.toBe(draftId);
+
     // A second browser reloads the owner dashboard from Auth-backed SQL.
     const resume = await open(owner.session, 'taxpayer_home');
     const cards = resume.getByTestId('dashboard-payment-drafts');
@@ -492,6 +506,16 @@ for (const language of ['en', 'bn'] as const) {
     await finalCard.getByRole('button', { name: bn ? 'মুছে ফেলা নিশ্চিত করুন' : 'Confirm delete', exact: true }).click();
     await expect(finalCard).toHaveCount(0);
     expect(await readRows(owner.session, { owner_uid: 'eq.' + owner.id, id: 'eq.' + draftId })).toEqual([]);
+    const siblingCard = cards.locator('[data-draft-id="' + siblingDraft!.id + '"]');
+    await expect(siblingCard).toBeVisible();
+    const remainingRows = await readRows(owner.session, { owner_uid: 'eq.' + owner.id });
+    expect(remainingRows).toHaveLength(1);
+    expect(remainingRows[0]).toMatchObject({ id: siblingDraft!.id, owner_uid: owner.id, revision: 1 });
+    expect(remainingRows[0].form_payload.noticeReference).toBe(siblingMarker);
+    await siblingCard.getByRole('button', { name: bn ? 'মুছুন' : 'Delete', exact: true }).click();
+    await siblingCard.getByRole('button', { name: bn ? 'মুছে ফেলা নিশ্চিত করুন' : 'Confirm delete', exact: true }).click();
+    await expect(siblingCard).toHaveCount(0);
+    expect(await readRows(owner.session, { owner_uid: 'eq.' + owner.id })).toEqual([]);
     expect(query('select count(*) from public.sim_payment_transactions')).toBe(paymentCountBefore);
     } finally {
       await Promise.allSettled(contexts.map(context => context.close()));
