@@ -185,6 +185,7 @@ jobs:
       - name: Verify unsigned guest form drafts using disposable SQL and real local Edge
         run: |
           set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/guestPaymentFormDraftIsolation.sql
           node tests/integration/guestPaymentFormDraftEdge.mjs
 
