@@ -133,6 +133,10 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
 
     // Do not create a payment; discard the disposable draft after the full recovery journey.
     await resumed.locator('.taxpay-modal__header .taxpay-modal__close').click();
+    const exitPrompt = owner.getByTestId('payment-draft-exit-overlay');
+    await expect(exitPrompt).toBeVisible();
+    await exitPrompt.getByRole('button', { name: 'কর পরিশোধ বাদ দিন', exact: true }).click();
+    await expect(exitPrompt).toHaveCount(0);
     const refreshedCard = dashboard.locator('[data-draft-id="' + draftId + '"]');
     await expect(refreshedCard).toBeVisible();
     await refreshedCard.getByRole('button', { name: 'মুছুন', exact: true }).click();
