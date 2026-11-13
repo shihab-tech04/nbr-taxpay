@@ -46,7 +46,7 @@ async function mockAccountHistory(page:Page){
     const encoded=request.headers().authorization?.replace(/^Bearer\s+/i,'').split('.')[1];
     if(encoded)expect(JSON.parse(atob(encoded)).sub).toBe(owner.id);
     if(url.pathname==='/auth/v1/user')return response(owner);
-    if(url.pathname==='/rest/v1/rpc/sim_my_taxpayer_profile')return response({message:'No approved simulator binding'},403);
+    if(url.pathname==='/rest/v1/rpc/sim_my_taxpayer_profile')return response({message:'No approved synthetic profile binding'},403);
     if(url.pathname==='/rest/v1/rpc/taxpay_claim_story1_session'||
        url.pathname==='/rest/v1/rpc/taxpay_claim_walkin_payer_payments')return response(0);
     if(url.pathname==='/rest/v1/rpc/taxpay_my_story1_payments')
