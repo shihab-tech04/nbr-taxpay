@@ -428,8 +428,6 @@ test('Travel Tax: duplicate passports cannot be confirmed or included in final t
   await expect(second.locator('.travel-flow__inline-error')).toHaveCount(0);
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
   await modal.locator('#travel-mobile').fill('01712345678');
-  await modal.getByRole('button',{name:'Continue to travel details'}).click();
-  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
   const completePassengers=modal.getByTestId('travel-passenger-list').locator('[data-complete="true"]');
   await expect(completePassengers).toHaveCount(2);
   const summaries=modal.getByTestId('travel-passenger-list').locator('.travel-flow__person-summary');
@@ -439,11 +437,15 @@ test('Travel Tax: duplicate passports cannot be confirmed or included in final t
     summaries.nth(1).locator('div').nth(1).locator('dd').innerText(),
   ]);
   expect(maskedPassports[0]).not.toBe(maskedPassports[1]);
+  await modal.getByRole('button',{name:'Continue to travel details'}).click();
+  await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
+  await expect(modal.getByRole('button',{name:'Edit passengers (2)'})).toBeVisible();
   await fillTravelDetails(modal);
   await modal.getByRole('button',{name:'Continue to review'}).click();
   const reviewedPassengers=modal.locator('.travel-flow__passenger-table tbody tr');
   await expect(reviewedPassengers).toHaveCount(2);
   await expect(reviewedPassengers).toContainText('SAMPLE BANGLADESHI PASSENGER');
+  await expect(reviewedPassengers).toContainText('SAMPLE PASSENGER TWO');
 });
 
 test('Travel Tax: incomplete foreign passenger shows a field error and recovers without losing the first passenger',async({page})=>{
