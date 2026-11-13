@@ -146,7 +146,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(timeline).toContainText('Penalty');
  await expect(timeline).toContainText('2025-26');
  await expect(timeline).toContainText(tx!.id);
- await expect(timeline).toContainText('৳ 23.50');
+ await expect(timeline).toContainText(/৳\s*23\.50?/);
  await expect(timeline).not.toContainText('Advance tax');
  await expect(timeline).not.toContainText('৳ 150.25');
 

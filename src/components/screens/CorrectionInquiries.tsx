@@ -4,6 +4,7 @@ import {sameAuthenticatedOwner} from '../../services/secureWorkspacePolicy';
 import {validateCorrectionInquiry, type ProposedAttributionField} from '../../services/correctionInquiryValidation';
 import {UiButton,UiInput,UiTextarea,UiSelect} from '../ui/Controls';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {useTaxState} from '../../services/taxState';
 
 type Row=Readonly<{
  inquiry_id:string; original_reference:string; evidence_state:string; created_at:string;
@@ -26,7 +27,8 @@ const t={
  auth:'Your authenticated session does not match the requester.',
  history:'My review inquiries',
  empty:'No correction inquiries for this account.',
- state:'Pending evidence — not an approved correction',
+ state:'Pending evidence — not an approved correction', focusedCase:'Opened the correction case linked from this notification.',
+ focusedCaseUnavailable:'This correction case is not available to the signed-in account.',
  officeReview:'Office review status',
  officeReviewUpdated:'Last updated by Office',officeReviewRevision:'Review revision',
  officeReviewStates:{PENDING_OFFICER:'Waiting for Office review',MAKER_ACKNOWLEDGED:'Maker acknowledged',REVIEWER_VERIFIED:'Reviewer verified',APPROVER_CLOSED:'Review closed — no financial record changed',REJECTED:'Review rejected — no financial record changed'},
@@ -49,7 +51,8 @@ const t={
  auth:'সাইন-ইন করা অ্যাকাউন্ট ও আবেদনকারী মিলতে হবে।',
  history:'আমার পর্যালোচনার অনুসন্ধান',
  empty:'এই অ্যাকাউন্টে কোনো অনুসন্ধান নেই।',
- state:'প্রমাণের অপেক্ষায় — অনুমোদিত সংশোধন নয়',
+ state:'প্রমাণের অপেক্ষায় — অনুমোদিত সংশোধন নয়', focusedCase:'এই বিজ্ঞপ্তির সঙ্গে যুক্ত সংশোধন মামলাটি খোলা হয়েছে।',
+ focusedCaseUnavailable:'এই সংশোধন মামলা সাইন-ইন করা অ্যাকাউন্টে পাওয়া যায়নি।',
  officeReview:'অফিস পর্যালোচনার অবস্থা',
  officeReviewUpdated:'অফিসের সর্বশেষ হালনাগাদ',officeReviewRevision:'পর্যালোচনা সংস্করণ',
  officeReviewStates:{PENDING_OFFICER:'অফিস পর্যালোচনার অপেক্ষায়',MAKER_ACKNOWLEDGED:'মেকার গ্রহণ করেছেন',REVIEWER_VERIFIED:'রিভিউয়ার যাচাই করেছেন',APPROVER_CLOSED:'পর্যালোচনা বন্ধ — আর্থিক রেকর্ড বদলায়নি',REJECTED:'পর্যালোচনা প্রত্যাখ্যাত — আর্থিক রেকর্ড বদলায়নি'},
@@ -62,6 +65,11 @@ const t={
 
 export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,dashboard=false})=>{
  const labels=t[language];
+ const {routeParams}=useTaxState();
+ const candidateInquiryId=routeParams?.inquiryId;
+ const selectedInquiryId=typeof candidateInquiryId==='string'&&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidateInquiryId)
+   ?candidateInquiryId:null;
  const [originalReference,setOriginalReference]=useState('');
  const [reason,setReason]=useState('');
  const [desiredOutcome,setDesiredOutcome]=useState('');
@@ -90,7 +98,25 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
    error=null;
   }
   if(error)throw error;
-  if(isActive())setRows((data??[]) as Row[]);
+  let ownedRows=(data??[]) as Row[];
+  if(selectedInquiryId&&!ownedRows.some(row=>row.inquiry_id===selectedInquiryId)){
+   let focus=await supabase.from('taxpay_correction_inquiries')
+    .select('inquiry_id,original_reference,evidence_state,created_at,reason,requested_outcome,change_kind,old_value,new_value,office_review_state,office_review_revision,office_review_updated_at')
+    .eq('requester_uid',authenticatedUserId).eq('inquiry_id',selectedInquiryId).maybeSingle();
+   if(focus.error&&(focus.error.code==='42703'||focus.error.code==='PGRST204')&&/office_review_state/i.test(focus.error.message)){
+    const legacyFocus=await supabase.from('taxpay_correction_inquiries')
+     .select('inquiry_id,original_reference,evidence_state,created_at,reason,requested_outcome,change_kind,old_value,new_value')
+     .eq('requester_uid',authenticatedUserId).eq('inquiry_id',selectedInquiryId).maybeSingle();
+    if(legacyFocus.error)throw legacyFocus.error;
+    if(legacyFocus.data)ownedRows=[{...legacyFocus.data,office_review_state:null,office_review_revision:null,office_review_updated_at:null} as Row,...ownedRows];
+   }else{
+    if(focus.error)throw focus.error;
+    if(focus.data)ownedRows=[focus.data as Row,...ownedRows];
+   }
+  }
+  const {data:stillSignedIn,error:stillSignedInError}=await supabase.auth.getUser();
+  if(stillSignedInError||!sameAuthenticatedOwner(stillSignedIn.user?.id,authenticatedUserId))throw new Error(labels.auth);
+  if(isActive())setRows(ownedRows);
  };
  useEffect(()=>{
   let active=true;setRows([]);setLoading(true);setLoadError(false);
@@ -99,7 +125,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   void refresh();
   const timer=window.setInterval(()=>void refresh(),15000);
   return ()=>{active=false;window.clearInterval(timer);};
- },[authenticatedUserId]);
+ },[authenticatedUserId,selectedInquiryId]);
  const retryLoad=async()=>{
   if(loading)return;
   setLoading(true);setLoadError(false);setMessage('');
@@ -133,8 +159,9 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   }catch{if(persisted){setLoadError(true);setMessage(labels.savedHistoryFail)}else setMessage(labels.fail)}finally{setBusy(false);}
  };
  const needle=historySearch.trim().toLocaleLowerCase();
- const matchingRows=rows.filter(r=>!needle || [r.original_reference,r.reason,r.requested_outcome,r.evidence_state,
-  r.office_review_state??''].some(value=>value.toLocaleLowerCase().includes(needle)));
+ const matchingRows=rows.filter(r=>(!selectedInquiryId||r.inquiry_id===selectedInquiryId)&&(!needle || [r.original_reference,r.reason,r.requested_outcome,r.evidence_state,
+  r.office_review_state??''].some(value=>value.toLocaleLowerCase().includes(needle))));
+ const focusedCaseExists=selectedInquiryId!==null&&rows.some(row=>row.inquiry_id===selectedInquiryId);
  const form=<form onSubmit={submit} className="space-y-4">
    <label className="block text-sm font-semibold text-slate-800">{labels.ref}
     <UiInput required minLength={6} maxLength={80} value={originalReference} onChange={e=>setOriginalReference(e.target.value)}
@@ -175,6 +202,8 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   {message&&<p role="status" aria-live="polite" className="rounded-lg border border-slate-300 p-3 text-sm break-words">{message}</p>}
   <section aria-labelledby="inquiry-history-title" className="space-y-3">
    <h3 id="inquiry-history-title" className="text-lg font-semibold text-taxpay-text">{labels.history}</h3>
+   {selectedInquiryId&&<p role={focusedCaseExists?'status':'alert'} data-testid="notification-focused-correction-case">
+    {focusedCaseExists?labels.focusedCase:!loading?labels.focusedCaseUnavailable:labels.loading}</p>}
    {loading?<p role="status">{labels.loading}</p>:
     loadError?<div className="space-y-2"><p className="text-sm text-amber-900">{labels.fail}</p>
       <UiButton type="button" onClick={retryLoad}>{labels.retry}</UiButton></div>:

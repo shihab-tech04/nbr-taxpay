@@ -395,8 +395,14 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                               CORRECTION_APPROVER_CLOSED:t.correctionApproverClosed,
                               CORRECTION_REJECTED:t.correctionRejected
                             } as Record<string,string>)[item.message_code]??t.reviewLabel}</p>},
-                            {key:'reference',header:language==='bn'?'রেফারেন্স':'Reference',renderCell:item=><p className="break-all font-mono-plex text-sm text-taxpay-muted">
-                              {item.correction_inquiry_id ? item.correction_reference ?? '—' : item.request_id ?? '—'}</p>},
+                            {key:'reference',header:language==='bn'?'রেফারেন্স':'Reference',renderCell:item=>{
+                              const reference=item.correction_inquiry_id ? item.correction_reference : item.request_id;
+                              return item.correction_inquiry_id && reference
+                                ? <button type="button" className="break-all text-left font-mono-plex text-sm text-taxpay-primary underline underline-offset-2"
+                                    aria-label={language==='bn'?'সংশোধন মামলা খুলুন: '+reference:'Open correction case: '+reference}
+                                    onClick={()=>navigate('corrections',{inquiryId:item.correction_inquiry_id})}>{reference}</button>
+                                : <p className="break-all font-mono-plex text-sm text-taxpay-muted">{reference ?? '—'}</p>;
+                            }},
                             {key:'recorded',header:language==='bn'?'রেকর্ডের তারিখ':'Recorded',renderCell:item=><time dateTime={item.created_at} className="text-sm text-taxpay-muted">{date(item.created_at)}</time>},
                             {key:'status',header:language==='bn'?'অবস্থা':'Status',renderCell:item=><p className="font-semibold">{item.is_read?t.viewed:t.new}</p>}
                           ]}/>
