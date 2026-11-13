@@ -218,6 +218,55 @@ test('unbound signed-in history retains review activity and SQL-owned beneficiar
   await expect(history).toContainText('Beneficiary B');
 });
 
+
+const repeatableAdvancePayment={
+  id:'00000000-0000-4000-8000-000000000912',service:'ADVANCE_TAX',
+  amountMinor:1234,status:'SIMULATED_SUCCESS',createdAt:'2026-10-25T12:00:00Z',
+  details:{payerName:'Journey owner',payerTin:'1111111111111',taxpayerName:'Beneficiary A',
+    taxpayerTin:'012345678901',assessmentYear:'2026-27',lines:[{
+      headId:11,headNameEn:'Advance Tax - 1st Quarter Installment (Section 154)',
+      economicCode:'1-1141-0015-0201',taxAmount:12.34,penaltyAmount:0,
+      surchargeAmount:0,interestAmount:0,totalAmount:12.34
+    }]
+  }
+};
+
+for(const language of ['en','bn'] as const){
+  test('beneficiary-history Pay Again opens an editable copy without changing the original in '+language,
+    async({page},info)=>{
+      const original=JSON.stringify(repeatableAdvancePayment);
+      await mockAccount(page,true,[repeatableAdvancePayment]);
+      await page.route(backend+'/rest/v1/rpc/sim_my_taxpayer_profile**',async route=>{
+        const req=route.request();
+        const headers={'access-control-allow-origin':'*',
+          'access-control-allow-headers':'authorization, apikey, content-type, prefer, x-client-info',
+          'access-control-allow-methods':'GET,POST,OPTIONS'};
+        if(req.method()==='OPTIONS')
+          return route.fulfill({status:200,contentType:'application/json',headers,body:'{}'});
+        const claim=req.headers().authorization?.replace(/^Bearer\s+/i,'').split('.')[1];
+        if(claim){const actual=JSON.parse(atob(claim));expect(actual.sub).toBe(owner.id);}
+        return route.fulfill({status:200,contentType:'application/json',headers,body:'null'});
+      });
+      const profileRead=page.waitForResponse(response=>
+        response.request().method()==='POST'&&response.url().includes('/rpc/sim_my_taxpayer_profile'));
+      await page.goto('/?action=history&lang='+language);
+      await profileRead;
+      const history=page.getByTestId('beneficiary-payment-history');
+      await expect(history).toBeVisible();
+      const mobile=(page.viewportSize()?.width??1280)<768;
+      const repeat=history.getByTestId(mobile?'account-pay-again-mobile':'account-pay-again-desktop');
+      await expect(repeat).toBeVisible();
+      await repeat.click();
+      const copied=page.getByTestId('pay-again-reuse-notice');
+      await expect(copied).toBeVisible();
+      await expect(copied).toContainText(repeatableAdvancePayment.id);
+      await expect(copied).toContainText(language==='bn'?'মূল পেমেন্ট অপরিবর্তিত':'Original payment unchanged');
+      await expect(page.locator('[data-payment-service="ADVANCE_TAX"]')).toBeVisible();
+      await expect(page.locator('#guest-tin')).toHaveValue('012345678901');
+      expect(JSON.stringify(repeatableAdvancePayment)).toBe(original);
+    });
+}
+
 for(const language of ['en','bn'] as const){
   test('authenticated Notifications and Corrections show shared searchable tables in '+language,async({page},info)=>{
     await mockAccount(page,true);
