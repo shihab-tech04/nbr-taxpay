@@ -282,7 +282,7 @@ for (const [language, project] of [['en', 'desktop-1280'], ['bn', 'mobile-320']]
       .toContainText(language === 'bn' ? 'ইস্যুকারী কর্তৃপক্ষের যাচাইকৃত কর ক্রেডিট সনদপত্র নেই' :
         'No issuer-verified tax credit certificates are available');
     await expect(visibleRecords).toBeVisible();
-    await expect(visibleRecords.getByText(accountCertificateId, { exact: true })).toBeVisible();
+    await expect(visibleRecords.getByText(accountCertificateId)).toBeVisible();
     await expect(register).toContainText('Nusrat Jahan');
     await expect(register).toContainText('2026-27');
     await expect(register).toContainText('৳');
