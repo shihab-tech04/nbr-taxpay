@@ -63,6 +63,26 @@ test('user guide supports responsive search, FAQs and languages',async({page},in
  expect(overflow).toBeLessThanOrEqual(2);
 });
 
+test('NBR tax and VAT e-Payment help is current and bilingual on the public guide', async ({ page }) => {
+  for (const language of ['en', 'bn'] as const) {
+    await page.goto(`/?action=user_guide&lang=${language}`);
+    const source = page.locator('.public-guide-source').first();
+    if (language === 'en') {
+      await expect(page.getByRole('heading', { name: 'Sohojkor user guide' })).toBeVisible();
+      await expect(source).toContainText('For tax or VAT e-Payment problems, call 16555.');
+      await expect(source.getByRole('link', { name: 'Call NBR Tax and VAT e-Payment hotline (16555)' }))
+        .toHaveAttribute('href', 'tel:16555');
+    } else {
+      await expect(page.getByRole('heading', { name: 'সহজকর ব্যবহার নির্দেশিকা' })).toBeVisible();
+      await expect(source).toContainText('কর বা ভ্যাট ই-পেমেন্ট সমস্যায় ১৬৫৫৫ নম্বরে কল করুন।');
+      await expect(source.getByRole('link', { name: 'এনবিআর কর ও ভ্যাট ই-পেমেন্ট হটলাইনে কল করুন (১৬৫৫৫)' }))
+        .toHaveAttribute('href', 'tel:16555');
+    }
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(2);
+  }
+});
+
 test('Help Center typography and interactions remain usable at each viewport', async ({ page }) => {
   await page.goto('/?action=user_guide');
   const guide = page.locator('.public-guide-page');
