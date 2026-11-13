@@ -113,7 +113,7 @@ for(const language of ['en','bn'] as const){
     await expect(history).toBeVisible();
     await expect(history).toContainText('Beneficiary A');
     await expect(history).toContainText('Beneficiary B');
-    await history.getByRole('button',{name:language==='bn'?'দেখুন':'View',exact:true}).first().click();
+    await history.getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
     const receipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
     await expect(receipt).toBeVisible();
     const saveLabel=language==='bn'?'উপকারভোগী সংরক্ষণ করুন':'Save Beneficiary';
@@ -149,7 +149,7 @@ for(const language of ['en','bn'] as const){
     const reloadedHistory=page.getByTestId('beneficiary-payment-history');
     await expect(reloadedHistory).toContainText('Beneficiary A');
     await expect(reloadedHistory).toContainText(payment.id);
-    await reloadedHistory.getByRole('button',{name:language==='bn'?'দেখুন':'View',exact:true}).first().click();
+    await reloadedHistory.getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
     const savedReceipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
     await expect(savedReceipt.getByTestId('account-save-beneficiary-receipt')).toHaveCount(0);
     await expect(savedReceipt).toContainText('012345678901');
@@ -219,7 +219,7 @@ for(const language of ['en','bn'] as const){
       const history=page.getByTestId('beneficiary-payment-history');
       await expect(history).toBeVisible();
       await expect(history).toContainText('Beneficiary A');
-      await history.getByRole('button',{name:language==='bn'?'দেখুন':'View',exact:true}).first().click();
+      await history.getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
       const receipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
       await expect(receipt).toBeVisible();
       await receipt.getByRole('button',{name:language==='bn'?'উপকারভোগী সংরক্ষণ করুন':'Save Beneficiary',exact:true}).click();
@@ -249,7 +249,7 @@ for(const language of ['en','bn'] as const){
       await page.goto(appUrl('history',owner.session));
       const reloaded=page.getByTestId('beneficiary-payment-history');
       await expect(reloaded).toContainText(payment.id);
-      await reloaded.getByRole('button',{name:language==='bn'?'দেখুন':'View',exact:true}).first().click();
+      await reloaded.getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
       const savedReceipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
       await expect(savedReceipt.getByTestId('account-save-beneficiary-receipt')).toHaveCount(0);
       await expect(savedReceipt).toContainText('012345678901');
