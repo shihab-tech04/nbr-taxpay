@@ -57,11 +57,12 @@ export const PublicUserGuide:React.FC=()=>{
  const officialSource=<aside className="public-guide-source" aria-label={bn?'সরকারি তথ্য ও সহায়তা':'Official information and support'}>
    <div className="public-guide-source-copy">
      <h3>{bn?'সরকারি তথ্য ও সহায়তা':'Official information and support'}</h3>
-     <p>{bn?'ই-রিটার্নের প্রশ্নে এনবিআর সহায়তা: ০৯৬৪৩ ৭১৭১৭১, ছুটির দিন ছাড়া সকাল ৯টা–বিকাল ৫টা। ব্যাংক বা গেটওয়ে লেনদেনের সমস্যায় আপনার সেবাদাতার সঙ্গে যোগাযোগ করুন।':'NBR e-Return help: 09643 717171, 09:00–17:00 excluding holidays. For a bank or gateway transaction issue, contact your provider.'}</p>
+     <p>{bn?'ই-রিটার্নের প্রশ্নে এনবিআর সহায়তা: ০৯৬৪৩ ৭১৭১৭১, ছুটির দিন ছাড়া সকাল ৯টা–বিকাল ৫টা। কর বা ভ্যাট ই-পেমেন্ট সমস্যায় ১৬৫৫৫ নম্বরে কল করুন। ব্যাংক বা গেটওয়ে লেনদেনের সমস্যায় আপনার সেবাদাতার সঙ্গে যোগাযোগ করুন।':'NBR e-Return help: 09643 717171, 09:00–17:00 excluding holidays. For tax or VAT e-Payment problems, call 16555. For a bank or gateway transaction issue, contact your provider.'}</p>
    </div>
    <a className="public-guide-hotline" href="tel:09643717171">{bn?'এনবিআর ই-রিটার্ন সহায়তা কল করুন':'Call NBR e-Return support'}<PhoneCall size={16} aria-hidden="true"/></a>
    <nav className="public-guide-source-links" aria-label={bn?'সরকারি সহায়তা ও তথ্যের লিংক':'Official support and information links'}>
     <a href={bn?'https://nbr.gov.bd/all-faq/ban':'https://nbr.gov.bd/all-faq/eng'} rel="noopener noreferrer" target="_blank">{bn?'এনবিআর ই-রিটার্ন প্রশ্নোত্তর':'NBR e-Return FAQ'}<ExternalLink size={16} aria-hidden="true"/></a>
+     <a href="tel:16555">{bn?'এনবিআর কর ও ভ্যাট ই-পেমেন্ট হটলাইনে কল করুন (১৬৫৫৫)':'Call NBR Tax and VAT e-Payment hotline (16555)'}<PhoneCall size={16} aria-hidden="true"/></a>
     <a href="https://nbr.gov.bd/" rel="noopener noreferrer" target="_blank">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ExternalLink size={16} aria-hidden="true"/></a>
     <a href="https://nbr.gov.bd/terms-of-use/eng" rel="noopener noreferrer" target="_blank">{bn?'এনবিআর ভ্যাট পোর্টালের ব্যবহারের শর্ত (ইংরেজি)':'NBR VAT Portal terms (English)'}<ExternalLink size={16} aria-hidden="true"/></a>
     <a href="https://nbr.gov.bd/privacy-policy/e-services/vatcalculator/eng" rel="noopener noreferrer" target="_blank">{bn?'এনবিআর ভ্যাট পোর্টালের গোপনীয়তা নীতি (ইংরেজি)':'NBR VAT Portal privacy policy (English)'}<ExternalLink size={16} aria-hidden="true"/></a>
