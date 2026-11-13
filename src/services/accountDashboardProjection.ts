@@ -143,3 +143,12 @@ export function filterPrivateDashboardTransactionsByYear(
     return [{ ...transaction, allocations, amountMinor }];
   });
 }
+
+
+/** A payment made for this account by a third party is activity received,
+ * never spending initiated by this account or part of its payer totals. */
+export function selectCompletedPayerDashboardTransactions(
+  transactions:readonly DashboardSimulationTransaction[]
+):DashboardSimulationTransaction[]{
+  return transactions.filter(row=>row.state==='SIMULATED'&&row.participantView!=='beneficiary');
+}
