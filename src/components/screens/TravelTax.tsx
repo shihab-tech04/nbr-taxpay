@@ -103,6 +103,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const [processing, setProcessing] = useState(false);
   const [bankSlipPending, setBankSlipPending] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
+  const [sourcePaymentId, setSourcePaymentId] = useState<string | null>(null);
   const [selectedAccountDraft, setSelectedAccountDraft] = useState<PaymentFormDraft | null>(null);
   const [draftFooterTarget, setDraftFooterTarget] = useState<HTMLDivElement | null>(null);
   const storySessionId = getStorySessionId();
@@ -123,7 +124,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   // passports are re-entered on resume because preview credentials are public.
   const snapshotTravelDraft = (): Record<string, unknown> => ({
     schemaVersion: 1, step: Math.min(step, 2), mode, port, waterPort,
-    destination, travelDate, phone,
+    destination, travelDate, phone, sourcePaymentId,
     passengers: previewAccount
       ? passengers.map(person => ({ ...person, passport: '', identitySource: person.nationality === 'BD' ? 'PENDING' : 'MANUAL' }))
       : passengers,
@@ -143,6 +144,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setDestination(typeof saved.destination === 'string' ? saved.destination : '');
     setTravelDate(typeof saved.travelDate === 'string' ? saved.travelDate : '');
     setPhone(typeof saved.phone === 'string' ? saved.phone : '');
+    setSourcePaymentId(typeof saved.sourcePaymentId === 'string' && saved.sourcePaymentId.length
+      ? saved.sourcePaymentId : null);
     setPassengers(restored.map(person => ({
       ...person, identitySource: person.nationality === 'BD' ? 'PENDING' : 'MANUAL',
     })));
@@ -174,7 +177,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       setError('Account changed. Reopen your payment history before using Pay Again.');
       return;
     }
-    try { restoreTravelDraft(initialReuse.formPayload); }
+    try { restoreTravelDraft({ ...initialReuse.formPayload, sourcePaymentId: initialReuse.sourcePaymentId }); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Previous travel payment could not be copied.'); }
     // A different history record remounts this form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -448,6 +451,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
         service: 'TRAVEL_TAX',
         amountMinor: Math.round(totalAmount * 100),
         details: {
+          ...(sourcePaymentId ? { sourcePaymentId } : {}),
           payerName: passengers[0].name.trim(),
           assessmentYear: TRAVEL_TAX_YEAR,
           paymentMethod, paymentChannel,
