@@ -175,7 +175,15 @@ test('source-tax and demand heads combine across beneficiaries into one exact re
   expect(submitted[0].details.lines.map((x:{headId:number})=>x.headId)).toEqual([8,145]);
   expect(submitted[0].details.lines.map((x:{serviceCode:string;isWithholding:boolean})=>
     [x.serviceCode,x.isWithholding])).toEqual([['SOURCE_TAX_DEPOSIT',true],['ASSESSED_DEMAND',false]]);
-  expect(submitted[0].details.allocationContractVersion).toBe(2);
+  expect(submitted[0].details.allocationContractVersion).toBe(3);
+  const allocationIds = submitted[0].details.allocations.map((item:{allocationId:string})=>item.allocationId);
+  expect(allocationIds).toHaveLength(2);
+  expect(allocationIds.every((id:string)=>typeof id==='string'&&id.trim().length>0)).toBe(true);
+  expect(new Set(allocationIds).size).toBe(2);
+  expect(submitted[0].details.receiptSnapshot.allocationItems.map((item:{allocationId:string})=>item.allocationId))
+    .toEqual(allocationIds);
+  expect(submitted[0].details.allocations.reduce((sum:number,item:{amountMinor:number})=>sum+item.amountMinor,0))
+    .toBe(submitted[0].amountMinor);
   expect(submitted[0].details.allocations.map((x:{serviceCode:string;isWithholding:boolean})=>
     [x.serviceCode,x.isWithholding])).toEqual([['SOURCE_TAX_DEPOSIT',true],['ASSESSED_DEMAND',false]]);
   expect(submitted[0].details.allocations.map((x:{taxpayerTin:string;assessmentYear:string})=>[x.taxpayerTin,x.assessmentYear]))
