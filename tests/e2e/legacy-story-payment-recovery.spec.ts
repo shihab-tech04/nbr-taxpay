@@ -30,6 +30,7 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   let recovered=false;
   let recoveryAttempts=0;
   const paymentRequests:string[]=[];
+  const paymentSubmissions:Array<Record<string,unknown>>=[];
   const failedRequests:string[]=[];
   page.on('requestfailed',request=>failedRequests.push(request.url()+':'+request.failure()?.errorText));
   await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
@@ -70,6 +71,14 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
     const url=new URL(route.request().url());
     paymentRequests.push(url.pathname+url.search);
+    if(route.request().method()==='POST'){
+      paymentSubmissions.push(route.request().postDataJSON() as Record<string,unknown>);
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        success:true,id:'00000000-0000-4000-8000-000000039999',
+        status:'SIMULATED_SUCCESS',mirrored:true,simulationOnly:true
+      })});
+      return;
+    }
     const records=[
       {id:payment,service:'OTHER_TAX_PAYMENT',amountMinor:10000,status:'SIMULATED_SUCCESS',createdAt:date},
       {id:older,service:'TAX_WITH_RETURN',amountMinor:2500000,status:'SIMULATED_SUCCESS',createdAt:'2026-10-26T12:00:00Z'},
@@ -193,6 +202,19 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(cloned).toBeVisible();
   await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText(payment);
   await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText('Original payment unchanged.');
+  await cloned.getByRole('button',{name:'Continue to purpose & amount'}).click();
+  await cloned.getByRole('button',{name:'Continue to payment channel'}).click();
+  await cloned.getByRole('button',{name:'Pay online'}).click();
+  await cloned.getByRole('button',{name:'Mobile banking'}).click();
+  await cloned.getByRole('radio',{name:'bKash'}).check();
+  await cloned.getByRole('checkbox',{name:/I confirm each taxpayer TIN/}).check();
+  await cloned.getByRole('button',{name:/^Pay/}).last().click();
+  await expect(cloned.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:12000});
+  expect(paymentSubmissions).toHaveLength(1);
+  const payAgainSubmission=paymentSubmissions[0];
+  expect(payAgainSubmission.details).toMatchObject({sourcePaymentId:payment});
+  expect(typeof payAgainSubmission.idempotencyKey).toBe('string');
+  expect(payAgainSubmission.idempotencyKey).not.toBe(payment);
   await page.reload({waitUntil:'domcontentloaded'});
   const reg=page.getByTestId('taxpayer-transaction-table');
   const original=reg.getByRole('row').filter({hasText:older});
