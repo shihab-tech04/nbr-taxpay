@@ -77,6 +77,51 @@ test('the signed-in payer keeps both saved beneficiaries inside one scoped SQL s
  assert.deepEqual(confirmed.allocationItems?.map(item=>[item.taxpayerTin,item.economicCode,item.amountMinor]),
   [['909000000013','64',1500],['000000000018','135',3500]]);
 });
+test('confirmed v3 receipts preserve durable allocation IDs and reject malformed or inconsistent snapshots',()=>{
+ const details=structuredClone(mk().payload.details);
+ const confirm=(candidate:typeof details)=>makeConfirmedReceipt({id,service:'OTHER_TAX_PAYMENT',
+  amountMinor:5000,status:'SIMULATED_SUCCESS',createdAt:'2026-11-08T12:00:00Z',details:candidate});
+ assert.deepEqual(confirm(details).allocationItems?.map(item=>item.allocationId),['one','two']);
+ const broken: Array<[string,(candidate:typeof details)=>void]>=[
+  ['missing saved ID',candidate=>{delete (candidate.allocations as Array<Record<string,unknown>>)[0].allocationId;}],
+  ['duplicate saved IDs',candidate=>{(candidate.allocations as Array<Record<string,unknown>>)[1].allocationId='one';}],
+  ['snapshot ID mismatch',candidate=>{
+   const snapshot=candidate.receiptSnapshot as ChallanReceipt;
+   snapshot.allocationItems![0].allocationId='changed';
+  }],
+  ['snapshot beneficiary mismatch',candidate=>{
+   const snapshot=candidate.receiptSnapshot as ChallanReceipt;
+   snapshot.allocationItems![0].taxpayerTin='000000000018';
+  }],
+  ['snapshot amount mismatch',candidate=>{
+   const snapshot=candidate.receiptSnapshot as ChallanReceipt;
+   snapshot.allocationItems![0].amountMinor=1499;
+  }],
+  ['snapshot head mismatch',candidate=>{
+   const snapshot=candidate.receiptSnapshot as ChallanReceipt;
+   snapshot.items[0].headId=145;
+  }],
+ ];
+ for(const [description,mutate] of broken){
+  const candidate=structuredClone(details);
+  mutate(candidate);
+  assert.throws(()=>confirm(candidate),/allocations could not be reconciled/,description);
+ }
+});
+test('confirmed v2 and unversioned combined receipts remain recoverable without fabricated IDs',()=>{
+ for(const version of [2,undefined]){
+  const details=structuredClone(mk().payload.details);
+  if(version===undefined)delete details.allocationContractVersion;
+  else details.allocationContractVersion=version;
+  for(const allocation of details.allocations as Array<Record<string,unknown>>)delete allocation.allocationId;
+  const snapshot=details.receiptSnapshot as ChallanReceipt;
+  for(const item of snapshot.allocationItems??[])delete item.allocationId;
+  const recovered=makeConfirmedReceipt({id,service:'OTHER_TAX_PAYMENT',amountMinor:5000,
+   status:'SIMULATED_SUCCESS',createdAt:'2026-11-08T12:00:00Z',details});
+  assert.deepEqual(recovered.allocationItems?.map(item=>item.allocationId),[undefined,undefined]);
+  assert.deepEqual(recovered.allocationItems?.map(item=>item.amountMinor),[1500,3500]);
+ }
+});
 test('pending combined request is recoverable with same identity, and cannot leak across sessions',()=>{
  const storage=store(), request=mk();
  saveCombinedOtherTaxRequest(request,'READY',storage);
