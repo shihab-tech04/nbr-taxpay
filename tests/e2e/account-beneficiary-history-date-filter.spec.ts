@@ -106,6 +106,7 @@ for(const language of ['en','bn'] as const){
       name:language==='bn'?'লেনদেনের তালিকায় ফিরুন':'Back to activity',exact:true
     }).click();
     await expect(history).toBeVisible();
+    await history.getByRole('button',{name:language==='bn'?'ফিল্টার':'Filter',exact:true}).click();
     await expect(history.getByLabel(language==='bn'?'শুরুর তারিখ থেকে পেমেন্ট ফিল্টার করুন':'Filter payments from date')).toHaveValue('2026-10-26');
     await expect(history.getByLabel(language==='bn'?'শেষ তারিখ পর্যন্ত পেমেন্ট ফিল্টার করুন':'Filter payments to date')).toHaveValue('2026-10-26');
     await expect(history.getByLabel(language==='bn'?'ট্যাগ দিয়ে উপকারভোগীর পেমেন্ট ফিল্টার':'Filter beneficiary payments by tag')).toHaveValue('others');
@@ -115,6 +116,7 @@ for(const language of ['en','bn'] as const){
 
     await page.reload();
     await expect(history).toBeVisible();
+    await history.getByRole('button',{name:language==='bn'?'ফিল্টার':'Filter',exact:true}).click();
     await expect(history.getByLabel(language==='bn'?'শুরুর তারিখ থেকে পেমেন্ট ফিল্টার করুন':'Filter payments from date')).toHaveValue('2026-10-26');
     await expect(history.getByLabel(language==='bn'?'শেষ তারিখ পর্যন্ত পেমেন্ট ফিল্টার করুন':'Filter payments to date')).toHaveValue('2026-10-26');
     await expect(history.getByLabel(language==='bn'?'ট্যাগ দিয়ে উপকারভোগীর পেমেন্ট ফিল্টার':'Filter beneficiary payments by tag')).toHaveValue('others');
