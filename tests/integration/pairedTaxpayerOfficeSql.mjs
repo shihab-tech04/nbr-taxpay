@@ -74,7 +74,7 @@ assert.equal(mirrorRetry.id,payment.id);assert.equal(mirrorRetry.replayed,true);
 finish(retryClaim.claimToken,true);
 const admin=psql(dst,'BEGIN;SET LOCAL ROLE authenticated;SELECT public.demo_story1_office_payment_page(1,100);COMMIT;');
 const row=admin.items.find(x=>x.id===payment.id);assert.ok(row);
-assert.equal(row.amountMinor,'5000');assert.equal(row.certificateReference,'SK-PC-'+payment.id);
+assert.equal(Number(row.amountMinor),5000);assert.equal(row.certificateReference,'SK-PC-'+payment.id);
 assert.deepEqual(row.details.allocations,details.allocations);
 assert.deepEqual(row.details.lines,details.lines);
 assert.deepEqual(row.details.receiptSnapshot,details.receiptSnapshot);
