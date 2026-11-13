@@ -45,8 +45,26 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
   expect(b.status,JSON.stringify(b.data)).toBe(200);
   expect(b.data).toBe(profile);
  }
- const visit=async(who:typeof payer,route:string,viewport:{width:number;height:number})=>{
+ type PreviewSession={profileId:'user6'|'user7';capability:string;paymentSessionId:string;language:'en'|'bn';selectedListId:string|null};
+ const previewSession=async(profileId:'user6'|'user7'):Promise<PreviewSession>=>{
+  const response=await fetch(u.origin+'/functions/v1/taxpay-guest-beneficiaries',{method:'POST',
+   headers:{Origin:'http://127.0.0.1:4173',apikey:anonKey,'Content-Type':'application/json'},
+   body:JSON.stringify({action:'demo-login',userId:profileId,password:profileId})});
+  const raw=await response.json() as {success?:boolean;data?:PreviewSession};
+  expect(response.status,JSON.stringify(raw)).toBe(200);
+  expect(raw.success).toBe(true);
+  expect(raw.data).toMatchObject({profileId});
+  expect(raw.data?.capability).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  expect(raw.data?.paymentSessionId).toMatch(/^[0-9a-f-]{36}$/i);
+  return raw.data!;
+ };
+ const payerPreview=await previewSession('user6');
+ const visit=async(who:typeof payer,route:string,viewport:{width:number;height:number},preview?:PreviewSession)=>{
   const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
+  if(preview)await context.addInitScript(session=>{
+   window.sessionStorage.setItem('taxpay-taxpayer-preview-user',session.profileId);
+   window.sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify(session));
+  },preview);
   const page=await context.newPage();
   const session=who.session;
   await page.goto('/?action='+route+'#access_token='+encodeURIComponent(session.access_token)+
@@ -54,7 +72,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
    '&token_type=bearer&expires_in=3600&expires_at='+(session.expires_at||Math.floor(Date.now()/1000)+3600));
   return {page,context};
  };
- const one=await visit(payer,'history',{width:375,height:812});
+ const one=await visit(payer,'history',{width:375,height:812},payerPreview);
  await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
  await expect(one.page.getByText('User ID: user6')).toBeVisible();
  await expect(one.page.getByRole('heading',{name:'Choose payment category'})).toBeVisible();
@@ -148,6 +166,10 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  // list after navigation/refresh; the saved contact remains owner-scoped.
  const payerSecondContext=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:320,height:720}});
  const payerSecondPage=await payerSecondContext.newPage();
+ await payerSecondContext.addInitScript(session=>{
+  window.sessionStorage.setItem('taxpay-taxpayer-preview-user',session.profileId);
+  window.sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify(session));
+ },payerPreview);
  await payerSecondPage.goto('/?action=beneficiaries#access_token='+encodeURIComponent(payer.session.access_token)+
   '&refresh_token='+encodeURIComponent(payer.session.refresh_token)+'&token_type=bearer&expires_in=3600&expires_at='+
   (payer.session.expires_at||Math.floor(Date.now()/1000)+3600));
