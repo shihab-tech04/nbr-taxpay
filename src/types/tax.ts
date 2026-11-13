@@ -94,6 +94,8 @@ export interface PaymentLineItem {
 }
 
 export interface ReceiptAllocationItem {
+  /** Stable original composer line ID for source/Office reconciliation. */
+  allocationId?: string;
   taxpayerName: string;
   taxpayerTin?: string;
   paymentServiceEn: string;

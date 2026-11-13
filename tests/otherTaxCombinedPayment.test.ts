@@ -48,6 +48,10 @@ test('multi-taxpayer combined payment uses ONE idempotency key and ONE challan',
  assert.deepEqual(result.receipt.allocationItems?.map(x=>[x.taxpayerTin,x.assessmentYear,x.amountMinor]),[
    ['909000000013','2026-27',1500],['000000000018','2025-26',3500]]);
  assert.equal(result.payload.details.combinedPayment,true);
+ assert.equal(result.payload.details.allocationContractVersion,3);
+ assert.deepEqual(result.receipt.allocationItems?.map(x=>x.allocationId),['one','two']);
+ assert.deepEqual((result.payload.details.allocations as Array<{allocationId:string}>).map(x=>x.allocationId),['one','two']);
+ assert.deepEqual((result.payload.details.receiptSnapshot as ChallanReceipt).allocationItems?.map(x=>x.allocationId),['one','two']);
  assert.equal(result.payload.details.taxpayerCount,2);
  assert.equal((result.payload.details.allocations as unknown[]).length,2);
  assert.equal(result.payload.details.batchItemCount,undefined,'no split-payment record');
@@ -63,11 +67,13 @@ test('the signed-in payer keeps both saved beneficiaries inside one scoped SQL s
  assert.deepEqual(allocated.map(x=>x.amountMinor),[1500,3500]);
  assert.deepEqual(allocated.map(x=>x.taxpayerTin),['909000000013','000000000018']);
  assert.equal(bound.idempotencyKey,id);
+ assert.deepEqual(allocated.map(x=>x.allocationId),['one','two']);
  assert.deepEqual(bound,bindPreviewStoryPayer(grouped.payload,{profileId:'user1',paymentSessionId:session}));
  const confirmed=makeConfirmedReceipt({id,service:'OTHER_TAX_PAYMENT',amountMinor:5000,
   status:'SIMULATED_SUCCESS',createdAt:'2026-11-08T12:00:00Z',details:bound.details});
  assert.equal(confirmed.totalAmount,50);
  assert.equal(confirmed.paymentTransactionId,id);
+ assert.deepEqual(confirmed.allocationItems?.map(item=>item.allocationId),['one','two']);
  assert.deepEqual(confirmed.allocationItems?.map(item=>[item.taxpayerTin,item.economicCode,item.amountMinor]),
   [['909000000013','64',1500],['000000000018','135',3500]]);
 });
@@ -126,6 +132,13 @@ test('pending combined retries reject altered beneficiary-head identities and re
     const entries=request.payload.details.allocations as Array<Record<string,unknown>>;
     entries[0].headId=145;
   }],
+  ['changed immutable allocation ID', request => {
+    const entries=request.payload.details.allocations as Array<Record<string,unknown>>;
+    entries[0].allocationId='forged-line';
+  }],
+  ['changed receipt allocation ID', request => {
+    request.receipt.allocationItems![0].allocationId='forged-line';
+  }],
   ['changed visible receipt economic code', request => {
     request.receipt.allocationItems![0].economicCode='FORGED';
   }],
@@ -167,10 +180,25 @@ test('pending combined retries reject altered beneficiary-head identities and re
  assert.throws(()=>loadCombinedOtherTaxRequest(session,storage),/INVALID_COMBINED_RECOVERY/, 'tampered persistent retry must fail on load');
 });
 
+test('v2 pending combined requests remain byte-identical after the v3 upgrade',()=>{
+ const v2=structuredClone(mk());
+ v2.payload.details.allocationContractVersion=2;
+ for(const a of v2.payload.details.allocations as Array<Record<string,unknown>>) delete a.allocationId;
+ for(const item of [...v2.receipt.allocationItems!, ...(v2.payload.details.receiptSnapshot as ChallanReceipt).allocationItems!]) delete item.allocationId;
+ const before=JSON.stringify(v2.payload);
+ const storage=store();
+ assert.equal(saveCombinedOtherTaxRequest(v2,'READY',storage),true);
+ const loaded=loadCombinedOtherTaxRequest(session,storage);
+ assert.equal(JSON.stringify(loaded?.request.payload),before);
+ assert.deepEqual(loaded?.request.receipt.allocationItems,v2.receipt.allocationItems);
+});
+
 test('previous-version pending combined requests remain recoverable without changing their idempotency payload',()=>{
  const legacy=structuredClone(mk());
  delete legacy.payload.details.allocationContractVersion;
+ for(const item of [...legacy.receipt.allocationItems!, ...(legacy.payload.details.receiptSnapshot as ChallanReceipt).allocationItems!]) delete item.allocationId;
  for(const allocation of legacy.payload.details.allocations as Array<Record<string,unknown>>){
+  delete allocation.allocationId;
   delete allocation.serviceCode;
   delete allocation.isWithholding;
  }
@@ -272,7 +300,7 @@ test('one batch preserves the actual service category for every eligible non-Ret
  assert.deepEqual(serialized.map(item=>item.serviceCode),categories);
  assert.deepEqual(serialized.map(item=>item.isWithholding),[false,false,false,true,false,false]);
  assert.equal(result.payload.service,'OTHER_TAX_PAYMENT','the aggregate parent remains one combined payment');
- assert.equal(result.payload.details.allocationContractVersion,2);
+ assert.equal(result.payload.details.allocationContractVersion,3);
  assert.equal(result.payload.amountMinor,categories.length*100);
  assert.equal(result.receipt.challanNo,'SIM-'+id);
  assert.equal(result.receipt.items.length,categories.length);
