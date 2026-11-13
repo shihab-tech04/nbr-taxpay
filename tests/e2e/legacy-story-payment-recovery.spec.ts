@@ -249,6 +249,8 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   const resumedAllocation=resumed.getByTestId('other-tax-line').first();
   await expect(resumedAllocation.locator('select')).toHaveValue('');
   await expect(continueToChannel,'The prior assessment year must be reselected on Pay Again').toBeDisabled();
+  await resumed.getByTestId('other-tax-head-catalogue')
+    .locator('details[data-head-group="Others"] > summary').click();
   await resumedAllocation.locator('select').selectOption('2025-26');
   await expect(continueToChannel,'Restored payment allocations must become valid after year selection').toBeEnabled({timeout:5000});
   await continueToChannel.click();
