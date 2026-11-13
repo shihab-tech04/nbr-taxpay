@@ -4,7 +4,7 @@ import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
+import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import type { PaymentReuse } from '../../services/paymentReuse';
@@ -77,6 +77,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [selectedAccountDraft, setSelectedAccountDraft] = useState<PaymentFormDraft | null>(null);
   const [draftFooterTarget, setDraftFooterTarget] = useState<HTMLDivElement | null>(null);
+  const pendingPayment = useRef<StoryPaymentInput | null>(null);
   const [paymentNonce, setPaymentNonce] = useState(() => crypto.randomUUID());
 
 
@@ -112,7 +113,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setPaymentChannel(null); setMethodGroup(null); setPaymentMethod(null);
     setAcknowledged(false); setSimulateDecline(false); setCreatedReceipt(null);
     setBankSlipPending(false); setReceiptReviewOpen(false); setProcessing(false);
-    setPaymentNonce(crypto.randomUUID()); setError(''); setStep(0);
+    pendingPayment.current = null; setPaymentNonce(crypto.randomUUID()); setError(''); setStep(0);
   };
   useEffect(() => {
     if (!initialDraft) return;
@@ -338,7 +339,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setReceiptReviewOpen(false); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
-    setCreatedReceipt(null); setProcessing(false); setPaymentNonce(crypto.randomUUID());
+    setCreatedReceipt(null); setProcessing(false); pendingPayment.current = null; setPaymentNonce(crypto.randomUUID());
   };
 
   const paymentReceipt = (pendingBank: boolean): ChallanReceipt => {
@@ -398,7 +399,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     // Records are explicitly simulated: no real A-Challan is issued.
     let stored = receipt;
     if (import.meta.env.VITE_SUPABASE_DISABLED !== 'true') {
-      const ack = await persistSimulatedPayment({
+      pendingPayment.current ??= {
         idempotencyKey: paymentNonce,
         sessionId: getStorySessionId(),
         service: 'TRAVEL_TAX',
@@ -414,12 +415,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
           passengers: receipt.travelDetails?.passengers,
           lines: receipt.items, receiptSnapshot: receipt,
         },
-      });
-      stored = { ...receipt, paymentTransactionId: ack.id };
+      };
+      const request = pendingPayment.current;
+      const ack = await persistSimulatedPayment(request);
+      stored = { ...(request.details.receiptSnapshot as ChallanReceipt), paymentTransactionId: ack.id };
     }
     addPaymentReceipt(stored);
     setCreatedReceipt(stored);
-    setPaymentNonce(crypto.randomUUID());
+    pendingPayment.current = null; setPaymentNonce(crypto.randomUUID());
     setBankSlipPending(false);
     stepTo(3);
   };
@@ -427,19 +430,21 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (step !== 2 || processing) return;
-    const problem = validateTravelDetails() ?? validatePassengers();
+    const problem = pendingPayment.current ? null : validateTravelDetails() ?? validatePassengers();
     if (problem) { showError(problem); return; }
-    if (!paymentMethod || !paymentChannel || !acknowledged) {
+    if (!pendingPayment.current && (!paymentMethod || !paymentChannel || !acknowledged)) {
       setError(tr('Choose a payment method and confirm the details.', 'পেমেন্ট পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করুন।'));
       return;
     }
-    if (totalAmount <= 0) {
+    if (!pendingPayment.current && totalAmount <= 0) {
       setError(tr('No tax is payable for this passenger group.', 'এই যাত্রীদের জন্য কর প্রদেয় নেই।'));
       return;
     }
     setError(''); setProcessing(true);
     try {
-      if (paymentChannel === 'NOW' && simulateDecline) {
+      if (pendingPayment.current) {
+        await persistPreview(pendingPayment.current.details.receiptSnapshot as ChallanReceipt);
+      } else if (paymentChannel === 'NOW' && simulateDecline) {
         setError(tr('Payment preview declined. Try again.', 'পেমেন্ট পরীক্ষাটি প্রত্যাখ্যাত হয়েছে। আবার চেষ্টা করুন।'));
       } else if (paymentChannel === 'OTC') {
         setCreatedReceipt(paymentReceipt(true));
