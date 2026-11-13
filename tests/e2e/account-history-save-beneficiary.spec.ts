@@ -81,7 +81,7 @@ test('history recipient prefill is cleared if the signed-in payer changes before
   await page.goto('/?action=history');
   const history=page.getByTestId('beneficiary-payment-history');
   await expect(history).toBeVisible();
-  await history.getByRole('button',{name:'View',exact:true}).first().click();
+  await history.getByRole('button',{name:'View receipt',exact:true}).first().click();
   const receipt=page.getByRole('dialog',{name:'Payment receipt'});
   await receipt.getByRole('button',{name:'Save Beneficiary',exact:true}).click();
   const entry=page.getByRole('dialog',{name:'Beneficiary entry'});
