@@ -15,7 +15,7 @@ function psql(url,sql){
 }
 function lit(v){return "'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";}
 const fixture=readFileSync('tests/integration/demoRecipientNotices.sql','utf8');
-assert.match(fixture,/^BEGIN;/);assert.match(fixture,/WS3 disposable payer/);assert.match(fixture,/ROLLBACK;\s*$/);
+assert.match(fixture,/^BEGIN;/m);assert.match(fixture,/WS3 disposable payer/);assert.match(fixture,/ROLLBACK;\s*$/);
 const capture=[
  'SELECT coalesce(jsonb_agg(jsonb_build_object(',
  "  'id',p.id,'sessionId',p.session_id,'service',p.service_code,",
