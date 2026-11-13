@@ -87,7 +87,8 @@ export function projectDashboardChartRecords(
   source:DashboardChartSource,
   people:readonly DashboardRecipientProfile[],
   ownerTin:string,
-  serviceFilter:DashboardChartService|'all'='all'
+  serviceFilter:DashboardChartService|'all'='all',
+  recipientFilter?:string
 ):DashboardChartProjection{
   const targetYear=assessmentYear(year);
   const allocations:ChartAllocation[]=[];
@@ -141,7 +142,9 @@ export function projectDashboardChartRecords(
       tin:row.beneficiaryTin,amountMinor:BigInt(amountMinor)
     });
   }
-  const included=serviceFilter==='all'?allocations:allocations.filter(row=>row.service===serviceFilter);
+  const included=allocations.filter(row=>
+    (serviceFilter==='all'||row.service===serviceFilter)&&
+    (!recipientFilter||row.tin===recipientFilter));
   const aggregate=<Key extends string>(
     keys:readonly Key[],getKey:(row:ChartAllocation)=>Key
   ):DashboardChartSlice<Key>[]=>keys.map(key=>{
@@ -228,4 +231,23 @@ export function chooseDashboardChartSource(
   const examples=projectDashboardChartRecords(rows,year,'example',people,ownerTin);
   return saved.totalMinor>0n||saved.omittedRecords>0 ? 'recorded'
     : examples.totalMinor>0n ? 'example' : 'recorded';
+}
+
+
+/** Apply the exact same allocation guards as the visible dashboard chart
+ * before opening filtered history. A multi-year combined payment must not
+ * appear merely because a different head or recipient matched that batch. */
+export function matchesDashboardChartDrilldown(
+  row:DashboardChartRecord,
+  year:string,
+  source:DashboardChartSource,
+  people:readonly DashboardRecipientProfile[],
+  ownerTin:string,
+  service:DashboardChartService|'all'='all',
+  recipientTin?:string,
+  relationship?:DashboardChartTag
+):boolean{
+  const projection=projectDashboardChartRecords([row],year,source,people,ownerTin,service,recipientTin);
+  if(projection.totalMinor<=0n)return false;
+  return !relationship||projection.byTag.some(item=>item.key===relationship&&item.amountMinor>0n);
 }
