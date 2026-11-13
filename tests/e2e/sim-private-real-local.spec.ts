@@ -121,6 +121,14 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await one.page.goto('/?action=history');
  const payerHistory=one.page.getByTestId('beneficiary-payment-history');
  await expect(payerHistory).toBeVisible({timeout:15000});
+ const ownerHistory=await request('/rest/v1/rpc/taxpay_my_story1_payments',
+  {p_page:1,p_per_page:100},payer.session.access_token);
+ expect(ownerHistory.status,JSON.stringify(ownerHistory.data)).toBe(200);
+ const ownerHistoryData=ownerHistory.data as {items?:Array<{id:string;details:Record<string,unknown>}>};
+ const savedPayment=ownerHistoryData.items?.find(item=>item.id===tx!.id);
+ expect(savedPayment,JSON.stringify({paymentId:tx!.id,sessionId:payerPreview.paymentSessionId,
+  returnedIds:ownerHistoryData.items?.map(item=>item.id)})).toBeTruthy();
+ expect(savedPayment!.details.payerId).toBe('user6');
  const mobileHistoryRows=payerHistory.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem');
  const oneTimeRecipient=mobileHistoryRows.filter({hasText:'777777777777'}).filter({hasText:'Penalty'}).filter({hasText:'2025-26'});
  await expect(oneTimeRecipient).toHaveCount(1,{timeout:15000});
