@@ -111,6 +111,26 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await beneficiaryDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
  await expect(one.page.getByText('Beneficiary saved.',{exact:true})).toBeVisible({timeout:15000});
 
+ const listQuery=new URL('/rest/v1/taxpay_beneficiary_lists',u.origin);
+ listQuery.searchParams.set('select','id,owner_uid,name');
+ listQuery.searchParams.set('owner_uid','eq.'+payer.id);
+ listQuery.searchParams.set('name','eq.Profile acceptance');
+ const listResponse=await fetch(listQuery,{headers:{apikey:anonKey,Authorization:'Bearer '+payer.session.access_token}});
+ expect(listResponse.status).toBe(200);
+ const savedLists=await listResponse.json() as Array<{id:string;owner_uid:string;name:string}>;
+ expect(savedLists).toHaveLength(1);
+ expect(savedLists[0]).toMatchObject({owner_uid:payer.id,name:'Profile acceptance'});
+ const savedListId=savedLists[0].id;
+ const contactQuery=new URL('/rest/v1/taxpay_beneficiaries',u.origin);
+ contactQuery.searchParams.set('select','id,owner_uid,list_id,tin');
+ contactQuery.searchParams.set('owner_uid','eq.'+payer.id);
+ contactQuery.searchParams.set('list_id','eq.'+savedListId);
+ const contactResponse=await fetch(contactQuery,{headers:{apikey:anonKey,Authorization:'Bearer '+payer.session.access_token}});
+ expect(contactResponse.status).toBe(200);
+ const savedContacts=await contactResponse.json() as Array<{id:string;owner_uid:string;list_id:string;tin:string}>;
+ expect(savedContacts).toHaveLength(1);
+ expect(savedContacts[0]).toMatchObject({owner_uid:payer.id,list_id:savedListId,tin:'777777777777'});
+
  await one.page.goto('/?action=history');
  await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
  const payerCard=one.page.getByTestId('signed-in-payment-activity-cards')
@@ -180,6 +200,45 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(prior?.totalMinor).toBe(17375);
  expect(prior?.allocations.map(a=>a.amountMinor)).toEqual([15025,2350]);
  expect(prior?.allocations.map(a=>a.assessmentYear)).toEqual(['2026-27','2025-26']);
+
+ // Removing a private address-book list cascades only its contact row. The
+ // payer's immutable payment and beneficiary allocation must remain readable.
+ await one.page.goto('/?action=beneficiaries');
+ await expect(one.page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+ await one.page.getByRole('button',{name:'Selected list'}).click();
+ await one.page.getByRole('dialog',{name:'Choose beneficiary list'})
+   .getByRole('button',{name:'Edit Profile acceptance'}).click();
+ await one.page.getByRole('dialog',{name:'Edit beneficiary list'}).getByRole('button',{name:'Delete list'}).click();
+ const confirmDelete=one.page.getByRole('dialog',{name:'Confirm list deletion'});
+ await expect(confirmDelete).toContainText('Existing payment and tax records will not be affected.');
+ await confirmDelete.getByRole('button',{name:'Delete list',exact:true}).click();
+ await expect(one.page.getByText('Beneficiary list deleted.',{exact:true})).toBeVisible({timeout:15000});
+
+ const listsAfterResponse=await fetch(new URL('/rest/v1/taxpay_beneficiary_lists?select=id&id=eq.'+savedListId,u.origin),{
+  headers:{apikey:anonKey,Authorization:'Bearer '+payer.session.access_token}
+ });
+ expect(listsAfterResponse.status).toBe(200);
+ expect(await listsAfterResponse.json()).toEqual([]);
+ const contactsAfterResponse=await fetch(new URL('/rest/v1/taxpay_beneficiaries?select=id&id=eq.'+savedContacts[0].id,u.origin),{
+  headers:{apikey:anonKey,Authorization:'Bearer '+payer.session.access_token}
+ });
+ expect(contactsAfterResponse.status).toBe(200);
+ expect(await contactsAfterResponse.json()).toEqual([]);
+ const historyAfterDelete=await request('/rest/v1/rpc/sim_my_payment_history',{p_view:'payer'},payer.session.access_token);
+ expect(historyAfterDelete.status).toBe(200);
+ const preservedPayment=(historyAfterDelete.data as Array<{transactionId:string;totalMinor:number;allocations:Array<{beneficiary:string;amountMinor:number}>}>)
+  .find(row=>row.transactionId===tx!.transactionId);
+ expect(preservedPayment?.totalMinor).toBe(17375);
+ expect(preservedPayment?.allocations).toEqual(expect.arrayContaining([
+  expect.objectContaining({beneficiary:'user7',amountMinor:2350})
+ ]));
+ await one.page.goto('/?action=history');
+ const preservedCard=one.page.getByTestId('signed-in-payment-activity-cards')
+  .locator(':scope > li').filter({hasText:tx!.id}).first();
+ await expect(preservedCard.getByText(tx!.id)).toBeVisible({timeout:15000});
+ await preservedCard.getByText('View allocations',{exact:false}).click();
+ await expect(preservedCard).toContainText('user7');
+ await expect(preservedCard).toContainText('৳23.50');
  await expect(two.page.getByTestId('pay-again-mobile')).toHaveCount(0);
  await one.context.close();await two.context.close();
 });
