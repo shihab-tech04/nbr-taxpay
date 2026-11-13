@@ -64,6 +64,16 @@ export function makeTravelPassenger(id: string, nationality: TravellerNationalit
   };
 }
 
+export function dhakaTravelDate(now = new Date()): string {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Dhaka' }).format(now);
+}
+
+export function isPlannedTravelDate(date: string, now = new Date()): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < dhakaTravelDate(now)) return false;
+  const day = new Date(date + 'T00:00:00Z');
+  return Number.isFinite(day.getTime()) && day.toISOString().slice(0, 10) === date;
+}
+
 /** Age is measured on the selected travel date, not on today's date. */
 export function travelPassengerAge(birthDate: string, travelDate: string): number | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate) || !/^\d{4}-\d{2}-\d{2}$/.test(travelDate)) return null;
