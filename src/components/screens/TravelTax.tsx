@@ -14,7 +14,7 @@ import { deletePaymentFormDraft, type PaymentDraftActor, type PaymentFormDraft }
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
 import {
   LAND_PORT_NAMES, SAMPLE_BD_PASSPORTS, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_YEAR,
-  makeTravelPassenger, travelPartyTotal, validateTravelParty, assessTravelPassenger, travelPassengerAge,
+  makeTravelPassenger, travelPartyTotal, validateTravelParty, assessTravelPassenger, travelPassengerAge, dhakaTravelDate, isPlannedTravelDate,
   type TravelMode, type TravelPassenger, type TravellerNationality,
 } from '../../data/travelTax2026';
 import { formatCurrency } from '../../services/numberFormat';
@@ -245,6 +245,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     if (!selectedPort) return tr('Select a departure port.', 'যাত্রা শুরুর বন্দর নির্বাচন করুন।');
     if (!destination.trim()) return tr('Select or enter a destination.', 'গন্তব্য নির্বাচন বা লিখুন।');
     if (!travelDate) return tr('Select your travel date.', 'ভ্রমণের তারিখ নির্বাচন করুন।');
+    if (!isPlannedTravelDate(travelDate))
+      return tr('Select today or a future travel date.', 'আজকের বা ভবিষ্যতের ভ্রমণের তারিখ নির্বাচন করুন।');
     return null;
   };
   const firstIdentityIssue = (): {id: string; message: string} | null => {
@@ -892,7 +894,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 </div>
                 <div className="travel-flow__field travel-flow__field--full">
                   <label htmlFor="travel-departure-date">{tr('Travel date','ভ্রমণের তারিখ')} *</label>
-                  <input id="travel-departure-date" type="date" value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); }}/>
+                  <input id="travel-departure-date" type="date" min={dhakaTravelDate()} value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); }}/>
                 </div>
               </div>
               <button type="button" className="travel-flow__edit-travel" onClick={() => stepTo(0)}>
