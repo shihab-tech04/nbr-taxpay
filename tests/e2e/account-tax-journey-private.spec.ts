@@ -14,7 +14,7 @@ function session(){
   return {access_token:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'+encoded+'.synthetic',token_type:'bearer',
     expires_in:3600,expires_at:exp,refresh_token:'journey-refresh',user:owner};
 }
-async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[]){
+async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[],correctionColumns=true){
   await page.addInitScript(({key,value})=>{localStorage.setItem(key,JSON.stringify(value));},
     {key:'sb-nbr-taxpay-test-auth-token',value:session()});
   await page.route(backend+'/**',async route=>{
@@ -26,7 +26,13 @@ async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[]
     if(req.method()==='OPTIONS')return response({});
     const claim=req.headers().authorization?.replace(/^Bearer\s+/i,'').split('.')[1];
     if(claim){const actual=JSON.parse(atob(claim));expect(actual.sub).toBe(owner.id);}
-    if(url.pathname==='/auth/v1/user')return response(owner);
+    if(url.pathname==='/auth/v1/user'){
+      if(req.method()==='PATCH'){
+        const update=req.postDataJSON() as {data?:Record<string,unknown>};
+        Object.assign(owner.user_metadata,update.data??{});
+      }
+      return response(owner);
+    }
     if(url.pathname==='/rest/v1/taxpay_payment_requests'){
       expect(url.searchParams.get('owner_uid')).toBe('eq.'+owner.id);
       return response(hasData?[request]:[]);
@@ -37,8 +43,22 @@ async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[]
         assessment_year:'2026-27',created_at:'2026-10-01T10:00:00Z'}]:[]);
     }
     if(url.pathname==='/rest/v1/taxpay_in_app_notifications'){
-      return response(hasData?[{id:'notice-a1',request_id:request.id,message_code:'REQUEST_SUBMITTED',
-        is_read:false,created_at:'2026-10-03T10:00:00Z'}]:[]);
+      expect(url.searchParams.get('recipient_uid')).toBe('eq.'+owner.id);
+      if(req.method()==='PATCH')return response([
+        {id:'notice-a1'},{id:'notice-correction-a1'}
+      ]);
+      const correctionSelect=url.searchParams.get('select')?.includes('correction_inquiry_id');
+      if(!correctionColumns&&correctionSelect)
+        return response({code:'42703',message:'column taxpay_in_app_notifications.correction_inquiry_id does not exist'},400);
+      if(!correctionColumns)return response(hasData?[{id:'notice-a1',request_id:request.id,event_id:'event-a1',
+        message_code:'REQUEST_SUBMITTED',is_read:false,created_at:'2026-10-03T10:00:00Z'}]:[]);
+      return response(hasData?[
+        {id:'notice-a1',request_id:request.id,event_id:'event-a1',message_code:'REQUEST_SUBMITTED',
+          is_read:false,created_at:'2026-10-03T10:00:00Z'},
+        {id:'notice-correction-a1',request_id:null,event_id:null,correction_inquiry_id:'case-a1',
+          correction_decision_id:'decision-a1',message_code:'CORRECTION_MAKER_ACKNOWLEDGED',
+          is_read:false,created_at:'2026-10-04T10:00:00Z'},
+      ]:[]);
     }
     if(url.pathname==='/rest/v1/taxpay_correction_inquiries'){
       expect(url.searchParams.get('requester_uid')).toBe('eq.'+owner.id);
@@ -166,16 +186,21 @@ for(const language of ['en','bn'] as const){
     const reviews=page.getByTestId(desktop?'authenticated-review-notification-register':'authenticated-review-notification-cards');
     const drafts=page.getByTestId(desktop?'authenticated-draft-notification-register':'authenticated-draft-notification-cards');
     const reviewRows=desktop?reviews.locator('tbody tr'):reviews.getByRole('listitem');
-    await expect(reviewRows).toHaveCount(1);
+    await expect(reviewRows).toHaveCount(2);
     await expect(desktop?drafts.locator('tbody tr'):drafts.getByRole('listitem')).toHaveCount(1);
     await expect(reviews).toContainText(request.id);
+    await expect(reviews).toContainText(language==='bn'
+      ?'সংশোধনের অনুরোধ গ্রহণ করা হয়েছে':'Correction request acknowledged');
+    await expect(reviews).toContainText('SYN-OWNER-REF-001');
     await expect(drafts).toContainText('ADVANCE_TAX');
     const search=page.getByRole('searchbox',{name:language==='bn'?'বিজ্ঞপ্তি খুঁজুন':'Search account notifications'});
     await search.fill('no-matching-reference');
     await expect(reviews).toHaveCount(0);
     await expect(drafts).toHaveCount(0);
     await page.getByRole('button',{name:language==='bn'?'অনুসন্ধান মুছুন':'Clear search'}).click();
-    await expect(reviewRows).toHaveCount(1);
+    await expect(reviewRows).toHaveCount(2);
+    await page.getByRole('button',{name:language==='bn'?'সবগুলো দেখা হয়েছে':'Mark all as viewed'}).click();
+    await expect(reviews).toContainText(language==='bn'?'দেখা':'Viewed');
     const count=desktop?await reviewRows.first().locator('td').count()
       :await reviewRows.first().locator('dt').count();
     expect(count).toBe(4);
@@ -203,3 +228,13 @@ for(const language of ['en','bn'] as const){
       animations:'disabled'});
   });
 }
+
+test('notification register keeps payment reviews available before correction columns are deployed',async({page})=>{
+  await mockAccount(page,true,[],false);
+  await page.goto('/?action=account_notifications');
+  const reviews=page.getByTestId('authenticated-review-notification-register');
+  await expect(reviews).toBeVisible();
+  await expect(reviews).toContainText(request.id);
+  await expect(reviews).not.toContainText('case-a1');
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
