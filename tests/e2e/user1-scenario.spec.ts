@@ -140,7 +140,7 @@ test('user1 Activity retains the approved transaction table and removes redundan
 
 
 test('user1 unified profile displays all distinct TIN fields with no tabs, duplicates or overflow',async({page},info)=>{
-  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Unified taxpayer profile desktop/mobile acceptance');
+  test.skip(!['desktop-1280','mobile-375','mobile-320'].includes(info.project.name),'Unified taxpayer profile desktop/mobile acceptance');
   await page.goto('/?action=account_profile&demoUser=user1');
   const profile=page.getByTestId('user1-taxpayer-profile');
   const content=profile.getByTestId('user1-profile-unified-content');
