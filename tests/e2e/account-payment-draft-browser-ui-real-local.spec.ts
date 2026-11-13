@@ -423,10 +423,16 @@ for (const language of ['en', 'bn'] as const) {
     const savedLabel = bn ? 'খসড়া সংরক্ষিত' : 'Draft Saved';
     const continueLabel = bn ? 'চালিয়ে যান' : 'Continue';
     const marker = `AUTH-DRAFT-${language}-${randomUUID()}`;
+    const receiptPhone = '01712345678';
+    const receiptEmail = `draft-${language}-${randomUUID()}@example.invalid`;
     const payerChoice = payer.locator('#guest-payer-self');
     await payerChoice.check();
     await expect(payer.locator('#guest-notice-ref')).toBeVisible();
+    await expect(payer.locator('#guest-phone')).toBeVisible();
+    await expect(payer.locator('#guest-receipt-email')).toBeVisible();
     await payer.locator('#guest-notice-ref').fill(marker);
+    await payer.locator('#guest-phone').fill(receiptPhone);
+    await payer.locator('#guest-receipt-email').fill(receiptEmail);
     await payer.getByRole('button', { name: saveLabel, exact: true }).click();
     await expect(payer.getByRole('button', { name: savedLabel, exact: true })).toBeVisible();
 
@@ -434,7 +440,9 @@ for (const language of ['en', 'bn'] as const) {
     expect(firstRows).toHaveLength(1);
     const draftId = firstRows[0].id;
     expect(firstRows[0]).toMatchObject({ owner_uid: owner.id, revision: 1 });
-    expect(firstRows[0].form_payload).toMatchObject({ noticeReference: marker, forSelf: true });
+    expect(firstRows[0].form_payload).toMatchObject({
+      noticeReference: marker, forSelf: true, phone: receiptPhone, receiptEmail,
+    });
 
     // A separate fresh form creates a sibling draft for the same owner. The
     // later discard must remove only the selected draft, never this sibling.
@@ -458,6 +466,8 @@ for (const language of ['en', 'bn'] as const) {
     await card.getByRole('button', { name: continueLabel, exact: true }).click();
     const modal = resume.getByRole('dialog').filter({ has: resume.locator('#guest-notice-ref') });
     await expect(modal.locator('#guest-notice-ref')).toHaveValue(marker);
+    await expect(modal.locator('#guest-phone')).toHaveValue(receiptPhone);
+    await expect(modal.locator('#guest-receipt-email')).toHaveValue(receiptEmail);
     const updatedMarker = marker + '-UPDATED';
     await modal.locator('#guest-notice-ref').fill(updatedMarker);
     await modal.getByRole('button', { name: saveLabel, exact: true }).click();
@@ -466,7 +476,9 @@ for (const language of ['en', 'bn'] as const) {
     const updatedRows = await readRows(owner.session, { owner_uid: 'eq.' + owner.id, id: 'eq.' + draftId });
     expect(updatedRows).toHaveLength(1);
     expect(updatedRows[0]).toMatchObject({ id: draftId, owner_uid: owner.id, revision: 2 });
-    expect(updatedRows[0].form_payload).toMatchObject({ noticeReference: updatedMarker, forSelf: true });
+    expect(updatedRows[0].form_payload).toMatchObject({
+      noticeReference: updatedMarker, forSelf: true, phone: receiptPhone, receiptEmail,
+    });
 
     // The first browser retains revision 1; a stale update must be rejected.
     await payer.locator('#guest-notice-ref').fill(marker + '-STALE');
@@ -481,6 +493,8 @@ for (const language of ['en', 'bn'] as const) {
     await cards.locator('[data-draft-id="' + draftId + '"]').getByRole('button', { name: continueLabel, exact: true }).click();
     const refreshedModal = resume.getByRole('dialog').filter({ has: resume.locator('#guest-notice-ref') });
     await expect(refreshedModal.locator('#guest-notice-ref')).toHaveValue(updatedMarker);
+    await expect(refreshedModal.locator('#guest-phone')).toHaveValue(receiptPhone);
+    await expect(refreshedModal.locator('#guest-receipt-email')).toHaveValue(receiptEmail);
     await refreshedModal.locator('.taxpay-modal__header .taxpay-modal__close').click();
     const exitPrompt = refreshedModal.getByRole('alertdialog');
     await expect.poll(async () => await refreshedModal.count() === 0 || await exitPrompt.count() > 0).toBe(true);
