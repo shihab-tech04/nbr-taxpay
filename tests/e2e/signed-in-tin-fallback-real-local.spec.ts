@@ -77,12 +77,15 @@ for(const language of ['en','bn'] as const){
         {owner_uid:auth.user.id,tin:'012345678901',display_name:'Saved Contact'}
       ]);
 
-      await page.goto('/?action=guest&lang='+language+'&initialCategory=OTHER_TAX_PAYMENT');
-      // The direct ?action=guest route renders standalone GuestPayment, not the embedded Pay Tax modal.
-      await expect(page.getByRole('heading',{name:language==='bn'?'অতিথি আয়কর পরিশোধ':'Guest Income Tax Payment'})).toBeVisible();
-      await expect(page.locator('.taxpay-modal')).toHaveCount(0);
-      await expect(page.locator('#guest-payer-other')).toBeVisible({timeout:15_000});
-      await page.locator('#guest-payer-other').click();
+      // Exercise the approved embedded Pay Tax journey, where footer actions
+      // are portaled into the existing modal rather than the legacy guest page.
+      await page.goto('/?action=landing&lang='+language);
+      await page.getByRole('button',{name:language==='bn'?'কর পরিশোধ':'Pay Tax',exact:true}).first().click();
+      const dialog=page.getByRole('dialog',{name:language==='bn'?'কর পরিশোধ':'Pay Tax'});
+      await dialog.locator('[data-payer-relationship="OTHER"]').click();
+      await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+      await dialog.getByRole('button',{name:language==='bn'?'এগিয়ে যান':'Continue',exact:true}).click();
+      await expect(dialog.locator('[data-payment-service="OTHER_TAX_PAYMENT"]').first()).toBeVisible();
       const picker=page.getByTestId('saved-beneficiary-picker');
       await expect(picker).toBeVisible({timeout:15_000});
       const savedSearch=picker.locator('#payment-beneficiary-search');
@@ -113,7 +116,7 @@ for(const language of ['en','bn'] as const){
       await expect(selected).toContainText(language==='bn'?'ইউজার 1':'User 1');
       await expect(selected).toContainText('111111111111');
       await expect(selected).toContainText(language==='bn'?'সংরক্ষিত নয়':'Not saved to your beneficiary lists');
-      await expect(page.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
+      await expect(dialog.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
 
       // Confirming a one-time sample must not create an address-book row or a payment.
       expect(await readBeneficiaries()).toEqual([
@@ -121,15 +124,17 @@ for(const language of ['en','bn'] as const){
       ]);
       expect(psql('SELECT count(*)::text FROM demo_payment.story_payments')).toBe(beforePaymentCount);
 
-      const receiptPhone=page.locator('#guest-phone');
+      const receiptPhone=dialog.locator('#guest-phone');
       if(await receiptPhone.count()===1&&await receiptPhone.isEditable())
         await receiptPhone.fill('01712345678');
-      const continueLabel=language==='bn'?'পেমেন্ট খাতে এগিয়ে যান':'Continue to Payment Head';
-      await page.getByRole('button',{name:continueLabel,exact:true}).click();
-      await expect(page.getByText(language==='bn'?'ধাপ 2 / ৪':'Step 2 of 4',{exact:true})).toBeVisible();
+      const continueLabel=language==='bn'?'খাত ও পরিমাণে এগিয়ে যান':'Continue to purpose & amount';
+      const footer=dialog.locator('.taxpay-modal__footer-actions');
+      await expect(footer).toBeVisible();
+      await footer.getByRole('button',{name:continueLabel,exact:true}).click();
+      await expect(dialog.locator('.taxpay-modal__step-count')).toContainText('2/4');
       const backLabel=language==='bn'?'পূর্ববর্তী ধাপ':'Back';
-      await page.getByRole('button',{name:backLabel,exact:true}).first().click();
-      await expect(page.getByText(language==='bn'?'ধাপ 1 / ৪':'Step 1 of 4',{exact:true})).toBeVisible();
+      await footer.getByRole('button',{name:backLabel,exact:true}).click();
+      await expect(dialog.locator('.taxpay-modal__step-count')).toContainText('1/4');
       await expect(picker.getByTestId('one-time-tin-selection')).toContainText('111111111111');
     }finally{
       await context.close().catch(()=>undefined);
