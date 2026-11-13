@@ -221,7 +221,9 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(dashboard).toContainText('Private dashboard owner');
   await expect(dashboard).toContainText('linked scenario profile user2 · Meghna Trading Ltd.');
   await expect(dashboard.getByTestId('account-dashboard-status-summary')).toContainText('Saved Drafts');
-  await expect(dashboard.getByTestId('account-payment-category-breakdown')).toBeVisible();
+  // A beneficiary-only account has received activity but no payer-owned
+  // category chart. Showing one here would incorrectly claim spending.
+  await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
   await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
   await expect(dashboard).toContainText('৳ 34.50');
   await expect(dashboard).not.toContainText('৳ 65.50');
@@ -345,7 +347,10 @@ test('beneficiary-only signed-in dashboard does not present payments made by som
   await expect(dashboard.getByText('Recorded amount in scenario').locator('..').locator('p').last())
     .toHaveText('৳ 0.00');
   await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
-  await expect(dashboard.getByTestId('account-beneficiary-spending')).toContainText('৳ 0.00');
+  // Tags are deliberately blocked by this mock transport. Unknown
+  // classifications must remain unavailable rather than fabricated as ৳0.
+  await expect(dashboard.getByTestId('account-beneficiary-spending')).toContainText('Cannot verify saved tags');
+  await expect(dashboard.getByTestId('account-beneficiary-spending')).toContainText('—');
   await expect(dashboard.getByTestId('account-scenario-monthly'))
     .toContainText('No completed payments initiated by this account');
   // The received transaction is still visible in Activity.
