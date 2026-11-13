@@ -84,8 +84,8 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     // then recover the same owner-scoped SQL draft in Bengali on a phone-sized viewport.
     await owner.setViewportSize({ width: 1600, height: 900 });
     const desktopRail = owner.getByRole('complementary', { name: 'Taxpayer desktop navigation' });
-    const languageSwitcher = desktopRail.locator('.taxpayer-reference-rail-bottom')
-      .getByRole('button').filter({ hasText: 'Language' });
+    const languageSwitcher = desktopRail.locator('.taxpayer-reference-rail-bottom').getByRole('button').nth(1);
+    await expect(languageSwitcher).toContainText('Language');
     await languageSwitcher.click();
     await expect(languageSwitcher).toContainText('English');
     await expect(owner).toHaveURL(/lang=bn/);
