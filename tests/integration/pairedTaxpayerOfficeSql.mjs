@@ -11,6 +11,8 @@ function psql(url,sql){
  const r=spawnSync('psql',['-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-d',url],{input:sql,encoding:'utf8',timeout:90000,maxBuffer:6000000});
  if(r.status!==0)throw Error('Disposable SQL failed: '+r.stderr.slice(-3000));
  const lines=r.stdout.trim().split('\n').filter(Boolean);
+ if(lines.at(-1)==='t')return true;
+ if(lines.at(-1)==='f')return false;
  try{return JSON.parse(lines.at(-1));}catch{throw Error('Non-JSON result: '+r.stdout.slice(-1400));}
 }
 function lit(v){return "'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";}
