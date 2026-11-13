@@ -173,6 +173,11 @@ test('source-tax and demand heads combine across beneficiaries into one exact re
   expect(submitted[0].service).toBe('OTHER_TAX_PAYMENT');
   expect(submitted[0].amountMinor).toBe(3000);
   expect(submitted[0].details.lines.map((x:{headId:number})=>x.headId)).toEqual([8,145]);
+  expect(submitted[0].details.lines.map((x:{serviceCode:string;isWithholding:boolean})=>
+    [x.serviceCode,x.isWithholding])).toEqual([['SOURCE_TAX_DEPOSIT',true],['ASSESSED_DEMAND',false]]);
+  expect(submitted[0].details.allocationContractVersion).toBe(2);
+  expect(submitted[0].details.allocations.map((x:{serviceCode:string;isWithholding:boolean})=>
+    [x.serviceCode,x.isWithholding])).toEqual([['SOURCE_TAX_DEPOSIT',true],['ASSESSED_DEMAND',false]]);
   expect(submitted[0].details.allocations.map((x:{taxpayerTin:string;assessmentYear:string})=>[x.taxpayerTin,x.assessmentYear]))
     .toEqual([['111111111111','2026-27'],['222222222222','2025-26']]);
   await dialog.getByRole('button',{name:'Receipt details'}).click();

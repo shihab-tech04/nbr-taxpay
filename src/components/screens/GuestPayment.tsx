@@ -1063,6 +1063,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         const taxpayer = batchTaxpayers.find(person => person.id === line.taxpayerId)!;
         return {
           headId: head.id, economicCode: head.economicCode, headNameEn: head.nameEn,
+          serviceCode: head.category, isWithholding: head.isWithholding,
           taxAmount: head.category === 'PENALTY' ? 0 : amount,
           penaltyAmount: head.category === 'PENALTY' ? amount : 0,
           surchargeAmount: 0, interestAmount: 0, totalAmount: amount,

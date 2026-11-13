@@ -8,12 +8,13 @@ import {bindPreviewStoryPayer} from '../src/services/simulatedPaymentStory.ts';
 import {makeConfirmedReceipt} from '../src/services/confirmedPaymentCertificate.ts';
 import type {ChallanReceipt,PaymentLineItem} from '../src/types/tax.ts';
 import type {StoryPaymentInput} from '../src/services/simulatedPaymentStory.ts';
+import { V11_PAYMENT_OPTIONS } from '../src/data/v11PaymentOptions.ts';
 
 const id='11111111-2222-4333-8444-555555555555';
 const session='aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
 const items:PaymentLineItem[]=[
- {headId:121,economicCode:'64',headNameEn:'Advance Tax',taxAmount:15,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:15},
- {headId:145,economicCode:'135',headNameEn:'Tax on notice of demand',taxAmount:35,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:35},
+ {headId:121,serviceCode:'ADVANCE_TAX',isWithholding:false,economicCode:'64',headNameEn:'Advance Tax',taxAmount:15,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:15},
+ {headId:145,serviceCode:'ASSESSED_DEMAND',isWithholding:false,economicCode:'135',headNameEn:'Tax on notice of demand',taxAmount:35,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:35},
 ];
 const receipt:ChallanReceipt={
  id:'rcpt-'+id,challanNo:'SIM-'+id,tokenNumber:'SIM-TOKEN-'+id,
@@ -139,6 +140,14 @@ test('pending combined retries reject altered beneficiary-head identities and re
   ['changed allocation count', request => {
     request.payload.details.allocationCount=99;
   }],
+  ['changed allocation service category', request => {
+    const entries=request.payload.details.allocations as Array<Record<string,unknown>>;
+    entries[0].serviceCode='TAX_WITH_RETURN';
+  }],
+  ['changed withholding classification', request => {
+    const entries=request.payload.details.allocations as Array<Record<string,unknown>>;
+    entries[0].isWithholding=true;
+  }],
   ['changed persisted receipt total', request => {
     const snapshot=request.payload.details.receiptSnapshot as ChallanReceipt;
     snapshot.totalAmount=51;
@@ -156,6 +165,26 @@ test('pending combined retries reject altered beneficiary-head identities and re
  saved.request.payload.details.allocations[0].headId=145;
  storage.setItem(key,JSON.stringify(saved));
  assert.throws(()=>loadCombinedOtherTaxRequest(session,storage),/INVALID_COMBINED_RECOVERY/, 'tampered persistent retry must fail on load');
+});
+
+test('previous-version pending combined requests remain recoverable without changing their idempotency payload',()=>{
+ const legacy=structuredClone(mk());
+ delete legacy.payload.details.allocationContractVersion;
+ for(const allocation of legacy.payload.details.allocations as Array<Record<string,unknown>>){
+  delete allocation.serviceCode;
+  delete allocation.isWithholding;
+ }
+ for(const line of [
+  ...(legacy.payload.details.lines as PaymentLineItem[]),
+  ...legacy.receipt.items,
+  ...(legacy.payload.details.receiptSnapshot as ChallanReceipt).items,
+ ]){delete line.serviceCode;delete line.isWithholding;}
+ const storage=store();
+ assert.equal(saveCombinedOtherTaxRequest(legacy,'READY',storage),true);
+ const restored=loadCombinedOtherTaxRequest(session,storage);
+ assert.equal(restored?.request.payload.idempotencyKey,id);
+ assert.equal(restored?.request.payload.details.allocationContractVersion,undefined);
+ assert.deepEqual(restored?.request.payload.details.allocations,legacy.payload.details.allocations);
 });
 
 test('one combined transaction supports more than twenty allocations without splitting',()=>{
@@ -203,7 +232,7 @@ test('configured capacity is explicit and one above the capacity is rejected bef
 });
 
 test('a mapped Source Tax head combines with an Advance/Demand head across distinct beneficiaries',()=>{
- const sourceLine={...items[0],headId:8,economicCode:'50',headNameEn:'Deduction from Salary'};
+ const sourceLine={...items[0],headId:8,serviceCode:'SOURCE_TAX_DEPOSIT' as const,isWithholding:true,economicCode:'50',headNameEn:'Deduction from Salary'};
  const newReceipt={...receipt,items:[sourceLine,items[1]]};
  const newInput={...input,details:{...input.details,lines:newReceipt.items}};
  const result=prepareCombinedOtherTaxPayment(newInput,newReceipt,[
@@ -211,12 +240,45 @@ test('a mapped Source Tax head combines with an Advance/Demand head across disti
  ]);
  assert.equal(result.payload.details.allocationCount,2);
  assert.equal(result.payload.details.taxpayerCount,2);
+ assert.deepEqual((result.payload.details.allocations as Array<Record<string,unknown>>).map(a=>[
+  a.serviceCode,a.isWithholding]),[['SOURCE_TAX_DEPOSIT',true],['ASSESSED_DEMAND',false]]);
+ assert.deepEqual(result.receipt.items.map(a=>[a.serviceCode,a.isWithholding]),[
+  ['SOURCE_TAX_DEPOSIT',true],['ASSESSED_DEMAND',false]]);
  assert.deepEqual(result.receipt.allocationItems?.map(a=>a.economicCode),['50','135']);
  assert.equal(result.receipt.challanNo,'SIM-'+id);
  assert.equal(result.payload.amountMinor,5000);
 });
+test('one batch preserves the actual service category for every eligible non-Return head group',()=>{
+ const categories=['ADVANCE_TAX','ASSESSED_DEMAND','PENALTY','SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT'] as const;
+ const sourceHeads=categories.map(serviceCode=>{
+  const option=V11_PAYMENT_OPTIONS.find(head=>head.category===serviceCode&&head.status==='ACTIVE');
+  assert.ok(option,`active mapped head missing for ${serviceCode}`);
+  return option;
+ });
+ const mixedLines=sourceHeads.map((head,index)=>{
+  const amount=1;
+  return {sourceId:'category-'+index,taxpayerTin:index%2===0?'909000000013':'000000000018',
+   taxpayerName:'Beneficiary '+index,assessmentYear:index%2===0?'2026-27':'2025-26',amountMinor:100,
+   line:{headId:head.id,serviceCode:head.category,isWithholding:head.isWithholding,
+    economicCode:head.economicCode,headNameEn:head.nameEn,taxAmount:head.category==='PENALTY'?0:amount,
+    penaltyAmount:head.category==='PENALTY'?amount:0,surchargeAmount:0,interestAmount:0,totalAmount:amount}};
+ });
+ const mixedItems=mixedLines.map(item=>item.line);
+ const mixedReceipt={...receipt,items:mixedItems,totalAmount:categories.length};
+ const mixedInput={...input,amountMinor:categories.length*100,
+  details:{...input.details,lines:mixedItems,totalAmount:categories.length}};
+ const result=prepareCombinedOtherTaxPayment(mixedInput,mixedReceipt,mixedLines);
+ const serialized=result.payload.details.allocations as Array<Record<string,unknown>>;
+ assert.deepEqual(serialized.map(item=>item.serviceCode),categories);
+ assert.deepEqual(serialized.map(item=>item.isWithholding),[false,false,false,true,false,false]);
+ assert.equal(result.payload.service,'OTHER_TAX_PAYMENT','the aggregate parent remains one combined payment');
+ assert.equal(result.payload.details.allocationContractVersion,2);
+ assert.equal(result.payload.amountMinor,categories.length*100);
+ assert.equal(result.receipt.challanNo,'SIM-'+id);
+ assert.equal(result.receipt.items.length,categories.length);
+});
 test('Tax with Return never mixes into the non-return combined-payment service',()=>{
- const returnLine={...items[0],headId:125,economicCode:'74',headNameEn:'Tax with return'};
+ const returnLine={...items[0],headId:125,serviceCode:'TAX_WITH_RETURN' as const,economicCode:'74',headNameEn:'Tax with return'};
  const newReceipt={...receipt,items:[returnLine,items[1]]};
  assert.throws(()=>prepareCombinedOtherTaxPayment({...input,details:{...input.details,lines:newReceipt.items}},newReceipt,[
    {...allocations[0],line:returnLine},allocations[1],
