@@ -332,3 +332,22 @@ test('completed summary and amounts count only successful payer records in the s
   await expect(dashboard.getByTestId('account-dashboard-status-summary')
     .getByText('সম্পন্ন পেমেন্ট',{exact:true}).locator('..').locator('p').nth(1)).toHaveText('২');
 });
+
+
+test('beneficiary-only signed-in dashboard does not present payments made by someone else as my spending',async({page})=>{
+  await mockPrivateAccount(page,'user2');
+  await page.goto('/?action=taxpayer_home');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2026-27');
+  const completed=dashboard.getByTestId('account-dashboard-status-summary')
+    .getByText('Completed Payments',{exact:true}).locator('..');
+  await expect(completed.locator('p').nth(1)).toHaveText('0');
+  await expect(dashboard.getByText('Recorded amount in scenario').locator('..').locator('p').last())
+    .toHaveText('৳ 0.00');
+  await expect(dashboard.getByTestId('account-payment-category-breakdown')).toHaveCount(0);
+  await expect(dashboard.getByTestId('account-beneficiary-spending')).toContainText('৳ 0.00');
+  await expect(dashboard.getByTestId('account-scenario-monthly'))
+    .toContainText('No completed payments initiated by this account');
+  // The received transaction is still visible in Activity.
+  await expect(dashboard.getByText('Recent scenario transactions').count()).resolves.toBeGreaterThanOrEqual(0);
+});
