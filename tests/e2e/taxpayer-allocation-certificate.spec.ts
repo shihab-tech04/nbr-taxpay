@@ -275,7 +275,7 @@ for (const [language, project] of [['en', 'desktop-1280'], ['bn', 'mobile-320']]
     const certificateAction = language === 'bn' ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate';
     const downloadAction = language === 'bn' ? 'ডাউনলোড' : 'Download';
     const register = page.getByTestId('account-certificate-record-register');
-    await expect(page.getByRole('heading', { name: pageHeading })).toBeVisible();
+    await expect(page.getByRole('heading', { name: pageHeading, exact: true })).toBeVisible();
     await expect(page.getByTestId('issued-tax-credit-certificates'))
       .toContainText(language === 'bn' ? 'ইস্যুকারী কর্তৃপক্ষের যাচাইকৃত কর ক্রেডিট সনদপত্র নেই' :
         'No issuer-verified tax credit certificates are available');
