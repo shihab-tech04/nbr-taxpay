@@ -283,29 +283,37 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       return tr('Select today or a future travel date.', 'আজকের বা ভবিষ্যতের ভ্রমণের তারিখ নির্বাচন করুন।');
     return null;
   };
+  const passengerIdentityIssue = (id: string): {id: string; message: string} | null => {
+    const index = passengers.findIndex(item => item.id === id);
+    const item = passengers[index];
+    if (!item || index < 0) return {id, message: tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।')};
+    const prefix = tr('Passenger ', 'যাত্রী ') + (index + 1) + ': ';
+    if (item.passport.trim().length < 6)
+      return {id: item.id, message: prefix + tr('enter a valid passport number.', 'বৈধ পাসপোর্ট নম্বর দিন।')};
+    const passport = item.passport.trim().toUpperCase();
+    const duplicateEarlierPassenger = passengers.slice(0, index).some(
+      other => other.passport.trim().toUpperCase() === passport,
+    );
+    if (duplicateEarlierPassenger)
+      return {id: item.id, message: prefix + tr('this passport is already used by another passenger.', 'এই পাসপোর্ট অন্য যাত্রী ইতিমধ্যে ব্যবহার করেছেন।')};
+    if (item.nationality === 'BD' && item.identitySource !== 'PASSPORT_SAMPLE')
+      return {id: item.id, message: prefix + tr('check the selected sample passport first.', 'প্রথমে নির্বাচিত নমুনা পাসপোর্ট যাচাই করুন।')};
+    if (item.name.trim().length < 2)
+      return {id: item.id, message: prefix + tr('enter a passenger name.', 'যাত্রীর নাম লিখুন।')};
+    if (item.nationality === 'FOREIGN') {
+      if (!item.country.trim())
+        return {id: item.id, message: prefix + tr('enter the country of nationality.', 'জাতীয়তার দেশ দিন।')};
+      if (travelPassengerAge(item.birthDate, new Date().toISOString().slice(0,10)) === null)
+        return {id: item.id, message: prefix + tr('enter a valid date of birth.', 'বৈধ জন্মতারিখ দিন।')};
+    }
+    if (item.medicalPortReferral)
+      return {id: item.id, message: prefix + tr('medical exemption requires assessment at the departure port.', 'চিকিৎসাজনিত অব্যাহতির জন্য বন্দরে সরাসরি যাচাই প্রয়োজন।')};
+    return null;
+  };
   const firstIdentityIssue = (): {id: string; message: string} | null => {
-    const used = new Set<string>();
-    for (let index = 0; index < passengers.length; index++) {
-      const item = passengers[index];
-      const prefix = tr('Passenger ', 'যাত্রী ') + (index + 1) + ': ';
-      if (item.passport.trim().length < 6)
-        return {id: item.id, message: prefix + tr('enter a valid passport number.', 'বৈধ পাসপোর্ট নম্বর দিন।')};
-      const passport = item.passport.trim().toUpperCase();
-      if (used.has(passport))
-        return {id: item.id, message: prefix + tr('this passport is already used by another passenger.', 'এই পাসপোর্ট অন্য যাত্রী ইতিমধ্যে ব্যবহার করেছেন।')};
-      used.add(passport);
-      if (item.nationality === 'BD' && item.identitySource !== 'PASSPORT_SAMPLE')
-        return {id: item.id, message: prefix + tr('check the selected sample passport first.', 'প্রথমে নির্বাচিত নমুনা পাসপোর্ট যাচাই করুন।')};
-      if (item.name.trim().length < 2)
-        return {id: item.id, message: prefix + tr('enter a passenger name.', 'যাত্রীর নাম লিখুন।')};
-      if (item.nationality === 'FOREIGN') {
-        if (!item.country.trim())
-          return {id: item.id, message: prefix + tr('enter the country of nationality.', 'জাতীয়তার দেশ লিখুন।')};
-        if (travelPassengerAge(item.birthDate, new Date().toISOString().slice(0,10)) === null)
-          return {id: item.id, message: prefix + tr('enter a valid date of birth.', 'বৈধ জন্মতারিখ দিন।')};
-      }
-      if (item.medicalPortReferral)
-        return {id: item.id, message: prefix + tr('medical exemption requires assessment at the departure port.', 'চিকিৎসাজনিত অব্যাহতির জন্য বন্দরে সরাসরি যাচাই প্রয়োজন।')};
+    for (const item of passengers) {
+      const issue = passengerIdentityIssue(item.id);
+      if (issue) return issue;
     }
     return null;
   };
@@ -883,9 +891,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     {!valid && !editing && <p className="travel-flow__field-hint">{tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।')}</p>}
                     {canShowAddPassenger && pendingConfirmationId === item.id && <div className="travel-flow__confirm-row">
                       <button type="button" className="travel-flow__add-member travel-flow__confirm-passenger"
-                        disabled={firstIdentityIssue() !== null}
+                        disabled={passengerIdentityIssue(item.id) !== null}
                         onClick={() => {
-                          const issue = firstIdentityIssue();
+                          const issue = passengerIdentityIssue(item.id);
                           if (issue) { reportIdentityIssue(issue); return; }
                           setConfirmedPassengerIds(ids => [...new Set([...ids, item.id])]);
                           setEditingPassengerId(null);
