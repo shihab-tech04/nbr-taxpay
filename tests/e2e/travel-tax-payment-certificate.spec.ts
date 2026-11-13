@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
-import { fillTravelDetails } from './travel-tax-test-helper';
+import { fillTravelDetails, futureTravelDate } from './travel-tax-test-helper';
 import { setWorkspaceLanguage } from './workspace-language';
 
 const paymentId = '2bd0a21e-4a7c-4c89-9664-0ae1f7f336a8';
@@ -16,6 +16,7 @@ for (const language of ['en', 'bn'] as const) {
   test('Travel Tax receipt opens a separate, itemized ' + language.toUpperCase() + ' payment certificate and PDF', async ({ page }) => {
     let submitted: Record<string, unknown> | null = null;
     let submissionCount = 0;
+    const totalText = language === 'bn' ? '১,৫০০' : '1,500';
     await page.route(fixtureOrigin + '/functions/v1/demo-story1-taxpay/payments*', async route => {
       const request = route.request();
       if (request.method() === 'OPTIONS') {
@@ -56,8 +57,10 @@ for (const language of ['en', 'bn'] as const) {
     await second.locator('input[id^="travel-country-"]').fill('India');
     await modal.getByRole('button', { name: /^(Add passenger|যাত্রী যোগ করুন)$/ }).click();
     await fillTravelDetails(modal);
+    const selectedTravelDate = await modal.locator('#travel-departure-date').inputValue();
+    expect(selectedTravelDate).toBe(futureTravelDate);
     await modal.getByRole('button', { name: /Continue to review|পেমেন্ট পর্যালোচনায় যান/ }).click();
-    await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText('1,500');
+    await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText(totalText);
     await modal.getByRole('button', { name: /Pay online|অনলাইনে পরিশোধ/ }).click();
     await modal.getByRole('button', { name: /Mobile banking|মোবাইল ব্যাংকিং/ }).click();
     await modal.getByRole('radio', { name: 'Nagad' }).check();
@@ -68,7 +71,7 @@ for (const language of ['en', 'bn'] as const) {
     await expect(receiptPaper).toBeVisible();
     const receipt = modal.getByTestId('travel-family-challan');
     await expect(receipt.locator('tbody tr')).toHaveCount(2);
-    await expect(receipt).toContainText('1,500');
+    await expect(receipt).toContainText(totalText);
     const firstPassenger = (await receipt.locator('tbody tr').first().locator('td').first().innerText()).trim();
     await expect(modal.getByRole('button', { name: /View payment certificate|পেমেন্ট সনদ দেখুন/ })).toBeVisible();
     await modal.getByRole('button', { name: /View payment certificate|পেমেন্ট সনদ দেখুন/ }).click();
@@ -83,12 +86,12 @@ for (const language of ['en', 'bn'] as const) {
     await expect(certificate).toContainText('••••4321');
     await expect(certificate).toContainText('Benapole');
     await expect(certificate).toContainText('India');
-    await expect(certificate).toContainText('2026-11-20');
+    await expect(certificate).toContainText(selectedTravelDate);
     const certificateLines = certificate.getByTestId('payment-certificate-line');
     await expect(certificateLines).toHaveCount(2);
     await expect(certificateLines.nth(0)).toContainText(language === 'bn' ? '৳ ১,০০০' : '৳ 1,000');
     await expect(certificateLines.nth(1)).toContainText(language === 'bn' ? '৳ ৫০০' : '৳ 500');
-    await expect(certificate.getByTestId('payment-certificate-total')).toContainText('1,500');
+    await expect(certificate.getByTestId('payment-certificate-total')).toContainText(totalText);
     await expect(certificate).not.toContainText('SIMULATED_SUCCESS');
     await expect(certificate).not.toContainText('TREASURY_SCROLLED');
     await expect(certificate).not.toContainText('SIM-TOKEN');
@@ -113,7 +116,7 @@ for (const language of ['en', 'bn'] as const) {
     expect(request.service).toBe('TRAVEL_TAX');
     expect(request.amountMinor).toBe(150000);
     expect(request.details?.passengers).toHaveLength(2);
-    expect(request.details?.travelDate).toBe('2026-11-20');
+    expect(request.details?.travelDate).toBe(selectedTravelDate);
     expect(submissionCount).toBe(1);
   });
 }
