@@ -326,8 +326,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   // Clicking it reports the precise missing field before any passenger is added.
   const pendingConfirmationId = editingPassengerId ??
     passengers.find(item => !confirmedPassengerIds.includes(item.id))?.id ?? null;
-  const canShowAddPassenger = pendingConfirmationId !== null &&
-    passengers.some(item => item.id === pendingConfirmationId);
+  const canShowAddPassenger = passengers.some(item => item.id === pendingConfirmationId &&
+    (item.nationality === 'BD'
+      ? item.identitySource === 'PASSPORT_SAMPLE'
+      : !!(item.passport.trim() || item.name.trim() || item.birthDate.trim() || item.country.trim())));
   const allPassengersComplete = firstIdentityIssue() === null &&
     passengers.every(item => confirmedPassengerIds.includes(item.id));
   const receiptMobileComplete = /^01\d{9}$/.test(phone);
