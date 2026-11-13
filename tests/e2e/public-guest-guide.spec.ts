@@ -274,14 +274,21 @@ test('help chat answers the matched FAQ in both languages and retains the conver
  const answers=page.locator('.public-help-message--assistant');
  await expect(answers.last()).toContainText('Check the reference for typing errors');
 
+ // Mobile help is an aria-modal dialog with a focus trap. Close it before
+ // changing the page language, then reopen and verify the English answer
+ // stayed in the conversation.
+ await page.getByRole('button',{name:'Close chat'}).click();
  await setWorkspaceLanguage(page,'bn');
+ const banglaLaunch=page.getByRole('button',{name:'চ্যাট সহায়তা'});
+ await banglaLaunch.click();
+ await expect(answers.last()).toContainText('Check the reference for typing errors');
+
  const banglaQuestion=page.getByLabel('আপনার প্রশ্ন');
  await banglaQuestion.fill('রেফারেন্স পাওয়া যাচ্ছে না কেন?');
  await page.getByRole('button',{name:'পাঠান'}).click();
  await expect(answers.last()).toContainText('রেফারেন্সটি সঠিকভাবে লেখা হয়েছে কি না দেখুন');
 
  await page.getByRole('button',{name:'চ্যাট বন্ধ করুন'}).click();
- const banglaLaunch=page.getByRole('button',{name:'চ্যাট সহায়তা'});
  await expect(banglaLaunch).toBeFocused();
  await banglaLaunch.click();
  await expect(answers.last()).toContainText('রেফারেন্সটি সঠিকভাবে লেখা হয়েছে কি না দেখুন');
