@@ -510,9 +510,8 @@ test('Travel Tax: medical referral is not an online tax exemption',async({page})
   await expect(modal.getByRole('tooltip')).toContainText('does not approve a tax exemption online');
   const medicalPassenger=modal.getByTestId('travel-passenger-list').locator('.travel-flow__person').first();
   const addPassenger=modal.getByRole('button',{name:'Add passenger',exact:true});
-  await expect(addPassenger).toBeEnabled();
-  await addPassenger.click();
-  await expect(modal.getByRole('alert')).toContainText('medical exemption requires assessment at the departure port.');
+  await expect(medicalPassenger).toContainText('Medical exemption is not approved online. Bring supporting documents to the port.');
+  await expect(addPassenger).toBeDisabled();
   await expect(medicalPassenger).toHaveAttribute('data-complete','false');
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
