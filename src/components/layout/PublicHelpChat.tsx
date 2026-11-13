@@ -31,6 +31,7 @@ export function PublicHelpChat(){
  const last=useRef<HTMLDivElement>(null);
  const launchRef=useRef<HTMLButtonElement>(null);
  const panelRef=useRef<HTMLElement>(null);
+ const wasOpen=useRef(false);
  useEffect(()=>{
   const query=window.matchMedia('(max-width: 650px)');
   const update=()=>setMobile(query.matches);
@@ -59,7 +60,11 @@ export function PublicHelpChat(){
   document.addEventListener('keydown',trap);
   return ()=>{document.body.style.overflow=previousOverflow;document.removeEventListener('keydown',trap);};
  },[open,mobile]);
- const closePanel=()=>{setOpen(false);launchRef.current?.focus();};
+ const closePanel=()=>setOpen(false);
+ useEffect(()=>{
+  if(!open&&wasOpen.current)launchRef.current?.focus();
+  wasOpen.current=open;
+ },[open]);
  useEffect(()=>{
   if(!open)return;
   const onKeyDown=(event:KeyboardEvent)=>{
