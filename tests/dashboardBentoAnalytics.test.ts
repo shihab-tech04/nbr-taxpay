@@ -152,3 +152,44 @@ test('unclassified amounts distinguish known untagged recipients from missing re
   assert.equal(travel.unclassified.recipientMissingMinor,0n);
   assert.equal(travel.unclassified.missingRecipientPaymentCount,0);
 });
+
+test('ranking by recipient counts combined receipts once across payment heads',()=>{
+  const combined=recorded('combined-1',[
+    receipt('receipt-6','OTHER_TAX_PAYMENT',[
+      {tin:family,year:'2026-27',minor:12000},
+      {tin:family,year:'2026-27',minor:8000},
+      {tin:friend,year:'2026-27',minor:9000}]),
+    receipt('receipt-7','ADVANCE_TAX',[
+      {tin:family,year:'2026-27',minor:40000},
+      {year:'2026-27',minor:3000},
+      {tin:owner,year:'2025-26',minor:10000}])
+  ]);
+  const other=recorded('combined-2',[
+    receipt('receipt-8','TRAVEL_TAX',[{tin:friend,year:'2026-27',minor:20000}])
+  ]);
+  const peopleWithNames=[
+    {...people[0],display_name:'Saved relative'},
+    {...people[1],display_name:'Saved friend'}
+  ];
+  const projection=projectDashboardChartRecords([combined,other],'2026-27','recorded',peopleWithNames,owner);
+  assert.equal(projection.totalMinor,92000n);
+  assert.equal(projection.byBeneficiary.length,2);
+  assert.equal(projection.byBeneficiary[0].tin,family);
+  assert.equal(projection.byBeneficiary[0].name,'Saved relative');
+  assert.equal(projection.byBeneficiary[0].tag,'family');
+  assert.equal(projection.byBeneficiary[0].amountMinor,60000n);
+  assert.equal(projection.byBeneficiary[0].paymentCount,1);
+  assert.equal(projection.byBeneficiary[1].tin,friend);
+  assert.equal(projection.byBeneficiary[1].amountMinor,29000n);
+  assert.equal(projection.byBeneficiary[1].paymentCount,2);
+  assert.equal(projection.unclassified.recipientMissingMinor,3000n);
+  assert.equal(projection.byBeneficiary.reduce((sum,x)=>sum+x.amountMinor,0n)
+    +projection.unclassified.recipientMissingMinor,projection.totalMinor);
+  const travel=projectDashboardChartRecords([combined,other],'2026-27','recorded',peopleWithNames,owner,'travel');
+  assert.equal(travel.byBeneficiary.length,1);
+  assert.equal(travel.byBeneficiary[0].tin,friend);
+  assert.equal(travel.byBeneficiary[0].amountMinor,20000n);
+  const older=projectDashboardChartRecords([combined,other],'2025-26','recorded',peopleWithNames,owner);
+  assert.equal(older.byBeneficiary[0].tin,owner);
+  assert.equal(older.byBeneficiary[0].tag,'own');
+});
