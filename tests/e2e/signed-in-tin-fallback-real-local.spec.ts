@@ -85,9 +85,9 @@ for(const language of ['en','bn'] as const){
       await expect(picker).toBeVisible({timeout:15_000});
       const savedSearch=picker.locator('#payment-beneficiary-search');
       await savedSearch.fill('012345678901');
-      await expect(picker.getByRole('radio')).toHaveCount(1);
+      await expect(picker.getByRole('checkbox')).toHaveCount(1);
       await expect(picker.getByTestId('one-time-tin-fallback-open')).toHaveCount(0);
-      await picker.getByRole('radio').check();
+      await picker.getByRole('checkbox').check();
 
       await savedSearch.fill('111111111111');
       const noSavedMatch=picker.getByTestId('one-time-tin-fallback-open');
