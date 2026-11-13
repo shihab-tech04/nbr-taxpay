@@ -448,7 +448,7 @@ for (const language of ['en', 'bn'] as const) {
     const payer = await open(owner.session, 'history');
     // A route reached through a real local Auth callback enables the existing
     // signed-in draft actor; no preview identity or mocked transport is used.
-    await payer.goto(`/?action=guest&lang=${language}`);
+    await payer.goto(`/?action=guest&lang=${language}&initialCategory=ADVANCE_TAX`);
     const saveLabel = bn ? 'খসড়া সংরক্ষণ করুন' : 'Save Draft';
     const savedLabel = bn ? 'খসড়া সংরক্ষিত' : 'Draft Saved';
     const continueLabel = bn ? 'চালিয়ে যান' : 'Continue';
