@@ -284,7 +284,7 @@ export const PublicLanding: React.FC = () => {
             <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
             <div className="public-benefits__copy">
               <h3>{route ? (
-                <a className="public-benefits__action" href={`?action=${route}`} aria-describedby={`public-benefit-detail-${id}`}
+                <a className="public-benefits__action" href={`?action=${route}${bn ? '&lang=bn' : ''}`} aria-describedby={`public-benefit-detail-${id}`}
                   onClick={event => {
                     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                     event.preventDefault();

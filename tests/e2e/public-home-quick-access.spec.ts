@@ -859,6 +859,23 @@ test('six benefit destinations work by pointer and keyboard in English and Bangl
         const control = item.id === 'payments'
           ? card.getByRole('button', { name: label })
           : card.getByRole('link', { name: label });
+        // Direct links and new-tab navigation must retain the public language.
+        if (item.id !== 'payments') {
+          await expect(control).toHaveAttribute('href',
+            `?action=${item.destination}${language === 'bn' ? '&lang=bn' : ''}`);
+        }
+        if (width === 1280 && language === 'bn' && item.id === 'history') {
+          const destination = await control.getAttribute('href');
+          const tab = await page.context().newPage();
+          try {
+            await tab.goto(new URL(destination!, page.url()).toString());
+            await expect(tab.getByText('আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন।')).toBeVisible();
+            await tab.reload();
+            await expect(tab.getByText('আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন।')).toBeVisible();
+          } finally {
+            await tab.close();
+          }
+        }
         const box = await card.boundingBox();
         if (!box) throw new Error(`Missing benefit card: ${item.id}`);
 
