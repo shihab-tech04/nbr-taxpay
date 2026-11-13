@@ -354,6 +354,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [acknowledged, setAcknowledged] = useState(false);
   const [simulateDecline, setSimulateDecline] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [sourcePaymentId, setSourcePaymentId] = useState<string | null>(initialReuse?.sourcePaymentId ?? null);
   const [paymentPhase, setPaymentPhase] = useState<PaymentPhase>('review');
   const [officeMirrorPending, setOfficeMirrorPending] = useState(false);
   const [paymentValidationBlocked, setPaymentValidationBlocked] = useState(false);
@@ -384,12 +385,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     schemaVersion: 1, category, step: Math.min(step, 2),
     forSelf, tin, payerName, walkInPayerTin, otherTaxpayerName, additionalTaxpayers,
     otherTaxLines, phone, receiptEmail, assessmentYear, noticeReference,
-    incomeTaxType, selectedHeadIds, amountInputs,
+    incomeTaxType, selectedHeadIds, amountInputs, sourcePaymentId,
   });
   const restoreAccountDraft = (saved: Record<string, unknown>) => {
     if (saved.schemaVersion !== 1 || saved.category !== category)
       throw new Error('Saved payment category does not match the selected service.');
     const stringField = (key: string) => typeof saved[key] === 'string' ? String(saved[key]) : '';
+    const restoredSourcePaymentId = stringField('sourcePaymentId').trim();
+    setSourcePaymentId(initialReuse?.sourcePaymentId ?? (restoredSourcePaymentId || null));
     if (saved.forSelf !== null && typeof saved.forSelf !== 'boolean')
       throw new Error('Saved payer relationship is invalid.');
     setForSelf(saved.forSelf === null ? null : saved.forSelf as boolean);
@@ -1138,6 +1141,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           amountMinor: Number(storyAmountMinor),
           details: {
             receiptReference: newReceipt.challanNo,
+            ...(sourcePaymentId ? { sourcePaymentId } : {}),
             taxpayerTin,
             payerName: newReceipt.payerName,
             payerTin: newReceipt.payerTin,
@@ -1412,11 +1416,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   return (
     <div lang={language === 'bn' ? 'bn' : 'en'} className={`${embedded ? 'payment-flow-embedded' : 'max-w-7xl mx-auto space-y-6 pb-12'} ${language === 'bn' ? 'font-bengali' : ''}`}>
-      {initialReuse && <p role="status" data-testid="pay-again-reuse-notice" className="rounded-lg border border-taxpay-border bg-taxpay-light p-3 text-sm text-taxpay-dark">
+      {sourcePaymentId && <p role="status" data-testid="pay-again-reuse-notice" className="rounded-lg border border-taxpay-border bg-taxpay-light p-3 text-sm text-taxpay-dark">
         {language==='bn'?'আগের পেমেন্ট থেকে তথ্য কপি করা হয়েছে: ':'Copied from previous payment: '}
-        <strong className="break-all">{initialReuse.sourcePaymentId}</strong>.
+        <strong className="break-all">{sourcePaymentId}</strong>.
         {' '}{language==='bn'?'মূল পেমেন্ট অপরিবর্তিত। প্রতিটি করবর্ষ, পরিমাণ ও তথ্য যাচাই করুন।':'Original payment unchanged. Review every year, amount and taxpayer before submitting.'}
-        {typeof initialReuse.formPayload.legacySourceAmount==='string'&&
+        {typeof initialReuse?.formPayload.legacySourceAmount==='string'&&
           <span className="mt-2 block" data-testid="pay-again-legacy-note">
             {language==='bn'
               ? 'পুরোনো রেকর্ডে পেমেন্ট খাতের আইডি ও করদাতার ধরন ছিল না। এগুলো নতুন করে নির্বাচন করুন। রেকর্ডকৃত পরিমাণ ৳'+initialReuse.formPayload.legacySourceAmount+' — খাত নির্বাচন করলে পরিমাণ প্রস্তাব করা হবে।'
