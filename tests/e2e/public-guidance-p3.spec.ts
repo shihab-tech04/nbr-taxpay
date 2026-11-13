@@ -5,6 +5,8 @@ test('public guide provides scoped official support, legal links and example-pay
   const source = page.locator('.public-guide-source').first();
   await expect(page.getByRole('heading', { name: 'Sohojkor user guide' })).toBeVisible();
   await expect(source.getByRole('link', { name: 'Call NBR e-Return support' })).toHaveAttribute('href', 'tel:09643717171');
+  await expect(source.getByRole('link', { name: 'Call NBR Tax and VAT e-Payment hotline (16555)' })).toHaveAttribute('href', 'tel:16555');
+  await expect(source).toContainText('For tax or VAT e-Payment problems, call 16555.');
   await expect(source.getByRole('link', { name: 'NBR e-Return FAQ' })).toHaveAttribute('href', 'https://nbr.gov.bd/all-faq/eng');
   await expect(source.getByRole('link', { name: 'NBR VAT Portal terms (English)' })).toHaveAttribute('href', 'https://nbr.gov.bd/terms-of-use/eng');
   await expect(source.getByRole('link', { name: 'NBR VAT Portal privacy policy (English)' })).toHaveAttribute('href', 'https://nbr.gov.bd/privacy-policy/e-services/vatcalculator/eng');
@@ -23,7 +25,9 @@ test('public guide provides scoped official support, legal links and example-pay
   await page.goto('/?action=user_guide&lang=bn');
   const banglaSource = page.locator('.public-guide-source').first();
   await expect(page.getByRole('heading', { name: 'সহজকর ব্যবহার নির্দেশিকা' })).toBeVisible();
+  await expect(banglaSource.getByRole('link', { name: 'এনবিআর কর ও ভ্যাট ই-পেমেন্ট হটলাইনে কল করুন (১৬৫৫৫)' })).toHaveAttribute('href', 'tel:16555');
   await expect(banglaSource.getByRole('link', { name: 'এনবিআর ভ্যাট পোর্টালের ব্যবহারের শর্ত (ইংরেজি)' })).toBeVisible();
+  await expect(banglaSource).toContainText('কর বা ভ্যাট ই-পেমেন্ট সমস্যায় ১৬৫৫৫ নম্বরে কল করুন।');
   await expect(banglaSource).toContainText('মে ২০১২');
 });
 
