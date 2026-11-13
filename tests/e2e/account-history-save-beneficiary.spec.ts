@@ -421,10 +421,8 @@ for(const language of ['en','bn'] as const){
       await expect(profileReceipt).toContainText('2026-27');
       await expect(profileReceipt).toContainText('2025-26');
 
-      // Full navigation resets the transient profile view; reopening the saved
-      // contact must recover the same SQL-backed recipient timeline.
-      await page.goto(appUrl('beneficiaries',owner.session));
-      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      // Reloading the current beneficiaries route resets the transient profile
+      // view; reopening the saved contact must recover the SQL-backed timeline.
       await page.reload();
       await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
       const recoveredProfileLink=page.getByRole('link',{name:
