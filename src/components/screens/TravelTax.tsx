@@ -40,6 +40,29 @@ function maskPassport(passport: string) {
   return passport.length <= 4 ? '••••' : '••••' + passport.slice(-4);
 }
 
+type PendingTravelPayment = StoryPaymentInput & {
+  service: 'TRAVEL_TAX';
+  details: StoryPaymentInput['details'] & { receiptSnapshot: ChallanReceipt };
+};
+
+function readPendingTravelPayment(key: string, sessionId: string): PendingTravelPayment | null {
+  try {
+    const stored = sessionStorage.getItem(key);
+    if (!stored) return null;
+    const payment = JSON.parse(stored) as Partial<PendingTravelPayment>;
+    const receipt = payment.details?.receiptSnapshot;
+    if (payment.service !== 'TRAVEL_TAX' || payment.sessionId !== sessionId ||
+        typeof payment.idempotencyKey !== 'string' || !Number.isSafeInteger(payment.amountMinor) ||
+        !receipt || receipt.paymentCategory !== 'TRAVEL_TAX' ||
+        receipt.tokenNumber !== 'SIM-TOKEN-' + payment.idempotencyKey ||
+        !Array.isArray(receipt.travelDetails?.passengers) || !Array.isArray(receipt.items) ||
+        Math.round(receipt.totalAmount * 100) !== payment.amountMinor) return null;
+    return payment as PendingTravelPayment;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Four progressive stages in the existing TaxPay modal.
  * This is a UX/reference-data preview, not a real passport verification or
@@ -77,7 +100,17 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
   const [selectedAccountDraft, setSelectedAccountDraft] = useState<PaymentFormDraft | null>(null);
   const [draftFooterTarget, setDraftFooterTarget] = useState<HTMLDivElement | null>(null);
-  const pendingPayment = useRef<StoryPaymentInput | null>(null);
+  const storySessionId = getStorySessionId();
+  const pendingPaymentKey = 'taxpay-travel-payment:' + storySessionId + ':' +
+    (authenticatedUser?.id ?? previewAccount?.id ?? 'walk-in');
+  const [recoveringPayment, setRecoveringPayment] = useState<PendingTravelPayment | null>(null);
+  const pendingPayment = useRef<PendingTravelPayment | null>(null);
+
+  useEffect(() => {
+    const saved = readPendingTravelPayment(pendingPaymentKey, storySessionId);
+    pendingPayment.current = saved;
+    setRecoveringPayment(saved);
+  }, [pendingPaymentKey, storySessionId]);
   const [paymentNonce, setPaymentNonce] = useState(() => crypto.randomUUID());
 
 
@@ -401,7 +434,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     if (import.meta.env.VITE_SUPABASE_DISABLED !== 'true') {
       pendingPayment.current ??= {
         idempotencyKey: paymentNonce,
-        sessionId: getStorySessionId(),
+        sessionId: storySessionId,
         service: 'TRAVEL_TAX',
         amountMinor: Math.round(totalAmount * 100),
         details: {
@@ -417,9 +450,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
         },
       };
       const request = pendingPayment.current;
+      try {
+        sessionStorage.setItem(pendingPaymentKey, JSON.stringify(request));
+      } catch { /* In-memory retry remains available when storage is unavailable. */ }
       const ack = await persistSimulatedPayment(request);
-      stored = { ...(request.details.receiptSnapshot as ChallanReceipt), paymentTransactionId: ack.id };
+      try { sessionStorage.removeItem(pendingPaymentKey); }
+      catch { /* The saved key can safely replay the same payment. */ }
+      stored = { ...request.details.receiptSnapshot, paymentTransactionId: ack.id };
     }
+    setRecoveringPayment(null);
     addPaymentReceipt(stored);
     setCreatedReceipt(stored);
     pendingPayment.current = null; setPaymentNonce(crypto.randomUUID());
@@ -443,7 +482,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setError(''); setProcessing(true);
     try {
       if (pendingPayment.current) {
-        await persistPreview(pendingPayment.current.details.receiptSnapshot as ChallanReceipt);
+        await persistPreview(pendingPayment.current.details.receiptSnapshot);
       } else if (paymentChannel === 'NOW' && simulateDecline) {
         setError(tr('Payment preview declined. Try again.', 'পেমেন্ট পরীক্ষাটি প্রত্যাখ্যাত হয়েছে। আবার চেষ্টা করুন।'));
       } else if (paymentChannel === 'OTC') {
@@ -682,6 +721,32 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       </div>
     </>;
   };
+
+  if (recoveringPayment) {
+    const recover = async () => {
+      if (processing) return;
+      setProcessing(true);
+      setError('');
+      try {
+        pendingPayment.current = recoveringPayment;
+        await persistPreview(recoveringPayment.details.receiptSnapshot);
+      } catch {
+        setError(tr('Payment confirmation is still unavailable. Retry again.',
+          'পেমেন্ট নিশ্চিতকরণ পাওয়া যায়নি। আবার চেষ্টা করুন।'));
+      } finally { setProcessing(false); }
+    };
+    const retryAction = <button type="button" className="travel-flow__primary"
+      disabled={processing} onClick={recover}>
+      {processing ? tr('Processing…', 'প্রক্রিয়াধীন…') : tr('Retry payment confirmation', 'পেমেন্ট নিশ্চিতকরণ আবার চেষ্টা করুন')}
+    </button>;
+    return <section className="travel-flow__panel" lang={language}>
+      <h3>{tr('Payment confirmation pending', 'পেমেন্ট নিশ্চিতকরণের অপেক্ষায়')}</h3>
+      <p>{recoveringPayment.details.receiptSnapshot.challanNo}</p>
+      <p>{formatCurrency(recoveringPayment.amountMinor / 100, language)}</p>
+      {error && <p role="alert">{error}</p>}
+      {modalFooterTarget ? createPortal(retryAction, modalFooterTarget) : retryAction}
+    </section>;
+  }
 
   const primaryAction = createdReceipt && bankSlipPending ? (
     <button type="button" className="travel-flow__primary" onClick={settleBankSlip} disabled={processing}>

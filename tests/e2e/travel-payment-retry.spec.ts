@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import { fillTravelDetails } from './travel-tax-test-helper';
 
-test('Travel Tax resends the identical payment after a lost response', async ({ page }) => {
+for (const refresh of [false, true]) {
+test('Travel Tax resends the identical payment after a lost response ' +
+  (refresh ? 'and refresh' : 'in the same form'), async ({ page }) => {
   test.skip(process.env.VITE_SUPABASE_URL !== 'https://travel-retry-test.invalid',
     'Run with the isolated Travel Tax fixture endpoint.');
   const requests: string[] = [];
@@ -35,8 +37,18 @@ test('Travel Tax resends the identical payment after a lost response', async ({ 
   const submit = modal.getByRole('button', { name: 'Confirm preview payment' });
   await submit.click();
   await expect(modal.getByRole('alert')).toContainText('Retry with the same details');
-  await submit.click();
+  if (refresh) {
+    await page.goto('/');
+    await openTravelTaxFromBanner(page);
+    await expect(modal.getByRole('heading', { name: 'Payment confirmation pending' })).toBeVisible();
+    await modal.getByRole('button', { name: 'Retry payment confirmation' }).click();
+  } else {
+    await submit.click();
+  }
   await expect(modal.locator('.receipt-view__paper')).toBeVisible();
   expect(requests).toHaveLength(2);
   expect(requests[1]).toBe(requests[0]);
+  expect(await page.evaluate(() => Object.keys(sessionStorage)
+    .filter(key => key.startsWith('taxpay-travel-payment:')))).toEqual([]);
 });
+}
