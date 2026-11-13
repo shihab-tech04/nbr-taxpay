@@ -1,11 +1,11 @@
 import {TaxPayDataGrid,TaxPayTableState,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter,TaxPayActiveFilterChips} from '../ui/TaxPayDataTable';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, FileText, Download } from 'lucide-react';
+import { Search, FileText, Download, UserPlus } from 'lucide-react';
 import { getAccountStoryPayments, beneficiaryPaymentEntries, type BeneficiaryPaymentEntry } from '../../services/story1AccountPaymentHistory';
 import { formatCurrency } from '../../services/numberFormat';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
 import {beneficiaryFinalTagLabel} from '../../services/beneficiaryTags';
-import {beneficiaryNameForDisplay} from '../../services/beneficiaryNames';
+import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
 import {PAYMENT_TAG_GROUPS,paymentTagGroupForTin,paymentTagGroupLabels,type PaymentTagGroup} from '../../services/beneficiaryPaymentTags';
 import { TaxPayModal } from '../ui/TaxPayModal';
 import { ReceiptView } from '../common/ReceiptView';
@@ -66,7 +66,7 @@ function readHistoryFilters(ownerUid:string):StoredHistoryFilters {
  */
 export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: string; language: 'en'|'bn' }) {
   const [rows,setRows]=useState<BeneficiaryPaymentEntry[]>([]);
-  const {startPaymentReuse,navigate}=useTaxState();
+  const {startPaymentReuse,startBeneficiarySave,navigate}=useTaxState();
   const profile=usePaymentAccountProfile(ownerUid,null);
   const [reuseError,setReuseError]=useState('');
   const [loading,setLoading]=useState(true);
@@ -126,6 +126,15 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
   const visibleTags=tags.owner===ownerUid?tags:{owner:ownerUid,status:'loading' as const,people:[]};
   const savedPerson=(tin:string)=>visibleTags.status==='ready'?
     visibleTags.people.find(person=>person.tin===tin):undefined;
+  const canSaveBeneficiary=(entry:BeneficiaryPaymentEntry)=>
+    /^\d{12}$/.test(entry.taxpayerTin)&&visibleTags.status==='ready'&&!savedPerson(entry.taxpayerTin);
+  const saveBeneficiary=(entry:BeneficiaryPaymentEntry)=>{
+    if(!canSaveBeneficiary(entry))return;
+    const storedName=beneficiaryNameForPrefill(entry.beneficiaryName);
+    const name=storedName==='—'||storedName===`TIN ${entry.taxpayerTin}`?'':storedName;
+    startBeneficiarySave({ownerUid,tin:entry.taxpayerTin,name});
+    setSelected(null);
+  };
   const personLabel=(row:BeneficiaryPaymentEntry)=>{
     const person=savedPerson(row.taxpayerTin);
     const name=person?beneficiaryNameForDisplay(person.display_name,row.beneficiaryName):row.beneficiaryName;
@@ -318,11 +327,14 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
     {selected&&<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')} service="status"
       className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
       <ReceiptView receipt={selected.receipt} embedded/>
-      {canReuse(selected)&&<div className="mt-3 flex justify-end">
-        <button type="button" data-testid="account-pay-again-receipt"
+      <div className="mt-3 flex flex-wrap justify-end gap-2">
+        {canSaveBeneficiary(selected)&&<button type="button" data-testid="account-save-beneficiary-receipt"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border px-4 font-semibold text-taxpay-primary"
+          onClick={()=>saveBeneficiary(selected)}><UserPlus size={16} aria-hidden="true"/>{tr('Save Beneficiary','উপকারভোগী সংরক্ষণ করুন')}</button>}
+        {canReuse(selected)&&<button type="button" data-testid="account-pay-again-receipt"
           className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold text-taxpay-primary"
-          onClick={()=>payAgain(selected)}>{tr('Pay Again','আবার পরিশোধ')}</button>
-      </div>}
+          onClick={()=>payAgain(selected)}>{tr('Pay Again','আবার পরিশোধ')}</button>}
+      </div>
     </TaxPayModal>}
   </section>;
 }
