@@ -5,7 +5,7 @@ const id='fd718297-1e32-421c-a951-987f4e92a991';
 const record={
  id,service:'PENALTY',status:'SIMULATED_SUCCESS',amountMinor:260000,
  createdAt:'2026-10-18T08:00:00.000Z',
- details:{payerName:'Md. Arif Rahman',payerTin:'9999999999999',taxpayerName:'Nusrat Jahan',taxpayerTin:'1111111111111',
+ details:{payerMode:'OTHER',payerName:'Md. Arif Rahman',payerTin:'9999999999999',taxpayerName:'Nusrat Jahan',taxpayerTin:'1111111111111',
  assessmentYear:'2026-27',receiptReference:'ACS-2026-000123',
  paymentMethod:'BKASH',taxZone:'Taxes Zone 1',taxCircle:'circle-1',
  lines:[{headId:120,economicCode:'120',headNameEn:'Penalty',
