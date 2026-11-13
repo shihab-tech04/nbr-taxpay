@@ -4,7 +4,7 @@ import {fillTravelDetails} from './travel-tax-test-helper';
 /** Browser journey uses intercepted fictional transport; SQL ownership is tested
  * separately against disposable PostgreSQL. No hosted payment rows are created. */
 test('prior-browser Story1 recovery preserves original data without duplicating Activity panels',async({page})=>{
-  // This full legacy recovery scenario now also completes a second Travel Tax\n  // Pay Again journey after the original account/privacy assertions. Keep every\n  // assertion; allow both journeys to finish on loaded CI browser runners.\n  test.setTimeout(180_000);
+  test.setTimeout(90_000);
   const primary='00000000-0000-4000-8000-000000010001';
   const legacy='00000000-0000-4000-8000-000000020002';
   const payment='00000000-0000-4000-8000-000000030003';
