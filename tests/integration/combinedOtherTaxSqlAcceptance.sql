@@ -52,7 +52,7 @@ BEGIN
   -- Never combine synthetic beneficiary lines and explicit allocations.
   lines:=ledger_lines;
   snapshot:=jsonb_build_object('challanNo','SIM-'||payment_key::text,
-    'paymentCategory','OTHER_TAX_PAYMENT','totalAmount',50,'payerName','First payer',
+    'paymentCategory','OTHER_TAX_PAYMENT','totalAmount',50,'payerName','First recipient',
     'payerTin','909000000013','taxpayerTin','','items',ledger_lines,
     'allocationItems',jsonb_build_array(
       jsonb_build_object('allocationId','ws3-v3-one','taxpayerTin','909000000013','taxpayerName','First recipient',
@@ -67,7 +67,7 @@ BEGIN
     'details',jsonb_build_object('combinedPayment',true,'allocationContractVersion',3,'allocationCount',2,
       'taxpayerCount',2,'payerId','user1','payerMode','OTHER',
       'receiptReference','SIM-'||payment_key::text,'paymentChannel','NOW','paymentMethod','BKASH',
-      'payerName','First payer','payerTin','909000000013','totalAmount',50,'assessmentYear','2026-27, 2025-26',
+      'payerName','First recipient','payerTin','909000000013','totalAmount',50,'assessmentYear','2026-27, 2025-26',
       'taxpayerTin','','lines',lines,'receiptLines',ledger_lines,
       'allocations',allocations,'receiptSnapshot',snapshot));
   result:=public.taxpay_demo_story1_submit(owner_hash,payload);
@@ -78,9 +78,9 @@ BEGIN
        WHERE id=saved_id AND amount_minor=5000 AND data->'details'->>'combinedPayment'='true'
          AND data->'details'->>'allocationContractVersion'='3'
          AND data->'details'->>'payerTin'='909000000013'
-         AND data->'details'->>'payerName'='First payer'
+         AND data->'details'->>'payerName'='First recipient'
          AND data->'details'->'receiptSnapshot'->>'payerTin'='909000000013'
-         AND data->'details'->'receiptSnapshot'->>'payerName'='First payer')<>1
+         AND data->'details'->'receiptSnapshot'->>'payerName'='First recipient')<>1
     OR (SELECT jsonb_agg(a.value->>'allocationId' ORDER BY a.ordinality)
         FROM demo_payment.story_payments p
         CROSS JOIN LATERAL jsonb_array_elements(p.data->'details'->'allocations')
