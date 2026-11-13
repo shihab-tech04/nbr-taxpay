@@ -30,7 +30,7 @@ const auth=(actor,statement)=>[
 const owner='80000000-0000-4000-8000-000000000001';
 const outsider='80000000-0000-4000-8000-000000000002';
 const correctionFixture=readFileSync('tests/integration/correctionOfficeReadback.sql','utf8');
-const cut=correctionFixture.indexOf('DO $owner_initial$;');
+const cut=correctionFixture.indexOf('DO $owner_initial$\n');
 assert.ok(cut>0,'Passing correction fixture anchor missing');
 const initial=correctionFixture.slice(0,cut)+[
  'RESET ROLE;',
