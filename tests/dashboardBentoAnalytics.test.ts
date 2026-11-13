@@ -193,3 +193,29 @@ test('ranking by recipient counts combined receipts once across payment heads',(
   assert.equal(older.byBeneficiary[0].tin,owner);
   assert.equal(older.byBeneficiary[0].tag,'own');
 });
+
+test('ranked beneficiaries are never fabricated from missing recipient IDs or example payments',()=>{
+  const rows:DashboardChartRecord[]=[
+    {id:'example-one',year:'2025-2026',kind:'income',amount:450,state:'POSTED',beneficiaryTin:family},
+    {id:'example-two',year:'2025-2026',kind:'travel',amount:65,state:'POSTED',beneficiaryTin:friend},
+    {id:'no-recipient',year:'2025-2026',kind:'ait',amount:320,state:'POSTED'},
+    {id:'failed',year:'2025-2026',kind:'income',amount:100,state:'FAILED',beneficiaryTin:family},
+    recorded('sql-1',[receipt('receipt-9','OTHER_TAX_PAYMENT',[
+      {tin:owner,year:'2025-26',minor:2500}
+    ])])
+  ];
+  const shown=projectDashboardChartRecords(rows,'2025-26','example',[],owner);
+  assert.equal(shown.byBeneficiary.length,2);
+  assert.equal(shown.byBeneficiary[0].amountMinor,45000n);
+  assert.equal(shown.byBeneficiary[0].name,null);
+  assert.equal(shown.byBeneficiary[0].saved,false);
+  assert.equal(shown.byBeneficiary[1].amountMinor,6500n);
+  assert.equal(shown.unclassified.recipientMissingMinor,32000n);
+  assert.equal(shown.totalMinor,83500n);
+  const saved=projectDashboardChartRecords(rows,'2025-26','recorded',[],owner);
+  assert.equal(saved.byBeneficiary.length,1);
+  assert.equal(saved.byBeneficiary[0].tin,owner);
+  assert.equal(saved.byBeneficiary[0].amountMinor,2500n);
+  const selected=projectDashboardChartRecords(rows,'2025-26','example',[],owner,'travel');
+  assert.deepEqual(selected.byBeneficiary.map(item=>item.tin),[friend]);
+});
