@@ -1,7 +1,7 @@
 import {expect,test,type Page} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 
-const backend='https://nbr-taxpay-test.invalid';
+const backend='https://beneficiaries-test.invalid';
 const owner={id:'00000000-0000-4000-8000-000000000202',email:'history-owner@example.invalid',
   aud:'authenticated',role:'authenticated',app_metadata:{provider:'email',providers:['email']},
   user_metadata:{taxpay_display_name:'History owner'},created_at:'2026-01-01T00:00:00Z',
