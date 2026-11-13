@@ -125,8 +125,9 @@ test('real account restores its own language and selected beneficiary list in a 
   // Sign out immediately after selecting Bangla. The owner preference must
   // finish saving before the session is revoked: no waiting for SQL here.
   await page.locator('.citizen-mobile-menu-trigger').click();
+  const signedOutUrl=new URL('/',page.url()).href;
   await page.locator('.citizen-dialog-signout').click();
-  await expect(page).toHaveURL(/^(?!.*action=account_settings)/,{timeout:15000});
+  await page.waitForURL(signedOutUrl,{waitUntil:'load',timeout:15000});
   await first.close();
 
   const aSession=await signIn(a.email,a.password);
@@ -157,8 +158,9 @@ test('real account restores its own language and selected beneficiary list in a 
   // React/account caches that separate-browser isolation alone would miss.
   const b=await signUp();
   await again.locator('.citizen-mobile-menu-trigger').click();
+  const ownerASignedOutUrl=new URL('/',again.url()).href;
   await again.locator('.citizen-dialog-signout').click();
-  await expect(again).toHaveURL(/^(?!.*action=account_settings)/,{timeout:15000});
+  await again.waitForURL(ownerASignedOutUrl,{waitUntil:'load',timeout:15000});
   await again.goto(url(b.session));
   await expect(again.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(again.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
