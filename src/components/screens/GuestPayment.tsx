@@ -232,6 +232,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [additionalTaxpayers, setAdditionalTaxpayers] = useState<OtherTaxTaxpayer[]>(() =>
     (initialBeneficiary?.additional ?? []).map(person => ({ ...person, id: crypto.randomUUID() }))
   );
+  // A one-time recipient belongs to this payment only; it is never written to a saved list.
+  const [oneTimeTaxpayer, setOneTimeTaxpayer] = useState<OtherTaxTaxpayer | null>(null);
+  const [oneTimeTinDraft, setOneTimeTinDraft] = useState('');
+  const [oneTimeSearchedTin, setOneTimeSearchedTin] = useState<string | null>(null);
+  const [oneTimeLookupError, setOneTimeLookupError] = useState('');
   // Keep confirmation across stage navigation, but invalidate it when a TIN changes.
   const [confirmedOtherTaxTins, setConfirmedOtherTaxTins] = useState<Record<string, string>>({});
   const [invalidBatchTaxpayerId, setInvalidBatchTaxpayerId] = useState<string | null>(null);
@@ -245,6 +250,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [forSelf, setForSelf] = useState<boolean | null>(initialForSelf ?? null);
   const ownAccountTax = signedInAccount && forSelf === true;
   const signedInBeneficiarySelection = signedInAccount && forSelf === false;
+  const oneTimeSearchMatch = oneTimeSearchedTin === oneTimeTinDraft
+    ? lookupSampleTaxpayer(oneTimeTinDraft) : null;
   // A saved TIN must be present in the current account's loaded lists; a route prefill is insufficient.
   const [availableSavedTins,setAvailableSavedTins] = useState<string[] | null>(null);
   const signedInProfile = signedInAccount ? accountTaxpayer.profile : null;
@@ -291,7 +298,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // Both payer relationships use the same Other Tax selection and allocation UI.
   const otherBatch = !isWithholdingMode && forSelf !== null && category === 'OTHER_TAX_PAYMENT';
   const simpleOwnOtherTax = otherBatch && forSelf === true && !signedInAccount;
-  const batchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: ownAccountTax ? accountName : otherTaxpayerName }, ...additionalTaxpayers];
+  const savedBatchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: ownAccountTax ? accountName : otherTaxpayerName }, ...additionalTaxpayers];
+  const batchTaxpayers: OtherTaxTaxpayer[] = oneTimeTaxpayer
+    ? [...savedBatchTaxpayers, oneTimeTaxpayer] : savedBatchTaxpayers;
   const batchAmount = otherTaxAllocationTotal(otherTaxLines);
   const missingBatchTaxpayer = batchTaxpayers.find(person => !otherTaxLines.some(line => line.taxpayerId === person.id));
   const uniqueBatchAllocations = new Set(otherTaxLines.map(line =>
@@ -307,7 +316,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const canContinueStep1 = (() => {
     if (beneficiaryChecking || forSelf === null || (ownAccountTax && !ownProfile)) return false;
     if (signedInBeneficiarySelection && (!availableSavedTins ||
-      !batchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) return false;
+      !savedBatchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) return false;
     if (ownAccountTax && additionalTaxpayers.length && (!availableSavedTins ||
       !additionalTaxpayers.every(person => availableSavedTins.includes(person.tin)))) return false;
     const tinValid = ownAccountTax
@@ -382,7 +391,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // gateway status and payment authorizations must be re-established on resume.
   const snapshotAccountDraft = (): Record<string, unknown> => ({
     schemaVersion: 1, category, step: Math.min(step, 2),
-    forSelf, tin, payerName, walkInPayerTin, otherTaxpayerName, additionalTaxpayers,
+    forSelf, tin, payerName, walkInPayerTin, otherTaxpayerName, additionalTaxpayers, oneTimeTaxpayer,
     otherTaxLines, phone, receiptEmail, assessmentYear, noticeReference,
     incomeTaxType, selectedHeadIds, amountInputs, sourcePaymentId,
   });
@@ -415,6 +424,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       ? saved.additionalTaxpayers.filter((person): person is OtherTaxTaxpayer =>
         person && typeof person.id === 'string' && typeof person.tin === 'string' &&
         typeof person.name === 'string').slice(0,100) : []);
+    const savedOneTime = saved.oneTimeTaxpayer && typeof saved.oneTimeTaxpayer === 'object' &&
+      !Array.isArray(saved.oneTimeTaxpayer) ? saved.oneTimeTaxpayer as Partial<OtherTaxTaxpayer> : null;
+    setOneTimeTaxpayer(savedOneTime && typeof savedOneTime.id === 'string' &&
+      typeof savedOneTime.tin === 'string' && /^\d{12}$/.test(savedOneTime.tin) &&
+      typeof savedOneTime.name === 'string' && savedOneTime.name.length <= 160
+      ? { id: savedOneTime.id, tin: savedOneTime.tin, name: savedOneTime.name } : null);
+    setOneTimeTinDraft(''); setOneTimeSearchedTin(null); setOneTimeLookupError('');
     setOtherTaxLines(Array.isArray(saved.otherTaxLines)
       ? saved.otherTaxLines.filter((line): line is OtherTaxAllocation =>
         line && typeof line.taxpayerId === 'string' &&
@@ -838,7 +854,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   const handleStep1Next = async () => {
     if (signedInBeneficiarySelection && (!availableSavedTins ||
-      !batchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) {
+      !savedBatchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) {
       setValidationError(language === 'bn' ? 'এগোনোর আগে আপনার সংরক্ষিত তালিকা থেকে উপকারভোগী নির্বাচন করুন।' : 'Select beneficiaries from your saved lists before continuing.', 'tin');
       return;
     }
@@ -846,7 +862,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (signedInBeneficiarySelection || (ownAccountTax && additionalTaxpayers.length > 0)) {
       setBeneficiaryChecking(true);
       try {
-        const tins = (otherBatch ? batchTaxpayers : batchTaxpayers.slice(0, 1)).map(person => person.tin);
+        const tins = (otherBatch ? savedBatchTaxpayers : batchTaxpayers.slice(0, 1)).map(person => person.tin);
         if (!(await areCurrentSavedBeneficiaries(tins))) {
           setBeneficiaryRefreshKey(key => key + 1);
           setValidationError(language === 'bn'
@@ -1469,7 +1485,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <div className="payment-radio-card-grid">
                   {[{ value: true, en: isWithholdingMode ? 'I am the withholding agent' : 'My tax liability', bn: isWithholdingMode ? 'আমি উৎসে কর কর্তনকারী' : 'আমার করদায়' }, { value: false, en: isWithholdingMode ? 'Paying for the agent' : 'Facilitate another taxpayer’s payment', bn: isWithholdingMode ? 'এজেন্টের পক্ষে পরিশোধ' : 'অন্য করদাতার কর পরিশোধে সহায়তা করুন' }].map(choice =>
                     <PaymentRadioCard key={String(choice.value)} id={choice.value ? 'guest-payer-self' : 'guest-payer-other'} name="guest-payer-relationship" value={String(choice.value)} checked={forSelf === choice.value}
-                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); setWalkInPayerTin(''); setWalkInPayerLookup(null); setWalkInPayerConfirmed(false); if (signedInAccount && !choice.value) { setTin(''); setOtherTaxpayerName(''); } setAdditionalTaxpayers([]); setOtherTaxLines([]); setConfirmedOtherTaxTins({}); setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
+                      onChange={() => { clearReferenceSelection(); setForSelf(choice.value); setWalkInPayerTin(''); setWalkInPayerLookup(null); setWalkInPayerConfirmed(false); setOneTimeTaxpayer(null); setOneTimeTinDraft(''); setOneTimeSearchedTin(null); setOneTimeLookupError(''); if (signedInAccount && !choice.value) { setTin(''); setOtherTaxpayerName(''); } setAdditionalTaxpayers([]); setOtherTaxLines([]); setConfirmedOtherTaxTins({}); setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); clearValidationError(); }} title={language === 'bn' ? choice.bn : choice.en} invalid={isFieldInvalid('payerChoice')} errorId={`${ERROR_ID}-payerChoice`} />)}
                 </div>
                 {forSelf === null && <p className="payment-radio-card__empty">{language === 'bn' ? 'এগিয়ে যেতে একটি বিকল্প নির্বাচন করুন।' : 'No option selected. Choose one to continue.'}</p>}
                 {fieldError('payerChoice')}
@@ -1478,13 +1494,19 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             {forSelf !== null && <PaymentFormSection number={2} staticView={embedded} hideHeading={ownAccountTax} title={simpleOwnOtherTax ? (language === 'bn' ? 'এই পেমেন্টের করদাতারা' : 'Taxpayers in this payment') : signedInAccount && forSelf === false ? (language === 'bn' ? 'উপকারভোগী নির্বাচন' : 'Choose beneficiaries') : ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details') : otherBatch ? (language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={simpleOwnOtherTax ? (language === 'bn' ? 'টিআইএন লিখে খুঁজুন। করদাতার নাম স্বয়ংক্রিয়ভাবে দেখানো হবে।' : 'Enter a TIN and search to automatically display the taxpayer name.') : signedInAccount && forSelf === false ? (language === 'bn' ? 'সংরক্ষিত তালিকা থেকে উপকারভোগী নির্বাচন করুন' : 'Select beneficiaries from your saved lists') : ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্ট থেকে আপনার করদাতার তথ্য দেখানো হচ্ছে' : 'Your taxpayer information is filled from your signed-in account') : otherBatch ? '' : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
             
             {signedInBeneficiarySelection && <SavedBeneficiaryPicker key={beneficiaryRefreshKey} language={language} allowMultiple={otherBatch}
-              selectedTins={(otherBatch ? batchTaxpayers : batchTaxpayers.slice(0,1)).map(person=>person.tin).filter(Boolean)}
+              selectedTins={(otherBatch ? savedBatchTaxpayers : savedBatchTaxpayers.slice(0,1)).map(person=>person.tin).filter(Boolean)}
               onAvailableTins={setAvailableSavedTins}
               onChoose={selected => {
                 clearReferenceSelection();
                 const unique=selected.filter((person,index)=>selected.findIndex(candidate=>candidate.tin===person.tin)===index);
                 const first=unique[0];
                 const priorPrimaryTin=taxpayerTin;
+                if (oneTimeTaxpayer && unique.some(person => person.tin === oneTimeTaxpayer.tin)) {
+                  setOneTimeLookupError(language === 'bn'
+                    ? 'এই টিআইএনটি সংরক্ষিত তালিকায় আছে। পেমেন্টে সংরক্ষিত উপকারভোগী নির্বাচন করুন।'
+                    : 'This TIN is already saved. Select its saved beneficiary entry for this payment.');
+                  return;
+                }
                 const additional=otherBatch?unique.slice(1).map(person=>{
                   const previous=additionalTaxpayers.find(candidate=>candidate.tin===person.tin);
                   return {...person,id:previous?.id??crypto.randomUUID()};
@@ -1494,11 +1516,84 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 setAdditionalTaxpayers(additional);
                 setOtherTaxLines(lines=>lines.filter(line=>line.taxpayerId==='primary'
                   ? Boolean(first&&first.tin===priorPrimaryTin)
-                  : additional.some(person=>person.id===line.taxpayerId)));
+                  : additional.some(person=>person.id===line.taxpayerId) ||
+                    Boolean(oneTimeTaxpayer && line.taxpayerId===oneTimeTaxpayer.id)));
+                setOneTimeLookupError('');
+
                 setAuthorizedTaxpayerId(null);
                 setAuthorizedTaxpayerIds({});
                 clearValidationError();
               }} />}
+            {signedInBeneficiarySelection && otherBatch && <section className="col-span-full space-y-3 rounded-lg border border-taxpay-border p-3"
+              data-testid="one-time-taxpayer-entry" aria-label={language === 'bn' ? 'একবারের করদাতা' : 'One-time taxpayer'}>
+              <div>
+                <h3 className="text-sm font-semibold text-taxpay-dark">
+                  {language === 'bn' ? 'এই পেমেন্টের জন্য নতুন করদাতা যোগ করুন' : 'Add a one-time taxpayer for this payment'}
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  {language === 'bn'
+                    ? 'এই করদাতা শুধু এই পেমেন্টে ব্যবহার হবে এবং সংরক্ষিত উপকারভোগীর তালিকায় যোগ হবে না।'
+                    : 'This taxpayer is used only for this payment and is not added to your saved beneficiary lists.'}
+                </p>
+              </div>
+              {oneTimeTaxpayer ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-taxpay-light p-3"
+                data-testid="confirmed-one-time-taxpayer">
+                <p className="min-w-0 text-sm text-taxpay-text">
+                  <span className="font-semibold">{language === 'bn' ? 'একবারের করদাতা' : 'One-time taxpayer'}:</span>{' '}
+                  <span>{oneTimeTaxpayer.name}</span>{' · '}<span className="break-all">{oneTimeTaxpayer.tin}</span>
+                </p>
+                <button type="button" className="min-h-10 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-semibold text-taxpay-dark"
+                  onClick={() => {
+                    setOtherTaxLines(lines => lines.filter(line => line.taxpayerId !== oneTimeTaxpayer.id));
+                    setOneTimeTaxpayer(null); setOneTimeTinDraft(''); setOneTimeSearchedTin(null); setOneTimeLookupError('');
+                  }}>
+                  {language === 'bn' ? 'পেমেন্ট থেকে সরান' : 'Remove from this payment'}
+                </button>
+              </div> : <>
+                <TaxpayerTinLookup language={language} tinId="other-tax-one-time-tin" nameId="other-tax-one-time-name"
+                  tin={oneTimeTinDraft} name={oneTimeSearchMatch ? (language === 'bn' ? oneTimeSearchMatch.nameBn : oneTimeSearchMatch.nameEn) : ''}
+                  onTinChange={value => { setOneTimeTinDraft(value); setOneTimeSearchedTin(null); setOneTimeLookupError(''); }}
+                  onSearch={() => {
+                    setOneTimeSearchedTin(oneTimeTinDraft);
+                    const match = lookupSampleTaxpayer(oneTimeTinDraft);
+                    if (!match || match.tin !== oneTimeTinDraft) setOneTimeLookupError(language === 'bn' ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.');
+                    else if (availableSavedTins?.includes(oneTimeTinDraft) || savedBatchTaxpayers.some(person => person.tin === oneTimeTinDraft))
+                      setOneTimeLookupError(language === 'bn'
+                        ? 'এই টিআইএনটি ইতিমধ্যে নির্বাচিত বা সংরক্ষিত। পেমেন্টের জন্য সংরক্ষিত উপকারভোগী নির্বাচন করুন।'
+                        : 'This TIN is already selected or saved. Select the saved beneficiary entry for this payment.');
+                    else setOneTimeLookupError('');
+                  }}
+                  onClear={() => { setOneTimeTinDraft(''); setOneTimeSearchedTin(null); setOneTimeLookupError(''); }}
+                  canSearch={/^\d{12}$/.test(oneTimeTinDraft)} maxTinLength={12}
+                  heading={language === 'bn' ? 'করদাতার টিআইএন অনুসন্ধান' : 'Search taxpayer TIN'}
+                  searchLabel={language === 'bn' ? 'করদাতার টিআইএন খুঁজুন' : 'Search one-time taxpayer'}
+                  hideNameField
+                                    className="w-full" />
+                {oneTimeLookupError && <p role="alert" className="text-sm text-red-700">{oneTimeLookupError}</p>}
+                {oneTimeSearchMatch && <div className="rounded-lg border border-taxpay-border bg-white p-3" data-testid="one-time-taxpayer-preview">
+                  <p className="text-xs text-slate-600">{language === 'bn' ? 'করদাতার নাম' : 'Taxpayer name'}</p>
+                  <p className="font-semibold text-taxpay-text">{language === 'bn' ? oneTimeSearchMatch.nameBn : oneTimeSearchMatch.nameEn}</p>
+                  <p className="break-all text-sm text-slate-600">{oneTimeSearchMatch.tin}</p>
+                  <button type="button" className="mt-3 min-h-10 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white"
+                    disabled={!availableSavedTins || !savedBatchTaxpayers.some(person => Boolean(person.tin)) || Boolean(oneTimeLookupError) || beneficiaryChecking}
+                    onClick={() => {
+                      if (!oneTimeSearchMatch || oneTimeSearchMatch.tin !== oneTimeTinDraft) return;
+                      if (!availableSavedTins || availableSavedTins.includes(oneTimeTinDraft) ||
+                        savedBatchTaxpayers.some(person => person.tin === oneTimeTinDraft)) {
+                        setOneTimeLookupError(language === 'bn'
+                          ? 'এই টিআইএনটি ইতিমধ্যে নির্বাচিত বা সংরক্ষিত। পেমেন্টের জন্য সংরক্ষিত উপকারভোগী নির্বাচন করুন।'
+                          : 'This TIN is already selected or saved. Select the saved beneficiary entry for this payment.');
+                        return;
+                      }
+                      setOneTimeTaxpayer({ id: crypto.randomUUID(), tin: oneTimeSearchMatch.tin, name: oneTimeSearchMatch.nameEn });
+                      setOneTimeTinDraft(''); setOneTimeSearchedTin(null); setOneTimeLookupError('');
+                    }}>
+                    {language === 'bn' ? 'এই পেমেন্টে যোগ করুন' : 'Add to this payment'}
+                  </button>
+                </div>}
+              </>}
+            </section>}
+
             {signedInBeneficiarySelection && isFieldInvalid('tin') &&
               <p className="text-sm text-red-700" role="alert">{errorMessage}</p>}
             {simpleOwnOtherTax && renderOtherTaxTaxpayerList(true)}
@@ -1708,6 +1803,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 onChange={(e) => {
                   const newCat = e.target.value as PaymentCategory;
                   setCategory(newCat);
+                  if (newCat !== 'OTHER_TAX_PAYMENT' && oneTimeTaxpayer) {
+                    setOtherTaxLines(lines => lines.filter(line => line.taxpayerId !== oneTimeTaxpayer.id));
+                    setOneTimeTaxpayer(null); setOneTimeTinDraft(''); setOneTimeSearchedTin(null); setOneTimeLookupError('');
+                  }
                   setSelectedHeadIds([]);
                   setVerifiedReference(null);
                   setNoticeReference('');
