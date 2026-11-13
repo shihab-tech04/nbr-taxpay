@@ -74,10 +74,11 @@ test('completed dashboard payer totals exclude beneficiary-only payments but kee
   const [both]=projectPrivateDashboardTransactions('user1',[transaction()],[transaction({
     allocations:[transaction().allocations[0]]
   })]);
-  const completed=selectCompletedPayerDashboardTransactions([payer,recipient,both,
-    {...payer,transactionId:'failed',state:'FAILED'}
+  const completed=selectCompletedPayerDashboardTransactions([payer,recipient,
+    {...payer,transactionId:'failed',state:'FAILED' as const}
   ]);
-  assert.equal(completed.length,2);
-  assert.equal(completed.reduce((sum,row)=>sum+row.amountMinor,0),60000);
+  assert.deepEqual(completed.map(row=>row.transactionId),[payer.transactionId]);
+  assert.equal(completed.reduce((sum,row)=>sum+row.amountMinor,0),30000);
   assert.equal(completed.some(row=>row.participantView==='beneficiary'),false);
+  assert.deepEqual(selectCompletedPayerDashboardTransactions([both]).map(row=>row.participantView),['both']);
 });
