@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
 const transactionId = '9a5ec4cb-8d85-4a7d-903c-2cfacbafe160';
@@ -76,6 +77,16 @@ test('shared receipt allocation labels and values stay in Bengali', async ({ pag
   await expect(paper).toContainText('জরিমানা ও সরল সুদ');
   await expect(paper).toContainText('৳ ১২৩.৪৫');
   await expect(paper).toContainText('৳ ৬.৫৫');
+  const download = page.waitForEvent('download', { timeout: 20000 });
+  await page.getByRole('button', { name: 'ডাউনলোড', exact: true }).click();
+  const result = await download;
+  expect(result.suggestedFilename()).toBe('Payment-certificate-' + transactionId + '.pdf');
+  const path = await result.path();
+  expect(path).toBeTruthy();
+  const bytes = await readFile(path!);
+  expect(bytes.subarray(0, 5).toString()).toBe('%PDF-');
+  expect(bytes.toString('latin1')).toContain('/Subtype /Image');
+  expect(bytes.toString('latin1')).toContain('Sohojkor Payment Certificate ' + transactionId);
 });
 
 test('same taxpayer heads group into one receipt section with correct subtotal', async ({ page }) => {
