@@ -507,6 +507,79 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
   }
 });
 
+test('walk-in self payer can include a confirmed second taxpayer', async ({ page }) => {
+  const submitted: Array<Record<string, unknown>> = [];
+  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
+    submitted.push(route.request().postDataJSON());
+    await route.fulfill({ json: {
+      success: true, id: '00000000-0000-4000-8000-000000000102',
+      status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true,
+    } });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+  const second = dialog.getByTestId('other-tax-taxpayer');
+  await second.locator('input[id^="other-tax-tin-"]').fill('222222222222');
+  await second.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  const next = dialog.getByRole('button', { name: 'Continue to purpose & amount' });
+  await expect(next).toBeDisabled();
+  await second.getByRole('button', { name: 'Add taxpayer', exact: true }).click();
+  await next.click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  const tabs = batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button');
+  await tabs.first().click();
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  const line = batch.getByTestId('other-tax-line');
+  await line.locator('input[id^="other-tax-amount"]').fill('15');
+  await tabs.nth(1).click();
+  await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
+  await line.locator('select[id^="other-tax-year"]').selectOption('2025-26');
+  await line.locator('input[id^="other-tax-amount"]').fill('35');
+  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await dialog.getByRole('button', { name: 'Pay online' }).click();
+  await dialog.getByRole('button', { name: 'Mobile banking' }).click();
+  await dialog.getByRole('radio', { name: 'bKash' }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
+  await dialog.getByRole('button', { name: /Pay ৳ 50/ }).click();
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
+  expect(submitted).toHaveLength(1);
+  expect(submitted[0]).toMatchObject({
+    amountMinor: 5000,
+    details: {
+      payerTin: '111111111111',
+      payerMode: 'OTHER',
+      combinedPayment: true,
+      allocations: [
+        { taxpayerTin: '111111111111', assessmentYear: '2026-27', amountMinor: 1500 },
+        { taxpayerTin: '222222222222', assessmentYear: '2025-26', amountMinor: 3500 },
+      ],
+    },
+  });
+  const details = submitted[0].details as {allocations: Array<{headId: number}>};
+  expect(new Set(details.allocations.map(allocation => allocation.headId)).size).toBe(2);
+  await dialog.getByRole('button', { name: 'Receipt details' }).click();
+  const document = dialog.locator('.receipt-view__paper');
+  await expect(document).toContainText('111111111111');
+  await expect(document).toContainText('222222222222');
+  await dialog.getByRole('button', { name: 'View payment certificate' }).click();
+  await expect(document.getByRole('heading', { name: 'Payment Certificate' })).toBeVisible();
+  await expect(document.getByTestId('payment-certificate-reference'))
+    .toContainText('SK-PC-00000000-0000-4000-8000-000000000102');
+  await expect(document).toContainText('111111111111');
+  await expect(document).toContainText('222222222222');
+  await expect(document).toContainText('2025-26');
+  await expect(document).toContainText('৳ 50');
+  await dialog.getByRole('button', { name: 'View receipt' }).click();
+  await expect(document.getByTestId('payment-certificate-reference')).toHaveCount(0);
+});
+
 test('signed-in SELF Other Tax preserves the locked account identity and canonical head catalogue', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
   const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
