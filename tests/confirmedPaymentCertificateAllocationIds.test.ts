@@ -32,7 +32,9 @@ function validDetails():Record<string,unknown>{
       headId:lines[index].headId,assessmentYear:item.assessmentYear,amountMinor:item.amountMinor,
     })),
     receiptSnapshot:{
-      paymentCategory:'OTHER_TAX_PAYMENT',totalAmount:30,items:structuredClone(lines),
+      paymentCategory:'OTHER_TAX_PAYMENT',totalAmount:30,
+      payerName:'Saved combined payer',payerTin:'9999999999999',
+      isRepresentativePayment:true,items:structuredClone(lines),
       allocationItems:structuredClone(allocationItems),
     },
   };
