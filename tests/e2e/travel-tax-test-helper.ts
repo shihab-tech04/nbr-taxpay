@@ -20,7 +20,9 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
     // Pay Again intentionally retains copied fields but revokes the previous
     // identity confirmation. Re-run the passport lookup if the passenger is
     // still unconfirmed, even when the input was already populated.
-    if (await addPassenger.isVisible() && !(await addPassenger.isEnabled())) {
+    // Before any lookup the confirmation button is intentionally absent;
+    // after a copied draft it may be absent again until fresh validation.
+    if (!(await addPassenger.isVisible()) || !(await addPassenger.isEnabled())) {
       await root.locator('#travel-lookup-first').click();
     }
   }
