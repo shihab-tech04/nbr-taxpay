@@ -62,6 +62,8 @@ test('real account restores its own language and selected beneficiary list in a 
   }
   await addList('Family');
   await addList('Clients');
+  if(await page.locator('#beneficiary-list').count()===0)
+    await page.getByRole('button',{name:'Filter',exact:true}).click();
   await expect(page.locator('#beneficiary-list')).toContainText('Clients');
   const ownedLists=await fetch(new URL('/rest/v1/taxpay_beneficiary_lists?select=id,name',api.origin),{
     headers:{apikey:key,Authorization:'Bearer '+a.session.access_token}
