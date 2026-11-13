@@ -230,6 +230,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     setDashboardHistoryCompletedOnly(routeParams.dashboardOnlyCompleted===true);
     setDashboardHistoryService(['income','tds','ait','other','travel'].includes(String(routeParams.dashboardService))
       ?routeParams.dashboardService as DashboardChartService:'all');
+    const dashboardRecipientTin=String(routeParams.dashboardRecipientTin??'');
+    setBeneficiaryFilter(/^\d{12,13}$/.test(dashboardRecipientTin)?dashboardRecipientTin:'all');
   },[route,routeParams]);
   const openReview=(states:State[])=>navigate('history',{reviewStatuses:states});
   const [query,setQuery]=useState('');
@@ -672,10 +674,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       selectedSource={overviewSource}
       onSourceChange={source=>setOverviewSourceChoice({year,source})}
       onManageBeneficiaries={()=>navigate('beneficiaries')}
-      onOpenHistory={(tag,service)=>navigate('history',{
+      onOpenBeneficiary={tin=>navigate('beneficiaries',{
+        openBeneficiaryTin:tin,returnTo:'taxpayer_home'
+      })}
+      onOpenHistory={(tag,service,recipientTin)=>navigate('history',{
         dashboardSource:overviewSource,dashboardOnlyCompleted:true,
         ...(tag?{dashboardTagFilter:tag}:{}),
-        ...(service&&service!=='all'?{dashboardService:service}:{})
+        ...(service&&service!=='all'?{dashboardService:service}:{}),
+        ...(recipientTin?{dashboardRecipientTin:recipientTin}:{})
       })}
     />
   </div>;
