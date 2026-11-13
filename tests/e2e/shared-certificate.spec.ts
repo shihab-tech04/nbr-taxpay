@@ -25,6 +25,8 @@ test('transaction-linked certificate uses the real TaxPay ReceiptView document',
  await expect(page.locator('.receipt-view__paper')).toContainText('ACS-DEMO-123');
  await expect(page.locator('.receipt-view__paper')).toContainText('2,600');
  await expect(page.locator('.receipt-view__paper')).toContainText(id);
+ await expect(page.getByTestId('payment-certificate-reference')).toContainText('SK-PC-'+id);
+ await expect(page.locator('.receipt-view__paper').getByRole('heading', {name:'Payment Certificate'})).toBeVisible();
  await expect(page.locator('.receipt-view__status')).toHaveCount(0);
  await expect(page.locator('.receipt-view__paper')).not.toContainText('LEDGER CREDIT UNVERIFIED');
 });

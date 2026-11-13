@@ -42,7 +42,7 @@ function SyncedCertificate({transactionId,docAction,embedded=false}:{transaction
   if(!receipt)return <main className="mx-auto max-w-3xl p-6" role="status">Loading payment certificate…</main>;
   return <div className="mx-auto max-w-5xl pb-4">
     {actionError&&<p role="alert">{actionError}</p>}
-    <ReceiptView receipt={receipt} embedded={embedded} onBack={()=>window.close()}/>
+    <ReceiptView receipt={receipt} embedded={embedded} certificate onBack={()=>window.close()}/>
   </div>;
 }
 
