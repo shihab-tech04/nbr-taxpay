@@ -316,8 +316,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       : isSupportedBeneficiaryTin(taxpayerTin, allowSyntheticDemoTin);
     if (!tinValid) return false;
     if (otherBatch) {
-      if (forSelf === false && !signedInAccount &&
-          batchTaxpayers.some(person => confirmedOtherTaxTins[person.id] !== person.tin)) return false;
+      if (!signedInAccount && batchTaxpayers.some(person =>
+          (forSelf === false || person.id !== 'primary') && confirmedOtherTaxTins[person.id] !== person.tin)) return false;
       const seenTins = new Set<string>();
       for (const person of batchTaxpayers) {
         const valid = person.id === 'primary' && ownAccountTax
@@ -719,8 +719,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   );
 
   const renderOtherTaxTaxpayerList = (singleSelf: boolean) => (
-    <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax} singleTaxpayerLayout={singleSelf} allowAdditional={!singleSelf && (forSelf === false || Boolean(initialReuse && ownAccountTax))}
-                requireConfirmation={otherBatch && forSelf === false && !signedInAccount}
+    <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax} singleTaxpayerLayout={singleSelf} allowAdditional={singleSelf ? Boolean(taxpayerTin && lastSearchedTin === taxpayerTin) : forSelf === false || Boolean(initialReuse && ownAccountTax)}
+                requireConfirmation={otherBatch && !signedInAccount}
+                confirmPrimary={!singleSelf}
                 confirmedTins={confirmedOtherTaxTins} onConfirmTaxpayer={(id, tin) => {
                   setConfirmedOtherTaxTins(current => ({...current, [id]: tin})); clearValidationError();
                 }}
@@ -768,8 +769,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           : (language === 'bn' ? 'প্রত্যেক করদাতার আলাদা ১২ সংখ্যার টিআইএন দিন। নাম ঐচ্ছিক।' : 'Enter a different 12-digit TIN for each taxpayer. Names are optional.'), 'tin');
         return false;
       }
-      if (forSelf === false && !signedInAccount) {
-        const unconfirmed = batchTaxpayers.find(person => confirmedOtherTaxTins[person.id] !== person.tin);
+      if (!signedInAccount) {
+        const unconfirmed = batchTaxpayers.find(person =>
+          (forSelf === false || person.id !== 'primary') && confirmedOtherTaxTins[person.id] !== person.tin);
         if (unconfirmed) {
           setInvalidBatchTaxpayerId(unconfirmed.id);
           setValidationError(language === 'bn'
@@ -1065,6 +1067,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         const taxpayer = batchTaxpayers.find(person => person.id === line.taxpayerId)!;
         return {
           headId: head.id, economicCode: head.economicCode, headNameEn: head.nameEn,
+          serviceCode: head.category, isWithholding: head.isWithholding,
           taxAmount: head.category === 'PENALTY' ? 0 : amount,
           penaltyAmount: head.category === 'PENALTY' ? amount : 0,
           surchargeAmount: 0, interestAmount: 0, totalAmount: amount,
@@ -1113,7 +1116,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         receiptMobile: receiptPhone,
         receiptEmail: normaliseReceiptEmail(receiptEmail),
         noticeReference: noticeReference.trim() || undefined,
-        isRepresentativePayment: !forSelf,
+        isRepresentativePayment: !forSelf || additionalTaxpayers.length > 0,
         representativeTin: undefined,
         taxZone,
         taxCircle,
