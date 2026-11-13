@@ -508,7 +508,7 @@ for (const language of ['en', 'bn'] as const) {
     const card = cards.locator('[data-draft-id="' + draftId + '"]');
     await expect(card).toBeVisible();
     await card.getByRole('button', { name: continueLabel, exact: true }).click();
-    const modal = resume.getByRole('dialog', { name: 'Pay Tax' });
+    const modal = resume.getByRole('dialog', { name: bn ? 'কর পরিশোধ' : 'Pay Tax' });
     await expect(modal.locator('#guest-assessment-year')).toHaveValue('2025-26');
     await expect(modal.locator('#guest-income-type-NON_COMPANY')).toBeChecked();
     await expect(modal.locator('#guest-head-' + selectedHeadId)).toBeChecked();
@@ -539,7 +539,7 @@ for (const language of ['en', 'bn'] as const) {
     await resume.goto(`/?action=taxpayer_home&lang=${language}`);
     await expect(cards.locator('[data-draft-id="' + draftId + '"]')).toBeVisible();
     await cards.locator('[data-draft-id="' + draftId + '"]').getByRole('button', { name: continueLabel, exact: true }).click();
-    const refreshedModal = resume.getByRole('dialog', { name: 'Pay Tax' });
+    const refreshedModal = resume.getByRole('dialog', { name: bn ? 'কর পরিশোধ' : 'Pay Tax' });
     await expect(refreshedModal.locator('#guest-assessment-year')).toHaveValue('2025-26');
     await expect(refreshedModal.locator('#guest-income-type-NON_COMPANY')).toBeChecked();
     await expect(refreshedModal.locator('#guest-head-' + selectedHeadId)).toBeChecked();
