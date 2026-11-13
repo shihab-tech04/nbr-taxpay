@@ -14,11 +14,16 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
   // on the travel stage. Wait for either stable stage anchor after lazy mount.
   await root.locator('#travel-mobile, #travel-tax-route-1').first().waitFor({ state: 'attached' });
   const passport = root.locator('#travel-passport-first');
-  if (await passport.isVisible() && !(await passport.inputValue())) {
-    await passport.fill('TEST123456');
-    await root.locator('#travel-lookup-first').click();
-  }
   const addPassenger = root.getByRole('button', {name: /^(Add passenger|যাত্রী যোগ করুন)$/});
+  if (await passport.isVisible()) {
+    if (!(await passport.inputValue())) await passport.fill('TEST123456');
+    // Pay Again intentionally retains copied fields but revokes the previous
+    // identity confirmation. Re-run the passport lookup if the passenger is
+    // still unconfirmed, even when the input was already populated.
+    if (await addPassenger.isVisible() && !(await addPassenger.isEnabled())) {
+      await root.locator('#travel-lookup-first').click();
+    }
+  }
   if (await addPassenger.isVisible() && await addPassenger.isEnabled()) await addPassenger.click();
   const mobile = root.locator('#travel-mobile');
   if (await mobile.isVisible() && !(await mobile.inputValue())) await mobile.fill('01712345678');
