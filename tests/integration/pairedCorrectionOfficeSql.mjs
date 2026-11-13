@@ -63,8 +63,7 @@ assert.ok(!('requesterUid' in first.event.payload),'Private owner identity leake
 const ackSource=(item,success)=>db(source,[
  'BEGIN;SET LOCAL ROLE service_role;',
  'SELECT public.taxpay_correction_internal_ack('+
- pgJSON(item.event.eventId).replace(/::jsonb$/,'::jsonb')+'::text::uuid,'+
- pgJSON(item.claimToken)+'::text::uuid,'+(success?'true':'false')+','+
+ "'"+item.event.eventId+"'::uuid,'"+item.claimToken+"'::uuid,"+(success?'true':'false')+','+
  (success?'NULL':"'DISPOSABLE_OFFICE_OUTAGE'")+');','COMMIT;'
 ].join('\n'));
 // Use the existing source retry path instead of accepting a fabricated Office event.
