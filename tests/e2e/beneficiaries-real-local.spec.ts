@@ -1,7 +1,6 @@
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
-import {readFileSync} from 'node:fs';
 
 // Real disposable Auth + PostgREST. Fail closed if pointed at any hosted database.
 test('real account saves private beneficiary, reopens it, isolates another owner and prefills Pay Tax',async({browser})=>{
@@ -42,8 +41,9 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await listDialog.locator('#beneficiary-create-list-name').fill('Family');
   await listDialog.getByRole('button',{name:'Create list',exact:true}).click();
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Add one beneficiary'}).click();
   const addDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await expect(addDialog).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Choose how to add beneficiaries'})).toHaveCount(0);
   await addDialog.locator('#beneficiary-tin').fill('012345678901');
   await addDialog.locator('#beneficiary-name').fill('Local Beneficiary One');
   await chooseBeneficiaryOption(addDialog,'beneficiary-tag','friends_family:father');
@@ -80,24 +80,17 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(records).toContainText('Local Beneficiary One');
 
-  // Import a genuine compressed Excel workbook: one duplicate and one valid new beneficiary.
+  // The approved manual-only entry opens directly; dormant Excel code remains covered by parser tests.
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await page.getByRole('dialog',{name:'Choose how to add beneficiaries'}).getByRole('button',{name:'Import from Excel'}).click();
-  await page.locator('#beneficiary-file').setInputFiles({
-    name:'beneficiaries-two-rows.xlsx',
-    mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    buffer:Buffer.from(readFileSync('tests/fixtures/beneficiary-two-rows.xlsx.base64','utf8').trim(),'base64'),
-  });
-  const importAlerts=await page.locator('[role="alert"]').allTextContents();
-  const importDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
-  await expect(importDialog.getByText(/Upload ready:/),'Excel parser / import errors: '+JSON.stringify(importAlerts)).toBeVisible();
-  await chooseBeneficiaryOption(importDialog,'beneficiary-tag','clients');
-  await importDialog.getByRole('button',{name:'Next',exact:true}).click();
-  await expect(importDialog.getByText('Already saved in this list.')).toBeVisible();
-  await expect(importDialog.getByText('1 valid, 1 needing attention')).toBeVisible();
-  await importDialog.getByRole('button',{name:'Next',exact:true}).click();
-  await importDialog.getByRole('button',{name:'Finish import'}).click();
-  await expect(page.getByText('1 beneficiaries added to the list.')).toBeVisible({timeout:15000});
+  const secondAddDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await expect(secondAddDialog).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Choose how to add beneficiaries'})).toHaveCount(0);
+  await expect(page.getByText('Import from Excel',{exact:true})).toHaveCount(0);
+  await secondAddDialog.locator('#beneficiary-tin').fill('987654321098');
+  await secondAddDialog.locator('#beneficiary-name').fill('Local Beneficiary Two');
+  await chooseBeneficiaryOption(secondAddDialog,'beneficiary-tag','clients');
+  await secondAddDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await expect(page.getByText('Beneficiary saved.')).toBeVisible({timeout:15000});
   await expect(records).toContainText('Local Beneficiary Two');
   await page.reload();
   await expect(records).toContainText('Local Beneficiary Two');
