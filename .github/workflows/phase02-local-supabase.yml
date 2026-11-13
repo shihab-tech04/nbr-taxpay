@@ -219,39 +219,6 @@ jobs:
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/story1MirrorOutbox.sql
 
-      - name: Verify original v3 Taxpayer SQL parent in separate disposable Office SQL and officer read state
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Two independent local databases; never link or write hosted SQL.
-          OFFICE_SHA=ceb1cd7f8a724dc7b599b66ffc82fdfd12b34d23
-          OFFICE_DIR="$RUNNER_TEMP/ws3-office-verified"
-          git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
-            https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
-          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
-          docker run --rm -d --name ws3-office-sql-pg17 \
-            -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres \
-            -p 127.0.0.1:55433:5432 postgres:17
-          trap 'docker stop ws3-office-sql-pg17 >/dev/null 2>&1 || true' EXIT
-          export WS3_TAXPAYER_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-          export WS3_OFFICE_DB_URL="postgresql://postgres:postgres@127.0.0.1:55433/postgres"
-          for attempt in $(seq 1 35); do
-            if pg_isready -h 127.0.0.1 -p 55433 -U postgres -d postgres; then break; fi
-            sleep 2
-          done
-          pg_isready -h 127.0.0.1 -p 55433 -U postgres -d postgres
-          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -c \
-            "CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN BYPASSRLS;"
-          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f \
-            "$OFFICE_DIR/tests/integration/officeMigrationAuthPrerequisite.sql"
-          while IFS= read -r migration; do
-            psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f "$migration" >/dev/null
-          done < <(find "$OFFICE_DIR/supabase/migrations" -maxdepth 1 -name '*.sql' -type f | sort)
-          node tests/integration/pairedTaxpayerOfficeSql.mjs
-          node tests/integration/pairedCorrectionOfficeSql.mjs
-          echo "PASS: original source v3 payment and independent Office SQL readback, retry and officer state"
-
-
       - name: Verify all ten SQL personas and eight publicly read-only simulated tax services
         shell: bash
         run: |
@@ -458,6 +425,39 @@ jobs:
 
       - name: Reauthenticate both synthetic owners and verify exact rows after restart
         run: node tests/integration/localDraftRestartReadBack.mjs
+
+      - name: Verify original v3 Taxpayer SQL parent in separate disposable Office SQL and officer read state
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Two independent local databases; never link or write hosted SQL.
+          OFFICE_SHA=ceb1cd7f8a724dc7b599b66ffc82fdfd12b34d23
+          OFFICE_DIR="$RUNNER_TEMP/ws3-office-verified"
+          git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
+            https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
+          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
+          docker run --rm -d --name ws3-office-sql-pg17 \
+            -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres \
+            -p 127.0.0.1:55433:5432 postgres:17
+          trap 'docker stop ws3-office-sql-pg17 >/dev/null 2>&1 || true' EXIT
+          export WS3_TAXPAYER_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          export WS3_OFFICE_DB_URL="postgresql://postgres:postgres@127.0.0.1:55433/postgres"
+          for attempt in $(seq 1 35); do
+            if pg_isready -h 127.0.0.1 -p 55433 -U postgres -d postgres; then break; fi
+            sleep 2
+          done
+          pg_isready -h 127.0.0.1 -p 55433 -U postgres -d postgres
+          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -c \
+            "CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN BYPASSRLS;"
+          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f \
+            "$OFFICE_DIR/tests/integration/officeMigrationAuthPrerequisite.sql"
+          while IFS= read -r migration; do
+            psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f "$migration" >/dev/null
+          done < <(find "$OFFICE_DIR/supabase/migrations" -maxdepth 1 -name '*.sql' -type f | sort)
+          node tests/integration/pairedTaxpayerOfficeSql.mjs
+          node tests/integration/pairedCorrectionOfficeSql.mjs
+          echo "PASS: original source v3 payment and independent Office SQL readback, retry and officer state"
+
 
       - name: Remove disposable synthetic credentials
         if: always()
