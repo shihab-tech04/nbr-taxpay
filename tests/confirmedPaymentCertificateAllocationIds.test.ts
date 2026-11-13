@@ -48,6 +48,9 @@ function confirm(details:Record<string,unknown>):ChallanReceipt{
 test('confirmed v3 certificate reconstruction retains the saved allocation identities and exact amounts',()=>{
   const receipt=confirm(validDetails());
   assert.deepEqual(receipt.allocationItems?.map(item=>item.allocationId),['one','two']);
+  const certificate=buildPaymentCertificateModel(receipt);
+  assert.ok(certificate);
+  assert.deepEqual(certificate.lines.map(line=>line.allocationId),['one','two']);
   assert.deepEqual(receipt.allocationItems?.map(item=>[item.taxpayerTin,item.assessmentYear,item.amountMinor]),[
     ['111111111111','2026-27',1200],['222222222222','2025-26',1800],
   ]);
