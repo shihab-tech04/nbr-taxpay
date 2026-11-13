@@ -164,10 +164,11 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
   '&refresh_token='+encodeURIComponent(payer.session.refresh_token)+'&token_type=bearer&expires_in=3600&expires_at='+
   (payer.session.expires_at||Math.floor(Date.now()/1000)+3600));
  await expect(payerSecondPage.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
- await expect(payerSecondPage.getByText('User 7',{exact:true})).toBeVisible({timeout:15000});
- await expect(payerSecondPage.getByText('777777777777',{exact:true})).toBeVisible();
+ const ownerDirectory=payerSecondPage.getByTestId('beneficiary-directory-mobile');
+ await expect(ownerDirectory).toContainText('User 7',{timeout:15000});
+ await expect(ownerDirectory).toContainText('777777777777');
  await payerSecondPage.reload();
- await expect(payerSecondPage.getByText('User 7',{exact:true})).toBeVisible({timeout:15000});
+ await expect(payerSecondPage.getByTestId('beneficiary-directory-mobile')).toContainText('User 7',{timeout:15000});
  await payerSecondContext.close();
 
  await one.page.goto('/?action=history');
