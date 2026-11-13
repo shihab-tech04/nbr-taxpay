@@ -728,8 +728,7 @@
     font-weight: 500;
   }
 }
-/* Six benefits: concise and legible, with cards rather than a faux table.
-   They are informational, not additional competing payment actions. */
+/* Six benefit cards keep the approved layout and open their established destinations. */
 .public-benefits { min-width: 0; }
 .public-benefits__heading {
   display: flex;
@@ -760,6 +759,7 @@
   gap: .7rem .75rem;
 }
 .public-benefits__item {
+  position: relative;
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr);
   align-items: center;
@@ -789,6 +789,31 @@
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.35;
+}
+.public-benefits__copy h3 > .public-benefits__action {
+  position: static;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.public-benefits__action::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+}
+.public-benefits__item:hover .public-benefits__copy h3 { color: var(--citizen-primary-dark); }
+.public-benefits__action:focus-visible { outline: none; }
+.public-benefits__action:focus-visible::after {
+  outline: 3px solid var(--citizen-focus, #5CA8D8);
+  outline-offset: 2px;
 }
 .public-benefits__copy p {
   margin: 0;
