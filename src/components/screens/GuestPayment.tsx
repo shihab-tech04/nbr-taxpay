@@ -1403,17 +1403,19 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     </div>
   );
 
+  const legacySourceAmount = initialReuse?.formPayload.legacySourceAmount;
+
   return (
     <div lang={language === 'bn' ? 'bn' : 'en'} className={`${embedded ? 'payment-flow-embedded' : 'max-w-7xl mx-auto space-y-6 pb-12'} ${language === 'bn' ? 'font-bengali' : ''}`}>
       {sourcePaymentId && <p role="status" data-testid="pay-again-reuse-notice" className="rounded-lg border border-taxpay-border bg-taxpay-light p-3 text-sm text-taxpay-dark">
         {language==='bn'?'আগের পেমেন্ট থেকে তথ্য কপি করা হয়েছে: ':'Copied from previous payment: '}
         <strong className="break-all">{sourcePaymentId}</strong>.
         {' '}{language==='bn'?'মূল পেমেন্ট অপরিবর্তিত। প্রতিটি করবর্ষ, পরিমাণ ও তথ্য যাচাই করুন।':'Original payment unchanged. Review every year, amount and taxpayer before submitting.'}
-        {typeof initialReuse.formPayload.legacySourceAmount==='string'&&
+        {typeof legacySourceAmount==='string'&&
           <span className="mt-2 block" data-testid="pay-again-legacy-note">
             {language==='bn'
-              ? 'পুরোনো রেকর্ডে পেমেন্ট খাতের আইডি ও করদাতার ধরন ছিল না। এগুলো নতুন করে নির্বাচন করুন। রেকর্ডকৃত পরিমাণ ৳'+initialReuse.formPayload.legacySourceAmount+' — খাত নির্বাচন করলে পরিমাণ প্রস্তাব করা হবে।'
-              : 'This older record did not save the payment-head ID or income-tax classification. Choose them again. Original recorded amount: ৳'+initialReuse.formPayload.legacySourceAmount+'. The amount is suggested after selecting a head.'}
+              ? 'পুরোনো রেকর্ডে পেমেন্ট খাতের আইডি ও করদাতার ধরন ছিল না। এগুলো নতুন করে নির্বাচন করুন। রেকর্ডকৃত পরিমাণ ৳'+legacySourceAmount+' — খাত নির্বাচন করলে পরিমাণ প্রস্তাব করা হবে।'
+              : 'This older record did not save the payment-head ID or income-tax classification. Choose them again. Original recorded amount: ৳'+legacySourceAmount+'. The amount is suggested after selecting a head.'}
           </span>}
       </p>}
       {/* Title & Mode Banner */}
