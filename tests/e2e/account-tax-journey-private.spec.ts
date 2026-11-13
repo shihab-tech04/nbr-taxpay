@@ -247,6 +247,29 @@ for(const language of ['en','bn'] as const){
         if(claim){const actual=JSON.parse(atob(claim));expect(actual.sub).toBe(owner.id);}
         return route.fulfill({status:200,contentType:'application/json',headers,body:'null'});
       });
+      const savedList={id:'00000000-0000-4000-8000-000000000920',owner_uid:owner.id,
+        name:'Clients',created_at:'2026-10-01T00:00:00Z'};
+      const savedBeneficiary={id:'00000000-0000-4000-8000-000000000921',owner_uid:owner.id,
+        list_id:savedList.id,tin:'012345678901',display_name:'Beneficiary A',tag:'clients',
+        relationship:null,other_label:null,created_at:'2026-10-01T00:00:00Z',updated_at:'2026-10-01T00:00:00Z'};
+      await page.route(backend+'/rest/v1/taxpay_beneficiary_lists**',async route=>{
+        const req=route.request(),url=new URL(req.url());
+        const headers={'access-control-allow-origin':'*',
+          'access-control-allow-headers':'authorization, apikey, content-type, prefer, x-client-info, range',
+          'access-control-allow-methods':'GET,POST,OPTIONS','content-range':'0-0/1'};
+        if(req.method()==='OPTIONS')return route.fulfill({status:200,headers,body:'{}'});
+        expect(url.searchParams.get('owner_uid')).toBe('eq.'+owner.id);
+        return route.fulfill({status:200,contentType:'application/json',headers,body:JSON.stringify([savedList])});
+      });
+      await page.route(backend+'/rest/v1/taxpay_beneficiaries**',async route=>{
+        const req=route.request(),url=new URL(req.url());
+        const headers={'access-control-allow-origin':'*',
+          'access-control-allow-headers':'authorization, apikey, content-type, prefer, x-client-info, range',
+          'access-control-allow-methods':'GET,POST,OPTIONS','content-range':'0-0/1'};
+        if(req.method()==='OPTIONS')return route.fulfill({status:200,headers,body:'{}'});
+        expect(url.searchParams.get('owner_uid')).toBe('eq.'+owner.id);
+        return route.fulfill({status:200,contentType:'application/json',headers,body:JSON.stringify([savedBeneficiary])});
+      });
       const profileRead=page.waitForResponse(response=>
         response.request().method()==='POST'&&response.url().includes('/rpc/sim_my_taxpayer_profile'));
       await page.goto('/?action=history&lang='+language);
@@ -262,7 +285,10 @@ for(const language of ['en','bn'] as const){
       await expect(copied).toContainText(repeatableAdvancePayment.id);
       await expect(copied).toContainText(language==='bn'?'মূল পেমেন্ট অপরিবর্তিত':'Original payment unchanged');
       await expect(page.locator('[data-payment-service="ADVANCE_TAX"]')).toBeVisible();
-      await expect(page.locator('#guest-tin')).toHaveValue('012345678901');
+      const picker=page.getByTestId('saved-beneficiary-picker');
+      await expect(picker).toContainText('012345678901');
+      await expect(picker.getByRole('radio')).toBeChecked();
+      await expect(page.locator('#guest-tin')).toHaveCount(0);
       expect(JSON.stringify(repeatableAdvancePayment)).toBe(original);
     });
 }
