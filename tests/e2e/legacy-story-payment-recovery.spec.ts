@@ -255,6 +255,9 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await page.getByRole('navigation',{name:'Taxpayer services'}).getByRole('button',{name:'Activity'}).click();
   await expect(page).toHaveURL(/action=history/);
+  const assessmentYear=page.getByLabel('Assessment year');
+  await expect(assessmentYear.locator('option[value="2026-2027"]')).toHaveCount(1);
+  await assessmentYear.selectOption('2026-2027');
   const travelRegister=page.getByTestId('taxpayer-transaction-table');
   const travelRow=travelRegister.getByRole('row').filter({hasText:travelPayment});
   await expect(travelRow).toBeVisible({timeout:15000});
