@@ -269,6 +269,9 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   expect(typeof payAgainSubmission.idempotencyKey).toBe('string');
   expect(payAgainSubmission.idempotencyKey).not.toBe(payment);
   await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await page.getByRole('navigation',{name:'Taxpayer services'}).getByRole('button',{name:'Activity'}).click();
+  await expect(page).toHaveURL(/action=history/);
   const reg=page.getByTestId('taxpayer-transaction-table');
   const original=reg.getByRole('row').filter({hasText:older});
   const forbidden=reg.getByRole('row').filter({hasText:mixed});
