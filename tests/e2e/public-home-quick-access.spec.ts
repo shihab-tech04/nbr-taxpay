@@ -828,6 +828,22 @@ test('six benefit destinations work by pointer and keyboard in English and Bangl
     { id: 'pay-again', en: 'Pay Again', bn: 'আবার পরিশোধ', destination: 'history' },
     { id: 'saved-drafts', en: 'Saved Drafts', bn: 'সংরক্ষিত খসড়া', destination: 'taxpayer_home' },
   ] as const;
+
+  const expectDestination = async (item: typeof cases[number], language: 'en' | 'bn') => {
+    if (item.id === 'payments') {
+      await expect(page.locator('.tax-service-choice__card')).toHaveCount(2);
+      return;
+    }
+    await expect(page).toHaveURL(new RegExp(`[?&]action=${item.destination}(?:&|$)`));
+    if (language === 'en') {
+      await expect(page.getByText('Sign in to your Sohojkor account to continue.')).toBeVisible();
+      await expect(page.getByText(/Korbritto/i)).toHaveCount(0);
+    } else {
+      await expect(page.getByText('আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন।')).toBeVisible();
+      await expect(page.getByText(/করবৃত্ত/)).toHaveCount(0);
+    }
+  };
+
   for (const width of [320, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     for (const language of ['en', 'bn'] as const) {
@@ -840,31 +856,28 @@ test('six benefit destinations work by pointer and keyboard in English and Bangl
       for (const item of cases) {
         const card = benefits.locator(`[data-benefit="${item.id}"]`);
         const label = item[language];
+        const control = item.id === 'payments'
+          ? card.getByRole('button', { name: label })
+          : card.getByRole('link', { name: label });
         const box = await card.boundingBox();
         if (!box) throw new Error(`Missing benefit card: ${item.id}`);
-        if (item.id === 'payments') {
-          await card.click({ position: { x: box.width - 6, y: box.height - 6 } });
-          await expect(page.locator('.tax-service-choice__card')).toHaveCount(2);
-        } else {
-          const control = card.getByRole('link', { name: label });
-          if (item.id === 'certificates' && width === 320 && language === 'bn') {
-            await control.focus();
-            await expect(control).toBeFocused();
-            await page.keyboard.press('Enter');
-          } else {
-            await card.click({ position: { x: box.width - 6, y: box.height - 6 } });
-          }
-          await expect(page).toHaveURL(new RegExp(`[?&]action=${item.destination}(?:&|$)`));
-          if (language === 'en') {
-            await expect(page.getByText('Sign in to your Sohojkor account to continue.')).toBeVisible();
-            await expect(page.getByText(/Korbritto/i)).toHaveCount(0);
-          } else {
-            await expect(page.getByText('আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন।')).toBeVisible();
-            await expect(page.getByText(/করবৃত্ত/)).toHaveCount(0);
-          }
-        }
-        // Return to a fresh landing state so a modal or private-route gate from one
-        // destination cannot intercept the next card's real pointer interaction.
+
+        // Check the full-card pointer target.
+        await card.click({ position: { x: box.width - 6, y: box.height - 6 } });
+        await expectDestination(item, language);
+
+        // Return to a fresh landing state before checking keyboard activation.
+        await page.goto(`/?action=landing&lang=${language}`);
+        const keyboardCard = page.locator(`.public-benefits [data-benefit="${item.id}"]`);
+        const keyboardControl = item.id === 'payments'
+          ? keyboardCard.getByRole('button', { name: label })
+          : keyboardCard.getByRole('link', { name: label });
+        await keyboardControl.focus();
+        await expect(keyboardControl).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expectDestination(item, language);
+
+        // Clear any chooser or signed-out gate before the next real interaction.
         await page.goto(`/?action=landing&lang=${language}`);
       }
     }
