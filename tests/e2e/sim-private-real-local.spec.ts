@@ -96,7 +96,9 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  const noticeDetails=two.page.getByTestId('payment-lifecycle-details');
  await expect(noticeDetails).toContainText(tx!.transactionId);
  await expect(noticeDetails).toContainText(/৳\s*23\.50/);
- const ownAllocations=noticeDetails.locator('section').filter({has:noticeDetails.getByRole('heading',{name:'Taxpayer allocations'})});
+ const allocationHeading=noticeDetails.getByRole('heading',{name:'Taxpayer allocations'});
+ await expect(allocationHeading).toBeVisible();
+ const ownAllocations=allocationHeading.locator('xpath=ancestor::section[1]');
  await expect(ownAllocations).toContainText('user7');
  await expect(ownAllocations).not.toContainText('user6');
  await expect(ownAllocations).not.toContainText(/৳\s*150\.25/);
