@@ -119,6 +119,8 @@ for(const language of ['en','bn'] as const){
       ]);
       expect(psql('SELECT count(*)::text FROM demo_payment.story_payments')).toBe(beforePaymentCount);
 
+      await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+      await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed','true');
       const receiptPhone=dialog.locator('#guest-phone');
       if(await receiptPhone.count()===1&&await receiptPhone.isEditable())
         await receiptPhone.fill('01712345678');
