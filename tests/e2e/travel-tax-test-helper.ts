@@ -13,7 +13,9 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
   // Receipt contact exists throughout the passenger stage; route options exist
   // on the travel stage. Wait for either stable stage anchor after lazy mount.
   await root.locator('#travel-mobile, #travel-tax-route-1').first().waitFor({ state: 'attached' });
-  const passport = root.locator('#travel-passport-first');
+  // Pay Again uses stable copied passenger IDs (e.g. repeat-traveller-1),
+  // whereas a new payment starts with first. Confirm whichever is rendered.
+  const passport = root.locator('input[id^="travel-passport-"]').first();
   const addPassenger = root.getByRole('button', {name: /^(Add passenger|যাত্রী যোগ করুন)$/});
   if (await passport.isVisible()) {
     if (!(await passport.inputValue())) await passport.fill('TEST123456');
@@ -23,7 +25,7 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
     // Before any lookup the confirmation button is intentionally absent;
     // after a copied draft it may be absent again until fresh validation.
     if (!(await addPassenger.isVisible()) || !(await addPassenger.isEnabled())) {
-      await root.locator('#travel-lookup-first').click();
+      await root.locator('button[id^="travel-lookup-"]').first().click();
     }
   }
   if (await addPassenger.isVisible() && await addPassenger.isEnabled()) await addPassenger.click();
