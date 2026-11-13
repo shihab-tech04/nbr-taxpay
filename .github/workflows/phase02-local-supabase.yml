@@ -342,6 +342,13 @@ jobs:
           # Serializing only this case prevents cross-project writes to one owner.
           npx playwright test tests/e2e/account-payment-draft-browser-ui-real-local.spec.ts --project=desktop-1280 --project=mobile-375 --workers=1 --grep 'user1 Overview shows account-scoped saved drafts'
 
+      - name: Verify signed-in Travel Tax draft save, safe resume and owner isolation
+        env:
+          VITE_SUPABASE_DISABLED: "false"
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/travel-tax-draft-real-local.spec.ts --project=desktop-1280 --workers=1
+
       - name: Verify SQL profiles and all eight service types render for real preview identities
         env:
           VITE_SUPABASE_DISABLED: 'false'
