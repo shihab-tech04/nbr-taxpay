@@ -87,7 +87,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const [editingPassengerId, setEditingPassengerId] = useState<string | null>('first');
   const [confirmedPassengerIds, setConfirmedPassengerIds] = useState<string[]>([]);
   const [receiptReviewOpen, setReceiptReviewOpen] = useState(false);
-  const [passengerIssue, setPassengerIssue] = useState<{ id: string; message: string } | null>(null);
+  type PassengerIdentityIssue = {
+    id: string;
+    message: string;
+    field?: 'passport' | 'name' | 'birth-date' | 'country' | 'medical';
+  };
+  const [passengerIssue, setPassengerIssue] = useState<PassengerIdentityIssue | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
   const [medicalHelpFor, setMedicalHelpFor] = useState<string | null>(null);
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
@@ -283,61 +288,56 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       return tr('Select today or a future travel date.', 'আজকের বা ভবিষ্যতের ভ্রমণের তারিখ নির্বাচন করুন।');
     return null;
   };
-  const passengerIdentityIssue = (id: string): {id: string; message: string} | null => {
+  const passengerIdentityIssue = (id: string): PassengerIdentityIssue | null => {
     const index = passengers.findIndex(item => item.id === id);
     const item = passengers[index];
-    if (!item || index < 0) return {id, message: tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।')};
+    if (!item || index < 0) return {id, message: tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।'), field: 'passport'};
     const prefix = tr('Passenger ', 'যাত্রী ') + (index + 1) + ': ';
     if (item.passport.trim().length < 6)
-      return {id: item.id, message: prefix + tr('enter a valid passport number.', 'বৈধ পাসপোর্ট নম্বর দিন।')};
+      return {id: item.id, message: prefix + tr('enter a valid passport number.', 'বৈধ পাসপোর্ট নম্বর দিন।'), field: 'passport'};
     const passport = item.passport.trim().toUpperCase();
     const duplicateEarlierPassenger = passengers.slice(0, index).some(
       other => other.passport.trim().toUpperCase() === passport,
     );
     if (duplicateEarlierPassenger)
-      return {id: item.id, message: prefix + tr('this passport is already used by another passenger.', 'এই পাসপোর্ট অন্য যাত্রী ইতিমধ্যে ব্যবহার করেছেন।')};
+      return {id: item.id, message: prefix + tr('this passport is already used by another passenger.', 'এই পাসপোর্ট অন্য যাত্রী ইতিমধ্যে ব্যবহার করেছেন।'), field: 'passport'};
     if (item.nationality === 'BD' && item.identitySource !== 'PASSPORT_SAMPLE')
-      return {id: item.id, message: prefix + tr('check the selected sample passport first.', 'প্রথমে নির্বাচিত নমুনা পাসপোর্ট যাচাই করুন।')};
+      return {id: item.id, message: prefix + tr('check the selected sample passport first.', 'প্রথমে নির্বাচিত নমুনা পাসপোর্ট যাচাই করুন।'), field: 'passport'};
     if (item.name.trim().length < 2)
-      return {id: item.id, message: prefix + tr('enter a passenger name.', 'যাত্রীর নাম লিখুন।')};
+      return {id: item.id, message: prefix + tr('enter a passenger name.', 'যাত্রীর নাম লিখুন।'), field: 'name'};
     if (item.nationality === 'FOREIGN') {
       if (!item.country.trim())
-        return {id: item.id, message: prefix + tr('enter the country of nationality.', 'জাতীয়তার দেশ দিন।')};
+        return {id: item.id, message: prefix + tr('enter the country of nationality.', 'জাতীয়তার দেশ দিন।'), field: 'country'};
       if (travelPassengerAge(item.birthDate, new Date().toISOString().slice(0,10)) === null)
-        return {id: item.id, message: prefix + tr('enter a valid date of birth.', 'বৈধ জন্মতারিখ দিন।')};
+        return {id: item.id, message: prefix + tr('enter a valid date of birth.', 'বৈধ জন্মতারিখ দিন।'), field: 'birth-date'};
     }
     if (item.medicalPortReferral)
-      return {id: item.id, message: prefix + tr('medical exemption requires assessment at the departure port.', 'চিকিৎসাজনিত অব্যাহতির জন্য বন্দরে সরাসরি যাচাই প্রয়োজন।')};
+      return {id: item.id, message: prefix + tr('medical exemption requires assessment at the departure port.', 'চিকিৎসাজনিত অব্যাহতির জন্য বন্দরে সরাসরি যাচাই প্রয়োজন।'), field: 'medical'};
     return null;
   };
-  const firstIdentityIssue = (): {id: string; message: string} | null => {
+  const firstIdentityIssue = (): PassengerIdentityIssue | null => {
     for (const item of passengers) {
       const issue = passengerIdentityIssue(item.id);
       if (issue) return issue;
     }
     return null;
   };
-  // Recover a pending confirmation even when its editor switches to summary;
-  // identity lookup must never silently confirm a passenger.
+  // Keep the explicit confirmation action visible for the pending passenger.
+  // Clicking it reports the precise missing field before any passenger is added.
   const pendingConfirmationId = editingPassengerId ??
     passengers.find(item => !confirmedPassengerIds.includes(item.id))?.id ?? null;
-  // Present the confirmation action only once the current person's details
-  // can actually be reviewed. Passport lookup never adds a passenger itself.
-  const canShowAddPassenger = passengers.some(item =>
-    item.id === pendingConfirmationId && (item.nationality === 'BD'
-      ? item.identitySource === 'PASSPORT_SAMPLE'
-      : item.passport.trim().length >= 6 && item.name.trim().length >= 2 &&
-        !!item.country.trim() &&
-        travelPassengerAge(item.birthDate, new Date().toISOString().slice(0, 10)) !== null));
+  const canShowAddPassenger = pendingConfirmationId !== null &&
+    passengers.some(item => item.id === pendingConfirmationId);
   const allPassengersComplete = firstIdentityIssue() === null &&
     passengers.every(item => confirmedPassengerIds.includes(item.id));
-  const receiptMobileComplete = /^01\d{9}$/.test(phone);
+  const receiptMobileComplete = /^01\\d{9}$/.test(phone);
   const canContinueToTravel = allPassengersComplete && receiptMobileComplete;
-  const reportIdentityIssue = (issue: {id: string; message: string}) => {
+  const reportIdentityIssue = (issue: PassengerIdentityIssue) => {
     setEditingPassengerId(issue.id); setPassengerIssue(issue);
     showError(issue.message);
+    const focusId = 'travel-' + (issue.field ?? 'passport') + '-' + issue.id;
     requestAnimationFrame(() => requestAnimationFrame(() =>
-      document.getElementById('travel-passport-' + issue.id)?.focus()));
+      document.getElementById(focusId)?.focus()));
   };
   const validatePassengers = () => {
     const problem = validateTravelParty(passengers, travelDate);
@@ -522,6 +522,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     const panelId = 'travel-passenger-panel-' + item.id;
     const assessment = assessTravelPassenger(item, unitRate, travelDate);
     const normalizedPassport = item.passport.trim().toUpperCase();
+    const passengerFieldIssue = passengerIssue?.id === item.id ? passengerIssue : null;
     const passportAlreadyAdded = !!normalizedPassport && passengers.some(other =>
       other.id !== item.id && other.passport.trim().toUpperCase() === normalizedPassport);
     const availableSamples = SAMPLE_BD_PASSPORTS.filter(sample =>
@@ -564,8 +565,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 <input id={'travel-passport-' + item.id} role="combobox" aria-autocomplete="list"
                   aria-controls={'travel-passport-suggestions-' + item.id}
                   aria-expanded={passportSuggestionsFor === item.id}
-                  aria-invalid={passportAlreadyAdded}
-                  aria-describedby={passportAlreadyAdded ? 'travel-passport-duplicate-' + item.id : undefined}
+                  aria-invalid={passportAlreadyAdded || passengerFieldIssue?.field === 'passport'}
+                  aria-describedby={[
+                    passportAlreadyAdded ? 'travel-passport-duplicate-' + item.id : null,
+                    passengerFieldIssue?.field === 'passport' ? 'travel-passenger-issue-' + item.id : null,
+                  ].filter(Boolean).join(' ') || undefined}
                   value={item.passport} maxLength={20} autoComplete="off"
                   onFocus={() => {
                     errorFocusRevision.current += 1;
@@ -683,6 +687,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               <label htmlFor={'travel-passport-' + item.id}>{tr('Passport number','পাসপোর্ট নম্বর')} *</label>
               <div className="travel-flow__passport-entry">
               <input id={'travel-passport-' + item.id} value={item.passport} maxLength={20} autoComplete="off"
+                aria-invalid={passengerFieldIssue?.field === 'passport'}
+                aria-describedby={passengerFieldIssue?.field === 'passport' ? 'travel-passenger-issue-' + item.id : undefined}
                 onChange={event => changePassenger(item.id, {passport: event.target.value.toUpperCase().replace(/\s+/g, '')})}
                 placeholder={tr('Enter passport number','পাসপোর্ট নম্বর লিখুন')}/>
               {item.passport && <button type="button" className="travel-flow__passport-clear"
@@ -699,17 +705,23 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             <div className="travel-flow__field">
               <label htmlFor={'travel-name-' + item.id}>{tr('Passenger name as on passport','পাসপোর্ট অনুযায়ী নাম')} *</label>
               <input id={'travel-name-' + item.id} maxLength={100} value={item.name}
+                aria-invalid={passengerFieldIssue?.field === 'name'}
+                aria-describedby={passengerFieldIssue?.field === 'name' ? 'travel-passenger-issue-' + item.id : undefined}
                 onChange={event => changePassenger(item.id, {name: event.target.value.toUpperCase()})}
                 placeholder={tr('Enter full name','পূর্ণ নাম লিখুন')}/>
             </div>
             <div className="travel-flow__field">
               <label htmlFor={'travel-birth-date-' + item.id}>{tr('Date of birth','জন্মতারিখ')} *</label>
               <input id={'travel-birth-date-' + item.id} type="date" value={item.birthDate}
+                aria-invalid={passengerFieldIssue?.field === 'birth-date'}
+                aria-describedby={passengerFieldIssue?.field === 'birth-date' ? 'travel-passenger-issue-' + item.id : undefined}
                 max={travelDate || undefined} onChange={event => changePassenger(item.id, {birthDate: event.target.value})}/>
             </div>
             <div className="travel-flow__field">
               <label htmlFor={'travel-country-' + item.id}>{tr('Country of nationality','জাতীয়তার দেশ')} *</label>
               <input id={'travel-country-' + item.id} maxLength={80} value={item.country}
+                aria-invalid={passengerFieldIssue?.field === 'country'}
+                aria-describedby={passengerFieldIssue?.field === 'country' ? 'travel-passenger-issue-' + item.id : undefined}
                 onChange={event => changePassenger(item.id, {country: event.target.value})}
                 placeholder={tr('Enter country','দেশ লিখুন')}/>
             </div>
@@ -852,7 +864,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     </div>
                     {editing ? <div key={item.id + '-editor'} className="travel-flow__person-body">
                       {renderPassengerEditor(item, index)}
-                      {passengerIssue?.id === item.id && <p className="travel-flow__inline-error" role="status">{passengerIssue.message}</p>}
+                      {passengerIssue?.id === item.id && <p id={'travel-passenger-issue-' + item.id} className="travel-flow__inline-error" role="status">{passengerIssue.message}</p>}
                     </div> : <dl key={item.id + '-summary'} className="travel-flow__person-summary travel-flow__person-body">
                       <div><dt>{tr('Passenger name', 'যাত্রীর নাম')}</dt><dd data-testid={'travel-passenger-name-' + item.id}>{item.name}</dd></div>
                       <div><dt>{tr('Passport number', 'পাসপোর্ট নম্বর')}</dt><dd>{maskPassport(item.passport)}</dd></div>
@@ -891,7 +903,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     {!valid && !editing && <p className="travel-flow__field-hint">{tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।')}</p>}
                     {canShowAddPassenger && pendingConfirmationId === item.id && <div className="travel-flow__confirm-row">
                       <button type="button" className="travel-flow__add-member travel-flow__confirm-passenger"
-                        disabled={passengerIdentityIssue(item.id) !== null}
                         onClick={() => {
                           const issue = passengerIdentityIssue(item.id);
                           if (issue) { reportIdentityIssue(issue); return; }
