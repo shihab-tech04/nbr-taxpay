@@ -317,7 +317,7 @@ for (const [language, project] of [['en', 'desktop-1280'], ['bn', 'mobile-320']]
     await expect(certificate).toContainText('1111111111111');
     await expect(certificate).toContainText(language === 'bn' ? 'জরিমানা ও সরল সুদ' : 'Penalty & Simple Interest');
     await expect(certificate).toContainText('2026-27');
-    await expect(page.getByTestId('payment-certificate-total')).toContainText('130');
+    await expect(page.getByTestId('payment-certificate-total')).toContainText(language === 'bn' ? '১৩০' : '130');
     await expect(certificate).not.toContainText('SIMULATED_SUCCESS');
     await expect(certificate).not.toContainText('PENDING_RECONCILIATION');
 
