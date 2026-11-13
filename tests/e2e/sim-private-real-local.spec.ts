@@ -174,8 +174,10 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(notices.status).toBe(200);
  const own=(notices.data as Array<{transactionId:string;isRead:boolean}>).find(n=>n.transactionId===tx!.transactionId);
  expect(own?.isRead).toBe(true);
- // Revisit the Activity route after a fresh reload. Pay Again must remain
- // visible by default to an initiating payer, not only immediately after saving.
+ // The profile navigation above leaves Activity. Return to Activity and reload
+ // so this proves the initiating payer view remains the default after refresh.
+ await one.page.goto('/?action=history');
+ await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
  await one.page.reload({waitUntil:'domcontentloaded'});
  await expect(one.page.getByRole('button',{name:'Payments I initiated'}))
    .toHaveAttribute('aria-pressed','true',{timeout:15000});
