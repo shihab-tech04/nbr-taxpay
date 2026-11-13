@@ -514,16 +514,22 @@ for (const language of ['en', 'bn'] as const) {
     await expect(modal.locator('#guest-head-' + selectedHeadId)).toBeChecked();
     await expect(modal.locator('#guest-tax-amount')).toHaveValue('125.75');
 
-    // Resume must restore the original payer/recipient and receipt inputs too.
-    await modal.getByRole('button', { name: bn ? 'পূর্ববর্তী ধাপ' : 'Back', exact: true }).click();
-    await expect(modal.locator('#guest-payer-other')).toBeChecked();
+    // The approved embedded Pay Tax modal retains the payer relationship from the
+    // draft entry. Its relationship selector is not duplicated inside this step.
+    const modalBack = modal.locator('.taxpay-modal__back');
+    await expect(modalBack).toHaveAttribute('aria-label', bn ? 'ফিরুন' : 'Back');
+    await modalBack.click();
+    await expect(modal.locator('[data-payer-relationship]')).toHaveCount(0);
+    await expect(modal.locator('.tax-service-choice__selected-service')).toContainText(
+      bn ? 'অন্য করদাতার কর পরিশোধে সহায়তা করুন' : 'Facilitate another taxpayer’s payment');
     await expect(modal.locator('#guest-notice-ref')).toHaveValue(marker);
     await expect(modal.locator('#guest-phone')).toHaveValue(receiptPhone);
     await expect(modal.locator('#guest-receipt-email')).toHaveValue(receiptEmail);
     const restoredPicker = modal.getByTestId('saved-beneficiary-picker');
     await expect(restoredPicker).toContainText('Local Draft Beneficiary');
     await expect(restoredPicker.locator('input[name="payment-beneficiary"]')).toBeChecked();
-    await modal.getByRole('button', { name: bn ? 'পেমেন্ট খাতে এগিয়ে যান' : 'Continue to Payment Head', exact: true }).click();
+    await modal.locator('.taxpay-modal__footer-actions')
+      .getByRole('button', { name: bn ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount', exact: true }).click();
 
     await expect(modal.locator('#guest-assessment-year')).toHaveValue('2025-26');
     await expect(modal.locator('#guest-income-type-NON_COMPANY')).toBeChecked();
