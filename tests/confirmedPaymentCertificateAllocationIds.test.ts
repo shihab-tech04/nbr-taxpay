@@ -108,8 +108,14 @@ test('Travel Tax Pay Again certificate uses the new parent and reference while p
   const newId='00000000-0000-4000-8000-000000000902';
   const createdAt='2026-11-13T12:00:00.000Z';
   const travelSnapshot=(id:string,challanNo:string):ChallanReceipt=>({
-    ...baseReceipt,
     id,paymentTransactionId:id,challanNo,tokenNumber:'—',
+    paymentCategory:'TRAVEL_TAX',assessmentYear:'2026-27',
+    payerName:'Travel payer',payerTin:'1111111111111',
+    isRepresentativePayment:false,taxZone:'',taxCircle:'',isWithholding:false,
+    items:[],totalAmount:1500,paymentMethod:'SIMULATED',
+    gatewayTransactionId:id,treasuryStatus:'GATEWAY_SUCCESS',
+    taxCreditStatus:'PENDING_RECONCILIATION',createdAt,completedAt:createdAt,
+    isSimulatedDemo:true,
     paymentCategory:'TRAVEL_TAX',assessmentYear:'2026-27',
     payerName:'Travel payer',payerTin:'1111111111111',
     taxpayerName:undefined,taxpayerTin:undefined,receiptMobile:'01712345678',
