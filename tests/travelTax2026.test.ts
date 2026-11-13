@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { dhakaTravelDate, isPlannedTravelDate, LAND_PORT_NAMES, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_ZONES,
-  makeTravelPassenger, travelPassengerAmount, travelPartyTotal, validateTravelParty, travelPassengerAge, assessTravelPassenger } from '../src/data/travelTax2026';
+  makeTravelPassenger, travelPassengerAmount, travelPartyTotal, validateTravelParty, travelPassengerAge, assessTravelPassenger, travelTaxRateEvidence } from '../src/data/travelTax2026';
 
 test('client accounting reference has nine unique organizational codes and one economic code', () => {
   assert.equal(TRAVEL_TAX_ZONES.length, 9);
@@ -9,6 +9,37 @@ test('client accounting reference has nine unique organizational codes and one e
   assert.equal(TRAVEL_TAX_ECONOMIC_CODE, '1144102');
   for(const zone of TRAVEL_TAX_ZONES) assert.match(zone.code,/^\d{13}$/);
   assert.equal(LAND_PORT_NAMES.length,16);
+});
+
+test('Travel Tax preview rates carry an explicit non-statutory version and exact age mapping', () => {
+  assert.deepEqual(travelTaxRateEvidence('LAND', 1000), {
+    referenceVersion: 'APP_PREVIEW_2026-11-02',
+    classification: 'ILLUSTRATIVE',
+    source: 'IN_APP_PREVIEW',
+    mode: 'LAND',
+    economicCode: '1144102',
+    currency: 'BDT',
+    adultUnitRateMinor: 100000,
+    ageBands: [
+      { band: 'UNDER5', minAgeInclusive: 0, maxAgeInclusive: 5, multiplierBps: 0 },
+      { band: 'CHILD', minAgeInclusive: 6, maxAgeInclusive: 12, multiplierBps: 5000 },
+      { band: 'ADULT', minAgeInclusive: 13, maxAgeInclusive: null, multiplierBps: 10000 },
+    ],
+  });
+  assert.equal(travelTaxRateEvidence('WATER', 1000).mode, 'WATER');
+  assert.throws(() => travelTaxRateEvidence('LAND', Number.NaN), /preview rate is invalid/);
+});
+
+test('changing the planned date recalculates the illustrative passenger amount and mode evidence', () => {
+  const child = {
+    ...makeTravelPassenger('date-sensitive', 'FOREIGN'),
+    passport: 'PASSENGER123', name: 'Date Sensitive Passenger',
+    birthDate: '2014-08-10', country: 'India',
+  };
+  assert.equal(travelPartyTotal([child], 1000, '2027-08-09'), 500);
+  assert.equal(travelPartyTotal([child], 1000, '2027-08-10'), 1000);
+  assert.equal(travelTaxRateEvidence('LAND', 1000).mode, 'LAND');
+  assert.equal(travelTaxRateEvidence('WATER', 1000).mode, 'WATER');
 });
 
 test('family/friend amounts sum individual illustrative amounts without rounding drift', () => {

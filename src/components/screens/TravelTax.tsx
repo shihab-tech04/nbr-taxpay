@@ -14,7 +14,7 @@ import { deletePaymentFormDraft, type PaymentDraftActor, type PaymentFormDraft }
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
 import {
   LAND_PORT_NAMES, SAMPLE_BD_PASSPORTS, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_YEAR,
-  makeTravelPassenger, travelPartyTotal, validateTravelParty, assessTravelPassenger, travelPassengerAge, dhakaTravelDate, isPlannedTravelDate,
+  makeTravelPassenger, travelPartyTotal, travelTaxRateEvidence, validateTravelParty, assessTravelPassenger, travelPassengerAge, dhakaTravelDate, isPlannedTravelDate,
   type TravelMode, type TravelPassenger, type TravellerNationality,
 } from '../../data/travelTax2026';
 import { formatCurrency } from '../../services/numberFormat';
@@ -445,6 +445,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
           travelMode: mode, departurePort: selectedPort,
           destination: destination.trim(), travelDate,
           economicCode: TRAVEL_TAX_ECONOMIC_CODE,
+          travelRateEvidence: travelTaxRateEvidence(mode, unitRate),
           passengers: receipt.travelDetails?.passengers,
           lines: receipt.items, receiptSnapshot: receipt,
         },

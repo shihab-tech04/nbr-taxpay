@@ -67,7 +67,21 @@ test('Travel Tax resends the identical payment after a lost response ' +
   expect(requests[1]).toBe(requests[0]);
   const submitted = JSON.parse(requests[0]) as {
     amountMinor: number;
-    details?: { passengers?: Array<{ name: string; passportMasked: string; amount: number }> };
+    details?: {
+      passengers?: Array<{ name: string; passportMasked: string; amount: number }>;
+      travelRateEvidence?: {
+        referenceVersion: string;
+        classification: string;
+        source: string;
+        mode: string;
+        economicCode: string;
+        currency: string;
+        adultUnitRateMinor: number;
+        ageBands: Array<{ band: string; minAgeInclusive: number; maxAgeInclusive: number | null; multiplierBps: number }>;
+      };
+      lines?: Array<{ totalAmount: number; economicCode: string }>;
+      receiptSnapshot?: { totalAmount: number; items: Array<{ totalAmount: number; economicCode: string }> };
+    };
   };
   expect(submitted.amountMinor).toBe(150000);
   expect(submitted.details?.passengers?.map(passenger =>
@@ -75,6 +89,28 @@ test('Travel Tax resends the identical payment after a lost response ' +
       ['SAMPLE BANGLADESHI PASSENGER', '••••3456', 1000],
       ['FRIEND SECOND', '••••4321', 500],
     ]);
+  expect(submitted.details?.travelRateEvidence).toEqual({
+    referenceVersion: 'APP_PREVIEW_2026-11-02',
+    classification: 'ILLUSTRATIVE',
+    source: 'IN_APP_PREVIEW',
+    mode: 'LAND',
+    economicCode: '1144102',
+    currency: 'BDT',
+    adultUnitRateMinor: 100000,
+    ageBands: [
+      { band: 'UNDER5', minAgeInclusive: 0, maxAgeInclusive: 5, multiplierBps: 0 },
+      { band: 'CHILD', minAgeInclusive: 6, maxAgeInclusive: 12, multiplierBps: 5000 },
+      { band: 'ADULT', minAgeInclusive: 13, maxAgeInclusive: null, multiplierBps: 10000 },
+    ],
+  });
+  const detailLineMinor = submitted.details?.lines?.map(line => Math.round(line.totalAmount * 100));
+  const receiptLineMinor = submitted.details?.receiptSnapshot?.items.map(line => Math.round(line.totalAmount * 100));
+  expect(detailLineMinor).toEqual([100000, 50000]);
+  expect(receiptLineMinor).toEqual(detailLineMinor);
+  expect(detailLineMinor?.reduce((sum, amount) => sum + amount, 0)).toBe(submitted.amountMinor);
+  expect(submitted.details?.receiptSnapshot?.totalAmount).toBe(1500);
+  await expect(receipt).toContainText('1,000');
+  await expect(receipt).toContainText('500');
   expect(await page.evaluate(() => Object.keys(sessionStorage)
     .filter(key => key.startsWith('taxpay-travel-payment:')))).toEqual([]);
 });

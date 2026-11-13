@@ -28,18 +28,36 @@ begin
 
   payment_payload := jsonb_build_object(
     'idempotencyKey',payment_key,'sessionId',session_id,
-    'service','TRAVEL_TAX','amountMinor',12345,'origin','TAXPAY_UI',
+    'service','TRAVEL_TAX','amountMinor',150000,'origin','TAXPAY_UI',
     'details',jsonb_build_object('travelRoute','Synthetic acceptance',
+      'travelRateEvidence',jsonb_build_object(
+        'referenceVersion','APP_PREVIEW_2026-11-02',
+        'classification','ILLUSTRATIVE','source','IN_APP_PREVIEW','mode','LAND',
+        'economicCode','1144102','currency','BDT','adultUnitRateMinor',100000,
+        'ageBands',jsonb_build_array(
+          jsonb_build_object('band','UNDER5','minAgeInclusive',0,'maxAgeInclusive',5,'multiplierBps',0),
+          jsonb_build_object('band','CHILD','minAgeInclusive',6,'maxAgeInclusive',12,'multiplierBps',5000),
+          jsonb_build_object('band','ADULT','minAgeInclusive',13,'maxAgeInclusive',null,'multiplierBps',10000))),
       'passengers',jsonb_build_array(
-        jsonb_build_object('name','Test traveller A','passportMasked','••••1234','amount',100),
-        jsonb_build_object('name','Test traveller B','passportMasked','••••5678','amount',23.45))));
+        jsonb_build_object('name','Test traveller A','passportMasked','••••1234','amount',1000),
+        jsonb_build_object('name','Test traveller B','passportMasked','••••5678','amount',500)),
+      'lines',jsonb_build_array(
+        jsonb_build_object('headId',155,'economicCode','1144102','totalAmount',1000),
+        jsonb_build_object('headId',156,'economicCode','1144102','totalAmount',500))));
   submission := public.demo_story1_submit(payment_payload);
   payment_id := (submission->>'id')::uuid;
   replay := public.demo_story1_submit(payment_payload);
   if replay->>'id' is distinct from payment_id::text
     or replay->>'replayed' is distinct from 'true'
     or (select count(*) from demo_payment.story_payments where idempotency_key=payment_key
-          and data=payment_payload and amount_minor=12345) <> 1
+          and data=payment_payload and amount_minor=150000) <> 1
+    or (select data->'details'->'travelRateEvidence' from demo_payment.story_payments
+          where idempotency_key=payment_key)
+         is distinct from payment_payload->'details'->'travelRateEvidence'
+    or (select round(sum((passenger.value->>'amount')::numeric * 100))::bigint
+          from demo_payment.story_payments stored
+          cross join lateral jsonb_array_elements(stored.data->'details'->'passengers') as passenger(value)
+          where stored.idempotency_key=payment_key) <> 150000
     or (select count(*) from demo_payment.mirror_outbox where entity_type='PAYMENT' and entity_id=payment_id) <> 1
   then raise exception 'Travel retry failed to recover the original payment and outbox item';end if;
 
