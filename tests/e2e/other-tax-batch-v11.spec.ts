@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
 const getFlow = async (page: import('@playwright/test').Page) => {
@@ -8,6 +8,39 @@ const getFlow = async (page: import('@playwright/test').Page) => {
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   return dialog;
 };
+
+async function mockSignedInOtherTax(page: Page, writes: string[]) {
+  const list={id:'00000000-0000-4000-8000-000000000001',name:'Family',created_at:'2026-01-01T00:00:00Z'};
+  const people=[
+    {id:'00000000-0000-4000-8000-000000000002',list_id:list.id,tin:'222222222222',display_name:'Saved Taxpayer Two',tag:'friends_family',relationship:'father',created_at:list.created_at,updated_at:list.created_at},
+    {id:'00000000-0000-4000-8000-000000000003',list_id:list.id,tin:'333333333333',display_name:'Saved Taxpayer Three',tag:'clients',relationship:null,created_at:list.created_at,updated_at:list.created_at},
+  ];
+  await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=user1',route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify({success:true,data:[],simulationOnly:true})
+  }));
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
+    const body=route.request().postDataJSON() as {action?:string;offset?:number;limit?:number};
+    let data:unknown;
+    if(body.action==='demo-login') data={language:'en',selectedListId:null,paymentSessionId:'00000000-0000-4000-8000-000000000099',profileId:'user1',capability:'A'.repeat(43)};
+    else if(body.action==='demo-settings') data={language:'en',selectedListId:null,paymentSessionId:'00000000-0000-4000-8000-000000000099'};
+    else if(body.action==='open') data={active:true};
+    else if(body.action==='lists') data=[list];
+    else if(body.action==='people') data=people.slice(body.offset??0,(body.offset??0)+(body.limit??500));
+    else { writes.push(String(body.action??'unknown')); data=[]; }
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
+  });
+  await page.goto('/?action=taxpayer_login');
+  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  await login.getByRole('textbox',{name:'User ID'}).fill('user1');
+  await login.getByLabel('Password',{exact:true}).fill('user1');
+  await login.getByRole('button',{name:'Sign In'}).click();
+  await expect(login).toHaveCount(0);
+  await page.goto('/?action=landing');
+  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+  const dialog=page.getByRole('dialog',{name:'Pay Tax'});
+  await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
+  return {dialog,people};
+}
 
 // Reveal the mobile-only calculation in the sticky footer before checking
 // the existing exact amounts and per-taxpayer allocation detail.
@@ -750,4 +783,97 @@ test('compact search/selection stays operable at 320px without horizontal overfl
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
   expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
   await expect(dialog.getByRole('button', { name: 'Continue to payment channel' })).toBeVisible();
+});
+
+test('signed-in Other Tax combines a saved beneficiary with a confirmed one-time recipient without saving it',async({page})=>{
+  const writes:string[]=[];
+  const submitted:Record<string,any>[]=[];
+  const {dialog}=await mockSignedInOtherTax(page,writes);
+  await page.route('**/functions/v1/demo-story1-taxpay/payments',async route=>{
+    submitted.push(route.request().postDataJSON() as Record<string,any>);
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      success:true,id:'00000000-0000-4000-8000-000000000779',status:'SIMULATED_SUCCESS',
+      mirrored:true,simulationOnly:true,
+    })});
+  });
+
+  const picker=dialog.getByTestId('saved-beneficiary-picker');
+  await expect(picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'})).toBeVisible();
+  const continueButton=dialog.getByRole('button',{name:'Continue to purpose & amount'});
+  await expect(continueButton).toBeDisabled();
+  await picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'}).check();
+  await expect(continueButton).toBeEnabled();
+  await continueButton.click();
+
+  const batch=dialog.getByTestId('other-tax-batch');
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox',{name:/Select 68A/}).check();
+  const firstLine=batch.getByTestId('other-tax-line');
+  await firstLine.locator('select[id^="other-tax-year"]').selectOption('2026-27');
+  await firstLine.locator('input[id^="other-tax-amount"]').fill('10');
+  await dialog.locator('.taxpay-modal__back').click();
+
+  const oneTime=dialog.getByTestId('one-time-taxpayer-entry');
+  await expect(oneTime).toBeVisible();
+  await oneTime.locator('#other-tax-one-time-tin').fill('222222222222');
+  await oneTime.getByRole('button',{name:'Search one-time taxpayer'}).click();
+  await expect(oneTime.getByRole('alert')).toContainText('already selected or saved');
+  await expect(picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'})).toBeChecked();
+
+  await oneTime.locator('#other-tax-one-time-tin').fill('123456789012');
+  await oneTime.getByRole('button',{name:'Search one-time taxpayer'}).click();
+  await expect(oneTime.getByRole('alert')).toContainText('TIN information not found');
+  await oneTime.getByRole('button',{name:'Clear TIN search'}).click();
+  await expect(picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'})).toBeChecked();
+
+  await oneTime.locator('#other-tax-one-time-tin').fill('444444444444');
+  await oneTime.getByRole('button',{name:'Search one-time taxpayer'}).click();
+  await expect(oneTime.getByTestId('one-time-taxpayer-preview')).toContainText('User 4');
+  await oneTime.getByRole('button',{name:'Add to this payment'}).click();
+  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
+  await expect(picker).not.toContainText('444444444444');
+  await continueButton.click();
+
+  const preserved=batch.getByTestId('other-tax-line');
+  await expect(preserved).toHaveCount(1);
+  await expect(preserved.locator('input[id^="other-tax-amount"]')).toHaveValue('10');
+  const tabs=batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button');
+  await expect(tabs).toHaveCount(2);
+  await tabs.nth(1).click();
+  await batch.getByRole('checkbox',{name:/Select 68B/}).check();
+  const secondLine=batch.getByTestId('other-tax-line');
+  await secondLine.locator('select[id^="other-tax-year"]').selectOption('2025-26');
+  await secondLine.locator('input[id^="other-tax-amount"]').fill('20');
+  await dialog.getByRole('button',{name:'Continue to payment channel'}).click();
+  await dialog.getByRole('button',{name:'Pay online'}).click();
+  await dialog.getByRole('button',{name:'Mobile banking'}).click();
+  await dialog.getByRole('radio',{name:'bKash'}).check();
+  await dialog.getByRole('checkbox',{name:/I confirm each taxpayer TIN/}).check();
+  await dialog.getByRole('button',{name:/Pay ৳ 30/}).click();
+  await expect(dialog.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:15000});
+
+  expect(submitted).toHaveLength(1);
+  expect(submitted[0].amountMinor).toBe(3000);
+  const details=submitted[0].details as {payerTin:string;payerMode:string;combinedPayment:boolean;allocationContractVersion:number;allocations:Array<{allocationId:string;taxpayerTin:string;taxpayerName:string;headId:number;assessmentYear:string;amountMinor:number}>};
+  expect(details).toMatchObject({payerTin:'1111111111111',payerMode:'OTHER',combinedPayment:true,allocationContractVersion:3});
+  expect(details.allocations.map(({taxpayerTin,taxpayerName,headId,assessmentYear,amountMinor})=>
+    [taxpayerTin,taxpayerName,headId,assessmentYear,amountMinor])).toEqual([
+      ['222222222222','Saved Taxpayer Two',122,'2026-27',1000],
+      ['444444444444','User 4',123,'2025-26',2000],
+    ]);
+  const allocationIds=details.allocations.map(item=>item.allocationId);
+  expect(allocationIds.every(id=>typeof id==='string'&&id.trim().length>0)).toBe(true);
+  expect(new Set(allocationIds).size).toBe(2);
+
+  await dialog.getByRole('button',{name:'Receipt details'}).click();
+  const receipt=dialog.locator('.receipt-view__paper');
+  await expect(receipt).toContainText('222222222222');
+  await expect(receipt).toContainText('444444444444');
+  await expect(receipt).toContainText('2025-26');
+  await expect(receipt).toContainText('৳ 30');
+  expect(writes).toEqual([]);
+  await page.goto('/?action=beneficiaries');
+  await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+  await expect(page.getByTestId('beneficiaries-page')).toContainText('222222222222');
+  await expect(page.getByTestId('beneficiaries-page')).not.toContainText('444444444444');
 });
