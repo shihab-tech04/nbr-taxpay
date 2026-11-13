@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { MASTER_PAYMENT_HEADS } from '../src/data/paymentHeads.ts';
 import { makeConfirmedReceipt } from '../src/services/confirmedPaymentCertificate.ts';
 import type { ChallanReceipt, PaymentLineItem } from '../src/types/tax.ts';
+import { buildPaymentCertificateModel } from '../src/services/paymentCertificateModel.ts';
 
 const paymentId='00000000-0000-4000-8000-000000000501';
 const lines:PaymentLineItem[]=[
@@ -99,4 +100,52 @@ test('confirmed v2 and unversioned certificate recovery keeps legacy rows withou
     assert.deepEqual(receipt.allocationItems?.map(item=>item.allocationId),[undefined,undefined]);
     assert.deepEqual(receipt.allocationItems?.map(item=>item.amountMinor),[1200,1800]);
   }
+});
+
+
+test('Travel Tax Pay Again certificate uses the new parent and reference while preserving the original document',()=>{
+  const oldId='00000000-0000-4000-8000-000000000901';
+  const newId='00000000-0000-4000-8000-000000000902';
+  const createdAt='2026-11-13T12:00:00.000Z';
+  const travelSnapshot=(id:string,challanNo:string):ChallanReceipt=>({
+    ...baseReceipt,
+    id,paymentTransactionId:id,challanNo,tokenNumber:'—',
+    paymentCategory:'TRAVEL_TAX',assessmentYear:'2026-27',
+    payerName:'Travel payer',payerTin:'1111111111111',
+    taxpayerName:undefined,taxpayerTin:undefined,receiptMobile:'01712345678',
+    isRepresentativePayment:false,items:[],totalAmount:1500,
+    gatewayTransactionId:id,createdAt,completedAt:createdAt,
+    travelDetails:{
+      mode:'LAND',departurePort:'Benapole',destination:'India',travelDate:'2026-11-20',
+      economicCode:'1144102',passengers:[
+        {name:'Traveler One',passportMasked:'••••3456',nationality:'BD',country:'Bangladesh',ageBand:'ADULT',age:32,amount:1000},
+        {name:'Traveler Two',passportMasked:'••••4321',nationality:'FOREIGN',country:'India',ageBand:'CHILD',age:8,amount:500},
+      ],
+    },
+  });
+  const originalSnapshot=travelSnapshot(oldId,'TRAVEL-ORIGINAL');
+  const originalBefore=structuredClone(originalSnapshot);
+  const original=makeConfirmedReceipt({
+    id:oldId,service:'TRAVEL_TAX',amountMinor:150000,status:'SIMULATED_SUCCESS',createdAt,
+    details:{payerName:'Travel payer',payerTin:'1111111111111',receiptReference:'TRAVEL-ORIGINAL',receiptSnapshot:originalSnapshot},
+  });
+  const payAgainSnapshot={...originalSnapshot,id:oldId,paymentTransactionId:oldId,challanNo:'TRAVEL-NEW'};
+  const replacement=makeConfirmedReceipt({
+    id:newId,service:'TRAVEL_TAX',amountMinor:150000,status:'SIMULATED_SUCCESS',createdAt,
+    details:{sourcePaymentId:oldId,payerName:'Travel payer',payerTin:'1111111111111',
+      receiptReference:'TRAVEL-NEW',receiptSnapshot:payAgainSnapshot},
+  });
+  const originalCertificate=buildPaymentCertificateModel(original);
+  const replacementCertificate=buildPaymentCertificateModel(replacement);
+  assert.ok(originalCertificate);
+  assert.ok(replacementCertificate);
+  assert.equal(originalCertificate.paymentTransactionId,oldId);
+  assert.equal(originalCertificate.certificateReference,'SK-PC-'+oldId);
+  assert.equal(replacement.paymentTransactionId,newId,'confirmed document must bind the saved replacement parent');
+  assert.equal(replacementCertificate.paymentTransactionId,newId);
+  assert.equal(replacementCertificate.certificateReference,'SK-PC-'+newId);
+  assert.equal(replacementCertificate.paymentReference,'TRAVEL-NEW');
+  assert.notEqual(replacementCertificate.certificateReference,originalCertificate.certificateReference);
+  assert.deepEqual(replacementCertificate.lines,originalCertificate.lines);
+  assert.deepEqual(originalSnapshot,originalBefore,'Pay Again never mutates the earlier receipt source');
 });
