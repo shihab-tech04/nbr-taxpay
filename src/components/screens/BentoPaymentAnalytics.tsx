@@ -252,7 +252,7 @@ export const BentoPaymentAnalytics:React.FC<{
         </>}
         {filtered.totalMinor>0n&&<button type="button" className="taxpay-bento-analytics__link"
           onClick={()=>onOpenHistory(tag??undefined,service)}>
-          {tr('View matching payment records','মিলে যাওয়া পেমেন্টের রেকর্ড দেখুন')}
+          {tr('View payment records','পেমেন্টের রেকর্ড দেখুন')}
           <ArrowRight size={16} aria-hidden="true"/>
         </button>}
         {!filtered.totalMinor&&<p role="status" className="taxpay-bento-analytics__empty">{tr(
