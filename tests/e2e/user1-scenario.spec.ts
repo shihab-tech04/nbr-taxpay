@@ -295,6 +295,20 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   if(await rail.isVisible())await expect(rail.getByRole('button',{name:'Activity',exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  if(info.project.name==='mobile-375'){
+    // Recheck the approved profile at the minimum supported 320px width while
+    // retaining its existing summary, masking and adjacent copy controls.
+    await page.setViewportSize({width:320,height:720});
+    await expect(profile.getByTestId('user1-profile-summary').locator(':scope > div')).toHaveCount(4);
+    await expect(profile.getByRole('button',{name:'Show TIN'})).toBeVisible();
+    await expect(profile.getByRole('button',{name:'Copy TIN'})).toBeVisible();
+    const narrowEye=await profile.getByRole('button',{name:'Show TIN'}).boundingBox();
+    const narrowCopy=await profile.getByRole('button',{name:'Copy TIN'}).boundingBox();
+    expect(narrowEye&&narrowCopy).toBeTruthy();
+    expect(narrowCopy!.x-narrowEye!.x).toBeGreaterThanOrEqual(narrowEye!.width-2);
+    expect(narrowCopy!.x-narrowEye!.x).toBeLessThanOrEqual(narrowEye!.width+16);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  }
   await page.goto('/?action=account_profile&demoUser=user1&lang=bn');
   const bn=page.getByTestId('user1-profile-unified-content');
   await expect(bn).toBeVisible();
