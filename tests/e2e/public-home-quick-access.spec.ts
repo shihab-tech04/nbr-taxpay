@@ -472,6 +472,32 @@ test('approved payment-record lookup keeps the compact reference composition', a
     'Enter challan, token or transaction reference');
 });
 
+test('desktop search keeps compact inset below the 960px height breakpoint', async ({page}) => {
+  for (const {height,padLeft,padTop,padBottom} of [
+    {height:959,padLeft:16,padTop:10,padBottom:11},
+    {height:960,padLeft:24,padTop:24,padBottom:24},
+  ]) {
+    for (const lang of ['en','bn']) {
+      await page.setViewportSize({width:1151,height});
+      await page.goto('/?action=landing&lang='+lang);
+      await page.evaluate(async()=>{await document.fonts.ready;});
+      const measurements=await page.locator('.public-record-discovery').evaluate(el=>{
+        const style=getComputedStyle(el);
+        return {
+          top:parseFloat(style.paddingTop),
+          bottom:parseFloat(style.paddingBottom),
+          left:parseFloat(style.paddingLeft),
+          overflow:document.documentElement.scrollWidth-innerWidth,
+        };
+      });
+      expect(measurements.left,JSON.stringify({lang,height,measurements})).toBe(padLeft);
+      expect(Math.abs(measurements.top-padTop)).toBeLessThanOrEqual(1);
+      expect(Math.abs(measurements.bottom-padBottom)).toBeLessThanOrEqual(1);
+      expect(measurements.overflow).toBeLessThanOrEqual(2);
+    }
+  }
+});
+
 test('reference screenshot: tall desktop payment search matches approved padding and vertical composition', async ({page}) => {
   for (const viewport of [
     {width:1151,height:1263}, // exact supplied approved-reference PNG
