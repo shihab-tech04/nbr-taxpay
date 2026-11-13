@@ -14,7 +14,7 @@ const allocationRecord = {
     taxpayerTin: '2222222222222',
     payerMode: 'OTHER',
     assessmentYear: '2026-27',
-    receiptReference: 'MIXED-DEMO-130',
+    receiptReference: 'ACS-2026-00130',
     paymentMethod: 'BKASH',
     taxZone: 'Taxes Zone 2',
     taxCircle: 'Circle 2',
@@ -37,7 +37,7 @@ test('shared receipt reconciles and displays every taxpayer allocation across re
   await page.goto('/?action=payment_details&transactionId=' + transactionId);
   const paper = page.locator('.receipt-view__paper');
   await expect(paper).toBeVisible();
-  await expect(paper).toContainText('MIXED-DEMO-130');
+  await expect(paper).toContainText('ACS-2026-00130');
   await expect(paper).toContainText('user8');
   await expect(paper).toContainText('user9');
   await expect(paper).toContainText('1111111111111');

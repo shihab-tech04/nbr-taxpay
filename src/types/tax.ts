@@ -109,6 +109,8 @@ export interface ChallanReceipt {
   assessmentYear: string;
   payerName: string;
   payerTin: string;
+  /** Recipient name from the saved payment parent when available. */
+  taxpayerName?: string;
   /** Account receiving the payment; never infer it from a guest payer. */
   taxpayerTin?: string;
   receiptMobile?: string;

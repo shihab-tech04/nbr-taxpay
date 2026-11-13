@@ -1,0 +1,119 @@
+import { readFile } from 'node:fs/promises';
+import { expect, test } from '@playwright/test';
+import { openTravelTaxFromBanner } from './public-travel-tax-entry';
+import { fillTravelDetails } from './travel-tax-test-helper';
+import { setWorkspaceLanguage } from './workspace-language';
+
+const paymentId = '2bd0a21e-4a7c-4c89-9664-0ae1f7f336a8';
+const fixtureOrigin = 'https://travel-certificate-fixture.invalid';
+const corsHeaders = {
+  'access-control-allow-origin': 'http://127.0.0.1:4173',
+  'access-control-allow-methods': 'POST, OPTIONS',
+  'access-control-allow-headers': 'apikey, content-type',
+};
+
+for (const language of ['en', 'bn'] as const) {
+  test('Travel Tax receipt opens a separate, itemized ' + language.toUpperCase() + ' payment certificate and PDF', async ({ page }) => {
+    let submitted: Record<string, unknown> | null = null;
+    let submissionCount = 0;
+    await page.route(fixtureOrigin + '/functions/v1/demo-story1-taxpay/payments*', async route => {
+      const request = route.request();
+      if (request.method() === 'OPTIONS') {
+        await route.fulfill({ status: 204, headers: corsHeaders });
+        return;
+      }
+      if (request.method() !== 'POST') {
+        await route.fulfill({ status: 405, headers: corsHeaders });
+        return;
+      }
+      submitted = request.postDataJSON() as Record<string, unknown>;
+      submissionCount += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: corsHeaders,
+        body: JSON.stringify({
+          success: true, id: paymentId, status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true,
+        }),
+      });
+    });
+
+    await page.goto('/');
+    if (language === 'bn') await setWorkspaceLanguage(page, language);
+    await openTravelTaxFromBanner(page);
+    const modal = page.getByRole('dialog', { name: /Travel tax|ভ্রমণ কর/ });
+    await modal.locator('#travel-passport-first').fill('TEST123456');
+    await modal.locator('#travel-lookup-first').click();
+    await modal.getByRole('button', { name: /^(Add passenger|যাত্রী যোগ করুন)$/ }).click();
+    await modal.getByRole('button', { name: /Add another passenger|আরেকজন যাত্রী/ }).click();
+    const people = modal.getByTestId('travel-passenger-list').locator('.travel-flow__person');
+    await expect(people).toHaveCount(2);
+    const second = people.nth(1);
+    await second.getByRole('tab', { name: /Foreign passenger|বিদেশি যাত্রী/ }).click();
+    await second.locator('input[id^="travel-passport-"]').fill('B7654321');
+    await second.locator('input[id^="travel-name-"]').fill('FRIEND SECOND');
+    await second.locator('input[id^="travel-birth-date-"]').fill('2017-08-10');
+    await second.locator('input[id^="travel-country-"]').fill('India');
+    await modal.getByRole('button', { name: /^(Add passenger|যাত্রী যোগ করুন)$/ }).click();
+    await fillTravelDetails(modal);
+    await modal.getByRole('button', { name: /Continue to review|পেমেন্ট পর্যালোচনায় যান/ }).click();
+    await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText('1,500');
+    await modal.getByRole('button', { name: /Pay online|অনলাইনে পরিশোধ/ }).click();
+    await modal.getByRole('button', { name: /Mobile banking|মোবাইল ব্যাংকিং/ }).click();
+    await modal.getByRole('radio', { name: 'Nagad' }).check();
+    await modal.getByLabel(/I confirm the travel information|ভ্রমণের তথ্য/).check();
+    await modal.getByRole('button', { name: /Confirm preview payment|নমুনা পেমেন্ট নিশ্চিত করুন/ }).click();
+
+    const receiptPaper = modal.locator('.receipt-view__paper');
+    await expect(receiptPaper).toBeVisible();
+    const receipt = modal.getByTestId('travel-family-challan');
+    await expect(receipt.locator('tbody tr')).toHaveCount(2);
+    await expect(receipt).toContainText('1,500');
+    const firstPassenger = (await receipt.locator('tbody tr').first().locator('td').first().innerText()).trim();
+    await expect(modal.getByRole('button', { name: /View payment certificate|পেমেন্ট সনদ দেখুন/ })).toBeVisible();
+    await modal.getByRole('button', { name: /View payment certificate|পেমেন্ট সনদ দেখুন/ }).click();
+
+    const certificate = modal.getByTestId('payment-certificate-document');
+    await expect(certificate).toBeVisible();
+    await expect(certificate.getByRole('heading', { name: /Payment Certificate|পেমেন্ট সনদ/ })).toBeVisible();
+    await expect(certificate.getByTestId('payment-certificate-reference')).toContainText('SK-PC-' + paymentId);
+    await expect(certificate).toContainText(paymentId);
+    await expect(certificate).toContainText(firstPassenger);
+    await expect(certificate).toContainText('FRIEND SECOND');
+    await expect(certificate).toContainText('••••4321');
+    await expect(certificate).toContainText('Benapole');
+    await expect(certificate).toContainText('India');
+    await expect(certificate).toContainText('2026-11-20');
+    const certificateLines = certificate.getByTestId('payment-certificate-line');
+    await expect(certificateLines).toHaveCount(2);
+    await expect(certificateLines.nth(0)).toContainText(language === 'bn' ? '৳ ১,০০০' : '৳ 1,000');
+    await expect(certificateLines.nth(1)).toContainText(language === 'bn' ? '৳ ৫০০' : '৳ 500');
+    await expect(certificate.getByTestId('payment-certificate-total')).toContainText('1,500');
+    await expect(certificate).not.toContainText('SIMULATED_SUCCESS');
+    await expect(certificate).not.toContainText('TREASURY_SCROLLED');
+    await expect(certificate).not.toContainText('SIM-TOKEN');
+    await expect(receipt).toHaveCount(0);
+    await modal.getByRole('button', { name: /View receipt|রসিদ দেখুন/ }).click();
+    await expect(modal.getByTestId('travel-family-challan')).toBeVisible();
+    await modal.getByRole('button', { name: /View payment certificate|পেমেন্ট সনদ দেখুন/ }).click();
+    await expect(modal.getByTestId('payment-certificate-document')).toBeVisible();
+
+    const download = page.waitForEvent('download', { timeout: 20000 });
+    await modal.getByRole('button', { name: /Download|ডাউনলোড/ }).click();
+    const result = await download;
+    expect(result.suggestedFilename()).toBe('Payment-certificate-' + paymentId + '.pdf');
+    const path = await result.path();
+    expect(path).toBeTruthy();
+    const bytes = await readFile(path!);
+    expect(bytes.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(bytes.toString('latin1')).toContain('/Subtype /Image');
+    expect(bytes.toString('latin1')).toContain('Sohojkor Payment Certificate ' + paymentId);
+    expect(submitted).not.toBeNull();
+    const request = submitted as unknown as { service?: string; amountMinor?: number; details?: Record<string, unknown> };
+    expect(request.service).toBe('TRAVEL_TAX');
+    expect(request.amountMinor).toBe(150000);
+    expect(request.details?.passengers).toHaveLength(2);
+    expect(request.details?.travelDate).toBe('2026-11-20');
+    expect(submissionCount).toBe(1);
+  });
+}

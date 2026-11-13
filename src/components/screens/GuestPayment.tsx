@@ -1094,6 +1094,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           ? confirmedWalkInPayer.tin
           : signedInProfile?.tin ?? (ownAccountTax ? taxpayerTin : 'GUEST'),
         taxpayerTin,
+        taxpayerName: otherBatch ? undefined
+          : ownAccountTax ? accountName || undefined
+          : otherTaxpayerName.trim() || undefined,
         receiptMobile: receiptPhone,
         receiptEmail: normaliseReceiptEmail(receiptEmail),
         noticeReference: noticeReference.trim() || undefined,
@@ -1130,6 +1133,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             payerTin: newReceipt.payerTin,
             payerMode: otherBatch && additionalTaxpayers.length ? 'OTHER' : forSelf ? 'SELF' : 'OTHER',
             assessmentYear,
+            ...(newReceipt.taxpayerName ? { taxpayerName: newReceipt.taxpayerName } : {}),
             taxZone, taxCircle,
             receiptMobile: receiptPhone,
             receiptEmail: normaliseReceiptEmail(receiptEmail),

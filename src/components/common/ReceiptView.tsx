@@ -14,6 +14,8 @@ import { downloadDisplayedCertificate } from '../../services/receiptDocumentExpo
 import { validCertificateTransactionId } from '../../services/transactionId';
 import { groupReceiptAllocations } from '../../services/receiptAllocationGroups';
 import { TaxPayModal, TaxPayModalFooterTarget } from '../ui/TaxPayModal';
+import { PaymentCertificateDocument } from './PaymentCertificateDocument';
+import { buildPaymentCertificateModel } from '../../services/paymentCertificateModel';
 
 interface ReceiptViewProps {
   receipt: ChallanReceipt;
@@ -30,13 +32,18 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   const [showCertificate, setShowCertificate] = useState(false);
   const canViewCertificate = validCertificateTransactionId(receipt.paymentTransactionId) &&
     Boolean(receipt.completedAt) &&
-    (receipt.treasuryStatus === 'GATEWAY_SUCCESS' || receipt.treasuryStatus === 'TREASURY_SCROLLED');
+    (receipt.treasuryStatus === 'GATEWAY_SUCCESS' || receipt.treasuryStatus === 'TREASURY_SCROLLED') &&
+    buildPaymentCertificateModel(receipt) !== null;
   const isCertificate = certificate || (canViewCertificate && showCertificate);
   const paperRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(false);
   async function downloadCertificate() {
     if (!paperRef.current) return;
+    if (isCertificate && !canViewCertificate) {
+      setDownloadError(true);
+      return;
+    }
     setDownloading(true);
     setDownloadError(false);
     try {
@@ -232,6 +239,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         {bn ? 'সনদ ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।' : 'Unable to download the certificate. Try again.'}
       </p>}
       <div ref={paperRef} className="receipt-view__paper print-card" lang={language}>
+        {isCertificate ? <PaymentCertificateDocument receipt={receipt} language={language}/> : <>
         {batchLabel&&<div className="receipt-view__batch-meta" data-testid="receipt-batch-identity">
           <strong>{batchLabel}</strong><span className="break-all">{receipt.batchId}</span>
         </div>}
@@ -482,7 +490,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           </div>
         </div>
         ))}
-
+        </>}
       </div>
     </div>
   );
