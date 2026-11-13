@@ -159,3 +159,22 @@ test('Top five chart stays accessible at 320px with Bengali labels',async({page}
   await tabs.getByRole('button',{name:'সম্পর্ক'}).click();
   await expect(chart.getByRole('heading',{name:'উপকারভোগীর সম্পর্ক অনুযায়ী'})).toBeVisible();
 });
+
+test('returning from Top 5 clears the hidden relationship filter and restores the total',async({page})=>{
+  await page.goto(dashboard);
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  const chart=page.getByTestId('dashboard-payment-analytics');
+  await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
+  const beneficiary=chart.getByTestId('dashboard-beneficiary-breakdown');
+  const toggle=chart.getByTestId('dashboard-beneficiary-view');
+  await toggle.getByRole('button',{name:'Top 5'}).click();
+  await beneficiary.getByRole('combobox',{name:'Filter top beneficiaries by relationship'}).selectOption('family');
+  await expect(beneficiary.locator('.taxpay-bento-analytics__total')).toHaveText('৳ 0');
+  await expect(beneficiary.getByTestId('dashboard-reset-filters')).toBeVisible();
+  await toggle.getByRole('button',{name:'Relationships'}).click();
+  await expect(beneficiary.locator('.taxpay-bento-analytics__total')).toContainText('113,500');
+  await expect(beneficiary.getByTestId('dashboard-reset-filters')).toHaveCount(0);
+  await expect(beneficiary.getByRole('button',{name:/Unclassified/})).toContainText('113,500');
+  await toggle.getByRole('button',{name:'Top 5'}).click();
+  await expect(beneficiary.getByRole('combobox',{name:'Filter top beneficiaries by relationship'})).toHaveValue('all');
+});
