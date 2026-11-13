@@ -80,7 +80,7 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     await expect(otherDashboard).toBeVisible();
     await expect(otherDashboard.locator('[data-draft-id]').filter({ hasText: /travel tax/i })).toHaveCount(0);
 
-    // Reloaded same-owner draft opens at the safe passenger stage; identity confirmations are never restored.
+    // Reloaded same-owner draft opens at the safe passenger stage. Preview identities are redacted and must be re-entered and checked.
     await draftCard.getByRole('button', { name: 'Continue', exact: true }).click();
     const resumed = owner.getByRole('dialog', { name: 'Travel tax' });
     const resumedFlow = resumed.locator('.travel-flow');
@@ -88,8 +88,9 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     const passengers = resumed.locator('[data-passenger-id]');
     await expect(passengers).toHaveCount(2);
     const first = passengers.nth(0);
-    await expect(first.locator('#travel-passport-first')).toHaveValue('TEST123456');
+    await expect(first.locator('#travel-passport-first')).toHaveValue('');
     await expect(first).toHaveAttribute('data-complete', 'false');
+    await first.locator('#travel-passport-first').fill('TEST123456');
     await first.locator('#travel-lookup-first').click();
     await first.getByRole('button', { name: 'Add passenger', exact: true }).click();
 
@@ -97,8 +98,9 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     const resumedSecondId = await resumedSecond.getAttribute('data-passenger-id');
     expect(resumedSecondId).toBeTruthy();
     await resumedSecond.getByRole('button', { name: 'Edit', exact: true }).click();
-    await expect(resumedSecond.locator('#travel-passport-' + resumedSecondId)).toHaveValue('TEST230001');
+    await expect(resumedSecond.locator('#travel-passport-' + resumedSecondId)).toHaveValue('');
     await expect(resumedSecond).toHaveAttribute('data-complete', 'false');
+    await resumedSecond.locator('#travel-passport-' + resumedSecondId).fill('TEST230001');
     await resumedSecond.locator('#travel-lookup-' + resumedSecondId).click();
     await resumedSecond.getByRole('button', { name: 'Add passenger', exact: true }).click();
     await expect(resumed.locator('#travel-mobile')).toHaveValue('01712345678');
