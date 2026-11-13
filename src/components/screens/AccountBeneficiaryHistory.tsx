@@ -15,6 +15,51 @@ import {reuseRecordedPayment} from '../../services/paymentReuse';
 import {paymentDateInRange} from '../../services/paymentDateFilter';
 import {buildAccountBeneficiaryHistoryCsv} from '../../services/accountBeneficiaryHistoryCsv';
 
+type StoredHistoryFilters={
+  search:string;
+  tagFilter:'all'|PaymentTagGroup;
+  beneficiaryFilter:string;
+  yearFilter:string;
+  headFilter:string;
+  dateFrom:string;
+  dateTo:string;
+};
+const emptyHistoryFilters:StoredHistoryFilters={
+  search:'',tagFilter:'all',beneficiaryFilter:'all',yearFilter:'all',headFilter:'all',dateFrom:'',dateTo:''
+};
+const historyFiltersStorageKey=(ownerUid:string)=>'taxpay:beneficiary-history-filters:v1:'+ownerUid;
+function validHistoryDate(value:unknown):value is string {
+  if(typeof value!=='string'||!/^\\d{4}-\\d{2}-\\d{2}$/.test(value))return false;
+  const [year,month,day]=value.split('-').map(Number);
+  const parsed=new Date(year,month-1,day);
+  return parsed.getFullYear()===year&&parsed.getMonth()===month-1&&parsed.getDate()===day;
+}
+function readHistoryFilters(ownerUid:string):StoredHistoryFilters {
+  if(typeof window==='undefined'||!ownerUid)return {...emptyHistoryFilters};
+  try{
+    const stored=JSON.parse(window.sessionStorage.getItem(historyFiltersStorageKey(ownerUid))||'null') as
+      Partial<StoredHistoryFilters>|null;
+    if(!stored||typeof stored!=='object')return {...emptyHistoryFilters};
+    const tag=stored.tagFilter;
+    const tagFilter:StoredHistoryFilters['tagFilter']=tag==='all'||
+      typeof tag==='string'&&(PAYMENT_TAG_GROUPS as readonly string[]).includes(tag)
+        ?tag as StoredHistoryFilters['tagFilter']:'all';
+    const beneficiaryFilter=stored.beneficiaryFilter==='all'||
+      typeof stored.beneficiaryFilter==='string'&&/^\\d{12,13}$/.test(stored.beneficiaryFilter)
+        ?stored.beneficiaryFilter:'all';
+    return {
+      search:typeof stored.search==='string'?stored.search.slice(0,160):'',
+      tagFilter,
+      beneficiaryFilter,
+      yearFilter:stored.yearFilter==='all'||typeof stored.yearFilter==='string'&&/^\\d{4}-\\d{2}$/.test(stored.yearFilter)
+        ?stored.yearFilter:'all',
+      headFilter:typeof stored.headFilter==='string'?stored.headFilter.slice(0,160):'all',
+      dateFrom:validHistoryDate(stored.dateFrom)?stored.dateFrom:'',
+      dateTo:validHistoryDate(stored.dateTo)?stored.dateTo:''
+    };
+  }catch{return {...emptyHistoryFilters};}
+}
+
 /** History of SQL-recorded payments initiated by this signed-in payer.
  * Each beneficiary allocation keeps its own TIN, assessment year, head and
  * amount; never present the combined batch total as an individual's payment.
@@ -28,16 +73,24 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
   const [error,setError]=useState('');
   const [exportError,setExportError]=useState('');
   const [revision,setRevision]=useState(0);
-  const [search,setSearch]=useState('');
+  const [restoredFilters]=useState(()=>readHistoryFilters(ownerUid));
+  const [search,setSearch]=useState(restoredFilters.search);
   const [filtersOpen,setFiltersOpen]=useState(false);
-  const [tagFilter,setTagFilter]=useState<'all'|PaymentTagGroup>('all');
-  const [beneficiaryFilter,setBeneficiaryFilter]=useState('all');
-  const [yearFilter,setYearFilter]=useState('all');
-  const [headFilter,setHeadFilter]=useState('all');
-  const [dateFrom,setDateFrom]=useState('');
-  const [dateTo,setDateTo]=useState('');
+  const [tagFilter,setTagFilter]=useState<'all'|PaymentTagGroup>(restoredFilters.tagFilter);
+  const [beneficiaryFilter,setBeneficiaryFilter]=useState(restoredFilters.beneficiaryFilter);
+  const [yearFilter,setYearFilter]=useState(restoredFilters.yearFilter);
+  const [headFilter,setHeadFilter]=useState(restoredFilters.headFilter);
+  const [dateFrom,setDateFrom]=useState(restoredFilters.dateFrom);
+  const [dateTo,setDateTo]=useState(restoredFilters.dateTo);
   const [tags,setTags]=useState<{owner:string|null;status:'loading'|'ready'|'error';people:Beneficiary[]}>({owner:null,status:'loading',people:[]});
   const [selected,setSelected]=useState<BeneficiaryPaymentEntry|null>(null);
+  useEffect(()=>{
+    try{
+      window.sessionStorage.setItem(historyFiltersStorageKey(ownerUid),JSON.stringify({
+        search,tagFilter,beneficiaryFilter,yearFilter,headFilter,dateFrom,dateTo
+      }));
+    }catch{/* Private browsing may disable session storage; history remains usable. */}
+  },[ownerUid,search,tagFilter,beneficiaryFilter,yearFilter,headFilter,dateFrom,dateTo]);
   const bn=language==='bn';
   const tr=(en:string,other:string)=>bn?other:en;
   useEffect(()=>{
