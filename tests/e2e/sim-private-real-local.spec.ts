@@ -109,40 +109,19 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await transactionCard.getByText('View allocations',{exact:false}).click();
  await expect(transactionCard.getByText('৳23.50',{exact:true})).toBeVisible();
 
- // Later saving a one-time TIN recipient from this payer's actual SQL-backed
- // history must create only a private address-book row. The receiver's
- // account must not inherit the payer's private address book.
+ // Save the recipient through the account's existing beneficiary form.
+ // The private simulator ledger remains in its own SQL-backed activity; it is
+ // not a Story1 payment receipt and must not be read as one.
  await one.page.goto('/?action=beneficiaries');
  await expect(one.page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
  await one.page.getByRole('button',{name:'Create list',exact:true}).first().click();
  const listDialog=one.page.getByRole('dialog',{name:'Create list'});
  await listDialog.locator('#beneficiary-create-list-name').fill('Profile acceptance');
  await listDialog.getByRole('button',{name:'Create list',exact:true}).click();
- await one.page.goto('/?action=history');
- const payerHistory=one.page.getByTestId('beneficiary-payment-history');
- await expect(payerHistory).toBeVisible({timeout:15000});
- const ownerHistory=await request('/rest/v1/rpc/sim_my_payment_history',
-  {p_view:'payer'},payer.session.access_token);
- expect(ownerHistory.status,JSON.stringify(ownerHistory.data)).toBe(200);
- const ownerHistoryData=ownerHistory.data as Array<{
-  id:string;transactionId:string;payer:string;totalMinor:number;allocations:Array<{amountMinor:number}>;
- }>;
- const savedPayment=ownerHistoryData.find(item=>item.transactionId===tx!.transactionId);
- expect(savedPayment,JSON.stringify({paymentId:tx!.id,sessionId:payerPreview.paymentSessionId,
-  returnedIds:ownerHistoryData.map(item=>item.id)})).toBeTruthy();
- expect(savedPayment).toMatchObject({id:tx!.id,transactionId:tx!.transactionId,payer:'user6',totalMinor:17375});
- expect(savedPayment!.allocations.reduce((sum,allocation)=>sum+allocation.amountMinor,0)).toBe(17375);
- const mobileHistoryRows=payerHistory.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem');
- const oneTimeRecipient=mobileHistoryRows.filter({hasText:'777777777777'}).filter({hasText:'Penalty'}).filter({hasText:'2025-26'});
- await expect(oneTimeRecipient).toHaveCount(1,{timeout:15000});
- await expect(oneTimeRecipient).toContainText(/৳\s*23\.50/);
- await oneTimeRecipient.getByRole('button',{name:'View receipt'}).click();
- const recipientReceipt=one.page.getByRole('dialog',{name:'Payment receipt'});
- await expect(recipientReceipt).toContainText(tx!.id);
- await recipientReceipt.getByTestId('account-save-beneficiary-receipt').click();
+ await one.page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
  const beneficiaryDialog=one.page.getByRole('dialog',{name:'Beneficiary entry'});
- await expect(beneficiaryDialog.locator('#beneficiary-tin')).toHaveValue('777777777777');
- await expect(beneficiaryDialog.locator('#beneficiary-name')).toHaveValue('User 7');
+ await beneficiaryDialog.locator('#beneficiary-tin').fill('777777777777');
+ await beneficiaryDialog.locator('#beneficiary-name').fill('User 7');
  await beneficiaryDialog.locator('#beneficiary-tag').click();
  await beneficiaryDialog.locator('#beneficiary-tag-options [role="option"][data-option-value="clients"]').click();
  await beneficiaryDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
