@@ -87,7 +87,9 @@ for (const language of ['en', 'bn'] as const) {
     await expect(certificate).toContainText('Benapole');
     await expect(certificate).toContainText('India');
     await expect(certificate).toContainText(selectedTravelDate);
-    const certificateLines = certificate.getByTestId('payment-certificate-line');
+    const certificateLines = (page.viewportSize()?.width ?? 0) <= 650
+      ? certificate.getByTestId('payment-certificate-mobile-lines').getByTestId('payment-certificate-line-card')
+      : certificate.getByTestId('payment-certificate-allocation-table').getByTestId('payment-certificate-line-row');
     await expect(certificateLines).toHaveCount(2);
     await expect(certificateLines.nth(0)).toContainText(language === 'bn' ? '৳ ১,০০০' : '৳ 1,000');
     await expect(certificateLines.nth(1)).toContainText(language === 'bn' ? '৳ ৫০০' : '৳ 500');
