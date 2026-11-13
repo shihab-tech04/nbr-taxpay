@@ -49,7 +49,7 @@ function sessionFor(){
   };
 }
 
-async function mockDashboardAccount(page:Page,profile:'user1'|'user2'){
+async function mockDashboardAccount(page:Page,profile:'user1'|'user3'){
   await page.addInitScript(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{
     key:'sb-'+projectRef+'-auth-token',value:sessionFor(),
   });
@@ -85,7 +85,7 @@ async function mockDashboardAccount(page:Page,profile:'user1'|'user2'){
         const allocations=payment.allocations.filter(allocation=>allocation.beneficiary===profile);
         return allocations.length?[{...payment,allocations}]:[];
       });
-      const payerRows=profile==='user1'?[payments[0]]:[];
+      const payerRows=payments.filter(payment=>payment.payer===profile);
       return json(body.p_view==='beneficiary'?visible:payerRows);
     }
     if(url.pathname==='/rest/v1/taxpay_beneficiary_lists'||url.pathname==='/rest/v1/taxpay_beneficiaries'){
@@ -131,7 +131,7 @@ test('dashboard shows payer parent once, self/other allocations, and received li
 });
 
 test('recipient-only account shows received allocations without a zero payer or spending breakdown',async({page})=>{
-  await mockDashboardAccount(page,'user2');
+  await mockDashboardAccount(page,'user3');
   await page.setViewportSize({width:320,height:820});
   await page.goto('/?action=taxpayer_home');
   const summary=page.getByTestId('account-workflow-summary');
@@ -139,7 +139,7 @@ test('recipient-only account shows received allocations without a zero payer or 
   await expect(totals.getByTestId('dashboard-payer-total')).toHaveText('—');
   await expect(totals.getByTestId('dashboard-self-paid-total')).toHaveText('—');
   await expect(totals.getByTestId('dashboard-paid-for-others-total')).toHaveText('—');
-  await expect(totals.getByTestId('dashboard-received-total')).toHaveText('৳ 200.00');
+  await expect(totals.getByTestId('dashboard-received-total')).toHaveText('৳ 10.00');
   await expect(summary.getByTestId('account-beneficiary-spending')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
