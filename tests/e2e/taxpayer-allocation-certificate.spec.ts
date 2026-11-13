@@ -33,50 +33,55 @@ test.beforeEach(async ({ page }) => {
   }));
 });
 
-test('shared receipt reconciles and displays every taxpayer allocation across responsive layouts', async ({ page }) => {
+test('synced certificate displays every taxpayer allocation across responsive layouts', async ({ page }) => {
   await page.goto('/?action=payment_details&transactionId=' + transactionId);
-  const paper = page.locator('.receipt-view__paper');
-  await expect(paper).toBeVisible();
-  await expect(paper).toContainText('ACS-2026-00130');
-  await expect(paper).toContainText('user8');
-  await expect(paper).toContainText('user9');
-  await expect(paper).toContainText('1111111111111');
-  await expect(paper).toContainText('9999999999999');
-  await expect(paper).toContainText('Tax with Return');
-  await expect(paper).toContainText('Penalty & Simple Interest');
-  await expect(paper).toContainText('123.45');
-  await expect(paper).toContainText('6.55');
-  await expect(paper).toContainText('৳ 130');
-  await expect(page.getByTestId('receipt-breakdown-mobile')).toHaveCount(0);
-  await expect(page.getByTestId('receipt-breakdown-table')).toHaveCount(0);
+  const certificate = page.getByTestId('payment-certificate-document');
+  await expect(certificate).toBeVisible();
+  await expect(certificate.getByRole('heading', { name: 'Payment Certificate' })).toBeVisible();
+  await expect(page.getByTestId('payment-certificate-reference')).toContainText('SK-PC-' + transactionId);
+  await expect(certificate).toContainText('Sample payer');
+  await expect(certificate).toContainText('1111111111111');
+  await expect(certificate).toContainText('9999999999999');
+  await expect(certificate).toContainText('Tax with Return');
+  await expect(certificate).toContainText('Penalty & Simple Interest');
+  await expect(certificate).toContainText('2026-27');
+  await expect(certificate).toContainText('৳ 123.45');
+  await expect(certificate).toContainText('৳ 6.55');
+  await expect(page.getByTestId('payment-certificate-total')).toHaveText('৳ 130');
 
   if ((page.viewportSize()?.width ?? 0) <= 650) {
-    const cards = page.getByTestId('receipt-allocation-mobile');
+    const cards = page.getByTestId('payment-certificate-mobile-lines');
     await expect(cards).toBeVisible();
-    await expect(cards.locator('article')).toHaveCount(2);
-    await expect(page.getByTestId('receipt-allocation-table')).toBeHidden();
+    await expect(cards.getByTestId('payment-certificate-line-card')).toHaveCount(2);
+    await expect(page.getByTestId('payment-certificate-allocation-table-wrap')).toBeHidden();
   } else {
-    const table = page.getByTestId('receipt-allocation-table');
+    const table = page.getByTestId('payment-certificate-allocation-table');
     await expect(table).toBeVisible();
-    await expect(table.locator('tbody tr')).toHaveCount(2);
-    await expect(page.getByTestId('receipt-allocation-mobile')).toBeHidden();
+    await expect(table.getByTestId('payment-certificate-line-row')).toHaveCount(2);
+    await expect(page.getByTestId('payment-certificate-mobile-lines')).toBeHidden();
   }
 });
 
-test('shared receipt allocation labels and values stay in Bengali', async ({ page }) => {
+test('certificate content and download remain Bengali and produce PDF bytes', async ({ page }) => {
   await page.goto('/?action=payment_details&transactionId=' + transactionId + '&lang=bn');
   const paper = page.locator('.receipt-view__paper');
+  const certificate = page.getByTestId('payment-certificate-document');
   await expect(paper).toBeVisible();
   await expect(paper).toHaveAttribute('lang', 'bn');
-  await expect(paper.getByRole('heading', { name: 'পেমেন্ট সনদ' })).toBeVisible();
-  await expect(paper.getByTestId('payment-certificate-reference')).toContainText('SK-PC-' + transactionId);
-  await expect(paper).toContainText('করদাতাভিত্তিক পেমেন্ট বরাদ্দ');
-  await expect(paper).toContainText('user8');
-  await expect(paper).toContainText('user9');
-  await expect(paper).toContainText('রিটার্নের সাথে কর');
-  await expect(paper).toContainText('জরিমানা ও সরল সুদ');
-  await expect(paper).toContainText('৳ ১২৩.৪৫');
-  await expect(paper).toContainText('৳ ৬.৫৫');
+  await expect(certificate.getByRole('heading', { name: 'পেমেন্ট সনদ' })).toBeVisible();
+  await expect(certificate).toContainText('প্রাপক ও পেমেন্ট বরাদ্দ');
+  await expect(certificate).toContainText('user8');
+  await expect(certificate).toContainText('user9');
+  await expect(certificate).toContainText('রিটার্নের সাথে কর');
+  await expect(certificate).toContainText('জরিমানা ও সরল সুদ');
+  await expect(certificate).toContainText('৳ ১২৩.৪৫');
+  await expect(certificate).toContainText('৳ ৬.৫৫');
+  if ((page.viewportSize()?.width ?? 0) <= 650) {
+    await expect(page.getByTestId('payment-certificate-mobile-lines').getByTestId('payment-certificate-line-card')).toHaveCount(2);
+  } else {
+    await expect(page.getByTestId('payment-certificate-allocation-table').getByTestId('payment-certificate-line-row')).toHaveCount(2);
+  }
+
   const download = page.waitForEvent('download', { timeout: 20000 });
   await page.getByRole('button', { name: 'ডাউনলোড', exact: true }).click();
   const result = await download;
@@ -89,7 +94,7 @@ test('shared receipt allocation labels and values stay in Bengali', async ({ pag
   expect(bytes.toString('latin1')).toContain('Sohojkor Payment Certificate ' + transactionId);
 });
 
-test('same taxpayer heads group into one receipt section with correct subtotal', async ({ page }) => {
+test('certificate retains every beneficiary head and year in its reconciled total', async ({ page }) => {
   const record = { ...allocationRecord, amountMinor: 16000, details: {
     ...allocationRecord.details, lines: [
       { beneficiary: 'user8', taxpayerTin: '1111111111111', category: 'PENALTY', assessmentYear: '2026-27', amountMinor: 12345 },
@@ -102,26 +107,18 @@ test('same taxpayer heads group into one receipt section with correct subtotal',
     body: JSON.stringify({ success: true, data: { items: [record], total: 1, page: 1, perPage: 100 } })
   }));
   await page.goto('/?action=payment_details&transactionId=' + transactionId);
-  const paper = page.locator('.receipt-view__paper');
-  await expect(paper).toContainText('1111111111111');
-  await expect(paper).toContainText('9999999999999');
-  await expect(paper).toContainText('123.45');
-  await expect(paper).toContainText('6.55');
-  await expect(paper.locator('.receipt-view__amount strong')).toHaveText('৳ 160');
-  const table = page.getByTestId('receipt-allocation-table');
-  const cards = page.getByTestId('receipt-allocation-mobile');
+  const certificate = page.getByTestId('payment-certificate-document');
+  await expect(certificate).toContainText('1111111111111');
+  await expect(certificate).toContainText('9999999999999');
+  await expect(certificate).toContainText('Tax with Return');
+  await expect(certificate).toContainText('Advance Income Tax');
+  await expect(certificate).toContainText('2025-26');
+  await expect(page.getByTestId('payment-certificate-total')).toHaveText('৳ 160');
   if ((page.viewportSize()?.width ?? 0) <= 650) {
-    await expect(cards).toBeVisible();
-    await expect(cards.locator('article')).toHaveCount(2);
-    await expect(cards.locator('article').first().getByTestId('receipt-taxpayer-head-row')).toHaveCount(2);
-    await expect(cards.locator('article').first()).toContainText('Taxpayer subtotal');
-    await expect(cards.locator('article').first()).toContainText('153.45');
+    await expect(page.getByTestId('payment-certificate-mobile-lines').getByTestId('payment-certificate-line-card')).toHaveCount(3);
   } else {
-    await expect(table).toBeVisible();
-    await expect(table.locator('tbody tr')).toHaveCount(3);
-    await expect(table.locator('td[rowspan="2"]')).toHaveCount(1);
-    await expect(table.locator('tbody td[data-testid="receipt-taxpayer-cell"]')).toHaveCount(2);
-    await expect(table.locator('td[rowspan="2"]')).toContainText('153.45');
+    const table = page.getByTestId('payment-certificate-allocation-table');
+    await expect(table.getByTestId('payment-certificate-line-row')).toHaveCount(3);
     await expect(table.locator('tbody tr').nth(1).locator('td').last()).toHaveCSS('text-align', 'right');
   }
 });
