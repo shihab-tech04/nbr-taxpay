@@ -419,7 +419,7 @@ test('Travel Tax: duplicate passports cannot be confirmed or included in final t
   await expect(second.getByLabel('Passport number')).toHaveAttribute('aria-invalid','true');
   await expect(second.getByLabel('Passport number')).toBeFocused();
   await expect(second).toHaveAttribute('data-complete','false');
-  await expect(second.getByText('Passport already added.',{exact:true})).toBeVisible();
+  await expect(second.locator('.travel-flow__inline-error')).toContainText('Passport already added.');
   await expect(modal.getByRole('button',{name:'Add another passenger'})).toHaveCount(0);
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
@@ -508,7 +508,12 @@ test('Travel Tax: medical referral is not an online tax exemption',async({page})
   const help = modal.getByRole('button',{name:'What is manual assessment?'});
   await help.click();
   await expect(modal.getByRole('tooltip')).toContainText('does not approve a tax exemption online');
-  await expect(modal.getByRole('button',{name:'Add passenger'})).toBeDisabled();
+  const medicalPassenger=modal.getByTestId('travel-passenger-list').locator('.travel-flow__person').first();
+  const addPassenger=modal.getByRole('button',{name:'Add passenger',exact:true});
+  await expect(addPassenger).toBeEnabled();
+  await addPassenger.click();
+  await expect(modal.getByRole('alert')).toContainText('medical exemption requires assessment at the departure port.');
+  await expect(medicalPassenger).toHaveAttribute('data-complete','false');
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
   await modal.locator('#travel-medical-first').uncheck();
