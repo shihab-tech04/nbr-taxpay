@@ -29,7 +29,7 @@ function downloadDisplayedPaper(filename: string, documentTitle: string) {
 }
 
 /** Export the shared receipt surface, including Bengali text and all allocations. */
-export async function downloadDisplayedCertificate(receipt: ChallanReceipt, paper: HTMLElement) {
+export async function downloadDisplayedCertificate(receipt: ChallanReceipt, paper: HTMLElement, certificate = true) {
   const title = String(receipt.paymentTransactionId || receipt.challanNo)
     .replace(/[^a-zA-Z0-9-]/g, '').slice(0, 80);
   const [{ default: renderPaper }, { jsPDF }] = await Promise.all([
@@ -70,8 +70,8 @@ export async function downloadDisplayedCertificate(receipt: ChallanReceipt, pape
     pdf.addImage(page, 'PNG', margin, margin, width, height / pixelsPerMm);
     start = end;
   }
-  pdf.setProperties({ title: 'Sohojkor Payment Certificate ' + title });
-  pdf.save('Payment-certificate-' + title + '.pdf');
+  pdf.setProperties({ title: (certificate ? 'Sohojkor Payment Certificate ' : 'Sohojkor Payment Receipt ') + title });
+  pdf.save((certificate ? 'Payment-certificate-' : 'Payment-receipt-') + title + '.pdf');
 }
 
 /** Save a selected certificate *summary*, never fabricate a payment receipt. */

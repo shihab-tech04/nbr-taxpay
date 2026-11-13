@@ -11,6 +11,7 @@ import { formatCurrency } from '../../services/numberFormat';
 import { useTaxState } from '../../services/taxState';
 import { MASTER_PAYMENT_HEADS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { downloadDisplayedCertificate } from '../../services/receiptDocumentExport';
+import { validCertificateTransactionId } from '../../services/transactionId';
 import { groupReceiptAllocations } from '../../services/receiptAllocationGroups';
 import { TaxPayModal, TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 
@@ -26,6 +27,11 @@ interface ReceiptViewProps {
 
 export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment, certificate = false }) => {
   const { language, navigate } = useTaxState();
+  const [showCertificate, setShowCertificate] = useState(false);
+  const canViewCertificate = validCertificateTransactionId(receipt.paymentTransactionId) &&
+    Boolean(receipt.completedAt) &&
+    (receipt.treasuryStatus === 'GATEWAY_SUCCESS' || receipt.treasuryStatus === 'TREASURY_SCROLLED');
+  const isCertificate = certificate || (canViewCertificate && showCertificate);
   const paperRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(false);
@@ -34,14 +40,14 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     setDownloading(true);
     setDownloadError(false);
     try {
-      await downloadDisplayedCertificate(receipt, paperRef.current);
+      await downloadDisplayedCertificate(receipt, paperRef.current, isCertificate);
     } catch {
       setDownloadError(true);
     } finally {
       setDownloading(false);
     }
   }
-  const certificateReference = certificate ? 'SK-PC-' + receipt.paymentTransactionId : null;
+  const certificateReference = isCertificate ? 'SK-PC-' + receipt.paymentTransactionId : null;
   const footerTarget = useContext(TaxPayModalFooterTarget);
   const travelPreview = receipt.paymentCategory === 'TRAVEL_TAX' && !!receipt.isSimulatedDemo;
   const recordedAt = new Date(receipt.completedAt || receipt.createdAt);
@@ -192,13 +198,19 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
         onClick={onNewPayment}>{bn ? 'নতুন পেমেন্ট' : 'New payment'}</button>}
       <div className="receipt-view__action-group">
+        {canViewCertificate && !certificate && <button type="button"
+          className="receipt-view__action receipt-view__action--secondary"
+          onClick={() => { setDownloadError(false); setShowCertificate(value => !value); }}>
+          {showCertificate ? (bn ? 'রসিদ দেখুন' : 'View receipt')
+            : (bn ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate')}
+        </button>}
         <button type="button" className="receipt-view__action receipt-view__action--secondary"
           disabled={downloading} onClick={downloadCertificate}>
           <Download size={18} aria-hidden="true" /><span>{labels.export}</span>
         </button>
         <button type="button" className="receipt-view__action receipt-view__action--primary"
           onClick={() => window.print()}>
-          <Printer size={18} aria-hidden="true" /><span>{labels.print}</span>
+          <Printer size={18} aria-hidden="true" /><span>{isCertificate ? (bn ? 'সনদ প্রিন্ট' : 'Print certificate') : labels.print}</span>
         </button>
       </div>
     </div>
@@ -225,8 +237,8 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         </div>}
         <header className="receipt-view__summary">
           <div className="receipt-view__summary-copy">
-            <p className="receipt-view__eyebrow">{certificate ? (bn ? 'সহজকর' : 'Sohojkor') : travelPreview ? (bn ? 'নমুনা পেমেন্ট রেকর্ড' : 'Simulated payment record') : (bn ? 'পেমেন্ট রেকর্ড' : 'Payment record')}</p>
-            <h3>{certificate ? (bn ? 'পেমেন্ট সনদ' : 'Payment Certificate') : travelPreview ? (bn ? 'সম্মিলিত ভ্রমণ করের বিবরণ' : 'Combined Travel Tax details') : (bn ? 'রসিদের বিবরণ' : 'Receipt details')}</h3>
+            <p className="receipt-view__eyebrow">{isCertificate ? (bn ? 'সহজকর' : 'Sohojkor') : travelPreview ? (bn ? 'নমুনা পেমেন্ট রেকর্ড' : 'Simulated payment record') : (bn ? 'পেমেন্ট রেকর্ড' : 'Payment record')}</p>
+            <h3>{isCertificate ? (bn ? 'পেমেন্ট সনদ' : 'Payment Certificate') : travelPreview ? (bn ? 'সম্মিলিত ভ্রমণ করের বিবরণ' : 'Combined Travel Tax details') : (bn ? 'রসিদের বিবরণ' : 'Receipt details')}</h3>
             <p className="receipt-view__summary-subtitle">
               {serviceSummary}
             </p>
@@ -261,7 +273,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             </div>
           </div>
 
-          {!certificate && !travelPreview && <div>
+          {!isCertificate && !travelPreview && <div>
             <span className="text-slate-700 block">{embedded ? (bn ? 'টোকেন' : 'Token') : labels.token}:</span>
             <span className="font-mono-plex font-bold text-sm text-slate-900 mt-0.5 block">
               {receipt.tokenNumber}
@@ -316,25 +328,25 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
 
           <div className="space-y-2">
             <h3 className="receipt-view__section-title">
-              {labels.treasurySection}
+              {isCertificate ? (bn ? 'পেমেন্টের তথ্য' : 'Payment details') : labels.treasurySection}
             </h3>
             <div className="receipt-view__detail">
               <span className="text-slate-700">{labels.paymentMethod}:</span>
               <span className="col-span-2 font-medium text-slate-900">{paymentMethodLabels}</span>
             </div>
-            {!certificate && !travelPreview && <div className="receipt-view__detail">
+            {!isCertificate && !travelPreview && <div className="receipt-view__detail">
               <span className="text-slate-700">{labels.transaction}:</span>
               <span className="col-span-2 font-mono-plex text-slate-700">{receipt.gatewayTransactionId}</span>
             </div>}
-            {!certificate && !travelPreview && receipt.taxEventId && <div className="receipt-view__detail">
+            {!isCertificate && !travelPreview && receipt.taxEventId && <div className="receipt-view__detail">
               <span className="text-slate-700">{bn ? 'কর ইভেন্ট আইডি:' : 'Tax event ID:'}</span>
               <span className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.taxEventId}</span>
             </div>}
-            {(certificate || !travelPreview) && receipt.paymentTransactionId && <div className="receipt-view__detail">
+            {(isCertificate || !travelPreview) && receipt.paymentTransactionId && <div className="receipt-view__detail">
               <span className="text-slate-700">{bn ? 'পেমেন্ট ট্রানজেকশন আইডি:' : 'Payment transaction ID:'}</span>
               <span className="col-span-2 font-mono-plex text-slate-700 break-all">{receipt.paymentTransactionId}</span>
             </div>}
-            {!certificate && !travelPreview && <div className="receipt-view__detail">
+            {!isCertificate && !travelPreview && <div className="receipt-view__detail">
               <span className="text-slate-700">{labels.scroll}:</span>
               <span className="col-span-2 font-mono-plex font-semibold text-emerald-900">
                 {receipt.isSimulatedDemo ? (bn ? 'ট্রেজারি স্ক্রল ইস্যু হয়নি' : 'No Treasury scroll issued') : receipt.treasuryScrollNo || labels.pendingScroll}
