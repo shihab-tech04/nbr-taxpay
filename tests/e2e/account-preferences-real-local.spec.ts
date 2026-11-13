@@ -138,9 +138,9 @@ test('real account restores its own language and selected beneficiary list in a 
   expect((await authUser(aSession.access_token)).user_metadata?.taxpay_language).toBe('bn');
   const second=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
   const again=await second.newPage();
-  await expect(again).toHaveViewportSize(viewport);
+  expect(again.viewportSize()).toEqual(viewport);
   await again.goto(url(aSession));
-  await expect(again).toHaveViewportSize(viewport);
+  expect(again.viewportSize()).toEqual(viewport);
   await expect(again.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(again.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
   if(await again.locator('#beneficiary-list').count()===0)
@@ -166,7 +166,7 @@ test('real account restores its own language and selected beneficiary list in a 
   const third=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
   const another=await third.newPage();
   await another.goto(url(b.session));
-  await expect(another).toHaveViewportSize(viewport);
+  expect(another.viewportSize()).toEqual(viewport);
   await expect(another.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(another.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
   await expect(another.locator('#beneficiary-list')).toHaveCount(0);
@@ -206,7 +206,7 @@ test('real account restores its own language and selected beneficiary list in a 
   await again.locator('.citizen-dialog-signout').click();
   await again.waitForURL(ownerASignedOutUrl,{waitUntil:'load',timeout:15000});
   await again.goto(url(b.session));
-  await expect(again).toHaveViewportSize(viewport);
+  expect(again.viewportSize()).toEqual(viewport);
   await expect(again.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(again.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
   await expect(again.locator('#beneficiary-list')).toHaveCount(0);
