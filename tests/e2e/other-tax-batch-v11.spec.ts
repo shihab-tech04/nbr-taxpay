@@ -570,14 +570,21 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
   const document = dialog.locator('.receipt-view__paper');
   await expect(document).toContainText('111111111111');
   await expect(document).toContainText('222222222222');
+  await expect(document).toContainText('৳ 50');
   await dialog.getByRole('button', { name: 'View payment certificate' }).click();
-  await expect(document.getByRole('heading', { name: 'Payment Certificate' })).toBeVisible();
+  const certificate = dialog.getByTestId('payment-certificate-document');
+  await expect(certificate.getByRole('heading', { name: 'Payment Certificate' })).toBeVisible();
   await expect(document.getByTestId('payment-certificate-reference'))
     .toContainText('SK-PC-00000000-0000-4000-8000-000000000102');
-  await expect(document).toContainText('111111111111');
-  await expect(document).toContainText('222222222222');
-  await expect(document).toContainText('2025-26');
-  await expect(document).toContainText('৳ 50');
+  await expect(certificate).toContainText('111111111111');
+  await expect(certificate).toContainText('222222222222');
+  await expect(certificate).toContainText('2026-27');
+  await expect(certificate).toContainText('2025-26');
+  await expect(certificate).toContainText('৳ 15');
+  await expect(certificate).toContainText('৳ 35');
+  await expect(dialog.getByTestId('payment-certificate-total')).toContainText('৳ 50');
+  await expect(certificate).not.toContainText('SIMULATED_SUCCESS');
+  expect(submitted).toHaveLength(1);
   await dialog.getByRole('button', { name: 'View receipt' }).click();
   await expect(document.getByTestId('payment-certificate-reference')).toHaveCount(0);
 });
