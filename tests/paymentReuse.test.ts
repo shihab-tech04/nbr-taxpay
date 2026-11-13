@@ -78,8 +78,10 @@ test('Travel Tax reuse copies itinerary and people but never treats masked passp
      passengers:[{name:'Test Passenger',passportMasked:'••••1234',nationality:'BD' as const,
        country:'Bangladesh',ageBand:'ADULT' as const,age:34,amount:30}]
    }};
+ const before=JSON.stringify(travel);
  const draft=reuseRecordedPayment([travel],'owner','1234567890123','travel-origin');
  assert.equal(draft.service,'TRAVEL_TAX');
+ assert.equal(draft.sourcePaymentId,'travel-origin');
  assert.equal(draft.formPayload.travelDate,'');
  assert.equal(draft.formPayload.port,'Benapole');
  assert.equal(draft.formPayload.destination,'India');
@@ -89,6 +91,9 @@ test('Travel Tax reuse copies itinerary and people but never treats masked passp
  assert.deepEqual(people.map(p=>p.birthDate),['']);
  assert.deepEqual(people.map(p=>p.identitySource),['PENDING']);
  assert.equal(JSON.stringify(draft).includes('••••1234'),false);
+ for(const priorDocumentRef of ['SIM-1','SIM-token','SIM-TXN'])
+  assert.equal(JSON.stringify(draft.formPayload).includes(priorDocumentRef),false);
+ assert.equal(JSON.stringify(travel),before);
  assert.throws(()=>reuseRecordedPayment([{...travel,
    travelDetails:{...travel.travelDetails,passengers:[{...travel.travelDetails.passengers[0],amount:0}]}
  }],'owner','1234567890123','travel-origin'),/cannot be reconciled/);
