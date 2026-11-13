@@ -1,5 +1,6 @@
 import {expect,test,type Page} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 
 const backend='https://nbr-taxpay-test.invalid';
@@ -253,6 +254,147 @@ for(const language of ['en','bn'] as const){
       const savedReceipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
       await expect(savedReceipt.getByTestId('account-save-beneficiary-receipt')).toHaveCount(0);
       await expect(savedReceipt).toContainText('012345678901');
+    }finally{await context.close();}
+  });
+}
+
+
+for(const language of ['en','bn'] as const){
+  test('real Auth payer saves one history allocation from original saved Taxpayer SQL payment without mocking ('+language+')',async({browser})=>{
+    test.setTimeout(150_000);
+    const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL;
+    const key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+    const dsn=process.env.TAXPAY_LOCAL_PG_DSN;
+    if(!raw||!key||!dsn)throw new Error('Disposable Auth, PostgREST and SQL are required.');
+    const endpoint=new URL(raw),database=new URL(dsn);
+    if(endpoint.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(endpoint.hostname)||
+      !['localhost','127.0.0.1','[::1]'].includes(database.hostname))
+      throw new Error('Refusing a hosted or non-loopback payment-history test.');
+    const psql=(query:string)=>{
+      const run=spawnSync('psql',['-X','-At','-v','ON_ERROR_STOP=1','-c',query],{
+        encoding:'utf8',timeout:10_000,
+        env:{...process.env,PGHOST:database.hostname,PGPORT:database.port||'5432',
+          PGUSER:decodeURIComponent(database.username),PGPASSWORD:decodeURIComponent(database.password),
+          PGDATABASE:database.pathname.slice(1)}
+      });
+      if(run.status!==0)throw new Error((run.stderr||'SQL fixture failed').slice(0,500));
+      return run.stdout.trim();
+    };
+    const quote=(value:string)=>"'"+value.replaceAll("'","''")+"'";
+    const createAccount=async()=>{
+      const response=await fetch(new URL('/auth/v1/signup',endpoint.origin),{
+        method:'POST',headers:{apikey:key,'content-type':'application/json'},
+        body:JSON.stringify({email:'source-history-'+randomUUID()+'@example.invalid',
+          password:randomBytes(32).toString('base64url')})
+      });
+      expect(response.status).toBe(200);
+      const body=await response.json() as {user:{id:string};session?:{access_token:string;refresh_token:string;expires_at?:number};
+        access_token?:string;refresh_token?:string;expires_at?:number};
+      const session=body.session??body;
+      expect(body.user.id).toMatch(/^[0-9a-f-]{36}$/i);
+      expect(session.access_token).toBeTruthy();
+      return {id:body.user.id,session:session as {access_token:string;refresh_token:string;expires_at?:number}};
+    };
+    const owner=await createAccount(),other=await createAccount();
+    const payerId=language==='en'?'user27':'user29';
+    const recipientId=language==='en'?'user28':'user30';
+    const recipientTin=language==='en'?'909000000028':'909000000030';
+    const selfTin=language==='en'?'909000000027':'909000000029';
+    const paymentId=randomUUID(),idempotencyKey=randomUUID(),authorizationId=randomUUID();
+    const payerSessionId=psql(
+      "SELECT payment_session_id FROM taxpay_guest_private.demo_profiles WHERE demo_id="+quote(payerId)
+    );
+    expect(payerSessionId).toMatch(/^[0-9a-f-]{36}$/i);
+    const lines=[
+      {beneficiary:recipientId,taxpayerTin:recipientTin,category:'ADVANCE_TAX',
+        assessmentYear:'2026-27',amountMinor:1500,authorizationId},
+      {beneficiary:payerId,taxpayerTin:selfTin,category:'PENALTY',
+        assessmentYear:'2025-26',amountMinor:3500}
+    ];
+    const sourceData={origin:'TAXPAY_UI',idempotencyKey,sessionId:payerSessionId,
+      service:'OTHER_TAX_PAYMENT',amountMinor:5000,
+      details:{payerId,payerMode:'OTHER',payerName:'Original payment owner',lines}};
+    // Authoritative original payment and existing approver-assigned account
+    // binding are inserted in disposable PostgreSQL only.
+    psql(
+      "UPDATE auth.users SET email_confirmed_at=coalesce(email_confirmed_at,now()) WHERE id="+quote(owner.id)+"::uuid;"+
+      "INSERT INTO public.sim_payment_account_bindings(user_id,owner_uid,assigned_by) VALUES("+
+        quote(payerId)+","+quote(owner.id)+"::uuid,"+quote(owner.id)+"::uuid);"+
+      "INSERT INTO public.demo_authorization_requests(id,payer_id,taxpayer_id,status,confirmed_at) VALUES("+
+        quote(authorizationId)+"::uuid,"+quote(payerId)+","+quote(recipientId)+",'ACTIVE',now());"+
+      "INSERT INTO demo_payment.story_payments"+
+      "(id,idempotency_key,session_id,service_code,amount_minor,data,status) VALUES("+
+        quote(paymentId)+"::uuid,"+quote(idempotencyKey)+"::uuid,"+
+        quote(payerSessionId)+"::uuid,'OTHER_TAX_PAYMENT',5000,"+
+        quote(JSON.stringify(sourceData))+"::jsonb,'SIMULATED_SUCCESS');"
+    );
+    const rpc=async(name:string,session:typeof owner.session,payload:Record<string,unknown>)=>{
+      const response=await fetch(new URL('/rest/v1/rpc/'+name,endpoint.origin),{
+        method:'POST',headers:{apikey:key,Authorization:'Bearer '+session.access_token,
+          'content-type':'application/json'},body:JSON.stringify(payload)});
+      expect(response.status,name).toBe(200);
+      return await response.json() as unknown;
+    };
+    const claim=await rpc('taxpay_claim_story1_session',owner.session,{p_session_id:payerSessionId});
+    expect(typeof claim).toBe('number');
+    expect(claim as number).toBeGreaterThanOrEqual(1);
+    const payerHistory=await rpc('taxpay_my_story1_payments',owner.session,{p_page:1,p_per_page:100}) as
+      {items:Array<{id:string;amountMinor:number;details:Record<string,unknown>}>;total:number};
+    const original=payerHistory.items.find(record=>record.id===paymentId);
+    expect(original).toMatchObject({id:paymentId,amountMinor:5000,details:sourceData.details});
+    expect(await rpc('taxpay_claim_story1_session',owner.session,{p_session_id:payerSessionId})).toBe(0);
+    const otherHistory=await rpc('taxpay_my_story1_payments',other.session,{p_page:1,p_per_page:100}) as
+      {items:Array<{id:string}>};
+    expect(otherHistory.items.some(record=>record.id===paymentId)).toBe(false);
+    const appUrl=(action:string,session:typeof owner.session)=>
+      '/?action='+action+'&lang='+language+'#access_token='+encodeURIComponent(session.access_token)+
+      '&refresh_token='+encodeURIComponent(session.refresh_token)+
+      '&token_type=bearer&expires_in=3600&expires_at='+
+      (session.expires_at??Math.floor(Date.now()/1000)+3600);
+    const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:375,height:812}});
+    try{
+      const page=await context.newPage();
+      await page.goto(appUrl('beneficiaries',owner.session));
+      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      await page.getByRole('button',{name:language==='bn'?'তালিকা তৈরি':'Create list',exact:true}).first().click();
+      const createList=page.getByRole('dialog',{name:language==='bn'?'তালিকা তৈরি':'Create list'});
+      await createList.locator('#beneficiary-create-list-name').fill('Family');
+      await createList.getByRole('button',{name:language==='bn'?'তালিকা তৈরি':'Create list',exact:true}).click();
+      await expect(createList).toBeHidden();
+      await page.goto(appUrl('history',owner.session));
+      const history=page.getByTestId('beneficiary-payment-history');
+      await expect(history).toContainText(paymentId,{timeout:15_000});
+      await history.getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
+      const receipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
+      await expect(receipt).toContainText(recipientTin);
+      await expect(receipt).toContainText(selfTin);
+      await receipt.getByRole('button',{name:language==='bn'?'উপকারভোগী সংরক্ষণ করুন':'Save Beneficiary',exact:true}).click();
+      const entry=page.getByRole('dialog',{name:language==='bn'?'উপকারভোগী যোগ':'Beneficiary entry'});
+      await expect(entry.locator('#beneficiary-tin')).toHaveValue(recipientTin);
+      await expect(entry.locator('#beneficiary-name')).toHaveValue(recipientId);
+      await chooseBeneficiaryOption(entry,'beneficiary-target-list',{label:'Family'});
+      await chooseBeneficiaryOption(entry,'beneficiary-tag','clients');
+      await entry.getByRole('button',{name:language==='bn'?'উপকারভোগী যোগ':'Add beneficiary',exact:true}).click();
+      await expect(page.getByText(language==='bn'?'উপকারভোগী সংরক্ষিত হয়েছে।':'Beneficiary saved.')).toBeVisible();
+      const readSaved=async(token:string)=>{
+        const url=new URL('/rest/v1/taxpay_beneficiaries',endpoint.origin);
+        url.searchParams.set('select','owner_uid,tin,display_name,tag');
+        const response=await fetch(url,{headers:{apikey:key,Authorization:'Bearer '+token}});
+        expect(response.status).toBe(200);
+        return await response.json() as Array<{owner_uid:string;tin:string;display_name:string;tag:string}>;
+      };
+      expect(await readSaved(owner.session.access_token)).toEqual([
+        {owner_uid:owner.id,tin:recipientTin,display_name:recipientId,tag:'clients'}
+      ]);
+      expect(await readSaved(other.session.access_token)).toEqual([]);
+      await page.goto(appUrl('history',owner.session));
+      await expect(page.getByTestId('beneficiary-payment-history')).toContainText(paymentId);
+      await page.getByTestId('beneficiary-payment-history')
+        .getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
+      await expect(page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'})
+        .getByTestId('account-save-beneficiary-receipt')).toHaveCount(0);
+      const persisted=psql("SELECT data::text FROM demo_payment.story_payments WHERE id="+quote(paymentId)+"::uuid");
+      expect(JSON.parse(persisted)).toMatchObject(sourceData);
     }finally{await context.close();}
   });
 }
