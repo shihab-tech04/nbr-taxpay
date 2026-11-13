@@ -3,6 +3,7 @@ import { Copy } from 'lucide-react';
 import type { ChallanReceipt, Language } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
 import { buildPaymentCertificateModel } from '../../services/paymentCertificateModel';
+import '../../styles/payment-certificate-document.css';
 
 interface Props {
   receipt: ChallanReceipt;
@@ -166,8 +167,9 @@ export const PaymentCertificateDocument: React.FC<Props> = ({ receipt, language 
 
       <section className="receipt-view__breakdown">
         <h3 className="receipt-view__section-title">{labels.allocations}</h3>
-        <div className="receipt-view__table">
-          <table className="receipt-view__financial-table" aria-label={labels.allocations}>
+        <div className="payment-certificate-document__allocation-table" data-testid="payment-certificate-allocation-table-wrap">
+          <table className="receipt-view__financial-table payment-certificate-document__table"
+            data-testid="payment-certificate-allocation-table" aria-label={labels.allocations}>
             <thead>
               <tr>
                 <th scope="col">{labels.recipient}</th>
@@ -178,7 +180,7 @@ export const PaymentCertificateDocument: React.FC<Props> = ({ receipt, language 
             </thead>
             <tbody>
               {model.lines.map((line, index) => (
-                <tr key={model.paymentTransactionId + ':' + index} data-testid="payment-certificate-line">
+                <tr key={model.paymentTransactionId + ':' + index} data-testid="payment-certificate-line-row">
                   <td>
                     <strong>{line.recipientName}</strong>
                     {line.recipientTin && <span className="block break-all font-mono-plex text-xs">{line.recipientTin}</span>}
@@ -207,6 +209,40 @@ export const PaymentCertificateDocument: React.FC<Props> = ({ receipt, language 
               </tr>
             </tfoot>
           </table>
+        </div>
+        <div className="payment-certificate-document__mobile-lines" data-testid="payment-certificate-mobile-lines">
+          {model.lines.map((line, index) => (
+            <article key={model.paymentTransactionId + ':mobile:' + index}
+              className="border-b border-slate-200 px-3 py-3 last:border-b-0"
+              data-testid="payment-certificate-line-card">
+              <div className="space-y-1">
+                <strong className="block break-words text-slate-900">{line.recipientName}</strong>
+                {line.recipientTin && <span className="block break-all font-mono-plex text-xs text-slate-700">{line.recipientTin}</span>}
+                {line.passportMasked && <span className="block text-xs">{labels.passport}: {line.passportMasked}</span>}
+                {line.nationality && <span className="block text-xs">
+                  {labels.nationality}: {line.nationality === 'Bangladeshi' ? labels.bangladeshi : labels.foreign}
+                  {line.country ? ' · ' + labels.country + ': ' + line.country : ''}
+                </span>}
+                {line.age !== undefined && <span className="block text-xs">{labels.age}: {numberLabel(line.age)}</span>}
+              </div>
+              <dl className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                <div className="col-span-2"><dt className="text-slate-700">{labels.taxHead}</dt>
+                  <dd className="mt-1 break-words font-medium text-slate-900">{bn ? line.descriptionBn : line.descriptionEn}
+                    {line.economicCode && <span className="block font-mono-plex">{line.economicCode}</span>}
+                  </dd>
+                </div>
+                <div><dt className="text-slate-700">{labels.year}</dt>
+                  <dd className="mt-1 font-medium text-slate-900">{line.assessmentYear ?? model.travel?.travelDate ?? '—'}</dd>
+                </div>
+                <div className="text-right"><dt className="text-slate-700">{labels.amount}</dt>
+                  <dd className="mt-1 font-mono-plex font-bold text-taxpay-dark">{formatCurrency(line.amountMinor / 100, language)}</dd>
+                </div>
+              </dl>
+            </article>
+          ))}
+          <div className="flex items-center justify-between gap-3 bg-taxpay-light px-3 py-3 text-sm font-bold text-taxpay-dark">
+            <span>{labels.total}</span><span className="shrink-0 font-mono-plex">{formatCurrency(model.totalMinor / 100, language)}</span>
+          </div>
         </div>
       </section>
 
