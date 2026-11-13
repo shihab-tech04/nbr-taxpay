@@ -65,7 +65,8 @@ export const BentoPaymentAnalytics:React.FC<{
   const selectedTag=tag===null?null:filtered.byTag.find(item=>item.key===tag);
   const topBeneficiaries=filtered.byBeneficiary.filter(item=>!tag||item.tag===tag).slice(0,5);
   const topMax=topBeneficiaries[0]?.amountMinor??0n;
-  const displayedBeneficiaryTotal=selectedTag?.amountMinor??filtered.totalMinor;
+  const displayedBeneficiaryTotal=beneficiaryView==='top'&&selectedTag
+    ?selectedTag.amountMinor:filtered.totalMinor;
   const maskedTin=(tin:string)=>'••••'+tin.slice(-4);
   return <section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
     data-testid="dashboard-payment-analytics" data-chart-source={source}>
@@ -149,11 +150,11 @@ export const BentoPaymentAnalytics:React.FC<{
               :tr('Top beneficiaries','শীর্ষ উপকারভোগী')}</h3>
             <p>{service==='all'?tr('All payment services','সব ধরনের পেমেন্ট'):SERVICE_LABELS[service][language]}</p>
           </div>
-          <strong className="taxpay-bento-analytics__total tabular-nums">{displayedBeneficiaryTotal>0n?money(displayedBeneficiaryTotal):'—'}</strong>
+          <strong className="taxpay-bento-analytics__total tabular-nums">{filtered.totalMinor>0n?money(displayedBeneficiaryTotal):'—'}</strong>
         </div>
         <div className="taxpay-bento-analytics__view-switch" role="group"
           aria-label={tr('Beneficiary chart view','উপকারভোগীর চার্টের ধরন')} data-testid="dashboard-beneficiary-view">
-          <button type="button" aria-pressed={beneficiaryView==='relationships'} onClick={()=>setBeneficiaryView('relationships')}>
+          <button type="button" aria-pressed={beneficiaryView==='relationships'} onClick={()=>{setBeneficiaryView('relationships');setTag(null);}}>
             {tr('Relationships','সম্পর্ক')}
           </button>
           <button type="button" aria-pressed={beneficiaryView==='top'} onClick={()=>setBeneficiaryView('top')}>
