@@ -1,3 +1,4 @@
+import './account-beneficiary-history-date-filter.spec';
 import {test,expect} from '@playwright/test';
 
 /** Owned preview capability, no production account data or financial writes. */
