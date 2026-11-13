@@ -138,6 +138,8 @@ test('real account restores its own language and selected beneficiary list in a 
   await again.goto(url(aSession));
   await expect(again.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
   await expect(again.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
+  if(await again.locator('#beneficiary-list').count()===0)
+    await again.getByRole('button',{name:'Filter',exact:true}).click();
   await expect(again.locator('#beneficiary-list')).toContainText('Family');
   await expect(again.getByTestId('beneficiary-records')).toContainText('Sajid Khan');
   await expect(again.getByTestId('beneficiary-records')).toContainText('000000000047');
