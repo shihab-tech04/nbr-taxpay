@@ -612,7 +612,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                   disabled={normalizedPassport.length < 6} onClick={() => {
                   setPassportSuggestionsFor(null);
                   if (passportAlreadyAdded) {
-                    reportIdentityIssue({id: item.id, message: tr('Passport already added.', 'পাসপোর্ট ইতিমধ্যে যোগ করা হয়েছে।')});
+                    const message = tr('Passport already added.', 'পাসপোর্ট ইতিমধ্যে যোগ করা হয়েছে।');
+                    // The duplicate is already announced beside the field.
+                    // Keep the shared alert without adding a second row message.
+                    setPassengerIssue(null);
+                    showError(message);
+                    requestAnimationFrame(() => requestAnimationFrame(() =>
+                      document.getElementById('travel-passport-' + item.id)?.focus()));
                     return;
                   }
                   const sample = SAMPLE_BD_PASSPORTS.find(entry => entry.passport === normalizedPassport);
@@ -905,6 +911,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     {!valid && !editing && <p className="travel-flow__field-hint">{tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।')}</p>}
                     {canShowAddPassenger && pendingConfirmationId === item.id && <div className="travel-flow__confirm-row">
                       <button type="button" className="travel-flow__add-member travel-flow__confirm-passenger"
+                        disabled={item.medicalPortReferral}
                         onClick={() => {
                           const issue = passengerIdentityIssue(item.id);
                           if (issue) { reportIdentityIssue(issue); return; }
