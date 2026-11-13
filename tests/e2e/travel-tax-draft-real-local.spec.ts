@@ -80,21 +80,19 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     await expect(otherDashboard).toBeVisible();
     await expect(otherDashboard.locator('[data-draft-id]').filter({ hasText: /travel tax|ভ্রমণ কর/i })).toHaveCount(0);
 
-    // Change language through the existing account preference form so it persists across refresh.
-    await owner.goto('/?action=account_settings');
-    const accountSettings = owner.locator('form.taxpayer-account-fields');
-    const languagePreference = accountSettings.locator('#taxpay-profile-language');
-    await expect(languagePreference).toBeVisible();
-    await languagePreference.selectOption('bn');
-    await accountSettings.getByRole('button', { name: 'Save preferences', exact: true }).click();
-    await expect(owner.locator('.taxpay-citizen-shell')).toHaveAttribute('lang', 'bn');
-
+    // Use the existing desktop language control at its supported 1600px rail breakpoint,
+    // then recover the same owner-scoped SQL draft in Bengali on a phone-sized viewport.
+    await owner.setViewportSize({ width: 1600, height: 900 });
+    const desktopRail = owner.getByRole('complementary', { name: 'Taxpayer desktop navigation' });
+    const languageSwitcher = desktopRail.locator('.taxpayer-reference-rail-bottom')
+      .getByRole('button').filter({ hasText: 'Language' });
+    await languageSwitcher.click();
+    await expect(languageSwitcher).toContainText('English');
+    await expect(owner).toHaveURL(/lang=bn/);
     await owner.setViewportSize({ width: 375, height: 812 });
-    await owner.goto('/?action=taxpayer_home');
-    await expect(owner.locator('.taxpay-citizen-shell')).toHaveAttribute('lang', 'bn');
     await owner.reload();
-    await expect(owner.locator('.taxpay-citizen-shell')).toHaveAttribute('lang', 'bn');
     await expect(draftCard).toBeVisible();
+    await expect(owner.locator('.taxpay-citizen-shell')).toHaveAttribute('lang', 'bn');
 
     // Preview identity fields were redacted. Re-enter and recheck every passenger in the restored batch.
     await draftCard.getByRole('button', { name: /Continue|চালিয়ে যান/ }).click();

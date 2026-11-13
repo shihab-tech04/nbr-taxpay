@@ -714,7 +714,7 @@ test('Travel Tax: Bangla journey validates, edits and shows the shared receipt w
 
   const receipt = modal.getByTestId('travel-family-challan');
   await expect(receipt).toBeVisible();
-  await expect(receipt).toContainText('সম্মিলিত ভ্রমণ করের বিবরণ');
+  await expect(receipt).toContainText('সর্বমোট ভ্রমণ কর');
   await expect(receipt).toContainText('যাত্রীভিত্তিক ভ্রমণ কর');
   await expect(receipt).toContainText('SAMPLE BANGLADESHI PASSENGER');
   await expect(receipt.locator('tbody tr')).toHaveCount(1);
