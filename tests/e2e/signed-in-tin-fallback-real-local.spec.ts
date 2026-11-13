@@ -132,8 +132,11 @@ for(const language of ['en','bn'] as const){
       await expect(footer).toBeVisible();
       await footer.getByRole('button',{name:continueLabel,exact:true}).click();
       await expect(dialog.locator('.taxpay-modal__step-count')).toContainText('2/4');
-      const backLabel=language==='bn'?'পূর্ববর্তী ধাপ':'Back';
-      await footer.getByRole('button',{name:backLabel,exact:true}).click();
+      // The approved modal header Back delegates to the current payment-stage back action.
+      const backLabel=language==='bn'?'ফিরুন':'Back';
+      const modalBack=dialog.locator('.taxpay-modal__back');
+      await expect(modalBack).toHaveAttribute('aria-label',backLabel);
+      await modalBack.click();
       await expect(dialog.locator('.taxpay-modal__step-count')).toContainText('1/4');
       await expect(picker.getByTestId('one-time-tin-selection')).toContainText('111111111111');
     }finally{
