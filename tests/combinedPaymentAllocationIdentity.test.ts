@@ -20,7 +20,7 @@ const savedAllocationItems = [
   { ...allocations[1], paymentServiceEn: lines[1].headNameEn, paymentServiceBn: serviceBn(1), economicCode: lines[1].economicCode },
 ];
 
-function details(version: 2 | 3 | undefined = 3): Record<string, unknown> {
+function details(version: 2 | 3 | undefined): Record<string, unknown> {
   const savedAllocations = allocations.map(item => ({ ...item }));
   const snapshotItems = savedAllocationItems.map(item => ({ ...item }));
   if (version !== 3) {
@@ -53,7 +53,7 @@ function confirm(saved: Record<string, unknown>): ChallanReceipt {
 }
 
 test('v3 combined receipt reconstruction preserves the original unique allocation IDs', () => {
-  const receipt = confirm(details());
+  const receipt = confirm(details(3));
   assert.deepEqual(receipt.allocationItems?.map(item => item.allocationId), ['one', 'two']);
   assert.deepEqual(receipt.allocationItems?.map(item => [item.taxpayerTin, item.assessmentYear, item.amountMinor]), [
     ['111111111111', '2026-27', 1200],
@@ -68,7 +68,7 @@ test('v3 combined receipt reconstruction rejects missing, duplicate, or inconsis
     (saved: Record<string, unknown>) => { (((saved.receiptSnapshot as Record<string, unknown>).allocationItems as Array<Record<string, unknown>>)[0]).allocationId = 'changed'; },
   ];
   for (const mutate of malformed) {
-    const saved = details();
+    const saved = details(3);
     mutate(saved);
     assert.throws(() => confirm(saved), /allocations could not be reconciled/);
   }
