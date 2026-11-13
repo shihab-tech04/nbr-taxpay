@@ -11,7 +11,7 @@ import {checkedOwnerRecordCount, type AccountActivityCounts} from '../../service
 import {loadPrivateDashboardPaymentActivity} from '../../services/privateDashboardPayments';
 import type {PrivateDashboardPaymentActivity} from '../../services/privateDashboardPayments';
 import {simulationCategories, simulationCategoryLabels, type SimulationCategory, type SimulationUser} from '../../contracts/paymentSimulationContract';
-import {filterPrivateDashboardTransactionsByYear, type DashboardSimulationTransaction} from '../../services/accountDashboardProjection';
+import {filterPrivateDashboardTransactionsByYear,selectCompletedPayerDashboardTransactions,type DashboardSimulationTransaction} from '../../services/accountDashboardProjection';
 import {DashboardScenarioTrends} from './DashboardScenarioTrends';
 
 type DashboardRoute = 'secure_workspace'|'corrections'|'account_notifications'|'account_profile'|'history'|'journey'|'ledger'|'certificates'|'beneficiaries'|'manage_authorization';
@@ -119,7 +119,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
   // SIMULATED records are complete in the application, never certified Treasury settlements.
   // Count completed payer-owned transactions for the selected assessment year,
   // not every year in the account or allocations received from another payer.
-  const completedTransactions=yearTransactions.filter(row=>row.state==='SIMULATED');
+  const completedTransactions=selectCompletedPayerDashboardTransactions(yearTransactions);
   const completedCount=visibleScenario.phase==='linked'
     ? new Set(completedTransactions.filter(row=>row.participantView!=='beneficiary')
         .map(row=>row.transactionId)).size : null;
@@ -140,9 +140,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
   const categoryRows=simulationCategories.map(category=>({category,amount:categoryTotals.get(category)??0n}))
     .filter(row=>row.amount>0n);
   const tagSpending=new Map<PaymentTagGroup,bigint>(PAYMENT_TAG_GROUPS.map(group=>[group,0n]));
-  for(const transaction of yearTransactions){
-    // A beneficiary-only receipt belongs to someone else's initiated spending.
-    if(transaction.participantView==='beneficiary'||transaction.state!=='SIMULATED')continue;
+  for(const transaction of completedTransactions){
     for(const allocation of transaction.allocations){
       const match=/^user(\d+)$/.exec(allocation.beneficiary);
       const lookupTin=match?sampleTinForUserNumber(Number(match[1])):null;
@@ -282,7 +280,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
           </div>
         </div>}
         <div className="mt-4">
-          <DashboardScenarioTrends transactions={yearTransactions} assessmentYear={selectedYear} language={language}/>
+          <DashboardScenarioTrends transactions={completedTransactions} assessmentYear={selectedYear} language={language}/>
         </div>
         {categoryRows.length>0&&<figure className="mt-4 rounded-xl border border-taxpay-border bg-white p-3" data-testid="account-payment-category-breakdown">
           <figcaption className="text-sm font-semibold text-taxpay-text">{tr('Scenario activity by payment category','পেমেন্ট খাত অনুযায়ী সিনারিও কার্যক্রম')}</figcaption>
