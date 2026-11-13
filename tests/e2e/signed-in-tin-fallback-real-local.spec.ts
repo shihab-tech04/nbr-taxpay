@@ -30,7 +30,7 @@ for(const language of ['en','bn'] as const){
     const password=randomBytes(32).toString('base64url');
     const signup=await fetch(new URL('/auth/v1/signup',api.origin),{
       method:'POST',headers:{apikey:key,'content-type':'application/json'},
-      body:JSON.stringify({email,password})
+      body:JSON.stringify({email,password}),signal:AbortSignal.timeout(15_000)
     });
     expect(signup.status).toBe(200);
     const auth=await signup.json();
@@ -48,10 +48,12 @@ for(const language of ['en','bn'] as const){
       viewport:mobile?{width:375,height:812}:{width:1280,height:900}
     });
     const page=await context.newPage();
+    page.setDefaultTimeout(10_000);
+    page.setDefaultNavigationTimeout(20_000);
     const readBeneficiaries=async()=>{
       const response=await fetch(new URL('/rest/v1/taxpay_beneficiaries?select=owner_uid,tin,display_name&owner_uid=eq.'+
         encodeURIComponent(auth.user.id),api.origin),{
-        headers:{apikey:key,Authorization:'Bearer '+session.access_token}
+        headers:{apikey:key,Authorization:'Bearer '+session.access_token},signal:AbortSignal.timeout(15_000)
       });
       expect(response.status).toBe(200);
       return response.json();
@@ -126,7 +128,7 @@ for(const language of ['en','bn'] as const){
       await dialog.getByRole('button',{name:backLabel,exact:true}).first().click();
       await expect(picker.getByTestId('one-time-tin-selection')).toContainText('111111111111');
     }finally{
-      await context.close();
+      await context.close().catch(()=>undefined);
     }
   });
 }
