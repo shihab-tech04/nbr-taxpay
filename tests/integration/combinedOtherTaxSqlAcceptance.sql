@@ -221,7 +221,7 @@ DECLARE
   login jsonb;
   owner_hash text;
   session_id uuid;
-  list_id uuid;
+  f039_list_id uuid;
   original_list jsonb;
   payment_key uuid:=gen_random_uuid();
   saved_payment_id uuid;
@@ -241,12 +241,12 @@ BEGIN
   login:=public.taxpay_demo_profile_login('user1','user1');
   owner_hash:=encode(extensions.digest(convert_to(login->>'capability','UTF8'),'sha256'),'hex');
   session_id:=(login->>'paymentSessionId')::uuid;
-  list_id:=(public.taxpay_guest_beneficiary_create_list(owner_hash,'F039 saved + one-time')->>'id')::uuid;
-  IF public.taxpay_guest_beneficiary_add(owner_hash,list_id,
+  f039_list_id:=(public.taxpay_guest_beneficiary_create_list(owner_hash,'F039 saved + one-time')->>'id')::uuid;
+  IF public.taxpay_guest_beneficiary_add(owner_hash,f039_list_id,
        '[{"tin":"222222222222","display_name":"Saved Taxpayer Two"}]'::jsonb)<>1
   THEN RAISE EXCEPTION 'F039_SAVED_FIXTURE_INSERT_FAILED'; END IF;
   SELECT jsonb_agg(to_jsonb(person) ORDER BY person.tin) INTO original_list
-  FROM taxpay_guest_private.beneficiaries person WHERE person.list_id=list_id;
+  FROM taxpay_guest_private.beneficiaries person WHERE person.list_id=f039_list_id;
   IF jsonb_array_length(original_list)<>1
      OR original_list->0->>'tin' IS DISTINCT FROM '222222222222'
   THEN RAISE EXCEPTION 'F039_NOT_EXACTLY_ONE_SAVED_RECIPIENT'; END IF;
@@ -305,7 +305,7 @@ BEGIN
         IS DISTINCT FROM '["ws3-f039-saved","ws3-f039-onetime"]'::jsonb
   THEN RAISE EXCEPTION 'F039_IMMUTABLE_PARENT_OR_RECEIPT_MISMATCH'; END IF;
   IF (SELECT jsonb_agg(to_jsonb(person) ORDER BY person.tin)
-       FROM taxpay_guest_private.beneficiaries person WHERE person.list_id=list_id)
+       FROM taxpay_guest_private.beneficiaries person WHERE person.list_id=f039_list_id)
       IS DISTINCT FROM original_list
   THEN RAISE EXCEPTION 'F039_ONE_TIME_AUTO_SAVED'; END IF;
   answer:=public.taxpay_demo_story1_submit(owner_hash,payload);
@@ -353,7 +353,7 @@ BEGIN
   END;
   IF NOT blocked THEN RAISE EXCEPTION 'F039_DUPLICATE_ALLOCATION_ACCEPTED'; END IF;
   IF (SELECT jsonb_agg(to_jsonb(person) ORDER BY person.tin)
-       FROM taxpay_guest_private.beneficiaries person WHERE person.list_id=list_id)
+       FROM taxpay_guest_private.beneficiaries person WHERE person.list_id=f039_list_id)
       IS DISTINCT FROM original_list
      OR (SELECT data FROM demo_payment.story_payments WHERE id=saved_payment_id)
       IS DISTINCT FROM payload
