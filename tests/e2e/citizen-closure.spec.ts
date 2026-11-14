@@ -175,3 +175,23 @@ test('home explains the payment stages without an inline transaction form',async
  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
 });
 
+test('dashboard CSV export keeps Sohojkor branding and localized column labels',async({page},info)=>{
+  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'WS4 desktop/mobile CSV parity');
+  await page.goto('/?action=taxpayer_home&demoUser=user1');
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  const englishExport=page.getByRole('button',{name:'Export CSV'});
+  await expect(englishExport).toBeEnabled();
+  const [english]=await Promise.all([page.waitForEvent('download'),englishExport.click()]);
+  expect(english.suggestedFilename()).toBe('Sohojkor_transactions.csv');
+  const englishCsv=await (await import('node:fs/promises')).readFile(await english.path(),'utf8');
+  expect(englishCsv).toContain('"Reference","Category","Assessment year","Amount ৳","Treasury status"');
+
+  await switchTaxpayerToBangla(page);
+  await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
+  const banglaExport=page.getByRole('button',{name:'CSV রপ্তানি'});
+  await expect(banglaExport).toBeEnabled();
+  const [bangla]=await Promise.all([page.waitForEvent('download'),banglaExport.click()]);
+  expect(bangla.suggestedFilename()).toBe('Sohojkor_transactions.csv');
+  const banglaCsv=await (await import('node:fs/promises')).readFile(await bangla.path(),'utf8');
+  expect(banglaCsv).toContain('"রেফারেন্স","কর পরিশোধের ধরন","করবর্ষ","পরিমাণ ৳","ট্রেজারি অবস্থা"');
+});
