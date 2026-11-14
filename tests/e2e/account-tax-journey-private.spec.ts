@@ -261,13 +261,28 @@ const signedInTravelTaxPayment={
 };
 
 for(const language of ['en','bn'] as const){
-  test('F-162 / US-158 signed-in Travel Tax receipt and certificate keep the original reference in '+language,
+  test('F-162 / US-119, US-158, US-159 recover signed-in Travel Tax history after sign-out in '+language,
     async({page})=>{
       await mockAccount(page,true,[signedInTravelTaxPayment]);
+      const guestSessionId='ed18e1b3-8abf-4a19-a22d-0b5d6dca7101';
+      const claimedSessionIds:string[]=[];
+      await page.addInitScript(id=>sessionStorage.setItem('taxpay-guest-simulation-session',id),guestSessionId);
+      await page.route(backend+'/rest/v1/rpc/taxpay_claim_story1_session',async route=>{
+        const request=route.request();
+        const headers={'access-control-allow-origin':'*',
+          'access-control-allow-headers':'authorization, apikey, content-type, prefer, x-client-info',
+          'access-control-allow-methods':'GET,POST,OPTIONS'};
+        if(request.method()==='OPTIONS')
+          return route.fulfill({status:200,contentType:'application/json',headers,body:'{}'});
+        const payload=request.postDataJSON() as {p_session_id?:string};
+        claimedSessionIds.push(payload.p_session_id??'');
+        return route.fulfill({status:200,contentType:'application/json',headers,body:'1'});
+      });
       await page.goto('/?action=history&lang='+language);
       const history=page.getByTestId('beneficiary-payment-history');
       await expect(history).toBeVisible();
       await expect(history).toContainText(travelHistoryId);
+      await expect(claimedSessionIds).toEqual([guestSessionId]);
       const mobile=(page.viewportSize()?.width??1280)<768;
       const record=mobile
         ?history.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem').filter({hasText:travelHistoryId})
@@ -307,6 +322,35 @@ for(const language of ['en','bn'] as const){
       await expect(certificate.getByTestId('payment-certificate-reference'))
         .toContainText('SK-PC-'+travelHistoryId);
       await expect(certificate).toContainText('FRIEND SECOND');
+
+      // Sign out through the existing account screen, then re-enter the same owner
+      // session while keeping the opaque guest session that was claimed above.
+      await page.goto('/?action=account_profile&lang='+language);
+      const signOut=page.getByRole('button',{name:language==='bn'?/সাইন আউট/:/Sign out/});
+      await expect(signOut).toBeVisible();
+      await signOut.click();
+      await expect(page).toHaveURL(/action=landing/);
+      await expect.poll(()=>page.evaluate(()=>localStorage.getItem('sb-nbr-taxpay-test-auth-token'))).toBeNull();
+
+      await page.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{
+        key:'sb-nbr-taxpay-test-auth-token',value:session()
+      });
+      await page.goto('/?action=history&lang='+language);
+      const relogged=page.getByTestId('beneficiary-payment-history');
+      await expect(relogged).toBeVisible();
+      await expect(relogged).toContainText(travelHistoryId);
+      await expect(claimedSessionIds).toEqual([guestSessionId,guestSessionId,guestSessionId]);
+      const restoredRecord=mobile
+        ?relogged.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem')
+          .filter({hasText:travelHistoryId})
+        :relogged.getByRole('row').filter({hasText:travelHistoryId});
+      await restoredRecord.getByRole('button',{name:language==='bn'?/দেখুন/:/View/}).click();
+      const restoredDialog=page.getByRole('dialog');
+      await restoredDialog.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/}).click();
+      const restoredCertificate=restoredDialog.getByTestId('payment-certificate-document');
+      await expect(restoredCertificate.getByTestId('payment-certificate-reference'))
+        .toContainText('SK-PC-'+travelHistoryId);
+      await expect(restoredCertificate).toContainText('FRIEND SECOND');
     });
 }
 
