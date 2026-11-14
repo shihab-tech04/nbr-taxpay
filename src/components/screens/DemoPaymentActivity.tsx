@@ -224,8 +224,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());setPayAgainSource(null);
         setCompletedReference(confirmed.id);setPaymentStage(3);
         setSubmitMessage((synced.mirrored
-          ? txt('Payment synchronized with Office: ','অফিসের সঙ্গে পেমেন্ট সিঙ্ক হয়েছে: ')
-          : txt('Simulation saved; Office synchronization pending: ','সিমুলেশন সংরক্ষিত; অফিস সমন্বয় অপেক্ষমাণ: '))+confirmed.id);
+          ? txt('Payment record saved. Office copy confirmed; Treasury settlement unverified: ','পেমেন্ট রেকর্ড সংরক্ষিত। অফিস কপি নিশ্চিত; ট্রেজারি নিষ্পত্তি যাচাই হয়নি: ')
+          : txt('Payment record saved. Office copy pending; Treasury settlement unverified: ','পেমেন্ট রেকর্ড সংরক্ষিত। অফিস কপি অপেক্ষমাণ; ট্রেজারি নিষ্পত্তি যাচাই হয়নি: '))+confirmed.id);
         return;
       }
       const result=privateMode?await submitPrivateSimulationPayment(checked,nonce):await submitSimulatedPayment(id,checked,nonce);
@@ -266,8 +266,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());setPayAgainSource(null);
       setCompletedReference(result.reference);setPaymentStage(3);
       setSubmitMessage((officeMirrorConfirmed
-        ? txt('Payment record saved: ','পেমেন্ট রেকর্ড সংরক্ষিত: ')
-        : txt('Simulation saved; Office synchronization pending: ','সিমুলেশন সংরক্ষিত; অফিস সমন্বয় অপেক্ষমাণ: '))+
+        ? txt('Payment record saved. Treasury settlement unverified: ','পেমেন্ট রেকর্ড সংরক্ষিত। ট্রেজারি নিষ্পত্তি যাচাই হয়নি: ')
+        : txt('Payment record saved. Office copy pending; Treasury settlement unverified: ','পেমেন্ট রেকর্ড সংরক্ষিত। অফিস কপি অপেক্ষমাণ; ট্রেজারি নিষ্পত্তি যাচাই হয়নি: '))+
         result.reference+(result.replayed?' (previous request)':''));
     }catch(err){setSubmitMessage(err instanceof Error?err.message:'Submission could not be verified');}
     finally{setSaving(false);}
