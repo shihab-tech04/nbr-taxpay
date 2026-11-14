@@ -1,7 +1,7 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
 import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
-import {reuseRecordedPayment,type PaymentReuse} from '../../services/paymentReuse';
+import {oneChoicePerRecordedParent,reuseRecordedPayment,type PaymentReuse} from '../../services/paymentReuse';
 import {useTaxState} from '../../services/taxState';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {getDemoUser,type DemoUserId} from '../../data/demoUsers';
@@ -30,7 +30,10 @@ export function RecordedPaymentReuseChooser({profileId,language,onReuse}:{
    });
    return()=>{active=false;};
  },[profileId,revision]);
- const records=useMemo(()=>state.rows.map(payment=>{
+ const records=useMemo(()=>oneChoicePerRecordedParent(state.rows,payment=>{
+   try { return makeConfirmedReceipt(payment).batchId; }
+   catch { return undefined; }
+ }).map(payment=>{
    let copy:PaymentReuse|null=null;
    try{
      const peers=state.rows.filter(other=>{
