@@ -165,7 +165,9 @@ try {
     const rows = visibleDrawer.locator('.office-shared-allocation-list__item');
     assert.equal(await rows.count(), expectedAllocations.length,
       language + ' drawer must render exactly two source-backed allocation lines');
-    const field = visibleDrawer.locator('.drawer-field').filter({ has: rows.first() });
+    // :has() is relative to each field; a drawer-rooted Playwright has-locator
+    // cannot match descendants when its selector also includes the parent drawer.
+    const field = visibleDrawer.locator('.drawer-field:has(.office-shared-allocation-list__item)');
     assert.equal(await field.count(), 1, 'Allocation breakdown must use the approved shared drawer field');
     const expectedLabel = language === 'bn' ? 'করদাতা অনুযায়ী বণ্টন' : 'Taxpayer allocations';
     assert.equal((await field.locator('.drawer-field__label').innerText()).trim(), expectedLabel,
@@ -191,7 +193,10 @@ try {
   await verifyVisibleAllocations('en');
   const priorRequests = paymentRequests;
   await page.evaluate(() => sessionStorage.setItem('ws3_office_test_language', 'bn'));
+  const bengaliReadback = page.waitForResponse(response =>
+    response.url().includes('/functions/v1/demo-story1-office/payments') && response.status() === 200);
   await page.reload();
+  await bengaliReadback;
   await screen.waitFor({ state: 'visible', timeout: 30000 });
   assert.ok(paymentRequests > priorRequests, 'Bengali refresh must re-read the authorized Office endpoint');
   assert.equal(missingBearer, false);
