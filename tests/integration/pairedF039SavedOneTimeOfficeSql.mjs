@@ -28,6 +28,9 @@ const marker='-- F-039 / US-014 T04 original Taxpayer SQL:';
 const start=acceptance.indexOf(marker);
 const finish=acceptance.indexOf('$f039$;',start)+'$f039$;'.length;
 assert.ok(start>0&&finish>start,'Original F-039 SQL fixture is required');
+// The fixture creates its saved list under a capability owner hash, not the
+// payment session UUID. Match its uniquely named disposable fixture list
+// and include *all* members so an auto-saved one-time TIN fails below.
 const capture=`SELECT coalesce(jsonb_agg(jsonb_build_object(
   'id',p.id,'sessionId',p.session_id,'service',p.service_code,
   'amountMinor',p.amount_minor,'status',p.status,'createdAt',p.created_at,'data',p.data,
@@ -35,7 +38,7 @@ const capture=`SELECT coalesce(jsonb_agg(jsonb_build_object(
     SELECT coalesce(jsonb_agg(jsonb_build_object('tin',b.tin,'name',b.display_name)), '[]'::jsonb)
     FROM taxpay_guest_private.beneficiaries b
     JOIN taxpay_guest_private.lists l ON l.id=b.list_id
-    WHERE l.session_id=p.session_id AND l.name='F039 saved + one-time'
+    WHERE l.name='F039 saved + one-time'
   ),
   'outbox',(
     SELECT jsonb_build_object('status',o.status,'attempts',o.attempts)
@@ -104,7 +107,7 @@ const unchanged=query(source,`SELECT jsonb_build_object(
   'saved',(SELECT coalesce(jsonb_agg(jsonb_build_object('tin',b.tin,'name',b.display_name)), '[]'::jsonb)
     FROM taxpay_guest_private.beneficiaries b
     JOIN taxpay_guest_private.lists l ON l.id=b.list_id
-    WHERE l.session_id=p.session_id AND l.name='F039 saved + one-time')
+    WHERE l.name='F039 saved + one-time')
 ) FROM demo_payment.story_payments p WHERE p.id='${parent.id}'::uuid;`);
 assert.deepEqual(unchanged.data,parent.data);
 assert.deepEqual(unchanged.outbox,{status:'ACKED',attempts:0});
