@@ -60,3 +60,55 @@ test('recipient backlog fails closed on missing page, cross-page duplicate and i
     items:[item(offset+1)],total:offset===0?2:3,offset,limit,hasMore:offset===0,
   })),/Invalid notice page/);
 });
+
+
+test('stored recipient notices keep acknowledged items and exact recipient-only fields',async()=>{
+  const {parseStoredReceivedPaymentNotice}=await import('../src/services/demoReceivedPaymentNotices');
+  const old=parseStoredReceivedPaymentNotice({...valid,isRead:true,
+    acknowledgedAt:'2026-11-14T04:20:00Z',payerTin:'PRIVATE-FOREIGN-TIN',
+    allocations:[{recipientTin:'333333333333'}]});
+  assert.equal(old.isRead,true);
+  assert.equal(old.acknowledgedAt,'2026-11-14T04:20:00Z');
+  assert.equal(old.recipientTin,valid.recipientTin);
+  assert.equal(old.amountMinor,1500);
+  assert.equal(Object.hasOwn(old,'payerTin'),false);
+  assert.equal(Object.hasOwn(old,'allocations'),false);
+  const unread=parseStoredReceivedPaymentNotice({...valid,acknowledgedAt:null});
+  assert.equal(unread.isRead,false);
+  assert.equal(unread.acknowledgedAt,null);
+  for(const row of [
+    {...valid,isRead:true,acknowledgedAt:null},
+    {...valid,isRead:false,acknowledgedAt:'2026-11-14T04:20:00Z'},
+    {...valid,isRead:true,acknowledgedAt:'not-a-date'},
+    {...valid,isRead:'true',acknowledgedAt:'2026-11-14T04:20:00Z'}
+  ])assert.throws(()=>parseStoredReceivedPaymentNotice(row));
+});
+
+test('stored notice list retains all 205 read/unread events in SQL order with >100 page recovery',async()=>{
+  const {loadStoredReceivedPaymentNotices}=await import('../src/services/demoReceivedPaymentNotices');
+  const rows=Array.from({length:205},(_,i)=>({
+    ...valid,eventId:'event-'+String(i+1).padStart(4,'0'),
+    createdAt:new Date(Date.parse(valid.createdAt)+i*1000).toISOString(),
+    isRead:i%2===0,acknowledgedAt:i%2===0?'2026-11-14T04:20:00Z':null
+  }));
+  const offsets:number[]=[];
+  const result=await loadStoredReceivedPaymentNotices(async(offset,limit)=>{
+    offsets.push(offset);
+    return {items:rows.slice(offset,offset+limit),total:rows.length,offset,limit,
+      hasMore:offset+limit<rows.length};
+  });
+  assert.deepEqual(offsets,[0,100,200]);
+  assert.deepEqual(result.map(row=>row.eventId),rows.map(row=>row.eventId));
+  assert.equal(result.filter(row=>row.isRead).length,103);
+  assert.equal(result.filter(row=>!row.isRead).length,102);
+  await assert.rejects(loadStoredReceivedPaymentNotices(async(offset,limit)=>{
+    if(offset===0)return {items:rows.slice(0,100),total:205,offset,limit,hasMore:true};
+    throw Error('offline');
+  }),/offline/);
+  await assert.rejects(loadStoredReceivedPaymentNotices(async(offset,limit)=>({
+    items:offset===0?[rows[0]]:[rows[0]],total:2,offset,limit,hasMore:offset===0,
+  })),/Duplicate/);
+  await assert.rejects(loadStoredReceivedPaymentNotices(async(offset,limit)=>({
+    items:offset===0?[rows[2]]:[rows[1]],total:2,offset,limit,hasMore:offset===0,
+  })),/ordering/);
+});

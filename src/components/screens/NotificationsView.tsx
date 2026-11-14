@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
+import {ReceivedPaymentNoticeRegister} from './ReceivedPaymentNoticeRegister';
 import {getStoryNotices,getStorySessionPayments} from '../../services/simulatedPaymentStory';
 import {formatSimulatedAmount,getDemoStoryPaymentHistory} from '../../services/simulatedPaymentsApi';
 import {reconcileDemoSimulationActivity,type DemoSimulationActivity} from '../../services/demoSimulationActivity';
@@ -202,6 +203,7 @@ export const NotificationsView:React.FC=()=>{
              ?label('Recorded','সংরক্ষিত'):String(p.state).replaceAll('_',' ').toLowerCase()}</p>}
          ]}/>}
     </section>
+    <ReceivedPaymentNoticeRegister profileId={previewAccount.id} language={language}/>
     <SessionPaymentNotifications language={language}/>
   </main>;
   // Keep the existing pre-payment account entry; successful guest payments
