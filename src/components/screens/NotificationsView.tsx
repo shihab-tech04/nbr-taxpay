@@ -98,6 +98,9 @@ export const NotificationsView:React.FC=()=>{
     return()=>{active=false;window.clearInterval(timer);};
   },[authenticatedUser?.id,previewAccount?.id,language]);
   useEffect(()=>{
+    // Retire the prior officer/account's pending notice action immediately.
+    // Its late acknowledgement is ignored by the identity ref below.
+    setBusyNotice(null);
     if(!authenticatedUser){setBoundId(null);setBoundOwnerUid(null);setBindingError('');setBindingReady(false);return;}
     let active=true;setBoundId(null);setBoundOwnerUid(null);setBindingError('');setBindingReady(false);
     getBoundSimulationUser().then(profile=>{if(active){setBoundId(profile);setBoundOwnerUid(authenticatedUser.id);setBindingReady(true);}})
