@@ -332,7 +332,7 @@ for(const stage of stages){
   const commandFailed=db(office,"SELECT jsonb_build_object('state',delivery_state,'attempts',attempts,'later',next_attempt_at>now()) FROM payment_sync.control_outbox WHERE message_id='"+saved.messageId+"'::uuid;");
   assert.equal(commandFailed.state,'FAILED');assert.equal(commandFailed.attempts,1);
   assert.equal(commandFailed.later,true);
-  const sourceBeforeRetry=db(source,"SELECT office_review_state FROM public.taxpay_correction_inquiries WHERE inquiry_id='"+started.inquiryId+"'::uuid;");
+  const sourceBeforeRetry=db(source,"SELECT to_jsonb(office_review_state) FROM public.taxpay_correction_inquiries WHERE inquiry_id='"+started.inquiryId+"'::uuid;");
   assert.equal(sourceBeforeRetry,'PENDING_OFFICER',
    'A failed command transport must not claim that Taxpayer SQL accepted the Office decision');
   db(office,"UPDATE payment_sync.control_outbox SET next_attempt_at=now()-interval '1 second' WHERE message_id='"+saved.messageId+"'::uuid RETURNING to_jsonb(delivery_state);");
