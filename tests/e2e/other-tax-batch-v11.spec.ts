@@ -44,8 +44,20 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
   await expect(login).toHaveCount(0);
   await page.goto('/?action=landing');
   if(language==='bn') {
-    await page.getByRole('button',{name:'বাংলা',exact:true}).click();
-    await expect(page.getByRole('button',{name:'Switch to English'})).toBeVisible();
+    // Signed-in desktop uses the header language button; the approved mobile
+    // navigation places the same setting inside Open menu > Language.
+    const mobileMenu=page.getByRole('button',{name:'Open menu'});
+    if(await mobileMenu.isVisible()) {
+      await mobileMenu.click();
+      const menu=page.locator('#citizen-menu-dialog');
+      await menu.getByRole('button',{name:'বাংলা',exact:true}).click();
+      await expect(menu.getByRole('button',{name:'English',exact:true})).toBeVisible();
+      await menu.getByRole('button',{name:'বন্ধ করুন'}).click();
+      await expect(menu).toHaveCount(0);
+    } else {
+      await page.getByRole('button',{name:'বাংলা',exact:true}).click();
+      await expect(page.getByRole('button',{name:'Switch to English'})).toBeVisible();
+    }
   }
   await page.getByRole('button',{name:language==='bn'?'কর পরিশোধ':'Pay Tax',exact:true}).first().click();
   const dialog=page.getByRole('dialog',{name:language==='bn'?'কর পরিশোধ':'Pay Tax'});
@@ -868,6 +880,12 @@ test('F-039 signed-in Other Tax combines a saved beneficiary with a confirmed on
   const tabs=batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button');
   await expect(tabs).toHaveCount(2);
   await tabs.nth(1).click();
+  // Returning from Step 1 remounts the editor with its head groups collapsed.
+  // Explicitly open the approved Advance Tax disclosure for this recipient.
+  const advanceGroup=batch.locator('[data-head-group="Advance Tax"]');
+  await expect(advanceGroup).not.toHaveAttribute('open','');
+  await advanceGroup.locator('summary').click();
+  await expect(advanceGroup).toHaveAttribute('open','');
   await batch.getByRole('checkbox',{name:/Select 68B/}).check();
   const secondLine=batch.getByTestId('other-tax-line');
   await secondLine.locator('select[id^="other-tax-year"]').selectOption('2025-26');
