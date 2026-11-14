@@ -84,9 +84,9 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
           VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          VITE_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
           # Publishable key only. NEVER use service_role, secret or JWT signing keys in a web bundle.
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
         run: npm run build
       - name: Enforce approved public startup transfer budget
         run: |
@@ -99,7 +99,7 @@ jobs:
           grep -q '/nbr-taxpay/assets/' dist/index.html
           ! grep -q '/NBR-Tax-Payment/assets/' dist/index.html
           ! grep -q '/src/main.tsx' dist/index.html
-          grep -RFq 'https://eyqhoavnitkrajvyqvxn.supabase.co' dist/assets
+          grep -RFq 'https://gmuhitmaynfhipcvbvkh.supabase.co' dist/assets
           # Ensure no unrelated hosted Supabase projects or privileged key formats leak.
           ! grep -REq 'sb_secret_|service_role' dist/assets
           ! grep -REq '(^|[^0-9])[0-9]{12}([^0-9]|$)' dist/assets
@@ -563,8 +563,8 @@ jobs:
       - name: Verify hosted persistence from live Pages with synthetic smoke data and cleanup
         if: github.event_name == 'workflow_dispatch'
         env:
-          VITE_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
+          VITE_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
         run: node scripts/verify-hosted-profile-persistence.mjs
 
   public-support-e2e:
@@ -682,7 +682,7 @@ jobs:
           grep -q '/nbr-taxpay/assets/' dist/index.html
           ! grep -q '/NBR-Tax-Payment/assets/' dist/index.html
           ! grep -q '/src/main.tsx' dist/index.html
-          grep -RFq 'https://eyqhoavnitkrajvyqvxn.supabase.co' dist/assets
+          grep -RFq 'https://gmuhitmaynfhipcvbvkh.supabase.co' dist/assets
           ! grep -REq 'sb_secret_|service_role' dist/assets
           ! grep -REq '(^|[^0-9])[0-9]{12}([^0-9]|$)' dist/assets
           ! grep -REq '(^|[^0-9])[0-9]{17}([^0-9]|$)' dist/assets
