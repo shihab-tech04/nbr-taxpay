@@ -89,7 +89,7 @@ const makeLine = (head, tin, name, year, sourceId) => {
   };
 };
 const makeValidLines = (tins) => {
-  const lines = eligible.map((head, index) =>
+  const lines = Array.from(eligible, (head, index) =>
     makeLine(head, tins[index % tins.length].tin, tins[index % tins.length].name,
       years[index % years.length], 'f137-valid-' + head.id));
   const repeatedHead = eligible[0];
