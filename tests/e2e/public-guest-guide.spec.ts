@@ -657,3 +657,24 @@ test('glossary filters have bilingual result feedback, clear search, and full em
  expect(await page.evaluate(()=>
   document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+test('public guide displays the actual maintained content revision date in EN/BN across all topics',async({page})=>{
+  await page.goto('/?action=user_guide&lang=en');
+  const guide=page.locator('.public-guide-page');
+  const updated=guide.getByTestId('public-guide-last-updated');
+  await expect(updated).toContainText('Guide last updated:');
+  await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  await expect(updated.locator('time')).toContainText('14 November 2026');
+  const topicNav=guide.getByRole('navigation',{name:'Guide topics'});
+  for(const button of await topicNav.getByRole('button').all()){
+    await button.click();
+    await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  }
+  await setWorkspaceLanguage(page,'bn');
+  await expect(updated).toContainText('নির্দেশিকা সর্বশেষ হালনাগাদ:');
+  await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  await expect(updated.locator('time')).toContainText('২০২৬');
+  await expect(updated.locator('time')).toContainText('নভেম্বর');
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
