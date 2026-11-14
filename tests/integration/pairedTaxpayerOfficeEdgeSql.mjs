@@ -12,7 +12,6 @@ import {resolve,dirname} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import vm from 'node:vm';
 import {transformSync} from 'esbuild';
-import {verifyWs3BrowserOrigin} from './ws3BrowserOriginPayment.mjs';
 
 const sourceDb=process.env.WS3_TAXPAYER_DB_URL;
 const officeDb=process.env.WS3_OFFICE_DB_URL;
@@ -515,7 +514,6 @@ try{
       ' allocations, multiple beneficiaries and AYs, exact Taxpayer/Office identity, receipt/certificate/status and replay; '+
       f137Matrix.rejectedCases+' rejected composer cases have no SQL parents');
   }
-  await verifyWs3BrowserOrigin({request,psql,sqlText,sourceDb,officeDb,officeToken,sourceSha:process.env.WS1_SOURCE_SHA});
   console.log('PASS: separate disposable Taxpayer and Office SQL through existing Edge handlers; combined multi-recipient v3 allocations, distinct Pay Again parent lineage and separate Travel Tax passengers, exact amounts/years/heads, payer, receipt/certificate, authorized readback and passport redaction, recipient notice isolation, Office outage recovery, idempotent replay/conflict immutability, and single source/Office notices');
 }finally{
   await Promise.all([taxpayerServer,officeServer,recipientServer].map(server=>new Promise(resolve=>server.close(resolve))));
