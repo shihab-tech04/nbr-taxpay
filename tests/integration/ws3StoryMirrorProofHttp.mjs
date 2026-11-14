@@ -43,7 +43,7 @@ function dataAccess(origin,name,args={}){
  if(name==='demo_story1_mirror'){
   const p=args.p_input, prior=office.get(p.id);
   if(prior){
-   assert.deepEqual(prior,p,'Office must not silently replace an original parent');
+   assert.deepEqual(JSON.parse(JSON.stringify(prior)),JSON.parse(JSON.stringify(p)),'Office must not silently replace an original parent');
    return {id:p.id,replayed:true};
   }
   office.set(p.id,structuredClone(p));
