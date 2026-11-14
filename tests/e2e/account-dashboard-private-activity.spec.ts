@@ -460,3 +460,64 @@ test('linked empty account shows verified no-data guidance without fictional amo
   await expect(dashboard.getByText(/৳/)).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+test('recent-activity filter preserves yearly owner totals and supplies bilingual empty/recovery states',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  const account=page.getByTestId('account-workflow-summary');
+  const filter=account.getByTestId('dashboard-recent-service-filter');
+  await expect(filter).toBeVisible();
+  const parentCount=account.getByTestId('account-dashboard-status-summary');
+  await expect(parentCount).toContainText('Completed Payments');
+  const list=account.getByTestId('dashboard-recent-activity-list');
+  await expect(list.getByRole('listitem')).toHaveCount(1);
+  await expect(list).toContainText('SIM-PAY-OWNER-2026');
+  const before=await parentCount.innerText();
+  const totals=account.getByTestId('dashboard-payment-role-totals');
+  const originalTotal=await totals.innerText();
+
+  await filter.selectOption('SOURCE_TAX_DEPOSIT');
+  const empty=account.getByTestId('dashboard-recent-activity-empty');
+  await expect(empty).toContainText('No recent payment activity matches this service');
+  await expect(account.getByTestId('dashboard-recent-activity-list')).toHaveCount(0);
+  await expect(parentCount).toHaveText(before);
+  await expect(totals).toHaveText(originalTotal);
+
+  await filter.selectOption('ADVANCE_TAX');
+  await expect(list).toContainText('SIM-PAY-OWNER-2026');
+  await expect(empty).toHaveCount(0);
+  await filter.selectOption('PENALTY');
+  await expect(empty).toBeVisible();
+  await account.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
+  await expect(list).toContainText('SIM-PAY-OWNER-2026');
+  await expect(empty).toHaveCount(0);
+  await filter.selectOption('all');
+
+  await setWorkspaceLanguage(page,'bn');
+  const banglaFilter=account.getByRole('combobox',{name:'সাম্প্রতিক কার্যক্রম সেবাভিত্তিক ফিল্টার'});
+  await expect(banglaFilter).toHaveValue('all');
+  await banglaFilter.selectOption('SOURCE_TAX_DEPOSIT');
+  await expect(account.getByTestId('dashboard-recent-activity-empty'))
+    .toContainText('নির্বাচিত করবর্ষে এই সেবার কোনো সাম্প্রতিক');
+  await banglaFilter.selectOption('PENALTY');
+  await expect(account.getByTestId('dashboard-recent-activity-list')).toContainText('SIM-PAY-OWNER-2026');
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('dashboard correction shortcut focuses the existing request register and lists all authorized years',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  const phase=page.getByTestId('authenticated-dashboard-v11');
+  const years=await page.getByRole('combobox',{name:'Assessment year'}).first().locator('option').allTextContents();
+  for(const year of years.filter(value=>/^20\\d{2}-20\\d{2}$/.test(value.trim()))){
+    await expect(phase.getByRole('button',{name:year.trim(),exact:true})).toHaveCount(1);
+  }
+  await phase.getByRole('button',{name:'Correction inquiries'}).click();
+  await expect(page.locator('#dashboard-correction-requests')).toBeFocused();
+  await setWorkspaceLanguage(page,'bn');
+  await phase.getByRole('button',{name:'সংশোধনের অনুসন্ধান'}).click();
+  await expect(page.locator('#dashboard-correction-requests')).toBeFocused();
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
