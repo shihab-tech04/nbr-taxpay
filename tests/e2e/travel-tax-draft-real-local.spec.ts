@@ -106,6 +106,17 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     await second.locator('#travel-passport-' + secondId).fill('TEST230001');
     await second.locator('#travel-lookup-' + secondId).click();
     await second.getByRole('button', { name: 'Add passenger', exact: true }).click();
+    // F-153/US-150-T03/T04: cancel edit, remove, undo, then persist the
+    // original two IDs to isolated SQL. Undo must not create a duplicate draft.
+    await second.getByRole('button', { name: 'Edit', exact: true }).click();
+    await second.locator('#travel-passport-' + secondId).fill('TEST230002');
+    await second.getByRole('button', { name: 'Cancel edit', exact: true }).click();
+    await expect(second).toHaveAttribute('data-complete', 'true');
+    await expect(second).toContainText('SAMPLE PASSENGER TWO');
+    await second.getByRole('button', { name: 'Remove passenger 2' }).click();
+    await expect(modal.locator('[data-passenger-id]')).toHaveCount(1);
+    await modal.getByRole('button', { name: 'Undo removal' }).click();
+    await expect(modal.locator('[data-passenger-id="' + secondId + '"]')).toHaveAttribute('data-complete', 'true');
     await modal.locator('#travel-mobile').fill('01712345678');
     await modal.getByRole('button', { name: 'Continue to travel details' }).click();
     await expect(modal.locator('.travel-flow')).toHaveAttribute('data-step', '1');

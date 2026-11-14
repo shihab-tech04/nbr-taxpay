@@ -91,6 +91,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const errorFocusRevision = useRef(0);
   const [editingPassengerId, setEditingPassengerId] = useState<string | null>('first');
   const [confirmedPassengerIds, setConfirmedPassengerIds] = useState<string[]>([]);
+  // Keep a reversible snapshot while a confirmed passenger is being edited.
+  // Confirmation is intentionally revoked until the payer saves or cancels.
+  const [editBackup, setEditBackup] = useState<{ passenger: TravelPassenger; wasConfirmed: boolean } | null>(null);
+  const [removedPassenger, setRemovedPassenger] = useState<{
+    passenger: TravelPassenger; index: number; wasConfirmed: boolean;
+  } | null>(null);
   const [receiptReviewOpen, setReceiptReviewOpen] = useState(false);
   type PassengerIdentityIssue = {
     id: string;
@@ -143,6 +149,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       (person.nationality === 'BD' || person.nationality === 'FOREIGN'))
     ).slice(0,20);
     if (!restored.length) throw new Error('Saved passenger information was incomplete.');
+    // A new saved journey must never inherit an earlier unsaved edit/undo.
+    setEditBackup(null); setRemovedPassenger(null);
     setMode(saved.mode === 'WATER' ? 'WATER' : 'LAND');
     setPort(typeof saved.port === 'string' ? saved.port : '');
     setWaterPort(typeof saved.waterPort === 'string' ? saved.waterPort : '');
@@ -268,6 +276,39 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setError('');
     setAcknowledged(false);
   };
+  const beginPassengerEdit = (person: TravelPassenger) => {
+    setEditBackup({passenger: {...person}, wasConfirmed: confirmedPassengerIds.includes(person.id)});
+    setConfirmedPassengerIds(ids => ids.filter(id => id !== person.id));
+    setEditingPassengerId(person.id); setPassengerIssue(null); setError('');
+    setAcknowledged(false);
+  };
+  const cancelPassengerEdit = () => {
+    if (!editBackup) return;
+    const {passenger, wasConfirmed} = editBackup;
+    setPassengers(existing => existing.map(item => item.id === passenger.id ? passenger : item));
+    setConfirmedPassengerIds(ids => wasConfirmed ? [...new Set([...ids, passenger.id])] :
+      ids.filter(id => id !== passenger.id));
+    setEditingPassengerId(null); setEditBackup(null); setPassengerIssue(null);
+    setError(''); setAcknowledged(false);
+  };
+  const removeTravelPassenger = (person: TravelPassenger, index: number) => {
+    if (passengers.length <= 1) return; // Never remove the last payer/passenger.
+    setRemovedPassenger({passenger: {...person}, index, wasConfirmed: confirmedPassengerIds.includes(person.id)});
+    setPassengers(existing => existing.filter(item => item.id !== person.id));
+    setConfirmedPassengerIds(ids => ids.filter(id => id !== person.id));
+    if (editingPassengerId === person.id) setEditingPassengerId(null);
+    if (editBackup?.passenger.id === person.id) setEditBackup(null);
+    setPassengerIssue(null); setError(''); setAcknowledged(false);
+  };
+  const undoPassengerRemoval = () => {
+    if (!removedPassenger) return;
+    const {passenger, index, wasConfirmed} = removedPassenger;
+    setPassengers(existing => existing.some(item => item.id === passenger.id) ? existing : [
+      ...existing.slice(0, index), passenger, ...existing.slice(index),
+    ]);
+    if (wasConfirmed) setConfirmedPassengerIds(ids => [...new Set([...ids, passenger.id])]);
+    setRemovedPassenger(null); setPassengerIssue(null); setError(''); setAcknowledged(false);
+  };
   const changePassengerType = (id: string, nationality: TravellerNationality) => {
     setPassportSuggestionsFor(null);
     changePassenger(id, { nationality, passport: '', name: '', birthDate: '',
@@ -388,6 +429,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setStep(0); setMode('LAND'); setPort(''); setWaterPort('');
     setDestination(''); setTravelDate(''); setEditingPassengerId('first'); setPassengerIssue(null); setPassportSuggestionsFor(null);
     setPassengers([makeTravelPassenger('first', 'BD')]); setConfirmedPassengerIds([]);
+    setEditBackup(null); setRemovedPassenger(null);
     setReceiptReviewOpen(false); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
@@ -869,18 +911,16 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     <div className="travel-flow__person-header">
                       <h3>{tr('Passenger ', 'যাত্রী ')}{index + 1}</h3>
                       <div className="travel-flow__person-actions">
-                        {!editing && <button type="button" className="travel-flow__edit" onClick={() => {
-                          setConfirmedPassengerIds(ids => ids.filter(id => id !== item.id));
-                          setEditingPassengerId(item.id); setPassengerIssue(null);
-                        }}><Pencil size={15} aria-hidden="true"/>{tr('Edit', 'সম্পাদনা')}</button>}
-                        {index > 0 && <button type="button" className="travel-flow__member-remove"
+                        {!editing && <button type="button" className="travel-flow__edit"
+                          onClick={() => beginPassengerEdit(item)}><Pencil size={15} aria-hidden="true"/>
+                          {tr('Edit', 'সম্পাদনা')}</button>}
+                        {editing && editBackup?.passenger.id === item.id && <button type="button"
+                          className="travel-flow__edit" onClick={cancelPassengerEdit}>
+                          {tr('Cancel edit', 'সম্পাদনা বাতিল')}</button>}
+                        {passengers.length > 1 && <button type="button" className="travel-flow__member-remove"
                           aria-label={tr('Remove passenger ', 'যাত্রী বাদ দিন ') + (index + 1)}
-                          onClick={() => {
-                            setPassengers(existing => existing.filter(person => person.id !== item.id));
-                            setConfirmedPassengerIds(ids => ids.filter(id => id !== item.id));
-                            if (editingPassengerId === item.id) setEditingPassengerId(null);
-                            setPassengerIssue(null); setError(''); setAcknowledged(false);
-                          }}><Trash2 size={16} aria-hidden="true"/>{tr('Remove', 'বাদ দিন')}</button>}
+                          onClick={() => removeTravelPassenger(item, index)}>
+                          <Trash2 size={16} aria-hidden="true"/>{tr('Remove', 'বাদ দিন')}</button>}
                       </div>
                     </div>
                     {editing ? <div key={item.id + '-editor'} className="travel-flow__person-body">
@@ -899,6 +939,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               <label className="travel-flow__check" htmlFor={'travel-medical-' + item.id}>
                 <input id={'travel-medical-' + item.id} type="checkbox" checked={item.medicalPortReferral}
                   onChange={event => {
+                    if (confirmedPassengerIds.includes(item.id) && editingPassengerId !== item.id)
+                      setEditBackup({passenger: {...item}, wasConfirmed: true});
                     changePassenger(item.id, {medicalPortReferral: event.target.checked});
                     setEditingPassengerId(item.id);
                   }}/>
@@ -929,7 +971,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                           const issue = passengerIdentityIssue(item.id);
                           if (issue) { reportIdentityIssue(issue); return; }
                           setConfirmedPassengerIds(ids => [...new Set([...ids, item.id])]);
-                          setEditingPassengerId(null);
+                          setEditingPassengerId(null); setEditBackup(null);
                           setPassengerIssue(null);
                         }}>
                         <Plus size={18} aria-hidden="true"/>{tr('Add passenger', 'যাত্রী যোগ করুন')}
@@ -937,6 +979,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     </div>}
                   </section>;
                 })}
+                {removedPassenger && <div className="travel-flow__confirm-row"
+                  role="status" data-testid="travel-passenger-removal-recovery">
+                  <span>{tr('Passenger removed.', 'যাত্রী বাদ দেওয়া হয়েছে।')}</span>
+                  <button type="button" className="travel-flow__edit" onClick={undoPassengerRemoval}>
+                    {tr('Undo removal', 'বাদ দেওয়া বাতিল করুন')}
+                  </button>
+                </div>}
               </div>
               {confirmedPassengerIds.length > 0 && allPassengersComplete && <button
                 type="button" className="travel-flow__add-member" onClick={() => {
