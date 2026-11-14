@@ -368,7 +368,9 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   // Reconfirm passenger identity after re-entry; route/date still need new input.
   await fillTravelDetails(travelDialog,{date:''});
   await expect(travelDialog.locator('#travel-departure-date')).toHaveValue('');
-  await expect(travelDialog.getByRole('button',{name:'Continue to review'})).toBeDisabled();
+  await travelDialog.getByRole('button',{name:'Continue to review'}).click();
+  await expect(travelDialog.getByRole('alert')).toContainText('Select your travel date.');
+  expect(submittedTravelPayments).toHaveLength(0);
   await travelDialog.locator('#travel-departure-date').fill(futureTravelDate);
   await travelDialog.getByRole('button',{name:'Continue to review'}).click();
   await travelDialog.getByRole('button',{name:'Pay online'}).click();
