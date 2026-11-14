@@ -1,5 +1,6 @@
 import React, {useEffect,useState} from 'react';
 import {supabase} from '../../services/supabaseClient';
+import {getStorySessionId} from '../../services/simulatedPaymentStory';
 import {sameAuthenticatedOwner} from '../../services/secureWorkspacePolicy';
 import {validateCorrectionInquiry, type ProposedAttributionField} from '../../services/correctionInquiryValidation';
 import {UiButton,UiInput,UiTextarea,UiSelect} from '../ui/Controls';
@@ -10,12 +11,19 @@ type Row=Readonly<{
  reason:string; requested_outcome:string; change_kind:ProposedAttributionField|null; old_value:string|null; new_value:string|null;
  office_review_state:string|null; office_review_revision:number|null; office_review_updated_at:string|null;
 }>;
+
+type CorrectionHistoryEvent=Readonly<{
+ inquiry_id:string;event_id:string;event_kind:string;revision:number;action_code:string;
+ actor_role:string;source_system:string;previous_state:string|null;next_state:string|null;
+ reason:string;occurred_at:string;
+}>;
+
 type Props={readonly authenticatedUserId:string;readonly language:'en'|'bn';readonly dashboard?:boolean};
 const t={
  en:{
  title:'Request a review of an original reference',
  intro:'Private, unverified inquiry only. This does not open a financial correction case or change a payment, challan, withholding credit or ledger.',
- ref:'Original receipt or payment reference (user supplied, not verified)',
+ ref:'Original payment reference (must match your linked payment history)',
  reason:'Reason for requesting a correction review',
  outcome:'What outcome are you requesting?',
  select:'Proposed attribution field (optional)', none:'No attribution change', old:'Original value (user supplied)', newValue:'Requested value (unverified)',
@@ -33,12 +41,12 @@ const t={
  statusUnavailable:'Status unavailable',details:'Request details',reasonLabel:'Reason provided',outcomeLabel:'Requested outcome',
  changeLabel:'Unverified attribution proposal',oldValueLabel:'Previous value (unverified)',newValueLabel:'Requested value (unverified)',
  changeKinds:{ASSESSMENT_YEAR:'Assessment year',CIRCLE:'Circle',PAYMENT_HEAD:'Payment head',ATTRIBUTION:'Payment attribution'},
- loading:'Loading private inquiries…',retry:'Retry loading inquiries',historyRefreshed:'Private inquiry history refreshed.'
+ loading:'Loading private inquiries…',retry:'Retry loading inquiries',historyRefreshed:'Private inquiry history refreshed.',reviewHistory:'Correction history',reviewHistoryUnavailable:'Correction history is unavailable. Retry to refresh this request.',reviewHistoryEmpty:'No recorded review events are available for this request.',historyActor:'Actor',historySource:'Source',historyRevision:'Revision',historyState:'Status',historyReason:'Office decision reason',historyActions:{SUBMITTED:'Inquiry submitted',MAKER_ACKNOWLEDGE:'Maker acknowledged',REVIEWER_VERIFY:'Reviewer verified',APPROVER_CLOSE:'Approver closed',REJECT:'Review rejected'},historyActors:{TAXPAYER:'You',MAKER:'Office Maker',REVIEWER:'Office Reviewer',APPROVER:'Office Approver'},historySources:{TAXPAY_SQL:'TaxPay SQL',OFFICE_SQL:'Office SQL'},notLinked:'No payment in your linked account matches this reference. Check it or use the account that owns the payment.'
  },
  bn:{
  title:'মূল রেফারেন্স পর্যালোচনার অনুরোধ',
  intro:'শুধু ব্যক্তিগত যাচাইবিহীন অনুসন্ধান। এটি আর্থিক সংশোধনী মামলা নয়; অর্থ পরিশোধ, চালান বা লেজার ক্রেডিট পরিবর্তন করে না।',
- ref:'মূল রসিদ/পরিশোধ রেফারেন্স (নিজের দেওয়া, যাচাই হয়নি)',
+ ref:'মূল পরিশোধ রেফারেন্স (আপনার সংযুক্ত পেমেন্ট ইতিহাসের সঙ্গে মিলতে হবে)',
  reason:'সংশোধন পর্যালোচনার কারণ',
  outcome:'কী ফলাফল চান?',
  select:'পরিবর্তনের ক্ষেত্র (ঐচ্ছিক)', none:'পরিশোধের তথ্য পরিবর্তনের অনুরোধ নেই',old:'পূর্বের তথ্য (নিজের দেওয়া)', newValue:'প্রস্তাবিত তথ্য (যাচাই হয়নি)',
@@ -56,7 +64,7 @@ const t={
  statusUnavailable:'অবস্থা অনুপলব্ধ',details:'অনুরোধের বিবরণ',reasonLabel:'প্রদত্ত কারণ',outcomeLabel:'অনুরোধের ফলাফল',
  changeLabel:'যাচাই না হওয়া পরিচিতি প্রস্তাব',oldValueLabel:'পূর্বের মান (যাচাই হয়নি)',newValueLabel:'অনুরোধের মান (যাচাই হয়নি)',
  changeKinds:{ASSESSMENT_YEAR:'করবর্ষ',CIRCLE:'কর সার্কেল',PAYMENT_HEAD:'কর খাত',ATTRIBUTION:'পরিশোধের পরিচিতি'},
- loading:'ব্যক্তিগত অনুসন্ধান লোড হচ্ছে…',retry:'অনুসন্ধান আবার লোড করুন',historyRefreshed:'ব্যক্তিগত অনুসন্ধানের ইতিহাস হালনাগাদ হয়েছে।'
+ loading:'ব্যক্তিগত অনুসন্ধান লোড হচ্ছে…',retry:'অনুসন্ধান আবার লোড করুন',historyRefreshed:'ব্যক্তিগত অনুসন্ধানের ইতিহাস হালনাগাদ হয়েছে।',reviewHistory:'সংশোধনের ইতিহাস',reviewHistoryUnavailable:'সংশোধনের ইতিহাস পাওয়া যাচ্ছে না। এই অনুরোধের তথ্য আবার হালনাগাদ করুন।',reviewHistoryEmpty:'এই অনুরোধের কোনো পর্যালোচনা ঘটনা নেই।',historyActor:'কর্তা',historySource:'উৎস',historyRevision:'সংস্করণ',historyState:'অবস্থা',historyReason:'অফিসের সিদ্ধান্তের কারণ',historyActions:{SUBMITTED:'অনুসন্ধান জমা হয়েছে',MAKER_ACKNOWLEDGE:'মেকার গ্রহণ করেছেন',REVIEWER_VERIFY:'রিভিউয়ার যাচাই করেছেন',APPROVER_CLOSE:'অ্যাপ্রুভার বন্ধ করেছেন',REJECT:'পর্যালোচনা প্রত্যাখ্যাত'},historyActors:{TAXPAYER:'আপনি',MAKER:'অফিস মেকার',REVIEWER:'অফিস রিভিউয়ার',APPROVER:'অফিস অ্যাপ্রুভার'},historySources:{TAXPAY_SQL:'TaxPay SQL',OFFICE_SQL:'Office SQL'},notLinked:'আপনার সংযুক্ত অ্যাকাউন্টে এই রেফারেন্সের কোনো পরিশোধ পাওয়া যায়নি। রেফারেন্স যাচাই করুন অথবা যে অ্যাকাউন্টে পেমেন্টটি রয়েছে সেটিতে সাইন ইন করুন।'
  }
 } as const;
 
@@ -73,8 +81,10 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
  const [rows,setRows]=useState<readonly Row[]>([]);
+ const [reviewHistory,setReviewHistory]=useState<readonly CorrectionHistoryEvent[]>([]);
+ const [reviewHistoryError,setReviewHistoryError]=useState(false);
  const [historySearch,setHistorySearch]=useState('');
- const load=async(isActive:()=>boolean)=>{
+ const load=async(isActive:()=>boolean):Promise<boolean>=>{
   if(!supabase) throw new Error(labels.fail);
   const {data:who,error:idError}=await supabase.auth.getUser();
   if(idError||!sameAuthenticatedOwner(who.user?.id,authenticatedUserId))throw new Error(labels.auth);
@@ -90,10 +100,27 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
    error=null;
   }
   if(error)throw error;
-  if(isActive())setRows((data??[]) as Row[]);
+  const inquiries=(data??[]) as Row[];
+  if(!isActive())return false;
+  setRows(inquiries);
+  if(inquiries.length===0){
+   setReviewHistory([]);
+   setReviewHistoryError(false);
+   return true;
+  }
+  const {data:events,error:eventsError}=await supabase.rpc('taxpay_correction_my_history',{p_limit:50});
+  if(!isActive())return false;
+  if(eventsError){
+   setReviewHistory([]);
+   setReviewHistoryError(true);
+   return false;
+  }
+  setReviewHistory((events??[]) as CorrectionHistoryEvent[]);
+  setReviewHistoryError(false);
+  return true;
  };
  useEffect(()=>{
-  let active=true;setRows([]);setLoading(true);setLoadError(false);
+  let active=true;setRows([]);setReviewHistory([]);setReviewHistoryError(false);setLoading(true);setLoadError(false);
   const refresh=()=>load(()=>active).catch(()=>{if(active){setMessage(labels.fail);setLoadError(true)}})
    .finally(()=>{if(active)setLoading(false)});
   void refresh();
@@ -103,7 +130,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
  const retryLoad=async()=>{
   if(loading)return;
   setLoading(true);setLoadError(false);setMessage('');
-  try{await load(()=>true);setMessage(labels.historyRefreshed)}
+  try{const historyLoaded=await load(()=>true);setLoadError(false);setMessage(historyLoaded?labels.historyRefreshed:labels.reviewHistoryUnavailable)}
   catch{setLoadError(true);setMessage(labels.fail)}
   finally{setLoading(false)}
  };
@@ -117,6 +144,10 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   try{
    const {data:who,error:idError}=await supabase.auth.getUser();
    if(idError||!sameAuthenticatedOwner(who.user?.id,authenticatedUserId)){setMessage(labels.auth);return;}
+   const {error:sessionClaimError}=await supabase.rpc('taxpay_claim_story1_session',{p_session_id:getStorySessionId()});
+   if(sessionClaimError){setMessage(labels.fail);return;}
+   const {error:walkinClaimError}=await supabase.rpc('taxpay_claim_walkin_payer_payments');
+   if(walkinClaimError){setMessage(labels.fail);return;}
    const {error}=await supabase.from('taxpay_correction_inquiries').insert({
      requester_uid:authenticatedUserId,
      original_reference:originalReference.trim(),
@@ -124,10 +155,14 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
      requested_outcome:desiredOutcome.trim(),
      ...(change ? {change_kind:change.field,old_value:change.previousValue.trim(),new_value:change.proposedValue.trim()}: {})
    });
-   if(error){setMessage(labels.fail);return;}
+   if(error){
+    const detail=typeof error.message==='string'?error.message:'';
+    setMessage(detail.includes('CORRECTION_ORIGINAL_PAYMENT_NOT_LINKED')?labels.notLinked:labels.fail);
+    return;
+   }
    persisted=true;
    setOriginalReference('');setReason('');setDesiredOutcome('');setChangeKind('');setPreviousValue('');setProposedValue('');
-   try{await load(()=>true);setLoadError(false)}
+   try{const historyLoaded=await load(()=>true);setLoadError(false);if(!historyLoaded){setMessage(labels.savedHistoryFail);return;}}
    catch{setLoadError(true);setMessage(labels.savedHistoryFail);return;}
    setMessage(labels.saved);
   }catch{if(persisted){setLoadError(true);setMessage(labels.savedHistoryFail)}else setMessage(labels.fail)}finally{setBusy(false);}
@@ -216,6 +251,31 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
                   <p>{labels.oldValueLabel}: {r.old_value}</p>
                   <p>{labels.newValueLabel}: {r.new_value}</p>
                 </div>}
+                <div className="space-y-2 border-t border-taxpay-border pt-2" data-testid="correction-history-panel">
+                  <p className="font-semibold">{labels.reviewHistory}</p>
+                  {reviewHistoryError?<p role="status" className="text-amber-900">{labels.reviewHistoryUnavailable}</p>:
+                    reviewHistory.filter(event=>event.inquiry_id===r.inquiry_id).length===0
+                      ?<p className="text-taxpay-muted">{labels.reviewHistoryEmpty}</p>
+                      :<ol className="space-y-3" data-testid="correction-history-events">
+                        {reviewHistory.filter(event=>event.inquiry_id===r.inquiry_id).map(event=>{
+                          const actor=labels.historyActors[event.actor_role as keyof typeof labels.historyActors]??labels.statusUnavailable;
+                          const source=labels.historySources[event.source_system as keyof typeof labels.historySources]??labels.statusUnavailable;
+                          const action=labels.historyActions[event.action_code as keyof typeof labels.historyActions]??labels.statusUnavailable;
+                          const nextState=event.next_state?labels.officeReviewStates[event.next_state as keyof typeof labels.officeReviewStates]??labels.statusUnavailable:labels.statusUnavailable;
+                          const previousState=event.previous_state?labels.officeReviewStates[event.previous_state as keyof typeof labels.officeReviewStates]??labels.statusUnavailable:null;
+                          return <li key={event.event_id} className="rounded-lg border border-taxpay-border p-3" data-event-id={event.event_id}>
+                            <p className="font-semibold text-taxpay-text">{action}</p>
+                            <time dateTime={event.occurred_at} className="block text-sm text-taxpay-muted">{event.occurred_at}</time>
+                            <p className="text-sm text-taxpay-text">{labels.historyActor}: {actor}</p>
+                            <p className="text-sm text-taxpay-text">{labels.historySource}: {source}</p>
+                            <p className="text-sm text-taxpay-text">{labels.historyRevision}: {event.revision}</p>
+                            {previousState&&<p className="text-sm text-taxpay-text">{labels.historyState}: {previousState}</p>}
+                            <p className="text-sm text-taxpay-text">{labels.historyState}: {nextState}</p>
+                            {event.event_kind==='OFFICE_DECISION'&&<p className="text-sm text-taxpay-text">{labels.historyReason}: {event.reason}</p>}
+                          </li>;
+                        })}
+                      </ol>}
+                </div>
               </div>
             </details>}
           ]}/>}

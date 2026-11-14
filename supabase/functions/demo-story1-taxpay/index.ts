@@ -199,6 +199,34 @@ Deno.serve(async(req)=>{
      return respond({success:false,error:"SOURCE_RECORD_NOT_FOUND"},404);
    return respond({success:true,data,simulationOnly:true});
   }
+  // A refresh-safe original SQL lookup for an *existing approved profile*
+  // capability. Public references and receipt mobiles are identifiers only:
+  // they are never substitutes for an active possession capability.
+  if(req.method==="GET"&&path==="/payments/reference"){
+   const p_capability_hash=await capabilityHash(req);
+   if(!p_capability_hash)
+     return respond({success:false,error:"PROFILE_CAPABILITY_REQUIRED"},401);
+   const p_reference=u.searchParams.get("reference");
+   const p_receipt_mobile=u.searchParams.get("receiptMobile");
+   if(!p_reference||p_reference.length>200||!p_reference.trim()||
+     (p_receipt_mobile!==null&&p_receipt_mobile!==""&&!/^01[0-9]{9}$/.test(p_receipt_mobile)))
+     return respond({success:false,error:"INVALID_REFERENCE"},400);
+   const {data,error}=await serviceClient(url).rpc("taxpay_demo_story1_reference_payment",{
+    p_capability_hash,p_reference,p_receipt_mobile
+   });
+   if(error){
+    if(/GUEST_SESSION_UNAVAILABLE|INVALID_CAPABILITY|INVALID_DEMO_PROFILE/.test(error.message??""))
+     return respond({success:false,error:"PROFILE_CAPABILITY_UNAVAILABLE"},403);
+    if(/INVALID_REFERENCE|INVALID_RECEIPT_MOBILE/.test(error.message??""))
+     return respond({success:false,error:"INVALID_REFERENCE"},400);
+    // Never turn a SQL outage or ambiguous reference into a false missing row.
+    return respond({success:false,error:"PAYMENT_LOOKUP_UNAVAILABLE"},503);
+   }
+   if(data===null)return respond({success:false,error:"NOT_FOUND"},404);
+   if(!data||typeof data!=="object"||!uuid.test(data.id)||data.status!=="SIMULATED_SUCCESS")
+     return respond({success:false,error:"PAYMENT_LOOKUP_UNAVAILABLE"},503);
+   return respond({success:true,data,simulationOnly:true});
+  }
   let rpc:string,args:Record<string,unknown>;
   if(req.method==="GET"&&path==="/payments"){
     const session=u.searchParams.get("sessionId");if(!session||!uuid.test(session))return respond({success:false,error:"INVALID_SESSION"},400);

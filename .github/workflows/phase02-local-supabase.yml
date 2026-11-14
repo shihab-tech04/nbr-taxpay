@@ -42,10 +42,8 @@ jobs:
           test "$(git -C "$OFFICE_CURRENT_DIR" rev-parse HEAD)" = "$OFFICE_CURRENT_SHA"
           cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_CURRENT_DIR/src/app/contracts/paymentSimulationContract.ts"
           OFFICE_REPO="https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git"
-          OFFICE_BRIDGE_REF="main"
-          if git ls-remote --exit-code --heads "$OFFICE_REPO" codex/correction-bridge-20261029 >/dev/null 2>&1; then
-            OFFICE_BRIDGE_REF="codex/correction-bridge-20261029"
-          fi
+          # Check the existing WS3 Office #270 branch, not a stale historical bridge.
+          OFFICE_BRIDGE_REF="ws3/v95-correction-payment-parent-20261112"
           OFFICE_BRIDGE_DIR="$RUNNER_TEMP/office-matching-bridge"
           git clone --depth 1 --branch "$OFFICE_BRIDGE_REF" "$OFFICE_REPO" "$OFFICE_BRIDGE_DIR"
           cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_BRIDGE_DIR/supabase/functions/payment-sync-bridge/index.ts"
@@ -181,6 +179,15 @@ jobs:
           set -euo pipefail
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/accountPaymentFormDraftIsolation.sql
+
+      - name: Verify unsigned guest form drafts using disposable SQL and real local Edge
+        run: |
+          set -euo pipefail
+          export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/guestPaymentFormDraftIsolation.sql
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/demoRecipientNotices.sql
+          node tests/integration/guestPaymentFormDraftEdge.mjs
+
 
       - name: Verify explicit prior-browser fictional payment recovery and isolation
         shell: bash
@@ -416,6 +423,69 @@ jobs:
 
       - name: Reauthenticate both synthetic owners and verify exact rows after restart
         run: node tests/integration/localDraftRestartReadBack.mjs
+
+      - name: Verify original v3 Taxpayer SQL parent in separate disposable Office SQL and officer read state
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Two independent local databases; never link or write hosted SQL.
+          OFFICE_DIR="$RUNNER_TEMP/ws3-office-verified"
+          # B-owned paired SQL step: resolve the current Office #270 branch
+          # once, record its immutable SHA and test that exact detached tree.
+          # A historical hardcoded head can fail before any SQL test runs.
+          git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
+            https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
+          OFFICE_SHA="$(git -C "$OFFICE_DIR" rev-parse HEAD)"
+          test -n "$OFFICE_SHA"
+          git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
+          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
+          echo "Paired Office SQL source SHA: $OFFICE_SHA"
+          docker run --rm -d --name ws3-office-sql-pg17 \
+            -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres \
+            -p 127.0.0.1:55433:5432 postgres:17
+          trap 'docker stop ws3-office-sql-pg17 >/dev/null 2>&1 || true' EXIT
+          export WS3_TAXPAYER_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          export WS3_OFFICE_DB_URL="postgresql://postgres:postgres@127.0.0.1:55433/postgres"
+          export WS3_OFFICE_SOURCE="$OFFICE_DIR"
+          for attempt in $(seq 1 35); do
+            if pg_isready -h 127.0.0.1 -p 55433 -U postgres -d postgres; then break; fi
+            sleep 2
+          done
+          pg_isready -h 127.0.0.1 -p 55433 -U postgres -d postgres
+          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -c \
+            "CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN BYPASSRLS;"
+          psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f \
+            "$OFFICE_DIR/tests/integration/officeMigrationAuthPrerequisite.sql"
+          while IFS= read -r migration; do
+            psql -X -v ON_ERROR_STOP=1 "$WS3_OFFICE_DB_URL" -f "$migration" >/dev/null
+          done < <(find "$OFFICE_DIR/supabase/migrations" -maxdepth 1 -name '*.sql' -type f | sort)
+          node tests/integration/pairedTaxpayerOfficeSql.mjs
+          node tests/integration/pairedCorrectionOfficeSql.mjs
+          node tests/integration/pairedTaxpayerOfficeEdgeSql.mjs
+          echo "PASS: original source v3 payment, separate Office SQL, existing Edge transport, retry, and authorized readback"
+
+
+      - name: Verify capability-bound guest reference recovery via real local Edge
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Prior database restart can stop the disposable Edge worker. Reuse
+          # the live local worker when possible, otherwise restart it locally.
+          endpoint="http://127.0.0.1:54321/functions/v1/demo-story1-taxpay/payments/reference?reference=WS3-PROBE"
+          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
+            --header "apikey: $TAXPAY_LOCAL_SUPABASE_ANON_KEY" "$endpoint" || true)"
+          if [ "$code" != "401" ]; then
+            supabase functions serve --no-verify-jwt > "$RUNNER_TEMP/ws3-guest-reference-edge.log" 2>&1 &
+            for attempt in $(seq 1 35); do
+              code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
+                --header "apikey: $TAXPAY_LOCAL_SUPABASE_ANON_KEY" "$endpoint" || true)"
+              if [ "$code" = "401" ]; then break; fi
+              sleep 2
+            done
+          fi
+          test "$code" = "401"
+          node tests/integration/guestReferenceLookupEdge.mjs
+          echo "PASS: synthetic original SQL -> Edge receipt reference, session recovery, capability denial"
 
       - name: Remove disposable synthetic credentials
         if: always()
