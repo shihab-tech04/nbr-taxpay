@@ -149,7 +149,11 @@ export function CitizenNavigation() {
     let last = window.scrollY;
     let accumulated = 0;
     const onScroll = () => {
-      if (inputFocusedRef.current) { accumulated = 0; setCompact(false); return; }
+      // Scrolling may collapse guest navigation, but must never replace the
+      // approved signed-in bottom dock with a corner-only navigation.
+      if (isTaxpayer || inputFocusedRef.current) {
+        accumulated = 0; setCompact(false); return;
+      }
       if (window.matchMedia('(min-width: 901px)').matches) { setCompact(false); return; }
       const next = window.scrollY;
       const delta = next - last;
@@ -185,7 +189,7 @@ export function CitizenNavigation() {
       document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('focusout', onFocusOut);
     };
-  }, [inTransaction]);
+  }, [inTransaction,isTaxpayer]);
 
   const overlayOpen = menuOpen;
   useEffect(() => {
