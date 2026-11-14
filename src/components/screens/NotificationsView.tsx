@@ -129,7 +129,7 @@ export const NotificationsView:React.FC=()=>{
   if(authLoading)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
   const visibleAuthorizations=authorizationNotices.filter(r=>(authorizationFilter==="all"||r.status===authorizationFilter)&&
     (r.payerId+" "+r.taxpayerId+" "+r.status).toLocaleLowerCase().includes(authorizationSearch.trim().toLocaleLowerCase()));
-  const visiblePayments=previewPaymentEvents.filter(p=>(p.transactionId+" "+p.payer+" "+p.state).toLocaleLowerCase().includes(paymentSearch.trim().toLocaleLowerCase()));
+  const visiblePayments=previewPaymentEvents.filter(p=>(p.transactionId+" "+p.payer+" "+p.state+" "+p.createdAt.slice(0,10)).toLocaleLowerCase().includes(paymentSearch.trim().toLocaleLowerCase()));
   if(previewAccount&&!authenticatedUser)return <main className="mx-auto max-w-7xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={label('Notifications','বিজ্ঞপ্তি')} description={label('Review requests and recorded payment updates.','অনুমোদনের অনুরোধ ও সংরক্ষিত পেমেন্টের হালনাগাদ দেখুন।')}/>
     <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-labelledby="authorization-notice-title">
@@ -199,8 +199,13 @@ export const NotificationsView:React.FC=()=>{
              :label('Your recorded payment','আপনার সংরক্ষিত পেমেন্ট')}</p>},
            {key:'reference',header:label('Reference','রেফারেন্স'),renderCell:p=><p className="break-all text-sm text-taxpay-muted">{p.transactionId}</p>},
            {key:'amount',header:label('Amount','পরিমাণ'),renderCell:p=><p className="text-sm font-semibold tabular-nums text-taxpay-text">{formatSimulatedAmount(p.amountMinor)}</p>},
-           {key:'status',header:label('Status','অবস্থা'),renderCell:p=><p className="text-sm text-taxpay-muted">{p.state==='SIMULATED'
-             ?label('Recorded','সংরক্ষিত'):String(p.state).replaceAll('_',' ').toLowerCase()}</p>}
+           {key:'status',header:label('Status','অবস্থা'),renderCell:p=><div className="text-sm text-taxpay-muted">
+             <p>{p.state==='SIMULATED'
+             ?label('Recorded','সংরক্ষিত'):String(p.state).replaceAll('_',' ').toLowerCase()}</p>
+             <time dateTime={p.createdAt} className="block text-xs">
+               {new Date(p.createdAt).toLocaleDateString(bn?'bn-BD':'en-GB',{dateStyle:'medium'})}
+             </time>
+           </div>}
          ]}/>}
     </section>
     <ReceivedPaymentNoticeRegister profileId={previewAccount.id} language={language}/>
