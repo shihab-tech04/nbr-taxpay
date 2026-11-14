@@ -50,6 +50,11 @@ for(const language of ['en','bn'] as const){
     await expect(records).toHaveCount(2);
 
     const paymentSearch=page.getByRole('searchbox',{name:language==='bn'?'পেমেন্টের হালনাগাদ খুঁজুন':'Search payment updates'});
+    // F-085: verified original event date is visible without changing the
+    // approved four-column notification layout and is searchable in both languages.
+    await expect(records.last().locator('time[datetime="2026-10-24T10:00:00Z"]')).toHaveCount(1);
+    await paymentSearch.fill('2026-10-24');
+    await expect(records.last().locator('tbody tr')).toHaveCount(1);
     await paymentSearch.fill('no-match-999');
     await expect(records).toHaveCount(1);
     await page.getByRole('button',{name:language==='bn'?'অনুসন্ধান মুছুন':'Clear search'}).click();
