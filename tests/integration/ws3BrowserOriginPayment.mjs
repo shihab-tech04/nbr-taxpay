@@ -55,7 +55,7 @@ export async function verifyWs3BrowserOrigin({
       const capability=route.request().headers()['x-taxpay-guest-capability'];
       if(capability)headers['x-taxpay-guest-capability']=capability;
       const result=await request('TAXPAY_SQL','/payments','POST',input,headers);
-      captured.push({input,result});
+      captured.push({input,result,capability});
       await route.fulfill({status:result.status,contentType:'application/json',
         headers:{'cache-control':'no-store','access-control-allow-origin':'*'},
         body:JSON.stringify(result.data)});
@@ -108,7 +108,8 @@ export async function verifyWs3BrowserOrigin({
     await expect(dialog.getByRole('heading',{name:'Payment record saved'}))
       .toBeVisible({timeout:30000});
     assert.equal(captured.length,1,'The original UI must submit only once');
-    const {input,result}=captured[0];
+    const {input,result,capability}=captured[0];
+    assert.ok(capability,'Existing preview login must bind payment to server-issued capability');
     assert.equal(result.status,200,'Browser-originated payment must reach both SQL projects');
     assert.equal(result.data.mirrored,true);
     assert.equal(input.amountMinor,5000);
@@ -148,15 +149,12 @@ export async function verifyWs3BrowserOrigin({
     assert.equal(row.details.receiptReference,input.details.receiptReference);
     assert.equal(row.details.payerId,'user1');
     const retry=await request('TAXPAY_SQL','/payments','POST',input,
-      {apikey:anonKey,'x-taxpay-guest-capability':page===null?'':captured[0].capability||''});
-    // The browser-origin evidence is complete without requiring this extra
-    // replay when its temporary profile token has expired; original paired
-    // SQL/Edge replay tests independently verify idempotency.
-    if(retry.status===200){
-      assert.equal(retry.data.id,id);
-      assert.equal(Number(psql(officeDb,
-        'SELECT count(*) FROM demo_payment.story_payments WHERE id='+sqlText(id)+'::uuid;')),1);
-    }
+      {apikey:anonKey,'x-taxpay-guest-capability':capability});
+    assert.equal(retry.status,200,'Replaying the identical browser request must be idempotent');
+    assert.equal(retry.data.id,id);
+    assert.equal(retry.data.replayed,true);
+    assert.equal(Number(psql(officeDb,
+      'SELECT count(*) FROM demo_payment.story_payments WHERE id='+sqlText(id)+'::uuid;')),1);
     console.log('PASS WS3 browser-origin preview payment: current WS1 source '+sourceSha+
       ' -> original disposable Taxpayer SQL -> existing signed Edge -> separate Office SQL'+
       ' -> authorized Office readback, two original allocation IDs and exact values');
