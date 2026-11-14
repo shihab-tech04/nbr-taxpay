@@ -193,7 +193,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
           {bn ? 'সর্বশেষ সংরক্ষিত খসড়া খুলুন' : 'Open latest saved version'}
         </button>
       </div>
-    </div>
+    </div>}
     {expanded && <div className="mt-3 rounded-lg border border-taxpay-border bg-white p-3">
       {loading ? <p role="status">{bn ? 'খসড়া লোড হচ্ছে…' : 'Loading saved drafts…'}</p>
         : rows.length === 0 ? <p role="status" className="text-sm text-slate-600">{bn ? 'এই সেবায় কোনো খসড়া নেই।' : 'No saved drafts for this service.'}</p>
