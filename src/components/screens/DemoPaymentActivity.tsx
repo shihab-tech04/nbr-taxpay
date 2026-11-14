@@ -177,7 +177,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     setLines(before=>before.map((l,i)=>i===index?{...l,[field]:value}:l));
     setNonce(crypto.randomUUID());setSubmitMessage('');
   };
-  const addLine=()=>{if(id&&lines.length<20){setLines(old=>[...old,freshLine(id)]);setNonce(crypto.randomUUID());setSubmitMessage('');}};
+  const addLine=()=>{if(id&&lines.length<20&&!lines.some(line=>line.category==='TAX_WITH_RETURN')){setLines(old=>[...old,{...freshLine(id),category:old[0]?.category??'OTHER_TAX_PAYMENT'}]);setNonce(crypto.randomUUID());setSubmitMessage('');}};
   const removeLine=(index:number)=>{if(lines.length>1){setLines(old=>old.filter((_,i)=>i!==index));setNonce(crypto.randomUUID());setSubmitMessage('');}};
   const submit=useCallback(async(e:React.FormEvent)=>{
     e.preventDefault();if(!id||saving)return;
@@ -393,7 +393,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
           </PaymentFormSection>
           <PaymentFormSection number={2} title={txt('Review the calculated amount','হিসাবকৃত পরিমাণ যাচাই করুন')} description={txt('You can add more allocations','আরও বরাদ্দ যোগ করতে পারেন')}>
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" disabled={lines.length>=20||saving} onClick={addLine} className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold disabled:opacity-50">{txt('Add beneficiary / category','বরাদ্দ যোগ করুন')}</button>
+          <button type="button" disabled={lines.length>=20||saving||lines.some(line=>line.category==='TAX_WITH_RETURN')} onClick={addLine} className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold disabled:opacity-50">{txt('Add beneficiary / category','বরাদ্দ যোগ করুন')}</button>
           <button type="submit" disabled={saving} className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white disabled:opacity-50">{saving?txt('Saving…','সংরক্ষণ হচ্ছে…'):txt('Save payment record','পেমেন্ট রেকর্ড সংরক্ষণ করুন')}</button>
         </div>
           </PaymentFormSection>
