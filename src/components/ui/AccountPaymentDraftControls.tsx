@@ -5,7 +5,7 @@ import { PaymentDraftExitContext } from './TaxPayModal';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
 import {
-  deletePaymentFormDraft, listPaymentFormDrafts, savePaymentFormDraft,
+  deletePaymentFormDraft, listPaymentFormDrafts, savePaymentFormDraft, PaymentDraftConflictError,
   type PaymentFormDraft, type PaymentDraftActor, type PaymentDraftService,
 } from '../../services/accountPaymentFormDrafts';
 
@@ -48,12 +48,14 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [conflictDraftId, setConflictDraftId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     setRows([]);
     setGuestContractReady(false);
     setPendingDelete(null);
+    setConflictDraftId(null);
     setError(null);
     setFeedback(null);
     setSavedSnapshot(null);
@@ -76,17 +78,22 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     setRows(result);
   };
 
-  const save = async (rethrowFailure = false) => {
+  const existingDraftId = () => selectedDraft?.service === service ? selectedDraft.id : null;
+  const save = async (rethrowFailure = false, asNewDraft = false) => {
     if (!actor || busy || loading) {
       if (rethrowFailure) throw new Error(bn ? 'এখন খসড়া সংরক্ষণ করা যাচ্ছে না। আবার চেষ্টা করুন।' : 'Draft saving is unavailable right now. Retry.');
       return;
     }
     setBusy(true); setError(null); setFeedback(null); setSavedSnapshot(null);
+    if (!asNewDraft) setConflictDraftId(null);
     try {
       const payload = snapshot();
-      const existing = selectedDraft?.service === service ? selectedDraft : undefined;
+      // A separate draft preserves both the server's newer original revision
+      // and the local unsaved form without silently choosing a winner.
+      const existing = !asNewDraft && selectedDraft?.service === service ? selectedDraft : undefined;
       const result = await savePaymentFormDraft(actor, service, payload, existing);
       onSelectedDraft(result);
+      setConflictDraftId(null);
       setRows(rows => [result, ...rows.filter(row => row.id !== result.id)].sort(
         (a, b) => b.updated_at.localeCompare(a.updated_at)));
       // The SQL write and readback have already completed. Show success only in
@@ -94,6 +101,11 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       setSavedSnapshot(JSON.stringify(payload));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Save was not confirmed.');
+      if (cause instanceof PaymentDraftConflictError && existingDraftId()) {
+        setConflictDraftId(existingDraftId());
+        // A list refresh must never overwrite edits still in the open form.
+        try { await refresh(); } catch { /* The recovery buttons can retry. */ }
+      }
       // The close dialog must remain open unless the SQL write/readback succeeded.
       if (rethrowFailure) throw cause;
     } finally { setBusy(false); }
@@ -107,6 +119,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       const current = latest.find(row => row.id === draft.id);
       if (!current) throw new Error(bn ? 'খসড়াটি আর পাওয়া যাচ্ছে না।' : 'Draft was not found.');
       restore(current.form_payload);
+      setConflictDraftId(null);
       setSavedSnapshot(null);
       onSelectedDraft(current);
       setRows(latest);
@@ -165,6 +178,22 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     {!guardOnly && (actionTarget ? createPortal(actions, actionTarget) : actionTarget === undefined ? actions : null)}
     {feedback && <p className="mt-2 text-sm text-taxpay-dark" role="status">{feedback}</p>}
     {error && <p className="mt-2 text-sm text-taxpay-error" role="alert">{error}</p>}
+    {conflictDraftId && selectedDraft?.id === conflictDraftId && <div className="mt-2 space-y-2"
+      aria-label={bn ? 'পরিবর্তিত খসড়া পুনরুদ্ধার' : 'Changed draft recovery'}>
+      <p className="text-sm text-taxpay-muted">{bn
+        ? 'অন্য জায়গায় এই খসড়ার নতুন সংস্করণ আছে। বর্তমান ফর্মের তথ্য আলাদা খসড়ায় রাখুন, অথবা নতুন সংস্করণটি খুলুন।'
+        : 'A newer saved version exists. Keep these form edits in a separate draft, or explicitly open the latest version.'}</p>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" disabled={busy || loading} onClick={() => void save(false, true)}
+          className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
+          {bn ? 'আমার পরিবর্তন নতুন খসড়ায় রাখুন' : 'Save my edits as a new draft'}
+        </button>
+        <button type="button" disabled={busy || loading} onClick={() => { if (selectedDraft) void resume(selectedDraft); }}
+          className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
+          {bn ? 'সর্বশেষ সংরক্ষিত খসড়া খুলুন' : 'Open latest saved version'}
+        </button>
+      </div>
+    </div>}
     {expanded && <div className="mt-3 rounded-lg border border-taxpay-border bg-white p-3">
       {loading ? <p role="status">{bn ? 'খসড়া লোড হচ্ছে…' : 'Loading saved drafts…'}</p>
         : rows.length === 0 ? <p role="status" className="text-sm text-slate-600">{bn ? 'এই সেবায় কোনো খসড়া নেই।' : 'No saved drafts for this service.'}</p>
