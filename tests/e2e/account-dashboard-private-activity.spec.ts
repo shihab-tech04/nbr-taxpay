@@ -566,3 +566,40 @@ test('private recent activity has an owner-scoped history action with localized 
   await expect(page).toHaveURL(/action=history/);
   await expect(page.getByTestId('account-workflow-summary')).toHaveCount(0);
 });
+
+test('F-122 signed-in mobile bottom navigation survives scrolling, language switch and refresh',async({page})=>{
+  await page.setViewportSize({width:375,height:812});
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  await expect(page.getByTestId('account-workflow-summary')).toBeVisible();
+  const nav=page.getByRole('navigation',{name:'Mobile primary navigation'});
+  const pay=page.getByRole('button',{name:'Pay — select payment type'});
+  await expect(nav).toBeVisible();
+  for(const name of ['Overview','Activity','Tax Ledger']){
+    await expect(nav.getByRole('button',{name,exact:true})).toBeVisible();
+  }
+  await expect(pay).toBeVisible();
+
+  // This scroll distance used to trigger compact mode and remove the dock.
+  await page.evaluate(()=>window.scrollTo(0,400));
+  await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(145);
+  await expect(nav).toBeVisible();
+  await expect(pay).toBeVisible();
+  await expect(page.locator('header.citizen-header--hidden')).toHaveCount(0);
+  await expect(page.locator('.citizen-corner--bottom-left')).toHaveCount(0);
+
+  await setWorkspaceLanguage(page,'bn');
+  const banglaNav=page.getByRole('navigation',{name:'মোবাইল প্রধান নেভিগেশন'});
+  await expect(banglaNav).toBeVisible();
+  for(const name of ['সংক্ষিপ্ত বিবরণ','লেনদেন','কর লেজার']){
+    await expect(banglaNav.getByRole('button',{name,exact:true})).toBeVisible();
+  }
+  await page.evaluate(()=>window.scrollTo(0,440));
+  await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(145);
+  await expect(banglaNav).toBeVisible();
+  await expect(page.getByRole('button',{name:'কর পরিশোধের ধরন নির্বাচন'})).toBeVisible();
+  await page.reload();
+  await expect(banglaNav).toBeVisible();
+  await expect(page.getByRole('button',{name:'কর পরিশোধের ধরন নির্বাচন'})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
