@@ -184,9 +184,9 @@ const allocations=[
 ];
 const idempotencyKey=randomUUID();
 const receiptSnapshot={paymentCategory:'OTHER_TAX_PAYMENT',totalAmount:50,challanNo:'SIM-'+idempotencyKey,
-  items:lines,allocationItems:allocations.map(item=>({allocationId:item.allocationId,
+  items:lines,allocationItems:allocations.map((item,index)=>({allocationId:item.allocationId,
     taxpayerTin:item.taxpayerTin,assessmentYear:item.assessmentYear,amountMinor:item.amountMinor,
-    paymentServiceEn:item.serviceCode,economicCode:item.headId===121?'64':'135'})),isSimulatedDemo:true};
+    paymentServiceEn:lines[index].headNameEn,economicCode:lines[index].economicCode})),isSimulatedDemo:true};
 const payload={origin:'TAXPAY_UI',idempotencyKey,sessionId:profile.paymentSessionId,
   service:'OTHER_TAX_PAYMENT',amountMinor:5000,details:{payerId:'user1',payerName:'WS3 Edge SQL payer',
     payerMode:'OTHER',combinedPayment:true,allocationContractVersion:3,allocationCount:2,taxpayerCount:2,
