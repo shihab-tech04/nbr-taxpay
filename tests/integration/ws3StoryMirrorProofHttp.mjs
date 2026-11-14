@@ -179,6 +179,34 @@ try{
  assert.equal(again.status,200);assert.equal(again.data.id,sourceId);
  assert.equal(store.size,1);assert.equal(office.size,1);
 
+ // Pay Again is a NEW submitted SQL parent with its own idempotency key,
+ // original parent retained as read-only provenance; the prefilled draft alone
+ // must not create a source or Office payment.
+ const repeatKey=randomUUID();
+ const repeat=JSON.parse(JSON.stringify(payload));
+ repeat.idempotencyKey=repeatKey;
+ repeat.details.sourcePaymentId=sourceId;
+ repeat.details.receiptReference='SIM-'+repeatKey;
+ repeat.details.receiptSnapshot.challanNo='SIM-'+repeatKey;
+ repeat.details.allocations[0].allocationId='ws3-new-allocation-one';
+ repeat.details.allocations[1].allocationId='ws3-new-allocation-two';
+ const copiedDraft={sourcePaymentId:sourceId,formPayload:repeat.details};
+ assert.equal(store.size,1);assert.equal(office.size,1);
+ assert.equal(copiedDraft.sourcePaymentId,sourceId);
+ const submittedAgain=await post('TAXPAY_SQL','/demo-story1-taxpay/payments',repeat);
+ assert.equal(submittedAgain.status,200);
+ const newParentId=submittedAgain.data.id;
+ assert.notEqual(newParentId,sourceId);
+ assert.equal(office.get(newParentId).data.details.sourcePaymentId,sourceId);
+ assert.equal(office.get(newParentId).data.details.receiptReference,'SIM-'+repeatKey);
+ assert.deepEqual(office.get(sourceId).data.details.allocations,payload.details.allocations);
+ assert.equal(office.get(sourceId).data.details.sourcePaymentId,undefined);
+ assert.equal(office.get(newParentId).data.details.allocations[0].allocationId,'ws3-new-allocation-one');
+ const repeatAck=await post('TAXPAY_SQL','/demo-story1-taxpay/payments',repeat);
+ assert.equal(repeatAck.status,200);assert.equal(repeatAck.data.id,newParentId);
+ assert.equal(repeatAck.data.replayed,true);
+ assert.equal(office.size,2);assert.equal(store.size,2);
+
  // A submitted Travel Tax record is independent from an unsubmitted draft.
  const travelKey=randomUUID();
  const travel={
@@ -199,6 +227,6 @@ try{
  assert.equal(JSON.stringify(mirrored).includes('PASSPORT-UNMASKED'),false);
  const replay=await post('TAXPAY_SQL','/demo-story1-taxpay/payments',travel);
  assert.equal(replay.status,200);assert.equal(replay.data.id,submitted.data.id);
- assert.equal(office.size,2);assert.equal(store.size,2);
- console.log('PASS WS3 Story 1 Edge HTTP: Office requires signed proof, forged/missing proof denied, source signed proof verified on fetch, same-parent source-outage retry and single Office mirror, original v3 allocation/receipt IDs and submitted masked Travel Tax passengers; RPC persistence is isolated stand-in, not production SQL');
+ assert.equal(office.size,3);assert.equal(store.size,3);
+ console.log('PASS WS3 Story 1 Edge HTTP: Office requires signed proof, forged/missing proof denied, source signed proof verified on fetch, same-parent source-outage retry and single Office mirror, original v3 allocation/receipt IDs, Pay Again distinct parent/source parent lineage, and submitted masked Travel Tax passengers; RPC persistence is isolated stand-in, not production SQL');
 }finally{await Promise.all(servers.map(s=>new Promise(ok=>s.close(ok))));}
