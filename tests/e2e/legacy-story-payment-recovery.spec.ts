@@ -361,7 +361,7 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(newCertificate.getByTestId('payment-certificate-reference'))
     .toContainText('SK-PC-'+newTravelPayment);
   await expect(newCertificate).toContainText(newTravelPayment);
-  await expect(newCertificate).toContainText('Travel passenger');
+  await expect(newCertificate).toContainText('SAMPLE BANGLADESHI PASSENGER');
   await expect(newCertificate).toContainText('••••3456');
   await expect(newCertificate).not.toContainText('SK-PC-'+travelPayment);
   expect(submittedTravelPayments).toHaveLength(1);
