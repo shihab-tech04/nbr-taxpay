@@ -555,3 +555,18 @@ test('Travel Tax Bengali passenger tabs remain accessible at 320px',async({page}
 // Banner-dependent browser checks use explicitly published CMS rows;
 // unavailable CMS must not revive unpublished bundled artwork.
 test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
+
+test('guide search keeps existing Travel Tax action reachable in English and Bangla', async ({ page }) => {
+  for (const language of ['en', 'bn'] as const) {
+    await page.goto('/?action=user_guide&lang=' + language);
+    const bn = language === 'bn';
+    await page.getByRole('searchbox', { name: bn ? 'নির্দেশিকা খুঁজুন' : 'Search the guide' })
+      .fill(bn ? 'ভ্রমণ কর' : 'Travel tax');
+    const result = page.locator('.public-guide-result-group').filter({
+      has: page.getByRole('heading', {name: bn ? 'ভ্রমণ কর' : 'Travel tax', exact: true})
+    });
+    await expect(result).toBeVisible();
+    await result.getByRole('button', {name: bn ? 'ভ্রমণ কর পরিশোধ করুন' : 'Pay Travel Tax'}).click();
+    await expect(page.getByRole('dialog', {name: bn ? 'ভ্রমণ কর' : 'Travel tax'})).toBeVisible();
+  }
+});
