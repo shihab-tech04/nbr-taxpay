@@ -168,7 +168,9 @@ test('User guide search and text weights follow the citizen typography contract'
 test('User guide has real platform-specific steps and searches across all topics', async ({ page }) => {
   await page.goto('/?action=user_guide');
   const guide = page.locator('.public-guide-page');
-  await expect(guide.getByText('On Home, choose Pay Tax', { exact: false })).toBeVisible();
+  const mobileDefault=(page.viewportSize()?.width??1280)<=700;
+  await expect(guide.getByText(mobileDefault?'Tap Pay Tax on Home':'On Home, choose Pay Tax',
+    { exact: false })).toBeVisible();
   await guide.getByRole('button', { name: 'Mobile', exact: true }).click();
   await expect(guide.getByText('Tap Pay Tax on Home', { exact: false })).toBeVisible();
   await expect(guide.getByText('On Home, choose Pay Tax', { exact: false })).toHaveCount(0);
