@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {reuseRecordedPayment,reuseLegacySingleHeadPayment} from '../src/services/paymentReuse.ts';
+import {reuseRecordedPayment,reuseLegacySingleHeadPayment,oneChoicePerRecordedParent} from '../src/services/paymentReuse.ts';
 import type {ChallanReceipt} from '../src/types/tax.ts';
 import {V11_PAYMENT_OPTIONS} from '../src/data/v11PaymentOptions.ts';
 const receipt = {
@@ -295,4 +295,22 @@ test('single-head Pay Again service matrix retains editable source inputs and ex
       assert.equal(JSON.stringify(original),immutable,'original payment must remain unchanged');
     }
   }
+});
+
+test('Pay Again offers one choice per recorded parent, never one per legacy batch line',()=>{
+  const source=[
+    {id:'payment-1',batchId:'batch-A',amountMinor:1500},
+    {id:'payment-2',batchId:'batch-A',amountMinor:3500},
+    {id:'batch-A',amountMinor:700},
+    {id:'payment-3',batchId:'batch-B',amountMinor:900},
+    {id:'payment-4',batchId:'batch-B',amountMinor:1100},
+    {id:'payment-5',amountMinor:800},
+  ];
+  const original=JSON.stringify(source);
+  const choices=oneChoicePerRecordedParent(source,payment=>payment.batchId);
+  assert.deepEqual(choices.map(item=>item.id),['payment-1','batch-A','payment-3','payment-5']);
+  // Grouped rows are display-only; all saved allocations stay available to
+  // the existing complete-batch reconstruction and idempotency checks.
+  assert.equal(source.length,6);
+  assert.equal(JSON.stringify(source),original);
 });
