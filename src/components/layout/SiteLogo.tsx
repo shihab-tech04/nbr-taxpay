@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useState, type ImgHTMLAttributes } from 'react';
+import { useEffect, useSyncExternalStore, useState, type ImgHTMLAttributes } from 'react';
 import defaultWordmark from '../../assets/korbritto-brand-locked.svg';
 import { supabase } from '../../services/supabaseClient';
 
@@ -119,6 +119,18 @@ function subscribe(subscriber: () => void) {
 export function SiteLogo(props: ImgHTMLAttributes<HTMLImageElement>) {
   const selectedUrl = useSyncExternalStore(subscribe, snapshot, snapshot);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  // A temporarily unavailable uploaded image must not be stuck on the bundled
+  // fallback forever if Storage connectivity returns without a new version.
+  useEffect(() => {
+    if (!failedUrl) return;
+    const retry = () => setFailedUrl(null);
+    window.addEventListener('online', retry);
+    window.addEventListener('focus', retry);
+    return () => {
+      window.removeEventListener('online', retry);
+      window.removeEventListener('focus', retry);
+    };
+  }, [failedUrl]);
   const src = failedUrl === selectedUrl ? defaultWordmark : selectedUrl;
   return <img {...props} src={src} onError={event => {
     if (src !== defaultWordmark) setFailedUrl(selectedUrl);
