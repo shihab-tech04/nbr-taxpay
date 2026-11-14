@@ -77,23 +77,23 @@ function installBridgeConfig(origin,root,hostedPath){
 function sqlRpc(origin,name,args){
  const calls={
   TAXPAY_SQL:{
-   payment_v1_internal_bridge_config:'public.payment_v1_internal_bridge_config()',
-   taxpay_correction_internal_claim:'public.taxpay_correction_internal_claim('+args.p_limit+'::integer)',
-   taxpay_correction_internal_ack:'public.taxpay_correction_internal_ack('+sqlText(args.p_event_id)+'::uuid,'+
+   payment_v1_internal_bridge_config:()=> 'public.payment_v1_internal_bridge_config()',
+   taxpay_correction_internal_claim:()=> 'public.taxpay_correction_internal_claim('+args.p_limit+'::integer)',
+   taxpay_correction_internal_ack:()=> 'public.taxpay_correction_internal_ack('+sqlText(args.p_event_id)+'::uuid,'+
     sqlText(args.p_claim_token)+'::uuid,'+args.p_success+','+(args.p_error===null?'NULL':sqlText(args.p_error))+')',
-   taxpay_correction_record_office_decision:'public.taxpay_correction_record_office_decision('+pgJSON(args.p_command)+')',
+   taxpay_correction_record_office_decision:()=> 'public.taxpay_correction_record_office_decision('+pgJSON(args.p_command)+')',
   },
   OFFICE_SQL:{
-   payment_v1_internal_bridge_config:'public.payment_v1_internal_bridge_config()',
-   payment_v1_internal_ingest_correction:'public.payment_v1_internal_ingest_correction('+pgJSON(args.p_event)+')',
-   payment_v1_internal_claim_commands:'public.payment_v1_internal_claim_commands('+args.p_limit+'::integer)',
-   payment_v1_internal_ack_correction_command:'public.payment_v1_internal_ack_correction_command('+
+   payment_v1_internal_bridge_config:()=> 'public.payment_v1_internal_bridge_config()',
+   payment_v1_internal_ingest_correction:()=> 'public.payment_v1_internal_ingest_correction('+pgJSON(args.p_event)+')',
+   payment_v1_internal_claim_commands:()=> 'public.payment_v1_internal_claim_commands('+args.p_limit+'::integer)',
+   payment_v1_internal_ack_correction_command:()=> 'public.payment_v1_internal_ack_correction_command('+
     sqlText(args.p_message_id)+'::uuid,'+sqlText(args.p_claim_token)+'::uuid,'+args.p_success+','+
     (args.p_review_state===null?'NULL':sqlText(args.p_review_state))+','+
     (args.p_error===null?'NULL':sqlText(args.p_error))+')',
   },
  };
- const expression=calls[origin]?.[name];
+ const expression=calls[origin]?.[name]?.();
  if(!expression)throw Error('Unexpected correction bridge RPC '+origin+'.'+name);
  return db(origin==='TAXPAY_SQL'?source:office,
   'BEGIN;SET LOCAL ROLE service_role;SELECT '+expression+';COMMIT;');
