@@ -180,9 +180,11 @@ test('F-129 US-050 valid profile wrong-mobile 404 denies without falling through
     legacyReads++;await route.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify({success:true,data:{items:[],total:0}})});
   });
-  await page.route(/\/demo-story1-taxpay\/payments\/reference\?/,route=>
-    route.fulfill({status:404,contentType:'application/json',
-      body:JSON.stringify({success:false,error:'NOT_FOUND'})}));
+  await page.route(/\/demo-story1-taxpay\/payments\/reference\?/,route=>{
+    const empty=!new URL(route.request().url()).searchParams.get('reference');
+    return route.fulfill({status:empty?400:404,contentType:'application/json',
+      body:JSON.stringify({success:false,error:empty?'INVALID_REFERENCE':'NOT_FOUND'})});
+  });
   await page.goto('/?action=verify');
   const dialog=page.getByRole('dialog',{name:'Payment status & receipt'});
   await dialog.getByRole('textbox',{name:'Challan, token or transaction reference'}).fill(reference);
@@ -214,4 +216,24 @@ test('F-129 US-050 source outage keeps reference for retry, never fabricates a m
   await dialog.getByRole('button',{name:'Search records'}).click();
   await expect(dialog.locator('.receipt-view__paper')).toContainText(reference);
   expect(calls).toBe(2);
+});
+
+
+test('F-129 US-050 older Edge 404 preserves existing same-session receipt/mobile recovery',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Backward compatibility representative');
+  await installReferenceProfile(page);
+  let oldRouteReads=0;
+  await page.route(/\/demo-story1-taxpay\/payments\/reference\?/,route=>{
+    oldRouteReads++;
+    return route.fulfill({status:404,contentType:'application/json',
+      body:JSON.stringify({success:false,error:'NOT_FOUND'})});
+  });
+  await stubSessionRecord(page);
+  await page.goto('/?action=verify');
+  const dialog=page.getByRole('dialog',{name:'Payment status & receipt'});
+  await dialog.getByRole('textbox',{name:'Challan, token or transaction reference'}).fill(reference);
+  await dialog.getByRole('textbox',{name:'Receipt mobile number'}).fill(mobile);
+  await dialog.getByRole('button',{name:'Search records'}).click();
+  await expect(dialog.locator('.receipt-view__paper')).toContainText(reference);
+  expect(oldRouteReads).toBe(2); // ambiguous 404 + version-safe probe
 });

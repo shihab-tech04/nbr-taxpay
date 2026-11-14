@@ -13,7 +13,7 @@ import { useAccountIdentity } from '../../services/accountIdentity';
 type ReceiptLookupProps = { embedded?: boolean; activityTabs?: boolean; hidePageHeading?: boolean; accountContext?: boolean };
 
 export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, activityTabs = false, hidePageHeading = false, accountContext = false }) => {
-  const { language, lookupReceipt, receipts, navigate, routeParams } = useTaxState();
+  const { language, lookupReceipt, receipts, navigate, routeParams, previewAccount } = useTaxState();
   const { user: signedInUser } = useAccountIdentity();
   // Homepage reference is kept in in-memory navigation state, never in a public URL.
   const initialReference = typeof routeParams.initialReference === 'string' ? routeParams.initialReference.trim() : '';
@@ -44,7 +44,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
     setLookupPending(false);
     setLookupError(false);
     setNeedsReceiptMobile(false);
-  }, [signedInUser?.id]);
+  }, [signedInUser?.id, previewAccount?.id]);
   // Never suggest sample/session receipts in the signed-in account tracking journey.
   // Users must provide the actual reference; public lookup examples remain unchanged.
   const sampleReceipts = accountContext ? [] : receipts.filter(receipt => !receipt.receiptMobile).slice(0, 3);

@@ -295,12 +295,22 @@ export async function findProfileReceiptByReference(
     success?:boolean;simulationOnly?:boolean;error?:string;data?:unknown
   }|null;
   if(response.status===404){
-    // Older Edge versions have no /payments/reference route. Do not turn a
-    // generic 404 into a verified negative or disable legacy recovery.
+    // Old Edge versions ALSO send 404 NOT_FOUND for unknown routes, so the
+    // error string alone cannot distinguish an absent handler from a proven
+    // owner-scoped no-match. Probe an invalid reference: only the new handler
+    // responds with INVALID_REFERENCE (400) after capability verification.
     if(body?.error!=='NOT_FOUND')return {checked:false,receipt:null};
+    const probe=await fetch(API+'/payments/reference?reference=',{
+      headers:storyApiHeaders(profile.paymentSessionId),cache:'no-store'
+    });
+    const probeBody=await probe.json().catch(()=>null) as {error?:string}|null;
     if(activePreviewSession()?.capability!==profile.capability)
       throw new Error('Preview profile changed during receipt lookup');
-    return {checked:true,receipt:null};
+    if(probe.status===404&&probeBody?.error==='NOT_FOUND')
+      return {checked:false,receipt:null}; // Old backend: retain safe legacy path.
+    if(probe.status===400&&probeBody?.error==='INVALID_REFERENCE')
+      return {checked:true,receipt:null}; // New backend: real scoped negative.
+    throw new Error('Authorized receipt lookup is unavailable');
   }
   if(!response.ok||body?.success!==true||body.simulationOnly!==true)
     throw new Error('Authorized receipt lookup is unavailable');
