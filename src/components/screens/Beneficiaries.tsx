@@ -476,7 +476,13 @@ export function Beneficiaries(){
     try{
       await removeBeneficiary(owner,deletePerson.id);await reload();setDeletePerson(null);setEditPerson(null);setModalError('');
       setNotice({en:'Beneficiary removed.',bn:'উপকারভোগী সরানো হয়েছে।'});
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){
+      const message=e instanceof Error?e.message:String(e);
+      setModalError(message==='The beneficiary is no longer saved. Refresh and try again.'
+        ?tr('The beneficiary is no longer saved. Refresh and try again.',
+          'উপকারভোগীটি আর সংরক্ষিত নেই। রিফ্রেশ করে আবার চেষ্টা করুন।')
+        :message);
+    }
     finally{setBusy(false);}
   }
 
