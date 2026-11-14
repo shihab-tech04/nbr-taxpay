@@ -397,13 +397,13 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
     browser.__sohojkorPrintCalls = 0;
     browser.print = () => { browser.__sohojkorPrintCalls = (browser.__sohojkorPrintCalls ?? 0) + 1; };
   });
-  await newCertificate.getByRole('button',{name:'Print certificate'}).click();
+  await travelDialog.getByRole('button',{name:'Print certificate'}).click();
   await expect.poll(() => page.evaluate(
     () => (window as Window & { __sohojkorPrintCalls?: number }).__sohojkorPrintCalls,
   )).toBe(1);
   const [certificatePdf] = await Promise.all([
     page.waitForEvent('download'),
-    newCertificate.getByRole('button',{name:'Download'}).click(),
+    travelDialog.getByRole('button',{name:'Download'}).click(),
   ]);
   expect(certificatePdf.suggestedFilename()).toBe('Payment-certificate-'+newTravelPayment+'.pdf');
   const certificatePdfPath = await certificatePdf.path();
