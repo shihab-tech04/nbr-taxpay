@@ -144,7 +144,9 @@ test('certificate previews stay non-official, match the selected type and locali
   // Genuine populated HTML export is covered by receiptDocumentExportBranding.
   await expect(documentModal.getByRole('button',{name:'Download'})).toBeDisabled();
   await expect(documentModal.getByRole('button',{name:'Print summary'})).toBeDisabled();
-  await expect(documentModal.locator('.receipt-view__amount strong')).toHaveText('—');
+  // Empty readback displays “—”; a failed backend read displays “Unavailable”.
+  // Neither is a zero-value or exportable certificate.
+  await expect(documentModal.locator('.receipt-view__amount strong')).toHaveText(/^(—|Unavailable)$/);
   await documentModal.getByRole('button',{name:'Close modal'}).click();
   await expect(documentModal).toHaveCount(0);
 
