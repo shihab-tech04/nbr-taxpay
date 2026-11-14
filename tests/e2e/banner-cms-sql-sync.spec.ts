@@ -166,3 +166,166 @@ test('a temporary Storage outage retries the unchanged published image after con
   await expect.poll(() => image.evaluate(element =>
     (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
 });
+
+test('reordering published CMS banners retains the selected service, fixed copy and image palette (EN/BN)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const palette = {
+    background_color: '#EFF7F4', heading_color: '#185A43',
+    body_color: '#245B4B', outline_color: '#24664E',
+  };
+  let rows = banners.map(row => row.id === 'advance' ? {...row, ...palette} : row);
+  await page.route('**/rest/v1/taxpay_site_banners**', route =>
+    route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify(rows)}));
+  await page.goto('/?action=landing&lang=en');
+  const carousel = page.getByRole('region', {name: 'Tax payment service banners'});
+  await expect(carousel.locator('.public-hero-carousel__slide')).toHaveCount(5);
+  await carousel.focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await expect(carousel).toHaveAttribute('data-active-slide', '2');
+  await expect(carousel).toHaveAttribute('data-payment-service', 'ADVANCE_TAX');
+
+  // Office changes order; every published service keeps its identity rather
+  // than unexpectedly replacing the slide the taxpayer is currently reading.
+  rows = [rows[0], rows[3], rows[4], rows[1], rows[2]];
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(carousel).toHaveAttribute('data-active-slide', '4');
+  await expect(carousel).toHaveAttribute('data-payment-service', 'ADVANCE_TAX');
+  const retained = carousel.locator('.public-hero-carousel__slide[data-active="true"]');
+  await expect(retained).toHaveCSS('background-color', 'rgb(239, 247, 244)');
+  await expect(retained.locator('h2')).toHaveCSS('color', 'rgb(24, 90, 67)');
+  await expect(retained.getByRole('button', {name: 'Start tax payment'})).toBeVisible();
+  await expect(retained.getByRole('button', {name: 'Start travel tax'})).toBeVisible();
+  await expect(carousel.getByRole('heading', {
+    name: page.viewportSize()!.width <= 640 ? 'SQL mobile heading' : 'Updated SQL-controlled headline',
+  })).toBeVisible();
+
+  await setWorkspaceLanguage(page, 'bn');
+  await expect(carousel).toHaveAttribute('data-payment-service', 'ADVANCE_TAX');
+  await expect(retained.getByRole('button', {name: 'কর পরিশোধ শুরু'})).toBeVisible();
+  await expect(retained.getByRole('button', {name: 'ভ্রমণ কর শুরু'})).toBeVisible();
+  expect(await page.evaluate(() =>
+    document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('unpublishing the active banner preserves available payment actions and avoids ghost slides', async ({page}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  let rows = banners;
+  await page.route('**/rest/v1/taxpay_site_banners**', route =>
+    route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify(rows)}));
+  await page.goto('/?action=landing&lang=en');
+  const carousel = page.getByRole('region', {name: 'Tax payment service banners'});
+  await carousel.focus();
+  for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
+  await expect(carousel).toHaveAttribute('data-payment-service', 'TRAVEL_TAX');
+  rows = banners.filter(row => row.id !== 'travel');
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(carousel.locator('.public-hero-carousel__slide')).toHaveCount(4);
+  await expect(carousel).toHaveAttribute('data-active-slide', '3');
+  await expect(carousel.locator('.public-hero-carousel__slide[data-active="true"]')
+    .getByRole('button', {name: 'Start tax payment'})).toBeVisible();
+  // The unpublished Travel Tax row cannot supply its custom label; the
+  // approved fallback still exposes the separate Travel Tax action.
+  await expect(carousel.locator('.public-hero-carousel__slide[data-active="true"]')
+    .getByRole('button', {name: 'Pay Travel Tax'})).toBeVisible();
+  await expect(carousel.locator('[data-banner-service="travel"]')).toHaveCount(0);
+});
+
+test('published Sohojkor logo updates on version change without a 30-second polling loop', async ({page}) => {
+  await page.clock.install();
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  let version = 18;
+  let logoReads = 0;
+  await page.route('**/rest/v1/taxpay_site_logo**', route => {
+    logoReads++;
+    return route.fulfill({status: 200, contentType: 'application/json',
+      body: JSON.stringify({id:'primary',image_path:'logos/approved-wordmark.svg',version})});
+  });
+  await page.route('**/rest/v1/taxpay_site_banners**', route =>
+    route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify(banners)}));
+  await page.route('**/storage/v1/object/public/taxpay-branding/**', route =>
+    route.fulfill({status: 200, contentType: 'image/svg+xml',
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="36"><rect width="120" height="36" fill="#ffffff"/></svg>'}));
+  await page.goto('/?action=landing&lang=en');
+  const logos = page.locator('img[src*="taxpay-branding"]');
+  await expect(logos.first()).toHaveAttribute('src', /approved-wordmark\.svg\?v=18/);
+  const initialReads = logoReads;
+  expect(initialReads).toBeGreaterThanOrEqual(1);
+
+  await page.clock.fastForward(31_000);
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('focus'));
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  expect(logoReads).toBe(initialReads);
+
+  // A higher CMS version at the SAME asset path must invalidate the old image,
+  // without touching approved sizing, the public buttons, or navigation.
+  version = 19;
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(logos.first()).toHaveAttribute('src', /approved-wordmark\.svg\?v=19/);
+  expect(logoReads).toBe(initialReads + 1);
+  await expect(page.locator('.public-benefits__item')).toHaveCount(6);
+  await expect(page.locator('.public-hero-carousel__slide')).toHaveCount(5);
+});
+
+test('temporarily missing published logo retries after connectivity without requiring a new CMS version',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  let storageAvailable=false;
+  await page.route('**/rest/v1/taxpay_site_logo**',route=>
+    route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({id:'primary',image_path:'logos/recoverable.svg',version:18})}));
+  await page.route('**/rest/v1/taxpay_site_banners**',route=>
+    route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(banners)}));
+  await page.route('**/storage/v1/object/public/taxpay-branding/**',route=>
+    storageAvailable
+      ? route.fulfill({status:200,contentType:'image/svg+xml',
+          body:'<svg xmlns="http://www.w3.org/2000/svg" width="120" height="36"><rect width="120" height="36" fill="#ffffff"/></svg>'})
+      : route.fulfill({status:503,body:'Storage temporarily unavailable'}));
+  await page.goto('/?action=landing&lang=en');
+  const logo=page.locator('.public-home-wordmark');
+  await expect(logo).toHaveAttribute('src',/korbritto-brand-locked/);
+  storageAvailable=true;
+  await page.evaluate(()=>window.dispatchEvent(new Event('online')));
+  await expect(logo).toHaveAttribute('src',/taxpay-branding\/logos\/recoverable\.svg\?v=18/);
+  await expect.poll(()=>logo.evaluate(el=>(el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await expect(page.locator('.public-benefits__item')).toHaveCount(6);
+});
+
+test('public Help uses exact maintained FAQ/guide steps, avoids one-letter false matches and keeps selected EN/BN guide topic',async({page})=>{
+  await page.route('**/rest/v1/taxpay_site_banners**',route=>
+    route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(banners)}));
+  await page.goto('/?action=landing&lang=en');
+  await page.getByRole('button',{name:'Chat support'}).click();
+  const messages=page.locator('.public-help-message--assistant');
+  await expect(page.getByRole('button',{name:'Payment status',exact:true})).toBeVisible();
+  await page.getByLabel('Your question').fill('a');
+  await page.getByRole('button',{name:'Send'}).click();
+  await expect(messages.last()).toContainText('Ask about payment, receipts or travel tax');
+
+  await page.getByLabel('Your question').fill('Find and add passengers');
+  await page.getByRole('button',{name:'Send'}).click();
+  await expect(messages.last()).toContainText('passport');
+  await page.getByRole('button',{name:'Payment status',exact:true}).click();
+  const guide=page.getByRole('link',{name:'Open user guide'});
+  await expect(guide).toHaveAttribute('href',/action=user_guide&lang=en&category=status/);
+  await guide.click();
+  await expect(page).toHaveURL(/action=user_guide.+category=status/);
+  await expect(page.getByRole('navigation',{name:'Guide topics'})
+    .getByRole('button',{name:'Payment status'})).toHaveAttribute('aria-current','true');
+
+  await page.goto('/?action=landing&lang=bn');
+  await page.getByRole('button',{name:'চ্যাট সহায়তা'}).click();
+  await expect(page.getByRole('button',{name:'পেমেন্টের অবস্থা',exact:true})).toBeVisible();
+  await page.getByLabel('আপনার প্রশ্ন').fill('যাত্রী খুঁজে যোগ করুন');
+  await page.getByRole('button',{name:'পাঠান'}).click();
+  await expect(page.locator('.public-help-message--assistant').last()).toContainText('নমুনা');
+  await page.getByRole('button',{name:'পেমেন্টের অবস্থা',exact:true}).click();
+  const banglaGuide=page.getByRole('link',{name:'ব্যবহার নির্দেশিকা'});
+  await expect(banglaGuide).toHaveAttribute('href',/action=user_guide&lang=bn&category=status/);
+  await banglaGuide.click();
+  await expect(page.getByRole('navigation',{name:'বিষয় নির্বাচন'})
+    .getByRole('button',{name:'পেমেন্টের অবস্থা'})).toHaveAttribute('aria-current','true');
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
