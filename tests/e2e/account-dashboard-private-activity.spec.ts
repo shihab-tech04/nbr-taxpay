@@ -35,8 +35,13 @@ const privateHistory=[{
   ],
 }];
 
-async function mockPrivateAccount(page:Page,profile:'user1'|'user2'|null){
-  const session=sessionFor(owner);
+async function mockPrivateAccount(page:Page,profile:'user1'|'user2'|null,displayName?:string){
+  // Optional identity variation isolates the privacy regression from all other
+  // tests; it does not change the signed-in Auth UID or source owner scopes.
+  const currentOwner=displayName===undefined?owner:{
+    ...owner,user_metadata:{...owner.user_metadata,taxpay_display_name:displayName}
+  };
+  const session=sessionFor(currentOwner);
   await page.addInitScript(({key,value})=>{
     localStorage.setItem(key,JSON.stringify(value));
   },{key:`sb-${projectRef}-auth-token`,value:session});
@@ -60,7 +65,7 @@ async function mockPrivateAccount(page:Page,profile:'user1'|'user2'|null){
     if(request.method()==='OPTIONS')return json({});
     if(url.pathname==='/auth/v1/user'&&request.method()==='GET'){
       expect(ownerFromToken()).toBe(owner.id);
-      return json(owner);
+      return json(currentOwner);
     }
     if(url.pathname==='/rest/v1/rpc/sim_my_taxpayer_profile'&&request.method()==='POST'){
       expect(ownerFromToken()).toBe(owner.id);
@@ -520,4 +525,44 @@ test('dashboard correction shortcut focuses the existing request register and li
   await expect(page.locator('#dashboard-correction-requests')).toBeFocused();
   expect(await page.evaluate(()=>
     document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+
+test('dashboard never exposes the full fallback email and financial breakdown remains accessible across English/Bangla',async({page})=>{
+  await mockPrivateAccount(page,'user1','');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  await expect(dashboard.getByText('pri****@example.invalid',{exact:true})).toBeVisible();
+  await expect(dashboard).not.toContainText('private-dashboard-owner@example.invalid');
+  const category=dashboard.getByTestId('account-payment-category-breakdown');
+  const rows=category.getByRole('list',{name:'Category amounts for private scenario records'});
+  await expect(rows).toBeVisible();
+  await expect(rows.getByRole('listitem')).toHaveCount(2);
+  await expect(rows.getByRole('listitem').first()).toContainText('Tax with return');
+  await expect(rows.getByRole('listitem').first()).toContainText('৳ 65.50');
+  await expect(rows.getByRole('listitem').nth(1)).toContainText('৳ 64.50');
+  await expect(category).not.toContainText('৳ 164.50');
+  await expect(dashboard.getByTestId('dashboard-tag-classification-note'))
+    .toContainText('current saved tags');
+  await setWorkspaceLanguage(page,'bn');
+  await expect(dashboard.getByText('pri****@example.invalid',{exact:true})).toBeVisible();
+  await expect(dashboard).not.toContainText('private-dashboard-owner@example.invalid');
+  await expect(dashboard.getByRole('list',{name:'ব্যক্তিগত সিনারিও রেকর্ডের খাতভিত্তিক পরিমাণ'})
+    .getByRole('listitem')).toHaveCount(2);
+  await expect(dashboard.getByTestId('dashboard-tag-classification-note'))
+    .toContainText('বর্তমান সংরক্ষিত ট্যাগ');
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('private recent activity has an owner-scoped history action with localized accessible reference',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=bn');
+  const dashboard=page.getByTestId('account-workflow-summary');
+  const refButton=dashboard.getByTestId('dashboard-recent-history-00000000-0000-4000-8000-000000000901');
+  await expect(refButton).toBeVisible();
+  await expect(refButton).toHaveAccessibleName(/রেফারেন্স খুঁজতে পেমেন্ট ইতিহাস খুলুন SIM-PAY-OWNER-2026/);
+  await refButton.click();
+  await expect(page).toHaveURL(/action=history/);
+  await expect(page.getByTestId('account-workflow-summary')).toHaveCount(0);
 });
