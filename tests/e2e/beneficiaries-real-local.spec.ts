@@ -170,7 +170,9 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await page.goto('/?action=beneficiaries');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(page.getByTestId('beneficiary-directory-mobile')).toContainText('Local Beneficiary One');
-  await page.getByRole('button',{name:'Edit',exact:true}).first().click();
+  await page.getByTestId('beneficiary-directory-mobile').locator('li')
+    .filter({hasText:'Local Beneficiary One'})
+    .getByRole('button',{name:'Edit',exact:true}).click();
   const editor=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(editor).toContainText('Local Beneficiary One');
   // Edit must persist the exact mandatory final relationship, not just repaint UI.
@@ -183,7 +185,9 @@ test('real account saves private beneficiary, reopens it, isolates another owner
     });
   await page.reload();
   await expect(page.getByTestId('beneficiary-directory-mobile')).toContainText('Local Beneficiary One');
-  await page.getByRole('button',{name:'Edit',exact:true}).first().click();
+  await page.getByTestId('beneficiary-directory-mobile').locator('li')
+    .filter({hasText:'Local Beneficiary One'})
+    .getByRole('button',{name:'Edit',exact:true}).click();
   const updatedEditor=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(updatedEditor).toContainText('Local Beneficiary One');
   await updatedEditor.getByRole('button',{name:'Delete beneficiary'}).click();
@@ -196,7 +200,9 @@ test('real account saves private beneficiary, reopens it, isolates another owner
 
   // Simulate a legitimate second device removing the remaining contact while
   // the owner's confirmation modal is open. A stale click is a recoverable error.
-  await page.getByRole('button',{name:'Edit',exact:true}).first().click();
+  await page.getByTestId('beneficiary-directory-mobile').locator('li')
+    .filter({hasText:'Local Beneficiary Two'})
+    .getByRole('button',{name:'Edit',exact:true}).click();
   const staleEditor=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(staleEditor).toContainText('Local Beneficiary Two');
   await staleEditor.getByRole('button',{name:'Delete beneficiary'}).click();
