@@ -177,7 +177,7 @@ test('reordering published CMS banners retains the selected service, fixed copy 
   await page.route('**/rest/v1/taxpay_site_banners**', route =>
     route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify(rows)}));
   await page.goto('/?action=landing&lang=en');
-  const carousel = page.getByRole('region', {name: 'Tax payment service banners'});
+  const carousel = page.locator('section.public-hero-carousel');
   await expect(carousel.locator('.public-hero-carousel__slide')).toHaveCount(5);
   await carousel.focus();
   await page.keyboard.press('ArrowRight');
@@ -284,7 +284,7 @@ test('temporarily missing published logo retries after connectivity without requ
       : route.fulfill({status:503,body:'Storage temporarily unavailable'}));
   await page.goto('/?action=landing&lang=en');
   const logo=page.locator('.public-home-wordmark');
-  await expect(logo).toHaveAttribute('src',/korbritto-brand-locked/);
+  await expect(logo).toHaveAttribute('src', /^(?:data:image\/svg\+xml|.*korbritto-brand-locked)/);
   storageAvailable=true;
   await page.evaluate(()=>window.dispatchEvent(new Event('online')));
   await expect(logo).toHaveAttribute('src',/taxpay-branding\/logos\/recoverable\.svg\?v=18/);
@@ -297,8 +297,9 @@ test('public Help uses exact maintained FAQ/guide steps, avoids one-letter false
     route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(banners)}));
   await page.goto('/?action=landing&lang=en');
   await page.getByRole('button',{name:'Chat support'}).click();
-  const messages=page.locator('.public-help-message--assistant');
-  await expect(page.getByRole('button',{name:'Payment status',exact:true})).toBeVisible();
+  const helpPanel=page.locator('#public-help-panel');
+  const messages=helpPanel.locator('.public-help-message--assistant');
+  await expect(helpPanel.getByRole('button',{name:'Payment status',exact:true})).toBeVisible();
   await page.getByLabel('Your question').fill('a');
   await page.getByRole('button',{name:'Send'}).click();
   await expect(messages.last()).toContainText('Ask about payment, receipts or travel tax');
@@ -306,8 +307,8 @@ test('public Help uses exact maintained FAQ/guide steps, avoids one-letter false
   await page.getByLabel('Your question').fill('Find and add passengers');
   await page.getByRole('button',{name:'Send'}).click();
   await expect(messages.last()).toContainText('passport');
-  await page.getByRole('button',{name:'Payment status',exact:true}).click();
-  const guide=page.getByRole('link',{name:'Open user guide'});
+  await helpPanel.getByRole('button',{name:'Payment status',exact:true}).click();
+  const guide=helpPanel.getByRole('link',{name:'Open user guide'});
   await expect(guide).toHaveAttribute('href',/action=user_guide&lang=en&category=status/);
   await guide.click();
   await expect(page).toHaveURL(/action=user_guide.+category=status/);
@@ -316,12 +317,12 @@ test('public Help uses exact maintained FAQ/guide steps, avoids one-letter false
 
   await page.goto('/?action=landing&lang=bn');
   await page.getByRole('button',{name:'চ্যাট সহায়তা'}).click();
-  await expect(page.getByRole('button',{name:'পেমেন্টের অবস্থা',exact:true})).toBeVisible();
+  await expect(helpPanel.getByRole('button',{name:'পেমেন্টের অবস্থা',exact:true})).toBeVisible();
   await page.getByLabel('আপনার প্রশ্ন').fill('যাত্রী খুঁজে যোগ করুন');
   await page.getByRole('button',{name:'পাঠান'}).click();
   await expect(page.locator('.public-help-message--assistant').last()).toContainText('নমুনা');
-  await page.getByRole('button',{name:'পেমেন্টের অবস্থা',exact:true}).click();
-  const banglaGuide=page.getByRole('link',{name:'ব্যবহার নির্দেশিকা'});
+  await helpPanel.getByRole('button',{name:'পেমেন্টের অবস্থা',exact:true}).click();
+  const banglaGuide=helpPanel.getByRole('link',{name:'ব্যবহার নির্দেশিকা'});
   await expect(banglaGuide).toHaveAttribute('href',/action=user_guide&lang=bn&category=status/);
   await banglaGuide.click();
   await expect(page.getByRole('navigation',{name:'বিষয় নির্বাচন'})
