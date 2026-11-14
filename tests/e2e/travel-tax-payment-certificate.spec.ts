@@ -7,9 +7,9 @@ import { setWorkspaceLanguage } from './workspace-language';
 const paymentId = '2bd0a21e-4a7c-4c89-9664-0ae1f7f336a8';
 const fixtureOrigin = 'https://travel-certificate-fixture.invalid';
 const corsHeaders = {
-  'access-control-allow-origin': 'http://127.0.0.1:4173',
+  'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, POST, OPTIONS',
-  'access-control-allow-headers': 'apikey, content-type',
+  'access-control-allow-headers': '*',
 };
 
 for (const language of ['en', 'bn'] as const) {
@@ -17,6 +17,13 @@ for (const language of ['en', 'bn'] as const) {
     let submitted: Record<string, unknown> | null = null;
     let submissionCount = 0;
     const totalText = language === 'bn' ? '১,৫০০' : '1,500';
+    page.on('requestfailed',request=>{
+      if(request.url().includes('/demo-story1-taxpay/payments'))
+        console.log('F162_FETCH_FAILURE',JSON.stringify({
+          path:new URL(request.url()).pathname.endsWith('/'+paymentId)?'detail':'list',
+          reason:request.failure()?.errorText?.slice(0,100)??'unknown'
+        }));
+    });
     await page.route(fixtureOrigin + '/functions/v1/demo-story1-taxpay/payments*', async route => {
       const request = route.request();
       if (request.method() === 'OPTIONS') {
