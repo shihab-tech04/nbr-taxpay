@@ -139,10 +139,12 @@ export function CitizenNavigation() {
     go('landing');
   };
   useEffect(() => {
+    // An identity change can occur without a route/userRole change.
+    // Never retain the guest compact state after signing in.
     setCompact(false);
     setMenuOpen(false);
     setPayPopoverOpen(false);
-  }, [currentRoute, userRole]);
+  }, [currentRoute, userRole, isTaxpayer]);
 
   useEffect(() => {
     if (inTransaction) return;
