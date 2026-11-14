@@ -12,9 +12,9 @@ const record={
  taxAmount:0,penaltyAmount:2600,surchargeAmount:0,interestAmount:0,totalAmount:2600}]}
 };
 test.beforeEach(async ({page})=>{
- await page.route('**/functions/v1/demo-story1-office/payments*',route=>route.fulfill({
+ await page.route('**/functions/v1/demo-story1-taxpay/payments/*',route=>route.fulfill({
   status:200,contentType:'application/json',
-  body:JSON.stringify({success:true,data:{items:[record],total:1,page:1,perPage:100}})
+  body:JSON.stringify({success:true,simulationOnly:true,data:{id:record.id,status:record.status,createdAt:record.createdAt,data:{origin:'TAXPAY_UI',service:record.service,amountMinor:record.amountMinor,details:record.details}}})
  }));
 });
 test('transaction-linked certificate uses the real TaxPay ReceiptView document',async({page})=>{
@@ -32,7 +32,7 @@ test('transaction-linked certificate uses the real TaxPay ReceiptView document',
  await expect(page.locator('.receipt-view__status')).toHaveCount(0);
  await expect(page.locator('.receipt-view__paper')).not.toContainText('LEDGER CREDIT UNVERIFIED');
 });
-test('Admin Download opens same TaxPay document as a PDF certificate',async({page})=>{
+test('Authorized Download opens same TaxPay document as a PDF certificate',async({page})=>{
  const download=page.waitForEvent('download',{timeout:20000});
  await page.goto('/?action=payment_details&transactionId='+id+'&docAction=download');
  const result=await download;
@@ -46,11 +46,11 @@ test('Admin Download opens same TaxPay document as a PDF certificate',async({pag
  await expect(page.locator('.receipt-view__paper')).toBeVisible();
 });
 test('a nonmatching payment never falls back to locally generated sample receipt',async({page})=>{
- await page.route('**/functions/v1/demo-story1-office/payments*',route=>route.fulfill({
-  status:200,contentType:'application/json',
-  body:JSON.stringify({success:true,data:{items:[],total:0,page:1,perPage:100}})
+ await page.route('**/functions/v1/demo-story1-taxpay/payments/*',route=>route.fulfill({
+  status:404,contentType:'application/json',
+  body:JSON.stringify({success:false,error:'NOT_FOUND'})
  }));
  await page.goto('/?action=payment_details&transactionId='+id);
- await expect(page.getByRole('alert')).toContainText('No synchronized payment record');
+ await expect(page.getByRole('alert')).toContainText('Payment record unavailable for this session');
  await expect(page.locator('.receipt-view__paper')).toHaveCount(0);
 });

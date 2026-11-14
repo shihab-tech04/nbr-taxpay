@@ -1,12 +1,16 @@
+import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
+import {getStorySessionId,storyApiHeaders} from './simulatedPaymentStory';
+import {activePreviewSession} from './previewAccountSession';
+import {supabase} from './supabaseClient';
 import { CATEGORY_LABELS, MASTER_PAYMENT_HEADS } from '../data/paymentHeads';
 import { validCertificateTransactionId } from './transactionId';
 export { validCertificateTransactionId } from './transactionId';
 import type { ChallanReceipt, PaymentCategory, PaymentLineItem, ReceiptAllocationItem } from '../types/tax';
 import {sampleTinForUserNumber} from '../data/sampleTinSuggestions';
 
-/** Both Office and TaxPay link to this same TaxPay receipt route.
- * It reads SQL-confirmed Office records, never browser-local sample receipts. */
-const OFFICE_API='https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office';
+/** Public receipt reads are restricted to the original Taxpayer SQL owner
+ * or active guest-session capability. The Office API remains officer-only. */
+const TAXPAY_API=TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'')+'/functions/v1/demo-story1-taxpay';
 const serviceCodes=new Set<PaymentCategory>([
  'TAX_WITH_RETURN','ADVANCE_TAX','ASSESSED_DEMAND','PENALTY',
  'SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT','TRAVEL_TAX'
@@ -19,7 +23,6 @@ interface StoredPayment {
  id:string;service:string;amountMinor:number;status:string;createdAt:string;
  details?:Record<string,unknown>;
 }
-type StoredPage={items:StoredPayment[];total:number};
 function stringValue(value:unknown):string{return typeof value==='string'?value:'';}
 function numberValue(value:unknown):number{return typeof value==='number'&&Number.isFinite(value)?value:0;}
 function toItems(value:unknown):PaymentLineItem[]{
@@ -258,21 +261,87 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
  };
  return fallback;
 }
-export async function getConfirmedReceipt(transactionId:string):Promise<ChallanReceipt>{
- if(!validCertificateTransactionId(transactionId))throw new Error('Invalid transaction reference');
- // The Office feed contains only UI-submitted, SQL-mirrored simulated payments.
- // Page through all rows rather than silently displaying a fixture for a missing record.
+const isRecord=(value:unknown):value is Record<string,unknown> =>
+ Boolean(value&&typeof value==='object'&&!Array.isArray(value));
+
+function checkedParent(value:unknown,transactionId:string):StoredPayment{
+ if(!isRecord(value)||value.id!==transactionId||
+   typeof value.service!=='string'||typeof value.status!=='string'||
+   typeof value.createdAt!=='string'||!Number.isFinite(Date.parse(value.createdAt))||
+   typeof value.amountMinor!=='number'||!Number.isSafeInteger(value.amountMinor)||
+   value.amountMinor<=0||!isRecord(value.details))
+   throw Error('Invalid Taxpayer payment record');
+ return {id:transactionId,service:value.service,amountMinor:value.amountMinor,
+   status:value.status,createdAt:value.createdAt,details:value.details};
+}
+
+/** Existing Taxpayer Auth RPC projects only this owner’s claimed payments.
+ * Do not fall back to an unrelated browser session when the owner has no row.
+ */
+async function signedInParent(transactionId:string):Promise<StoredPayment|null>{
+ if(!supabase)return null;
+ const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
+ if(sessionError)throw Error('Account session could not be verified');
+ const session=sessionData.session;
+ if(!session?.access_token)return null;
+ const {data:identity,error:identityError}=await supabase.auth.getUser();
+ const owner=identity.user?.id;
+ if(identityError||!owner||owner!==session.user.id)
+   throw Error('Account ownership could not be verified');
  for(let page=1;page<=2000;page++){
-  const response=await fetch(OFFICE_API+'/payments?page='+page+'&perPage=100',{cache:'no-store'});
-  if(!response.ok)throw new Error('Certificate record service unavailable');
-  const envelope=await response.json() as {success:boolean;data:StoredPage};
-  if(!envelope.success||!envelope.data||!Array.isArray(envelope.data.items))
-   throw new Error('Invalid certificate response');
-  const matched=envelope.data.items.find(p=>p.id===transactionId);
-  if(matched)return makeConfirmedReceipt(matched);
-  if(page*100>=envelope.data.total)break;
+   const {data,error}=await supabase.rpc('taxpay_my_story1_payments',{
+     p_page:page,p_per_page:100,
+   });
+   if(error)throw Error('Account payment records are temporarily unavailable');
+   if(!isRecord(data)||!Array.isArray(data.items)||
+     typeof data.total!=='number'||!Number.isSafeInteger(data.total)||
+     data.total<0||data.items.length>100)
+     throw Error('Invalid account payment response');
+   const match=data.items.find(item=>isRecord(item)&&item.id===transactionId);
+   if(match){
+     const {data:recheck,error:recheckError}=await supabase.auth.getUser();
+     if(recheckError||recheck.user?.id!==owner)
+       throw Error('Account changed during payment lookup');
+     return checkedParent(match,transactionId);
+   }
+   if(page*100>=data.total)break;
+   if(data.items.length===0)throw Error('Incomplete account payment history');
  }
- throw new Error('No synchronized payment record found for this transaction');
+ throw Error('Payment record is not linked to this account');
+}
+
+/** A UUID is not an ownership proof. The original Taxpayer Edge endpoint
+ * verifies the current session/preview capability before returning one parent.
+ * Never query Office's privileged global payment page from a public browser.
+ */
+export async function getConfirmedReceipt(transactionId:string):Promise<ChallanReceipt>{
+ if(!validCertificateTransactionId(transactionId))
+   throw Error('Invalid transaction reference');
+ const owner=await signedInParent(transactionId);
+ if(owner)return makeConfirmedReceipt(owner);
+ const sessionId=getStorySessionId();
+ const preview=activePreviewSession();
+ const response=await fetch(TAXPAY_API+'/payments/'+encodeURIComponent(transactionId)+
+   '?sessionId='+encodeURIComponent(sessionId),{
+     cache:'no-store',headers:storyApiHeaders(sessionId),
+   });
+ if(!response.ok)throw Error('Payment record unavailable for this session');
+ const payload:unknown=await response.json().catch(()=>null);
+ if(!isRecord(payload)||payload.success!==true||payload.simulationOnly!==true||
+   !isRecord(payload.data)||payload.data.id!==transactionId||
+   !isRecord(payload.data.data)||payload.data.data.origin!=='TAXPAY_UI')
+   throw Error('Unverified Taxpayer payment response');
+ const now=activePreviewSession();
+ if(getStorySessionId()!==sessionId||
+   (now?.capability??null)!==(preview?.capability??null)||
+   (now?.profileId??null)!==(preview?.profileId??null))
+   throw Error('Payment session changed during lookup');
+ const row=payload.data;
+ return makeConfirmedReceipt(checkedParent({
+   id:row.id,status:row.status,createdAt:row.createdAt,
+   service:row.data.service,amountMinor:row.data.amountMinor,
+   details:row.data.details,
+ },transactionId));
 }
 export const certificateDocumentUrl=(transactionId:string,action?:'print'|'download')=>{
  const url=new URL(window.location.origin+import.meta.env.BASE_URL);
