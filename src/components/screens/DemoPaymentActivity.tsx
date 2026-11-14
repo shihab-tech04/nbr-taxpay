@@ -188,6 +188,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       if(lines.some(line=>line.category==='TAX_WITH_RETURN') &&
          lines.some(line=>line.category!=='TAX_WITH_RETURN'))
         throw new Error(txt('Tax with Return cannot be combined with another tax head.','রিটার্নসহ কর অন্য করের খাতের সঙ্গে একত্রে পরিশোধ করা যাবে না।'));
+      if(lines.some(line=>line.category==='TAX_WITH_RETURN') && lines.length!==1)
+        throw new Error(txt('Tax with Return must have exactly one taxpayer and one assessment year.','রিটার্নসহ করের জন্য একজন করদাতা ও একটি করবর্ষ নির্বাচন করুন।'));
       const checked:SimulationLine[]=lines.map(l=>({
         beneficiary:l.beneficiary,category:l.category,assessmentYear:l.assessmentYear,
         amountMinor:parseSimulatedAmount(l.amount)
