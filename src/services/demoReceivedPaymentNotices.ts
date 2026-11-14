@@ -53,17 +53,51 @@ async function scopedRequest(profileId:string,action:'received-notices-unread'|'
   return result.data;
 }
 
+/**
+ * Fetch the full chronological unread queue using WS3 #408's existing
+ * capability-scoped offset contract, without silently losing item 101+.
+ * Concurrent ack/addition is fail-closed and retried by the existing poll.
+ */
+export async function loadUnreadReceivedPaymentNotices(
+  requestPage:(offset:number,limit:number)=>Promise<unknown>,
+  limit=100,maxPages=200,
+):Promise<ReceivedPaymentNotice[]>{
+  if(!Number.isSafeInteger(limit)||limit<1||limit>100||
+     !Number.isSafeInteger(maxPages)||maxPages<1||maxPages>200)throw Error('Invalid notice pagination');
+  const items:ReceivedPaymentNotice[]=[];
+  const seen=new Set<string>();
+  let total:number|null=null;
+  for(let index=0;index<maxPages;index++){
+    const offset=items.length;
+    const value=await requestPage(offset,limit);
+    if(!value||typeof value!=='object'||Array.isArray(value))
+      throw Error('Invalid notice page');
+    const data=value as Record<string,unknown>;
+    if(!Array.isArray(data.items)||data.items.length>limit||
+       !Number.isSafeInteger(data.total)||Number(data.total)<0||
+       data.offset!==offset||data.limit!==limit||
+       typeof data.hasMore!=='boolean'||(total!==null&&data.total!==total))
+      throw Error('Invalid notice page');
+    total=data.total as number;
+    if(total>maxPages*limit||data.hasMore&&data.items.length===0)
+      throw Error('Notice pagination exceeded its safe limit');
+    const page=data.items.map(parseReceivedPaymentNotice);
+    for(const item of page){
+      if(seen.has(item.eventId))throw Error('Duplicate received-payment notice');
+      seen.add(item.eventId);items.push(item);
+    }
+    if(data.hasMore){
+      if(items.length>=total)throw Error('Notice cursor changed while loading');
+      continue;
+    }
+    if(items.length!==total)throw Error('Notice page count changed while loading');
+    return items;
+  }
+  throw Error('Notice retrieval exceeded its safe limit');
+}
 export async function unreadReceivedPaymentNotices(profileId:string):Promise<ReceivedPaymentNotice[]> {
-  const value=await scopedRequest(profileId,'received-notices-unread',{offset:0,limit:100});
-  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Invalid notice feed');
-  const data=value as Record<string,unknown>;
-  if(!Array.isArray(data.items)||!Number.isSafeInteger(data.total)||
-    Number(data.total)<data.items.length||typeof data.hasMore!=='boolean'||
-    data.items.length>100)throw new Error('Invalid notice feed');
-  const parsed=data.items.map(parseReceivedPaymentNotice);
-  if(new Set(parsed.map(item=>item.eventId)).size!==parsed.length)
-    throw new Error('Duplicate received-payment notice');
-  return parsed;
+  return loadUnreadReceivedPaymentNotices((offset,limit)=>
+    scopedRequest(profileId,'received-notices-unread',{offset,limit}));
 }
 
 export async function acknowledgeReceivedPaymentNotice(profileId:string,eventId:string):Promise<void>{

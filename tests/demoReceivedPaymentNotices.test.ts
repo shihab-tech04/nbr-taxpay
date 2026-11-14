@@ -30,3 +30,33 @@ test('recipient notice rejects unsafe amounts, malformed and already-read events
     assert.throws(()=>parseReceivedPaymentNotice({...valid,...changes}));
   }
 });
+
+
+test('recipient backlog retrieves 205 events and preserves their order across pages',async()=>{
+  const base='77777777-7777-4777-8777-777777777777';
+  const records=Array.from({length:205},(_,i)=>({...valid,eventId:base+':allocation:'+(i+1)}));
+  const offsets:number[]=[];
+  const {loadUnreadReceivedPaymentNotices}=await import('../src/services/demoReceivedPaymentNotices');
+  const all=await loadUnreadReceivedPaymentNotices(async(offset,limit)=>{
+    offsets.push(offset);
+    const slice=records.slice(offset,offset+limit);
+    return {items:slice,total:records.length,offset,limit,hasMore:offset+limit<records.length};
+  });
+  assert.deepEqual(offsets,[0,100,200]);
+  assert.deepEqual(all.map(item=>item.eventId),records.map(item=>item.eventId));
+});
+
+test('recipient backlog fails closed on missing page, cross-page duplicate and inconsistent count',async()=>{
+  const {loadUnreadReceivedPaymentNotices}=await import('../src/services/demoReceivedPaymentNotices');
+  const item=(i:number)=>({...valid,eventId:'event-'+i});
+  await assert.rejects(loadUnreadReceivedPaymentNotices(async(offset,limit)=>{
+    if(offset===0)return {items:[item(1)],total:2,offset,limit,hasMore:true};
+    throw Error('offline');
+  }),/offline/);
+  await assert.rejects(loadUnreadReceivedPaymentNotices(async(offset,limit)=>({
+    items:[item(1)],total:2,offset,limit,hasMore:offset===0,
+  })),/Duplicate/);
+  await assert.rejects(loadUnreadReceivedPaymentNotices(async(offset,limit)=>({
+    items:[item(offset+1)],total:offset===0?2:3,offset,limit,hasMore:offset===0,
+  })),/Invalid notice page/);
+});
