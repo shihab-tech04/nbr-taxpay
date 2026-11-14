@@ -177,7 +177,10 @@ test('home explains the payment stages without an inline transaction form',async
 
 test('dashboard CSV export keeps Sohojkor branding and localized column labels',async({page},info)=>{
   test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'WS4 desktop/mobile CSV parity');
-  await page.goto('/?action=taxpayer_home&demoUser=user1');
+  // URL-selected demoUser profiles deliberately cannot read public preview receipts.
+  // Use the existing uncredentialed taxpayer design preview, not user1's isolated scenario.
+  await page.goto('/?action=taxpayer_home');
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const englishExport=page.getByRole('button',{name:'Export CSV'});
   await expect(englishExport).toBeEnabled();
