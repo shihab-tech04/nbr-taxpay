@@ -59,7 +59,8 @@ function installBridgeConfig(origin,root,hostedPath){
   'INSERT INTO payment_sync.bridge_config(singleton,self_url,peer_url,dispatch_token,signing_key,enabled) VALUES(true,'+
   sqlText(config.selfUrl)+','+sqlText(config.peerUrl)+','+sqlText(config.dispatchToken)+','+
   sqlText(config.signingKey)+',true) ON CONFLICT(singleton) DO UPDATE SET self_url=excluded.self_url,'+
-  'peer_url=excluded.peer_url,dispatch_token=excluded.dispatch_token,signing_key=excluded.signing_key,enabled=true;';
+  'peer_url=excluded.peer_url,dispatch_token=excluded.dispatch_token,signing_key=excluded.signing_key,enabled=true;'+
+  'SELECT true::jsonb;';
  db(origin==='TAXPAY_SQL'?source:office,'BEGIN;'+setup+'COMMIT;');
 }
 function sqlRpc(origin,name,args){
@@ -174,7 +175,8 @@ function installOfficeCommandClaim(){
  assert.ok(start>=0&&end>start,'Existing Office command claim contract is unavailable');
  db(office,'BEGIN;'+hosted.slice(start,end)+
   'REVOKE ALL ON FUNCTION public.payment_v1_internal_claim_commands(integer) FROM PUBLIC,anon,authenticated;'+
-  'GRANT EXECUTE ON FUNCTION public.payment_v1_internal_claim_commands(integer) TO service_role;COMMIT;');
+  'GRANT EXECUTE ON FUNCTION public.payment_v1_internal_claim_commands(integer) TO service_role;'+
+  'SELECT true::jsonb;COMMIT;');
 }
 const owner='80000000-0000-4000-8000-000000000001';
 const outsider='80000000-0000-4000-8000-000000000002';
