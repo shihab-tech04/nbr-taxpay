@@ -233,7 +233,8 @@ try{
   assert.equal(retry.data.replayed,true);
   const history=await request('TAXPAY_SQL',`/payments/${sourceId}?sessionId=${encodeURIComponent(profile.paymentSessionId)}`,'GET',undefined,headers);
   assert.equal(history.status,200);
-  assert.equal(history.data.data.idempotencyKey,idempotencyKey);
+  assert.equal(history.data.data.id,sourceId);
+  assert.equal(history.data.data.data.idempotencyKey,idempotencyKey);
   assert.deepEqual(history.data.data.details.allocations,allocations);
 
   const officeRow=psql(officeDb,`SELECT jsonb_build_object('id',id,'sessionId',session_id,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`);
