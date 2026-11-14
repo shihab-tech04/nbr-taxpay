@@ -208,7 +208,7 @@ const roleSetup=[
 ].join('\n');
 psql(officeDb,roleSetup);
 
-const [taxpayerServer,officeServer]=await Promise.all([
+const [taxpayerServer,officeServer,recipientServer]=await Promise.all([
   start('TAXPAY_SQL',resolve('.'),'demo-story1-taxpay'),
   start('OFFICE_SQL',resolve(officeRoot),'demo-story1-office'),
   start('TAXPAY_RECIPIENTS',resolve('.'),'taxpay-guest-beneficiaries'),
@@ -309,5 +309,5 @@ try{
     'Office replay must remain a single immutable parent');
   console.log('PASS: Taxpayer/Office Edge handlers over separate disposable SQL DBs; multi-recipient v3 parent and allocation readback, exact amounts/AYs/heads, payer, receipt/certificate, payer history, authorized Office readback, recipient-notice API isolation/ack replay, Office outage recovery, same-key replay, and single source/Office payment notice');
 }finally{
-  await Promise.all([taxpayerServer,officeServer].map(server=>new Promise(resolve=>server.close(resolve))));
+  await Promise.all([taxpayerServer,officeServer,recipientServer].map(server=>new Promise(resolve=>server.close(resolve))));
 }
