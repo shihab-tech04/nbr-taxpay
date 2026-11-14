@@ -1,5 +1,5 @@
 import {TaxPayDataGrid,TaxPayTableState,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowRight, Download, Search } from 'lucide-react';
 import { DemoPaymentActivity } from './DemoPaymentActivity';
 import {RecoveredStoryHistory} from './RecoveredStoryHistory';
@@ -17,6 +17,10 @@ import type { ChallanReceipt, PaymentCategory, Language } from '../../types/tax'
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {PaymentLifecycleDetails,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
 import {TaxPayModal} from '../ui/TaxPayModal';
+import {ReceiptView} from '../common/ReceiptView';
+import {getDetailedStorySessionPayments} from '../../services/story1AccountPaymentHistory';
+import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
+import {TAXPAY_PUBLIC_ENDPOINT} from '../../config/publicBackend';
 
 export function LegacyPaymentRecovery({language}:{language:Language}) {
   const [busy,setBusy]=useState(false);
@@ -107,11 +111,51 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
   const [year, setYear] = useState('ALL');
   const [category, setCategory] = useState('ALL');
   const [lifecycleReceipt,setLifecycleReceipt]=useState<ChallanReceipt|null>(null);
+  const [storedTravelReceipts,setStoredTravelReceipts]=useState<ChallanReceipt[]>([]);
+  const [selectedStoredReceipt,setSelectedStoredReceipt]=useState<ChallanReceipt|null>(null);
+  const [travelHistoryError,setTravelHistoryError]=useState(false);
+  const [travelHistoryLoading,setTravelHistoryLoading]=useState(false);
+  const [travelHistoryRevision,setTravelHistoryRevision]=useState(0);
+  const guestSourceEnabled=!authenticatedUser&&!demoUser&&!previewAccount&&
+    Boolean(TAXPAY_PUBLIC_ENDPOINT.url&&TAXPAY_PUBLIC_ENDPOINT.publishableKey);
+  // Only an existing browser session can read its original simulated payments.
+  // An entered TIN, passport or public reference never grants guest history.
+  useEffect(()=>{
+    if(!guestSourceEnabled){setStoredTravelReceipts([]);setTravelHistoryError(false);setTravelHistoryLoading(false);return;}
+    let hasSession=false;
+    try{hasSession=Boolean(sessionStorage.getItem('taxpay-guest-simulation-session'));}catch{hasSession=false;}
+    if(!hasSession){setStoredTravelReceipts([]);setTravelHistoryError(false);setTravelHistoryLoading(false);return;}
+    let active=true;
+    setTravelHistoryLoading(true);setTravelHistoryError(false);
+    void getDetailedStorySessionPayments().then(rows=>{
+      if(!active)return;
+      // The immutable original Taxpayer SQL record is authoritative for both
+      // receipt and certificate; never promote a local preview-only snapshot.
+      const travel=rows.filter(row=>row.service==='TRAVEL_TAX')
+        .map(row=>makeConfirmedReceipt(row));
+      if(travel.some(receipt=>receipt.paymentCategory!=='TRAVEL_TAX'||
+        !receipt.isSimulatedDemo||!receipt.paymentTransactionId))
+        throw new Error('Travel Tax source history is inconsistent');
+      setStoredTravelReceipts(travel);
+    }).catch(()=>{if(active){setStoredTravelReceipts([]);setTravelHistoryError(true);}})
+      .finally(()=>{if(active)setTravelHistoryLoading(false);});
+    return()=>{active=false;};
+  },[guestSourceEnabled,travelHistoryRevision]);
   const bn = language === 'bn';
   const label = (en:string,bengali:string)=> bn ? bengali : en;
   // payerTin is not authoritative taxpayer/credit ownership. Only initiated demo receipts
   // are visible until a separate beneficiary and entitlement contract has been certified.
-  const filtered = taxpayerPreviewReceipts(receipts, taxpayerProfile.tin, userRole, demoUser, Boolean(authenticatedUser))
+  const localPreview=taxpayerPreviewReceipts(receipts, taxpayerProfile.tin, userRole, demoUser, Boolean(authenticatedUser));
+  const originalTravel=guestSourceEnabled?storedTravelReceipts:[];
+  const recoveredIds=new Set(originalTravel.map(receipt=>receipt.paymentTransactionId));
+  const allVisible=[...originalTravel,...localPreview.filter(receipt=>
+    !receipt.paymentTransactionId||!recoveredIds.has(receipt.paymentTransactionId))];
+  const openReceipt=(receipt:ChallanReceipt)=>{
+    if(guestSourceEnabled&&recoveredIds.has(receipt.paymentTransactionId))
+      setSelectedStoredReceipt(receipt);
+    else selectReceipt(receipt.id);
+  };
+  const filtered = allVisible
     .filter(r => (r.challanNo + ' ' + r.tokenNumber + ' ' + r.payerName).toLowerCase().includes(query.trim().toLowerCase()))
     .filter(r => year === 'ALL' || r.assessmentYear === year)
     .filter(r => category === 'ALL' || r.paymentCategory === category);
@@ -144,7 +188,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
       {activityTabs && <TaxpayerActivityTabs />}
       <section className="taxpay-office-register-frame rounded-xl border border-taxpay-border bg-white px-4 sm:px-5" aria-label={label('Payment register','পেমেন্ট নিবন্ধন')}>
         <TaxPayOfficeRegisterToolbar title={label('Payment records','পেমেন্টের তথ্য')}
-          count={filtered.length} total={receipts.length} countLabel={label('records','রেকর্ড')}
+          count={filtered.length} total={allVisible.length} countLabel={label('records','রেকর্ড')}
           searchValue={query} onSearchChange={setQuery}
           searchLabel={label('Search payments','পেমেন্ট খুঁজুন')}
           searchPlaceholder={label('Reference or payer','রেফারেন্স বা পরিশোধকারী')}
@@ -183,6 +227,17 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
           ...(year!=='ALL'?[{key:'year',label:year,onRemove:()=>setYear('ALL')}]:[]),
           ...(category!=='ALL'?[{key:'category',label:bn?CATEGORY_LABELS[category]?.bn??category:CATEGORY_LABELS[category]?.en??category,onRemove:()=>setCategory('ALL')}]:[])
         ]}/>
+      {guestSourceEnabled&&travelHistoryLoading&&<p role="status" className="mb-2 text-sm text-taxpay-muted">
+        {label('Checking your saved Travel Tax receipts…','আপনার সংরক্ষিত ভ্রমণ করের রসিদ যাচাই হচ্ছে…')}
+      </p>}
+      {guestSourceEnabled&&travelHistoryError&&<div role="alert" className="mb-2 flex flex-wrap items-center gap-2 text-sm text-taxpay-error">
+        <span>{label('Saved Travel Tax records are temporarily unavailable. No missing-record result has been confirmed.',
+          'সংরক্ষিত ভ্রমণ করের তথ্য সাময়িকভাবে পাওয়া যাচ্ছে না। রেকর্ড নেই বলে নিশ্চিত হওয়া যায়নি।')}</span>
+        <button type="button" onClick={()=>setTravelHistoryRevision(v=>v+1)}
+          className="min-h-11 rounded-lg border border-taxpay-border px-3 text-taxpay-primary">
+          {label('Retry','আবার চেষ্টা করুন')}
+        </button>
+      </div>}
       <div className="taxpay-office-register__body">
         {filtered.length===0 ? (
           <TaxPayTableState className="rounded-lg bg-taxpay-background p-5">
@@ -201,7 +256,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
               {key:'status',header:label('Status','অবস্থা'),renderCell:r=><p>{treasuryLabel(r)}</p>},
               {key:'details',header:label('Details','বিস্তারিত'),renderCell:r=><div className="flex flex-wrap gap-1">
                 <button type="button" onClick={()=>setLifecycleReceipt(r)} className="min-h-11 rounded-lg px-3 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('Lifecycle','পেমেন্ট ধাপ')}</button>
-                <button type="button" onClick={()=>selectReceipt(r.id)} className="min-h-11 rounded-lg px-3 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('View','দেখুন')}</button>
+                <button type="button" onClick={()=>openReceipt(r)} data-testid={recoveredIds.has(r.paymentTransactionId)?'travel-session-history-view':undefined} className="min-h-11 rounded-lg px-3 font-semibold text-taxpay-dark hover:bg-taxpay-light">{label('View','দেখুন')}</button>
               </div>}
             ]}
             renderMobileCard={r=><>
@@ -214,15 +269,19 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
               <p className="taxpay-mobile-table-card__meta">{label('Credit status','ক্রেডিটের অবস্থা')}: {statusLabel(r.taxCreditStatus)}</p>
               <div className="taxpay-mobile-table-card__actions">
                 <button type="button" onClick={()=>setLifecycleReceipt(r)} className="min-h-11 flex-1 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark">{label('Payment lifecycle','পেমেন্টের ধাপসমূহ')} <ArrowRight aria-hidden="true" size={16}/></button>
-                <button type="button" onClick={()=>selectReceipt(r.id)} className="min-h-11 flex-1 rounded-lg bg-taxpay-light px-3 text-sm font-semibold text-taxpay-dark">{label('View details','বিস্তারিত দেখুন')} <ArrowRight aria-hidden="true" size={16}/></button>
+                <button type="button" onClick={()=>openReceipt(r)} data-testid={recoveredIds.has(r.paymentTransactionId)?'travel-session-history-view':undefined} className="min-h-11 flex-1 rounded-lg bg-taxpay-light px-3 text-sm font-semibold text-taxpay-dark">{label('View details','বিস্তারিত দেখুন')} <ArrowRight aria-hidden="true" size={16}/></button>
               </div>
             </>}/>
 
         </>}
       </div>
-        <TaxPayOfficeRegisterFooter shown={filtered.length} total={receipts.length}
+        <TaxPayOfficeRegisterFooter shown={filtered.length} total={allVisible.length}
           labels={{showing:label('Showing','দেখানো হচ্ছে'),of:label('of','মোট'),records:label('records','রেকর্ড')}}/>
       </section>
+      {selectedStoredReceipt&&guestSourceEnabled&&<TaxPayModal title={label('Payment receipt','পেমেন্ট রসিদ')}
+        service="status" className="receipt-modal" onClose={()=>setSelectedStoredReceipt(null)} footer={<></>}>
+        <ReceiptView receipt={selectedStoredReceipt} embedded onBack={()=>setSelectedStoredReceipt(null)}/>
+      </TaxPayModal>}
       {lifecycleReceipt&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}
         onClose={()=>setLifecycleReceipt(null)} hideFooter className="taxpayer-transaction-detail">
         <PaymentLifecycleDetails language={language} record={historyLifecycleRecord(lifecycleReceipt,language)}/>

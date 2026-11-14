@@ -8,7 +8,7 @@ const paymentId = '2bd0a21e-4a7c-4c89-9664-0ae1f7f336a8';
 const fixtureOrigin = 'https://travel-certificate-fixture.invalid';
 const corsHeaders = {
   'access-control-allow-origin': 'http://127.0.0.1:4173',
-  'access-control-allow-methods': 'POST, OPTIONS',
+  'access-control-allow-methods': 'GET, POST, OPTIONS',
   'access-control-allow-headers': 'apikey, content-type',
 };
 
@@ -21,6 +21,25 @@ for (const language of ['en', 'bn'] as const) {
       const request = route.request();
       if (request.method() === 'OPTIONS') {
         await route.fulfill({ status: 204, headers: corsHeaders });
+        return;
+      }
+      if(request.method()==='GET'){
+        const url=new URL(request.url());
+        const stored=submitted as {sessionId?:string;service?:string;amountMinor?:number;details?:Record<string,unknown>}|null;
+        if(!stored||url.searchParams.get('sessionId')!==stored.sessionId){
+          await route.fulfill({status:403,contentType:'application/json',headers:corsHeaders,
+            body:JSON.stringify({success:false,error:'SESSION_NOT_AUTHORIZED'})});
+          return;
+        }
+        const createdAt='2026-11-14T08:00:00.000Z';
+        const source={id:paymentId,service:stored.service,amountMinor:stored.amountMinor,
+          status:'SIMULATED_SUCCESS',createdAt};
+        const detail=url.pathname.endsWith('/'+paymentId);
+        await route.fulfill({status:200,contentType:'application/json',headers:corsHeaders,
+          body:JSON.stringify(detail
+            ?{success:true,simulationOnly:true,data:{id:paymentId,status:'SIMULATED_SUCCESS',
+                createdAt,data:{service:stored.service,amountMinor:stored.amountMinor,details:stored.details}}}
+            :{success:true,simulationOnly:true,data:{items:[source],total:1}})});
         return;
       }
       if (request.method() !== 'POST') {
@@ -119,6 +138,36 @@ for (const language of ['en', 'bn'] as const) {
     expect(request.amountMinor).toBe(150000);
     expect(request.details?.passengers).toHaveLength(2);
     expect(request.details?.travelDate).toBe(selectedTravelDate);
+    expect(submissionCount).toBe(1);
+
+    // F-162 / US-119: recover the SAME original Taxpayer receipt/certificate
+    // from its session-owned SQL parent after reload, without resubmission.
+    await page.goto('/?action=history');
+    await page.reload();
+    const historyView=page.getByTestId('travel-session-history-view').first();
+    await expect(historyView).toBeVisible();
+    const originalSnapshot=(submitted as {details?:{receiptSnapshot?:{challanNo?:string}}}).details?.receiptSnapshot;
+    expect(originalSnapshot?.challanNo).toBeTruthy();
+    await expect(page.locator('[data-taxpay-register-page]')).toContainText(originalSnapshot!.challanNo!);
+    await historyView.click();
+    const savedReceipt=page.getByRole('dialog',{name:/Payment receipt|পেমেন্ট রসিদ/});
+    await expect(savedReceipt.getByTestId('travel-family-challan').locator('tbody tr')).toHaveCount(2);
+    await expect(savedReceipt).toContainText(originalSnapshot!.challanNo!);
+    await savedReceipt.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/}).click();
+    await expect(savedReceipt.getByTestId('payment-certificate-reference'))
+      .toContainText('SK-PC-'+paymentId);
+    await expect(savedReceipt.getByTestId('payment-certificate-document'))
+      .toContainText('FRIEND SECOND');
+    expect(submissionCount).toBe(1);
+
+    // Another session may not recover passports by guessing the reference.
+    await page.evaluate(()=>sessionStorage.setItem(
+      'taxpay-guest-simulation-session','ed18e1b3-8abf-4a19-a22d-0b5d6dca7101'));
+    await page.reload();
+    await expect(page.getByTestId('travel-session-history-view')).toHaveCount(0);
+    await expect(page.getByRole('alert')).toContainText(language==='bn'
+      ?'সংরক্ষিত ভ্রমণ করের তথ্য সাময়িকভাবে পাওয়া যাচ্ছে না'
+      :'Saved Travel Tax records are temporarily unavailable');
     expect(submissionCount).toBe(1);
   });
 }
