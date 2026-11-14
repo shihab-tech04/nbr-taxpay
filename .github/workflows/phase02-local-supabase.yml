@@ -440,6 +440,20 @@ jobs:
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
           echo "Paired Office SQL source SHA: $OFFICE_SHA"
+          WS1_DIR="$RUNNER_TEMP/ws1-current"
+          git clone --depth 1 --branch ws1/v95-walk-in-self-combinations \
+            https://github.com/shihab-tech04/nbr-taxpay.git "$WS1_DIR"
+          WS1_SHA="$(git -C "$WS1_DIR" rev-parse HEAD)"
+          test -n "$WS1_SHA"
+          git -C "$WS1_DIR" checkout --detach "$WS1_SHA"
+          test "$(git -C "$WS1_DIR" rev-parse HEAD)" = "$WS1_SHA"
+          echo "Current Work A #779 source SHA: $WS1_SHA"
+          export WS1_SOURCE_DIR="$WS1_DIR"
+          export WS1_SOURCE_SHA="$WS1_SHA"
+          export WS3_F137_MATRIX_FIXTURE_OUT="$RUNNER_TEMP/f137-t01-matrix.json"
+          export WS3_F137_MATRIX_FIXTURE="$WS3_F137_MATRIX_FIXTURE_OUT"
+          export WS3_OFFICE_UI_FIXTURE_OUT="$RUNNER_TEMP/ws3-office-ui-paired-payment.json"
+          node tests/integration/f137CombinationMatrix.mjs
           docker run --rm -d --name ws3-office-sql-pg17 \
             -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres \
             -p 127.0.0.1:55433:5432 postgres:17
@@ -462,7 +476,9 @@ jobs:
           node tests/integration/pairedTaxpayerOfficeSql.mjs
           node tests/integration/pairedCorrectionOfficeSql.mjs
           node tests/integration/pairedTaxpayerOfficeEdgeSql.mjs
-          echo "PASS: original source v3 payment, separate Office SQL, existing Edge transport, retry, and authorized readback"
+          npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
+          node tests/integration/pairedOfficeUiReadback.mjs
+          echo "PASS: current Work A composer matrix, original Taxpayer Edge/SQL, separate current Office SQL/API, same paired record in Office UI, retry and authorized readback"
 
 
       - name: Verify capability-bound guest reference recovery via real local Edge

@@ -6,7 +6,7 @@
  */
 import assert from 'node:assert/strict';
 import {createHash,randomUUID,webcrypto} from 'node:crypto';
-import {readFileSync} from 'node:fs';
+import {readFileSync,writeFileSync} from 'node:fs';
 import {createServer} from 'node:http';
 import {resolve,dirname} from 'node:path';
 import {spawnSync} from 'node:child_process';
@@ -27,6 +27,10 @@ const officerId='80000000-0000-4000-8000-000000000011';
 const officeToken='ws3-disposable-authorized-office-session';
 const servers={};
 const officeFailure={next:true};
+const f137MatrixPath=process.env.WS3_F137_MATRIX_FIXTURE;
+const f137Matrix=f137MatrixPath?JSON.parse(readFileSync(f137MatrixPath,'utf8')):null;
+if(f137Matrix)assert.equal(f137Matrix.sourceSha,process.env.WS1_SOURCE_SHA,
+  'F-137 matrix must use the exact current Work A #779 source SHA');
 
 function psql(url,sql){
   const result=spawnSync('psql',['-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-d',url],{
@@ -261,6 +265,15 @@ try{
   assert.deepEqual(row.details.allocations.map(item=>item.headId),[121,145]);
   assert.deepEqual(row.details.allocations.map(item=>item.assessmentYear),['2026-27','2025-26']);
   assert.deepEqual(row.details.allocations.map(item=>item.amountMinor),[1500,3500]);
+  const officeUiFixtureOut=process.env.WS3_OFFICE_UI_FIXTURE_OUT;
+  if(officeUiFixtureOut)writeFileSync(officeUiFixtureOut,JSON.stringify({
+    payment:row,
+    expected:{id:sourceId,status:sourceRow.status,payerId:'user1',
+      receiptReference:'SIM-'+idempotencyKey,allocationIds,allocationTins:['222222222222','333333333333'],
+      headIds:[121,145],assessmentYears:['2026-27','2025-26'],amountsMinor:[1500,3500],
+      totalMinor:5000},
+  }),{mode:0o600});
+
 
   const notices=async(profile,action='received-notices-list',eventId)=>request(
     'TAXPAY_RECIPIENTS','', 'POST',
@@ -423,6 +436,84 @@ try{
   assert.equal(psql(sourceDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(payAgainId)}::uuid;`),1);
   assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(payAgainId)}::uuid;`),1);
 
+
+  if(f137Matrix){
+    const rejectedKeys=f137Matrix.rejectedIdempotencyKeys;
+    assert.ok(Array.isArray(rejectedKeys)&&rejectedKeys.length===f137Matrix.rejectedCases);
+    assert.equal(new Set(rejectedKeys).size,rejectedKeys.length,
+      'Every rejected composer combination must have a distinct non-submitted idempotency key');
+    const rejectedArray='ARRAY['+rejectedKeys.map(sqlText).join(',')+']::text[]';
+    assert.equal(Number(psql(sourceDb,
+      `SELECT count(*) FROM demo_payment.story_payments WHERE idempotency_key::text=ANY(${rejectedArray});`)),0,
+      'Rejected combinations must not create Taxpayer SQL payment parents');
+    assert.equal(Number(psql(officeDb,
+      `SELECT count(*) FROM demo_payment.story_payments WHERE data->>'idempotencyKey'=ANY(${rejectedArray});`)),0,
+      'Rejected combinations must not create separate Office SQL parents');
+
+    const matrixPayload=structuredClone(f137Matrix.validPayload);
+    matrixPayload.origin='TAXPAY_UI';
+    matrixPayload.sessionId=profile.paymentSessionId;
+    assert.equal(matrixPayload.service,'OTHER_TAX_PAYMENT');
+    assert.equal(matrixPayload.details.payerMode,'OTHER');
+    assert.equal(matrixPayload.details.allocationContractVersion,3);
+    assert.equal(matrixPayload.details.allocations.length,f137Matrix.validAllocationCount);
+    const matrixIds=matrixPayload.details.allocations.map(item=>item.allocationId);
+    assert.equal(new Set(matrixIds).size,matrixIds.length);
+    const matrixHeads=[...new Set(matrixPayload.details.allocations.map(item=>item.headId))].sort((a,b)=>a-b);
+    assert.deepEqual(matrixHeads,[...f137Matrix.eligibleHeadIds].sort((a,b)=>a-b),
+      'The paired SQL/API payment must contain every currently eligible mapped non-Return head');
+    assert.equal(new Set(matrixPayload.details.allocations.map(item=>item.taxpayerTin)).size,2,
+      'The valid Other payment must preserve multiple beneficiaries');
+    assert.equal(new Set(matrixPayload.details.allocations.map(item=>item.assessmentYear)).size,4,
+      'The valid Other payment must preserve multiple assessment years');
+    assert.equal(matrixPayload.details.allocations.reduce((sum,item)=>sum+item.amountMinor,0),
+      matrixPayload.amountMinor,'Every allocation amount must reconcile to the combined parent total');
+
+    const matrixSubmit=await request('TAXPAY_SQL','/payments','POST',matrixPayload,headers);
+    assert.equal(matrixSubmit.status,200,'All mapped non-Return heads must pass the existing Taxpayer Edge/SQL contract');
+    assert.equal(matrixSubmit.data.replayed,false);
+    const matrixId=matrixSubmit.data.id;
+    assert.ok(matrixId);
+    const matrixSource=psql(sourceDb,
+      `SELECT jsonb_build_object('id',id,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(matrixId)}::uuid;`);
+    assert.equal(matrixSource.id,matrixId);
+    assert.equal(Number(matrixSource.amountMinor),matrixPayload.amountMinor);
+    assert.equal(matrixSource.status,'SIMULATED_SUCCESS');
+    assert.equal(matrixSource.data.details.payerId,'user1');
+    assert.deepEqual(matrixSource.data.details.allocations,matrixPayload.details.allocations,
+      'Original allocation IDs, beneficiaries, mapped heads, AYs, service codes and amounts must persist unchanged');
+    assert.equal(matrixSource.data.details.receiptReference,matrixPayload.details.receiptReference);
+    assert.deepEqual(matrixSource.data.details.receiptSnapshot.items,matrixPayload.details.receiptSnapshot.items);
+
+    const matrixOffice=psql(officeDb,
+      `SELECT jsonb_build_object('id',id,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(matrixId)}::uuid;`);
+    assert.equal(matrixOffice.id,matrixId);
+    assert.deepEqual(matrixOffice.data,matrixSource.data,
+      'Separate Office SQL must retain the exact combined source snapshot');
+    const matrixReadback=await request('OFFICE_SQL','/payments?page=1&perPage=100','GET',undefined,
+      {authorization:'Bearer '+officeToken});
+    assert.equal(matrixReadback.status,200);
+    const matrixItem=matrixReadback.data.data.items.find(item=>item.id===matrixId);
+    assert.ok(matrixItem,'Authorized Office/Admin readback must return the matrix parent');
+    assert.equal(Number(matrixItem.amountMinor),matrixPayload.amountMinor);
+    assert.equal(matrixItem.status,'SIMULATED_SUCCESS');
+    assert.equal(matrixItem.certificateReference,'SK-PC-'+matrixId);
+    assert.equal(matrixItem.details.payerId,'user1');
+    assert.equal(matrixItem.details.receiptReference,matrixPayload.details.receiptReference);
+    assert.deepEqual(matrixItem.details.allocations,matrixPayload.details.allocations);
+    const matrixReplay=await request('TAXPAY_SQL','/payments','POST',matrixPayload,headers);
+    assert.equal(matrixReplay.status,200);
+    assert.equal(matrixReplay.data.id,matrixId);
+    assert.equal(matrixReplay.data.replayed,true);
+    assert.equal(Number(psql(sourceDb,
+      `SELECT count(*) FROM demo_payment.story_payments WHERE idempotency_key=${sqlText(matrixPayload.idempotencyKey)}::uuid;`)),1);
+    assert.equal(Number(psql(officeDb,
+      `SELECT count(*) FROM demo_payment.story_payments WHERE id=${sqlText(matrixId)}::uuid;`)),1);
+    console.log('PASS F-137-T01 paired SQL/API: '+f137Matrix.eligibleHeadIds.length+
+      ' mapped non-Return heads, '+f137Matrix.validAllocationCount+
+      ' allocations, multiple beneficiaries and AYs, exact Taxpayer/Office identity, receipt/certificate/status and replay; '+
+      f137Matrix.rejectedCases+' rejected composer cases have no SQL parents');
+  }
   console.log('PASS: separate disposable Taxpayer and Office SQL through existing Edge handlers; combined multi-recipient v3 allocations, distinct Pay Again parent lineage and separate Travel Tax passengers, exact amounts/years/heads, payer, receipt/certificate, authorized readback and passport redaction, recipient notice isolation, Office outage recovery, idempotent replay/conflict immutability, and single source/Office notices');
 }finally{
   await Promise.all([taxpayerServer,officeServer,recipientServer].map(server=>new Promise(resolve=>server.close(resolve))));
