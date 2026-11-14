@@ -177,7 +177,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ? DEMO_TAXPAYERS['WITHHOLDING_DEDUCTOR']
       : DEMO_TAXPAYERS['INDIVIDUAL_REGULAR'];
   // First-time scenarios retain empty financial records but have named test identities.
-  const firstTimeDemo = Boolean(demoUser && ['user7','user8','user9','user10'].includes(demoUser.id));
+  const firstTimeDemo = Boolean(demoUser && Number(demoUser.id.slice(4)) >= 7);
   const taxpayerProfile: TaxpayerProfile = firstTimeDemo
     ? {tin:demoUser!.tin,nameEn:demoUser!.nameEn,nameBn:demoUser!.nameBn,type:'INDIVIDUAL',taxZone:'',taxCircle:demoUser!.taxCircle,
        phone:'',email:'',address:'',isWithholdingEntity:false,
