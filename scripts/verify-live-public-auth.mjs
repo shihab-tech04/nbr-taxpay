@@ -10,12 +10,25 @@ if (base.protocol !== 'https:' || base.hostname !== 'shihab-tech04.github.io' ||
 await mkdir('test-results', { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
+ 
+// Repeated CI smoke runs must not download megabytes of public CMS artwork.
+// This guard applies only to verification browsers, not to the published app.
+// The image onError path uses the existing bundled fallback artwork; all
+// payment/API/auth traffic remains subject to the existing test assertions.
+const openBudgetSafePage = async options => {
+  const page = await browser.newPage(options);
+  await page.route(
+    'https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**',
+    route => route.abort('blockedbyclient'),
+  );
+  return page;
+};
 try {
   for (const [name, viewport, isMobile] of [
     ['desktop', { width: 1280, height: 850 }, false],
     ['mobile', { width: 375, height: 812 }, true]
   ]) {
-    const page = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+    const page = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
     const url = new URL(base);
     url.searchParams.set('action','account_profile');
     await page.goto(url.toString(), {waitUntil:'domcontentloaded',timeout:45_000});
@@ -131,7 +144,7 @@ try {
     // Only the already-published Pages bundle can certify MOBILE public navigation LIVE.
     // PR preflight must not assert this against the previously published version.
     if (isMobile && process.env.GITHUB_EVENT_NAME !== 'pull_request') {
-      const publicMobile = await browser.newPage({ viewport, isMobile, hasTouch: true });
+      const publicMobile = await openBudgetSafePage({ viewport, isMobile, hasTouch: true });
       const mobileUrl = new URL(base);
       mobileUrl.searchParams.set('action','landing');
       await publicMobile.goto(mobileUrl.toString(), {waitUntil:'domcontentloaded',timeout:45_000});
@@ -223,7 +236,7 @@ try {
     // A post-deploy check of the actual published bundle, not a PR preview.
     // Keep the pre-merge readback compatible with the older currently-live UI.
     if (process.env.GITHUB_EVENT_NAME !== 'pull_request') {
-      const guestPayment = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+      const guestPayment = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
       const guestPaymentUrl = new URL(base);
       guestPaymentUrl.searchParams.set('action', 'guest');
       await guestPayment.goto(guestPaymentUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -237,7 +250,7 @@ try {
     // Beneficiaries are private in the already-live baseline as well as the
     // candidate release. Enforce the same signed-out boundary in both PR
     // preflight and the deployed production browser check.
-    const beneficiaries = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+    const beneficiaries = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
     const beneficiariesUrl = new URL(base);
     beneficiariesUrl.searchParams.set('action', 'beneficiaries');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -289,7 +302,7 @@ try {
     // Check the signed-out navigation without changing hosted payment data.
     // Keep session-scoped event reads available by direct link, not a guest bell.
     // Mock only the two SQL-backed read endpoints; never emulate a settlement.
-    const guest = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+    const guest = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
     const sessionId = '22222222-2222-4222-8222-222222222222';
     const paymentId = '33333333-3333-4333-8333-333333333333';
     await guest.addInitScript(session => {
