@@ -6,8 +6,9 @@ export const PAY_AGAIN_YEAR_OPTIONS=['2024-25','2025-26','2026-27','2027-28'] as
 export type RepeatablePayment={payer:string;state:string;allocations:readonly {beneficiary:string;category:string;assessmentYear:string;amountMinor:number}[]};
 export const canPayAgain=(p:RepeatablePayment,actor:string,view:string)=>Boolean(actor)&&view==='payer'&&p.payer===actor&&p.state==='SIMULATED'&&Array.isArray(p.allocations)&&p.allocations.length>0&&p.allocations.length<=20&&
   // Tax with Return is exclusive: never reuse an invalid mixed-head payment.
-  !(p.allocations.some(a=>a.category==='TAX_WITH_RETURN')&&
-    p.allocations.some(a=>a.category!=='TAX_WITH_RETURN'));
+  // Tax with Return is single-taxpayer, single-year and cannot repeat as a group.
+  (!p.allocations.some(a=>a.category==='TAX_WITH_RETURN') ||
+    p.allocations.length===1);
 export function copyPreviousPayment(p:RepeatablePayment,actor:string,view:string,allowedTaxpayers:readonly string[],allowedCategories:readonly string[],currentYear=CURRENT_PAY_AGAIN_YEAR) {
   if(!canPayAgain(p,actor,view))throw Error('Only your recorded payments can be reused.');
   if(!PAY_AGAIN_YEAR_OPTIONS.some(y=>y===currentYear))throw Error('Current assessment year is not configured.');
