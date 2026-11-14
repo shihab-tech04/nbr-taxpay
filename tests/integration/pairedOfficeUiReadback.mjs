@@ -124,7 +124,6 @@ try {
     'Tax on notice of demand',
     '2025-26',
     '৳35.00',
-    '৳50.00',
     'Payment record saved',
     'SIMULATED SUCCESS',
     fixture.expected.receiptReference,
@@ -133,6 +132,14 @@ try {
   for (const value of expectedValues) {
     assert.ok(drawerText.includes(value), 'Office drawer must render paired field: ' + value);
   }
+  // The shared Office register displays whole taka without trailing .00;
+  // allocation lines display two decimals. Both represent the same paisa.
+  // Verify the parent value numerically instead of imposing one UI format.
+  const renderedAmountMinor = [...drawerText.matchAll(/৳\\s*([0-9][0-9,]*)(?:\\.([0-9]{1,2}))?(?![0-9,.])/g)]
+    .map(([, whole, fraction = '']) =>
+      Number(whole.replaceAll(',', '')) * 100 + Number(fraction.padEnd(2, '0')));
+  assert.ok(renderedAmountMinor.includes(payment.amountMinor),
+    'Office drawer must render the exact paired parent amount in paisa');
   assert.ok(drawerText.includes('Taxpayer allocations'));
   console.log('PASS Office #270 UI readback: paired parent ' + payment.id +
     ', 2 original allocations, payer, both beneficiaries, heads/years/amounts, receipt reference and status rendered with the existing officer fixture');
