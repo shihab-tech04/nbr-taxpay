@@ -120,7 +120,9 @@ test('US-050 recovery preserves entered reference across an outage and retries t
   await expect(receipt).toContainText(reference);
   await expect(receipt.locator('.receipt-view__paper')).toContainText('12,500');
   await expect(receipt.locator('.receipt-view__status')).toHaveCount(0);
-  await expect(referenceField).toHaveValue(reference);
-  await expect(mobileField).toHaveValue(mobile);
+  // The approved receipt-success view replaces the form; the input-preservation
+  // assertions above apply before retry, while this verifies clean completion.
+  await expect(referenceField).toHaveCount(0);
+  await expect(mobileField).toHaveCount(0);
   expect(paymentWrites).toEqual([]);
 });
