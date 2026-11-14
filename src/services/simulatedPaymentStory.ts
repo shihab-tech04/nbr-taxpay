@@ -265,3 +265,86 @@ export async function findSessionReceiptByReference(reference: string, mobile: s
   }
   return null;
 }
+
+
+/** F-129 / US-050: recover an immutable, original Taxpayer SQL simulation
+ * only through an already issued, unexpired profile possession capability.
+ * The B-owned Edge route verifies the capability, existing owner/session link,
+ * source provenance and exact reference. This path does NOT grant public
+ * reference+phone access and does not create an issuer-backed challan.
+ *
+ * If the new Edge route has not yet been deployed, return checked:false and
+ * let the existing same-session/mobile path continue unchanged.
+ */
+export async function findProfileReceiptByReference(
+ reference:string, mobile:string
+):Promise<{checked:boolean;receipt:ChallanReceipt|null}> {
+  const profile=activePreviewSession();
+  if(!profile)return {checked:false,receipt:null};
+  const wanted=reference.trim().toUpperCase();
+  const cleanMobile=mobile.replace(/\D/g,'');
+  if(!wanted||wanted.length>200)return {checked:true,receipt:null};
+  if(cleanMobile && !/^01\d{9}$/.test(cleanMobile))
+    return {checked:true,receipt:null};
+  const params=new URLSearchParams({reference:wanted});
+  if(cleanMobile)params.set('receiptMobile',cleanMobile);
+  const response=await fetch(API+'/payments/reference?'+params.toString(),{
+    headers:storyApiHeaders(profile.paymentSessionId),cache:'no-store'
+  });
+  const body=await response.json().catch(()=>null) as {
+    success?:boolean;simulationOnly?:boolean;error?:string;data?:unknown
+  }|null;
+  if(response.status===404){
+    // Older Edge versions have no /payments/reference route. Do not turn a
+    // generic 404 into a verified negative or disable legacy recovery.
+    if(body?.error!=='NOT_FOUND')return {checked:false,receipt:null};
+    if(activePreviewSession()?.capability!==profile.capability)
+      throw new Error('Preview profile changed during receipt lookup');
+    return {checked:true,receipt:null};
+  }
+  if(!response.ok||body?.success!==true||body.simulationOnly!==true)
+    throw new Error('Authorized receipt lookup is unavailable');
+  const row=body.data;
+  if(!row||typeof row!=='object'||Array.isArray(row))
+    throw new Error('Invalid original receipt response');
+  const source=row as Record<string,unknown>;
+  const details=source.details;
+  if(typeof source.id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(source.id)||
+    source.status!=='SIMULATED_SUCCESS'||typeof source.service!=='string'||
+    !Number.isSafeInteger(source.amountMinor)||Number(source.amountMinor)<=0||
+    !details||typeof details!=='object'||Array.isArray(details))
+    throw new Error('Invalid original receipt response');
+  const stored=details as Record<string,unknown>;
+  // The source must name the exact active preview payer. A matching receipt
+  // reference or mobile alone is not an ownership assertion.
+  if(stored.payerId!==profile.profileId)
+    throw new Error('Original receipt ownership mismatch');
+  const raw=stored.receiptSnapshot;
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))
+    throw new Error('Original source has no saved receipt document');
+  const snapshot=raw as Record<string,unknown>;
+  if(snapshot.isSimulatedDemo!==true||
+    typeof snapshot.challanNo!=='string'||typeof snapshot.tokenNumber!=='string'||
+    typeof snapshot.gatewayTransactionId!=='string'||
+    typeof snapshot.totalAmount!=='number'||!Number.isFinite(snapshot.totalAmount)||
+    !Array.isArray(snapshot.items)||snapshot.items.length<1||
+    Math.round(snapshot.totalAmount*100)!==source.amountMinor||
+    snapshot.paymentCategory!==source.service)
+    throw new Error('Original receipt and payment mismatch');
+  if(cleanMobile && snapshot.receiptMobile!==cleanMobile)
+    throw new Error('Original receipt mobile mismatch');
+  const references=[source.id,'SK-PC-'+source.id,stored.receiptReference,
+    stored.tokenNumber,stored.gatewayTransactionId,snapshot.challanNo,
+    snapshot.tokenNumber,snapshot.gatewayTransactionId,snapshot.paymentTransactionId];
+  if(!references.some(value=>typeof value==='string'&&value.trim().toUpperCase()===wanted))
+    throw new Error('Original receipt reference mismatch');
+  const latest=activePreviewSession();
+  if(!latest||latest.capability!==profile.capability||
+    latest.profileId!==profile.profileId||
+    latest.paymentSessionId!==profile.paymentSessionId)
+    throw new Error('Preview profile changed during receipt lookup');
+  return {checked:true,receipt:{
+    ...(snapshot as unknown as ChallanReceipt),
+    paymentTransactionId:source.id
+  }};
+}

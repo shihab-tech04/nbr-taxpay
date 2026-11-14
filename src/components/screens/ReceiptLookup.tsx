@@ -5,7 +5,8 @@ import { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import { validCertificateTransactionId } from '../../services/transactionId';
-import { findSessionReceiptByReference } from '../../services/simulatedPaymentStory';
+import { findSessionReceiptByReference, findProfileReceiptByReference } from '../../services/simulatedPaymentStory';
+import {activePreviewSession} from '../../services/previewAccountSession';
 import { findOwnedReceiptByReference } from '../../services/confirmedPaymentCertificate';
 import { useAccountIdentity } from '../../services/accountIdentity';
 
@@ -59,7 +60,10 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
     const parentId = reference.slice(6);
     const certificateReference = /^SK-PC-/i.test(reference) && validCertificateTransactionId(parentId);
     setCertificateResult(certificateReference);
-    const local = certificateReference ? undefined : lookupReceipt(reference, mobile);
+    // A browser-local receipt is not proof of ownership after account or
+    // preview-profile switching. Account holders use their verified source.
+    const local = signedInUser || activePreviewSession() || certificateReference
+      ? undefined : lookupReceipt(reference, mobile);
     if (local) {
       setLookupPending(false);
       setSearchResult(local);
@@ -73,6 +77,10 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
     void (async () => {
       const owned = await findOwnedReceiptByReference(reference, mobile);
       if (owned.authenticated) return owned.receipt;
+      // Only an existing server-issued profile capability may recover a
+      // receipt from another *verified linked* browser session.
+      const profile = await findProfileReceiptByReference(reference, mobile);
+      if (profile.checked) return profile.receipt;
       if (!/^01\d{9}$/.test(mobile)) return 'MOBILE_REQUIRED' as const;
       return findSessionReceiptByReference(certificateReference ? parentId : reference, mobile);
     })()
