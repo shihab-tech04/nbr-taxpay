@@ -4,6 +4,8 @@ import type { Language } from '../types/tax';
  * Never turn an unknown internal code into a user-visible assertion.
  */
 const labels: Record<string, { en: string; bn: string }> = {
+  SIMULATED: { en: 'Recorded', bn: 'নথিভুক্ত' },
+  PENDING: { en: 'Pending', bn: 'অপেক্ষমাণ' },
   INITIATED: { en: 'Initiated', bn: 'শুরু হয়েছে' },
   GATEWAY_PENDING: { en: 'Payment pending', bn: 'পেমেন্ট অপেক্ষমাণ' },
   GATEWAY_SUCCESS: { en: 'Gateway completed', bn: 'গেটওয়ে সম্পন্ন' },
@@ -33,4 +35,18 @@ export function paymentStatusLabel(
   const label = Object.hasOwn(labels, status) ? labels[status] : undefined;
   return label?.[language] ??
     (language === 'bn' ? 'অবস্থা যাচাই করা যায়নি' : 'Status unavailable');
+}
+
+/** Officer workflow status is not government Treasury settlement. */
+const reviewLabels: Record<string, { en: string; bn: string }> = {
+  PENDING_OFFICER: { en: 'Office review pending', bn: 'অফিস পর্যালোচনা অপেক্ষমাণ' },
+  MAKER_ACKNOWLEDGED: { en: 'Maker acknowledged', bn: 'প্রস্তুতকারীর স্বীকৃতি হয়েছে' },
+  REVIEWER_VERIFIED: { en: 'Reviewer verified', bn: 'পর্যালোচক যাচাই করেছেন' },
+  APPROVER_CLOSED: { en: 'Office review closed', bn: 'অফিস পর্যালোচনা বন্ধ হয়েছে' },
+};
+
+export function paymentReviewStatusLabel(status: string, language: Language): string {
+  const label = Object.hasOwn(reviewLabels, status) ? reviewLabels[status] : undefined;
+  return label?.[language] ??
+    (language === 'bn' ? 'পর্যালোচনার অবস্থা যাচাই করা যায়নি' : 'Review status unavailable');
 }
