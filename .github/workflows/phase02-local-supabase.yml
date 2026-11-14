@@ -465,10 +465,12 @@ jobs:
         run: |
           set -euo pipefail
           # Two independent local databases; never link or write hosted SQL.
-          OFFICE_SHA=d4485d6aa12119f91269a30eaf640e3b6b789f15
+          OFFICE_SHA=15d8114091b6381046fc62c6b1519e5b6a66b474
           OFFICE_DIR="$RUNNER_TEMP/ws3-office-verified"
           git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
             https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
+          git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
+          git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
           docker run --rm -d --name ws3-office-sql-pg17 \
             -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres \
