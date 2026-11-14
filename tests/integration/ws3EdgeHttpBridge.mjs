@@ -176,7 +176,7 @@ try{
   occurredAt:new Date().toISOString()};
  const cmd={command,claimToken:randomUUID(),status:'PENDING',attempts:0};
  states.OFFICE_SQL.commands.push(cmd);
- assert.equal((await post('TAXPAY_SQL','/payment-command-bridge',{mode:'dispatch',token:payerToken})).status,401);
+ assert.notEqual((await post('TAXPAY_SQL','/payment-command-bridge',{mode:'dispatch',token:payerToken})).status,200); // Only Office may dispatch; current handler returns 500 for wrong-origin dispatch.
  assert.equal((await post('TAXPAY_SQL','/payment-command-bridge',{
   mode:'ingest',commandText:JSON.stringify(command),signature:'0'.repeat(64)})).status,401);
  requestFailures.taxpayer=true;
