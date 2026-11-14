@@ -30,15 +30,33 @@ DECLARE
           THEN RAISE EXCEPTION 'INVALID_BENEFICIARY'; END IF;
         END IF;
 $verified$;
+  v_duplicate_anchor text := 'v_amount := (v_allocation->>''amountMinor'')::bigint;';
+  v_duplicate_guard text := $unique$
+      -- Multiple different heads and years per recipient remain valid;
+      -- a second identical (TIN, head, assessment year) allocation is not.
+      IF EXISTS (
+        SELECT 1 FROM pg_catalog.jsonb_array_elements(v_allocations)
+          WITH ORDINALITY AS prior(value,position)
+        WHERE prior.position <= v_i
+          AND prior.value->>'taxpayerTin' = v_tin
+          AND prior.value->>'headId' = v_allocation->>'headId'
+          AND prior.value->>'assessmentYear' = v_allocation->>'assessmentYear'
+      ) THEN RAISE EXCEPTION 'DUPLICATE_COMBINED_ALLOCATION'; END IF;
+      v_amount := (v_allocation->>'amountMinor')::bigint;
+$unique$;
   v_sql text;
 BEGIN
   v_sql:=pg_catalog.pg_get_functiondef(
     'demo_payment.validate_demo_authorized_payment()'::pg_catalog.regprocedure);
   IF (pg_catalog.length(v_sql)-pg_catalog.length(pg_catalog.replace(v_sql,v_existing,'')))
       IS DISTINCT FROM pg_catalog.length(v_existing)
+     OR (pg_catalog.length(v_sql)-pg_catalog.length(pg_catalog.replace(v_sql,v_duplicate_anchor,'')))
+        IS DISTINCT FROM pg_catalog.length(v_duplicate_anchor)
      OR pg_catalog.to_regprocedure('taxpay_guest_private.walkin_sample_tin(text)') IS NULL
   THEN RAISE EXCEPTION 'F039_COMBINED_GUARD_BASELINE_MISMATCH'; END IF;
-  EXECUTE pg_catalog.replace(v_sql,v_existing,v_replacement);
+  EXECUTE pg_catalog.replace(
+    pg_catalog.replace(v_sql,v_existing,v_replacement),
+    v_duplicate_anchor,v_duplicate_guard);
   IF pg_catalog.position('A one-time recipient is not saved' IN
        pg_catalog.pg_get_functiondef(
          'demo_payment.validate_demo_authorized_payment()'::pg_catalog.regprocedure))=0
