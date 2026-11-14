@@ -42,10 +42,8 @@ jobs:
           test "$(git -C "$OFFICE_CURRENT_DIR" rev-parse HEAD)" = "$OFFICE_CURRENT_SHA"
           cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_CURRENT_DIR/src/app/contracts/paymentSimulationContract.ts"
           OFFICE_REPO="https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git"
-          OFFICE_BRIDGE_REF="main"
-          if git ls-remote --exit-code --heads "$OFFICE_REPO" codex/correction-bridge-20261029 >/dev/null 2>&1; then
-            OFFICE_BRIDGE_REF="codex/correction-bridge-20261029"
-          fi
+          # Check the existing WS3 Office #270 branch, not a stale historical bridge.
+          OFFICE_BRIDGE_REF="ws3/v95-correction-payment-parent-20261112"
           OFFICE_BRIDGE_DIR="$RUNNER_TEMP/office-matching-bridge"
           git clone --depth 1 --branch "$OFFICE_BRIDGE_REF" "$OFFICE_REPO" "$OFFICE_BRIDGE_DIR"
           cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_BRIDGE_DIR/supabase/functions/payment-sync-bridge/index.ts"
