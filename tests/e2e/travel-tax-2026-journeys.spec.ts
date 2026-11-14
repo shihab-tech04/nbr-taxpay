@@ -875,7 +875,7 @@ test('F-150 US-147: changing travel date reclassifies the same passenger and upd
   const modal=page.getByRole('dialog',{name:'Travel tax'});
   await fillForeignPassenger(modal,{name:'AGE CHANGE VISITOR',birthDate:'2020-11-16',passport:'FOREIGN2020'});
   await fillTravelDetails(modal,{date:'2026-11-15'});
-  await expect(modal.locator('.travel-flow__age-breakdown')).toContainText('Age 4 on travel date');
+  await expect(modal.locator('.travel-flow__age-breakdown')).toContainText('Age 5 on travel date');
   await expect(modal.getByTestId('travel-payment-total')).toContainText('0');
   await modal.locator('#travel-departure-date').fill('2026-11-16');
   await expect(modal.locator('.travel-flow__age-breakdown')).toContainText('Age 6 on travel date');
