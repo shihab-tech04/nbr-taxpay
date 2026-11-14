@@ -61,15 +61,19 @@ try {
     return route.abort('blockedbyclient');
   });
   await installIsolatedOfficeOfficer(page);
+  // Fix the language explicitly, rather than inheriting the runner's
+  // i18next setting. The same authenticated officer checks EN and BN.
   await page.addInitScript(() => {
+    const language = sessionStorage.getItem('ws3_office_test_language') === 'bn' ? 'bn' : 'en';
     sessionStorage.setItem('office_ui_entered', 'admin');
     localStorage.setItem('gov_ui_settings', JSON.stringify({
       assessmentYear: '2027-28',
       themeId: 'indigo-blue',
       fontId: 'inter',
       fontSizeId: 'standard',
-      languageId: 'en',
+      languageId: language,
     }));
+    localStorage.setItem('i18nextLng', language);
   });
   await page.route('https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/**', async (route) => {
     try {
@@ -140,9 +144,62 @@ try {
       Number(whole.replaceAll(',', '')) * 100 + Number(fraction.padEnd(2, '0')));
   assert.ok(renderedAmountMinor.includes(payment.amountMinor),
     'Office drawer must render the exact paired parent amount in paisa');
-  assert.ok(drawerText.includes('Taxpayer allocations'));
-  console.log('PASS Office #270 UI readback: paired parent ' + payment.id +
-    ', 2 original allocations, payer, both beneficiaries, heads/years/amounts, receipt reference and status rendered with the existing officer fixture');
+  // Prove the allocation field itself is present, not merely a collection of
+  // matching strings elsewhere in the drawer. Each beneficiary must retain
+  // their own immutable head, assessment year and amount in both languages.
+  const expectedAllocations = [
+    { name: 'WS3 recipient 2', tin: '222222222222', head: 'Advance Tax', year: '2026-27', minor: 1500 },
+    { name: 'WS3 recipient 3', tin: '333333333333', head: 'Tax on notice of demand', year: '2025-26', minor: 3500 },
+  ];
+  const normalizeDigits = (value) => value.replace(/[০-৯]/g,
+    digit => String(digit.charCodeAt(0) - 0x09e6));
+  const parseAmountMinor = (value) => {
+    const match = /^৳\s*([0-9][0-9,]*)(?:\.([0-9]{1,2}))?$/.exec(normalizeDigits(value.trim()));
+    assert.ok(match, 'Allocation must display a valid localized taka amount: ' + value);
+    return Number(match[1].replaceAll(',', '')) * 100 +
+      Number((match[2] ?? '').padEnd(2, '0'));
+  };
+  const verifyVisibleAllocations = async (language) => {
+    const visibleDrawer = page.locator('.dynamic-drawer');
+    await visibleDrawer.waitFor({ state: 'visible', timeout: 10000 });
+    const rows = visibleDrawer.locator('.office-shared-allocation-list__item');
+    assert.equal(await rows.count(), expectedAllocations.length,
+      language + ' drawer must render exactly two source-backed allocation lines');
+    const field = visibleDrawer.locator('.drawer-field').filter({ has: rows.first() });
+    assert.equal(await field.count(), 1, 'Allocation breakdown must use the approved shared drawer field');
+    const expectedLabel = language === 'bn' ? 'করদাতা অনুযায়ী বণ্টন' : 'Taxpayer allocations';
+    assert.equal((await field.locator('.drawer-field__label').innerText()).trim(), expectedLabel,
+      'Allocation label must resolve in the selected Office language');
+    for (const [index, expected] of expectedAllocations.entries()) {
+      const row = rows.nth(index);
+      const text = await row.innerText();
+      for (const value of [expected.name, expected.tin, expected.head, expected.year])
+        assert.ok(text.includes(value), language + ' allocation ' + (index + 1) + ' missing ' + value);
+      const amounts = row.locator('strong');
+      assert.equal(await amounts.count(), 2, 'Each allocation must show a party and one amount');
+      assert.equal(parseAmountMinor(await amounts.nth(1).innerText()), expected.minor,
+        language + ' allocation must retain exact immutable source paisa');
+    }
+    const text = normalizeDigits(await visibleDrawer.innerText());
+    assert.ok([...text.matchAll(/৳\s*([0-9][0-9,]*)(?:\.([0-9]{1,2}))?(?![0-9,.])/g)]
+      .some(([, whole, fraction = '']) =>
+        Number(whole.replaceAll(',', '')) * 100 + Number(fraction.padEnd(2, '0')) === payment.amountMinor),
+    language + ' drawer must retain the exact payment parent total');
+    for (const value of [payment.id, fixture.expected.receiptReference, payment.certificateReference])
+      assert.ok(text.includes(value), language + ' drawer must retain source-backed reference ' + value);
+  };
+  await verifyVisibleAllocations('en');
+  const priorRequests = paymentRequests;
+  await page.evaluate(() => sessionStorage.setItem('ws3_office_test_language', 'bn'));
+  await page.reload();
+  await screen.waitFor({ state: 'visible', timeout: 30000 });
+  assert.ok(paymentRequests > priorRequests, 'Bengali refresh must re-read the authorized Office endpoint');
+  assert.equal(missingBearer, false);
+  assert.equal(routeError, null, routeError || undefined);
+  await page.locator('.payment-module__table-card .card-table__action-btn').first().click();
+  await verifyVisibleAllocations('bn');
+  console.log('PASS Office #270 UI readback EN/BN refresh: paired parent ' + payment.id +
+    ', two individually verified immutable allocations, payer, beneficiaries, heads/years/exact amounts, original receipt/certificate references and authorized Office readback');
 } finally {
   if (browser) await browser.close();
   if (server.exitCode === null) {
