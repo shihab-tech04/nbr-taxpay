@@ -214,6 +214,56 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(notices.status).toBe(200);
  const own=(notices.data as Array<{transactionId:string;isRead:boolean}>).find(n=>n.transactionId===tx!.transactionId);
  expect(own?.isRead).toBe(true);
+ // WS2 F-085/F-088: delayed real local SQL ACK from recipient Account A
+ // must not paint that recipient's notice or an error onto payer Account B.
+ // This is a disposable Supabase + actual mobile Chromium journey, not a mock
+ // of auth ownership/RLS or a hosted production transaction.
+ const aNoticeId=(notices.data as Array<{id:number;transactionId:string}>)
+   .find(n=>n.transactionId===tx!.transactionId)?.id;
+ expect(aNoticeId).toBeTruthy();
+ const race=await visit(beneficiary,'notifications',{width:375,height:812});
+ await expect(race.page.getByRole('button',{name:'Mark unread'})).toBeVisible({timeout:15000});
+ let releaseDelayedAck!:()=>void;
+ let acknowledgeStarted!:()=>void;
+ const holdAck=new Promise<void>(resolve=>{releaseDelayedAck=resolve;});
+ const ackStarted=new Promise<void>(resolve=>{acknowledgeStarted=resolve;});
+ await race.page.route('**/rest/v1/rpc/sim_set_my_notice_read',async route=>{
+   const actualSqlResponse=await route.fetch();
+   acknowledgeStarted();
+   await holdAck;
+   await route.fulfill({response:actualSqlResponse});
+ });
+ await race.page.getByRole('button',{name:'Mark unread'}).click();
+ await ackStarted;
+ // Auth changes while the A request is in flight and its SQL reply withheld.
+ await race.page.locator('.citizen-mobile-menu-trigger').click();
+ const afterSignoutUrl=new URL('/',race.page.url()).href;
+ await race.page.locator('.citizen-dialog-signout').click();
+ await race.page.waitForURL(afterSignoutUrl,{waitUntil:'load',timeout:15000});
+ await race.page.goto('/?action=notifications#access_token='+encodeURIComponent(payer.session.access_token)+
+  '&refresh_token='+encodeURIComponent(payer.session.refresh_token)+
+  '&token_type=bearer&expires_in=3600&expires_at='+
+  (payer.session.expires_at||Math.floor(Date.now()/1000)+3600));
+ await expect(race.page.getByRole('heading',{name:'Payment notifications'})).toBeVisible({timeout:15000});
+ await expect(race.page.getByText('৳173.75').first()).toBeVisible({timeout:15000});
+ await expect(race.page.getByText('৳23.50')).toHaveCount(0);
+ const lateSqlReply=race.page.waitForResponse(response=>
+  response.url().includes('/rest/v1/rpc/sim_set_my_notice_read'));
+ releaseDelayedAck();
+ await lateSqlReply;
+ await race.page.waitForTimeout(200);
+ await expect(race.page.getByText('৳23.50')).toHaveCount(0);
+ await expect(race.page.getByText('Account changed during payment operation')).toHaveCount(0);
+ await expect(race.page.getByText('Notification update failed')).toHaveCount(0);
+ await expect(race.page.getByText('৳173.75').first()).toBeVisible();
+ // A's immutable notice ID is not writable by B even with a direct RPC.
+ const unauthorizedAck=await request('/rest/v1/rpc/sim_set_my_notice_read',
+   {p_notice_id:aNoticeId,p_is_read:true},payer.session.access_token);
+ expect(unauthorizedAck.status).toBeGreaterThanOrEqual(400);
+ await race.page.reload({waitUntil:'domcontentloaded'});
+ await expect(race.page.getByText('৳173.75').first()).toBeVisible({timeout:15000});
+ await expect(race.page.getByText('৳23.50')).toHaveCount(0);
+ await race.context.close();
  // The profile navigation above leaves Activity. Return to Activity and reload
  // so this proves the initiating payer view remains the default after refresh.
  await one.page.goto('/?action=history');
