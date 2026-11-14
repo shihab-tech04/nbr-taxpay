@@ -4,6 +4,15 @@ import { expect, test } from '@playwright/test';
 // issuer-backed tax-credit certificate. No-source states cannot export a
 // zero-value or otherwise unsupported payment document.
 test('Tax Credit Certificates does not export empty or unverified record summaries', async ({ page }) => {
+  // Isolate the session-scoped readback: an explicitly empty response is not
+  // evidence of an officially issued document, and cannot depend on the
+  // availability or seeded data of the hosted demonstration endpoint.
+  await page.route(/\/demo-story1-taxpay\/payments\?sessionId=/, async route => {
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({success:true,simulationOnly:true,data:{items:[],total:0}})
+    });
+  });
   for (const language of ['en','bn'] as const) {
     await page.goto('/?action=certificates&demoUser=user2&lang=' + language);
     const bn = language === 'bn';
