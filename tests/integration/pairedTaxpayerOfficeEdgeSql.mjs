@@ -22,7 +22,8 @@ for(const value of [sourceDb,officeDb])
 assert.notEqual(new URL(sourceDb).port,new URL(officeDb).port,'Taxpayer and Office SQL must be separate databases');
 
 const officeSecret='ws3-disposable-shared-mirror-secret';
-const officerId=randomUUID();
+// Reuse the active MAKER fixture installed by pairedCorrectionOfficeSql.mjs.
+const officerId='80000000-0000-4000-8000-000000000011';
 const officeToken='ws3-disposable-authorized-office-session';
 const servers={};
 const officeFailure={next:true};
@@ -199,14 +200,12 @@ const payload={origin:'TAXPAY_UI',idempotencyKey,sessionId:profile.paymentSessio
     receiptReference:'SIM-'+idempotencyKey,totalAmount:50,assessmentYear:'2026-27, 2025-26',
     taxpayerTin:'',lines,receiptLines:lines,allocations,receiptSnapshot}};
 
-const roleSetup=[
-  'BEGIN;',
-  `INSERT INTO auth.users(id,email) VALUES(${sqlText(officerId)}::uuid,${sqlText('ws3-'+officerId+'@example.invalid')});`,
-  "INSERT INTO payment_sync.settings(singleton,origin) VALUES(true,'OFFICE_SQL') ON CONFLICT(singleton) DO UPDATE SET origin=excluded.origin;",
-  `INSERT INTO payment_sync.officer_roles(user_uid,role,active) VALUES(${sqlText(officerId)}::uuid,'MAKER',true);`,
-  'COMMIT;',
-].join('\n');
-psql(officeDb,roleSetup);
+const officeFixture=psql(officeDb,
+  `SELECT jsonb_build_object('userExists',EXISTS(SELECT 1 FROM auth.users WHERE id=${sqlText(officerId)}::uuid),`+
+  `'role',(SELECT role FROM payment_sync.officer_roles WHERE user_uid=${sqlText(officerId)}::uuid),`+
+  `'active',(SELECT active FROM payment_sync.officer_roles WHERE user_uid=${sqlText(officerId)}::uuid));`);
+assert.deepEqual(officeFixture,{userExists:true,role:'MAKER',active:true},
+  'Use the existing authorized disposable Office maker identity; do not create a test role here');
 
 const [taxpayerServer,officeServer,recipientServer]=await Promise.all([
   start('TAXPAY_SQL',resolve('.'),'demo-story1-taxpay'),
@@ -235,7 +234,7 @@ try{
   assert.equal(history.status,200);
   assert.equal(history.data.data.id,sourceId);
   assert.equal(history.data.data.data.idempotencyKey,idempotencyKey);
-  assert.deepEqual(history.data.data.details.allocations,allocations);
+  assert.deepEqual(history.data.data.data.details.allocations,allocations);
 
   const officeRow=psql(officeDb,`SELECT jsonb_build_object('id',id,'sessionId',session_id,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`);
   assert.equal(officeRow.id,sourceId);
