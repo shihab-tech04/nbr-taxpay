@@ -68,7 +68,10 @@ $source_allocation_integrity$;
 REVOKE ALL ON FUNCTION demo_payment.check_new_v3_source_allocations()
   FROM PUBLIC,anon,authenticated;
 
-CREATE TRIGGER taxpay_v3_allocation_integrity_before_insert
+-- PostgreSQL executes same-event triggers by name: validate original v3
+-- allocation integrity first, then retain every existing authorization/TIN
+-- guard on all accepted inserts. The other guards remain enabled.
+CREATE TRIGGER a_taxpay_v3_allocation_integrity_before_insert
   BEFORE INSERT ON demo_payment.story_payments
   FOR EACH ROW EXECUTE FUNCTION demo_payment.check_new_v3_source_allocations();
 
