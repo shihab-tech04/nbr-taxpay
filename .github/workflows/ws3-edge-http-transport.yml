@@ -1,0 +1,40 @@
+name: WS3 signed Edge HTTP transport - isolated endpoints
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/payment-sync-bridge/**'
+      - 'supabase/functions/payment-command-bridge/**'
+      - 'tests/integration/ws3EdgeHttpBridge.mjs'
+      - '.github/workflows/ws3-edge-http-transport.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  signed-http-transport:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact Taxpayer PR source
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Load and pin canonical Office #270 source without touching Office branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          OFFICE_SHA=ceb1cd7f8a724dc7b599b66ffc82fdfd12b34d23
+          OFFICE_DIR="$RUNNER_TEMP/ws3-office-http-source"
+          git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
+            https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
+          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
+          echo "WS3_OFFICE_SOURCE=$OFFICE_DIR" >> "$GITHUB_ENV"
+      - name: Execute actual Taxpayer and Office Edge handlers through loopback HTTP
+        run: node tests/integration/ws3EdgeHttpBridge.mjs
