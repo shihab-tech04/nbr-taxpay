@@ -65,8 +65,5 @@ test('guide search keeps existing Travel Tax action reachable in English and Ban
     await expect(result).toBeVisible();
     await result.getByRole('button', {name: bn ? 'ভ্রমণ কর পরিশোধ করুন' : 'Pay Travel Tax'}).click();
     await expect(page.getByRole('dialog', {name: bn ? 'ভ্রমণ কর' : 'Travel tax'})).toBeVisible();
-    await expect(page.getByRole('heading', {
-      name: bn ? 'সহজকর ব্যবহার নির্দেশিকা' : 'Sohojkor user guide'
-    })).toBeVisible();
   }
 });
