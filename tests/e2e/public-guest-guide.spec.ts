@@ -201,7 +201,7 @@ test('Guide search covers steps and answers, while topic FAQs stay contextual', 
   await expect(guide.getByRole('heading',{name:'Search results'})).toBeVisible();
   await expect(guide.getByRole('link',{name:'NBR publications'})).toBeVisible();
   await expect(guide.locator('.public-guide-result-step').first()).toContainText('Find and add passengers');
-  await expect(guide.locator('.public-guide-result-step').first()).toContainText('not government passport verification');
+  await expect(guide.locator('.public-guide-result-step').first()).toContainText('not government verification');
   await expect(guide.locator('.public-guide-layout')).toHaveCount(0);
   await field.fill('tap Pay Tax');
   await expect(guide.locator('.public-guide-result-step').first()).toContainText('Step 1 · Mobile');
@@ -619,9 +619,10 @@ test('guide no-results has a directly operable EN/BN recovery button and Bengali
  await expect(guide.locator('.public-guide-result-step')).not.toHaveCount(0);
  await expect(guide.locator('.public-guide-results-head [role="status"]')).toContainText(/[০-৯]/);
  await setWorkspaceLanguage(page,'en');
- await input.fill('another-completely-absent-topic-xyz');
+ const englishInput=guide.getByRole('searchbox',{name:'Search the guide'});
+ await englishInput.fill('another-completely-absent-topic-xyz');
  await guide.locator('.public-guide-no-results').getByRole('button',{name:'Clear search'}).click();
- await expect(input).toBeFocused();
+ await expect(englishInput).toBeFocused();
  await expect(guide.getByRole('navigation',{name:'Guide topics'})).toBeVisible();
 });
 

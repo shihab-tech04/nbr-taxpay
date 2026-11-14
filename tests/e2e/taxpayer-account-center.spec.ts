@@ -106,7 +106,8 @@ test('signed-in public mobile uses the existing private-style header, shared she
   await page.getByLabel('Password',{exact:true}).fill('user1');
   await page.getByRole('dialog').getByRole('button',{name:'Sign In'}).click();
   await page.locator('.citizen-brand').click();
-  await expect(page).toHaveURL(/action=landing/);
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   for(const width of [320,360,375,390]) {
     await page.setViewportSize({width,height:812});
     await page.goto('/?action=landing');
