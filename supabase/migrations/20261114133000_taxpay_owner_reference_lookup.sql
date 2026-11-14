@@ -20,14 +20,14 @@ BEGIN
   v_ref := pg_catalog.upper(pg_catalog.btrim(p_reference));
   IF v_ref IS NULL OR pg_catalog.length(v_ref)=0 OR pg_catalog.length(v_ref)>200
   THEN RAISE EXCEPTION 'INVALID_PAYMENT_REFERENCE'; END IF;
-  v_mobile := pg_catalog.nullif(pg_catalog.btrim(p_receipt_mobile),'');
+  v_mobile := NULLIF(pg_catalog.btrim(p_receipt_mobile),'');
   IF v_mobile IS NOT NULL AND v_mobile !~ '^01[0-9]{9}$'
   THEN RAISE EXCEPTION 'INVALID_RECEIPT_MOBILE'; END IF;
 
-  SELECT pg_catalog.coalesce(pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
+  SELECT COALESCE(pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
     'id',q.id,'service',q.service_code,'amountMinor',q.amount_minor,
     'status',q.status,'createdAt',q.created_at,
-    'details',pg_catalog.coalesce(q.data->'details','{}'::jsonb)
+    'details',COALESCE(q.data->'details','{}'::jsonb)
   )),'[]'::jsonb) INTO v_rows
   FROM (
     SELECT p.id,p.service_code,p.amount_minor,p.status,p.created_at,p.data
@@ -46,8 +46,8 @@ BEGIN
         OR pg_catalog.upper(pg_catalog.btrim(p.data#>>'{details,receiptSnapshot,paymentTransactionId}'))=v_ref
       )
       AND (v_mobile IS NULL OR
-        pg_catalog.coalesce(
-          pg_catalog.nullif(p.data#>>'{details,receiptSnapshot,receiptMobile}',''),
+        COALESCE(
+          NULLIF(p.data#>>'{details,receiptSnapshot,receiptMobile}',''),
           p.data#>>'{details,receiptMobile}',''
         )=v_mobile)
     LIMIT 2
