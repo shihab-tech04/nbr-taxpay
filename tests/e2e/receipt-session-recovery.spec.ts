@@ -88,3 +88,41 @@ test('backend outage is not misreported as a missing receipt', async ({ page }) 
   await expect(page.getByRole('alert')).toContainText('Saved session records are temporarily unavailable');
   await expect(page.getByRole('heading', { name: 'No matching record' })).toHaveCount(0);
 });
+
+test('US-050 recovery preserves entered reference across an outage and retries the original receipt', async ({ page }) => {
+  const paymentWrites: string[] = [];
+  page.on('request', request => {
+    if (request.url().includes('/demo-story1-taxpay/payments') && request.method() !== 'GET')
+      paymentWrites.push(request.method());
+  });
+  await page.route(/\/demo-story1-taxpay\/payments\?sessionId=/, async route =>
+    route.fulfill({ status: 503, contentType: 'application/json',
+      body: JSON.stringify({ success: false, error: 'BACKEND_UNAVAILABLE' }) }));
+  await page.goto('/?action=verify');
+  const dialog = page.getByRole('dialog', { name: 'Payment status & receipt' });
+  const referenceField = dialog.getByRole('textbox', { name: 'Challan, token or transaction reference' });
+  const mobileField = dialog.getByRole('textbox', { name: 'Receipt mobile number' });
+  await referenceField.fill(reference);
+  await mobileField.fill(mobile);
+  await dialog.getByRole('button', { name: 'Search records' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Saved session records are temporarily unavailable');
+  await expect(dialog.getByRole('heading', { name: 'No matching record' })).toHaveCount(0);
+  await expect(referenceField).toHaveValue(reference);
+  await expect(mobileField).toHaveValue(mobile);
+  await expect(dialog.locator('.receipt-view')).toHaveCount(0);
+
+  // Replace only the disposable HTTP fixture; do not create a new transaction
+  // or reset the payment reference/verified receipt-mobile values.
+  await stubSessionRecord(page);
+  await dialog.getByRole('button', { name: 'Search records' }).click();
+  const receipt = dialog.locator('.receipt-view');
+  await expect(receipt).toBeVisible();
+  await expect(receipt).toContainText(reference);
+  await expect(receipt.locator('.receipt-view__paper')).toContainText('12,500');
+  await expect(receipt.locator('.receipt-view__status')).toHaveCount(0);
+  // The approved receipt-success view replaces the form; the input-preservation
+  // assertions above apply before retry, while this verifies clean completion.
+  await expect(referenceField).toHaveCount(0);
+  await expect(mobileField).toHaveCount(0);
+  expect(paymentWrites).toEqual([]);
+});
