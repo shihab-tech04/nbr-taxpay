@@ -1,9 +1,7 @@
 import type { ChallanReceipt } from '../types/tax';
 
 /**
- * Receipts and certificate summaries export the same Korbritto document surface
- * shown in the shared modal, with the same approved typography and layout.
- * This is an HTML export, not an invented PDF or a different Office template.
+ * Account summaries retain their existing HTML export.
  */
 function downloadDisplayedPaper(filename: string, documentTitle: string) {
   const paper = document.querySelector<HTMLElement>('.receipt-view__paper');
@@ -30,15 +28,54 @@ function downloadDisplayedPaper(filename: string, documentTitle: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
 
-/** Save exactly the displayed receipt (also linked from Office Management). */
-export function downloadDisplayedCertificate(receipt: ChallanReceipt) {
+/** Export the shared receipt surface, including Bengali text and all allocations. */
+export async function downloadDisplayedCertificate(receipt: ChallanReceipt, paper: HTMLElement, certificate = true) {
   const title = String(receipt.paymentTransactionId || receipt.challanNo)
     .replace(/[^a-zA-Z0-9-]/g, '').slice(0, 80);
-  downloadDisplayedPaper('Payment-certificate-' + title + '.html', 'Payment certificate ' + title);
+  const [{ default: renderPaper }, { jsPDF }] = await Promise.all([
+    import('html2canvas-pro'),
+    import('jspdf'),
+  ]);
+  await document.fonts.ready;
+  const scale = 2;
+  const canvas = await renderPaper(paper, {
+    backgroundColor: '#fff', logging: false, scale,
+    ignoreElements: element => element.matches('button, .no-print'),
+  });
+  if (!canvas.width || !canvas.height) throw new Error('Document is not ready');
+
+  const pdf = new jsPDF({ format: 'a4', unit: 'mm', compress: true });
+  const margin = 12;
+  const width = pdf.internal.pageSize.getWidth() - 2 * margin;
+  const pixelsPerMm = canvas.width / width;
+  const pageHeight = Math.floor((pdf.internal.pageSize.getHeight() - 2 * margin) * pixelsPerMm);
+  const top = paper.getBoundingClientRect().top;
+  const breaks = Array.from(paper.querySelectorAll('tr, article, header, section'))
+    .map(element => Math.floor((element.getBoundingClientRect().bottom - top) * scale))
+    .filter(position => position > 0 && position < canvas.height)
+    .sort((left, right) => right - left);
+
+  const page = document.createElement('canvas');
+  page.width = canvas.width;
+  const context = page.getContext('2d');
+  if (!context) throw new Error('Unable to render the payment certificate');
+  for (let start = 0; start < canvas.height;) {
+    const limit = Math.min(start + pageHeight, canvas.height);
+    const end = limit === canvas.height ? limit :
+      breaks.find(position => position <= limit && position >= start + pageHeight / 2) ?? limit;
+    const height = end - start;
+    page.height = height;
+    context.drawImage(canvas, 0, start, canvas.width, height, 0, 0, canvas.width, height);
+    if (start > 0) pdf.addPage();
+    pdf.addImage(page, 'PNG', margin, margin, width, height / pixelsPerMm);
+    start = end;
+  }
+  pdf.setProperties({ title: (certificate ? 'Sohojkor Payment Certificate ' : 'Sohojkor Payment Receipt ') + title });
+  pdf.save((certificate ? 'Payment-certificate-' : 'Payment-receipt-') + title + '.pdf');
 }
 
 /** Save a selected certificate *summary*, never fabricate a payment receipt. */
 export function downloadDisplayedCertificateSummary(summaryType: string) {
   const safe = summaryType.replace(/[^A-Z_]/g, '').slice(0, 50);
-  downloadDisplayedPaper('Korbritto-' + safe + '-summary.html', 'Korbritto certificate summary');
+  downloadDisplayedPaper('Sohojkor-' + safe + '-summary.html', 'Sohojkor certificate summary');
 }

@@ -492,8 +492,10 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     if (relationship === 'OTHER') await dialog.locator('#guest-payer-name').fill('Sample Payer');
     await dialog.locator('#guest-phone').fill('01712345678');
     await expect(dialog.getByTestId('other-tax-taxpayer-list')).toBeVisible();
-    if (relationship === 'SELF') await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
-    else await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
+    // Both relationships allow a confirmed additional taxpayer in the same
+    // non-Return combined payment; the dedicated SELF+OTHER payment test below
+    // checks the saved allocations and certificate under the same parent.
+    await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
     await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
     await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
     await expect(dialog.locator('[data-head-group]')).toHaveCount(6);
@@ -505,6 +507,86 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     await dialog.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('250');
     await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 250');
   }
+});
+
+test('walk-in self payer can include a confirmed second taxpayer', async ({ page }) => {
+  const submitted: Array<Record<string, unknown>> = [];
+  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
+    submitted.push(route.request().postDataJSON());
+    await route.fulfill({ json: {
+      success: true, id: '00000000-0000-4000-8000-000000000102',
+      status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true,
+    } });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
+  await dialog.locator('#guest-tin').fill('111111111111');
+  await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  await dialog.locator('#guest-phone').fill('01712345678');
+  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+  const second = dialog.getByTestId('other-tax-taxpayer');
+  await second.locator('input[id^="other-tax-tin-"]').fill('222222222222');
+  await second.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
+  const next = dialog.getByRole('button', { name: 'Continue to purpose & amount' });
+  await expect(next).toBeDisabled();
+  await second.getByRole('button', { name: 'Add taxpayer', exact: true }).click();
+  await next.click();
+  const batch = dialog.getByTestId('other-tax-batch');
+  const tabs = batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button');
+  await tabs.first().click();
+  await batch.locator('[data-head-group="Advance Tax"] summary').click();
+  await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+  const line = batch.getByTestId('other-tax-line');
+  await line.locator('input[id^="other-tax-amount"]').fill('15');
+  await tabs.nth(1).click();
+  await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
+  await line.locator('select[id^="other-tax-year"]').selectOption('2025-26');
+  await line.locator('input[id^="other-tax-amount"]').fill('35');
+  await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
+  await dialog.getByRole('button', { name: 'Pay online' }).click();
+  await dialog.getByRole('button', { name: 'Mobile banking' }).click();
+  await dialog.getByRole('radio', { name: 'bKash' }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm each taxpayer TIN/ }).check();
+  await dialog.getByRole('button', { name: /Pay ৳ 50/ }).click();
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
+  expect(submitted).toHaveLength(1);
+  expect(submitted[0]).toMatchObject({
+    amountMinor: 5000,
+    details: {
+      payerTin: '111111111111',
+      payerMode: 'OTHER',
+      combinedPayment: true,
+      allocations: [
+        { taxpayerTin: '111111111111', assessmentYear: '2026-27', amountMinor: 1500 },
+        { taxpayerTin: '222222222222', assessmentYear: '2025-26', amountMinor: 3500 },
+      ],
+    },
+  });
+  const details = submitted[0].details as {allocations: Array<{headId: number}>};
+  expect(new Set(details.allocations.map(allocation => allocation.headId)).size).toBe(2);
+  await dialog.getByRole('button', { name: 'Receipt details' }).click();
+  const document = dialog.locator('.receipt-view__paper');
+  await expect(document).toContainText('111111111111');
+  await expect(document).toContainText('222222222222');
+  await expect(document).toContainText('৳ 50');
+  await dialog.getByRole('button', { name: 'View payment certificate' }).click();
+  const certificate = dialog.getByTestId('payment-certificate-document');
+  await expect(certificate.getByRole('heading', { name: 'Payment Certificate' })).toBeVisible();
+  await expect(document.getByTestId('payment-certificate-reference'))
+    .toContainText('SK-PC-00000000-0000-4000-8000-000000000102');
+  await expect(certificate).toContainText('111111111111');
+  await expect(certificate).toContainText('222222222222');
+  await expect(certificate).toContainText('2026-27');
+  await expect(certificate).toContainText('2025-26');
+  await expect(certificate).toContainText('৳ 15');
+  await expect(certificate).toContainText('৳ 35');
+  await expect(dialog.getByTestId('payment-certificate-total')).toContainText('৳ 50');
+  await expect(certificate).not.toContainText('SIMULATED_SUCCESS');
+  expect(submitted).toHaveLength(1);
+  await dialog.getByRole('button', { name: 'View receipt' }).click();
+  await expect(document.getByTestId('payment-certificate-reference')).toHaveCount(0);
 });
 
 test('signed-in SELF Other Tax preserves the locked account identity and canonical head catalogue', async ({ page }) => {

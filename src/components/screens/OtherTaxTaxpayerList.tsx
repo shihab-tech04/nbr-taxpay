@@ -12,6 +12,7 @@ interface Props {
   lockedPrimary?: boolean;
   singleTaxpayerLayout?: boolean;
   allowAdditional?: boolean;
+  confirmPrimary?: boolean;
   requireConfirmation?: boolean;
   allowSyntheticDemoTin?: boolean;
   confirmedTins: Record<string, string>;
@@ -29,7 +30,7 @@ interface Props {
 }
 
 export function OtherTaxTaxpayerList({
-  language, primaryTin, primaryName, lockedPrimary = false, singleTaxpayerLayout = false, allowAdditional = true, requireConfirmation = false, allowSyntheticDemoTin = false, confirmedTins, onConfirmTaxpayer, additional, allocations, invalidId, tinError,
+  language, primaryTin, primaryName, lockedPrimary = false, singleTaxpayerLayout = false, allowAdditional = true, confirmPrimary = true, requireConfirmation = false, allowSyntheticDemoTin = false, confirmedTins, onConfirmTaxpayer, additional, allocations, invalidId, tinError,
   onPrimaryTin, onPrimarySearch, onPrimaryName, onAdditional, onAllocations, onClearError
 }: Props) {
   const bn = language === 'bn';
@@ -40,7 +41,7 @@ export function OtherTaxTaxpayerList({
   const notFoundLabel = bn ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.';
   // Existing lookup fixtures; do not create new taxpayers or change payment data.
   const suggestedTins = SAMPLE_TIN_SUGGESTIONS;
-  const progressive = requireConfirmation && allowAdditional;
+  const progressive = requireConfirmation && confirmPrimary && allowAdditional;
   const revealAddAction = (id: string) => requestAnimationFrame(() => requestAnimationFrame(() => {
     const card = document.querySelector<HTMLElement>(id === 'primary'
       ? '[data-testid="other-tax-primary-taxpayer"]' : `[data-taxpayer-id="${id}"]`);
@@ -59,7 +60,7 @@ export function OtherTaxTaxpayerList({
   const confirmed = (id: string, tin: string) => Boolean(tin) && confirmedTins[id] === tin;
   const duplicate = (id: string, tin: string) => Boolean(tin) &&
     (id !== 'primary' && primaryTin === tin || additional.some(person => person.id !== id && person.tin === tin));
-  const primaryConfirmed = requireConfirmation && confirmed('primary', primaryTin);
+  const primaryConfirmed = !confirmPrimary || (requireConfirmation && confirmed('primary', primaryTin));
   const count = requireConfirmation
     ? (primaryConfirmed ? 1 : 0) + additional.filter(person => confirmed(person.id, person.tin)).length
     : additional.length + 1;
@@ -106,7 +107,7 @@ export function OtherTaxTaxpayerList({
     <article className={`taxpay-taxpayer-row${simpleSelf ? ' taxpay-taxpayer-row--single' : ''}`} data-testid="other-tax-primary-taxpayer">
       <div className="taxpay-taxpayer-row__header">
         <h3>{simpleSelf ? (bn ? 'করদাতার তথ্য' : 'Taxpayer Information') : (bn ? 'করদাতা ১' : 'Taxpayer 1')}</h3>
-        {requireConfirmation && allowAdditional && primaryConfirmed && <button type="button" className="taxpay-taxpayer-row__edit"
+        {progressive && primaryConfirmed && <button type="button" className="taxpay-taxpayer-row__edit"
           onClick={() => { onConfirmTaxpayer('primary', ''); onPrimaryName(''); setSearchedTins(current => ({...current, primary: ''})); onClearError(); }}>
           <Pencil size={15} aria-hidden="true"/>{bn ? 'সম্পাদনা' : 'Edit'}
         </button>}
@@ -134,7 +135,7 @@ export function OtherTaxTaxpayerList({
           <>{identityCard('primary', primaryTin, primaryName, false)}
             {addTaxpayerAction('primary', primaryTin)}</>}
       </div>}
-      {requireConfirmation && allowAdditional && !primaryConfirmed && searchedTins.primary === primaryTin && duplicate('primary', primaryTin) &&
+      {progressive && !primaryConfirmed && searchedTins.primary === primaryTin && duplicate('primary', primaryTin) &&
         <p className="taxpay-taxpayer-row__lookup-status" role="status">{bn ? 'করদাতা ইতিমধ্যে যোগ করা হয়েছে।' : 'Taxpayer already added.'}</p>}
       {tinError && (!invalidId || invalidId === 'primary') &&
         <p id="guest-payment-error-tin" className="payment-form-field-error" role="alert">{tinError}</p>}
