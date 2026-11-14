@@ -41,3 +41,23 @@ test('Tax with Return cannot be mixed with any other payment head when repeating
  const returnOnly={...old,allocations:[{...old.allocations[0],category:'TAX_WITH_RETURN'}]};
  assert.equal(canPayAgain(returnOnly,'user1','payer'),true);
 });
+
+test('Tax with Return Pay Again permits exactly one allocation and rejects multiple beneficiaries or years',()=>{
+ const one={...old,allocations:[{...old.allocations[0],category:'TAX_WITH_RETURN'}]};
+ assert.equal(canPayAgain(one,'user1','payer'),true);
+ for(const duplicate of [
+   {...old.allocations[0],category:'TAX_WITH_RETURN',beneficiary:'user2'},
+   {...old.allocations[0],category:'TAX_WITH_RETURN',assessmentYear:'2025-26'}
+ ]){
+   const invalid={...one,allocations:[one.allocations[0],duplicate]};
+   const original=JSON.stringify(invalid);
+   assert.equal(canPayAgain(invalid,'user1','payer'),false);
+   assert.throws(
+     ()=>copyPreviousPayment(invalid,'user1','payer',people,[...categories,'TAX_WITH_RETURN']),
+     /Only your recorded payments/
+   );
+   assert.equal(JSON.stringify(invalid),original);
+ }
+ // Non-Return combinations remain independently repeatable.
+ assert.equal(canPayAgain(old,'user1','payer'),true);
+});
