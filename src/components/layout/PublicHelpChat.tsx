@@ -31,6 +31,7 @@ export function PublicHelpChat(){
  const last=useRef<HTMLDivElement>(null);
  const launchRef=useRef<HTMLButtonElement>(null);
  const panelRef=useRef<HTMLElement>(null);
+ const wasOpen=useRef(false);
  useEffect(()=>{
   const query=window.matchMedia('(max-width: 650px)');
   const update=()=>setMobile(query.matches);
@@ -59,7 +60,11 @@ export function PublicHelpChat(){
   document.addEventListener('keydown',trap);
   return ()=>{document.body.style.overflow=previousOverflow;document.removeEventListener('keydown',trap);};
  },[open,mobile]);
- const closePanel=()=>{setOpen(false);launchRef.current?.focus();};
+ const closePanel=()=>setOpen(false);
+ useEffect(()=>{
+  if(!open&&wasOpen.current)launchRef.current?.focus();
+  wasOpen.current=open;
+ },[open]);
  useEffect(()=>{
   if(!open)return;
   const onKeyDown=(event:KeyboardEvent)=>{
@@ -73,12 +78,14 @@ export function PublicHelpChat(){
   const query=text.trim();
   if(!query)return;
   const normalized=query.toLowerCase();
-  const terms=GUIDE_CONTENT.flatMap(group=>[{
-   keywords:[group.en,group.bn,...group.faqs.flatMap(x=>x.q)],
-   answer:group.faqs[0]?.a[bn?1:0] || group.description[bn?1:0]
-  }]);
-  const best=terms.find(row=>row.keywords.some(k=>normalized.includes(k.toLowerCase())||k.toLowerCase().includes(normalized)));
-  const answer=best?.answer||(bn?'পেমেন্ট, রসিদ বা ভ্রমণ কর সম্পর্কে প্রশ্ন করুন। বিস্তারিত User guide-এ দেখুন।':'Ask about payment, receipts or travel tax. See the user guide for more.');
+  const matches=(keywords:string[])=>keywords.some(k=>normalized.includes(k.toLowerCase())||k.toLowerCase().includes(normalized));
+  // Match each question to its own maintained answer. Previously every
+  // question in a topic returned that topic's first FAQ response.
+  const faqAnswers=GUIDE_CONTENT.flatMap(group=>group.faqs.map(faq=>({keywords:faq.q,answer:faq.a[bn?1:0]})));
+  const matchedFaq=faqAnswers.find(row=>matches(row.keywords));
+  const matchedTopic=GUIDE_CONTENT.find(group=>matches([group.en,group.bn]));
+  const answer=matchedFaq?.answer || matchedTopic?.description[bn?1:0] ||
+   (bn?'পেমেন্ট, রসিদ বা ভ্রমণ কর সম্পর্কে প্রশ্ন করুন। বিস্তারিত User guide-এ দেখুন।':'Ask about payment, receipts or travel tax. See the user guide for more.');
   setMessages(prev=>[...prev,{from:'user',value:query},{from:'assistant',value:answer}]);
   setInput('');
  };
