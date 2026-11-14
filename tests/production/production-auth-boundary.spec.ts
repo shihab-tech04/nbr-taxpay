@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test';
 
+// CI route/auth checks must not download large live CMS artworks; app fallback stays intact.
+test.beforeEach(async ({ page }) => {
+  await page.route(
+    'https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**',
+    route => route.abort('blockedbyclient'),
+  );
+});
+
 const site = '/nbr-taxpay/';
 const privateRoutes = ['taxpayer_home', 'dashboard', 'history', 'ledger', 'account_profile', 'account_notifications', 'account_settings', 'beneficiaries', 'services'];
 

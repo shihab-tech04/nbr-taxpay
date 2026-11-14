@@ -183,8 +183,10 @@ jobs:
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/mobile-public-shell-parity.spec.ts --project=mobile-320 --project=mobile-375 --project=desktop-1280
+      # PR candidate changes must not scrape the already-live production CMS artwork.
+      # Keep actual post-deployment verification after authorized merge.
       - name: Verify current live auth and Beneficiaries smoke contract in Chromium
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'workflow_dispatch'
         env:
           TAXPAY_LIVE_URL: https://shihab-tech04.github.io/nbr-taxpay/
         run: node scripts/verify-live-public-auth.mjs
