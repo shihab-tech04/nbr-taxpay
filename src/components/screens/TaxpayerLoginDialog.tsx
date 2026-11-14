@@ -104,7 +104,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
           <div className="taxpayer-login-input-wrap">
             <UserRound size={18} aria-hidden="true" />
             <input ref={inputRef} id="taxpayer-login-user-id" type="text" autoComplete="username"
-              role="combobox" aria-autocomplete="list" aria-haspopup="listbox"
+              aria-autocomplete="list" aria-haspopup="listbox"
               aria-expanded={suggestionsOpen} aria-controls="taxpayer-login-account-options"
               aria-activedescendant={suggestionsOpen&&suggestions.length ? `taxpayer-login-account-${suggestions[Math.min(highlighted,suggestions.length-1)]}`:undefined}
               autoCapitalize="none" spellCheck={false}
