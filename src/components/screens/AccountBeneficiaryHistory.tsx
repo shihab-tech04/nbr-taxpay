@@ -173,7 +173,7 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
       const csv=buildAccountBeneficiaryHistoryCsv(filtered,language);
       const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
       const link=document.createElement('a');
-      link.href=url;link.download='Korbritto_payment_history.csv';
+      link.href=url;link.download='Sohojkor_payment_history.csv';
       document.body.appendChild(link);link.click();link.remove();
       window.setTimeout(()=>URL.revokeObjectURL(url),0);
     }catch{
