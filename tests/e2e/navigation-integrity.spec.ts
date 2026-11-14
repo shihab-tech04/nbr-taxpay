@@ -143,7 +143,7 @@ test('missing transaction searches do not launch private or public lookup', asyn
 test('public missing-record reports keep their existing incident destination', async ({page}) => {
   // Deterministic, empty browser-session readback: this exercises the genuine
   // no-match response without claiming an invented/official public SQL record.
-  await page.route(/\\/demo-story1-taxpay\\/payments\\?sessionId=/, async route => {
+  await page.route(/\/demo-story1-taxpay\/payments\?sessionId=/, async route => {
     await route.fulfill({
       status: 200, contentType: 'application/json',
       body: JSON.stringify({success:true,simulationOnly:true,data:{items:[],total:0}}),
