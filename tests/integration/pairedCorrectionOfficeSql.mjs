@@ -2,15 +2,22 @@
  * WS3 correction round trip, exact source event and Office command IDs.
  * Two separate disposable databases; no hosted secrets or new SQL architecture.
  * Reuses the passing original Taxpayer correction creation fixture prefix.
- * HMAC HTTP transport must still be tested independently.
+ * Existing signed Edge handlers exchange correction events and decisions over
+ * loopback HTTP while each RPC executes against its own disposable SQL DB.
  */
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createServer} from 'node:http';
+import {resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,webcrypto} from 'node:crypto';
+import vm from 'node:vm';
+import {transformSync} from 'esbuild';
 
 const source=process.env.WS3_TAXPAYER_DB_URL,office=process.env.WS3_OFFICE_DB_URL;
+const officeRoot=process.env.WS3_OFFICE_SOURCE;
 assert.ok(source&&office);
+assert.ok(officeRoot,'Pin the current Office #270 source with WS3_OFFICE_SOURCE');
 for(const u of [source,office])assert.ok(['127.0.0.1','localhost'].includes(new URL(u).hostname));
 assert.notEqual(new URL(source).port,new URL(office).port);
 function db(url,script){
@@ -22,11 +29,135 @@ function db(url,script){
  try{return JSON.parse(s);}catch{throw Error('Non-JSON disposable SQL: '+p.stdout.slice(-800));}
 }
 const pgJSON=v=>"'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";
+const sqlText=v=>"'"+String(v).replaceAll("'","''")+"'";
 const auth=(actor,statement)=>[
  'BEGIN;SET LOCAL ROLE authenticated;',
  "SELECT set_config('request.jwt.claim.sub','"+actor+"',true);",
  statement,'COMMIT;'
 ].join('\n');
+const bridgeKey='ab'.repeat(32);
+const dispatchTokens={TAXPAY_SQL:'11'.repeat(32),OFFICE_SQL:'22'.repeat(32)};
+const projectHosts={TAXPAY_SQL:'eyqhoavnitkrajvyqvxn',OFFICE_SQL:'ihbtabrvmyiwikqqbhrf'};
+const bridgeServers={};
+let failNextOfficeSync=true;
+let failNextTaxpayerCommand=true;
+function bridgeConfig(origin){
+ const peer=origin==='TAXPAY_SQL'?'OFFICE_SQL':'TAXPAY_SQL';
+ return {origin,selfUrl:'https://'+projectHosts[origin]+'.supabase.co/functions/v1/payment-sync-bridge',
+  peerUrl:'https://'+projectHosts[peer]+'.supabase.co/functions/v1/payment-sync-bridge',
+  dispatchToken:dispatchTokens[origin],signingKey:bridgeKey,enabled:true};
+}
+function sqlRpc(origin,name,args){
+ const calls={
+  TAXPAY_SQL:{
+   taxpay_correction_internal_claim:'public.taxpay_correction_internal_claim('+args.p_limit+'::integer)',
+   taxpay_correction_internal_ack:'public.taxpay_correction_internal_ack('+sqlText(args.p_event_id)+'::uuid,'+
+    sqlText(args.p_claim_token)+'::uuid,'+args.p_success+','+(args.p_error===null?'NULL':sqlText(args.p_error))+')',
+   taxpay_correction_record_office_decision:'public.taxpay_correction_record_office_decision('+pgJSON(args.p_command)+')',
+  },
+  OFFICE_SQL:{
+   payment_v1_internal_ingest_correction:'public.payment_v1_internal_ingest_correction('+pgJSON(args.p_event)+')',
+   payment_v1_internal_claim_commands:'public.payment_v1_internal_claim_commands('+args.p_limit+'::integer)',
+   payment_v1_internal_ack_correction_command:'public.payment_v1_internal_ack_correction_command('+
+    sqlText(args.p_message_id)+'::uuid,'+sqlText(args.p_claim_token)+'::uuid,'+args.p_success+','+
+    (args.p_review_state===null?'NULL':sqlText(args.p_review_state))+','+
+    (args.p_error===null?'NULL':sqlText(args.p_error))+')',
+  },
+ };
+ const expression=calls[origin]?.[name];
+ if(!expression)throw Error('Unexpected correction bridge RPC '+origin+'.'+name);
+ return db(origin==='TAXPAY_SQL'?source:office,
+  'BEGIN;SET LOCAL ROLE service_role;SELECT '+expression+';COMMIT;');
+}
+async function bridgeFetch(input,init){
+ const raw=typeof input==='string'?input:input.url;
+ const url=new URL(raw);
+ const origin=Object.keys(projectHosts).find(key=>url.hostname===projectHosts[key]+'.supabase.co');
+ if(!origin||!url.pathname.startsWith('/functions/v1/'))
+  throw Error('Blocked external URL in disposable correction Edge test: '+url.origin);
+ const path=url.pathname.replace('/functions/v1','')+url.search;
+ if(origin==='OFFICE_SQL'&&path==='/payment-sync-bridge'&&failNextOfficeSync){
+  failNextOfficeSync=false;
+  return new Response(JSON.stringify({error:'DISPOSABLE_OFFICE_OUTAGE'}),
+   {status:503,headers:{'content-type':'application/json'}});
+ }
+ if(origin==='TAXPAY_SQL'&&path==='/payment-command-bridge'&&failNextTaxpayerCommand){
+  failNextTaxpayerCommand=false;
+  return new Response(JSON.stringify({error:'DISPOSABLE_TAXPAY_COMMAND_OUTAGE'}),
+   {status:503,headers:{'content-type':'application/json'}});
+ }
+ return fetch(bridgeServers[origin]+path,init);
+}
+function loadBridge(file,origin){
+ let handler=null;
+ const compiled=transformSync(readFileSync(file,'utf8'),{loader:'ts',format:'cjs',target:'es2022'}).code;
+ const module={exports:{}};
+ const context={module,exports:module.exports,console,TextEncoder,TextDecoder,Request,Response,Headers,URL,
+  AbortSignal,crypto:webcrypto,Uint8Array,ArrayBuffer,JSON,Date,Error,Number,Promise,RegExp,fetch:bridgeFetch,
+  require(spec){
+   assert.match(spec,/^npm:@supabase\/supabase-js@/);
+   return {createClient:()=>({rpc:async(name,args)=>{
+    if(name==='payment_v1_internal_bridge_config')return {data:bridgeConfig(origin),error:null};
+    if(origin==='TAXPAY_SQL'&&name==='payment_v1_internal_claim')return {data:[],error:null};
+    try{return {data:sqlRpc(origin,name,args),error:null};}
+    catch(error){return {data:null,error:{message:error instanceof Error?error.message:String(error)}};}
+   }})};
+  },
+  Deno:{env:{get(name){
+   if(name==='SUPABASE_URL')return 'https://'+projectHosts[origin]+'.supabase.co';
+   if(name==='SUPABASE_SECRET_KEYS')return JSON.stringify({default:'disposable-service-key'});
+   if(name==='SUPABASE_SERVICE_ROLE_KEY')return 'disposable-service-key';
+   return null;
+  }},serve(callback){handler=callback;}},
+ };
+ vm.runInNewContext(compiled,context,{filename:file,timeout:5000});
+ assert.equal(typeof handler,'function','Correction bridge handler did not register: '+file);
+ return handler;
+}
+async function startBridge(origin,root){
+ const routes={
+  '/payment-sync-bridge':loadBridge(resolve(root,'supabase/functions/payment-sync-bridge/index.ts'),origin),
+  '/payment-command-bridge':loadBridge(resolve(root,'supabase/functions/payment-command-bridge/index.ts'),origin),
+ };
+ const server=createServer(async(req,res)=>{
+  const path=new URL(req.url,'http://127.0.0.1').pathname;
+  const handler=routes[path];
+  if(!handler){res.writeHead(404);res.end();return;}
+  let body='';for await(const part of req)body+=part;
+  try{
+   const request=new Request('http://127.0.0.1'+req.url,{method:req.method,headers:req.headers,
+    body:req.method==='POST'?body:undefined});
+   const response=await handler(request);
+   res.writeHead(response.status,Object.fromEntries(response.headers));
+   res.end(Buffer.from(await response.arrayBuffer()));
+  }catch(error){res.writeHead(500);res.end(JSON.stringify({error:String(error)}));}
+ });
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ bridgeServers[origin]='http://127.0.0.1:'+server.address().port;
+ return server;
+}
+async function postBridge(origin,path,body){
+ const response=await fetch(bridgeServers[origin]+path,{method:'POST',headers:{'content-type':'application/json'},
+  body:JSON.stringify(body)});
+ return {status:response.status,data:await response.json()};
+}
+async function signBridgePayload(text){
+ const key=await webcrypto.subtle.importKey('raw',Uint8Array.from(bridgeKey.match(/../g),x=>parseInt(x,16)),
+  {name:'HMAC',hash:'SHA-256'},false,['sign']);
+ const bytes=await webcrypto.subtle.sign('HMAC',key,new TextEncoder().encode(text));
+ return Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('');
+}
+function installOfficeCommandClaim(){
+ const hosted=readFileSync(resolve(officeRoot,
+  'supabase/hosted_migration_history/20261017103132_payment_v1_phase4_officer_command.sql'),'utf8');
+ const marker='create or replace function public.payment_v1_internal_claim_commands';
+ const start=hosted.indexOf(marker);
+ const end=start<0?-1:hosted.indexOf('$function$;',start)+'$function$;'.length;
+ assert.ok(start>=0&&end>start,'Existing Office command claim contract is unavailable');
+ db(office,'BEGIN;'+hosted.slice(start,end)+
+  'REVOKE ALL ON FUNCTION public.payment_v1_internal_claim_commands(integer) FROM PUBLIC,anon,authenticated;'+
+  'GRANT EXECUTE ON FUNCTION public.payment_v1_internal_claim_commands(integer) TO service_role;COMMIT;');
+}
 const owner='80000000-0000-4000-8000-000000000001';
 const outsider='80000000-0000-4000-8000-000000000002';
 const correctionFixture=readFileSync('tests/integration/correctionOfficeReadback.sql','utf8');
@@ -50,31 +181,35 @@ assert.equal(started.sourcePaymentKind,'TAXPAY_STORY_PAYMENT');
 assert.equal(started.sourcePaymentId,'80000000-0000-4000-8000-000000000041');
 assert.equal(started.outboxState,'PENDING');
 assert.equal(started.originalPayment.details.receiptReference,'SYN-REF-003');
-const sourceClaim=()=>db(source,[
- 'BEGIN;SET LOCAL ROLE service_role;','SELECT public.taxpay_correction_internal_claim(20);','COMMIT;'
-].join('\n'));
-const first=sourceClaim().find(v=>v.event?.requestId===started.inquiryId);
-assert.ok(first,'Original Taxpayer correction not claimed');
-assert.equal(first.event.eventId,started.eventId);
-assert.equal(first.event.payload.originalPaymentId,started.sourcePaymentId);
-assert.equal(first.event.payload.originalPaymentKind,'TAXPAY_STORY_PAYMENT');
-assert.equal(first.event.origin,'TAXPAY_SQL');
-assert.ok(!('requesterUid' in first.event.payload),'Private owner identity leaked to Office');
-const ackSource=(item,success)=>db(source,[
- 'BEGIN;SET LOCAL ROLE service_role;',
- 'SELECT public.taxpay_correction_internal_ack('+
- "'"+item.event.eventId+"'::uuid,'"+item.claimToken+"'::uuid,"+(success?'true':'false')+','+
- (success?'NULL':"'DISPOSABLE_OFFICE_OUTAGE'")+');','COMMIT;'
-].join('\n'));
-// Use the existing source retry path instead of accepting a fabricated Office event.
-ackSource(first,false);
+const [taxpayerBridgeServer,officeBridgeServer]=await Promise.all([
+ startBridge('TAXPAY_SQL',resolve('.')),startBridge('OFFICE_SQL',officeRoot),
+]);
+try{
+ const failedDispatch=await postBridge('TAXPAY_SQL','/payment-sync-bridge',
+  {mode:'dispatch',token:dispatchTokens.TAXPAY_SQL});
+ assert.equal(failedDispatch.status,200);
+ assert.deepEqual(failedDispatch.data,{claimed:1,acknowledged:0,failed:1},
+  'The existing source Edge must retain an Office outage as a retryable correction delivery');
 const failed=db(source,
  "SELECT jsonb_build_object('state',delivery_state,'attempts',attempts,'later',next_attempt_at>now()) FROM payment_sync.correction_outbox WHERE inquiry_id='"+started.inquiryId+"'::uuid;");
 assert.equal(failed.state,'FAILED');assert.equal(failed.attempts,1);
 assert.equal(failed.later,true);
 db(source,"UPDATE payment_sync.correction_outbox SET next_attempt_at=now()-interval '1 second' WHERE inquiry_id='"+started.inquiryId+"'::uuid RETURNING to_jsonb(delivery_state);");
-const retry=sourceClaim().find(v=>v.event?.requestId===started.inquiryId);
-assert.ok(retry);assert.notEqual(retry.claimToken,first.claimToken);
+const retryDispatch=await postBridge('TAXPAY_SQL','/payment-sync-bridge',
+ {mode:'dispatch',token:dispatchTokens.TAXPAY_SQL});
+assert.equal(retryDispatch.status,200);
+assert.deepEqual(retryDispatch.data,{claimed:1,acknowledged:1,failed:0},
+ 'The existing signed Edge must deliver and acknowledge the retry against separate Office SQL');
+const outboxAfterRetry=db(source,
+ "SELECT jsonb_build_object('state',delivery_state,'attempts',attempts,'eventId',event_id,'payload',event_payload,'createdAt',created_at) FROM payment_sync.correction_outbox WHERE inquiry_id='"+started.inquiryId+"'::uuid;");
+assert.equal(outboxAfterRetry.state,'ACKNOWLEDGED');assert.equal(outboxAfterRetry.attempts,2);
+assert.equal(outboxAfterRetry.eventId,started.eventId);
+const retryEvent={schemaVersion:'1.0.0',eventId:outboxAfterRetry.eventId,requestId:started.inquiryId,
+ origin:'TAXPAY_SQL',eventType:'CORRECTION_SUBMITTED',revision:1,occurredAt:outboxAfterRetry.createdAt,
+ payload:outboxAfterRetry.payload};
+assert.equal(retryEvent.payload.originalPaymentId,started.sourcePaymentId);
+assert.equal(retryEvent.payload.originalPaymentKind,'TAXPAY_STORY_PAYMENT');
+assert.ok(!('requesterUid' in retryEvent.payload),'Private owner identity leaked to Office');
 
 const maker='80000000-0000-4000-8000-000000000011';
 const reviewer='80000000-0000-4000-8000-000000000012';
@@ -100,13 +235,13 @@ const bootstrap=[
  "SELECT 'true'::jsonb;COMMIT;"
 ].join('\n');
 assert.equal(db(office,bootstrap),true);
-const eventArg=pgJSON(retry.event);
-const ingestSql='SELECT public.payment_v1_internal_ingest_correction('+eventArg+');';
-const ingested=db(office,'BEGIN;SET LOCAL ROLE service_role;'+ingestSql+'COMMIT;');
-const replay=db(office,'BEGIN;SET LOCAL ROLE service_role;'+ingestSql+'COMMIT;');
-assert.equal(ingested.stored,true);assert.equal(ingested.duplicate,false);
-assert.equal(replay.duplicate,true);
-ackSource(retry,true);
+installOfficeCommandClaim();
+const correctionReplayText=JSON.stringify(retryEvent);
+const correctionReplay=await postBridge('OFFICE_SQL','/payment-sync-bridge',
+ {mode:'ingest',eventText:correctionReplayText,signature:await signBridgePayload(correctionReplayText)});
+assert.equal(correctionReplay.status,200);
+assert.equal(correctionReplay.data.stored,true);assert.equal(correctionReplay.data.duplicate,true,
+ 'The Office SQL inbox must accept exact signed replay without duplicating the correction mirror');
 const queue=db(office,auth(maker,'SELECT public.payment_v1_correction_queue_page(200,NULL,NULL);'));
 const item=queue.items.find(v=>v.requestId===started.inquiryId);
 assert.ok(item);assert.equal(item.sourcePaymentId,started.sourcePaymentId);
@@ -135,21 +270,51 @@ for(const stage of stages){
  const command=db(office,"SELECT payload FROM payment_sync.control_outbox WHERE message_id='"+saved.messageId+"'::uuid;");
  assert.equal(command.origin,'OFFICE_SQL');assert.equal(command.requestId,started.inquiryId);
  assert.equal(command.officerRole,stage.role);
- const accepted=db(source,'BEGIN;SET LOCAL ROLE service_role;'+
-  'SELECT public.taxpay_correction_record_office_decision('+pgJSON(command)+');COMMIT;');
- const again=db(source,'BEGIN;SET LOCAL ROLE service_role;'+
-  'SELECT public.taxpay_correction_record_office_decision('+pgJSON(command)+');COMMIT;');
- assert.equal(accepted.stored,true);assert.equal(accepted.duplicate,false);
- assert.equal(again.duplicate,true);assert.equal(accepted.reviewState,stage.state);
- const claimToken=randomUUID();
- db(office,"UPDATE payment_sync.control_outbox SET delivery_state='IN_FLIGHT',claim_token='"+
-  claimToken+"'::uuid,attempts=attempts+1 WHERE message_id='"+saved.messageId+"'::uuid RETURNING to_jsonb(delivery_state);");
- assert.equal(db(office,'BEGIN;SET LOCAL ROLE service_role;'+
-  "SELECT public.payment_v1_internal_ack_correction_command('"+saved.messageId+
-  "'::uuid,'"+claimToken+"'::uuid,true,'"+stage.state+"',NULL);COMMIT;"),true);
+ const firstCommandAttempt=await postBridge('OFFICE_SQL','/payment-command-bridge',
+  {mode:'dispatch',token:dispatchTokens.OFFICE_SQL});
+ assert.equal(firstCommandAttempt.status,200);
+ if(stage===stages[0]){
+  assert.deepEqual(firstCommandAttempt.data,{claimed:1,acknowledged:0,failed:1},
+   'An unreachable Taxpayer command endpoint must leave the Office correction decision retryable');
+  const commandFailed=db(office,"SELECT jsonb_build_object('state',delivery_state,'attempts',attempts,'later',next_attempt_at>now()) FROM payment_sync.control_outbox WHERE message_id='"+saved.messageId+"'::uuid;");
+  assert.equal(commandFailed.state,'FAILED');assert.equal(commandFailed.attempts,1);
+  assert.equal(commandFailed.later,true);
+  const sourceBeforeRetry=db(source,"SELECT office_review_state FROM public.taxpay_correction_inquiries WHERE inquiry_id='"+started.inquiryId+"'::uuid;");
+  assert.equal(sourceBeforeRetry,'PENDING_OFFICER',
+   'A failed command transport must not claim that Taxpayer SQL accepted the Office decision');
+  db(office,"UPDATE payment_sync.control_outbox SET next_attempt_at=now()-interval '1 second' WHERE message_id='"+saved.messageId+"'::uuid RETURNING to_jsonb(delivery_state);");
+ }
+ const delivered=stage===stages[0]?await postBridge('OFFICE_SQL','/payment-command-bridge',
+  {mode:'dispatch',token:dispatchTokens.OFFICE_SQL}):firstCommandAttempt;
+ assert.equal(delivered.status,200);
+ assert.deepEqual(delivered.data,{claimed:1,acknowledged:1,failed:0},
+  'The existing Office command Edge must deliver the signed review to Taxpayer SQL');
+ const commandOutbox=db(office,"SELECT jsonb_build_object('state',delivery_state,'attempts',attempts) FROM payment_sync.control_outbox WHERE message_id='"+saved.messageId+"'::uuid;");
+ assert.equal(commandOutbox.state,'ACKNOWLEDGED');
+ assert.equal(commandOutbox.attempts,stage===stages[0]?2:1);
+ const commandText=JSON.stringify(command);
+ const commandReplay=await postBridge('TAXPAY_SQL','/payment-command-bridge',
+  {mode:'ingest',commandText,signature:await signBridgePayload(commandText)});
+ assert.equal(commandReplay.status,200);
+ assert.equal(commandReplay.data.stored,true);
+ assert.equal(commandReplay.data.duplicate,true);
+ assert.equal(commandReplay.data.reviewState,stage.state,
+  'A signed command replay must preserve the Taxpayer decision without applying it twice');
+ const noPendingCommand=await postBridge('OFFICE_SQL','/payment-command-bridge',
+  {mode:'dispatch',token:dispatchTokens.OFFICE_SQL});
+ assert.equal(noPendingCommand.status,200);
+ assert.deepEqual(noPendingCommand.data,{claimed:0,acknowledged:0,failed:0},
+  'Acknowledged Office command must not be redelivered on a retry sweep');
  const officeReview=db(office,"SELECT jsonb_build_object('state',review_state,'revision',review_revision) FROM payment_sync.correction_mirrors WHERE inquiry_id='"+
   started.inquiryId+"'::uuid;");
  assert.equal(officeReview.state,stage.state);
+ const sourceReview=db(source,"SELECT jsonb_build_object('state',office_review_state,'revision',office_review_revision) FROM public.taxpay_correction_inquiries WHERE inquiry_id='"+
+  started.inquiryId+"'::uuid;");
+ assert.equal(sourceReview.state,stage.state);
+ const adminReadback=db(office,auth(maker,
+  "SELECT public.payment_v1_correction_queue_page(200,NULL,NULL);"));
+ const adminItem=adminReadback.items.find(v=>v.requestId===started.inquiryId);
+ assert.equal(adminItem.reviewState,stage.state);
 }
 const completed=db(source,"SELECT jsonb_build_object("+
  " 'state',i.office_review_state,'revision',i.office_review_revision,"+
@@ -174,4 +339,7 @@ assert.equal(readResult.isRead,true);
 const readAgain=db(source,auth(owner,
  "SELECT jsonb_build_object('count',count(*),'read',count(*) FILTER(WHERE is_read)) FROM public.taxpay_in_app_notifications WHERE correction_inquiry_id='"+started.inquiryId+"'::uuid;"));
 assert.deepEqual(readAgain,{count:3,read:1});
-console.log('PASS: original owner-linked Taxpayer correction -> separate Office SQL authenticated 3-officer decisions -> source notifications/readback, outbox retry, exact parent, idempotence, immutable payment and outsider isolation');
+console.log('PASS: original Taxpayer correction SQL -> signed payment-sync Edge -> separate Office correction SQL and authorized officer queue -> signed command Edge -> Taxpayer status/history/recipient notifications; Office outage retry, signed event/command replay, source parent immutability and outsider isolation');
+}finally{
+ await Promise.all([taxpayerBridgeServer,officeBridgeServer].map(server=>new Promise(resolve=>server.close(resolve))));
+}
