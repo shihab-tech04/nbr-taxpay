@@ -219,6 +219,97 @@ test('unbound signed-in history retains review activity and SQL-owned beneficiar
 });
 
 
+const travelHistoryId='00000000-0000-4000-8000-000000000913';
+const travelHistoryPassengers=[
+  {name:'JOURNEY OWNER',passportMasked:'••••3456',nationality:'BD',ageBand:'ADULT',age:35,amount:1000},
+  {name:'FRIEND SECOND',passportMasked:'••••4321',nationality:'FOREIGN',country:'India',ageBand:'CHILD',age:9,amount:500}
+];
+const travelHistoryLines=[
+  {headId:155,headNameEn:'Travel tax — JOURNEY OWNER',economicCode:'1144102',
+    taxAmount:1000,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:1000,
+    note:'LAND | Benapole | India | 2026-11-20 | Passport ••••3456'},
+  {headId:156,headNameEn:'Travel tax — FRIEND SECOND',economicCode:'1144102',
+    taxAmount:500,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:500,
+    note:'LAND | Benapole | India | 2026-11-20 | Passport ••••4321'}
+];
+const travelHistoryDetails={
+  mode:'LAND',departurePort:'Benapole',destination:'India',travelDate:'2026-11-20',
+  economicCode:'1144102',passengers:travelHistoryPassengers
+};
+const travelHistorySnapshot={
+  id:'rcpt-trv-history-913',taxEventId:'SIM-EVENT-history-913',
+  paymentTransactionId:'SIM-TOKEN-history-913',challanNo:'SIM-history-913',
+  tokenNumber:'SIM-TOKEN-history-913',paymentCategory:'TRAVEL_TAX',assessmentYear:'2026-27',
+  payerName:'JOURNEY OWNER',payerTin:'NON-TIN-PASSENGER',receiptMobile:'01712345678',
+  isRepresentativePayment:false,taxZone:'',taxCircle:'',isWithholding:false,
+  travelDetails:travelHistoryDetails,items:travelHistoryLines,totalAmount:1500,
+  paymentMethod:'NAGAD',gatewayTransactionId:'SIM-TXN-history-913',
+  treasuryStatus:'GATEWAY_SUCCESS',taxCreditStatus:'NOT_APPLICABLE',
+  createdAt:'2026-11-14T08:00:00.000Z',completedAt:'2026-11-14T08:00:00.000Z',
+  isSimulatedDemo:true
+};
+const signedInTravelTaxPayment={
+  id:travelHistoryId,service:'TRAVEL_TAX',amountMinor:150000,status:'SIMULATED_SUCCESS',
+  createdAt:'2026-11-14T08:00:00.000Z',
+  details:{
+    payerName:'JOURNEY OWNER',assessmentYear:'2026-27',paymentMethod:'NAGAD',
+    paymentChannel:'NOW',receiptReference:travelHistorySnapshot.tokenNumber,
+    receiptMobile:'01712345678',travelMode:'LAND',departurePort:'Benapole',
+    destination:'India',travelDate:'2026-11-20',economicCode:'1144102',
+    passengers:travelHistoryPassengers,lines:travelHistoryLines,receiptSnapshot:travelHistorySnapshot
+  }
+};
+
+for(const language of ['en','bn'] as const){
+  test('F-162 / US-158 signed-in Travel Tax receipt and certificate keep the original reference in '+language,
+    async({page})=>{
+      await mockAccount(page,true,[signedInTravelTaxPayment]);
+      await page.goto('/?action=history&lang='+language);
+      const history=page.getByTestId('beneficiary-payment-history');
+      await expect(history).toBeVisible();
+      await expect(history).toContainText(travelHistoryId);
+      const mobile=(page.viewportSize()?.width??1280)<768;
+      const record=mobile
+        ?history.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem').filter({hasText:travelHistoryId})
+        :history.getByRole('row').filter({hasText:travelHistoryId});
+      await expect(record).toHaveCount(1);
+      await record.getByRole('button',{name:language==='bn'?/দেখুন/:/View/}).click();
+      const dialog=page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
+      const certificateToggle=dialog.getByRole('button',{
+        name:/View payment certificate|পেমেন্ট সনদ দেখুন/
+      });
+      await expect(certificateToggle).toBeVisible();
+      await certificateToggle.click();
+      let certificate=dialog.getByTestId('payment-certificate-document');
+      await expect(certificate).toBeVisible();
+      await expect(certificate.getByTestId('payment-certificate-reference'))
+        .toContainText('SK-PC-'+travelHistoryId);
+      await expect(certificate).toContainText(travelHistoryId);
+      await expect(certificate).toContainText('JOURNEY OWNER');
+      await expect(certificate).toContainText('FRIEND SECOND');
+      await expect(certificate).toContainText('••••4321');
+      await expect(certificate).toContainText('Benapole');
+
+      // Refresh recovers the same owner-scoped SQL row and certificate reference.
+      await page.reload();
+      const recovered=page.getByTestId('beneficiary-payment-history');
+      await expect(recovered).toBeVisible();
+      await expect(recovered).toContainText(travelHistoryId);
+      const recoveredRecord=mobile
+        ?recovered.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem')
+          .filter({hasText:travelHistoryId})
+        :recovered.getByRole('row').filter({hasText:travelHistoryId});
+      await recoveredRecord.getByRole('button',{name:language==='bn'?/দেখুন/:/View/}).click();
+      const recoveredDialog=page.getByRole('dialog');
+      await recoveredDialog.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/}).click();
+      certificate=recoveredDialog.getByTestId('payment-certificate-document');
+      await expect(certificate.getByTestId('payment-certificate-reference'))
+        .toContainText('SK-PC-'+travelHistoryId);
+      await expect(certificate).toContainText('FRIEND SECOND');
+    });
+}
+
 const repeatableAdvancePayment={
   id:'00000000-0000-4000-8000-000000000912',service:'ADVANCE_TAX',
   amountMinor:1234,status:'SIMULATED_SUCCESS',createdAt:'2026-10-25T12:00:00Z',
