@@ -26,6 +26,9 @@ async function mockSignedInOtherTax(page: Page, writes: string[]) {
     else if(body.action==='open') data={active:true};
     else if(body.action==='lists') data=[list];
     else if(body.action==='people') data=people.slice(body.offset??0,(body.offset??0)+(body.limit??500));
+    // Signed-in payment entry reads saved drafts independently of the beneficiary
+    // address book. A read must not be counted as a beneficiary write.
+    else if(body.action==='payment-draft-list') data=[];
     else { writes.push(String(body.action??'unknown')); data=[]; }
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
