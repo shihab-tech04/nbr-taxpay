@@ -85,7 +85,7 @@ jobs:
         # This legacy fail-closed matrix intentionally has no configured backend.
         # The one explicit F-039 fixture runs immediately below with an isolated
         # local-only mocked endpoint so it can test the real signed-in list read.
-        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts tests/e2e/other-tax-travel-interaction-parity.spec.ts tests/e2e/shared-taxpayer-tin-lookup.spec.ts tests/e2e/other-tax-batch-submit.spec.ts tests/e2e/other-tax-bulk-summary-ux.spec.ts tests/e2e/other-tax-all-heads-visible.spec.ts tests/e2e/payment-payer-email-layout.spec.ts tests/e2e/walkin-payer-tin.spec.ts --grep-invert "signed-in Other Tax combines a saved beneficiary with a confirmed one-time recipient without saving it"
+        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts tests/e2e/other-tax-travel-interaction-parity.spec.ts tests/e2e/shared-taxpayer-tin-lookup.spec.ts tests/e2e/other-tax-batch-submit.spec.ts tests/e2e/other-tax-bulk-summary-ux.spec.ts tests/e2e/other-tax-all-heads-visible.spec.ts tests/e2e/payment-payer-email-layout.spec.ts tests/e2e/walkin-payer-tin.spec.ts --grep-invert "F-039"
       - name: Test F-039 saved and one-time payees against local-only mocked beneficiary API
         env:
           VITE_SUPABASE_DISABLED: 'false'
@@ -93,7 +93,7 @@ jobs:
           # Non-secret test token: requests are fulfilled by page.route; this
           # workflow does not start, authenticate with, or write to hosted SQL.
           VITE_SUPABASE_PUBLISHABLE_KEY: 'ws1-local-only-f039-test-key'
-        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts --grep "signed-in Other Tax combines a saved beneficiary with a confirmed one-time recipient without saving it"
+        run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts --grep "F-039"
       - name: Upload Playwright evidence on failure
         if: failure()
         uses: actions/upload-artifact@v4
