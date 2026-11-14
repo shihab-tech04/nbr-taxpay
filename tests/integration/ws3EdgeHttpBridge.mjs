@@ -9,7 +9,7 @@ import {readFileSync} from 'node:fs';
 import {createServer} from 'node:http';
 import {createHmac,randomBytes,randomUUID,webcrypto} from 'node:crypto';
 import vm from 'node:vm';
-import ts from 'typescript';
+import {transformSync} from 'esbuild';
 
 const officeRoot=process.env.WS3_OFFICE_SOURCE;
 assert.ok(officeRoot,'Pin original Office PR #270 source with WS3_OFFICE_SOURCE');
@@ -78,7 +78,7 @@ function rpc(origin,name,args={}){
 }
 function loadHandler(file,origin){
  const source=readFileSync(file,'utf8');
- const compiled=ts.transpileModule(source,{compilerOptions:{target:9,module:1}}).outputText;
+ const compiled=transformSync(source,{loader:'ts',format:'cjs',target:'es2022'}).code;
  const module={exports:{}},box={handler:null};
  const context={
   exports:module.exports,module,console,TextEncoder,TextDecoder,Request,Response,Headers,URL,AbortSignal,
