@@ -50,7 +50,9 @@ export function LegacyPaymentRecovery({language}:{language:Language}) {
 /** Read-only detail projection: a session receipt alone proves no Treasury settlement or tax credit. */
 function historyLifecycleRecord(receipt:ChallanReceipt,language:Language):PaymentLifecycleRecord {
   const displayedStatus = paymentStatusLabel(receipt.treasuryStatus, language, Boolean(receipt.isSimulatedDemo));
-  const source = 'Sohojkor payment record';
+  const source = language === 'bn' ? 'সহজকর পেমেন্ট রেকর্ড' : 'Sohojkor payment record';
+  const createdTitle = language === 'bn' ? 'পেমেন্ট রেকর্ড তৈরি হয়েছে' : 'Payment record created';
+  const unverified = language === 'bn' ? 'যাচাই হয়নি' : 'Not verified';
   return {
     reference:receipt.challanNo,
     taxEventId:receipt.taxEventId,
@@ -66,10 +68,10 @@ function historyLifecycleRecord(receipt:ChallanReceipt,language:Language):Paymen
     channel:receipt.paymentMethod.replaceAll('_',' '),
     amountMinor:Math.round(receipt.totalAmount*100),
     createdAt:receipt.createdAt,status:displayedStatus,
-    financialReceiptStatus:'Not verified',taxCreditStatus:'Not verified',
+    financialReceiptStatus:unverified,taxCreditStatus:unverified,
     source,
     events:[
-      {id:receipt.id+':created',title:'Payment record created',occurredAt:receipt.createdAt,source},
+      {id:receipt.id+':created',title:createdTitle,occurredAt:receipt.createdAt,source},
       ...(receipt.completedAt?[{id:receipt.id+':status',title:displayedStatus,
         occurredAt:receipt.completedAt,source}]:[])
     ],
