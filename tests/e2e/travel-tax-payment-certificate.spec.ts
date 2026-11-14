@@ -17,14 +17,9 @@ for (const language of ['en', 'bn'] as const) {
     let submitted: Record<string, unknown> | null = null;
     let submissionCount = 0;
     const totalText = language === 'bn' ? '১,৫০০' : '1,500';
-    page.on('requestfailed',request=>{
-      if(request.url().includes('/demo-story1-taxpay/payments'))
-        console.log('F162_FETCH_FAILURE',JSON.stringify({
-          path:new URL(request.url()).pathname.endsWith('/'+paymentId)?'detail':'list',
-          reason:request.failure()?.errorText?.slice(0,100)??'unknown'
-        }));
-    });
-    await page.route(fixtureOrigin + '/functions/v1/demo-story1-taxpay/payments*', async route => {
+    // Match both the list and /payments/<original UUID> detail. A Playwright
+    // glob '*' does not span '/', so the old fixture intercepted only the list.
+    await page.route(/\/functions\/v1\/demo-story1-taxpay\/payments(?:\/[^?]+)?(?:\?.*)?$/, async route => {
       const request = route.request();
       if (request.method() === 'OPTIONS') {
         await route.fulfill({ status: 204, headers: corsHeaders });
@@ -33,12 +28,6 @@ for (const language of ['en', 'bn'] as const) {
       if(request.method()==='GET'){
         const url=new URL(request.url());
         const stored=submitted as {sessionId?:string;service?:string;amountMinor?:number;details?:Record<string,unknown>}|null;
-        console.log('F162_SQL_READ',JSON.stringify({
-          hasStored:Boolean(stored),
-          scopedSession:Boolean(stored)&&url.searchParams.get('sessionId')===stored?.sessionId,
-          requestedSession:Boolean(url.searchParams.get('sessionId')),
-          detail:url.pathname.endsWith('/'+paymentId)
-        }));
         if(!stored||url.searchParams.get('sessionId')!==stored.sessionId){
           await route.fulfill({status:403,contentType:'application/json',headers:corsHeaders,
             body:JSON.stringify({success:false,error:'SESSION_NOT_AUTHORIZED'})});
@@ -168,15 +157,6 @@ for (const language of ['en', 'bn'] as const) {
     await lookup.getByRole('textbox',{name:/Receipt mobile number|রসিদের মোবাইল নম্বর/})
       .fill(originalSnapshot!.receiptMobile!);
     await lookup.getByRole('button',{name:/Search records|রেকর্ড খুঁজুন/}).click();
-    await expect(lookup.getByRole('status').first()).toBeVisible({timeout:8000}).catch(()=>undefined);
-    const diagnostics=await lookup.evaluate(element=>({
-      hasReceipt:Boolean(element.querySelector('.receipt-view')),
-      hasPassengerTable:Boolean(element.querySelector('[data-testid="travel-family-challan"]')),
-      alerts:Array.from(element.querySelectorAll('[role="alert"]')).map(node=>(node.textContent||'').trim().slice(0,150)),
-      noMatch:Boolean(Array.from(element.querySelectorAll('h2')).find(node=>/No matching record|কোনো মিল পাওয়া যায়নি/.test(node.textContent||''))),
-      waiting:Boolean(element.textContent?.includes('Checking records from this browser session')),
-    }));
-    console.log('F162_LOCAL_STATUS',JSON.stringify(diagnostics));
     await expect(lookup.getByTestId('travel-family-challan').locator('tbody tr')).toHaveCount(2);
     await expect(lookup.getByTestId('travel-family-challan')).toContainText('FRIEND SECOND');
     await lookup.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/}).click();
