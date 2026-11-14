@@ -34,7 +34,10 @@ test('recipient notice rejects unsafe amounts, malformed and already-read events
 
 test('recipient backlog retrieves 205 events and preserves their order across pages',async()=>{
   const base='77777777-7777-4777-8777-777777777777';
-  const records=Array.from({length:205},(_,i)=>({...valid,eventId:base+':allocation:'+(i+1)}));
+  const records=Array.from({length:205},(_,i)=>({...valid,
+    eventId:base+':allocation:'+(i+1),
+    createdAt:new Date(Date.parse(valid.createdAt)+i*1000).toISOString(),
+  }));
   const offsets:number[]=[];
   const {loadUnreadReceivedPaymentNotices}=await import('../src/services/demoReceivedPaymentNotices');
   const all=await loadUnreadReceivedPaymentNotices(async(offset,limit)=>{
@@ -59,6 +62,21 @@ test('recipient backlog fails closed on missing page, cross-page duplicate and i
   await assert.rejects(loadUnreadReceivedPaymentNotices(async(offset,limit)=>({
     items:[item(offset+1)],total:offset===0?2:3,offset,limit,hasMore:offset===0,
   })),/Invalid notice page/);
+});
+
+
+test('unread first-login backlog rejects out-of-order pages instead of showing a newer event first',async()=>{
+  const {loadUnreadReceivedPaymentNotices}=await import('../src/services/demoReceivedPaymentNotices');
+  const older={...valid,eventId:'notice-older',createdAt:'2026-11-13T10:00:00Z'};
+  const newer={...valid,eventId:'notice-newer',createdAt:'2026-11-13T11:00:00Z'};
+  await assert.rejects(loadUnreadReceivedPaymentNotices(async(offset,limit)=>({
+    items:offset===0?[newer]:[older],total:2,offset,limit,hasMore:offset===0,
+  })),/ordering/);
+  // Identical timestamps must use the exact event ID as SQL's deterministic tie-breaker.
+  await assert.rejects(loadUnreadReceivedPaymentNotices(async(offset,limit)=>({
+    items:offset===0?[{...older,eventId:'z'}]:[{...older,eventId:'a'}],
+    total:2,offset,limit,hasMore:offset===0,
+  })),/ordering/);
 });
 
 
