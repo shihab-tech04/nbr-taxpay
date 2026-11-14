@@ -56,7 +56,7 @@ function installBridgeSettings(origin,root,hostedPath){
  const table=hosted.slice(start,end).replace(marker,'create table if not exists payment_sync.settings (');
  db(origin==='TAXPAY_SQL'?source:office,'BEGIN;'+table+
   'INSERT INTO payment_sync.settings(singleton,origin) VALUES(true,'+sqlText(origin)+
-  ') ON CONFLICT(singleton) DO UPDATE SET origin=excluded.origin;SELECT true::jsonb;COMMIT;');
+  ") ON CONFLICT(singleton) DO UPDATE SET origin=excluded.origin;SELECT 'true'::jsonb;COMMIT;");
 }
 function installBridgeConfig(origin,root,hostedPath){
  const hosted=readFileSync(resolve(root,hostedPath),'utf8');
@@ -71,7 +71,7 @@ function installBridgeConfig(origin,root,hostedPath){
   sqlText(config.selfUrl)+','+sqlText(config.peerUrl)+','+sqlText(config.dispatchToken)+','+
   sqlText(config.signingKey)+',true) ON CONFLICT(singleton) DO UPDATE SET self_url=excluded.self_url,'+
   'peer_url=excluded.peer_url,dispatch_token=excluded.dispatch_token,signing_key=excluded.signing_key,enabled=true;'+
-  'SELECT true::jsonb;';
+  "SELECT 'true'::jsonb;";
  db(origin==='TAXPAY_SQL'?source:office,'BEGIN;'+setup+'COMMIT;');
 }
 function sqlRpc(origin,name,args){
@@ -187,7 +187,7 @@ function installOfficeCommandClaim(){
  db(office,'BEGIN;'+hosted.slice(start,end)+
   'REVOKE ALL ON FUNCTION public.payment_v1_internal_claim_commands(integer) FROM PUBLIC,anon,authenticated;'+
   'GRANT EXECUTE ON FUNCTION public.payment_v1_internal_claim_commands(integer) TO service_role;'+
-  'SELECT true::jsonb;COMMIT;');
+  "SELECT 'true'::jsonb;COMMIT;");
 }
 const owner='80000000-0000-4000-8000-000000000001';
 const outsider='80000000-0000-4000-8000-000000000002';
