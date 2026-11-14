@@ -693,3 +693,22 @@ test('F-122 signed-in Sohojkor logo returns to the private dashboard instead of 
   expect(await page.evaluate(()=>
     document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+test('F-122 signed-in public desktop wordmark opens private dashboard, preserving modifier-click target and guest-independent routing',async({page})=>{
+  await page.setViewportSize({width:1280,height:800});
+  await mockPrivateAccount(page,'user1');
+  for(const language of ['en','bn'] as const){
+    await page.goto('/?action=landing&lang='+language);
+    const desktop=page.locator('.taxpay-public-desktop-navigation');
+    const brand=desktop.locator('.public-home-brand');
+    await expect(brand).toBeVisible();
+    const href=await brand.getAttribute('href');
+    expect(href).toContain('action=taxpayer_home');
+    if(language==='bn')expect(href).toContain('lang=bn');
+    await brand.click();
+    await expect(page).toHaveURL(/action=taxpayer_home(?:&|$)/);
+    await expect(page.getByTestId('account-workflow-summary')).toBeVisible();
+  }
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
