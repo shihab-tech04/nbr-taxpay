@@ -47,6 +47,17 @@ function bridgeConfig(origin){
   peerUrl:'https://'+projectHosts[peer]+'.supabase.co/functions/v1/payment-sync-bridge',
   dispatchToken:dispatchTokens[origin],signingKey:bridgeKey,enabled:true};
 }
+function installBridgeSettings(origin,root,hostedPath){
+ const hosted=readFileSync(resolve(root,hostedPath),'utf8');
+ const marker='create table payment_sync.settings (';
+ const start=hosted.indexOf(marker);
+ const end=start<0?-1:hosted.indexOf('insert into payment_sync.settings',start);
+ assert.ok(start>=0&&end>start,'Existing payment_sync.settings SQL contract is unavailable: '+hostedPath);
+ const table=hosted.slice(start,end).replace(marker,'create table if not exists payment_sync.settings (');
+ db(origin==='TAXPAY_SQL'?source:office,'BEGIN;'+table+
+  'INSERT INTO payment_sync.settings(singleton,origin) VALUES(true,'+sqlText(origin)+
+  ') ON CONFLICT(singleton) DO UPDATE SET origin=excluded.origin;SELECT true::jsonb;COMMIT;');
+}
 function installBridgeConfig(origin,root,hostedPath){
  const hosted=readFileSync(resolve(root,hostedPath),'utf8');
  const start=hosted.indexOf('create table payment_sync.bridge_config (');
@@ -201,6 +212,10 @@ assert.equal(started.sourcePaymentKind,'TAXPAY_STORY_PAYMENT');
 assert.equal(started.sourcePaymentId,'80000000-0000-4000-8000-000000000041');
 assert.equal(started.outboxState,'PENDING');
 assert.equal(started.originalPayment.details.receiptReference,'SYN-REF-003');
+installBridgeSettings('TAXPAY_SQL',resolve('.'),
+ 'supabase/hosted_migration_history/20261016222840_payment_v1_taxpayer_requests.sql');
+installBridgeSettings('OFFICE_SQL',officeRoot,
+ 'supabase/hosted_migration_history/20261016222757_payment_v1_office_requests.sql');
 installBridgeConfig('TAXPAY_SQL',resolve('.'),
  'supabase/hosted_migration_history/20261017063603_payment_v1_hosted_bridge.sql');
 installBridgeConfig('OFFICE_SQL',officeRoot,
