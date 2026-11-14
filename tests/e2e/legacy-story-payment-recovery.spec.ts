@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
 import {fillTravelDetails,futureTravelDate} from './travel-tax-test-helper';
 
 /** Browser journey uses intercepted fictional transport; SQL ownership is tested
@@ -391,6 +392,25 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(newCertificate).toContainText('SAMPLE BANGLADESHI PASSENGER');
   await expect(newCertificate).toContainText('••••3456');
   await expect(newCertificate).not.toContainText('SK-PC-'+travelPayment);
+  await page.evaluate(() => {
+    const browser = window as Window & { __sohojkorPrintCalls?: number };
+    browser.__sohojkorPrintCalls = 0;
+    browser.print = () => { browser.__sohojkorPrintCalls = (browser.__sohojkorPrintCalls ?? 0) + 1; };
+  });
+  await newCertificate.getByRole('button',{name:'Print certificate'}).click();
+  await expect.poll(() => page.evaluate(
+    () => (window as Window & { __sohojkorPrintCalls?: number }).__sohojkorPrintCalls,
+  )).toBe(1);
+  const [certificatePdf] = await Promise.all([
+    page.waitForEvent('download'),
+    newCertificate.getByRole('button',{name:'Download'}).click(),
+  ]);
+  expect(certificatePdf.suggestedFilename()).toBe('Payment-certificate-'+newTravelPayment+'.pdf');
+  const certificatePdfPath = await certificatePdf.path();
+  if (!certificatePdfPath) throw new Error('Payment certificate PDF download did not complete.');
+  const certificatePdfBytes = await readFile(certificatePdfPath);
+  expect(certificatePdfBytes.subarray(0,5).toString('ascii')).toBe('%PDF-');
+  expect(certificatePdfBytes.length).toBeGreaterThan(1000);
   expect(submittedTravelPayments).toHaveLength(1);
   const submitted=submittedTravelPayments[0];
   expect(submitted.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/i);
