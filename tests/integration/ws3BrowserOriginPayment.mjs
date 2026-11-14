@@ -19,7 +19,7 @@ export async function verifyWs3BrowserOrigin({
     'Current Work A source and disposable local Supabase configuration required');
   assert.ok(['localhost','127.0.0.1'].includes(new URL(localUrl).hostname),
     'Never direct browser-origin acceptance to a hosted Taxpayer API');
-  const port='3201',base='http://127.0.0.1:'+port;
+  const port='3000',base='http://127.0.0.1:'+port; // Approved local Edge origin
   const child=spawn('npm',['run','dev','--','--host','127.0.0.1','--port',port,'--strictPort'],{
     cwd:workA,
     env:{...process.env,VITE_SUPABASE_URL:localUrl,
@@ -68,7 +68,12 @@ export async function verifyWs3BrowserOrigin({
     await login.locator('#taxpayer-login-password').fill('user1');
     await page.getByTestId('taxpayer-login-submit').click();
     const otp=login.locator('#taxpayer-login-demo-otp');
-    if(await otp.isVisible({timeout:3500}).catch(()=>false)){
+    await expect.poll(async()=>{
+      if(await otp.isVisible())return 'otp';
+      if(!await login.count())return 'complete';
+      return 'pending';
+    },{timeout:15000}).not.toBe('pending');
+    if(await otp.isVisible()){
       await otp.fill('111111');
       await page.getByTestId('taxpayer-login-submit').click();
     }
