@@ -75,6 +75,12 @@ BEGIN
     OR replay->>'replayed' IS DISTINCT FROM 'true'
   THEN RAISE EXCEPTION 'RECIPIENT_NOTICE_PAYMENT_SOURCE_RETRY_FAILED'; END IF;
 
+  -- Snapshot original rows first; each attempted malformed payment must leave
+  -- the source payment, notification and relay outbox counts unchanged.
+  SELECT count(*) INTO before_payment_count FROM demo_payment.story_payments;
+  SELECT count(*) INTO before_story_notices FROM demo_payment.story_notifications;
+  SELECT count(*) INTO before_outbox FROM demo_payment.mirror_outbox;
+
   -- A malformed new v3 combined payment is rejected at the original source,
   -- before any immutable payment, notification or mirror outbox is created.
   FOR invalid_case IN SELECT unnest(ARRAY[
@@ -101,17 +107,34 @@ BEGIN
       bad_payload := pg_catalog.jsonb_set(bad_payload,
         '{amountMinor}','4900'::jsonb);
     END IF;
+    -- The existing public submit validator may reject first. Preserve it;
+    -- assert its denial separately from the new database trigger.
     BEGIN
       PERFORM public.taxpay_demo_story1_submit(payer_hash,bad_payload);
-      RAISE EXCEPTION 'INVALID_V3_SOURCE_ACCEPTED_%',invalid_case;
+      RAISE EXCEPTION 'INVALID_V3_RPC_ACCEPTED_%',invalid_case;
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLERRM NOT IN ('INVALID_COMBINED_PAYMENT','INVALID_V3_ALLOCATION')
+      THEN RAISE; END IF;
+    END;
+    -- Privileged direct write only inside this disposable ROLLBACK fixture:
+    -- prove that bypassing the public RPC still cannot insert a malformed v3
+    -- parent, and therefore cannot create a source notice or mirror outbox.
+    BEGIN
+      INSERT INTO demo_payment.story_payments(
+        idempotency_key,session_id,service_code,amount_minor,data,status
+      ) VALUES(
+        v_bad_key,session_id,'OTHER_TAX_PAYMENT',
+        (bad_payload->>'amountMinor')::bigint,bad_payload,'SIMULATED_SUCCESS'
+      );
+      RAISE EXCEPTION 'INVALID_V3_DIRECT_INSERT_ACCEPTED_%',invalid_case;
     EXCEPTION WHEN OTHERS THEN
       IF SQLERRM IS DISTINCT FROM 'INVALID_V3_ALLOCATION' THEN RAISE; END IF;
     END;
     IF EXISTS(SELECT 1 FROM demo_payment.story_payments
               WHERE idempotency_key=v_bad_key)
-       OR EXISTS(SELECT 1 FROM demo_payment.story_notifications n
-              JOIN demo_payment.story_payments p ON p.id=n.payment_id
-              WHERE p.idempotency_key=v_bad_key)
+       OR (SELECT count(*) FROM demo_payment.story_payments)<>before_payment_count
+       OR (SELECT count(*) FROM demo_payment.story_notifications)<>before_story_notices
+       OR (SELECT count(*) FROM demo_payment.mirror_outbox)<>before_outbox
     THEN RAISE EXCEPTION 'REJECTED_V3_SOURCE_PERSISTED_%',invalid_case; END IF;
   END LOOP;
 
