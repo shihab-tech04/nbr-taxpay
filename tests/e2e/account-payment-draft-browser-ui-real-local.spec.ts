@@ -176,6 +176,12 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await a.locator('#guest-notice-ref').fill(marker + '-STALE');
     await a.getByRole('button', { name: 'Save Draft', exact: true }).click();
     await expect(a.getByRole('alert').filter({ hasText: /changed in another session/ })).toBeVisible();
+    // F-079: the newer saved revision stays intact, and the payer can
+    // explicitly open that version instead of overwriting it from stale form data.
+    await expect(a.getByRole('button', { name: 'Save my edits as a new draft' })).toBeVisible();
+    await a.getByRole('button', { name: 'Open latest saved version' }).click();
+    await expect(a.locator('#guest-notice-ref')).toHaveValue(marker + '-UPDATED');
+    await expect(a.getByRole('button', { name: 'Save my edits as a new draft' })).toHaveCount(0);
 
     const unrelated = await open(accounts.other);
     await unrelated.locator('.payment-form-draft-controls__open').click();
@@ -560,6 +566,19 @@ for (const language of ['en', 'bn'] as const) {
     const afterConflict = await readRows(owner.session, { owner_uid: 'eq.' + owner.id, id: 'eq.' + draftId });
     expect(afterConflict[0]?.form_payload.amountInputs).toEqual({ [selectedHeadId]: '126.75' });
 
+    // F-079: preserve browser A's edits as a SEPARATE revision-1 draft.
+    // Browser B's newer revision-2 original must remain exactly as stored.
+    await expect(payer.locator('#guest-notice-ref')).toHaveValue(marker + '-STALE');
+    const forkLabel = bn ? 'আমার পরিবর্তন নতুন খসড়ায় রাখুন' : 'Save my edits as a new draft';
+    await payer.getByRole('button', { name: forkLabel, exact: true }).click();
+    await expect(payer.getByRole('button', { name: savedLabel, exact: true })).toBeVisible();
+    const allAfterFork = await readRows(owner.session, { owner_uid: 'eq.' + owner.id });
+    const fork = allAfterFork.find(row => row.id !== draftId && row.id !== siblingDraft!.id);
+    expect(fork).toMatchObject({ owner_uid: owner.id, revision: 1 });
+    expect(fork?.form_payload.noticeReference).toBe(marker + '-STALE');
+    expect(allAfterFork.find(row => row.id === draftId)?.form_payload.amountInputs)
+      .toEqual({ [selectedHeadId]: '126.75' });
+
     // Refresh then resume the exact updated value. Draft activity must not create a payment.
     await resume.goto(`/?action=taxpayer_home&lang=${language}`);
     await expect(cards.locator('[data-draft-id="' + draftId + '"]')).toBeVisible();
@@ -598,9 +617,18 @@ for (const language of ['en', 'bn'] as const) {
     const siblingCard = cards.locator('[data-draft-id="' + siblingDraft!.id + '"]');
     await expect(siblingCard).toBeVisible();
     const remainingRows = await readRows(owner.session, { owner_uid: 'eq.' + owner.id });
-    expect(remainingRows).toHaveLength(1);
-    expect(remainingRows[0]).toMatchObject({ id: siblingDraft!.id, owner_uid: owner.id, revision: 1 });
-    expect(remainingRows[0].form_payload.noticeReference).toBe(siblingMarker);
+    expect(remainingRows).toHaveLength(2);
+    expect(remainingRows.find(row => row.id === siblingDraft!.id))
+      .toMatchObject({ id: siblingDraft!.id, owner_uid: owner.id, revision: 1 });
+    expect(remainingRows.find(row => row.id === fork!.id)?.form_payload.noticeReference)
+      .toBe(marker + '-STALE');
+    const forkCard = cards.locator('[data-draft-id="' + fork!.id + '"]');
+    await expect(forkCard).toBeVisible();
+    await forkCard.getByRole('button', { name: bn ? 'মুছুন' : 'Delete', exact: true }).click();
+    await forkCard.getByRole('button', { name: bn ? 'মুছে ফেলা নিশ্চিত করুন' : 'Confirm delete', exact: true }).click();
+    await expect(forkCard).toHaveCount(0);
+    expect((await readRows(owner.session, { owner_uid: 'eq.' + owner.id })).map(row => row.id))
+      .toEqual([siblingDraft!.id]);
     await siblingCard.getByRole('button', { name: bn ? 'মুছুন' : 'Delete', exact: true }).click();
     await siblingCard.getByRole('button', { name: bn ? 'মুছে ফেলা নিশ্চিত করুন' : 'Confirm delete', exact: true }).click();
     await expect(siblingCard).toHaveCount(0);
