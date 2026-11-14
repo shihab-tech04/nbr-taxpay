@@ -642,3 +642,38 @@ test('F-123 signed-in Pay menu has predictable EN/BN arrow, Home/End and Escape 
   await expect(page.getByRole('navigation',{name:'মোবাইল প্রধান নেভিগেশন'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+test('F-099 correction shortcuts focus the embedded register and recover to the corrections page when missing',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  const account=page.getByTestId('account-workflow-summary');
+  const correction=page.locator('#dashboard-correction-requests');
+  await expect(correction).toBeVisible();
+  const correctionCard=account.getByTestId('account-dashboard-status-summary').locator('article').nth(2);
+  await expect(correctionCard).toContainText('Correction Requests');
+  await correctionCard.getByRole('button',{name:'Open records'}).click();
+  await expect(correction).toBeFocused();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await setWorkspaceLanguage(page,'bn');
+  const shortcut=account.getByRole('navigation',{name:'অ্যাকাউন্ট শর্টকাট'}).getByRole('button',{name:'সংশোধন'});
+  await expect(shortcut).toBeVisible();
+  await shortcut.click();
+  await expect(correction).toBeFocused();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  // When the embedded register is not mounted, the existing dedicated page
+  // must remain reachable; the action must not silently do nothing.
+  await correction.evaluate(node=>node.remove());
+  await shortcut.click();
+  await expect(page).toHaveURL(/action=corrections(?:&|$)/);
+});
+
+test('F-099 correction status-card fallback works without embedded register in English',async({page})=>{
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  const correction=page.locator('#dashboard-correction-requests');
+  await expect(correction).toBeAttached();
+  await correction.evaluate(node=>node.remove());
+  const correctionCard=page.getByTestId('account-dashboard-status-summary').locator('article').nth(2);
+  await correctionCard.getByRole('button',{name:'Open records'}).click();
+  await expect(page).toHaveURL(/action=corrections(?:&|$)/);
+});
