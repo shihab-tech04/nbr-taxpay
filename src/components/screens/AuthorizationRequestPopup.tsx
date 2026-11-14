@@ -108,7 +108,7 @@ export function AuthorizationRequestPopup(){
         {receivedBusy?(bn?'নিশ্চিত করা হচ্ছে…':'Confirming…'):(bn?'পড়েছি, পরেরটি দেখুন':'Acknowledge and continue')}
       </button>}
     >
-      <div className="mt-4 space-y-3" data-testid="visibleReceived-payment-notice">
+      <div className="mt-4 space-y-3" data-testid="received-payment-notice">
         <p className="text-sm leading-6 text-taxpay-text">
           {bn?'আপনার করদাতা প্রোফাইলের জন্য একটি পরিশোধ রেকর্ড হয়েছে।':'A payment has been recorded for your taxpayer profile.'}
         </p>
@@ -138,7 +138,7 @@ export function AuthorizationRequestPopup(){
     finally{setBusy(false);}
   };
   const viewAuthorization = () => {
-    try { sessionStorage.setItem('taxpay-authorization-open-tab', 'visibleIncoming'); }
+    try { sessionStorage.setItem('taxpay-authorization-open-tab', 'incoming'); }
     catch { /* Optional navigation hint. */ }
     dismiss();
     navigate('manage_authorization');
@@ -163,7 +163,7 @@ export function AuthorizationRequestPopup(){
   >
       {displayedCode?<div className="mt-4 space-y-3">
         <p className="text-sm text-slate-700">{visibleIncoming.status==='CODE_ISSUED'
-          ?(bn?'নতুন কোড এসেছে। আগের কোড বাতিল হয়েছে। সর্বশেষ কোডটি অনুরোধকারীকে দিন।':'New code visibleReceived. The previous code is invalid. Share this latest code with the requester.')
+          ?(bn?'নতুন কোড এসেছে। আগের কোড বাতিল হয়েছে। সর্বশেষ কোডটি অনুরোধকারীকে দিন।':'New code received. The previous code is invalid. Share this latest code with the requester.')
           :(bn?'অনুরোধ গ্রহণ করা হয়েছে। এই কোডটি অনুরোধকারীকে দিন।':'Request accepted. Share this code with the requester.')}</p>
         <p className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-center font-mono text-3xl font-bold tracking-[0.3em] text-blue-900">{displayedCode}</p>
         <p className="text-xs text-slate-600">{bn?'কোডটি ১৫ মিনিট কার্যকর। অনুরোধকারী কোড লিখলে অনুমোদন সম্পূর্ণ হবে।':'This four-digit code expires in 15 minutes. Authorization completes when the requester enters it.'}</p>
