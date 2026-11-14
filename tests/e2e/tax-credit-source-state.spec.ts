@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 // zero-value or otherwise unsupported payment document.
 test('Tax Credit Certificates does not export empty or unverified record summaries', async ({ page }) => {
   for (const language of ['en','bn'] as const) {
-    await page.goto('/?action=certificates&lang=' + language);
+    await page.goto('/?action=certificates&demoUser=user2&lang=' + language);
     const bn = language === 'bn';
     const issued = page.getByTestId('issued-tax-credit-certificates');
     await expect(issued).toContainText(bn
@@ -13,7 +13,7 @@ test('Tax Credit Certificates does not export empty or unverified record summari
       : 'No issuer-verified tax credit certificates are available');
     await expect(issued.getByRole('button', {name: /download|ডাউনলোড/i})).toHaveCount(0);
 
-    // Isolated anonymous browser context has no source-backed account/session
+    // Isolated local-review account has no source-backed payment/session
     // payment records; it must not be displayed as a verified zero total.
     const register = page.getByTestId('account-certificate-record-register');
     await expect(register).toContainText(bn
