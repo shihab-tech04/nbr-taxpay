@@ -146,7 +146,7 @@ for (const language of ['en', 'bn'] as const) {
     await page.reload();
     const historyView=page.getByTestId('travel-session-history-view').first();
     await expect(historyView).toBeVisible();
-    const originalSnapshot=(submitted as {details?:{receiptSnapshot?:{challanNo?:string}}}).details?.receiptSnapshot;
+    const originalSnapshot=(submitted as unknown as {details?:{receiptSnapshot?:{challanNo?:string}}}).details?.receiptSnapshot;
     expect(originalSnapshot?.challanNo).toBeTruthy();
     await expect(page.locator('[data-taxpay-register-page]')).toContainText(originalSnapshot!.challanNo!);
     await historyView.click();
