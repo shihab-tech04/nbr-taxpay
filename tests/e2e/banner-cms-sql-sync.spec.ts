@@ -266,3 +266,26 @@ test('published Sohojkor logo updates on version change without a 30-second poll
   await expect(page.locator('.public-benefits__item')).toHaveCount(6);
   await expect(page.locator('.public-hero-carousel__slide')).toHaveCount(5);
 });
+
+test('temporarily missing published logo retries after connectivity without requiring a new CMS version',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  let storageAvailable=false;
+  await page.route('**/rest/v1/taxpay_site_logo**',route=>
+    route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({id:'primary',image_path:'logos/recoverable.svg',version:18})}));
+  await page.route('**/rest/v1/taxpay_site_banners**',route=>
+    route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(banners)}));
+  await page.route('**/storage/v1/object/public/taxpay-branding/**',route=>
+    storageAvailable
+      ? route.fulfill({status:200,contentType:'image/svg+xml',
+          body:'<svg xmlns="http://www.w3.org/2000/svg" width="120" height="36"><rect width="120" height="36" fill="#ffffff"/></svg>'})
+      : route.fulfill({status:503,body:'Storage temporarily unavailable'}));
+  await page.goto('/?action=landing&lang=en');
+  const logo=page.locator('.public-home-wordmark');
+  await expect(logo).toHaveAttribute('src',/korbritto-brand-locked/);
+  storageAvailable=true;
+  await page.evaluate(()=>window.dispatchEvent(new Event('online')));
+  await expect(logo).toHaveAttribute('src',/taxpay-branding\/logos\/recoverable\.svg\?v=18/);
+  await expect.poll(()=>logo.evaluate(el=>(el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await expect(page.locator('.public-benefits__item')).toHaveCount(6);
+});
