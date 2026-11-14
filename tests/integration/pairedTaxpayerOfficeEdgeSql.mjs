@@ -195,7 +195,7 @@ const payload={origin:'TAXPAY_UI',idempotencyKey,sessionId:profile.paymentSessio
 
 const roleSetup=[
   'BEGIN;',
-  `INSERT INTO auth.users(id,email,raw_user_meta_data,created_at) VALUES(${sqlText(officerId)}::uuid,${sqlText('ws3-'+officerId+'@example.invalid')},'{}'::jsonb,now());`,
+  `INSERT INTO auth.users(id,email) VALUES(${sqlText(officerId)}::uuid,${sqlText('ws3-'+officerId+'@example.invalid')});`,
   "INSERT INTO payment_sync.settings(singleton,origin) VALUES(true,'OFFICE_SQL') ON CONFLICT(singleton) DO UPDATE SET origin=excluded.origin;",
   `INSERT INTO payment_sync.officer_roles(user_uid,role,active) VALUES(${sqlText(officerId)}::uuid,'MAKER',true);`,
   'COMMIT;',
