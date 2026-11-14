@@ -3,6 +3,7 @@ import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {getStorySessionId,persistSimulatedPayment} from '../../services/simulatedPaymentStory';
 import {parsePaymentPrefill} from '../../services/paymentPrefill';
+import {paymentStatusLabel,paymentReviewStatusLabel} from '../../services/paymentStatusDisplay';
 import {copyPreviousPayment,canPayAgain,CURRENT_PAY_AGAIN_YEAR,PAY_AGAIN_YEAR_OPTIONS} from '../../services/payAgain';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {sampleTinForUserNumber} from '../../data/sampleTinSuggestions';
@@ -480,8 +481,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            {key:'amount',header:txt('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',
              renderCell:tx=><p className="whitespace-nowrap font-semibold">{formatSimulatedAmount(tx.allocations.reduce((sum,a)=>sum+a.amountMinor,0))}</p>},
            {key:'status',header:txt('Status','অবস্থা'),renderCell:tx=><div className="space-y-1">
-             <p className="font-semibold">{tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
-             <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+             <p className="font-semibold">{paymentStatusLabel(tx.state,language,true)}</p>
+             <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {paymentReviewStatusLabel(tx.reviewStatus,language)}</p>
            </div>},
            {key:'actions',header:txt('Actions','কার্যক্রম'),renderCell:tx=><div className="flex flex-wrap gap-2">
              <button type="button" onClick={()=>setSelectedPayment(tx)}
@@ -504,8 +505,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            <p className="text-sm text-taxpay-muted">
              <time dateTime={tx.createdAt}>{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time> · {txt('Payer','প্রদানকারী')}: {tx.payer}
            </p>
-           <p className="text-sm">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')} · {tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
-           <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+           <p className="text-sm">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')} · {paymentStatusLabel(tx.state,language,true)}</p>
+           <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {paymentReviewStatusLabel(tx.reviewStatus,language)}</p>
            <details className="rounded-lg border border-taxpay-border p-2">
              <summary className="min-h-11 cursor-pointer text-sm font-medium">{txt('View allocations','বরাদ্দ দেখুন')}</summary>
              <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
