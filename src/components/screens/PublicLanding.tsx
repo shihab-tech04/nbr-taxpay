@@ -193,6 +193,7 @@ export const PublicLanding: React.FC = () => {
             aria-describedby="public-record-discovery-help"
             aria-autocomplete="list"
             aria-controls={searchOpen ? "public-record-suggestions" : undefined}
+            aria-expanded={searchOpen}
             aria-activedescendant={searchOpen && activeSuggestion >= 0 && suggestions[activeSuggestion]
               ? `public-search-option-${activeSuggestion}` : undefined}
             onFocus={() => setSearchOpen(true)}
@@ -229,18 +230,23 @@ export const PublicLanding: React.FC = () => {
             <Search size={23} aria-hidden="true" />
           </button>
         </form>
+        {/* Keep the live region mounted while closed so the first update is
+            announced reliably instead of appearing with pre-filled content. */}
+        <p role="status" aria-live="polite" aria-atomic="true" className="sr-only"
+          data-testid="public-search-match-status">
+          {searchOpen
+            ? cleanReference
+              ? matchedOptions.length
+                ? t(`${matchedOptions.length} matching example references. Use arrow keys to choose one, or submit your own reference.`,
+                  `${new Intl.NumberFormat('bn-BD').format(matchedOptions.length)}টি নমুনা রেফারেন্স মিলেছে। বেছে নিতে তীর চিহ্নের বোতাম বা নিজের রেফারেন্স খুঁজতে অনুসন্ধান ব্যবহার করুন।`)
+                : t('No example references matched. You can still check your own reference.',
+                  'কোনো নমুনা রেফারেন্স মেলেনি। নিজের রেফারেন্স দিয়েও যাচাই করতে পারবেন।')
+              : t('Example references available. Use the arrow keys to choose one.',
+                  'নমুনা রেফারেন্স পাওয়া যাচ্ছে। বেছে নিতে তীর চিহ্নের বোতাম ব্যবহার করুন।')
+            : ''}
+        </p>
         {searchOpen && (
           <div className="public-record-suggestions" id="public-record-suggestions">
-            <p role="status" className="sr-only" data-testid="public-search-match-status">
-              {cleanReference
-                ? matchedOptions.length
-                  ? t(`${matchedOptions.length} matching example references. Use arrow keys to choose one, or submit your own reference.`,
-                    `${new Intl.NumberFormat('bn-BD').format(matchedOptions.length)}টি নমুনা রেফারেন্স মিলেছে। বেছে নিতে তীর চিহ্নের বোতাম বা নিজের রেফারেন্স খুঁজতে অনুসন্ধান ব্যবহার করুন।`)
-                  : t('No example references matched. You can still check your own reference.',
-                    'কোনো নমুনা রেফারেন্স মেলেনি। নিজের রেফারেন্স দিয়েও যাচাই করতে পারবেন।')
-                : t('Example references available. Use the arrow keys to choose one.',
-                    'নমুনা রেফারেন্স পাওয়া যাচ্ছে। বেছে নিতে তীর চিহ্নের বোতাম ব্যবহার করুন।')}
-            </p>
             {cleanReference && (
               <div className="public-record-suggestions__group">
                 <h3>{t('Matching references', 'মিলে যাওয়া রেফারেন্স')}</h3>

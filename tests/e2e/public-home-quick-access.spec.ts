@@ -934,7 +934,10 @@ test('homepage lookup labels example-only matches and preserves focus in EN/BN a
       await page.goto(`/?action=landing&lang=${lang}`);
       const section = page.locator('.public-record-discovery');
       const search = section.getByRole('searchbox');
+      await expect(section.getByTestId('public-search-match-status')).toBeEmpty();
+      await expect(search).toHaveAttribute('aria-expanded', 'false');
       await search.focus();
+      await expect(search).toHaveAttribute('aria-expanded', 'true');
       await expect(search).toHaveAttribute('aria-autocomplete', 'list');
       await expect(search).toHaveAttribute('aria-describedby', 'public-record-discovery-help');
       await search.fill('NOT-A-KNOWN-EXAMPLE');
@@ -949,7 +952,8 @@ test('homepage lookup labels example-only matches and preserves focus in EN/BN a
       await search.press('Escape');
       await expect(search).toBeFocused();
       await expect(search).not.toHaveAttribute('aria-activedescendant', /./);
-      await expect(section.getByTestId('public-search-match-status')).toHaveCount(0);
+      await expect(search).toHaveAttribute('aria-expanded', 'false');
+      await expect(section.getByTestId('public-search-match-status')).toBeEmpty();
       await search.fill('NOT-A-KNOWN-EXAMPLE');
       await section.getByRole('button', { name: lang === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
       await expect(page.getByTestId('receipt-mobile-required')).toBeVisible();
