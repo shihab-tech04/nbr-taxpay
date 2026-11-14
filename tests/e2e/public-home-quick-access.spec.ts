@@ -904,7 +904,7 @@ test('six benefit destinations work by pointer and keyboard in English and Bangl
 
 test('homepage reference entry does not claim a missing SQL record before session verification', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'This case explicitly exercises mobile and desktop states.');
-  for (const width of [320, 1280]) {
+  for (const width of [320, 375, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     for (const language of ['en', 'bn'] as const) {
       await page.goto(`/?action=landing&lang=${language}`);
@@ -926,9 +926,9 @@ test('homepage reference entry does not claim a missing SQL record before sessio
   }
 });
 
-test('homepage lookup labels example-only matches and preserves keyboard focus in EN/BN at 320px and desktop', async ({ page }, testInfo) => {
+test('homepage lookup labels example-only matches and preserves focus in EN/BN at 320px, 375px and 1280px', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'This case covers both target widths in one browser.');
-  for (const width of [320, 1280]) {
+  for (const width of [320, 375, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     for (const lang of ['en', 'bn'] as const) {
       await page.goto(`/?action=landing&lang=${lang}`);
