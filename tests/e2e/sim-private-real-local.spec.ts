@@ -229,6 +229,8 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  const ackStarted=new Promise<void>(resolve=>{acknowledgeStarted=resolve;});
  await race.page.route('**/rest/v1/rpc/sim_set_my_notice_read',async route=>{
    const actualSqlResponse=await route.fetch();
+   expect(actualSqlResponse.status()).toBe(200);
+   expect(await actualSqlResponse.json()).toMatchObject({id:aNoticeId,isRead:false,userId:'user7'});
    acknowledgeStarted();
    await holdAck;
    await route.fulfill({response:actualSqlResponse});
