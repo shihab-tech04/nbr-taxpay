@@ -148,7 +148,7 @@ for (const language of ['en', 'bn'] as const) {
       challanNo?:string;receiptMobile?:string
     }}}).details?.receiptSnapshot;
     expect(originalSnapshot?.challanNo).toBeTruthy();
-    expect(originalSnapshot?.receiptMobile).toMatch(/^01\\d{9}$/);
+    expect(originalSnapshot?.receiptMobile).toMatch(/^01\d{9}$/);
     const lookup=page.getByRole('dialog',{name:/Payment status & receipt|পেমেন্ট স্ট্যাটাস|পেমেন্টের অবস্থা/});
     await lookup.getByRole('textbox',{name:/Challan, token or transaction reference|চালান, টোকেন বা লেনদেনের রেফারেন্স/})
       .fill(originalSnapshot!.challanNo!);
