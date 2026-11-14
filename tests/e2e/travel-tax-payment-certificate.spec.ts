@@ -155,6 +155,15 @@ for (const language of ['en', 'bn'] as const) {
     await lookup.getByRole('textbox',{name:/Receipt mobile number|রসিদের মোবাইল নম্বর/})
       .fill(originalSnapshot!.receiptMobile!);
     await lookup.getByRole('button',{name:/Search records|রেকর্ড খুঁজুন/}).click();
+    await expect(lookup.getByRole('status').first()).toBeVisible({timeout:8000}).catch(()=>undefined);
+    const diagnostics=await lookup.evaluate(element=>({
+      hasReceipt:Boolean(element.querySelector('.receipt-view')),
+      hasPassengerTable:Boolean(element.querySelector('[data-testid="travel-family-challan"]')),
+      alerts:Array.from(element.querySelectorAll('[role="alert"]')).map(node=>(node.textContent||'').trim().slice(0,150)),
+      noMatch:Boolean(Array.from(element.querySelectorAll('h2')).find(node=>/No matching record|কোনো মিল পাওয়া যায়নি/.test(node.textContent||''))),
+      waiting:Boolean(element.textContent?.includes('Checking records from this browser session')),
+    }));
+    console.log('F162_LOCAL_STATUS',JSON.stringify(diagnostics));
     await expect(lookup.getByTestId('travel-family-challan').locator('tbody tr')).toHaveCount(2);
     await expect(lookup.getByTestId('travel-family-challan')).toContainText('FRIEND SECOND');
     await lookup.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/}).click();
