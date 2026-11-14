@@ -336,6 +336,16 @@ for(const language of ['en','bn'] as const){
       await expect(page).toHaveURL(/(?:[?&]action=landing|\/$)/);
       await expect.poll(()=>page.evaluate(()=>localStorage.getItem('sb-nbr-taxpay-test-auth-token'))).toBeNull();
 
+      // A signed-out owner must not reopen the private payment register or its certificate.
+      // The one-shot fixture must not silently seed the old token during this navigation.
+      await page.goto('/?action=history&lang='+language);
+      await expect.poll(()=>page.evaluate(()=>localStorage.getItem('sb-nbr-taxpay-test-auth-token'))).toBeNull();
+      await expect(page.getByRole('heading',{name:language==='bn'?'করদাতার ব্যক্তিগত তথ্য':'Private taxpayer workspace'})).toBeVisible();
+      await expect(page.getByRole('link',{name:language==='bn'?'সাইন ইন':'Sign In'})).toBeVisible();
+      await expect(page.getByTestId('beneficiary-payment-history')).toHaveCount(0);
+      await expect(page.getByTestId('payment-certificate-document')).toHaveCount(0);
+      await expect(page.getByText(travelHistoryId,{exact:false})).toHaveCount(0);
+
       await page.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{
         key:'sb-nbr-taxpay-test-auth-token',value:session()
       });
