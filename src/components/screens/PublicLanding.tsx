@@ -165,7 +165,7 @@ export const PublicLanding: React.FC = () => {
     <section className="public-record-discovery" aria-labelledby="public-record-discovery-title">
       <div className="public-record-discovery__heading">
         <h2 id="public-record-discovery-title">{t('Find a payment record', 'পেমেন্ট রেকর্ড খুঁজুন')}</h2>
-        <p>{t('Search by challan, token or transaction reference.', 'চালান, টোকেন বা লেনদেনের রেফারেন্স দিয়ে খুঁজুন।')}</p>
+        <p id="public-record-discovery-help">{t('Search by challan, token or transaction reference.', 'চালান, টোকেন বা লেনদেনের রেফারেন্স দিয়ে খুঁজুন।')}</p>
       </div>
       <div className="public-record-discovery__interactive" ref={searchRegionRef}>
         <form
@@ -190,7 +190,11 @@ export const PublicLanding: React.FC = () => {
             spellCheck={false}
             maxLength={120}
             value={paymentReference}
+            aria-describedby="public-record-discovery-help"
+            aria-autocomplete="list"
             aria-controls={searchOpen ? "public-record-suggestions" : undefined}
+            aria-activedescendant={searchOpen && activeSuggestion >= 0 && suggestions[activeSuggestion]
+              ? `public-search-option-${activeSuggestion}` : undefined}
             onFocus={() => setSearchOpen(true)}
             onClick={() => setSearchOpen(true)}
             onChange={event => { setPaymentReference(event.target.value); setSearchOpen(true); setActiveSuggestion(-1); }}
@@ -227,6 +231,16 @@ export const PublicLanding: React.FC = () => {
         </form>
         {searchOpen && (
           <div className="public-record-suggestions" id="public-record-suggestions">
+            <p role="status" className="sr-only" data-testid="public-search-match-status">
+              {cleanReference
+                ? matchedOptions.length
+                  ? t(`${matchedOptions.length} matching example references. Use arrow keys to choose one, or submit your own reference.`,
+                    `${new Intl.NumberFormat('bn-BD').format(matchedOptions.length)}টি নমুনা রেফারেন্স মিলেছে। বেছে নিতে তীর চিহ্নের বোতাম বা নিজের রেফারেন্স খুঁজতে অনুসন্ধান ব্যবহার করুন।`)
+                  : t('No example references matched. You can still check your own reference.',
+                    'কোনো নমুনা রেফারেন্স মেলেনি। নিজের রেফারেন্স দিয়েও যাচাই করতে পারবেন।')
+                : t('Example references available. Use the arrow keys to choose one.',
+                    'নমুনা রেফারেন্স পাওয়া যাচ্ছে। বেছে নিতে তীর চিহ্নের বোতাম ব্যবহার করুন।')}
+            </p>
             {cleanReference && (
               <div className="public-record-suggestions__group">
                 <h3>{t('Matching references', 'মিলে যাওয়া রেফারেন্স')}</h3>
@@ -245,7 +259,7 @@ export const PublicLanding: React.FC = () => {
                     ))}
                   </ul>
                 ) : (
-                  <p className="public-record-suggestions__empty">{t('No matching references. You can still search using this reference.', 'মিলে যাওয়া রেফারেন্স নেই। এই রেফারেন্স দিয়েও খুঁজতে পারবেন।')}</p>
+                  <p className="public-record-suggestions__empty">{t('No matching references among the examples. You can still search using this reference.', 'নমুনার মধ্যে মিলে যাওয়া রেফারেন্স নেই। এই রেফারেন্স দিয়েও খুঁজতে পারবেন।')}</p>
                 )}
               </div>
             )}

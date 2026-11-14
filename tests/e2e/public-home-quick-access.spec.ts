@@ -925,3 +925,35 @@ test('homepage reference entry does not claim a missing SQL record before sessio
     }
   }
 });
+
+test('homepage lookup labels example-only matches and preserves keyboard focus in EN/BN at 320px and desktop', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1280', 'This case covers both target widths in one browser.');
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const lang of ['en', 'bn'] as const) {
+      await page.goto(`/?action=landing&lang=${lang}`);
+      const section = page.locator('.public-record-discovery');
+      const search = section.getByRole('searchbox');
+      await search.focus();
+      await expect(search).toHaveAttribute('aria-autocomplete', 'list');
+      await expect(search).toHaveAttribute('aria-describedby', 'public-record-discovery-help');
+      await search.fill('NOT-A-KNOWN-EXAMPLE');
+      await expect(section.getByTestId('public-search-match-status')).toContainText(lang === 'bn'
+        ? 'কোনো নমুনা রেফারেন্স মেলেনি'
+        : 'No example references matched');
+      await expect(section.locator('.public-record-suggestions__empty')).toContainText(lang === 'bn'
+        ? 'নমুনার মধ্যে মিলে যাওয়া রেফারেন্স নেই'
+        : 'No matching references among the examples');
+      await search.press('ArrowDown');
+      await expect(search).toHaveAttribute('aria-activedescendant', 'public-search-option-0');
+      await search.press('Escape');
+      await expect(search).toBeFocused();
+      await expect(search).not.toHaveAttribute('aria-activedescendant', /./);
+      await expect(section.getByTestId('public-search-match-status')).toHaveCount(0);
+      await search.fill('NOT-A-KNOWN-EXAMPLE');
+      await section.getByRole('button', { name: lang === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
+      await expect(page.getByTestId('receipt-mobile-required')).toBeVisible();
+      await expect(page.locator('.receipt-view')).toHaveCount(0);
+    }
+  }
+});
