@@ -392,7 +392,7 @@ test('Travel Tax: additional passengers are added in Step 1, share one receipt a
   const combined=modal.getByTestId('travel-family-challan');
   await expect(combined).toBeVisible({timeout:12000});
   await expect(combined.locator('tbody tr')).toHaveCount(2);
-  await expect(combined).toContainText('not a government A-Challan');
+  await expect(combined).toContainText('This saved record is not proof of government A-Challan issuance or Treasury settlement.');
   await expect(modal.locator('.receipt-view__actions')).not.toContainText('New payment');
   await expect(modal.getByRole('button',{name:'Download'})).toBeVisible();
   await expect(modal.getByRole('button',{name:'Print receipt'})).toBeVisible();
