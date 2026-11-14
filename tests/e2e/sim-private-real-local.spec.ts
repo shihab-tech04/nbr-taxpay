@@ -247,11 +247,12 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(race.page.getByRole('heading',{name:'Payment notifications'})).toBeVisible({timeout:15000});
  await expect(race.page.getByText('৳173.75').filter({visible:true}).first()).toBeVisible({timeout:15000});
  await expect(race.page.getByText('৳23.50')).toHaveCount(0);
- const lateSqlReply=race.page.waitForResponse(response=>
-  response.url().includes('/rest/v1/rpc/sim_set_my_notice_read'));
+ // A same-page request may be cancelled by the full navigation needed to
+ // authenticate B. The server ACK was already verified through route.fetch()
+ // before the switch, so do not wait for a response event from the old page.
+ // The isolated unit test verifies that an *uncancelled* late result is ignored.
  releaseDelayedAck();
- await lateSqlReply;
- await race.page.waitForTimeout(200);
+ await race.page.waitForTimeout(250);
  await expect(race.page.getByText('৳23.50')).toHaveCount(0);
  await expect(race.page.getByText('Account changed during payment operation')).toHaveCount(0);
  await expect(race.page.getByText('Notification update failed')).toHaveCount(0);
