@@ -1,6 +1,23 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
+test('public document language follows locale switching and refresh', async ({ page }, testInfo) => {
+  await page.goto('/?action=landing&lang=bn');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'bn');
+  await expect(page.locator('.public-benefits__heading h2')).toHaveText('সহজকর কেন ব্যবহার করবেন?');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'bn');
+
+  await page.goto('/?action=landing');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  if (testInfo.project.name === 'desktop-1280') {
+    await page.getByRole('button', { name: 'বাংলা', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'bn');
+    await page.getByRole('button', { name: 'Switch to English' }).click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  }
+});
+
 test('compact desktop homepage keeps six balanced benefit destinations', async ({ page }) => {
   // This 3x2 parity test intentionally uses the compact desktop breakpoint.
   // The same 3x2 layout remains consistent at wider desktop sizes.
