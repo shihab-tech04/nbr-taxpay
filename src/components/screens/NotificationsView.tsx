@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {ReceivedPaymentNoticeRegister} from './ReceivedPaymentNoticeRegister';
@@ -13,6 +13,7 @@ import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {getBoundSimulationUser,getPrivateSimulationHistory,getPrivateSimulationNotices,setPrivateSimulationNoticeRead,type SimulationNotice,type SimulationUser} from '../../services/simulatedPaymentsApi';
 import {getHostedAuthorizations,type HostedAuthorization} from '../../services/hostedDemoAuthorizations';
+import {isCurrentNoticeOwner,type NoticeOwnerIdentity} from '../../services/notificationAccountGuard';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {PaymentLifecycleDetails,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
 import {simulationCategoryLabels,type SimulationTransaction} from '../../contracts/paymentSimulationContract';
@@ -29,6 +30,10 @@ export const NotificationsView:React.FC=()=>{
   const privateMode=Boolean(authenticatedUser);
   // Do not render the previous account's bound profile during an Auth switch.
   const id=(privateMode&&authenticatedUser&&boundOwnerUid===authenticatedUser.id?boundId:undefined) as SimulationUser|undefined;
+  // A delayed SQL acknowledgment must be scoped to the Auth UID and profile
+  // that started it. Refresh this ref during render, before passive effects.
+  const currentNoticeIdentity=useRef<NoticeOwnerIdentity>({authUid:authenticatedUser?.id??null,profileId:id??null});
+  currentNoticeIdentity.current={authUid:authenticatedUser?.id??null,profileId:id??null};
   const [notices,setNotices]=useState<VerifiedPrivateSimulationNotice[]>([]);
   const [noticeOwner,setNoticeOwner]=useState<SimulationUser|null>(null);
   const [privatePaymentRows,setPrivatePaymentRows]=useState<{
@@ -106,6 +111,8 @@ export const NotificationsView:React.FC=()=>{
     return()=>{active=false;window.clearInterval(timer);};
   },[authenticatedUser?.id,previewAccount?.id,language]);
   useEffect(()=>{
+    // Retire any previous-account action or detail view immediately.
+    setBusyNotice(null);setSelectedPayment(null);
     if(!authenticatedUser){setBoundId(null);setBoundOwnerUid(null);setBindingError('');setBindingReady(false);return;}
     let active=true;setBoundId(null);setBoundOwnerUid(null);setBindingError('');setBindingReady(false);
     getBoundSimulationUser().then(profile=>{if(active){setBoundId(profile);setBoundOwnerUid(authenticatedUser.id);setBindingReady(true);}})
@@ -168,17 +175,26 @@ export const NotificationsView:React.FC=()=>{
     });
   };
   const markRead=async (notice:SimulationNotice)=>{
-    if(!privateMode||busyNotice!==null)return;
+    const requestOwner:NoticeOwnerIdentity={authUid:authenticatedUser?.id??null,profileId:id??null};
+    if(!privateMode||boundOwnerUid!==requestOwner.authUid||noticeOwner!==id||
+      !isCurrentNoticeOwner(requestOwner,currentNoticeIdentity.current)||busyNotice!==null)return;
     setBusyNotice(notice.id);setError('');
-    try{const confirmed=await setPrivateSimulationNoticeRead(notice.id,!notice.isRead);
+    try{
+      const confirmed=await setPrivateSimulationNoticeRead(notice.id,!notice.isRead);
+      if(!isCurrentNoticeOwner(requestOwner,currentNoticeIdentity.current))return;
       if(confirmed.id!==notice.id||confirmed.isRead===notice.isRead)throw Error('Notification read-back mismatch');
       const [after,payerRows,beneficiaryRows]=await Promise.all([
         getPrivateSimulationNotices(),getPrivateSimulationHistory('payer'),getPrivateSimulationHistory('beneficiary'),
       ]);
+      if(!isCurrentNoticeOwner(requestOwner,currentNoticeIdentity.current))return;
       if(!after.some(n=>n.id===notice.id&&n.isRead===confirmed.isRead))throw Error('SQL notification read-back failed');
       setNotices(reconcilePrivateSimulationNotices(id!,after,payerRows,beneficiaryRows));
-    }catch(e){setError(e instanceof Error?e.message:'Notification update failed');}
-    finally{setBusyNotice(null);}
+    }catch(e){
+      if(isCurrentNoticeOwner(requestOwner,currentNoticeIdentity.current))
+        setError(e instanceof Error?e.message:'Notification update failed');
+    }finally{
+      if(isCurrentNoticeOwner(requestOwner,currentNoticeIdentity.current))setBusyNotice(null);
+    }
   };
   if(authLoading)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
   const visibleAuthorizations=authorizationNotices.filter(r=>(authorizationFilter==="all"||r.status===authorizationFilter)&&
@@ -324,7 +340,7 @@ export const NotificationsView:React.FC=()=>{
           ]}/>}
     </section>
     <SessionPaymentNotifications language={language}/>
-    {selectedPayment&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}
+    {selectedPayment&&id&&noticeOwner===id&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}
       onClose={()=>setSelectedPayment(null)} hideFooter className="taxpayer-transaction-detail">
       <PaymentLifecycleDetails record={selectedPayment} language={language}/>
     </TaxPayModal>}
