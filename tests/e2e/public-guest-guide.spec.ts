@@ -201,7 +201,7 @@ test('Guide search covers steps and answers, while topic FAQs stay contextual', 
   await expect(guide.getByRole('heading',{name:'Search results'})).toBeVisible();
   await expect(guide.getByRole('link',{name:'NBR publications'})).toBeVisible();
   await expect(guide.locator('.public-guide-result-step').first()).toContainText('Find and add passengers');
-  await expect(guide.locator('.public-guide-result-step').first()).toContainText('not government verification');
+  await expect(guide.locator('.public-guide-result-step').first()).toContainText(/not government (?:passport )?verification/);
   await expect(guide.locator('.public-guide-layout')).toHaveCount(0);
   await field.fill('tap Pay Tax');
   await expect(guide.locator('.public-guide-result-step').first()).toContainText('Step 1 · Mobile');

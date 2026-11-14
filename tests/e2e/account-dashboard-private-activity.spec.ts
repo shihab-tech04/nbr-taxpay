@@ -485,8 +485,8 @@ test('recent-activity filter preserves yearly owner totals and supplies bilingua
   const empty=account.getByTestId('dashboard-recent-activity-empty');
   await expect(empty).toContainText('No recent payment activity matches this service');
   await expect(account.getByTestId('dashboard-recent-activity-list')).toHaveCount(0);
-  await expect(parentCount).toHaveText(before);
-  await expect(totals).toHaveText(originalTotal);
+  await expect.poll(()=>parentCount.innerText()).toBe(before);
+  await expect.poll(()=>totals.innerText()).toBe(originalTotal);
 
   await filter.selectOption('ADVANCE_TAX');
   await expect(list).toContainText('SIM-PAY-OWNER-2026');
