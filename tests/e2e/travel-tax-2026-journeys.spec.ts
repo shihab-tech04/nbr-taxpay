@@ -1053,7 +1053,7 @@ for (const [language,project] of [['en','desktop-1280'],['bn','mobile-375']] as 
     await expect(acknowledge).not.toBeChecked();
     await expect(confirm).toBeDisabled();
     await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
-    await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText('1,000');
+    await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText(language==='bn'?'১,০০০':'1,000');
     await acknowledge.check();
     await expect(confirm).toBeEnabled();
   });
