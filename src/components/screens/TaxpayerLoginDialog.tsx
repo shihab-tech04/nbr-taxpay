@@ -5,6 +5,7 @@ import { TaxPayModal } from '../ui/TaxPayModal';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
+import { DEMO_USER_IDS, DEMO_USERS, type DemoUserId } from '../../data/demoUsers';
 
 /** TaxPay-only preview account entry. This does not authenticate API calls. */
 /** One footer action for both standalone and in-journey sign-in modals. */
@@ -38,6 +39,35 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   const [showRecovery, setShowRecovery] = useState(false);
   const [error, setError] = useState<'invalid'|'already_signed_in'|'unavailable'|null>(null);
   const [signingIn,setSigningIn]=useState(false);
+  const [suggestionsOpen,setSuggestionsOpen]=useState(false);
+  const [highlighted,setHighlighted]=useState(0);
+  const suggestions=DEMO_USER_IDS.filter(id=>{
+    const query=userId.trim().toLowerCase();
+    return id.includes(query)||DEMO_USERS[id].nameEn.toLowerCase().includes(query);
+  });
+  const choosePreview=(id:DemoUserId)=>{
+    // Credentials here identify fictional public QA profiles only; never auto-fill real Auth credentials.
+    setUserId(id);
+    setPassword(id);
+    setError(null);
+    setSuggestionsOpen(false);
+    setHighlighted(0);
+    inputRef.current?.focus();
+  };
+  const onUserIdKeyDown=(event:React.KeyboardEvent<HTMLInputElement>)=>{
+    if(event.key==='Escape'&&suggestionsOpen){event.preventDefault();setSuggestionsOpen(false);return;}
+    if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+      event.preventDefault();
+      setSuggestionsOpen(true);
+      if(!suggestions.length)return;
+      setHighlighted(current=>event.key==='ArrowDown'?(current+1)%suggestions.length:(current-1+suggestions.length)%suggestions.length);
+      return;
+    }
+    if(event.key==='Enter'&&suggestionsOpen&&suggestions.length){
+      event.preventDefault();
+      choosePreview(suggestions[Math.min(highlighted,suggestions.length-1)]);
+    }
+  };
   const { user: verifiedApplicationUser } = useAccountIdentity();
   const inputRef = useRef<HTMLInputElement>(null);
   const bn = language === 'bn';
@@ -74,10 +104,26 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
           <div className="taxpayer-login-input-wrap">
             <UserRound size={18} aria-hidden="true" />
             <input ref={inputRef} id="taxpayer-login-user-id" type="text" autoComplete="username"
+              role="combobox" aria-autocomplete="list" aria-haspopup="listbox"
+              aria-expanded={suggestionsOpen} aria-controls="taxpayer-login-account-options"
+              aria-activedescendant={suggestionsOpen&&suggestions.length ? `taxpayer-login-account-${suggestions[Math.min(highlighted,suggestions.length-1)]}`:undefined}
               autoCapitalize="none" spellCheck={false}
               placeholder={bn ? 'আপনার ইউজার আইডি লিখুন' : 'Enter your User ID'}
               aria-invalid={Boolean(error)}
-              value={userId} onChange={event => { setUserId(event.target.value); setError(null); }} />
+              value={userId}
+              onFocus={()=>{setHighlighted(0);setSuggestionsOpen(true);}}
+              onBlur={()=>setSuggestionsOpen(false)}
+              onKeyDown={onUserIdKeyDown}
+              onChange={event => { setUserId(event.target.value);setPassword('');setHighlighted(0);setSuggestionsOpen(true);setError(null); }} />
+            {suggestionsOpen && <ul id="taxpayer-login-account-options" className="taxpayer-login-suggestions" role="listbox" aria-label={bn?'পরীক্ষামূলক অ্যাকাউন্ট':'Test accounts'}>
+              {suggestions.map((id,index)=><li id={`taxpayer-login-account-${id}`} key={id} role="option" aria-selected={index===highlighted}
+                className={index===highlighted?'taxpayer-login-suggestion--active':undefined}
+                onPointerDown={event=>{event.preventDefault();choosePreview(id);}}
+                onClick={()=>choosePreview(id)}>
+                <span>{id}</span><span>{bn?DEMO_USERS[id].nameBn:DEMO_USERS[id].nameEn}</span>
+              </li>)}
+              {!suggestions.length&&<li role="presentation" className="taxpayer-login-suggestions__empty">{bn?'কোনো পরীক্ষামূলক অ্যাকাউন্ট পাওয়া যায়নি':'No test accounts found'}</li>}
+            </ul>}
           </div>
         </div>
         <div className="taxpayer-login-field">
@@ -102,7 +148,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
             onClick={() => setShowRecovery(open => !open)}>{bn ? 'অ্যাকাউন্ট পুনরুদ্ধার' : 'Recover Account'}</button>
         </div>
         {showRecovery && <p id="taxpayer-login-recovery" className="taxpayer-login-recovery" role="status">
-          {bn ? 'বর্তমান user1–user30 অ্যাকাউন্টের পাসওয়ার্ড তার ইউজার আইডির সমান।' : 'For the current user1–user30 accounts, the password is the same as the User ID.'}
+          {bn ? 'বর্তমান user1–user55 অ্যাকাউন্টের পাসওয়ার্ড তার ইউজার আইডির সমান।' : 'For the current user1–user55 accounts, the password is the same as the User ID.'}
         </p>}
         {error && <p className="taxpayer-login-error" role="alert">
           {error === 'already_signed_in'
