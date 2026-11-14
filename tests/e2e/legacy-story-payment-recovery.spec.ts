@@ -352,6 +352,18 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await travelDialog.getByLabel(/I confirm the travel information/).check();
   await travelDialog.getByRole('button',{name:'Confirm preview payment'}).click();
   await expect(travelDialog.locator('.receipt-view__paper')).toBeVisible({timeout:15000});
+  const certificateButton=travelDialog.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/});
+  await expect(certificateButton).toBeVisible();
+  await certificateButton.click();
+  const newCertificate=travelDialog.getByTestId('payment-certificate-document');
+  await expect(newCertificate).toBeVisible();
+  await expect(newCertificate.getByRole('heading',{name:/Payment Certificate|পেমেন্ট সনদ/})).toBeVisible();
+  await expect(newCertificate.getByTestId('payment-certificate-reference'))
+    .toContainText('SK-PC-'+newTravelPayment);
+  await expect(newCertificate).toContainText(newTravelPayment);
+  await expect(newCertificate).toContainText('Travel passenger');
+  await expect(newCertificate).toContainText('••••3456');
+  await expect(newCertificate).not.toContainText('SK-PC-'+travelPayment);
   expect(submittedTravelPayments).toHaveLength(1);
   const submitted=submittedTravelPayments[0];
   expect(submitted.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/i);
