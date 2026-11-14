@@ -342,8 +342,34 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(travelRow).toBeVisible({timeout:15000});
   await expect(travelRow.getByTestId('recorded-pay-again')).toBeEnabled();
   await travelRow.getByTestId('recorded-pay-again').click();
+  const interruptedTravelDialog=page.getByRole('dialog',{name:'Travel tax'});
+  await expect(page.getByTestId('travel-pay-again-notice')).toContainText(travelPayment);
+  const interruptedPassport=interruptedTravelDialog.locator('input[id^="travel-passport-"]').first();
+  await expect(interruptedPassport).toHaveValue('');
+  await expect(interruptedTravelDialog.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
+  expect(submittedTravelPayments).toHaveLength(0);
+
+  // Leaving an incomplete repeat must not create a payment or mutate its source.
+  await page.goto('/?action=taxpayer_home');
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await page.getByRole('navigation',{name:'Taxpayer services'}).getByRole('button',{name:'Activity'}).click();
+  await expect(page).toHaveURL(/action=history/);
+  await assessmentYear.selectOption('2026-2027');
+  const reopenedTravelRow=page.getByTestId('taxpayer-transaction-table')
+    .getByRole('row').filter({hasText:travelPayment});
+  await expect(reopenedTravelRow).toBeVisible({timeout:15000});
+  await reopenedTravelRow.getByTestId('recorded-pay-again').click();
   const travelDialog=page.getByRole('dialog',{name:'Travel tax'});
   await expect(page.getByTestId('travel-pay-again-notice')).toContainText(travelPayment);
+  await expect(travelDialog.locator('input[id^="travel-passport-"]').first()).toHaveValue('');
+  await expect(travelDialog.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
+  expect(submittedTravelPayments).toHaveLength(0);
+
+  // Reconfirm passenger identity after re-entry; route/date still need new input.
+  await fillTravelDetails(travelDialog,{date:''});
+  await expect(travelDialog.locator('#travel-departure-date')).toHaveValue('');
+  await expect(travelDialog.getByRole('button',{name:'Continue to review'})).toBeDisabled();
+  await travelDialog.locator('#travel-departure-date').fill(futureTravelDate);
   await fillTravelDetails(travelDialog,{date:futureTravelDate});
   await travelDialog.getByRole('button',{name:'Continue to review'}).click();
   await travelDialog.getByRole('button',{name:'Pay online'}).click();
