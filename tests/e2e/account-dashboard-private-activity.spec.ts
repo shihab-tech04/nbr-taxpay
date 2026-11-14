@@ -603,3 +603,42 @@ test('F-122 signed-in mobile bottom navigation survives scrolling, language swit
   await expect(page.getByRole('button',{name:'কর পরিশোধের ধরন নির্বাচন'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+test('F-123 signed-in Pay menu has predictable EN/BN arrow, Home/End and Escape keyboard recovery',async({page})=>{
+  await page.setViewportSize({width:375,height:812});
+  await mockPrivateAccount(page,'user1');
+  await page.goto('/?action=taxpayer_home&lang=en');
+  await expect(page.getByTestId('account-workflow-summary')).toBeVisible();
+  const pay=page.getByRole('button',{name:'Pay — select payment type'});
+  await pay.click();
+  const menu=page.getByRole('menu',{name:'Payment options'});
+  const payTax=menu.getByRole('menuitem',{name:'Pay Tax'});
+  const travel=menu.getByRole('menuitem',{name:'Travel Tax'});
+  await expect(payTax).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(travel).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(payTax).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(travel).toBeFocused();
+  await page.keyboard.press('Home');
+  await expect(payTax).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(travel).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  await expect(pay).toBeFocused();
+
+  await setWorkspaceLanguage(page,'bn');
+  const banglaPay=page.getByRole('button',{name:'কর পরিশোধের ধরন নির্বাচন'});
+  await banglaPay.click();
+  const banglaMenu=page.getByRole('menu',{name:'পরিশোধের ধরন'});
+  await expect(banglaMenu.getByRole('menuitem',{name:'কর পরিশোধ'})).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(banglaMenu.getByRole('menuitem',{name:'ভ্রমণ কর'})).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(banglaMenu).toHaveCount(0);
+  await expect(banglaPay).toBeFocused();
+  await expect(page.getByRole('navigation',{name:'মোবাইল প্রধান নেভিগেশন'})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
