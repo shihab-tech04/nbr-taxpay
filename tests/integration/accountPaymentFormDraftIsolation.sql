@@ -38,13 +38,19 @@ BEGIN
 
   created := public.taxpay_demo_payment_form_drafts(
     hash_a, 'create', NULL, 'TRAVEL_TAX',
-    '{"schemaVersion":1,"passengers":[{"name":"Rollback only","passport":""}],"phone":"01700000000"}'::jsonb,
+    '{"schemaVersion":1,"step":1,"mode":"LAND","port":"Benapole","destination":"India","travelDate":"","phone":"01700000000","passengers":[{"id":"first","name":"Rollback only","passport":"","birthDate":"1992-04-18","nationality":"BD"},{"id":"second","name":"Rollback passenger two","passport":"","birthDate":"1988-11-10","nationality":"BD"}]}'::jsonb,
     NULL
   );
   id := (created->>'id')::uuid;
   IF id IS NULL OR created->>'service' <> 'TRAVEL_TAX'
-     OR (created->>'revision')::integer <> 1 THEN
-    RAISE EXCEPTION 'Preview draft creation did not return exact persisted identity';
+     OR (created->>'revision')::integer <> 1
+     OR created->'form_payload'->>'step' <> '1'
+     OR created->'form_payload'->>'mode' <> 'LAND'
+     OR created->'form_payload'->>'port' <> 'Benapole'
+     OR created->'form_payload'->>'destination' <> 'India'
+     OR jsonb_array_length(created->'form_payload'->'passengers') <> 2
+     OR created->'form_payload'->'passengers'->1->>'name' <> 'Rollback passenger two' THEN
+    RAISE EXCEPTION 'Travel Tax draft did not preserve exact safe step, route and passenger list';
   END IF;
 
   restored := public.taxpay_demo_payment_form_drafts(hash_a, 'get', id);
