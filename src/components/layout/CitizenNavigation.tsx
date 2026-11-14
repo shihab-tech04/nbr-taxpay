@@ -136,7 +136,9 @@ export function CitizenNavigation() {
     if (inTransaction && !window.confirm(bn
       ? 'আপনি কি এই পেমেন্ট ধাপ থেকে বের হবেন? এখন পর্যন্ত দেওয়া তথ্য হারিয়ে যাবে।'
       : 'Leave this payment step? The information entered so far will be lost.')) return;
-    go('landing');
+    // Keep the approved guest home route, but for a signed-in taxpayer the
+    // wordmark returns to the existing private dashboard.
+    go(home);
   };
   useEffect(() => {
     // An identity change can occur without a route/userRole change.
