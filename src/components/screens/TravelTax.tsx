@@ -1017,7 +1017,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                   <label htmlFor="travel-mobile">{tr('Mobile number for receipt', 'রসিদের জন্য মোবাইল নম্বর')} *</label>
                   <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11}
                     value={phone} placeholder="01XXXXXXXXX"
-                    onChange={event => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 11)); setError(''); }}/>
+                    onChange={event => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 11)); setError(''); setAcknowledged(false); }}/>
                 </div>
               </div>
             </PaymentFormSection>
@@ -1047,7 +1047,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               <div className="travel-flow__fields travel-flow__field-group">
                 {mode === 'LAND' ? <div key="land" className="travel-flow__field travel-flow__mode-field">
                   <label htmlFor="travel-port">{tr('Departure land port','স্থলবন্দর')} *</label>
-                  <select id="travel-port" value={port} onChange={e => { setPort(e.target.value); setError(''); }}>
+                  <select id="travel-port" value={port} onChange={e => { setPort(e.target.value); setError(''); setAcknowledged(false); }}>
                     <option value="">{tr('Select departure port','বন্দর নির্বাচন করুন')}</option>
                     {LAND_PORT_NAMES.map(name => <option key={name} value={name}>{name}</option>)}
                   </select>
@@ -1055,7 +1055,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     'ঐতিহাসিক বন্দরের তালিকা; বর্তমান কার্যক্রম যাচাই প্রয়োজন।')}</p>
                 </div> : <div key="water" className="travel-flow__field travel-flow__mode-field">
                   <label htmlFor="travel-water-port">{tr('Departure water port','নৌবন্দর')} *</label>
-                  <input id="travel-water-port" value={waterPort} onChange={e => { setWaterPort(e.target.value); setError(''); }}
+                  <input id="travel-water-port" value={waterPort} onChange={e => { setWaterPort(e.target.value); setError(''); setAcknowledged(false); }}
                     placeholder={tr('Enter water port','নৌবন্দর লিখুন')} list="travel-water-port-options"/>
                   <datalist id="travel-water-port-options"><option value="Chattogram"/><option value="Mongla"/><option value="Payra"/></datalist>
                   <p className="travel-flow__field-hint">{tr('Water-port catalogue pending approval.','নৌবন্দরের তালিকা অনুমোদনের অপেক্ষায়।')}</p>
@@ -1063,12 +1063,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 <div className="travel-flow__field">
                   <label htmlFor="travel-destination">{tr('Destination','গন্তব্য')} *</label>
                   <input id="travel-destination" list="travel-destinations" value={destination}
-                    onChange={e => { setDestination(e.target.value); setError(''); }} placeholder={tr('Select or enter destination','গন্তব্য নির্বাচন বা লিখুন')}/>
+                    onChange={e => { setDestination(e.target.value); setError(''); setAcknowledged(false); }} placeholder={tr('Select or enter destination','গন্তব্য নির্বাচন বা লিখুন')}/>
                   <datalist id="travel-destinations"><option value="India"/><option value="Nepal"/><option value="Bhutan"/><option value="Myanmar"/></datalist>
                 </div>
                 <div className="travel-flow__field travel-flow__field--full">
                   <label htmlFor="travel-departure-date">{tr('Travel date','ভ্রমণের তারিখ')} *</label>
-                  <input id="travel-departure-date" type="date" min={dhakaTravelDate()} value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); }}/>
+                  <input id="travel-departure-date" type="date" min={dhakaTravelDate()} value={travelDate} onChange={e => { setTravelDate(e.target.value); setError(''); setAcknowledged(false); }}/>
                 </div>
               </div>
               <button type="button" className="travel-flow__edit-travel" onClick={() => stepTo(0)}>
@@ -1083,6 +1083,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               <div><dt>{tr('Travel','ভ্রমণ')}</dt><dd>{mode === 'LAND' ? tr('By land','স্থলপথে') : tr('By water','নৌপথে')}</dd></div>
               <div><dt>{tr('Departure port','যাত্রা বন্দর')}</dt><dd>{selectedPort}</dd></div>
               <div><dt>{tr('Destination / date','গন্তব্য / তারিখ')}</dt><dd>{destination} / {travelDate}</dd></div>
+              <div><dt>{tr('Receipt mobile','রসিদের মোবাইল')}</dt><dd>{phone}</dd></div>
+              <div><dt>{tr('Payment channel','পেমেন্ট চ্যানেল')}</dt><dd>{
+                paymentChannel === 'NOW' ? tr('Pay online','অনলাইনে পরিশোধ')
+                : paymentChannel === 'OTC' ? tr('Pay at a bank branch','ব্যাংক শাখায় পরিশোধ')
+                : tr('Not selected','নির্বাচিত নয়')
+              }</dd></div>
+              <div><dt>{tr('Payment method','পেমেন্ট পদ্ধতি')}</dt><dd>{
+                paymentMethod ? paymentMethodLabel(paymentMethod,language) : tr('Not selected','নির্বাচিত নয়')
+              }</dd></div>
               {!createdReceipt && <div><dt>{tr('Edit', 'সম্পাদনা')}</dt><dd><button type="button" className="travel-flow__edit" onClick={() => stepTo(1)}><Pencil size={15} aria-hidden="true"/>{tr('Edit travel details', 'ভ্রমণের তথ্য সম্পাদনা')}</button></dd></div>}
             </div>
             {!createdReceipt && <button type="button" className="travel-flow__edit-travel" onClick={() => stepTo(0)}><Pencil size={15} aria-hidden="true"/>{tr('Edit passengers and receipt contact', 'যাত্রী ও রসিদের যোগাযোগ সম্পাদনা')}</button>}
@@ -1113,7 +1122,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               onGroupChange={group => { setMethodGroup(group); setPaymentMethod(null); setAcknowledged(false); }}
               onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
               simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>}
-            {paymentMethod && <p className="travel-flow__field-hint">{paymentMethodLabel(paymentMethod, language)}</p>}
             {!createdReceipt && (!paymentMethod || !acknowledged) && <p className="travel-flow__field-hint" role="status">{tr('Choose a payment channel and method, then confirm the details to enable payment.', 'পেমেন্ট চ্যানেল ও পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করলে পেমেন্ট চালু হবে।')}</p>}
             {!createdReceipt && <label className="travel-flow__channel-option">
               <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)}/>

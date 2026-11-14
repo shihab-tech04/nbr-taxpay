@@ -995,3 +995,66 @@ test('F-153 / US-150 T02 T03: removing either passenger reprices and undo restor
   await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(2);
   await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText('2,000');
 });
+
+
+// F-159-C01 / US-156-T01–T03: a complete final review and explicit re-approval
+// after editing any material field. Uses existing simulated journey only.
+for (const [language,project] of [['en','desktop-1280'],['bn','mobile-375']] as const) {
+  test('F-159 US-156 complete review and changed-details confirmation recovery ('+language+')',async({page},info)=>{
+    test.skip(info.project.name!==project,'Representative EN desktop / BN mobile.');
+    await page.goto(language==='bn'?'/?lang=bn':'/');
+    await openTravelTaxFromBanner(page);
+    const modal=page.locator('.taxpay-modal:visible').first();
+    const nextReview=language==='bn'?'পেমেন্ট পর্যালোচনায় যান':'Continue to review';
+    const confirmLabel=language==='bn'?'নমুনা পেমেন্ট নিশ্চিত করুন':'Confirm preview payment';
+    await fillTravelDetails(modal);
+    await modal.getByRole('button',{name:nextReview}).click();
+    const summary=modal.locator('.travel-flow__review');
+    const confirm=modal.getByRole('button',{name:confirmLabel});
+    await expect(summary).toContainText('01712345678');
+    await expect(summary).toContainText('India');
+    await expect(summary).toContainText(language==='bn'?'পেমেন্ট চ্যানেল':'Payment channel');
+    await expect(summary).toContainText(language==='bn'?'পেমেন্ট পদ্ধতি':'Payment method');
+    await expect(summary).toContainText(language==='bn'?'নির্বাচিত নয়':'Not selected');
+    await expect(confirm).toBeDisabled();
+    await modal.getByRole('button',{name:language==='bn'?'অনলাইনে পরিশোধ':'Pay online'}).click();
+    await modal.getByRole('button',{name:language==='bn'?'মোবাইল ব্যাংকিং':'Mobile banking'}).click();
+    await modal.getByRole('radio',{name:'Nagad'}).check();
+    await expect(summary).toContainText('Nagad');
+    await expect(summary).toContainText(language==='bn'?'অনলাইনে পরিশোধ':'Pay online');
+    const acknowledge=modal.getByLabel(language==='bn'
+      ?'ভ্রমণের তথ্য, সকল যাত্রী এবং মোট টাকার পরিমাণ নিশ্চিত করছি।'
+      :'I confirm the travel information, all passengers and the combined amount.');
+    await expect(confirm).toBeDisabled();
+    await acknowledge.check();
+    await expect(confirm).toBeEnabled();
+
+    // T02/T03: a previously accepted review does not remain accepted after
+    // travel details change, even when the provider and passenger stay intact.
+    await modal.getByRole('button',{name:language==='bn'?'ভ্রমণের তথ্য সম্পাদনা':'Edit travel details'}).click();
+    await modal.locator('#travel-destination').fill('Nepal');
+    await modal.getByRole('button',{name:nextReview}).click();
+    await expect(summary).toContainText('Nepal');
+    await expect(summary).toContainText('Nagad');
+    await expect(acknowledge).not.toBeChecked();
+    await expect(confirm).toBeDisabled();
+    await acknowledge.check();
+    await expect(confirm).toBeEnabled();
+
+    // The receipt contact must also be reviewed and re-confirmed.
+    await modal.getByRole('button',{name:language==='bn'
+      ?'যাত্রী ও রসিদের যোগাযোগ সম্পাদনা':'Edit passengers and receipt contact'}).click();
+    await modal.locator('#travel-mobile').fill('01712340000');
+    await modal.getByRole('button',{name:language==='bn'?'ভ্রমণের তথ্য দিতে এগিয়ে যান':'Continue to travel details'}).click();
+    await modal.getByRole('button',{name:nextReview}).click();
+    await expect(summary).toContainText('01712340000');
+    await expect(summary).not.toContainText('01712345678');
+    await expect(summary).toContainText('Nagad');
+    await expect(acknowledge).not.toBeChecked();
+    await expect(confirm).toBeDisabled();
+    await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
+    await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText('1,000');
+    await acknowledge.check();
+    await expect(confirm).toBeEnabled();
+  });
+}
