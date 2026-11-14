@@ -68,10 +68,15 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
   // Use integer minor units so the total equals the sum of beneficiary lines.
   const recordedMinor = scopedPayments.reduce((total,row) => total + row.amountMinor,0);
   const recordedTotal = recordedMinor / 100;
-  const totalValue = sqlError ? label('Unavailable', 'পাওয়া যাচ্ছে না') :
-    formatCurrency(recordedTotal, language);
-  const countValue = sqlError ? label('Unavailable', 'পাওয়া যাচ্ছে না') :
-    new Intl.NumberFormat(bn ? 'bn-BD' : 'en-US').format(scopedPayments.length);
+  // An unavailable, loading or empty record source is not a zero-value document.
+  // Payment summaries stay separate from issuer-verified tax-credit certificates.
+  const summaryReady = !sqlLoading && !sqlError && scopedPayments.length > 0;
+  const totalValue = sqlLoading ? label('Loading…', 'লোড হচ্ছে…') :
+    sqlError ? label('Unavailable', 'পাওয়া যাচ্ছে না') :
+    summaryReady ? formatCurrency(recordedTotal, language) : '—';
+  const countValue = sqlLoading ? label('Loading…', 'লোড হচ্ছে…') :
+    sqlError ? label('Unavailable', 'পাওয়া যাচ্ছে না') :
+    summaryReady ? new Intl.NumberFormat(bn ? 'bn-BD' : 'en-US').format(scopedPayments.length) : '—';
   const details = selectedPreview === 'ANNUAL_PAYMENT'
     ? [
       { label: label('Payment total', 'পেমেন্টের মোট'), value: totalValue },
@@ -205,11 +210,13 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
             <div className="receipt-view__actions no-print">
               <div className="receipt-view__action-group">
                 <button type="button" className="receipt-view__action receipt-view__action--secondary"
+                  disabled={!summaryReady}
                   onClick={() => downloadDisplayedCertificateSummary(selectedPreview)}>
                   <Download size={18} aria-hidden="true" />
                   {label('Download', 'ডাউনলোড')}
                 </button>
                 <button type="button" className="receipt-view__action receipt-view__action--primary"
+                  disabled={!summaryReady}
                   onClick={() => window.print()}>
                   <Printer size={18} aria-hidden="true" />
                   {label('Print summary', 'সারসংক্ষেপ প্রিন্ট')}
