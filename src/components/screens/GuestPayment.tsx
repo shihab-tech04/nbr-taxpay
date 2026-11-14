@@ -843,13 +843,28 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // Saved contacts permit the payer to choose a TIN, not to read that taxpayer's
   // private records. Re-read only the current account's lists before advancing
   // or persisting a simulated payment; never rely on a route prefill or stale UI state.
-  const areCurrentSavedBeneficiaries = async (tins: string[]): Promise<boolean> => {
+  const areCurrentSavedBeneficiaries = async (
+    tins: string[], confirmedOneTime: OtherTaxTaxpayer | null = null
+  ): Promise<boolean> => {
     if (!tins.length || tins.some(tin => !tin)) return false;
     // Payment validation bypasses the short navigation cache and fails closed on stale ownership.
     const saved = await loadBeneficiaries(authenticatedUser?.id ?? null,{forceFresh:true});
     const ownedListIds = new Set(saved.lists.map(list => list.id));
     const allowed = new Set(saved.people.filter(person => ownedListIds.has(person.list_id)).map(person => person.tin));
-    return tins.every(tin => tin === signedInProfile?.tin || allowed.has(tin));
+    // F-039 permits a confirmed one-time recipient without ever saving their
+    // TIN or granting access to their private records. Verify the existing
+    // public lookup identity again, and still recheck all saved recipients.
+    if (confirmedOneTime) {
+      const match = lookupSampleTaxpayer(confirmedOneTime.tin);
+      if (!signedInBeneficiarySelection || !otherBatch ||
+        !match || match.tin !== confirmedOneTime.tin ||
+        match.nameEn !== confirmedOneTime.name ||
+        !tins.includes(confirmedOneTime.tin) ||
+        allowed.has(confirmedOneTime.tin) ||
+        confirmedOneTime.tin === signedInProfile?.tin) return false;
+    }
+    return tins.every(tin => tin === confirmedOneTime?.tin ||
+      tin === signedInProfile?.tin || allowed.has(tin));
   };
 
   const handleStep1Next = async () => {
@@ -949,7 +964,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 ? (item as Record<string,unknown>).taxpayerTin : null) : []
           : [pending.payload.details.taxpayerTin];
         if (!tins.length || tins.some(tin => typeof tin !== 'string' || !/^\d{12,13}$/.test(tin)) ||
-          !(await areCurrentSavedBeneficiaries(tins as string[])))
+          !(await areCurrentSavedBeneficiaries(tins as string[], combined ? oneTimeTaxpayer : null)))
           throw new Error('Selected beneficiary no longer belongs to the signed-in account.');
       }
       const confirmed = await persistSimulatedPayment(pending.payload);
