@@ -57,9 +57,10 @@ BEGIN
   EXECUTE pg_catalog.replace(
     pg_catalog.replace(v_sql,v_existing,v_replacement),
     v_duplicate_anchor,v_duplicate_guard);
-  IF pg_catalog.position('A one-time recipient is not saved' IN
+  IF pg_catalog.strpos(
        pg_catalog.pg_get_functiondef(
-         'demo_payment.validate_demo_authorized_payment()'::pg_catalog.regprocedure))=0
+         'demo_payment.validate_demo_authorized_payment()'::pg_catalog.regprocedure),
+       'A one-time recipient is not saved')=0
   THEN RAISE EXCEPTION 'F039_GUARD_NOT_INSTALLED'; END IF;
 END
 $one_time$;
