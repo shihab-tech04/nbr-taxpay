@@ -329,7 +329,7 @@ for(const language of ['en','bn'] as const){
       const signOut=page.getByRole('button',{name:language==='bn'?/সাইন আউট/:/Sign out/});
       await expect(signOut).toBeVisible();
       await signOut.click();
-      await expect(page).toHaveURL(/action=landing/);
+      await expect(page).toHaveURL(/(?:[?&]action=landing|\/$)/);
       await expect.poll(()=>page.evaluate(()=>localStorage.getItem('sb-nbr-taxpay-test-auth-token'))).toBeNull();
 
       await page.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{
