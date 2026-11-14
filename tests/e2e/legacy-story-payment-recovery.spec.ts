@@ -370,7 +370,6 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(travelDialog.locator('#travel-departure-date')).toHaveValue('');
   await expect(travelDialog.getByRole('button',{name:'Continue to review'})).toBeDisabled();
   await travelDialog.locator('#travel-departure-date').fill(futureTravelDate);
-  await fillTravelDetails(travelDialog,{date:futureTravelDate});
   await travelDialog.getByRole('button',{name:'Continue to review'}).click();
   await travelDialog.getByRole('button',{name:'Pay online'}).click();
   await travelDialog.getByRole('button',{name:'Mobile banking'}).click();
