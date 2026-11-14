@@ -40,25 +40,27 @@ function sqlText(value){return "'"+String(value).replaceAll("'","''")+"'";}
 function sqlJson(value){return sqlText(JSON.stringify(value))+'::jsonb';}
 
 function sqlRpc(origin,name,args,authenticatedOffice=false){
+  const databaseOrigin=origin==='OFFICE_SQL'?'OFFICE_SQL':'TAXPAY_SQL';
   const definitions={
     TAXPAY_SQL:{
       taxpay_demo_story1_submit:`public.taxpay_demo_story1_submit(${sqlText(args.p_capability_hash)},${sqlJson(args.p_input)})`,
       taxpay_demo_story1_session_payment:`public.taxpay_demo_story1_session_payment(${sqlText(args.p_capability_hash)},${sqlText(args.p_payment_id)}::uuid)`,
       taxpay_office_story1_mirror_read:`public.taxpay_office_story1_mirror_read(${sqlText(args.p_id)}::uuid,${sqlText(args.p_session)}::uuid)`,
+      taxpay_demo_received_payment_notices:`public.taxpay_demo_received_payment_notices(${sqlText(args.p_capability_hash)},${sqlText(args.p_action)},${args.p_event_id===null?'NULL::text':sqlText(args.p_event_id)},${args.p_offset}::integer,${args.p_limit}::integer)`,
     },
     OFFICE_SQL:{
       demo_story1_mirror:`public.demo_story1_mirror(${sqlJson(args.p_input)})`,
       payment_v1_office_guarded_story_page:`public.payment_v1_office_guarded_story_page(${args.p_page}::integer,${args.p_per_page}::integer)`,
     },
   };
-  const expression=definitions[origin]?.[name];
+  const expression=definitions[databaseOrigin]?.[name];
   if(!expression)throw Error('Unexpected SQL RPC '+origin+'.'+name);
-  const role=origin==='OFFICE_SQL'&&name==='payment_v1_office_guarded_story_page'
+  const role=databaseOrigin==='OFFICE_SQL'&&name==='payment_v1_office_guarded_story_page'
     ?'authenticated':'service_role';
   const claims=role==='authenticated'
     ?`SELECT set_config('request.jwt.claim.sub',${sqlText(authenticatedOffice?officerId:randomUUID())},true);\n`
     :'';
-  return psql(origin==='TAXPAY_SQL'?sourceDb:officeDb,
+  return psql(databaseOrigin==='TAXPAY_SQL'?sourceDb:officeDb,
     `BEGIN;\nSET LOCAL ROLE ${role};\n${claims}SELECT ${expression};\nCOMMIT;`);
 }
 
@@ -68,7 +70,7 @@ function loadHandler(file,origin){
   const compiled=transformSync(source,{loader:'ts',format:'cjs',target:'es2022'}).code;
   const module={exports:{}};
   const context={
-    module,exports:module.exports,console,TextEncoder,TextDecoder,Request,Response,Headers,URL,
+    module,exports:module.exports,console,TextEncoder,TextDecoder,Request,Response,Headers,URL,btoa,atob,
     AbortSignal,crypto:webcrypto,Uint8Array,ArrayBuffer,JSON,Date,Error,Number,Promise,RegExp,
     structuredClone,fetch:routedFetch,
     require(spec){
@@ -88,7 +90,7 @@ function loadHandler(file,origin){
       }};
     },
     Deno:{env:{get(name){
-      if(name==='SUPABASE_URL')return origin==='TAXPAY_SQL'
+      if(name==='SUPABASE_URL')return origin.startsWith('TAXPAY')
         ?'https://eyqhoavnitkrajvyqvxn.supabase.co'
         :'https://ihbtabrvmyiwikqqbhrf.supabase.co';
       if(name==='SUPABASE_ANON_KEY')return 'disposable-anon-key';
@@ -150,7 +152,8 @@ async function start(origin,root,name){
   return server;
 }
 async function request(origin,path,method='GET',body,headers={}){
-  const name=origin==='TAXPAY_SQL'?'demo-story1-taxpay':'demo-story1-office';
+  const name=origin==='TAXPAY_SQL'?'demo-story1-taxpay':origin==='TAXPAY_RECIPIENTS'
+    ?'taxpay-guest-beneficiaries':'demo-story1-office';
   const response=await fetch(servers[origin]+'/'+name+path,{
     method,headers:{...headers,...(body?{'content-type':'application/json'}:{})},
     body:body?JSON.stringify(body):undefined,
@@ -161,6 +164,9 @@ async function request(origin,path,method='GET',body,headers={}){
 const profile=psql(sourceDb,
   "SELECT public.taxpay_demo_profile_login('user1','user1');");
 assert.ok(profile?.capability&&profile.paymentSessionId,'Existing disposable User1 profile contract is unavailable');
+const recipient2Profile=psql(sourceDb,"SELECT public.taxpay_demo_profile_login('user2','user2');");
+const recipient3Profile=psql(sourceDb,"SELECT public.taxpay_demo_profile_login('user3','user3');");
+const unrelatedProfile=psql(sourceDb,"SELECT public.taxpay_demo_profile_login('user4','user4');");
 const capabilityHash=createHash('sha256').update(profile.capability).digest('hex');
 const list=psql(sourceDb,
   `SELECT public.taxpay_guest_beneficiary_create_list(${sqlText(capabilityHash)},${sqlText('WS3 Edge SQL '+randomUUID())});`);
@@ -205,6 +211,7 @@ psql(officeDb,roleSetup);
 const [taxpayerServer,officeServer]=await Promise.all([
   start('TAXPAY_SQL',resolve('.'),'demo-story1-taxpay'),
   start('OFFICE_SQL',resolve(officeRoot),'demo-story1-office'),
+  start('TAXPAY_RECIPIENTS',resolve('.'),'taxpay-guest-beneficiaries'),
 ]);
 try{
   const headers={'x-taxpay-guest-capability':profile.capability};
@@ -255,13 +262,52 @@ try{
   assert.deepEqual(row.details.allocations.map(item=>item.assessmentYear),['2026-27','2025-26']);
   assert.deepEqual(row.details.allocations.map(item=>item.amountMinor),[1500,3500]);
 
+  const notices=async(profile,action='received-notices-list',eventId)=>request(
+    'TAXPAY_RECIPIENTS','', 'POST',
+    {action,eventId:eventId??null,offset:0,limit:100},
+    {origin:'http://127.0.0.1:4173','x-taxpay-guest-capability':profile.capability});
+  const recipient2Notices=await notices(recipient2Profile);
+  const recipient3Notices=await notices(recipient3Profile);
+  const unrelatedNotices=await notices(unrelatedProfile);
+  assert.equal(recipient2Notices.status,200);
+  assert.equal(recipient3Notices.status,200);
+  assert.equal(unrelatedNotices.status,200);
+  const recipient2Item=recipient2Notices.data.data.items.find(item=>item.paymentId===sourceId);
+  const recipient3Item=recipient3Notices.data.data.items.find(item=>item.paymentId===sourceId);
+  assert.ok(recipient2Item&&recipient3Item,'Each beneficiary should receive only their allocated payment notice');
+  assert.equal(recipient2Item.allocationId,allocationIds[0]);
+  assert.equal(recipient2Item.recipientTin,'222222222222');
+  assert.equal(recipient2Item.headId,'121');
+  assert.equal(recipient2Item.assessmentYear,'2026-27');
+  assert.equal(recipient2Item.amountMinor,1500);
+  assert.equal(recipient2Item.receiptReference,'SIM-'+idempotencyKey);
+  assert.equal(recipient3Item.allocationId,allocationIds[1]);
+  assert.equal(recipient3Item.recipientTin,'333333333333');
+  assert.equal(recipient3Item.headId,'145');
+  assert.equal(recipient3Item.assessmentYear,'2025-26');
+  assert.equal(recipient3Item.amountMinor,3500);
+  assert.equal(recipient3Item.receiptReference,'SIM-'+idempotencyKey);
+  assert.equal(unrelatedNotices.data.data.items.some(item=>item.paymentId===sourceId),false,
+    'A profile outside the allocation must not see a recipient notice');
+  const acknowledged=await notices(recipient2Profile,'received-notices-ack',recipient2Item.eventId);
+  const repeatedAcknowledgement=await notices(recipient2Profile,'received-notices-ack',recipient2Item.eventId);
+  assert.equal(acknowledged.status,200);
+  assert.equal(acknowledged.data.data.isRead,true);
+  assert.equal(repeatedAcknowledgement.data.data.acknowledgedAt,acknowledged.data.data.acknowledgedAt,
+    'Repeated acknowledgement must preserve its original receipt time');
+  const recipient2Unread=await notices(recipient2Profile,'received-notices-unread');
+  const recipient3Unread=await notices(recipient3Profile,'received-notices-unread');
+  assert.equal(recipient2Unread.data.data.items.some(item=>item.eventId===recipient2Item.eventId),false);
+  assert.equal(recipient3Unread.data.data.items.some(item=>item.eventId===recipient3Item.eventId),true,
+    'Acknowledging one allocation notice must not mark another recipient read');
+
   const replay=await request('TAXPAY_SQL','/payments','POST',payload,headers);
   assert.equal(replay.status,200);
   assert.equal(replay.data.id,sourceId);
   assert.equal(replay.data.replayed,true);
   assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`),1,
     'Office replay must remain a single immutable parent');
-  console.log('PASS: real Taxpayer/Office Edge handlers over two disposable SQL DBs; multi-recipient v3 parent and allocations, exact amounts/AYs/heads, payer, receipt/certificate, Taxpayer history, authorized Office readback, Office outage recovery, same-key replay, and single source/Office notification');
+  console.log('PASS: Taxpayer/Office Edge handlers over separate disposable SQL DBs; multi-recipient v3 parent and allocation readback, exact amounts/AYs/heads, payer, receipt/certificate, payer history, authorized Office readback, recipient-notice API isolation/ack replay, Office outage recovery, same-key replay, and single source/Office payment notice');
 }finally{
   await Promise.all([taxpayerServer,officeServer].map(server=>new Promise(resolve=>server.close(resolve))));
 }
