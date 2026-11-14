@@ -247,6 +247,9 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  // payer's immutable payment and beneficiary allocation must remain readable.
  await one.page.goto('/?action=beneficiaries');
  await expect(one.page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+ // The approved shared register keeps its advanced list selector behind Filters.
+ await one.page.getByRole('button',{name:'Filter',exact:true}).click();
+ await expect(one.page.getByRole('button',{name:'Selected list'})).toBeVisible();
  await one.page.getByRole('button',{name:'Selected list'}).click();
  await one.page.getByRole('dialog',{name:'Choose beneficiary list'})
    .getByRole('button',{name:'Edit Profile acceptance'}).click();

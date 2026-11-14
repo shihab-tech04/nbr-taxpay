@@ -882,7 +882,7 @@ test('F-039 signed-in Other Tax combines a saved beneficiary with a confirmed on
   await oneTime.getByRole('button',{name:'Search one-time taxpayer'}).click();
   await oneTime.getByRole('button',{name:'Add to this payment'}).click();
   await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
-  await expect(picker).not.toContainText('444444444444');
+  await expect(picker.getByTestId('beneficiary-list-accordion')).not.toContainText('444444444444');
   await continueButton.click();
 
   const preserved=batch.getByTestId('other-tax-line');
@@ -957,7 +957,7 @@ test('F-039 Bengali saved-and-one-time recipient selection preserves the saved l
   await oneTime.getByRole('button',{name:'করদাতার টিআইএন খুঁজুন'}).click();
   await oneTime.getByRole('button',{name:'এই পেমেন্টে যোগ করুন'}).click();
   await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
-  await expect(picker).not.toContainText('444444444444');
+  await expect(picker.getByTestId('beneficiary-list-accordion')).not.toContainText('444444444444');
   await expect(selected).toBeChecked();
   expect(writes).toEqual([]);
 });
