@@ -9,6 +9,7 @@ import travelTaxIllustration from '../../assets/taxpay-hero-travel-v9.webp';
 import { supabase } from '../../services/supabaseClient';
 
 const AUTOPLAY_INTERVAL_MS = 8_000;
+const CMS_FALLBACK_POLL_MS = 5 * 60_000;
 const SWIPE_THRESHOLD_PX = 45;
 const SWIPE_DOMINANCE_RATIO = 1.2;
 
@@ -194,6 +195,8 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [slides, setSlides] = useState<BannerSlide[]>([]);
+  const activeBannerId = useRef<string | null>(null);
+  const lastPublishedSignature = useRef<string | null>(null);
   const [bannerStatus, setBannerStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const [retryNonce, setRetryNonce] = useState(0);
   // The next slide may preload only after the visible banner's image finishes.
@@ -211,30 +214,62 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
 
   const goNext = useCallback(() => setActiveIndex(index => (index + 1) % Math.max(slides.length, 1)), [slides.length]);
   const goPrevious = useCallback(() => setActiveIndex(index => (index - 1 + slides.length) % Math.max(slides.length, 1)), [slides.length]);
+  useEffect(() => {
+    activeBannerId.current = slides[activeIndex]?.id ?? null;
+  }, [slides, activeIndex]);
 
   useEffect(() => {
     let active = true;
-    const refresh = () => { void fetchPublishedBanners().then(next => {
-      if (!active) return;
-      setSlides(next);
-      setBannerStatus('ready');
-      setActiveIndex(index => Math.min(index, Math.max(0, next.length - 1)));
-    }).catch(() => {
-      if (!active) return;
-      // Do not revive bundled images for banners an administrator may have
-      // unpublished or deleted. Keep payment entrypoints available separately.
-      setSlides([]);
-      setBannerStatus('unavailable');
-    }); };
+    // Concurrent focus/Realtime updates must not publish an older response
+    // over a newer CMS revision. Skip identical snapshots altogether.
+    let requestSerial = 0;
+    let realtimeConnected = false;
+    let previouslyConnected = false;
+    const refresh = () => {
+      const serial = ++requestSerial;
+      void fetchPublishedBanners().then(next => {
+        if (!active || serial !== requestSerial) return;
+        const signature = JSON.stringify(next);
+        if (signature !== lastPublishedSignature.current) {
+          const keepId = activeBannerId.current;
+          lastPublishedSignature.current = signature;
+          setSlides(next);
+          // Keep the visitor's selected service visible if an editor reorders
+          // the five slides. If unpublished, fall back to the nearest index.
+          setActiveIndex(index => {
+            const retained = next.findIndex(slide => slide.id === keepId);
+            return retained >= 0 ? retained : Math.min(index, Math.max(0, next.length - 1));
+          });
+        }
+        setBannerStatus('ready');
+      }).catch(() => {
+        if (!active || serial !== requestSerial) return;
+        // Never resurrect unpublished/unknown CMS artwork after a failed read.
+        lastPublishedSignature.current = null;
+        setSlides([]);
+        setBannerStatus('unavailable');
+      });
+    };
     refresh();
     const channel = supabase?.channel('published-taxpay-banners')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'taxpay_site_banners' }, refresh).subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'taxpay_site_banners' }, refresh)
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') {
+          if (previouslyConnected && !realtimeConnected) refresh();
+          previouslyConnected = true;
+          realtimeConnected = true;
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          realtimeConnected = false;
+        }
+      });
     // Reconcile missed Realtime messages after inactive tabs or intermittent networks.
     const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
     window.addEventListener('focus', refresh);
     window.addEventListener('online', refresh);
     document.addEventListener('visibilitychange', onVisible);
-    const poll = window.setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 30_000);
+    const poll = window.setInterval(() => {
+      if (!realtimeConnected && document.visibilityState === 'visible') refresh();
+    }, CMS_FALLBACK_POLL_MS);
     return () => {
       active = false;
       window.clearInterval(poll);

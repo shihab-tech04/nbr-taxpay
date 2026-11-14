@@ -55,8 +55,7 @@ export const PublicLanding: React.FC = () => {
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
 
-  // Citizen-value cards are informational, not duplicate payment CTAs.
-  // The approved Pay Tax / Pay Travel Tax journeys remain in the hero.
+  // Benefit cards open their established destinations. The hero remains the entry for both payment journeys.
   const citizenBenefits = [
     {
       id: 'payments',
@@ -69,30 +68,35 @@ export const PublicLanding: React.FC = () => {
       Icon: FileCheck2,
       title: t('Tax Certificates', 'কর সনদ'),
       detail: t('Find and download available tax certificates.', 'উপলব্ধ কর সনদ খুঁজুন ও ডাউনলোড করুন।'),
+      route: 'certificates',
     },
     {
       id: 'corrections',
       Icon: FilePenLine,
       title: t('Corrections & Requests', 'সংশোধন ও আবেদন'),
       detail: t('Request corrections and follow their progress.', 'সংশোধনের আবেদন করুন ও অগ্রগতি দেখুন।'),
+      route: 'corrections',
     },
     {
       id: 'history',
       Icon: History,
       title: t('Payment History', 'পেমেন্টের ইতিহাস'),
       detail: t('See past payments, tax years and receipts.', 'আগের পেমেন্ট, করবর্ষ ও রসিদ দেখুন।'),
+      route: 'history',
     },
     {
       id: 'pay-again',
       Icon: Repeat2,
       title: t('Pay Again', 'আবার পরিশোধ'),
       detail: t('Reuse and edit a previous payment.', 'আগের পেমেন্টের তথ্য বদলে আবার পরিশোধ করুন।'),
+      route: 'history',
     },
     {
       id: 'saved-drafts',
       Icon: Save,
       title: t('Saved Drafts', 'সংরক্ষিত খসড়া'),
       detail: t('Save a payment and continue it later.', 'পেমেন্ট খসড়া সংরক্ষণ করে পরে চালিয়ে যান।'),
+      route: 'taxpayer_home',
     },
   ];
 
@@ -275,12 +279,22 @@ export const PublicLanding: React.FC = () => {
         <p>{t('Pay, organize and track your taxes in one place.', 'কর পরিশোধ, তথ্য গুছিয়ে রাখা ও অগ্রগতি দেখা—সব এক জায়গায়।')}</p>
       </div>
       <div className="public-benefits__grid">
-        {citizenBenefits.map(({ id, Icon, title, detail }) => (
+        {citizenBenefits.map(({ id, Icon, title, detail, route }) => (
           <article key={id} className="public-benefits__item" data-benefit={id}>
             <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
             <div className="public-benefits__copy">
-              <h3>{title}</h3>
-              <p>{detail}</p>
+              <h3>{route ? (
+                <a className="public-benefits__action" href={`?action=${route}${bn ? '&lang=bn' : ''}`} aria-describedby={`public-benefit-detail-${id}`}
+                  onClick={event => {
+                    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    event.preventDefault();
+                    navigate(route);
+                  }}>{title}</a>
+              ) : (
+                <button type="button" className="public-benefits__action" aria-describedby={`public-benefit-detail-${id}`}
+                  onClick={() => openPaymentServiceChoice()}>{title}</button>
+              )}</h3>
+              <p id={`public-benefit-detail-${id}`}>{detail}</p>
             </div>
           </article>
         ))}
