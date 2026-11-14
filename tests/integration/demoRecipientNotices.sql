@@ -12,6 +12,7 @@ DECLARE
   payment_id uuid; before_data jsonb;
   before_outbox bigint; before_payment_count bigint;
   before_story_notices bigint; denied boolean;
+  invalid_case text; bad_payload jsonb; v_bad_key uuid;
 BEGIN
   IF has_function_privilege('anon',
        'public.taxpay_demo_received_payment_notices(text,text,text,integer,integer)','EXECUTE')
@@ -73,6 +74,46 @@ BEGIN
     OR replay->>'id' IS DISTINCT FROM payment_id::text
     OR replay->>'replayed' IS DISTINCT FROM 'true'
   THEN RAISE EXCEPTION 'RECIPIENT_NOTICE_PAYMENT_SOURCE_RETRY_FAILED'; END IF;
+
+  -- A malformed new v3 combined payment is rejected at the original source,
+  -- before any immutable payment, notification or mirror outbox is created.
+  FOR invalid_case IN SELECT unnest(ARRAY[
+    'MISSING_ALLOCATION_ID','DUPLICATE_ALLOCATION_ID',
+    'ALLOCATION_AMOUNT_DRIFT','MISSING_LINE_SERVICE','PARENT_TOTAL_DRIFT'
+  ]) LOOP
+    v_bad_key := pg_catalog.gen_random_uuid();
+    bad_payload := pg_catalog.jsonb_set(payload,'{idempotencyKey}',
+      pg_catalog.to_jsonb(v_bad_key::text));
+    IF invalid_case='MISSING_ALLOCATION_ID' THEN
+      bad_payload := pg_catalog.jsonb_set(bad_payload,
+        '{details,allocations,0,allocationId}','null'::jsonb);
+    ELSIF invalid_case='DUPLICATE_ALLOCATION_ID' THEN
+      bad_payload := pg_catalog.jsonb_set(bad_payload,
+        '{details,allocations,1,allocationId}',
+        pg_catalog.to_jsonb('ws3-recipient-2'::text));
+    ELSIF invalid_case='ALLOCATION_AMOUNT_DRIFT' THEN
+      bad_payload := pg_catalog.jsonb_set(bad_payload,
+        '{details,allocations,1,amountMinor}','3400'::jsonb);
+    ELSIF invalid_case='MISSING_LINE_SERVICE' THEN
+      bad_payload := pg_catalog.jsonb_set(bad_payload,
+        '{details,allocations,0,serviceCode}','null'::jsonb);
+    ELSE
+      bad_payload := pg_catalog.jsonb_set(bad_payload,
+        '{amountMinor}','4900'::jsonb);
+    END IF;
+    BEGIN
+      PERFORM public.taxpay_demo_story1_submit(payer_hash,bad_payload);
+      RAISE EXCEPTION 'INVALID_V3_SOURCE_ACCEPTED_%',invalid_case;
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLERRM IS DISTINCT FROM 'INVALID_V3_ALLOCATION' THEN RAISE; END IF;
+    END;
+    IF EXISTS(SELECT 1 FROM demo_payment.story_payments
+              WHERE idempotency_key=v_bad_key)
+       OR EXISTS(SELECT 1 FROM demo_payment.story_notifications n
+              JOIN demo_payment.story_payments p ON p.id=n.payment_id
+              WHERE p.idempotency_key=v_bad_key)
+    THEN RAISE EXCEPTION 'REJECTED_V3_SOURCE_PERSISTED_%',invalid_case; END IF;
+  END LOOP;
 
   SELECT data INTO before_data FROM demo_payment.story_payments WHERE id=payment_id;
   SELECT count(*) INTO before_payment_count FROM demo_payment.story_payments;
