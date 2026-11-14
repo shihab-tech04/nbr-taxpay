@@ -7,6 +7,7 @@ on:
       - 'supabase/functions/payment-command-bridge/**'
       - 'tests/integration/ws3EdgeHttpBridge.mjs'
       - 'tests/integration/ws3StoryMirrorProofHttp.mjs'
+      - 'tests/integration/ws3CommandDispatchOriginHttp.mjs'
       - '.github/workflows/ws3-edge-http-transport.yml'
   workflow_dispatch:
 
@@ -48,3 +49,5 @@ jobs:
         run: node tests/integration/ws3EdgeHttpBridge.mjs
       - name: Verify signed source-bound Story 1 proof, outage recovery and submitted Travel Tax
         run: node tests/integration/ws3StoryMirrorProofHttp.mjs
+      - name: Verify wrong-origin denial and authorized Office command dispatch
+        run: node tests/integration/ws3CommandDispatchOriginHttp.mjs

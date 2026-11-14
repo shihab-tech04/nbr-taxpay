@@ -446,6 +446,7 @@ jobs:
           trap 'docker stop ws3-office-sql-pg17 >/dev/null 2>&1 || true' EXIT
           export WS3_TAXPAYER_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
           export WS3_OFFICE_DB_URL="postgresql://postgres:postgres@127.0.0.1:55433/postgres"
+          export WS3_OFFICE_SOURCE="$OFFICE_DIR"
           for attempt in $(seq 1 35); do
             if pg_isready -h 127.0.0.1 -p 55433 -U postgres -d postgres; then break; fi
             sleep 2
@@ -460,7 +461,8 @@ jobs:
           done < <(find "$OFFICE_DIR/supabase/migrations" -maxdepth 1 -name '*.sql' -type f | sort)
           node tests/integration/pairedTaxpayerOfficeSql.mjs
           node tests/integration/pairedCorrectionOfficeSql.mjs
-          echo "PASS: original source v3 payment and independent Office SQL readback, retry and officer state"
+          node tests/integration/pairedTaxpayerOfficeEdgeSql.mjs
+          echo "PASS: original source v3 payment, separate Office SQL, existing Edge transport, retry, and authorized readback"
 
 
       - name: Verify capability-bound guest reference recovery via real local Edge
