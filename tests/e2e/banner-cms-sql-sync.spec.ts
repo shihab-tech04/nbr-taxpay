@@ -224,8 +224,10 @@ test('unpublishing the active banner preserves available payment actions and avo
   await expect(carousel).toHaveAttribute('data-active-slide', '3');
   await expect(carousel.locator('.public-hero-carousel__slide[data-active="true"]')
     .getByRole('button', {name: 'Start tax payment'})).toBeVisible();
+  // The unpublished Travel Tax row cannot supply its custom label; the
+  // approved fallback still exposes the separate Travel Tax action.
   await expect(carousel.locator('.public-hero-carousel__slide[data-active="true"]')
-    .getByRole('button', {name: 'Start travel tax'})).toBeVisible();
+    .getByRole('button', {name: 'Pay Travel Tax'})).toBeVisible();
   await expect(carousel.locator('[data-banner-service="travel"]')).toHaveCount(0);
 });
 
