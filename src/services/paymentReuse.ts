@@ -31,6 +31,22 @@ type SourceAllocation = {
   tin: string; name: string; headId: number; year: string; amountMinor: number;
 };
 
+/** A grouped historical batch has one Pay Again choice, not one per receipt.
+ * Keep the full original row list available to the reconstruction validator.
+ * Prefix batch and individual identities so unrelated IDs cannot collide. */
+export function oneChoicePerRecordedParent<T extends {id: string}>(
+  rows: readonly T[], batchIdOf: (row: T) => string | undefined,
+): T[] {
+  const seen = new Set<string>();
+  return rows.filter(row => {
+    const batchId = batchIdOf(row);
+    const key = batchId ? 'batch:' + batchId : 'payment:' + row.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /**
  * Never infer a missing taxpayer/head/year from a batch summary label. Only
  * reconstruct from each verified SQL receipt's full head/allocation pair.
