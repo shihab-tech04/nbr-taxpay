@@ -77,5 +77,5 @@ export async function downloadDisplayedCertificate(receipt: ChallanReceipt, pape
 /** Save a selected certificate *summary*, never fabricate a payment receipt. */
 export function downloadDisplayedCertificateSummary(summaryType: string) {
   const safe = summaryType.replace(/[^A-Z_]/g, '').slice(0, 50);
-  downloadDisplayedPaper('Korbritto-' + safe + '-summary.html', 'Korbritto certificate summary');
+  downloadDisplayedPaper('Sohojkor-' + safe + '-summary.html', 'Sohojkor certificate summary');
 }
