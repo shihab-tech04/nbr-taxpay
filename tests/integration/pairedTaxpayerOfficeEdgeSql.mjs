@@ -321,7 +321,62 @@ try{
   assert.equal(replay.data.replayed,true);
   assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`),1,
     'Office replay must remain a single immutable parent');
-  console.log('PASS: Taxpayer/Office Edge handlers over separate disposable SQL DBs; multi-recipient v3 parent and allocation readback, exact amounts/AYs/heads, payer, receipt/certificate, payer history, authorized Office readback, recipient-notice API isolation/ack replay, Office outage recovery, same-key replay, and single source/Office payment notice');
+
+  const travelKey=randomUUID();
+  const rawPassport='WS3-DISPOSABLE-PASSPORT-XYZ';
+  const travelPassengers=[
+    {passengerName:'WS3 QA Passenger A',passportNumberMasked:'••••1234',nationality:'Bangladeshi',
+      country:'Bangladesh',age:32,amountMinor:6000},
+    {passengerName:'WS3 QA Passenger B',passportNumberMasked:'••••5678',nationality:'Bangladeshi',
+      country:'Bangladesh',age:28,amountMinor:6000},
+  ];
+  const travelPayload={origin:'TAXPAY_UI',idempotencyKey:travelKey,sessionId:profile.paymentSessionId,
+    service:'TRAVEL_TAX',amountMinor:12000,details:{payerId:'user1',payerName:'WS3 Edge SQL payer',
+      travelMode:'AIR',departurePort:'DAC',destination:'KUL',travelDate:'2026-11-13',
+      passportNumber:rawPassport,passengers:travelPassengers,
+      lines:[{amountMinor:12000,note:'Passport: '+rawPassport}],
+      receiptReference:'SIM-'+travelKey,totalAmount:120,
+      receiptSnapshot:{paymentCategory:'TRAVEL_TAX',totalAmount:120,challanNo:'SIM-'+travelKey,
+        travelDetails:{travelMode:'AIR',departurePort:'DAC',destination:'KUL',
+          travelDate:'2026-11-13',passengers:travelPassengers}}}};
+  const travelSubmit=await request('TAXPAY_SQL','/payments','POST',travelPayload,headers);
+  assert.equal(travelSubmit.status,200,'Separate Travel Tax parent must mirror through the existing Edge path');
+  assert.equal(travelSubmit.data.replayed,false);
+  const travelId=travelSubmit.data.id;
+  assert.ok(travelId);
+  const travelSource=psql(sourceDb,`SELECT jsonb_build_object('id',id,'service',service_code,'amountMinor',amount_minor,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(travelId)}::uuid;`);
+  assert.equal(travelSource.id,travelId);
+  assert.equal(travelSource.service,'TRAVEL_TAX');
+  assert.equal(Number(travelSource.amountMinor),12000);
+  assert.equal(travelSource.data.details.payerId,'user1');
+  assert.deepEqual(travelSource.data.details.passengers,travelPassengers);
+  const travelOfficeStored=psql(officeDb,`SELECT jsonb_build_object('id',id,'service',service_code,'amountMinor',amount_minor,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(travelId)}::uuid;`);
+  assert.equal(travelOfficeStored.id,travelId);
+  assert.deepEqual(travelOfficeStored.data,travelSource.data,
+    'Office SQL must retain the original Travel Tax parent and source snapshot');
+  const travelReadback=await request('OFFICE_SQL','/payments?page=1&perPage=100','GET',undefined,
+    {authorization:'Bearer '+officeToken});
+  assert.equal(travelReadback.status,200);
+  const travelItem=travelReadback.data.data.items.find(item=>item.id===travelId);
+  assert.ok(travelItem,'Authorized Office/Admin readback must return the separate Travel Tax parent');
+  assert.equal(travelItem.service,'TRAVEL_TAX');
+  assert.equal(Number(travelItem.amountMinor),12000);
+  assert.equal(travelItem.certificateReference,'SK-PC-'+travelId);
+  assert.equal(travelItem.details.payerId,'user1');
+  assert.equal(travelItem.details.passportNumberMasked,'•'.repeat(rawPassport.length-3)+'XYZ');
+  assert.deepEqual(travelItem.details.passengers,travelPassengers);
+  assert.equal(JSON.stringify(travelItem).includes(rawPassport),false,
+    'Office/Admin Travel Tax readback must not expose the source passport or passport-bearing line note');
+  const travelReplay=await request('TAXPAY_SQL','/payments','POST',travelPayload,headers);
+  assert.equal(travelReplay.status,200);
+  assert.equal(travelReplay.data.id,travelId);
+  assert.equal(travelReplay.data.replayed,true);
+  assert.equal(psql(sourceDb,`SELECT count(*) FROM demo_payment.story_payments WHERE idempotency_key=${sqlText(travelKey)}::uuid;`),1);
+  assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_payments WHERE id=${sqlText(travelId)}::uuid;`),1);
+  assert.equal(psql(sourceDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(travelId)}::uuid;`),1);
+  assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(travelId)}::uuid;`),1);
+
+  console.log('PASS: separate disposable Taxpayer and Office SQL through existing Edge handlers; combined multi-recipient v3 allocations and Travel Tax passengers, exact amounts/years/heads, payer, receipt/certificate, authorized readback and passport redaction, recipient notice isolation, Office outage recovery, idempotent replay/conflict immutability, and single source/Office notices');
 }finally{
   await Promise.all([taxpayerServer,officeServer,recipientServer].map(server=>new Promise(resolve=>server.close(resolve))));
 }
