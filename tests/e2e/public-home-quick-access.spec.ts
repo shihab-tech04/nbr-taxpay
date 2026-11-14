@@ -876,6 +876,14 @@ for (const width of [320, 1280]) {
                 await tab.close();
               }
             }
+            // Bengali web fonts can change card height during the first render.
+            // Wait for fonts and two paint frames before measuring the full-card target.
+            await page.evaluate(async () => {
+              await document.fonts.ready;
+              await new Promise<void>(resolve => {
+                requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+              });
+            });
             const box = await card.boundingBox();
             if (!box) throw new Error(`Missing benefit card: ${item.id}`);
 
