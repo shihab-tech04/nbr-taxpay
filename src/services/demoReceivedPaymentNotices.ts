@@ -67,6 +67,7 @@ export async function loadUnreadReceivedPaymentNotices(
   const items:ReceivedPaymentNotice[]=[];
   const seen=new Set<string>();
   let total:number|null=null;
+  let previousOrderKey:string|null=null;
   for(let index=0;index<maxPages;index++){
     const offset=items.length;
     const value=await requestPage(offset,limit);
@@ -84,6 +85,13 @@ export async function loadUnreadReceivedPaymentNotices(
     const page=data.items.map(parseReceivedPaymentNotice);
     for(const item of page){
       if(seen.has(item.eventId))throw Error('Duplicate received-payment notice');
+      // The SQL contract orders notices by event time, payment UUID and exact
+      // string event ID. Enforce that ordering before opening the first popup.
+      const stamp=Date.parse(item.createdAt);
+      const key=String(stamp).padStart(16,'0')+'|'+item.paymentId+'|'+item.eventId;
+      if(previousOrderKey!==null&&key<previousOrderKey)
+        throw Error('Unread received-payment notices changed ordering');
+      previousOrderKey=key;
       seen.add(item.eventId);items.push(item);
     }
     if(data.hasMore){
