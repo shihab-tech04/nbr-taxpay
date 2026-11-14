@@ -3,7 +3,7 @@ import { Monitor, Smartphone, Search, ChevronDown, ExternalLink, X, ArrowRight, 
 import { useTaxState } from '../../services/taxState';
 import '../../styles/public-guide-p3.css';
 
-import { GUIDE_CONTENT, type Category, type Pair } from '../../data/publicGuideContent';
+import { GUIDE_CONTENT, GUIDE_CONTENT_LAST_UPDATED, type Category, type Pair } from '../../data/publicGuideContent';
 export { GUIDE_CONTENT } from '../../data/publicGuideContent';
 type Device = 'web'|'mobile';
 
@@ -18,14 +18,22 @@ export const PublicUserGuide:React.FC=()=>{
    setSearch('');
  },[routeParams]);
  const [search,setSearch]=useState('');
- const [device,setDevice]=useState<'web'|'mobile'>('web');
+ const [device,setDevice]=useState<Device>(()=>{
+   // The first instruction must match the visitor's device. Keep the
+   // existing device switch under user control after initial rendering.
+   return typeof window!=='undefined'&&window.matchMedia('(max-width: 700px)').matches?'mobile':'web';
+ });
  const contentRef=useRef<HTMLElement>(null);
  const searchRef=useRef<HTMLInputElement>(null);
  const chooseTopic=(id:Category)=>{
    setSelected(id);
    navigate('user_guide',{category:id});
    // Topic changes should take the reader to the new instructions, not back to the page hero.
-   window.requestAnimationFrame(()=>contentRef.current?.scrollIntoView({block:'start',behavior:'instant'}));
+   window.requestAnimationFrame(()=>{
+     const content=contentRef.current;
+     content?.scrollIntoView({block:'start',behavior:'instant'});
+     content?.focus({preventScroll:true});
+   });
  };
  const current=GUIDE_CONTENT.find(x=>x.id===selected)!;
  const query=search.trim().toLocaleLowerCase();
@@ -43,6 +51,9 @@ export const PublicUserGuide:React.FC=()=>{
  }).filter(item=>item.steps.length||item.faqs.length):[];
  const resultCount=results.reduce((count,item)=>count+item.steps.length+item.faqs.length,0);
  const labels=bn?['ওয়েব','মোবাইল']:['Web','Mobile'];
+ const guideUpdatedLabel=new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{
+   day:'numeric',month:'long',year:'numeric',timeZone:'UTC'
+ }).format(new Date(GUIDE_CONTENT_LAST_UPDATED+'T00:00:00Z'));
  const actionsFor=(category:Category)=>{
   if(category==='travel') return [{id:'travel',label:['Pay Travel Tax','ভ্রমণ কর পরিশোধ করুন'] as Pair,run:()=>openPaymentServiceChoice('TRAVEL_TAX')}];
   if(category==='status'||category==='records') return [{id:'records',label:['Find a payment record','পেমেন্ট রেকর্ড খুঁজুন'] as Pair,run:()=>navigate('verify')}];
@@ -77,6 +88,9 @@ export const PublicUserGuide:React.FC=()=>{
       <p className="citizen-hub-eyebrow">{bn?'ব্যবহার নির্দেশিকা':'User guide'}</p>
       <h1>{bn?'সহজকর ব্যবহার নির্দেশিকা':'Sohojkor user guide'}</h1>
       <p>{bn?'পেমেন্টের ধাপ, রসিদ ও সাধারণ প্রশ্ন।':'Clear steps, payment references and common questions.'}</p>
+      <p className="public-guide-last-updated" data-testid="public-guide-last-updated">
+        {bn?'নির্দেশিকা সর্বশেষ হালনাগাদ':'Guide last updated'}: <time dateTime={GUIDE_CONTENT_LAST_UPDATED}>{guideUpdatedLabel}</time>
+      </p>
     </header>
     <section className="public-guide-find" aria-labelledby="guide-search-title">
       <div className="public-guide-find-copy">
@@ -87,7 +101,7 @@ export const PublicUserGuide:React.FC=()=>{
         <div className="public-guide-search" onClick={()=>searchRef.current?.focus()}>
           <Search size={20} aria-hidden="true"/>
           <label className="sr-only" htmlFor="public-guide-search-input">{bn?'নির্দেশিকা খুঁজুন':'Search the guide'}</label>
-          <input id="public-guide-search-input" ref={searchRef} value={search} onChange={event=>setSearch(event.target.value)} placeholder={bn?'কী জানতে চান?':'What do you need help with?'} type="text" role="searchbox" inputMode="search"/>
+          <input id="public-guide-search-input" ref={searchRef} value={search} onChange={event=>setSearch(event.target.value)} placeholder={bn?'কী জানতে চান?':'What do you need help with?'} type="text" role="searchbox" inputMode="search" aria-controls={query?'guide-search-results':undefined}/>
           {search&&<button className="public-guide-clear" type="button" aria-label={bn?'অনুসন্ধান মুছুন':'Clear search'} onClick={()=>{setSearch('');searchRef.current?.focus();}}><X size={18} aria-hidden="true"/></button>}
         </div>
       </div>
@@ -96,7 +110,7 @@ export const PublicUserGuide:React.FC=()=>{
   {query?<section className="public-guide-results" aria-labelledby="guide-results-title" id="guide-search-results">
     <div className="public-guide-results-head">
       <h2 id="guide-results-title">{bn?'অনুসন্ধানের ফল':'Search results'}</h2>
-      <p role="status">{bn?`${resultCount}টি ফল পাওয়া গেছে`:`${resultCount} ${resultCount===1?'result':'results'} across all topics`}</p>
+      <p role="status">{bn?`${new Intl.NumberFormat('bn-BD').format(resultCount)}টি ফল পাওয়া গেছে`:`${resultCount} ${resultCount===1?'result':'results'} across all topics`}</p>
     </div>
     {resultCount?results.map(({category,steps,faqs})=><section key={category.id} className="public-guide-result-group" aria-label={bn?category.bn:category.en}>
       <h3>{bn?category.bn:category.en}</h3>
@@ -113,6 +127,9 @@ export const PublicUserGuide:React.FC=()=>{
     </section>):<div className="public-guide-no-results" role="status">
       <h3>{bn?'কোনো ফল পাওয়া যায়নি':'No results found'}</h3>
       <p>{bn?'অন্য শব্দ দিয়ে খুঁজুন বা অনুসন্ধান মুছে বিষয়গুলো দেখুন।':'Try a different term, or clear the search to browse by topic.'}</p>
+      <button className="public-guide-action" type="button" onClick={()=>{setSearch('');searchRef.current?.focus();}}>
+        {bn?'অনুসন্ধান মুছুন':'Clear search'}
+      </button>
     </div>}
     {officialSource}
   </section>:<div className="public-guide-layout">
@@ -121,7 +138,7 @@ export const PublicUserGuide:React.FC=()=>{
       {GUIDE_CONTENT.map((item,index)=><button type="button" key={item.id} aria-current={selected===item.id?'true':undefined}
         onClick={()=>chooseTopic(item.id)}><span aria-hidden="true">{String(index+1).padStart(2,'0')}</span>{bn?item.bn:item.en}</button>)}
     </nav>
-    <article className="public-guide-content" ref={contentRef}>
+    <article className="public-guide-content" ref={contentRef} tabIndex={-1}>
       <div className="public-guide-content-head">
         <div><p className="citizen-hub-eyebrow">{bn?`বিষয় ${GUIDE_CONTENT.findIndex(x=>x.id===selected)+1} / ৬`:`TOPIC ${GUIDE_CONTENT.findIndex(x=>x.id===selected)+1} OF 6`}</p><h2>{bn?current.bn:current.en}</h2><p>{t(current.description)}</p></div>
       </div>

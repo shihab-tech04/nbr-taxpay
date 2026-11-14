@@ -168,7 +168,9 @@ test('User guide search and text weights follow the citizen typography contract'
 test('User guide has real platform-specific steps and searches across all topics', async ({ page }) => {
   await page.goto('/?action=user_guide');
   const guide = page.locator('.public-guide-page');
-  await expect(guide.getByText('On Home, choose Pay Tax', { exact: false })).toBeVisible();
+  const mobileDefault=(page.viewportSize()?.width??1280)<=700;
+  await expect(guide.getByText(mobileDefault?'Tap Pay Tax on Home':'On Home, choose Pay Tax',
+    { exact: false })).toBeVisible();
   await guide.getByRole('button', { name: 'Mobile', exact: true }).click();
   await expect(guide.getByText('Tap Pay Tax on Home', { exact: false })).toBeVisible();
   await expect(guide.getByText('On Home, choose Pay Tax', { exact: false })).toHaveCount(0);
@@ -572,4 +574,107 @@ test('guide search keeps existing Travel Tax action reachable in English and Ban
     await result.getByRole('button', {name: bn ? 'ভ্রমণ কর পরিশোধ করুন' : 'Pay Travel Tax'}).click();
     await expect(page.getByRole('dialog', {name: bn ? 'ভ্রমণ কর' : 'Travel tax'})).toBeVisible();
   }
+});
+
+test('public guide defaults to correct desktop/mobile instructions and focuses selected topic without losing device choice',async({page})=>{
+ const mobile=(page.viewportSize()?.width??1280)<=700;
+ await page.goto('/?action=user_guide&lang=en');
+ const guide=page.locator('.public-guide-page');
+ const mobileButton=guide.getByRole('button',{name:'Mobile',exact:true});
+ const webButton=guide.getByRole('button',{name:'Web',exact:true});
+ await expect(mobileButton).toHaveAttribute('aria-pressed',mobile?'true':'false');
+ await expect(webButton).toHaveAttribute('aria-pressed',mobile?'false':'true');
+ await expect(guide.getByText(mobile?'Tap Pay Tax on Home':'On Home, choose Pay Tax',{exact:false})).toBeVisible();
+
+ // A visitor can override the detected device; navigation does not discard it.
+ const override=mobile?webButton:mobileButton;
+ await override.click();
+ await expect(override).toHaveAttribute('aria-pressed','true');
+ await guide.getByRole('navigation',{name:'Guide topics'}).getByRole('button',{name:'Travel tax',exact:true}).click();
+ const article=guide.locator('.public-guide-content');
+ await expect(article).toBeFocused();
+ await expect(article.locator('.public-guide-content-head').getByRole('heading',{name:'Travel tax',exact:true})).toBeInViewport();
+ await expect(override).toHaveAttribute('aria-pressed','true');
+ await setWorkspaceLanguage(page,'bn');
+ await expect(guide.getByRole('heading',{name:'সহজকর ব্যবহার নির্দেশিকা'})).toBeVisible();
+ await expect(guide.getByRole('navigation',{name:'বিষয় নির্বাচন'})
+   .getByRole('button',{name:'ভ্রমণ কর',exact:true})).toHaveAttribute('aria-current','true');
+ await expect(guide.getByRole('button',{name:mobile?'ওয়েব':'মোবাইল',exact:true})).toHaveAttribute('aria-pressed','true');
+ expect(await page.evaluate(()=>
+  document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('guide no-results has a directly operable EN/BN recovery button and Bengali search-result count',async({page})=>{
+ await page.goto('/?action=user_guide&lang=bn');
+ const guide=page.locator('.public-guide-page');
+ const input=guide.getByRole('searchbox',{name:'নির্দেশিকা খুঁজুন'});
+ await input.fill('this-topic-does-not-exist-123456789');
+ const noResults=guide.locator('.public-guide-no-results');
+ await expect(noResults).toBeVisible();
+ await noResults.getByRole('button',{name:'অনুসন্ধান মুছুন'}).click();
+ await expect(input).toBeFocused();
+ await expect(input).toHaveValue('');
+ await expect(guide.getByRole('navigation',{name:'বিষয় নির্বাচন'})).toBeVisible();
+ await input.fill('passport');
+ await expect(guide.locator('.public-guide-result-step')).not.toHaveCount(0);
+ await expect(guide.locator('.public-guide-results-head [role="status"]')).toContainText(/[০-৯]/);
+ await setWorkspaceLanguage(page,'en');
+ await input.fill('another-completely-absent-topic-xyz');
+ await guide.locator('.public-guide-no-results').getByRole('button',{name:'Clear search'}).click();
+ await expect(input).toBeFocused();
+ await expect(guide.getByRole('navigation',{name:'Guide topics'})).toBeVisible();
+});
+
+test('glossary filters have bilingual result feedback, clear search, and full empty-result recovery',async({page})=>{
+ await page.goto('/?action=glossary&lang=en');
+ const glossary=page.locator('.public-glossary');
+ const input=glossary.getByRole('searchbox',{name:'Search terms'});
+ const category=glossary.getByRole('combobox',{name:'Topic'});
+ await input.fill('e-TIN');
+ await expect(glossary.getByRole('heading',{name:'Taxpayer Identification Number'})).toBeVisible();
+ await expect(glossary.getByRole('status')).toContainText('term');
+ await category.selectOption('PAYMENT');
+ await expect(glossary.getByRole('status')).toContainText('No terms match');
+ await glossary.getByRole('button',{name:'Clear filters'}).click();
+ await expect(input).toBeFocused();
+ await expect(input).toHaveValue('');
+ await expect(category).toHaveValue('ALL');
+ await expect(glossary.getByRole('heading',{name:'Tax with Return'})).toBeVisible();
+ await input.fill('Advance Tax');
+ await glossary.getByRole('button',{name:'Clear search'}).click();
+ await expect(input).toHaveValue('');
+
+ await setWorkspaceLanguage(page,'bn');
+ const banglaInput=glossary.getByRole('searchbox',{name:'শব্দ খুঁজুন'});
+ await banglaInput.fill('রসিদ');
+ await expect(glossary.getByRole('heading',{name:'Payment Receipt'})).toBeVisible();
+ await expect(glossary.getByRole('status')).toContainText(/[০-৯]টি শব্দ/);
+ await banglaInput.fill('চালান-নয়-অজানা-শব্দ-123xyz');
+ await expect(glossary.getByRole('status')).toContainText('এই অনুসন্ধানে কোনো শব্দ মেলেনি');
+ await glossary.getByRole('button',{name:'সব ফিল্টার মুছুন'}).click();
+ await expect(banglaInput).toBeFocused();
+ await expect(glossary.getByRole('combobox',{name:'বিষয়'})).toHaveValue('ALL');
+ expect(await page.evaluate(()=>
+  document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('public guide displays the actual maintained content revision date in EN/BN across all topics',async({page})=>{
+  await page.goto('/?action=user_guide&lang=en');
+  const guide=page.locator('.public-guide-page');
+  const updated=guide.getByTestId('public-guide-last-updated');
+  await expect(updated).toContainText('Guide last updated:');
+  await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  await expect(updated.locator('time')).toContainText('14 November 2026');
+  const topicNav=guide.getByRole('navigation',{name:'Guide topics'});
+  for(const button of await topicNav.getByRole('button').all()){
+    await button.click();
+    await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  }
+  await setWorkspaceLanguage(page,'bn');
+  await expect(updated).toContainText('নির্দেশিকা সর্বশেষ হালনাগাদ:');
+  await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  await expect(updated.locator('time')).toContainText('২০২৬');
+  await expect(updated.locator('time')).toContainText('নভেম্বর');
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
