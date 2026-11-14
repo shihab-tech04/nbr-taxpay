@@ -465,6 +465,13 @@ jobs:
           echo "PASS: original source v3 payment and independent Office SQL readback, retry and officer state"
 
 
+      - name: Verify capability-bound guest reference recovery via real local Edge
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/integration/guestReferenceLookupEdge.mjs
+          echo "PASS: synthetic original SQL -> Edge receipt reference, session recovery, capability denial"
+
       - name: Remove disposable synthetic credentials
         if: always()
         shell: bash
