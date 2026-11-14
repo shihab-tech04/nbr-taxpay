@@ -122,8 +122,8 @@ export const GlossaryView: React.FC = () => {
             <p className="public-glossary-term-bn">{term.termBn}</p>
             <p className="public-glossary-definition">{bn ? term.definitionBn : term.definitionEn}</p>
           </article>)}
-        </div> : <div className="public-glossary-empty" role="status">
-          <p>{copy.noResults}</p>
+        </div> : <div className="public-glossary-empty">
+          <p role="status">{copy.noResults}</p>
           <button type="button" onClick={resetFilters}
             className="mt-3 min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
             {bn?'সব ফিল্টার মুছুন':'Clear filters'}
