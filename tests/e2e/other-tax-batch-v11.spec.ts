@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, ensureNewPaymentEntry } from './pay-tax-entry-helper';
 
 const getFlow = async (page: import('@playwright/test').Page) => {
   await page.goto('/');
@@ -9,7 +9,8 @@ const getFlow = async (page: import('@playwright/test').Page) => {
   return dialog;
 };
 
-async function mockSignedInOtherTax(page: Page, writes: string[]) {
+async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en') {
+  let sessionLanguage: 'en' | 'bn' = 'en';
   const list={id:'00000000-0000-4000-8000-000000000001',name:'Family',created_at:'2026-01-01T00:00:00Z'};
   const people=[
     {id:'00000000-0000-4000-8000-000000000002',list_id:list.id,tin:'222222222222',display_name:'Saved Taxpayer Two',tag:'friends_family',relationship:'father',created_at:list.created_at,updated_at:list.created_at},
@@ -19,10 +20,13 @@ async function mockSignedInOtherTax(page: Page, writes: string[]) {
     status:200,contentType:'application/json',body:JSON.stringify({success:true,data:[],simulationOnly:true})
   }));
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
-    const body=route.request().postDataJSON() as {action?:string;offset?:number;limit?:number};
+    const body=route.request().postDataJSON() as {action?:string;offset?:number;limit?:number;key?:string;value?:string};
     let data:unknown;
     if(body.action==='demo-login') data={language:'en',selectedListId:null,paymentSessionId:'00000000-0000-4000-8000-000000000099',profileId:'user1',capability:'A'.repeat(43)};
-    else if(body.action==='demo-settings') data={language:'en',selectedListId:null,paymentSessionId:'00000000-0000-4000-8000-000000000099'};
+    else if(body.action==='demo-settings') {
+      if(body.key==='language' && (body.value==='bn'||body.value==='en')) sessionLanguage=body.value;
+      data={language:sessionLanguage,selectedListId:null,paymentSessionId:'00000000-0000-4000-8000-000000000099'};
+    }
     else if(body.action==='open') data={active:true};
     else if(body.action==='lists') data=[list];
     else if(body.action==='people') data=people.slice(body.offset??0,(body.offset??0)+(body.limit??500));
@@ -39,9 +43,21 @@ async function mockSignedInOtherTax(page: Page, writes: string[]) {
   await login.getByRole('button',{name:'Sign In'}).click();
   await expect(login).toHaveCount(0);
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
-  const dialog=page.getByRole('dialog',{name:'Pay Tax'});
-  await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
+  if(language==='bn') {
+    await page.getByRole('button',{name:'বাংলা',exact:true}).click();
+    await expect(page.getByRole('button',{name:'Switch to English'})).toBeVisible();
+  }
+  await page.getByRole('button',{name:language==='bn'?'কর পরিশোধ':'Pay Tax',exact:true}).first().click();
+  const dialog=page.getByRole('dialog',{name:language==='bn'?'কর পরিশোধ':'Pay Tax'});
+  if(language==='en') await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
+  else {
+    await ensureNewPaymentEntry(dialog);
+    await dialog.locator('[data-payer-relationship="OTHER"]').click();
+    await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+    const advance=dialog.locator('.tax-service-choice__actions .tax-service-choice__continue');
+    await expect(advance).toBeEnabled();
+    await advance.click();
+  }
   return {dialog,people};
 }
 
@@ -788,7 +804,7 @@ test('compact search/selection stays operable at 320px without horizontal overfl
   await expect(dialog.getByRole('button', { name: 'Continue to payment channel' })).toBeVisible();
 });
 
-test('signed-in Other Tax combines a saved beneficiary with a confirmed one-time recipient without saving it',async({page})=>{
+test('F-039 signed-in Other Tax combines a saved beneficiary with a confirmed one-time recipient without saving it',async({page})=>{
   const writes:string[]=[];
   const submitted:Record<string,any>[]=[];
   const {dialog}=await mockSignedInOtherTax(page,writes);
@@ -832,6 +848,15 @@ test('signed-in Other Tax combines a saved beneficiary with a confirmed one-time
   await oneTime.locator('#other-tax-one-time-tin').fill('444444444444');
   await oneTime.getByRole('button',{name:'Search one-time taxpayer'}).click();
   await expect(oneTime.getByTestId('one-time-taxpayer-preview')).toContainText('User 4');
+  await oneTime.getByRole('button',{name:'Add to this payment'}).click();
+  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
+  // T03: cancel the one-time addition and retry without changing saved payees
+  // or discarding the first recipient's existing head/year/amount line.
+  await oneTime.getByRole('button',{name:'Remove from this payment'}).click();
+  await expect(picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'})).toBeChecked();
+  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toHaveCount(0);
+  await oneTime.locator('#other-tax-one-time-tin').fill('444444444444');
+  await oneTime.getByRole('button',{name:'Search one-time taxpayer'}).click();
   await oneTime.getByRole('button',{name:'Add to this payment'}).click();
   await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
   await expect(picker).not.toContainText('444444444444');
@@ -879,4 +904,31 @@ test('signed-in Other Tax combines a saved beneficiary with a confirmed one-time
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(page.getByTestId('beneficiaries-page')).toContainText('222222222222');
   await expect(page.getByTestId('beneficiaries-page')).not.toContainText('444444444444');
+});
+
+test('F-039 Bengali saved-and-one-time recipient selection preserves the saved list after cancel and retry',async({page})=>{
+  const writes:string[]=[];
+  const {dialog}=await mockSignedInOtherTax(page,writes,'bn');
+  const picker=dialog.getByTestId('saved-beneficiary-picker');
+  const selected=picker.getByRole('checkbox',{name:'নির্বাচন করুন Saved Taxpayer Two'});
+  await expect(selected).toBeVisible();
+  await selected.check();
+  await expect(selected).toBeChecked();
+
+  const oneTime=dialog.getByTestId('one-time-taxpayer-entry');
+  await expect(oneTime.getByRole('heading',{name:'এই পেমেন্টের জন্য নতুন করদাতা যোগ করুন'})).toBeVisible();
+  await oneTime.locator('#other-tax-one-time-tin').fill('444444444444');
+  await oneTime.getByRole('button',{name:'করদাতার টিআইএন খুঁজুন'}).click();
+  await expect(oneTime.getByTestId('one-time-taxpayer-preview')).toContainText('444444444444');
+  await oneTime.getByRole('button',{name:'এই পেমেন্টে যোগ করুন'}).click();
+  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
+  await oneTime.getByRole('button',{name:'পেমেন্ট থেকে সরান'}).click();
+  await expect(selected).toBeChecked();
+  await oneTime.locator('#other-tax-one-time-tin').fill('444444444444');
+  await oneTime.getByRole('button',{name:'করদাতার টিআইএন খুঁজুন'}).click();
+  await oneTime.getByRole('button',{name:'এই পেমেন্টে যোগ করুন'}).click();
+  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
+  await expect(picker).not.toContainText('444444444444');
+  await expect(selected).toBeChecked();
+  expect(writes).toEqual([]);
 });
