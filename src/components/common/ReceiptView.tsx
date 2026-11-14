@@ -245,7 +245,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         </div>}
         <header className="receipt-view__summary">
           <div className="receipt-view__summary-copy">
-            <p className="receipt-view__eyebrow">{isCertificate ? (bn ? 'সহজকর' : 'Sohojkor') : travelPreview ? (bn ? 'নমুনা পেমেন্ট রেকর্ড' : 'Simulated payment record') : (bn ? 'পেমেন্ট রেকর্ড' : 'Payment record')}</p>
+            <p className="receipt-view__eyebrow">{isCertificate ? (bn ? 'সহজকর' : 'Sohojkor') : travelPreview ? (bn ? 'সংরক্ষিত পেমেন্ট রেকর্ড' : 'Saved payment record') : (bn ? 'পেমেন্ট রেকর্ড' : 'Payment record')}</p>
             <h3>{isCertificate ? (bn ? 'পেমেন্ট সনদ' : 'Payment Certificate') : travelPreview ? (bn ? 'সম্মিলিত ভ্রমণ করের বিবরণ' : 'Combined Travel Tax details') : (bn ? 'রসিদের বিবরণ' : 'Receipt details')}</h3>
             <p className="receipt-view__summary-subtitle">
               {serviceSummary}
@@ -390,7 +390,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
               <tbody>{receipt.travelDetails.passengers.map((item,index) => <tr key={index}>
                 <td>{item.name}</td>
                 <td>{item.passportMasked}</td>
-                <td>{item.age ?? item.ageBand}{typeof item.age === 'number' && item.age <= 5 && <p className="receipt-view__summary-subtitle">{bn ? 'নমুনা বয়সভিত্তিক অব্যাহতি' : 'Illustrative age exemption'}</p>}</td>
+                <td>{item.age ?? item.ageBand}{typeof item.age === 'number' && item.age <= 5 && <p className="receipt-view__summary-subtitle">{bn ? 'বয়সভিত্তিক করছাড়; যাচাই সাপেক্ষে' : 'Age-based exemption; subject to verification'}</p>}</td>
                 <td>{formatCurrency(item.amount, language)}</td>
               </tr>)}</tbody>
               <tfoot><tr><th scope="row" colSpan={3}>{bn ? 'সর্বমোট ভ্রমণ কর' : 'Combined Travel Tax'}</th>
@@ -404,8 +404,8 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <div><dt>{bn ? 'অর্থনৈতিক কোড' : 'Economic code'}</dt><dd>{receipt.travelDetails.economicCode}</dd></div>
           </dl>
           <p className="receipt-view__summary-subtitle">{bn
-            ? 'এটি নমুনা রসিদ; সরকারি A-Challan বা ট্রেজারি নিষ্পত্তি নয়।'
-            : 'Simulation only: not a government A-Challan or Treasury settlement.'}</p>
+            ? 'এই সংরক্ষিত রেকর্ড সরকারি A-Challan ইস্যু বা ট্রেজারি নিষ্পত্তির প্রমাণ নয়।'
+            : 'This saved record is not proof of government A-Challan issuance or Treasury settlement.'}</p>
         </section>}
         {/* Keep one financial document view for both standard heads and reconciled allocations. */}
         {allocationBreakdown || (!receipt.travelDetails && (
