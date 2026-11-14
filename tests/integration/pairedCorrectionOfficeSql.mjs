@@ -47,15 +47,32 @@ function bridgeConfig(origin){
   peerUrl:'https://'+projectHosts[peer]+'.supabase.co/functions/v1/payment-sync-bridge',
   dispatchToken:dispatchTokens[origin],signingKey:bridgeKey,enabled:true};
 }
+function installBridgeConfig(origin,root,hostedPath){
+ const hosted=readFileSync(resolve(root,hostedPath),'utf8');
+ const start=hosted.indexOf('create table payment_sync.bridge_config (');
+ const end=start<0?-1:hosted.indexOf('-- pg_net transmits only after the inserting transaction commits.',start);
+ assert.ok(start>=0&&end>start,'Existing hosted bridge config SQL contract is unavailable: '+hostedPath);
+ const config=bridgeConfig(origin);
+ const setup=hosted.slice(start,end)+
+  'INSERT INTO payment_sync.settings(singleton,origin) VALUES(true,'+sqlText(origin)+
+  ') ON CONFLICT(singleton) DO UPDATE SET origin=excluded.origin;'+
+  'INSERT INTO payment_sync.bridge_config(singleton,self_url,peer_url,dispatch_token,signing_key,enabled) VALUES(true,'+
+  sqlText(config.selfUrl)+','+sqlText(config.peerUrl)+','+sqlText(config.dispatchToken)+','+
+  sqlText(config.signingKey)+',true) ON CONFLICT(singleton) DO UPDATE SET self_url=excluded.self_url,'+
+  'peer_url=excluded.peer_url,dispatch_token=excluded.dispatch_token,signing_key=excluded.signing_key,enabled=true;';
+ db(origin==='TAXPAY_SQL'?source:office,'BEGIN;'+setup+'COMMIT;');
+}
 function sqlRpc(origin,name,args){
  const calls={
   TAXPAY_SQL:{
+   payment_v1_internal_bridge_config:'public.payment_v1_internal_bridge_config()',
    taxpay_correction_internal_claim:'public.taxpay_correction_internal_claim('+args.p_limit+'::integer)',
    taxpay_correction_internal_ack:'public.taxpay_correction_internal_ack('+sqlText(args.p_event_id)+'::uuid,'+
     sqlText(args.p_claim_token)+'::uuid,'+args.p_success+','+(args.p_error===null?'NULL':sqlText(args.p_error))+')',
    taxpay_correction_record_office_decision:'public.taxpay_correction_record_office_decision('+pgJSON(args.p_command)+')',
   },
   OFFICE_SQL:{
+   payment_v1_internal_bridge_config:'public.payment_v1_internal_bridge_config()',
    payment_v1_internal_ingest_correction:'public.payment_v1_internal_ingest_correction('+pgJSON(args.p_event)+')',
    payment_v1_internal_claim_commands:'public.payment_v1_internal_claim_commands('+args.p_limit+'::integer)',
    payment_v1_internal_ack_correction_command:'public.payment_v1_internal_ack_correction_command('+
@@ -97,7 +114,8 @@ function loadBridge(file,origin){
   require(spec){
    assert.match(spec,/^npm:@supabase\/supabase-js@/);
    return {createClient:()=>({rpc:async(name,args)=>{
-    if(name==='payment_v1_internal_bridge_config')return {data:bridgeConfig(origin),error:null};
+    // No ordinary payment outbox rows are part of this correction fixture;
+    // every correction-specific RPC below runs against its actual SQL.
     if(origin==='TAXPAY_SQL'&&name==='payment_v1_internal_claim')return {data:[],error:null};
     try{return {data:sqlRpc(origin,name,args),error:null};}
     catch(error){return {data:null,error:{message:error instanceof Error?error.message:String(error)}};}
@@ -181,6 +199,10 @@ assert.equal(started.sourcePaymentKind,'TAXPAY_STORY_PAYMENT');
 assert.equal(started.sourcePaymentId,'80000000-0000-4000-8000-000000000041');
 assert.equal(started.outboxState,'PENDING');
 assert.equal(started.originalPayment.details.receiptReference,'SYN-REF-003');
+installBridgeConfig('TAXPAY_SQL',resolve('.'),
+ 'supabase/hosted_migration_history/20261017063603_payment_v1_hosted_bridge.sql');
+installBridgeConfig('OFFICE_SQL',officeRoot,
+ 'supabase/hosted_migration_history/20261017063621_payment_v1_hosted_bridge.sql');
 const [taxpayerBridgeServer,officeBridgeServer]=await Promise.all([
  startBridge('TAXPAY_SQL',resolve('.')),startBridge('OFFICE_SQL',officeRoot),
 ]);
@@ -220,7 +242,9 @@ const bootstrap=[
  ' message_id uuid PRIMARY KEY,request_id uuid NOT NULL,target_origin text NOT NULL,',
  " payload jsonb NOT NULL,delivery_state text NOT NULL DEFAULT 'PENDING',",
  ' attempts integer NOT NULL DEFAULT 0,acknowledged_at timestamptz,last_error text,',
- ' next_attempt_at timestamptz NOT NULL DEFAULT now(),claim_token uuid);',
+ ' next_attempt_at timestamptz NOT NULL DEFAULT now(),claim_token uuid,',
+ ' created_at timestamptz NOT NULL DEFAULT now());',
+ 'ALTER TABLE payment_sync.control_outbox ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();',
  'CREATE TABLE IF NOT EXISTS payment_sync.officer_decisions(',
  ' request_id uuid NOT NULL,officer_uid uuid NOT NULL,officer_role text NOT NULL,',
  ' action_code text NOT NULL,reason text NOT NULL,idempotency_key uuid NOT NULL,',
