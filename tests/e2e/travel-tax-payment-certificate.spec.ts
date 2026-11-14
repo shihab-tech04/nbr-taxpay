@@ -140,34 +140,44 @@ for (const language of ['en', 'bn'] as const) {
     expect(request.details?.travelDate).toBe(selectedTravelDate);
     expect(submissionCount).toBe(1);
 
-    // F-162 / US-119: recover the SAME original Taxpayer receipt/certificate
-    // from its session-owned SQL parent after reload, without resubmission.
-    await page.goto('/?action=history');
+    // F-162 / US-119: public Guest status recovery uses the original session
+    // AND the receipt mobile. Private Payments & Activity stays sign-in gated.
+    await page.goto('/?action=verify');
     await page.reload();
-    const historyView=page.getByTestId('travel-session-history-view').first();
-    await expect(historyView).toBeVisible();
-    const originalSnapshot=(submitted as unknown as {details?:{receiptSnapshot?:{challanNo?:string}}}).details?.receiptSnapshot;
+    const originalSnapshot=(submitted as unknown as {details?:{receiptSnapshot?:{
+      challanNo?:string;receiptMobile?:string
+    }}}).details?.receiptSnapshot;
     expect(originalSnapshot?.challanNo).toBeTruthy();
-    await expect(page.locator('[data-taxpay-register-page]')).toContainText(originalSnapshot!.challanNo!);
-    await historyView.click();
-    const savedReceipt=page.getByRole('dialog',{name:/Payment receipt|পেমেন্ট রসিদ/});
-    await expect(savedReceipt.getByTestId('travel-family-challan').locator('tbody tr')).toHaveCount(2);
-    await expect(savedReceipt).toContainText(originalSnapshot!.challanNo!);
-    await savedReceipt.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/}).click();
-    await expect(savedReceipt.getByTestId('payment-certificate-reference'))
+    expect(originalSnapshot?.receiptMobile).toMatch(/^01\\d{9}$/);
+    const lookup=page.getByRole('dialog',{name:/Payment status & receipt|পেমেন্ট স্ট্যাটাস|পেমেন্টের অবস্থা/});
+    await lookup.getByRole('textbox',{name:/Challan, token or transaction reference|চালান, টোকেন বা লেনদেনের রেফারেন্স/})
+      .fill(originalSnapshot!.challanNo!);
+    await lookup.getByRole('textbox',{name:/Receipt mobile number|রসিদের মোবাইল নম্বর/})
+      .fill(originalSnapshot!.receiptMobile!);
+    await lookup.getByRole('button',{name:/Search records|রেকর্ড খুঁজুন/}).click();
+    await expect(lookup.getByTestId('travel-family-challan').locator('tbody tr')).toHaveCount(2);
+    await expect(lookup.getByTestId('travel-family-challan')).toContainText('FRIEND SECOND');
+    await lookup.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/}).click();
+    await expect(lookup.getByTestId('payment-certificate-reference'))
       .toContainText('SK-PC-'+paymentId);
-    await expect(savedReceipt.getByTestId('payment-certificate-document'))
+    await expect(lookup.getByTestId('payment-certificate-document'))
       .toContainText('FRIEND SECOND');
     expect(submissionCount).toBe(1);
 
-    // Another session may not recover passports by guessing the reference.
+    // A different browser session cannot recover the original document,
+    // even with the same public reference and receipt-mobile number.
     await page.evaluate(()=>sessionStorage.setItem(
       'taxpay-guest-simulation-session','ed18e1b3-8abf-4a19-a22d-0b5d6dca7101'));
     await page.reload();
-    await expect(page.getByTestId('travel-session-history-view')).toHaveCount(0);
-    await expect(page.getByRole('alert')).toContainText(language==='bn'
-      ?'সংরক্ষিত ভ্রমণ করের তথ্য সাময়িকভাবে পাওয়া যাচ্ছে না'
-      :'Saved Travel Tax records are temporarily unavailable');
+    const outsider=page.getByRole('dialog',{name:/Payment status & receipt|পেমেন্ট স্ট্যাটাস|পেমেন্টের অবস্থা/});
+    await outsider.getByRole('textbox',{name:/Challan, token or transaction reference|চালান, টোকেন বা লেনদেনের রেফারেন্স/})
+      .fill(originalSnapshot!.challanNo!);
+    await outsider.getByRole('textbox',{name:/Receipt mobile number|রসিদের মোবাইল নম্বর/})
+      .fill(originalSnapshot!.receiptMobile!);
+    await outsider.getByRole('button',{name:/Search records|রেকর্ড খুঁজুন/}).click();
+    await expect(outsider.getByRole('alert')).toBeVisible();
+    await expect(outsider.locator('.receipt-view')).toHaveCount(0);
+    expect(submissionCount).toBe(1);
     expect(submissionCount).toBe(1);
   });
 }
