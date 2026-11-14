@@ -804,3 +804,33 @@ for (const { width, height, lang } of [
     await expect(page.locator('.public-home-header')).toBeVisible();
   });
 }
+
+
+test('F-001 keeps excluded homepage sections hidden on desktop and mobile in English and Bangla', async ({ page }) => {
+  for (const viewport of [
+    { width: 1280, height: 800 },
+    { width: 375, height: 812 },
+    { width: 320, height: 780 },
+  ]) {
+    for (const lang of ['en', 'bn'] as const) {
+      await page.setViewportSize(viewport);
+      await page.goto(`/?action=landing&lang=${lang}`);
+
+      const excludedSections = [
+        {
+          selector: '#public-how-it-works',
+          heading: lang === 'bn' ? 'যেভাবে কর পরিশোধ করবেন' : 'How your payment works',
+        },
+        {
+          selector: '#public-faq',
+          heading: lang === 'bn' ? 'সাধারণ প্রশ্ন' : 'Common questions',
+        },
+      ];
+
+      for (const { selector, heading } of excludedSections) {
+        await expect(page.locator(selector)).toBeHidden();
+        await expect(page.getByRole('heading', { name: heading, exact: true })).toHaveCount(0);
+      }
+    }
+  }
+});
