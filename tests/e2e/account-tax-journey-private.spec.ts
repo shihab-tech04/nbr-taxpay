@@ -319,6 +319,7 @@ for(const language of ['en','bn'] as const){
         ?recovered.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem')
           .filter({hasText:travelHistoryId})
         :recovered.getByRole('row').filter({hasText:travelHistoryId});
+      await expect(recoveredRecord).toHaveCount(1);
       await recoveredRecord.getByRole('button',{name:language==='bn'?/দেখুন/:/View/}).click();
       const recoveredDialog=page.getByRole('dialog');
       await recoveredDialog.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/}).click();
@@ -358,6 +359,7 @@ for(const language of ['en','bn'] as const){
         ?relogged.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem')
           .filter({hasText:travelHistoryId})
         :relogged.getByRole('row').filter({hasText:travelHistoryId});
+      await expect(restoredRecord).toHaveCount(1);
       await restoredRecord.getByRole('button',{name:language==='bn'?/দেখুন/:/View/}).click();
       const restoredDialog=page.getByRole('dialog');
       await restoredDialog.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/}).click();
