@@ -39,6 +39,10 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     : allowGuest ? { kind: 'guest' } : null;
   const ownerKey = actor ? actor.kind + ':' + (actor.kind === 'preview' ? actor.profileId : actor.kind === 'authenticated' ? actor.userId : 'session') : '';
   const [rows, setRows] = useState<PaymentFormDraft[]>([]);
+  const [rowsOwnerKey, setRowsOwnerKey] = useState('');
+  // Render only rows fetched for the current account, even before effects clear
+  // old state or when an earlier owner's request finishes after switching.
+  const visibleRows = rowsOwnerKey === ownerKey ? rows : [];
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -53,6 +57,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   useEffect(() => {
     let active = true;
     setRows([]);
+    setRowsOwnerKey('');
     setGuestContractReady(false);
     setPendingDelete(null);
     setConflictDraftId(null);
@@ -62,7 +67,11 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     if (!actor) return () => { active = false; };
     setLoading(true);
     void listPaymentFormDrafts(actor, service).then(result => {
-      if (active) { setRows(result); if (actor.kind === 'guest') setGuestContractReady(true); }
+      if (active) {
+        setRows(result);
+        setRowsOwnerKey(ownerKey);
+        if (actor.kind === 'guest') setGuestContractReady(true);
+      }
     }).catch(() => {
       if (active && actor.kind !== 'guest')
         setError(bn ? 'সংরক্ষিত খসড়া লোড করা যায়নি। আবার চেষ্টা করুন।' : 'Saved drafts could not be loaded. Retry.');
@@ -76,6 +85,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     if (!actor) return;
     const result = await listPaymentFormDrafts(actor, service);
     setRows(result);
+    setRowsOwnerKey(ownerKey);
   };
 
   const existingDraftId = () => selectedDraft?.service === service ? selectedDraft.id : null;
@@ -96,6 +106,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       setConflictDraftId(null);
       setRows(rows => [result, ...rows.filter(row => row.id !== result.id)].sort(
         (a, b) => b.updated_at.localeCompare(a.updated_at)));
+      setRowsOwnerKey(ownerKey);
       // The SQL write and readback have already completed. Show success only in
       // the button; no extra success banner below the payment form.
       setSavedSnapshot(JSON.stringify(payload));
@@ -170,7 +181,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       onClick={() => setExpanded(open => !open)} disabled={busy} aria-expanded={expanded}>
       <span className="payment-form-draft-controls__open-long">{bn ? 'সংরক্ষিত খসড়া' : 'Continue Draft'}</span>
       <span className="payment-form-draft-controls__open-short">{bn ? 'খসড়া' : 'Drafts'}</span>
-      {!loading ? ' (' + rows.length + ')' : ''}
+      {!loading ? ' (' + visibleRows.length + ')' : ''}
     </button>}
   </div>;
 
@@ -196,9 +207,9 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     </div>}
     {expanded && <div className="mt-3 rounded-lg border border-taxpay-border bg-white p-3">
       {loading ? <p role="status">{bn ? 'খসড়া লোড হচ্ছে…' : 'Loading saved drafts…'}</p>
-        : rows.length === 0 ? <p role="status" className="text-sm text-slate-600">{bn ? 'এই সেবায় কোনো খসড়া নেই।' : 'No saved drafts for this service.'}</p>
+        : visibleRows.length === 0 ? <p role="status" className="text-sm text-slate-600">{bn ? 'এই সেবায় কোনো খসড়া নেই।' : 'No saved drafts for this service.'}</p>
         : <ul className="divide-y divide-taxpay-border">
-          {rows.map(row => <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+          {visibleRows.map(row => <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
             <div className="min-w-0">
               <p className="text-sm font-medium text-taxpay-dark">{bn ? 'পেমেন্ট খসড়া' : 'Payment draft'}</p>
               <p className="text-xs text-slate-600">
