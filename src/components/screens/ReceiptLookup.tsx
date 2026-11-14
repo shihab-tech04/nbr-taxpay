@@ -6,11 +6,14 @@ import { ReceiptView } from '../common/ReceiptView';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import { validCertificateTransactionId } from '../../services/transactionId';
 import { findSessionReceiptByReference } from '../../services/simulatedPaymentStory';
+import { findOwnedReceiptByReference } from '../../services/confirmedPaymentCertificate';
+import { useAccountIdentity } from '../../services/accountIdentity';
 
 type ReceiptLookupProps = { embedded?: boolean; activityTabs?: boolean; hidePageHeading?: boolean; accountContext?: boolean };
 
 export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, activityTabs = false, hidePageHeading = false, accountContext = false }) => {
   const { language, lookupReceipt, receipts, navigate, routeParams } = useTaxState();
+  const { user: signedInUser } = useAccountIdentity();
   // Homepage reference is kept in in-memory navigation state, never in a public URL.
   const initialReference = typeof routeParams.initialReference === 'string' ? routeParams.initialReference.trim() : '';
   const bn = language === 'bn';
@@ -33,6 +36,14 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
     setLookupError(false);
     setNeedsReceiptMobile(false);
   };
+  // Discard in-flight results if a different account signs in.
+  useEffect(() => {
+    lookupSequence.current += 1;
+    setSearchResult(null);
+    setLookupPending(false);
+    setLookupError(false);
+    setNeedsReceiptMobile(false);
+  }, [signedInUser?.id]);
   // Never suggest sample/session receipts in the signed-in account tracking journey.
   // Users must provide the actual reference; public lookup examples remain unchanged.
   const sampleReceipts = accountContext ? [] : receipts.filter(receipt => !receipt.receiptMobile).slice(0, 3);
@@ -55,19 +66,22 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
       return;
     }
 
-    // Cross-session lookup requires an approved authorized API. The existing
-    // recovery route only reads simulated records from this browser session.
-    if (!/^01\d{9}$/.test(mobile)) {
-      setLookupPending(false);
-      setSearchResult(null);
-      setNeedsReceiptMobile(true);
-      return;
-    }
+    // Signed-in records come from the existing auth.uid()-bound Taxpayer SQL.
+    // Without account verification, preserve guest session/mobile recovery.
     setSearchResult(null);
     setLookupPending(true);
-    void findSessionReceiptByReference(certificateReference ? parentId : reference, mobile)
+    void (async () => {
+      const owned = await findOwnedReceiptByReference(reference, mobile);
+      if (owned.authenticated) return owned.receipt;
+      if (!/^01\d{9}$/.test(mobile)) return 'MOBILE_REQUIRED' as const;
+      return findSessionReceiptByReference(certificateReference ? parentId : reference, mobile);
+    })()
       .then(receipt => {
         if (lookupSequence.current !== sequence) return;
+        if (receipt === 'MOBILE_REQUIRED') {
+          setNeedsReceiptMobile(true);
+          return;
+        }
         setSearchResult(receipt ?? 'NOT_FOUND');
       })
       .catch(() => {
@@ -144,7 +158,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
               placeholder="01XXXXXXXXX" value={receiptMobile}
               onChange={event => { setReceiptMobile(event.target.value.replace(/\D/g, '').slice(0, 11)); resetLookup(); }}
               className="receipt-lookup__input font-mono-plex" />
-            <p className="receipt-lookup__hint">{t('Required for receipts generated through the guest payment form.', 'অতিথি পেমেন্ট ফর্মের মাধ্যমে তৈরি রসিদের জন্য আবশ্যক।')}</p>
+            <p className="receipt-lookup__hint">{t('Required for guest receipts; verified account owners can search their own records by reference.', 'অতিথি রসিদের জন্য আবশ্যক; যাচাইকৃত অ্যাকাউন্টের মালিক রেফারেন্স দিয়ে নিজের রেকর্ড খুঁজতে পারবেন।')}</p>
           </div>
           {sampleReceipts.length > 0 && (
             <div className="receipt-lookup__examples">

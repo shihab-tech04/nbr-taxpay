@@ -389,3 +389,61 @@ test('F-172 signed-in certificate parent cannot be read through another owner', 
     .toContainText('Payment record is not linked to this account');
   await expect(page.getByTestId('payment-certificate-document')).toHaveCount(0);
 });
+
+
+for (const [language, project] of [['en', 'desktop-1280'], ['bn', 'mobile-375']] as const) {
+  test('F-129 / US-050 authenticated owner finds saved receipt in a new browser by reference (' + language + ')', async ({ page }, info) => {
+    test.skip(info.project.name !== project, 'Representative bilingual/account devices.');
+    const fixture = await installCertificateAccountFixture(page, accountCertificateOwner);
+    await page.goto('/?action=verify' + (language === 'bn' ? '&lang=bn' : ''));
+    const dialog = page.getByRole('dialog').filter({ has: page.locator('.receipt-lookup') });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('textbox', {
+      name: language === 'bn' ? 'চালান, টোকেন বা লেনদেনের রেফারেন্স' : 'Challan, token or transaction reference'
+    }).fill('ACS-2026-00130');
+    // Verified owner: no guest-mobile proof, no unscoped Office payment reads.
+    await dialog.getByRole('button', { name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
+    const paper = dialog.locator('.receipt-view__paper');
+    await expect(paper).toBeVisible();
+    await expect(paper).toContainText('ACS-2026-00130');
+    await expect(paper).toContainText('Nusrat Jahan');
+    await expect(paper).toContainText('130');
+    expect(fixture.ledgerRequests.length).toBeGreaterThan(0);
+  });
+}
+
+test('F-129 / US-050 another account cannot recover an owner receipt by reference alone', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Owner isolation representative.');
+  const fixture = await installCertificateAccountFixture(page, accountCertificateOther);
+  await page.goto('/?action=verify');
+  const dialog = page.getByRole('dialog').filter({ has: page.locator('.receipt-lookup') });
+  await dialog.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill('ACS-2026-00130');
+  await dialog.getByRole('button', { name: 'Search records' }).click();
+  await expect(dialog.getByRole('heading', { name: 'No matching record' })).toBeVisible();
+  await expect(dialog.locator('.receipt-view__paper')).toHaveCount(0);
+  expect(fixture.ledgerRequests.length).toBeGreaterThan(0);
+});
+
+test('F-129 / US-050 wrong supplied receipt mobile denies an otherwise owned reference', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Receipt mobile mismatch representative.');
+  await installCertificateAccountFixture(page, accountCertificateOwner);
+  await page.goto('/?action=verify');
+  const dialog = page.getByRole('dialog').filter({ has: page.locator('.receipt-lookup') });
+  await dialog.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill('ACS-2026-00130');
+  await dialog.getByRole('textbox', { name: 'Receipt mobile number' }).fill('01700000000');
+  await dialog.getByRole('button', { name: 'Search records' }).click();
+  await expect(dialog.getByRole('heading', { name: 'No matching record' })).toBeVisible();
+  await expect(dialog.locator('.receipt-view__paper')).toHaveCount(0);
+});
+
+test('F-129 / US-050 owner SQL outage is not reported as a missing payment', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Readback outage representative.');
+  await installCertificateAccountFixture(page, accountCertificateOwner, true);
+  await page.goto('/?action=verify');
+  const dialog = page.getByRole('dialog').filter({ has: page.locator('.receipt-lookup') });
+  await dialog.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill('ACS-2026-00130');
+  await dialog.getByRole('button', { name: 'Search records' }).click();
+  await expect(dialog.getByRole('alert')).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'No matching record' })).toHaveCount(0);
+  await expect(dialog.locator('.receipt-view__paper')).toHaveCount(0);
+});

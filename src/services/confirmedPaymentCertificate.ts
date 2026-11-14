@@ -345,6 +345,64 @@ export async function getConfirmedReceipt(transactionId:string):Promise<ChallanR
    details:data.details,
  },transactionId));
 }
+
+/** F-129 / US-050: an authenticated owner may recover a stored original
+ * Taxpayer SQL receipt by challan/token/gateway/parent/certificate reference.
+ * A reference or receipt mobile NEVER grants cross-account authorization.
+ * Guest lookups continue through their original session-bound API.
+ */
+export async function findOwnedReceiptByReference(
+ reference:string,receiptMobile:string
+):Promise<{authenticated:boolean;receipt:ChallanReceipt|null}> {
+ const wanted=reference.trim().toUpperCase();
+ if(!wanted||wanted.length>200)return {authenticated:false,receipt:null};
+ if(!supabase)return {authenticated:false,receipt:null};
+ const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
+ if(sessionError)throw Error('Account session could not be verified');
+ const session=sessionData.session;
+ if(!session?.access_token)return {authenticated:false,receipt:null};
+ const {data:identity,error:identityError}=await supabase.auth.getUser();
+ const owner=identity.user?.id;
+ if(identityError||!owner||session.user.id!==owner)
+   throw Error('Account ownership could not be verified');
+ const mobile=receiptMobile.trim();
+ for(let page=1;page<=2000;page++){
+   const {data,error}=await supabase.rpc('taxpay_my_story1_payments',{
+     p_page:page,p_per_page:100
+   });
+   if(error)throw Error('Account payment records are temporarily unavailable');
+   if(!isRecord(data)||!Array.isArray(data.items)||
+     typeof data.total!=='number'||!Number.isSafeInteger(data.total)||
+     data.total<0||data.items.length>100)
+     throw Error('Invalid account payment response');
+   for(const raw of data.items){
+     if(!isRecord(raw)||!validCertificateTransactionId(raw.id)||!isRecord(raw.details))continue;
+     const id=raw.id as string;
+     const details=raw.details;
+     const snap=isRecord(details.receiptSnapshot)?details.receiptSnapshot:null;
+     const refs=[id,'SK-PC-'+id,details.receiptReference,details.tokenNumber,
+       details.gatewayTransactionId,snap?.challanNo,snap?.tokenNumber,
+       snap?.gatewayTransactionId,snap?.paymentTransactionId];
+     if(!refs.some(value=>stringValue(value).trim().toUpperCase()===wanted))continue;
+     if(mobile){
+       const stored=stringValue(snap?.receiptMobile)||stringValue(details.receiptMobile);
+       if(!/^01\d{9}$/.test(mobile)||stored!==mobile)continue;
+     }
+     const {data:recheck,error:recheckError}=await supabase.auth.getUser();
+     if(recheckError||recheck.user?.id!==owner)
+       throw Error('Account changed during payment lookup');
+     const receipt=makeConfirmedReceipt(checkedParent(raw,id));
+     return {authenticated:true,receipt};
+   }
+   if(page*100>=data.total)break;
+   if(data.items.length===0)throw Error('Incomplete account payment history');
+ }
+ const {data:recheck,error:recheckError}=await supabase.auth.getUser();
+ if(recheckError||recheck.user?.id!==owner)
+   throw Error('Account changed during payment lookup');
+ return {authenticated:true,receipt:null};
+}
+
 export const certificateDocumentUrl=(transactionId:string,action?:'print'|'download')=>{
  const url=new URL(window.location.origin+import.meta.env.BASE_URL);
  url.searchParams.set('action','payment_details');
