@@ -510,7 +510,7 @@ test('dashboard correction shortcut focuses the existing request register and li
   await page.goto('/?action=taxpayer_home&lang=en');
   const phase=page.getByTestId('authenticated-dashboard-v11');
   const years=await page.getByRole('combobox',{name:'Assessment year'}).first().locator('option').allTextContents();
-  for(const year of years.filter(value=>/^20\\d{2}-20\\d{2}$/.test(value.trim()))){
+  for(const year of years.filter(value=>/^20\d{2}-20\d{2}$/.test(value.trim()))){
     await expect(phase.getByRole('button',{name:year.trim(),exact:true})).toHaveCount(1);
   }
   await phase.getByRole('button',{name:'Correction inquiries'}).click();
