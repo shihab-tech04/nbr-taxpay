@@ -662,7 +662,7 @@ test('F-099 correction shortcuts focus the embedded register and recover to the 
   await expect(page).toHaveURL(/action=taxpayer_home/);
   // When the embedded register is not mounted, the existing dedicated page
   // must remain reachable; the action must not silently do nothing.
-  await correction.evaluate(node=>node.remove());
+  await correction.evaluate(node=>{node.id='temporarily-disabled-correction-register';});
   await shortcut.click();
   await expect(page).toHaveURL(/action=corrections(?:&|$)/);
 });
@@ -672,7 +672,7 @@ test('F-099 correction status-card fallback works without embedded register in E
   await page.goto('/?action=taxpayer_home&lang=en');
   const correction=page.locator('#dashboard-correction-requests');
   await expect(correction).toBeAttached();
-  await correction.evaluate(node=>node.remove());
+  await correction.evaluate(node=>{node.id='temporarily-disabled-correction-register';});
   const correctionCard=page.getByTestId('account-dashboard-status-summary').locator('article').nth(2);
   await correctionCard.getByRole('button',{name:'Open records'}).click();
   await expect(page).toHaveURL(/action=corrections(?:&|$)/);
