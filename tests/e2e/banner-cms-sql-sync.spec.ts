@@ -201,9 +201,18 @@ test('reordering published CMS banners retains the selected service, fixed copy 
   })).toBeVisible();
 
   await setWorkspaceLanguage(page, 'bn');
-  await expect(carousel).toHaveAttribute('data-payment-service', 'ADVANCE_TAX');
-  await expect(retained.getByRole('button', {name: 'কর পরিশোধ শুরু'})).toBeVisible();
-  await expect(retained.getByRole('button', {name: 'ভ্রমণ কর শুরু'})).toBeVisible();
+  // The carousel's accessible region name is intentionally localized on switch.
+  // Re-resolve the same element by its Bengali name; retain service, identity,
+  // action, and palette assertions instead of hiding a genuine regression.
+  const bengaliCarousel = page.getByRole('region', {name: 'কর পরিশোধের সেবা ব্যানার'});
+  await expect(bengaliCarousel).toHaveAttribute('data-payment-service', 'ADVANCE_TAX');
+  await expect(bengaliCarousel).toHaveAttribute('data-active-slide', '4');
+  const retainedBn = bengaliCarousel.locator('.public-hero-carousel__slide[data-active="true"]');
+  await expect(retainedBn).toHaveAttribute('data-banner-service', 'advance');
+  await expect(retainedBn).toHaveCSS('background-color', 'rgb(239, 247, 244)');
+  await expect(retainedBn.locator('h2')).toHaveCSS('color', 'rgb(24, 90, 67)');
+  await expect(retainedBn.getByRole('button', {name: 'কর পরিশোধ শুরু'})).toBeVisible();
+  await expect(retainedBn.getByRole('button', {name: 'ভ্রমণ কর শুরু'})).toBeVisible();
   expect(await page.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
@@ -284,7 +293,10 @@ test('temporarily missing published logo retries after connectivity without requ
       : route.fulfill({status:503,body:'Storage temporarily unavailable'}));
   await page.goto('/?action=landing&lang=en');
   const logo=page.locator('.public-home-wordmark');
-  await expect(logo).toHaveAttribute('src',/korbritto-brand-locked/);
+  // Vite inlines the bundled fallback SVG as a data URI in the actual browser.
+  // Validate that a real, usable fallback is rendered, not an outdated filename.
+  await expect(logo).toHaveAttribute('src',/^data:image\/svg\+xml/);
+  await expect.poll(() => logo.evaluate(el => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
   storageAvailable=true;
   await page.evaluate(()=>window.dispatchEvent(new Event('online')));
   await expect(logo).toHaveAttribute('src',/taxpay-branding\/logos\/recoverable\.svg\?v=18/);
