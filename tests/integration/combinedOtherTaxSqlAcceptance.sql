@@ -274,10 +274,10 @@ BEGIN
     'items',lines,'allocationItems',jsonb_build_array(
       jsonb_build_object('allocationId','ws3-f039-saved','taxpayerTin','222222222222',
         'taxpayerName','Saved Taxpayer Two','assessmentYear','2026-27','amountMinor',1000,
-        'paymentServiceEn','Advance Tax','paymentServiceBn','অগ্রিম কর','economicCode','68A'),
+        'paymentServiceEn','Advance tax on cigarrete manufacturer','paymentServiceBn','অগ্রিম কর','economicCode','68A'),
       jsonb_build_object('allocationId','ws3-f039-onetime','taxpayerTin','444444444444',
         'taxpayerName','User 4','assessmentYear','2025-26','amountMinor',2000,
-        'paymentServiceEn','Advance Tax','paymentServiceBn','অগ্রিম কর','economicCode','68B')),
+        'paymentServiceEn','Advance tax for the owners of private motor car','paymentServiceBn','অগ্রিম কর','economicCode','68B')),
     'isSimulatedDemo',true);
   payload:=jsonb_build_object('origin','TAXPAY_UI','service','OTHER_TAX_PAYMENT',
     'idempotencyKey',payment_key,'sessionId',session_id,'amountMinor',3000,
