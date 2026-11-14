@@ -277,6 +277,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setAcknowledged(false);
   };
   const beginPassengerEdit = (person: TravelPassenger) => {
+    // If the user edits another card, discard the unfinished previous edit
+    // and return that passenger to its last confirmed record.
+    if (editBackup && editBackup.passenger.id !== person.id) {
+      setPassengers(existing => existing.map(item =>
+        item.id === editBackup.passenger.id ? editBackup.passenger : item));
+      if (editBackup.wasConfirmed) setConfirmedPassengerIds(ids =>
+        [...new Set([...ids, editBackup.passenger.id])]);
+    }
     setEditBackup({passenger: {...person}, wasConfirmed: confirmedPassengerIds.includes(person.id)});
     setConfirmedPassengerIds(ids => ids.filter(id => id !== person.id));
     setEditingPassengerId(person.id); setPassengerIssue(null); setError('');
@@ -293,7 +301,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   };
   const removeTravelPassenger = (person: TravelPassenger, index: number) => {
     if (passengers.length <= 1) return; // Never remove the last payer/passenger.
-    setRemovedPassenger({passenger: {...person}, index, wasConfirmed: confirmedPassengerIds.includes(person.id)});
+    // Removing during an unfinished edit must preserve the LAST valid
+    // confirmed passenger, not the unsaved and possibly invalid editor state.
+    const original = editBackup?.passenger.id === person.id ? editBackup.passenger : person;
+    const wasConfirmed = editBackup?.passenger.id === person.id
+      ? editBackup.wasConfirmed : confirmedPassengerIds.includes(person.id);
+    setRemovedPassenger({passenger: {...original}, index, wasConfirmed});
     setPassengers(existing => existing.filter(item => item.id !== person.id));
     setConfirmedPassengerIds(ids => ids.filter(id => id !== person.id));
     if (editingPassengerId === person.id) setEditingPassengerId(null);

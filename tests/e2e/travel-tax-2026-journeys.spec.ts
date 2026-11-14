@@ -969,6 +969,15 @@ test('F-153 / US-150 T02 T03: removing either passenger reprices and undo restor
   await expect(members).toHaveCount(2);
   await expect(members.nth(1)).toHaveAttribute('data-passenger-id',secondId!);
   await expect(members.nth(1)).toHaveAttribute('data-complete','true');
+  // Removing mid-edit must Undo to the previously confirmed identity, not
+  // resurrect the half-edited passport or an unconfirmed passenger.
+  await members.first().getByRole('button',{name:'Edit',exact:true}).click();
+  await members.first().locator('#travel-passport-first').fill('TEST230003');
+  await expect(members.first()).toHaveAttribute('data-complete','false');
+  await modal.getByRole('button',{name:'Remove passenger 1'}).click();
+  await modal.getByRole('button',{name:'Undo removal'}).click();
+  await expect(members.first()).toContainText('SAMPLE BANGLADESHI PASSENGER');
+  await expect(members.first()).toHaveAttribute('data-complete','true');
   await modal.getByRole('button',{name:'Remove passenger 1'}).click();
   await expect(members).toHaveCount(1);
   await expect(members.first()).toHaveAttribute('data-passenger-id',secondId!);
