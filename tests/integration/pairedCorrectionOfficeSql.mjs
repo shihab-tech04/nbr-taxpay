@@ -223,7 +223,19 @@ installBridgeConfig('OFFICE_SQL',officeRoot,
 const [taxpayerBridgeServer,officeBridgeServer]=await Promise.all([
  startBridge('TAXPAY_SQL',resolve('.')),startBridge('OFFICE_SQL',officeRoot),
 ]);
+let deferredCorrectionEvents=[];
 try{
+ // The shared disposable Taxpayer database may contain pending corrections
+ // from earlier Phase 02 steps. Keep only this fixture's event claimable so the
+ // injected outage and retry assertions remain scoped to the current inquiry.
+ deferredCorrectionEvents=db(source,
+  "SELECT coalesce(jsonb_agg(jsonb_build_object('eventId',event_id,'nextAttemptAt',next_attempt_at)),'[]'::jsonb) "+
+  "FROM payment_sync.correction_outbox WHERE inquiry_id<> '"+started.inquiryId+"'::uuid "+
+  "AND delivery_state<>'ACKNOWLEDGED';");
+ for(const event of deferredCorrectionEvents){
+  db(source,"UPDATE payment_sync.correction_outbox SET next_attempt_at=now()+interval '2 hours' "+
+   "WHERE event_id='"+event.eventId+"'::uuid;SELECT 'true'::jsonb;");
+ }
  const failedDispatch=await postBridge('TAXPAY_SQL','/payment-sync-bridge',
   {mode:'dispatch',token:dispatchTokens.TAXPAY_SQL});
  assert.equal(failedDispatch.status,200);
@@ -382,5 +394,9 @@ const readAgain=db(source,auth(owner,
 assert.deepEqual(readAgain,{count:3,read:1});
 console.log('PASS: original Taxpayer correction SQL -> signed payment-sync Edge -> separate Office correction SQL and authorized officer queue -> signed command Edge -> Taxpayer status/history/recipient notifications; Office outage retry, signed event/command replay, source parent immutability and outsider isolation');
 }finally{
+ for(const event of deferredCorrectionEvents){
+  db(source,"UPDATE payment_sync.correction_outbox SET next_attempt_at="+sqlText(event.nextAttemptAt)+
+   "::timestamptz WHERE event_id='"+event.eventId+"'::uuid;SELECT 'true'::jsonb;");
+ }
  await Promise.all([taxpayerBridgeServer,officeBridgeServer].map(server=>new Promise(resolve=>server.close(resolve))));
 }
