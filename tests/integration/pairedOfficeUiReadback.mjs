@@ -132,10 +132,10 @@ try {
   for (const value of expectedValues) {
     assert.ok(drawerText.includes(value), 'Office drawer must render paired field: ' + value);
   }
-  // The shared Office register displays whole taka without trailing .00;
+  // Office may render the parent with or without trailing .00;
   // allocation lines display two decimals. Both represent the same paisa.
   // Verify the parent value numerically instead of imposing one UI format.
-  const renderedAmountMinor = [...drawerText.matchAll(/৳\\s*([0-9][0-9,]*)(?:\\.([0-9]{1,2}))?(?![0-9,.])/g)]
+  const renderedAmountMinor = [...drawerText.matchAll(/৳\s*([0-9][0-9,]*)(?:\.([0-9]{1,2}))?(?![0-9,.])/g)]
     .map(([, whole, fraction = '']) =>
       Number(whole.replaceAll(',', '')) * 100 + Number(fraction.padEnd(2, '0')));
   assert.ok(renderedAmountMinor.includes(payment.amountMinor),
