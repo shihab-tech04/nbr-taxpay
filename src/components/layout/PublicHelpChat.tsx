@@ -78,7 +78,7 @@ export function PublicHelpChat(){
   const query=text.trim();
   if(!query)return;
   const normalize=(value:string)=>value.toLocaleLowerCase()
-   .replace(/[?!।.,]+/g,' ').replace(/\\s+/g,' ').trim();
+   .replace(/[?!।.,]+/g,' ').replace(/\s+/g,' ').trim();
   const normalized=normalize(query);
   // A one-letter or unrelated message is not permission to return an
   // arbitrary tax/legal FAQ. Match maintained full questions or specific text.
