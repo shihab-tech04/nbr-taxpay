@@ -301,6 +301,20 @@ try{
   assert.equal(recipient3Unread.data.data.items.some(item=>item.eventId===recipient3Item.eventId),true,
     'Acknowledging one allocation notice must not mark another recipient read');
 
+  const conflictingPayload=structuredClone(payload);
+  conflictingPayload.details={...conflictingPayload.details,payerName:'WS3 conflicting payer'};
+  const conflict=await request('TAXPAY_SQL','/payments','POST',conflictingPayload,headers);
+  assert.equal(conflict.status,400,'Reusing a payment idempotency key with changed data must be rejected');
+  assert.equal(conflict.data.error,'SUBMISSION_FAILED');
+  const sourceAfterConflict=psql(sourceDb,`SELECT jsonb_build_object('id',id,'sessionId',session_id,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`);
+  assert.deepEqual(sourceAfterConflict,sourceRow,'A conflicting replay must not mutate the original Taxpayer parent');
+  const officeAfterConflict=psql(officeDb,`SELECT jsonb_build_object('id',id,'sessionId',session_id,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`);
+  assert.deepEqual(officeAfterConflict,officeRow,'A conflicting replay must not mutate the Office mirror');
+  assert.equal(psql(sourceDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(sourceId)}::uuid;`),1,
+    'A conflicting replay must not create a duplicate Taxpayer payment notice');
+  assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(sourceId)}::uuid;`),1,
+    'A conflicting replay must not create a duplicate Office payment notice');
+
   const replay=await request('TAXPAY_SQL','/payments','POST',payload,headers);
   assert.equal(replay.status,200);
   assert.equal(replay.data.id,sourceId);
