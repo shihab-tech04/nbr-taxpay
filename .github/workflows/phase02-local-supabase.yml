@@ -431,7 +431,7 @@ jobs:
         run: |
           set -euo pipefail
           # Two independent local databases; never link or write hosted SQL.
-          OFFICE_SHA=ceb1cd7f8a724dc7b599b66ffc82fdfd12b34d23
+          OFFICE_SHA=d4485d6aa12119f91269a30eaf640e3b6b789f15
           OFFICE_DIR="$RUNNER_TEMP/ws3-office-verified"
           git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
             https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
