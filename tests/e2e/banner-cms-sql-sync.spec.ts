@@ -291,3 +291,41 @@ test('temporarily missing published logo retries after connectivity without requ
   await expect.poll(()=>logo.evaluate(el=>(el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
   await expect(page.locator('.public-benefits__item')).toHaveCount(6);
 });
+
+test('public Help uses exact maintained FAQ/guide steps, avoids one-letter false matches and keeps selected EN/BN guide topic',async({page})=>{
+  await page.route('**/rest/v1/taxpay_site_banners**',route=>
+    route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(banners)}));
+  await page.goto('/?action=landing&lang=en');
+  await page.getByRole('button',{name:'Chat support'}).click();
+  const messages=page.locator('.public-help-message--assistant');
+  await expect(page.getByRole('button',{name:'Payment status',exact:true})).toBeVisible();
+  await page.getByLabel('Your question').fill('a');
+  await page.getByRole('button',{name:'Send'}).click();
+  await expect(messages.last()).toContainText('Ask about payment, receipts or travel tax');
+
+  await page.getByLabel('Your question').fill('Find and add passengers');
+  await page.getByRole('button',{name:'Send'}).click();
+  await expect(messages.last()).toContainText('passport');
+  await page.getByRole('button',{name:'Payment status',exact:true}).click();
+  const guide=page.getByRole('link',{name:'Open user guide'});
+  await expect(guide).toHaveAttribute('href',/action=user_guide&lang=en&category=status/);
+  await guide.click();
+  await expect(page).toHaveURL(/action=user_guide.+category=status/);
+  await expect(page.getByRole('navigation',{name:'Guide topics'})
+    .getByRole('button',{name:'Payment status'})).toHaveAttribute('aria-current','true');
+
+  await page.goto('/?action=landing&lang=bn');
+  await page.getByRole('button',{name:'চ্যাট সহায়তা'}).click();
+  await expect(page.getByRole('button',{name:'পেমেন্টের অবস্থা',exact:true})).toBeVisible();
+  await page.getByLabel('আপনার প্রশ্ন').fill('যাত্রী খুঁজে যোগ করুন');
+  await page.getByRole('button',{name:'পাঠান'}).click();
+  await expect(page.locator('.public-help-message--assistant').last()).toContainText('নমুনা');
+  await page.getByRole('button',{name:'পেমেন্টের অবস্থা',exact:true}).click();
+  const banglaGuide=page.getByRole('link',{name:'ব্যবহার নির্দেশিকা'});
+  await expect(banglaGuide).toHaveAttribute('href',/action=user_guide&lang=bn&category=status/);
+  await banglaGuide.click();
+  await expect(page.getByRole('navigation',{name:'বিষয় নির্বাচন'})
+    .getByRole('button',{name:'পেমেন্টের অবস্থা'})).toHaveAttribute('aria-current','true');
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
