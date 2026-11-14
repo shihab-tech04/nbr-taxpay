@@ -245,7 +245,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
   '&token_type=bearer&expires_in=3600&expires_at='+
   (payer.session.expires_at||Math.floor(Date.now()/1000)+3600));
  await expect(race.page.getByRole('heading',{name:'Payment notifications'})).toBeVisible({timeout:15000});
- await expect(race.page.getByText('৳173.75').first()).toBeVisible({timeout:15000});
+ await expect(race.page.getByText('৳173.75').filter({visible:true}).first()).toBeVisible({timeout:15000});
  await expect(race.page.getByText('৳23.50')).toHaveCount(0);
  const lateSqlReply=race.page.waitForResponse(response=>
   response.url().includes('/rest/v1/rpc/sim_set_my_notice_read'));
@@ -255,13 +255,13 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(race.page.getByText('৳23.50')).toHaveCount(0);
  await expect(race.page.getByText('Account changed during payment operation')).toHaveCount(0);
  await expect(race.page.getByText('Notification update failed')).toHaveCount(0);
- await expect(race.page.getByText('৳173.75').first()).toBeVisible();
+ await expect(race.page.getByText('৳173.75').filter({visible:true}).first()).toBeVisible();
  // A's immutable notice ID is not writable by B even with a direct RPC.
  const unauthorizedAck=await request('/rest/v1/rpc/sim_set_my_notice_read',
    {p_notice_id:aNoticeId,p_is_read:true},payer.session.access_token);
  expect(unauthorizedAck.status).toBeGreaterThanOrEqual(400);
  await race.page.reload({waitUntil:'domcontentloaded'});
- await expect(race.page.getByText('৳173.75').first()).toBeVisible({timeout:15000});
+ await expect(race.page.getByText('৳173.75').filter({visible:true}).first()).toBeVisible({timeout:15000});
  await expect(race.page.getByText('৳23.50')).toHaveCount(0);
  await race.context.close();
  // The profile navigation above leaves Activity. Return to Activity and reload
