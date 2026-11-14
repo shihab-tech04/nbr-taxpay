@@ -109,6 +109,7 @@ export const PublicUserGuide:React.FC=()=>{
         <summary><span>{t(item.q)}</span><ChevronDown size={18} aria-hidden="true"/></summary>
         <p>{t(item.a)}</p>
       </details>)}
+      {actionLinks(category.id)}
     </section>):<div className="public-guide-no-results" role="status">
       <h3>{bn?'কোনো ফল পাওয়া যায়নি':'No results found'}</h3>
       <p>{bn?'অন্য শব্দ দিয়ে খুঁজুন বা অনুসন্ধান মুছে বিষয়গুলো দেখুন।':'Try a different term, or clear the search to browse by topic.'}</p>
