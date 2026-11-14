@@ -25,6 +25,8 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
   const [dateFrom,setDateFrom]=useState('');
   const [dateTo,setDateTo]=useState('');
   const busyRef=useRef<string|null>(null);
+  // Older in-flight polls must not overwrite newer reads or a confirmed ACK.
+  const loadRevisionRef=useRef(0);
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   useEffect(()=>{
@@ -35,12 +37,13 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
     setSearch('');setReadFilter('all');setDateFrom('');setDateTo('');
     const load=async()=>{
       if(busyRef.current)return;
+      const requestRevision=++loadRevisionRef.current;
       try{
         const rows=await listReceivedPaymentNotices(profileId);
-        if(active&&busyRef.current===null)
+        if(active&&requestRevision===loadRevisionRef.current&&busyRef.current===null)
           setState({owner:profileId,status:'ready',rows});
       }catch{
-        if(active&&busyRef.current===null)
+        if(active&&requestRevision===loadRevisionRef.current&&busyRef.current===null)
           setState(previous=>previous.owner===profileId&&previous.status==='ready'
             ?previous:{owner:profileId,status:'error',rows:[]});
       }
@@ -51,7 +54,7 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
     window.addEventListener('focus',refresh);
     const timer=window.setInterval(refresh,7000);
     return()=>{
-      active=false;window.clearInterval(timer);
+      active=false;loadRevisionRef.current++;window.clearInterval(timer);
       window.removeEventListener('online',refresh);
       window.removeEventListener('focus',refresh);
     };
@@ -60,17 +63,23 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
   const acknowledge=async(notice:StoredReceivedPaymentNotice)=>{
     if(busyRef.current||notice.isRead||state.owner!==profileId)return;
     busyRef.current=notice.eventId;setBusy(notice.eventId);setAckError('');
+    // Invalidate every poll begun before the acknowledgement was requested.
+    const requestRevision=++loadRevisionRef.current;
     try{
       await acknowledgeReceivedPaymentNotice(profileId,notice.eventId);
       const rows=await listReceivedPaymentNotices(profileId);
       const confirmed=rows.find(row=>row.eventId===notice.eventId);
       if(!confirmed?.isRead||!confirmed.acknowledgedAt)
         throw Error('Read acknowledgement has not been verified');
-      setState(previous=>previous.owner===profileId?{owner:profileId,status:'ready',rows}:previous);
+      if(requestRevision===loadRevisionRef.current)
+        setState(previous=>previous.owner===profileId?{owner:profileId,status:'ready',rows}:previous);
     }catch{
-      setAckError(tr('Read acknowledgement could not be verified. Retry.',
-        'পঠিত নিশ্চিত করা যায়নি। আবার চেষ্টা করুন।'));
-    }finally{busyRef.current=null;setBusy(null);}
+      if(requestRevision===loadRevisionRef.current)
+        setAckError(tr('Read acknowledgement could not be verified. Retry.',
+          'পঠিত নিশ্চিত করা যায়নি। আবার চেষ্টা করুন।'));
+    }finally{
+      if(busyRef.current===notice.eventId){busyRef.current=null;setBusy(null);}
+    }
   };
   if(!enabled)return null;
   const current=state.owner===profileId?state:{owner:profileId,status:'loading' as const,rows:[]};
