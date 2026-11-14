@@ -863,7 +863,7 @@ test('F-150 US-147: Dhaka-midnight foreign DOB is accepted and a future DOB is r
   await expect(modal.locator('.travel-flow__age-breakdown')).toContainText('Age 0 on travel date');
   await expect(modal.getByTestId('travel-payment-total')).toContainText('0');
   await modal.getByRole('button',{name:'Continue to review'}).click();
-  await expect(modal.locator('.travel-flow__review')).toContainText('BABY VISITOR');
+  await expect(modal.locator('.travel-flow__passenger-table')).toContainText('BABY VISITOR');
   await expect(modal.locator('.travel-flow__review')).toContainText('2026-11-16');
 });
 
@@ -882,9 +882,9 @@ test('F-150 US-147: changing travel date reclassifies the same passenger and upd
   await expect(modal.getByTestId('travel-payment-total')).toContainText('500');
   await modal.getByRole('button',{name:'Continue to review'}).click();
   const reviewed=modal.locator('.travel-flow__review');
-  await expect(reviewed).toContainText('AGE CHANGE VISITOR');
+  await expect(modal.locator('.travel-flow__passenger-table')).toContainText('AGE CHANGE VISITOR');
   await expect(reviewed).toContainText('2026-11-16');
-  await expect(reviewed).toContainText('500');
+  await expect(modal.locator('.travel-flow__passenger-table')).toContainText('500');
   await modal.getByRole('button',{name:'Back',exact:true}).click();
   await expect(modal.locator('#travel-departure-date')).toHaveValue('2026-11-16');
   await expect(modal.getByTestId('travel-payment-total')).toContainText('500');
