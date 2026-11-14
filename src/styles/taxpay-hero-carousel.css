@@ -59,17 +59,28 @@
   border-color: var(--choice-border);
 }
 
+/* Every published banner occupies the same frame: fade the complete
+ * service palette, copy, CTA and unscaled illustration together. No slide travel. */
 .public-hero-carousel__track {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   width: 100%;
   align-items: stretch;
-  transition: transform 500ms cubic-bezier(0, 0, .2, 1);
+  isolation: isolate;
 }
 
-.public-hero-carousel[data-active-slide="1"] .public-hero-carousel__track { transform: translateX(-100%); }
-.public-hero-carousel[data-active-slide="2"] .public-hero-carousel__track { transform: translateX(-200%); }
-.public-hero-carousel[data-active-slide="3"] .public-hero-carousel__track { transform: translateX(-300%); }
-.public-hero-carousel[data-active-slide="4"] .public-hero-carousel__track { transform: translateX(-400%); }
+.public-hero-carousel__track > .public-hero-carousel__slide.public-information-hero {
+  grid-area: 1 / 1;
+  position: relative;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 750ms ease-in-out;
+}
+.public-hero-carousel__track > .public-hero-carousel__slide.public-information-hero[data-active="true"] {
+  z-index: 1;
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .public-hero-carousel__slide.public-information-hero {
   flex: 0 0 100%;
@@ -159,8 +170,8 @@
   --banner-fade-end: 47%;
 }
 
-/* All service illustrations fill the frame. Keep their CSS fade narrow; the
- * introduction retains its gentler, wider blend with the default brand tint. */
+/* Preserve the complete Office-uploaded artwork without CSS cropping/zoom.
+ * The existing service-specific image blend and layout remain unchanged. */
 .public-hero-carousel__slide:not([data-banner-service="intro"]) .public-hero-carousel__media--illustrated {
   --banner-fade-mid: 8%;
   --banner-fade-end: 24%;
@@ -186,7 +197,7 @@
 
 .public-hero-carousel__slide .public-hero-carousel__service-image {
   max-height: none;
-  object-fit: cover;
+  object-fit: contain;
   /* The new character-free artwork is composed to the right; never crop its focal subject. */
   object-position: right center;
 }
@@ -279,19 +290,19 @@
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__actions {
     margin-top: .75rem;
   }
-  .public-hero-carousel__slide .public-information-hero__media { height: clamp(184px, 52vw, 270px); }
+  .public-hero-carousel__slide .public-information-hero__media { height: clamp(164px, 47vw, 225px); }
 
   /* Prevent unnecessary zoom and preserve the new conceptual art at phone sizes. */
   .public-hero-carousel__slide .public-information-hero__image {
-    /* Fill the definite media frame instead of sizing from intrinsic image
-     * dimensions (which left a 143px image inside a 184px phone banner). */
+    /* Fill the media element's frame while fitting the entire uploaded image
+     * inside it without cropping or zooming at phone sizes. */
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     max-width: 100%;
     max-height: none;
-    object-fit: cover;
+    object-fit: contain;
     object-position: right center;
     transform: none;
   }
@@ -320,7 +331,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .public-hero-carousel__track { transition: none; }
+  .public-hero-carousel__track > .public-hero-carousel__slide.public-information-hero {
+    transition: none;
+  }
 }
 
 
@@ -368,7 +381,7 @@
     height: 100%;
     max-width: none;
     max-height: none;
-    object-fit: cover;
+    object-fit: contain;
     object-position: right center;
     transform: none;
   }
@@ -398,22 +411,22 @@
   }
 }
 
-/* The introductory banner keeps its two payment actions in a single row.
- * The existing service banners, hero dimensions and CMS artwork stay unchanged. */
-.public-hero-carousel__slide[data-banner-kind="intro"] .citizen-public-hero__copy {
+/* The fixed-left banner keeps the same two payment actions on every image.
+ * The CMS artwork, dimensions, image palettes and slide timing remain unchanged. */
+.public-hero-carousel__slide[data-fixed-left="true"] .citizen-public-hero__copy {
   padding-block: .75rem;
 }
-.public-hero-carousel__slide[data-banner-kind="intro"] .citizen-public-hero__copy > p {
+.public-hero-carousel__slide[data-fixed-left="true"] .citizen-public-hero__copy > p {
   margin-top: .4rem;
 }
-.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions {
+.public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: .35rem;
   margin-top: .7rem;
   align-items: stretch;
 }
-.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-guest-action {
+.public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .public-guest-action {
   min-width: 0;
   max-width: none;
   width: 100%;
@@ -425,22 +438,22 @@
   white-space: nowrap;
   border-radius: .55rem;
 }
-.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-guest-action svg {
+.public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .public-guest-action svg {
   width: 16px;
   height: 16px;
   flex: none;
 }
 /* Pay Tax remains the filled primary CTA. Travel Tax is outlined secondary. */
-.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel {
+.public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .public-hero-carousel__travel {
   background: rgb(255 255 255 / 58%);
   color: var(--citizen-primary-dark);
   border: 1px solid var(--citizen-primary);
 }
-.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel:hover {
+.public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .public-hero-carousel__travel:hover {
   background: rgb(255 255 255 / 90%);
   color: var(--citizen-primary-dark);
 }
-.public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel:focus-visible {
+.public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .public-hero-carousel__travel:focus-visible {
   outline: 2px solid var(--citizen-primary);
   outline-offset: 2px;
 }
@@ -448,37 +461,37 @@
 .public-hero-carousel__pay-compact { display: none; }
 
 @media (min-width: 901px) and (max-width: 1100px) {
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions {
+  .public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions {
     gap: .25rem;
   }
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-guest-action {
+  .public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .public-guest-action {
     padding-inline: .15rem;
     font-size: 14px;
     gap: .2rem;
   }
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-primary svg,
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel svg {
+  .public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .citizen-public-primary svg,
+  .public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .public-hero-carousel__travel svg {
     display: none;
   }
 }
 @media (max-width: 600px) {
   /* Space is limited at 320px. Shorten visible travel text while retaining
    * its complete accessible name and the original onPayTax('TRAVEL_TAX') route. */
-  .public-hero-carousel__slide[data-banner-kind="intro"] .citizen-public-hero__copy {
+  .public-hero-carousel__slide[data-fixed-left="true"] .citizen-public-hero__copy {
     padding-block: .35rem;
   }
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions {
+  .public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions {
     margin-top: .45rem;
     gap: .25rem;
   }
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-guest-action {
+  .public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .public-guest-action {
     min-height: 44px;
     padding-inline: .18rem;
     font-size: 14px;
     gap: .2rem;
   }
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .citizen-public-primary svg,
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel svg {
+  .public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .citizen-public-primary svg,
+  .public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .public-hero-carousel__travel svg {
     display: none;
   }
   .public-hero-carousel__travel-full { display: none; }
@@ -488,8 +501,8 @@
 /* Preserve a readable Bengali primary label on 320px phones without
  * changing the button's full accessible name. */
 @media (max-width: 360px) {
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-hero-carousel__pay-full { display: none; }
-  .public-hero-carousel__slide[data-banner-kind="intro"] .public-hero-carousel__pay-compact { display: inline; }
+  .public-hero-carousel__slide[data-fixed-left="true"] .public-hero-carousel__pay-full { display: none; }
+  .public-hero-carousel__slide[data-fixed-left="true"] .public-hero-carousel__pay-compact { display: inline; }
 }
 
 
@@ -505,7 +518,7 @@
   background: var(--citizen-surface);
 }
 .public-record-discovery__heading { margin-bottom: 1rem; min-width: 0; }
-.public-record-discovery__heading h2 { margin: 0; color: var(--citizen-text); font-size: 1.15rem; line-height: 1.4; font-weight: 800; }
+.public-record-discovery__heading h2 { margin: 0; color: var(--citizen-text); font-size: 1.125rem; line-height: 1.4; font-weight: 600; }
 .public-record-discovery__heading p { margin: .3rem 0 0; color: var(--citizen-muted); font-size: .875rem; line-height: 1.5; }
 .public-record-discovery__interactive { position: relative; min-width: 0; }
 .public-record-search {
@@ -584,73 +597,43 @@
 }
 
 
-/* Fixed-copy hero: the words/buttons stay stationary while the illustration
- * and left-panel surface follow the active service's EXISTING design tokens.
- * No independent palette and no change to payment action colors. */
-.public-hero-carousel__fixed.public-information-hero {
-  --banner-bg: var(--citizen-primary-light);
-  transition: background-color 500ms ease-in-out;
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
+/* Restore the complete per-service presentation: slide copy, image and
+ * matching palette move together. Native transform keeps keyboard, pointer,
+ * autoplay and reduced-motion behavior consistent across all five records. */
+.public-hero-carousel__slide[data-banner-kind="service"] .public-guest-actions {
+  max-width: 100%;
 }
-/* The carousel already reports the active CMS service. Drive the background
- * from that attribute so its tint follows the actual displayed illustration.
- * Published images with no service category retain the approved blue fallback. */
-.public-hero-carousel[data-image-service="TAX_WITH_RETURN"] .public-hero-carousel__fixed {
-  --banner-bg: var(--service-return-bg);
+.public-hero-carousel__slide[data-banner-kind="service"] .public-guest-action {
+  min-height: 46px;
+  max-width: 100%;
+  white-space: normal;
+  text-wrap: balance;
 }
-.public-hero-carousel[data-image-service="ADVANCE_TAX"] .public-hero-carousel__fixed {
-  --banner-bg: var(--service-advance-bg);
-}
-.public-hero-carousel[data-image-service="SOURCE_TAX_DEPOSIT"] .public-hero-carousel__fixed {
-  --banner-bg: var(--service-withholding-bg);
-}
-.public-hero-carousel[data-image-service="TRAVEL_TAX"] .public-hero-carousel__fixed {
-  --banner-bg: var(--service-other-bg);
-}
-.public-hero-carousel__fixed .citizen-public-hero__copy { position: relative; z-index: 2; }
-.public-hero-carousel__fixed .public-hero-carousel__media--illustrated {
-  overflow: hidden;
-}
-.public-hero-carousel__fixed .public-hero-carousel__image-layer {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  transition: opacity 500ms ease-in-out;
-}
-.public-hero-carousel__fixed .public-hero-carousel__image-layer[data-visible="true"] { opacity: 1; }
-.public-hero-carousel__fixed .public-information-hero__image {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-  object-fit: cover;
-  object-position: right center;
-}
-@media (min-width: 901px) {
-  .public-hero-carousel__fixed .public-information-hero__media {
-    left: 50% !important;
-    right: 0 !important;
-    width: 50% !important;
+@media (max-width: 600px) {
+  /* Longer bilingual service titles and CTA labels must wrap instead of
+   * overflowing the fixed 150px introduction-only copy slot. */
+  .public-hero-carousel__slide.public-information-hero {
+    /* The former 190px text track pushed CMS artwork far below compact
+     * mobile copy. Allow long Bengali CTAs to grow naturally, not every
+     * banner to inherit an oversized fixed empty row. */
+    grid-template-rows: minmax(154px, auto) clamp(164px, 47vw, 225px);
+    height: auto;
+    min-height: calc(154px + clamp(164px, 47vw, 225px));
   }
-  .public-hero-carousel__fixed .public-hero-carousel__media--illustrated::before {
-    background: linear-gradient(to right, var(--banner-bg), transparent 28%) !important;
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2,
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .public-hero-carousel__slide[data-banner-kind="service"] .public-guest-actions .public-guest-action {
+    width: 100%;
+    min-height: 44px;
+    line-height: 1.3;
+    padding: .55rem .65rem;
   }
 }
-@media (max-width: 900px) {
-  .public-hero-carousel__fixed .public-hero-carousel__media--illustrated { position: relative; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .public-hero-carousel__fixed { transition: none; }
-  .public-hero-carousel__fixed .public-hero-carousel__image-layer { transition: none; }
-}
+
 
 /* Fail closed when the CMS cannot confirm published artwork. Keep only safe
    service entrypoints, never bundled images with unknown publication state. */
@@ -674,4 +657,366 @@
 .public-hero-carousel__retry:focus-visible {
   outline: 3px solid var(--citizen-primary);
   outline-offset: 2px;
+}
+
+/* Only CMS records with a complete saved palette override service colors.
+ * The main filled primary Pay Tax action remains unchanged. */
+/* Match the existing service heading selector's specificity. Otherwise
+ * --choice-text wins over the Office-published --banner-heading on TaxPay. */
+.public-hero-carousel__slide.public-information-hero[data-banner-palette="image"] .citizen-public-hero__copy h1,
+.public-hero-carousel__slide.public-information-hero[data-banner-palette="image"][data-payment-service] .citizen-public-hero__copy h2,
+.public-hero-carousel__slide.public-information-hero[data-banner-palette="image"] .citizen-public-hero__copy h2 {
+  color: var(--banner-heading);
+}
+.public-hero-carousel__slide.public-information-hero[data-banner-palette="image"] .citizen-public-hero__copy > p,
+.public-hero-carousel__slide.public-information-hero[data-banner-palette="image"][data-payment-service] .citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow) { color: var(--banner-body); }
+.public-hero-carousel__slide[data-banner-palette="image"][data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel,
+.public-hero-carousel__slide[data-banner-palette="image"][data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel:hover { color: var(--banner-outline); border-color: var(--banner-outline); }
+.public-hero-carousel__slide[data-banner-palette="image"][data-payment-service] .public-guest-actions .citizen-public-primary,
+.public-hero-carousel__slide[data-banner-palette="image"][data-payment-service] .public-guest-actions .citizen-public-primary:hover { color: var(--banner-outline); border-color: var(--banner-outline); }
+
+/* CMS-published outline ink must also drive the related service focus ring.
+ * Navigation arrows and filled Pay Tax remain the permanent TaxPay blue. */
+.public-hero-carousel__slide[data-banner-palette="image"][data-payment-service] .public-guest-actions .citizen-public-primary:focus-visible {
+  outline-color: var(--banner-outline);
+}
+.public-hero-carousel__slide[data-banner-palette="image"][data-banner-kind="intro"] .public-guest-actions .public-hero-carousel__travel:focus-visible {
+  outline-color: var(--banner-outline);
+}
+
+/* Fixed-left restoration: service slides retain their published image palette,
+ * but do not replace the common Pay Tax / Pay Travel Tax entrypoints. */
+.public-hero-carousel__slide[data-fixed-left="true"][data-payment-service] .public-guest-actions .citizen-public-primary,
+.public-hero-carousel__slide[data-fixed-left="true"][data-payment-service] .public-guest-actions .citizen-public-primary:hover {
+  background: var(--citizen-primary);
+  border-color: var(--citizen-primary);
+  color: #fff;
+}
+.public-hero-carousel__slide[data-fixed-left="true"][data-payment-service] .public-guest-actions .public-hero-carousel__travel {
+  background: rgb(255 255 255 / 58%);
+  color: var(--choice-text);
+  border: 1px solid var(--choice-primary);
+}
+.public-hero-carousel__slide[data-fixed-left="true"][data-payment-service] .public-guest-actions .public-hero-carousel__travel:hover {
+  background: rgb(255 255 255 / 90%);
+}
+.public-hero-carousel__slide[data-fixed-left="true"][data-payment-service][data-banner-palette="image"] .public-guest-actions .public-hero-carousel__travel,
+.public-hero-carousel__slide[data-fixed-left="true"][data-payment-service][data-banner-palette="image"] .public-guest-actions .public-hero-carousel__travel:hover {
+  color: var(--banner-outline);
+  border-color: var(--banner-outline);
+}
+.public-hero-carousel__slide[data-fixed-left="true"][data-payment-service][data-banner-palette="image"] .public-guest-actions .public-hero-carousel__travel:focus-visible {
+  outline-color: var(--banner-outline);
+}
+.public-hero-carousel__slide[data-fixed-left="true"][data-banner-kind="service"] .public-guest-actions .public-guest-action {
+  white-space: nowrap;
+  text-wrap: initial;
+}
+
+
+/* Sohojkor public home only: unified typography and the approved
+   heading/description ABOVE a full-width payment-reference search.
+   Preserve the existing search markup, suggestions and Pay Tax actions. */
+.taxpay-citizen-shell:has(.public-home-sections):not([lang="bn"]) {
+  font-family: var(--font-text, "Poppins", sans-serif);
+}
+.public-record-discovery__heading h2 { font-weight: 600; }
+@media (min-width: 901px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-home-nav a,
+  .taxpay-citizen-shell:has(.public-home-sections) .public-home-language {
+    font-size: .875rem;
+    font-weight: 500;
+  }
+}
+/* Six benefits: concise and legible, with cards rather than a faux table.
+   They are informational, not additional competing payment actions. */
+.public-benefits { min-width: 0; }
+.public-benefits__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .25rem .9rem;
+  margin-bottom: .7rem;
+}
+.public-benefits__heading h2 {
+  margin: 0;
+  color: var(--citizen-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.public-benefits__heading p {
+  margin: 0;
+  color: var(--citizen-muted);
+  font-size: .875rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+.public-benefits__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: .7rem .75rem;
+}
+.public-benefits__item {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: .8rem;
+  min-width: 0;
+  min-height: 98px;
+  padding: .8rem .95rem;
+  border: 1px solid var(--citizen-border);
+  border-radius: .8rem;
+  background: var(--citizen-surface);
+  color: var(--citizen-text);
+}
+.public-benefits__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: .65rem;
+  background: var(--citizen-primary-light);
+  color: var(--citizen-primary-dark);
+}
+.public-benefits__icon svg { width: 20px; height: 20px; }
+.public-benefits__copy { min-width: 0; }
+.public-benefits__copy h3 {
+  margin: 0 0 .2rem;
+  color: var(--citizen-text);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.public-benefits__copy p {
+  margin: 0;
+  color: var(--citizen-muted);
+  font-size: .875rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+.public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem; }
+
+/* Desktop: return the solved full-width record search. Distribute height
+   with natural content sizing, never clipping text to satisfy no-scroll. */
+@media (min-width: 981px) {
+  .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
+    display: flex;
+    flex-direction: column;
+    padding-top: 10px;
+    padding-bottom: 12px;
+  }
+  .public-home-sections {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    /* Keep the three existing blocks together at a predictable vertical rhythm.
+       Do not distribute spare viewport height between the banner, lookup and cards. */
+    justify-content: flex-start;
+  }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 12px; }
+  .public-home-sections > .public-hero-carousel-shell,
+  .public-home-sections > .public-record-discovery { flex: 0 0 auto; }
+  /* Reference screenshot: white lookup with 24px inset on tall desktop.
+     Keep the approved field, suggestions, and search interactions unchanged. */
+  .public-home-sections .public-record-discovery {
+    display: block;
+    padding: 1.5rem;
+    border-radius: .75rem;
+  }
+  .public-home-sections .public-record-discovery__heading {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .15rem;
+    margin-bottom: .8rem;
+  }
+  .public-home-sections .public-record-discovery__heading h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.375;
+  }
+  .public-home-sections .public-record-discovery__heading p {
+    margin: 0;
+    font-size: .875rem;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+  .public-home-sections .public-record-search {
+    min-height: 46px;
+    padding: .18rem;
+    border-radius: .625rem;
+    box-shadow: 0 1px 3px rgba(12, 35, 65, .06);
+  }
+  .public-home-sections .public-record-search input {
+    padding: .5rem .8rem;
+    font-size: 1rem;
+  }
+  .public-home-sections .public-record-search button {
+    flex-basis: 40px;
+    min-height: 40px;
+    border-radius: .5rem;
+  }
+  .public-home-sections .public-record-search button svg {
+    width: 20px;
+    height: 20px;
+  }
+  .public-home-sections .public-benefits {
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+    padding: 1.5rem;
+    border: 0;
+    border-radius: 1rem;
+    background: var(--citizen-surface);
+  }
+  .public-home-sections .public-benefits__heading {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: .15rem;
+    margin-bottom: 1rem;
+    padding: 0;
+    border: 0;
+  }
+  .public-home-sections .public-benefits__heading h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -.012em;
+  }
+  .public-home-sections .public-benefits__heading p {
+    margin: 0;
+    font-size: .875rem;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+  /* The proposed design uses one panel with six connected cells and
+     1px shared dividers, not six individual rounded cards. */
+  .public-home-sections .public-benefits__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    padding: 1px;
+    background: var(--citizen-border);
+  }
+  .public-home-sections .public-benefits__item {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: .85rem;
+    min-height: clamp(96px, 10.8dvh, 136px);
+    padding: 1rem 1.125rem;
+    border: 0;
+    border-radius: 0;
+    background: var(--citizen-surface);
+  }
+}
+@media (min-width: 981px) and (min-height: 960px) {
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 16px; }
+  .public-home-sections .public-benefits__copy p { line-height: 1.5; }
+}
+/* Medium-height desktop: retain the connected panel, but avoid unnecessary
+   vertical scrolling. Tall screenshots keep the approved 24px / 136px rhythm. */
+@media (min-width: 981px) and (min-height: 821px) and (max-height: 959px) {
+  .public-home-sections .public-benefits { padding: 1rem; }
+  .public-home-sections .public-benefits__heading { margin-bottom: .75rem; }
+  .public-home-sections .public-benefits__item {
+    min-height: 88px;
+    padding: .65rem .9rem;
+  }
+}
+@media (min-width: 1280px) {
+  .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
+    font-weight: 700;
+  }
+  .public-home-sections .public-benefits__heading h2 {
+    letter-spacing: -.012em;
+  }
+}
+/* Medium/short desktop only: keep the compact search geometry needed for
+   no-overflow screens. Tall desktops use the reference's 24px card inset. */
+@media (min-width: 981px) and (max-height: 959px) {
+  .public-home-sections .public-record-discovery {
+    padding: .625rem 1rem .6875rem;
+  }
+  .public-home-sections .public-record-discovery__heading {
+    margin-bottom: .4rem;
+  }
+}
+
+/* Short desktop screens retain the CMS artwork and both unchanged hero CTAs.
+   Compact only unused spacing; do not reduce text below the helper size. */
+@media (min-width: 981px) and (max-height: 820px) {
+  .public-home-sections .public-hero-carousel__slide.public-information-hero {
+    height: 220px;
+    min-height: 220px;
+  }
+  .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy {
+    padding-top: .7rem;
+    padding-bottom: .7rem;
+  }
+  .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
+    font-size: 1.65rem;
+    line-height: 1.2;
+  }
+  .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
+    margin-top: .4rem;
+    font-size: .875rem;
+    line-height: 1.35;
+  }
+  .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__actions {
+    margin-top: .55rem;
+  }
+  .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
+    padding-top: 3px;
+    padding-bottom: 0;
+  }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 5px; }
+  .public-home-sections .public-record-discovery { padding: .4rem .85rem .5rem; }
+  .public-home-sections .public-record-discovery__heading { margin-bottom: .25rem; }
+  .public-home-sections .public-benefits { padding: 1rem; }
+  .public-home-sections .public-benefits__heading { margin-bottom: .5rem; }
+  .public-home-sections .public-benefits__item {
+    min-height: 84px;
+    padding: .5rem .75rem;
+  }
+}
+@media (min-width: 981px) and (max-width: 1120px) and (max-height: 820px) {
+  .public-home-sections .public-hero-carousel__slide.public-information-hero {
+    height: 210px;
+    min-height: 210px;
+  }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 6px; }
+  .public-home-sections .public-benefits__item {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: .6rem;
+    padding: .5rem .65rem;
+  }
+  .public-home-sections .public-benefits__icon { width: 36px; height: 36px; }
+}
+@media (max-width: 980px) {
+  .public-benefits__heading { display: block; margin-bottom: .75rem; }
+  .public-benefits__heading p { margin-top: .25rem; }
+  .public-benefits__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .public-benefits__item { min-height: 100px; padding: .75rem; }
+}
+@media (max-width: 600px) {
+  .public-benefits__heading h2 { font-size: 1.05rem; }
+  .public-benefits__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
+    gap: .6rem;
+  }
+  .public-benefits__item {
+    grid-template-columns: 42px minmax(0, 1fr);
+    min-height: 90px;
+    padding: .8rem;
+    gap: .8rem;
+  }
+  .public-benefits__icon { width: 42px; height: 42px; }
 }

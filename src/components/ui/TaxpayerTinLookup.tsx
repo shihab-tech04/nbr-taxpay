@@ -1,5 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { SAMPLE_TIN_SUGGESTIONS } from '../../data/sampleTinSuggestions';
 
 /**
  * Shared TaxPay TIN → taxpayer-name entry pattern.
@@ -19,6 +21,8 @@ export interface TaxpayerTinLookupProps {
   heading?: string;
   tinLabel?: string;
   nameLabel?: string;
+  /** Optional accessible name when two separate TIN lookups share a form. */
+  searchLabel?: string;
   tinPlaceholder?: string;
   namePlaceholder?: string;
   maxTinLength?: number;
@@ -44,18 +48,17 @@ export interface TaxpayerTinLookupProps {
 
 export function TaxpayerTinLookup({
   language, tinId, nameId, tin, name, onTinChange, onSearch, onClear, canSearch,
-  heading, tinLabel, nameLabel, tinPlaceholder, namePlaceholder, maxTinLength = 12, maxNameLength = 160,
+  heading, tinLabel, nameLabel, searchLabel, tinPlaceholder, namePlaceholder, maxTinLength = 12, maxNameLength = 160,
   readonlyTin = false, editableName = false, onNameChange, disabled = false, requiredTin = true,
-  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins, hideNameField = false,
+  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false,
 }: TaxpayerTinLookupProps) {
   const bn = language === 'bn';
   const tinRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRowRef = useRef<HTMLDivElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestionLayout, setSuggestionLayout] = useState<{placement: 'above' | 'below'; maxHeight: number}>({
-    placement: 'below', maxHeight: 190,
-  });
+  const [suggestionLayout, setSuggestionLayout] = useState<{top: number; left: number; width: number; maxHeight: number; inDialog: boolean} | null>(null);
   // After choosing a suggestion or using the clear X, keep keyboard focus on
   // the field without reopening the menu in the very same focus event.
   const suppressNextFocusOpen = useRef(false);
@@ -66,37 +69,41 @@ export function TaxpayerTinLookup({
       tinRef.current?.focus();
     }
   };
-  const options = suggestedTins?.filter(suggestion => suggestion.includes(tin)) ?? [];
+  const options = tin ? (suggestedTins?.filter(suggestion => suggestion.includes(tin)) ?? []) : [];
   useEffect(() => {
     if (!suggestedTins?.length || !showSuggestions) return;
     const closeOnOutside = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setShowSuggestions(false);
+      if (!rootRef.current?.contains(event.target as Node) && !suggestionsRef.current?.contains(event.target as Node)) setShowSuggestions(false);
     };
     document.addEventListener('pointerdown', closeOnOutside);
     return () => document.removeEventListener('pointerdown', closeOnOutside);
   }, [showSuggestions, suggestedTins]);
-  // The modal body scrolls independently of its fixed footer. Keep the popup
-  // entirely inside the visible body: flip it above the TIN input whenever
-  // opening below would put its options underneath that footer.
+  // A single shared placement contract: suggestions open only after typing,
+  // always *below* the input, and overlay the fixed modal footer when needed.
+  // Portal to the dialog shell to avoid clipping inside its scrolling body.
   useLayoutEffect(() => {
-    if (!showSuggestions || !suggestedTins?.length) return;
+    if (!showSuggestions || !tin || !suggestedTins?.length) return;
     const row = searchRowRef.current;
-    const body = rootRef.current?.closest<HTMLElement>('.taxpay-modal__body');
     if (!row) return;
+    const dialog = row.closest<HTMLElement>('.taxpay-modal');
+    const body = row.closest<HTMLElement>('.taxpay-modal__body');
     const measure = () => {
       const anchor = row.getBoundingClientRect();
-      const visibleTop = window.visualViewport?.offsetTop ?? 0;
-      const visibleBottom = visibleTop + (window.visualViewport?.height ?? window.innerHeight);
-      const area = body?.getBoundingClientRect();
-      const upperLimit = Math.max(visibleTop, area?.top ?? visibleTop) + 8;
-      const lowerLimit = Math.min(visibleBottom, area?.bottom ?? visibleBottom) - 8;
-      const roomAbove = Math.max(0, anchor.top - upperLimit - 4);
+      const dialogRect = dialog?.getBoundingClientRect();
+      const viewportBottom = (window.visualViewport?.offsetTop ?? 0)
+        + (window.visualViewport?.height ?? window.innerHeight);
+      const lowerLimit = Math.min(viewportBottom - 8, (dialogRect?.bottom ?? viewportBottom) - 10);
       const roomBelow = Math.max(0, lowerLimit - anchor.bottom - 4);
-      const desiredHeight = Math.min(190, Math.round((visibleBottom - visibleTop) * 0.3));
-      const placement = roomBelow < desiredHeight && roomAbove > roomBelow ? 'above' : 'below';
-      const maxHeight = Math.max(0, Math.floor(Math.min(desiredHeight, placement === 'above' ? roomAbove : roomBelow)));
-      setSuggestionLayout(previous => previous.placement === placement && previous.maxHeight === maxHeight
-        ? previous : {placement, maxHeight});
+      const desired = Math.min(190, Math.round(window.innerHeight * .3));
+      const next = {
+        top: anchor.bottom + 4 - (dialogRect?.top ?? 0),
+        left: anchor.left - (dialogRect?.left ?? 0),
+        width: anchor.width,
+        maxHeight: Math.max(48, Math.min(desired, roomBelow)),
+        inDialog: Boolean(dialog),
+      };
+      setSuggestionLayout(previous => previous && Object.keys(next).every(key =>
+        previous[key as keyof typeof next] === next[key as keyof typeof next]) ? previous : next);
     };
     measure();
     body?.addEventListener('scroll', measure, {passive: true});
@@ -109,13 +116,14 @@ export function TaxpayerTinLookup({
       window.visualViewport?.removeEventListener('resize', measure);
       window.visualViewport?.removeEventListener('scroll', measure);
     };
-  }, [showSuggestions, suggestedTins?.length]);
+  }, [showSuggestions, tin, suggestedTins?.length]);
   const locked = disabled || readonlyTin;
   const change = (next: string) => onTinChange(next.replace(/\D/g, '').slice(0, maxTinLength));
   return <div ref={rootRef} className={['taxpayer-tin-lookup', card ? 'taxpayer-tin-lookup--card' : '', className].filter(Boolean).join(' ')}
     data-testid="shared-taxpayer-tin-lookup"
     onBlur={event => {
-      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setShowSuggestions(false);
+      const next = event.relatedTarget as Node | null;
+      if (!event.currentTarget.contains(next) && !suggestionsRef.current?.contains(next)) setShowSuggestions(false);
     }}>
     {heading && <h3 className="taxpayer-tin-lookup__heading">{heading}</h3>}
     <div className="taxpayer-tin-lookup__field">
@@ -129,11 +137,8 @@ export function TaxpayerTinLookup({
             aria-controls={suggestedTins?.length ? tinId + '-suggestions' : undefined}
             aria-expanded={suggestedTins?.length ? showSuggestions : undefined}
             onFocus={() => {
-              if (suppressNextFocusOpen.current) {
-                suppressNextFocusOpen.current = false;
-                return;
-              }
-              if (suggestedTins?.length && !locked) setShowSuggestions(true);
+              // Entering a fresh Add beneficiary modal must NOT expose all TINs.
+              if (suppressNextFocusOpen.current) suppressNextFocusOpen.current = false;
             }}
             onKeyDown={event => {
               if (event.key === 'Escape' && showSuggestions) {
@@ -143,12 +148,16 @@ export function TaxpayerTinLookup({
               }
               if (event.key === 'ArrowDown' && showSuggestions) {
                 event.preventDefault();
-                rootRef.current?.querySelector<HTMLButtonElement>('[role="option"]')?.focus();
+                suggestionsRef.current?.querySelector<HTMLButtonElement>('[role="option"]')?.focus();
               }
             }}
             aria-invalid={invalidTin || undefined} aria-describedby={tinDescribedBy || undefined}
             placeholder={tinPlaceholder ?? (bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN')}
-            onChange={event => { change(event.target.value); if (suggestedTins?.length) setShowSuggestions(true); }} />
+            onChange={event => {
+              const next = event.target.value.replace(/\D/g, '').slice(0, maxTinLength);
+              change(next);
+              setShowSuggestions(Boolean(next && suggestedTins?.length));
+            }} />
           {Boolean(tin) && !locked && <button type="button"
             className="taxpayer-tin-lookup__clear taxpay-taxpayer-row__tin-clear"
             aria-label={bn ? 'টিআইএন অনুসন্ধান মুছুন' : 'Clear TIN search'}
@@ -158,13 +167,15 @@ export function TaxpayerTinLookup({
           </button>}
         </div>
         <button type="button" className="tin-lookup__search taxpayer-tin-lookup__search"
-          disabled={disabled || !canSearch} onClick={() => { setShowSuggestions(false); onSearch(); }}>
+          disabled={disabled || !canSearch} aria-label={searchLabel} onClick={() => { setShowSuggestions(false); onSearch(); }}>
           <Search size={17} aria-hidden="true" />{bn ? 'খুঁজুন' : 'Search'}
         </button>
-        {Boolean(suggestedTins?.length) && showSuggestions && !locked && <div
-          className="taxpayer-tin-lookup__suggestions" id={tinId + '-suggestions'} role="listbox"
-          data-placement={suggestionLayout.placement}
-          style={{maxHeight: suggestionLayout.maxHeight + 'px'}}
+        {Boolean(suggestedTins?.length) && showSuggestions && tin && !locked && suggestionLayout && createPortal(<div
+          ref={suggestionsRef} className="taxpayer-tin-lookup__suggestions" id={tinId + '-suggestions'} role="listbox"
+          data-placement="below"
+          style={{position:suggestionLayout.inDialog?'absolute':'fixed',top:suggestionLayout.top,
+            left:suggestionLayout.left,width:suggestionLayout.width,right:'auto',bottom:'auto',
+            maxHeight:suggestionLayout.maxHeight,zIndex:9999}}
           aria-label={bn ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'}>
           <p className="taxpayer-tin-lookup__suggestions-heading" role="presentation">
             {bn ? 'প্রস্তাবিত টিআইএন নম্বর' : 'Suggested TIN numbers'}
@@ -178,7 +189,7 @@ export function TaxpayerTinLookup({
                 focusTinWithoutOpeningSuggestions();
               } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
                 event.preventDefault();
-                const items = [...(rootRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]') ?? [])];
+                const items = [...(suggestionsRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]') ?? [])];
                 const index = items.indexOf(event.currentTarget);
                 const next = event.key === 'ArrowDown' ? index + 1 : index - 1;
                 if (items[next]) items[next].focus();
@@ -191,7 +202,7 @@ export function TaxpayerTinLookup({
           {!options.length && <p className="taxpayer-tin-lookup__no-results" role="presentation">
             {bn ? 'কোনো প্রস্তাবিত টিআইএন নেই।' : 'No matching suggested TIN.'}
           </p>}
-        </div>}
+        </div>, rootRef.current?.closest('.taxpay-modal') ?? document.body)}
       </div>
       {error}
       {helper}

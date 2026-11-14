@@ -1,6 +1,10 @@
 import type { ChallanReceipt } from '../types/tax';
+import { MAX_COMBINED_ALLOCATIONS } from './otherTaxCombinedPayment';
 import {activePreviewSession} from './previewAccountSession';
 import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
+import type {DemoUserId} from '../data/demoUsers';
+import {sampleUserNumberForTin} from '../data/sampleTinSuggestions';
+import {userIdForHostedTin} from './hostedDemoAuthorizations';
 /** Synthetic-only persistence; browser session ID is not an authenticated account. */
 export type StoryPaymentInput = {
   idempotencyKey: string;
@@ -13,7 +17,7 @@ export type StoryPaymentAcknowledgement = {
   success: true;
   id: string;
   status: 'SIMULATED_SUCCESS';
-  mirrored: true;
+  mirrored: boolean;
   simulationOnly: true;
 };
 const API = TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'')+'/functions/v1/demo-story1-taxpay';
@@ -42,17 +46,119 @@ export function getStorySessionId(): string {
     return fallbackSession;
   }
 }
+/** Bind synthetic payer identity to the active server-issued demo profile,
+ * never to a user-entered TIN or the selected beneficiary. The source SQL
+ * independently verifies this ID against the private profile capability.
+ */
+/** The payment wizard stores receipt accounting heads in details.lines, but the
+ * existing demo-payment SQL authorization trigger expects beneficiary allocations.
+ * Preserve receipt items separately and send its exact, checked allocation contract.
+ * Never manufacture an authorization for another taxpayer. */
+export function bindPreviewStoryPayer(
+  input: StoryPaymentInput,
+  preview: {profileId:string;paymentSessionId:string}|null
+): StoryPaymentInput {
+  if(!preview)return input;
+  if(input.sessionId!==preview.paymentSessionId)throw new Error('Demo account changed.');
+  const details: Record<string,unknown>={...input.details,payerId:preview.profileId};
+  if(!details.receiptSnapshot)return {...input,details};
+  if(!Array.isArray(details.lines)||details.lines.length===0||
+     !Number.isSafeInteger(input.amountMinor)||input.amountMinor<=0)
+    throw new Error('Simulation payment details are incomplete.');
+  const thirdParty=details.payerMode==='OTHER';
+  const tin=typeof details.taxpayerTin==='string'?details.taxpayerTin.trim():'';
+  const number=sampleUserNumberForTin(tin);
+  // The server independently validates this exact TIN against the payer's
+  // capability-scoped saved list. A saved beneficiary payment is not an
+  // authorization to read the beneficiary's private tax records.
+  // A saved TIN need not be one of the 30 illustrative accounts. Keep its
+  // literal identity; SQL requires this exact TIN in the payer's owned list.
+  // Combined payments use the established Office-compatible contract:
+  // details.lines = accounting heads, details.allocations = taxpayer shares.
+  // Do not synthesize beneficiary IDs into lines: Office 360 and Analytics
+  // explicitly reject records with BOTH beneficiary and explicit allocations.
+  // The private SQL trigger independently verifies every saved TIN for this
+  // payer's capability-scoped session before accepting the single payment.
+  if (details.combinedPayment === true && input.service === 'OTHER_TAX_PAYMENT') {
+    const allocations=details.allocations;
+    const accounting=details.lines as Array<Record<string,unknown>>;
+    const snapshot=details.receiptSnapshot as {items?:unknown}|undefined;
+    if (!Array.isArray(allocations) || allocations.length < 1 || allocations.length > MAX_COMBINED_ALLOCATIONS ||
+      accounting.length !== allocations.length ||
+      !snapshot || !Array.isArray(snapshot.items) ||
+      snapshot.items.length !== allocations.length)
+      throw new Error('INVALID_COMBINED_ALLOCATION');
+    let total=0;
+    for (let index=0;index<allocations.length;index++) {
+      const a=allocations[index] as Record<string,unknown>;
+      if (!a || typeof a!=='object' || Array.isArray(a) ||
+        typeof a.taxpayerTin!=='string' || !/^\d{12,13}$/.test(a.taxpayerTin) ||
+        typeof a.assessmentYear!=='string' || !a.assessmentYear ||
+        typeof a.headId!=='number' || !Number.isSafeInteger(a.headId) || a.headId<=0 ||
+        typeof a.amountMinor!=='number' || !Number.isSafeInteger(a.amountMinor) || a.amountMinor<=0 ||
+        accounting[index].headId!==a.headId ||
+        Math.round(Number(accounting[index].totalAmount)*100)!==a.amountMinor)
+        throw new Error('INVALID_COMBINED_ALLOCATION');
+      total+=a.amountMinor;
+    }
+    if (!Number.isSafeInteger(total) || total!==input.amountMinor)
+      throw new Error('COMBINED_TOTAL_MISMATCH');
+    return {...input,details};
+  }
+  const selected=thirdParty
+    ? userIdForHostedTin(tin)||(number?`user${number}` as DemoUserId:null)||
+      (/^\d{12,13}$/.test(tin)?`SAVED_TIN:${tin}`:null)
+    : preview.profileId;
+  if(!selected)throw new Error('Choose a saved demo beneficiary for this simulation.');
+  return {...input,details:{
+    ...details,
+    receiptLines:details.lines,
+    lines:[{
+      beneficiary:selected,
+      category:input.service,
+      assessmentYear:typeof details.assessmentYear==='string'?details.assessmentYear:'2026-27',
+      amountMinor:input.amountMinor
+    }]
+  }};
+}
 export async function persistSimulatedPayment(input: StoryPaymentInput): Promise<StoryPaymentAcknowledgement> {
   const preview=activePreviewSession();
-  if(preview&&input.sessionId!==preview.paymentSessionId)throw new Error('Demo account changed.');
+  const scoped=bindPreviewStoryPayer(input,preview);
   const response = await fetch(API + '/payments', {
     method: 'POST',
     headers: { ...storyApiHeaders(input.sessionId),'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...input, origin: import.meta.env?.VITE_SUPABASE_DISABLED === 'true' ? 'QA_BROWSER' : 'TAXPAY_UI' }),
+    body: JSON.stringify({ ...scoped, origin: import.meta.env?.VITE_SUPABASE_DISABLED === 'true' ? 'QA_BROWSER' : 'TAXPAY_UI' }),
   });
-  const body = await response.json() as Partial<StoryPaymentAcknowledgement> & { error?: string };
-  if (!response.ok || body.success !== true || body.mirrored !== true || !body.id)
-    throw new Error(body.error || 'OFFICE_SYNC_PENDING');
+  const body = await response.json() as Partial<StoryPaymentAcknowledgement> & {
+    error?: string; requestId?: string; retryable?: boolean;
+  };
+  let acknowledged: StoryPaymentAcknowledgement;
+  if (response.ok && body.success === true && body.mirrored === true && body.id && body.status === 'SIMULATED_SUCCESS' && body.simulationOnly === true) {
+    acknowledged = body as StoryPaymentAcknowledgement;
+  } else if (response.status === 503 && body.error === 'OFFICE_SYNC_PENDING' && body.retryable === true &&
+             typeof body.requestId === 'string' && /^[0-9a-f-]{36}$/i.test(body.requestId)) {
+    // Office mirror failure is NOT a payment-gateway decline. Before showing a
+    // saved simulation, independently read back the exact idempotent source SQL
+    // row using this session's existing capability/ownership boundary.
+    const readback = await fetch(API + '/payments/' + encodeURIComponent(body.requestId) +
+      '?sessionId=' + encodeURIComponent(input.sessionId), {
+        headers: storyApiHeaders(input.sessionId), cache: 'no-store',
+      });
+    if (!readback.ok) throw new Error('SIMULATION_READBACK_PENDING');
+    const stored = await readback.json() as {success?:boolean;simulationOnly?:boolean;
+      data?:{id?:string;status?:string;data?:Partial<StoryPaymentInput>}};
+    if (stored.success !== true || stored.simulationOnly !== true ||
+        stored.data?.id !== body.requestId || stored.data.status !== 'SIMULATED_SUCCESS' ||
+        stored.data.data?.idempotencyKey !== scoped.idempotencyKey ||
+        stored.data.data?.sessionId !== scoped.sessionId ||
+        stored.data.data?.amountMinor !== scoped.amountMinor ||
+        stored.data.data?.service !== scoped.service)
+      throw new Error('SIMULATION_READBACK_MISMATCH');
+    acknowledged = {success:true,id:body.requestId,status:'SIMULATED_SUCCESS',
+      mirrored:false,simulationOnly:true};
+  } else {
+    throw new Error(body.error || 'SIMULATION_SUBMISSION_PENDING');
+  }
   try { sessionStorage.setItem('taxpay-guest-story-payment', 'true'); } catch { /* optional navigation hint only */ }
   // Persist the authenticated payer-to-payment link immediately after the SQL
   // acknowledgement. Do not delay a saved receipt or resubmit a payment when
@@ -69,7 +175,7 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
       }
     }
   } catch { /* Submitted SQL receipt remains authoritative; history can retry. */ }
-  return body as StoryPaymentAcknowledgement;
+  return acknowledged;
 }
 
 export type StoryPaymentNotice = {

@@ -1,9 +1,18 @@
 import type { Locator, Page } from '@playwright/test';
 
+export const futureTravelDate = new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Dhaka'})
+  .format(new Date(Date.now() + 86_400_000));
+
 /** Completes the primary passenger first, then travel details. Only simulated passport lookup is available. */
 export async function fillTravelDetails(root: Locator | Page, options?: {
   mode?: 'LAND' | 'WATER'; port?: string; destination?: string; date?: string;
 }) {
+  // Travel Tax is lazy-loaded. Wait for the stage UI before any isVisible()
+  // probe, otherwise a fast test skips passenger confirmation during chunk load.
+  // The passport editor may disappear once a passenger is confirmed.
+  // Receipt contact exists throughout the passenger stage; route options exist
+  // on the travel stage. Wait for either stable stage anchor after lazy mount.
+  await root.locator('#travel-mobile, #travel-tax-route-1').first().waitFor({ state: 'attached' });
   const passport = root.locator('#travel-passport-first');
   if (await passport.isVisible() && !(await passport.inputValue())) {
     await passport.fill('TEST123456');
@@ -24,12 +33,17 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
     await root.locator('#travel-port').selectOption(options?.port ?? 'Benapole');
   }
   await root.locator('#travel-destination').fill(options?.destination ?? 'India');
-  await root.locator('#travel-departure-date').fill(options?.date ?? '2026-11-20');
+  await root.locator('#travel-departure-date').fill(options?.date ?? futureTravelDate);
 }
 /** Can be called on first stage or after continuing to the group-passenger stage. */
 export async function fillForeignPassenger(root: Locator | Page, options?: {
   name?: string; passport?: string; birthDate?: string; country?: string;
 }) {
+  // The parent Travel Tax modal may exist before its lazy-loaded passenger
+  // form has mounted. Wait for a real stage anchor before examining visibility;
+  // do not misinterpret an unmounted form as a request to navigate Back.
+  await root.locator('#travel-passenger-tab-first-FOREIGN, #travel-tax-route-1, .travel-flow__review')
+    .first().waitFor({state:'attached'});
   let returnedToTravel = false;
   if (!(await root.locator('#travel-passenger-tab-first-FOREIGN').isVisible())) {
     const editPassengers = root.getByRole('button', { name: /Edit passengers|যাত্রী সম্পাদনা|Edit passengers and receipt contact/ }).first();

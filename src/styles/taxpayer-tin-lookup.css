@@ -30,9 +30,7 @@
 .taxpayer-tin-lookup__suggestions{position:absolute;z-index:23;top:calc(100% + 4px);left:0;right:0;
   max-height:min(190px,30vh);overflow-y:auto;overscroll-behavior:contain;background:#fff;
   border:1px solid #c7d4e7;border-radius:9px;box-shadow:0 12px 24px rgb(18 42 77 / 20%)}
-/* Flip toward the space actually visible in the scrollable modal body. The
-   menu stays an overlay and never increases the modal or taxpayer-card height. */
-.taxpayer-tin-lookup__suggestions[data-placement="above"]{top:auto;bottom:calc(100% + 4px)}
+/* The shared lookup menu is portalled and anchored below its input; it never flips up. */
 .taxpayer-tin-lookup__suggestions-heading,.taxpayer-tin-lookup__no-results{margin:0;padding:10px 12px;
   font-size:13px;color:#526681}
 .taxpayer-tin-lookup__suggestions-heading{border-bottom:1px solid #e0e6ef}

@@ -25,12 +25,15 @@ test('search uses the established icon-free section heading and concise single-l
 
 test('typing opens a clean floating dropdown without changing the card height', async ({ page }) => {
   await page.goto('/?action=landing');
+  // Compare settled layout to settled layout: swapping in Poppins after the
+  // initial measurement can change wrapped helper text by one line on 375px.
+  await page.evaluate(async () => { await document.fonts.ready; });
   const section = page.getByRole('region', { name: 'Find a payment record' });
   const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
   const cardHeightBefore = await section.evaluate(element => element.getBoundingClientRect().height);
   const nextGapBefore = await page.evaluate(() => {
     const card = document.querySelector('.public-record-discovery')!.getBoundingClientRect();
-    const next = document.querySelector('#public-how-it-works')!.getBoundingClientRect();
+    const next = document.querySelector('.public-footer')!.getBoundingClientRect();
     return next.top - card.bottom;
   });
   await search.fill('DEMO-REF-001');
@@ -48,7 +51,7 @@ test('typing opens a clean floating dropdown without changing the card height', 
       belowField: rect.top >= searchField.getBoundingClientRect().bottom,
       cardHeight: element.getBoundingClientRect().height,
       dropdownOutsideCard: rect.bottom > element.getBoundingClientRect().bottom,
-      nextGap: document.querySelector('#public-how-it-works')!.getBoundingClientRect().top - element.getBoundingClientRect().bottom,
+      nextGap: document.querySelector('.public-footer')!.getBoundingClientRect().top - element.getBoundingClientRect().bottom,
     };
   });
   expect(geometry.position).toBe('absolute');
@@ -117,7 +120,7 @@ test('dropdown overlays following content without resizing the card or overflowi
     const geometry = await page.evaluate(() => {
       const section = document.querySelector<HTMLElement>('.public-record-discovery')!;
       const dropdown = document.querySelector<HTMLElement>('.public-record-suggestions')!;
-      const following = document.querySelector<HTMLElement>('#public-how-it-works')!;
+      const following = document.querySelector<HTMLElement>('.public-footer')!;
       const bounds = dropdown.getBoundingClientRect();
       return {
         left: bounds.left, right: bounds.right,

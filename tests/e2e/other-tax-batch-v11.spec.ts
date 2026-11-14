@@ -62,8 +62,8 @@ test('Other Tax has five v11 groups, never Return, and uses in-place clickable c
 
   const batch = dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
-  await expect(batch).toContainText('42 available Other Tax heads');
-  await expect(batch.locator('[data-head-group]')).toHaveCount(5);
+  await expect(batch).toContainText('169 available non-return payment heads');
+  await expect(batch.locator('[data-head-group]')).toHaveCount(6);
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
   await expect(batch.locator('#other-tax-target')).toHaveCount(0);
   await expect(batch.getByRole('button', { name: /^Add (68A|68B)/ })).toHaveCount(0);
@@ -90,9 +90,10 @@ test('Other Tax has five v11 groups, never Return, and uses in-place clickable c
   await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 2,000');
   await batch.locator('[data-head-group="Others"] summary').click();
   await expect(batch.getByRole('checkbox', { name: /Select 19AAAAA/ })).toBeDisabled();
+  await expect(batch.locator('[data-head-row="5"]')).toContainText('Historical section 19AAAAA was omitted in 2022; not available for new payments.');
 });
 
-test('all five Other Tax groups keep an editable year and amount through payment review', async ({ page }) => {
+test('all five original non-return liability groups keep an editable year and amount through payment review', async ({ page }) => {
   const dialog = await getFlow(page);
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
@@ -264,7 +265,7 @@ test('three taxpayers keep separate heads, years and amounts through combined re
   for (const plan of plans) await expect(calculation).toContainText(plan.year);
 });
 
-test('other-tax allocations create individual records with their own receipts', async ({ page }) => {
+test('Other Tax allocations produce one shared simulation receipt and a reversible confirmation', async ({ page }) => {
   const submitted: Record<string, unknown>[] = [];
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     submitted.push(route.request().postDataJSON());
@@ -285,7 +286,7 @@ test('other-tax allocations create individual records with their own receipts', 
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2500');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('3/4 Steps');
-  await expect(dialog.getByText('A separate payment record will be created for each selected head.')).toBeVisible();
+  await expect(dialog.getByText('One combined simulated payment record and receipt will cover all selected taxpayers and heads.')).toBeVisible();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
   await dialog.getByRole('radio', { name: 'bKash' }).check();
@@ -294,11 +295,18 @@ test('other-tax allocations create individual records with their own receipts', 
   await expect(pay).toBeEnabled();
   await pay.click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 15000 });
-  await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(1);
-  await expect(dialog.getByTestId('other-tax-batch-result')).toContainText('111111111111');
-  await expect(dialog.getByTestId('other-tax-batch-result')).toContainText('Record saved');
   expect(submitted).toHaveLength(1);
   expect(submitted[0].amountMinor).toBe(250000);
+  const details = submitted[0].details as {combinedPayment:boolean;allocations:Array<{taxpayerTin:string;amountMinor:number}>};
+  expect(details.combinedPayment).toBe(true);
+  expect(details.allocations).toHaveLength(1);
+  expect(details.allocations[0]).toMatchObject({taxpayerTin:'111111111111',amountMinor:250000});
+  await expect(dialog.getByTestId('other-tax-batch-result')).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Receipt details' }).click();
+  await expect(dialog.locator('.receipt-view__paper')).toContainText('111111111111');
+  await expect(dialog.locator('.receipt-view__paper')).toContainText('৳ 2,500');
+  await dialog.getByRole('button', { name: 'Back to confirmation' }).click();
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible();
 });
 
 test('Other Tax starts with one TIN and an optional name, and added rows remain clear on mobile', async ({ page }) => {
@@ -488,10 +496,10 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     else await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
     await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
     await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
-    await expect(dialog.locator('[data-head-group]')).toHaveCount(5);
+    await expect(dialog.locator('[data-head-group]')).toHaveCount(6);
     await expect(dialog.locator('#guest-income-type-NON_COMPANY')).toHaveCount(0);
     await expect(dialog.locator('#guest-head-search')).toHaveCount(0);
-    await expect(dialog.getByTestId('other-tax-batch')).toContainText('42 available Other Tax heads');
+    await expect(dialog.getByTestId('other-tax-batch')).toContainText('169 available non-return payment heads');
     await dialog.locator('[data-head-group="Advance Tax"] summary').click();
     await dialog.getByRole('checkbox', { name: /Select 68A/ }).check();
     await dialog.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('250');
@@ -522,7 +530,7 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
   await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
-  await expect(batch.locator('[data-head-group]')).toHaveCount(5);
+  await expect(batch.locator('[data-head-group]')).toHaveCount(6);
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
 });
 

@@ -1,4 +1,6 @@
+import {acceptPaymentRequestSize,MAX_COMBINED_PAYMENT_PAYLOAD_CHARS,officeMirrorIdentity} from "./combinedPaymentRequest.ts";
 import {createClient} from "npm:@supabase/supabase-js@2.57.0";
+import {createOfficeMirrorProof,verifyOfficeMirrorProof} from "./mirrorProof.ts";
 const headers={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"content-type,authorization,apikey,x-taxpay-guest-capability","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};
 const respond=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
 const uuid=/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -11,11 +13,14 @@ async function capabilityHash(request:Request):Promise<string|null>{
  const digest=await crypto.subtle.digest("SHA-256",encoder.encode(token));
  return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
 }
-function serviceClient(url:string){
+function serviceCredential():string {
  const configured=Deno.env.get("SUPABASE_SECRET_KEYS");
- const serviceKey=(configured&&(JSON.parse(configured) as Record<string,string>).default)||Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
- if(!serviceKey)throw Error("PROFILE_SERVICE_UNAVAILABLE");
- return createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
+ const secret=(configured&&(JSON.parse(configured) as Record<string,string>).default)||Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+ if(!secret)throw Error("PROFILE_SERVICE_UNAVAILABLE");
+ return secret;
+}
+function serviceClient(url:string){
+ return createClient(url,serviceCredential(),{auth:{persistSession:false,autoRefreshToken:false}});
 }
 const office="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/mirror";
 const officeAuthorization="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/authorization/mirror";
@@ -41,7 +46,9 @@ async function reconcileMirrors(url:string,serviceKey:string){
     if(item.type==="AUTHORIZATION"){
      okay=await mirrorAuthorization(item.id);
     }else if(item.type==="PAYMENT"&&item.sessionId){
-     const response=await fetch(office,{method:"POST",headers:{"Content-Type":"application/json"},
+     const proof=await createOfficeMirrorProof(serviceKey,item.id,item.sessionId);
+     const response=await fetch(office,{method:"POST",headers:{"Content-Type":"application/json",
+       "x-taxpay-office-mirror-proof":proof},
       body:JSON.stringify({id:item.id,sessionId:item.sessionId}),signal:AbortSignal.timeout(10000)});
      const result=await response.json();
      okay=response.ok&&result.success===true&&result.data?.id===item.id;
@@ -143,8 +150,11 @@ Deno.serve(async(req)=>{
    return respond({success:true,data:result,mirrored:true,simulationOnly:true});
   }
   if(req.method==="POST"&&path==="/payments"){
-    const raw=await req.text();if(raw.length>12000)return respond({success:false,error:"PAYLOAD_TOO_LARGE"},400);
+    const raw=await req.text();
+    // Match the canonical combined-payment SQL contract; keep legacy services capped.
+    if(raw.length>MAX_COMBINED_PAYMENT_PAYLOAD_CHARS)return respond({success:false,error:"PAYLOAD_TOO_LARGE"},400);
     const body=JSON.parse(raw);
+    if(!acceptPaymentRequestSize(raw.length,body))return respond({success:false,error:"PAYLOAD_TOO_LARGE"},400);
     const p_capability_hash=await capabilityHash(req);
     const client=p_capability_hash?serviceClient(url):db;
     const {data,error}=p_capability_hash
@@ -158,13 +168,36 @@ Deno.serve(async(req)=>{
         return respond({success:false,error:"PROFILE_CAPABILITY_REQUIRED"},403);
       return respond({success:false,error:"SUBMISSION_FAILED"},400);
     }
-    const out={id:data.id,sessionId:body.sessionId,service:body.service,amountMinor:body.amountMinor,data:body,status:data.status,createdAt:data.createdAt};
+    // Office independently reads the SQL record using the signed proof. Send only
+    // identifiers so a large combined request never trips Office's 16k edge gate.
+    const out=officeMirrorIdentity(data.id,body.sessionId);
     try{
-      const res=await fetch(office,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(out),signal:AbortSignal.timeout(10000)});
+      // Sign only after TaxPay SQL has returned a durable, idempotent payment ID.
+      // No client profile capability or service credential crosses to Office.
+      const proof=await createOfficeMirrorProof(serviceCredential(),data.id,body.sessionId);
+      const res=await fetch(office,{method:"POST",headers:{"Content-Type":"application/json",
+        "x-taxpay-office-mirror-proof":proof},body:JSON.stringify(out),signal:AbortSignal.timeout(10000)});
       const receipt=await res.json();
       if(!res.ok||!receipt.success||receipt.data?.id!==data.id)throw Error("OFFICE_MIRROR_NOT_ACKNOWLEDGED");
       return respond({success:true,id:data.id,status:"SIMULATED_SUCCESS",mirrored:true,replayed:data.replayed,simulationOnly:true});
     }catch(e){console.error("Office mirror pending",e);return respond({success:false,error:"OFFICE_SYNC_PENDING",requestId:data.id,retryable:true,simulationOnly:true},503);}
+  }
+  // Office verification is an independent server-to-server capability: unlike
+  // the retired public session read, this signed 120-second proof can only be
+  // minted by TaxPay Edge after SQL has acknowledged a synthetic payment.
+  // Readback is service-role only and never makes private profile data public.
+  const proof=req.headers.get("x-taxpay-office-mirror-proof");
+  if(proof!==null){
+   const m=path.match(/^\/payments\/([0-9a-fA-F-]{36})$/);
+   const session=u.searchParams.get("sessionId");
+   if(req.method!=="GET"||!m||!uuid.test(m[1])||!session||!uuid.test(session))
+     return respond({success:false,error:"NOT_FOUND"},404);
+   if(!await verifyOfficeMirrorProof(serviceCredential(),m[1],session,proof))
+     return respond({success:false,error:"UNAUTHORIZED_MIRROR_PROOF"},403);
+   const {data,error}=await serviceClient(url).rpc("taxpay_office_story1_mirror_read",{p_id:m[1],p_session:session});
+   if(error||data?.id!==m[1]||data?.status!=="SIMULATED_SUCCESS")
+     return respond({success:false,error:"SOURCE_RECORD_NOT_FOUND"},404);
+   return respond({success:true,data,simulationOnly:true});
   }
   let rpc:string,args:Record<string,unknown>;
   if(req.method==="GET"&&path==="/payments"){

@@ -15,6 +15,8 @@ try {
     ['mobile', { width: 375, height: 812 }, true],
   ]) {
     const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile });
+  // Budget guard: live readback tests use bundled image fallback rather than remote CMS bytes.
+  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**', route => route.abort('blockedbyclient'));
     const url = new URL(base);
     url.searchParams.set('action', 'landing');
     await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -149,7 +151,8 @@ try {
     await expect(modes).not.toContainText('স্থলপথে');
     await modal.locator('#travel-port').selectOption('Benapole');
     await modal.locator('#travel-destination').fill('India');
-    await modal.locator('#travel-departure-date').fill('2026-11-20');
+    await modal.locator('#travel-departure-date').fill(new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Dhaka'})
+      .format(new Date(Date.now() + 86_400_000)));
     await modal.getByRole('button', { name: 'Continue to review' }).click();
     await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
     await modal.getByRole('button', { name: 'Back', exact: true }).click();

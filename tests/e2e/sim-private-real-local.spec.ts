@@ -58,7 +58,8 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
  await expect(one.page.getByText('User ID: user6')).toBeVisible();
  await expect(one.page.getByRole('heading',{name:'Choose payment category'})).toBeVisible();
- await one.page.getByRole('button',{name:/TAX WITH RETURN/i}).click();
+ // Tax with Return is deliberately exclusive; use an eligible mixed-head pair.
+ await one.page.getByRole('button',{name:/ADVANCE TAX/i}).click();
  await expect(one.page.getByRole('heading',{name:'Information before payment'})).toBeVisible();
  await one.page.getByRole('button',{name:'Make Payment →'}).click();
  await one.page.getByLabel('Amount (৳)').first().fill('150.25');
@@ -71,7 +72,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  // The disposable TaxPay database cannot be treated as source data by hosted
  // Office. The browser must report the unacknowledged mirror and retain the
  // original SQL records/outbox; a separate local Office journey verifies ACK.
- await expect(one.page.getByRole('status').filter({hasText:'OFFICE_SYNC_PENDING'})).toBeVisible({timeout:15000});
+ await expect(one.page.getByRole('status').filter({hasText:'Simulation saved; Office synchronization pending:'})).toBeVisible({timeout:15000});
  const author=await request('/rest/v1/rpc/sim_my_payment_history',{p_view:'payer'},payer.session.access_token);
  expect(author.status).toBe(200);
  const tx=(author.data as Array<{transactionId:string;id:string;totalMinor:number;allocations:Array<{beneficiary:string;amountMinor:number}>}>)
@@ -98,5 +99,32 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(notices.status).toBe(200);
  const own=(notices.data as Array<{transactionId:string;isRead:boolean}>).find(n=>n.transactionId===tx!.transactionId);
  expect(own?.isRead).toBe(true);
+ // Revisit the Activity route after a fresh reload. Pay Again must remain
+ // visible by default to an initiating payer, not only immediately after saving.
+ await one.page.reload({waitUntil:'domcontentloaded'});
+ await expect(one.page.getByRole('button',{name:'Payments I initiated'}))
+   .toHaveAttribute('aria-pressed','true',{timeout:15000});
+ // The recorded payer, not a beneficiary, can reuse the complete historical
+ // transaction. The previous-year allocation must be reset individually.
+ await expect(one.page.getByTestId('pay-again-mobile').first()).toBeVisible({timeout:15000});
+ await one.page.getByTestId('pay-again-mobile').first().click();
+ await expect(one.page.getByTestId('pay-again-copy-status')).toContainText(tx!.id);
+ await expect(one.page.getByLabel('Payment category').nth(0)).toHaveValue('ADVANCE_TAX');
+ await expect(one.page.getByLabel('Payment category').nth(1)).toHaveValue('PENALTY');
+ await expect(one.page.getByLabel('Amount (৳)').nth(0)).toHaveValue('150.25');
+ await expect(one.page.getByLabel('Amount (৳)').nth(1)).toHaveValue('23.50');
+ await expect(one.page.getByLabel('Assessment year').nth(0)).toHaveValue('2026-27');
+ await expect(one.page.getByLabel('Assessment year').nth(1)).toHaveValue('');
+ // Reuse remains editable. Simply opening/changing a copy cannot mutate the
+ // immutable SQL payment or produce a second receipt.
+ await one.page.getByLabel('Assessment year').nth(1).selectOption('2026-27');
+ await one.page.getByLabel('Amount (৳)').nth(0).fill('150.30');
+ const original=await request('/rest/v1/rpc/sim_my_payment_history',{p_view:'payer'},payer.session.access_token);
+ const prior=(original.data as Array<{transactionId:string;totalMinor:number;allocations:Array<{assessmentYear:string;amountMinor:number}>}>)
+   .find(row=>row.transactionId===tx!.transactionId);
+ expect(prior?.totalMinor).toBe(17375);
+ expect(prior?.allocations.map(a=>a.amountMinor)).toEqual([15025,2350]);
+ expect(prior?.allocations.map(a=>a.assessmentYear)).toEqual(['2026-27','2025-26']);
+ await expect(two.page.getByTestId('pay-again-mobile')).toHaveCount(0);
  await one.context.close();await two.context.close();
 });

@@ -1,5 +1,8 @@
-import { CATEGORY_LABELS } from '../data/paymentHeads';
+import { CATEGORY_LABELS, MASTER_PAYMENT_HEADS } from '../data/paymentHeads';
+import { validCertificateTransactionId } from './transactionId';
+export { validCertificateTransactionId } from './transactionId';
 import type { ChallanReceipt, PaymentCategory, PaymentLineItem, ReceiptAllocationItem } from '../types/tax';
+import {sampleTinForUserNumber} from '../data/sampleTinSuggestions';
 
 /** Both Office and TaxPay link to this same TaxPay receipt route.
  * It reads SQL-confirmed Office records, never browser-local sample receipts. */
@@ -12,8 +15,6 @@ const methods=new Set<ChallanReceipt['paymentMethod']>([
  'BKASH','NAGAD','ROCKET','SONALI_E_SHEBA','A_CHALLAN_CARD',
  'BEFTN_RTGS','INTERNET_BANKING','VISA','MASTERCARD','BANK_BRANCH','SIMULATED'
 ]);
-export const validCertificateTransactionId=(id:unknown):id is string=>
- typeof id==='string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 interface StoredPayment {
  id:string;service:string;amountMinor:number;status:string;createdAt:string;
  details?:Record<string,unknown>;
@@ -40,6 +41,19 @@ const validMinorAmount=(value:unknown):value is number=>
 const validTin=(value:unknown):value is string=>
  typeof value==='string'&&/^[0-9]{12,13}$/.test(value);
 
+/** Older fictional records used a userN/SAVED_TIN synthetic beneficiary
+ * identifier without a separate TIN field. This restores only that exact,
+ * previously approved illustrative mapping, never taxpayer entitlement. */
+function legacySyntheticTin(beneficiary:string):string|undefined {
+ if(beneficiary.startsWith('SAVED_TIN:')){
+  const saved=beneficiary.slice('SAVED_TIN:'.length);
+  return validTin(saved)?saved:undefined;
+ }
+ const match=/^user([1-9]|[12][0-9]|30)$/.exec(beneficiary);
+ if(!match)return undefined;
+ return sampleTinForUserNumber(Number(match[1]))??undefined;
+}
+
 function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
  const d=tx.details??{};
  const lines=Array.isArray(d.lines)
@@ -50,14 +64,56 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
   :[];
  const synthetic=lines.some(line=>typeof line.beneficiary==='string');
  let items:ReceiptAllocationItem[]=[];
- if(synthetic){
-  if(explicit.length||lines.some(line=>typeof line.beneficiary!=='string'||
+ if(synthetic && explicit.length){
+  // Combined SQL payment: accounting lines and display allocations must match
+  // one-to-one. Never use an unverified receipt snapshot to infer tax credit.
+  const receiptLines=Array.isArray(d.receiptLines)
+    ?d.receiptLines.filter(line=>line&&typeof line==='object'&&!Array.isArray(line)) as Array<Record<string,unknown>>
+    :[];
+  if(explicit.length!==lines.length||receiptLines.length!==lines.length||
+    explicit.some((allocation,index)=>{
+      const line=lines[index],head=receiptLines[index];
+      return !validTin(allocation.taxpayerTin) ||
+        !validMinorAmount(allocation.amountMinor) ||
+        !Number.isSafeInteger(allocation.headId) ||
+        typeof allocation.assessmentYear!=='string'||!allocation.assessmentYear.trim() ||
+        // Earlier synthetic lines carry beneficiary/category/amount/year, with
+        // TIN and head ID stored in the matched allocation and receipt line.
+        // Preserve that valid historical contract while rejecting any explicit
+        // synthetic TIN/head that disagrees with the durable allocation.
+        (line.taxpayerTin!==undefined && line.taxpayerTin!==allocation.taxpayerTin) ||
+        line.amountMinor!==allocation.amountMinor ||
+        line.assessmentYear!==allocation.assessmentYear ||
+        (line.headId!==undefined && line.headId!==allocation.headId) ||
+        line.category!==tx.service ||
+        head.headId!==allocation.headId ||
+        Math.round(numberValue(head.totalAmount)*100)!==allocation.amountMinor;
+    }))return undefined;
+  items=explicit.map((allocation,index)=>{
+    const head=receiptLines[index];
+    const name=stringValue(allocation.taxpayerName).trim();
+    const serviceEn=stringValue(head.headNameEn).trim()||CATEGORY_LABELS[tx.service]?.en||tx.service;
+    return {taxpayerName:name||'TIN '+stringValue(allocation.taxpayerTin),
+      taxpayerTin:stringValue(allocation.taxpayerTin),
+      paymentServiceEn:serviceEn,
+      paymentServiceBn:stringValue(head.headNameBn).trim()||MASTER_PAYMENT_HEADS.find(item=>item.id===head.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn,
+      assessmentYear:stringValue(allocation.assessmentYear),
+      amountMinor:allocation.amountMinor as number,
+      ...(stringValue(head.economicCode)?{economicCode:stringValue(head.economicCode)}:{})};
+  });
+ }else if(synthetic){
+  if(lines.some(line=>typeof line.beneficiary!=='string'||
     !validMinorAmount(line.amountMinor)||!serviceCodes.has(line.category as PaymentCategory)))return undefined;
   items=lines.map(line=>{
    const category=line.category as PaymentCategory;
    const label=CATEGORY_LABELS[category];
-   const tin=validTin(line.taxpayerTin)?line.taxpayerTin:undefined;
    const name=stringValue(line.beneficiary).trim();
+   // A single legacy record may carry the exact saved TIN in payment
+   // details even when its synthetic user alias has a different length.
+   // For mixed-recipient records, derive only the fixed fictional ID mapping.
+   const storedSingleTin=lines.length===1&&validTin(d.taxpayerTin)?d.taxpayerTin:undefined;
+   const tin=validTin(line.taxpayerTin)?line.taxpayerTin:
+     storedSingleTin??legacySyntheticTin(name);
    return {taxpayerName:name||'—',paymentServiceEn:label.en,
     paymentServiceBn:label.bn,assessmentYear:stringValue(line.assessmentYear)||stringValue(d.assessmentYear)||'—',
     amountMinor:line.amountMinor as number,...(tin?{taxpayerTin:tin}:{}),
@@ -71,7 +127,7 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
    const head=lines.find(line=>line.headId===item.headId);
    const name=stringValue(item.taxpayerName);
    const serviceEn=stringValue(head?.headNameEn).trim()||CATEGORY_LABELS[tx.service]?.en||tx.service;
-   const serviceBn=stringValue(head?.headNameBn).trim()||serviceEn;
+   const serviceBn=stringValue(head?.headNameBn).trim()||MASTER_PAYMENT_HEADS.find(item=>item.id===head?.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn;
    return {taxpayerName:name||'TIN '+stringValue(item.taxpayerTin),
     taxpayerTin:stringValue(item.taxpayerTin),paymentServiceEn:serviceEn,paymentServiceBn:serviceBn,
     assessmentYear:stringValue(item.assessmentYear),amountMinor:item.amountMinor as number,
@@ -105,6 +161,24 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   const category=raw.paymentCategory;
   if(category===tx.service&&Math.round(numberValue(raw.totalAmount)*100)===tx.amountMinor
     &&Array.isArray(raw.items)){
+    // The receipt snapshot is display data, never an alternative accounting
+    // source. When durable SQL already supplies per-head facts, the snapshot
+    // must retain those exact head identities and amounts before display.
+    const accountingSource=Array.isArray(d.receiptLines)?d.receiptLines:d.lines;
+    const accounting=Array.isArray(accountingSource)&&accountingSource.length>0&&
+      accountingSource.every(line=>line&&typeof line==='object'&&!Array.isArray(line)&&
+        Number.isSafeInteger((line as Record<string,unknown>).headId))
+      ?accountingSource as Array<Record<string,unknown>>:null;
+    // Older combined receipts may have no head items in the snapshot;
+    // their independently reconciled SQL allocations remain authoritative.
+    if(accounting&&raw.items.length>0&&(raw.items.length!==accounting.length||
+      raw.items.some((item,index)=>{
+        if(!item||typeof item!=='object'||Array.isArray(item))return true;
+        const snapshotLine=item as Record<string,unknown>;
+        const sourceLine=accounting[index];
+        return ['headId','headNameEn','economicCode','totalAmount'].some(key=>
+          sourceLine[key]!==undefined&&sourceLine[key]!==snapshotLine[key]);
+      })))throw Error('Payment receipt lines could not be reconciled');
     return {
       ...(raw as unknown as ChallanReceipt),
       paymentTransactionId:tx.id,

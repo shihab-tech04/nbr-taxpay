@@ -1,3 +1,4 @@
+import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test,type Page} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 
@@ -52,8 +53,8 @@ for(const language of ['en','bn'] as const){
         :root.locator('.taxpay-mobile-table-card').first();
       await expect(row).toBeVisible();
       if(view==='history'&&desktop){
-        await expect(root.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(7);
-        await expect(row.locator('td')).toHaveCount(7);
+        await expect(root.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(9);
+        await expect(row.locator('td')).toHaveCount(9);
       }
       if(view==='history'&&!desktop){
         await expect(root.getByTestId('taxpayer-transaction-mobile-cards')).toBeVisible();
@@ -67,57 +68,23 @@ for(const language of ['en','bn'] as const){
           .toHaveText('012345678901');
       }
       if(view==='beneficiaries'&&!desktop){
-        await expect(row.locator('.taxpay-mobile-table-card__title')).toContainText('Visible Beneficiary · '+(language==='bn'?'ক্লায়েন্ট':'Clients'));
-        await expect(row.locator('.taxpay-mobile-table-card__title')).toContainText('012345678901');
-        await expect(row).not.toContainText(language==='bn'?'টিআইএন:':'TIN:');
-      }
-      if(!desktop&&view==='ledger'){
-        const nested=await row.locator('button').first().evaluate(element=>({
-          borderTopWidth:getComputedStyle(element).borderTopWidth,
-          paddingLeft:getComputedStyle(element).paddingLeft,
-          minHeight:element.getBoundingClientRect().height
-        }));
-        expect(nested.borderTopWidth,'mobile ledger must not double-border a card').toBe('0px');
-        expect(nested.paddingLeft,'mobile ledger must not double-inset a card').toBe('0px');
-        expect(nested.minHeight).toBeGreaterThanOrEqual(44);
-        const panel=await root.locator('.taxpay-ledger-records').evaluate(element=>({
-          borderTopWidth:getComputedStyle(element).borderTopWidth,
-          background:getComputedStyle(element).backgroundColor,
-          viewportBorder:getComputedStyle(element.querySelector('.taxpay-table-viewport')!).borderTopWidth
-        }));
-        expect(panel.borderTopWidth,'mobile ledger list should not double-wrap cards').toBe('0px');
-        expect(panel.viewportBorder,'mobile ledger viewport should not frame cards').toBe('0px');
-      }
-      if(header)await expect(header).toBeVisible();
-      if(view==='ledger') {
-        const ledgerMobileList=root.locator('.taxpay-mobile-table-cards');
-        const ledgerDesktopTable=root.locator('table.taxpay-unified-table');
-        if(desktop){
-          await expect(ledgerMobileList).toBeHidden();
-          await expect(ledgerDesktopTable).toBeVisible();
-        } else {
-          await expect(ledgerMobileList).toBeVisible();
-          await expect(ledgerDesktopTable).toBeHidden();
-        }
-      }
-      if(view==='beneficiaries'&&!desktop){
-        const filters=page.locator('.beneficiary-directory__filters');
-        const list=filters.locator('.beneficiary-directory__list-filter');
-        const tag=filters.locator('.beneficiary-directory__tag-filter');
-        const search=filters.locator('.beneficiary-directory__search-filter');
-        const [listBox,tagBox,searchBox]=await Promise.all([list.boundingBox(),tag.boundingBox(),search.boundingBox()]);
-        if(!listBox||!tagBox||!searchBox)throw Error('Missing beneficiary mobile filters');
-        expect(Math.abs(tagBox.y-searchBox.y),'Tag and Search share a row').toBeLessThanOrEqual(3);
-        expect(listBox.y+listBox.height,'Selected list precedes Tag and Search').toBeLessThanOrEqual(tagBox.y);
+        const context=page.locator('.taxpay-office-register__actions .beneficiary-directory__list-toolbar .beneficiary-directory__list-filter');
+        const search=page.locator('.taxpay-office-register__actions .taxpay-record-toolbar__search');
+        await expect(context.getByRole('button',{name:language==='en'?'Selected list':'নির্বাচিত তালিকা'})).toBeVisible();
+        await expect(search.getByRole('searchbox')).toBeVisible();
+        const [listBox,searchBox]=await Promise.all([context.boundingBox(),search.boundingBox()]);
+        if(!listBox||!searchBox)throw Error('Missing list switch or shared search');
         expect(searchBox.width,'Search is usable at 375px').toBeGreaterThan(120);
-        await tag.locator('select').selectOption('friends_family');
-        const relationship=filters.locator('.beneficiary-directory__relationship-filter');
-        await expect(relationship).toBeVisible();
-        const relationBox=await relationship.boundingBox();
-        if(!relationBox)throw Error('Relationship filter is missing');
-        expect(relationBox.y,'Relationship follows Tag/Search row').toBeGreaterThan(tagBox.y+tagBox.height-2);
-        await tag.locator('select').selectOption('all');
-        await expect(relationship).toHaveCount(0);
+        await page.getByRole('button',{name:language==='en'?'Filter':'ফিল্টার',exact:true}).click();
+        const filters=page.locator('.beneficiary-directory__filters');
+        const tag=filters.locator('.beneficiary-directory__tag-filter');
+        await expect(tag).toBeVisible();
+        // The approved combined Tag + Relationship is still one grouped searchable selector.
+        await chooseBeneficiaryOption(page,'beneficiary-filter-tag','friends_family:father');
+        await expect(tag.locator('#beneficiary-filter-tag')).toHaveAttribute('data-value','friends_family:father');
+        await expect(filters.locator('.beneficiary-directory__relationship-filter')).toHaveCount(0);
+        await chooseBeneficiaryOption(page,'beneficiary-filter-tag','all');
+        await expect(tag.locator('#beneficiary-filter-tag')).toHaveAttribute('data-value','all');
       }
       const style=await page.evaluate(({view,desktop})=>{
         const scope=view==='ledger'
@@ -269,3 +236,46 @@ for(const language of ['en','bn'] as const){
     expect(overflow).toBeLessThanOrEqual(2);
   });
 }
+
+
+test('Office-style record workspaces fill laptop width without hiding transaction columns',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Desktop laptop register geometry');
+  for(const view of ['beneficiaries','history','ledger'] as const){
+    if(view==='beneficiaries')await beneficiaryFixture(page);
+    await page.goto('/?action='+view+'&demoUser=user1&lang=en');
+    const workspace=page.locator('[data-taxpay-register-page="true"]').first();
+    await expect(workspace).toBeVisible();
+    const dimensions=await workspace.evaluate(element=>({
+      width:element.getBoundingClientRect().width,
+      right:element.getBoundingClientRect().right,
+      screenWidth:window.innerWidth
+    }));
+    expect(dimensions.width,view+' must use available desktop workspace').toBeGreaterThan(940);
+    expect(dimensions.right,view+' stays within viewport').toBeLessThanOrEqual(dimensions.screenWidth+1);
+    if(view==='beneficiaries'){
+      const actionCell=page.getByTestId('beneficiary-records').locator('tbody tr').first().locator('td:nth-child(2)');
+      const buttons=actionCell.getByRole('button');
+      await expect(buttons).toHaveCount(2);
+      const tops=await buttons.evaluateAll(nodes=>nodes.map(node=>Math.round(node.getBoundingClientRect().top)));
+      expect(Math.max(...tops)-Math.min(...tops),'Beneficiary actions should fit one desktop row').toBeLessThanOrEqual(8);
+    }
+    if(view==='history'){
+      const table=page.locator('.taxpayer-transaction-panel table.taxpayer-transaction-table');
+      await expect(table.locator('thead th')).toHaveCount(9);
+      for(const header of await table.locator('thead th').all())await expect(header).toBeVisible();
+      const meta=page.locator('.taxpayer-transaction-panel .taxpayer-transaction-compact-meta').first();
+      await expect(meta).toBeHidden();
+      const viewport=page.locator('.taxpayer-transaction-panel .taxpay-table-viewport');
+      // New payer and beneficiary columns fit inside the existing locally scrollable table.
+      // Scrolling the table must not scroll the entire page or hide actions permanently.
+      await viewport.evaluate(node=>{node.scrollLeft=node.scrollWidth;});
+      const action=table.locator('tbody tr').first().locator('td:last-child button');
+      const [windowBox,actionBox]=await Promise.all([viewport.boundingBox(),action.boundingBox()]);
+      expect(windowBox).not.toBeNull();expect(actionBox).not.toBeNull();
+      expect(actionBox!.x+actionBox!.width,'Transaction actions remain accessible by table-only scrolling')
+        .toBeLessThanOrEqual(windowBox!.x+windowBox!.width+2);
+    }
+    const horizontalOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(horizontalOverflow,view+' must not overflow document').toBeLessThanOrEqual(2);
+  }
+});

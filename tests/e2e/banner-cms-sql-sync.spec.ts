@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { setWorkspaceLanguage } from './workspace-language';
 
-// Synthetic HTTP transport: proves SQL rows own stationary copy and images without
+// Synthetic HTTP transport: proves each SQL row owns its content and images without
 // accessing or changing the hosted TaxPay CMS.
 const serviceRows = [
   { id: 'intro', service_code: null },
@@ -20,12 +20,12 @@ const banners = serviceRows.map(({ id, service_code }, index) => ({
   description_bn: id === 'intro' ? 'এসকিউএল-নিয়ন্ত্রিত বর্ণনা।' : 'সেবার বিবরণ।',
   mobile_description_en: id === 'intro' ? 'SQL mobile description.' : 'Service description.',
   mobile_description_bn: id === 'intro' ? 'মোবাইল বর্ণনা।' : 'সেবার বিবরণ।',
-  action_en: id === 'intro' ? 'Start tax payment' : id === 'travel' ? 'Start travel tax' : 'Pay tax',
-  action_bn: id === 'intro' ? 'কর পরিশোধ শুরু' : id === 'travel' ? 'ভ্রমণ কর শুরু' : 'কর দিন',
+  action_en: id === 'intro' ? 'Start tax payment' : id === 'travel' ? 'Start travel tax' : id === 'return' ? 'Pay return tax' : id === 'advance' ? 'Pay advance tax' : 'Deposit source tax',
+  action_bn: id === 'intro' ? 'কর পরিশোধ শুরু' : id === 'travel' ? 'ভ্রমণ কর শুরু' : id === 'return' ? 'রিটার্ন কর দিন' : id === 'advance' ? 'অগ্রিম কর দিন' : 'উৎস কর জমা',
   desktop_image_path: null, mobile_image_path: null,
 }));
 
-test('SQL-backed main copy and two payment CTAs remain fixed while five category artworks rotate', async ({ page }, info) => {
+test('SQL-backed banners preserve image order while keeping the published intro copy and two journeys fixed', async ({ page }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.route('**/rest/v1/taxpay_site_banners**', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify(banners),
@@ -33,17 +33,22 @@ test('SQL-backed main copy and two payment CTAs remain fixed while five category
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
   const mobile = info.project.name !== 'desktop-1280';
-  await expect(carousel.getByRole('heading', { name: mobile ? 'SQL mobile heading' : 'Updated SQL-controlled headline' })).toBeVisible();
+  await expect(carousel.getByRole('heading', {
+    name: mobile ? 'SQL mobile heading' : 'Updated SQL-controlled headline',
+  })).toBeVisible();
   await expect(carousel.getByRole('button', { name: 'Start tax payment' })).toBeVisible();
   await expect(carousel.getByRole('button', { name: 'Start travel tax' })).toBeVisible();
-  const copyBefore = await carousel.locator('.citizen-public-hero__copy').textContent();
   await carousel.focus();
   for (let i = 1; i <= 4; i++) {
     await page.keyboard.press('ArrowRight');
     await expect(carousel).toHaveAttribute('data-active-slide', String(i));
-    await expect(carousel.locator('.public-hero-carousel__image-layer[data-visible="true"] img'))
-      .toHaveAttribute('src', /taxpay-hero-(return|advance|withholding|travel)-v9/);
-    expect(await carousel.locator('.citizen-public-hero__copy').textContent()).toBe(copyBefore);
+    await expect(carousel.locator('.public-hero-carousel__slide').nth(i)
+      .locator('img')).toHaveAttribute('src', /taxpay-hero-(return|advance|withholding|travel)-v9/);
+    const active = carousel.locator('.public-hero-carousel__slide').nth(i);
+    await expect(active.getByRole('button', { name: 'Start tax payment' })).toBeVisible();
+    await expect(active.getByRole('button', { name: 'Start travel tax' })).toBeVisible();
+    await expect(active.locator('.public-guest-action')).toHaveCount(2);
+    await expect(carousel.getByRole('heading', { name: mobile ? 'SQL mobile heading' : 'Updated SQL-controlled headline' })).toBeVisible();
   }
 });
 
@@ -92,7 +97,7 @@ test('custom CMS button labels appear visually in compact English and Bangla lay
   await page.route('**/rest/v1/taxpay_site_banners**', route =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(banners) }));
   await page.goto('/?action=landing');
-  const hero = page.locator('.public-hero-carousel__fixed');
+  const hero = page.locator('.public-hero-carousel__slide[data-banner-service="intro"]');
   await expect(hero.locator('.public-hero-carousel__travel-compact')).toHaveText('Start travel tax');
   await expect(hero.locator('.public-hero-carousel__pay-compact')).toHaveText('Start tax payment');
   await setWorkspaceLanguage(page, 'bn');

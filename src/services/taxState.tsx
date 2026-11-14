@@ -12,6 +12,7 @@ import {
   TaxpayerProfile
 } from '../types/tax';
 import { getDemoUser, type DemoUser } from '../data/demoUsers';
+import type {PaymentReuse} from './paymentReuse';
 import {useAccountIdentity} from './accountIdentity';
 import {readBrowserLanguage,saveBrowserLanguage,saveAccountViewPreference,validSavedLanguage} from './accountViewPreferences';
 import {recordAccountActivity} from './accountActivity';
@@ -29,6 +30,7 @@ import {
 
 export type BannerPaymentService = 'TAX_WITH_RETURN' | 'ADVANCE_TAX' | 'SOURCE_TAX_DEPOSIT' | 'TRAVEL_TAX';
 export interface PaymentBeneficiaryPrefill { tin: string; name: string; additional?: { tin: string; name: string }[]; }
+export interface BeneficiarySavePrefill { ownerUid: string; tin: string; name: string; }
 
 export interface TaxStateContextType {
   currentRoute: string;
@@ -37,6 +39,11 @@ export interface TaxStateContextType {
   paymentServiceInitialSelection: BannerPaymentService | null;
   openPaymentServiceChoice: (service?: BannerPaymentService) => void;
   paymentBeneficiaryPrefill: PaymentBeneficiaryPrefill | null;
+  pendingBeneficiarySave: BeneficiarySavePrefill | null;
+  startBeneficiarySave: (request: BeneficiarySavePrefill) => void;
+  clearPendingBeneficiarySave: () => void;
+  paymentReuse: PaymentReuse | null;
+  startPaymentReuse: (reuse: PaymentReuse) => void;
   setPaymentBeneficiaryPrefill: (value: PaymentBeneficiaryPrefill | null) => void;
   demoUser: DemoUser | null;
   previewAccount: DemoUser | null;
@@ -95,15 +102,31 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpenState] = useState(false);
   const [paymentServiceInitialSelection, setPaymentServiceInitialSelection] = useState<BannerPaymentService | null>(null);
   const [paymentBeneficiaryPrefill, setPaymentBeneficiaryPrefill] = useState<PaymentBeneficiaryPrefill | null>(null);
+  const [pendingBeneficiarySave, setPendingBeneficiarySave] = useState<BeneficiarySavePrefill | null>(null);
+  const [paymentReuse, setPaymentReuse] = useState<PaymentReuse | null>(null);
+  const startPaymentReuse = (copy: PaymentReuse) => {
+    const signedInOwner=accountUser?.id===copy.ownerUid;
+    // Preview history is available only with a still-valid server-issued
+    // profile capability. Never trust the URL or a local UI role as ownership.
+    const previewOwner=!accountUser && previewAccount?.id===copy.ownerUid &&
+      activePreviewSession()?.profileId===copy.ownerUid;
+    if (!signedInOwner && !previewOwner) return;
+    setPaymentBeneficiaryPrefill(null);
+    setPaymentServiceInitialSelection(null);
+    setPaymentReuse(copy);
+    setPaymentServiceChoiceOpenState(true);
+  };
   const setPaymentServiceChoiceOpen = (open: boolean) => {
     if (!open) {
       setPaymentServiceInitialSelection(null);
       setPaymentBeneficiaryPrefill(null);
+      setPaymentReuse(null);
     }
     setPaymentServiceChoiceOpenState(open);
   };
   const openPaymentServiceChoice = (service?: BannerPaymentService) => {
     setPaymentBeneficiaryPrefill(null);
+    setPaymentReuse(null);
     setPaymentServiceInitialSelection(service ?? null);
     setPaymentServiceChoiceOpenState(true);
   };
@@ -207,6 +230,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const navigate = (requestedRoute: string, params: Record<string, any> = {}) => {
     setPaymentServiceChoiceOpen(false);
     const route = validRoute(requestedRoute);
+    if (route !== 'beneficiaries') setPendingBeneficiarySave(null);
     if(accountUser?.id&&route!==currentRoute&&
        !['landing','office_login','taxpayer_login'].includes(route))
       void recordAccountActivity(accountUser.id,'PAGE_OPENED',route).catch(()=>undefined);
@@ -238,6 +262,16 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       window.history.replaceState(historyEntry, '', next);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
+  const startBeneficiarySave = (request: BeneficiarySavePrefill) => {
+    if (!accountUser?.id || accountUser.id !== request.ownerUid || !/^\d{12}$/.test(request.tin)) return;
+    setPendingBeneficiarySave({
+      ownerUid: request.ownerUid,
+      tin: request.tin,
+      name: request.name.trim().slice(0, 160),
+    });
+    navigate('beneficiaries');
+  };
+  const clearPendingBeneficiarySave = () => setPendingBeneficiarySave(null);
 
   useEffect(() => {
     const onPopState = (event: PopStateEvent) => {
@@ -419,6 +453,11 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         openPaymentServiceChoice,
         paymentBeneficiaryPrefill,
         setPaymentBeneficiaryPrefill,
+        pendingBeneficiarySave,
+        startBeneficiarySave,
+        clearPendingBeneficiarySave,
+        paymentReuse,
+        startPaymentReuse,
         demoUser,
         previewAccount,
         loginPreviewAccount,

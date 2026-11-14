@@ -1,3 +1,6 @@
+import '../../styles/taxpay-service-choice.css';
+import '../../styles/taxpay-payment-form.css';
+import '../../styles/taxpay-unified-table.css';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowRight, CalendarClock, Check, CircleAlert, ClipboardCheck, FileCheck2, FolderOpen,
@@ -5,13 +8,17 @@ import {
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import type { BannerPaymentService } from '../../services/taxState';
-import { TaxPayModal } from '../ui/TaxPayModal';
+import { TaxPayModal, type PaymentDraftExitAction } from '../ui/TaxPayModal';
 import { GuestPayment } from './GuestPayment';
 import { TravelTax } from './TravelTax';
+import {travelTaxModalTitle,travelTaxModalStages} from './travelTaxModalContract';
 import { TaxpayerLoginDialog, TaxpayerLoginFooter } from './TaxpayerLoginDialog';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import {recordAccountActivity} from '../../services/accountActivity';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
+import type {PaymentReuse} from '../../services/paymentReuse';
+import { PaymentDraftEntryGate } from './PaymentDraftEntryGate';
+import type { PaymentFormDraft, PaymentDraftActor } from '../../services/accountPaymentFormDrafts';
 import { taxpayerBrandName } from '../../config/brand';
 
 /** The seven income-tax categories and separate travel-tax service in the NBR v11 HTML. */
@@ -35,38 +42,102 @@ export const TAXPAY_ENTRY_CHOICES = [
   { id: 'OTHER_TAX', Icon: WalletCards, en: 'Other Tax', bn: 'অন্যান্য কর', detailEn: 'Other tax payments.', detailBn: 'অন্যান্য কর পরিশোধ।' }
 ] as const;
 
-export function PaymentServiceChoiceDialog({ initialService = null }: { initialService?: BannerPaymentService | null }) {
+export function PaymentServiceChoiceDialog({ initialService = null, initialDraft = null, initialReuse = null, onDismiss }: { initialService?: BannerPaymentService | null; initialDraft?: PaymentFormDraft | null; initialReuse?: PaymentReuse | null; onDismiss?: () => void }) {
   const { language, navigate, setPaymentServiceChoiceOpen, previewAccount, paymentBeneficiaryPrefill } = useTaxState();
   const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
   const multiBeneficiaryPrefill = (paymentBeneficiaryPrefill?.additional?.length ?? 0) > 0;
-  const [payerForSelf, setPayerForSelf] = useState<boolean | null>(paymentBeneficiaryPrefill ? false : null);
-  const [topLevel, setTopLevel] = useState<TopLevelService | null>(paymentBeneficiaryPrefill ? 'OTHER_TAX' : initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
+  // A Travel Tax shortcut enters the existing passenger journey directly.
+  const directTravelEntry = initialService === 'TRAVEL_TAX' && !initialDraft && !initialReuse;
+  const [payerForSelf, setPayerForSelf] = useState<boolean | null>(initialDraft ? (initialDraft.service === 'TRAVEL_TAX' ? true : initialDraft.form_payload.forSelf as boolean) : initialReuse ? initialReuse.formPayload.forSelf as boolean : paymentBeneficiaryPrefill ? false : null);
+  const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialDraft ? (initialDraft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : initialReuse ? (initialReuse.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : paymentBeneficiaryPrefill ? 'OTHER_TAX' : initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
   // Other Tax is one entry choice. No follow-up subtype selection is collected here.
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
-  const [view, setView] = useState<'payer' | 'login' | 'payment'>('payer');
+  const [view, setView] = useState<'payer' | 'login' | 'payment'>(initialDraft || initialReuse || directTravelEntry ? 'payment' : 'payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
-  const [useAccount, setUseAccount] = useState(false);
+  const [useAccount, setUseAccount] = useState(Boolean(initialDraft || initialReuse));
   const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(null);
   // An existing signed-in session must always use the account journey.
   // Only signed-out users need to choose between account sign-in and walk-in.
   const alreadySignedIn = Boolean(verifiedUser || previewAccount);
   const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
+  const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(initialDraft);
+  // Back from taxpayer details returns to payer choices without losing
+  // the route back to the signed-in user's original saved-draft decision.
+  const [draftEntryCompleted, setDraftEntryCompleted] = useState(Boolean(initialDraft || initialReuse));
+  const [enteredFromDraftChoice, setEnteredFromDraftChoice] = useState(false);
+  const [draftEntryMode, setDraftEntryMode] = useState<'choice' | 'list' | 'new'>('choice');
+  const changeDraftEntryMode = useCallback((next: 'choice' | 'list' | 'new') => {
+    if (next === 'new') setEnteredFromDraftChoice(true);
+    setDraftEntryMode(next);
+  }, []);
+  const [draftEntryBlocking, setDraftEntryBlocking] = useState(Boolean(verifiedUser || previewAccount));
+  const draftActor: PaymentDraftActor | null = verifiedUser
+    ? { kind: 'authenticated', userId: verifiedUser.id }
+    : previewAccount ? { kind: 'preview', profileId: previewAccount.id } : null;
+  const draftOwnerKey = draftActor ? draftActor.kind + ':' +
+    (draftActor.kind === 'authenticated' ? draftActor.userId : draftActor.profileId) : '';
   const [loginReady, setLoginReady] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
   const payerHeadingRef = useRef<HTMLHeadingElement>(null);
   const stepHeadingRef = useRef<HTMLParagraphElement>(null);
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
-  const close = () => setPaymentServiceChoiceOpen(false);
-  const stages = [tr('Taxpayer details', 'করদাতার তথ্য'), tr('Purpose & amount', 'খাত ও পরিমাণ'), tr('Payment channel', 'পেমেন্ট চ্যানেল'), tr('Confirmation', 'নিশ্চিতকরণ')];
-  const shortStages = [tr('Identity', 'পরিচয়'), tr('Amount', 'পরিমাণ'), tr('Channel', 'চ্যানেল'), tr('Done', 'শেষ')];
-  const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === selected);
-  const paymentAccess = selected ? resolvePaymentServiceAccess(selected, 'MAKE_PAYMENT') : null;
+  const close = () => { if (onDismiss) onDismiss(); else setPaymentServiceChoiceOpen(false); };
+  const draftExitActionRef = useRef<PaymentDraftExitAction | null>(null);
+  const registerDraftExit = useCallback((action: PaymentDraftExitAction | null) => {
+    draftExitActionRef.current = action;
+  }, []);
+  const [exitPromptOpen, setExitPromptOpen] = useState(false);
+  const [exitSaving, setExitSaving] = useState(false);
+  const [exitError, setExitError] = useState('');
+  const exitFirstButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (exitPromptOpen) exitFirstButtonRef.current?.focus();
+  }, [exitPromptOpen]);
+  const requestClose = () => {
+    if (exitSaving) return;
+    if (exitPromptOpen) { setExitPromptOpen(false); setExitError(''); return; }
+    if (view === 'payment' && draftExitActionRef.current) {
+      setExitPromptOpen(true);
+      setExitError('');
+      return;
+    }
+    close();
+  };
+  const saveDraftAndClose = async () => {
+    if (exitSaving) return;
+    const saveDraft = draftExitActionRef.current;
+    if (!saveDraft) {
+      setExitError(tr('Draft saving is unavailable. Keep editing and try again.', 'খসড়া সংরক্ষণ করা যাচ্ছে না। ফর্মে ফিরে আবার চেষ্টা করুন।'));
+      return;
+    }
+    setExitSaving(true);
+    setExitError('');
+    try {
+      await saveDraft();
+      close();
+    } catch (cause) {
+      setExitError(cause instanceof Error ? cause.message :
+        tr('Draft saving failed. Your payment is still open.', 'খসড়া সংরক্ষণ ব্যর্থ হয়েছে। পেমেন্টটি এখনো খোলা আছে।'));
+    } finally {
+      setExitSaving(false);
+    }
+  };
+  const effectiveSelected: ServiceId | null = draftToResume?.service ?? initialReuse?.service ?? selected;
+  const travelJourney = effectiveSelected === 'TRAVEL_TAX';
+  const stages = travelJourney
+    ? travelTaxModalStages(language)
+    : [tr('Taxpayer details', 'করদাতার তথ্য'), tr('Purpose & amount', 'খাত ও পরিমাণ'), tr('Payment channel', 'পেমেন্ট চ্যানেল'), tr('Confirmation', 'নিশ্চিতকরণ')];
+  const shortStages = travelJourney
+    ? [tr('Passengers', 'যাত্রী'), tr('Travel', 'ভ্রমণ'), tr('Review', 'পর্যালোচনা'), tr('Receipt', 'রসিদ')]
+    : [tr('Identity', 'পরিচয়'), tr('Amount', 'পরিমাণ'), tr('Channel', 'চ্যানেল'), tr('Done', 'শেষ')];
+  const chosenService = PAYMENT_SERVICE_CHOICES.find(choice => choice.id === effectiveSelected);
+  const paymentAccess = effectiveSelected ? resolvePaymentServiceAccess(effectiveSelected, 'MAKE_PAYMENT') : null;
   const publicPayment = paymentAccess?.kind === 'PUBLIC';
   const beginPayment = (withAccount: boolean) => {
     if(withAccount&&verifiedUser?.id)
       void recordAccountActivity(verifiedUser.id,'PAYMENT_STARTED','wizard').catch(()=>undefined);
-    setUseAccount(withAccount); setStage(1); setView('payment');
+    setDraftToResume(null); setDraftEntryCompleted(true); setUseAccount(withAccount); setStage(1); setView('payment');
   };
   const openLogin = () => { setLoginReady(false); setView('login'); };
   const advanceToPayment = () => {
@@ -77,6 +148,7 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
     openLogin();
   };
   const returnToService = () => {
+    setDraftToResume(null);
     setStage(1);
     setView('payer');
   };
@@ -93,32 +165,61 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
     <TaxPayModal
       title={view === 'login'
         ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`)
+        : view === 'payment' && travelJourney ? stages[stage - 1]
         : view === 'payment' ? stages[stage - 1] : tr('Pay Tax', 'কর পরিশোধ')}
       progress={view === 'payment' ? { current: stage, total: 4, label: tr('Steps', 'ধাপ'),
-        subtitle: chosenService && payerForSelf !== null
+        subtitle: travelJourney ? travelTaxModalTitle(language)
+          : chosenService && payerForSelf !== null
           ? `${tr(chosenService.en, chosenService.bn)} › ${payerForSelf ? tr('My Tax Liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}`
           : undefined } : undefined}
-      ariaLabel={view === 'login' ? undefined : tr('Pay Tax', 'কর পরিশোধ')}
-      onClose={close}
+      ariaLabel={view === 'login' ? undefined : travelJourney && view === 'payment' ? travelTaxModalTitle(language) : tr('Pay Tax', 'কর পরিশোধ')}
+      onClose={requestClose}
+      onBackdropClose={() => {
+        // A backdrop click never discards draft-eligible payment data.
+        if (exitPromptOpen || (view === 'payment' && draftExitActionRef.current)) return;
+        close();
+      }}
+      registerDraftExit={registerDraftExit}
       className={view === 'login' ? 'taxpayer-login-modal' : ''}
       animateSize={view === 'payer'}
-      motionKey={view}
-      onBack={view === 'login' ? () => setView('payer') : view === 'payment' ? () => {
+      // Draft choice/list/new swap content inside the same payer view.
+      // Re-measure the approved modal height on every such transition so the
+      // full original payer cards and footer cannot inherit the compact draft height.
+      motionKey={`${view}:${view === 'payer' ? `${draftEntryMode}:${draftEntryBlocking ? 'draft' : 'original'}` : stage}`}
+      onBack={view === 'payer' && enteredFromDraftChoice && draftActor &&
+        !initialService && !paymentBeneficiaryPrefill
+        ? () => {
+          setEnteredFromDraftChoice(false);
+          setDraftEntryCompleted(false);
+          setDraftEntryMode('choice');
+        }
+        : view === 'payer' && draftEntryBlocking && draftEntryMode === 'list'
+        ? () => setDraftEntryMode('choice')
+        : view === 'login' ? () => setView('payer') : view === 'payment' && (travelJourney ? stage > 1 : stage !== 4) ? () => {
+        if (travelJourney && stage === 4) {
+          document.querySelector<HTMLButtonElement>('.taxpay-modal[data-public-service="travel"] [data-testid="travel-receipt-back"]')?.click();
+          return;
+        }
+        if (travelJourney && document.querySelector('.taxpay-modal[data-public-service="travel"] .travel-flow[data-receipt-review="true"]')) {
+          document.querySelector<HTMLButtonElement>('.taxpay-modal[data-public-service="travel"] .travel-flow__footer-actions .travel-flow__primary')?.click();
+          return;
+        }
         const back = document.querySelector<HTMLButtonElement>(
           '.taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions .tax-service-choice__cancel, ' +
           '.taxpay-modal[data-payment-stage="true"] .travel-flow__footer-actions .tax-service-choice__cancel'
         );
         if (back && !back.disabled) back.click();
-        else if (stage === 1 || stage === 4) returnToService();
+        else if (stage === 1) (directTravelEntry ? requestClose() : returnToService());
       } : undefined}
       backLabel={tr('Back', 'ফিরুন')}
-      service={view === 'login' ? 'login' : view === 'payment' && selected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
-      closeIconLabel={tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
+      hideFooter={view === 'payer' && draftEntryBlocking}
+      service={view === 'login' ? 'login' : view === 'payment' && effectiveSelected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
+      closeIconLabel={travelJourney && view === 'payment' ? tr('Close modal', 'মডাল বন্ধ করুন') : tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
       footer={view === 'login'
         ? <TaxpayerLoginFooter formId="taxpay-embedded-login-form" disabled={!loginReady} language={language} />
         : (
         <div className="tax-service-choice__actions">
-          {view === 'payer' && <button type="button" className="tax-service-choice__continue"
+          {view === 'payer' && !draftEntryBlocking && <button type="button" className="tax-service-choice__continue"
              disabled={payerForSelf === null || !selected || (multiBeneficiaryPrefill && selected !== 'OTHER_TAX_PAYMENT') || (accountLoading && !previewAccount)
                || !selectedAccess}
              onClick={advanceToPayment}>
@@ -127,8 +228,13 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
         </div>
       )}
     >
-      <section key={view} ref={flowRef} data-view={view}
-        className={`tax-service-choice${view === 'payment' && selected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
+      {view === 'payment' && travelJourney ? (
+        <TravelTax key={draftToResume ? 'travel-draft-' + draftToResume.id : initialReuse ? 'travel-reuse-' + initialReuse.sourcePaymentId : 'travel-tax-modal'}
+          embedded fourStepJourney initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
+          onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage} />
+      ) : <section key={view} ref={flowRef} data-view={view}
+        data-banner-entry={initialService && view === 'payment' ? 'true' : undefined}
+        className={`tax-service-choice${view === 'payment' && effectiveSelected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
         {view === 'payment' && <>
           <p ref={stepHeadingRef} tabIndex={-1} className="tax-service-choice__eyebrow" aria-label={tr(`Step ${stage} of 4: ${stages[stage - 1]}`, `ধাপ ${stage} / ৪: ${stages[stage - 1]}`)}>{tr(`Step ${stage} of 4`, `ধাপ ${stage} / ৪`)}</p>
           <ol className="tax-service-choice__progress sr-only" aria-label={tr('Payment stages', 'পেমেন্টের ধাপ')}>
@@ -148,10 +254,30 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
           <p className="tax-service-choice__selected-service">
             <span>{tr('Selected payment service', 'নির্বাচিত কর পরিশোধ সেবা')}</span>
             <strong data-payment-service={chosenService.id}>{tr(chosenService.en, chosenService.bn)}</strong>
-            <span>{payerForSelf ? tr('My tax liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}</span>
+            {!travelJourney && <span>{payerForSelf ? tr('My tax liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}</span>}
           </p>
         </>}
-        {view === 'payer' ? <>
+        {view === 'payer' ? <PaymentDraftEntryGate
+           actor={draftActor} ownerKey={draftOwnerKey}
+           mode={draftEntryMode} onModeChange={changeDraftEntryMode}
+           enabled={Boolean(!draftEntryCompleted && draftActor && !initialService && !paymentBeneficiaryPrefill)}
+           language={language}
+           serviceLabel={id => {
+             const service = PAYMENT_SERVICE_CHOICES.find(item => item.id === id);
+             return service ? tr(service.en, service.bn) : id;
+           }}
+           onBlockingChange={setDraftEntryBlocking}
+           onResume={draft => {
+             setTopLevel(draft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX');
+             setPayerForSelf(draft.service === 'TRAVEL_TAX' ? true : draft.form_payload.forSelf as boolean);
+             setDraftToResume(draft);
+             setEnteredFromDraftChoice(true);
+             setDraftEntryCompleted(true);
+             setUseAccount(true);
+             setStage(1);
+             setView('payment');
+           }}
+         >
            <h3 ref={payerHeadingRef} tabIndex={-1} id="tax-service-choice-question" className="tax-service-choice__payer-focus">{tr('Whose tax liability are you settling?', 'আপনি কার করদায় পরিশোধ করছেন?')}</h3>
            <div className="tax-service-choice__grid tax-service-choice__payer-grid" role="group" aria-label={tr('Taxpayer relationship', 'করদাতার সঙ্গে সম্পর্ক')}>
              {[
@@ -208,17 +334,85 @@ export function PaymentServiceChoiceDialog({ initialService = null }: { initialS
              <FolderOpen size={17} aria-hidden="true" />
              {tr('Resume a saved payment draft', 'সংরক্ষিত পেমেন্ট খসড়া চালু করুন')}
            </button>}
-         </> : view === 'login' ? (
+         </PaymentDraftEntryGate> : view === 'login' ? (
            <TaxpayerLoginDialog embedded preservePaymentJourney emailReturnTo="taxpayer_home" onClose={() => setView('payer')} onValidityChange={setLoginReady} onSuccess={() => beginPayment(true)} />
-         ) : selected === 'TRAVEL_TAX' ? (
-          <TravelTax key="travel-tax-modal" embedded fourStepJourney onBackToService={returnToService} onStageChange={reportStage} />
-        ) : selected ? (
-          <GuestPayment key={`${selected}-${payerForSelf}`} embedded initialCategory={selected} initialForSelf={payerForSelf ?? undefined}
+         ) : effectiveSelected === 'TRAVEL_TAX' ? (
+          <TravelTax key={draftToResume ? 'travel-draft-' + draftToResume.id : initialReuse ? 'travel-reuse-' + initialReuse.sourcePaymentId : 'travel-tax-modal'}
+            embedded fourStepJourney initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
+            onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage} />
+        ) : effectiveSelected ? (
+          <GuestPayment key={draftToResume ? 'payment-draft-' + draftToResume.id : initialReuse ? 'payment-reuse-' + initialReuse.sourcePaymentId : effectiveSelected + '-' + String(payerForSelf)}
+            embedded initialCategory={effectiveSelected} initialForSelf={payerForSelf ?? undefined}
+            initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
             initialBeneficiary={payerForSelf === false ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
-            isWithholdingMode={selected === 'SOURCE_TAX_DEPOSIT'}
+            isWithholdingMode={effectiveSelected === 'SOURCE_TAX_DEPOSIT'}
             onBackToService={returnToService} onStageChange={reportStage} />
         ) : null}
-      </section>
+      </section>}
+      {exitPromptOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/50 px-4 py-6"
+          data-testid="payment-draft-exit-overlay"
+          onMouseDown={event => event.stopPropagation()}>
+          <div role="alertdialog" aria-modal="true" aria-labelledby="payment-draft-exit-title"
+            aria-describedby="payment-draft-exit-description"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-[440px] overflow-y-auto rounded-2xl border border-taxpay-border bg-white p-5 shadow-2xl sm:p-6"
+            onKeyDown={event => {
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!exitSaving) { setExitPromptOpen(false); setExitError(''); }
+              }
+              if (event.key === 'Tab') {
+                const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
+                if (!buttons.length) { event.preventDefault(); return; }
+                if (event.shiftKey && document.activeElement === buttons[0]) {
+                  event.preventDefault();
+                  buttons[buttons.length - 1].focus();
+                } else if (!event.shiftKey && document.activeElement === buttons[buttons.length - 1]) {
+                  event.preventDefault();
+                  buttons[0].focus();
+                }
+              }
+            }}>
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-taxpay-primary/10 text-taxpay-primary" aria-hidden="true">
+                <FileCheck2 size={20} strokeWidth={1.8} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 id="payment-draft-exit-title" className="text-lg font-semibold leading-6 text-taxpay-dark">
+                  {tr('Save your tax payment?', 'কর পরিশোধের খসড়া সংরক্ষণ করবেন?')}
+                </h3>
+                <p id="payment-draft-exit-description" className="mt-2 text-sm leading-6 text-taxpay-muted">
+                  {tr('Save a draft to continue later. Discarding will lose your unsaved changes.',
+                    'পরে চালিয়ে যেতে খসড়া সংরক্ষণ করুন। বাদ দিলে অসংরক্ষিত পরিবর্তন হারিয়ে যাবে।')}
+                </p>
+              </div>
+            </div>
+            {exitError && <p role="alert" className="mt-4 rounded-lg border border-taxpay-border px-3 py-2 text-sm text-taxpay-error">{exitError}</p>}
+            <div className="mt-6 grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2"
+              data-testid="payment-draft-exit-cta-row">
+              <button ref={exitFirstButtonRef} type="button" disabled={exitSaving}
+                className="min-h-11 w-full rounded-lg bg-taxpay-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-taxpay-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
+                onClick={() => void saveDraftAndClose()}>
+                {exitSaving ? tr('Saving…', 'সংরক্ষণ হচ্ছে…') : tr('Save Draft', 'খসড়া সংরক্ষণ করুন')}
+              </button>
+              <button type="button" disabled={exitSaving}
+                className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-4 py-2.5 text-sm font-semibold text-taxpay-dark transition-colors hover:bg-taxpay-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
+                onClick={() => { setExitPromptOpen(false); setExitError(''); }}>
+                {tr('Keep editing', 'সম্পাদনা চালিয়ে যান')}
+              </button>
+            </div>
+            <div className="mt-5 border-t border-taxpay-border pt-3"
+              data-testid="payment-draft-exit-discard-row">
+              <button type="button" disabled={exitSaving}
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-taxpay-error transition-colors hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
+                onClick={close}>
+                {tr('Discard tax payment', 'কর পরিশোধ বাদ দিন')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </TaxPayModal>
   );
 }

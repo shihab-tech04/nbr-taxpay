@@ -206,14 +206,16 @@
 /* Entry cards are presentation choices, not financial service identities.
    Reuse existing design-system service palettes without changing original IDs. */
 .tax-service-choice__card[data-payer-relationship="SELF"],
-.tax-service-choice__card[data-payment-entry="TAX_WITH_RETURN"] {
+.tax-service-choice__card[data-payment-entry="TAX_WITH_RETURN"],
+.tax-service-choice__card[data-draft-entry-option="NEW"] {
   --choice-primary: var(--service-return-primary);
   --choice-bg: var(--service-return-bg);
   --choice-border: var(--service-return-border);
   --choice-text: var(--service-return-text);
 }
 .tax-service-choice__card[data-payer-relationship="OTHER"],
-.tax-service-choice__card[data-payment-entry="OTHER_TAX"] {
+.tax-service-choice__card[data-payment-entry="OTHER_TAX"],
+.tax-service-choice__card[data-draft-entry-option="RESUME"] {
   --choice-primary: var(--service-general-primary);
   --choice-bg: var(--service-general-bg);
   --choice-border: var(--service-general-border);
@@ -239,6 +241,12 @@
 }
 .tax-service-choice__card:hover {
   background: var(--color-taxpay-surface-subtle);
+}
+/* Draft entry rows are navigation actions, not selected radio choices.
+   Keep the shared card/icon geometry; only reuse existing palette and arrow cues. */
+.tax-service-choice__card[data-draft-entry-option] > .tax-service-choice__access-arrow {
+  color: var(--choice-primary);
+  margin-inline-start: .5rem;
 }
 .tax-service-choice__card[aria-pressed="true"] {
   /* The 1px border + clipped 2px inset stroke make a 3px left accent.
@@ -487,11 +495,16 @@
 .payment-head-search__button {display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 15px;border-radius:8px;border:1px solid var(--citizen-primary);color:white;background:var(--citizen-primary);font-size:14px;font-weight:700;cursor:pointer;}
 .payment-head-search__button:hover {background:var(--citizen-primary-dark);}
 .payment-head-amount-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;min-width:0;}
+/* Multi-head amount rows keep the editable field on the left and its code and
+   description on the right. The entire row occupies the available form width. */
+.payment-head-amount-grid:has(.payment-head-amount--multi) {grid-template-columns:minmax(0,1fr);grid-column:1/-1;}
 .payment-head-amount {margin-top:14px;min-width:0;}
 .payment-head-amount[data-columns="1"] {grid-column:1/-1;}
 .payment-head-amount[data-columns="2"] {grid-column:auto;}
-.payment-head-amount__label {font-size:14px;font-weight:700;color:var(--citizen-text);margin:0 0 8px;line-height:1.45;}
-@media(max-width:700px){.payment-head-amount-grid{grid-template-columns:minmax(0,1fr);}.payment-head-amount[data-columns]{grid-column:1/-1;}}
+.payment-head-amount__control {min-width:0;}
+.payment-head-amount--multi {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:center;}
+.payment-head-amount__label {font-size:14px;font-weight:600;color:var(--citizen-text);margin:0;line-height:1.5;min-width:0;overflow-wrap:anywhere;}
+@media(max-width:700px){.payment-head-amount-grid{grid-template-columns:minmax(0,1fr);}.payment-head-amount[data-columns]{grid-column:1/-1;}.payment-head-amount--multi{grid-template-columns:minmax(0,1fr);gap:8px;}}
 .taxpay-citizen-shell .taxpay-modal:has(.payment-flow-embedded) .taxpay-modal__footer { justify-content:space-between; }
 .taxpay-citizen-shell .taxpay-modal:has(.payment-flow-embedded) .taxpay-modal__footer-actions { flex:1 1 auto; }
 .payment-flow-embedded--receipt .receipt-view--embedded { max-width:100%; }
@@ -681,15 +694,20 @@
   text-align: center;
   font-weight: 650;
 }
-/* Only the Pay Tax entry screen has no Back: align its heading with its choice cards. */
+/* Keep the Pay Tax entry title beside the header Back arrow when present.
+   Only the no-Back entry screen may span the empty first grid column. */
 .taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not([data-payment-stage="true"])
   .taxpay-modal__header .taxpay-modal__title {
-  grid-column: 1 / 3;
+  grid-column: 2;
   grid-row: 1;
   text-align: left;
   min-width: 0;
 }
-.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not([data-payment-stage="true"])
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not([data-payment-stage="true"]):not(:has(.taxpay-modal__back))
+  .taxpay-modal__header .taxpay-modal__title {
+  grid-column: 1 / 3;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="payment-choice"]:not([data-payment-stage="true"]):not(:has(.taxpay-modal__back))
   .taxpay-modal__back-placeholder { display: none; }
 .taxpay-citizen-shell .taxpay-modal .taxpay-modal__back,
 .taxpay-citizen-shell .taxpay-modal .taxpay-modal__close {
@@ -1116,6 +1134,16 @@
     border-top: 1px solid var(--citizen-border);
     border-left: 1px solid var(--citizen-border);
     border-radius: 0;
+  }
+  /* Step 1 uses the modal body as its scroll container. The desktop
+     calculation must remain visible while the left beneficiary list scrolls. */
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__identity > .payment-form-summary {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: min(70dvh, 620px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
 @media (max-width: 800px) {
@@ -1999,24 +2027,51 @@
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__mobile-summary {
   display: none;
 }
+/* All travel entries use the same shared footer. Account drafts take the
+   leading slot (as in Pay Tax); Continue remains the trailing primary action. */
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions {
-  justify-content: stretch;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 12px;
   width: 100%;
+  min-width: 0;
 }
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions .payment-journey-footer__back {
   display: none;
 }
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions .payment-journey-footer__leading {
+  display: flex;
+  flex: 0 0 auto;
+  min-width: 0;
+  align-items: center;
+}
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions .payment-journey-footer__next {
   display: flex;
-  width: 100%;
-  flex: 1 1 auto;
-  margin: 0;
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+  margin-inline-start: auto;
 }
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions .travel-flow__primary {
-  width: 100%;
+  width: auto;
+  min-width: min(240px,100%);
+  max-width: 100%;
   min-height: 46px;
   border-radius: 9px;
   font: 700 14px/1.5 Poppins, system-ui, sans-serif;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions:not(:has(.payment-journey-footer__leading)) .payment-journey-footer__next {
+  flex: 1 1 auto;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions:not(:has(.payment-journey-footer__leading)) .travel-flow__primary {
+  width: 100%;
+}
+.travel-flow__action-short { display: none; }
+@media (max-width: 520px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions:has(.payment-journey-footer__leading) .travel-flow__action-long { display: none; }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions:has(.payment-journey-footer__leading) .travel-flow__action-short { display: inline; }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions .travel-flow__primary { min-width: 0; padding-inline: 10px; font-size: 13px; }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .travel-flow__footer-actions { gap: 8px; }
 }
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="travel"] .taxpay-modal__body:has(> .receipt-view) {
   padding: 20px;
@@ -2191,3 +2246,138 @@
     transition: none !important;
   }
 }
+
+
+/* Payment stage footer: draft actions stay on the left; the primary next-step
+   action stays right-aligned. None of these buttons should expand full width. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions {
+  justify-content: space-between;
+  gap: 12px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .tax-service-choice__continue {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  margin-inline-start: auto;
+  padding-inline: 20px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__draft-actions {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.payment-form-draft-controls__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.payment-form-draft-controls__actions button {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: auto;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.payment-form-draft-controls__save {
+  border: 1px solid var(--citizen-primary);
+  background: var(--citizen-primary);
+  color: white;
+}
+.payment-form-draft-controls__open {
+  border: 1px solid var(--citizen-primary);
+  background: white;
+  color: var(--citizen-primary);
+}
+.payment-form-draft-controls__open-short { display: none; }
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions {
+    column-gap: 8px;
+    row-gap: 10px;
+  }
+  .payment-form-draft-controls__actions { gap: 5px; }
+  .payment-form-draft-controls__actions button { padding-inline: 9px; font-size: 13px; }
+  .payment-form-draft-controls__open-long { display: none; }
+  .payment-form-draft-controls__open-short { display: inline; }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .tax-service-choice__continue {
+    flex: 0 1 auto;
+    width: auto;
+    padding-inline: 12px;
+    margin-inline-start: auto;
+    font-size: 13px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .tax-service-choice__continue .payment-flow-embedded__action-long {
+    display: none;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .tax-service-choice__continue .payment-flow-embedded__action-short {
+    display: inline;
+  }
+}
+
+
+@media (max-width: 360px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer {
+    padding-inline: 8px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions {
+    column-gap: 4px;
+  }
+  .payment-form-draft-controls__actions { gap: 4px; }
+  .payment-form-draft-controls__actions button { padding-inline: 6px; font-size: 12px; }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .tax-service-choice__continue {
+    padding-inline: 7px;
+    font-size: 12px;
+    gap: 4px;
+  }
+}
+
+/* A CMS service-specific CTA must use the same readable progressive modal as
+ * the shared Pay action, without losing its distinct accounting category.
+ * The legacy two-column form + 310px rail cramped multi-head amount inputs.
+ * Only the direct service entry's Step 2 uses the full-width arrangement.
+ * All heads, per-head amounts, AY controls and the calculation remain present. */
+.taxpay-citizen-shell .tax-service-choice[data-banner-entry="true"]
+  .payment-flow-embedded__content:has(> .payment-flow-embedded__payment) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.taxpay-citizen-shell .tax-service-choice[data-banner-entry="true"]
+  .payment-flow-embedded__payment > .payment-form-layout__sections {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+}
+.taxpay-citizen-shell .tax-service-choice[data-banner-entry="true"]
+  .payment-flow-embedded__payment > .payment-form-summary {
+  grid-column: 1;
+  grid-row: 2;
+  width: 100%;
+  min-width: 0;
+  border-left: 0;
+  border-top: 1px solid var(--citizen-border);
+  position: static;
+}
+@media (min-width: 801px) {
+  .taxpay-citizen-shell .tax-service-choice[data-banner-entry="true"]
+    .payment-flow-embedded__payment .payment-head-amount-grid:has(.payment-head-amount:nth-child(2)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .taxpay-citizen-shell .tax-service-choice[data-banner-entry="true"]
+    .payment-flow-embedded__payment .payment-head-amount-grid:has(.payment-head-amount:nth-child(2))
+    .payment-head-amount {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 260px);
+    align-items: center;
+    gap: 12px;
+  }
+  .taxpay-citizen-shell .tax-service-choice[data-banner-entry="true"]
+    .payment-flow-embedded__payment .payment-head-amount-grid:has(.payment-head-amount:nth-child(2))
+    .payment-head-amount__label { margin: 0; }
+}
+

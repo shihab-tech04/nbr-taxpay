@@ -95,13 +95,24 @@ type BannerSlide = {
   mobileHeadingEn: string; mobileHeadingBn: string; descriptionEn: string; descriptionBn: string;
   mobileDescriptionEn: string; mobileDescriptionBn: string; actionEn: string; actionBn: string;
   image: string; mobileImage?: string;
+  backgroundColor?: string | null; headingColor?: string | null;
+  bodyColor?: string | null; outlineColor?: string | null;
 };
 
 const fallbackSlides: BannerSlide[] = defaultSlides.map(slide => ({ ...slide }));
 
 /** Keep the approved v9 media and layout even if a published Storage object is missing. */
-function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolean }) {
+function BannerPicture({ slide, visible, preload, onVisibleReady }: {
+  slide: BannerSlide; visible: boolean; preload: boolean; onVisibleReady: () => void;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
+  // Never give the browser a URL for unpublished/inactive artwork at startup.
+  // Once visited or prepared, retain the image through the approved dissolve.
+  const [requested, setRequested] = useState(visible || preload);
+  const shouldRequest = requested || visible || preload;
+  useEffect(() => {
+    if (visible || preload) setRequested(true);
+  }, [visible, preload]);
   // The keyed picture already retries when CMS changes its image URL. Also
   // retry an unchanged URL after a temporary network/storage outage recovers.
   useEffect(() => {
@@ -116,10 +127,15 @@ function BannerPicture({ slide, visible }: { slide: BannerSlide; visible: boolea
   }, [imageFailed]);
   const fallbackImage = fallbackSlides.find(value =>
     (value.serviceCode || null) === (slide.serviceCode || null))?.image || heroPaymentIllustration;
+  const resolvedImage = imageFailed ? fallbackImage : slide.image;
   return <picture className="public-hero-carousel__image-layer" data-visible={visible}>
-    {!imageFailed && slide.mobileImage && <source media="(max-width: 640px)" srcSet={slide.mobileImage} />}
+    {!imageFailed && slide.mobileImage && <source media="(max-width: 640px)"
+      srcSet={shouldRequest ? slide.mobileImage : undefined} />}
     <img className="public-information-hero__image public-hero-carousel__service-image"
-      src={imageFailed ? fallbackImage : slide.image} alt="" decoding="async"
+      src={shouldRequest ? resolvedImage : undefined} data-deferred-src={resolvedImage}
+      alt="" decoding="async" loading={visible || preload ? 'eager' : 'lazy'}
+      fetchPriority={visible ? 'high' : 'low'}
+      onLoad={() => { if (visible) onVisibleReady(); }}
       onError={() => setImageFailed(true)} />
   </picture>;
 }
@@ -159,6 +175,8 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
       actionEn: row.action_en, actionBn: row.action_bn,
       image: publicBannerImage(row.desktop_image_path, categoryImage),
       mobileImage: row.mobile_image_path ? publicBannerImage(row.mobile_image_path, categoryImage) : undefined,
+      backgroundColor: row.background_color, headingColor: row.heading_color,
+      bodyColor: row.body_color, outlineColor: row.outline_color,
     };
   });
 }
@@ -178,6 +196,9 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   const [slides, setSlides] = useState<BannerSlide[]>([]);
   const [bannerStatus, setBannerStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const [retryNonce, setRetryNonce] = useState(0);
+  // The next slide may preload only after the visible banner's image finishes.
+  // This prevents five simultaneous images from competing for first paint on 4G.
+  const [visibleImageReady, setVisibleImageReady] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [hasFocus, setHasFocus] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -318,11 +339,18 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       </section>
     </div>;
   }
-  // The SQL main record owns the stationary copy. Changing the active image
-  // must never change the left-side headline, description, or payment CTAs.
-  const mainBanner = slides.find(slide => slide.id === 'intro' && !slide.serviceCode)
-    ?? slides.find(slide => !slide.serviceCode) ?? fallbackSlides[0];
+  // Keep the canonical introductory copy and two payment actions stationary.
+  // SQL still controls each published slide's artwork, ordering, and image palette.
+  const fixedBanner = slides.find(slide => !slide.serviceCode) ?? fallbackSlides[0];
   const travelBanner = slides.find(slide => slide.serviceCode === 'TRAVEL_TAX') ?? fallbackSlides[4];
+  // The carousel border follows the currently published service theme,
+  // while the global brand controls and the main Pay Tax CTA remain fixed.
+  const activeSlide = slides[activeIndex];
+  const activeOutline = activeSlide.serviceCode && [
+    activeSlide.backgroundColor, activeSlide.headingColor,
+    activeSlide.bodyColor, activeSlide.outlineColor,
+  ].every(value => typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value))
+    ? activeSlide.outlineColor : null;
 
   return (
     <div
@@ -340,11 +368,13 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         role="region"
         aria-roledescription="carousel"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
-        aria-description={bn ? 'শুধু ডান পাশের ছবি পরিবর্তন করতে সোয়াইপ করুন অথবা তীরচিহ্ন ব্যবহার করুন।' : 'Swipe or use the arrow keys to change the right-side illustration. The payment actions remain fixed.'}
+        aria-description={bn ? 'ছবি ও রং পরিবর্তন করতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন। কর ও ভ্রমণ কর পরিশোধের বোতাম অপরিবর্তিত থাকবে।' : 'Swipe or use the arrow keys to change banner images and colors. Pay Tax and Pay Travel Tax stay available on every slide.'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
         data-dragging={isSwiping}
-        data-image-service={slides[activeIndex].serviceCode}
+        data-payment-service={slides[activeIndex].serviceCode}
+        data-active-palette={activeOutline ? 'image' : undefined}
+        style={activeOutline ? { borderColor: activeOutline } : undefined}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onPointerDown={onSwipeStart}
@@ -352,60 +382,112 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         onPointerCancel={cancelSwipe}
         onLostPointerCapture={cancelSwipe}
       >
-        <article
-          className="citizen-public-hero public-information-hero public-hero-carousel__slide public-hero-carousel__fixed"
-          data-banner-service="intro"
-          data-banner-kind="intro"
-        >
-          <div className="citizen-public-hero__copy">
-            <h1 id="public-home-title">
-              <span className="public-hero-copy--desktop">{bn ? mainBanner.headingBn : mainBanner.headingEn}</span>
-              <span className="public-hero-copy--mobile">{bn ? mainBanner.mobileHeadingBn : mainBanner.mobileHeadingEn}</span>
-            </h1>
-            <p>
-              <span className="public-hero-copy--desktop">{bn ? mainBanner.descriptionBn : mainBanner.descriptionEn}</span>
-              <span className="public-hero-copy--mobile">{bn ? mainBanner.mobileDescriptionBn : mainBanner.mobileDescriptionEn}</span>
-            </p>
-            <div className="citizen-public-hero__actions public-guest-actions">
-              <button className="citizen-public-primary public-guest-action" type="button" onClick={() => onPayTax()} aria-label={bn ? mainBanner.actionBn : mainBanner.actionEn}>
-                <WalletCards size={18} aria-hidden="true" />
-                <span className="public-hero-carousel__pay-full">{bn ? mainBanner.actionBn : mainBanner.actionEn}</span>
-                <span className="public-hero-carousel__pay-compact" aria-hidden="true">{bn ? compactAction(mainBanner.actionBn, fallbackSlides[0].actionBn, 'কর দিন') : compactAction(mainBanner.actionEn, fallbackSlides[0].actionEn, 'Pay Tax')}</span>
-              </button>
-              <button className="public-guest-action public-hero-carousel__travel" type="button" onClick={() => onPayTax('TRAVEL_TAX')} aria-label={bn ? travelBanner.actionBn : travelBanner.actionEn}>
-                <WalletCards size={18} aria-hidden="true" />
-                <span className="public-hero-carousel__travel-full">{bn ? travelBanner.actionBn : travelBanner.actionEn}</span>
-                <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? compactAction(travelBanner.actionBn, fallbackSlides[4].actionBn, 'ভ্রমণ কর') : compactAction(travelBanner.actionEn, fallbackSlides[4].actionEn, 'Travel Tax')}</span>
-              </button>
-            </div>
-          </div>
-          <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
-            {slides.map((slide, index) => (
-              <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`}
-                slide={slide} visible={index === activeIndex} />
-            ))}
-          </div>
-        </article>
+        <div className="public-hero-carousel__track" aria-live="off">
+          {slides.map((slide, index) => {
+            const isActive = index === activeIndex;
+            const intro = !slide.serviceCode;
+            const heading = bn ? fixedBanner.headingBn : fixedBanner.headingEn;
+            const mobileHeading = bn ? fixedBanner.mobileHeadingBn : fixedBanner.mobileHeadingEn;
+            const action = bn ? fixedBanner.actionBn : fixedBanner.actionEn;
+            // NULL palette preserves the existing approved service tokens.
+            const validHex = (value: string | null | undefined) =>
+              typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
+            const hasPalette = validHex(slide.backgroundColor) && validHex(slide.headingColor) &&
+              validHex(slide.bodyColor) && validHex(slide.outlineColor);
+            const paletteStyle = hasPalette ? {
+              '--banner-bg': slide.backgroundColor,
+              '--banner-heading': slide.headingColor,
+              '--banner-body': slide.bodyColor,
+              '--banner-outline': slide.outlineColor,
+            } as React.CSSProperties : undefined;
+            return (
+              <article
+                key={slide.id}
+                className="citizen-public-hero public-information-hero public-hero-carousel__slide"
+                data-banner-service={intro ? 'intro' : slide.id}
+                data-banner-kind={intro ? 'intro' : 'service'}
+                data-fixed-left="true"
+                data-active={isActive}
+                data-payment-service={slide.serviceCode}
+                data-banner-palette={hasPalette ? 'image' : undefined}
+                style={paletteStyle}
+                role="group"
+                aria-roledescription="slide"
+                aria-label={bn ? `ব্যানার ${index + 1} / ${slides.length}` : `Slide ${index + 1} of ${slides.length}`}
+                aria-hidden={!isActive}
+                inert={!isActive}
+              >
+                <div className="citizen-public-hero__copy">
+                  {intro ? (
+                    <h1 id="public-home-title">
+                      <span className="public-hero-copy--desktop">{heading}</span>
+                      <span className="public-hero-copy--mobile">{mobileHeading}</span>
+                    </h1>
+                  ) : (
+                    <h2>
+                      <span className="public-hero-copy--desktop">{heading}</span>
+                      <span className="public-hero-copy--mobile">{mobileHeading}</span>
+                    </h2>
+                  )}
+                  <p>
+                    <span className="public-hero-copy--desktop">{bn ? fixedBanner.descriptionBn : fixedBanner.descriptionEn}</span>
+                    <span className="public-hero-copy--mobile">{bn ? fixedBanner.mobileDescriptionBn : fixedBanner.mobileDescriptionEn}</span>
+                  </p>
+                  <div className="citizen-public-hero__actions public-guest-actions">
+                    <button className="citizen-public-primary public-guest-action" type="button"
+                      onClick={() => onPayTax()}
+                      aria-label={action}>
+                      <WalletCards size={18} aria-hidden="true" />
+                      <>
+                          <span className="public-hero-carousel__pay-full">{action}</span>
+                          <span className="public-hero-carousel__pay-compact" aria-hidden="true">
+                            {bn ? compactAction(action, fallbackSlides[0].actionBn, 'কর দিন')
+                              : compactAction(action, fallbackSlides[0].actionEn, 'Pay Tax')}
+                          </span>
+                      </>
+                    </button>
+                    {(
+                      <button className="public-guest-action public-hero-carousel__travel" type="button"
+                        onClick={() => onPayTax('TRAVEL_TAX')}
+                        aria-label={bn ? travelBanner.actionBn : travelBanner.actionEn}>
+                        <WalletCards size={18} aria-hidden="true" />
+                        <span className="public-hero-carousel__travel-full">
+                          {bn ? travelBanner.actionBn : travelBanner.actionEn}
+                        </span>
+                        <span className="public-hero-carousel__travel-compact" aria-hidden="true">
+                          {bn ? compactAction(travelBanner.actionBn, fallbackSlides[4].actionBn, 'ভ্রমণ কর')
+                            : compactAction(travelBanner.actionEn, fallbackSlides[4].actionEn, 'Travel Tax')}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
+                  <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`}
+                    slide={slide} visible={isActive}
+                    preload={visibleImageReady && index === (activeIndex + 1) % slides.length}
+                    onVisibleReady={() => setVisibleImageReady(true)} />
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </section>
-      <div className="public-hero-carousel__controls" role="group" aria-label={bn ? 'ব্যানার পরিবর্তন করুন' : 'Banner navigation'}>
-        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--previous" onClick={goPrevious} aria-label={bn ? 'আগের ব্যানার' : 'Previous banner'}>
+      {slides.length > 1 && <div className="public-hero-carousel__controls" role="group"
+        aria-label={bn ? 'ব্যানার পরিবর্তন করুন' : 'Banner navigation'}>
+        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--previous"
+          onClick={goPrevious} aria-label={bn ? 'আগের ব্যানার' : 'Previous banner'}>
           <ChevronLeft size={21} aria-hidden="true" />
         </button>
-        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--next" onClick={goNext} aria-label={bn ? 'পরের ব্যানার' : 'Next banner'}>
+        <button type="button" className="public-hero-carousel__arrow public-hero-carousel__arrow--next"
+          onClick={goNext} aria-label={bn ? 'পরের ব্যানার' : 'Next banner'}>
           <ChevronRight size={21} aria-hidden="true" />
         </button>
-      </div>
+      </div>}
       <span className="sr-only" role="status" aria-live="polite">
-        <span className="public-hero-copy--desktop">
-          {bn
-            ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}. ${slides[activeIndex].descriptionBn}`
-            : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}. ${slides[activeIndex].descriptionEn}`}
-        </span>
-        <span className="public-hero-copy--mobile">
-          {bn
-            ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].mobileHeadingBn}. ${slides[activeIndex].mobileDescriptionBn}`
-            : `Illustration ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].mobileHeadingEn}. ${slides[activeIndex].mobileDescriptionEn}`}
-        </span>
+        {bn
+          ? `ব্যানার ${activeIndex + 1} / ${slides.length}: ${slides[activeIndex].headingBn}`
+          : `Banner ${activeIndex + 1} of ${slides.length}: ${slides[activeIndex].headingEn}`}
       </span>
     </div>
   );

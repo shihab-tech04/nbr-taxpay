@@ -10,26 +10,31 @@ test('User1 dashboard omits the redundant register and lengthy data notice but p
   await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
   await expect(page.getByText('Taxpayer workspace / Synthetic scenario user1')).toHaveCount(0);
   await expect(page.getByRole('heading', {name:'Transaction history'})).toHaveCount(0);
-  await expect(page.getByText('৳ 180,000').first()).toBeVisible();
-  await expect(page.getByText('৳ 25,000').first()).toBeVisible();
-  await page.getByRole('button', {name:'Open transaction history'}).click();
+  await expect(page.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
+  await expect(page.getByTestId('dashboard-chart-source')).toBeVisible();
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  await page.getByRole('button', {name:'View all activity'}).click();
   await expect(page.getByRole('heading', {name:'Payments & activity'})).toBeVisible();
   await expect(page.getByRole('heading', {name:'Transaction history'})).toBeVisible();
   await expect(page.getByRole('searchbox', {name:'Search transaction reference'})).toBeVisible();
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
   await expect(page.getByRole('combobox', {name:'Transaction status'})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-PEND-01').filter({visible:true}).first()).toBeVisible();
 });
 
-test('User1 charts use TaxPay blue tokens, and category filters work by keyboard', async ({page}) => {
+test('User1 bento retains the approved blue surface and keyboard-operable service bars',async({page})=>{
   await page.goto(url('taxpayer_home'));
-  const active = page.getByRole('button', {name:'Income tax', exact:true});
-  await expect(active).toHaveCSS('background-color','rgb(234, 242, 255)');
-  const travel = page.getByRole('button', {name:'Travel tax', exact:true});
-  await travel.focus();
+  const hero=page.locator('.taxpay-bento-hero');
+  await expect(hero).toHaveCSS('background-color','rgb(255, 255, 255)');
+  await expect(page.locator('.taxpay-bento-position__highlight')).toHaveCount(0);
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  await page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
+  const bar=page.getByTestId('dashboard-service-breakdown').locator('[data-service="income"]');
+  await bar.focus();
   await page.keyboard.press('Space');
-  await expect(travel).toHaveAttribute('aria-pressed','true');
-  await expect(travel).toHaveCSS('background-color','rgb(234, 242, 255)');
-  await expect(page.getByRole('heading',{name:'How your tax is covered'})).toBeVisible();
+  await expect(bar).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('heading',{name:'By payment service'})).toBeVisible();
+  await expect(page.locator('.taxpay-bento-hero__actions').getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
 });
 
 test('User1 overview preserves narrow screens and expands fluidly at 1400px and wider', async ({page},info) => {
@@ -55,7 +60,7 @@ test('User1 overview preserves narrow screens and expands fluidly at 1400px and 
     }
     if (width<=390) {
       await expect(page.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
-      await expect(page.getByRole('button',{name:'Open transaction history'})).toBeVisible();
+      await expect(page.getByRole('button',{name:'View all activity'})).toBeVisible();
     }
   }
 });
@@ -70,6 +75,7 @@ test('All taxpayer inner pages preserve responsive access without a full-width s
       await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
       if(route==='ledger') {
         await expect(page.getByRole('combobox',{name:'Assessment year',exact:true})).toHaveCount(0);
+        await page.getByTestId('event-tax-ledger').getByRole('button',{name:'Filter',exact:true}).click();
         await expect(page.getByRole('combobox',{name:'Filter ledger by year'})).toBeVisible();
       } else if(['account_profile','account_settings','journey'].includes(route))
         await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);
@@ -80,7 +86,12 @@ test('All taxpayer inner pages preserve responsive access without a full-width s
       if(width>=1400) {
         expect(dims.content,route+' content did not expand at '+width).toBeGreaterThan(width * .7);
       } else if(width===1280) {
-        expect(dims.content,route+' should preserve its pre-1400px width').toBeLessThanOrEqual(902);
+        // Record registers now use the available workspace like Office Management;
+        // non-register pages retain the existing centered reading column.
+        if(['history','ledger','certificates','corrections'].includes(route))
+          expect(dims.content,route+' should use available laptop width').toBeGreaterThan(940);
+        else
+          expect(dims.content,route+' should preserve centered reading width').toBeLessThanOrEqual(902);
       }
       await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
     }

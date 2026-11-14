@@ -23,9 +23,10 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(modal.getByRole('button', {name: nextName})).toHaveCount(0);
     const before = await primary.evaluate(el => el.getBoundingClientRect().height);
     await tin.focus();
-    const suggestions = primary.getByRole('listbox', {name: locale === 'bn' ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'});
+    const suggestions = modal.getByRole('listbox', {name: locale === 'bn' ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'});
+    await expect(suggestions).toHaveCount(0); // Focus does not open all suggestions.
+    await tin.fill('1');
     await expect(suggestions).toBeVisible();
-    await expect(suggestions.getByRole('option')).toHaveCount(10);
     const after = await primary.evaluate(el => el.getBoundingClientRect().height);
     expect(Math.abs(before - after)).toBeLessThan(3); // overlay never expands the card
     await suggestions.getByRole('option', {name: '111111111111'}).click();
@@ -60,7 +61,7 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(clear).toBeVisible();
     await clear.click();
     const secondTin = second.locator('input[id^="other-tax-tin-"]');
-    const secondSuggestions = second.getByRole('listbox', {name: locale === 'bn' ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'});
+    const secondSuggestions = modal.getByRole('listbox', {name: locale === 'bn' ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'});
     await expect(secondTin).toHaveValue('');
     await expect(secondTin).toBeFocused();
     await expect(secondSuggestions).toHaveCount(0); // Clear X restores focus without opening.
@@ -88,9 +89,9 @@ for (const locale of ['en', 'bn'] as const) {
   });
 }
 
-// Regression for the actual fixed-footer screenshot: the TIN input can sit at
-// the bottom of the independently scrolling modal, leaving no room underneath.
-test('Other Tax TIN suggestions remain fully reachable above the fixed footer', async ({page}) => {
+// Regression for a TIN input near the fixed footer: suggestions still open
+// beneath the field in a scrollable overlay without growing the modal.
+test('Other Tax TIN suggestions open below and remain reachable near the fixed footer', async ({page}) => {
   await page.goto('/?action=landing');
   await page.getByRole('button', {name: 'Pay Tax', exact: true}).first().click();
   const modal = page.getByRole('dialog', {name: 'Pay Tax'});
@@ -99,28 +100,25 @@ test('Other Tax TIN suggestions remain fully reachable above the fixed footer', 
   const input = first.locator('#guest-tin');
   await input.evaluate(element => element.scrollIntoView({block: 'end', inline: 'nearest', behavior: 'instant'}));
   await input.focus();
-  const options = first.getByRole('listbox', {name: 'Suggested TIN numbers'});
+  const options = modal.getByRole('listbox', {name: 'Suggested TIN numbers'});
+  await expect(options).toHaveCount(0);
+  await input.fill('9');
   await expect(options).toBeVisible();
-  await expect(options.getByRole('option')).toHaveCount(10);
   const geometry = await options.evaluate(menu => {
-    const area = menu.closest('.taxpay-modal__body');
-    const anchor = menu.parentElement?.querySelector<HTMLInputElement>('#guest-tin');
-    if (!area || !anchor) throw new Error('Expected TIN popup inside its modal scroll container');
+    const dialog = menu.closest('.taxpay-modal');
+    const anchor = dialog?.querySelector<HTMLInputElement>('#guest-tin');
+    if (!dialog || !anchor) throw new Error('Expected TIN popup within its modal dialog shell');
     const menuRect = menu.getBoundingClientRect();
-    const bodyRect = area.getBoundingClientRect();
+    const dialogRect = dialog.getBoundingClientRect();
     const anchorRect = anchor.getBoundingClientRect();
-    return {top: menuRect.top, bottom: menuRect.bottom, height: menuRect.height,
-      bodyTop: bodyRect.top, bodyBottom: bodyRect.bottom, inputBottom: anchorRect.bottom,
-      placement: menu.getAttribute('data-placement')};
+    return {top:menuRect.top,bottom:menuRect.bottom,height:menuRect.height,
+      dialogBottom:dialogRect.bottom,inputBottom:anchorRect.bottom,
+      placement:menu.getAttribute('data-placement')};
   });
-  expect(geometry.top).toBeGreaterThanOrEqual(geometry.bodyTop + 2);
-  expect(geometry.bottom).toBeLessThanOrEqual(geometry.bodyBottom - 2);
-  expect(geometry.height).toBeGreaterThan(80);
-  if (geometry.bodyBottom - geometry.inputBottom < 80) {
-    expect(geometry.placement).toBe('above');
-  }
-  // The last suggested entry must remain reachable without scrolling the modal
-  // or obscuring the fixed Continue action.
+  expect(geometry.placement).toBe('below');
+  expect(geometry.top).toBeGreaterThanOrEqual(geometry.inputBottom);
+  expect(geometry.bottom).toBeLessThanOrEqual(geometry.dialogBottom+2);
+  expect(geometry.height).toBeGreaterThan(40);
   await options.getByRole('option', {name: '999999999999'}).click();
   await expect(input).toHaveValue('999999999999');
   await expect(options).toHaveCount(0);

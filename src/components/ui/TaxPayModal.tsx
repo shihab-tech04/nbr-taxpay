@@ -2,11 +2,17 @@ import React, { createContext, useEffect, useId, useLayoutEffect, useRef, useSta
 
 /** Portal target for workflow-owned footer actions; the modal still owns its close control. */
 export const TaxPayModalFooterTarget = createContext<HTMLDivElement | null>(null);
+/** Only payment workflows register a verified, owner-scoped draft save action. */
+export type PaymentDraftExitAction = () => Promise<void>;
+export const PaymentDraftExitContext = createContext<((action: PaymentDraftExitAction | null) => void) | null>(null);
 import { ArrowLeft, X } from 'lucide-react';
 
 export interface TaxPayModalProps {
   title: string;
   onClose: () => void;
+  /** Optional separate backdrop policy: payment drafts must not close by accident. */
+  onBackdropClose?: () => void;
+  registerDraftExit?: (action: PaymentDraftExitAction | null) => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
   closeIconLabel?: string;
@@ -37,6 +43,8 @@ export interface TaxPayModalProps {
 export function TaxPayModal({
   title,
   onClose,
+  onBackdropClose,
+  registerDraftExit,
   children,
   footer,
   closeIconLabel = 'Close modal',
@@ -61,6 +69,8 @@ export function TaxPayModal({
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const backdropCloseRef = useRef(onBackdropClose);
+  backdropCloseRef.current = onBackdropClose;
 
   useEffect(() => {
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -140,15 +150,16 @@ export function TaxPayModal({
   }, [animateSize, motionKey]);
 
   return (
+    <PaymentDraftExitContext.Provider value={registerDraftExit ?? null}>
     <TaxPayModalFooterTarget.Provider value={footerTarget}>
     <div
       className="taxpay-modal__overlay public-service-overlay"
       onMouseDown={event => {
-        if (event.target === event.currentTarget) onCloseRef.current();
+        if (event.target === event.currentTarget) (backdropCloseRef.current ?? onCloseRef.current)();
       }}
     >
       <div
-        className={`taxpay-modal public-service-dialog ${className}`.trim()}
+        className={`relative taxpay-modal public-service-dialog ${className}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel}
@@ -191,5 +202,6 @@ export function TaxPayModal({
       </div>
     </div>
     </TaxPayModalFooterTarget.Provider>
+    </PaymentDraftExitContext.Provider>
   );
 }

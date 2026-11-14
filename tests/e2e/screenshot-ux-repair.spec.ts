@@ -1,6 +1,7 @@
 import { fillTravelDetails } from './travel-tax-test-helper';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import {expect,test,type Page} from '@playwright/test';
+import {openTaxpayerTravelTax} from './taxpayer-travel-menu-helper';
 
 async function enterUser1(page:Page){
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=*',route=>route.fulfill({
@@ -21,6 +22,13 @@ test('mobile transaction details use a contained sheet with a visible close cont
   const dialog=page.locator('.taxpayer-transaction-detail');
   await expect(dialog).toHaveClass(/taxpay-modal/);
   await expect(dialog.getByRole('button',{name:'Close transaction details'})).toBeVisible();
+  // The modal enters with motion; visibility alone can precede the last
+  // fractional transform frame. Wait for stable in-viewport geometry without
+  // relaxing the original strict boundary expectation.
+  await expect.poll(async()=>{
+    const bounds=await dialog.boundingBox();
+    return bounds?bounds.y+bounds.height:Number.POSITIVE_INFINITY;
+  },{timeout:5000}).toBeLessThanOrEqual(page.viewportSize()!.height+1);
   const geometry=await dialog.evaluate(element=>{
     const rect=element.getBoundingClientRect();
     const body=element.querySelector('.taxpay-modal__body')!;
@@ -39,14 +47,15 @@ test('mobile transaction details use a contained sheet with a visible close cont
   await expect(dialog).toHaveCount(0);
 });
 
-test('mobile monthly activity help opens fully within the dashboard width',async({page},info)=>{
-  test.skip(info.project.name==='desktop-1280','Mobile tooltip geometry');
+test('mobile bento source controls remain visible without clipped focus targets',async({page},info)=>{
+  test.skip(info.project.name==='desktop-1280','Mobile chart geometry');
   await enterUser1(page);
-  const row=page.locator('.taxpayer-monthly-help-row');
-  await row.locator('.taxpayer-inline-help > summary').click();
-  const content=row.locator('.taxpayer-inline-help__content');
-  await expect(content).toBeVisible();
-  const bounds=await content.boundingBox();
+  const chart=page.getByTestId('dashboard-payment-analytics');
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
+  const source=chart.getByTestId('dashboard-chart-source');
+  await source.getByRole('button',{name:'Examples'}).click();
+  await expect(source.getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
+  const bounds=await source.boundingBox();
   expect(bounds).not.toBeNull();
   expect(bounds!.x).toBeGreaterThanOrEqual(0);
   expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
@@ -148,18 +157,18 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
   expect(box!.x + box!.width).toBeLessThanOrEqual(side!.x + side!.width + 1);
 });
 
-test('mobile travel-tax explanation stays within the dashboard rather than clipping off-screen',async({page},info)=>{
-  test.skip(info.project.name==='desktop-1280','Mobile tooltip geometry');
+test('mobile bento retains separate travel tax and opens its approved payment modal',async({page},info)=>{
+  test.skip(info.project.name==='desktop-1280','Mobile travel-tax shortcut');
   await enterUser1(page);
-  const summary=page.locator('.taxpayer-travel-tax-summary');
-  await summary.locator('.taxpayer-inline-help > summary').click();
-  const tooltip=summary.locator('.taxpayer-inline-help__content');
-  await expect(tooltip).toBeVisible();
-  const box=await tooltip.boundingBox();
-  expect(box).not.toBeNull();
-  expect(box!.x).toBeGreaterThanOrEqual(0);
-  expect(box!.x+box!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
-  await expect(tooltip).toContainText('Travel tax is reported separately');
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
+  await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
+  await openTaxpayerTravelTax(page);
+  const dialog=page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  const bounds=await dialog.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(-1);
+  expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
 });
 
 test('mobile public Help entry clears the footer identity area',async({page},info)=>{

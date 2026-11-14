@@ -10,12 +10,25 @@ if (base.protocol !== 'https:' || base.hostname !== 'shihab-tech04.github.io' ||
 await mkdir('test-results', { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
+ 
+// Repeated CI smoke runs must not download megabytes of public CMS artwork.
+// This guard applies only to verification browsers, not to the published app.
+// The image onError path uses the existing bundled fallback artwork; all
+// payment/API/auth traffic remains subject to the existing test assertions.
+const openBudgetSafePage = async options => {
+  const page = await browser.newPage(options);
+  await page.route(
+    'https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**',
+    route => route.abort('blockedbyclient'),
+  );
+  return page;
+};
 try {
   for (const [name, viewport, isMobile] of [
     ['desktop', { width: 1280, height: 850 }, false],
     ['mobile', { width: 375, height: 812 }, true]
   ]) {
-    const page = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+    const page = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
     const url = new URL(base);
     url.searchParams.set('action','account_profile');
     await page.goto(url.toString(), {waitUntil:'domcontentloaded',timeout:45_000});
@@ -37,8 +50,86 @@ try {
       await dialog.getByRole('textbox',{name:'User ID'}).fill('user1');
       await dialog.getByLabel('Password',{exact:true}).fill('user1');
       await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
-      await expect(page).toHaveURL(/action=taxpayer_home/);
+      // A real edge-backed preview login may take longer than Playwright's
+      // default five seconds on a cold mobile session. Do not skip login:
+      // require successful navigation, and preserve visible failure evidence.
+      try {
+        await expect(page).toHaveURL(/action=taxpayer_home/,{timeout:30_000});
+      } catch(error) {
+        const messages=await dialog.getByRole('alert').allTextContents().catch(()=>[]);
+        const buttonDisabled=await dialog.getByRole('button',{name:'Sign In',exact:true}).isDisabled().catch(()=>false);
+        await page.screenshot({path:'test-results/live-auth-login-failure-'+name+'.png',fullPage:true}).catch(()=>{});
+        throw new Error('Live '+name+' sign-in did not complete: '+JSON.stringify({
+          url:page.url(),messages,buttonDisabled
+        }),{cause:error});
+      }
       await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+      // Only a deployed build can certify the NEW dashboard UI. PR preflight
+      // runs against the older published version and must not pre-approve it.
+      if(process.env.GITHUB_EVENT_NAME!=='pull_request'){
+        // The live dashboard uses the new source-separated bento, not the old
+        // static beneficiary chart. Verify a real interactive instance in
+        // Chromium (no production writes and no invented Treasury totals).
+        const bento=page.getByTestId('taxpayer-overview-bento');
+        await expect(bento).toBeVisible({timeout:30_000});
+        const chart=bento.getByTestId('dashboard-payment-analytics');
+        await expect(chart).toBeVisible({timeout:30_000});
+        await expect(bento.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
+        await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
+        const sources=chart.getByTestId('dashboard-chart-source');
+        await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+        // Source-aware Overview defaults to recorded allocations when present,
+        // otherwise to available examples. Live evidence must accept either
+        // truthful source, not demand an empty Recorded chart as the default.
+        const initialSource=await chart.getAttribute('data-chart-source');
+        if(initialSource!=='recorded'&&initialSource!=='example')
+          throw new Error('Live dashboard has no explicit source selection: '+initialSource);
+        await expect(sources.getByRole('button',{name:initialSource==='recorded'?'Recorded':'Examples'}))
+          .toHaveAttribute('aria-pressed','true');
+        // Keep the manually selected account-recorded view available, including
+        // its honest missing-data state, without inventing a zero balance.
+        await sources.getByRole('button',{name:'Recorded'}).click();
+        await expect(sources.getByRole('button',{name:'Recorded'}))
+          .toHaveAttribute('aria-pressed','true');
+        const noItemized=await chart.getByTestId('dashboard-service-breakdown')
+          .getByText('No itemized recorded payments',{exact:false}).count();
+        if(noItemized){
+          await expect(chart.getByTestId('dashboard-service-breakdown')
+            .locator('.taxpay-bento-analytics__total')).toHaveText('—');
+        }
+        // Example amounts are independently selected and must never be
+        // asserted as bank settlements or combined with SQL-recorded totals.
+        await sources.getByRole('button',{name:'Examples'}).click();
+        await expect(sources.getByRole('button',{name:'Examples'}))
+          .toHaveAttribute('aria-pressed','true');
+        const services=chart.getByTestId('dashboard-service-breakdown');
+        const spending=chart.getByTestId('dashboard-beneficiary-breakdown');
+        await expect(services.locator('[data-service]')).not.toHaveCount(0);
+        await expect(spending.locator('[data-tag]')).not.toHaveCount(0);
+        const numbers=await spending.evaluate(root=>{
+          const normalize=text=>{
+            const bengali='০১২৩৪৫৬৭৮৯';
+            const raw=String(text??'').replace(/[০-৯]/g,d=>String(bengali.indexOf(d))).replace(/[^0-9.]/g,'');
+            return raw?Math.round(Number(raw)*100):NaN;
+          };
+          const total=normalize(root.querySelector('.taxpay-bento-analytics__total')?.textContent);
+          const amounts=[...root.querySelectorAll('[data-tag]')]
+            .map(node=>normalize(node.querySelector('strong')?.textContent));
+          return {total,sum:amounts.reduce((a,b)=>a+b,0),count:amounts.length};
+        });
+        if(!Number.isFinite(numbers.total)||numbers.total!==numbers.sum||numbers.count<1)
+          throw new Error('Live bento beneficiary amounts did not reconcile: '+JSON.stringify(numbers));
+        const selection=services.locator('[data-service]').first();
+        await selection.click();
+        await expect(selection).toHaveAttribute('aria-pressed','true');
+        await expect(services.getByRole('button',{name:'Show all payment services'})).toBeVisible();
+        await services.getByRole('button',{name:'Show all payment services'}).click();
+        // Selecting a tag updates the details rather than switching routes or
+        // rewriting financial records.
+        await spending.locator('[data-tag]').first().click();
+        await expect(spending.getByTestId('dashboard-selected-tag')).toBeVisible();
+        await page.screenshot({path:'test-results/live-dashboard-category-breakdown-'+name+'.png',fullPage:true});
+      }
       const beneficiaryUrl=new URL(base);
       beneficiaryUrl.searchParams.set('action','beneficiaries');
       await page.goto(beneficiaryUrl.toString(),{waitUntil:'domcontentloaded',timeout:45_000});
@@ -53,36 +144,91 @@ try {
     // Only the already-published Pages bundle can certify MOBILE public navigation LIVE.
     // PR preflight must not assert this against the previously published version.
     if (isMobile && process.env.GITHUB_EVENT_NAME !== 'pull_request') {
-      const publicMobile = await browser.newPage({ viewport, isMobile, hasTouch: true });
+      const publicMobile = await openBudgetSafePage({ viewport, isMobile, hasTouch: true });
       const mobileUrl = new URL(base);
       mobileUrl.searchParams.set('action','landing');
       await publicMobile.goto(mobileUrl.toString(), {waitUntil:'domcontentloaded',timeout:45_000});
       const mobileNav = publicMobile.locator('.taxpay-public-mobile-navigation');
       const menu = mobileNav.getByRole('button',{name:'Open menu'});
-      const wordmark = mobileNav.getByRole('button',{name:'Korbritto home'});
+      const wordmark = mobileNav.getByRole('button',{name:'Sohojkor home'});
       const guestBell = mobileNav.getByRole('button',{name:'Notifications'});
       await expect(menu).toBeVisible({timeout:30_000});
       await expect(wordmark).toBeVisible();
       await expect(guestBell).toHaveCount(0);
       await expect(publicMobile.locator('.public-home-header')).toBeHidden();
-      const dock = publicMobile.getByRole('navigation',{name:'Mobile primary navigation'});
-      await expect(dock).toBeVisible();
-      await expect(dock.getByRole('button',{name:'Payment Status'})).toBeVisible();
-      await expect(dock.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
-      await expect(publicMobile.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
+      // Preserve the original public bottom navigation, separate from Help chat
+      // and the floating Pay now action (the previous removal was unrequested).
+      const publicDock=publicMobile.getByRole('navigation',{name:'Mobile primary navigation'});
+      await expect(publicDock).toBeVisible();
+      for(const item of ['Home','Payment Status','Help'])
+        await expect(publicDock.getByRole('button',{name:item})).toBeVisible();
+      await expect(publicDock.locator('.citizen-bottom-nav__item')).toHaveCount(3);
+      const helpButton = publicMobile.getByRole('button',{name:'Chat support'});
+      await expect(helpButton).toBeVisible();
+      const payButton = publicMobile.getByRole('button',{name:'Pay — select payment type'});
+      await expect(payButton).toBeVisible();
+      await expect(payButton).toHaveClass(/citizen-pay--guest-floating/);
+      await menu.click();
+      const mobileMenu = publicMobile.getByRole('dialog',{name:'Services & menu'});
+      await expect(mobileMenu.getByRole('button',{name:'Payment Status'})).toBeVisible();
+      await expect(mobileMenu.getByRole('button',{name:'Help'})).toBeVisible();
+      await expect(mobileMenu.getByRole('button',{name:'Beneficiaries'})).toHaveCount(0);
+      await publicMobile.keyboard.press('Escape');
+      await expect(mobileMenu).toHaveCount(0);
       const frame = await publicMobile.evaluate(()=>{
         const header = document.querySelector('.taxpay-public-mobile-navigation .citizen-header').getBoundingClientRect();
         const logo = document.querySelector('.taxpay-public-mobile-navigation .citizen-brand').getBoundingClientRect();
         const menu = document.querySelector('.taxpay-public-mobile-navigation .citizen-mobile-menu-trigger').getBoundingClientRect();
         const help = document.querySelector('.public-help-launch')?.getBoundingClientRect();
         const pay = document.querySelector('.citizen-pay')?.getBoundingClientRect();
+        const dock = document.querySelector('.citizen-bottom-nav')?.getBoundingClientRect();
+        const paySpace = document.querySelector('.citizen-bottom-nav__pay-space')?.getBoundingClientRect();
+        const navTargets = [...document.querySelectorAll('.citizen-bottom-nav__item')]
+          .map(item=>item.getBoundingClientRect());
         const overlaps = help && pay && help.left < pay.right && help.right > pay.left && help.top < pay.bottom && help.bottom > pay.top;
+        const payInsideReservedDock = Boolean(pay && dock && paySpace &&
+          pay.left >= paySpace.left-2 && pay.right <= paySpace.right+2 &&
+          pay.top >= dock.top-2 && pay.bottom <= dock.bottom+2);
+        const payClearsNavTargets = Boolean(pay && navTargets.length===3 &&
+          navTargets.every(target=>pay.left >= target.right+2));
         return {center:Math.abs(logo.x+logo.width/2-header.x-header.width/2),
           order:menu.x < logo.x,overlaps,
+          payInsideReservedDock,payClearsNavTargets,
+          dockAtBottom:Boolean(dock && Math.abs(dock.bottom-innerHeight)<=2),
           overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
       });
-      if(frame.center>3 || !frame.order || frame.overlaps || frame.overflow>2)
+      if(frame.center>3 || !frame.order || frame.overlaps ||
+         !frame.payInsideReservedDock || !frame.payClearsNavTargets ||
+         !frame.dockAtBottom || frame.overflow>2)
         throw new Error('Live public mobile navigation parity regression: '+JSON.stringify(frame));
+      // Mobile Help is an approved bottom-anchored modal sheet with a
+      // backdrop, not the old floating panel above the dock. The unchanged
+      // bottom navigation remains mounted beneath the modal and is restored
+      // as soon as Help closes.
+      await helpButton.click();
+      const helpPanel=publicMobile.locator('#public-help-panel');
+      await expect(helpPanel).toBeVisible();
+      await expect(helpPanel).toHaveAttribute('aria-modal','true');
+      await expect(publicMobile.locator('.public-help-backdrop')).toBeVisible();
+      await expect.poll(async()=>{
+        const rect=await helpPanel.boundingBox();
+        return rect ? Math.abs(rect.y+rect.height-viewport.height) : Infinity;
+      },{timeout:5000}).toBeLessThanOrEqual(2);
+      const helpBox=await helpPanel.boundingBox();
+      if(!helpBox || helpBox.height>=viewport.height)
+        throw new Error('Live mobile Help sheet overflows available viewport');
+      await helpPanel.getByRole('button',{name:'Close chat'}).click();
+      await expect(helpPanel).toHaveCount(0);
+      await expect(publicDock).toBeVisible();
+      await expect(payButton).toBeVisible();
+      await payButton.click();
+      const payChoice=publicMobile.getByRole('dialog',{name:'Pay Tax'});
+      await expect(payChoice).toBeVisible();
+      await expect(payChoice.locator('[data-payer-relationship]')).toHaveCount(2);
+      const choiceBox=await payChoice.boundingBox();
+      if(!choiceBox || choiceBox.height>=viewport.height*.8)
+        throw new Error('Live mobile Pay Tax first choice has excessive blank height');
+      await payChoice.getByRole('button',{name:'Close payment services'}).click();
       await publicMobile.screenshot({path:'test-results/live-auth-public-mobile-nav-'+name+'.png',fullPage:false});
       await publicMobile.close();
     }
@@ -90,7 +236,7 @@ try {
     // A post-deploy check of the actual published bundle, not a PR preview.
     // Keep the pre-merge readback compatible with the older currently-live UI.
     if (process.env.GITHUB_EVENT_NAME !== 'pull_request') {
-      const guestPayment = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+      const guestPayment = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
       const guestPaymentUrl = new URL(base);
       guestPaymentUrl.searchParams.set('action', 'guest');
       await guestPayment.goto(guestPaymentUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -104,12 +250,20 @@ try {
     // Beneficiaries are private in the already-live baseline as well as the
     // candidate release. Enforce the same signed-out boundary in both PR
     // preflight and the deployed production browser check.
-    const beneficiaries = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+    const beneficiaries = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
     const beneficiariesUrl = new URL(base);
     beneficiariesUrl.searchParams.set('action', 'beneficiaries');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
     const beneficiaryModal = beneficiaries.locator('.taxpay-modal.taxpayer-login-modal');
     const requireBeneficiaryModal = process.env.TAXPAY_REQUIRE_BENEFICIARIES_MODAL === '1';
+    // Lazy-loaded private routes may show a loading fallback after
+    // DOMContentLoaded. Wait for an actual authenticated-entry boundary
+    // before checking the required newer modal or approved older gate.
+    if (!requireBeneficiaryModal) {
+      await expect.poll(async () => await beneficiaryModal.isVisible() ||
+        await beneficiaries.getByRole('heading', { name: 'Private taxpayer workspace' }).isVisible(),
+        { timeout: 30_000, message: 'Signed-out Beneficiaries require a login gate' }).toBe(true);
+    }
     if (requireBeneficiaryModal || await beneficiaryModal.isVisible()) {
       await expect(beneficiaryModal).toBeVisible({ timeout: 30_000 });
       await expect(beneficiaryModal).toHaveCount(1);
@@ -126,6 +280,11 @@ try {
     await expect(beneficiaries.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Beneficiaries' })).toHaveCount(0);
     beneficiariesUrl.searchParams.set('lang', 'bn');
     await beneficiaries.goto(beneficiariesUrl.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    if (!requireBeneficiaryModal) {
+      await expect.poll(async () => await beneficiaryModal.isVisible() ||
+        await beneficiaries.getByRole('heading', { name: 'করদাতার ব্যক্তিগত তথ্য' }).isVisible(),
+        { timeout: 30_000, message: 'Signed-out Bengali Beneficiaries require a login gate' }).toBe(true);
+    }
     if (requireBeneficiaryModal || await beneficiaryModal.isVisible()) {
       await expect(beneficiaryModal).toBeVisible({ timeout: 30_000 });
       await expect(beneficiaryModal.getByRole('textbox', { name: 'ইউজার আইডি' })).toBeVisible();
@@ -143,7 +302,7 @@ try {
     // Check the signed-out navigation without changing hosted payment data.
     // Keep session-scoped event reads available by direct link, not a guest bell.
     // Mock only the two SQL-backed read endpoints; never emulate a settlement.
-    const guest = await browser.newPage({ viewport, isMobile, hasTouch: isMobile });
+    const guest = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
     const sessionId = '22222222-2222-4222-8222-222222222222';
     const paymentId = '33333333-3333-4333-8333-333333333333';
     await guest.addInitScript(session => {

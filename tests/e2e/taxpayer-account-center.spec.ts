@@ -82,7 +82,7 @@ test('a signed-in account returning to public home sees notification and profile
   const guideLink=header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'User guide'});
   await expect(guideLink).toBeVisible();
   await guideLink.click();
-  await expect(page.getByRole('heading',{name:'Korbritto user guide'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
   await header.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Home'}).click();
   await expect(page.getByRole('button',{name:'Help'})).toHaveCount(0);
   await header.getByRole('button',{name:'Profile menu'}).click();
@@ -112,7 +112,7 @@ test('signed-in public mobile uses the existing private-style header, shared she
     await page.goto('/?action=landing');
     const header=page.locator('.taxpay-public-mobile-navigation .citizen-header');
     await expect(header.getByRole('button',{name:'Notifications'})).toBeVisible();
-    await expect(header.getByRole('button',{name:'Korbritto home'})).toBeVisible();
+    await expect(header.getByRole('button',{name:'Sohojkor home'})).toBeVisible();
     await header.getByRole('button',{name:'Open menu'}).click();
     const menu=page.getByRole('dialog',{name:'Services & menu'});
     await expect(menu.getByRole('button',{name:'Beneficiaries'})).toBeVisible();
@@ -144,3 +144,32 @@ test('account UI retains no horizontal overflow at six mobile and desktop widths
 // Banner-dependent browser checks use explicitly published CMS rows;
 // unavailable CMS must not revive unpublished bundled artwork.
 test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
+
+
+test('mobile Services & menu sign-out is readable and actually ends the preview session', async ({ page }, info) => {
+  test.skip(!['mobile-320','mobile-375'].includes(info.project.name), 'Mobile signed-in menu regression');
+  await page.goto('/?action=taxpayer_login');
+  await page.getByLabel('User ID').fill('user1');
+  await page.getByLabel('Password', { exact: true }).fill('user1');
+  await page.getByRole('dialog').getByRole('button', { name: 'Sign In' }).click();
+  await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Services & menu' });
+  const logout = sheet.locator('.citizen-dialog-signout');
+  await expect(logout).toHaveText('Sign out');
+  await expect(logout).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(logout.locator('svg')).toBeVisible();
+  await expect(logout).toBeEnabled();
+  await logout.click();
+  await expect(page).toHaveURL(/action=landing/);
+  await expect(sheet).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() =>
+    sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
+  // The dev-only Account Profile screen intentionally allows a signed-out
+  // empty state. Use a genuinely protected private route to verify that
+  // sign-out revoked the preview and not just the menu/dialog.
+  await page.goto('/?action=ledger');
+  await expect(page.locator('.citizen-account-gate')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^(Private taxpayer workspace|করদাতার ব্যক্তিগত তথ্য)$/ })).toBeVisible();
+  await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
+});

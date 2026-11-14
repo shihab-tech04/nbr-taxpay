@@ -2,43 +2,40 @@ import {expect,test} from '@playwright/test';
 
 const preview='/?action=taxpayer_home&demoUser=user1';
 
-test('dashboard month bar opens exact calendar month and preserved category',async({page})=>{
+test('Overview tax-year chart replaces monthly chart while Activity retains its complete month filters',async({page})=>{
   await page.goto(preview);
-  const summary=page.getByRole('region',{name:'Financial summary'});
-  await expect(summary.locator('.taxpayer-dashboard-kpi')).toHaveCount(4);
-  const review=page.getByRole('heading',{name:'What needs your attention'});
-  const charts=page.getByRole('heading',{name:'How your tax is covered'});
-  const order=await page.evaluate(()=>({
-    review:document.querySelector('#taxpayer-attention-title')?.getBoundingClientRect().top,
-    chart:document.querySelector('#taxpayer-coverage-title')?.getBoundingClientRect().top,
-  }));
-  expect(order.review).toBeDefined();
-  expect(order.chart).toBeDefined();
-  expect(order.review!).toBeLessThan(order.chart!);
-  await expect(review).toBeVisible();
-  await expect(charts).toBeVisible();
-  await page.getByRole('group',{name:/Income tax: Jun 2026/}).getByRole('button',{name:/Income tax, Jun 2026/}).click();
+  const bento=page.getByTestId('taxpayer-overview-bento');
+  await expect(bento.getByRole('heading',{name:'By payment service'})).toBeVisible();
+  await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
+  await expect(bento.locator('.taxpay-bento-hero__status')).toContainText('Completed Payments');
+  await expect(bento.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  await bento.getByRole('button',{name:'View all activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-  await expect(page.getByRole('list',{name:'Chronological account events'})).toHaveCount(0);
-  await expect(page.getByRole('combobox',{name:'Transaction category'})).toHaveValue('income');
-  await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('2026-06');
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
+  await page.getByRole('combobox',{name:'Transaction category'}).selectOption('income');
+  await page.getByRole('combobox',{name:'Transaction month'}).selectOption('2026-06');
   await expect(page).toHaveURL(/monthFilter=2026-06/);
   await page.reload();
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
   await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('2026-06');
-  await expect(page.getByText('Records: 1')).toBeVisible();
+  await expect(page.locator('.taxpay-office-register__count')).toContainText('1 / 14');
   await expect(page.getByText('DEMO-PAY-01').filter({visible:true}).first()).toBeVisible();
   await expect(page.getByText('DEMO-PAY-02')).toHaveCount(0);
   await page.getByRole('combobox',{name:'Transaction month'}).selectOption('all');
   await expect(page).not.toHaveURL(/monthFilter=/);
   await page.reload();
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
   await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('all');
   await page.getByRole('combobox',{name:'Transaction month'}).selectOption('2026-09');
   await expect(page).toHaveURL(/monthFilter=2026-09/);
   await page.reload();
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
   await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('2026-09');
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-2025');
   await expect(page).not.toHaveURL(/monthFilter=/);
   await page.reload();
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
   await expect(page.getByRole('combobox',{name:'Transaction month'})).toHaveValue('all');
   await expect(page.getByText('DEMO-PAY-24-01').filter({visible:true}).first()).toBeVisible();
 });

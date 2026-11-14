@@ -1,5 +1,6 @@
+import '../../styles/taxpay-unified-table.css';
 import {type ComponentPropsWithoutRef,type ReactNode} from 'react';
-import {ChevronLeft,ChevronRight,Search} from 'lucide-react';
+import {ChevronLeft,ChevronRight,Filter,Search,X} from 'lucide-react';
 
 /** Shared Korbritto table primitives.
  * The Board Meeting reference guides presentation only; the caller retains
@@ -28,6 +29,83 @@ export function TaxPayMobileTableCard({className,...rest}:ComponentPropsWithoutR
 export function TaxPayTableControls({className,...rest}:DivProps) {
   return <div {...rest} className={merge('taxpay-table-controls',className)}/>;
 }
+
+/** Office Management-style disclosure; callers retain filter and query ownership. */
+export function TaxPayTableFilterToggle({expanded,onToggle,label}:{
+  expanded:boolean;onToggle:()=>void;label:string;
+}) {
+  return <button type="button" className="taxpay-office-filter-toggle" onClick={onToggle}
+    aria-expanded={expanded} aria-label={label}>
+    <Filter size={16} aria-hidden="true"/>{label}
+  </button>;
+}
+export type TaxPayActiveFilter = {key:string;label:string;onRemove:()=>void};
+export function TaxPayActiveFilterChips({filters,clearLabel,onClear}:{
+  filters:readonly TaxPayActiveFilter[];clearLabel:string;onClear:()=>void;
+}) {
+  if(!filters.length)return null;
+  return <div className="taxpay-office-active-filters" aria-label="Active table filters">
+    <div className="taxpay-office-active-filters__chips">{filters.map(filter=>
+      <button type="button" key={filter.key} className="taxpay-office-active-filters__chip"
+        aria-label={'Remove filter: '+filter.label} onClick={filter.onRemove}>
+        <span>{filter.label}</span><X size={13} aria-hidden="true"/>
+      </button>
+    )}</div>
+    <button type="button" className="taxpay-office-active-filters__clear" onClick={onClear}>{clearLabel}</button>
+  </div>;
+}
+
+/** One Office-Management-style register header used by every taxpayer record page.
+ * Search is always available; only the advanced controls are collapsible.
+ * Domain screens retain their own queries, filters, exports and actions.
+ */
+export function TaxPayOfficeRegisterToolbar({
+  title,description,count,total,countLabel,searchValue,searchLabel,searchPlaceholder,
+  onSearchChange,filtersOpen,onToggleFilters,filterLabel,actions,id,testId
+}:{
+  title:string;description?:string;count:number;total?:number;countLabel:string;
+  searchValue?:string;searchLabel?:string;searchPlaceholder?:string;
+  onSearchChange?:(value:string)=>void;
+  filtersOpen?:boolean;onToggleFilters?:()=>void;filterLabel?:string;
+  actions?:ReactNode;id?:string;testId?:string;
+}){
+  return <header className="taxpay-office-register__toolbar" data-testid={testId??"taxpay-office-register-toolbar"}>
+    <div className="taxpay-office-register__identity">
+      <div>
+        <h2 id={id} className="taxpay-office-register__title">{title}</h2>
+        {description&&<p className="taxpay-office-register__description">{description}</p>}
+      </div>
+      <span className="taxpay-office-register__count" role="status" aria-live="polite">
+        {count}{total!==undefined&&total!==count?' / '+total:''} {countLabel}
+      </span>
+    </div>
+    <div className="taxpay-office-register__actions">
+      {onSearchChange&&<label className="taxpay-record-toolbar__search">
+        <Search size={16} aria-hidden="true"/>
+        <input type="search" value={searchValue??''} onChange={event=>onSearchChange(event.target.value)}
+          aria-label={searchLabel??'Search'} placeholder={searchPlaceholder??'Search…'}/>
+      </label>}
+      {onToggleFilters&&<TaxPayTableFilterToggle expanded={Boolean(filtersOpen)}
+        onToggle={onToggleFilters} label={filterLabel??'Filter'}/>}
+      {actions}
+    </div>
+  </header>;
+}
+export function TaxPayOfficeRegisterFilters({open,children,className,id,testId,ariaLabel}:{
+  open:boolean;children:ReactNode;className?:string;id?:string;testId?:string;ariaLabel?:string;
+}){
+  if(!open)return null;
+  return <TaxPayTableControls id={id} data-testid={testId} role={ariaLabel?'region':undefined} aria-label={ariaLabel} className={merge('taxpay-office-register__filters',className)}>{children}</TaxPayTableControls>;
+}
+export function TaxPayOfficeRegisterFooter({shown,total,labels}:{
+  shown:number;total:number;labels?:{showing:string;of:string;records:string};
+}){
+  const text={showing:'Showing',of:'of',records:'records',...labels};
+  return <footer className="taxpay-office-register__footer" role="status" aria-live="polite">
+    {text.showing} {shown===0?'0':'1–'+shown} {text.of} {total} {text.records}
+  </footer>;
+}
+
 /** Count presentation is centralized; caller owns filtering and totals. */
 export function TaxPayTableCounter({shown,total,label}:{shown:number;total?:number;label:string}) {
   return <p className="taxpay-table-count" role="status" aria-live="polite">{label}: {shown}{total!==undefined&&<span className="taxpay-table-count__total">/ {total}</span>}</p>;

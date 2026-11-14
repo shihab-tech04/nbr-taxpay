@@ -57,7 +57,7 @@ test('legacy URL offers account access without fabricated sign-out',async({page}
    .toHaveAttribute('href','?action=taxpayer_login');
 });
 
-test('User 1 login reveals both dashboard phases and retains them after refresh',async({page})=>{
+test('User 1 login keeps the bento Overview and financial sources after refresh',async({page})=>{
   await page.goto('/?action=taxpayer_login');
   await page.getByRole('textbox',{name:'User ID'}).fill('user1');
   await page.getByLabel('Password',{exact:true}).fill('user1');
@@ -65,14 +65,14 @@ test('User 1 login reveals both dashboard phases and retains them after refresh'
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(page).not.toHaveURL(/demoUser=/);
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'What needs your attention'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'By tax year'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Already covered'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Tax summary for this year'})).toBeVisible();
-  await expect(page.getByRole('table',{name:'Posted credit components'})).toContainText('৳ 155,000');
-  await expect(page.getByRole('region',{name:'Tax summary for this year'})).toContainText('৳ 25,000');
+  await expect(page.getByRole('heading',{name:'What needs your attention?'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'By payment service'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
+  await expect(page.getByTestId('dashboard-chart-source')).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Already covered'})).toBeVisible();
-  await expect(page.getByRole('region',{name:'Tax summary for this year'})).toContainText('৳ 25,000');
+  await expect(page.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
+  await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
 });
-

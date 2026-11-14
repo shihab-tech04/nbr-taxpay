@@ -4,7 +4,7 @@ import {useTaxState} from '../../services/taxState';
 import {TaxpayerActivityTabs,TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {formattedReviewAmount,safeReviewStatus} from '../../services/accountReviewHistory';
 import {AccountBeneficiaryHistory} from './AccountBeneficiaryHistory';
-import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter,TaxPayActiveFilterChips} from '../ui/TaxPayDataTable';
 
 type Row={
   id:string;owner_uid:string;category:string;assessment_year:string;
@@ -25,6 +25,7 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
   const [snapshot,setSnapshot]=useState<Snapshot>({uid:null,status:'loading',rows:[]});
   const [retry,setRetry]=useState(0);
   const [search,setSearch]=useState('');
+  const [filtersOpen,setFiltersOpen]=useState(false);
   const [selectedYear,setSelectedYear]=useState('all');
   const bn=language==='bn';
   const tr=(en:string,other:string)=>bn?other:en;
@@ -58,7 +59,7 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
     (!needle||[row.id,row.category,row.assessment_year,row.request_status].some(value=>value.toLocaleLowerCase().includes(needle))));
   const formatDate=(raw:string)=>new Intl.DateTimeFormat(bn?'bn-BD':'en-BD',{dateStyle:'medium'}).format(new Date(raw));
 
-  return <div className="mx-auto max-w-5xl space-y-4 pb-12">
+  return <div className="mx-auto max-w-7xl space-y-4 pb-12">
     <TaxpayerPageHeading title={tr('My submitted requests','আমার জমা দেওয়া অনুরোধ')}
       description={tr('Account-owned, non-financial payment review activity. No TIN binding required.',
         'অ্যাকাউন্টভিত্তিক অ-আর্থিক পরিশোধ পর্যালোচনা। টিআইএন সংযোগের প্রয়োজন নেই।')} />
@@ -79,14 +80,14 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
       {state.status==='ready'&&state.rows.length===0&&<div role="status" className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-taxpay-muted">
         {tr('No review requests have been submitted from this account.', 'এই অ্যাকাউন্ট থেকে কোনো পর্যালোচনা অনুরোধ জমা দেওয়া হয়নি।')}</div>}
       {state.status==='ready'&&state.rows.length>0&&<div className="mt-4 space-y-3" data-testid="account-owner-review-history">
-        <TaxPayTableControls className="taxpay-record-page-filters">
-          <label className="taxpayer-transaction-filter">
-            <span>{tr('Search requests','অনুরোধ খুঁজুন')}</span>
-            <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
-              aria-label={tr('Search requests','অনুরোধ খুঁজুন')}
-              placeholder={tr('Reference, service or status','রেফারেন্স, সেবা বা অবস্থা')}
-              className="min-h-11 w-full min-w-0 rounded-lg border border-taxpay-border bg-white px-3 text-base"/>
-          </label>
+        <TaxPayOfficeRegisterToolbar title={tr('Submitted request history','জমা দেওয়া অনুরোধের ইতিহাস')}
+          count={visible.length} total={state.rows.length} countLabel={tr('records','রেকর্ড')}
+          searchValue={search} onSearchChange={setSearch}
+          searchLabel={tr('Search requests','অনুরোধ খুঁজুন')}
+          searchPlaceholder={tr('Reference, service or status','রেফারেন্স, সেবা বা অবস্থা')}
+          filtersOpen={filtersOpen} onToggleFilters={()=>setFiltersOpen(open=>!open)}
+          filterLabel={tr('Filter','ফিল্টার')}/>
+        <TaxPayOfficeRegisterFilters open={filtersOpen}>
           <label className="taxpayer-transaction-filter">
             <span>{tr('Assessment year','করবর্ষ')}</span>
             <select value={selectedYear} onChange={event=>setSelectedYear(event.target.value)}
@@ -99,8 +100,13 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
           {(search||selectedYear!=='all')&&<button type="button"
             className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
             onClick={()=>{setSearch('');setSelectedYear('all');}}>{tr('Clear filters','ফিল্টার মুছুন')}</button>}
-        </TaxPayTableControls>
-        <TaxPayTableCounter label={tr('Requests','অনুরোধ')} shown={visible.length} total={state.rows.length}/>
+        </TaxPayOfficeRegisterFilters>
+        <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
+          onClear={()=>{setSearch('');setSelectedYear('all');}}
+          filters={[
+            ...(search.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+search.trim(),onRemove:()=>setSearch('')}]:[]),
+            ...(selectedYear!=='all'?[{key:'year',label:selectedYear,onRemove:()=>setSelectedYear('all')}]:[])
+          ]}/>
         {visible.length===0?<TaxPayTableState>{tr('No submitted requests match those filters.','এই ফিল্টারে কোনো অনুরোধ মেলেনি।')}</TaxPayTableState>:
           <TaxPayDataGrid variant="tabular" rows={visible} getRowKey={row=>row.id}
             ariaLabel={tr('Submitted request register','জমা দেওয়া অনুরোধের তালিকা')}
@@ -121,6 +127,8 @@ export const AccountReviewHistory:React.FC<{ownerUid:string;language:'en'|'bn';a
                 <p className="text-sm text-taxpay-muted">{tr('Financial status: Not verified','আর্থিক অবস্থা: যাচাই হয়নি')}</p>
               </div>}
             ]}/>}
+        <TaxPayOfficeRegisterFooter shown={visible.length} total={state.rows.length}
+          labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('records','রেকর্ড')}}/>
       </div>}
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={()=>navigate('secure_workspace')} className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-medium text-taxpay-primary">
