@@ -492,7 +492,8 @@ jobs:
           done < <(find "$OFFICE_DIR/supabase/migrations" -maxdepth 1 -name '*.sql' -type f | sort)
           node tests/integration/pairedTaxpayerOfficeSql.mjs
           node tests/integration/pairedCorrectionOfficeSql.mjs
-          echo "PASS: original source v3 payment and independent Office SQL readback, retry and officer state"
+          node tests/integration/pairedF039SavedOneTimeOfficeSql.mjs
+          echo "PASS: original source v3 payment and F-039 saved-plus-one-time parent in independent Office SQL, retry and officer state"
 
 
       - name: Remove disposable synthetic credentials
