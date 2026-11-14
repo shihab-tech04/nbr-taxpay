@@ -186,6 +186,12 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
     const paisa=new Intl.NumberFormat(locale,{minimumIntegerDigits:2,useGrouping:false}).format(Number(minor%100n));
     return `৳ ${taka}.${paisa}`;
   };
+  const openCorrectionRecords=()=>{
+    const target=document.getElementById('dashboard-correction-requests');
+    if(!target){onNavigate('corrections');return;}
+    target.scrollIntoView({behavior:'smooth',block:'start'});
+    target.focus({preventScroll:true});
+  };
   const shortcutItems=[
     {route:'history' as const,label:tr('Payment history','পেমেন্টের ইতিহাস')},
     {route:'journey' as const,label:tr('My Tax Journey','আমার কর যাত্রা')},
@@ -240,10 +246,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         <p className="text-sm text-taxpay-muted">{item.label}</p>
         <p className="mt-2 text-2xl font-semibold tabular-nums text-taxpay-text">{typeof item.count==='number'?item.count.toLocaleString(bn?'bn-BD':'en-BD'):'—'}</p>
         {item.id==='completed'&&<p className="mt-1 text-xs text-taxpay-muted">{tr('Application-recorded simulation; not a Treasury-confirmed credit.','অ্যাপে সংরক্ষিত সিমুলেশন; ট্রেজারি-নিশ্চিত কর ক্রেডিট নয়।')}</p>}
-        <button type="button" onClick={()=>item.route==='corrections'
-          ? (document.getElementById('dashboard-correction-requests')?.scrollIntoView({behavior:'smooth',block:'start'}),
-             document.getElementById('dashboard-correction-requests')?.focus({preventScroll:true}))
-          : onNavigate(item.route)}
+        <button type="button" onClick={()=>item.route==='corrections'?openCorrectionRecords():onNavigate(item.route)}
           className="mt-3 min-h-11 self-start rounded-lg border border-taxpay-border bg-white px-3 text-sm font-medium text-taxpay-primary">
           {tr('Open records','রেকর্ড দেখুন')}
         </button>
@@ -401,10 +404,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
     <nav className="mt-4" aria-label={tr('Account shortcuts','অ্যাকাউন্ট শর্টকাট')}>
       <p className="mb-2 text-sm font-semibold text-taxpay-text">{tr('Account shortcuts','অ্যাকাউন্ট শর্টকাট')}</p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-        {shortcutItems.map(item=><button key={item.route} type="button" onClick={()=>item.route==='corrections'
-          ? (document.getElementById('dashboard-correction-requests')?.scrollIntoView({behavior:'smooth',block:'start'}),
-             document.getElementById('dashboard-correction-requests')?.focus({preventScroll:true}))
-          : onNavigate(item.route)}
+        {shortcutItems.map(item=><button key={item.route} type="button" onClick={()=>item.route==='corrections'?openCorrectionRecords():onNavigate(item.route)}
           className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-left text-sm font-medium text-taxpay-primary hover:bg-slate-50">
           {item.label}
         </button>)}
