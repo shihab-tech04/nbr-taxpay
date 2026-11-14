@@ -1,8 +1,8 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {TaxPayDataGrid,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayTableCounter,TaxPayTableState,TaxPayTableControls} from '../ui/TaxPayDataTable';
 import {formatCurrency} from '../../services/numberFormat';
 import {
-  acknowledgeReceivedPaymentNotice,listReceivedPaymentNotices,
+  acknowledgeReceivedPaymentNotice,listReceivedPaymentNotices,filterStoredReceivedPaymentNotices,
   type StoredReceivedPaymentNotice,
 } from '../../services/demoReceivedPaymentNotices';
 
@@ -20,6 +20,10 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
   const [revision,setRevision]=useState(0);
   const [busy,setBusy]=useState<string|null>(null);
   const [ackError,setAckError]=useState('');
+  const [search,setSearch]=useState('');
+  const [readFilter,setReadFilter]=useState<'all'|'read'|'unread'>('all');
+  const [dateFrom,setDateFrom]=useState('');
+  const [dateTo,setDateTo]=useState('');
   const busyRef=useRef<string|null>(null);
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
@@ -28,6 +32,7 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
     let active=true;
     setState({owner:profileId,status:'loading',rows:[]});
     setAckError('');setBusy(null);busyRef.current=null;
+    setSearch('');setReadFilter('all');setDateFrom('');setDateTo('');
     const load=async()=>{
       if(busyRef.current)return;
       try{
@@ -70,6 +75,10 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
   if(!enabled)return null;
   const current=state.owner===profileId?state:{owner:profileId,status:'loading' as const,rows:[]};
   const rows=current.rows;
+  const filtered=filterStoredReceivedPaymentNotices(rows,{
+    query:search,readStatus:readFilter,dateFrom,dateTo
+  });
+  const invalidDates=Boolean(dateFrom&&dateTo&&dateFrom>dateTo);
   return <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6"
     data-testid="received-payment-notice-register"
     aria-label={tr('Received payment notices','প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি')}>
@@ -78,12 +87,47 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
         {tr('Received payment notices','প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি')}
       </h2>
       <TaxPayTableCounter label={tr('Notices','বিজ্ঞপ্তি')}
-        shown={rows.length} total={rows.length}/>
+        shown={filtered.length} total={rows.length}/>
     </div>
     <p className="mt-1 text-sm text-taxpay-muted">
       {tr('Saved recipient allocations, including notices already read. These are payment records, not Treasury settlement or tax credit.',
         'ইতিমধ্যে পঠিত বিজ্ঞপ্তিসহ সংরক্ষিত প্রাপকের বরাদ্দ। এগুলো পেমেন্টের রেকর্ড, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট নয়।')}
     </p>
+    <TaxPayTableControls className="taxpayer-transaction-filters taxpay-record-page-filters">
+      <label className="taxpayer-transaction-filter">
+        <span>{tr('Find a received notice','প্রাপ্ত বিজ্ঞপ্তি খুঁজুন')}</span>
+        <input type="search" value={search} onChange={e=>setSearch(e.target.value)}
+          className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"
+          placeholder={tr('Reference, head or year','রেফারেন্স, খাত বা করবর্ষ')}/>
+      </label>
+      <label className="taxpayer-transaction-filter">
+        <span>{tr('Read status','পঠিত অবস্থা')}</span>
+        <select value={readFilter} onChange={e=>setReadFilter(e.target.value as 'all'|'read'|'unread')}
+          className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm">
+          <option value="all">{tr('All notices','সব বিজ্ঞপ্তি')}</option>
+          <option value="unread">{tr('Unread','অপঠিত')}</option>
+          <option value="read">{tr('Read','পঠিত')}</option>
+        </select>
+      </label>
+      <label className="taxpayer-transaction-filter">
+        <span>{tr('From date','শুরুর তারিখ')}</span>
+        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
+          className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"/>
+      </label>
+      <label className="taxpayer-transaction-filter">
+        <span>{tr('To date','শেষ তারিখ')}</span>
+        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)}
+          className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm"/>
+      </label>
+      {(search||readFilter!=='all'||dateFrom||dateTo)&&<button type="button"
+        className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary"
+        onClick={()=>{setSearch('');setReadFilter('all');setDateFrom('');setDateTo('');}}>
+        {tr('Clear filters','ফিল্টার মুছুন')}
+      </button>}
+    </TaxPayTableControls>
+    {invalidDates&&<p role="alert" className="mt-2 text-sm text-taxpay-error">
+      {tr('End date must be on or after start date.','শেষের তারিখ শুরুর তারিখের আগে হতে পারে না।')}
+    </p>}
     {ackError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{ackError}</p>}
     {current.status==='loading'
       ?<p role="status" className="mt-3 text-sm text-taxpay-muted">
@@ -96,7 +140,9 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
         </div>
         :rows.length===0
           ?<TaxPayTableState>{tr('No received payments recorded.','এখনো প্রাপ্ত পেমেন্ট নেই।')}</TaxPayTableState>
-          :<TaxPayDataGrid variant="tabular" rows={rows} getRowKey={row=>row.eventId}
+          :filtered.length===0
+            ?<TaxPayTableState>{tr('No received notices match these filters.','এই ফিল্টারে কোনো প্রাপ্ত বিজ্ঞপ্তি নেই।')}</TaxPayTableState>
+          :<TaxPayDataGrid variant="tabular" rows={filtered} getRowKey={row=>row.eventId}
             ariaLabel={tr('Received payment register','প্রাপ্ত পেমেন্টের তালিকা')}
             mobileTestId="received-payment-notice-cards"
             columns={[
@@ -107,6 +153,10 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
               {key:'amount',header:tr('Your allocation','আপনার বরাদ্দ'),
                 headerClassName:'text-right',cellClassName:'text-right tabular-nums',renderCell:row=>
                 <p className="font-semibold">{formatCurrency(row.amountMinor/100,language)}</p>},
+              {key:'date',header:tr('Recorded','সংরক্ষণের তারিখ'),renderCell:row=>
+                <time dateTime={row.createdAt}>
+                  {new Date(row.createdAt).toLocaleDateString(bn?'bn-BD':'en-BD',{dateStyle:'medium'})}
+                </time>},
               {key:'read',header:tr('Status / action','অবস্থা / কার্যক্রম'),renderCell:row=>
                 row.isRead
                   ?<span>{tr('Read','পঠিত')}</span>

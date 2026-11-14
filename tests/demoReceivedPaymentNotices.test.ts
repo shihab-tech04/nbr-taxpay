@@ -112,3 +112,23 @@ test('stored notice list retains all 205 read/unread events in SQL order with >1
     items:offset===0?[rows[2]]:[rows[1]],total:2,offset,limit,hasMore:offset===0,
   })),/ordering/);
 });
+
+
+test('received-notice search, read filter and exact SQL UTC dates retain only matching owned events',async()=>{
+  const {filterStoredReceivedPaymentNotices,parseStoredReceivedPaymentNotice}=await import('../src/services/demoReceivedPaymentNotices');
+  const make=(eventId:string,createdAt:string,isRead:boolean,headId:string)=>
+    parseStoredReceivedPaymentNotice({...valid,eventId,createdAt,headId,
+      isRead,acknowledgedAt:isRead?'2026-11-14T04:20:00Z':null});
+  const rows=[
+    make('owned-1','2026-11-13T18:00:00Z',true,'121'),
+    make('owned-2','2026-11-14T18:00:00Z',false,'122'),
+    make('owned-3','2026-11-15T18:00:00Z',false,'121'),
+  ];
+  assert.deepEqual(filterStoredReceivedPaymentNotices(rows,{query:'121',readStatus:'unread'}).map(x=>x.eventId),['owned-3']);
+  assert.deepEqual(filterStoredReceivedPaymentNotices(rows,{query:'',readStatus:'read'}).map(x=>x.eventId),['owned-1']);
+  assert.deepEqual(filterStoredReceivedPaymentNotices(rows,{query:'',readStatus:'all',
+    dateFrom:'2026-11-14',dateTo:'2026-11-14'}).map(x=>x.eventId),['owned-2']);
+  assert.deepEqual(filterStoredReceivedPaymentNotices(rows,{query:'',readStatus:'all',
+    dateFrom:'2026-11-16',dateTo:'2026-11-13'}),[]);
+  assert.equal(rows.length,3,'Filters never rewrite the SQL snapshot');
+});

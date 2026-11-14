@@ -186,3 +186,31 @@ export async function listReceivedPaymentNotices(profileId:string):Promise<Store
   return loadStoredReceivedPaymentNotices((offset,limit)=>
     scopedRequest(profileId,'received-notices-list',{offset,limit}));
 }
+
+
+export type ReceivedNoticeFilter={
+  query:string;readStatus:'all'|'read'|'unread';
+  dateFrom?:string;dateTo?:string;
+};
+/** All filters operate only on the already validated recipient-owned SQL list.
+ * Never expand the data source or infer a payer's unrelated allocations. */
+export function filterStoredReceivedPaymentNotices(
+  rows:readonly StoredReceivedPaymentNotice[],filter:ReceivedNoticeFilter,
+):StoredReceivedPaymentNotice[]{
+  const query=filter.query.trim().toLocaleLowerCase();
+  const from=filter.dateFrom??'',to=filter.dateTo??'';
+  if((from&&!/^\d{4}-\d{2}-\d{2}$/.test(from))||
+    (to&&!/^\d{4}-\d{2}-\d{2}$/.test(to))||
+    (from&&to&&from>to))return [];
+  return rows.filter(row=>{
+    if(filter.readStatus==='read'&&!row.isRead||
+      filter.readStatus==='unread'&&row.isRead)return false;
+    // Stable UTC date of the original SQL event, not browser's render clock.
+    const day=new Date(row.createdAt).toISOString().slice(0,10);
+    if(from&&day<from||to&&day>to)return false;
+    return !query || [
+      row.paymentId,row.receiptReference??'',row.assessmentYear,row.headId??'',
+      row.serviceCode??'',row.eventId,day
+    ].some(value=>value.toLocaleLowerCase().includes(query));
+  });
+}
