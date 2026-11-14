@@ -3,7 +3,7 @@ import { Monitor, Smartphone, Search, ChevronDown, ExternalLink, X, ArrowRight, 
 import { useTaxState } from '../../services/taxState';
 import '../../styles/public-guide-p3.css';
 
-import { GUIDE_CONTENT, type Category, type Pair } from '../../data/publicGuideContent';
+import { GUIDE_CONTENT, GUIDE_CONTENT_LAST_UPDATED, type Category, type Pair } from '../../data/publicGuideContent';
 export { GUIDE_CONTENT } from '../../data/publicGuideContent';
 type Device = 'web'|'mobile';
 
@@ -51,6 +51,9 @@ export const PublicUserGuide:React.FC=()=>{
  }).filter(item=>item.steps.length||item.faqs.length):[];
  const resultCount=results.reduce((count,item)=>count+item.steps.length+item.faqs.length,0);
  const labels=bn?['ওয়েব','মোবাইল']:['Web','Mobile'];
+ const guideUpdatedLabel=new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{
+   day:'numeric',month:'long',year:'numeric',timeZone:'UTC'
+ }).format(new Date(GUIDE_CONTENT_LAST_UPDATED+'T00:00:00Z'));
  const actionsFor=(category:Category)=>{
   if(category==='travel') return [{id:'travel',label:['Pay Travel Tax','ভ্রমণ কর পরিশোধ করুন'] as Pair,run:()=>openPaymentServiceChoice('TRAVEL_TAX')}];
   if(category==='status'||category==='records') return [{id:'records',label:['Find a payment record','পেমেন্ট রেকর্ড খুঁজুন'] as Pair,run:()=>navigate('verify')}];
@@ -85,6 +88,9 @@ export const PublicUserGuide:React.FC=()=>{
       <p className="citizen-hub-eyebrow">{bn?'ব্যবহার নির্দেশিকা':'User guide'}</p>
       <h1>{bn?'সহজকর ব্যবহার নির্দেশিকা':'Sohojkor user guide'}</h1>
       <p>{bn?'পেমেন্টের ধাপ, রসিদ ও সাধারণ প্রশ্ন।':'Clear steps, payment references and common questions.'}</p>
+      <p className="public-guide-last-updated" data-testid="public-guide-last-updated">
+        {bn?'নির্দেশিকা সর্বশেষ হালনাগাদ':'Guide last updated'}: <time dateTime={GUIDE_CONTENT_LAST_UPDATED}>{guideUpdatedLabel}</time>
+      </p>
     </header>
     <section className="public-guide-find" aria-labelledby="guide-search-title">
       <div className="public-guide-find-copy">
