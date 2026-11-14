@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {reuseRecordedPayment,reuseLegacySingleHeadPayment} from '../src/services/paymentReuse.ts';
 import type {ChallanReceipt} from '../src/types/tax.ts';
+import {V11_PAYMENT_OPTIONS} from '../src/data/v11PaymentOptions.ts';
 const receipt = {
   id:'r1',challanNo:'SIM-1',tokenNumber:'SIM-token',paymentCategory:'OTHER_TAX_PAYMENT',
   assessmentYear:'2025-26, 2026-27',payerName:'Payer',payerTin:'1234567890123',
@@ -77,8 +78,10 @@ test('Travel Tax reuse copies itinerary and people but never treats masked passp
      passengers:[{name:'Test Passenger',passportMasked:'••••1234',nationality:'BD' as const,
        country:'Bangladesh',ageBand:'ADULT' as const,age:34,amount:30}]
    }};
+ const before=JSON.stringify(travel);
  const draft=reuseRecordedPayment([travel],'owner','1234567890123','travel-origin');
  assert.equal(draft.service,'TRAVEL_TAX');
+ assert.equal(draft.sourcePaymentId,'travel-origin');
  assert.equal(draft.formPayload.travelDate,'');
  assert.equal(draft.formPayload.port,'Benapole');
  assert.equal(draft.formPayload.destination,'India');
@@ -88,6 +91,9 @@ test('Travel Tax reuse copies itinerary and people but never treats masked passp
  assert.deepEqual(people.map(p=>p.birthDate),['']);
  assert.deepEqual(people.map(p=>p.identitySource),['PENDING']);
  assert.equal(JSON.stringify(draft).includes('••••1234'),false);
+ for(const priorDocumentRef of ['SIM-1','SIM-token','SIM-TXN'])
+  assert.equal(JSON.stringify(draft.formPayload).includes(priorDocumentRef),false);
+ assert.equal(JSON.stringify(travel),before);
  assert.throws(()=>reuseRecordedPayment([{...travel,
    travelDetails:{...travel.travelDetails,passengers:[{...travel.travelDetails.passengers[0],amount:0}]}
  }],'owner','1234567890123','travel-origin'),/cannot be reconciled/);
@@ -259,4 +265,34 @@ test('Pay Again must bind the selected source ID to the original immutable SQL p
  assert.equal(reuseRecordedPayment([batch],'owner','1234567890123',batchId).sourcePaymentId,batchId);
  assert.throws(()=>reuseRecordedPayment([batch],'owner','1234567890123',otherId),
   /original payment|source payment|batch/i,'a mismatched batch ID must never be attached to a receipt');
+});
+
+// The approved Pay Again entry is not limited to OTHER_TAX_PAYMENT. These
+// recorded service journeys still use their existing single-head wizard and
+// must not manufacture a new beneficiary, historical year or source payment.
+test('single-head Pay Again service matrix retains editable source inputs and exact year rules',()=>{
+  const services = ['ADVANCE_TAX','ASSESSED_DEMAND','PENALTY',
+    'SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL'] as const;
+  for(const service of services){
+    const head=V11_PAYMENT_OPTIONS.find(item=>item.category===service && item.status==='ACTIVE');
+    assert.ok(head,service+' must have an available source-catalogue head');
+    for(const assessmentYear of ['2026-27','2025-26','2027-28'] as const){
+      const original={...receipt,paymentCategory:service,taxpayerTin:'1234567890123',
+        assessmentYear,allocationItems:undefined,
+        items:[{...receipt.items[0],headId:head.id,economicCode:head.economicCode,
+          headNameEn:head.nameEn,totalAmount:10,taxAmount:10}],totalAmount:10} as ChallanReceipt;
+      const immutable=JSON.stringify(original);
+      const sourceId=service+'-'+assessmentYear;
+      const reused=reuseRecordedPayment([original],'ownerUid','1234567890123',sourceId);
+      assert.equal(reused.service,service);
+      assert.equal(reused.sourcePaymentId,sourceId);
+      assert.equal(reused.formPayload.forSelf,true);
+      assert.deepEqual(reused.formPayload.additionalTaxpayers,[]);
+      assert.deepEqual(reused.formPayload.otherTaxLines,[]);
+      assert.deepEqual(reused.formPayload.selectedHeadIds,[head.id]);
+      assert.deepEqual(reused.formPayload.amountInputs,{[head.id]:'10.00'});
+      assert.equal(reused.formPayload.assessmentYear,assessmentYear==='2026-27'?assessmentYear:'');
+      assert.equal(JSON.stringify(original),immutable,'original payment must remain unchanged');
+    }
+  }
 });

@@ -75,7 +75,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     ? { kind: 'authenticated', userId: verifiedUser.id }
     : previewAccount ? { kind: 'preview', profileId: previewAccount.id } : null;
   const draftOwnerKey = draftActor ? draftActor.kind + ':' +
-    (draftActor.kind === 'authenticated' ? draftActor.userId : draftActor.profileId) : '';
+    (draftActor.kind === 'authenticated' ? draftActor.userId : draftActor.kind === 'preview' ? draftActor.profileId : 'guest-session') : '';
   const [loginReady, setLoginReady] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
   const payerHeadingRef = useRef<HTMLHeadingElement>(null);

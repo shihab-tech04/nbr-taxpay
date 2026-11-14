@@ -181,7 +181,7 @@ test('leaving an active payment through the logo confirms before discarding ente
 });
 
 
-test('taxpayer full and compact views remain usable at six audited widths', async ({page},info) => {
+test('taxpayer persistent mobile navigation remains usable at six audited widths', async ({page},info) => {
   test.skip(info.project.name!=='mobile-320','Single runner captures the full viewport matrix');
   for (const width of [320,360,375,390,768,1280]) {
     await page.setViewportSize({width,height:812});
@@ -204,12 +204,16 @@ test('taxpayer full and compact views remain usable at six audited widths', asyn
       await expect(page.getByRole('button',{name:'Pay Tax menu'})).toBeVisible();
     }
     if(width<=900) {
+      const header=page.locator('.citizen-header');
       await page.evaluate(()=>window.scrollTo(0,450));
-      await expect(page.locator('.citizen-header')).toHaveClass(/citizen-header--hidden/);
-      await expect(page.locator('.citizen-header')).toHaveCSS('visibility','hidden');
-      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Notifications'})).toBeVisible();
-      await expect(page.locator('.citizen-corners').getByRole('button',{name:'Home'})).toBeVisible();
-      await page.screenshot({path:'test-results/screenshots/taxpayer-compact-'+width+'.png',fullPage:false});
+      await expect(header).not.toHaveClass(/citizen-header--hidden/);
+      await expect(header).not.toHaveAttribute('inert','');
+      await expect(header).toBeVisible();
+      const bottomNav=page.locator('.citizen-bottom-nav');
+      await expect(bottomNav).toBeVisible();
+      for(const name of ['Overview','Activity','Tax Ledger']) await expect(bottomNav.getByRole('button',{name})).toBeVisible();
+      await expect(page.locator('.citizen-corners')).toHaveCount(0);
+      await page.screenshot({path:'test-results/screenshots/taxpayer-persistent-'+width+'.png',fullPage:false});
     } else {
       await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'})).toBeVisible();
       await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeHidden();
@@ -270,7 +274,7 @@ test('public mobile menu opens guide and report in EN/BN without exposing privat
  await expect(page.getByRole('heading',{name:'সমস্যা জানান'})).toBeVisible();
 });
 
-test('taxpayer mobile header, compact corners and two-tier full-width menu are accessible',async({page},info)=>{
+test('taxpayer mobile header, persistent dock and two-tier full-width menu are accessible',async({page},info)=>{
  test.skip(info.project.name!=='mobile-375','One mobile workflow verifies requested navigation behavior');
  await page.setViewportSize({width:375,height:812});
  await page.goto('/?action=taxpayer_home');
@@ -304,10 +308,13 @@ test('taxpayer mobile header, compact corners and two-tier full-width menu are a
  await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'English'}).click();
  await dialog.getByRole('button',{name:'Close'}).click();
  await page.evaluate(()=>window.scrollTo(0,500));
- await expect(header).toHaveClass(/citizen-header--hidden/);
- const corners=page.locator('.citizen-corners');
- for(const name of ['Open menu','Notifications','Home'])await expect(corners.getByRole('button',{name})).toBeVisible();
- await expect(page.locator('.citizen-pay--compact')).toBeVisible();
+ await expect(header).not.toHaveClass(/citizen-header--hidden/);
+ await expect(header).not.toHaveAttribute('inert','');
+ const bottomNav=page.locator('.citizen-bottom-nav');
+ await expect(bottomNav).toBeVisible();
+ for(const name of ['Overview','Activity','Tax Ledger'])await expect(bottomNav.getByRole('button',{name})).toBeVisible();
+ await expect(page.locator('.citizen-corners')).toHaveCount(0);
+ await expect(page.locator('.citizen-pay--expanded')).toBeVisible();
 });
 
 // Banner-dependent browser checks use explicitly published CMS rows;

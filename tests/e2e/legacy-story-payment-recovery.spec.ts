@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {fillTravelDetails,futureTravelDate} from './travel-tax-test-helper';
 
 /** Browser journey uses intercepted fictional transport; SQL ownership is tested
  * separately against disposable PostgreSQL. No hosted payment rows are created. */
@@ -10,8 +11,25 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   const older='00000000-0000-4000-8000-000000030004';
   const mixed='00000000-0000-4000-8000-000000030005';
   const unsnapshottedMulti='00000000-0000-4000-8000-000000030006';
+  const travelPayment='00000000-0000-4000-8000-000000030007';
+  const newTravelPayment='00000000-0000-4000-8000-000000030008';
   const cap='A'.repeat(43);
   const date='2026-11-05T12:00:00Z';
+  const travelSnapshot={
+    id:travelPayment,paymentTransactionId:travelPayment,challanNo:'SIM-TRAVEL-ORIGINAL',
+    tokenNumber:'SIM-TRAVEL-TOKEN',paymentCategory:'TRAVEL_TAX',assessmentYear:'2026-27',
+    payerName:'Preview user1',payerTin:'1111111111111',taxpayerTin:'1111111111111',
+    receiptMobile:'01712345678',isRepresentativePayment:false,
+    taxZone:'—',taxCircle:'—',isWithholding:false,
+    travelDetails:{mode:'LAND',departurePort:'Benapole',destination:'India',travelDate:'2026-11-30',
+      economicCode:'1144102',passengers:[{name:'Travel passenger',passportMasked:'••••3456',
+        nationality:'BD',country:'Bangladesh',ageBand:'ADULT',age:34,amount:1000}]},
+    items:[{headId:155,economicCode:'1144102',headNameEn:'Travel tax — Travel passenger',
+      taxAmount:1000,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:1000}],
+    totalAmount:1000,paymentMethod:'SIMULATED',gatewayTransactionId:'SIM-TRAVEL-TXN',
+    treasuryStatus:'GATEWAY_SUCCESS',taxCreditStatus:'NOT_APPLICABLE',createdAt:date,isSimulatedDemo:true
+  };
+  const originalTravelSnapshot=JSON.stringify(travelSnapshot);
   const snapshot={
     id:payment,challanNo:'SIM-RECOVER-1',tokenNumber:'SIM-TOKEN',
     paymentCategory:'OTHER_TAX_PAYMENT',assessmentYear:'2025-26',
@@ -29,7 +47,11 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   };
   let recovered=false;
   let recoveryAttempts=0;
+  let savedPaymentDraft:Record<string,unknown>|null=null;
+  let savedPaymentDraftPayload:Record<string,unknown>|null=null;
   const paymentRequests:string[]=[];
+  const paymentSubmissions:Array<Record<string,unknown>>=[];
+  const submittedTravelPayments:Record<string,any>[]=[];
   const failedRequests:string[]=[];
   page.on('requestfailed',request=>failedRequests.push(request.url()+':'+request.failure()?.errorText));
   await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
@@ -48,8 +70,29 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
         return;
       }
       recovered=true;data={recovered:1};
-    }else if(action==='lists'||action==='people'||action==='payment-draft-list')data=[];
-    else if(action==='open')data={active:true};
+    }else if(action==='lists'||action==='people')data=[];
+    else if(action==='payment-draft-list')data=savedPaymentDraft?[savedPaymentDraft]:[];
+    else if(action==='payment-draft-create'||action==='payment-draft-update'){
+      const payload=body.payload;
+      if(!payload||typeof payload!=='object'||Array.isArray(payload))throw new Error('Invalid mock payment draft');
+      if(action==='payment-draft-update'&&(!savedPaymentDraft||body.id!==savedPaymentDraft.id))
+        throw new Error('Unexpected mock payment draft update');
+      savedPaymentDraftPayload=payload as Record<string,unknown>;
+      savedPaymentDraft={
+        id:'00000000-0000-4000-8000-000000039001',
+        service:body.service,
+        form_payload:savedPaymentDraftPayload,
+        revision:savedPaymentDraft?Number(savedPaymentDraft.revision)+1:1,
+        created_at:date,updated_at:date
+      };
+      data=savedPaymentDraft;
+    }else if(action==='payment-draft-get'){
+      if(!savedPaymentDraft||body.id!==savedPaymentDraft.id)throw new Error('Unexpected mock payment draft read');
+      data=savedPaymentDraft;
+    }else if(action==='payment-draft-delete'){
+      if(!savedPaymentDraft||body.id!==savedPaymentDraft.id)throw new Error('Unexpected mock payment draft delete');
+      savedPaymentDraft=null;data={deleted:'00000000-0000-4000-8000-000000039001'};
+    }else if(action==='open')data={active:true};
     else throw new Error('Unexpected action '+action);
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
@@ -60,6 +103,11 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
       payer:'user1',state:'SIMULATED',reviewStatus:'MIRRORED_TO_OFFICE',
       createdAt:date,totalMinor:10000,simulationOnly:true,
       allocations:[{beneficiary:'user1',category:'OTHER_TAX_PAYMENT',assessmentYear:'2026-27',amountMinor:10000}],events:[]
+    },{
+      id:'SIM-'+travelPayment.replaceAll('-','').slice(0,16).toUpperCase(),transactionId:travelPayment,
+      payer:'user1',state:'SIMULATED',reviewStatus:'MIRRORED_TO_OFFICE',
+      createdAt:date,totalMinor:100000,simulationOnly:true,
+      allocations:[{beneficiary:'user1',category:'TRAVEL_TAX',assessmentYear:'2026-27',amountMinor:100000}],events:[]
     }]:[];
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
       success:true,simulationOnly:true,data:rows
@@ -69,17 +117,40 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
     route.fulfill({status:200,contentType:'application/json',body:'{"success":true,"data":[],"simulationOnly":true}'}));
   await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
     const url=new URL(route.request().url());
+    if(route.request().method()==='POST'){
+      const request=route.request().postDataJSON() as Record<string,any>;
+      if(request.service==='TRAVEL_TAX'){
+        submittedTravelPayments.push(request);
+        await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+          success:true,id:newTravelPayment,status:'SIMULATED_SUCCESS',mirrored:true,simulationOnly:true
+        })});
+      }else{
+        paymentSubmissions.push(request);
+        await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+          success:true,id:'00000000-0000-4000-8000-000000039999',
+          status:'SIMULATED_SUCCESS',mirrored:true,simulationOnly:true
+        })});
+      }
+      return;
+    }
     paymentRequests.push(url.pathname+url.search);
     const records=[
       {id:payment,service:'OTHER_TAX_PAYMENT',amountMinor:10000,status:'SIMULATED_SUCCESS',createdAt:date},
       {id:older,service:'TAX_WITH_RETURN',amountMinor:2500000,status:'SIMULATED_SUCCESS',createdAt:'2026-10-26T12:00:00Z'},
       {id:mixed,service:'TAX_WITH_RETURN',amountMinor:5000,status:'SIMULATED_SUCCESS',createdAt:'2026-10-18T12:00:00Z'},
-      {id:unsnapshottedMulti,service:'ADVANCE_TAX',amountMinor:6500,status:'SIMULATED_SUCCESS',createdAt:'2026-10-17T12:00:00Z'}
+      {id:unsnapshottedMulti,service:'ADVANCE_TAX',amountMinor:6500,status:'SIMULATED_SUCCESS',createdAt:'2026-10-17T12:00:00Z'},
+      {id:travelPayment,service:'TRAVEL_TAX',amountMinor:100000,status:'SIMULATED_SUCCESS',createdAt:date}
     ];
     const chosen=records.find(item=>url.pathname.includes('/payments/'+item.id));
     if(chosen){
       const details=chosen.id===payment
         ?{payerName:'Earlier payer',assessmentYear:'2025-26',paymentMethod:'SIMULATED',receiptSnapshot:snapshot}
+        :chosen.id===travelPayment
+          ?{payerId:'user1',payerName:'Preview user1',payerTin:'1111111111111',taxpayerTin:'1111111111111',
+            assessmentYear:'2026-27',paymentMethod:'SIMULATED',receiptMobile:'01712345678',
+            travelMode:'LAND',departurePort:'Benapole',destination:'India',travelDate:'2026-11-30',
+            economicCode:'1144102',passengers:travelSnapshot.travelDetails.passengers,
+            lines:travelSnapshot.items,receiptSnapshot:travelSnapshot}
         :chosen.id===older
           ?{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2025-26',
             lines:[{category:'TAX_WITH_RETURN',beneficiary:'user1',assessmentYear:'2025-26',amountMinor:2500000,
@@ -193,7 +264,53 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(cloned).toBeVisible();
   await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText(payment);
   await expect(cloned.getByTestId('pay-again-reuse-notice')).toContainText('Original payment unchanged.');
+  await cloned.getByRole('button',{name:'Save Draft',exact:true}).click();
+  await expect(cloned.getByRole('button',{name:'Draft Saved'})).toBeVisible({timeout:12000});
+  expect(savedPaymentDraftPayload).toMatchObject({sourcePaymentId:payment});
+  const draftId='00000000-0000-4000-8000-000000039001';
+  await cloned.getByRole('button',{name:'Close payment services'}).click();
+  const draftExit=page.getByRole('alertdialog');
+  await expect(draftExit).toBeVisible();
+  await expect(draftExit.getByRole('button',{name:'Save Draft',exact:true})).toBeEnabled();
+  await expect(draftExit.getByRole('button',{name:'Keep editing'})).toBeEnabled();
+  await draftExit.getByRole('button',{name:'Discard tax payment'}).click();
+  await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
+  await page.goto('/?action=taxpayer_home');
+  const savedDraftCard=page.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="'+draftId+'"]');
+  await expect(savedDraftCard).toBeVisible();
+  await savedDraftCard.getByRole('button',{name:'Continue'}).click();
+  const resumed=page.getByRole('dialog',{name:'Pay Tax'});
+  await expect(resumed.getByTestId('pay-again-reuse-notice')).toContainText(payment);
+  const continueToAmount=resumed.getByRole('button',{name:'Continue to purpose & amount'});
+  await expect(continueToAmount,'Pay Again draft must restore a valid owner and beneficiary state').toBeEnabled({timeout:5000});
+  await continueToAmount.click();
+  const continueToChannel=resumed.getByRole('button',{name:'Continue to payment channel'});
+  const resumedAllocation=resumed.getByTestId('other-tax-line').first();
+  await expect(resumedAllocation.locator('select')).toHaveValue('');
+  await expect(resumedAllocation.locator('input[type="text"]')).toHaveValue('100.00');
+  await expect(continueToChannel,'The prior assessment year must be reselected on Pay Again').toBeDisabled();
+  await resumed.getByTestId('other-tax-head-catalogue')
+    .locator('details[data-head-group="Others"] > summary').click();
+  await resumedAllocation.locator('select').selectOption('2025-26');
+  await expect(resumedAllocation.locator('input[type="text"]'),
+    'Changing assessment year must retain the copied source amount').toHaveValue('100.00');
+  await expect(continueToChannel,'Restored payment allocations must become valid after year selection').toBeEnabled({timeout:5000});
+  await continueToChannel.click();
+  await resumed.getByRole('button',{name:'Pay online'}).click();
+  await resumed.getByRole('button',{name:'Mobile banking'}).click();
+  await resumed.getByRole('radio',{name:'bKash'}).check();
+  await resumed.getByRole('checkbox',{name:/I confirm each taxpayer TIN/}).check();
+  await resumed.getByRole('button',{name:/^Pay/}).last().click();
+  await expect(resumed.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:12000});
+  expect(paymentSubmissions).toHaveLength(1);
+  const payAgainSubmission=paymentSubmissions[0];
+  expect(payAgainSubmission.details).toMatchObject({sourcePaymentId:payment});
+  expect(typeof payAgainSubmission.idempotencyKey).toBe('string');
+  expect(payAgainSubmission.idempotencyKey).not.toBe(payment);
   await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await page.getByRole('navigation',{name:'Taxpayer services'}).getByRole('button',{name:'Activity'}).click();
+  await expect(page).toHaveURL(/action=history/);
   const reg=page.getByTestId('taxpayer-transaction-table');
   const original=reg.getByRole('row').filter({hasText:older});
   const forbidden=reg.getByRole('row').filter({hasText:mixed});
@@ -208,4 +325,40 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(legacyCopy.getByTestId('pay-again-reuse-notice')).toContainText(older);
   await expect(legacyCopy.getByTestId('pay-again-legacy-note')).toContainText('25000.00');
   await expect(legacyCopy.getByTestId('pay-again-legacy-note')).toContainText('Choose them again');
+
+  // Travel Tax Pay Again retains the original parent only as provenance; the
+  // replacement is a fresh request/parent and cannot mutate the saved source.
+  // Re-enter the existing Transactions register through the approved Activity
+  // navigation so the signed-in User1 workspace mounts its SQL-backed rows.
+  await page.goto('/?action=taxpayer_home');
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await page.getByRole('navigation',{name:'Taxpayer services'}).getByRole('button',{name:'Activity'}).click();
+  await expect(page).toHaveURL(/action=history/);
+  const assessmentYear=page.getByLabel('Assessment year');
+  await expect(assessmentYear.locator('option[value="2026-2027"]')).toHaveCount(1);
+  await assessmentYear.selectOption('2026-2027');
+  const travelRegister=page.getByTestId('taxpayer-transaction-table');
+  const travelRow=travelRegister.getByRole('row').filter({hasText:travelPayment});
+  await expect(travelRow).toBeVisible({timeout:15000});
+  await expect(travelRow.getByTestId('recorded-pay-again')).toBeEnabled();
+  await travelRow.getByTestId('recorded-pay-again').click();
+  const travelDialog=page.getByRole('dialog',{name:'Travel tax'});
+  await expect(page.getByTestId('travel-pay-again-notice')).toContainText(travelPayment);
+  await fillTravelDetails(travelDialog,{date:futureTravelDate});
+  await travelDialog.getByRole('button',{name:'Continue to review'}).click();
+  await travelDialog.getByRole('button',{name:'Pay online'}).click();
+  await travelDialog.getByRole('button',{name:'Mobile banking'}).click();
+  await travelDialog.getByRole('radio',{name:'Nagad'}).check();
+  await travelDialog.getByLabel(/I confirm the travel information/).check();
+  await travelDialog.getByRole('button',{name:'Confirm preview payment'}).click();
+  await expect(travelDialog.locator('.receipt-view__paper')).toBeVisible({timeout:15000});
+  expect(submittedTravelPayments).toHaveLength(1);
+  const submitted=submittedTravelPayments[0];
+  expect(submitted.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/i);
+  expect(submitted.idempotencyKey).not.toBe(travelPayment);
+  expect(submitted.details?.sourcePaymentId).toBe(travelPayment);
+  expect(submitted.amountMinor).toBe(100000);
+  expect(submitted.details?.receiptSnapshot?.challanNo).not.toBe(travelSnapshot.challanNo);
+  expect(newTravelPayment).not.toBe(travelPayment);
+  expect(JSON.stringify(travelSnapshot)).toBe(originalTravelSnapshot);
 });

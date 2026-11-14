@@ -8,12 +8,13 @@ import {bindPreviewStoryPayer} from '../src/services/simulatedPaymentStory.ts';
 import {makeConfirmedReceipt} from '../src/services/confirmedPaymentCertificate.ts';
 import type {ChallanReceipt,PaymentLineItem} from '../src/types/tax.ts';
 import type {StoryPaymentInput} from '../src/services/simulatedPaymentStory.ts';
+import { V11_PAYMENT_OPTIONS } from '../src/data/v11PaymentOptions.ts';
 
 const id='11111111-2222-4333-8444-555555555555';
 const session='aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
 const items:PaymentLineItem[]=[
- {headId:121,economicCode:'64',headNameEn:'Advance Tax',taxAmount:15,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:15},
- {headId:145,economicCode:'135',headNameEn:'Tax on notice of demand',taxAmount:35,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:35},
+ {headId:121,serviceCode:'ADVANCE_TAX',isWithholding:false,economicCode:'64',headNameEn:'Advance Tax',taxAmount:15,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:15},
+ {headId:145,serviceCode:'ASSESSED_DEMAND',isWithholding:false,economicCode:'135',headNameEn:'Tax on notice of demand',taxAmount:35,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:35},
 ];
 const receipt:ChallanReceipt={
  id:'rcpt-'+id,challanNo:'SIM-'+id,tokenNumber:'SIM-TOKEN-'+id,
@@ -47,6 +48,10 @@ test('multi-taxpayer combined payment uses ONE idempotency key and ONE challan',
  assert.deepEqual(result.receipt.allocationItems?.map(x=>[x.taxpayerTin,x.assessmentYear,x.amountMinor]),[
    ['909000000013','2026-27',1500],['000000000018','2025-26',3500]]);
  assert.equal(result.payload.details.combinedPayment,true);
+ assert.equal(result.payload.details.allocationContractVersion,3);
+ assert.deepEqual(result.receipt.allocationItems?.map(x=>x.allocationId),['one','two']);
+ assert.deepEqual((result.payload.details.allocations as Array<{allocationId:string}>).map(x=>x.allocationId),['one','two']);
+ assert.deepEqual((result.payload.details.receiptSnapshot as ChallanReceipt).allocationItems?.map(x=>x.allocationId),['one','two']);
  assert.equal(result.payload.details.taxpayerCount,2);
  assert.equal((result.payload.details.allocations as unknown[]).length,2);
  assert.equal(result.payload.details.batchItemCount,undefined,'no split-payment record');
@@ -62,13 +67,60 @@ test('the signed-in payer keeps both saved beneficiaries inside one scoped SQL s
  assert.deepEqual(allocated.map(x=>x.amountMinor),[1500,3500]);
  assert.deepEqual(allocated.map(x=>x.taxpayerTin),['909000000013','000000000018']);
  assert.equal(bound.idempotencyKey,id);
+ assert.deepEqual(allocated.map(x=>x.allocationId),['one','two']);
  assert.deepEqual(bound,bindPreviewStoryPayer(grouped.payload,{profileId:'user1',paymentSessionId:session}));
  const confirmed=makeConfirmedReceipt({id,service:'OTHER_TAX_PAYMENT',amountMinor:5000,
   status:'SIMULATED_SUCCESS',createdAt:'2026-11-08T12:00:00Z',details:bound.details});
  assert.equal(confirmed.totalAmount,50);
  assert.equal(confirmed.paymentTransactionId,id);
+ assert.deepEqual(confirmed.allocationItems?.map(item=>item.allocationId),['one','two']);
  assert.deepEqual(confirmed.allocationItems?.map(item=>[item.taxpayerTin,item.economicCode,item.amountMinor]),
   [['909000000013','64',1500],['000000000018','135',3500]]);
+});
+test('confirmed v3 receipts preserve durable allocation IDs and reject malformed or inconsistent snapshots',()=>{
+ const details=structuredClone(mk().payload.details);
+ const confirm=(candidate:typeof details)=>makeConfirmedReceipt({id,service:'OTHER_TAX_PAYMENT',
+  amountMinor:5000,status:'SIMULATED_SUCCESS',createdAt:'2026-11-08T12:00:00Z',details:candidate});
+ assert.deepEqual(confirm(details).allocationItems?.map(item=>item.allocationId),['one','two']);
+ const broken: Array<[string,(candidate:typeof details)=>void]>=[
+  ['missing saved ID',candidate=>{delete (candidate.allocations as Array<Record<string,unknown>>)[0].allocationId;}],
+  ['duplicate saved IDs',candidate=>{(candidate.allocations as Array<Record<string,unknown>>)[1].allocationId='one';}],
+  ['snapshot ID mismatch',candidate=>{
+   const snapshot=candidate.receiptSnapshot as ChallanReceipt;
+   snapshot.allocationItems![0].allocationId='changed';
+  }],
+  ['snapshot beneficiary mismatch',candidate=>{
+   const snapshot=candidate.receiptSnapshot as ChallanReceipt;
+   snapshot.allocationItems![0].taxpayerTin='000000000018';
+  }],
+  ['snapshot amount mismatch',candidate=>{
+   const snapshot=candidate.receiptSnapshot as ChallanReceipt;
+   snapshot.allocationItems![0].amountMinor=1499;
+  }],
+  ['snapshot head mismatch',candidate=>{
+   const snapshot=candidate.receiptSnapshot as ChallanReceipt;
+   snapshot.items[0].headId=145;
+  }],
+ ];
+ for(const [description,mutate] of broken){
+  const candidate=structuredClone(details);
+  mutate(candidate);
+  assert.throws(()=>confirm(candidate),/allocations could not be reconciled/,description);
+ }
+});
+test('confirmed v2 and unversioned combined receipts remain recoverable without fabricated IDs',()=>{
+ for(const version of [2,undefined]){
+  const details=structuredClone(mk().payload.details);
+  if(version===undefined)delete details.allocationContractVersion;
+  else details.allocationContractVersion=version;
+  for(const allocation of details.allocations as Array<Record<string,unknown>>)delete allocation.allocationId;
+  const snapshot=details.receiptSnapshot as ChallanReceipt;
+  for(const item of snapshot.allocationItems??[])delete item.allocationId;
+  const recovered=makeConfirmedReceipt({id,service:'OTHER_TAX_PAYMENT',amountMinor:5000,
+   status:'SIMULATED_SUCCESS',createdAt:'2026-11-08T12:00:00Z',details});
+  assert.deepEqual(recovered.allocationItems?.map(item=>item.allocationId),[undefined,undefined]);
+  assert.deepEqual(recovered.allocationItems?.map(item=>item.amountMinor),[1500,3500]);
+ }
 });
 test('pending combined request is recoverable with same identity, and cannot leak across sessions',()=>{
  const storage=store(), request=mk();
@@ -125,6 +177,13 @@ test('pending combined retries reject altered beneficiary-head identities and re
     const entries=request.payload.details.allocations as Array<Record<string,unknown>>;
     entries[0].headId=145;
   }],
+  ['changed immutable allocation ID', request => {
+    const entries=request.payload.details.allocations as Array<Record<string,unknown>>;
+    entries[0].allocationId='forged-line';
+  }],
+  ['changed receipt allocation ID', request => {
+    request.receipt.allocationItems![0].allocationId='forged-line';
+  }],
   ['changed visible receipt economic code', request => {
     request.receipt.allocationItems![0].economicCode='FORGED';
   }],
@@ -138,6 +197,14 @@ test('pending combined retries reject altered beneficiary-head identities and re
   }],
   ['changed allocation count', request => {
     request.payload.details.allocationCount=99;
+  }],
+  ['changed allocation service category', request => {
+    const entries=request.payload.details.allocations as Array<Record<string,unknown>>;
+    entries[0].serviceCode='TAX_WITH_RETURN';
+  }],
+  ['changed withholding classification', request => {
+    const entries=request.payload.details.allocations as Array<Record<string,unknown>>;
+    entries[0].isWithholding=true;
   }],
   ['changed persisted receipt total', request => {
     const snapshot=request.payload.details.receiptSnapshot as ChallanReceipt;
@@ -156,6 +223,41 @@ test('pending combined retries reject altered beneficiary-head identities and re
  saved.request.payload.details.allocations[0].headId=145;
  storage.setItem(key,JSON.stringify(saved));
  assert.throws(()=>loadCombinedOtherTaxRequest(session,storage),/INVALID_COMBINED_RECOVERY/, 'tampered persistent retry must fail on load');
+});
+
+test('v2 pending combined requests remain byte-identical after the v3 upgrade',()=>{
+ const v2=structuredClone(mk());
+ v2.payload.details.allocationContractVersion=2;
+ for(const a of v2.payload.details.allocations as Array<Record<string,unknown>>) delete a.allocationId;
+ for(const item of [...v2.receipt.allocationItems!, ...(v2.payload.details.receiptSnapshot as ChallanReceipt).allocationItems!]) delete item.allocationId;
+ const before=JSON.stringify(v2.payload);
+ const storage=store();
+ assert.equal(saveCombinedOtherTaxRequest(v2,'READY',storage),true);
+ const loaded=loadCombinedOtherTaxRequest(session,storage);
+ assert.equal(JSON.stringify(loaded?.request.payload),before);
+ assert.deepEqual(loaded?.request.receipt.allocationItems,v2.receipt.allocationItems);
+});
+
+test('previous-version pending combined requests remain recoverable without changing their idempotency payload',()=>{
+ const legacy=structuredClone(mk());
+ delete legacy.payload.details.allocationContractVersion;
+ for(const item of [...legacy.receipt.allocationItems!, ...(legacy.payload.details.receiptSnapshot as ChallanReceipt).allocationItems!]) delete item.allocationId;
+ for(const allocation of legacy.payload.details.allocations as Array<Record<string,unknown>>){
+  delete allocation.allocationId;
+  delete allocation.serviceCode;
+  delete allocation.isWithholding;
+ }
+ for(const line of [
+  ...(legacy.payload.details.lines as PaymentLineItem[]),
+  ...legacy.receipt.items,
+  ...(legacy.payload.details.receiptSnapshot as ChallanReceipt).items,
+ ]){delete line.serviceCode;delete line.isWithholding;}
+ const storage=store();
+ assert.equal(saveCombinedOtherTaxRequest(legacy,'READY',storage),true);
+ const restored=loadCombinedOtherTaxRequest(session,storage);
+ assert.equal(restored?.request.payload.idempotencyKey,id);
+ assert.equal(restored?.request.payload.details.allocationContractVersion,undefined);
+ assert.deepEqual(restored?.request.payload.details.allocations,legacy.payload.details.allocations);
 });
 
 test('one combined transaction supports more than twenty allocations without splitting',()=>{
@@ -203,7 +305,7 @@ test('configured capacity is explicit and one above the capacity is rejected bef
 });
 
 test('a mapped Source Tax head combines with an Advance/Demand head across distinct beneficiaries',()=>{
- const sourceLine={...items[0],headId:8,economicCode:'50',headNameEn:'Deduction from Salary'};
+ const sourceLine={...items[0],headId:8,serviceCode:'SOURCE_TAX_DEPOSIT' as const,isWithholding:true,economicCode:'50',headNameEn:'Deduction from Salary'};
  const newReceipt={...receipt,items:[sourceLine,items[1]]};
  const newInput={...input,details:{...input.details,lines:newReceipt.items}};
  const result=prepareCombinedOtherTaxPayment(newInput,newReceipt,[
@@ -211,12 +313,45 @@ test('a mapped Source Tax head combines with an Advance/Demand head across disti
  ]);
  assert.equal(result.payload.details.allocationCount,2);
  assert.equal(result.payload.details.taxpayerCount,2);
+ assert.deepEqual((result.payload.details.allocations as Array<Record<string,unknown>>).map(a=>[
+  a.serviceCode,a.isWithholding]),[['SOURCE_TAX_DEPOSIT',true],['ASSESSED_DEMAND',false]]);
+ assert.deepEqual(result.receipt.items.map(a=>[a.serviceCode,a.isWithholding]),[
+  ['SOURCE_TAX_DEPOSIT',true],['ASSESSED_DEMAND',false]]);
  assert.deepEqual(result.receipt.allocationItems?.map(a=>a.economicCode),['50','135']);
  assert.equal(result.receipt.challanNo,'SIM-'+id);
  assert.equal(result.payload.amountMinor,5000);
 });
+test('one batch preserves the actual service category for every eligible non-Return head group',()=>{
+ const categories=['ADVANCE_TAX','ASSESSED_DEMAND','PENALTY','SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT'] as const;
+ const sourceHeads=categories.map(serviceCode=>{
+  const option=V11_PAYMENT_OPTIONS.find(head=>head.category===serviceCode&&head.status==='ACTIVE');
+  assert.ok(option,`active mapped head missing for ${serviceCode}`);
+  return option;
+ });
+ const mixedLines=sourceHeads.map((head,index)=>{
+  const amount=1;
+  return {sourceId:'category-'+index,taxpayerTin:index%2===0?'909000000013':'000000000018',
+   taxpayerName:'Beneficiary '+index,assessmentYear:index%2===0?'2026-27':'2025-26',amountMinor:100,
+   line:{headId:head.id,serviceCode:head.category,isWithholding:head.isWithholding,
+    economicCode:head.economicCode,headNameEn:head.nameEn,taxAmount:head.category==='PENALTY'?0:amount,
+    penaltyAmount:head.category==='PENALTY'?amount:0,surchargeAmount:0,interestAmount:0,totalAmount:amount}};
+ });
+ const mixedItems=mixedLines.map(item=>item.line);
+ const mixedReceipt={...receipt,items:mixedItems,totalAmount:categories.length};
+ const mixedInput={...input,amountMinor:categories.length*100,
+  details:{...input.details,lines:mixedItems,totalAmount:categories.length}};
+ const result=prepareCombinedOtherTaxPayment(mixedInput,mixedReceipt,mixedLines);
+ const serialized=result.payload.details.allocations as Array<Record<string,unknown>>;
+ assert.deepEqual(serialized.map(item=>item.serviceCode),categories);
+ assert.deepEqual(serialized.map(item=>item.isWithholding),[false,false,false,true,false,false]);
+ assert.equal(result.payload.service,'OTHER_TAX_PAYMENT','the aggregate parent remains one combined payment');
+ assert.equal(result.payload.details.allocationContractVersion,3);
+ assert.equal(result.payload.amountMinor,categories.length*100);
+ assert.equal(result.receipt.challanNo,'SIM-'+id);
+ assert.equal(result.receipt.items.length,categories.length);
+});
 test('Tax with Return never mixes into the non-return combined-payment service',()=>{
- const returnLine={...items[0],headId:125,economicCode:'74',headNameEn:'Tax with return'};
+ const returnLine={...items[0],headId:125,serviceCode:'TAX_WITH_RETURN' as const,economicCode:'74',headNameEn:'Tax with return'};
  const newReceipt={...receipt,items:[returnLine,items[1]]};
  assert.throws(()=>prepareCombinedOtherTaxPayment({...input,details:{...input.details,lines:newReceipt.items}},newReceipt,[
    {...allocations[0],line:returnLine},allocations[1],

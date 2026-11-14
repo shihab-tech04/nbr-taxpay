@@ -176,3 +176,42 @@ test('typed search keeps matched references above a distinct bottom sample-numbe
   await expect(match).toBeVisible();
   await expect(match).toHaveCSS('text-decoration-line', 'none');
 });
+
+test('public suggestions announce only example matches and keyboard selection without exposing references in URL',async({page})=>{
+  await page.goto('/?action=landing&lang=en');
+  const discovery=page.locator('.public-record-discovery');
+  const search=discovery.getByRole('searchbox',{name:'Search payment records by reference'});
+  await search.fill('TKN-882190');
+  await expect(search).toHaveAttribute('aria-autocomplete','list');
+  await expect(search).toHaveAttribute('aria-describedby','public-record-discovery-help');
+  await expect(discovery.getByTestId('public-search-match-status')).toContainText('matching example references');
+  await search.press('ArrowDown');
+  await expect(search).toHaveAttribute('aria-activedescendant','public-search-option-0');
+  await expect(discovery.locator('#public-search-option-0')).toHaveClass(/is-active/);
+  await search.press('Escape');
+  await expect(search).toBeFocused();
+  await expect(search).not.toHaveAttribute('aria-activedescendant',/./);
+  await expect(discovery.getByTestId('public-search-match-status')).toHaveCount(0);
+  await search.fill('TKN-882190');
+  await search.press('ArrowDown');
+  await search.press('Enter');
+  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toBeVisible();
+  expect(new URL(page.url()).searchParams.get('initialReference')).toBeNull();
+});
+
+test('unmatched public examples never falsely imply that actual payment SQL was searched (EN/BN)',async({page})=>{
+  for(const language of ['en','bn'] as const){
+    await page.goto('/?action=landing&lang='+language);
+    const discovery=page.locator('.public-record-discovery');
+    const search=discovery.getByRole('searchbox',{name:language==='bn'
+      ?'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন':'Search payment records by reference'});
+    await search.fill('ZZ-UNKNOWN-REFERENCE-765');
+    const notice=discovery.getByTestId('public-search-match-status');
+    await expect(notice).toContainText(language==='bn'?'কোনো নমুনা রেফারেন্স মেলেনি':'No example references matched');
+    await expect(discovery.locator('.public-record-suggestions__empty'))
+      .toContainText(language==='bn'?'নমুনার মধ্যে মিলে যাওয়া রেফারেন্স নেই':'No matching references among the examples');
+    await discovery.getByRole('button',{name:language==='bn'?'রেকর্ড খুঁজুন':'Search records'}).click();
+    await expect(page).toHaveURL(/action=verify/);
+    await expect(page.getByTestId('receipt-mobile-required')).toBeVisible();
+  }
+});

@@ -183,9 +183,8 @@ jobs:
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/mobile-public-shell-parity.spec.ts --project=mobile-320 --project=mobile-375 --project=desktop-1280
-      # A PR changes its candidate bundle, not the already-deployed site.
-      # Prevent redundant live-site browser traffic on every PR; the
-      # post-deployment verifier below retains production release acceptance.
+      # PR candidate changes must not scrape the already-live production CMS artwork.
+      # Keep actual post-deployment verification after authorized merge.
       - name: Verify current live auth and Beneficiaries smoke contract in Chromium
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -447,6 +446,12 @@ jobs:
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/travel-tax-2026-journeys.spec.ts
+      - name: Verify Travel Tax lost-response replay
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://travel-retry-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/travel-payment-retry.spec.ts --project=desktop-1280
       - name: Upload Travel Tax browser evidence
         if: always()
         uses: actions/upload-artifact@v4

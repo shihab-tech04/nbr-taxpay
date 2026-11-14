@@ -79,6 +79,10 @@ export interface TaxpayerProfile {
 
 export interface PaymentLineItem {
   headId: number;
+  /** Original service category for this line inside a heterogeneous combined payment. */
+  serviceCode?: PaymentCategory;
+  /** The line's own withholding classification; a combined parent may contain both types. */
+  isWithholding?: boolean;
   economicCode: string;
   headNameEn: string;
   taxAmount: number;
@@ -90,6 +94,8 @@ export interface PaymentLineItem {
 }
 
 export interface ReceiptAllocationItem {
+  /** Stable original composer allocation ID for source/Office reconciliation. */
+  allocationId?: string;
   taxpayerName: string;
   taxpayerTin?: string;
   paymentServiceEn: string;
@@ -109,6 +115,8 @@ export interface ChallanReceipt {
   assessmentYear: string;
   payerName: string;
   payerTin: string;
+  /** Recipient name from the saved payment parent when available. */
+  taxpayerName?: string;
   /** Account receiving the payment; never infer it from a guest payer. */
   taxpayerTin?: string;
   receiptMobile?: string;

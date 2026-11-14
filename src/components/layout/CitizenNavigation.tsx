@@ -136,20 +136,28 @@ export function CitizenNavigation() {
     if (inTransaction && !window.confirm(bn
       ? 'আপনি কি এই পেমেন্ট ধাপ থেকে বের হবেন? এখন পর্যন্ত দেওয়া তথ্য হারিয়ে যাবে।'
       : 'Leave this payment step? The information entered so far will be lost.')) return;
-    go('landing');
+    // Keep the approved guest home route, but for a signed-in taxpayer the
+    // wordmark returns to the existing private dashboard.
+    go(home);
   };
   useEffect(() => {
+    // An identity change can occur without a route/userRole change.
+    // Never retain the guest compact state after signing in.
     setCompact(false);
     setMenuOpen(false);
     setPayPopoverOpen(false);
-  }, [currentRoute, userRole]);
+  }, [currentRoute, userRole, isTaxpayer]);
 
   useEffect(() => {
     if (inTransaction) return;
     let last = window.scrollY;
     let accumulated = 0;
     const onScroll = () => {
-      if (inputFocusedRef.current) { accumulated = 0; setCompact(false); return; }
+      // Scrolling may collapse guest navigation, but must never replace the
+      // approved signed-in bottom dock with a corner-only navigation.
+      if (isTaxpayer || inputFocusedRef.current) {
+        accumulated = 0; setCompact(false); return;
+      }
       if (window.matchMedia('(min-width: 901px)').matches) { setCompact(false); return; }
       const next = window.scrollY;
       const delta = next - last;
@@ -185,7 +193,7 @@ export function CitizenNavigation() {
       document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('focusout', onFocusOut);
     };
-  }, [inTransaction]);
+  }, [inTransaction,isTaxpayer]);
 
   const overlayOpen = menuOpen;
   useEffect(() => {
@@ -304,7 +312,18 @@ export function CitizenNavigation() {
       )}
       {showPay && !overlayOpen && isTaxpayer && payPopoverOpen && (
         <div id="citizen-pay-popover" ref={payPopoverRef} role="menu"
-          className="citizen-pay-popover" aria-label={bn ? 'পরিশোধের ধরন' : 'Payment options'}>
+          className="citizen-pay-popover" aria-label={bn ? 'পরিশোধের ধরন' : 'Payment options'}
+          onKeyDown={event => {
+            if (!['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
+            const options=[...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')];
+            if (!options.length) return;
+            event.preventDefault();
+            const current=options.indexOf(document.activeElement as HTMLButtonElement);
+            const target=event.key==='Home'?0:event.key==='End'?options.length-1
+              :event.key==='ArrowDown'?(current+1)%options.length
+              :(current<=0?options.length-1:current-1);
+            options[target]?.focus();
+          }}>
           <button type="button" role="menuitem" onClick={() => {setPayPopoverOpen(false);openPaymentServiceChoice();}}>
             <Plus size={17} aria-hidden="true"/>{bn ? 'কর পরিশোধ' : 'Pay Tax'}
           </button>

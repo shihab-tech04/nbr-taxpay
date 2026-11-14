@@ -43,6 +43,9 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
     owner:null,phase:'loading',people:[]
   });
   const [assessmentYear,setAssessmentYear]=useState('');
+  // This controls only the recent-activity register, never the owner-scoped
+  // yearly counts, financial totals, tags or source payment allocations.
+  const [recentService,setRecentService]=useState<'all'|SimulationCategory>('all');
   const [revision,setRevision]=useState(0);
   const {user}=useAccountIdentity();
   const bn=language==='bn';
@@ -115,6 +118,9 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
   const accountName=user?.id===ownerUid&&typeof user.user_metadata?.taxpay_display_name==='string'
     ? user.user_metadata.taxpay_display_name.trim() : '';
   const accountEmail=user?.id===ownerUid&&typeof user.email==='string' ? user.email : '';
+  // The dashboard summary is not an identity-reveal control. Keep the full
+  // address in the authenticated account settings only, not in this heading.
+  const maskedAccountEmail=accountEmail.replace(/^([^@]{0,3})[^@]*(?=@)/, '$1****');
   // Distinct SQL payments only: a beneficiary-only allocation is not a payment by this account.
   // SIMULATED records are complete in the application, never certified Treasury settlements.
   // Count completed payer-owned transactions for the selected assessment year,
@@ -130,7 +136,12 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
     {id:'drafts',label:tr('Saved Drafts','সংরক্ষিত খসড়া'),count:visible.counts?.drafts??null,route:'secure_workspace' as const},
     {id:'corrections',label:tr('Correction Requests','সংশোধনের আবেদন'),count:visible.counts?.correctionInquiries??null,route:'corrections' as const}
   ];
-  const recentTransactions=yearTransactions.slice(0,5);
+  const filteredRecentTransactions=yearTransactions.filter(transaction=>
+    recentService==='all'||transaction.allocations.some(allocation=>allocation.category===recentService));
+  // Source projections are normally sorted, but preserve "recent" order even
+  // when a new authorized source returns an unordered set.
+  const recentTransactions=[...filteredRecentTransactions].sort((a,b)=>
+    Date.parse(b.createdAt)-Date.parse(a.createdAt)||a.transactionId.localeCompare(b.transactionId)).slice(0,5);
   // Failed, pending and reversed attempts are activity, not completed amounts.
   const scenarioAmount=dashboardPaymentTotals?.payerTotalMinor??0n;
   const categoryTotals=new Map<SimulationCategory,bigint>(simulationCategories.map(category=>[category,0n]));
@@ -175,6 +186,12 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
     const paisa=new Intl.NumberFormat(locale,{minimumIntegerDigits:2,useGrouping:false}).format(Number(minor%100n));
     return `৳ ${taka}.${paisa}`;
   };
+  const openCorrectionRecords=()=>{
+    const target=document.getElementById('dashboard-correction-requests');
+    if(!target){onNavigate('corrections');return;}
+    target.scrollIntoView({behavior:'smooth',block:'start'});
+    target.focus({preventScroll:true});
+  };
   const shortcutItems=[
     {route:'history' as const,label:tr('Payment history','পেমেন্টের ইতিহাস')},
     {route:'journey' as const,label:tr('My Tax Journey','আমার কর যাত্রা')},
@@ -201,7 +218,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         <h2 id="taxpay-owner-workflow-title" className="text-base font-semibold text-taxpay-text">
           {tr('My account activity', 'আমার অ্যাকাউন্টের কার্যক্রম')}
         </h2>
-        <p className="mt-1 text-sm font-medium text-taxpay-text">{accountName||accountEmail||tr('Signed-in application account','সাইন-ইন করা অ্যাপ অ্যাকাউন্ট')}</p>
+        <p className="mt-1 text-sm font-medium text-taxpay-text">{accountName||maskedAccountEmail||tr('Signed-in application account','সাইন-ইন করা অ্যাপ অ্যাকাউন্ট')}</p>
         <p className="text-xs text-taxpay-muted">{profileDescription}</p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -229,10 +246,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         <p className="text-sm text-taxpay-muted">{item.label}</p>
         <p className="mt-2 text-2xl font-semibold tabular-nums text-taxpay-text">{typeof item.count==='number'?item.count.toLocaleString(bn?'bn-BD':'en-BD'):'—'}</p>
         {item.id==='completed'&&<p className="mt-1 text-xs text-taxpay-muted">{tr('Application-recorded simulation; not a Treasury-confirmed credit.','অ্যাপে সংরক্ষিত সিমুলেশন; ট্রেজারি-নিশ্চিত কর ক্রেডিট নয়।')}</p>}
-        <button type="button" onClick={()=>item.route==='corrections'
-          ? (document.getElementById('dashboard-correction-requests')?.scrollIntoView({behavior:'smooth',block:'start'}),
-             document.getElementById('dashboard-correction-requests')?.focus({preventScroll:true}))
-          : onNavigate(item.route)}
+        <button type="button" onClick={()=>item.route==='corrections'?openCorrectionRecords():onNavigate(item.route)}
           className="mt-3 min-h-11 self-start rounded-lg border border-taxpay-border bg-white px-3 text-sm font-medium text-taxpay-primary">
           {tr('Open records','রেকর্ড দেখুন')}
         </button>
@@ -246,6 +260,18 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
           <p className="mt-1 text-xs text-taxpay-muted">{tr('Financial records appear only when an approved account binding and its private records are available.','অনুমোদিত অ্যাকাউন্ট সংযোগ ও ব্যক্তিগত রেকর্ড থাকলেই আর্থিক তথ্য দেখানো হয়।')}</p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
+          {visibleScenario.phase==='linked'&&<label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-taxpay-muted">
+            {tr('Filter recent activity by service','সাম্প্রতিক কার্যক্রম সেবাভিত্তিক ফিল্টার')}
+            <select aria-label={tr('Filter recent activity by service','সাম্প্রতিক কার্যক্রম সেবাভিত্তিক ফিল্টার')}
+              data-testid="dashboard-recent-service-filter" value={recentService}
+              onChange={event=>setRecentService(event.target.value as 'all'|SimulationCategory)}
+              className="min-h-10 max-w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm text-taxpay-text">
+              <option value="all">{tr('All services','সব সেবা')}</option>
+              {simulationCategories.map(category=><option value={category} key={category}>
+                {simulationCategoryLabels[category][language]}
+              </option>)}
+            </select>
+          </label>}
           {visibleScenario.phase!=='loading'&&visibleScenario.phase!=='error'&&availableYears.length>0&&<label className="flex flex-col gap-1 text-xs font-medium text-taxpay-muted">
             {tr('Assessment year','করবর্ষ')}
             <select aria-label={tr('Assessment year','করবর্ষ')} value={selectedYear} onChange={event=>{
@@ -308,10 +334,10 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         </div>
         {categoryRows.length>0&&<figure className="mt-4 rounded-xl border border-taxpay-border bg-white p-3" data-testid="account-payment-category-breakdown">
           <figcaption className="text-sm font-semibold text-taxpay-text">{tr('Scenario activity by payment category','পেমেন্ট খাত অনুযায়ী সিনারিও কার্যক্রম')}</figcaption>
-          <div role="img" aria-label={tr('Category amounts for private scenario records','ব্যক্তিগত সিনারিও রেকর্ডের খাতভিত্তিক পরিমাণ')} className="mt-3 space-y-3">
+          <div role="list" aria-label={tr('Category amounts for private scenario records','ব্যক্তিগত সিনারিও রেকর্ডের খাতভিত্তিক পরিমাণ')} className="mt-3 space-y-3">
             {categoryRows.map(row=>{
               const basisPoints=scenarioAmount>0n?Number(row.amount*10000n/scenarioAmount):0;
-              return <div key={row.category} data-payment-service={row.category}>
+              return <div role="listitem" key={row.category} data-payment-service={row.category}>
                 <div className="flex items-center justify-between gap-3 text-xs">
                   <p className="min-w-0 truncate text-taxpay-muted">{simulationCategoryLabels[row.category][language]}</p>
                   <p className="shrink-0 font-semibold tabular-nums text-taxpay-text">{scenarioAmountLabel(row.amount)}</p>
@@ -326,7 +352,13 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         {completedTransactions.length>0&&<section className="mt-4 rounded-xl border border-taxpay-border bg-white p-3"
           data-testid="account-beneficiary-spending" aria-label={tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-sm font-semibold text-taxpay-text">{tr('Recorded scenario payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী নথিভুক্ত নমুনা পেমেন্ট')}</h3>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-taxpay-text">{tr('Recorded scenario payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী নথিভুক্ত নমুনা পেমেন্ট')}</h3>
+              <p data-testid="dashboard-tag-classification-note" className="mt-1 text-xs leading-5 text-taxpay-muted">{tr(
+                'Grouped using your current saved tags. Own payments and missing or conflicting tags are shown as unassigned.',
+                'বর্তমান সংরক্ষিত ট্যাগ অনুযায়ী ভাগ করা হয়েছে। নিজের পেমেন্ট এবং অনুপস্থিত বা পরস্পরবিরোধী ট্যাগ শ্রেণিবিহীন হিসেবে দেখানো হয়েছে।'
+              )}</p>
+            </div>
             <p className="font-semibold tabular-nums text-taxpay-text">{visibleTags.phase==='ready'?scenarioAmountLabel(tagSpendingTotal):'—'}</p>
           </div>
           {visibleTags.phase==='loading'&&<p className="mt-2 text-sm text-taxpay-muted" role="status">{tr('Loading saved tags…','সংরক্ষিত ট্যাগ লোড হচ্ছে…')}</p>}
@@ -338,11 +370,16 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
             </div>)}
           </div>}
         </section>}
-        {yearTransactions.length===0?<p role="status" className="mt-3 rounded-lg border border-dashed border-taxpay-border bg-slate-50 p-3 text-sm text-taxpay-muted">
+        {recentTransactions.length===0?<p role="status" data-testid="dashboard-recent-activity-empty"
+          className="mt-3 rounded-lg border border-dashed border-taxpay-border bg-slate-50 p-3 text-sm text-taxpay-muted">
           {visibleScenario.transactions.length===0
             ?tr('No stored payment activity is linked to this scenario profile.','এই সিনারিও প্রোফাইলে কোনো সংরক্ষিত পেমেন্ট কার্যক্রম নেই।')
-            :tr(`No stored payment activity is available for assessment year ${selectedYear}.`,`${selectedYear} করবর্ষে কোনো সংরক্ষিত পেমেন্ট কার্যক্রম নেই।`)}
-        </p>:<ul className="mt-3 space-y-2" aria-label={tr('Recent scenario transactions','সাম্প্রতিক সিনারিও লেনদেন')}>
+            :yearTransactions.length===0
+              ?tr(`No stored payment activity is available for assessment year ${selectedYear}.`,`${selectedYear} করবর্ষে কোনো সংরক্ষিত পেমেন্ট কার্যক্রম নেই।`)
+              :tr('No recent payment activity matches this service in the selected year. Choose All services to see the available records.',
+                'নির্বাচিত করবর্ষে এই সেবার কোনো সাম্প্রতিক পেমেন্ট কার্যক্রম নেই। উপলব্ধ রেকর্ড দেখতে সব সেবা বেছে নিন।')}
+        </p>:<ul className="mt-3 space-y-2" aria-label={tr('Recent scenario transactions','সাম্প্রতিক সিনারিও লেনদেন')}
+          data-testid="dashboard-recent-activity-list">
           {recentTransactions.map(transaction=><li key={transaction.transactionId} className="rounded-xl border border-taxpay-border bg-white p-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
@@ -353,6 +390,13 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
             </div>
             <p className="mt-2 text-xs text-taxpay-muted">{serviceLabels(transaction)} · {tr('Assessment year','করবর্ষ')} {assessmentYears(transaction)}</p>
             <p className="mt-1 text-xs font-medium text-taxpay-muted">{transactionStatus(transaction.state)}</p>
+            <button type="button"
+              data-testid={'dashboard-recent-history-'+transaction.transactionId}
+              onClick={()=>onNavigate('history')}
+              aria-label={tr('Open payment history to locate reference ','রেফারেন্স খুঁজতে পেমেন্ট ইতিহাস খুলুন ')+transaction.id}
+              className="mt-2 min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
+              {tr('Open payment history','পেমেন্টের ইতিহাস দেখুন')}
+            </button>
           </li>)}
         </ul>}
       </>}
@@ -360,10 +404,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
     <nav className="mt-4" aria-label={tr('Account shortcuts','অ্যাকাউন্ট শর্টকাট')}>
       <p className="mb-2 text-sm font-semibold text-taxpay-text">{tr('Account shortcuts','অ্যাকাউন্ট শর্টকাট')}</p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-        {shortcutItems.map(item=><button key={item.route} type="button" onClick={()=>item.route==='corrections'
-          ? (document.getElementById('dashboard-correction-requests')?.scrollIntoView({behavior:'smooth',block:'start'}),
-             document.getElementById('dashboard-correction-requests')?.focus({preventScroll:true}))
-          : onNavigate(item.route)}
+        {shortcutItems.map(item=><button key={item.route} type="button" onClick={()=>item.route==='corrections'?openCorrectionRecords():onNavigate(item.route)}
           className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-left text-sm font-medium text-taxpay-primary hover:bg-slate-50">
           {item.label}
         </button>)}
