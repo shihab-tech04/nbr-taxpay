@@ -140,7 +140,7 @@ test('user1 Activity retains the approved transaction table and removes redundan
 
 
 test('user1 unified profile displays all distinct TIN fields with no tabs, duplicates or overflow',async({page},info)=>{
-  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Unified taxpayer profile desktop/mobile acceptance');
+  test.skip(!['desktop-1280','mobile-375','mobile-320'].includes(info.project.name),'Unified taxpayer profile desktop/mobile acceptance');
   await page.goto('/?action=account_profile&demoUser=user1');
   const profile=page.getByTestId('user1-taxpayer-profile');
   const content=profile.getByTestId('user1-profile-unified-content');
@@ -149,30 +149,31 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile.getByRole('heading',{name:'Md. Arif Rahman'})).toBeVisible();
   await expect(profile.getByTestId('user1-profile-tin')).toHaveText('*********798');
   await expect(profile.getByRole('tab')).toHaveCount(0);
-  // All 24 source fields appear exactly once: name/TIN in the identity, four in
-  // summary, and the remaining fields in their appropriate sections.
+  // All 24 source fields appear exactly once: name/TIN in the identity, the
+  // approved four-field summary, and the remaining fields in their sections.
   const rendered=await profile.locator('[data-profile-field]').evaluateAll(nodes=>
     nodes.map(node=>node.getAttribute('data-profile-field')));
   expect(rendered).toHaveLength(24);
   expect(new Set(rendered).size).toBe(24);
   expect(rendered).toEqual([
-    'taxpayerName','tin','tinType','registeredOn','previousTin','lastLoginAt',
+    'taxpayerName','tin','tinType','taxesCircle','registeredOn','lastLoginAt',
     'taxpayerStatus','tinSubtype','userType','localTaxpayer',
     'mobileNumber','emailAddress','registeredAddress','currentAddress',
-    'taxesCircle','taxesZone','taxesRange','district','country',
-    'certificateIssuedOn','certificateLastUpdatedOn','issuingOfficer',
+    'taxesZone','taxesRange','district','country',
+    'previousTin','certificateIssuedOn','certificateLastUpdatedOn','issuingOfficer',
     'taxOfficeAddress','taxOfficePhone'
   ]);
   await expect(profile.getByRole('tablist')).toHaveCount(0);
   await expect(profile.getByRole('button',{name:'View payment activity'})).toHaveCount(0);
   const cards=content.getByTestId('user1-profile-detail-columns');
   await expect(cards.locator(':scope > div')).toHaveCount(4);
-  // Keep tax circle together with zone and range, no repeated field labels.
+  // Keep the approved top summary and jurisdiction grouping, with no repeated labels.
   const jurisdiction=content.getByTestId('profile-jurisdiction-card');
-  for(const field of ['Taxes circle','Taxes zone','Taxes range'])
+  for(const field of ['Taxes zone','Taxes range'])
     await expect(jurisdiction.getByText(field,{exact:true})).toHaveCount(1);
-  await expect(profile.getByTestId('user1-profile-summary').getByText('Previous TIN',{exact:true})).toHaveCount(1);
-  await expect(jurisdiction.getByText('Previous TIN',{exact:true})).toHaveCount(0);
+  const profileSummary=profile.getByTestId('user1-profile-summary');
+  await expect(profileSummary.getByText('Previous TIN',{exact:true})).toHaveCount(0);
+  await expect(content.getByTestId('profile-certificate-card').getByText('Previous TIN',{exact:true})).toHaveCount(1);
   if(info.project.name==='desktop-1280'){
     const personal=await content.getByTestId('profile-personal-card').boundingBox();
     const tax=await jurisdiction.boundingBox();
@@ -218,12 +219,12 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
     await expect(content.getByRole('heading',{name:section,exact:true})).toHaveCount(1);
   for(const field of ['Taxpayer status','TIN classification','User type','Local taxpayer',
     'Mobile number','Email address','Registered / permanent address','Current address',
-    'Taxes circle','Taxes zone','Taxes range','District','Country',
+    'Taxes zone','Taxes range','District','Country','Previous TIN',
     'Certificate issue date','Certificate last updated','Issuing tax officer','Tax office address',
     'Tax office phone']){
     await expect(content.getByText(field,{exact:true})).toHaveCount(1);
   }
-  await expect(content.getByText('Taxes circle',{exact:true})).toHaveCount(1);
+  await expect(content.getByText('Taxes circle',{exact:true})).toHaveCount(0);
   await expect(content.getByText('Registered name',{exact:true})).toHaveCount(0);
   await expect(content.getByText('TIN type',{exact:true})).toHaveCount(0);
   await expect(profile.getByText('TIN type',{exact:true})).toHaveCount(1);
@@ -233,7 +234,11 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile.getByRole('heading',{name:'Account information'})).toHaveCount(0);
   const summary=profile.getByTestId('user1-profile-summary');
   await expect(summary.locator(':scope > div')).toHaveCount(4);
-  await expect(summary.getByText('Taxes circle',{exact:true})).toHaveCount(0);
+  const summaryFields=await summary.locator(':scope > div').evaluateAll(nodes=>
+    nodes.map(node=>node.getAttribute('data-profile-field')));
+  expect(summaryFields).toEqual(['tinType','taxesCircle','registeredOn','lastLoginAt']);
+  for(const field of ['TIN type','Taxes circle','Registered since','Last account login'])
+    await expect(summary.getByText(field,{exact:true})).toHaveCount(1);
   await expect(summary).toContainText('11 Nov 2026, 11:23:40 AM');
   await expect(content).toContainText('Taxes Zone-12, Dhaka');
   await expect(content).toContainText('04 Jun 2026, 05:06:20 PM');
@@ -290,6 +295,21 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   if(await rail.isVisible())await expect(rail.getByRole('button',{name:'Activity',exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  if(info.project.name==='mobile-375'){
+    // Recheck the approved profile at the minimum supported 320px width while
+    // retaining its existing summary, masking and adjacent copy controls.
+    await page.setViewportSize({width:320,height:720});
+    await expect(profile.getByTestId('user1-profile-summary').locator(':scope > div')).toHaveCount(4);
+    await expect(profile.getByRole('button',{name:'Show TIN'})).toBeVisible();
+    const narrowCopyButton=profile.getByRole('button',{name:/^(?:Copy|Copied) TIN$/});
+    await expect(narrowCopyButton).toBeVisible();
+    const narrowEye=await profile.getByRole('button',{name:'Show TIN'}).boundingBox();
+    const narrowCopy=await narrowCopyButton.boundingBox();
+    expect(narrowEye&&narrowCopy).toBeTruthy();
+    expect(narrowCopy!.x-narrowEye!.x).toBeGreaterThanOrEqual(narrowEye!.width-2);
+    expect(narrowCopy!.x-narrowEye!.x).toBeLessThanOrEqual(narrowEye!.width+16);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  }
   await page.goto('/?action=account_profile&demoUser=user1&lang=bn');
   const bn=page.getByTestId('user1-profile-unified-content');
   await expect(bn).toBeVisible();
@@ -327,4 +347,45 @@ test('user1 profile export contains supplied TIN fields without unnecessary copy
   expect(text).not.toContain('"Account","user1"');
   expect((text.match(/"TIN","577935451798"/g)??[])).toHaveLength(1);
   expect(text).not.toContain('FICTIONAL SAMPLE');
+});
+
+// F-132 / US-129 negative and recovery: a payment summary is not an
+// issuer-backed tax-credit certificate. No-source states cannot export a
+// zero-value or otherwise unsupported payment document.
+test('Tax Credit Certificates does not export empty or unverified record summaries', async ({ page }) => {
+  // Isolate the session-scoped readback: an explicitly empty response is not
+  // evidence of an officially issued document, and cannot depend on the
+  // availability or seeded data of the hosted demonstration endpoint.
+  await page.route(/\/demo-story1-taxpay\/payments\?sessionId=/, async route => {
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({success:true,simulationOnly:true,data:{items:[],total:0}})
+    });
+  });
+  for (const language of ['en','bn'] as const) {
+    await page.goto('/?action=certificates&demoUser=user2&lang=' + language);
+    const bn = language === 'bn';
+    const issued = page.getByTestId('issued-tax-credit-certificates');
+    await expect(issued).toContainText(bn
+      ? 'ইস্যুকারী কর্তৃপক্ষের যাচাইকৃত কর ক্রেডিট সনদপত্র নেই'
+      : 'No issuer-verified tax credit certificates are available');
+    await expect(issued.getByRole('button', {name: /download|ডাউনলোড/i})).toHaveCount(0);
+
+    // Isolated local-review account has no source-backed payment/session
+    // payment records; it must not be displayed as a verified zero total.
+    const register = page.getByTestId('account-certificate-record-register');
+    await expect(register).toContainText(bn
+      ? 'এই সারসংক্ষেপে কোনো পেমেন্ট রেকর্ড নেই।'
+      : 'No payment records in this summary.');
+
+    await page.getByRole('button', {name: bn ? 'সারসংক্ষেপ দেখুন' : 'View summary', exact: true}).click();
+    const modal = page.getByRole('dialog', {name: bn ? 'সনদের সারসংক্ষেপ' : 'Certificate summary'});
+    await expect(modal).toBeVisible();
+    await expect(modal.getByRole('button', {name: bn ? 'ডাউনলোড' : 'Download'})).toBeDisabled();
+    await expect(modal.getByRole('button', {name: bn ? 'সারসংক্ষেপ প্রিন্ট' : 'Print summary'})).toBeDisabled();
+    await expect(modal.locator('.receipt-view__amount strong')).toHaveText('—');
+    await expect(modal.locator('.receipt-view__reference-strip strong').last()).toHaveText('—');
+    await expect(modal.locator('[data-testid="certificate-summary-document"]')).toContainText(bn
+      ? 'কোনো মিল পাওয়া যায়নি।' : 'No matching records.');
+  }
 });

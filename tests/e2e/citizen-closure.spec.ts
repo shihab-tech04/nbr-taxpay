@@ -140,11 +140,13 @@ test('certificate previews stay non-official, match the selected type and locali
   await expect(documentModal.getByText('Not verified',{exact:true}).first()).toBeVisible();
   await expect(documentModal.locator('.taxpay-modal__footer .receipt-view__actions')).toBeVisible();
   await expect(documentModal.getByRole('button',{name:'Back to search'})).toHaveCount(0);
-  await expect(documentModal.getByRole('button',{name:'Download'})).toBeVisible();
-  await expect(documentModal.getByRole('button',{name:'Print summary'})).toBeVisible();
-  const summaryDownload = page.waitForEvent('download');
-  await documentModal.getByRole('button',{name:'Download'}).click();
-  expect((await summaryDownload).suggestedFilename()).toBe('Korbritto-WITHHOLDING_PROOF-summary.html');
+  // A selected preview with no source-backed rows is informational only.
+  // Genuine populated HTML export is covered by receiptDocumentExportBranding.
+  await expect(documentModal.getByRole('button',{name:'Download'})).toBeDisabled();
+  await expect(documentModal.getByRole('button',{name:'Print summary'})).toBeDisabled();
+  // Empty readback displays “—”; a failed backend read displays “Unavailable”.
+  // Neither is a zero-value or exportable certificate.
+  await expect(documentModal.locator('.receipt-view__amount strong')).toHaveText(/^(—|Unavailable)$/);
   await documentModal.getByRole('button',{name:'Close modal'}).click();
   await expect(documentModal).toHaveCount(0);
 
@@ -173,3 +175,26 @@ test('home explains the payment stages without an inline transaction form',async
  await expect(page.getByRole('heading',{name:'Guest Income Tax Payment'})).toBeVisible();
 });
 
+test('dashboard CSV export keeps Sohojkor branding and localized column labels',async({page},info)=>{
+  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'WS4 desktop/mobile CSV parity');
+  // URL-selected demoUser profiles deliberately cannot read public preview receipts.
+  // Use the existing uncredentialed taxpayer design preview, not user1's isolated scenario.
+  await page.goto('/?action=taxpayer_home');
+  await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  const englishExport=page.getByRole('button',{name:'Export CSV'});
+  await expect(englishExport).toBeEnabled();
+  const [english]=await Promise.all([page.waitForEvent('download'),englishExport.click()]);
+  expect(english.suggestedFilename()).toBe('Sohojkor_transactions.csv');
+  const englishCsv=await (await import('node:fs/promises')).readFile(await english.path(),'utf8');
+  expect(englishCsv).toContain('"Reference","Category","Assessment year","Amount ৳","Treasury status"');
+
+  await switchTaxpayerToBangla(page);
+  await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
+  const banglaExport=page.getByRole('button',{name:'CSV রপ্তানি'});
+  await expect(banglaExport).toBeEnabled();
+  const [bangla]=await Promise.all([page.waitForEvent('download'),banglaExport.click()]);
+  expect(bangla.suggestedFilename()).toBe('Sohojkor_transactions.csv');
+  const banglaCsv=await (await import('node:fs/promises')).readFile(await bangla.path(),'utf8');
+  expect(banglaCsv).toContain('"রেফারেন্স","কর পরিশোধের ধরন","করবর্ষ","পরিমাণ ৳","ট্রেজারি অবস্থা"');
+});
