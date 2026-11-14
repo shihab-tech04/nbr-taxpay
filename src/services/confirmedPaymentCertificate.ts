@@ -366,6 +366,40 @@ export async function findOwnedReceiptByReference(
  if(identityError||!owner||session.user.id!==owner)
    throw Error('Account ownership could not be verified');
  const mobile=receiptMobile.trim();
+ // Prefer Work B's original owner-scoped targeted SQL reference read.
+ // The legacy paged RPC is retained only for an *absent* new migration,
+ // never for an ownership denial, service outage or malformed response.
+ const {data:targeted,error:targetedError}=await supabase.rpc(
+   'taxpay_my_story1_payment_by_reference',{
+     p_reference:wanted,p_receipt_mobile:mobile||null,
+   });
+ if(!targetedError){
+   const {data:recheck,error:recheckError}=await supabase.auth.getUser();
+   if(recheckError||recheck.user?.id!==owner)
+     throw Error('Account changed during payment lookup');
+   if(targeted===null)return {authenticated:true,receipt:null};
+   if(!isRecord(targeted)||!validCertificateTransactionId(targeted.id))
+     throw Error('Invalid account payment response');
+   const id=targeted.id as string;
+   const confirmed=checkedParent(targeted,id);
+   const d=confirmed.details??{};
+   const snapshot=isRecord(d.receiptSnapshot)?d.receiptSnapshot:null;
+   const references=[id,'SK-PC-'+id,d.receiptReference,d.tokenNumber,
+     d.gatewayTransactionId,snapshot?.challanNo,snapshot?.tokenNumber,
+     snapshot?.gatewayTransactionId,snapshot?.paymentTransactionId];
+   if(!references.some(value=>stringValue(value).trim().toUpperCase()===wanted))
+     throw Error('Account payment reference mismatch');
+   if(mobile){
+     const saved=stringValue(snapshot?.receiptMobile)||stringValue(d.receiptMobile);
+     if(!/^01\d{9}$/.test(mobile)||mobile!==saved)
+       throw Error('Account receipt mobile mismatch');
+   }
+   return {authenticated:true,receipt:makeConfirmedReceipt(confirmed)};
+ }
+ // PostgREST uses PGRST202 for a missing function. Any other error is
+ // an original-source failure and must never become NOT_FOUND or a guest read.
+ if(targetedError.code!=='PGRST202')
+   throw Error('Account payment records are temporarily unavailable');
  for(let page=1;page<=2000;page++){
    const {data,error}=await supabase.rpc('taxpay_my_story1_payments',{
      p_page:page,p_per_page:100

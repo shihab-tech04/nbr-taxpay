@@ -245,6 +245,23 @@ async function installCertificateAccountFixture(
       await route.fulfill({ status: 200, headers, body: 'null' });
       return;
     }
+    if (url.pathname === '/rest/v1/rpc/taxpay_my_story1_payment_by_reference') {
+      const body=request.postDataJSON() as Record<string,unknown>;
+      expect(Object.keys(body).sort()).toEqual(['p_receipt_mobile','p_reference']);
+      expect(body.p_reference).toBe('ACS-2026-00130');
+      expect(body.p_receipt_mobile===null||body.p_receipt_mobile==='01700000000').toBe(true);
+      ledgerRequests.push(body);
+      if(!ledgerAvailable){
+        await route.fulfill({status:503,headers,body:JSON.stringify({
+          code:'PGRST504',message:'temporary fixture outage'})});
+        return;
+      }
+      const eligible=userId===accountCertificateOwner&&
+        (body.p_receipt_mobile===null||body.p_receipt_mobile==='01712345678');
+      await route.fulfill({status:200,headers,
+        body:JSON.stringify(eligible?accountCertificatePayment:null)});
+      return;
+    }
     if (url.pathname === '/rest/v1/rpc/taxpay_my_story1_payments') {
       const body = request.postDataJSON() as Record<string, unknown>;
       expect(body).toEqual({ p_page: 1, p_per_page: 100 });
@@ -446,4 +463,23 @@ test('F-129 / US-050 owner SQL outage is not reported as a missing payment', asy
   await expect(dialog.getByRole('alert')).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'No matching record' })).toHaveCount(0);
   await expect(dialog.locator('.receipt-view__paper')).toHaveCount(0);
+});
+
+test('F-129 US-050 targeted owner RPC refuses ambiguous/malformed source instead of scanning another session',async({page},info)=>{
+ test.skip(info.project.name!=='desktop-1280','Representative malformed source');
+ await installCertificateAccountFixture(page,accountCertificateOwner);
+ await page.route(accountCertificateBackend+'/rest/v1/rpc/taxpay_my_story1_payment_by_reference',async route=>{
+   await route.fulfill({status:200,contentType:'application/json',
+     headers:{'access-control-allow-origin':'*'},
+     body:JSON.stringify({...accountCertificatePayment,
+       details:{...accountCertificatePayment.details,receiptReference:'OTHER-REFERENCE',
+         receiptSnapshot:{...accountCertificateSnapshot,challanNo:'OTHER-REFERENCE'}}})});
+ });
+ await page.goto('/?action=verify');
+ const modal=page.getByRole('dialog',{name:'Payment status & receipt'});
+ await modal.getByRole('textbox',{name:'Challan, token or transaction reference'}).fill('ACS-2026-00130');
+ await modal.getByRole('button',{name:'Search records'}).click();
+ await expect(modal.getByRole('alert')).toBeVisible();
+ await expect(modal.locator('.receipt-view')).toHaveCount(0);
+ await expect(modal.getByRole('heading',{name:'No matching record'})).toHaveCount(0);
 });
