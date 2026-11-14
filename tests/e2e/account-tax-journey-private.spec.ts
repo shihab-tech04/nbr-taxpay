@@ -15,9 +15,13 @@ function session(){
   return {access_token:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'+encoded+'.synthetic',token_type:'bearer',
     expires_in:3600,expires_at:exp,refresh_token:'journey-refresh',user:owner};
 }
-async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[],correctionColumns=true){
-  await page.addInitScript(({key,value})=>{localStorage.setItem(key,JSON.stringify(value));},
-    {key:'sb-nbr-taxpay-test-auth-token',value:session()});
+async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[],correctionColumns=true,seedAuthOnlyOnce=false){
+  await page.addInitScript(({key,value,seedOnlyOnce})=>{
+    const seeded='taxpay-test-account-auth-seeded';
+    if(seedOnlyOnce&&sessionStorage.getItem(seeded))return;
+    localStorage.setItem(key,JSON.stringify(value));
+    if(seedOnlyOnce)sessionStorage.setItem(seeded,'1');
+  },{key:'sb-nbr-taxpay-test-auth-token',value:session(),seedOnlyOnce:seedAuthOnlyOnce});
   await page.route(backend+'/**',async route=>{
     const req=route.request(),url=new URL(req.url());
     const response=(data:unknown,status=200)=>route.fulfill({status,contentType:'application/json',
@@ -263,7 +267,7 @@ const signedInTravelTaxPayment={
 for(const language of ['en','bn'] as const){
   test('F-162 / US-119, US-158, US-159 recover signed-in Travel Tax history after sign-out in '+language,
     async({page})=>{
-      await mockAccount(page,true,[signedInTravelTaxPayment]);
+      await mockAccount(page,true,[signedInTravelTaxPayment],true,true);
       const guestSessionId='ed18e1b3-8abf-4a19-a22d-0b5d6dca7101';
       const claimedSessionIds:string[]=[];
       await page.addInitScript(id=>sessionStorage.setItem('taxpay-guest-simulation-session',id),guestSessionId);
