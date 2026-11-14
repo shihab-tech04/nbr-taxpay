@@ -30,7 +30,7 @@ export function parseReceivedPaymentNotice(value:unknown):ReceivedPaymentNotice 
   };
 }
 
-async function scopedRequest(profileId:string,action:'received-notices-unread'|'received-notices-ack',
+async function scopedRequest(profileId:string,action:'received-notices-unread'|'received-notices-list'|'received-notices-ack',
   fields:Record<string,unknown>={}):Promise<unknown>{
   const session=activePreviewSession();
   if(!session||session.profileId!==profileId)
@@ -108,4 +108,108 @@ export async function acknowledgeReceivedPaymentNotice(profileId:string,eventId:
   if(row.eventId!==eventId||row.isRead!==true||typeof row.acknowledgedAt!=='string'||
      !Number.isFinite(Date.parse(row.acknowledgedAt)))
     throw new Error('Notice acknowledgement could not be verified');
+}
+
+/** The separate read-only Notifications register contains both acknowledged
+ * and unacknowledged recipient events. The popup deliberately uses unread only.
+ * No other payer's source allocation or financial settlement is exposed.
+ */
+export type StoredReceivedPaymentNotice=Omit<ReceivedPaymentNotice,'isRead'> & {
+  isRead:boolean; acknowledgedAt:string|null;
+};
+
+export function parseStoredReceivedPaymentNotice(value:unknown):StoredReceivedPaymentNotice {
+  if(!value||typeof value!=='object'||Array.isArray(value))
+    throw Error('Invalid stored received-payment notice');
+  const row=value as Record<string,unknown>;
+  if(typeof row.isRead!=='boolean' ||
+    (row.isRead && (typeof row.acknowledgedAt!=='string' ||
+      !Number.isFinite(Date.parse(row.acknowledgedAt)))) ||
+    (!row.isRead && row.acknowledgedAt!=null))
+    throw Error('Invalid received-payment read state');
+  const verified=parseReceivedPaymentNotice({...row,isRead:false});
+  return {...verified,isRead:row.isRead,
+    acknowledgedAt:row.isRead?row.acknowledgedAt as string:null};
+}
+
+/** Preserve SQL's stable event ordering across all saved read/unread pages.
+ * An interrupted, duplicate, truncated or reordered page is rejected wholly.
+ */
+export async function loadStoredReceivedPaymentNotices(
+  requestPage:(offset:number,limit:number)=>Promise<unknown>,
+  limit=100,maxPages=200,
+):Promise<StoredReceivedPaymentNotice[]>{
+  if(!Number.isSafeInteger(limit)||limit<1||limit>100 ||
+    !Number.isSafeInteger(maxPages)||maxPages<1||maxPages>200)
+    throw Error('Invalid notice pagination');
+  const items:StoredReceivedPaymentNotice[]=[];
+  const seen=new Set<string>();
+  let total:number|null=null;
+  let previousOrderKey:string|null=null;
+  for(let index=0;index<maxPages;index++){
+    const offset=items.length;
+    const value=await requestPage(offset,limit);
+    if(!value||typeof value!=='object'||Array.isArray(value))
+      throw Error('Invalid notice page');
+    const data=value as Record<string,unknown>;
+    if(!Array.isArray(data.items)||data.items.length>limit||
+      !Number.isSafeInteger(data.total)||Number(data.total)<0||
+      data.offset!==offset||data.limit!==limit||
+      typeof data.hasMore!=='boolean'||(total!==null&&data.total!==total))
+      throw Error('Invalid notice page');
+    total=data.total as number;
+    if(total>maxPages*limit||(data.hasMore&&data.items.length===0))
+      throw Error('Notice pagination exceeded its safe limit');
+    const page=data.items.map(parseStoredReceivedPaymentNotice);
+    for(const item of page){
+      if(seen.has(item.eventId))throw Error('Duplicate received-payment notice');
+      // WS3 SQL sorts by createdAt, paymentId and eventId, ascending.
+      // Compare timestamps as epochs: their ISO formatting may differ.
+      const stamp=Date.parse(item.createdAt);
+      const key=String(stamp).padStart(16,'0')+'|'+item.paymentId+'|'+item.eventId;
+      if(previousOrderKey!==null&&key<previousOrderKey)
+        throw Error('Received-payment notices changed ordering');
+      previousOrderKey=key;seen.add(item.eventId);items.push(item);
+    }
+    if(data.hasMore){
+      if(items.length>=total)throw Error('Notice cursor changed while loading');
+      continue;
+    }
+    if(items.length!==total)throw Error('Notice page count changed while loading');
+    return items;
+  }
+  throw Error('Notice retrieval exceeded its safe limit');
+}
+
+export async function listReceivedPaymentNotices(profileId:string):Promise<StoredReceivedPaymentNotice[]> {
+  return loadStoredReceivedPaymentNotices((offset,limit)=>
+    scopedRequest(profileId,'received-notices-list',{offset,limit}));
+}
+
+
+export type ReceivedNoticeFilter={
+  query:string;readStatus:'all'|'read'|'unread';
+  dateFrom?:string;dateTo?:string;
+};
+/** All filters operate only on the already validated recipient-owned SQL list.
+ * Never expand the data source or infer a payer's unrelated allocations. */
+export function filterStoredReceivedPaymentNotices(
+  rows:readonly StoredReceivedPaymentNotice[],filter:ReceivedNoticeFilter,
+):StoredReceivedPaymentNotice[]{
+  const query=filter.query.trim().toLocaleLowerCase();
+  const from=filter.dateFrom??'',to=filter.dateTo??'';
+  if((from&&!/^\d{4}-\d{2}-\d{2}$/.test(from))||
+    (to&&!/^\d{4}-\d{2}-\d{2}$/.test(to))||
+    (from&&to&&from>to))return [];
+  return rows.filter(row=>{
+    if(filter.readStatus==='read'&&!row.isRead||
+      filter.readStatus==='unread'&&row.isRead)return false;
+    // Stable UTC date of the original SQL event, not browser's render clock.
+    const day=new Date(row.createdAt).toISOString().slice(0,10);
+    if(from&&day<from||to&&day>to)return false;
+    return !query || [
+      row.paymentId,row.receiptReference??'',row.assessmentYear,row.headId??'',
+      row.serviceCode??'',row.eventId,day
+    ].some(value=>value.toLocaleLowerCase().includes(query));
+  });
 }
