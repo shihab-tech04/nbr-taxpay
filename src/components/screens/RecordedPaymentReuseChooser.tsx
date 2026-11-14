@@ -35,16 +35,26 @@ export function RecordedPaymentReuseChooser({profileId,language,onReuse}:{
    catch { return undefined; }
  }).map(payment=>{
    let copy:PaymentReuse|null=null;
+   let displayId=payment.id;
+   let displayAmountMinor:number|null=payment.amountMinor;
    try{
+     const chosen=makeConfirmedReceipt(payment);
+     displayId=chosen.batchId??payment.id;
+     if(chosen.batchId) displayAmountMinor=null;
      const peers=state.rows.filter(other=>{
        const receipt=makeConfirmedReceipt(other);
-       const chosen=makeConfirmedReceipt(payment);
        return chosen.batchId ? receipt.batchId===chosen.batchId : other.id===payment.id;
      }).map(makeConfirmedReceipt);
-     copy=reuseRecordedPayment(peers,profileId,getDemoUser(profileId)?.tin??null,
-       makeConfirmedReceipt(payment).batchId??payment.id);
+     copy=reuseRecordedPayment(peers,profileId,getDemoUser(profileId)?.tin??null,displayId);
+     if(chosen.batchId){
+       // Show the complete original batch amount only after every immutable
+       // receipt row has passed the existing reconstruction validator.
+       const total=peers.reduce((sum,receipt)=>sum+Math.round(receipt.totalAmount*100),0);
+       if(!Number.isSafeInteger(total)||total<=0)throw Error('Incomplete original batch total');
+       displayAmountMinor=total;
+     }
    }catch{/* Incomplete historic receipts cannot establish a new payment. */}
-   return {payment,copy};
+   return {payment,copy,displayId,displayAmountMinor};
  }),[state.rows,profileId]);
  const reuse=(copy:PaymentReuse)=>{
    setReuseError('');
@@ -72,14 +82,16 @@ export function RecordedPaymentReuseChooser({profileId,language,onReuse}:{
      {tr('No recorded payments are available for this account.',
        'এই অ্যাকাউন্টের জন্য কোনো সংরক্ষিত পেমেন্ট পাওয়া যায়নি।')}</p>}
    {state.status==='ready'&&records.length>0&&<ul className="divide-y divide-taxpay-border">
-     {records.map(({payment,copy})=><li key={payment.id}
+     {records.map(({payment,copy,displayId,displayAmountMinor})=><li key={payment.id}
        className="flex flex-wrap items-center justify-between gap-3 py-3">
        <div className="min-w-0">
-         <p className="break-all text-sm font-medium">{payment.id}</p>
+         <p className="break-all text-sm font-medium">{displayId}</p>
          <p className="text-xs text-taxpay-muted">{payment.service.replaceAll('_',' ')} · {new Intl.DateTimeFormat(
            language==='bn'?'bn-BD':'en-BD',{dateStyle:'medium'}).format(new Date(payment.createdAt))}</p>
-         <p className="font-semibold tabular-nums">{'৳ '+(payment.amountMinor/100).toLocaleString(
-           language==='bn'?'bn-BD':'en-BD',{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
+         <p className="font-semibold tabular-nums">{displayAmountMinor===null
+           ? tr('Original batch amount unavailable','মূল ব্যাচের পরিমাণ পাওয়া যায়নি')
+           : '৳ '+(displayAmountMinor/100).toLocaleString(
+               language==='bn'?'bn-BD':'en-BD',{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
        </div>
        <button type="button" data-testid="recovered-pay-again"
          disabled={!copy} title={!copy?tr('Complete original payment details unavailable',
