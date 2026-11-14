@@ -5,9 +5,8 @@ test('public guide provides scoped official support, legal links and example-pay
   const source = page.locator('.public-guide-source').first();
   await expect(page.getByRole('heading', { name: 'Sohojkor user guide' })).toBeVisible();
   await expect(source.getByRole('link', { name: 'Call NBR e-Return support' })).toHaveAttribute('href', 'tel:09643717171');
-  await expect(source.getByRole('link', { name: 'Call NBR Tax e-Payment challan support (09611-777111)' })).toHaveAttribute('href', 'tel:09611777111');
-  await expect(source.getByRole('link', { name: 'Call NBR VAT e-Payment challan support (16555)' })).toHaveAttribute('href', 'tel:16555');
-  await expect(source).toContainText('For Tax e-Payment challan problems, call 09611-777111; for VAT e-Payment challan problems, call 16555.');
+  await expect(source.getByRole('link', { name: 'Call NBR Tax and VAT e-Payment support (16555)' })).toHaveAttribute('href', 'tel:16555');
+  await expect(source).toContainText('For Tax and VAT e-Payment problems, call the NBR hotline 16555.');
   await expect(source.getByRole('link', { name: 'NBR e-Return FAQ' })).toHaveAttribute('href', 'https://nbr.gov.bd/all-faq/eng');
   await expect(source.getByRole('link', { name: 'NBR VAT Portal terms (English)' })).toHaveAttribute('href', 'https://nbr.gov.bd/terms-of-use/eng');
   await expect(source.getByRole('link', { name: 'NBR VAT Portal privacy policy (English)' })).toHaveAttribute('href', 'https://nbr.gov.bd/privacy-policy/e-services/vatcalculator/eng');
@@ -26,10 +25,9 @@ test('public guide provides scoped official support, legal links and example-pay
   await page.goto('/?action=user_guide&lang=bn');
   const banglaSource = page.locator('.public-guide-source').first();
   await expect(page.getByRole('heading', { name: 'সহজকর ব্যবহার নির্দেশিকা' })).toBeVisible();
-  await expect(banglaSource.getByRole('link', { name: 'এনবিআর আয়কর ই-পেমেন্ট চালান সহায়তায় কল করুন (০৯৬১১-৭৭৭১১১)' })).toHaveAttribute('href', 'tel:09611777111');
-  await expect(banglaSource.getByRole('link', { name: 'এনবিআর ভ্যাট ই-পেমেন্ট চালান সহায়তায় কল করুন (১৬৫৫৫)' })).toHaveAttribute('href', 'tel:16555');
+  await expect(banglaSource.getByRole('link', { name: 'এনবিআর আয়কর ও ভ্যাট ই-পেমেন্ট সহায়তায় কল করুন (১৬৫৫৫)' })).toHaveAttribute('href', 'tel:16555');
   await expect(banglaSource.getByRole('link', { name: 'এনবিআর ভ্যাট পোর্টালের ব্যবহারের শর্ত (ইংরেজি)' })).toBeVisible();
-  await expect(banglaSource).toContainText('আয়কর ই-পেমেন্ট চালান পেতে সমস্যায় ০৯৬১১-৭৭৭১১১ এবং ভ্যাট ই-পেমেন্ট চালান পেতে সমস্যায় ১৬৫৫৫ নম্বরে কল করুন।');
+  await expect(banglaSource).toContainText('আয়কর ও ভ্যাট ই-পেমেন্ট সমস্যায় এনবিআরের ১৬৫৫৫ হটলাইনে কল করুন।');
   await expect(banglaSource).toContainText('মে ২০১২');
 });
 
