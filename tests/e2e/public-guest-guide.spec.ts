@@ -247,7 +247,7 @@ test('floating help uses guide answers and report offers an editable review with
  test.skip(info.project.name!=='desktop-1280','One assistant and report E2E journey');
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'Chat support'}).click();
- await expect(page.getByRole('heading',{name:'Korbritto help'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Sohojkor help'})).toBeVisible();
  await page.getByRole('button',{name:'Payment status',exact:true}).click();
  await expect(page.locator('.public-help-message--assistant')).toContainText('verified reconciliation');
  await page.getByRole('link',{name:'Open user guide'}).click();
