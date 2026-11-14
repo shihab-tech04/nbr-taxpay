@@ -6,6 +6,7 @@ on:
       - 'supabase/functions/payment-sync-bridge/**'
       - 'supabase/functions/payment-command-bridge/**'
       - 'tests/integration/ws3EdgeHttpBridge.mjs'
+      - 'tests/integration/ws3StoryMirrorProofHttp.mjs'
       - '.github/workflows/ws3-edge-http-transport.yml'
   workflow_dispatch:
 
@@ -30,7 +31,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          OFFICE_SHA=ceb1cd7f8a724dc7b599b66ffc82fdfd12b34d23
+          OFFICE_SHA=d4485d6aa12119f91269a30eaf640e3b6b789f15
           OFFICE_DIR="$RUNNER_TEMP/ws3-office-http-source"
           git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
             https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
@@ -38,3 +39,5 @@ jobs:
           echo "WS3_OFFICE_SOURCE=$OFFICE_DIR" >> "$GITHUB_ENV"
       - name: Execute actual Taxpayer and Office Edge handlers through loopback HTTP
         run: node tests/integration/ws3EdgeHttpBridge.mjs
+      - name: Verify signed source-bound Story 1 proof, outage recovery and submitted Travel Tax
+        run: node tests/integration/ws3StoryMirrorProofHttp.mjs
