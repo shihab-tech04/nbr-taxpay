@@ -251,6 +251,13 @@ test('local sample taxpayer Beneficiaries supports independent lists, single ent
   await expect(payment.locator('#other-tax-primary-name')).toHaveValue('Synthetic Guest One');
   await expect(payment.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin-"]')).toHaveValue('987654321098');
   await payment.getByRole('button',{name:'Close payment services'}).click();
+  // A signed-in preview payment can offer the approved Save Draft / Discard
+  // recovery dialog. Complete that exit before returning to contact actions.
+  const exitDialog=page.getByRole('alertdialog',{name:'Save your tax payment?'});
+  await expect.poll(async()=>await exitDialog.count()>0||await payment.count()===0).toBe(true);
+  if(await exitDialog.count()>0)
+    await exitDialog.getByRole('button',{name:'Discard tax payment',exact:true}).click();
+  await expect(payment).toHaveCount(0);
 
   const firstRecord=recordList.filter({hasText:'012345678901'});
   await firstRecord.getByRole('button',{name:'Edit'}).click();

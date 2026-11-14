@@ -9,6 +9,7 @@ import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import type { PaymentReuse } from '../../services/paymentReuse';
 import {activePreviewSession} from '../../services/previewAccountSession';
+import {TAXPAY_PUBLIC_ENDPOINT} from '../../config/publicBackend';
 import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
 import { deletePaymentFormDraft, type PaymentDraftActor, type PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
@@ -48,6 +49,10 @@ function maskPassport(passport: string) {
 export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, initialReuse, onBackToService, onStageChange }) => {
   const { language, navigate, addPaymentReceipt, previewAccount } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
+  // Keep the existing signed-in draft journey untouched. Unsigned guests
+  // reuse WS3's current capability/session only when its backend is configured.
+  const unsignedGuestDrafts = !authenticatedUser && !previewAccount &&
+    Boolean(TAXPAY_PUBLIC_ENDPOINT.url && TAXPAY_PUBLIC_ENDPOINT.publishableKey);
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
@@ -80,12 +85,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const [paymentNonce, setPaymentNonce] = useState(() => crypto.randomUUID());
 
 
-  // Only account-based draft snapshots are persisted. Unverified preview-account
-  // passports are re-entered on resume because preview credentials are public.
+  // Travel passports require reconfirmation on resume. Never persist plaintext
+  // passport values under a public preview or unsigned guest capability.
   const snapshotTravelDraft = (): Record<string, unknown> => ({
     schemaVersion: 1, step: Math.min(step, 2), mode, port, waterPort,
     destination, travelDate, phone,
-    passengers: previewAccount
+    passengers: (previewAccount || unsignedGuestDrafts)
       ? passengers.map(person => ({ ...person, passport: '', identitySource: person.nationality === 'BD' ? 'PENDING' : 'MANUAL' }))
       : passengers,
   });
@@ -144,14 +149,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     if (!selectedAccountDraft || !createdReceipt || bankSlipPending) return;
     const actor: PaymentDraftActor | null = authenticatedUser
       ? {kind:'authenticated',userId:authenticatedUser.id}
-      : previewAccount ? {kind:'preview',profileId:previewAccount.id} : null;
+      : previewAccount ? {kind:'preview',profileId:previewAccount.id}
+      : unsignedGuestDrafts ? {kind:'guest'} : null;
     if (!actor) return;
     let active = true;
     void deletePaymentFormDraft(actor,selectedAccountDraft).then(() => {
       if (active) setSelectedAccountDraft(null);
     }).catch(() => { /* preserve a recoverable draft if SQL cleanup fails */ });
     return () => { active = false; };
-  }, [createdReceipt?.id, bankSlipPending, selectedAccountDraft?.id, authenticatedUser?.id, previewAccount?.id]);
+  }, [createdReceipt?.id, bankSlipPending, selectedAccountDraft?.id, authenticatedUser?.id, previewAccount?.id, unsignedGuestDrafts]);
 
   useEffect(() => { onStageChange?.((step + 1) as 1 | 2 | 3 | 4); }, [step, onStageChange]);
   // The receipt takes over the wizard. Reset its scroll position when it
@@ -739,8 +745,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               'আগের ভ্রমণ করের তথ্য থেকে কপি করা হয়েছে। পরিশোধের আগে প্রতিটি যাত্রীর পাসপোর্ট ও জন্মতারিখ পুনরায় দিন, যাচাই করুন এবং নতুন ভ্রমণের তারিখ নির্বাচন করুন।')}
           </p>}
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert" tabIndex={-1}>{error}</p>}
-          {(authenticatedUser || previewAccount) && !createdReceipt &&
+          {(authenticatedUser || previewAccount || unsignedGuestDrafts) && !createdReceipt &&
             <AccountPaymentDraftControls service="TRAVEL_TAX" language={language}
+              allowGuest={unsignedGuestDrafts}
               snapshot={snapshotTravelDraft} restore={restoreTravelDraft}
               selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft}
               guardOnly={step >= 2} actionTarget={embedded ? draftFooterTarget : undefined} />}
@@ -1015,7 +1022,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </dl>
           </details>}
           <PaymentJourneyFooter className="travel-flow__footer-actions"
-            leading={(authenticatedUser || previewAccount) && !createdReceipt && step < 2
+            leading={(authenticatedUser || previewAccount || unsignedGuestDrafts) && !createdReceipt && step < 2
               ? <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />
               : null}
             back={!createdReceipt && step > 0 && <button type="button" className="tax-service-choice__cancel"

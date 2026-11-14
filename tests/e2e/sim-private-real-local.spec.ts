@@ -45,8 +45,26 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
   expect(b.status,JSON.stringify(b.data)).toBe(200);
   expect(b.data).toBe(profile);
  }
- const visit=async(who:typeof payer,route:string,viewport:{width:number;height:number})=>{
+ type PreviewSession={profileId:'user6'|'user7';capability:string;paymentSessionId:string;language:'en'|'bn';selectedListId:string|null};
+ const previewSession=async(profileId:'user6'|'user7'):Promise<PreviewSession>=>{
+  const response=await fetch(u.origin+'/functions/v1/taxpay-guest-beneficiaries',{method:'POST',
+   headers:{Origin:'http://127.0.0.1:4173',apikey:anonKey,'Content-Type':'application/json'},
+   body:JSON.stringify({action:'demo-login',userId:profileId,password:profileId})});
+  const raw=await response.json() as {success?:boolean;data?:PreviewSession};
+  expect(response.status,JSON.stringify(raw)).toBe(200);
+  expect(raw.success).toBe(true);
+  expect(raw.data).toMatchObject({profileId});
+  expect(raw.data?.capability).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  expect(raw.data?.paymentSessionId).toMatch(/^[0-9a-f-]{36}$/i);
+  return raw.data!;
+ };
+ const payerPreview=await previewSession('user6');
+ const visit=async(who:typeof payer,route:string,viewport:{width:number;height:number},preview?:PreviewSession)=>{
   const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
+  if(preview)await context.addInitScript(session=>{
+   window.sessionStorage.setItem('taxpay-taxpayer-preview-user',session.profileId);
+   window.sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify(session));
+  },preview);
   const page=await context.newPage();
   const session=who.session;
   await page.goto('/?action='+route+'#access_token='+encodeURIComponent(session.access_token)+
@@ -54,7 +72,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
    '&token_type=bearer&expires_in=3600&expires_at='+(session.expires_at||Math.floor(Date.now()/1000)+3600));
   return {page,context};
  };
- const one=await visit(payer,'history',{width:375,height:812});
+ const one=await visit(payer,'history',{width:375,height:812},payerPreview);
  await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
  await expect(one.page.getByText('User ID: user6')).toBeVisible();
  await expect(one.page.getByRole('heading',{name:'Choose payment category'})).toBeVisible();
@@ -90,8 +108,105 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(transactionCard.getByText(tx!.id)).toBeVisible({timeout:15000});
  await transactionCard.getByText('View allocations',{exact:false}).click();
  await expect(transactionCard.getByText('৳23.50',{exact:true})).toBeVisible();
+
+ // Save the recipient through the account's existing beneficiary form.
+ // The private simulator ledger remains in its own SQL-backed activity; it is
+ // not a Story1 payment receipt and must not be read as one.
+ await one.page.goto('/?action=beneficiaries');
+ await expect(one.page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+ await one.page.getByRole('button',{name:'Create list',exact:true}).first().click();
+ const listDialog=one.page.getByRole('dialog',{name:'Create list'});
+ await listDialog.locator('#beneficiary-create-list-name').fill('Profile acceptance');
+ await listDialog.getByRole('button',{name:'Create list',exact:true}).click();
+ await one.page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+ const beneficiaryDialog=one.page.getByRole('dialog',{name:'Beneficiary entry'});
+ await beneficiaryDialog.locator('#beneficiary-tin').fill('777777777777');
+ await beneficiaryDialog.locator('#beneficiary-name').fill('User 7');
+ await beneficiaryDialog.locator('#beneficiary-tag').click();
+ await beneficiaryDialog.locator('#beneficiary-tag-options [role="option"][data-option-value="clients"]').click();
+ await beneficiaryDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+ await expect(one.page.getByText('Beneficiary saved.',{exact:true})).toBeVisible({timeout:15000});
+
+ const listQuery=new URL('/rest/v1/taxpay_beneficiary_lists',u.origin);
+ listQuery.searchParams.set('select','id,owner_uid,name');
+ listQuery.searchParams.set('owner_uid','eq.'+payer.id);
+ listQuery.searchParams.set('name','eq.Profile acceptance');
+ const listResponse=await fetch(listQuery,{headers:{apikey:anonKey,Authorization:'Bearer '+payer.session.access_token}});
+ expect(listResponse.status).toBe(200);
+ const savedLists=await listResponse.json() as Array<{id:string;owner_uid:string;name:string}>;
+ expect(savedLists).toHaveLength(1);
+ expect(savedLists[0]).toMatchObject({owner_uid:payer.id,name:'Profile acceptance'});
+ const savedListId=savedLists[0].id;
+ const contactQuery=new URL('/rest/v1/taxpay_beneficiaries',u.origin);
+ contactQuery.searchParams.set('select','id,owner_uid,list_id,tin,display_name,tag,relationship,other_label');
+ contactQuery.searchParams.set('owner_uid','eq.'+payer.id);
+ contactQuery.searchParams.set('list_id','eq.'+savedListId);
+ const contactResponse=await fetch(contactQuery,{headers:{apikey:anonKey,Authorization:'Bearer '+payer.session.access_token}});
+ expect(contactResponse.status).toBe(200);
+ const savedContacts=await contactResponse.json() as Array<{id:string;owner_uid:string;list_id:string;tin:string;display_name:string;tag:string;relationship:string|null;other_label:string|null}>;
+ expect(savedContacts).toHaveLength(1);
+ expect(savedContacts[0]).toMatchObject({owner_uid:payer.id,list_id:savedListId,tin:'777777777777',display_name:'User 7',tag:'clients',relationship:null,other_label:null});
+ const recipientCannotReadPayerContact=await fetch(new URL('/rest/v1/taxpay_beneficiaries?select=id,tin&tin=eq.777777777777',u.origin),{
+  headers:{apikey:anonKey,Authorization:'Bearer '+beneficiary.session.access_token}
+ });
+ expect(recipientCannotReadPayerContact.status).toBe(200);
+ expect(await recipientCannotReadPayerContact.json()).toEqual([]);
+
+ // A separate browser with the same payer Auth session reads the SQL-backed
+ // list after navigation/refresh; the saved contact remains owner-scoped.
+ const payerSecondContext=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:320,height:720}});
+ const payerSecondPage=await payerSecondContext.newPage();
+ await payerSecondContext.addInitScript(session=>{
+  window.sessionStorage.setItem('taxpay-taxpayer-preview-user',session.profileId);
+  window.sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify(session));
+ },payerPreview);
+ await payerSecondPage.goto('/?action=beneficiaries#access_token='+encodeURIComponent(payer.session.access_token)+
+  '&refresh_token='+encodeURIComponent(payer.session.refresh_token)+'&token_type=bearer&expires_in=3600&expires_at='+
+  (payer.session.expires_at||Math.floor(Date.now()/1000)+3600));
+ await expect(payerSecondPage.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+ const ownerDirectory=payerSecondPage.getByTestId('beneficiary-directory-mobile');
+ await expect(ownerDirectory).toContainText('User 7',{timeout:15000});
+ await expect(ownerDirectory).toContainText('777777777777');
+ await payerSecondPage.reload();
+ await expect(payerSecondPage.getByTestId('beneficiary-directory-mobile')).toContainText('User 7',{timeout:15000});
+ await payerSecondContext.close();
+
+ await one.page.goto('/?action=history');
+ await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
+ const payerCard=one.page.getByTestId('signed-in-payment-activity-cards')
+   .locator(':scope > li').filter({hasText:tx!.id}).first();
+ await payerCard.getByText('View allocations',{exact:false}).click();
+ const profileLink=payerCard.getByRole('button',{name:'Open beneficiary profile for User 7'});
+ await expect(profileLink).toBeVisible({timeout:15000});
+ await profileLink.click();
+ const profile=one.page.getByTestId('beneficiary-profile');
+ await expect(profile).toBeVisible({timeout:15000});
+ const timeline=profile.getByTestId('beneficiary-chronological-timeline');
+ await expect(timeline.locator('li')).toHaveCount(1);
+ await expect(timeline).toContainText('Penalty');
+ await expect(timeline).toContainText('2025-26');
+ await expect(timeline).toContainText(tx!.id);
+ await expect(timeline).toContainText(/৳\s*23\.50?/);
+ await expect(timeline).not.toContainText('Advance tax');
+ await expect(timeline).not.toContainText('৳ 150.25');
+
+ await two.page.goto('/?action=beneficiaries');
+ await expect(two.page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+ await expect(two.page.getByText('User 7',{exact:true})).toHaveCount(0);
  await two.page.goto('/?action=notifications');
  await expect(two.page.getByRole('heading',{name:'Payment notifications'})).toBeVisible({timeout:15000});
+ await two.page.getByRole('button',{name:'View payment details'}).click();
+ const noticeDetails=two.page.getByTestId('payment-lifecycle-details');
+ await expect(noticeDetails).toContainText(tx!.transactionId);
+ await expect(noticeDetails).toContainText(/৳\s*23\.50/);
+ const allocationHeading=noticeDetails.getByRole('heading',{name:'Taxpayer allocations'});
+ await expect(allocationHeading).toBeVisible();
+ const ownAllocations=allocationHeading.locator('xpath=ancestor::section[1]');
+ await expect(ownAllocations).toContainText('user7');
+ await expect(ownAllocations).not.toContainText('user6');
+ await expect(ownAllocations).not.toContainText(/৳\s*150\.25/);
+ await expect(noticeDetails).not.toContainText(/৳\s*173\.75/);
+ await two.page.getByRole('button',{name:'Close modal'}).click();
  await expect(two.page.getByRole('button',{name:'Mark read'})).toBeVisible({timeout:15000});
  await two.page.getByRole('button',{name:'Mark read'}).click();
  await expect(two.page.getByRole('button',{name:'Mark unread'})).toBeVisible({timeout:10000});
@@ -99,8 +214,10 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(notices.status).toBe(200);
  const own=(notices.data as Array<{transactionId:string;isRead:boolean}>).find(n=>n.transactionId===tx!.transactionId);
  expect(own?.isRead).toBe(true);
- // Revisit the Activity route after a fresh reload. Pay Again must remain
- // visible by default to an initiating payer, not only immediately after saving.
+ // The profile navigation above leaves Activity. Return to Activity and reload
+ // so this proves the initiating payer view remains the default after refresh.
+ await one.page.goto('/?action=history');
+ await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
  await one.page.reload({waitUntil:'domcontentloaded'});
  await expect(one.page.getByRole('button',{name:'Payments I initiated'}))
    .toHaveAttribute('aria-pressed','true',{timeout:15000});
@@ -125,6 +242,45 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(prior?.totalMinor).toBe(17375);
  expect(prior?.allocations.map(a=>a.amountMinor)).toEqual([15025,2350]);
  expect(prior?.allocations.map(a=>a.assessmentYear)).toEqual(['2026-27','2025-26']);
+
+ // Removing a private address-book list cascades only its contact row. The
+ // payer's immutable payment and beneficiary allocation must remain readable.
+ await one.page.goto('/?action=beneficiaries');
+ await expect(one.page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+ await one.page.getByRole('button',{name:'Selected list'}).click();
+ await one.page.getByRole('dialog',{name:'Choose beneficiary list'})
+   .getByRole('button',{name:'Edit Profile acceptance'}).click();
+ await one.page.getByRole('dialog',{name:'Edit beneficiary list'}).getByRole('button',{name:'Delete list'}).click();
+ const confirmDelete=one.page.getByRole('dialog',{name:'Confirm list deletion'});
+ await expect(confirmDelete).toContainText('Existing payment and tax records will not be affected.');
+ await confirmDelete.getByRole('button',{name:'Delete list',exact:true}).click();
+ await expect(one.page.getByText('Beneficiary list deleted.',{exact:true})).toBeVisible({timeout:15000});
+
+ const listsAfterResponse=await fetch(new URL('/rest/v1/taxpay_beneficiary_lists?select=id&id=eq.'+savedListId,u.origin),{
+  headers:{apikey:anonKey,Authorization:'Bearer '+payer.session.access_token}
+ });
+ expect(listsAfterResponse.status).toBe(200);
+ expect(await listsAfterResponse.json()).toEqual([]);
+ const contactsAfterResponse=await fetch(new URL('/rest/v1/taxpay_beneficiaries?select=id&id=eq.'+savedContacts[0].id,u.origin),{
+  headers:{apikey:anonKey,Authorization:'Bearer '+payer.session.access_token}
+ });
+ expect(contactsAfterResponse.status).toBe(200);
+ expect(await contactsAfterResponse.json()).toEqual([]);
+ const historyAfterDelete=await request('/rest/v1/rpc/sim_my_payment_history',{p_view:'payer'},payer.session.access_token);
+ expect(historyAfterDelete.status).toBe(200);
+ const preservedPayment=(historyAfterDelete.data as Array<{transactionId:string;totalMinor:number;allocations:Array<{beneficiary:string;amountMinor:number}>}>)
+  .find(row=>row.transactionId===tx!.transactionId);
+ expect(preservedPayment?.totalMinor).toBe(17375);
+ expect(preservedPayment?.allocations).toEqual(expect.arrayContaining([
+  expect.objectContaining({beneficiary:'user7',amountMinor:2350})
+ ]));
+ await one.page.goto('/?action=history');
+ const preservedCard=one.page.getByTestId('signed-in-payment-activity-cards')
+  .locator(':scope > li').filter({hasText:tx!.id}).first();
+ await expect(preservedCard.getByText(tx!.id)).toBeVisible({timeout:15000});
+ await preservedCard.getByText('View allocations',{exact:false}).click();
+ await expect(preservedCard).toContainText('user7');
+ await expect(preservedCard).toContainText('৳23.50');
  await expect(two.page.getByTestId('pay-again-mobile')).toHaveCount(0);
  await one.context.close();await two.context.close();
 });

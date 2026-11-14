@@ -12,18 +12,28 @@ import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {getBoundSimulationUser,getPrivateSimulationHistory,getPrivateSimulationNotices,setPrivateSimulationNoticeRead,type SimulationNotice,type SimulationUser} from '../../services/simulatedPaymentsApi';
 import {getHostedAuthorizations,type HostedAuthorization} from '../../services/hostedDemoAuthorizations';
+import {TaxPayModal} from '../ui/TaxPayModal';
+import {PaymentLifecycleDetails,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
+import {simulationCategoryLabels,type SimulationTransaction} from '../../contracts/paymentSimulationContract';
 
 /** In-app notifications backed by the SAME SQL event rows as the officer ledger. */
 export const NotificationsView:React.FC=()=>{
   const {demoUser,previewAccount,language,navigate}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
+  const [boundOwnerUid,setBoundOwnerUid]=useState<string|null>(null);
   const [bindingError,setBindingError]=useState('');
   const [bindingReady,setBindingReady]=useState(false);
   const [busyNotice,setBusyNotice]=useState<number|null>(null);
   const privateMode=Boolean(authenticatedUser);
-  const id=(privateMode?boundId:undefined) as SimulationUser|undefined;
+  // Do not render the previous account's bound profile during an Auth switch.
+  const id=(privateMode&&authenticatedUser&&boundOwnerUid===authenticatedUser.id?boundId:undefined) as SimulationUser|undefined;
   const [notices,setNotices]=useState<VerifiedPrivateSimulationNotice[]>([]);
+  const [noticeOwner,setNoticeOwner]=useState<SimulationUser|null>(null);
+  const [privatePaymentRows,setPrivatePaymentRows]=useState<{
+    owner:SimulationUser; payer:SimulationTransaction[]; beneficiary:SimulationTransaction[];
+  }|null>(null);
+  const [selectedPayment,setSelectedPayment]=useState<PaymentLifecycleRecord|null>(null);
   const [guestNotices,setGuestNotices]=useState<VerifiedStoryPaymentNotice[]>([]);
   const [guestError,setGuestError]=useState('');
   const [error,setError]=useState('');
@@ -37,6 +47,11 @@ export const NotificationsView:React.FC=()=>{
   const [paymentSearch,setPaymentSearch]=useState('');
   const bn=language==='bn';
   const label=(en:string,bangla:string)=>bn?bangla:en;
+  const noticeTitle=(code:string)=>({
+    SIM_OFFICER_MAKER_ACKNOWLEDGED:label('Officer Maker acknowledged','মেকার অনুরোধ গ্রহণ করেছেন'),
+    SIM_OFFICER_REVIEWER_VERIFIED:label('Officer Reviewer verified','রিভিউয়ার যাচাই করেছেন'),
+    SIM_OFFICER_APPROVER_CLOSED:label('Officer Approver closed the review','অনুমোদনকারী পর্যালোচনা শেষ করেছেন')
+  } as Record<string,string>)[code]??label('Payment record added','পেমেন্ট রেকর্ড যোগ হয়েছে');
   const authorizationStatus=(state:string)=>{
     const names:Record<string,[string,string]>={
       ACTIVE:['Active','সক্রিয়'],EXPIRED:['Expired','মেয়াদ শেষ'],
@@ -90,28 +105,67 @@ export const NotificationsView:React.FC=()=>{
     return()=>{active=false;window.clearInterval(timer);};
   },[authenticatedUser?.id,previewAccount?.id,language]);
   useEffect(()=>{
-    if(!authenticatedUser){setBoundId(null);setBindingError('');setBindingReady(false);return;}
-    let active=true;setBoundId(null);setBindingError('');setBindingReady(false);
-    getBoundSimulationUser().then(profile=>{if(active){setBoundId(profile);setBindingReady(true);}})
+    if(!authenticatedUser){setBoundId(null);setBoundOwnerUid(null);setBindingError('');setBindingReady(false);return;}
+    let active=true;setBoundId(null);setBoundOwnerUid(null);setBindingError('');setBindingReady(false);
+    getBoundSimulationUser().then(profile=>{if(active){setBoundId(profile);setBoundOwnerUid(authenticatedUser.id);setBindingReady(true);}})
       .catch(e=>{if(active){setBindingError(e instanceof Error?e.message:'Profile assignment unavailable');setBindingReady(true);}});
     return()=>{active=false;};
   },[authenticatedUser?.id]);
   useEffect(()=>{
-    if(!id||!privateMode)return;
-    let active=true;setNotices([]);setLoading(true);setError('');
+    let active=true;
+    setNotices([]);setNoticeOwner(null);setPrivatePaymentRows(null);setSelectedPayment(null);setError('');
+    if(!id||!privateMode){setLoading(false);return()=>{active=false;};}
+    setLoading(true);
     const read=async()=>{
       try{
         const [data,payerRows,beneficiaryRows]=await Promise.all([
           getPrivateSimulationNotices(),getPrivateSimulationHistory('payer'),getPrivateSimulationHistory('beneficiary'),
         ]);
         const verified=reconcilePrivateSimulationNotices(id,data,payerRows,beneficiaryRows);
-        if(active){setNotices(verified);setLoading(false);setError('');}
-      }
-      catch(e){if(active){setError(e instanceof Error?e.message:'Notification API failed');setLoading(false);}}
+        if(active){setNotices(verified);setNoticeOwner(id);setPrivatePaymentRows({owner:id,payer:payerRows,beneficiary:beneficiaryRows});setLoading(false);setError('');}
+      }catch(e){if(active){setNoticeOwner(id);setPrivatePaymentRows({owner:id,payer:[],beneficiary:[]});setError(e instanceof Error?e.message:'Notification API failed');setLoading(false);}}
     };
     void read();const timer=window.setInterval(()=>void read(),7000);
     return()=>{active=false;window.clearInterval(timer);};
   },[id,privateMode]);
+  const privateNotices=noticeOwner===id?notices:[];
+  const openRelatedPayment=(notice:VerifiedPrivateSimulationNotice)=>{
+    setError('');
+    const rows=privatePaymentRows?.owner===id?privatePaymentRows:null;
+    const source=notice.perspective==='payer'?rows?.payer:notice.perspective==='beneficiary'?rows?.beneficiary:undefined;
+    const transaction=source?.find(row=>row.transactionId===notice.transactionId&&row.simulationOnly===true&&row.state==='SIMULATED');
+    if(!id||noticeOwner!==id||!transaction||notice.amountMinor===null||!notice.perspective){
+      setError(label('The related payment details could not be verified.','সংশ্লিষ্ট পেমেন্টের তথ্য যাচাই করা যায়নি।'));return;
+    }
+    const allocations=notice.perspective==='beneficiary'
+      ?transaction.allocations.filter(line=>line.beneficiary===id)
+      :transaction.allocations;
+    let allocatedMinor=0;
+    for(const allocation of allocations){
+      if(!Number.isSafeInteger(allocation.amountMinor)||allocation.amountMinor<=0||
+        !Number.isSafeInteger(allocatedMinor+allocation.amountMinor)){
+        setError(label('The related payment details could not be verified.','সংশ্লিষ্ট পেমেন্টের তথ্য যাচাই করা যায়নি।'));return;
+      }
+      allocatedMinor+=allocation.amountMinor;
+    }
+    if(!allocations.length||allocatedMinor!==notice.amountMinor||
+      (notice.perspective==='payer'&&allocatedMinor!==transaction.totalMinor)){
+      setError(label('The related payment details could not be verified.','সংশ্লিষ্ট পেমেন্টের তথ্য যাচাই করা যায়নি।'));return;
+    }
+    const years=[...new Set(allocations.map(line=>line.assessmentYear))];
+    const paymentTypes=[...new Set(allocations.map(line=>simulationCategoryLabels[line.category][bn?'bn':'en']))];
+    setSelectedPayment({
+      reference:transaction.id,transactionId:transaction.transactionId,payerName:transaction.payer,
+      taxpayerName:notice.perspective==='beneficiary'?id:allocations.length===1?allocations[0].beneficiary:undefined,
+      assessmentYear:years.join(', '),paymentType:paymentTypes.join(', '),amountMinor:notice.amountMinor,
+      createdAt:transaction.createdAt,status:transaction.state,
+      financialReceiptStatus:label('Not verified','যাচাই হয়নি'),taxCreditStatus:label('Not verified','যাচাই হয়নি'),
+      source:'TaxPay SQL',events:[{id:'notice-'+notice.id,title:noticeTitle(notice.messageCode),
+        occurredAt:notice.createdAt,source:'TaxPay SQL'}],
+      allocations:allocations.map(line=>({id:line.id,title:line.beneficiary+' · '+simulationCategoryLabels[line.category][bn?'bn':'en'],
+        assessmentYear:line.assessmentYear,amountMinor:line.amountMinor}))
+    });
+  };
   const markRead=async (notice:SimulationNotice)=>{
     if(!privateMode||busyNotice!==null)return;
     setBusyNotice(notice.id);setError('');
@@ -238,17 +292,13 @@ export const NotificationsView:React.FC=()=>{
   return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={label('Payment notifications','পেমেন্ট বিজ্ঞপ্তি')}/>
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
-      {loading?<p>{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:
-        !notices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
-        <TaxPayDataGrid variant="tabular" rows={notices} getRowKey={n=>String(n.id)}
+      {loading||noticeOwner!==id?<p role="status">{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:
+        !privateNotices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
+        <TaxPayDataGrid variant="tabular" rows={privateNotices} getRowKey={n=>String(n.id)}
           ariaLabel={label('Account payment notifications','অ্যাকাউন্টের পেমেন্ট বিজ্ঞপ্তি')}
           columns={[
             {key:'update',header:label('Update','হালনাগাদ'),renderCell:n=><div>
-              <h2 className="text-sm font-semibold text-taxpay-text">{({
-                SIM_OFFICER_MAKER_ACKNOWLEDGED:label('Officer Maker acknowledged','মেকার অনুরোধ গ্রহণ করেছেন'),
-                SIM_OFFICER_REVIEWER_VERIFIED:label('Officer Reviewer verified','রিভিউয়ার যাচাই করেছেন'),
-                SIM_OFFICER_APPROVER_CLOSED:label('Officer Approver closed the review','অনুমোদনকারী পর্যালোচনা শেষ করেছেন')
-              } as Record<string,string>)[n.messageCode]??label('Payment record added','পেমেন্ট রেকর্ড যোগ হয়েছে')}</h2>
+              <h2 className="text-sm font-semibold text-taxpay-text">{noticeTitle(n.messageCode)}</h2>
               <p className="mt-1 text-sm text-taxpay-muted">{n.isRead?label('Read','পঠিত'):label('Unread','অপঠিত')}</p>
             </div>},
             {key:'amount',header:label('Amount','পরিমাণ'),renderCell:n=>n.amountMinor!==null
@@ -258,11 +308,18 @@ export const NotificationsView:React.FC=()=>{
               <p className="break-all text-sm text-taxpay-muted">{n.transactionId}</p>
               <time className="text-sm text-taxpay-muted" dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time>
             </div>},
-            {key:'action',header:label('Actions','কার্যক্রম'),renderCell:n=><button type="button"
-              className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark disabled:opacity-50"
-              disabled={busyNotice!==null} onClick={()=>void markRead(n)}>{n.isRead?label('Mark unread','অপঠিত করুন'):label('Mark read','পঠিত করুন')}</button>}
+            {key:'action',header:label('Actions','কার্যক্রম'),renderCell:n=><div className="flex flex-col gap-2 sm:flex-row">
+              <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
+                onClick={()=>openRelatedPayment(n)}>{label('View payment details','পেমেন্টের বিবরণ দেখুন')}</button>
+              <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-dark disabled:opacity-50"
+                disabled={busyNotice!==null} onClick={()=>void markRead(n)}>{n.isRead?label('Mark unread','অপঠিত করুন'):label('Mark read','পঠিত করুন')}</button>
+            </div>}
           ]}/>}
     </section>
     <SessionPaymentNotifications language={language}/>
+    {selectedPayment&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}
+      onClose={()=>setSelectedPayment(null)} hideFooter className="taxpayer-transaction-detail">
+      <PaymentLifecycleDetails record={selectedPayment} language={language}/>
+    </TaxPayModal>}
   </main>;
 };
