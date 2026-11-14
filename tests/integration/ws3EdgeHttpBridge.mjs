@@ -78,7 +78,7 @@ function rpc(origin,name,args={}){
 }
 function loadHandler(file,origin){
  const source=readFileSync(file,'utf8');
- const compiled=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
+ const compiled=ts.transpileModule(source,{compilerOptions:{target:9,module:1}}).outputText;
  const module={exports:{}},box={handler:null};
  const context={
   exports:module.exports,module,console,TextEncoder,TextDecoder,Request,Response,Headers,URL,AbortSignal,
