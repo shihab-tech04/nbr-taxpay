@@ -173,7 +173,20 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await page.getByRole('button',{name:'Edit',exact:true}).first().click();
   const editor=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(editor).toContainText('Local Beneficiary One');
-  await editor.getByRole('button',{name:'Delete beneficiary'}).click();
+  // Edit must persist the exact mandatory final relationship, not just repaint UI.
+  await chooseBeneficiaryOption(editor,'beneficiary-edit-tag','friends_family:friends');
+  await editor.getByRole('button',{name:'Save changes'}).click();
+  await expect(page.getByText('Beneficiary details updated.')).toBeVisible();
+  expect((await read(ownerA.session.access_token)).find(
+    (row:{tin:string})=>row.tin==='012345678901')).toMatchObject({
+      owner_uid:ownerA.id,tag:'friends_family',relationship:'friends',
+    });
+  await page.reload();
+  await expect(page.getByTestId('beneficiary-directory-mobile')).toContainText('Local Beneficiary One');
+  await page.getByRole('button',{name:'Edit',exact:true}).first().click();
+  const updatedEditor=page.getByRole('dialog',{name:'Edit beneficiary'});
+  await expect(updatedEditor).toContainText('Local Beneficiary One');
+  await updatedEditor.getByRole('button',{name:'Delete beneficiary'}).click();
   const confirmation=page.getByRole('dialog',{name:'Remove beneficiary?'});
   await confirmation.getByRole('button',{name:'Remove',exact:true}).click();
   await expect(page.getByText('Beneficiary removed.')).toBeVisible();
