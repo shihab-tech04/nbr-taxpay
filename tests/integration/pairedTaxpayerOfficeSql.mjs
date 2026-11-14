@@ -72,7 +72,13 @@ const mirrorRetry=psql(dst,'BEGIN;SET LOCAL ROLE service_role;'+invoke+'COMMIT;'
 assert.equal(mirrorOnce.id,payment.id);assert.equal(mirrorOnce.replayed,false);
 assert.equal(mirrorRetry.id,payment.id);assert.equal(mirrorRetry.replayed,true);
 finish(retryClaim.claimToken,true);
-const admin=psql(dst,'BEGIN;SET LOCAL ROLE authenticated;SELECT public.demo_story1_office_payment_page(1,100);COMMIT;');
+// The unguarded projection is internal; a disposable privileged fixture may
+// compare exact rows, but no authenticated/anonymous Data API caller may invoke it.
+const directClient=spawnSync('psql',['-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-d',dst],{
+ input:'BEGIN;SET LOCAL ROLE authenticated;SELECT public.demo_story1_office_payment_page(1,100);COMMIT;',
+ encoding:'utf8'});
+assert.notEqual(directClient.status,0,'Authenticated direct Office payment projection must stay closed');
+const admin=psql(dst,'SELECT public.demo_story1_office_payment_page(1,100);');
 const row=admin.items.find(x=>x.id===payment.id);assert.ok(row);
 assert.equal(Number(row.amountMinor),5000);assert.equal(row.certificateReference,'SK-PC-'+payment.id);
 assert.deepEqual(row.details.allocations,details.allocations);
@@ -102,6 +108,17 @@ const setup=[
 ].join('\n');psql(dst,setup);
 const event=office.noticeId;
 function asOfficer(actor,statement){return psql(dst, 'BEGIN;SET LOCAL ROLE authenticated;SELECT set_config(\'request.jwt.claim.sub\',\''+actor+'\',true);'+statement+'COMMIT;');}
+const guardedPage=asOfficer(officer,'SELECT public.payment_v1_office_guarded_story_page(1,100);');
+const guardedRow=guardedPage.items.find(x=>x.id===payment.id);
+assert.ok(guardedRow,'Active Office officer must read mirrored payment');
+assert.equal(guardedRow.certificateReference,'SK-PC-'+payment.id);
+assert.deepEqual(guardedRow.details.allocations,details.allocations);
+assert.equal(guardedRow.details.receiptReference,details.receiptReference);
+const outsiderPage=spawnSync('psql',['-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-d',dst],{
+ input:'BEGIN;SET LOCAL ROLE authenticated;SELECT set_config(\'request.jwt.claim.sub\',\''+outsider+'\',true);SELECT public.payment_v1_office_guarded_story_page(1,100);COMMIT;',
+ encoding:'utf8'});
+assert.notEqual(outsiderPage.status,0,'Non-officer may not read Office payment projection');
+
 assert.equal(asOfficer(officer,"SELECT public.payment_v1_office_story_notice_read_state(ARRAY['"+event+"']);")[0].isRead,false);
 assert.equal(asOfficer(officer,"SELECT public.payment_v1_office_set_story_notice_read('"+event+"',true);").isRead,true);
 assert.equal(asOfficer(officer,"SELECT public.payment_v1_office_story_notice_read_state(ARRAY['"+event+"']);")[0].isRead,true);
