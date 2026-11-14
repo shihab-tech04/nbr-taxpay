@@ -140,11 +140,13 @@ test('certificate previews stay non-official, match the selected type and locali
   await expect(documentModal.getByText('Not verified',{exact:true}).first()).toBeVisible();
   await expect(documentModal.locator('.taxpay-modal__footer .receipt-view__actions')).toBeVisible();
   await expect(documentModal.getByRole('button',{name:'Back to search'})).toHaveCount(0);
-  await expect(documentModal.getByRole('button',{name:'Download'})).toBeVisible();
-  await expect(documentModal.getByRole('button',{name:'Print summary'})).toBeVisible();
-  const summaryDownload = page.waitForEvent('download');
-  await documentModal.getByRole('button',{name:'Download'}).click();
-  expect((await summaryDownload).suggestedFilename()).toBe('Korbritto-WITHHOLDING_PROOF-summary.html');
+  // A selected preview with no source-backed rows is informational only.
+  // Genuine populated HTML export is covered by receiptDocumentExportBranding.
+  await expect(documentModal.getByRole('button',{name:'Download'})).toBeDisabled();
+  await expect(documentModal.getByRole('button',{name:'Print summary'})).toBeDisabled();
+  // Empty readback displays “—”; a failed backend read displays “Unavailable”.
+  // Neither is a zero-value or exportable certificate.
+  await expect(documentModal.locator('.receipt-view__amount strong')).toHaveText(/^(—|Unavailable)$/);
   await documentModal.getByRole('button',{name:'Close modal'}).click();
   await expect(documentModal).toHaveCount(0);
 
