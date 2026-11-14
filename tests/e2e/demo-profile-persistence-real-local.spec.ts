@@ -1,5 +1,6 @@
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test,type BrowserContext,type Page} from '@playwright/test';
+import {demoLoginOtpCompletedState} from './demo-login-test-state';
 import {randomUUID} from 'node:crypto';
 import type {DemoUserId} from '../../src/data/demoUsers';
 
@@ -20,7 +21,8 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
   const otherUser:DemoUserId='user9';
   const contexts:BrowserContext[]=[];
   const makeContext=async()=>{
-    const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
+    const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport,
+      storageState:demoLoginOtpCompletedState});
     contexts.push(context);
     return context;
   };

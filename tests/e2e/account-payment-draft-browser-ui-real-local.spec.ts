@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { demoLoginOtpCompletedState } from './demo-login-test-state';
 
 type Account = 'user27' | 'user28' | 'user29' | 'user30';
 
@@ -24,7 +25,8 @@ test('payment form drafts survive another browser, protect owner isolation and r
     ? { owner: 'user27', other: 'user28' }
     : { owner: 'user29', other: 'user30' };
   const open = async (id: Account): Promise<Page> => {
-    const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173', viewport });
+    const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173', viewport,
+      storageState: demoLoginOtpCompletedState });
     contexts.push(context);
     const page = await context.newPage();
     page.setDefaultTimeout(9_000);
@@ -223,6 +225,7 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
   const context = await browser.newContext({
     baseURL: 'http://127.0.0.1:4173',
     viewport: info.project.name.startsWith('mobile') ? { width: 375, height: 812 } : { width: 1280, height: 800 },
+    storageState: demoLoginOtpCompletedState,
   });
   try {
     const page = await context.newPage();
