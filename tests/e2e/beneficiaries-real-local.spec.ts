@@ -191,7 +191,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   const updatedEditor=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(updatedEditor).toContainText('Local Beneficiary One');
   await updatedEditor.getByRole('button',{name:'Delete beneficiary'}).click();
-  const confirmation=page.getByRole('dialog',{name:'Remove beneficiary?'});
+  const confirmation=page.getByRole('dialog',{name:'Confirm beneficiary removal'});
   await confirmation.getByRole('button',{name:'Remove',exact:true}).click();
   await expect(page.getByText('Beneficiary removed.')).toBeVisible();
   const afterConfirmed=await read(ownerA.session.access_token);
@@ -206,7 +206,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   const staleEditor=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(staleEditor).toContainText('Local Beneficiary Two');
   await staleEditor.getByRole('button',{name:'Delete beneficiary'}).click();
-  const staleConfirmation=page.getByRole('dialog',{name:'Remove beneficiary?'});
+  const staleConfirmation=page.getByRole('dialog',{name:'Confirm beneficiary removal'});
   const concurrent=await fetch(deleteUrl(second!.id),{
     method:'DELETE',
     headers:{apikey:key,Authorization:'Bearer '+ownerA.session.access_token,Prefer:'return=representation'},
