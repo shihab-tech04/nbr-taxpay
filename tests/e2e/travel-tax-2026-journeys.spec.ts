@@ -832,3 +832,60 @@ test('Travel Tax: Bangla journey validates, edits and shows the shared receipt w
   await expect(modal.getByRole('button', { name: 'রসিদ প্রিন্ট', exact: true })).toBeVisible();
   await assertContained();
 });
+
+
+// F-150-C01 / US-147-T01–T04: verify the existing form, review and recovery
+// against the local Dhaka calendar boundary without issuing a real payment.
+test('F-150 US-147: Dhaka-midnight foreign DOB is accepted and a future DOB is rejected',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Representative date-validation boundary');
+  // 20:00Z on Nov 14 is Nov 15 in Dhaka, but still Nov 14 in UTC.
+  await page.clock.install({time:new Date('2026-11-14T20:00:00.000Z')});
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal=page.getByRole('dialog',{name:'Travel tax'});
+  await modal.getByRole('tab',{name:'Foreign passenger'}).click();
+  await modal.locator('#travel-passport-first').fill('FOREIGN123');
+  await modal.locator('#travel-name-first').fill('BABY VISITOR');
+  await modal.locator('#travel-country-first').fill('India');
+  await modal.locator('#travel-birth-date-first').fill('2026-11-16');
+  await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
+  await expect(modal.locator('#travel-birth-date-first')).toHaveAttribute('aria-invalid','true');
+  await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
+  await modal.locator('#travel-birth-date-first').fill('2026-11-15');
+  await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
+  await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
+  await modal.locator('#travel-mobile').fill('01712345678');
+  await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeEnabled();
+  await modal.getByRole('button',{name:'Continue to travel details'}).click();
+  await modal.locator('#travel-port').selectOption('Benapole');
+  await modal.locator('#travel-destination').fill('India');
+  await modal.locator('#travel-departure-date').fill('2026-11-16');
+  await expect(modal.locator('.travel-flow__age-breakdown')).toContainText('Age 0 on travel date');
+  await expect(modal.getByTestId('travel-payment-total')).toContainText('0');
+  await modal.getByRole('button',{name:'Continue to review'}).click();
+  await expect(modal.locator('.travel-flow__review')).toContainText('BABY VISITOR');
+  await expect(modal.locator('.travel-flow__review')).toContainText('2026-11-16');
+});
+
+test('F-150 US-147: changing travel date reclassifies the same passenger and updates review amount',async({page},info)=>{
+  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Travel date EN desktop/mobile representative');
+  await page.clock.install({time:new Date('2026-11-14T20:00:00.000Z')});
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal=page.getByRole('dialog',{name:'Travel tax'});
+  await fillForeignPassenger(modal,{name:'AGE CHANGE VISITOR',birthDate:'2020-11-16',passport:'FOREIGN2020'});
+  await fillTravelDetails(modal,{date:'2026-11-15'});
+  await expect(modal.locator('.travel-flow__age-breakdown')).toContainText('Age 4 on travel date');
+  await expect(modal.getByTestId('travel-payment-total')).toContainText('0');
+  await modal.locator('#travel-departure-date').fill('2026-11-16');
+  await expect(modal.locator('.travel-flow__age-breakdown')).toContainText('Age 6 on travel date');
+  await expect(modal.getByTestId('travel-payment-total')).toContainText('500');
+  await modal.getByRole('button',{name:'Continue to review'}).click();
+  const reviewed=modal.locator('.travel-flow__review');
+  await expect(reviewed).toContainText('AGE CHANGE VISITOR');
+  await expect(reviewed).toContainText('2026-11-16');
+  await expect(reviewed).toContainText('500');
+  await modal.getByRole('button',{name:'Back',exact:true}).click();
+  await expect(modal.locator('#travel-departure-date')).toHaveValue('2026-11-16');
+  await expect(modal.getByTestId('travel-payment-total')).toContainText('500');
+});

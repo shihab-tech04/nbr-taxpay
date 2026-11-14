@@ -317,7 +317,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     if (item.nationality === 'FOREIGN') {
       if (!item.country.trim())
         return {id: item.id, message: prefix + tr('enter the country of nationality.', 'জাতীয়তার দেশ দিন।'), field: 'country'};
-      if (travelPassengerAge(item.birthDate, new Date().toISOString().slice(0,10)) === null)
+      if (travelPassengerAge(item.birthDate, dhakaTravelDate()) === null)
         return {id: item.id, message: prefix + tr('enter a valid date of birth.', 'বৈধ জন্মতারিখ দিন।'), field: 'birth-date'};
     }
     if (item.medicalPortReferral)
