@@ -119,12 +119,12 @@ Deno.serve(async (request: Request) => {
     const body = await parseBody(request);
     const client = adminClient();
     const action = body.action;
-    // user1-user30 are intentionally fictional/public demo accounts only.
+    // user1-user55 are intentionally fictional/public demo accounts only.
     // The login returns a stable opaque demo capability, not Supabase Auth,
     // taxpayer ownership, SQL admin access or a payment entitlement.
     if (action === 'demo-login') {
       if (typeof body.userId !== 'string' || typeof body.password !== 'string' ||
-          !/^user(?:[1-9]|[12][0-9]|30)$/.test(body.userId) || body.password.length > 80)
+          !/^user(?:[1-9]|[1-4][0-9]|5[0-5])$/.test(body.userId) || body.password.length > 80)
         throw new Error('INVALID_DEMO_LOGIN');
       const data = await rpc(client, 'taxpay_demo_profile_login', {
         p_demo_id: body.userId, p_password: body.password,
