@@ -1,9 +1,9 @@
 import { supabase } from './supabaseClient';
 import {activePreviewSession} from './previewAccountSession';
 import { beneficiaryNameForStorage } from './beneficiaryNames';
-import {normalizeOtherLabel,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from './beneficiaryTags';
+import {normalizeOtherLabel,validBeneficiaryClassification,validNewBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from './beneficiaryTags';
 import {
-  addGuestBeneficiaries, createGuestBeneficiaryList, loadGuestBeneficiaries,loadLegacyGuestBeneficiaries, hasStoredGuestBeneficiaries,
+  addGuestBeneficiaries,restoreLegacyGuestBeneficiaries, createGuestBeneficiaryList, loadGuestBeneficiaries,loadLegacyGuestBeneficiaries, hasStoredGuestBeneficiaries,
   removeGuestBeneficiary, updateGuestBeneficiary, editGuestBeneficiaryClassification, moveGuestBeneficiary, renameGuestBeneficiaryList, deleteGuestBeneficiaryList,
 } from './guestBeneficiaries';
 
@@ -96,7 +96,7 @@ export async function recoverGuestBeneficiariesToProfile(ownerUid:string):Promis
       .map(person=>({tin:person.tin,display_name:person.display_name,tag:person.tag??null,relationship:person.relationship??null,other_label:person.other_label??null}));
     for(let offset=0;offset<rows.length;offset+=500){
       await ensureOwner();
-      personCount+=await addBeneficiaries(ownerUid,destination.id,rows.slice(offset,offset+500));
+      personCount+=await persistBeneficiaryRows(ownerUid,destination.id,rows.slice(offset,offset+500),true);
     }
   }
   // A successful HTTP write is insufficient: verify each original TIN is
@@ -152,7 +152,7 @@ export async function recoverLegacyGuestBeneficiariesToPreview():Promise<{lists:
         other_label:person.other_label??null}));
     for(let start=0;start<rows.length;start+=500){
       assertSame();
-      people+=await addGuestBeneficiaries(target.id,rows.slice(start,start+500));
+      people+=await persistBeneficiaryRows(null,target.id,rows.slice(start,start+500),true);
     }
   }
   assertSame();
@@ -176,16 +176,22 @@ export async function createBeneficiaryList(ownerUid:string | null,name:string):
   if(error)throw error;
   return data as BeneficiaryList;
 }
-export async function addBeneficiaries(ownerUid:string | null,listId:string,rows:BeneficiaryInput[]):Promise<number> {
+async function persistBeneficiaryRows(
+  ownerUid:string|null,listId:string,rows:BeneficiaryInput[],allowLegacyUnclassified=false
+):Promise<number>{
   if(!rows.length)return 0;
   if(rows.length>1000)throw new Error('Import a maximum of 1,000 beneficiaries at a time.');
   const normalized=rows.map(row=>({...row,display_name:beneficiaryNameForStorage(row.display_name),
     other_label:row.tag==='others'?normalizeOtherLabel(row.other_label):null}));
-  const valid=normalized.every(row=>/^\d{12}$/.test(row.tin)&&row.display_name.length<=160 &&
-    ((row.tag==null && row.relationship==null) || validBeneficiaryClassification(row.tag,row.relationship,row.other_label)));
-  // Legacy null tags remain readable; all new single/bulk entry forms enforce a choice.
-  if(!valid)throw new Error('Check the beneficiary TIN and name length before saving.');
-  if (!ownerUid) return addGuestBeneficiaries(listId,normalized);
+  const classificationIsValid=(row:typeof normalized[number])=>
+    allowLegacyUnclassified&&row.tag==null&&row.relationship==null&&row.other_label==null ||
+    validNewBeneficiaryClassification(row.tag,row.relationship,row.other_label);
+  const valid=normalized.every(row=>/^\d{12}$/.test(row.tin)&&row.display_name.length<=160&&classificationIsValid(row));
+  // New entries always need a final tag. Untagged legacy contacts pass only through explicit recovery.
+  if(!valid)throw new Error('Check the beneficiary TIN, name length, and required tag before saving.');
+  if(!ownerUid)return allowLegacyUnclassified
+    ?restoreLegacyGuestBeneficiaries(listId,normalized)
+    :addGuestBeneficiaries(listId,normalized);
   // Database unique constraint + ignoreDuplicates makes retry idempotent and leaves existing names unchanged.
   const {data,error}=await client().from('taxpay_beneficiaries')
     .upsert(normalized.map(row=>({owner_uid:ownerUid,list_id:listId,tin:row.tin,display_name:row.display_name,tag:row.tag??null,relationship:row.relationship??null,other_label:row.other_label??null})),
@@ -193,6 +199,9 @@ export async function addBeneficiaries(ownerUid:string | null,listId:string,rows
     .select('id');
   if(error)throw error;
   return data?.length??0;
+}
+export async function addBeneficiaries(ownerUid:string|null,listId:string,rows:BeneficiaryInput[]):Promise<number>{
+  return persistBeneficiaryRows(ownerUid,listId,rows);
 }
 export async function updateBeneficiary(ownerUid:string | null,id:string,name:string):Promise<void>{
   const normalized=beneficiaryNameForStorage(name);

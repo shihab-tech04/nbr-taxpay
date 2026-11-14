@@ -58,6 +58,7 @@ async function setupGuestTransport(page:Page){
 test('local sample taxpayer preserves names when moving beneficiaries across lists and prefilling',async({page})=>{
   const transport=await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
 
   await page.getByRole('button',{name:'Create list',exact:true}).click();
   let dialog=page.getByRole('dialog',{name:'Create list'});
@@ -101,6 +102,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await expect(visibleRecords.getByText('Editable Contact',{exact:true})).toBeVisible();
   expect(transport.saved().find(person=>person.tin==='987654321098')?.display_name).toBe('Editable Contact');
   await page.reload();
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
   await page.getByRole('button',{name:'Selected list'}).click();
   await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Optional names',exact:true}).click();
 

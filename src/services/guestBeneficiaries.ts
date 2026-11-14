@@ -224,6 +224,11 @@ export function addGuestBeneficiaries(listId: string, rows: BeneficiaryInput[]):
   return post('add', { listId, rows });
 }
 
+/** Explicitly restore untagged rows from the retained legacy guest book. */
+export function restoreLegacyGuestBeneficiaries(listId:string,rows:BeneficiaryInput[]):Promise<number>{
+  return post('restore-legacy-add',{listId,rows});
+}
+
 export async function updateGuestBeneficiary(id: string, name: string): Promise<void> {
   await post('update', { id, name });
 }

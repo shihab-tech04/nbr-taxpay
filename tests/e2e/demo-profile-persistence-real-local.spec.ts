@@ -34,6 +34,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
   const openBeneficiaries=async(page:Page)=>{
     await page.goto('/?action=beneficiaries');
     await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+    await page.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
   };
   const openMobileAccountMenu=async(page:Page)=>{
     const dialog=page.locator('.citizen-dialog');
@@ -96,6 +97,9 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await first.getByRole('button',{name:'Add beneficiary',exact:true}).click();
     // Direct Add Beneficiary opens the single-entry modal.
     dialog=first.getByRole('dialog',{name:'Beneficiary entry'});
+    await expect(dialog).toBeVisible();
+    await expect(first.getByRole('dialog',{name:'Choose how to add beneficiaries'})).toHaveCount(0);
+    await expect(first.getByText('Import from Excel',{exact:true})).toHaveCount(0);
     await dialog.locator('#beneficiary-tin').fill(tin);
     await dialog.locator('#beneficiary-name').fill(personName);
     await chooseBeneficiaryOption(dialog,'beneficiary-tag','clients');
@@ -167,6 +171,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     const secondProfile=await second.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
     expect(secondProfile?.paymentSessionId).toBe(firstProfile.paymentSessionId);
     await second.reload();
+    await second.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     await expect(selectedListButton(second)).toContainText(listName);
     await expect(second.getByTestId('beneficiary-records')).toContainText(personName);
     await second.goto('/?action=history');
