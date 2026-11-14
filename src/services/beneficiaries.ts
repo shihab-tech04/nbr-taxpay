@@ -272,8 +272,13 @@ export async function moveBeneficiary(ownerUid:string|null,id:string,sourceListI
 
 export async function removeBeneficiary(ownerUid:string | null,id:string):Promise<void>{
   if (!ownerUid) return removeGuestBeneficiary(id);
-  const {error}=await client().from('taxpay_beneficiaries').delete().eq('id',id).eq('owner_uid',ownerUid);
+  // PostgREST deletes can succeed with zero affected rows under RLS or after
+  // another browser removed the record. Never report success for a no-op.
+  const {data,error}=await client().from('taxpay_beneficiaries')
+    .delete().eq('id',id).eq('owner_uid',ownerUid).select('id').maybeSingle();
   if(error)throw error;
+  if(!data||data.id!==id)
+    throw new Error('The beneficiary is no longer saved. Refresh and try again.');
 }
 
 /** Rename only an owner-owned saved list; never mutate member TINs or payment records. */
