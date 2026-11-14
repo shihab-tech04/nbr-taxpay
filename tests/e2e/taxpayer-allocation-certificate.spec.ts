@@ -366,3 +366,25 @@ test('F-168 / US-169 keeps a different signed-in taxpayer document list owner-sc
   await expect(register.getByText(accountCertificateId, { exact: true })).toHaveCount(0);
   await expect(register.getByText('Nusrat Jahan', { exact: true })).toHaveCount(0);
 });
+
+
+test('F-172 signed-in certificate parent deep link reads only its original Taxpayer SQL owner', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Representative signed-in owner device.');
+  await installCertificateAccountFixture(page, accountCertificateOwner);
+  await page.goto('/?action=payment_details&transactionId=' + accountCertificateId);
+  const certificate = page.getByTestId('payment-certificate-document');
+  await expect(certificate).toBeVisible();
+  await expect(certificate).toContainText('Nusrat Jahan');
+  await expect(page.getByTestId('payment-certificate-reference'))
+    .toContainText('SK-PC-' + accountCertificateId);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
+test('F-172 signed-in certificate parent cannot be read through another owner', async ({ page }, info) => {
+  test.skip(info.project.name !== 'mobile-375', 'Representative signed-in privacy device.');
+  await installCertificateAccountFixture(page, accountCertificateOther);
+  await page.goto('/?action=payment_details&transactionId=' + accountCertificateId);
+  await expect(page.getByRole('alert'))
+    .toContainText('Payment record is not linked to this account');
+  await expect(page.getByTestId('payment-certificate-document')).toHaveCount(0);
+});
