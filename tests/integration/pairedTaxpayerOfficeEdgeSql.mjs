@@ -376,7 +376,54 @@ try{
   assert.equal(psql(sourceDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(travelId)}::uuid;`),1);
   assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(travelId)}::uuid;`),1);
 
-  console.log('PASS: separate disposable Taxpayer and Office SQL through existing Edge handlers; combined multi-recipient v3 allocations and Travel Tax passengers, exact amounts/years/heads, payer, receipt/certificate, authorized readback and passport redaction, recipient notice isolation, Office outage recovery, idempotent replay/conflict immutability, and single source/Office notices');
+  const payAgainKey=randomUUID();
+  const payAgainAllocationIds=['ws3-pay-again-allocation-2','ws3-pay-again-allocation-3'];
+  const payAgainPayload=structuredClone(payload);
+  payAgainPayload.idempotencyKey=payAgainKey;
+  payAgainPayload.details.sourcePaymentId=sourceId;
+  payAgainPayload.details.receiptReference='SIM-'+payAgainKey;
+  payAgainPayload.details.receiptSnapshot.challanNo='SIM-'+payAgainKey;
+  payAgainPayload.details.allocations=payAgainPayload.details.allocations.map((allocation,index)=>
+    ({...allocation,allocationId:payAgainAllocationIds[index]}));
+  payAgainPayload.details.receiptSnapshot.allocationItems=
+    payAgainPayload.details.receiptSnapshot.allocationItems.map((item,index)=>
+      ({...item,allocationId:payAgainAllocationIds[index]}));
+  const payAgain=await request('TAXPAY_SQL','/payments','POST',payAgainPayload,headers);
+  assert.equal(payAgain.status,200,'Pay Again must create a distinct Taxpayer parent and mirror it through the existing Edge');
+  assert.equal(payAgain.data.replayed,false);
+  const payAgainId=payAgain.data.id;
+  assert.ok(payAgainId);
+  assert.notEqual(payAgainId,sourceId,'Pay Again must not overwrite the source payment parent');
+  const payAgainSource=psql(sourceDb,`SELECT jsonb_build_object('id',id,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(payAgainId)}::uuid;`);
+  assert.equal(payAgainSource.id,payAgainId);
+  assert.equal(payAgainSource.data.details.sourcePaymentId,sourceId);
+  assert.deepEqual(payAgainSource.data.details.allocations.map(item=>item.allocationId),payAgainAllocationIds);
+  const originalAfterPayAgain=psql(sourceDb,`SELECT jsonb_build_object('id',id,'sessionId',session_id,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`);
+  assert.deepEqual(originalAfterPayAgain,sourceRow,'Pay Again must preserve the original Taxpayer parent and allocations');
+  const payAgainOfficeStored=psql(officeDb,`SELECT jsonb_build_object('id',id,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(payAgainId)}::uuid;`);
+  assert.equal(payAgainOfficeStored.id,payAgainId);
+  assert.deepEqual(payAgainOfficeStored.data,payAgainSource.data,
+    'Separate Office SQL must retain Pay Again parent, source lineage and allocation snapshot');
+  const payAgainReadback=await request('OFFICE_SQL','/payments?page=1&perPage=100','GET',undefined,
+    {authorization:'Bearer '+officeToken});
+  assert.equal(payAgainReadback.status,200);
+  const payAgainItem=payAgainReadback.data.data.items.find(item=>item.id===payAgainId);
+  assert.ok(payAgainItem,'Authorized Office/Admin readback must return the Pay Again parent');
+  assert.equal(payAgainItem.certificateReference,'SK-PC-'+payAgainId);
+  assert.equal(payAgainItem.details.sourcePaymentId,sourceId);
+  assert.equal(payAgainItem.details.receiptReference,'SIM-'+payAgainKey);
+  assert.equal(payAgainItem.details.receiptSnapshot.challanNo,'SIM-'+payAgainKey);
+  assert.deepEqual(payAgainItem.details.allocations.map(item=>item.allocationId),payAgainAllocationIds);
+  const payAgainReplay=await request('TAXPAY_SQL','/payments','POST',payAgainPayload,headers);
+  assert.equal(payAgainReplay.status,200);
+  assert.equal(payAgainReplay.data.id,payAgainId);
+  assert.equal(payAgainReplay.data.replayed,true);
+  assert.equal(psql(sourceDb,`SELECT count(*) FROM demo_payment.story_payments WHERE idempotency_key=${sqlText(payAgainKey)}::uuid;`),1);
+  assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_payments WHERE id=${sqlText(payAgainId)}::uuid;`),1);
+  assert.equal(psql(sourceDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(payAgainId)}::uuid;`),1);
+  assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(payAgainId)}::uuid;`),1);
+
+  console.log('PASS: separate disposable Taxpayer and Office SQL through existing Edge handlers; combined multi-recipient v3 allocations, distinct Pay Again parent lineage and separate Travel Tax passengers, exact amounts/years/heads, payer, receipt/certificate, authorized readback and passport redaction, recipient notice isolation, Office outage recovery, idempotent replay/conflict immutability, and single source/Office notices');
 }finally{
   await Promise.all([taxpayerServer,officeServer,recipientServer].map(server=>new Promise(resolve=>server.close(resolve))));
 }
