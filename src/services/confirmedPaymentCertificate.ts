@@ -337,10 +337,12 @@ export async function getConfirmedReceipt(transactionId:string):Promise<ChallanR
    (now?.profileId??null)!==(preview?.profileId??null))
    throw Error('Payment session changed during lookup');
  const row=payload.data;
+ const data=row.data;
+ if(!isRecord(data))throw Error('Unverified Taxpayer payment response');
  return makeConfirmedReceipt(checkedParent({
    id:row.id,status:row.status,createdAt:row.createdAt,
-   service:row.data.service,amountMinor:row.data.amountMinor,
-   details:row.data.details,
+   service:data.service,amountMinor:data.amountMinor,
+   details:data.details,
  },transactionId));
 }
 export const certificateDocumentUrl=(transactionId:string,action?:'print'|'download')=>{
