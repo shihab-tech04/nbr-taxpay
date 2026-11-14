@@ -118,6 +118,9 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
   const accountName=user?.id===ownerUid&&typeof user.user_metadata?.taxpay_display_name==='string'
     ? user.user_metadata.taxpay_display_name.trim() : '';
   const accountEmail=user?.id===ownerUid&&typeof user.email==='string' ? user.email : '';
+  // The dashboard summary is not an identity-reveal control. Keep the full
+  // address in the authenticated account settings only, not in this heading.
+  const maskedAccountEmail=accountEmail.replace(/^([^@]{0,3})[^@]*(?=@)/, '$1****');
   // Distinct SQL payments only: a beneficiary-only allocation is not a payment by this account.
   // SIMULATED records are complete in the application, never certified Treasury settlements.
   // Count completed payer-owned transactions for the selected assessment year,
@@ -209,7 +212,7 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         <h2 id="taxpay-owner-workflow-title" className="text-base font-semibold text-taxpay-text">
           {tr('My account activity', 'আমার অ্যাকাউন্টের কার্যক্রম')}
         </h2>
-        <p className="mt-1 text-sm font-medium text-taxpay-text">{accountName||accountEmail||tr('Signed-in application account','সাইন-ইন করা অ্যাপ অ্যাকাউন্ট')}</p>
+        <p className="mt-1 text-sm font-medium text-taxpay-text">{accountName||maskedAccountEmail||tr('Signed-in application account','সাইন-ইন করা অ্যাপ অ্যাকাউন্ট')}</p>
         <p className="text-xs text-taxpay-muted">{profileDescription}</p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -328,10 +331,10 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         </div>
         {categoryRows.length>0&&<figure className="mt-4 rounded-xl border border-taxpay-border bg-white p-3" data-testid="account-payment-category-breakdown">
           <figcaption className="text-sm font-semibold text-taxpay-text">{tr('Scenario activity by payment category','পেমেন্ট খাত অনুযায়ী সিনারিও কার্যক্রম')}</figcaption>
-          <div role="img" aria-label={tr('Category amounts for private scenario records','ব্যক্তিগত সিনারিও রেকর্ডের খাতভিত্তিক পরিমাণ')} className="mt-3 space-y-3">
+          <div role="list" aria-label={tr('Category amounts for private scenario records','ব্যক্তিগত সিনারিও রেকর্ডের খাতভিত্তিক পরিমাণ')} className="mt-3 space-y-3">
             {categoryRows.map(row=>{
               const basisPoints=scenarioAmount>0n?Number(row.amount*10000n/scenarioAmount):0;
-              return <div key={row.category} data-payment-service={row.category}>
+              return <div role="listitem" key={row.category} data-payment-service={row.category}>
                 <div className="flex items-center justify-between gap-3 text-xs">
                   <p className="min-w-0 truncate text-taxpay-muted">{simulationCategoryLabels[row.category][language]}</p>
                   <p className="shrink-0 font-semibold tabular-nums text-taxpay-text">{scenarioAmountLabel(row.amount)}</p>
@@ -346,7 +349,13 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
         {completedTransactions.length>0&&<section className="mt-4 rounded-xl border border-taxpay-border bg-white p-3"
           data-testid="account-beneficiary-spending" aria-label={tr('Payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী পেমেন্ট')}>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-sm font-semibold text-taxpay-text">{tr('Recorded scenario payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী নথিভুক্ত নমুনা পেমেন্ট')}</h3>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-taxpay-text">{tr('Recorded scenario payments by beneficiary tag','উপকারভোগীর ট্যাগ অনুযায়ী নথিভুক্ত নমুনা পেমেন্ট')}</h3>
+              <p data-testid="dashboard-tag-classification-note" className="mt-1 text-xs leading-5 text-taxpay-muted">{tr(
+                'Grouped using your current saved tags. Own payments and missing or conflicting tags are shown as unassigned.',
+                'বর্তমান সংরক্ষিত ট্যাগ অনুযায়ী ভাগ করা হয়েছে। নিজের পেমেন্ট এবং অনুপস্থিত বা পরস্পরবিরোধী ট্যাগ শ্রেণিবিহীন হিসেবে দেখানো হয়েছে।'
+              )}</p>
+            </div>
             <p className="font-semibold tabular-nums text-taxpay-text">{visibleTags.phase==='ready'?scenarioAmountLabel(tagSpendingTotal):'—'}</p>
           </div>
           {visibleTags.phase==='loading'&&<p className="mt-2 text-sm text-taxpay-muted" role="status">{tr('Loading saved tags…','সংরক্ষিত ট্যাগ লোড হচ্ছে…')}</p>}
@@ -378,6 +387,13 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
             </div>
             <p className="mt-2 text-xs text-taxpay-muted">{serviceLabels(transaction)} · {tr('Assessment year','করবর্ষ')} {assessmentYears(transaction)}</p>
             <p className="mt-1 text-xs font-medium text-taxpay-muted">{transactionStatus(transaction.state)}</p>
+            <button type="button"
+              data-testid={'dashboard-recent-history-'+transaction.transactionId}
+              onClick={()=>onNavigate('history')}
+              aria-label={tr('Open payment history to locate reference ','রেফারেন্স খুঁজতে পেমেন্ট ইতিহাস খুলুন ')+transaction.id}
+              className="mt-2 min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
+              {tr('Open payment history','পেমেন্টের ইতিহাস দেখুন')}
+            </button>
           </li>)}
         </ul>}
       </>}
