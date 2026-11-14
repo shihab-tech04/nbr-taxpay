@@ -26,6 +26,12 @@ for (const language of ['en', 'bn'] as const) {
       if(request.method()==='GET'){
         const url=new URL(request.url());
         const stored=submitted as {sessionId?:string;service?:string;amountMinor?:number;details?:Record<string,unknown>}|null;
+        console.log('F162_SQL_READ',JSON.stringify({
+          hasStored:Boolean(stored),
+          scopedSession:Boolean(stored)&&url.searchParams.get('sessionId')===stored?.sessionId,
+          requestedSession:Boolean(url.searchParams.get('sessionId')),
+          detail:url.pathname.endsWith('/'+paymentId)
+        }));
         if(!stored||url.searchParams.get('sessionId')!==stored.sessionId){
           await route.fulfill({status:403,contentType:'application/json',headers:corsHeaders,
             body:JSON.stringify({success:false,error:'SESSION_NOT_AUTHORIZED'})});
