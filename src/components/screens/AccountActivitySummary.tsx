@@ -43,6 +43,9 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
     owner:null,phase:'loading',people:[]
   });
   const [assessmentYear,setAssessmentYear]=useState('');
+  // This controls only the recent-activity register, never the owner-scoped
+  // yearly counts, financial totals, tags or source payment allocations.
+  const [recentService,setRecentService]=useState<'all'|SimulationCategory>('all');
   const [revision,setRevision]=useState(0);
   const {user}=useAccountIdentity();
   const bn=language==='bn';
@@ -130,7 +133,12 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
     {id:'drafts',label:tr('Saved Drafts','সংরক্ষিত খসড়া'),count:visible.counts?.drafts??null,route:'secure_workspace' as const},
     {id:'corrections',label:tr('Correction Requests','সংশোধনের আবেদন'),count:visible.counts?.correctionInquiries??null,route:'corrections' as const}
   ];
-  const recentTransactions=yearTransactions.slice(0,5);
+  const filteredRecentTransactions=yearTransactions.filter(transaction=>
+    recentService==='all'||transaction.allocations.some(allocation=>allocation.category===recentService));
+  // Source projections are normally sorted, but preserve "recent" order even
+  // when a new authorized source returns an unordered set.
+  const recentTransactions=[...filteredRecentTransactions].sort((a,b)=>
+    Date.parse(b.createdAt)-Date.parse(a.createdAt)||a.transactionId.localeCompare(b.transactionId)).slice(0,5);
   // Failed, pending and reversed attempts are activity, not completed amounts.
   const scenarioAmount=dashboardPaymentTotals?.payerTotalMinor??0n;
   const categoryTotals=new Map<SimulationCategory,bigint>(simulationCategories.map(category=>[category,0n]));
@@ -246,6 +254,18 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
           <p className="mt-1 text-xs text-taxpay-muted">{tr('Financial records appear only when an approved account binding and its private records are available.','অনুমোদিত অ্যাকাউন্ট সংযোগ ও ব্যক্তিগত রেকর্ড থাকলেই আর্থিক তথ্য দেখানো হয়।')}</p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
+          {visibleScenario.phase==='linked'&&<label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-taxpay-muted">
+            {tr('Filter recent activity by service','সাম্প্রতিক কার্যক্রম সেবাভিত্তিক ফিল্টার')}
+            <select aria-label={tr('Filter recent activity by service','সাম্প্রতিক কার্যক্রম সেবাভিত্তিক ফিল্টার')}
+              data-testid="dashboard-recent-service-filter" value={recentService}
+              onChange={event=>setRecentService(event.target.value as 'all'|SimulationCategory)}
+              className="min-h-10 max-w-full rounded-lg border border-taxpay-border bg-white px-3 text-sm text-taxpay-text">
+              <option value="all">{tr('All services','সব সেবা')}</option>
+              {simulationCategories.map(category=><option value={category} key={category}>
+                {simulationCategoryLabels[category][language]}
+              </option>)}
+            </select>
+          </label>}
           {visibleScenario.phase!=='loading'&&visibleScenario.phase!=='error'&&availableYears.length>0&&<label className="flex flex-col gap-1 text-xs font-medium text-taxpay-muted">
             {tr('Assessment year','করবর্ষ')}
             <select aria-label={tr('Assessment year','করবর্ষ')} value={selectedYear} onChange={event=>{
@@ -338,11 +358,16 @@ export const AccountActivitySummary:React.FC<Props>=({ownerUid,language,onNaviga
             </div>)}
           </div>}
         </section>}
-        {yearTransactions.length===0?<p role="status" className="mt-3 rounded-lg border border-dashed border-taxpay-border bg-slate-50 p-3 text-sm text-taxpay-muted">
+        {recentTransactions.length===0?<p role="status" data-testid="dashboard-recent-activity-empty"
+          className="mt-3 rounded-lg border border-dashed border-taxpay-border bg-slate-50 p-3 text-sm text-taxpay-muted">
           {visibleScenario.transactions.length===0
             ?tr('No stored payment activity is linked to this scenario profile.','এই সিনারিও প্রোফাইলে কোনো সংরক্ষিত পেমেন্ট কার্যক্রম নেই।')
-            :tr(`No stored payment activity is available for assessment year ${selectedYear}.`,`${selectedYear} করবর্ষে কোনো সংরক্ষিত পেমেন্ট কার্যক্রম নেই।`)}
-        </p>:<ul className="mt-3 space-y-2" aria-label={tr('Recent scenario transactions','সাম্প্রতিক সিনারিও লেনদেন')}>
+            :yearTransactions.length===0
+              ?tr(`No stored payment activity is available for assessment year ${selectedYear}.`,`${selectedYear} করবর্ষে কোনো সংরক্ষিত পেমেন্ট কার্যক্রম নেই।`)
+              :tr('No recent payment activity matches this service in the selected year. Choose All services to see the available records.',
+                'নির্বাচিত করবর্ষে এই সেবার কোনো সাম্প্রতিক পেমেন্ট কার্যক্রম নেই। উপলব্ধ রেকর্ড দেখতে সব সেবা বেছে নিন।')}
+        </p>:<ul className="mt-3 space-y-2" aria-label={tr('Recent scenario transactions','সাম্প্রতিক সিনারিও লেনদেন')}
+          data-testid="dashboard-recent-activity-list">
           {recentTransactions.map(transaction=><li key={transaction.transactionId} className="rounded-xl border border-taxpay-border bg-white p-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
