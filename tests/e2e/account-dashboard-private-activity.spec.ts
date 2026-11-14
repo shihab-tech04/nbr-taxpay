@@ -677,3 +677,19 @@ test('F-099 correction status-card fallback works without embedded register in E
   await correctionCard.getByRole('button',{name:'Open records'}).click();
   await expect(page).toHaveURL(/action=corrections(?:&|$)/);
 });
+
+test('F-122 signed-in Sohojkor logo returns to the private dashboard instead of public landing EN/BN',async({page})=>{
+  await page.setViewportSize({width:375,height:812});
+  await mockPrivateAccount(page,'user1');
+  for(const language of ['en','bn'] as const){
+    await page.goto('/?action=history&lang='+language);
+    const brand=page.getByRole('button',{name:language==='bn'?'সহজকর মূল পাতা':'Sohojkor home'});
+    await expect(brand).toBeVisible();
+    await brand.click();
+    await expect(page).toHaveURL(/action=taxpayer_home(?:&|$)/);
+    await expect(page.getByTestId('account-workflow-summary')).toBeVisible();
+    await expect(page.getByRole('navigation',{name:language==='bn'?'মোবাইল প্রধান নেভিগেশন':'Mobile primary navigation'})).toBeVisible();
+  }
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
