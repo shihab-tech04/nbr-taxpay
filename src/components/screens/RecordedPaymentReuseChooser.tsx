@@ -41,10 +41,18 @@ export function RecordedPaymentReuseChooser({profileId,language,onReuse}:{
      const chosen=makeConfirmedReceipt(payment);
      displayId=chosen.batchId??payment.id;
      if(chosen.batchId) displayAmountMinor=null;
-     const peers=state.rows.filter(other=>{
-       const receipt=makeConfirmedReceipt(other);
-       return chosen.batchId ? receipt.batchId===chosen.batchId : other.id===payment.id;
-     }).map(makeConfirmedReceipt);
+     const peers=state.rows.flatMap(other=>{
+       try {
+         const receipt=makeConfirmedReceipt(other);
+         return chosen.batchId
+           ? (receipt.batchId===chosen.batchId?[receipt]:[])
+           : (other.id===payment.id?[receipt]:[]);
+       } catch {
+         // A malformed unrelated row must not block a valid recorded payment.
+         // Missing members of the chosen batch still fail completeness checks.
+         return [];
+       }
+     });
      copy=reuseRecordedPayment(peers,profileId,getDemoUser(profileId)?.tin??null,displayId);
      if(chosen.batchId){
        // Show the complete original batch amount only after every immutable
@@ -53,7 +61,7 @@ export function RecordedPaymentReuseChooser({profileId,language,onReuse}:{
        if(!Number.isSafeInteger(total)||total<=0)throw Error('Incomplete original batch total');
        displayAmountMinor=total;
      }
-   }catch{/* Incomplete historic receipts cannot establish a new payment. */}
+   }catch{copy=null;/* Incomplete historic receipts cannot establish a new payment. */}
    return {payment,copy,displayId,displayAmountMinor};
  }),[state.rows,profileId]);
  const reuse=(copy:PaymentReuse)=>{
