@@ -556,6 +556,9 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     if (relationship === 'OTHER') await dialog.locator('#guest-payer-name').fill('Sample Payer');
     await dialog.locator('#guest-phone').fill('01712345678');
     await expect(dialog.getByTestId('other-tax-taxpayer-list')).toBeVisible();
+    // Both relationships allow a confirmed additional taxpayer in the same
+    // non-Return combined payment; the dedicated SELF+OTHER payment test below
+    // checks the saved allocations and certificate under the same parent.
     await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
     await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
     await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
@@ -627,19 +630,27 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
   });
   const details = submitted[0].details as {allocations: Array<{headId: number}>};
   expect(new Set(details.allocations.map(allocation => allocation.headId)).size).toBe(2);
-
-  // The same saved parent must supply a distinct, itemized certificate from
-  // the combined receipt; no second submission or independently summed total.
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
-  const receipt = dialog.locator('.receipt-view__paper');
-  await expect(receipt).toContainText('111111111111');
-  await expect(receipt).toContainText('222222222222');
-  await expect(receipt).toContainText('৳ 50');
-  // The complete itemized Payment Certificate check (same parent, two TINs,
-  // two years, two amounts, total, and no technical labels) is preserved in
-  // #775's corresponding SELF+OTHER browser test, where that unmerged document
-  // UI is actually implemented. This payment-engine branch owns one receipt.
+  const document = dialog.locator('.receipt-view__paper');
+  await expect(document).toContainText('111111111111');
+  await expect(document).toContainText('222222222222');
+  await expect(document).toContainText('৳ 50');
+  await dialog.getByRole('button', { name: 'View payment certificate' }).click();
+  const certificate = dialog.getByTestId('payment-certificate-document');
+  await expect(certificate.getByRole('heading', { name: 'Payment Certificate' })).toBeVisible();
+  await expect(document.getByTestId('payment-certificate-reference'))
+    .toContainText('SK-PC-00000000-0000-4000-8000-000000000102');
+  await expect(certificate).toContainText('111111111111');
+  await expect(certificate).toContainText('222222222222');
+  await expect(certificate).toContainText('2026-27');
+  await expect(certificate).toContainText('2025-26');
+  await expect(certificate).toContainText('৳ 15');
+  await expect(certificate).toContainText('৳ 35');
+  await expect(dialog.getByTestId('payment-certificate-total')).toContainText('৳ 50');
+  await expect(certificate).not.toContainText('SIMULATED_SUCCESS');
   expect(submitted).toHaveLength(1);
+  await dialog.getByRole('button', { name: 'View receipt' }).click();
+  await expect(document.getByTestId('payment-certificate-reference')).toHaveCount(0);
 });
 
 test('signed-in SELF Other Tax preserves the locked account identity and canonical head catalogue', async ({ page }) => {

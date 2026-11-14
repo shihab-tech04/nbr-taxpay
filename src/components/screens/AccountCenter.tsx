@@ -14,7 +14,53 @@ import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} 
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
-type ReviewNotice = { id: string; request_id: string; message_code: string; is_read: boolean; created_at: string };
+type ReviewNotice = {
+  id: string;
+  request_id: string | null;
+  event_id?: string | null;
+  correction_inquiry_id?: string | null;
+  correction_decision_id?: string | null;
+  correction_reference?: string | null;
+  message_code: string;
+  is_read: boolean;
+  created_at: string;
+};
+
+const reviewNoticeSelect = 'id,request_id,event_id,message_code,is_read,created_at,correction_inquiry_id,correction_decision_id';
+const legacyReviewNoticeSelect = 'id,request_id,event_id,message_code,is_read,created_at';
+
+function missingCorrectionNoticeColumns(error: { code?: string; message?: string } | null): boolean {
+  return Boolean(error && (
+    error.code === '42703' || error.code === 'PGRST204' ||
+    /column .* does not exist|could not find .* column|schema cache/i.test(error.message ?? '')
+  ));
+}
+
+async function readReviewNotices(client: NonNullable<typeof supabase>, uid: string): Promise<ReviewNotice[]> {
+  const query = (select: string) => client.from('taxpay_in_app_notifications').select(select)
+    .eq('recipient_uid', uid).order('created_at', { ascending: false }).limit(50);
+  let result = await query(reviewNoticeSelect);
+  // Keep existing payment review notices readable before WS3's additive
+  // correction-notification migration reaches the hosted schema.
+  if (result.error && missingCorrectionNoticeColumns(result.error)) result = await query(legacyReviewNoticeSelect);
+  if (result.error) throw result.error;
+
+  const notices = (result.data ?? []) as unknown as ReviewNotice[];
+  const inquiryIds = [...new Set(notices
+    .filter(item => item.message_code.startsWith('CORRECTION_'))
+    .map(item => item.correction_inquiry_id)
+    .filter((id): id is string => Boolean(id)))];
+  if (!inquiryIds.length) return notices;
+
+  const references = await client.from('taxpay_correction_inquiries')
+    .select('inquiry_id,original_reference')
+    .eq('requester_uid', uid).in('inquiry_id', inquiryIds);
+  if (references.error) throw references.error;
+  const byInquiry = new Map((references.data ?? []).map(row => [row.inquiry_id, row.original_reference]));
+  return notices.map(item => item.correction_inquiry_id
+    ? { ...item, correction_reference: byInquiry.get(item.correction_inquiry_id) ?? null }
+    : item);
+}
 
 const I18N = {
   en: {
@@ -31,6 +77,8 @@ const I18N = {
     reviewTitle: 'Officer review updates', reviewLabel: 'Non-financial review',
     reviewReceived: 'Review request submitted', reviewAcknowledged: 'Officer acknowledged your request',
     reviewInfo: 'Officer requested additional information', reviewClosed: 'Officer completed the review',
+    correctionMakerAcknowledged: 'Correction request acknowledged', correctionReviewerVerified: 'Correction review verified',
+    correctionApproverClosed: 'Correction review closed', correctionRejected: 'Correction request rejected',
     noNotices: 'No stored draft activity for this account.', noDemoNotices: 'No notifications yet.',
     load: 'Loading private activity…', loadError: 'Could not load notifications. Try again.',
     retry: 'Retry', markRead: 'Mark all as viewed', viewed: 'Viewed', new: 'New', draft: 'Draft saved',
@@ -55,6 +103,8 @@ const I18N = {
     reviewTitle: 'কর্মকর্তার পর্যালোচনার হালনাগাদ', reviewLabel: 'অ-আর্থিক পর্যালোচনা',
     reviewReceived: 'রিভিউ অনুরোধ জমা হয়েছে', reviewAcknowledged: 'কর্মকর্তা অনুরোধ গ্রহণ করেছেন',
     reviewInfo: 'কর্মকর্তা অতিরিক্ত তথ্য চেয়েছেন', reviewClosed: 'কর্মকর্তা পর্যালোচনা শেষ করেছেন',
+    correctionMakerAcknowledged: 'সংশোধনের অনুরোধ গ্রহণ করা হয়েছে', correctionReviewerVerified: 'সংশোধন পর্যালোচনা যাচাই হয়েছে',
+    correctionApproverClosed: 'সংশোধন পর্যালোচনা শেষ হয়েছে', correctionRejected: 'সংশোধনের অনুরোধ প্রত্যাখ্যান করা হয়েছে',
     noNotices: 'এই অ্যাকাউন্টে সংরক্ষিত ড্রাফটের কার্যক্রম নেই।', noDemoNotices: 'এখনো কোনো বিজ্ঞপ্তি নেই।',
     load: 'ব্যক্তিগত কার্যক্রম লোড হচ্ছে…', loadError: 'বিজ্ঞপ্তি লোড করা যায়নি। আবার চেষ্টা করুন।',
     retry: 'আবার চেষ্টা', markRead: 'সবগুলো দেখা হয়েছে', viewed: 'দেখা', new: 'নতুন', draft: 'খসড়া সংরক্ষিত',
@@ -116,15 +166,14 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       const [draftResult, reviewResult] = await Promise.all([
         client.from('taxpay_payment_drafts').select('id,owner_uid,created_at,category,assessment_year')
           .eq('owner_uid', uid).order('created_at', { ascending: false }).limit(30),
-        client.from('taxpay_in_app_notifications').select('id,request_id,message_code,is_read,created_at')
-          .order('created_at', { ascending: false }).limit(50)
+        readReviewNotices(client, uid)
       ]);
-      if (draftResult.error || reviewResult.error) throw draftResult.error ?? reviewResult.error;
+      if (draftResult.error) throw draftResult.error;
       const { data: stillCurrent, error: rereadError } = await client.auth.getUser();
       if (rereadError || stillCurrent.user?.id !== uid) throw new Error('Account session changed');
       if (!active) return;
       setNotices((draftResult.data ?? []).filter((item: DraftNotice) => item.owner_uid === uid));
-      setReviewNotices((reviewResult.data ?? []) as ReviewNotice[]);
+      setReviewNotices(reviewResult);
       setLoadState('ready');
     })().catch(() => { if (active) { setNotices([]); setReviewNotices([]); setLoadState('error'); } });
     void refreshNotices();
@@ -173,7 +222,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       const unread = reviewNotices.filter(n=>!n.is_read).map(n=>n.id);
       if (unread.length) {
         const { data: updated, error: reviewError } = await supabase.from('taxpay_in_app_notifications')
-          .update({is_read:true}).in('id',unread).select('id');
+          .update({is_read:true}).eq('recipient_uid', user.id).in('id',unread).select('id');
         if (reviewError || updated?.length !== unread.length) throw new Error('Review notice read-back not confirmed');
         setReviewNotices(prev=>prev.map(n=>unread.includes(n.id)?{...n,is_read:true}:n));
       }
@@ -199,7 +248,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   };
   const normalizedNotificationSearch=notificationSearch.trim().toLocaleLowerCase(language==='bn'?'bn-BD':'en-GB');
   const filteredReviewNotices=reviewNotices.filter(item=>
-    !normalizedNotificationSearch || [item.request_id,item.message_code,
+    !normalizedNotificationSearch || [item.request_id ?? '',item.correction_reference ?? '',item.message_code,
       date(item.created_at)].some(text=>text.toLocaleLowerCase().includes(normalizedNotificationSearch)));
   const filteredDraftNotices=notices.filter(item=>
     !normalizedNotificationSearch || [item.category,item.assessment_year,item.id,
@@ -340,9 +389,20 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                               REQUEST_SUBMITTED:t.reviewReceived,
                               REQUEST_ACKNOWLEDGED:t.reviewAcknowledged,
                               REQUEST_INFO_REQUESTED:t.reviewInfo,
-                              REQUEST_REVIEW_CLOSED:t.reviewClosed
+                              REQUEST_REVIEW_CLOSED:t.reviewClosed,
+                              CORRECTION_MAKER_ACKNOWLEDGED:t.correctionMakerAcknowledged,
+                              CORRECTION_REVIEWER_VERIFIED:t.correctionReviewerVerified,
+                              CORRECTION_APPROVER_CLOSED:t.correctionApproverClosed,
+                              CORRECTION_REJECTED:t.correctionRejected
                             } as Record<string,string>)[item.message_code]??t.reviewLabel}</p>},
-                            {key:'reference',header:language==='bn'?'অনুরোধের রেফারেন্স':'Request reference',renderCell:item=><p className="break-all font-mono-plex text-sm text-taxpay-muted">{item.request_id}</p>},
+                            {key:'reference',header:language==='bn'?'রেফারেন্স':'Reference',renderCell:item=>{
+                              const reference=item.correction_inquiry_id ? item.correction_reference : item.request_id;
+                              return item.correction_inquiry_id && reference
+                                ? <button type="button" className="break-all text-left font-mono-plex text-sm text-taxpay-primary underline underline-offset-2"
+                                    aria-label={language==='bn'?'সংশোধন মামলা খুলুন: '+reference:'Open correction case: '+reference}
+                                    onClick={()=>navigate('corrections',{inquiryId:item.correction_inquiry_id})}>{reference}</button>
+                                : <p className="break-all font-mono-plex text-sm text-taxpay-muted">{reference ?? '—'}</p>;
+                            }},
                             {key:'recorded',header:language==='bn'?'রেকর্ডের তারিখ':'Recorded',renderCell:item=><time dateTime={item.created_at} className="text-sm text-taxpay-muted">{date(item.created_at)}</time>},
                             {key:'status',header:language==='bn'?'অবস্থা':'Status',renderCell:item=><p className="font-semibold">{item.is_read?t.viewed:t.new}</p>}
                           ]}/>

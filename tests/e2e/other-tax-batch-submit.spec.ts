@@ -81,6 +81,16 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
   await expect(receipt).toContainText('222222222222');
   await expect(receipt).toContainText('2025-26');
   await expect(receipt).toContainText('৳ 50');
+  await dialog.getByRole('button',{name:'View payment certificate'}).click();
+  await expect(receipt.getByRole('heading',{name:'Payment Certificate'})).toBeVisible();
+  await expect(receipt.getByTestId('payment-certificate-reference'))
+    .toContainText('SK-PC-00000000-0000-4000-8000-000000000201');
+  await expect(receipt).toContainText('111111111111');
+  await expect(receipt).toContainText('222222222222');
+  await expect(receipt).toContainText('2025-26');
+  await expect(receipt).toContainText('৳ 50');
+  await dialog.getByRole('button',{name:'View receipt'}).click();
+  await expect(receipt.getByTestId('payment-certificate-reference')).toHaveCount(0);
   await expect(dialog.locator('.receipt-view__actions')).toBeVisible();
   await expect(dialog.getByRole('button',{name:'Back',exact:true})).toHaveCount(0);
   await dialog.getByRole('button',{name:'Back to confirmation'}).click();

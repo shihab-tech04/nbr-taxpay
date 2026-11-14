@@ -18,6 +18,9 @@ test('owner can recover a failed private inquiry history load without duplicatin
   const expiresAt = Math.floor(Date.now() / 1000) + 3600;
   const accessToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ sub: userId, aud: 'authenticated', role: 'authenticated', exp: expiresAt }))}.synthetic-signature`;
   let inquiryReads = 0;
+  let historyReads = 0;
+  let sessionClaimCalls = 0;
+  let walkinClaimCalls = 0;
   let allowHistorySuccess = false;
   let failPostSaveRefresh = false;
   let allowPostSaveHistoryRetry = false;
@@ -36,7 +39,14 @@ test('owner can recover a failed private inquiry history load without duplicatin
     change_kind: 'ASSESSMENT_YEAR',
     old_value: '2024-25',
     new_value: '2025-26',
+    office_review_state: 'MAKER_ACKNOWLEDGED',
+    office_review_revision: 2,
+    office_review_updated_at: '2026-01-02T00:00:00.000Z',
   };
+  const reviewHistory = [
+    { inquiry_id: 'synthetic-inquiry-1', event_id: 'synthetic-inquiry-1', event_kind: 'INQUIRY_SUBMITTED', revision: 1, action_code: 'SUBMITTED', actor_role: 'TAXPAYER', source_system: 'TAXPAY_SQL', previous_state: null, next_state: 'PENDING_OFFICER', reason: 'Synthetic request for review.', occurred_at: '2026-01-01T00:00:00.000Z' },
+    { inquiry_id: 'synthetic-inquiry-1', event_id: 'synthetic-decision-1', event_kind: 'OFFICE_DECISION', revision: 2, action_code: 'MAKER_ACKNOWLEDGE', actor_role: 'MAKER', source_system: 'OFFICE_SQL', previous_state: 'PENDING_OFFICER', next_state: 'MAKER_ACKNOWLEDGED', reason: 'Synthetic Office decision reason.', occurred_at: '2026-01-02T00:00:00.000Z' },
+  ];
 
   await page.addInitScript(({ storageKey, session }) => {
     localStorage.setItem(storageKey, JSON.stringify(session));
@@ -68,6 +78,16 @@ test('owner can recover a failed private inquiry history load without duplicatin
 
     if (request.method() === 'OPTIONS') return json({}, 200);
     if (url.pathname === '/auth/v1/user' && request.method() === 'GET') return json(authUser);
+    if (url.pathname === '/rest/v1/rpc/taxpay_claim_story1_session' && request.method() === 'POST') {
+      sessionClaimCalls++;
+      expect(request.postDataJSON()).toMatchObject({ p_session_id: expect.any(String) });
+      return json(1);
+    }
+    if (url.pathname === '/rest/v1/rpc/taxpay_claim_walkin_payer_payments' && request.method() === 'POST') {
+      walkinClaimCalls++;
+      expect(request.postDataJSON()).toEqual({});
+      return json(0);
+    }
     if (url.pathname === '/rest/v1/taxpay_correction_inquiries' && request.method() === 'GET') {
       inquiryReads++;
       if (!allowHistorySuccess) return json({ message: 'Synthetic temporary read failure.' }, 503);
@@ -82,6 +102,11 @@ test('owner can recover a failed private inquiry history load without duplicatin
       if (submitted) postSaveHistorySuccesses++;
       expect(url.searchParams.get('requester_uid')).toBe(`eq.${userId}`);
       return json(submitted ? [inquiry] : []);
+    }
+    if (url.pathname === '/rest/v1/rpc/taxpay_correction_my_history' && request.method() === 'POST') {
+      historyReads++;
+      expect(request.postDataJSON()).toEqual({ p_limit: 50 });
+      return json(submitted ? reviewHistory : []);
     }
     if (url.pathname === '/rest/v1/taxpay_correction_inquiries' && request.method() === 'POST') {
       insertCount++;
@@ -111,7 +136,7 @@ test('owner can recover a failed private inquiry history load without duplicatin
   expect(inquiryReads).toBe(failedReadCount + 1);
   await page.waitForLoadState('networkidle');
 
-  await page.getByLabel('Original receipt or payment reference (user supplied, not verified)').fill('SYN-REF-123456');
+  await page.getByLabel('Original payment reference (must match your linked payment history)').fill('SYN-REF-123456');
   await page.getByLabel('Reason for requesting a correction review').fill('Synthetic request for review.');
   await page.getByLabel('What outcome are you requesting?').fill('Please review this synthetic sample.');
   await page.getByLabel('Proposed attribution field (optional)').selectOption('ASSESSMENT_YEAR');
@@ -121,6 +146,8 @@ test('owner can recover a failed private inquiry history load without duplicatin
   await expect(page.getByRole('status').filter({ hasText: 'Inquiry saved, but its private history could not be refreshed' })).toBeVisible();
   await page.waitForLoadState('networkidle');
   expect(insertCount).toBe(1);
+  expect(sessionClaimCalls).toBe(1);
+  expect(walkinClaimCalls).toBe(1);
   expect(postSaveRefreshFailures).toBeGreaterThan(0);
   expect(insertPayload).toMatchObject({
     requester_uid: userId,
@@ -131,7 +158,7 @@ test('owner can recover a failed private inquiry history load without duplicatin
     old_value: '2024-25',
     new_value: '2025-26',
   });
-  await expect(page.getByLabel('Original receipt or payment reference (user supplied, not verified)')).toHaveValue('');
+  await expect(page.getByLabel('Original payment reference (must match your linked payment history)')).toHaveValue('');
   await expect(history.getByRole('button', { name: 'Retry loading inquiries' })).toBeVisible();
   expect(inquiryReads).toBeGreaterThan(failedReadCount + 1);
   allowPostSaveHistoryRetry = true;
@@ -146,6 +173,15 @@ test('owner can recover a failed private inquiry history load without duplicatin
   await expect(history.getByText('Unverified attribution proposal: Assessment year').filter({visible:true})).toBeVisible();
   await expect(history.getByText('Previous value (unverified): 2024-25').filter({visible:true})).toBeVisible();
   await expect(history.getByText('Requested value (unverified): 2025-26').filter({visible:true})).toBeVisible();
+  const correctionEvents = history.getByTestId('correction-history-events').getByRole('listitem');
+  await expect(correctionEvents).toHaveCount(2);
+  await expect(correctionEvents.nth(0)).toContainText('Inquiry submitted');
+  await expect(correctionEvents.nth(0)).toContainText('TaxPay SQL');
+  await expect(correctionEvents.nth(1)).toContainText('Maker acknowledged');
+  await expect(correctionEvents.nth(1)).toContainText('Office Maker');
+  await expect(correctionEvents.nth(1)).toContainText('Office SQL');
+  await expect(correctionEvents.nth(1)).toContainText('Synthetic Office decision reason.');
+  expect(historyReads).toBeGreaterThan(0);
 
   // Restore the expanded navigation before exercising its language action at 320px.
   // Preserve the real adaptive scroll behavior; never force-click a hidden control.
@@ -155,6 +191,9 @@ test('owner can recover a failed private inquiry history load without duplicatin
   await expect(page.getByRole('heading',{name:'মূল রেফারেন্স পর্যালোচনার অনুরোধ'})).toHaveClass(/text-taxpay-text/);
   const historyBn = page.getByRole('region', { name: 'আমার পর্যালোচনার অনুসন্ধান' });
   await expect(historyBn.locator('summary:visible')).toHaveText('অনুরোধের বিবরণ');
+  const historyPanelBn = historyBn.locator('details[open]').getByTestId('correction-history-panel');
+  await expect(historyPanelBn).toContainText('সংশোধনের ইতিহাস');
+  await expect(historyPanelBn.getByTestId('correction-history-events')).toContainText('অফিস মেকার');
   await expect(historyBn.getByText('প্রদত্ত কারণ: Synthetic request for review.').filter({visible:true})).toBeVisible();
   await expect(historyBn.getByText('অনুরোধের ফলাফল: Please review this synthetic sample.').filter({visible:true})).toBeVisible();
   await expect(historyBn.getByText('যাচাই না হওয়া পরিচিতি প্রস্তাব: করবর্ষ').filter({visible:true})).toBeVisible();

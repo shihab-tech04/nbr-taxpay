@@ -1,0 +1,45 @@
+/* The certificate is its own document. Keep all allocations visible without
+   changing the established receipt's responsive table/card presentation. */
+.payment-certificate-document__allocation-table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.payment-certificate-document .payment-certificate-document__table {
+  min-width: 720px;
+}
+
+.payment-certificate-document__mobile-lines {
+  display: none;
+  overflow: hidden;
+  border: 1px solid var(--citizen-border);
+  border-radius: 0.65rem;
+  background: var(--citizen-surface);
+}
+
+@media (max-width: 650px) {
+  .payment-certificate-document__allocation-table {
+    display: none;
+  }
+
+  .payment-certificate-document__mobile-lines {
+    display: block;
+  }
+}
+
+@media print {
+  .payment-certificate-document__allocation-table {
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  .payment-certificate-document__mobile-lines {
+    display: none !important;
+  }
+
+  .payment-certificate-document .payment-certificate-document__table {
+    min-width: 0;
+  }
+}

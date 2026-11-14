@@ -551,15 +551,21 @@ export function Beneficiaries(){
         </div>}
         <TaxPayOfficeRegisterToolbar id="beneficiary-list-heading"
           title={tr('Beneficiary list','উপকারভোগীর তালিকা')}
-          description={tr('Search and manage your saved taxpayers','সংরক্ষিত করদাতাদের খুঁজুন ও পরিচালনা করুন')}
           count={filteredPeople.length} total={listPeople.length} countLabel={tr('records','রেকর্ড')}
           searchValue={search} onSearchChange={setSearch}
           searchLabel={tr('Search this list','এই তালিকায় খুঁজুন')}
           searchPlaceholder={tr('Search name or TIN','নাম বা টিআইএন দিয়ে খুঁজুন')}
           filterLabel={tr('Filter','ফিল্টার')}
-          filtersOpen={filtersExpanded} onToggleFilters={()=>{setFiltersExpanded(open=>!open);setListMenuOpen(false);}}
-          actions={lists.length>0?<div className="beneficiary-directory__list-toolbar">
-            <div className="taxpayer-transaction-filter beneficiary-directory__list-filter">
+          filtersOpen={filtersExpanded} onToggleFilters={()=>{setFiltersExpanded(open=>!open);setListMenuOpen(false);}}/>
+
+        {!lists.length?<div className="mx-auto flex max-w-xl flex-col items-center py-5 text-center sm:py-6">
+          <span className="mb-3 rounded-full bg-taxpay-light p-3 text-taxpay-primary"><UsersRound size={28} aria-hidden="true"/></span>
+          <h2 className="text-lg font-semibold text-taxpay-text">{tr('Create your first list','আপনার প্রথম তালিকা তৈরি করুন')}</h2>
+          <p className="mt-1 text-sm text-slate-600">{tr('Save taxpayer TINs and optional names for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার টিআইএন ও ঐচ্ছিক নাম সংরক্ষণ করুন।')}</p>
+
+        </div>:<>
+          <TaxPayOfficeRegisterFilters open={filtersExpanded} className="taxpayer-transaction-filters beneficiary-directory__filters taxpay-table-filters">
+            {lists.length>0&&<div className="taxpayer-transaction-filter beneficiary-directory__list-filter">
               <p id="beneficiary-selected-list-label">{tr('Selected list','নির্বাচিত তালিকা')}</p>
               <div className="beneficiary-list-picker" ref={listMenuRef}>
                 <button id="beneficiary-list" ref={listTriggerRef} type="button" className="beneficiary-list-picker__trigger" aria-label={tr('Selected list','নির্বাচিত তালিকা')} aria-haspopup="dialog" aria-expanded={listMenuOpen} aria-controls="beneficiary-list-menu" onClick={()=>setListMenuOpen(current=>!current)}>
@@ -581,16 +587,7 @@ export function Beneficiaries(){
                   </div>)}
                 </div>}
               </div>
-            </div>
-          </div>:null}/>
-
-        {!lists.length?<div className="mx-auto flex max-w-xl flex-col items-center py-5 text-center sm:py-6">
-          <span className="mb-3 rounded-full bg-taxpay-light p-3 text-taxpay-primary"><UsersRound size={28} aria-hidden="true"/></span>
-          <h2 className="text-lg font-semibold text-taxpay-text">{tr('Create your first list','আপনার প্রথম তালিকা তৈরি করুন')}</h2>
-          <p className="mt-1 text-sm text-slate-600">{tr('Save taxpayer TINs and optional names for a faster payment start.','দ্রুত পেমেন্ট শুরু করতে করদাতার টিআইএন ও ঐচ্ছিক নাম সংরক্ষণ করুন।')}</p>
-
-        </div>:<>
-          <TaxPayOfficeRegisterFilters open={filtersExpanded} className="taxpayer-transaction-filters beneficiary-directory__filters taxpay-table-filters">
+            </div>}
             <label className="taxpayer-transaction-filter beneficiary-directory__tag-filter"><span className="hidden sm:inline">{tr('Tag / relationship','ট্যাগ / সম্পর্ক')}</span><span className="sm:hidden">{tr('Tag','ট্যাগ')}</span>
               <SearchableSelect id="beneficiary-filter-tag" ariaLabel={tr('Filter by tag or relationship','ট্যাগ বা সম্পর্ক দিয়ে ফিল্টার')}
                 value={tagFilter==='friends_family'&&relationshipFilter!=='all'
@@ -606,14 +603,15 @@ export function Beneficiaries(){
             </label>
           </TaxPayOfficeRegisterFilters>
           <TaxPayActiveFilterChips clearLabel={tr('Clear all','সব ফিল্টার মুছুন')}
-            onClear={()=>{setSearch('');setTagFilter('all');setRelationshipFilter('all');setReviewTins([]);setSelectedIds([]);}}
+            onClear={()=>{setSearch('');setTagFilter('all');setRelationshipFilter('all');setReviewTins([]);setSelectedIds([]);if(activeList!=='all')switchList('all');}}
             filters={[
               ...(reviewTins.length?[{key:'review-tins',label:tr('Needs tag review','ট্যাগ যাচাই প্রয়োজন'),onRemove:()=>{setReviewTins([]);setSelectedIds([]);}}]:[]),
+              ...(activeList!=='all'&&activeListRecord?[{key:'list',label:tr('List: ','তালিকা: ')+activeListRecord.name,onRemove:()=>switchList('all')}]:[]),
               ...(search.trim()?[{key:'search',label:tr('Search: ','অনুসন্ধান: ')+search.trim(),onRemove:()=>setSearch('')}]:[]),
               ...(tagFilter!=='all'?[{key:'tag',label:tagFilter==='clients'?tr('Clients','ক্লায়েন্ট'):tagFilter==='friends_family'?tr('Friends & family members','বন্ধু ও পরিবারের সদস্য'):tagFilter==='others'?tr('Others','অন্যান্য'):tr('Uncategorized','শ্রেণিবিহীন'),onRemove:()=>{setTagFilter('all');setRelationshipFilter('all');setSelectedIds([]);}}]:[]),
               ...(tagFilter==='friends_family'&&relationshipFilter!=='all'?[{key:'relationship',label:beneficiaryTagLabel('friends_family',relationshipFilter as BeneficiaryRelation,language).split(' · ').at(-1)??relationshipFilter,onRemove:()=>{setRelationshipFilter('all');setSelectedIds([]);}}]:[])
             ]}/>
-          <div className="taxpayer-transaction-count beneficiary-directory__count taxpay-table-toolbar">
+          {(selectedPeople.length>0||filteredPeople.length>0)&&<div className="taxpayer-transaction-count beneficiary-directory__count taxpay-table-toolbar" data-has-selection={selectedPeople.length>0?'true':'false'}>
             <div className="beneficiary-directory__bulk-actions">
               {filteredPeople.length>0&&<label className="beneficiary-directory__select-all">
                 <input type="checkbox" aria-label={tr('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')} checked={allFilteredSelected}
@@ -639,7 +637,7 @@ export function Beneficiaries(){
                 </details>
               </>}
             </div>
-          </div>
+          </div>}
 
           {listPeople.length===0?<div className="rounded-lg border border-dashed border-taxpay-border px-4 py-5 text-center">
             <h2 className="font-semibold text-taxpay-text">{activeList==='all'?tr('No beneficiaries yet','এখনো কোনো উপকারভোগী নেই'):tr(`“${lists.find(list=>list.id===activeList)?.name??''}” is empty`,`“${lists.find(list=>list.id===activeList)?.name??''}” তালিকাটি খালি`)}</h2>
@@ -655,7 +653,13 @@ export function Beneficiaries(){
                 testId="beneficiary-directory-desktop" mobileTestId="beneficiary-directory-mobile"
                 isSelected={person=>selectedIds.includes(person.id)} getRowClassName={()=>"beneficiary-directory__tabular-row"}
                 columns={[
-                  {key:'beneficiary',header:tr('Beneficiary','উপকারভোগী'),renderCell:person=><div className="beneficiary-directory__identity">
+                  {key:'beneficiary',header:tr('Beneficiary','উপকারভোগী'),headerContent:<label className="beneficiary-directory__select-all beneficiary-directory__header-select">
+                    <input type="checkbox" aria-label={tr('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')}
+                      checked={allFilteredSelected} onChange={event=>setSelectedIds(current=>event.target.checked
+                        ?Array.from(new Set([...current,...filteredPeople.map(person=>person.id)]))
+                        :current.filter(id=>!filteredPeople.some(person=>person.id===id)))}/>
+                    <span>{tr('Beneficiary','উপকারভোগী')}</span>
+                  </label>,renderCell:person=><div className="beneficiary-directory__identity">
                     <input id={'beneficiary-select-'+person.id} type="checkbox"
                       aria-label={tr(`Select ${displayName(person)}`,`${displayName(person)} নির্বাচন`)}
                       checked={selectedIds.includes(person.id)}
@@ -672,7 +676,7 @@ export function Beneficiaries(){
                   </div>},
                   {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:person=><div className="beneficiary-directory__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
-                    <UiButton type="button" variant="quiet" className="beneficiary-directory__secondary text-sm"
+                    <UiButton type="button" variant="outline" className="beneficiary-directory__secondary text-sm"
                       onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
                     <UiButton type="button" variant="outline" className="beneficiary-directory__pay gap-2 text-sm" onClick={()=>payWith([person])}>
                       <CreditCard size={16} aria-hidden="true"/>{tr('Make payment','পেমেন্ট করুন')}
@@ -698,7 +702,7 @@ export function Beneficiaries(){
                   </div>
                   <div className="taxpay-mobile-table-card__actions" role="group"
                     aria-label={tr(`Actions for ${displayName(person)}`,`${displayName(person)}-এর কার্যক্রম`)}>
-                    <UiButton type="button" variant="quiet" onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
+                    <UiButton type="button" variant="outline" onClick={()=>openPersonEditor(person)}>{tr('Edit','সম্পাদনা')}</UiButton>
                     <UiButton type="button" variant="outline" className="gap-2" onClick={()=>payWith([person])}>
                       <CreditCard size={16} aria-hidden="true"/>{tr('Make payment','পেমেন্ট করুন')}
                     </UiButton>

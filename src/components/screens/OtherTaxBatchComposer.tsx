@@ -46,6 +46,7 @@ type Props = {
   taxpayers: OtherTaxTaxpayer[];
   lines: OtherTaxAllocation[];
   suggestionTaxpayerIds?: Readonly<Record<string, DemoUserId | null>>;
+  /** Keep original paid amounts when a Pay Again draft reselects a required year. */
   preserveSourcePaymentAmounts?: boolean;
   onChange: (lines: OtherTaxAllocation[]) => void;
   error?: string;

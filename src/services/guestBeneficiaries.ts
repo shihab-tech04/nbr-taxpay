@@ -98,6 +98,10 @@ async function post<T>(action: string, fields: Record<string, unknown> = {}, sou
       if (response.status === 410 || result?.code === 'GUEST_SESSION_UNAVAILABLE') {
         throw new Error('This browser’s saved beneficiary session has expired or is unavailable. Its access key was kept so it will not be replaced silently.');
       }
+      if (nextAction.startsWith('guest-payment-draft-')) {
+        if (response.status === 409) throw new Error('The saved draft was changed in another session. Reload the draft before updating.');
+        if (response.status === 404) throw new Error('The selected payment draft was not found.');
+      }
       if (response.status === 409 && result?.code === 'BENEFICIARY_ALREADY_IN_LIST') {
         throw new Error('This beneficiary is already saved in the destination list.');
       }
@@ -127,6 +131,19 @@ async function post<T>(action: string, fields: Record<string, unknown> = {}, sou
   invalidatePreviewRead();
   try { return await send(action, fields); }
   finally { invalidatePreviewRead(); }
+}
+
+/** Reuse the existing unsigned guest capability, never exposing or rotating its token in UI code. */
+export async function unsignedGuestPaymentDraftRequest<T>(
+  action: 'list'|'get'|'create'|'update'|'delete',
+  fields: Record<string,unknown> = {},
+): Promise<T> {
+  if (activePreviewSession()) throw new Error('Sign out of the preview account before using guest drafts.');
+  const before = getCapability('active').value;
+  const result = await post<T>('guest-payment-draft-'+action,fields);
+  if (activePreviewSession() || getCapability('active').value !== before)
+    throw new Error('Guest payment session changed. Reopen your draft.');
+  return result;
 }
 
 /** Only idempotent reads retry once on transport/service interruption. A failed
@@ -222,6 +239,11 @@ export function createGuestBeneficiaryList(name: string): Promise<GuestList> {
 
 export function addGuestBeneficiaries(listId: string, rows: BeneficiaryInput[]): Promise<number> {
   return post('add', { listId, rows });
+}
+
+/** Explicitly restore untagged rows from the retained legacy guest book. */
+export function restoreLegacyGuestBeneficiaries(listId:string,rows:BeneficiaryInput[]):Promise<number>{
+  return post('restore-legacy-add',{listId,rows});
 }
 
 export async function updateGuestBeneficiary(id: string, name: string): Promise<void> {

@@ -43,6 +43,8 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   // Add beneficiary opens the existing individual form directly while Excel import is hidden.
   const addDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await expect(addDialog).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Choose how to add beneficiaries'})).toHaveCount(0);
   await addDialog.locator('#beneficiary-tin').fill('012345678901');
   await addDialog.locator('#beneficiary-name').fill('Local Beneficiary One');
   await chooseBeneficiaryOption(addDialog,'beneficiary-tag','friends_family:father');
@@ -79,14 +81,17 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(records).toContainText('Local Beneficiary One');
 
-  // Excel entry is intentionally hidden; add the second taxpayer through
-  // the existing individual form while retaining owner-isolation coverage.
+  // Excel entry is hidden; adding the second taxpayer uses the existing form while retaining owner-isolation coverage.
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  const individual=page.getByRole('dialog',{name:'Beneficiary entry'});
-  await individual.locator('#beneficiary-tin').fill('987654321098');
-  await individual.locator('#beneficiary-name').fill('Local Beneficiary Two');
-  await chooseBeneficiaryOption(individual,'beneficiary-tag','clients');
-  await individual.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  const secondAddDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await expect(secondAddDialog).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Choose how to add beneficiaries'})).toHaveCount(0);
+  await expect(page.getByText('Import from Excel',{exact:true})).toHaveCount(0);
+  await secondAddDialog.locator('#beneficiary-tin').fill('987654321098');
+  await secondAddDialog.locator('#beneficiary-name').fill('Local Beneficiary Two');
+  await chooseBeneficiaryOption(secondAddDialog,'beneficiary-tag','clients');
+  await secondAddDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await expect(page.getByText('Beneficiary saved.')).toBeVisible({timeout:15000});
   await expect(records).toContainText('Local Beneficiary Two');
   await page.reload();
   await expect(records).toContainText('Local Beneficiary Two');

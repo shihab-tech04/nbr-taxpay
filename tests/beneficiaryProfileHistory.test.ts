@@ -28,6 +28,16 @@ test('profile calculates only the selected TIN allocation, across heads and asse
   assert.ok(items.every(item=>item.source==='simulation'&&countsTowardBeneficiaryPaidTotal(item)));
 });
 
+test('simulated profile shows the original payment reference while retaining its SQL transaction ID internally',()=>{
+  const splitIdentity={...transaction,id:'SIM-ORIGINAL-REF',transactionId:'00000000-0000-4000-8000-000000000901'};
+  const rows=beneficiaryProfilePayments(tin2,[],[splitIdentity],'user1','en');
+  assert.equal(rows.length,2);
+  assert.ok(rows.every(row=>row.reference==='SIM-ORIGINAL-REF'));
+  assert.ok(rows.every(row=>row.transactionId==='00000000-0000-4000-8000-000000000901'));
+  assert.ok(rows.every(row=>row.paymentId==='00000000-0000-4000-8000-000000000901'));
+  assert.equal(new Set(rows.map(row=>row.transactionId)).size,1,'both allocations retain one source transaction');
+});
+
 test('other beneficiaries and unmatched saved TINs remain out of this profile',()=>{
   const otherTin=sampleTinForUserNumber(3)!;
   assert.deepEqual(beneficiaryProfilePayments(otherTin,[],[transaction],'user1','bn').map(x=>x.amountMinor),[15000]);

@@ -4,17 +4,18 @@ import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
+import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import type { PaymentReuse } from '../../services/paymentReuse';
 import {activePreviewSession} from '../../services/previewAccountSession';
+import {TAXPAY_PUBLIC_ENDPOINT} from '../../config/publicBackend';
 import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
 import { deletePaymentFormDraft, type PaymentDraftActor, type PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
 import {
   LAND_PORT_NAMES, SAMPLE_BD_PASSPORTS, TRAVEL_TAX_ECONOMIC_CODE, TRAVEL_TAX_YEAR,
-  makeTravelPassenger, travelPartyTotal, validateTravelParty, assessTravelPassenger, travelPassengerAge, dhakaTravelDate, isPlannedTravelDate,
+  makeTravelPassenger, travelPartyTotal, travelTaxRateEvidence, validateTravelParty, assessTravelPassenger, travelPassengerAge, dhakaTravelDate, isPlannedTravelDate,
   type TravelMode, type TravelPassenger, type TravellerNationality,
 } from '../../data/travelTax2026';
 import { formatCurrency } from '../../services/numberFormat';
@@ -40,6 +41,29 @@ function maskPassport(passport: string) {
   return passport.length <= 4 ? '••••' : '••••' + passport.slice(-4);
 }
 
+type PendingTravelPayment = StoryPaymentInput & {
+  service: 'TRAVEL_TAX';
+  details: StoryPaymentInput['details'] & { receiptSnapshot: ChallanReceipt };
+};
+
+function readPendingTravelPayment(key: string, sessionId: string): PendingTravelPayment | null {
+  try {
+    const stored = sessionStorage.getItem(key);
+    if (!stored) return null;
+    const payment = JSON.parse(stored) as Partial<PendingTravelPayment>;
+    const receipt = payment.details?.receiptSnapshot;
+    if (payment.service !== 'TRAVEL_TAX' || payment.sessionId !== sessionId ||
+        typeof payment.idempotencyKey !== 'string' || !Number.isSafeInteger(payment.amountMinor) ||
+        !receipt || receipt.paymentCategory !== 'TRAVEL_TAX' ||
+        receipt.tokenNumber !== 'SIM-TOKEN-' + payment.idempotencyKey ||
+        !Array.isArray(receipt.travelDetails?.passengers) || !Array.isArray(receipt.items) ||
+        Math.round(receipt.totalAmount * 100) !== payment.amountMinor) return null;
+    return payment as PendingTravelPayment;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Four progressive stages in the existing TaxPay modal.
  * This is a UX/reference-data preview, not a real passport verification or
@@ -48,6 +72,10 @@ function maskPassport(passport: string) {
 export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, initialReuse, onBackToService, onStageChange }) => {
   const { language, navigate, addPaymentReceipt, previewAccount } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
+  // Keep the existing signed-in draft journey untouched. Unsigned guests
+  // reuse WS3's current capability/session only when its backend is configured.
+  const unsignedGuestDrafts = !authenticatedUser && !previewAccount &&
+    Boolean(TAXPAY_PUBLIC_ENDPOINT.url && TAXPAY_PUBLIC_ENDPOINT.publishableKey);
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
@@ -64,7 +92,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const [editingPassengerId, setEditingPassengerId] = useState<string | null>('first');
   const [confirmedPassengerIds, setConfirmedPassengerIds] = useState<string[]>([]);
   const [receiptReviewOpen, setReceiptReviewOpen] = useState(false);
-  const [passengerIssue, setPassengerIssue] = useState<{ id: string; message: string } | null>(null);
+  type PassengerIdentityIssue = {
+    id: string;
+    message: string;
+    field?: 'passport' | 'name' | 'birth-date' | 'country' | 'medical';
+  };
+  const [passengerIssue, setPassengerIssue] = useState<PassengerIdentityIssue | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
   const [medicalHelpFor, setMedicalHelpFor] = useState<string | null>(null);
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
@@ -75,17 +108,29 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const [processing, setProcessing] = useState(false);
   const [bankSlipPending, setBankSlipPending] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState<ChallanReceipt | null>(null);
+  const [sourcePaymentId, setSourcePaymentId] = useState<string | null>(null);
   const [selectedAccountDraft, setSelectedAccountDraft] = useState<PaymentFormDraft | null>(null);
   const [draftFooterTarget, setDraftFooterTarget] = useState<HTMLDivElement | null>(null);
+  const storySessionId = getStorySessionId();
+  const pendingPaymentKey = 'taxpay-travel-payment:' + storySessionId + ':' +
+    (authenticatedUser?.id ?? previewAccount?.id ?? 'walk-in');
+  const [recoveringPayment, setRecoveringPayment] = useState<PendingTravelPayment | null>(null);
+  const pendingPayment = useRef<PendingTravelPayment | null>(null);
+
+  useEffect(() => {
+    const saved = readPendingTravelPayment(pendingPaymentKey, storySessionId);
+    pendingPayment.current = saved;
+    setRecoveringPayment(saved);
+  }, [pendingPaymentKey, storySessionId]);
   const [paymentNonce, setPaymentNonce] = useState(() => crypto.randomUUID());
 
 
-  // Only account-based draft snapshots are persisted. Unverified preview-account
-  // passports are re-entered on resume because preview credentials are public.
+  // Travel passports require reconfirmation on resume. Never persist plaintext
+  // passport values under a public preview or unsigned guest capability.
   const snapshotTravelDraft = (): Record<string, unknown> => ({
     schemaVersion: 1, step: Math.min(step, 2), mode, port, waterPort,
-    destination, travelDate, phone,
-    passengers: previewAccount
+    destination, travelDate, phone, sourcePaymentId,
+    passengers: (previewAccount || unsignedGuestDrafts)
       ? passengers.map(person => ({ ...person, passport: '', identitySource: person.nationality === 'BD' ? 'PENDING' : 'MANUAL' }))
       : passengers,
   });
@@ -104,6 +149,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setDestination(typeof saved.destination === 'string' ? saved.destination : '');
     setTravelDate(typeof saved.travelDate === 'string' ? saved.travelDate : '');
     setPhone(typeof saved.phone === 'string' ? saved.phone : '');
+    setSourcePaymentId(typeof saved.sourcePaymentId === 'string' && saved.sourcePaymentId.length
+      ? saved.sourcePaymentId : null);
     setPassengers(restored.map(person => ({
       ...person, identitySource: person.nationality === 'BD' ? 'PENDING' : 'MANUAL',
     })));
@@ -112,7 +159,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setPaymentChannel(null); setMethodGroup(null); setPaymentMethod(null);
     setAcknowledged(false); setSimulateDecline(false); setCreatedReceipt(null);
     setBankSlipPending(false); setReceiptReviewOpen(false); setProcessing(false);
-    setPaymentNonce(crypto.randomUUID()); setError(''); setStep(0);
+    pendingPayment.current = null; setPaymentNonce(crypto.randomUUID()); setError(''); setStep(0);
   };
   useEffect(() => {
     if (!initialDraft) return;
@@ -135,7 +182,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       setError('Account changed. Reopen your payment history before using Pay Again.');
       return;
     }
-    try { restoreTravelDraft(initialReuse.formPayload); }
+    try { restoreTravelDraft({ ...initialReuse.formPayload, sourcePaymentId: initialReuse.sourcePaymentId }); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Previous travel payment could not be copied.'); }
     // A different history record remounts this form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,14 +191,15 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     if (!selectedAccountDraft || !createdReceipt || bankSlipPending) return;
     const actor: PaymentDraftActor | null = authenticatedUser
       ? {kind:'authenticated',userId:authenticatedUser.id}
-      : previewAccount ? {kind:'preview',profileId:previewAccount.id} : null;
+      : previewAccount ? {kind:'preview',profileId:previewAccount.id}
+      : unsignedGuestDrafts ? {kind:'guest'} : null;
     if (!actor) return;
     let active = true;
     void deletePaymentFormDraft(actor,selectedAccountDraft).then(() => {
       if (active) setSelectedAccountDraft(null);
     }).catch(() => { /* preserve a recoverable draft if SQL cleanup fails */ });
     return () => { active = false; };
-  }, [createdReceipt?.id, bankSlipPending, selectedAccountDraft?.id, authenticatedUser?.id, previewAccount?.id]);
+  }, [createdReceipt?.id, bankSlipPending, selectedAccountDraft?.id, authenticatedUser?.id, previewAccount?.id, unsignedGuestDrafts]);
 
   useEffect(() => { onStageChange?.((step + 1) as 1 | 2 | 3 | 4); }, [step, onStageChange]);
   // The receipt takes over the wizard. Reset its scroll position when it
@@ -249,53 +297,58 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       return tr('Select today or a future travel date.', 'আজকের বা ভবিষ্যতের ভ্রমণের তারিখ নির্বাচন করুন।');
     return null;
   };
-  const firstIdentityIssue = (): {id: string; message: string} | null => {
-    const used = new Set<string>();
-    for (let index = 0; index < passengers.length; index++) {
-      const item = passengers[index];
-      const prefix = tr('Passenger ', 'যাত্রী ') + (index + 1) + ': ';
-      if (item.passport.trim().length < 6)
-        return {id: item.id, message: prefix + tr('enter a valid passport number.', 'বৈধ পাসপোর্ট নম্বর দিন।')};
-      const passport = item.passport.trim().toUpperCase();
-      if (used.has(passport))
-        return {id: item.id, message: prefix + tr('this passport is already used by another passenger.', 'এই পাসপোর্ট অন্য যাত্রী ইতিমধ্যে ব্যবহার করেছেন।')};
-      used.add(passport);
-      if (item.nationality === 'BD' && item.identitySource !== 'PASSPORT_SAMPLE')
-        return {id: item.id, message: prefix + tr('check the selected sample passport first.', 'প্রথমে নির্বাচিত নমুনা পাসপোর্ট যাচাই করুন।')};
-      if (item.name.trim().length < 2)
-        return {id: item.id, message: prefix + tr('enter a passenger name.', 'যাত্রীর নাম লিখুন।')};
-      if (item.nationality === 'FOREIGN') {
-        if (!item.country.trim())
-          return {id: item.id, message: prefix + tr('enter the country of nationality.', 'জাতীয়তার দেশ লিখুন।')};
-        if (travelPassengerAge(item.birthDate, new Date().toISOString().slice(0,10)) === null)
-          return {id: item.id, message: prefix + tr('enter a valid date of birth.', 'বৈধ জন্মতারিখ দিন।')};
-      }
-      if (item.medicalPortReferral)
-        return {id: item.id, message: prefix + tr('medical exemption requires assessment at the departure port.', 'চিকিৎসাজনিত অব্যাহতির জন্য বন্দরে সরাসরি যাচাই প্রয়োজন।')};
+  const passengerIdentityIssue = (id: string): PassengerIdentityIssue | null => {
+    const index = passengers.findIndex(item => item.id === id);
+    const item = passengers[index];
+    if (!item || index < 0) return {id, message: tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।'), field: 'passport'};
+    const prefix = tr('Passenger ', 'যাত্রী ') + (index + 1) + ': ';
+    if (item.passport.trim().length < 6)
+      return {id: item.id, message: prefix + tr('enter a valid passport number.', 'বৈধ পাসপোর্ট নম্বর দিন।'), field: 'passport'};
+    const passport = item.passport.trim().toUpperCase();
+    const duplicateEarlierPassenger = passengers.slice(0, index).some(
+      other => other.passport.trim().toUpperCase() === passport,
+    );
+    if (duplicateEarlierPassenger)
+      return {id: item.id, message: prefix + tr('this passport is already used by another passenger.', 'এই পাসপোর্ট অন্য যাত্রী ইতিমধ্যে ব্যবহার করেছেন।'), field: 'passport'};
+    if (item.nationality === 'BD' && item.identitySource !== 'PASSPORT_SAMPLE')
+      return {id: item.id, message: prefix + tr('check the selected sample passport first.', 'প্রথমে নির্বাচিত নমুনা পাসপোর্ট যাচাই করুন।'), field: 'passport'};
+    if (item.name.trim().length < 2)
+      return {id: item.id, message: prefix + tr('enter a passenger name.', 'যাত্রীর নাম লিখুন।'), field: 'name'};
+    if (item.nationality === 'FOREIGN') {
+      if (!item.country.trim())
+        return {id: item.id, message: prefix + tr('enter the country of nationality.', 'জাতীয়তার দেশ দিন।'), field: 'country'};
+      if (travelPassengerAge(item.birthDate, new Date().toISOString().slice(0,10)) === null)
+        return {id: item.id, message: prefix + tr('enter a valid date of birth.', 'বৈধ জন্মতারিখ দিন।'), field: 'birth-date'};
+    }
+    if (item.medicalPortReferral)
+      return {id: item.id, message: prefix + tr('medical exemption requires assessment at the departure port.', 'চিকিৎসাজনিত অব্যাহতির জন্য বন্দরে সরাসরি যাচাই প্রয়োজন।'), field: 'medical'};
+    return null;
+  };
+  const firstIdentityIssue = (): PassengerIdentityIssue | null => {
+    for (const item of passengers) {
+      const issue = passengerIdentityIssue(item.id);
+      if (issue) return issue;
     }
     return null;
   };
-  // Recover a pending confirmation even when its editor switches to summary;
-  // identity lookup must never silently confirm a passenger.
+  // Keep the explicit confirmation action visible for the pending passenger.
+  // Clicking it reports the precise missing field before any passenger is added.
   const pendingConfirmationId = editingPassengerId ??
     passengers.find(item => !confirmedPassengerIds.includes(item.id))?.id ?? null;
-  // Present the confirmation action only once the current person's details
-  // can actually be reviewed. Passport lookup never adds a passenger itself.
-  const canShowAddPassenger = passengers.some(item =>
-    item.id === pendingConfirmationId && (item.nationality === 'BD'
+  const canShowAddPassenger = passengers.some(item => item.id === pendingConfirmationId &&
+    (item.nationality === 'BD'
       ? item.identitySource === 'PASSPORT_SAMPLE'
-      : item.passport.trim().length >= 6 && item.name.trim().length >= 2 &&
-        !!item.country.trim() &&
-        travelPassengerAge(item.birthDate, new Date().toISOString().slice(0, 10)) !== null));
+      : !!(item.passport.trim() || item.name.trim() || item.birthDate.trim() || item.country.trim())));
   const allPassengersComplete = firstIdentityIssue() === null &&
     passengers.every(item => confirmedPassengerIds.includes(item.id));
   const receiptMobileComplete = /^01\d{9}$/.test(phone);
   const canContinueToTravel = allPassengersComplete && receiptMobileComplete;
-  const reportIdentityIssue = (issue: {id: string; message: string}) => {
+  const reportIdentityIssue = (issue: PassengerIdentityIssue) => {
     setEditingPassengerId(issue.id); setPassengerIssue(issue);
     showError(issue.message);
+    const focusId = 'travel-' + (issue.field ?? 'passport') + '-' + issue.id;
     requestAnimationFrame(() => requestAnimationFrame(() =>
-      document.getElementById('travel-passport-' + issue.id)?.focus()));
+      document.getElementById(focusId)?.focus()));
   };
   const validatePassengers = () => {
     const problem = validateTravelParty(passengers, travelDate);
@@ -338,7 +391,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setReceiptReviewOpen(false); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
-    setCreatedReceipt(null); setProcessing(false); setPaymentNonce(crypto.randomUUID());
+    setCreatedReceipt(null); setProcessing(false); pendingPayment.current = null; setPaymentNonce(crypto.randomUUID());
   };
 
   const paymentReceipt = (pendingBank: boolean): ChallanReceipt => {
@@ -398,12 +451,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     // Records are explicitly simulated: no real A-Challan is issued.
     let stored = receipt;
     if (import.meta.env.VITE_SUPABASE_DISABLED !== 'true') {
-      const ack = await persistSimulatedPayment({
+      pendingPayment.current ??= {
         idempotencyKey: paymentNonce,
-        sessionId: getStorySessionId(),
+        sessionId: storySessionId,
         service: 'TRAVEL_TAX',
         amountMinor: Math.round(totalAmount * 100),
         details: {
+          ...(sourcePaymentId ? { sourcePaymentId } : {}),
           payerName: passengers[0].name.trim(),
           assessmentYear: TRAVEL_TAX_YEAR,
           paymentMethod, paymentChannel,
@@ -411,15 +465,24 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
           travelMode: mode, departurePort: selectedPort,
           destination: destination.trim(), travelDate,
           economicCode: TRAVEL_TAX_ECONOMIC_CODE,
+          travelRateEvidence: travelTaxRateEvidence(mode, unitRate),
           passengers: receipt.travelDetails?.passengers,
           lines: receipt.items, receiptSnapshot: receipt,
         },
-      });
-      stored = { ...receipt, paymentTransactionId: ack.id };
+      };
+      const request = pendingPayment.current;
+      try {
+        sessionStorage.setItem(pendingPaymentKey, JSON.stringify(request));
+      } catch { /* In-memory retry remains available when storage is unavailable. */ }
+      const ack = await persistSimulatedPayment(request);
+      try { sessionStorage.removeItem(pendingPaymentKey); }
+      catch { /* The saved key can safely replay the same payment. */ }
+      stored = { ...request.details.receiptSnapshot, paymentTransactionId: ack.id };
     }
+    setRecoveringPayment(null);
     addPaymentReceipt(stored);
     setCreatedReceipt(stored);
-    setPaymentNonce(crypto.randomUUID());
+    pendingPayment.current = null; setPaymentNonce(crypto.randomUUID());
     setBankSlipPending(false);
     stepTo(3);
   };
@@ -427,19 +490,21 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (step !== 2 || processing) return;
-    const problem = validateTravelDetails() ?? validatePassengers();
+    const problem = pendingPayment.current ? null : validateTravelDetails() ?? validatePassengers();
     if (problem) { showError(problem); return; }
-    if (!paymentMethod || !paymentChannel || !acknowledged) {
+    if (!pendingPayment.current && (!paymentMethod || !paymentChannel || !acknowledged)) {
       setError(tr('Choose a payment method and confirm the details.', 'পেমেন্ট পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করুন।'));
       return;
     }
-    if (totalAmount <= 0) {
+    if (!pendingPayment.current && totalAmount <= 0) {
       setError(tr('No tax is payable for this passenger group.', 'এই যাত্রীদের জন্য কর প্রদেয় নেই।'));
       return;
     }
     setError(''); setProcessing(true);
     try {
-      if (paymentChannel === 'NOW' && simulateDecline) {
+      if (pendingPayment.current) {
+        await persistPreview(pendingPayment.current.details.receiptSnapshot);
+      } else if (paymentChannel === 'NOW' && simulateDecline) {
         setError(tr('Payment preview declined. Try again.', 'পেমেন্ট পরীক্ষাটি প্রত্যাখ্যাত হয়েছে। আবার চেষ্টা করুন।'));
       } else if (paymentChannel === 'OTC') {
         setCreatedReceipt(paymentReceipt(true));
@@ -469,6 +534,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     const panelId = 'travel-passenger-panel-' + item.id;
     const assessment = assessTravelPassenger(item, unitRate, travelDate);
     const normalizedPassport = item.passport.trim().toUpperCase();
+    const passengerFieldIssue = passengerIssue?.id === item.id ? passengerIssue : null;
     const passportAlreadyAdded = !!normalizedPassport && passengers.some(other =>
       other.id !== item.id && other.passport.trim().toUpperCase() === normalizedPassport);
     const availableSamples = SAMPLE_BD_PASSPORTS.filter(sample =>
@@ -511,8 +577,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 <input id={'travel-passport-' + item.id} role="combobox" aria-autocomplete="list"
                   aria-controls={'travel-passport-suggestions-' + item.id}
                   aria-expanded={passportSuggestionsFor === item.id}
-                  aria-invalid={passportAlreadyAdded}
-                  aria-describedby={passportAlreadyAdded ? 'travel-passport-duplicate-' + item.id : undefined}
+                  aria-invalid={passportAlreadyAdded || passengerFieldIssue?.field === 'passport'}
+                  aria-describedby={[
+                    passportAlreadyAdded ? 'travel-passport-duplicate-' + item.id : null,
+                    passengerFieldIssue?.field === 'passport' ? 'travel-passenger-issue-' + item.id : null,
+                  ].filter(Boolean).join(' ') || undefined}
                   value={item.passport} maxLength={20} autoComplete="off"
                   onFocus={() => {
                     errorFocusRevision.current += 1;
@@ -553,7 +622,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                   disabled={normalizedPassport.length < 6} onClick={() => {
                   setPassportSuggestionsFor(null);
                   if (passportAlreadyAdded) {
-                    reportIdentityIssue({id: item.id, message: tr('Passport already added.', 'পাসপোর্ট ইতিমধ্যে যোগ করা হয়েছে।')});
+                    const message = tr('Passport already added.', 'পাসপোর্ট ইতিমধ্যে যোগ করা হয়েছে।');
+                    // The duplicate is already announced beside the field.
+                    // Keep the shared alert without adding a second row message.
+                    setPassengerIssue(null);
+                    showError(message);
+                    requestAnimationFrame(() => requestAnimationFrame(() =>
+                      document.getElementById('travel-passport-' + item.id)?.focus()));
                     return;
                   }
                   const sample = SAMPLE_BD_PASSPORTS.find(entry => entry.passport === normalizedPassport);
@@ -630,6 +705,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               <label htmlFor={'travel-passport-' + item.id}>{tr('Passport number','পাসপোর্ট নম্বর')} *</label>
               <div className="travel-flow__passport-entry">
               <input id={'travel-passport-' + item.id} value={item.passport} maxLength={20} autoComplete="off"
+                aria-invalid={passengerFieldIssue?.field === 'passport'}
+                aria-describedby={passengerFieldIssue?.field === 'passport' ? 'travel-passenger-issue-' + item.id : undefined}
                 onChange={event => changePassenger(item.id, {passport: event.target.value.toUpperCase().replace(/\s+/g, '')})}
                 placeholder={tr('Enter passport number','পাসপোর্ট নম্বর লিখুন')}/>
               {item.passport && <button type="button" className="travel-flow__passport-clear"
@@ -646,17 +723,23 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             <div className="travel-flow__field">
               <label htmlFor={'travel-name-' + item.id}>{tr('Passenger name as on passport','পাসপোর্ট অনুযায়ী নাম')} *</label>
               <input id={'travel-name-' + item.id} maxLength={100} value={item.name}
+                aria-invalid={passengerFieldIssue?.field === 'name'}
+                aria-describedby={passengerFieldIssue?.field === 'name' ? 'travel-passenger-issue-' + item.id : undefined}
                 onChange={event => changePassenger(item.id, {name: event.target.value.toUpperCase()})}
                 placeholder={tr('Enter full name','পূর্ণ নাম লিখুন')}/>
             </div>
             <div className="travel-flow__field">
               <label htmlFor={'travel-birth-date-' + item.id}>{tr('Date of birth','জন্মতারিখ')} *</label>
               <input id={'travel-birth-date-' + item.id} type="date" value={item.birthDate}
+                aria-invalid={passengerFieldIssue?.field === 'birth-date'}
+                aria-describedby={passengerFieldIssue?.field === 'birth-date' ? 'travel-passenger-issue-' + item.id : undefined}
                 max={travelDate || undefined} onChange={event => changePassenger(item.id, {birthDate: event.target.value})}/>
             </div>
             <div className="travel-flow__field">
               <label htmlFor={'travel-country-' + item.id}>{tr('Country of nationality','জাতীয়তার দেশ')} *</label>
               <input id={'travel-country-' + item.id} maxLength={80} value={item.country}
+                aria-invalid={passengerFieldIssue?.field === 'country'}
+                aria-describedby={passengerFieldIssue?.field === 'country' ? 'travel-passenger-issue-' + item.id : undefined}
                 onChange={event => changePassenger(item.id, {country: event.target.value})}
                 placeholder={tr('Enter country','দেশ লিখুন')}/>
             </div>
@@ -677,6 +760,32 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       </div>
     </>;
   };
+
+  if (recoveringPayment) {
+    const recover = async () => {
+      if (processing) return;
+      setProcessing(true);
+      setError('');
+      try {
+        pendingPayment.current = recoveringPayment;
+        await persistPreview(recoveringPayment.details.receiptSnapshot);
+      } catch {
+        setError(tr('Payment confirmation is still unavailable. Retry again.',
+          'পেমেন্ট নিশ্চিতকরণ পাওয়া যায়নি। আবার চেষ্টা করুন।'));
+      } finally { setProcessing(false); }
+    };
+    const retryAction = <button type="button" className="travel-flow__primary"
+      disabled={processing} onClick={recover}>
+      {processing ? tr('Processing…', 'প্রক্রিয়াধীন…') : tr('Retry payment confirmation', 'পেমেন্ট নিশ্চিতকরণ আবার চেষ্টা করুন')}
+    </button>;
+    return <section className="travel-flow__panel" lang={language}>
+      <h3>{tr('Payment confirmation pending', 'পেমেন্ট নিশ্চিতকরণের অপেক্ষায়')}</h3>
+      <p>{recoveringPayment.details.receiptSnapshot.challanNo}</p>
+      <p>{formatCurrency(recoveringPayment.amountMinor / 100, language)}</p>
+      {error && <p role="alert">{error}</p>}
+      {modalFooterTarget ? createPortal(retryAction, modalFooterTarget) : retryAction}
+    </section>;
+  }
 
   const primaryAction = createdReceipt && bankSlipPending ? (
     <button type="button" className="travel-flow__primary" onClick={settleBankSlip} disabled={processing}>
@@ -733,14 +842,17 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
           ))}
         </nav>}
         <form id="travel-tax-form" onSubmit={submit} noValidate>
-          {initialReuse && !createdReceipt && <p role="status" data-testid="travel-pay-again-notice"
+          {sourcePaymentId && !createdReceipt && <p role="status" data-testid="travel-pay-again-notice"
             className="rounded-lg border border-taxpay-border bg-taxpay-light px-3 py-2 text-sm text-taxpay-dark">
-            {tr('Copied from your previous travel payment. Confirm each passenger again, enter passport and date of birth, and choose a new travel date before paying.',
-              'আগের ভ্রমণ করের তথ্য থেকে কপি করা হয়েছে। পরিশোধের আগে প্রতিটি যাত্রীর পাসপোর্ট ও জন্মতারিখ পুনরায় দিন, যাচাই করুন এবং নতুন ভ্রমণের তারিখ নির্বাচন করুন।')}
+            {tr('Copied from previous travel payment (reference: ','আগের ভ্রমণ করের পেমেন্ট কপি করা হয়েছে (রেফারেন্স: ')}
+            <strong className="break-all">{sourcePaymentId}</strong>.{' '}
+            {tr('The original payment remains unchanged. Confirm each passenger again, enter passport and date of birth, and choose a new travel date before paying.',
+              'মূল পেমেন্ট অপরিবর্তিত থাকবে। পরিশোধের আগে প্রতিটি যাত্রীর পাসপোর্ট ও জন্মতারিখ পুনরায় দিন, যাচাই করুন এবং নতুন ভ্রমণের তারিখ নির্বাচন করুন।')}
           </p>}
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert" tabIndex={-1}>{error}</p>}
-          {(authenticatedUser || previewAccount) && !createdReceipt &&
+          {(authenticatedUser || previewAccount || unsignedGuestDrafts) && !createdReceipt &&
             <AccountPaymentDraftControls service="TRAVEL_TAX" language={language}
+              allowGuest={unsignedGuestDrafts}
               snapshot={snapshotTravelDraft} restore={restoreTravelDraft}
               selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft}
               guardOnly={step >= 2} actionTarget={embedded ? draftFooterTarget : undefined} />}
@@ -773,7 +885,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     </div>
                     {editing ? <div key={item.id + '-editor'} className="travel-flow__person-body">
                       {renderPassengerEditor(item, index)}
-                      {passengerIssue?.id === item.id && <p className="travel-flow__inline-error" role="status">{passengerIssue.message}</p>}
+                      {passengerIssue?.id === item.id && <p id={'travel-passenger-issue-' + item.id} className="travel-flow__inline-error" role="status">{passengerIssue.message}</p>}
                     </div> : <dl key={item.id + '-summary'} className="travel-flow__person-summary travel-flow__person-body">
                       <div><dt>{tr('Passenger name', 'যাত্রীর নাম')}</dt><dd data-testid={'travel-passenger-name-' + item.id}>{item.name}</dd></div>
                       <div><dt>{tr('Passport number', 'পাসপোর্ট নম্বর')}</dt><dd>{maskPassport(item.passport)}</dd></div>
@@ -812,9 +924,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     {!valid && !editing && <p className="travel-flow__field-hint">{tr('Passenger details need correction.', 'যাত্রীর তথ্য সংশোধন প্রয়োজন।')}</p>}
                     {canShowAddPassenger && pendingConfirmationId === item.id && <div className="travel-flow__confirm-row">
                       <button type="button" className="travel-flow__add-member travel-flow__confirm-passenger"
-                        disabled={firstIdentityIssue() !== null}
+                        disabled={item.medicalPortReferral}
                         onClick={() => {
-                          const issue = firstIdentityIssue();
+                          const issue = passengerIdentityIssue(item.id);
                           if (issue) { reportIdentityIssue(issue); return; }
                           setConfirmedPassengerIds(ids => [...new Set([...ids, item.id])]);
                           setEditingPassengerId(null);
@@ -1015,7 +1127,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </dl>
           </details>}
           <PaymentJourneyFooter className="travel-flow__footer-actions"
-            leading={(authenticatedUser || previewAccount) && !createdReceipt && step < 2
+            leading={(authenticatedUser || previewAccount || unsignedGuestDrafts) && !createdReceipt && step < 2
               ? <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />
               : null}
             back={!createdReceipt && step > 0 && <button type="button" className="tax-service-choice__cancel"

@@ -20,12 +20,14 @@ type Props = {
   actionTarget?: HTMLElement | null;
   /** Keep a close-save guard on the review step without displaying a second Save control. */
   guardOnly?: boolean;
+  /** Reuse these exact controls for unsigned guests once WS3's API is available. */
+  allowGuest?: boolean;
 };
 
 /** Keep owner-scoped drafts inside the existing payment form; no extra login,
  * duplicate payment flow, URL state or browser-local draft storage. */
 export const AccountPaymentDraftControls: React.FC<Props> = ({
-  service, language, snapshot, restore, selectedDraft, onSelectedDraft, actionTarget, guardOnly = false,
+  service, language, snapshot, restore, selectedDraft, onSelectedDraft, actionTarget, guardOnly = false, allowGuest = false,
 }) => {
   const registerDraftExit = useContext(PaymentDraftExitContext);
   const { previewAccount } = useTaxState();
@@ -33,12 +35,15 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   const bn = language === 'bn';
   const actor: PaymentDraftActor | null = realUser
     ? { kind: 'authenticated', userId: realUser.id }
-    : previewAccount ? { kind: 'preview', profileId: previewAccount.id } : null;
-  const ownerKey = actor ? actor.kind + ':' + (actor.kind === 'preview' ? actor.profileId : actor.userId) : '';
+    : previewAccount ? { kind: 'preview', profileId: previewAccount.id }
+    : allowGuest ? { kind: 'guest' } : null;
+  const ownerKey = actor ? actor.kind + ':' + (actor.kind === 'preview' ? actor.profileId : actor.kind === 'authenticated' ? actor.userId : 'session') : '';
   const [rows, setRows] = useState<PaymentFormDraft[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Do not display inert guest draft buttons against older SQL/Edge deployments.
+  const [guestContractReady, setGuestContractReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
@@ -47,6 +52,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   useEffect(() => {
     let active = true;
     setRows([]);
+    setGuestContractReady(false);
     setPendingDelete(null);
     setError(null);
     setFeedback(null);
@@ -54,9 +60,10 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     if (!actor) return () => { active = false; };
     setLoading(true);
     void listPaymentFormDrafts(actor, service).then(result => {
-      if (active) setRows(result);
+      if (active) { setRows(result); if (actor.kind === 'guest') setGuestContractReady(true); }
     }).catch(() => {
-      if (active) setError(bn ? 'সংরক্ষিত খসড়া লোড করা যায়নি। আবার চেষ্টা করুন।' : 'Saved drafts could not be loaded. Retry.');
+      if (active && actor.kind !== 'guest')
+        setError(bn ? 'সংরক্ষিত খসড়া লোড করা যায়নি। আবার চেষ্টা করুন।' : 'Saved drafts could not be loaded. Retry.');
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   // A new owner cannot see stale rows while an async query is pending.
@@ -135,7 +142,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     return () => registerDraftExit(null);
   }, [registerDraftExit, ownerKey, service, authLoading, busy, loading, snapshot, selectedDraft]);
 
-  if (!actor || authLoading) return null;
+  if (!actor || authLoading || (actor.kind === 'guest' && !guestContractReady)) return null;
   const savedNow = savedSnapshot !== null && savedSnapshot === JSON.stringify(snapshot());
   const actions = <div className="payment-form-draft-controls__actions">
     <button type="button" className="payment-form-draft-controls__save"
