@@ -475,9 +475,6 @@ jobs:
           done < <(find "$OFFICE_DIR/supabase/migrations" -maxdepth 1 -name '*.sql' -type f | sort)
           node tests/integration/pairedTaxpayerOfficeSql.mjs
           node tests/integration/pairedCorrectionOfficeSql.mjs
-          # Exercise the current WS1 React payment UI against these same two
-          # disposable SQL projects; no hosted API or financial write.
-          npm ci --prefix "$WS1_DIR" --no-audit --no-fund
           node tests/integration/pairedTaxpayerOfficeEdgeSql.mjs
           npm ci --prefix "$OFFICE_DIR" --no-audit --no-fund
           node tests/integration/pairedOfficeUiReadback.mjs
