@@ -106,9 +106,10 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
           VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          # Unapproved V2 switches are rejected by the signed cutover gate below.
+          VITE_SUPABASE_URL: ${{ vars.SOHOJKOR_PRIMARY_SUPABASE_URL || 'https://eyqhoavnitkrajvyqvxn.supabase.co' }}
           # Publishable key only. NEVER use service_role, secret or JWT signing keys in a web bundle.
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SOHOJKOR_PRIMARY_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id' }}
           SOHOJKOR_CUTOVER_SIGNED_PROOF: ${{ secrets.SOHOJKOR_CUTOVER_SIGNED_PROOF }}
           SOHOJKOR_CUTOVER_APPROVER_PUBLIC_KEY: ${{ vars.SOHOJKOR_CUTOVER_APPROVER_PUBLIC_KEY }}
         run: |
@@ -119,13 +120,15 @@ jobs:
           node scripts/ci/check-public-startup-budget.mjs
           node --check scripts/measure-live-performance.mjs
       - name: Verify Pages base, scoped public endpoint and financial safety
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SOHOJKOR_PRIMARY_SUPABASE_URL || 'https://eyqhoavnitkrajvyqvxn.supabase.co' }}
         shell: bash
         run: |
           test -s dist/index.html
           grep -q '/nbr-taxpay/assets/' dist/index.html
           ! grep -q '/NBR-Tax-Payment/assets/' dist/index.html
           ! grep -q '/src/main.tsx' dist/index.html
-          grep -RFq 'https://eyqhoavnitkrajvyqvxn.supabase.co' dist/assets
+          grep -RFq "$VITE_SUPABASE_URL" dist/assets
           # Ensure no unrelated hosted Supabase projects or privileged key formats leak.
           ! grep -REq 'sb_secret_|service_role' dist/assets
           ! grep -REq '(^|[^0-9])[0-9]{12}([^0-9]|$)' dist/assets
