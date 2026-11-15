@@ -67,10 +67,12 @@ export function parseRecoverableTravelPayment(raw: string | null, sessionId: str
           !['BD', 'FOREIGN'].includes(String(person.nationality)) ||
           !['ADULT', 'CHILD', 'UNDER5'].includes(String(person.ageBand)) ||
           typeof person.passportMasked !== 'string' ||
-          !/^••••.{4}$/u.test(person.passportMasked) ||
+          !/^••••[^\s\u0000-\u001F\u007F-\u009F]{4}$/.test(person.passportMasked) ||
           (person.nationality === 'FOREIGN' && (typeof person.country !== 'string' || !person.country.trim())) ||
+          typeof person.age !== 'number' || !Number.isInteger(person.age) || person.age < 0 || person.age >= 130 ||
           storedPerson.name !== person.name || storedPerson.passportMasked !== person.passportMasked ||
           storedPerson.nationality !== person.nationality || storedPerson.ageBand !== person.ageBand ||
+          storedPerson.country !== person.country || storedPerson.age !== person.age ||
           storedPerson.amount !== person.amount ||
           line.headId !== 155 + i || storedLine.headId !== line.headId ||
           line.economicCode !== trip.economicCode || storedLine.economicCode !== line.economicCode ||
@@ -79,7 +81,10 @@ export function parseRecoverableTravelPayment(raw: string | null, sessionId: str
       const amount = minorUnits(person.amount);
       if (amount === null || minorUnits(line.totalAmount) !== amount ||
           minorUnits(storedLine.totalAmount) !== amount ||
-          minorUnits(line.taxAmount) !== amount || minorUnits(storedLine.taxAmount) !== amount) return null;
+          minorUnits(line.taxAmount) !== amount || minorUnits(storedLine.taxAmount) !== amount ||
+          minorUnits(line.penaltyAmount) !== 0 || minorUnits(storedLine.penaltyAmount) !== 0 ||
+          minorUnits(line.surchargeAmount) !== 0 || minorUnits(storedLine.surchargeAmount) !== 0 ||
+          minorUnits(line.interestAmount) !== 0 || minorUnits(storedLine.interestAmount) !== 0) return null;
       sum += amount;
       if (!Number.isSafeInteger(sum)) return null;
     }
