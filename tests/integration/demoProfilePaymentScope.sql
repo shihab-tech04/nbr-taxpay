@@ -44,6 +44,15 @@ begin
         'items',jsonb_build_array(jsonb_build_object(
           'headId',125,'totalAmount',123.45)))));
 
+  -- Disposable fixture diagnostic: schema flags only, never personal identifiers.
+  RAISE NOTICE 'M04 diagnostic: linesType=%,linesCount=%,head125=%,categoryReturn=%,combinedField=%,allocationsField=%,otherTaxField=%',
+    jsonb_typeof(input_data#>'{details,lines}'),
+    jsonb_array_length(input_data#>'{details,lines}'),
+    input_data#>>'{details,lines,0,headId}'='125',
+    input_data#>>'{details,lines,0,category}'='TAX_WITH_RETURN',
+    (input_data->'details') ? 'combinedPayment',
+    (input_data->'details') ? 'allocations',
+    (input_data->'details') ? 'otherTaxLines';
   inserted:=public.taxpay_demo_story1_submit(first_hash,input_data);
   v_payment_id:=(inserted->>'id')::uuid;
   if inserted->>'replayed'<>'false' then raise exception 'First capability-backed payment did not insert'; end if;
