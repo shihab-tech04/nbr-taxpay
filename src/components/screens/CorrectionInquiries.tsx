@@ -8,7 +8,7 @@ import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} 
 
 type Row=Readonly<{
  inquiry_id:string; original_reference:string; case_kind:CorrectionCaseKind; evidence_state:string; created_at:string;
- reason:string; requested_outcome:string; change_kind:ProposedAttributionField|null; old_value:string|null; new_value:string|null;
+ reason:string; requested_outcome:string; evidence_note?:string|null; change_kind:ProposedAttributionField|null; old_value:string|null; new_value:string|null;
  office_review_state:string|null; office_review_revision:number|null; office_review_updated_at:string|null;
 }>;
 
@@ -26,7 +26,7 @@ const t={
  ref:'Original payment reference (must match your linked payment history)',
   caseType:'Request type',caseCorrection:'Correction review',caseUnsolicited:'Report an unsolicited payment',reportReason:'Why was this payment unsolicited?',
  reason:'Reason for requesting a correction review',
- outcome:'What outcome are you requesting?',
+ outcome:'What outcome are you requesting?',evidenceNote:'Supporting evidence or document details (optional, not verified)',
  select:'Proposed attribution field (optional)', none:'No attribution change', old:'Original value (user supplied)', newValue:'Requested value (unverified)',
  submit:'Save evidence-pending inquiry',
  saved:'Inquiry saved. Claimant and receipt ownership remain unverified; no financial correction was performed.',
@@ -50,7 +50,7 @@ const t={
  ref:'মূল পরিশোধ রেফারেন্স (আপনার সংযুক্ত পেমেন্ট ইতিহাসের সঙ্গে মিলতে হবে)',
   caseType:'অনুরোধের ধরন',caseCorrection:'সংশোধন পর্যালোচনা',caseUnsolicited:'অনুরোধ ছাড়াই হওয়া পরিশোধের প্রতিবেদন',reportReason:'কেন এই পরিশোধটি অনাকাঙ্ক্ষিত?',
  reason:'সংশোধন পর্যালোচনার কারণ',
- outcome:'কী ফলাফল চান?',
+ outcome:'কী ফলাফল চান?',evidenceNote:'সহায়ক প্রমাণ বা নথির বিবরণ (ঐচ্ছিক, যাচাই করা হয়নি)',
  select:'পরিবর্তনের ক্ষেত্র (ঐচ্ছিক)', none:'পরিশোধের তথ্য পরিবর্তনের অনুরোধ নেই',old:'পূর্বের তথ্য (নিজের দেওয়া)', newValue:'প্রস্তাবিত তথ্য (যাচাই হয়নি)',
  submit:'প্রমাণের অপেক্ষায় থাকা অনুসন্ধান সংরক্ষণ করুন',
  saved:'অনুসন্ধান সংরক্ষিত। দাবিদার ও রসিদের মালিকানা যাচাই হয়নি; কোনো আর্থিক সংশোধন হয়নি।',
@@ -75,6 +75,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
  const [caseKind,setCaseKind]=useState<CorrectionCaseKind>('CORRECTION_REVIEW');
  const [originalReference,setOriginalReference]=useState('');
  const [reason,setReason]=useState('');
+ const [evidenceNote,setEvidenceNote]=useState('');
  const [desiredOutcome,setDesiredOutcome]=useState('');
  const [changeKind,setChangeKind]=useState<ProposedAttributionField|''>('');
  const [previousValue,setPreviousValue]=useState('');
@@ -95,7 +96,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   // Fall back only for absent columns; never swallow other owner/permission failures.
   const base='inquiry_id,original_reference,evidence_state,created_at,reason,requested_outcome,change_kind,old_value,new_value';
   const office=',office_review_state,office_review_revision,office_review_updated_at';
-  const projections=[`${base},case_kind${office}`,`${base}${office}`,`${base},case_kind`,base] as const;
+  const projections=[`${base},evidence_note,case_kind${office}`,`${base},case_kind${office}`,`${base}${office}`,`${base},case_kind`,base] as const;
   let inquiries:Row[]|null=null;
   let missingFieldError:Error|null=null;
   for(const projection of projections){
@@ -103,7 +104,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
     .select(projection).eq('requester_uid',authenticatedUserId).order('created_at',{ascending:false}).limit(50);
    if(!error){
     inquiries=((data??[]) as unknown as Partial<Row>[]).map(row=>({
-     ...row,case_kind:row.case_kind??'CORRECTION_REVIEW',
+     ...row,case_kind:row.case_kind??'CORRECTION_REVIEW',evidence_note:row.evidence_note??null,
      office_review_state:row.office_review_state??null,
      office_review_revision:row.office_review_revision??null,
      office_review_updated_at:row.office_review_updated_at??null
@@ -111,7 +112,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
     break;
    }
    if(!['42703','PGRST204'].includes(error.code??'')||
-      !/case_kind|office_review_state|office_review_revision|office_review_updated_at/i.test(error.message??''))throw error;
+      !/evidence_note|case_kind|office_review_state|office_review_revision|office_review_updated_at/i.test(error.message??''))throw error;
    missingFieldError=error;
   }
   if(!inquiries)throw missingFieldError??new Error(labels.fail);
@@ -151,7 +152,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
  const submit=async(e:React.FormEvent)=>{
   e.preventDefault();if(!supabase||busy)return;
   const change=changeKind?{field:changeKind,previousValue,proposedValue}:null;
-  const checked=validateCorrectionInquiry({caseKind,originalReference,reason,desiredOutcome,change});
+  const checked=validateCorrectionInquiry({caseKind,originalReference,reason,desiredOutcome,evidenceNote,change});
   if(checked.error){setMessage(checked.error);return;}
   setBusy(true);setMessage('');
   let persisted=false;
@@ -167,6 +168,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
      original_reference:originalReference.trim(),
      ...(caseKind==='UNSOLICITED_PAYMENT_REPORT'?{case_kind:caseKind}:{}),
      reason:reason.trim(),
+      ...(evidenceNote.trim()?{evidence_note:evidenceNote.trim()}:{}),
      requested_outcome:desiredOutcome.trim(),
      ...(change ? {change_kind:change.field,old_value:change.previousValue.trim(),new_value:change.proposedValue.trim()}: {})
    });
@@ -176,14 +178,14 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
     return;
    }
    persisted=true;
-   setCaseKind('CORRECTION_REVIEW');setOriginalReference('');setReason('');setDesiredOutcome('');setChangeKind('');setPreviousValue('');setProposedValue('');
+   setCaseKind('CORRECTION_REVIEW');setOriginalReference('');setReason('');setEvidenceNote('');setDesiredOutcome('');setChangeKind('');setPreviousValue('');setProposedValue('');
    try{const historyLoaded=await load(()=>true);setLoadError(false);if(!historyLoaded){setMessage(labels.savedHistoryFail);return;}}
    catch{setLoadError(true);setMessage(labels.savedHistoryFail);return;}
    setMessage(labels.saved);
   }catch{if(persisted){setLoadError(true);setMessage(labels.savedHistoryFail)}else setMessage(labels.fail)}finally{setBusy(false);}
  };
  const needle=historySearch.trim().toLocaleLowerCase();
- const matchingRows=rows.filter(r=>!needle || [r.original_reference,r.reason,r.requested_outcome,r.evidence_state,
+ const matchingRows=rows.filter(r=>!needle || [r.original_reference,r.reason,r.requested_outcome,r.evidence_note??'',r.evidence_state,
   r.office_review_state??''].some(value=>value.toLocaleLowerCase().includes(needle)));
  const form=<form onSubmit={submit} className="space-y-4">
   <label className="block text-sm font-semibold text-slate-800">{labels.caseType}
@@ -201,6 +203,11 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
    </label>
    <label className="block text-sm font-semibold text-slate-800">{labels.outcome}
     <UiTextarea required minLength={10} maxLength={600} rows={3} value={desiredOutcome} onChange={e=>setDesiredOutcome(e.target.value)} className="mt-2"/>
+   </label>
+   <label className="block text-sm font-semibold text-slate-800">{labels.evidenceNote}
+    <UiTextarea maxLength={2000} rows={3} value={evidenceNote}
+     onChange={e=>setEvidenceNote(e.target.value)} className="mt-2"
+     data-testid="correction-supporting-evidence"/>
    </label>
    <label className="block text-sm font-semibold text-slate-800">{labels.select}
     <UiSelect value={changeKind} onChange={e=>{setChangeKind(e.target.value as ProposedAttributionField|'');setPreviousValue('');setProposedValue('');}} className="mt-2">
@@ -271,6 +278,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
                 <p>{labels.caseType}: {r.case_kind==='UNSOLICITED_PAYMENT_REPORT'?labels.caseUnsolicited:labels.caseCorrection}</p>
                 <p>{labels.reasonLabel}: {r.reason}</p>
                 <p>{labels.outcomeLabel}: {r.requested_outcome}</p>
+                 {r.evidence_note&&<p className="whitespace-pre-wrap break-words">{labels.evidenceNote}: {r.evidence_note}</p>}
                 {r.change_kind&&<div className="space-y-1 border-t border-taxpay-border pt-2">
                   <p className="font-semibold">{labels.changeLabel}: {labels.changeKinds[r.change_kind]}</p>
                   <p>{labels.oldValueLabel}: {r.old_value}</p>
