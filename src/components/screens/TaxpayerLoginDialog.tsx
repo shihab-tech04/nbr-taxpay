@@ -75,6 +75,10 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   const { user: verifiedApplicationUser } = useAccountIdentity();
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionListRef = useRef<HTMLUListElement>(null);
+  const blurTimerRef = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (blurTimerRef.current !== null) window.clearTimeout(blurTimerRef.current);
+  }, []);
   // Keep the active option visible during keyboard travel through 55 IDs.
   // Scroll the list itself, never the payment modal or the underlying page.
   useEffect(() => {
@@ -128,8 +132,20 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
               placeholder={bn ? 'আপনার ইউজার আইডি লিখুন' : 'Enter your User ID'}
               aria-invalid={Boolean(error)}
               value={userId}
-              onFocus={()=>{setHighlighted(0);setSuggestionsOpen(true);}}
-              onBlur={()=>setSuggestionsOpen(false)}
+              onFocus={()=>{
+                if (blurTimerRef.current !== null) window.clearTimeout(blurTimerRef.current);
+                blurTimerRef.current = null;
+                setHighlighted(0);setSuggestionsOpen(true);
+              }}
+              onBlur={()=>{
+                // Dismissing the in-flow list synchronously on pointer-down
+                // moves the Recover button before pointer-up, losing its click.
+                // Defer only focus-out dismissal; Escape and item picks close now.
+                if (blurTimerRef.current !== null) window.clearTimeout(blurTimerRef.current);
+                blurTimerRef.current = window.setTimeout(()=>{
+                  blurTimerRef.current = null;setSuggestionsOpen(false);
+                },100);
+              }}
               onKeyDown={onUserIdKeyDown}
               onChange={event => { setUserId(event.target.value);setPassword('');setHighlighted(0);setSuggestionsOpen(true);setError(null); }} />
           </div>
