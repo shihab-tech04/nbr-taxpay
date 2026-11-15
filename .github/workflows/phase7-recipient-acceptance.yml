@@ -12,11 +12,17 @@ on:
       - 'src/components/screens/ReceivedPaymentNoticeRegister.tsx'
       - 'src/components/screens/TaxpayerLoginDialog.tsx'
       - 'src/components/screens/SecureWorkspace.tsx'
+      - 'src/components/screens/AuthenticatedReceivedPaymentPopup.tsx'
+      - 'src/components/screens/AuthorizationRequestPopup.tsx'
+      - 'src/services/accountIdentity.ts'
       - 'src/services/receivedPaymentCaseIntent.ts'
+      - 'src/services/accountReceivedPaymentNotices.ts'
+      - 'src/services/verifiedAccountNoticePage.ts'
       - 'src/services/verifiedEmailOtp.ts'
       - 'src/services/demoReceivedPaymentNotices.ts'
       - 'tests/receivedPaymentCaseIntent.test.ts'
       - 'tests/verifiedEmailOtp.test.ts'
+      - 'tests/verifiedAccountNoticePage.test.ts'
       - 'tests/demoReceivedPaymentNotices.test.ts'
       - '.github/workflows/phase7-recipient-acceptance.yml'
   workflow_dispatch:
@@ -46,7 +52,7 @@ jobs:
       - name: Install exact dependency lock
         run: npm ci --no-audit --no-fund
       - name: Test Phase 7 recipient source and notification contract
-        run: node --import tsx --test tests/receivedPaymentCaseIntent.test.ts tests/demoReceivedPaymentNotices.test.ts tests/verifiedEmailOtp.test.ts
+        run: node --import tsx --test tests/receivedPaymentCaseIntent.test.ts tests/demoReceivedPaymentNotices.test.ts tests/verifiedEmailOtp.test.ts tests/verifiedAccountNoticePage.test.ts
       - name: Typecheck complete Taxpayer candidate
         run: npm run lint
       - name: Build production bundle (without deployment)
