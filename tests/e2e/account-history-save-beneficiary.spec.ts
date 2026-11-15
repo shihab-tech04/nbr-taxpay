@@ -570,10 +570,16 @@ for(const language of ['en','bn'] as const){
       const savedDrafts=await savedDraftsResponse.json() as Array<{
         owner_uid:string;form_payload:Record<string,unknown>
       }>;
-      expect(savedDrafts.some(row=>row.owner_uid===owner.id &&
-        row.form_payload.sourcePaymentId===repeatableId &&
-        JSON.stringify(row.form_payload.sourceAllocationIds)===JSON.stringify(sourceAllocationIds)
-      )).toBe(true);
+      expect(savedDrafts.some(row=>{
+        if(row.owner_uid!==owner.id || row.form_payload.sourcePaymentId!==repeatableId ||
+          JSON.stringify(row.form_payload.sourceAllocationIds)!==JSON.stringify(sourceAllocationIds))
+          return false;
+        const draftLines=row.form_payload.otherTaxLines;
+        if(!Array.isArray(draftLines) || draftLines.length!==savedAllocations.length)return false;
+        const ids=draftLines.map((line:{id:string})=>line.id);
+        return ids.every((id:string)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id) &&
+          !sourceAllocationIds.includes(id)) && new Set(ids).size===ids.length;
+      })).toBe(true);
       await repeatModal.locator('.taxpay-modal__close').click();
 
       const persisted=psql("SELECT data::text FROM demo_payment.story_payments WHERE id="+quote(paymentId)+"::uuid");

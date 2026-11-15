@@ -216,7 +216,9 @@ export function reuseRecordedPayment(
     additionalTaxpayers: others,
     otherTaxLines: isAllocationPayment
       ? allocations.map((item,index) => ({
-          id:`repeat-line-${index + 1}`,
+          // A repeat is a NEW payment. Historical source IDs remain read-only;
+          // each editable copy receives independent, valid allocation identities.
+          id: crypto.randomUUID(),
           taxpayerId: people.get(item.tin)!.id,
           headId: item.headId,
           assessmentYear: years[index], amount: money(item.amountMinor)

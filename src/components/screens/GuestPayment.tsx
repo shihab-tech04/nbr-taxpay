@@ -453,10 +453,23 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       typeof savedOneTime.name === 'string' && savedOneTime.name.length <= 160
       ? { id: savedOneTime.id, tin: savedOneTime.tin, name: savedOneTime.name } : null);
     setOneTimeTinDraft(''); setOneTimeSearchedTin(null); setOneTimeLookupError('');
-    setOtherTaxLines(Array.isArray(saved.otherTaxLines)
+    const restoredLines = Array.isArray(saved.otherTaxLines)
       ? saved.otherTaxLines.filter((line): line is OtherTaxAllocation =>
-        line && typeof line.taxpayerId === 'string' &&
-        typeof line.headId === 'number' && typeof line.assessmentYear === 'string').slice(0,300) : []);
+          line && typeof line.taxpayerId === 'string' &&
+          typeof line.headId === 'number' && typeof line.assessmentYear === 'string' &&
+          typeof line.amount === 'string').slice(0, MAX_COMBINED_ALLOCATIONS) : [];
+    // Old Pay Again drafts used non-UUID "repeat-line-N" identifiers. Repair
+    // only missing/invalid/duplicate IDs on input recovery, never original
+    // allocation provenance or a valid new payment line.
+    const usedIds = new Set<string>(initialReuse?.sourceAllocationIds ?? savedAllocationIds);
+    setOtherTaxLines(restoredLines.map(line => {
+      let id = typeof line.id === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(line.id) &&
+        !usedIds.has(line.id) ? line.id : crypto.randomUUID();
+      while (usedIds.has(id)) id = crypto.randomUUID();
+      usedIds.add(id);
+      return { ...line, id };
+    }));
     setLastSearchedTin(null); setVerifiedReference(null);
     setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); setConfirmedOtherTaxTins({});
     setPaymentChannel(null); setMethodGroup(null); setPaymentMethod(null); setAcknowledged(false);
