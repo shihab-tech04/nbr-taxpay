@@ -51,6 +51,30 @@ BEGIN
        '92000000-0000-4000-8000-000000000003',
        '92000000-0000-4000-8000-000000000004'))<>4
  THEN RAISE EXCEPTION 'F178_T01_OPTIONAL_CASES_FAILED'; END IF;
+ -- Exactly 4,000 supplementary-plane Unicode code points (16,000 bytes)
+ -- must round-trip; 4,001 must be rejected, never silently truncated.
+ INSERT INTO demo_payment.story_payments
+  (id,idempotency_key,session_id,service_code,amount_minor,data)
+ VALUES ('92000000-0000-4000-8000-000000000005',
+  '92000000-0000-4000-8000-000000000015',
+  '92000000-0000-4000-8000-000000000099','OTHER_TAX_PAYMENT',1250,
+  jsonb_build_object('details',jsonb_build_object('challanRemarks',repeat('😀',4000))));
+ IF (SELECT data#>>'{details,challanRemarks}' FROM demo_payment.story_payments
+      WHERE id='92000000-0000-4000-8000-000000000005') IS DISTINCT FROM repeat('😀',4000)
+ THEN RAISE EXCEPTION 'F178_T03_BOUNDARY_ROUNDTRIP_FAILED'; END IF;
+ v_denied:=false;
+ BEGIN
+  INSERT INTO demo_payment.story_payments
+   (id,idempotency_key,session_id,service_code,amount_minor,data)
+  VALUES ('92000000-0000-4000-8000-000000000006',
+   '92000000-0000-4000-8000-000000000016',
+   '92000000-0000-4000-8000-000000000099','OTHER_TAX_PAYMENT',1250,
+   jsonb_build_object('details',jsonb_build_object('challanRemarks',repeat('😀',4001))));
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM='CHALLAN_REMARKS_TOO_LONG' THEN v_denied:=true;
+  ELSE RAISE; END IF;
+ END;
+ IF NOT v_denied THEN RAISE EXCEPTION 'F178_T03_OVERSIZED_REMARKS_ACCEPTED'; END IF;
  -- Reject forged non-text remarks; do not let JSON arrays/objects/numbers
  -- become unreviewed state changes in the payment envelope.
  FOR v_data IN
