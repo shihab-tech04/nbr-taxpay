@@ -7,7 +7,7 @@ test('taxpayer dashboard contains no repeated demonstration badges, tooltips or 
   await page.setViewportSize({width:1600,height:900});
   await page.goto('/?action=taxpayer_home&demoUser=user1');
   const main=page.getByTestId('user1-synthetic-workspace');
-  await expect(main.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).getByRole('button',{name:'Overview'})).toBeVisible();
   await expect(main.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
   expect(await main.innerText()).not.toMatch(banned);

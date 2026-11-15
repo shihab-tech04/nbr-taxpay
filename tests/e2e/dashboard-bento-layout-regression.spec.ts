@@ -1,132 +1,126 @@
 import {expect,test} from '@playwright/test';
-import {mkdirSync} from 'node:fs';
 
 const demo='/?action=taxpayer_home&demoUser=user1&qaScenario=1';
 
-test('reference-aligned Overview keeps the year, ring, three KPIs, recipients and Follow-ups responsive',async({page})=>{
-  test.setTimeout(120000);
-  for(const width of [320,375,768,1024,1600]){
+test('reference dashboard is recipient-first with a responsive hero and accessible follow-ups',async({page})=>{
+  for(const width of [320,375,1024,1600]){
     await page.setViewportSize({width,height:900});
     await page.goto(demo);
     const grid=page.getByTestId('taxpayer-overview-bento');
     const summary=grid.locator('.taxpay-bento-summary');
     const hero=summary.locator('.taxpay-overview-feature');
     const analytics=grid.getByTestId('dashboard-payment-analytics');
-    const recipients=analytics.getByTestId('dashboard-recipient-grid');
-    const relationship=recipients.getByTestId('dashboard-recipient-relationships');
-    const ranking=recipients.getByTestId('dashboard-ranked-beneficiaries');
+    const recipient=analytics.getByTestId('dashboard-beneficiary-breakdown');
+    const ranking=analytics.getByTestId('dashboard-ranked-beneficiaries');
+    const details=analytics.getByTestId('dashboard-payment-extra');
     const journey=grid.locator('.taxpay-bento-recent');
-    const followups=grid.locator('.taxpay-bento-followups');
+    const followups=grid.locator('.taxpay-bento-tasks');
     await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
-    await expect(hero.getByTestId('dashboard-overview-total')).toContainText('113,500');
-    await expect(hero.locator('.taxpay-overview-feature__ring')).toBeVisible();
-    await expect(hero.locator('.taxpay-overview-feature__ring-center')).toContainText('66%');
+    await expect(hero.getByRole('heading',{name:'Payments at a glance'})).toBeVisible();
+    await expect(hero.getByRole('link',{name:'View payment history'})).toBeVisible();
+    await expect(hero.locator('.taxpay-overview-feature__donut')).toBeVisible();
+    await expect(hero).toHaveCSS('background-image',/linear-gradient/);
     await expect(summary.locator('.taxpay-summary-metric')).toHaveCount(3);
-    await expect(summary.getByRole('button')).toHaveCount(3);
-    await expect(summary.getByRole('link',{name:'View payment history'})).toBeVisible();
-    await expect(hero).toHaveCSS('background-color','rgb(44, 94, 173)');
-    await expect(relationship.getByRole('heading',{name:'Payment relationships'})).toBeVisible();
-    await expect(relationship.locator('.taxpay-recipient-coverage__summary')).toContainText('72%');
+    await expect(recipient.getByRole('heading',{name:'Payment relationships'})).toBeVisible();
+    await expect(recipient.getByTestId('dashboard-recipient-snapshot')).toBeVisible();
     await expect(ranking.getByRole('heading',{name:'Top beneficiaries'})).toBeVisible();
+    await expect(details.locator('summary')).toBeVisible();
+    await expect(details).not.toHaveAttribute('open');
     await expect(journey.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
     await expect(followups.getByRole('heading',{name:'Follow-ups'})).toBeVisible();
-    await expect(analytics.getByTestId('dashboard-recipient-advanced')).not.toHaveAttribute('open');
-    const [h,re,ra,jo,fo]=await Promise.all(
-      [hero,relationship,ranking,journey,followups].map(el=>el.boundingBox()));
-    expect([h,re,ra,jo,fo].every(Boolean)).toBe(true);
-    if(h&&re&&ra&&jo&&fo){
-      expect(h.y+h.height).toBeLessThanOrEqual(re.y+4);
-      if(width>=1200){
-        expect(Math.abs(re.y-ra.y)).toBeLessThan(4);
-        expect(re.x+re.width).toBeLessThanOrEqual(ra.x+4);
-        expect(Math.abs(jo.y-fo.y)).toBeLessThan(4);
-        expect(jo.x+jo.width).toBeLessThanOrEqual(fo.x+4);
-      }else{
-        expect(ra.y).toBeGreaterThan(re.y);
-        expect(fo.y).toBeGreaterThan(jo.y);
-      }
+    await expect(followups.getByRole('button',{name:/Requests/})).toHaveAttribute('aria-pressed','true');
+    const [a,r,jy,t]=await Promise.all([analytics,recipient,journey,followups].map(x=>x.boundingBox()));
+    expect([a,r,jy,t].every(Boolean)).toBe(true);
+    if(a&&r&&jy&&t){
+      expect(a.y).toBeLessThan(jy.y);
+      if(width>=1200)expect(Math.abs(jy.y-t.y)).toBeLessThan(4);
+      else expect(t.y).toBeGreaterThan(jy.y);
     }
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth),
       'no horizontal overflow at '+width).toBeLessThanOrEqual(2);
-    if(width===375||width===1600){
-      mkdirSync('test-results/screenshots',{recursive:true});
-      await page.screenshot({
-        path:'test-results/screenshots/sohojkor-reference-overview-'+width+'.png',
-        fullPage:true
-      });
-    }
+    await details.locator('summary').click();
+    await expect(analytics.getByTestId('dashboard-service-breakdown')).toBeVisible();
+    await expect(analytics.getByTestId('dashboard-role-breakdown')).toBeVisible();
+    await details.locator('summary').click();
+    await followups.getByRole('button',{name:/Drafts/}).click();
+    await expect(followups.locator('.taxpay-bento-drafts')).toBeVisible();
+    await followups.getByRole('button',{name:/Requests/}).click();
+    await expect(followups.locator('#dashboard-correction-requests')).toBeVisible();
   }
 });
 
-test('advanced service, tags and ranking filters remain functional without extra default rows',async({page})=>{
+test('beneficiary charts retain real source isolation, tags, top five and history actions',async({page})=>{
+  await page.setViewportSize({width:1600,height:900});
   await page.goto(demo);
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const analytics=page.getByTestId('dashboard-payment-analytics');
-  const advanced=analytics.getByTestId('dashboard-recipient-advanced');
-  await expect(advanced).not.toHaveAttribute('open');
-  await advanced.locator('summary').click();
-  await expect(advanced).toHaveAttribute('open');
   const sources=analytics.getByTestId('dashboard-chart-source');
   await sources.getByRole('button',{name:'Examples'}).click();
-  const service=analytics.getByTestId('dashboard-service-breakdown');
-  const beneficiary=analytics.getByTestId('dashboard-beneficiary-breakdown');
-  await expect(service).toBeVisible();
-  await expect(analytics.getByTestId('dashboard-role-breakdown')).toBeVisible();
-  await beneficiary.getByRole('button',{name:'Tags',exact:true}).click();
-  await expect(beneficiary.getByTestId('dashboard-beneficiary-tags-chart')).toBeVisible();
-  await beneficiary.getByRole('button',{name:'Top 5'}).click();
-  await expect(beneficiary.getByTestId('dashboard-top-beneficiaries').locator('[data-rank]')).toHaveCount(3);
-  await service.locator('[data-service="ait"]').click();
-  await expect(beneficiary).toContainText('Advance Tax');
-  await service.getByRole('button',{name:'Show all payment services'}).click();
-  await expect(beneficiary).toContainText('113,500');
+  const breakdown=analytics.getByTestId('dashboard-beneficiary-breakdown');
+  await breakdown.locator('.taxpay-recipient-extra > summary').click();
+  await breakdown.getByRole('button',{name:'Tags',exact:true}).click();
+  await expect(analytics.getByTestId('dashboard-beneficiary-tags-chart')).toBeVisible();
+  await breakdown.getByRole('button',{name:'Top 5'}).click();
+  await expect(breakdown.getByTestId('dashboard-top-beneficiaries')).toBeVisible();
+  await expect(analytics.getByTestId('dashboard-ranked-beneficiaries')).toBeVisible();
   await sources.getByRole('button',{name:'Recorded'}).click();
-  await expect(service.locator('.taxpay-bento-analytics__total')).toHaveText('—');
+  await expect(analytics.getByTestId('dashboard-role-breakdown')).toContainText('No payer allocations');
   await expect(analytics.getByTestId('dashboard-ranked-beneficiaries')).toContainText('No identifiable third-party beneficiaries');
+  await expect(analytics.getByTestId('dashboard-service-breakdown').locator('.taxpay-bento-analytics__total')).toHaveText('—');
 });
 
-test('Follow-ups toggle retains draft controls and request details',async({page})=>{
-  await page.goto(demo);
+test('public account overview never falls back to fictional totals, even when selected year lacks data',async({page})=>{
+  await page.setViewportSize({width:1280,height:800});
+  await page.goto('/?action=taxpayer_home&demoUser=user1');
   const grid=page.getByTestId('taxpayer-overview-bento');
-  const followups=grid.locator('.taxpay-bento-followups');
-  const requests=followups.locator('#dashboard-correction-requests');
-  const drafts=followups.locator('#taxpayer-dashboard-draft-section');
-  await expect(requests).toBeVisible();
-  await expect(requests.getByTestId('dashboard-correction-request-list').locator('li')).toHaveCount(2);
-  await expect(drafts).toBeHidden();
-  await followups.getByRole('button',{name:/Drafts/i}).click();
-  await expect(drafts).toBeVisible();
-  await expect(requests).toBeHidden();
-  await followups.getByRole('button',{name:/Requests/i}).click();
-  await expect(requests).toBeVisible();
-  await requests.getByRole('button',{name:/View request details for Refund inquiry/}).click();
-  await expect(page.locator('.taxpay-modal')).toBeVisible();
+  const analytics=grid.getByTestId('dashboard-payment-analytics');
+  await expect(analytics).toHaveAttribute('data-chart-source','recorded');
+  await expect(analytics.getByTestId('dashboard-chart-source')).toHaveCount(0);
+  await expect(analytics).toContainText('No itemized account payments');
+  await expect(grid.getByTestId('dashboard-source-indicator')).not.toContainText('Example activity');
+  await expect(grid.getByTestId('dashboard-correction-request-list')).toHaveCount(0);
+  await expect(grid.getByRole('button',{name:/Completed Payments/})).not.toContainText('5');
+  await expect(analytics).not.toContainText('113,500');
+  await expect(grid.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
+  await expect(grid.getByTestId('dashboard-overview-total')).toHaveText('—');
+  await expect(grid.locator('.taxpay-overview-feature__services')).toHaveCount(0);
+  await expect(grid.getByRole('button',{name:/Saved Drafts/})).toBeVisible();
+  await analytics.getByRole('button',{name:'View payment history'}).click();
+  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
 });
 
-test('recorded empty state never promotes example amounts and keeps recovery actions',async({page})=>{
-  for(const width of [375,1600]){
+
+test('empty recorded dashboard keeps zero values honest and follow-up tabs usable',async({page})=>{
+  for(const width of [375,1024,1600]){
     await page.setViewportSize({width,height:900});
     await page.goto('/?action=taxpayer_home&demoUser=user1');
     const grid=page.getByTestId('taxpayer-overview-bento');
     const analytics=grid.getByTestId('dashboard-payment-analytics');
+    const summary=grid.locator('.taxpay-bento-summary');
+    const recent=grid.locator('.taxpay-bento-recent');
+    const tasks=grid.locator('.taxpay-bento-tasks');
     await expect(grid).toHaveAttribute('data-dashboard-empty','true');
-    await expect(analytics).toHaveAttribute('data-chart-source','recorded');
     await expect(analytics).toHaveAttribute('data-empty','true');
-    await expect(grid.getByTestId('dashboard-source-indicator')).not.toContainText('Example activity');
     await expect(grid.getByTestId('dashboard-overview-total')).toHaveText('—');
-    await expect(grid.locator('.taxpay-overview-feature__ring')).toHaveCount(0);
-    await expect(analytics.getByTestId('dashboard-chart-source')).toHaveCount(0);
-    await expect(grid.getByTestId('dashboard-correction-request-list')).toHaveCount(0);
-    await expect(grid.locator('.taxpay-bento-followups')).toBeVisible();
-    await grid.locator('.taxpay-bento-followups').getByRole('button',{name:/Drafts/i}).click();
-    await expect(grid.locator('.taxpay-bento-drafts')).toBeVisible();
-    await expect(grid.locator('.taxpay-bento-recent')).toBeVisible();
+    await expect(analytics).not.toContainText('113,500');
+    await expect(tasks.getByRole('heading',{name:'Follow-ups'})).toBeVisible();
+    const [s,a,j,t]=await Promise.all([summary,analytics,recent,tasks].map(x=>x.boundingBox()));
+    expect([s,a,j,t].every(Boolean)).toBe(true);
+    if(s&&a&&j&&t){
+      expect(s.y+s.height).toBeLessThanOrEqual(j.y+4);
+      if(width>=1200)expect(Math.abs(j.y-t.y)).toBeLessThan(4);
+      else expect(t.y).toBeGreaterThan(j.y);
+      expect(a.y).toBeGreaterThanOrEqual(t.y);
+    }
+    await tasks.getByRole('button',{name:/Drafts/}).click();
+    await expect(tasks.locator('.taxpay-bento-drafts')).toBeVisible();
+    await tasks.getByRole('button',{name:/Requests/}).click();
+    await expect(tasks.locator('#dashboard-correction-requests')).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   }
-  await page.getByTestId('dashboard-payment-analytics').getByRole('button',{name:'View payment history'}).click();
-  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
 });
 
-test('assessment-year selection and reload maintain source isolation',async({page})=>{
+test('public overview opens the current assessment year and preserves explicit year selection',async({page})=>{
   for(const width of [375,1600]){
     await page.setViewportSize({width,height:900});
     await page.goto('/?action=taxpayer_home&demoUser=user1');

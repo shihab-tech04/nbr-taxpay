@@ -14,7 +14,7 @@ const exactReference = {
 async function openSampleTaxpayer(page: import('@playwright/test').Page) {
   await page.goto('/?action=taxpayer_home');
   const enter = page.getByRole('button', { name: 'Explore taxpayer workspace' });
-  const dashboard = page.getByRole('heading', { name: 'Overview' });
+  const dashboard = page.getByRole('heading',{name:'Overview'});
   await expect(enter.or(dashboard).first()).toBeVisible();
   if (await enter.isVisible()) await enter.click();
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(1);

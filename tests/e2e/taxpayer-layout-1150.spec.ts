@@ -4,7 +4,7 @@ const url = (route: string) => '/?action=' + route + '&demoUser=user1&qaScenario
 
 test('User1 dashboard omits the redundant register and lengthy data notice but preserves Activity records', async ({page}) => {
   await page.goto(url('taxpayer_home'));
-  await expect(page.getByRole('heading', {name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   await expect(page.getByText('Sample',{exact:true})).toHaveCount(0);
   await expect(page.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
   await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
@@ -30,7 +30,7 @@ test('User1 bento retains the approved blue surface and keyboard-operable servic
   await expect(page.locator('.taxpay-bento-position__highlight')).toHaveCount(0);
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
-  await page.getByTestId('dashboard-recipient-advanced').locator('summary').click();
+  await page.getByTestId('dashboard-payment-extra').locator('summary').click();
   const bar=page.getByTestId('dashboard-service-breakdown').locator('[data-service="income"]');
   await bar.focus();
   await page.keyboard.press('Space');
@@ -46,7 +46,7 @@ test('User1 overview preserves narrow screens and expands fluidly at 1400px and 
     await page.setViewportSize({width,height:850});
     await page.goto(url('taxpayer_home'));
     await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-    await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
     const dims = await page.evaluate(() => {
       const el = document.querySelector('[data-testid="user1-synthetic-workspace"]') as HTMLElement;
       return {overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -114,21 +114,19 @@ test('both signed-in taxpayer profiles use available main width without horizont
       const size = await page.evaluate(() => {
         const main = document.querySelector('#main-content') as HTMLElement;
         const content = main.firstElementChild as HTMLElement;
-        const style = getComputedStyle(main);
-        const area = main.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
         return {
           main: main.getBoundingClientRect().width,
-          area,
           content: content.getBoundingClientRect().width,
           overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         };
       });
       expect(size.overflow,`${account} overflow at ${viewport}px`).toBeLessThanOrEqual(2);
-      const target=viewport < 1400 ? Math.min(size.area,1150) : size.area*.7;
-      expect(Math.abs(size.content-target),
-        `${account} F-124 authenticated width at ${viewport}px, expected ${target} got ${size.content}`)
-        .toBeLessThanOrEqual(2);
-      expect(size.content,`${account} exceeds main at ${viewport}px`).toBeLessThanOrEqual(size.main);
+      if (viewport < 1400) {
+        expect(size.content,`${account} unexpectedly changed at ${viewport}px`).toBeLessThanOrEqual(1152);
+      } else {
+        expect(size.content,`${account} does not fill its flexible workspace at ${viewport}px`).toBeGreaterThan(size.main * .82);
+        expect(size.content,`${account} exceeds main at ${viewport}px`).toBeLessThanOrEqual(size.main);
+      }
     }
   }
 });

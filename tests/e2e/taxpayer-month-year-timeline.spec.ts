@@ -10,7 +10,8 @@ test('current assessment year is available without invented liability or monthly
   await expect(year.locator('option[value="2025-2026"]')).toHaveCount(1);
   await expect(page.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Recorded payments by month'})).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'Payment recipients'})).toBeVisible();
+  await page.getByTestId('dashboard-payment-extra').locator('summary').click();
+  await expect(page.getByRole('heading',{name:'By payment service'})).toBeVisible();
 });
 
 test('all-year month filtering remains accessible in Activity after dashboard chart removal',async({page})=>{
@@ -35,7 +36,7 @@ test('all-year month filtering remains accessible in Activity after dashboard ch
 test('Travel Tax remains its separate payment journey and never appears as an official tax credit',async({page})=>{
   await page.goto(dashboard);
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
-  await expect(page.getByTestId('dashboard-recipient-relationships')).toBeVisible();
+  await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
   await openTaxpayerTravelTax(page);
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
@@ -46,7 +47,7 @@ test('narrow payment-service chart is keyboard operable without horizontal overf
   await page.goto(dashboard);
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
-  await page.getByTestId('dashboard-recipient-advanced').locator('summary').click();
+  await page.getByTestId('dashboard-payment-extra').locator('summary').click();
   const item=page.getByTestId('dashboard-service-breakdown').locator('[data-service="income"]');
   await item.focus();
   await expect(item).toBeFocused();

@@ -27,8 +27,8 @@ test('service filter is keyboard accessible and updates selected beneficiary tot
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const sources=page.getByTestId('dashboard-chart-source');
   await sources.getByRole('button',{name:'Examples'}).click();
-  await page.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   const services=page.getByTestId('dashboard-service-breakdown');
+  await page.getByTestId('dashboard-payment-extra').locator('summary').click();
   const advance=services.locator('[data-service="ait"]');
   await advance.focus();
   await page.keyboard.press('Space');
@@ -43,7 +43,6 @@ test('service filter is keyboard accessible and updates selected beneficiary tot
 test('year filtering cannot promote example liabilities to official credit',async({page})=>{
   await page.goto(dashboard);
   const analytics=page.getByTestId('dashboard-payment-analytics');
-  await analytics.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   await expect(analytics.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}))
     .toHaveAttribute('aria-pressed','true');
   await expect(page.getByRole('group',{name:'Coverage details'})).toHaveCount(0);
@@ -56,7 +55,7 @@ test('year filtering cannot promote example liabilities to official credit',asyn
 test('interactive bento cards fit a 320px mobile viewport',async({page})=>{
   await page.setViewportSize({width:320,height:800});
   await page.goto(dashboard);
-  await page.getByTestId('dashboard-recipient-advanced').locator('summary').click();
+  await page.getByTestId('dashboard-payment-extra').locator('summary').click();
   await expect(page.getByTestId('dashboard-service-breakdown')).toBeVisible();
   await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
   await expect(page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'})).toBeVisible();
@@ -68,7 +67,6 @@ test('Overview summary and charts use the same year/source, and unknown benefici
   await page.goto(dashboard);
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const chart=page.getByTestId('dashboard-payment-analytics');
-  await chart.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   const source=chart.getByTestId('dashboard-chart-source');
   await source.getByRole('button',{name:'Examples'}).click();
   await expect(chart).toHaveAttribute('data-chart-source','example');
@@ -91,8 +89,10 @@ test('Overview summary and charts use the same year/source, and unknown benefici
   await expect(summary.locator('.taxpay-summary-metric--completed strong')).toHaveText('5');
 
   // A source-aware drilldown must match the selected service, not all tax events.
+  await chart.getByTestId('dashboard-payment-extra').locator('summary').click();
   const advance=chart.getByTestId('dashboard-service-breakdown').locator('[data-service="ait"]');
   await advance.click();
+  await chart.locator('.taxpay-recipient-extra > summary').click();
   await chart.getByRole('button',{name:'View payment records'}).click();
   await expect(page).toHaveURL(/action=history/);
   const desktopRecords=page.getByTestId('taxpayer-transaction-table');
@@ -107,8 +107,8 @@ test('Top five ranked beneficiaries show actual recipients and link to filtered 
   await page.goto(dashboard);
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const chart=page.getByTestId('dashboard-payment-analytics');
-  await chart.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
+  await chart.locator('.taxpay-recipient-extra > summary').click();
   const tabs=chart.getByTestId('dashboard-beneficiary-view');
   await tabs.getByRole('button',{name:'Top 5'}).click();
   await expect(tabs.getByRole('button',{name:'Top 5'})).toHaveAttribute('aria-pressed','true');
@@ -131,10 +131,11 @@ test('Top five honors service and relationship filters without inventing benefic
   await page.goto(dashboard);
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const chart=page.getByTestId('dashboard-payment-analytics');
-  await chart.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
+  await chart.locator('.taxpay-recipient-extra > summary').click();
   await chart.getByTestId('dashboard-beneficiary-view').getByRole('button',{name:'Top 5'}).click();
   await expect(chart.getByTestId('dashboard-top-beneficiaries').locator('[data-rank]')).toHaveCount(3);
+  await chart.getByTestId('dashboard-payment-extra').locator('summary').click();
   await chart.getByTestId('dashboard-service-breakdown').locator('[data-service="ait"]').click();
   await expect(chart.getByText('No identified beneficiaries match this selection.')).toBeVisible();
   await expect(chart.getByTestId('dashboard-unranked-amount')).toContainText('32,000');
@@ -154,8 +155,8 @@ test('Top five chart stays accessible at 320px with Bengali labels',async({page}
   await page.setViewportSize({width:320,height:800});
   await page.goto(dashboard+'&lang=bn');
   const chart=page.getByTestId('dashboard-payment-analytics');
-  await chart.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'নমুনা'}).click();
+  await chart.locator('.taxpay-recipient-extra > summary').click();
   const tabs=chart.getByTestId('dashboard-beneficiary-view');
   await tabs.getByRole('button',{name:'শীর্ষ ৫'}).click();
   await expect(chart.getByRole('heading',{name:'শীর্ষ উপকারভোগী'})).toBeVisible();
@@ -164,16 +165,16 @@ test('Top five chart stays accessible at 320px with Bengali labels',async({page}
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth))
     .toBeLessThanOrEqual(2);
   await tabs.getByRole('button',{name:'সম্পর্ক'}).click();
-  await expect(chart.getByRole('heading',{name:'উপকারভোগীর বিস্তারিত'})).toBeVisible();
+  await expect(chart.getByRole('heading',{name:'পেমেন্টের সম্পর্ক'})).toBeVisible();
 });
 
 test('returning from Top 5 clears the hidden relationship filter and restores the total',async({page})=>{
   await page.goto(dashboard);
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const chart=page.getByTestId('dashboard-payment-analytics');
-  await chart.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
   const beneficiary=chart.getByTestId('dashboard-beneficiary-breakdown');
+  await chart.locator('.taxpay-recipient-extra > summary').click();
   const toggle=chart.getByTestId('dashboard-beneficiary-view');
   await toggle.getByRole('button',{name:'Top 5'}).click();
   await beneficiary.getByRole('combobox',{name:'Filter top beneficiaries by relationship'}).selectOption('family');
@@ -203,7 +204,7 @@ test('authorized user1 preview reconciles Overview with Activity without a sourc
     status:401,contentType:'application/json',body:'{"message":"No application Auth session"}'
   }));
   await page.goto('/?action=taxpayer_home');
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2025-2026');
   const overview=page.getByTestId('taxpayer-overview-bento');
   await expect(overview.getByTestId('dashboard-source-indicator')).toContainText('simulated');
@@ -211,7 +212,6 @@ test('authorized user1 preview reconciles Overview with Activity without a sourc
   await expect(overview.locator('.taxpay-summary-metric--requests strong')).toHaveText('2');
   await expect(overview.getByTestId('dashboard-correction-request-list').getByRole('listitem')).toHaveCount(2);
   const chart=overview.getByTestId('dashboard-payment-analytics');
-  await chart.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   await expect(chart).toHaveAttribute('data-chart-source','example');
   await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
   await expect(chart).toContainText('Simulated Activity preview');
@@ -251,7 +251,7 @@ test('populated Overview uses full-width balanced KPIs and readable charts acros
     await expect(cards).toHaveCount(3);
     const boxes=await Promise.all([0,1,2].map(n=>cards.nth(n).boundingBox()));
     expect(boxes.every(Boolean)).toBeTruthy();
-    if(width>=1200){
+    if(width>=900){
       expect(boxes[1]!.y,'second KPI stacks beneath first beside the summary').toBeGreaterThan(boxes[0]!.y);
       expect(boxes[2]!.y,'third KPI stacks beneath second beside the summary').toBeGreaterThan(boxes[1]!.y);
       expect(Math.abs(boxes[0]!.width-boxes[2]!.width),'balanced stacked KPI widths').toBeLessThan(3);
@@ -274,17 +274,18 @@ test('populated Overview uses full-width balanced KPIs and readable charts acros
   await page.goto('/?action=taxpayer_home&demoUser=user1&qaScenario=1&scenarioYear=2025-2026');
   const grid=page.getByTestId('taxpayer-overview-bento');
   const analytics=grid.getByTestId('dashboard-payment-analytics');
-  await analytics.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   await expect(grid.locator('.taxpay-summary-metric--completed strong')).toHaveText('5');
   await expect(grid.locator('.taxpay-summary-metric--requests strong')).toHaveText('2');
   await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
   const beneficiary=analytics.getByTestId('dashboard-beneficiary-breakdown');
+  await beneficiary.locator('.taxpay-recipient-extra > summary').click();
   await expect(beneficiary.locator('.taxpay-bento-analytics__unclassified-intro')).toBeVisible();
   await expect(beneficiary.locator('.taxpay-bento-analytics__segments')).toHaveCount(0);
   await expect(beneficiary.getByTestId('dashboard-unclassified-recovery')).toContainText('81,500');
   await expect(beneficiary.getByTestId('dashboard-unclassified-recovery')).toContainText('32,000');
   await expect(grid.locator('.taxpay-bento-recent li')).toHaveCount(5);
   const service=analytics.getByTestId('dashboard-service-breakdown');
+  await analytics.getByTestId('dashboard-payment-extra').locator('summary').click();
   const serviceBox=await service.boundingBox();
   const lastBarBox=await service.locator('.taxpay-bento-analytics__bar-item').last().boundingBox();
   expect(serviceBox&&lastBarBox).toBeTruthy();
@@ -312,7 +313,7 @@ test('Overview KPIs retain values and actions with proper metric-card hierarchy'
         x: rect.x, y: rect.y, width: rect.width,
         radius: parseFloat(style.borderTopLeftRadius),
         borders: [parseFloat(style.borderTopWidth), parseFloat(style.borderLeftWidth)],
-        display: style.display,
+        direction: style.flexDirection,
         labelSize: parseFloat(getComputedStyle(element.querySelector('.taxpay-summary-metric__label')!).fontSize),
         valueSize: parseFloat(getComputedStyle(element.querySelector('strong')!).fontSize),
         valueBelowLabel: value.y >= label.bottom - 1,
@@ -320,11 +321,11 @@ test('Overview KPIs retain values and actions with proper metric-card hierarchy'
     }));
     expect(geometry.every(card => card.radius === 16), 'consistent, not pill-shaped KPI corners').toBe(true);
     expect(geometry.every(card => card.borders.every(border => border === 1)), 'no thick status strips').toBe(true);
-    expect(geometry.every(card => card.display === 'grid'), 'number is a distinct hierarchy level').toBe(true);
+    expect(geometry.every(card => card.direction === 'column'), 'number is a distinct hierarchy level').toBe(true);
     expect(geometry.every(card => card.valueBelowLabel), 'values are below their labels').toBe(true);
     expect(Math.min(...geometry.map(card => card.labelSize))).toBeGreaterThanOrEqual(14);
     expect(Math.min(...geometry.map(card => card.valueSize))).toBeGreaterThanOrEqual(28);
-    if (width >= 1200) {
+    if (width >= 900) {
       expect(geometry[1].y).toBeGreaterThan(geometry[0].y);
       expect(geometry[2].y).toBeGreaterThan(geometry[1].y);
       expect(Math.abs(geometry[0].width - geometry[2].width)).toBeLessThan(3);

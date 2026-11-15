@@ -256,6 +256,7 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
 
     await page.goto('/?action=taxpayer_home');
     const workspace = page.getByTestId('user1-synthetic-workspace');
+    await workspace.locator('.taxpay-bento-tasks__tabs').getByRole('button',{name:/Drafts/}).click();
     const cards = workspace.getByTestId('dashboard-payment-drafts');
     // Follow-ups is tabbed in the approved overview; expose the saved-draft panel before its actions.
     await workspace.getByRole('button', { name: /^Drafts/ }).click();
@@ -332,6 +333,7 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     await expect(matching).toHaveCount(0);
     // Other user1 saved drafts must not be deleted or changed by this action.
     await page.reload();
+    await workspace.locator('.taxpay-bento-tasks__tabs').getByRole('button',{name:/Drafts/}).click();
     await expect(workspace.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="' + id + '"]')).toHaveCount(0);
     // Reload starts on Requests; open Drafts to verify the empty-state recovery action.
     await workspace.getByRole('button', { name: /^Drafts/ }).click();

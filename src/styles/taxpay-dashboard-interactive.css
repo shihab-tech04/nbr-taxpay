@@ -257,175 +257,139 @@
 }
 
 
-/* Reference-style Payment recipients: two clear cards, with complete existing
-   service/tag filter tools preserved in an expandable detail view. */
-.taxpay-bento-analytics__header h2{font-size:20px;line-height:1.35}
-.taxpay-recipient-grid{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-  align-items:stretch;gap:16px;min-width:0;
+/* Overview reference refinement: recipient-first, with existing service and
+   payer analysis accessible as an optional native disclosure. */
+.taxpay-bento-analytics__cards > [data-testid="dashboard-beneficiary-breakdown"],
+.taxpay-bento-analytics__cards > .taxpay-bento-analytics__card--ranking{
+  grid-column:span 6;
 }
-.taxpay-recipient-grid>.taxpay-bento-analytics__card{
+.taxpay-bento-analytics__cards > .taxpay-payment-extra{grid-column:1/-1}
+.taxpay-bento-analytics__card[data-testid="dashboard-beneficiary-breakdown"]{
   display:flex;flex-direction:column;gap:16px;
-  min-width:0;min-height:345px;padding:23px 24px;
-  border-radius:16px;
-  box-shadow:0 1px 3px rgba(20,50,86,.04);
 }
-.taxpay-recipient-grid .taxpay-bento-analytics__card-header{
-  align-items:center;flex-wrap:wrap;gap:10px;
+.taxpay-bento-analytics__card[data-testid="dashboard-beneficiary-breakdown"] .taxpay-bento-analytics__card-header p,
+.taxpay-bento-analytics__card--ranking .taxpay-bento-analytics__card-header p{
+  margin-top:0;
 }
-.taxpay-recipient-grid .taxpay-bento-analytics__card-header h3{
-  font-size:18px;line-height:1.35;font-weight:600;
+.taxpay-recipient-snapshot{
+  display:grid;gap:17px;
+  min-width:0;
 }
-.taxpay-recipient-manage,.taxpay-recipient-total{
-  flex:none;display:inline-flex;align-items:center;
-  justify-content:center;min-height:35px;padding:6px 11px;
-  border:0;border-radius:9px;background:#eef4ff;
-  color:var(--color-taxpay-primary,#2c5ead);
-  font-size:14px;line-height:1.35;font-weight:600;
-}
-.taxpay-recipient-manage:hover{background:#e1edff}
-.taxpay-recipient-manage:focus-visible{
-  outline:3px solid var(--color-taxpay-primary,#2c5ead);
-  outline-offset:2px;
-}
-.taxpay-recipient-coverage{
-  display:grid;grid-template-columns:auto minmax(0,1fr);
+.taxpay-recipient-snapshot__progress{
+  display:grid;grid-template-columns:minmax(0,.72fr) minmax(0,1.4fr);
   align-items:center;gap:16px;
-  padding:15px 17px;border:1px solid var(--color-taxpay-border,#dbe4f0);
-  border-radius:12px;background:#f6f9fd;
+  border:1px solid var(--color-taxpay-border,#dbe4f0);
+  border-radius:12px;background:#f6f9fe;
+  padding:15px;
 }
-.taxpay-recipient-coverage__summary{
-  display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;min-width:0;
+.taxpay-recipient-snapshot__progress>div:first-child{
+  display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;
+  color:var(--color-taxpay-muted,#64748b);font-size:13px;line-height:1.4;
 }
-.taxpay-recipient-coverage__summary strong{
-  font-size:28px;line-height:1.1;font-weight:650;
+.taxpay-recipient-snapshot__progress strong{
+  font-size:28px;font-weight:650;line-height:1.1;
   color:var(--color-taxpay-text,#17243c);
 }
-.taxpay-recipient-coverage__summary span{
-  font-size:12px;line-height:1.4;
-  color:var(--color-taxpay-muted,#64748b);
+.taxpay-recipient-snapshot__bar{
+  height:12px;width:100%;border-radius:999px;overflow:hidden;
+  background:#d0dbea;
 }
-.taxpay-recipient-coverage__bar{display:grid;gap:8px;min-width:0}
-.taxpay-recipient-coverage__track{
-  display:block;width:100%;height:13px;border-radius:999px;
-  background:#cad7e6;overflow:hidden;
-}
-.taxpay-recipient-coverage__track>span{
-  display:block;height:100%;min-width:0;
+.taxpay-recipient-snapshot__bar>span{
+  display:block;height:100%;border-radius:999px;
   background:var(--color-taxpay-primary,#2c5ead);
 }
-.taxpay-recipient-coverage__legend{
-  display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;
-  font-size:12px;color:var(--color-taxpay-muted,#64748b);
-}
-.taxpay-recipient-coverage__legend span:first-child:before,
-.taxpay-recipient-coverage__legend span:last-child:before{
-  display:inline-block;content:"";width:8px;height:8px;
-  border-radius:50%;margin-right:6px;
-  background:var(--color-taxpay-primary,#2c5ead);
-}
-.taxpay-recipient-coverage__legend span:last-child:before{background:#cad7e6}
-.taxpay-recipient-categories{
+.taxpay-recipient-snapshot__figures{
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-  min-width:0;gap:0;
 }
-.taxpay-recipient-categories>div{
-  display:grid;align-content:start;gap:5px;min-width:0;
-  padding:0 14px;border-left:1px solid var(--color-taxpay-border,#dbe4f0);
+.taxpay-recipient-snapshot__figures>div{
+  display:grid;gap:6px;min-width:0;padding:0 14px;
+  border-right:1px solid var(--color-taxpay-border,#dbe4f0);
 }
-.taxpay-recipient-categories>div:first-child{padding-left:0;border-left:0}
-.taxpay-recipient-categories>div:last-child{padding-right:0}
-.taxpay-recipient-categories dt{
-  font-size:14px;line-height:1.35;font-weight:600;
+.taxpay-recipient-snapshot__figures>div:first-child{padding-left:0}
+.taxpay-recipient-snapshot__figures>div:last-child{border:0;padding-right:0}
+.taxpay-recipient-snapshot__figures dt{
+  color:var(--color-taxpay-muted,#64748b);font-size:14px;line-height:1.4;
   overflow-wrap:anywhere;
+}
+.taxpay-recipient-snapshot__figures dd{
   color:var(--color-taxpay-text,#17243c);
+  font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;
+  overflow-wrap:anywhere;
 }
-.taxpay-recipient-categories p{
-  color:var(--color-taxpay-muted,#64748b);
-  font-size:12px;line-height:1.45;
+.taxpay-recipient-snapshot__notice{
+  border:1px solid var(--color-taxpay-border,#dbe4f0);
+  border-radius:10px;background:#f5f8fd;color:var(--color-taxpay-muted,#64748b);
+  padding:12px 14px;font-size:14px;line-height:1.5;
 }
-.taxpay-recipient-categories dd{
-  margin-top:7px;font-size:15px;line-height:1.4;
-  color:var(--color-taxpay-text,#17243c);
-  font-weight:600;overflow-wrap:anywhere;
-}
-.taxpay-recipient-note{
-  display:flex;gap:12px;align-items:center;
-  margin-top:auto;padding:13px 15px;
-  border:1px solid #e3ebf5;border-radius:12px;
-  background:#f3f7fd;color:var(--color-taxpay-text,#17243c);
-}
-.taxpay-recipient-note__icon{
-  display:grid;place-items:center;flex:none;width:34px;height:34px;
-  border-radius:10px;background:#fff;
-  color:var(--color-taxpay-primary,#2c5ead);font-size:18px;
-}
-.taxpay-recipient-note strong{font-size:14px;line-height:1.4}
-.taxpay-recipient-note p{
-  margin-top:3px;color:var(--color-taxpay-muted,#64748b);
-  font-size:12px;line-height:1.4;
-}
-.taxpay-recipient-grid .taxpay-bento-analytics__card--ranking .taxpay-bento-analytics__top-list{
-  display:grid;gap:0;
-}
-.taxpay-recipient-grid .taxpay-bento-analytics__card--ranking .taxpay-bento-analytics__top-item{
-  min-height:70px;padding:10px 0;
-}
-.taxpay-recipient-grid .taxpay-bento-analytics__top-name{
-  display:inline-flex;align-items:center;gap:11px;font-weight:600;
-}
-.taxpay-bento-analytics__rank{
-  display:inline-grid;place-items:center;flex:none;
-  width:27px;height:27px;border-radius:8px;
-  background:#edf3fd;color:var(--color-taxpay-primary,#2c5ead);
-  font-size:13px;font-weight:600;
-}
-.taxpay-recipient-grid .taxpay-bento-analytics__top-heading{
-  align-items:center;
-}
-.taxpay-recipient-grid .taxpay-bento-analytics__top-meta{
-  padding-left:38px;font-size:12px;
-}
-.taxpay-recipient-grid .taxpay-bento-analytics__top-item .taxpay-bento-analytics__bar-track{
-  margin-left:38px;width:calc(100% - 38px);height:7px;
-}
-.taxpay-recipient-grid .taxpay-bento-analytics__card--ranking>.taxpay-bento-analytics__link{
-  margin-top:auto;
-}
-.taxpay-recipient-advanced{min-width:0}
-.taxpay-recipient-advanced>summary{
-  display:inline-flex;align-items:center;gap:7px;
-  min-height:40px;width:max-content;max-width:100%;
-  cursor:pointer;border-radius:8px;
+.taxpay-recipient-extra summary,.taxpay-payment-extra summary{
+  cursor:pointer;min-height:44px;
+  display:flex;align-items:center;
   color:var(--color-taxpay-primary,#2c5ead);
-  font-size:14px;line-height:1.45;font-weight:600;
-  text-decoration:underline;text-underline-offset:4px;
-  list-style:revert;
+  font-size:14px;font-weight:600;line-height:1.4;
+  padding:10px 0;
 }
-.taxpay-recipient-advanced>summary:focus-visible{
-  outline:3px solid var(--color-taxpay-primary,#2c5ead);outline-offset:3px;
+.taxpay-recipient-extra summary:focus-visible,.taxpay-payment-extra summary:focus-visible{
+  outline:3px solid var(--color-taxpay-primary,#2c5ead);outline-offset:2px;
 }
-.taxpay-recipient-advanced .taxpay-bento-analytics__cards{margin-top:8px}
-@media(max-width:1059px){
-  .taxpay-recipient-grid{grid-template-columns:minmax(0,1fr)}
-  .taxpay-recipient-grid>.taxpay-bento-analytics__card{min-height:0}
+.taxpay-recipient-extra[open]{display:grid;gap:12px}
+.taxpay-recipient-extra .taxpay-bento-analytics__unclassified-details{margin-top:10px}
+.taxpay-payment-extra{
+  min-width:0;
+  margin-top:2px;
+  border:1px solid var(--color-taxpay-border,#dbe4f0);
+  border-radius:14px;background:#fff;
+  padding:0 18px;
+}
+.taxpay-payment-extra[open]{padding-bottom:18px}
+.taxpay-payment-extra__cards{
+  display:grid;grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:14px;min-width:0;
+}
+.taxpay-payment-extra__cards > [data-testid="dashboard-service-breakdown"]{grid-column:span 7}
+.taxpay-payment-extra__cards > [data-testid="dashboard-role-breakdown"]{grid-column:span 5}
+.taxpay-bento-analytics__cards > .taxpay-bento-analytics__card--ranking{
+  display:flex;flex-direction:column;
+}
+.taxpay-bento-analytics__card--ranking .taxpay-bento-analytics__top-list{
+  flex:1;gap:5px;
+}
+.taxpay-bento-analytics__top-heading{gap:6px 12px}
+.taxpay-bento-analytics__top-item{padding:10px 0;min-height:70px}
+@media(max-width:1099px){
+  .taxpay-bento-analytics__cards > [data-testid="dashboard-beneficiary-breakdown"],
+  .taxpay-bento-analytics__cards > .taxpay-bento-analytics__card--ranking{
+    grid-column:1/-1;
+  }
+  .taxpay-payment-extra__cards{grid-template-columns:minmax(0,1fr)}
+  .taxpay-payment-extra__cards > [data-testid="dashboard-service-breakdown"],
+  .taxpay-payment-extra__cards > [data-testid="dashboard-role-breakdown"]{grid-column:1/-1}
 }
 @media(max-width:599px){
-  .taxpay-recipient-grid>.taxpay-bento-analytics__card{
-    padding:18px 15px;gap:14px;
-  }
-  .taxpay-recipient-coverage{
-    grid-template-columns:minmax(0,1fr);gap:9px;padding:12px;
-  }
-  .taxpay-recipient-categories>div{padding:0 8px}
-  .taxpay-recipient-categories dt{font-size:12px}
-  .taxpay-recipient-categories dd{font-size:14px}
-  .taxpay-recipient-grid .taxpay-bento-analytics__top-heading{gap:5px}
+  .taxpay-recipient-snapshot__progress{grid-template-columns:minmax(0,1fr)}
+  .taxpay-recipient-snapshot__figures{gap:10px}
+  .taxpay-recipient-snapshot__figures>div{padding:0 8px}
+  .taxpay-recipient-snapshot__figures dt{font-size:12px}
+  .taxpay-recipient-snapshot__figures dd{font-size:14px}
+  .taxpay-payment-extra{padding-inline:12px}
 }
-@media(max-width:359px){
-  .taxpay-recipient-categories{grid-template-columns:minmax(0,1fr);gap:12px}
-  .taxpay-recipient-categories>div{
-    border-left:0;padding:0;border-top:1px solid var(--color-taxpay-border,#dbe4f0);padding-top:10px;
+
+
+/* The recipient card is now the first card. Override the older first-child
+   service-card column rule so recipient and ranking truly share a row. */
+.taxpay-bento-analytics__cards > .taxpay-bento-analytics__card[data-testid="dashboard-beneficiary-breakdown"]:first-child{
+  grid-column:span 6;
+  grid-template-rows:none;
+}
+@media(max-width:1099px){
+  .taxpay-bento-analytics__cards > .taxpay-bento-analytics__card[data-testid="dashboard-beneficiary-breakdown"]:first-child{
+    grid-column:1/-1;
   }
-  .taxpay-recipient-categories>div:first-child{border-top:0;padding-top:0}
+}
+
+/* Keep legacy service-chart height acceptance inside the new disclosure. */
+.taxpay-payment-extra__cards > .taxpay-bento-analytics__card:first-child{
+  display:grid;grid-template-rows:auto minmax(0,1fr);align-content:stretch;
+}
+.taxpay-payment-extra__cards > .taxpay-bento-analytics__card:first-child > .taxpay-bento-analytics__bars{
+  align-content:space-evenly;
 }

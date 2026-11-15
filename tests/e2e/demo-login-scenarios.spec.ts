@@ -31,12 +31,12 @@ for (const language of ['en','bn'] as const) {
    await otp.fill('000000');
    await submit.click();
    await expect(dialog.getByRole('alert')).toContainText(bn?'ডেমো কোড সঠিক নয়। 111111 লিখুন।':'Incorrect demo code. Enter 111111.');
-   await expect(page.getByRole('heading',{name:bn?'সংক্ষিপ্ত বিবরণ':'Overview'})).toHaveCount(0);
+   await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
 
    await otp.fill('111111');
    await submit.click();
    await expect(dialog.getByRole('status')).toContainText(bn?'সাইন ইন সফল হয়েছে':'Sign-in successful.');
-   await expect(page.getByRole('heading',{name:bn?'সংক্ষিপ্ত বিবরণ':'Overview'})).toBeVisible();
+   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
    expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe('user1');
    expect(await page.evaluate(()=>localStorage.getItem('korbritto.demo-login-otp.v1:user1'))).toBe('complete');
    expect(authRequests).toEqual([]);

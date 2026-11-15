@@ -277,6 +277,9 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await draftExit.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
   await page.goto('/?action=taxpayer_home');
+  const draftsTab=page.getByTestId('user1-synthetic-workspace').locator('.taxpay-bento-tasks__tabs').getByRole('button',{name:/^Drafts/});
+  await draftsTab.click();
+  await expect(draftsTab).toHaveAttribute('aria-pressed','true');
   const savedDraftCard=page.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="'+draftId+'"]');
   await expect(savedDraftCard).toBeVisible();
   await savedDraftCard.getByRole('button',{name:'Continue'}).click();
