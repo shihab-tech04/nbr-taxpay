@@ -256,14 +256,24 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   };
 
   const signOut = async () => {
+    if (!user) return;
+    const requestUid=user.id;
     setBusy(true); setFeedback(null);
     try {
       const result = await signOutApplicationAccount();
+      // Successful sign-out makes the Auth owner null. A different *non-null*
+      // owner means a second account took over; the old response cannot navigate
+      // or change that account's settings/feedback.
+      if(currentUidRef.current && !isCurrentUid(requestUid))return;
       if (!result.ok) throw new Error(result.error);
       setNoticeSnapshot(null); setUserRole('GUEST'); setFeedback({error:false,content:t.loggedOut});
       navigate('landing');
-    } catch { setFeedback({error:true,content:t.logoutFailed}); }
-    finally { setBusy(false); }
+    } catch {
+      if(!currentUidRef.current || isCurrentUid(requestUid))
+        setFeedback({error:true,content:t.logoutFailed});
+    } finally {
+      if(!currentUidRef.current || isCurrentUid(requestUid))setBusy(false);
+    }
   };
 
   const date = (value?: string | null) => {

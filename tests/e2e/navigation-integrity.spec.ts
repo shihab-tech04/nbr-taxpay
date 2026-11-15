@@ -72,7 +72,7 @@ test('public footer utility links open their actual destinations without copying
 test('public payment and receipt actions reach their dedicated flows', async ({page}) => {
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.goto('/?action=landing');
-  const search=page.getByRole('combobox',{name:'Search payment records by reference'});
+  const search=page.getByRole('searchbox',{name:'Search payment records by reference'});
   await expect(search).toBeVisible();
   await search.fill('NO-SUCH-REFERENCE-98765');
   await search.press('Enter');

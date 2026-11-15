@@ -332,7 +332,7 @@ test('public Help uses exact maintained FAQ/guide steps, avoids one-letter false
   await expect(helpPanel.getByRole('button',{name:'পেমেন্টের অবস্থা',exact:true})).toBeVisible();
   await page.getByLabel('আপনার প্রশ্ন').fill('যাত্রী খুঁজে যোগ করুন');
   await page.getByRole('button',{name:'পাঠান'}).click();
-  await expect(page.locator('.public-help-message--assistant').last()).toContainText('নমুনা');
+  await expect(messages.last()).toContainText('নমুনা');
   await helpPanel.getByRole('button',{name:'পেমেন্টের অবস্থা',exact:true}).click();
   const banglaGuide=helpPanel.getByRole('link',{name:'ব্যবহার নির্দেশিকা'});
   await expect(banglaGuide).toHaveAttribute('href',/action=user_guide&lang=bn&category=status/);

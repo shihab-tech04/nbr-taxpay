@@ -191,7 +191,6 @@ export const PublicLanding: React.FC = () => {
           <input
             id="public-payment-reference"
             type="search"
-            role="combobox"
             autoComplete="off"
             spellCheck={false}
             maxLength={120}

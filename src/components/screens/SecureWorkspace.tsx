@@ -315,11 +315,15 @@ export const SecureWorkspace: React.FC = () => {
   };
 
   const signOut = async () => {
-    if (!supabase) return;
+    if (!supabase || !user) return;
+    const requestUid=user.id;
     setBusy(true);
     try {
       // Signing out of this browser must not revoke every device session.
       const result = await signOutApplicationAccount();
+      // An already loaded different Auth owner must never be erased by a
+      // delayed sign-out response that was initiated from the prior account.
+      if(currentAuthUserId.current && currentAuthUserId.current!==requestUid)return;
       if (!result.ok) { showMessage('signOutNotConfirmed', result.error??'Please retry.'); return; }
       sessionEpoch.current++;
       setUser(null); setRows([]); setPendingDelete(null);
@@ -327,8 +331,12 @@ export const SecureWorkspace: React.FC = () => {
       draftBeforeEditing.current = null;
       showMessage('signedOut');
     } catch {
-      showMessage('signOutUnavailable');
-    } finally { setBusy(false); }
+      if(!currentAuthUserId.current || currentAuthUserId.current===requestUid)
+        showMessage('signOutUnavailable');
+    } finally {
+      if(!currentAuthUserId.current || currentAuthUserId.current===requestUid)
+        setBusy(false);
+    }
   };
 
   return (

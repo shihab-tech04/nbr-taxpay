@@ -7,7 +7,7 @@ test('public hero opens payment while standalone receipt search stays accessible
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.goto('/?action=landing');
  await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
- await expect(page.getByRole('combobox',{name:'Search payment records by reference'})).toBeVisible();
+ await expect(page.getByRole('searchbox',{name:'Search payment records by reference'})).toBeVisible();
  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
  await expect(page.locator('[data-banner-service="intro"] .public-hero-carousel__image-layer[data-visible="true"] .public-information-hero__image')).toBeVisible();
  await expect(page.locator('.public-information-guide')).toHaveCount(0);
@@ -110,7 +110,7 @@ test('public information header and sections fit all requested widths',async({pa
   expect(heroBox).not.toBeNull();
   expect(Math.abs(pay!.y-travel!.y),'both payment actions should share a row at '+width).toBeLessThan(2);
   expect(searchBox!.y,'receipt search must sit below the full banner at '+width).toBeGreaterThanOrEqual(heroBox!.y+heroBox!.height-2);
-  await expect(search.getByRole('combobox',{name:'Search payment records by reference'})).toBeVisible();
+  await expect(search.getByRole('searchbox',{name:'Search payment records by reference'})).toBeVisible();
   const actionFit=await heroActions.evaluate(actions=>[...actions.querySelectorAll<HTMLButtonElement>('button')].every(button=>{
     const rect=button.getBoundingClientRect();
     const box=actions.getBoundingClientRect();

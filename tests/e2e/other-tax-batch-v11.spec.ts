@@ -85,6 +85,39 @@ async function revealMobileCalculation(dialog: import('@playwright/test').Locato
   }
 }
 
+test('M03: unmatched TIN cannot be confirmed, and an edited confirmation requires a fresh sample lookup', async ({ page }) => {
+  const dialog = await getFlow(page);
+  const first = dialog.getByTestId('other-tax-primary-taxpayer');
+  const tin = first.locator('#guest-tin');
+  const continueAction = dialog.getByRole('button',{name:'Continue to purpose & amount'});
+
+  await tin.fill('987654321098');
+  await first.getByRole('button',{name:'Search',exact:true}).click();
+  await expect(first.getByText('TIN information not found.')).toBeVisible();
+  await expect(first.getByRole('button',{name:'Add taxpayer'})).toHaveCount(0);
+  await expect(continueAction).toBeDisabled();
+
+  await tin.fill('111111111111');
+  await expect(first.getByTestId('searched-taxpayer-card')).toHaveCount(0);
+  await first.getByRole('button',{name:'Search',exact:true}).click();
+  await expect(first.getByTestId('searched-taxpayer-card')).toContainText('User 1');
+  await expect(first.getByTestId('taxpayer-sample-source')).toContainText('not a verified NBR identity');
+  await first.getByRole('button',{name:'Add taxpayer'}).click();
+  await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('111111111111');
+
+  await first.getByRole('button',{name:'Edit',exact:true}).click();
+  await expect(continueAction).toBeDisabled();
+  await expect(first.getByTestId('confirmed-taxpayer-card')).toHaveCount(0);
+  await tin.fill('987654321098');
+  await first.getByRole('button',{name:'Search',exact:true}).click();
+  await expect(first.getByRole('button',{name:'Add taxpayer'})).toHaveCount(0);
+  await tin.fill('222222222222');
+  await first.getByRole('button',{name:'Search',exact:true}).click();
+  await expect(first.getByTestId('searched-taxpayer-card')).toContainText('User 2');
+  await first.getByRole('button',{name:'Add taxpayer'}).click();
+  await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('222222222222');
+});
+
 test('Step 1 primary action enables only after all required payment details are valid', async ({ page }) => {
   const dialog = await getFlow(page);
   const continueButton = dialog.getByRole('button', { name: 'Continue to purpose & amount' });
@@ -958,6 +991,7 @@ test('F-039 Bengali saved-and-one-time recipient selection preserves the saved l
   await oneTime.locator('#other-tax-one-time-tin').fill('444444444444');
   await oneTime.getByRole('button',{name:'করদাতার টিআইএন খুঁজুন'}).click();
   await expect(oneTime.getByTestId('one-time-taxpayer-preview')).toContainText('444444444444');
+  await expect(oneTime.getByTestId('one-time-sample-origin')).toContainText('NBR-এর সরকারি রেকর্ড নয়');
   await oneTime.getByRole('button',{name:'এই পেমেন্টে যোগ করুন'}).click();
   await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
   await oneTime.getByRole('button',{name:'পেমেন্ট থেকে সরান'}).click();
