@@ -6,7 +6,7 @@ import {TAXPAYER_PROFILE_FIELD_ORDER} from '../src/contracts/taxpayerProfileFiel
 import {USER1_FICTIONAL_TIN_PROFILE} from '../src/data/user1FictionalTinProfile';
 
 const recovery=readFileSync(new URL(
- '../supabase/migrations/20261115220000_taxpay_phase1_preview_accounts_recovery.sql',import.meta.url
+ '../supabase/migrations/20261114080000_taxpay_phase1_preview_accounts_recovery.sql',import.meta.url
 ),'utf8');
 const original30=readFileSync(new URL(
  '../supabase/migrations/20261107090000_taxpay_thirty_profiles.sql',import.meta.url
@@ -21,10 +21,13 @@ test('Phase 1 retains all 30 fictional IDs and restores public/private rows with
  assert.match(recovery,/INSERT INTO public\.sim_payment_users/);
  assert.match(recovery,/INSERT INTO taxpay_guest_private\.demo_profiles\(demo_id\)/);
  assert.match(recovery,/generate_series\(2,30\)/);
+ assert.match(recovery,/INSERT INTO public\.sim_payment_users\(id,role_code\) VALUES/);
+ assert.match(recovery,/First-login User7-User10 preview profiles must remain empty/);
+ assert.ok('20261114080000' < '20261115090000', 'Phase 1 recovery must run before 55-account expansion');
  assert.match(recovery,/generate_series\(11,30\)/);
  assert.match(recovery,/ON CONFLICT \(id\) DO NOTHING/g);
  assert.match(recovery,/ON CONFLICT \(demo_id\) DO NOTHING/);
- for(let i=2;i<=10;i++){
+ for(let i=2;i<=6;i++){
    assert.match(recovery,new RegExp("\\('user"+i+"','"));
  }
  assert.match(recovery,/missing_public<>0 OR missing_private<>0 OR mismatched_sessions<>0/);
