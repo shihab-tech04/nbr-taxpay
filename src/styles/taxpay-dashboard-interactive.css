@@ -372,3 +372,16 @@
   .taxpay-recipient-snapshot__figures dd{font-size:14px}
   .taxpay-payment-extra{padding-inline:12px}
 }
+
+
+/* The recipient card is now the first card. Override the older first-child
+   service-card column rule so recipient and ranking truly share a row. */
+.taxpay-bento-analytics__cards > .taxpay-bento-analytics__card[data-testid="dashboard-beneficiary-breakdown"]:first-child{
+  grid-column:span 6;
+  grid-template-rows:none;
+}
+@media(max-width:1099px){
+  .taxpay-bento-analytics__cards > .taxpay-bento-analytics__card[data-testid="dashboard-beneficiary-breakdown"]:first-child{
+    grid-column:1/-1;
+  }
+}
