@@ -47,3 +47,9 @@ test('BigInt allocation arithmetic preserves amounts above JS safe integer range
   big.data.details.allocations[0].amountMinor='9007199254737493';
   assert.equal(reconcile([big],[copy(big)]).issues.length,0);
 });
+test('legacy fallback and V2 candidate form one deduplicated Office ledger',()=>{
+  const next=copy(row);next.id='aaabb338-17cf-456f-a15e-ab2761b5e7a0';
+  assert.equal(reconcile([row,next],[row]).issues[0].reason,'MISSING_OFFICE');
+  assert.equal(reconcile([row,next],[row,next]).matched,2);
+  assert.ok(reconcile([row,copy(row)],[row]).issues.some(i=>i.reason==='DUPLICATE'));
+});
