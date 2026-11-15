@@ -3,6 +3,7 @@ import React, {useMemo, useState} from 'react';
 import {ArrowRight, Clock3, FileText} from 'lucide-react';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import type {Language} from '../../types/tax';
+import {EXTERNAL_LEDGER_SOURCES} from '../../services/externalLedgerRecords';
 
 /** Read-only event projection. Monetary effects exist only when the source explicitly
  * supplies a tax-account posting; a payment attempt or receipt is not a credit. */
@@ -18,6 +19,10 @@ export type TaxAccountEvent = {
   balanceAfterMinor:number|null;
   actor:string;
   source:string;
+  /** Original provider identity and section; never inferred from category or channel. */
+  sourceCode?:string;
+  dhara?:string;
+  creditEvidenceStatus?:'RECORDED_ONLY'|'OFFICIAL_POSTING';
   taxEventId?:string;
   paymentId?:string;
   challanNo?:string;
@@ -171,23 +176,26 @@ export function PaymentLifecycleDetails({record,language}:{record:PaymentLifecyc
   </div>;
 }
 
-export function EventBasedTaxLedger({events,language,year,onYearChange,financialBalanceVerified=false,showRecordedScenarioBalance=false,onOpenPayment}:{
+export function EventBasedTaxLedger({events,language,year,onYearChange,financialBalanceVerified=false,showRecordedScenarioBalance=false,onOpenPayment,showExternalSources=false}:{
   events:readonly TaxAccountEvent[];language:Language;year?:string;
   onYearChange?:(year:string)=>void;financialBalanceVerified?:boolean;showRecordedScenarioBalance?:boolean;onOpenPayment?:(paymentId:string)=>void;
+  showExternalSources?:boolean;
 }){
   const t=(en:string,bn:string)=>pair(en,bn,language);
   const [selectedYear,setSelectedYear]=useState('all');
   const [type,setType]=useState<typeof filters[number][0]>('all');
   const [ledgerFiltersExpanded,setLedgerFiltersExpanded]=useState(false);
   const [ledgerSearch,setLedgerSearch]=useState('');
+  const [sourceFilter,setSourceFilter]=useState('all');
   const [selected,setSelected]=useState<TaxAccountEvent|null>(null);
   const allYears=useMemo(()=>[...new Set(events.map(e=>e.assessmentYear))].filter(Boolean).sort().reverse(),[events]);
   const currentYear=year??selectedYear;
   const visible=useMemo(()=>events.filter(e=>(currentYear==='all'||e.assessmentYear===currentYear)
     &&(type==='all'||ledgerEventClass(e.code)===type)
-    &&(!ledgerSearch.trim()||(e.title+' '+e.reference+' '+e.taxEventId+' '+e.id+' '+e.component+' '+e.source)
+    &&(sourceFilter==='all'||(sourceFilter==='SOHOJKOR'?!e.sourceCode:e.sourceCode===sourceFilter))
+    &&(!ledgerSearch.trim()||(e.title+' '+e.reference+' '+e.taxEventId+' '+e.id+' '+e.component+' '+e.source+' '+(e.dhara||'')+' '+(e.challanNo||''))
       .toLocaleLowerCase().includes(ledgerSearch.trim().toLocaleLowerCase())))
-    .sort((a,b)=>b.occurredAt.localeCompare(a.occurredAt)||b.id.localeCompare(a.id)),[events,currentYear,type,ledgerSearch]);
+    .sort((a,b)=>b.occurredAt.localeCompare(a.occurredAt)||b.id.localeCompare(a.id)),[events,currentYear,type,ledgerSearch,sourceFilter]);
   const canShowBalance=financialBalanceVerified||showRecordedScenarioBalance;
   const balance=canShowBalance&&currentYear!=='all'
     ? events.filter(e=>e.assessmentYear===currentYear&&e.balanceAfterMinor!==null)
@@ -229,13 +237,24 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           {allYears.map(y=><option key={y} value={y}>{y}</option>)}
         </select>
       </label>
+      {showExternalSources&&<label className="flex items-center gap-2 text-xs text-taxpay-muted">
+        {t('Payment source','পেমেন্টের উৎস')}
+        <select aria-label={t('Filter ledger by payment source','পেমেন্টের উৎস অনুযায়ী লেজার')}
+          value={sourceFilter} onChange={e=>setSourceFilter(e.target.value)}
+          className="min-h-10 rounded-lg border border-taxpay-border bg-white px-3 text-sm text-taxpay-text">
+          <option value="all">{t('All sources','সব উৎস')}</option>
+          <option value="SOHOJKOR">Sohojkor</option>
+          {Object.entries(EXTERNAL_LEDGER_SOURCES).map(([code,label])=><option key={code} value={code}>{label}</option>)}
+        </select>
+      </label>}
     </TaxPayOfficeRegisterFilters>
     <TaxPayActiveFilterChips clearLabel={t('Clear all','সব ফিল্টার মুছুন')}
-      onClear={()=>{setType('all');setLedgerSearch('');onYearChange?onYearChange('all'):setSelectedYear('all');}}
+      onClear={()=>{setType('all');setSourceFilter('all');setLedgerSearch('');onYearChange?onYearChange('all'):setSelectedYear('all');}}
       filters={[
         ...(ledgerSearch.trim()?[{key:'search',label:t('Search: ','অনুসন্ধান: ')+ledgerSearch.trim(),onRemove:()=>setLedgerSearch('')}]:[]),
         ...(type!=='all'?[{key:'type',label:language==='bn'?({liabilities:'দায়',credits:'ক্রেডিট',payments:'পেমেন্টের ধাপ',corrections:'সংশোধন',refunds:'ফেরত'} as Record<string,string>)[type]:filters.find(([key])=>key===type)?.[1]??type,onRemove:()=>setType('all')}]:[]),
-        ...(currentYear!=='all'?[{key:'year',label:currentYear,onRemove:()=>onYearChange?onYearChange('all'):setSelectedYear('all')}]:[])
+        ...(currentYear!=='all'?[{key:'year',label:currentYear,onRemove:()=>onYearChange?onYearChange('all'):setSelectedYear('all')}]:[]),
+        ...(showExternalSources&&sourceFilter!=='all'?[{key:'source',label:sourceFilter==='SOHOJKOR'?'Sohojkor':EXTERNAL_LEDGER_SOURCES[sourceFilter as keyof typeof EXTERNAL_LEDGER_SOURCES],onRemove:()=>setSourceFilter('all')}]:[])
       ]}/>
     <TaxPayTablePanel className="taxpay-ledger-records">
     <TaxPayTableViewport>
@@ -247,6 +266,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             {key:'event',header:t('Event','ঘটনা'),renderCell:e=><button type="button" onClick={()=>setSelected(e)} className="text-left font-semibold text-taxpay-dark underline-offset-2 hover:underline focus-visible:underline">
               {e.title}<span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.code.replaceAll('_',' ')}</span><span className="mt-1 block break-all text-[11px] font-normal text-taxpay-muted">{e.reference||'—'}</span></button>},
             {key:'year',header:t('Year · component','বর্ষ · খাত'),renderCell:e=><>{e.assessmentYear}<span className="block text-taxpay-muted">{e.component}</span></>},
+            ...(showExternalSources?[{key:'dhara',header:t('Dhara / section','ধারা'),renderCell:(e:TaxAccountEvent)=>e.dhara||t('Not supplied','উৎসে নেই')}]:[]),
             {key:'particulars',header:t('Description / tax head','বিবরণ / কর খাত'),renderCell:e=><>{e.title}<span className="block text-taxpay-muted">{e.component}</span></>},
             {key:'debit',header:t('Debit (liability)','ডেবিট (দায়)'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:e=>e.effectMinor!==null&&e.effectMinor>0?money(e.effectMinor,language):'—'},
             {key:'credit',header:t('Credit (payment)','ক্রেডিট (পরিশোধ)'),headerClassName:'text-right',cellClassName:'whitespace-nowrap text-right tabular-nums',renderCell:e=>e.effectMinor!==null&&e.effectMinor<0?money(-e.effectMinor,language):'—'},
@@ -269,7 +289,8 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
               <span className="min-w-0"><span className="block text-sm text-taxpay-muted">{t('Recorded status','নথিভুক্ত অবস্থা')}</span>
                 <strong className="block break-words text-sm">{e.status||t('Not recorded','নথিভুক্ত নয়')}</strong></span>
             </span>
-            <span className="w-full break-words text-sm text-taxpay-muted">{t('Source','উৎস')}: {e.source}</span>
+            <span className="w-full break-words text-sm text-taxpay-muted">{t('Source','উৎস')}: {e.source}{showExternalSources?' · '+t('Dhara','ধারা')+': '+(e.dhara||t('Not supplied','উৎসে নেই')):''}</span>
+            {e.creditEvidenceStatus&&<span className="w-full text-sm text-taxpay-muted">{e.creditEvidenceStatus==='OFFICIAL_POSTING'?t('Separate official credit posting recorded','স্বতন্ত্র সরকারি ক্রেডিট পোস্টিং নথিভুক্ত'):t('Recorded payment only — no confirmed credit','শুধু পেমেন্ট নথিভুক্ত — ক্রেডিট নিশ্চিত নয়')}</span>}
           </button>}/>}
 
     </TaxPayTableViewport>
@@ -288,6 +309,8 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           <Field title={t('Effect on balance','ব্যালেন্সের প্রভাব')} value={selected.effectMinor===null?t('None confirmed','নিশ্চিত নয়'):money(selected.effectMinor,language)}/>
           <Field title={t('Actor','কার্যকারী')} value={selected.actor}/>
           <Field title={t('Source system','উৎস সিস্টেম')} value={selected.source}/>
+          <Field title={t('Dhara / section','ধারা')} value={selected.dhara||t('Not supplied','উৎসে নেই')}/>
+          <Field title={t('Tax credit evidence','কর ক্রেডিটের প্রমাণ')} value={selected.creditEvidenceStatus==='OFFICIAL_POSTING'?t('Separate official posting','স্বতন্ত্র সরকারি পোস্টিং'):t('Not verified by this record','এই রেকর্ডে যাচাই হয়নি')}/>
           <Field title={t('Year · component','বর্ষ · খাত')} value={selected.assessmentYear+' · '+selected.component}/>
           <Field title={t('Amount','পরিমাণ')} value={selected.amountMinor===null?'—':money(selected.amountMinor,language)}/>
           <Field title={t('Payment transaction','পেমেন্ট লেনদেন')} value={selected.paymentId||unavailable(language)}/>
