@@ -13,6 +13,9 @@ export type DemoSettings={language:'en'|'bn';selectedListId:string|null;paymentS
 export type PreviewSession=DemoSettings&{profileId:DemoUserId;capability:string};
 const outstanding=new Map<string,Map<'language'|'selected-list',string>>();
 const pending=new Map<string,Promise<void>>();
+// Monotonic local generation prevents older sign-ins from reactivating after a
+// newer login or explicit sign-out, even when network responses arrive late.
+let sessionGeneration=0;
 
 function valid(raw:unknown):PreviewSession|null {
   if(!raw||typeof raw!=='object')return null;
@@ -42,6 +45,7 @@ function remember(session:PreviewSession):void {
   window.sessionStorage.setItem(PREVIEW_USER_KEY,session.profileId);
 }
 export function clearPreviewSession():void {
+  sessionGeneration++;
   // Discard stale queued writes: a later sign-in with the same profile ID
   // must never replay settings from a previously issued capability.
   outstanding.clear();
@@ -67,7 +71,9 @@ async function send<T>(action:string,fields:Record<string,unknown>,capability?:s
 }
 export async function signInPreviewProfile(id:string,password:string):Promise<PreviewSession|null>{
   if(!demoIdPattern.test(id)||password!==id)return null;
+  const attempt=++sessionGeneration;
   const raw=await send<PreviewSession>('demo-login',{userId:id,password});
+  if(attempt!==sessionGeneration)throw new Error('Demo account changed.');
   const session=valid(raw);
   if(!session||session.profileId!==id)throw new Error('Demo account response could not be verified.');
   clearPreviewSession();
