@@ -123,7 +123,7 @@ test('desktop restores full-width lookup and proposed connected six-cell benefit
   expect(layout.input.width).toBeGreaterThanOrEqual(layout.search.width * .9);
   expect(layout.headings.every(weight => weight <= 600)).toBe(true);
   expect(layout.descriptions.every(size => size >= 14)).toBe(true);
-  expect(layout.panelRadius).toBe(12);
+  expect(layout.panelRadius).toBe(10);
   // On 821–959px-tall desktops, the approved connected panel retains a compact 16px inset.
   expect(layout.panelToGridInset).toBeGreaterThanOrEqual(16);
   expect(layout.panelBackground).not.toBe('rgba(0, 0, 0, 0)');
@@ -472,7 +472,7 @@ test('payment-record lookup keeps the new readable heading and consistent card g
   });
   expect(layout.panelHeight).toBeGreaterThanOrEqual(108);
   expect(layout.panelHeight).toBeLessThanOrEqual(150);
-  expect(layout.panelRadius).toBe(12);
+  expect(layout.panelRadius).toBe(10);
   expect(layout.headingBottom).toBeLessThan(layout.formTop);
   expect(layout.formHeight).toBeGreaterThanOrEqual(46);
   expect(layout.formHeight).toBeLessThanOrEqual(52);
@@ -614,7 +614,7 @@ test('approved desktop proposal is one white rounded panel with a connected 3x2 
       const expectedPanelWidth=Math.min(1100,viewport.width-64);
       expect(Math.abs(measurement.panelWidth-expectedPanelWidth),
         JSON.stringify({viewport,lang,measurement})).toBeLessThanOrEqual(2);
-      expect(measurement.panelRadius).toBe(12);
+      expect(measurement.panelRadius).toBe(10);
       // The reference tall desktop keeps 24px; medium-height layouts fit in 16px.
       const expectedPadding=viewport.height<=959 ? 16 : 24;
       expect(measurement.panelPadding).toBeGreaterThanOrEqual(expectedPadding);

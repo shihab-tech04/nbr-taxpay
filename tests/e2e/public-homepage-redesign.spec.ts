@@ -178,7 +178,7 @@ test('Home search and six-benefit panel share readable typography, spacing and c
     expect(computed.titleSizes[0]).toBeGreaterThanOrEqual(20);
     expect(Math.min(...computed.bodySizes.slice(0,2)), 'home helper text remains readable').toBeGreaterThanOrEqual(15);
     expect(computed.bodySizes[2], 'benefit details retain the approved 14px baseline').toBeGreaterThanOrEqual(14);
-    expect(computed.radii, 'matching understated home card corners').toEqual([12,12]);
+    expect(computed.radii, 'matching understated home card corners').toEqual([10,10]);
     expect(computed.horizontalPadding[0], 'same left/right insets').toBe(computed.horizontalPadding[1]);
     expect(computed.verticalPadding[0], 'same top inset').toBe(computed.verticalPadding[1]);
     expect(computed.bottomPadding[0], 'same bottom inset').toBe(computed.bottomPadding[1]);
@@ -194,4 +194,51 @@ test('Home search and six-benefit panel share readable typography, spacing and c
     expect(computed.overflow, 'no horizontal overflow at ' + viewport.width).toBeLessThanOrEqual(2);
     await expect(page.getByRole('searchbox', { name: 'Search payment records by reference' })).toBeVisible();
   }
+});
+
+
+test('six connected benefit cells have soft non-moving hover/focus shadows and clean nested corners', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Focused desktop hover and mobile corner acceptance');
+  for (const width of [375, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/?action=landing');
+    const measures = await page.evaluate(() => {
+      const select = (selector: string) => getComputedStyle(document.querySelector<HTMLElement>(selector)!);
+      return {
+        outer: [select('.public-record-discovery').borderTopLeftRadius,
+          select('.public-benefits').borderTopLeftRadius],
+        searchInput: select('.public-record-search').borderTopLeftRadius,
+        grid: select('.public-benefits__grid').borderTopLeftRadius,
+        overflow: document.documentElement.scrollWidth - innerWidth,
+      };
+    });
+    expect(measures.outer).toEqual(['10px','10px']);
+    expect(measures.searchInput).toBe('8px');
+    if (width >= 981) expect(measures.grid, 'no double-curved nested border').toBe('0px');
+    expect(measures.overflow).toBeLessThanOrEqual(2);
+  }
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/?action=landing');
+  const cards = page.locator('.public-benefits__item');
+  await expect(cards).toHaveCount(6);
+  for (const card of await cards.all()) {
+    const before = await card.boundingBox();
+    await expect(card).toHaveCSS('box-shadow', 'none');
+    await card.hover();
+    await expect(card).not.toHaveCSS('box-shadow', 'none');
+    const after = await card.boundingBox();
+    expect(after?.x).toBeCloseTo(before!.x, 1);
+    expect(after?.y).toBeCloseTo(before!.y, 1);
+    expect(after?.height).toBeCloseTo(before!.height, 1);
+    expect(after?.width).toBeCloseTo(before!.width, 1);
+  }
+
+  await page.mouse.move(0,0);
+  const first = cards.first();
+  await first.locator('.public-benefits__action').focus();
+  await expect(first).not.toHaveCSS('box-shadow', 'none');
+  await page.emulateMedia({ reducedMotion:'reduce' });
+  await expect(first).toHaveCSS('transition-duration','0s');
+  await expect(first.locator('.public-benefits__action')).toBeFocused();
 });
