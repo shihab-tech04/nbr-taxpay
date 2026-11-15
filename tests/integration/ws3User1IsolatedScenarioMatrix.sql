@@ -89,8 +89,8 @@ BEGIN
       v_total:=v_total+v_amount;
     END LOOP;
     v_remarks:=CASE WHEN v_case%2=0
-      THEN E'বাংলায় User1 মন্তব্য: একাধিক কর খাত\\nEnglish line with detailed context.'
-      ELSE E'User1 grouped payment for multiple assessment years.\\nAdditional explanation.' END;
+      THEN E'বাংলায় User1 মন্তব্য: একাধিক কর খাত\nEnglish line with detailed context.'
+      ELSE E'User1 grouped payment for multiple assessment years.\nAdditional explanation.' END;
     v_payload:=jsonb_build_object(
       'origin','TAXPAY_UI','idempotencyKey',v_key,'sessionId',v_sid,
       'service','OTHER_TAX_PAYMENT','amountMinor',v_total,
@@ -136,7 +136,7 @@ BEGIN
       'details',jsonb_build_object(
         'payerId','user1','payerTin','111111111111',
         'payerName','WS3 User1 isolated payer',
-        'challanRemarks',E'রিটার্ন করের জন্য মন্তব্য\\nAdditional text',
+        'challanRemarks',E'রিটার্ন করের জন্য মন্তব্য\nAdditional text',
         'receiptReference','SIM-'||v_key::text,
         'receiptSnapshot',jsonb_build_object('challanNo','SIM-'||v_key::text),
         'lines',jsonb_build_array(jsonb_build_object(
@@ -160,7 +160,7 @@ BEGIN
   v_payload:=jsonb_set(v_payload,'{details,receiptSnapshot,challanNo}',
     to_jsonb('SIM-'||v_key::text));
   v_payload:=jsonb_set(v_payload,'{details,challanRemarks}',
-    to_jsonb(E'Pay Again: পুনরায় পরিশোধ\\nUpdated independent remarks'));
+    to_jsonb(E'Pay Again: পুনরায় পরিশোধ\nUpdated independent remarks'));
   FOR v_line IN 0..jsonb_array_length(v_payload#>'{details,allocations}')-1 LOOP
     v_alloc_id:='ws3-user1-repeat-line-'||(v_line+1);
     v_payload:=jsonb_set(v_payload,
