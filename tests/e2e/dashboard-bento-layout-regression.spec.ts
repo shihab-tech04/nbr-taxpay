@@ -21,7 +21,7 @@ test('approved V3 overview is an asymmetric bento with real task destinations',a
     const hero=summary.locator('.taxpay-overview-feature');
     await expect(hero.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
     await expect(hero.getByRole('button',{name:'View payment history'})).toBeVisible();
-    await expect(hero).toHaveCSS('background-color','rgb(8, 85, 135)');
+    await expect(hero).toHaveCSS('background-color','rgb(44, 94, 173)');
     await expect(roles.getByRole('heading',{name:'Payment relationships'})).toBeVisible();
     await expect(beneficiaries.getByRole('heading',{name:'Beneficiary Breakdown'})).toBeVisible();
     await expect(ranking.getByRole('heading',{name:'Top beneficiaries'})).toBeVisible();
