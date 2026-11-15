@@ -35,7 +35,16 @@
   display:grid;grid-template-columns:repeat(12,minmax(0,1fr));
   align-items:stretch;gap:12px;min-width:0;
 }
-.taxpay-bento-analytics__cards > .taxpay-bento-analytics__card:first-child{grid-column:span 7}
+/* The service panel shares a row with the donut and must use that space
+   for its existing interactive bars instead of a large blank lower half. */
+.taxpay-bento-analytics__cards > .taxpay-bento-analytics__card:first-child{
+  grid-column:span 7;
+  grid-template-rows:auto minmax(0,1fr);
+  align-content:stretch;
+}
+.taxpay-bento-analytics__cards > .taxpay-bento-analytics__card:first-child > .taxpay-bento-analytics__bars{
+  align-content:space-evenly;
+}
 .taxpay-bento-analytics__cards > .taxpay-bento-analytics__card--roles{grid-column:span 5}
 .taxpay-bento-analytics__cards > [data-testid="dashboard-beneficiary-breakdown"]{grid-column:span 8}
 .taxpay-bento-analytics__cards > .taxpay-bento-analytics__card--ranking{grid-column:span 4}
@@ -46,9 +55,9 @@
 .taxpay-bento-analytics__role-donut{display:block;width:156px;height:156px;flex:none;max-width:100%}
 .taxpay-bento-analytics__role-legend{flex:1 1 135px;min-width:0;display:grid;gap:10px}
 .taxpay-bento-analytics__role-legend > div{min-width:0;display:grid;gap:3px}
-.taxpay-bento-analytics__role-legend dt{display:flex;align-items:center;gap:7px;color:var(--color-taxpay-muted,#64748b);font-size:12px}
+.taxpay-bento-analytics__role-legend dt{display:flex;align-items:center;gap:7px;color:var(--color-taxpay-muted,#64748b);font-size:14px;line-height:1.4}
 .taxpay-bento-analytics__role-legend dt span{display:inline-block;width:9px;height:9px;border-radius:3px;flex:none}
-.taxpay-bento-analytics__role-legend dd{font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.taxpay-bento-analytics__role-legend dd{font-size:14px;font-weight:600;overflow-wrap:anywhere}
 .taxpay-bento-analytics__card--ranking .taxpay-bento-analytics__top-list{gap:8px}
 .taxpay-bento-analytics__card--ranking .taxpay-bento-analytics__top-item{min-height:55px}
 .taxpay-bento-analytics__card{
@@ -179,6 +188,16 @@
   color:var(--color-taxpay-text,#17243c);font-size:14px;line-height:1.5;
 }
 .taxpay-bento-analytics__unclassified-details>p{font-weight:600}
+.taxpay-bento-analytics__unclassified-intro{
+  margin:0;
+  border:1px solid var(--color-taxpay-border,#dbe4f0);
+  border-radius:9px;
+  background:#f7f9fc;
+  padding:10px 12px;
+  font-size:14px;
+  line-height:1.5;
+  color:var(--color-taxpay-muted,#64748b);
+}
 .taxpay-bento-analytics__unclassified-details dl{display:grid;gap:8px}
 .taxpay-bento-analytics__unclassified-details dl>div{
   display:flex;flex-wrap:wrap;align-items:baseline;
