@@ -354,7 +354,7 @@ test('F-168 / US-169 opens the reconciled payment certificate directly from reco
   await expect(document.getByTestId('payment-certificate-document')).toBeVisible();
   await expect(document.getByTestId('payment-certificate-reference')).toContainText('SK-PC-' + accountCertificateId);
   await expect(document.getByTestId('payment-certificate-total')).toContainText('130');
-  await expect(document.getByText('Nusrat Jahan')).toBeVisible();
+  await expect(document.getByTestId('payment-certificate-document')).toContainText('Nusrat Jahan');
   await expect(document.getByRole('button', { name: 'Download', exact: true })).toBeVisible();
   await expect(document.getByRole('button', { name: 'Print certificate', exact: true })).toBeVisible();
 });
