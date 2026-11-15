@@ -17,6 +17,7 @@ test('user1 dashboard, payment history and ledger use one coherent synthetic bal
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
   await page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
+  await page.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toContainText('113,500');
   await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
   await expect(page.getByText('Sample',{exact:true})).toHaveCount(0);
@@ -81,7 +82,7 @@ test('user1 mobile design is bilingual and has no horizontal overflow',async({pa
   await page.locator('.citizen-mobile-menu-trigger').click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
   await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
-  await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'আপনার করের সারসংক্ষেপ'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 
