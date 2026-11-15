@@ -76,6 +76,7 @@ test('user1 exceptions, profile and notifications are correlated but not governm
     await expect(profile.locator('[data-profile-field]')).toHaveCount(0);
     return;
   }
+
   await expect(page.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await expect(page.getByText('Taxpayer status')).toBeVisible();
   await expect(page.getByTestId('user1-taxpayer-profile').getByText('Individual',{exact:true}).first()).toBeVisible();
@@ -172,6 +173,7 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   const expectedInitials=displayedName.split(/\s+/u).slice(-2)
     .map(part=>Array.from(part)[0]??'').join('').toLocaleUpperCase();
   await expect(profile.getByTestId('user1-profile-identity-badge')).toHaveText(expectedInitials);
+
   await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await expect(profile.getByRole('tab')).toHaveCount(0);
   // All 24 source fields appear exactly once: name/TIN in the identity, the
@@ -272,6 +274,11 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(content).not.toContainText('email@test.com');
   await expect(content).toContainText('+880**********');
   await expect(content).toContainText('02-9******');
+  // The approved mask reveals only leading digits; do not leak trailing digits
+  // before the independent Show action is deliberately activated.
+  await expect(content).not.toContainText('+**********765');
+  await expect(content).not.toContainText('**-****253');
+
   await expect(profile.getByText(/Fictional sample profile|Sample TIN|Not an NBR-issued TIN/i)).toHaveCount(0);
   await expect(profile.getByText('Not available',{exact:true})).toHaveCount(0);
   // Full values never appear on screen until an individual, accessible Show action.

@@ -14,6 +14,19 @@ export type PaymentDraftActor =
   | { kind: 'preview'; profileId: string }
   | { kind: 'guest' };
 
+/** A preview User ID is not a session. Renewing the same account issues a new
+ * random payment session; draft UI state must not be reused across it.
+ * The private capability itself is never placed in React keys or DOM.
+ */
+export function paymentDraftOwnerScope(actor:PaymentDraftActor|null):string {
+  if(!actor)return '';
+  if(actor.kind==='authenticated')return 'authenticated:'+actor.userId;
+  if(actor.kind==='guest')return 'guest:session';
+  const session=activePreviewSession();
+  return 'preview:'+actor.profileId+':'+
+    (session?.profileId===actor.profileId?session.paymentSessionId:'unavailable');
+}
+
 export type PaymentFormDraft = {
   id: string;
   service: PaymentDraftService;
@@ -56,7 +69,7 @@ async function verifiedActor(actor: PaymentDraftActor) {
   if (actor.kind === 'preview') {
     const session = activePreviewSession();
     if (!session || session.profileId !== actor.profileId) throw new Error('Sign in to your account again.');
-    return { capability: session.capability, profileId: session.profileId };
+    return { capability: session.capability, profileId: session.profileId, paymentSessionId: session.paymentSessionId };
   }
   if (actor.kind === 'guest') {
     if (activePreviewSession()) throw new Error('Sign out of the preview account to use guest drafts.');
@@ -64,13 +77,13 @@ async function verifiedActor(actor: PaymentDraftActor) {
       const { data } = await supabase.auth.getSession();
       if (data.session?.user?.id) throw new Error('Sign out of the account to use guest drafts.');
     }
-    return { capability: null, profileId: null };
+    return { capability: null, profileId: null, paymentSessionId: null };
   }
   if (!supabase) throw new Error('Database is unavailable.');
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user?.id || data.user.id !== actor.userId)
     throw new Error('Sign in to your account again.');
-  return { capability: null, profileId: null };
+  return { capability: null, profileId: null, paymentSessionId: null };
 }
 
 async function checkActorStillSignedIn(actor: PaymentDraftActor) {
@@ -103,6 +116,13 @@ async function previewDraftAction(
     throw new Error('Draft storage is unavailable. No save was confirmed.');
   }
   await checkActorStillSignedIn(actor);
+  // A new sign-in can issue a different capability for the *same* preview ID.
+  // Comparing profile IDs alone would accept an older session's delayed draft.
+  const current = activePreviewSession();
+  if (!current || current.profileId !== actor.profileId ||
+      current.capability !== identity.capability ||
+      current.paymentSessionId !== identity.paymentSessionId)
+    throw new Error('Sign in to your account again.');
   return result?.data;
 }
 

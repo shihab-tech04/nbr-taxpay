@@ -1,10 +1,11 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {ChevronDown, ChevronRight} from 'lucide-react';
 import {UiButton} from '../ui/Controls';
 import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
 import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {useAccountIdentity} from '../../services/accountIdentity';
+import {activePreviewSession} from '../../services/previewAccountSession';
 import {loadBeneficiaries,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
 import {useTaxState} from '../../services/taxState';
@@ -44,8 +45,18 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
   const [fallbackTin,setFallbackTin]=useState('');
   const [searchedFallbackTin,setSearchedFallbackTin]=useState('');
   const [fallbackResult,setFallbackResult]=useState<ReturnType<typeof lookupSampleTaxpayer>>(null);
+  // Keep the rendered address book bound to the current identity, not to the
+  // previous owner's state while an effect starts the next read.
+  const ownerScope=checkingIdentity?'checking'
+    :user?.id?'auth:'+user.id
+      :previewAccount?.id?'preview:'+previewAccount.id+':'+(activePreviewSession()?.paymentSessionId??'offline')
+        :'guest';
+  const [renderOwnerScope,setRenderOwnerScope]=useState<string|null>(null);
+  const ownerScopeRef=useRef(ownerScope);
+  ownerScopeRef.current=ownerScope;
   useEffect(()=>{
     let cancelled=false;
+    setRenderOwnerScope(ownerScope);
     setLists([]);setPeople([]);setExpanded([]);setLoading(true);setError('');
     onAvailableTins(null);
     if(checkingIdentity)return()=>{cancelled=true;};
@@ -77,7 +88,11 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     return()=>{cancelled=true;};
     // The available TIN set is intentionally refreshed on account changes, not on each checkbox click.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[user?.id,previewAccount?.id,checkingIdentity,refresh,onAvailableTins]);
+  },[ownerScope,refresh,onAvailableTins]);
+
+  useEffect(()=>{
+    setRestoring(false);setRecoveryDone(false);setRestoreInfo('');
+  },[ownerScope]);
 
   // A payment step can remain mounted while beneficiaries change in another
   // tab. Re-read the same identity-scoped source on return to the tab.
@@ -88,22 +103,32 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     return()=>{window.removeEventListener('focus',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible);};
   },[]);
 
+  if(renderOwnerScope!==ownerScope){
+    return <section className="col-span-full space-y-3" data-testid="saved-beneficiary-picker"
+      aria-label={tr('Choose beneficiaries','উপকারভোগী নির্বাচন')}>
+      <p role="status" className="text-sm text-slate-600">{tr('Loading beneficiary lists…','উপকারভোগীর তালিকা লোড হচ্ছে…')}</p>
+    </section>;
+  }
+
   const restoreAvailable=Boolean((user?.id||previewAccount)&&hasStoredGuestBeneficiaries()&&!recoveryDone);
   async function restoreSavedLists(){
     if((!user?.id&&!previewAccount)||restoring)return;
+    const expectedScope=ownerScope;
     setRestoring(true);setRestoreInfo('');
     try {
       const recovered=user?.id?await recoverGuestBeneficiariesToProfile(user.id)
         :await recoverLegacyGuestBeneficiariesToPreview();
+      if(ownerScopeRef.current!==expectedScope)return;
       setRecoveryDone(true);
       setRestoreInfo(recovered.people
         ? tr('Saved beneficiaries restored to your profile.','সংরক্ষিত উপকারভোগীরা আপনার প্রোফাইলে যুক্ত হয়েছে।')
         : tr('Your profile lists are up to date.','আপনার প্রোফাইলের তালিকা হালনাগাদ রয়েছে।'));
       setRefresh(previous=>previous+1);
     } catch {
+      if(ownerScopeRef.current!==expectedScope)return;
       setRestoreInfo(tr('Could not restore saved lists. You can safely retry; the original lists are preserved.',
         'সংরক্ষিত তালিকা ফিরিয়ে আনা যায়নি। আবার চেষ্টা করতে পারেন; আগের তালিকা অক্ষত আছে।'));
-    } finally {setRestoring(false);}
+    } finally {if(ownerScopeRef.current===expectedScope)setRestoring(false);}
   }
 
   const normalized=search.trim().toLocaleLowerCase();

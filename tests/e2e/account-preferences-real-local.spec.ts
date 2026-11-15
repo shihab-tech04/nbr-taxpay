@@ -101,6 +101,19 @@ test('real account restores its own language and selected beneficiary list in a 
   const accountPages=page.getByRole('navigation',{name:'Account pages'});
   await accountPages.getByRole('button',{name:'Profile',exact:true}).click();
   await expect(accountPages.getByRole('button',{name:'Profile',exact:true})).toHaveAttribute('aria-current','page');
+  // M02 F-166: actual disposable Auth email stays private until the explicit
+  // owner's eye action; signing in must not print it in the account summary.
+  const localPart=a.email.slice(0,a.email.indexOf('@'));
+  const maskedEmail=localPart.slice(0,2)+'*'.repeat(Math.max(3,localPart.length-2))+'@****.***';
+  await expect(page.getByText(maskedEmail,{exact:true})).toBeVisible();
+  await expect(page.getByText(a.email,{exact:true})).toHaveCount(0);
+  const revealEmail=page.getByRole('button',{name:'Show Account email',exact:true});
+  await expect(revealEmail).toBeVisible();
+  await expect(page.getByRole('button',{name:'Copy Account email',exact:true})).toBeVisible();
+  await revealEmail.click();
+  await expect(page.getByText(a.email,{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Hide Account email',exact:true}).click();
+  await expect(page.getByText(a.email,{exact:true})).toHaveCount(0);
   await accountPages.getByRole('button',{name:'Profile settings'}).click();
   await expect(page.locator('#taxpay-profile-language')).toBeVisible();
   await page.locator('#taxpay-profile-display-name').fill('Account A profile');
