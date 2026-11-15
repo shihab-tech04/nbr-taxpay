@@ -110,14 +110,33 @@ VALUES
   ('80000000-0000-4000-8000-000000000002','correction-outsider-test@example.invalid','{}'::jsonb,now())
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.sim_payment_users(id) VALUES ('user30')
+INSERT INTO public.sim_payment_users(id) VALUES ('user30'),('user31')
 ON CONFLICT (id) DO NOTHING;
 INSERT INTO taxpay_guest_private.demo_profiles(demo_id,payment_session_id)
 VALUES ('user30','80000000-0000-4000-8000-000000000043')
 ON CONFLICT (demo_id) DO UPDATE SET payment_session_id=EXCLUDED.payment_session_id;
+-- A distinct verified recipient is bound to user31, not to the payer user30.
+-- Only disposable fixture identities are used; never copy this to hosted SQL.
+INSERT INTO public.taxpay_taxpayer_registration_profiles(account_id,tin,profile)
+VALUES ('user31','444444444444',
+  jsonb_build_object('tin','444444444444','taxpayerName','WS3 recipient 31')
+  || (SELECT jsonb_object_agg(field,'') FROM unnest(ARRAY[
+      'source','sourceUpdatedAt','taxpayerStatus','tinType','tinSubtype',
+      'registeredOn','userType','localTaxpayer','previousTin','taxesCircle',
+      'taxesZone','taxesRange','district','country','registeredAddress',
+      'currentAddress','mobileNumber','emailAddress','certificateIssuedOn',
+      'certificateLastUpdatedOn','issuingOfficer','taxOfficeAddress',
+      'taxOfficePhone','lastLoginAt']) AS fields(field))
+) ON CONFLICT(account_id) DO NOTHING;
+
 INSERT INTO public.sim_payment_account_bindings(user_id,owner_uid,assigned_by)
 VALUES ('user30','80000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')
 ON CONFLICT (user_id) DO UPDATE SET
+  owner_uid=EXCLUDED.owner_uid,assigned_by=EXCLUDED.assigned_by;
+INSERT INTO public.sim_payment_account_bindings(user_id,owner_uid,assigned_by)
+VALUES ('user31','80000000-0000-4000-8000-000000000002',
+  '80000000-0000-4000-8000-000000000002')
+ON CONFLICT(user_id) DO UPDATE SET
   owner_uid=EXCLUDED.owner_uid,assigned_by=EXCLUDED.assigned_by;
 
 SET LOCAL ROLE authenticated;
