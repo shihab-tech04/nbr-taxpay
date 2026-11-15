@@ -39,7 +39,7 @@ test('profile-scoped tags reconcile dashboard family/friends/clients and filter 
   await summary.locator('[data-tag="friends"]').click();
   await expect(summary.getByTestId('dashboard-selected-tag')).toContainText('Friends');
   await summary.locator('[data-tag="friends"]').click();
-  await page.goto('/?action=history');
+  await page.goto('/?action=history&scenarioYear=2025-2026');
   await page.getByRole('button',{name:'Filter',exact:true}).click();
   const filter=page.getByRole('combobox',{name:'Filter transactions by beneficiary tag'});
   await expect(filter).toBeVisible();
