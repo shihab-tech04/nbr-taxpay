@@ -136,8 +136,11 @@ const MainRouter: React.FC = () => {
       return <NotificationsView />;
     }
     // Fictional user1 has a unified read-only story across all taxpayer views.
-    // Only public demoUser=user1, never a signed-in account or financial backend.
-    if ((sampleJourneysEnabled || previewAccount) && demoUser?.id === 'user1' && !verifiedApplicationUser && user1DemoRoutes.includes(currentRoute)) {
+    // A stale demoUser URL must never replace a different active preview account.
+    // Leave other preview IDs on their existing account-specific screen.
+    if ((sampleJourneysEnabled || previewAccount) && demoUser?.id === 'user1' &&
+        (!previewAccount || previewAccount.id === 'user1') &&
+        !verifiedApplicationUser && user1DemoRoutes.includes(currentRoute)) {
       return <User1DemoExperience route={currentRoute} activityTabs={showActivitySections} onResumePaymentDraft={resumeDashboardPayment} />;
     }
     switch (currentRoute) {
