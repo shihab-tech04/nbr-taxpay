@@ -57,6 +57,11 @@ assert.equal(valid.status,'SIMULATED_SUCCESS');
 assert.equal(valid.service,'TAX_WITH_RETURN');
 assert.equal(valid.amountMinor,12345);
 assert.equal(valid.details.receiptReference,ref);
+assert.equal(valid.receiptReference,ref,'SQL must return the stored original receipt reference');
+assert.equal(valid.certificateReference,'SK-PC-'+payment.id,
+ 'Taxpayer and Office readback must share the immutable parent certificate reference');
+assert.notEqual(valid.certificateReference,valid.receiptReference,
+ 'Certificate reference is distinct from the gateway/receipt identity');
 const retry=(await lookup(owner.capability,ref,'01700000000',200)).data;
 assert.deepEqual(retry,valid,'Repeated read must preserve immutable receipt');
 const certificate=(await lookup(owner.capability,'SK-PC-'+payment.id,null,200)).data;

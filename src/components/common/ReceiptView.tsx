@@ -223,7 +223,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
 
   return (
     <div className={`receipt-view receipt-view--embedded${bn ? ' font-bengali' : ''}`} lang={language}>
-      {footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions}
+      {(!isCertificate || canViewCertificate) && (footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions)}
 
       {canViewCertificate && !certificate && <button type="button"
         className="receipt-view__action receipt-view__action--secondary no-print"

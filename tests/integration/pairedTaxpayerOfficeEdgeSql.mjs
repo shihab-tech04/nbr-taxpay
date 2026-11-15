@@ -73,12 +73,13 @@ function sqlRpc(origin,name,args,authenticatedOffice=false){
     OFFICE_SQL:{
       demo_story1_mirror:`public.demo_story1_mirror(${sqlJson(args.p_input)})`,
       payment_v1_office_guarded_story_page:`public.payment_v1_office_guarded_story_page(${args.p_page}::integer,${args.p_per_page}::integer)`,
+      payment_v1_office_guarded_pay_again_lineage:`public.payment_v1_office_guarded_pay_again_lineage(${sqlText(args.p_payment_id)}::uuid)`,
     },
   };
   const expression=definitions[databaseOrigin]?.[name];
   if(!expression)throw Error('Unexpected SQL RPC '+origin+'.'+name);
   const role=name==='demo_story1_submit'?'anon'
-    :databaseOrigin==='OFFICE_SQL'&&name==='payment_v1_office_guarded_story_page'
+    :databaseOrigin==='OFFICE_SQL'&&['payment_v1_office_guarded_story_page','payment_v1_office_guarded_pay_again_lineage'].includes(name)
       ?'authenticated':'service_role';
   const claims=role==='authenticated'
     ?`SELECT set_config('request.jwt.claim.sub',${sqlText(authenticatedOffice?officerId:randomUUID())},true);\n`
@@ -454,6 +455,112 @@ try{
   assert.equal(psql(sourceDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(payAgainId)}::uuid;`),1);
   assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(payAgainId)}::uuid;`),1);
 
+
+
+  const deniedLineage=await request('OFFICE_SQL',
+    '/payments/'+payAgainId+'/lineage');
+  assert.equal(deniedLineage.status,401,
+    'Office Pay Again source ledger must require an authenticated officer');
+  const originalLineage=await request('OFFICE_SQL',
+    '/payments/'+payAgainId+'/lineage','GET',undefined,
+    {authorization:'Bearer '+officeToken});
+  assert.equal(originalLineage.status,200,
+    'Existing authorized Office officer must retrieve original Pay Again lineage');
+  const lineage=originalLineage.data.data;
+  assert.equal(lineage.sourceMirrored,true);
+  assert.equal(lineage.paymentId,payAgainId);
+  assert.equal(lineage.sourcePaymentId,sourceId);
+  assert.equal(lineage.payerId,'user1');
+  assert.equal(lineage.sourceReceiptReference,'SIM-'+idempotencyKey);
+  assert.equal(lineage.sourceCertificateReference,'SK-PC-'+sourceId);
+  assert.equal(lineage.repeatReceiptReference,'SIM-'+payAgainKey);
+  assert.equal(lineage.repeatCertificateReference,'SK-PC-'+payAgainId);
+  assert.deepEqual(lineage.sourceAllocations.map(a=>a.allocationId),allocationIds);
+  assert.deepEqual(lineage.repeatAllocations.map(a=>a.allocationId),payAgainAllocationIds);
+  assert.deepEqual(lineage.sourceAllocations.map(a=>a.taxpayerTin),
+    ['222222222222','333333333333']);
+  assert.deepEqual(lineage.repeatAllocations.map(a=>a.assessmentYear),
+    ['2026-27','2025-26']);
+  assert.equal(lineage.sourceAmountMinor,'5000');
+  assert.equal(lineage.repeatAmountMinor,'5000');
+
+  // P0 Pay Again: protect the original recorded parent and prove a repeat is
+  // independently identified. The original allocations remain historically
+  // recoverable, while new allocations are distinct and may be user-edited.
+  assert.notEqual(payAgainKey,idempotencyKey,'Pay Again idempotency identity must be new');
+  assert.equal(payAgainSource.data.details.sourcePaymentId,sourceId);
+  assert.deepEqual(payAgainSource.data.details.allocations.map(x=>x.allocationId),payAgainAllocationIds);
+  assert.ok(payAgainAllocationIds.every(id=>!allocationIds.includes(id)),
+    'Repeat allocations must not reuse immutable source allocation IDs');
+  const originalOfficeReadback=payAgainReadback.data.data.items.find(item=>item.id===sourceId);
+  assert.ok(originalOfficeReadback,'Officer must retain the historic original payment');
+  assert.deepEqual(originalOfficeReadback.details.allocations.map(x=>x.allocationId),allocationIds);
+  assert.equal(originalOfficeReadback.details.receiptReference,'SIM-'+idempotencyKey);
+  assert.equal(originalOfficeReadback.certificateReference,'SK-PC-'+sourceId);
+  assert.notEqual(payAgainItem.certificateReference,originalOfficeReadback.certificateReference);
+  assert.notEqual(payAgainItem.details.receiptReference,originalOfficeReadback.details.receiptReference);
+  assert.deepEqual(payAgainItem.details.allocations.map(x=>x.allocationId),payAgainAllocationIds);
+  assert.deepEqual(payAgainItem.details.allocations.map(x=>x.taxpayerTin),['222222222222','333333333333']);
+  assert.deepEqual(payAgainItem.details.allocations.map(x=>x.assessmentYear),['2026-27','2025-26']);
+  assert.deepEqual(payAgainItem.details.allocations.map(x=>x.amountMinor),[1500,3500]);
+
+  // Invalid lineage attempts must fail BEFORE they can create a source
+  // payment, notification or Office mirror. The retry key is always unique.
+  async function rejectRepeat(label,mutate){
+    const bad=structuredClone(payAgainPayload);
+    const badKey=randomUUID();
+    bad.idempotencyKey=badKey;
+    bad.details.receiptReference='SIM-'+badKey;
+    bad.details.receiptSnapshot.challanNo='SIM-'+badKey;
+    mutate(bad);
+    const result=await request('TAXPAY_SQL','/payments','POST',bad,headers);
+    assert.equal(result.status,400,'Pay Again must reject '+label+': '+JSON.stringify(result.data));
+    assert.equal(Number(psql(sourceDb,
+      'SELECT count(*) FROM demo_payment.story_payments WHERE idempotency_key='+
+      sqlText(badKey)+'::uuid;')),0,'Rejected repeat must not persist: '+label);
+    assert.equal(Number(psql(sourceDb,
+      "SELECT count(*) FROM demo_payment.story_payments WHERE data->>'idempotencyKey'="+
+      sqlText(badKey)+';')),0,'Rejected repeat must not create outbox work: '+label);
+  }
+  await rejectRepeat('missing historical source',bad=>{bad.details.sourcePaymentId=randomUUID();});
+  await rejectRepeat('malformed historical source',bad=>{bad.details.sourcePaymentId='not-a-uuid';});
+  await rejectRepeat('different payment category',bad=>{bad.details.sourcePaymentId=travelId;});
+  await rejectRepeat('reused historical allocation identity',bad=>{
+    bad.details.allocations[0].allocationId=allocationIds[0];
+    bad.details.receiptSnapshot.allocationItems[0].allocationId=allocationIds[0];
+  });
+  await rejectRepeat('reused historical receipt',bad=>{
+    bad.details.receiptReference='SIM-'+idempotencyKey;
+    bad.details.receiptSnapshot.challanNo='SIM-'+idempotencyKey;
+  });
+
+  const foreignKey=randomUUID();
+  const foreignPayload={
+    origin:'TAXPAY_UI',sessionId:unrelatedProfile.paymentSessionId,
+    idempotencyKey:foreignKey,service:'TAX_WITH_RETURN',amountMinor:700,
+    details:{payerId:'user4',payerName:'Other disposable account',payerMode:'SELF',
+      taxpayerTin:'444444444444',receiptReference:'SIM-'+foreignKey,
+      receiptSnapshot:{challanNo:'SIM-'+foreignKey,totalAmount:7,
+        paymentCategory:'TAX_WITH_RETURN',items:[]},
+      lines:[{beneficiary:'user4',category:'TAX_WITH_RETURN',
+        assessmentYear:'2026-27',amountMinor:700}]}
+  };
+  const foreignHash=createHash('sha256').update(unrelatedProfile.capability).digest('hex');
+  const foreignSource=psql(sourceDb,
+    'SELECT public.taxpay_demo_story1_submit('+sqlText(foreignHash)+','+
+      sqlJson(foreignPayload)+');');
+  assert.ok(foreignSource.id,'Disposable second payer must have its own stored parent');
+  await rejectRepeat('another payer account source',bad=>{
+    bad.details.sourcePaymentId=foreignSource.id;
+  });
+  assert.deepEqual(psql(sourceDb,
+    "SELECT jsonb_build_object('id',id,'sessionId',session_id,'amountMinor',amount_minor,'status',status,'data',data)"+
+    ' FROM demo_payment.story_payments WHERE id='+sqlText(sourceId)+'::uuid;'),
+    sourceRow,'Invalid lineage requests must not mutate the historical source');
+  assert.equal(Number(psql(officeDb,
+    'SELECT count(*) FROM demo_payment.story_payments WHERE id='+sqlText(payAgainId)+'::uuid;')),
+    1,'Approved new Pay Again must mirror once and only once');
+  console.log('PASS P0 Pay Again lineage: same owner/history source, original payer and allocation IDs immutable, fresh repeat transaction/idempotency/receipt/certificate/allocations, separate Office readback, 6 invalid source/reuse attempts rejected before persistence');
 
   if(f137Matrix){
     const rejectedKeys=f137Matrix.rejectedIdempotencyKeys;

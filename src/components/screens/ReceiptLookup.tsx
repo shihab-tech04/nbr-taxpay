@@ -33,6 +33,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   const resetLookup = () => {
     lookupSequence.current += 1;
     setSearchResult(null);
+    setCertificateResult(false);
     setLookupPending(false);
     setLookupError(false);
     setNeedsReceiptMobile(false);
@@ -41,13 +42,15 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   useEffect(() => {
     lookupSequence.current += 1;
     setSearchResult(null);
+    setCertificateResult(false);
     setLookupPending(false);
     setLookupError(false);
     setNeedsReceiptMobile(false);
   }, [signedInUser?.id, previewAccount?.id]);
   // Never suggest sample/session receipts in the signed-in account tracking journey.
   // Users must provide the actual reference; public lookup examples remain unchanged.
-  const sampleReceipts = accountContext ? [] : receipts.filter(receipt => !receipt.receiptMobile).slice(0, 3);
+  const sampleReceipts = accountContext ? [] : receipts.filter(receipt =>
+    receipt.isSimulatedDemo === true && !receipt.receiptMobile).slice(0, 3);
 
   const searchReference = (reference: string, mobile: string) => {
     if (!reference) return;
@@ -182,6 +185,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
                       setQuery(receipt.challanNo);
                       setSearchedReference(receipt.challanNo);
                       resetLookup();
+                      setCertificateResult(false);
                       setSearchResult(receipt);
                     }}
                   >
@@ -208,6 +212,10 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             <div className="receipt-lookup__result-copy">
               <h2>{t('No matching record', 'কোনো মিল পাওয়া যায়নি')}</h2>
               <p>{t('No record found for:', 'এই রেফারেন্সে কোনো রেকর্ড পাওয়া যায়নি:')} <strong className="font-mono-plex">{searchedReference}</strong></p>
+              <p data-testid="receipt-session-only-notice">{t(
+                'Only saved payments from this browser session were checked. This does not confirm whether an official payment record exists.',
+                'শুধু এই ব্রাউজার সেশনে সংরক্ষিত পেমেন্ট খোঁজা হয়েছে। সরকারি পেমেন্ট রেকর্ড আছে কি না, এই ফল তা নিশ্চিত করে না।'
+              )}</p>
               <button type="button" className="receipt-lookup__issue-link" onClick={() => navigate(accountContext ? 'corrections' : 'incident')}>
                 {t('Report a payment issue', 'পেমেন্টের সমস্যা জানান')}
               </button>

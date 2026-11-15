@@ -314,6 +314,55 @@ for(const language of ['en','bn'] as const){
     const sourceData={origin:'TAXPAY_UI',idempotencyKey,sessionId:payerSessionId,
       service:'OTHER_TAX_PAYMENT',amountMinor:5000,
       details:{payerId,payerMode:'OTHER',payerName:'Original payment owner',lines}};
+
+    // One additional modern, fully reconciled parent uses the SAME genuine
+    // Supabase Auth payer (no preview session). Unlike the old compatibility
+    // row, it retains both original immutable allocation identities and heads.
+    const repeatableId=randomUUID(),repeatableNonce=randomUUID();
+    const sourceAllocationIds=[randomUUID(),randomUUID()];
+    const boundTin='812345678900';
+    const actualPayerTin=language==='en'?'9000000000027':'9000000000029';
+    const anotherTin=language==='en'?'812345678901':'812345678902';
+    const savedAt='2026-10-24T08:00:00.000Z';
+    const repeatableItems=[
+      {headId:1,economicCode:'16A',headNameEn:'Surcharge',headNameBn:'Surcharge',
+        taxAmount:45,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:45},
+      {headId:8,economicCode:'50',headNameEn:'Deduction from Salary',headNameBn:'Deduction from Salary',
+        taxAmount:30,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:30},
+    ];
+    const savedAllocations=[
+      {allocationId:sourceAllocationIds[0],taxpayerTin:boundTin,taxpayerName:'Original payment owner',
+        headId:1,assessmentYear:'2026-27',amountMinor:4500},
+      {allocationId:sourceAllocationIds[1],taxpayerTin:anotherTin,taxpayerName:'Original recipient',
+        headId:8,assessmentYear:'2025-26',amountMinor:3000},
+    ];
+    const savedReceipt={
+      id:'record-'+repeatableId,paymentTransactionId:repeatableId,
+      challanNo:'SIM-'+repeatableNonce,tokenNumber:'TOKEN-'+repeatableId,
+      paymentCategory:'OTHER_TAX_PAYMENT',assessmentYear:'2026-27, 2025-26',
+      payerName:'Original payment owner',payerTin:actualPayerTin,
+      isRepresentativePayment:true,
+      taxZone:'—',taxCircle:'—',isWithholding:false,
+      items:repeatableItems,
+      allocationItems:savedAllocations.map((allocation,index)=>({
+        allocationId:allocation.allocationId,taxpayerTin:allocation.taxpayerTin,
+        taxpayerName:allocation.taxpayerName,paymentServiceEn:repeatableItems[index].headNameEn,
+        paymentServiceBn:repeatableItems[index].headNameBn,
+        assessmentYear:allocation.assessmentYear,amountMinor:allocation.amountMinor,
+        economicCode:repeatableItems[index].economicCode,
+      })),
+      totalAmount:75,paymentMethod:'BKASH',gatewayTransactionId:'SAVED-GATEWAY-'+repeatableId,
+      treasuryStatus:'GATEWAY_SUCCESS',taxCreditStatus:'PENDING_RECONCILIATION',
+      createdAt:savedAt,completedAt:savedAt,isSimulatedDemo:true,
+    };
+    const repeatableSource={origin:'TAXPAY_UI',idempotencyKey:repeatableNonce,
+      sessionId:payerSessionId,service:'OTHER_TAX_PAYMENT',amountMinor:7500,
+      details:{payerId,payerMode:'OTHER',payerName:'Original payment owner',payerTin:actualPayerTin,
+        receiptReference:'SIM-'+repeatableNonce,
+        allocationContractVersion:3,combinedPayment:true,allocationCount:2,taxpayerCount:2,
+        paymentMethod:'BKASH',lines:repeatableItems,receiptLines:repeatableItems,
+        allocations:savedAllocations,receiptSnapshot:savedReceipt}};
+
     // Authoritative original payment and existing approver-assigned account
     // binding are inserted in disposable PostgreSQL only.
     psql(
@@ -328,6 +377,36 @@ for(const language of ['en','bn'] as const){
         quote(payerSessionId)+"::uuid,'OTHER_TAX_PAYMENT',5000,"+
         quote(JSON.stringify(sourceData))+"::jsonb,'SIMULATED_SUCCESS');"
     );
+    // The existing SQL trigger requires OTHER-mode recipients to be in the
+    // payer's capability-scoped private list. Seed only the disposable local
+    // profile, preserving the real authorization check during original insert.
+    const savedListName='WS1 payer-approved recipients '+payerId;
+    psql(
+      "INSERT INTO taxpay_guest_private.sessions(capability_hash) "+
+      "SELECT encode(extensions.digest(convert_to(capability_token,'UTF8'),'sha256'),'hex') "+
+      "FROM taxpay_guest_private.demo_profiles WHERE demo_id="+quote(payerId)+
+      " ON CONFLICT (capability_hash) DO NOTHING;"+
+      "INSERT INTO taxpay_guest_private.lists(session_id,name) "+
+      "SELECT sess.id,"+quote(savedListName)+" FROM taxpay_guest_private.sessions sess "+
+      "JOIN taxpay_guest_private.demo_profiles prof ON sess.capability_hash="+
+        "encode(extensions.digest(convert_to(prof.capability_token,'UTF8'),'sha256'),'hex') "+
+      "WHERE prof.demo_id="+quote(payerId)+" ON CONFLICT DO NOTHING;"+
+      "INSERT INTO taxpay_guest_private.beneficiaries(session_id,list_id,tin,display_name,tag) "+
+      "SELECT lists.session_id,lists.id,people.tin,people.name,'clients' "+
+      "FROM taxpay_guest_private.lists lists "+
+      "JOIN taxpay_guest_private.sessions sess ON sess.id=lists.session_id "+
+      "JOIN taxpay_guest_private.demo_profiles prof ON sess.capability_hash="+
+        "encode(extensions.digest(convert_to(prof.capability_token,'UTF8'),'sha256'),'hex') "+
+      "CROSS JOIN (VALUES ("+quote(boundTin)+","+quote('Historical recipient A')+"),("+
+        quote(anotherTin)+","+quote('Historical recipient B')+")) AS people(tin,name) "+
+      "WHERE prof.demo_id="+quote(payerId)+" AND lists.name="+quote(savedListName)+
+      " ON CONFLICT DO NOTHING;"
+    );
+    psql("INSERT INTO demo_payment.story_payments"+
+      "(id,idempotency_key,session_id,service_code,amount_minor,data,status) VALUES("+
+        quote(repeatableId)+"::uuid,"+quote(repeatableNonce)+"::uuid,"+
+        quote(payerSessionId)+"::uuid,'OTHER_TAX_PAYMENT',7500,"+
+        quote(JSON.stringify(repeatableSource))+"::jsonb,'SIMULATED_SUCCESS');");
     const rpc=async(name:string,session:typeof owner.session,payload:Record<string,unknown>)=>{
       const response=await fetch(new URL('/rest/v1/rpc/'+name,endpoint.origin),{
         method:'POST',headers:{apikey:key,Authorization:'Bearer '+session.access_token,
@@ -364,7 +443,9 @@ for(const language of ['en','bn'] as const){
       await page.goto(appUrl('history',owner.session));
       const history=page.getByTestId('beneficiary-payment-history');
       await expect(history).toContainText(paymentId,{timeout:15_000});
-      await history.getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
+      await history.getByTestId('beneficiary-payment-mobile-cards').locator('li')
+        .filter({hasText:paymentId}).filter({hasText:recipientTin}).first()
+        .getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).click();
       const receipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
       await expect(receipt).toContainText(recipientTin);
       await expect(receipt).toContainText(selfTin);
@@ -443,9 +524,58 @@ for(const language of ['en','bn'] as const){
       await page.goto(appUrl('history',owner.session));
       await expect(page.getByTestId('beneficiary-payment-history')).toContainText(paymentId);
       await page.getByTestId('beneficiary-payment-history')
-        .getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
+        .getByTestId('beneficiary-payment-mobile-cards').locator('li')
+        .filter({hasText:paymentId}).filter({hasText:recipientTin}).first()
+        .getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).click();
       await expect(page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'})
         .getByTestId('account-save-beneficiary-receipt')).toHaveCount(0);
+      // F-071/F-072: real Auth UID → Taxpayer SQL owner RPC → whole combined
+      // original parent → Pay Again. No previewAccount/session alias is used.
+      // This checks the existing WS1 entry without bypassing the new-payment
+      // TIN/beneficiary authorization required before submission.
+      await page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'})
+        .locator('.taxpay-modal__close').click();
+      const modern=page.getByTestId('beneficiary-payment-history')
+        .getByTestId('beneficiary-payment-mobile-cards')
+        .locator('li').filter({hasText:repeatableId}).first();
+      await expect(modern).toBeVisible({timeout:15_000});
+      await expect(modern).toContainText('2026-27');
+      const repeatAction=modern.getByTestId('account-pay-again-mobile');
+      await expect(repeatAction).toBeEnabled();
+      await repeatAction.click();
+      const repeatModal=page.getByRole('dialog',{name:language==='bn'?'কর পরিশোধ':'Pay Tax'});
+      await expect(repeatModal).toBeVisible();
+      await expect(repeatModal.getByTestId('pay-again-reuse-notice')).toContainText(repeatableId);
+      const afterOwner=await rpc('taxpay_my_story1_payments',owner.session,{p_page:1,p_per_page:100}) as
+        {items:Array<{id:string;details:Record<string,unknown>}>};
+      const preserved=afterOwner.items.find(row=>row.id===repeatableId);
+      expect(preserved?.details).toMatchObject({
+        allocationContractVersion:3,receiptSnapshot:savedReceipt,
+        allocations:savedAllocations
+      });
+      expect(savedAllocations.map(item=>item.allocationId)).toEqual(sourceAllocationIds);
+      // The same authenticated owner keeps the original ID lineage when
+      // saving the editable Pay Again copy; no new payment is submitted.
+      await repeatModal.getByRole('button',{name:language==='bn'?'খসড়া সংরক্ষণ করুন':'Save Draft',exact:true}).click();
+      await expect(repeatModal.getByRole('button',{
+        name:language==='bn'?'খসড়া সংরক্ষিত':'Draft Saved',exact:true
+      })).toBeVisible({timeout:15_000});
+      const savedDraftsUrl=new URL('/rest/v1/taxpay_account_payment_form_drafts',endpoint.origin);
+      savedDraftsUrl.searchParams.set('select','form_payload,owner_uid');
+      savedDraftsUrl.searchParams.set('owner_uid','eq.'+owner.id);
+      const savedDraftsResponse=await fetch(savedDraftsUrl,{
+        headers:{apikey:key,Authorization:'Bearer '+owner.session.access_token}
+      });
+      expect(savedDraftsResponse.status).toBe(200);
+      const savedDrafts=await savedDraftsResponse.json() as Array<{
+        owner_uid:string;form_payload:Record<string,unknown>
+      }>;
+      expect(savedDrafts.some(row=>row.owner_uid===owner.id &&
+        row.form_payload.sourcePaymentId===repeatableId &&
+        JSON.stringify(row.form_payload.sourceAllocationIds)===JSON.stringify(sourceAllocationIds)
+      )).toBe(true);
+      await repeatModal.locator('.taxpay-modal__close').click();
+
       const persisted=psql("SELECT data::text FROM demo_payment.story_payments WHERE id="+quote(paymentId)+"::uuid");
       const persistedData=JSON.parse(persisted) as typeof sourceData;
       expect(persistedData).toEqual(sourceData);

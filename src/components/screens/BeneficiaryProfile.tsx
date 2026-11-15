@@ -34,11 +34,14 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
   const [status,setStatus]=useState('all');
   const [dateFrom,setDateFrom]=useState('');
   const [dateTo,setDateTo]=useState('');
-  const [selected,setSelected]=useState<BeneficiaryProfilePayment|null>(null);
+  const [selection,setSelection]=useState<{identity:string;payment:BeneficiaryProfilePayment}|null>(null);
   const identity=(ownerUid??previewId??'')+':'+person.id+':'+person.tin;
+  // An open receipt must never outlive the precise owner + saved beneficiary.
+  // Check before render, not only when a subsequent effect clears old state.
+  const selected=selection?.identity===identity?selection.payment:null;
   useEffect(()=>{
     let active=true;
-    setSnapshot({identity,state:'loading',rows:[]});setSelected(null);
+    setSnapshot({identity,state:'loading',rows:[]});setSelection(null);
     void loadBeneficiaryProfilePayments(person.tin,ownerUid,previewId,language).then(rows=>{
       if(active)setSnapshot({identity,state:'ready',rows});
     }).catch(()=>{
@@ -184,13 +187,17 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
         </div>}
         {groups.map(item=>{
           const entries=filtered.filter(row=>calendarYear(row.createdAt)===item);
+          // Match the top summary's exact minor-unit arithmetic. Summing as
+          // Number can silently round large multi-allocation year totals.
           const yearTotal=entries.filter(countsTowardBeneficiaryPaidTotal)
-            .reduce((sum,row)=>sum+row.amountMinor,0);
+            .reduce((sum,row)=>sum+BigInt(row.amountMinor),0n);
+          const yearTotalDisplay=yearTotal<=BigInt(Number.MAX_SAFE_INTEGER)
+            ?formatCurrency(Number(yearTotal)/100,language):tr('Amount unavailable','পরিমাণ পাওয়া যায়নি');
           return <div key={item} className="mt-5">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-taxpay-border pb-2">
               <h3 className="font-semibold text-taxpay-text">{item} · {tr('Payment date','পেমেন্টের তারিখ')}</h3>
               <span className="text-sm tabular-nums text-taxpay-muted">
-                {tr('Recorded','নথিভুক্ত')}: {formatCurrency(yearTotal/100,language)}
+                {tr('Recorded','নথিভুক্ত')}: {yearTotalDisplay}
               </span>
             </div>
             <ol className="relative ms-2 mt-4 space-y-3 border-s-2 border-taxpay-primary/30 ps-5"
@@ -212,7 +219,7 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <UiButton type="button" variant="outline" className="gap-2"
-                    onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>
+                    onClick={()=>setSelection({identity,payment:row})}><FileText size={16} aria-hidden="true"/>
                     {row.receipt?tr('View original record','মূল রেকর্ড দেখুন'):tr('View details','বিস্তারিত দেখুন')}
                   </UiButton>
                 </div>
@@ -223,7 +230,7 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
       </section>
     </>}
     {selected&&<TaxPayModal title={tr('Payment details','পেমেন্টের বিবরণ')} service="status"
-      className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
+      className="receipt-modal" onClose={()=>setSelection(null)} footer={<></>}>
       {selected.receipt?<>
         {selected.batchId&&<p className="mb-3 text-sm text-taxpay-muted">
           {tr('This allocation belongs to an original combined transaction. It is not a separate payment.',

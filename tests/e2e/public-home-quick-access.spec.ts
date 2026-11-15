@@ -934,6 +934,8 @@ test('homepage lookup labels example-only matches and preserves focus in EN/BN a
       await page.goto(`/?action=landing&lang=${lang}`);
       const section = page.locator('.public-record-discovery');
       const search = section.getByRole('combobox');
+      // Exactly one live status announcement at a time, including when suggestions are open.
+      await expect(section.getByTestId('public-search-match-status')).toHaveCount(1);
       await expect(section.getByTestId('public-search-match-status')).toBeEmpty();
       await expect(search).toHaveAttribute('aria-expanded', 'false');
       await search.focus();
@@ -1004,6 +1006,31 @@ test('F-001 keeps excluded homepage sections hidden on desktop and mobile in Eng
         await expect(page.locator(selector)).toBeHidden();
         await expect(page.getByRole('heading', { name: heading, exact: true })).toHaveCount(0);
       }
+    }
+  }
+});
+
+test('public reference no-match distinguishes browser session lookup from official records in EN/BN', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'One desktop project covers EN/BN at narrow and wide breakpoints.');
+  await page.route(/\/functions\/v1\/demo-story1-taxpay\/payments\?/, async route => {
+    await route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ success: true, simulationOnly: true, data: { items: [], total: 0 } }) });
+  });
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({width,height:860});
+    for (const language of ['en','bn'] as const) {
+      await page.goto('/?action=landing&lang=' + language);
+      const search=page.locator('.public-record-discovery');
+      await search.getByRole('combobox').fill('UNLINKED-TEST-REFERENCE');
+      await search.getByRole('button', {name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records'}).click();
+      const dialog=page.getByRole('dialog', {name: language === 'bn' ? 'পেমেন্টের অবস্থা ও রসিদ' : 'Payment status & receipt'});
+      await expect(dialog).toBeVisible();
+      await dialog.locator('#receipt-lookup-mobile').fill('01700000000');
+      await dialog.getByRole('button', {name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records'}).click();
+      await expect(dialog.getByTestId('receipt-session-only-notice')).toContainText(
+        language === 'bn' ? 'সরকারি পেমেন্ট রেকর্ড আছে কি না' : 'does not confirm whether an official payment record exists');
+      await expect(dialog.locator('.receipt-view')).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
     }
   }
 });

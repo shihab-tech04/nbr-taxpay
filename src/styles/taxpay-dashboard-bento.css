@@ -166,6 +166,13 @@
   align-items:start;
   gap:12px;
 }
+/* Limit signed-in Overview content only. Sidebar/nav dimensions and routes stay
+   owned by the existing shell and are not changed by this layout rule. */
+.taxpayer-workspace[data-dashboard-view="true"]{
+  width:100%;
+  max-width:1360px;
+  margin-inline:auto;
+}
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-position{
   grid-column:span 7;
   padding:18px;
@@ -392,6 +399,50 @@
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-analytics{
   grid-column:1/-1;order:2;
 }
+/* Zero-record sessions use useful bento slots, not a full-width blank chart
+   row followed by a large unbalanced gap. Preserve the four-chart arrangement
+   verbatim for accounts with recorded allocations and local QA fixtures. */
+.taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-analytics[data-empty="true"]{
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;
+  gap:12px;min-width:0;padding:18px;
+  background:var(--color-taxpay-surface,#fff);
+  border:1px solid var(--color-taxpay-border,#dbe4f0);
+  border-radius:16px;box-shadow:0 1px 2px rgba(18,48,86,.04);
+}
+.taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-analytics[data-empty="true"] .taxpay-bento-analytics__empty{
+  width:100%;margin:0;padding:0;border:0;background:transparent;
+  color:var(--color-taxpay-muted,#64748b);font-size:14px;line-height:1.5;
+}
+.taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-analytics[data-empty="true"] .taxpay-bento-analytics__link{
+  align-self:flex-start;margin-top:auto;
+}
+@media(min-width:1200px){
+  .taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-request-row > .taxpay-bento-tasks{display:contents}
+  .taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-drafts{
+    grid-column:span 7;order:2;
+  }
+  .taxpay-bento-grid[data-dashboard-empty="true"] > .taxpay-bento-analytics{
+    grid-column:span 5;order:3;
+  }
+  .taxpay-bento-grid[data-dashboard-empty="true"] > .taxpay-bento-recent{
+    grid-column:span 7;order:4;
+  }
+  .taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-corrections{
+    grid-column:span 5;order:5;
+  }
+}
+@media(max-width:1199px){
+  .taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-request-row > .taxpay-bento-tasks{
+    grid-column:1/-1;order:2;
+  }
+  .taxpay-bento-grid[data-dashboard-empty="true"] > .taxpay-bento-recent{
+    grid-column:1/-1;order:3;
+  }
+  .taxpay-bento-grid[data-dashboard-empty="true"] > .taxpay-bento-analytics{
+    grid-column:1/-1;order:4;
+  }
+}
+
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-recent ul{
   border-left:2px solid var(--color-taxpay-border,#dbe4f0);
   margin-left:9px;padding-left:19px;

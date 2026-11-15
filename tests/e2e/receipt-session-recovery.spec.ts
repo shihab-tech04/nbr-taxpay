@@ -77,6 +77,45 @@ test('a matching reference does not expose a receipt with the wrong mobile', asy
   await expect(page.locator('.receipt-view')).toHaveCount(0);
 });
 
+test('F-129 / US-050 rejects a same-session receipt whose saved amount or service differs from the SQL payment', async ({ page }) => {
+  await stubSessionRecord(page);
+  // The receipt reference and mobile still match, but its line and category
+  // must correspond to the persisted payment parent, not just the browser.
+  await page.route(/\/demo-story1-taxpay\/payments\/[0-9a-f-]+\?sessionId=/, async route => {
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ success: true, simulationOnly: true,
+        data: { id: paymentId, status: 'SIMULATED_SUCCESS',
+          data: { details: { receiptSnapshot: { ...snapshot, totalAmount: 12000 } } } } }),
+    });
+  });
+  await page.goto('/?action=verify');
+  const dialog = page.getByRole('dialog', { name: 'Payment status & receipt' });
+  await dialog.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill(reference);
+  await dialog.getByRole('textbox', { name: 'Receipt mobile number' }).fill(mobile);
+  await dialog.getByRole('button', { name: 'Search records' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Saved session records are temporarily unavailable');
+  await expect(dialog.getByRole('heading', { name: 'No matching record' })).toHaveCount(0);
+  await expect(dialog.locator('.receipt-view')).toHaveCount(0);
+
+  await page.route(/\/demo-story1-taxpay\/payments\/[0-9a-f-]+\?sessionId=/, async route => {
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ success: true, simulationOnly: true,
+        data: { id: paymentId, status: 'SIMULATED_SUCCESS',
+          data: { details: { receiptSnapshot: { ...snapshot, paymentCategory: 'TRAVEL_TAX' } } } } }),
+    });
+  });
+  await dialog.getByRole('button', { name: 'Search records' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Saved session records are temporarily unavailable');
+  await expect(dialog.getByRole('heading', { name: 'No matching record' })).toHaveCount(0);
+  await expect(dialog.locator('.receipt-view')).toHaveCount(0);
+
+  await stubSessionRecord(page);
+  await dialog.getByRole('button', { name: 'Search records' }).click();
+  await expect(dialog.locator('.receipt-view__paper')).toContainText(reference);
+});
+
 test('backend outage is not misreported as a missing receipt', async ({ page }) => {
   await page.route(/\/demo-story1-taxpay\/payments\?sessionId=/, async route =>
     route.fulfill({ status: 503, contentType: 'application/json',

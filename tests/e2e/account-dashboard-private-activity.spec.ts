@@ -568,6 +568,27 @@ test('private recent activity has an owner-scoped history action with localized 
 });
 
 test('F-122 signed-in mobile bottom navigation survives scrolling, language switch and refresh',async({page})=>{
+  // A short data-backed dashboard may have no native vertical overflow.
+  // Introduce scroll space only in this browser fixture, never in production UI,
+  // so the compact-header threshold is actually exercised instead of asserting
+  // that the application must fabricate content to make the page scroll.
+  const exerciseScroll=async(top:number)=>{
+    await page.evaluate(()=>{
+      const parent=document.querySelector('#main-content');
+      if(!parent)return;
+      let spacer=parent.querySelector<HTMLElement>('[data-test-only-scroll-space]');
+      if(!spacer){
+        spacer=document.createElement('div');
+        spacer.dataset.testOnlyScrollSpace='true';
+        spacer.setAttribute('aria-hidden','true');
+        spacer.style.height='800px';
+        spacer.style.pointerEvents='none';
+        parent.appendChild(spacer);
+      }
+    });
+    await page.evaluate(y=>window.scrollTo(0,y),top);
+    await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(145);
+  };
   await page.setViewportSize({width:375,height:812});
   await mockPrivateAccount(page,'user1');
   await page.goto('/?action=taxpayer_home&lang=en');
@@ -581,8 +602,7 @@ test('F-122 signed-in mobile bottom navigation survives scrolling, language swit
   await expect(pay).toBeVisible();
 
   // This scroll distance used to trigger compact mode and remove the dock.
-  await page.evaluate(()=>window.scrollTo(0,400));
-  await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(145);
+  await exerciseScroll(400);
   await expect(nav).toBeVisible();
   await expect(pay).toBeVisible();
   await expect(page.locator('header.citizen-header--hidden')).toHaveCount(0);
@@ -594,8 +614,7 @@ test('F-122 signed-in mobile bottom navigation survives scrolling, language swit
   for(const name of ['সংক্ষিপ্ত বিবরণ','লেনদেন','কর লেজার']){
     await expect(banglaNav.getByRole('button',{name,exact:true})).toBeVisible();
   }
-  await page.evaluate(()=>window.scrollTo(0,440));
-  await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(145);
+  await exerciseScroll(440);
   await expect(banglaNav).toBeVisible();
   await expect(page.getByRole('button',{name:'কর পরিশোধের ধরন নির্বাচন'})).toBeVisible();
   await page.reload();
@@ -605,8 +624,7 @@ test('F-122 signed-in mobile bottom navigation survives scrolling, language swit
   // The smallest supported viewport must keep the same approved taxpayer dock,
   // even after scroll compaction and a persisted language/session refresh.
   await page.setViewportSize({width:320,height:812});
-  await page.evaluate(()=>window.scrollTo(0,440));
-  await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(145);
+  await exerciseScroll(440);
   await expect(banglaNav).toBeVisible();
   for(const name of ['সংক্ষিপ্ত বিবরণ','লেনদেন','কর লেজার']){
     await expect(banglaNav.getByRole('button',{name,exact:true})).toBeVisible();

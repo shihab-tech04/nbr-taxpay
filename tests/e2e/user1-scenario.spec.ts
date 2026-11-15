@@ -265,6 +265,25 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(content).toContainText('email@test.com');
   await profile.getByRole('button',{name:'Hide Email address'}).click();
   await expect(content).not.toContainText('email@test.com');
+  // The existing eye controls remain independent from explicit field copying.
+  // Copying phone/email must not unmask those values on screen.
+  await page.evaluate(()=>{
+    Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+      writeText:async(text:string)=>{(window as typeof window & {__lastCopiedProfileValue?:string}).__lastCopiedProfileValue=text;}
+    }});
+  });
+  const phoneRow=content.locator('[data-profile-field="mobileNumber"]');
+  await expect(phoneRow.getByRole('button',{name:'Copy Mobile number'})).toBeVisible();
+  await phoneRow.getByRole('button',{name:'Copy Mobile number'}).click();
+  await expect(phoneRow.getByRole('button',{name:'Mobile number copied'})).toBeVisible();
+  expect(await page.evaluate(()=>(window as typeof window & {__lastCopiedProfileValue?:string}).__lastCopiedProfileValue)).toBe('+8801857648765');
+  await expect(content).not.toContainText('+8801857648765');
+  const emailRow=content.locator('[data-profile-field="emailAddress"]');
+  await emailRow.getByRole('button',{name:'Copy Email address'}).click();
+  await expect(emailRow.getByRole('button',{name:'Email address copied'})).toBeVisible();
+  expect(await page.evaluate(()=>(window as typeof window & {__lastCopiedProfileValue?:string}).__lastCopiedProfileValue)).toBe('email@test.com');
+  await expect(content).not.toContainText('email@test.com');
+  await expect(profile.getByRole('button',{name:'Copy TIN'})).toHaveCount(1);
   await expect(profile.getByRole('button',{name:'Show Tax office phone'})).toBeVisible();
   await expect(profile.getByRole('button',{name:'Show Previous TIN'})).toHaveCount(0);
   const copyButton=profile.getByRole('button',{name:'Copy TIN'});

@@ -32,7 +32,8 @@ test('navigation, language, beneficiary list, payment start and profile save use
  assert.match(state,/recordAccountActivity\(accountUser\.id,'LANGUAGE_CHANGED',lang\)/);
  assert.match(beneficiaries,/recordAccountActivity\(owner,'BENEFICIARY_LIST_SELECTED','beneficiaries'\)/);
  assert.match(payment,/recordAccountActivity\(verifiedUser\.id,'PAYMENT_STARTED','wizard'\)/);
- assert.match(profile,/recordAccountActivity\(user\.id,'PROFILE_SAVED','account_settings'\)/);
+ assert.match(profile,/recordAccountActivity\(requestUid,'PROFILE_SAVED','account_settings'\)/);
+ assert.match(profile,/if \(!isCurrentUid\(requestUid\)\) return;/);
  assert.match(profile,/<AccountRecentActivity ownerUid=\{user\.id\} language=\{language\}/);
 });
 
