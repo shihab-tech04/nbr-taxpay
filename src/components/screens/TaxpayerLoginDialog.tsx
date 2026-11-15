@@ -55,7 +55,11 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
     inputRef.current?.focus();
   };
   const onUserIdKeyDown=(event:React.KeyboardEvent<HTMLInputElement>)=>{
-    if(event.key==='Escape'&&suggestionsOpen){event.preventDefault();setSuggestionsOpen(false);return;}
+    if(event.key==='Escape'&&suggestionsOpen){
+      // The parent modal also listens for Escape at document level. Dismiss the
+      // account list first without ending the entire sign-in journey.
+      event.preventDefault();event.stopPropagation();setSuggestionsOpen(false);return;
+    }
     if(event.key==='ArrowDown'||event.key==='ArrowUp'){
       event.preventDefault();
       setSuggestionsOpen(true);
@@ -115,7 +119,8 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
               onBlur={()=>setSuggestionsOpen(false)}
               onKeyDown={onUserIdKeyDown}
               onChange={event => { setUserId(event.target.value);setPassword('');setHighlighted(0);setSuggestionsOpen(true);setError(null); }} />
-            {suggestionsOpen && <ul id="taxpayer-login-account-options" className="taxpayer-login-suggestions" role="listbox" aria-label={bn?'পরীক্ষামূলক অ্যাকাউন্ট':'Test accounts'}>
+          </div>
+          {suggestionsOpen && <ul id="taxpayer-login-account-options" className="taxpayer-login-suggestions" role="listbox" aria-label={bn?'পরীক্ষামূলক অ্যাকাউন্ট':'Test accounts'}>
               {suggestions.map((id,index)=><li id={`taxpayer-login-account-${id}`} key={id} role="option" aria-selected={index===highlighted}
                 className={index===highlighted?'taxpayer-login-suggestion--active':undefined}
                 onPointerDown={event=>{event.preventDefault();choosePreview(id);}}
@@ -124,7 +129,6 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
               </li>)}
               {!suggestions.length&&<li role="presentation" className="taxpayer-login-suggestions__empty">{bn?'কোনো পরীক্ষামূলক অ্যাকাউন্ট পাওয়া যায়নি':'No test accounts found'}</li>}
             </ul>}
-          </div>
         </div>
         <div className="taxpayer-login-field">
           <label htmlFor="taxpayer-login-password">{bn ? 'পাসওয়ার্ড' : 'Password'}</label>
