@@ -139,7 +139,7 @@ test('saved payment certificate action is offered only for a completed, reconcil
   assert.equal(canViewPaymentCertificate(baseReceipt), true);
   assert.equal(canViewPaymentCertificate({ ...baseReceipt, treasuryStatus: 'TREASURY_SCROLLED' }), true);
   assert.equal(canViewPaymentCertificate({ ...baseReceipt, completedAt: undefined }), false);
-  assert.equal(canViewPaymentCertificate({ ...baseReceipt, treasuryStatus: 'PENDING_RECONCILIATION' }), false);
+  assert.equal(canViewPaymentCertificate({ ...baseReceipt, treasuryStatus: 'GATEWAY_PENDING' }), false);
   assert.equal(canViewPaymentCertificate({ ...baseReceipt, paymentTransactionId: 'SIM-TOKEN-123' }), false);
   assert.equal(canViewPaymentCertificate({ ...baseReceipt, totalAmount: 49 }), false);
 });
