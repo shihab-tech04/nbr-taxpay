@@ -193,7 +193,11 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
 function reusableAccountingLines(
  tx:StoredPayment, allocations:ReceiptAllocationItem[]|undefined,
 ):PaymentLineItem[]|undefined{
- const raw=tx.details?.receiptLines;
+ // Older combined records persist a separate receiptLines array; v2/v3
+ // submissions persist the same immutable accounting facts in details.lines.
+ // Never infer head IDs from display labels or allocations alone.
+ const raw=Array.isArray(tx.details?.receiptLines)
+  ?tx.details.receiptLines:tx.details?.lines;
  if(!allocations?.length||!Array.isArray(raw)||raw.length!==allocations.length||
     raw.some(item=>!item||typeof item!=='object'||Array.isArray(item)))return undefined;
  const heads=toItems(raw);
