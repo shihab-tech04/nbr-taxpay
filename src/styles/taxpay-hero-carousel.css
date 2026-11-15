@@ -514,7 +514,7 @@
   min-width: 0;
   padding: 1.25rem;
   border: 1px solid var(--citizen-border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--citizen-surface);
 }
 .public-record-discovery__heading { margin-bottom: .75rem; min-width: 0; }
@@ -524,7 +524,7 @@
 .public-record-search {
   display: flex; align-items: stretch; min-width: 0; width: 100%; min-height: 60px;
   padding: .35rem; border: 1px solid var(--citizen-border);
-  border-radius: 10px; background: var(--citizen-surface);
+  border-radius: 8px; background: var(--citizen-surface);
   box-shadow: var(--taxpay-shadow-raised);
 }
 .public-record-search:focus-within { border-color: var(--citizen-primary); }
@@ -731,7 +731,7 @@
 /* Six benefit cards keep the approved layout and open their established destinations. */
 /* Home-only shared card spacing and radii; carousel design remains unchanged. */
 /* Search and benefits share the same outer geometry at each breakpoint. */
-.public-home-sections .public-benefits{min-width:0;padding:1.25rem;border:1px solid var(--citizen-border);border-radius:12px;background:var(--citizen-surface);}
+.public-home-sections .public-benefits{min-width:0;padding:1.25rem;border:1px solid var(--citizen-border);border-radius:10px;background:var(--citizen-surface);}
 .public-benefits { min-width: 0; }
 .public-benefits__heading {
   display: flex;
@@ -774,6 +774,27 @@
   border-radius: .8rem;
   background: var(--citizen-surface);
   color: var(--citizen-text);
+  z-index: 0;
+  box-shadow: none;
+  transition: box-shadow 180ms ease, background-color 180ms ease;
+}
+/* Give one benefit cell subtle depth without changing its dimensions, shared
+   dividers or click area. A raised stacking context makes the soft shadow
+   visible over adjacent cells inside the connected grid. */
+.public-benefits__item:focus-within {
+  z-index: 1;
+  background: #fbfdff;
+  box-shadow: 0 2px 12px rgb(21 61 103 / 11%);
+}
+@media (hover: hover) and (pointer: fine) {
+  .public-benefits__item:hover {
+    z-index: 1;
+    background: #fbfdff;
+    box-shadow: 0 2px 12px rgb(21 61 103 / 11%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .public-benefits__item { transition: none; }
 }
 /* Six quiet, flat semantic accents. No gradients, status implications or
    changed click targets: the Lucide glyphs and destinations stay intact. */
@@ -861,7 +882,7 @@
   .public-home-sections .public-record-discovery {
     display: block;
     padding: 1.5rem;
-    border-radius: 12px;
+    border-radius: 10px;
   }
   .public-home-sections .public-record-discovery__heading {
     display: flex;
@@ -884,7 +905,7 @@
   .public-home-sections .public-record-search {
     min-height: 46px;
     padding: .18rem;
-    border-radius: 10px;
+    border-radius: 8px;
     box-shadow: 0 1px 3px rgba(12, 35, 65, .06);
   }
   .public-home-sections .public-record-search input {
@@ -907,7 +928,7 @@
     overflow: visible;
     padding: 1.5rem;
     border: 1px solid var(--citizen-border);
-    border-radius: 12px;
+    border-radius: 10px;
     background: var(--citizen-surface);
   }
   .public-home-sections .public-benefits__heading {
@@ -940,7 +961,7 @@
     grid-template-rows: repeat(2, minmax(0, 1fr));
     gap: 1px;
     padding: 1px;
-    border-radius: 8px;
+    border-radius: 0;
     overflow: hidden;
     background: var(--citizen-border);
   }
