@@ -78,5 +78,8 @@ test('foreign, malformed or inconsistent source rows fail closed and cannot leak
    {...row(),revision:0},
    {...row(),updated_at:'not a timestamp'},
    {...row(),profile:{...profile,sourceUpdatedAt:'invalid'}},
+   {...row(),profile:Object.fromEntries(Object.entries(profile).filter(([field])=>field!=='taxpayerName'))},
+   {...row(),profile:{...profile,unapprovedIdentifier:'not allowed'}},
+   {...row(),profile:{...profile,taxesCircle:123}},
  ])assert.throws(()=>parseOwnerRegistrationRow(invalid,accountId),/mismatch/);
 });
