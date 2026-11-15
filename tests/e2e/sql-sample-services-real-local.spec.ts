@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 const signIn = async (page: import('@playwright/test').Page, userId: string) => {
   await page.goto('/?action=taxpayer_login');
-  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await dialog.getByRole('textbox', { name: 'User ID' }).fill(userId);
   await dialog.getByLabel('Password', { exact: true }).fill(userId);
   await dialog.getByRole('button', { name: 'Sign In' }).click();
@@ -54,6 +54,9 @@ test('user1 Activity keeps its approved transaction register without appended SQ
   await signIn(page, 'user1');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
+  // This local fixture was recorded for AY 2025–26. Select its year
+  // explicitly instead of assuming the customer Overview's current-year default.
+  await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await page.getByRole('button',{name:'View all activity'}).click();
   const tabs = page.getByRole('navigation',{name:'Activity sections'});
   await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');

@@ -4,7 +4,7 @@ import { ensureNewPaymentEntry } from './pay-tax-entry-helper';
 for (const locale of ['en', 'bn'] as const) {
   test(`already signed-in ${locale.toUpperCase()} taxpayer skips redundant account/walk-in choice for both payers`, async ({ page }) => {
     await page.goto('/?action=taxpayer_login');
-    const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+    const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
     await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
     await login.getByLabel('Password', { exact: true }).fill('user1');
     await login.getByRole('button', { name: 'Sign In' }).click();
@@ -25,7 +25,7 @@ for (const locale of ['en', 'bn'] as const) {
       await continueButton.click();
       await expect(payment.locator('.taxpay-modal__step-count')).toContainText('1/4');
       await expect(payment.locator('.tax-service-choice__account-access')).toHaveCount(0);
-      await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toHaveCount(0);
+      await expect(page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' })).toHaveCount(0);
       if (payer === 'OTHER') {
         await expect(payment.getByTestId('saved-beneficiary-picker')).toHaveCount(1);
       }

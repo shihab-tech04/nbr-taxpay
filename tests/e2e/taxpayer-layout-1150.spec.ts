@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 
-const url = (route: string) => '/?action=' + route + '&demoUser=user1';
+const url = (route: string) => '/?action=' + route + '&demoUser=user1&qaScenario=1';
 
 test('User1 dashboard omits the redundant register and lengthy data notice but preserves Activity records', async ({page}) => {
   await page.goto(url('taxpayer_home'));
-  await expect(page.getByRole('heading', {name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   await expect(page.getByText('Sample',{exact:true})).toHaveCount(0);
   await expect(page.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
   await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
@@ -25,10 +25,12 @@ test('User1 dashboard omits the redundant register and lengthy data notice but p
 test('User1 bento retains the approved blue surface and keyboard-operable service bars',async({page})=>{
   await page.goto(url('taxpayer_home'));
   const hero=page.locator('.taxpay-bento-hero');
-  await expect(hero).toHaveCSS('background-color','rgb(255, 255, 255)');
+  await expect(hero).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
+  await expect(hero.locator('.taxpay-summary-metric').first()).toHaveCSS('background-color','rgb(255, 255, 255)');
   await expect(page.locator('.taxpay-bento-position__highlight')).toHaveCount(0);
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
+  await page.getByTestId('dashboard-payment-extra').locator('summary').click();
   const bar=page.getByTestId('dashboard-service-breakdown').locator('[data-service="income"]');
   await bar.focus();
   await page.keyboard.press('Space');
@@ -44,7 +46,7 @@ test('User1 overview preserves narrow screens and expands fluidly at 1400px and 
     await page.setViewportSize({width,height:850});
     await page.goto(url('taxpayer_home'));
     await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-    await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
     const dims = await page.evaluate(() => {
       const el = document.querySelector('[data-testid="user1-synthetic-workspace"]') as HTMLElement;
       return {overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,

@@ -261,6 +261,15 @@ export async function findSessionReceiptByReference(reference: string, mobile: s
     const knownReferences = [receipt.challanNo, receipt.tokenNumber, receipt.gatewayTransactionId,
       receipt.paymentTransactionId, record.id];
     if (!knownReferences.some(value => typeof value === 'string' && value.toUpperCase() === wanted)) continue;
+    // A display snapshot is not payment evidence. Check the stored SQL parent
+    // amount and payment category before returning any matched reference.
+    // Never create or modify payments, settlements or certificates in lookup.
+    if (!Number.isSafeInteger(record.amountMinor) || record.amountMinor <= 0 ||
+        receipt.paymentCategory !== record.service ||
+        !Number.isFinite(receipt.totalAmount) ||
+        Math.round(receipt.totalAmount * 100) !== record.amountMinor) {
+      throw new Error('SESSION_LOOKUP_INTEGRITY');
+    }
     return { ...receipt, paymentTransactionId: record.id } as ChallanReceipt;
   }
   return null;

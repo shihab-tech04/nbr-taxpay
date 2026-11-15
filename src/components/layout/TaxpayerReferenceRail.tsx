@@ -3,6 +3,7 @@ import { Activity, Bell, BookOpen, ChevronDown, CirclePlus, CircleUserRound, Fil
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { SiteLogo } from './SiteLogo';
+import { taxpayerBrandName } from '../../config/brand';
 
 type RailLink = { route: string; en: string; bn: string; Icon: React.ComponentType<{size?: number; 'aria-hidden'?: boolean}> };
 
@@ -83,7 +84,7 @@ export function TaxpayerReferenceRail() {
     <aside className="taxpayer-reference-rail" aria-label={bn ? 'করদাতা ডেস্কটপ নেভিগেশন' : 'Taxpayer desktop navigation'}>
       <div>
         <button className="taxpayer-reference-brand" type="button" onClick={() => navigate('landing')}>
-          <SiteLogo className="taxpayer-reference-wordmark" alt={bn ? 'করবৃত্ত' : 'Korbritto'} />
+          <SiteLogo className="taxpayer-reference-wordmark" alt={taxpayerBrandName(language)} />
         </button>
         {(user || sampleProfile) && currentRoute !== 'wizard' && <div className="taxpayer-reference-pay-anchor" ref={payAnchorRef}>
           <button ref={payButtonRef} type="button" className="taxpayer-reference-main-action" onClick={() => setPayMenuOpen(open => !open)}

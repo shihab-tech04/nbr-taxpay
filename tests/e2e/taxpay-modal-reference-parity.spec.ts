@@ -54,7 +54,7 @@ test('the approved single modal progressively reveals all three choice groups an
 
 test('standalone login uses shared modal chrome, left heading, Back and full-width footer', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await expect(dialog).toHaveClass(/taxpay-modal/);
   await expect(dialog.locator('.taxpay-modal__header')).toBeVisible();
   await expect(dialog.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
@@ -77,7 +77,7 @@ test('standalone login uses shared modal chrome, left heading, Back and full-wid
 });
 test('both login entry points use the identical reusable login modal variant', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const standalone = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const standalone = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await expect(standalone).toHaveAttribute('data-public-service', 'login');
   await expect(standalone).toHaveClass(/taxpayer-login-modal/);
   const width = await standalone.evaluate(el => getComputedStyle(el).width);
@@ -100,7 +100,7 @@ test('both login entry points use the identical reusable login modal variant', a
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button', { name: 'Continue', exact: true }).click();
-  const embedded = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const embedded = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await expect(embedded).toHaveAttribute('data-public-service', 'login');
   await expect(embedded).toHaveClass(/taxpayer-login-modal/);
   await expect(embedded.locator('.taxpay-modal__back')).toBeVisible();
@@ -133,7 +133,7 @@ test('homepage Login and payment journey account login use the same modal chrome
   } else {
     await page.locator('.public-home-header__tools .public-home-login-link--desktop').click();
   }
-  const standalone=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const standalone=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await expect(standalone.locator('.taxpay-modal__header')).toBeVisible();
   await expect(standalone.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
   await expect(standalone.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeVisible();
@@ -145,8 +145,8 @@ test('homepage Login and payment journey account login use the same modal chrome
   await payment.locator('[data-payment-access="ACCOUNT"]').click();
   await payment.getByRole('button',{name:'Continue',exact:true}).click();
   // The shared modal stays mounted but its accessible name changes with the workflow step.
-  const paymentLogin=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
-  await expect(paymentLogin.locator('.taxpay-modal__title')).toContainText('Sign In To Your Korbritto Account');
+  const paymentLogin=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+  await expect(paymentLogin.locator('.taxpay-modal__title')).toContainText('Sign In To Your Sohojkor Account');
   await expect(paymentLogin.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
   await expect(paymentLogin.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeDisabled();
   await expect(paymentLogin.locator('.taxpay-modal__back')).toBeVisible();
@@ -228,7 +228,7 @@ test('single modal expands when groups are revealed and respects reduced motion'
 
 test('standalone sign-in Back returns to the public landing page without a second dialog', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await expect(dialog.getByRole('button', { name: 'Back' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Back' }).click();
   await expect(page.locator('.taxpay-modal')).toHaveCount(0);

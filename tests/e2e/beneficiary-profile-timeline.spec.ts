@@ -37,7 +37,7 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
     route.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify({success:true,simulationOnly:true,data:[record]})}));
   await page.goto('/?action=taxpayer_login');
-  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
   await login.getByLabel('Password',{exact:true}).fill('user1');
   await login.getByRole('button',{name:'Sign In'}).click();

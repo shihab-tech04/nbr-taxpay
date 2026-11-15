@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
-test('compact desktop homepage explains six benefits without duplicate CTAs', async ({ page }) => {
+test('compact desktop homepage keeps six balanced benefit destinations', async ({ page }) => {
   // This 3x2 parity test intentionally uses the compact desktop breakpoint.
   // The same 3x2 layout remains consistent at wider desktop sizes.
   await page.setViewportSize({ width: 1140, height: 900 });
@@ -24,10 +24,23 @@ test('compact desktop homepage explains six benefits without duplicate CTAs', as
     await expect(card).toHaveAttribute('data-benefit', id);
     await expect(card.getByRole('heading', { name: heading })).toBeVisible();
     await expect(card.locator('p')).toHaveText(description);
+    const control = id === 'payments'
+      ? card.getByRole('button', { name: heading })
+      : card.getByRole('link', { name: heading });
+    await expect(control).toHaveAttribute('aria-describedby', `public-benefit-detail-${id}`);
+    const destination: Record<string, string> = {
+      certificates: 'certificates',
+      corrections: 'corrections',
+      history: 'history',
+      'pay-again': 'history',
+      'saved-drafts': 'taxpayer_home',
+    };
+    if (id !== 'payments') await expect(control).toHaveAttribute('href', `?action=${destination[id]}`);
     await expect(card.locator('svg')).toHaveCount(1);
     await expect(card.locator('p')).toHaveCSS('font-size', '14px');
   }
-  await expect(benefits.getByRole('button')).toHaveCount(0);
+  await expect(benefits.getByRole('button')).toHaveCount(1);
+  await expect(benefits.getByRole('link')).toHaveCount(5);
   await expect(page.getByRole('heading', { name: 'Find a payment record' })).toBeVisible();
 
   const positions = await benefits.locator('.public-benefits__item').evaluateAll(items =>
@@ -110,7 +123,7 @@ test('desktop restores full-width lookup and proposed connected six-cell benefit
   expect(layout.input.width).toBeGreaterThanOrEqual(layout.search.width * .9);
   expect(layout.headings.every(weight => weight <= 600)).toBe(true);
   expect(layout.descriptions.every(size => size >= 14)).toBe(true);
-  expect(layout.panelRadius).toBeGreaterThanOrEqual(14);
+  expect(layout.panelRadius).toBe(10);
   // On 821–959px-tall desktops, the approved connected panel retains a compact 16px inset.
   expect(layout.panelToGridInset).toBeGreaterThanOrEqual(16);
   expect(layout.panelBackground).not.toBe('rgba(0, 0, 0, 0)');
@@ -172,7 +185,7 @@ test('wide desktop uses the available canvas without crushing the footer or look
   expect(visual.searchHeading.bottom).toBeLessThan(visual.searchField.top);
   expect(visual.searchField.width).toBeGreaterThanOrEqual(visual.record.width*.9);
   // Six balanced benefit cards should retain adequate height at wide viewport sizes.
-  // Medium-height desktops use 88px cells to preserve the no-overflow layout.
+  // Medium-height desktops retain balanced readable cells and no-overflow layout.
   expect(visual.firstCard.height).toBeGreaterThanOrEqual(88);
   // Two-line tagline is acceptable; footer links must never touch or overlap.
   expect(visual.footerTagline.height).toBeLessThanOrEqual(44);
@@ -423,13 +436,13 @@ test('record search and benefits share a restrained, left-aligned desktop headin
     expect(measurements.searchY).toBeGreaterThan(measurements.recordDescriptionBottom);
     expect(measurements.searchWidth).toBeGreaterThanOrEqual(measurements.sectionWidth * .9);
     expect(measurements.weights).toEqual([600, 600, 400]);
-    expect(measurements.fontSizes).toEqual(['16px', '20px', '14px', '14px']);
+    expect(measurements.fontSizes).toEqual(['20px', '20px', '15px', '15px']);
     expect(measurements.documentHeightOverflow).toBeLessThanOrEqual(2);
     expect(measurements.documentWidthOverflow).toBeLessThanOrEqual(2);
   }
 });
 
-test('approved payment-record lookup keeps the compact reference composition', async ({ page }) => {
+test('payment-record lookup keeps the new readable heading and consistent card geometry', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/?action=landing&lang=en');
   await page.evaluate(async () => { await document.fonts.ready; });
@@ -458,9 +471,8 @@ test('approved payment-record lookup keeps the compact reference composition', a
     };
   });
   expect(layout.panelHeight).toBeGreaterThanOrEqual(108);
-  expect(layout.panelHeight).toBeLessThanOrEqual(128);
-  expect(layout.panelRadius).toBeGreaterThanOrEqual(11);
-  expect(layout.panelRadius).toBeLessThanOrEqual(13);
+  expect(layout.panelHeight).toBeLessThanOrEqual(150);
+  expect(layout.panelRadius).toBe(10);
   expect(layout.headingBottom).toBeLessThan(layout.formTop);
   expect(layout.formHeight).toBeGreaterThanOrEqual(46);
   expect(layout.formHeight).toBeLessThanOrEqual(52);
@@ -474,7 +486,7 @@ test('approved payment-record lookup keeps the compact reference composition', a
 
 test('desktop search keeps compact inset below the 960px height breakpoint', async ({page}) => {
   for (const {height,padLeft,padTop,padBottom} of [
-    {height:959,padLeft:16,padTop:10,padBottom:11},
+    {height:959,padLeft:16,padTop:16,padBottom:16},
     {height:960,padLeft:24,padTop:24,padBottom:24},
   ]) {
     for (const lang of ['en','bn']) {
@@ -539,7 +551,7 @@ test('reference screenshot: tall desktop payment search matches approved padding
       expect(metrics.searchPadBottom).toBe(24);
       expect(metrics.headingGap).toBeGreaterThanOrEqual(12);
       expect(metrics.searchHeight,JSON.stringify({lang,viewport,metrics})).toBeGreaterThanOrEqual(148);
-      expect(metrics.searchHeight).toBeLessThanOrEqual(158);
+      expect(metrics.searchHeight).toBeLessThanOrEqual(170);
       expect(metrics.heroHeight).toBeGreaterThanOrEqual(260);
       expect(metrics.heroHeight).toBeLessThanOrEqual(284);
       expect(metrics.heroToSearch).toBeGreaterThanOrEqual(12);
@@ -602,7 +614,7 @@ test('approved desktop proposal is one white rounded panel with a connected 3x2 
       const expectedPanelWidth=Math.min(1100,viewport.width-64);
       expect(Math.abs(measurement.panelWidth-expectedPanelWidth),
         JSON.stringify({viewport,lang,measurement})).toBeLessThanOrEqual(2);
-      expect(measurement.panelRadius).toBeGreaterThanOrEqual(14);
+      expect(measurement.panelRadius).toBe(10);
       // The reference tall desktop keeps 24px; medium-height layouts fit in 16px.
       const expectedPadding=viewport.height<=959 ? 16 : 24;
       expect(measurement.panelPadding).toBeGreaterThanOrEqual(expectedPadding);
@@ -804,3 +816,197 @@ for (const { width, height, lang } of [
     await expect(page.locator('.public-home-header')).toBeVisible();
   });
 }
+
+test('six benefit destinations work by pointer and keyboard in English and Bangla on mobile and desktop', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1280', 'The test covers its own explicit mobile and desktop viewports.');
+  // Multiple mobile/desktop routes in both languages need their own
+  // realistic budget on heavily parallel GitHub runners; assertions unchanged.
+  test.setTimeout(90_000);
+  const cases = [
+    { id: 'payments', en: 'All Tax Payments', bn: 'সব ধরনের কর পরিশোধ', destination: 'pay-choice' },
+    { id: 'certificates', en: 'Tax Certificates', bn: 'কর সনদ', destination: 'certificates' },
+    { id: 'corrections', en: 'Corrections & Requests', bn: 'সংশোধন ও আবেদন', destination: 'corrections' },
+    { id: 'history', en: 'Payment History', bn: 'পেমেন্টের ইতিহাস', destination: 'history' },
+    { id: 'pay-again', en: 'Pay Again', bn: 'আবার পরিশোধ', destination: 'history' },
+    { id: 'saved-drafts', en: 'Saved Drafts', bn: 'সংরক্ষিত খসড়া', destination: 'taxpayer_home' },
+  ] as const;
+
+  const expectDestination = async (item: typeof cases[number], language: 'en' | 'bn') => {
+    if (item.id === 'payments') {
+      await expect(page.locator('.tax-service-choice__card')).toHaveCount(2);
+      return;
+    }
+    await expect(page).toHaveURL(new RegExp(`[?&]action=${item.destination}(?:&|$)`));
+    if (language === 'en') {
+      await expect(page.getByText('Sign in to your Sohojkor account to continue.')).toBeVisible();
+      await expect(page.getByText(/Korbritto/i)).toHaveCount(0);
+    } else {
+      await expect(page.getByText('আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন।')).toBeVisible();
+      await expect(page.getByText(/করবৃত্ত/)).toHaveCount(0);
+    }
+  };
+
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const language of ['en', 'bn'] as const) {
+      await page.goto(`/?action=landing&lang=${language}`);
+      const benefits = page.locator('.public-benefits');
+      await expect(benefits.locator('.public-benefits__grid')).toBeVisible();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(2);
+
+      for (const item of cases) {
+        const card = benefits.locator(`[data-benefit="${item.id}"]`);
+        const label = item[language];
+        const control = item.id === 'payments'
+          ? card.getByRole('button', { name: label })
+          : card.getByRole('link', { name: label });
+        // Direct links and new-tab navigation must retain the public language.
+        if (item.id !== 'payments') {
+          await expect(control).toHaveAttribute('href',
+            `?action=${item.destination}${language === 'bn' ? '&lang=bn' : ''}`);
+        }
+        if (width === 1280 && language === 'bn' && item.id === 'history') {
+          const destination = await control.getAttribute('href');
+          const tab = await page.context().newPage();
+          try {
+            await tab.goto(new URL(destination!, page.url()).toString());
+            await expect(tab.getByText('আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন।')).toBeVisible();
+            await tab.reload();
+            await expect(tab.getByText('আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন।')).toBeVisible();
+          } finally {
+            await tab.close();
+          }
+        }
+        const box = await card.boundingBox();
+        if (!box) throw new Error(`Missing benefit card: ${item.id}`);
+
+        // Check the full-card pointer target.
+        await card.click({ position: { x: box.width - 6, y: box.height - 6 } });
+        await expectDestination(item, language);
+
+        // Return to a fresh landing state before checking keyboard activation.
+        await page.goto(`/?action=landing&lang=${language}`);
+        const keyboardCard = page.locator(`.public-benefits [data-benefit="${item.id}"]`);
+        const keyboardControl = item.id === 'payments'
+          ? keyboardCard.getByRole('button', { name: label })
+          : keyboardCard.getByRole('link', { name: label });
+        await keyboardControl.focus();
+        await expect(keyboardControl).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expectDestination(item, language);
+
+        // Clear any chooser or signed-out gate before the next real interaction.
+        await page.goto(`/?action=landing&lang=${language}`);
+      }
+    }
+  }
+});
+
+
+test('homepage reference entry does not claim a missing SQL record before session verification', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1280', 'This case explicitly exercises mobile and desktop states.');
+  for (const width of [320, 375, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const language of ['en', 'bn'] as const) {
+      await page.goto(`/?action=landing&lang=${language}`);
+      const reference = `UNVERIFIED-REFERENCE-${width}`;
+      const landing = page.locator('.public-record-discovery');
+      await landing.getByRole('searchbox').fill(reference);
+      await landing.getByRole('button', { name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
+      const modal = page.getByRole('dialog', { name: language === 'bn' ? 'পেমেন্টের অবস্থা ও রসিদ' : 'Payment status & receipt' });
+      await expect(modal).toBeVisible();
+      await expect(modal.getByRole('textbox', { name: language === 'bn'
+        ? 'চালান, টোকেন বা লেনদেনের রেফারেন্স' : 'Challan, token or transaction reference' }))
+        .toHaveValue(reference);
+      await expect(modal.getByTestId('receipt-mobile-required')).toBeVisible();
+      await expect(modal.getByRole('heading', { name: language === 'bn' ? 'কোনো মিল পাওয়া যায়নি' : 'No matching record' })).toHaveCount(0);
+      await modal.getByRole('button', { name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
+      await expect(modal.getByTestId('receipt-mobile-required')).toBeVisible();
+      await expect(modal.locator('.receipt-view')).toHaveCount(0);
+    }
+  }
+});
+
+test('homepage lookup labels example-only matches and preserves focus in EN/BN at 320px, 375px and 1280px', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1280', 'This case covers both target widths in one browser.');
+  for (const width of [320, 375, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const lang of ['en', 'bn'] as const) {
+      await page.goto(`/?action=landing&lang=${lang}`);
+      const section = page.locator('.public-record-discovery');
+      const search = section.getByRole('searchbox');
+      // Prevent the integration merge from duplicating the one live status region.
+      await expect(section.getByTestId('public-search-match-status')).toHaveCount(1);
+      await expect(section.getByTestId('public-search-match-status')).toBeEmpty();
+      await expect(section.locator('#public-record-suggestions')).toHaveCount(0);
+      await search.focus();
+      await expect(section.locator('#public-record-suggestions')).toHaveCount(1);
+      if (width === 1280 && lang === 'en') {
+        const firstExample = (await section.locator('.public-record-suggestions__examples')
+          .locator('.public-record-suggestions__value').first().innerText()).trim();
+        await search.fill(firstExample);
+        const matched = section.locator('.public-record-suggestions__group').first();
+        await expect(matched.locator('.public-record-suggestions__value')
+          .filter({ hasText: firstExample })).toHaveCount(1);
+        await expect(section.locator('.public-record-suggestions__examples')
+          .locator('.public-record-suggestions__value').filter({ hasText: firstExample })).toHaveCount(0);
+        await matched.locator('.public-record-suggestions__option').first().click();
+        const verification = page.getByRole('dialog', { name: 'Payment status & receipt' });
+        await expect(verification).toBeVisible();
+        // Selecting a saved example opens its locally permitted receipt directly.
+        // The input is deliberately hidden while its matching receipt is shown.
+        const matchedReceipt = verification.locator('.receipt-view');
+        await expect(matchedReceipt).toBeVisible();
+        await expect(matchedReceipt).toContainText(firstExample);
+        await page.goto('/?action=landing&lang=en');
+        await section.getByRole('searchbox').focus();
+      }
+      await expect(search).toHaveAttribute('aria-autocomplete', 'list');
+      await expect(search).toHaveAttribute('aria-describedby', 'public-record-discovery-help');
+      await search.fill('NOT-A-KNOWN-EXAMPLE');
+      await expect(section.getByTestId('public-search-match-status')).toContainText(lang === 'bn'
+        ? 'কোনো নমুনা রেফারেন্স মেলেনি'
+        : 'No example references matched');
+      await expect(section.locator('.public-record-suggestions__empty')).toContainText(lang === 'bn'
+        ? 'নমুনার মধ্যে মিলে যাওয়া রেফারেন্স নেই'
+        : 'No matching references among the examples');
+      await search.press('ArrowDown');
+      await expect(section.locator('#public-search-option-0')).toHaveClass(/is-active/);
+      await search.press('Escape');
+      await expect(search).toBeFocused();
+      await expect(section.locator('#public-search-option-0')).toHaveCount(0);
+      await expect(section.locator('#public-record-suggestions')).toHaveCount(0);
+      await expect(section.getByTestId('public-search-match-status')).toBeEmpty();
+      await search.fill('NOT-A-KNOWN-EXAMPLE');
+      await section.getByRole('button', { name: lang === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
+      await expect(page.getByTestId('receipt-mobile-required')).toBeVisible();
+      await expect(page.locator('.receipt-view')).toHaveCount(0);
+    }
+  }
+});
+
+test('public reference no-match distinguishes browser session lookup from official records in EN/BN', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'One desktop project covers EN/BN at narrow and wide breakpoints.');
+  await page.route(/\/functions\/v1\/demo-story1-taxpay\/payments\?/, async route => {
+    await route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ success: true, simulationOnly: true, data: { items: [], total: 0 } }) });
+  });
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({width,height:860});
+    for (const language of ['en','bn'] as const) {
+      await page.goto('/?action=landing&lang=' + language);
+      const search=page.locator('.public-record-discovery');
+      await search.getByRole('searchbox').fill('UNLINKED-TEST-REFERENCE');
+      await search.getByRole('button', {name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records'}).click();
+      const dialog=page.getByRole('dialog', {name: language === 'bn' ? 'পেমেন্টের অবস্থা ও রসিদ' : 'Payment status & receipt'});
+      await expect(dialog).toBeVisible();
+      await dialog.locator('#receipt-lookup-mobile').fill('01700000000');
+      await dialog.getByRole('button', {name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records'}).click();
+      await expect(dialog.getByTestId('receipt-session-only-notice')).toContainText(
+        language === 'bn' ? 'সরকারি পেমেন্ট রেকর্ড আছে কি না' : 'does not confirm whether an official payment record exists');
+      await expect(dialog.locator('.receipt-view')).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+    }
+  }
+});

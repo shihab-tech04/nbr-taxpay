@@ -50,7 +50,7 @@ test('legacy URL offers account access without fabricated sign-out',async({page}
  const dialog=page.getByRole('dialog',{name:'Services & menu'});
  await expect(dialog.getByRole('button',{name:'Exit demonstration account'})).toHaveCount(0);
  await dialog.getByRole('button',{name:'Sign in'}).click();
- await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toBeVisible();
+ await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toBeVisible();
  await expect(page).not.toHaveURL(/demoUser=/);
  await page.goto('/?action=landing');
  await expect(page.locator('.public-home-header__tools .public-home-login-link--desktop'))
@@ -67,11 +67,14 @@ test('User 1 login keeps the bento Overview and financial sources after refresh'
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'What needs your attention?'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'By payment service'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
+  // A genuine sign-in must never be replaced by synthetic dashboard totals.
+  await expect(page.getByRole('heading',{name:'Payment recipients'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'By payment service'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Beneficiary Breakdown'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
-  await expect(page.getByTestId('dashboard-chart-source')).toBeVisible();
+  await expect(page.getByTestId('dashboard-chart-source')).toHaveCount(0);
+  await expect(page.getByTestId('dashboard-payment-analytics')).toContainText('No itemized account payments');
   await page.reload();
   await expect(page.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);

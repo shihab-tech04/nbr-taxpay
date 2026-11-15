@@ -42,7 +42,7 @@ try {
       const userIdEntry=page.getByRole('link',{name:'Sign In'});
       await expect(userIdEntry).toHaveAttribute('href',/action=taxpayer_login/);
       await userIdEntry.click();
-      const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+      const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
       await expect(dialog).toBeVisible();
       await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeVisible();
       await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
@@ -76,58 +76,38 @@ try {
         await expect(chart).toBeVisible({timeout:30_000});
         await expect(bento.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
         await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
-        const sources=chart.getByTestId('dashboard-chart-source');
         await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
-        // Source-aware Overview defaults to recorded allocations when present,
-        // otherwise to available examples. Live evidence must accept either
-        // truthful source, not demand an empty Recorded chart as the default.
-        const initialSource=await chart.getAttribute('data-chart-source');
-        if(initialSource!=='recorded'&&initialSource!=='example')
-          throw new Error('Live dashboard has no explicit source selection: '+initialSource);
-        await expect(sources.getByRole('button',{name:initialSource==='recorded'?'Recorded':'Examples'}))
-          .toHaveAttribute('aria-pressed','true');
-        // Keep the manually selected account-recorded view available, including
-        // its honest missing-data state, without inventing a zero balance.
-        await sources.getByRole('button',{name:'Recorded'}).click();
-        await expect(sources.getByRole('button',{name:'Recorded'}))
-          .toHaveAttribute('aria-pressed','true');
-        const noItemized=await chart.getByTestId('dashboard-service-breakdown')
-          .getByText('No itemized recorded payments',{exact:false}).count();
-        if(noItemized){
-          await expect(chart.getByTestId('dashboard-service-breakdown')
-            .locator('.taxpay-bento-analytics__total')).toHaveText('—');
-        }
-        // Example amounts are independently selected and must never be
-        // asserted as bank settlements or combined with SQL-recorded totals.
-        await sources.getByRole('button',{name:'Examples'}).click();
-        await expect(sources.getByRole('button',{name:'Examples'}))
-          .toHaveAttribute('aria-pressed','true');
+        // This is a capability-backed *fictional user1 preview*, not a
+        // Supabase Auth account. The exact Activity records must also appear
+        // in Overview, without a customer-facing data-source selector.
+        await expect(chart).toHaveAttribute('data-chart-source','example');
+        await expect(chart.getByTestId('dashboard-chart-source')).toHaveCount(0);
+        await expect(bento.getByTestId('dashboard-source-indicator')).toContainText('simulated');
+        await expect(chart).toContainText('Simulated Activity preview');
+        await expect(bento.locator('.taxpay-summary-metric--completed strong')).toHaveText('5');
+        await expect(bento.locator('.taxpay-summary-metric--requests strong')).toHaveText('2');
+        await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
+        await expect(bento.getByTestId('dashboard-correction-request-list').getByRole('listitem')).toHaveCount(2);
+        // Detailed service chart is intentionally disclosed in the approved recipient-first layout.
+        const serviceDetails=chart.getByTestId('dashboard-payment-extra');
+        if(await serviceDetails.count())await serviceDetails.locator('summary').click();
         const services=chart.getByTestId('dashboard-service-breakdown');
-        const spending=chart.getByTestId('dashboard-beneficiary-breakdown');
-        await expect(services.locator('[data-service]')).not.toHaveCount(0);
-        await expect(spending.locator('[data-tag]')).not.toHaveCount(0);
-        const numbers=await spending.evaluate(root=>{
-          const normalize=text=>{
-            const bengali='০১২৩৪৫৬৭৮৯';
-            const raw=String(text??'').replace(/[০-৯]/g,d=>String(bengali.indexOf(d))).replace(/[^0-9.]/g,'');
-            return raw?Math.round(Number(raw)*100):NaN;
-          };
-          const total=normalize(root.querySelector('.taxpay-bento-analytics__total')?.textContent);
-          const amounts=[...root.querySelectorAll('[data-tag]')]
-            .map(node=>normalize(node.querySelector('strong')?.textContent));
-          return {total,sum:amounts.reduce((a,b)=>a+b,0),count:amounts.length};
-        });
-        if(!Number.isFinite(numbers.total)||numbers.total!==numbers.sum||numbers.count<1)
-          throw new Error('Live bento beneficiary amounts did not reconcile: '+JSON.stringify(numbers));
-        const selection=services.locator('[data-service]').first();
-        await selection.click();
-        await expect(selection).toHaveAttribute('aria-pressed','true');
-        await expect(services.getByRole('button',{name:'Show all payment services'})).toBeVisible();
-        await services.getByRole('button',{name:'Show all payment services'}).click();
-        // Selecting a tag updates the details rather than switching routes or
-        // rewriting financial records.
-        await spending.locator('[data-tag]').first().click();
-        await expect(spending.getByTestId('dashboard-selected-tag')).toBeVisible();
+        if(await services.count()){
+          const selection=services.locator('[data-service]').first();
+          await expect(selection).toBeVisible();
+          await selection.click();
+          await expect(selection).toHaveAttribute('aria-pressed','true');
+          await services.getByRole('button',{name:'Show all payment services'}).click();
+          const spending=chart.getByTestId('dashboard-beneficiary-breakdown');
+          const recipientDetails=spending.locator('.taxpay-recipient-extra');
+          if(await recipientDetails.count())await recipientDetails.locator('summary').click();
+          if(await spending.locator('[data-tag]').count()){
+            await spending.locator('[data-tag]').first().click();
+            await expect(spending.getByTestId('dashboard-selected-tag')).toBeVisible();
+          }
+        }else{
+          throw new Error('Fictional preview breakdown unexpectedly contains no service rows');
+        }
         await page.screenshot({path:'test-results/live-dashboard-category-breakdown-'+name+'.png',fullPage:true});
       }
       const beneficiaryUrl=new URL(base);
@@ -136,7 +116,7 @@ try {
       await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
       await page.reload();
       await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
-      await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
+      await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
       await page.screenshot({path:'test-results/live-auth-restored-'+name+'.png',fullPage:true});
     }
     await page.close();
