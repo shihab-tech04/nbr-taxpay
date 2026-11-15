@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import {
-  EXTERNAL_LEDGER_SOURCES,projectExternalLedgerEvents,
+  EXTERNAL_LEDGER_SOURCES,escapeLedgerCsvCell,projectExternalLedgerEvents,
   type ExternalCreditPosting,type ExternalPaymentRecord
 } from '../src/services/externalLedgerRecords';
 
@@ -87,4 +87,15 @@ test('SQL contract is private, explicitly read-only for taxpayers, and separates
   assert.match(sql,/revoke all on public\.taxpay_external_payment_records from public,anon,authenticated,service_role/);
   assert.match(sql,/owner_uid=\(select auth\.uid\(\)\)/);
   assert.doesNotMatch(sql,/grant (insert|update|delete).*to authenticated/i);
+});
+
+test('ledger CSV exports neutralize untrusted provider formulas but preserve exact financial numbers',()=>{
+  assert.equal(escapeLedgerCsvCell('=HYPERLINK("bad","open")'),'"\'=HYPERLINK(""bad"",""open"")"');
+  assert.equal(escapeLedgerCsvCell('  +SUM(1,2)'),'"\'  +SUM(1,2)"');
+  assert.equal(escapeLedgerCsvCell('\t@SUM(1,2)'),'"\'\t@SUM(1,2)"');
+  assert.equal(escapeLedgerCsvCell('-financial-reference'),'"\'-financial-reference"');
+  assert.equal(escapeLedgerCsvCell('safe-"reference"'),'"safe-""reference"""');
+  assert.equal(escapeLedgerCsvCell(-5001),'"-5001"');
+  assert.equal(escapeLedgerCsvCell(12501),'"12501"');
+  assert.equal(escapeLedgerCsvCell(null),'""');
 });
