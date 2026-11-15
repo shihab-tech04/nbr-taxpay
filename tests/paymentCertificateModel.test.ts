@@ -154,6 +154,8 @@ test('Travel Tax certificate refuses plaintext passports and unknown nationality
   assert.equal(altered(p=>{p.passportMasked='TEST123456'}),null);
   assert.equal(altered(p=>{p.passportMasked='••••'}),null);
   assert.equal(altered(p=>{p.passportMasked='••••XXXX1234'}),null);
+  assert.equal(altered(p=>{p.passportMasked='••••1\n23'}),null);
+  assert.equal(altered(p=>{p.passportMasked='••••3-45'})?.lines[0].passportMasked,'••••3-45');
   assert.equal(altered(p=>{p.nationality='UNKNOWN' as 'BD'}),null);
   assert.equal(buildPaymentCertificateModel({...src,travelDetails:{...src.travelDetails,
     passengers:[{...src.travelDetails.passengers[0],nationality:'FOREIGN' as const,country:''}]}}),null);
