@@ -68,7 +68,7 @@ test('switching draft owner invalidates a selected draft and ignores stale refre
   assert.match(ui, /const selectionScope = ownerKey \+ ':' \+ service/);
   assert.match(ui, /const selectedOwnerRef = useRef\(selectionScope\)/);
   assert.match(ui, /window\.addEventListener\('storage', onGuestStorage\)/);
-  assert.match(ui, /guestReadyOwnerKey !== ownerKey/);
+  assert.match(ui, /guestReadyOwnerKey !== renderScope/);
   assert.match(ui, /if \(rethrowFailure\) throw new Error\(bn[\s\S]*?Account changed during save/);
   assert.match(ui, /if \(rethrowFailure\) throw cause;/);
   assert.match(ui, /setGuestReadyOwnerKey\(renderScope\)/);
