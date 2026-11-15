@@ -1558,6 +1558,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
               </>}
               {otherBatch && forSelf === false && !signedInAccount && <p className="text-sm text-taxpay-muted">{language === 'bn' ? 'নিচের নাম রসিদে পরিশোধকারী হিসেবে থাকবে। করদাতার তথ্য পরে আলাদাভাবে খুঁজুন।' : 'The payer named here appears on the receipt; the taxpayer receiving the payment is selected separately.'}</p>}
+                {otherBatch && forSelf === false && !signedInAccount && <h3 className="text-sm font-semibold text-taxpay-text">{language === 'bn' ? 'রসিদের তথ্য' : 'Receipt details'}</h3>}
               {(!ownAccountTax || !isWithholdingMode) && <div className={`payment-identity__receipt-row${ownAccountTax ? " payment-identity__receipt-row--account" : ""}`}>
               {forSelf === false && !signedInAccount && <div>
                 <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{otherBatch ? (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} *</label>
@@ -1577,7 +1578,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </div>}
 
 
-                {otherBatch && forSelf === false && !signedInAccount && <h3 className="text-sm font-semibold text-taxpay-text">{language === 'bn' ? 'রসিদের তথ্য' : 'Receipt details'}</h3>}
                 {(!signedInAccount || !signedInProfile?.receiptMobile) && <div>
                 <label htmlFor="guest-phone" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'রসিদের জন্য মোবাইল নম্বর' : 'Mobile number for receipt'} *</label>
                 <input
