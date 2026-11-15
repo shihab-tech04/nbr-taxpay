@@ -41,7 +41,15 @@ test('user1-user55 selector filters, keyboard-selects, fills only QA credentials
   const input=dialog.getByRole('textbox',{name:'User ID'});
   await input.focus();
   await expect(input).toHaveAttribute('aria-expanded','true');
-  await expect(dialog.getByRole('listbox',{name:'Test accounts'}).getByRole('option')).toHaveCount(55);
+  const allAccounts=dialog.getByRole('listbox',{name:'Test accounts'});
+  await expect(allAccounts.getByRole('option')).toHaveCount(55);
+  // The first ArrowUp wraps to the final account and must scroll inside the
+  // list; a keyboard user should never lose sight of the active option.
+  await input.press('ArrowUp');
+  await expect(input).toHaveAttribute('aria-activedescendant','taxpayer-login-account-user55');
+  await expect.poll(()=>allAccounts.evaluate(element=>element.scrollTop)).toBeGreaterThan(0);
+  await input.press('ArrowDown');
+  await expect(input).toHaveAttribute('aria-activedescendant','taxpayer-login-account-user1');
   await input.fill('user55');
   const list=dialog.getByRole('listbox',{name:'Test accounts'});
   await expect(list.getByRole('option')).toHaveCount(1);
