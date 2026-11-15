@@ -108,7 +108,12 @@ export function reuseRecordedPayment(
           minor !== lineMinor || head.headId !== 155 + index ||
           head.economicCode !== trip.economicCode ||
           head.headNameEn !== 'Travel tax — ' + passenger.name ||
-          Math.round(head.taxAmount * 100) !== minor ||
+          // Travel Tax has no permitted hidden fees. Compare the saved tax
+          // exactly in minor units rather than rounding away fractional cents.
+          !Number.isFinite(head.taxAmount) ||
+          Math.abs(head.taxAmount * 100 - minor) > 0.000001 ||
+          head.penaltyAmount !== 0 || head.surchargeAmount !== 0 ||
+          head.interestAmount !== 0 ||
           !['ADULT','CHILD','UNDER5'].includes(passenger.ageBand) ||
           typeof passenger.name !== 'string' || !passenger.name.trim() ||
           !['BD','FOREIGN'].includes(passenger.nationality) ||
