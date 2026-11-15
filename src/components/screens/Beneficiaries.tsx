@@ -548,10 +548,16 @@ export function Beneficiaries(){
       </div>
     </header>
     {(owner||previewAccount)&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
-      <p className="text-sm text-taxpay-text">{tr('Saved beneficiaries from this browser can be added to your signed-in profile. Existing profile records will be kept.','এই ব্রাউজারে সংরক্ষিত উপকারভোগীদের আপনার প্রোফাইলে যোগ করা যাবে। প্রোফাইলের বিদ্যমান তথ্য অক্ষত থাকবে।')}</p>
+      <p className="text-sm text-taxpay-text">{tr('Earlier saved beneficiaries can be restored only if this browser's original guest session is still valid. Your current profile records will be kept.','এই ব্রাউজারের আগের অতিথি সেশন এখনও বৈধ থাকলেই সংরক্ষিত উপকারভোগী ফিরিয়ে আনা যাবে। প্রোফাইলের বর্তমান তথ্য অক্ষত থাকবে।')}</p>
       <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>
     </div>}
-    {recoveryError&&<p role="alert" className="text-sm text-red-800">{recoveryError}</p>}
+    {recoveryError&&<div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+      <p className="font-medium">{recoveryError}</p>
+      {/expired|unavailable|access key/i.test(recoveryError)&&<p className="mt-2">{tr(
+        'The original guest session has expired or is unavailable. Its access key is preserved; no records were deleted. Recovery needs a still-authorized original session or verified backup. You can continue managing your existing profile beneficiaries.',
+        'আগের অতিথি সেশনের মেয়াদ শেষ বা সেটি অনুপলব্ধ। অ্যাক্সেস কী সংরক্ষিত আছে; কোনো রেকর্ড মুছে ফেলা হয়নি। পুনরুদ্ধারে আগের বৈধ সেশন অথবা যাচাইকৃত ব্যাকআপ প্রয়োজন। বর্তমান প্রোফাইলের উপকারভোগী পরিচালনা চালিয়ে যেতে পারেন।'
+      )}</p>}
+    </div>}
     {preferenceError&&<p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-900">{preferenceError[bn?'bn':'en']}</p>}
     {notice&&<p role="status" aria-live="polite" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">{notice[bn?'bn':'en']}</p>}
 
