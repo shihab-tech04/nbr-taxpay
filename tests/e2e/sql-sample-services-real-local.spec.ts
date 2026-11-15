@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 const signIn = async (page: import('@playwright/test').Page, userId: string) => {
   await page.goto('/?action=taxpayer_login');
-  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await dialog.getByRole('textbox', { name: 'User ID' }).fill(userId);
   await dialog.getByLabel('Password', { exact: true }).fill(userId);
   await dialog.getByRole('button', { name: 'Sign In' }).click();
@@ -28,7 +28,8 @@ test('user6 sees stored advance-tax installments and matching SQL profile', asyn
   await expect(panel.getByText('Service records unavailable')).toHaveCount(0);
   await expect(page.getByText('Government challan: Not available')).toBeVisible();
   await page.goto('/?action=account_profile');
-  await expect(page.getByText('6666666666666', { exact: true })).toBeVisible();
+  await expect(page.getByText('666**********', { exact: true })).toBeVisible();
+  await expect(page.getByText('6666666666666', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Advance tax and instalment review')).toBeVisible();
 });
 
@@ -44,7 +45,8 @@ test('user8 begins with no saved activity or personal tax profile; user6 data st
   }
   await expect(panel.getByText('Service records unavailable')).toHaveCount(0);
   await page.goto('/?action=account_profile');
-  await expect(page.getByText('8888888888888', { exact: true })).toBeVisible();
+  await expect(page.getByText('888**********', { exact: true })).toBeVisible();
+  await expect(page.getByText('8888888888888', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Payment Exception 08')).toHaveCount(0);
   await expect(page.getByText('Account type')).toBeVisible();
 });
