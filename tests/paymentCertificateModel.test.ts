@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { ChallanReceipt } from '../src/types/tax';
-import { buildPaymentCertificateModel } from '../src/services/paymentCertificateModel';
+import { buildPaymentCertificateModel, canViewPaymentCertificate } from '../src/services/paymentCertificateModel';
 
 const parentId = '3f3a5de8-1f5b-45a4-8a76-87c53e72c001';
 const baseReceipt: ChallanReceipt = {
@@ -132,4 +132,14 @@ test('Travel Tax certificate keeps one parent and itemized passenger, route, pas
   ]);
   assert.equal(model.totalMinor, 150000);
   assert.equal(model.paymentReference.includes('SIM'), false);
+});
+
+
+test('saved payment certificate action is offered only for a completed, reconciled parent', () => {
+  assert.equal(canViewPaymentCertificate(baseReceipt), true);
+  assert.equal(canViewPaymentCertificate({ ...baseReceipt, treasuryStatus: 'TREASURY_SCROLLED' }), true);
+  assert.equal(canViewPaymentCertificate({ ...baseReceipt, completedAt: undefined }), false);
+  assert.equal(canViewPaymentCertificate({ ...baseReceipt, treasuryStatus: 'PENDING_RECONCILIATION' }), false);
+  assert.equal(canViewPaymentCertificate({ ...baseReceipt, paymentTransactionId: 'SIM-TOKEN-123' }), false);
+  assert.equal(canViewPaymentCertificate({ ...baseReceipt, totalAmount: 49 }), false);
 });
