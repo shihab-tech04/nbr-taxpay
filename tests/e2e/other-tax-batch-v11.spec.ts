@@ -85,20 +85,28 @@ async function revealMobileCalculation(dialog: import('@playwright/test').Locato
   }
 }
 
-test('M03: unmatched TIN cannot be confirmed, and an edited confirmation requires a fresh sample lookup', async ({ page }) => {
+test('M03: unmatched searched TIN can be explicitly added without identity verification; edits require a fresh search', async ({ page }) => {
   const dialog = await getFlow(page);
   const first = dialog.getByTestId('other-tax-primary-taxpayer');
   const tin = first.locator('#guest-tin');
   const continueAction = dialog.getByRole('button',{name:'Continue to purpose & amount'});
 
   await tin.fill('987654321098');
+  await expect(first.getByRole('button',{name:'Add taxpayer'})).toHaveCount(0);
   await first.getByRole('button',{name:'Search',exact:true}).click();
   await expect(first.getByText('TIN information not found.')).toBeVisible();
-  await expect(first.getByRole('button',{name:'Add taxpayer'})).toHaveCount(0);
+  await expect(first.getByTestId('taxpayer-unmatched-source')).toContainText('not a verified identity');
+  await expect(first.getByRole('button',{name:'Add taxpayer'})).toBeVisible();
   await expect(continueAction).toBeDisabled();
+  await first.getByRole('button',{name:'Add taxpayer'}).click();
+  await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('987654321098');
+  await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('Not provided');
 
+  await first.getByRole('button',{name:'Edit',exact:true}).click();
+  await expect(continueAction).toBeDisabled();
+  await expect(first.getByTestId('confirmed-taxpayer-card')).toHaveCount(0);
   await tin.fill('111111111111');
-  await expect(first.getByTestId('searched-taxpayer-card')).toHaveCount(0);
+  await expect(first.getByRole('button',{name:'Add taxpayer'})).toHaveCount(0);
   await first.getByRole('button',{name:'Search',exact:true}).click();
   await expect(first.getByTestId('searched-taxpayer-card')).toContainText('User 1');
   await expect(first.getByTestId('taxpayer-sample-source')).toContainText('not a verified NBR identity');
@@ -106,12 +114,12 @@ test('M03: unmatched TIN cannot be confirmed, and an edited confirmation require
   await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('111111111111');
 
   await first.getByRole('button',{name:'Edit',exact:true}).click();
-  await expect(continueAction).toBeDisabled();
-  await expect(first.getByTestId('confirmed-taxpayer-card')).toHaveCount(0);
   await tin.fill('987654321098');
-  await first.getByRole('button',{name:'Search',exact:true}).click();
   await expect(first.getByRole('button',{name:'Add taxpayer'})).toHaveCount(0);
+  await first.getByRole('button',{name:'Search',exact:true}).click();
+  await expect(first.getByRole('button',{name:'Add taxpayer'})).toBeVisible();
   await tin.fill('222222222222');
+  await expect(first.getByRole('button',{name:'Add taxpayer'})).toHaveCount(0);
   await first.getByRole('button',{name:'Search',exact:true}).click();
   await expect(first.getByTestId('searched-taxpayer-card')).toContainText('User 2');
   await first.getByRole('button',{name:'Add taxpayer'}).click();
