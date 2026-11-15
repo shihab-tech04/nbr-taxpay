@@ -34,7 +34,7 @@ function projectRecordedEvents(rows:readonly SimulationTransaction[],language:'e
       effectMinor:null,
       balanceAfterMinor:null,
       actor:'Not recorded',
-      source:'TaxPay payment event',
+      source:'Sohojkor payment event',
       taxEventId:undefined,
       paymentId:tx.transactionId,
       reference:tx.id,
@@ -53,7 +53,7 @@ function paymentRecord(tx:SimulationTransaction,language:'en'|'bn'):PaymentLifec
     financialReceiptStatus:'Not verified',taxCreditStatus:'Not verified',
     source:'TaxPay payment event',
     events:tx.events.map(e=>({id:String(e.id),title:e.action.replaceAll('_',' '),
-      occurredAt:e.occurredAt,source:'TaxPay SQL',note:e.note})),
+      occurredAt:e.occurredAt,source:'Sohojkor SQL',note:e.note})),
     allocations:tx.allocations.map(a=>({id:a.id,title:a.beneficiary+' · '+(simulationCategoryLabels[a.category]?.en||a.category),
       assessmentYear:a.assessmentYear,amountMinor:a.amountMinor}))
   };
