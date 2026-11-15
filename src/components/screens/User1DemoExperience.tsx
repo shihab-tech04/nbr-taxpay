@@ -182,7 +182,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     // Preserve explicit year navigation and the historical localhost QA fixture,
     // but open the real public overview on the current assessment year.
     return typeof initial==='string'&&/^20\d{2}-20\d{2}$/.test(initial)
-      ? initial : (localQaScenario?'2025-2026':'2026-2027');
+      ? initial : ((route==='taxpayer_home'||route==='dashboard')&&!localQaScenario?'2026-2027':'2025-2026');
   });
   const [overviewSourceChoice,setOverviewSourceChoice]=useState<{year:string;source:DashboardChartSource}|null>(null);
   const changeYear=(nextYear:string)=>{

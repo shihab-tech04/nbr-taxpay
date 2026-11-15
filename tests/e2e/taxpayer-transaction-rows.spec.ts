@@ -1,6 +1,6 @@
 import {expect,test} from '@playwright/test';
 
-const history='/?action=history&demoUser=user1&scenarioYear=2025-2026';
+const history='/?action=history&demoUser=user1';
 
 test('history uses one content panel and aligned, legible payment rows',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Representative desktop transaction layout');
@@ -103,7 +103,7 @@ test('history rows, filters and detail modal fit narrow screens',async({page},in
 test('signed-in Activity has no separate Track payment tab and legacy tracking links resolve to Transactions',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Navigation and account history regression');
   for(const language of ['en','bn'] as const){
-    await page.goto('/?action=history&demoUser=user1&trackPayment=true&scenarioYear=2025-2026&lang='+language);
+    await page.goto('/?action=history&demoUser=user1&trackPayment=true&lang='+language);
     await expect(page.getByRole('navigation',{name:language==='bn'?'লেনদেনের বিভাগ':'Activity sections'})).toBeVisible();
     await expect(page.getByRole('button',{name:'Track payment'})).toHaveCount(0);
     await expect(page.getByRole('button',{name:'পেমেন্ট অনুসন্ধান'})).toHaveCount(0);
