@@ -53,3 +53,5 @@ test('legacy fallback and V2 candidate form one deduplicated Office ledger',()=>
   assert.equal(reconcile([row,next],[row,next]).matched,2);
   assert.ok(reconcile([row,copy(row)],[row]).issues.some(i=>i.reason==='DUPLICATE'));
 });
+
+test('zero record populations are not reconciliation evidence',()=>{ assert.equal(reconcile([],[]).parityPassed,false); });
