@@ -33,3 +33,12 @@ test('draft entry blocks stale catalog even if parent mode is new',()=>{
   assert.match(source,/setResuming\(null\)/);
   assert.match(source,/setCatalog\(\{ ownerKey, generation: requestGeneration, status: 'loading'/);
 });
+
+test('payment modal hides and closes an old draft immediately after an established owner changes',()=>{
+  const source=chooser();
+  assert.match(source,/originalDraftOwnerRef = useRef<string \| null>\(draftOwnerKey \|\| null\)/);
+  assert.match(source,/if \(!originalDraftOwnerRef\.current && draftOwnerKey\) originalDraftOwnerRef\.current = draftOwnerKey/);
+  assert.match(source,/originalDraftOwnerRef\.current !== draftOwnerKey/);
+  assert.match(source,/if \(paymentOwnerChanged\) setPaymentServiceChoiceOpen\(false\)/);
+  assert.match(source,/if \(paymentOwnerChanged\) return null;\s*return \(\s*<TaxPayModal/);
+});
