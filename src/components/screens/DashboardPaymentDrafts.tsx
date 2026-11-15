@@ -5,7 +5,7 @@ import { useTaxState } from '../../services/taxState';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import {
   deletePaymentFormDraft, listPaymentFormDrafts,
-  type PaymentFormDraft, type PaymentDraftActor,
+  type PaymentFormDraft, type PaymentDraftActor, paymentDraftOwnerScope,
 } from '../../services/accountPaymentFormDrafts';
 import { assertResumablePaymentDraft } from './PaymentDraftEntryGate';
 
@@ -29,8 +29,7 @@ export const DashboardPaymentDrafts: React.FC<{
   const actor: PaymentDraftActor | null = user
     ? { kind: 'authenticated', userId: user.id }
     : previewAccount ? { kind: 'preview', profileId: previewAccount.id } : null;
-  const ownerKey = actor ? actor.kind + ':' +
-    (actor.kind === 'authenticated' ? actor.userId : actor.profileId) : '';
+  const ownerKey = paymentDraftOwnerScope(actor);
   // SQL readback can finish after sign-out, account switching or unmount.
   // Bind each action to the owner active at the time it started.
   const latestOwner = useRef(ownerKey);
