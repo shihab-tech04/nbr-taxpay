@@ -309,8 +309,8 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           <Field title={t('Effect on balance','ব্যালেন্সের প্রভাব')} value={selected.effectMinor===null?t('None confirmed','নিশ্চিত নয়'):money(selected.effectMinor,language)}/>
           <Field title={t('Actor','কার্যকারী')} value={selected.actor}/>
           <Field title={t('Source system','উৎস সিস্টেম')} value={selected.source}/>
-          <Field title={t('Dhara / section','ধারা')} value={selected.dhara||t('Not supplied','উৎসে নেই')}/>
-          <Field title={t('Tax credit evidence','কর ক্রেডিটের প্রমাণ')} value={selected.creditEvidenceStatus==='OFFICIAL_POSTING'?t('Separate official posting','স্বতন্ত্র সরকারি পোস্টিং'):t('Not verified by this record','এই রেকর্ডে যাচাই হয়নি')}/>
+          {selected.sourceCode&&<Field title={t('Dhara / section','ধারা')} value={selected.dhara||t('Not supplied','উৎসে নেই')}/>}
+          {selected.creditEvidenceStatus&&<Field title={t('Tax credit evidence','কর ক্রেডিটের প্রমাণ')} value={selected.creditEvidenceStatus==='OFFICIAL_POSTING'?t('Separate official posting','স্বতন্ত্র সরকারি পোস্টিং'):t('Not verified by this record','এই রেকর্ডে যাচাই হয়নি')}/>}
           <Field title={t('Year · component','বর্ষ · খাত')} value={selected.assessmentYear+' · '+selected.component}/>
           <Field title={t('Amount','পরিমাণ')} value={selected.amountMinor===null?'—':money(selected.amountMinor,language)}/>
           <Field title={t('Payment transaction','পেমেন্ট লেনদেন')} value={selected.paymentId||unavailable(language)}/>
