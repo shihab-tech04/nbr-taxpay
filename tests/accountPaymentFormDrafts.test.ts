@@ -68,10 +68,10 @@ test('switching draft owner invalidates a selected draft and ignores stale refre
   assert.match(ui, /const selectionScope = ownerKey \+ ':' \+ service/);
   assert.match(ui, /const selectedOwnerRef = useRef\(selectionScope\)/);
   assert.match(ui, /window\.addEventListener\('storage', onGuestStorage\)/);
-  assert.match(ui, /guestReadyOwnerKey !== ownerKey/);
+  assert.match(ui, /guestReadyOwnerKey !== renderScope/);
   assert.match(ui, /if \(rethrowFailure\) throw new Error\(bn[\s\S]*?Account changed during save/);
   assert.match(ui, /if \(rethrowFailure\) throw cause;/);
-  assert.match(ui, /setGuestReadyOwnerKey\(ownerKey\)/);
+  assert.match(ui, /setGuestReadyOwnerKey\(renderScope\)/);
   assert.match(ui, /window\.removeEventListener\('storage', onGuestStorage\)/);
   assert.match(ui, /if \(paymentDraftOwnerScope\(\{kind:'guest'\}\) !== ownerKey\)/);
   assert.match(ui, /selectedOwnerRef\.current === selectionScope \? selectedDraft : null/);
@@ -103,4 +103,38 @@ test('authenticated draft catalog paginates every owner-scoped assessment-year r
   assert.match(api, /if \(data\.length < pageSize\) return rows/);
   assert.match(api, /throw new Error\('Saved draft list exceeds the supported retrieval limit/);
   assert.doesNotMatch(api, /\.limit\(100\)/);
+});
+
+test('new same-tab guest capability invalidates a mounted payment draft owner without revealing the token',()=>{
+  const guest=read('src/services/guestBeneficiaries.ts');
+  const controls=read('src/components/ui/AccountPaymentDraftControls.tsx');
+  assert.match(guest,/export const GUEST_DRAFT_OWNER_CHANGED_EVENT = 'taxpay-guest-draft-owner-changed'/);
+  assert.match(guest,/storage\.setItem\(capabilityKey, created\)/);
+  assert.match(guest,/window\.dispatchEvent\(new Event\(GUEST_DRAFT_OWNER_CHANGED_EVENT\)\)/);
+  assert.match(controls,/import \{ GUEST_DRAFT_OWNER_CHANGED_EVENT \} from '\.\.\/\.\.\/services\/guestBeneficiaries'/);
+  assert.match(controls,/window\.addEventListener\(GUEST_DRAFT_OWNER_CHANGED_EVENT, onGuestStorage\)/);
+  assert.match(controls,/window\.removeEventListener\(GUEST_DRAFT_OWNER_CHANGED_EVENT, onGuestStorage\)/);
+  assert.match(controls,/paymentDraftOwnerScope\(\{kind:'guest'\}\) !== ownerKey/);
+  assert.doesNotMatch(guest,/new CustomEvent\(GUEST_DRAFT_OWNER_CHANGED_EVENT,[^\n]*detail/);
+});
+
+test('switching payment service under one owner cannot display drafts from the previous service',()=>{
+  const ui=read('src/components/ui/AccountPaymentDraftControls.tsx');
+  assert.match(ui,/const selectionScope = ownerKey \+ ':' \+ service/);
+  assert.match(ui,/const visibleRows = rowsOwnerKey === renderScope \? rows : \[\]/);
+  assert.match(ui,/setRowsOwnerKey\(renderScope\)/);
+  assert.doesNotMatch(ui,/setRowsOwnerKey\(ownerKey\)/);
+  assert.doesNotMatch(ui,/rowsOwnerKey === ownerKey \? rows : \[\]/);
+});
+
+test('A to B to A draft catalog and guest readiness reject stale owner generations',()=>{
+  const ui=read('src/components/ui/AccountPaymentDraftControls.tsx');
+  assert.match(ui,/const renderScope = selectionScope \+ ':' \+ requestGeneration/);
+  assert.match(ui,/const visibleRows = rowsOwnerKey === renderScope \? rows : \[\]/);
+  assert.match(ui,/if \(active && ownerStillCurrent\(\)\) \{\s*setRows\(result\)/);
+  assert.match(ui,/if \(active && ownerStillCurrent\(\) && actor\.kind !== 'guest'\)/);
+  assert.match(ui,/if \(active && ownerStillCurrent\(\)\) setLoading\(false\)/);
+  assert.match(ui,/setGuestReadyOwnerKey\(renderScope\)/);
+  assert.match(ui,/guestReadyOwnerKey !== renderScope/);
+  assert.match(ui,/\}, \[ownerKey, service, requestGeneration\]\)/);
 });
