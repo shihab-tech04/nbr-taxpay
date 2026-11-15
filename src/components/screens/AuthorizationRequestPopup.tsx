@@ -81,7 +81,9 @@ export function AuthorizationRequestPopup(){
   },[actor,dismissedReceived,receivedBusy]);
 
   // Guard synchronously during a profile switch, before the reset effect runs.
-  const visibleReceived=receivedOwner===actor?received:null;
+  // A recipient who opened the correction/report form must not be covered by
+  // the same unread notice modal while entering the request.
+  const visibleReceived=receivedOwner===actor&&currentRoute!=='corrections'?received:null;
   const visibleIncoming=incoming?.taxpayerId===actor?incoming:null;
   const dismissReceived=()=>{
     if(!visibleReceived||receivedBusy)return;
