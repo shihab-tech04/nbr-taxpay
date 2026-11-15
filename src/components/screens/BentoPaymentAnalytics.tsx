@@ -32,12 +32,13 @@ export const BentoPaymentAnalytics:React.FC<{
   language:'en'|'bn';
   sourceLoadError?:boolean;
   allowExamples?:boolean;
+  previewOnlyExamples?:boolean;
   selectedSource?:DashboardChartSource;
   onSourceChange?:(source:DashboardChartSource)=>void;
   onManageBeneficiaries?:()=>void;
   onOpenBeneficiary?:(tin:string)=>void;
   onOpenHistory:(tag?:DashboardChartTag,service?:DashboardChartService|'all',recipientTin?:string)=>void;
-}>=({records,people,year,ownerTin,language,sourceLoadError,allowExamples=false,selectedSource,onSourceChange,onManageBeneficiaries,onOpenBeneficiary,onOpenHistory})=>{
+}>=({records,people,year,ownerTin,language,sourceLoadError,allowExamples=false,previewOnlyExamples=false,selectedSource,onSourceChange,onManageBeneficiaries,onOpenBeneficiary,onOpenHistory})=>{
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   // The signed-in overview has one trustworthy source: the account's recorded
@@ -47,11 +48,13 @@ export const BentoPaymentAnalytics:React.FC<{
   const [tag,setTag]=useState<DashboardChartTag|null>(null);
   const [beneficiaryView,setBeneficiaryView]=useState<'relationships'|'tags'|'top'>('relationships');
   const recorded=projectDashboardChartRecords(records,year,'recorded',people,ownerTin);
-  const examples=allowExamples?projectDashboardChartRecords(records,year,'example',people,ownerTin):null;
-  const defaultSource=allowExamples?chooseDashboardChartSource(records,year,people,ownerTin):'recorded';
-  const source:DashboardChartSource=allowExamples?(selectedSource??(sourceChoice?.year===year?sourceChoice.source:defaultSource)):'recorded';
+  const examples=(allowExamples||previewOnlyExamples)?projectDashboardChartRecords(records,year,'example',people,ownerTin):null;
+  const defaultSource=previewOnlyExamples?'example':allowExamples
+    ?chooseDashboardChartSource(records,year,people,ownerTin):'recorded';
+  const source:DashboardChartSource=previewOnlyExamples?'example':allowExamples
+    ?(selectedSource??(sourceChoice?.year===year?sourceChoice.source:defaultSource)):'recorded';
   const selectSource=(next:DashboardChartSource)=>{
-    if(!allowExamples)return;
+    if(!allowExamples||previewOnlyExamples)return;
     if(onSourceChange)onSourceChange(next);
     else setSourceChoice({year,source:next});
     setService('all');setTag(null);
@@ -78,7 +81,7 @@ export const BentoPaymentAnalytics:React.FC<{
   const maskedTin=(tin:string)=>'••••'+tin.slice(-4);
   // A missing account projection must not turn into a fictional dashboard.
   // Keep its next step visible rather than rendering four empty giant cards.
-  if(!hasData&&!allowExamples)return <section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
+  if(!hasData&&!allowExamples&&!previewOnlyExamples)return <section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
     data-testid="dashboard-payment-analytics" data-chart-source="recorded" data-empty="true">
     <div className="taxpay-bento-analytics__header">
       <div>
@@ -104,12 +107,15 @@ export const BentoPaymentAnalytics:React.FC<{
       <div>
         <h2 id="dashboard-payment-analytics-title">{tr('Payment breakdown','পেমেন্টের বিস্তারিত')}</h2>
         <p>{source==='example'
-          ?tr('Local QA scenario only — not saved account payments.',
-            'শুধু স্থানীয় পরীক্ষার নমুনা — অ্যাকাউন্টে সংরক্ষিত পেমেন্ট নয়।')
+          ?(previewOnlyExamples
+            ?tr('Simulated Activity preview — not real payments, Treasury settlements or tax credits.',
+              'কার্যক্রমের সিমুলেটেড প্রিভিউ — প্রকৃত পেমেন্ট, ট্রেজারি নিষ্পত্তি বা কর ক্রেডিট নয়।')
+            :tr('Local QA scenario only — not saved account payments.',
+              'শুধু স্থানীয় পরীক্ষার নমুনা — অ্যাকাউন্টে সংরক্ষিত পেমেন্ট নয়।'))
           :tr('Account-linked allocations for the selected assessment year. Not official tax credits.',
             'নির্বাচিত করবর্ষে অ্যাকাউন্টের বরাদ্দ তথ্য। সরকারি কর ক্রেডিট নয়।')}</p>
       </div>
-      {allowExamples&&<div className="taxpay-bento-analytics__sources" role="group"
+      {allowExamples&&!previewOnlyExamples&&<div className="taxpay-bento-analytics__sources" role="group"
         aria-label={tr('Payment data source','পেমেন্ট তথ্যের উৎস')} data-testid="dashboard-chart-source">
         <button type="button" aria-pressed={source==='recorded'} onClick={()=>selectSource('recorded')}>
           {tr('Recorded','সংরক্ষিত')}

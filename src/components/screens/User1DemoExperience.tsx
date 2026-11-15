@@ -107,10 +107,14 @@ export { user1DemoRoutes } from '../../config/user1DemoRoutes';
 export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;onResumePaymentDraft?: (draft:PaymentFormDraft)=>void}>=({route,activityTabs=false,onResumePaymentDraft})=>{
   const {navigate,language,setLanguage,routeParams,openPaymentServiceChoice,previewAccount,startPaymentReuse}=useTaxState();
   const bn=language==='bn';
-  // These historical fictional scenarios are available only on localhost and
-  // only with an explicit QA flag. Production must never fall back to them.
+  // The legacy localhost QA flag retains the test-only source comparison.
+  // Production preview requires a current fictional profile session and never
+  // substitutes these records for a real authenticated taxpayer account.
   const localQaScenario=['localhost','127.0.0.1'].includes(window.location.hostname)&&
     new URLSearchParams(window.location.search).get('qaScenario')==='1';
+  // A server-issued preview session selects fictional user1 Activity records only.
+  // Real Supabase accounts are routed elsewhere and never inherit these figures.
+  const authorizedPreviewScenario=previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1';
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [savedTagPeople,setSavedTagPeople]=useState<Beneficiary[]>([]);
@@ -179,10 +183,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     ?tr('My tax','নিজের কর'):paymentTagGroupLabels[group][language];
   const [year,setYear]=useState<string>(()=>{
     const initial=new URLSearchParams(window.location.search).get('scenarioYear');
-    // Preserve explicit year navigation and the historical localhost QA fixture,
-    // but open the real public overview on the current assessment year.
+    // Preserve explicit year navigation. Preview Activity and Overview both
+    // open the historical fictional year; other views keep their current year.
     return typeof initial==='string'&&/^20\d{2}-20\d{2}$/.test(initial)
-      ? initial : ((route==='taxpayer_home'||route==='dashboard')&&!localQaScenario?'2026-2027':'2025-2026');
+      ? initial : ((route==='taxpayer_home'||route==='dashboard')&&!localQaScenario&&!authorizedPreviewScenario?'2026-2027':'2025-2026');
   });
   const [overviewSourceChoice,setOverviewSourceChoice]=useState<{year:string;source:DashboardChartSource}|null>(null);
   const changeYear=(nextYear:string)=>{
@@ -327,17 +331,18 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     applied:0,outstanding:0,pending:0,failed:0,disputed:0,posted:0};
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
   const historyScoped=useMemo(()=>[...scoped,...sqlRows.filter(row=>row.years?.includes(year))],[scoped,sqlRows,year]);
-  // One assessment-year/source selection drives KPIs, recent activity and charts.
-  // Do not merge example events with owner-session SQL payments.
-  // Customer Overview is account-only. Local, explicitly opted-in QA scenarios
-  // retain the historical fixture projections for deterministic browser tests.
-  const dashboardChartRecords=useMemo(()=>localQaScenario?[...events,...sqlRows]:[...sqlRows],[sqlRows,localQaScenario]);
+  // Activity and preview Overview use the same fictional, year-scoped events.
+  // The production preview is always explicitly labeled as simulated; it never
+  // falls back to SQL on a missing fixture, or mixes its totals with SQL amounts.
+  // Local QA retains its existing source switch for regression coverage.
+  const dashboardChartRecords=useMemo(()=>authorizedPreviewScenario||localQaScenario?[...events,...sqlRows]:[...sqlRows],
+    [sqlRows,authorizedPreviewScenario,localQaScenario]);
   const defaultOverviewSource=localQaScenario
     ?chooseDashboardChartSource(dashboardChartRecords,year,savedTagPeople,DEMO_USERS.user1.tin)
-    :'recorded';
+    :authorizedPreviewScenario?'example':'recorded';
   const overviewSource=(localQaScenario
     ?(overviewSourceChoice?.year===year?overviewSourceChoice.source:defaultOverviewSource)
-    :'recorded') as DashboardChartSource;
+    :authorizedPreviewScenario?'example':'recorded') as DashboardChartSource;
   const overviewCompletedRows=overviewSource==='recorded'
     ?sqlRows.filter(item=>item.state==='POSTED'&&item.years?.includes(year))
     :scoped.filter(item=>item.state==='POSTED'&&['income','ait','travel'].includes(item.kind));
@@ -549,7 +554,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   // task-first bento. This never promotes synthetic events into real payments.
   const hasItemizedAccountAllocations=projectDashboardChartRecords(
     dashboardChartRecords,year,'recorded',savedTagPeople,DEMO_USERS.user1.tin).totalMinor>0n;
-  const compactEmptyOverview=!localQaScenario&&!hasItemizedAccountAllocations&&Boolean(onResumePaymentDraft);
+  const compactEmptyOverview=overviewSource==='recorded'&&!localQaScenario&&!hasItemizedAccountAllocations&&Boolean(onResumePaymentDraft);
   const correctionRequests=overviewSource==='example'
     ?scoped.filter(x=>x.state==='REQUESTED'&&(x.kind==='refund'||x.kind==='adjustment')):[];
   // There is no owner-verified correction source in this preview SQL projection.
@@ -616,12 +621,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         <h2 className="text-base font-semibold">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h2>
         <p className="mt-1 text-xs text-taxpay-muted" data-testid="dashboard-source-indicator">
           {overviewSource==='example'
-            ?tr('Example activity — not saved account payments','উদাহরণভিত্তিক কার্যক্রম — সংরক্ষিত অ্যাকাউন্ট পেমেন্ট নয়')
+            ?tr('Example activity (simulated) — not real payments or tax credits','উদাহরণভিত্তিক কার্যক্রম (সিমুলেশন) — প্রকৃত পেমেন্ট বা কর ক্রেডিট নয়')
             :tr('Payments linked to this session','এই সেশনের সঙ্গে যুক্ত পেমেন্ট')}
         </p>
         <div className="taxpay-bento-hero__status">
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--completed" onClick={openOverviewPayments}>
-            <span className="taxpay-summary-metric__label"><FileCheck2 size={17} aria-hidden="true"/>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong>{sqlLoadError?'—':completedPayments}</strong>
+            <span className="taxpay-summary-metric__label"><FileCheck2 size={17} aria-hidden="true"/>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong>{overviewSource==='recorded'&&sqlLoadError?'—':completedPayments}</strong>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--drafts" onClick={openSavedDrafts}
             aria-expanded={draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0)}>
@@ -690,8 +695,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           </div>
         </li>)}
       </ul>
-      {!overviewCompletedRows.length&&!sqlLoadError&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('No completed payment activity for the selected assessment year.','নির্বাচিত করবর্ষে সম্পন্ন পেমেন্ট নেই।')}</p>}
-      {sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-linked payment records could not be loaded. No example activity is included in this overview.','অ্যাকাউন্টের পেমেন্ট রেকর্ড লোড হয়নি। এই বিবরণে কোনো নমুনা কার্যক্রম যুক্ত করা হয়নি।')}</p>}
+      {!overviewCompletedRows.length&&!(overviewSource==='recorded'&&sqlLoadError)&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('No completed payment activity for the selected assessment year.','নির্বাচিত করবর্ষে সম্পন্ন পেমেন্ট নেই।')}</p>}
+      {overviewSource==='recorded'&&sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-linked payment records could not be loaded. No example activity is included in this overview.','অ্যাকাউন্টের পেমেন্ট রেকর্ড লোড হয়নি। এই বিবরণে কোনো নমুনা কার্যক্রম যুক্ত করা হয়নি।')}</p>}
     </section>
     </div>
     <BentoPaymentAnalytics
@@ -700,8 +705,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       year={year}
       ownerTin={DEMO_USERS.user1.tin}
       language={language}
-      sourceLoadError={sqlLoadError}
+      sourceLoadError={overviewSource==='recorded'&&sqlLoadError}
       allowExamples={localQaScenario}
+      previewOnlyExamples={authorizedPreviewScenario&&!localQaScenario}
       selectedSource={overviewSource}
       onSourceChange={source=>{if(localQaScenario)setOverviewSourceChoice({year,source});}}
       onManageBeneficiaries={()=>navigate('beneficiaries')}
