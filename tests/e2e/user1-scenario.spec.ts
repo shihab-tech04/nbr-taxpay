@@ -68,7 +68,7 @@ test('user1 exceptions, profile and notifications are correlated but not governm
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
   await page.goto('/?action=account_profile&demoUser=user1');
-  await expect(page.getByTestId('user1-profile-tin')).toHaveText('*********798');
+  await expect(page.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await expect(page.getByText('Taxpayer status')).toBeVisible();
   await expect(page.getByTestId('user1-taxpayer-profile').getByText('Individual',{exact:true}).first()).toBeVisible();
 });
@@ -147,7 +147,7 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile).toBeVisible();
   await expect(content).toBeVisible();
   await expect(profile.getByRole('heading',{name:'Md. Arif Rahman'})).toBeVisible();
-  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('*********798');
+  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await expect(profile.getByRole('tab')).toHaveCount(0);
   // All 24 source fields appear exactly once: name/TIN in the identity, the
   // approved four-field summary, and the remaining fields in their sections.
@@ -245,8 +245,8 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(content).toContainText('3/4 Purana Paltan');
   await expect(content).toContainText('em***@****.***');
   await expect(content).not.toContainText('email@test.com');
-  await expect(content).toContainText('+**********765');
-  await expect(content).toContainText('**-****253');
+  await expect(content).toContainText('+880**********');
+  await expect(content).toContainText('02-9******');
   await expect(profile.getByText(/Fictional sample profile|Sample TIN|Not an NBR-issued TIN/i)).toHaveCount(0);
   await expect(profile.getByText('Not available',{exact:true})).toHaveCount(0);
   // Full values never appear on screen until an individual, accessible Show action.
@@ -255,7 +255,7 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577935451798');
   await expect(content).not.toContainText('email@test.com');
   await profile.getByRole('button',{name:'Hide TIN'}).click();
-  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('*********798');
+  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await profile.getByRole('button',{name:'Show Mobile number'}).click();
   await expect(content).toContainText('+8801857648765');
   await expect(content).not.toContainText('email@test.com');
@@ -290,7 +290,7 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await copyButton.click();
   await expect(profile.getByRole('button',{name:'Copied TIN'})).toBeVisible();
   expect(await page.evaluate(()=>(window as typeof window & {__lastCopiedTin?:string}).__lastCopiedTin)).toBe('577935451798');
-  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('*********798');
+  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await expect(profile.getByRole('button',{name:'Download profile'})).toBeVisible();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   if(await rail.isVisible())await expect(rail.getByRole('button',{name:'Activity',exact:true})).toBeVisible();
@@ -322,7 +322,7 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   expect(bnKeys).toEqual(rendered);
   await expect(bn.getByText('সনদ ইস্যুর তারিখ')).toHaveCount(1);
   await expect(page.getByTestId('user1-profile-summary').getByText('সর্বশেষ লগইন')).toHaveCount(1);
-  await expect(page.getByTestId('user1-profile-tin')).toHaveText('*********798');
+  await expect(page.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await expect(page.getByRole('button',{name:'টিআইএন দেখান'})).toBeVisible();
   await expect(page.getByRole('button',{name:'টিআইএন কপি করুন'})).toBeVisible();
   await expect(bn.getByRole('button',{name:'মোবাইল নম্বর দেখান'})).toBeVisible();
