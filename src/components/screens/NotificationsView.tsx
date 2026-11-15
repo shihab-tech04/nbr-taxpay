@@ -38,10 +38,23 @@ export const NotificationsView:React.FC=()=>{
   const [guestError,setGuestError]=useState('');
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(true);
-  const [authorizationNotices,setAuthorizationNotices]=useState<HostedAuthorization[]>([]);
-  const [authorizationError,setAuthorizationError]=useState('');
-  const [previewPaymentEvents,setPreviewPaymentEvents]=useState<DemoSimulationActivity[]>([]);
-  const [previewPaymentError,setPreviewPaymentError]=useState('');
+  // Bind each preview response to the precise account that requested it.
+  // Do not render the previous account's notices or amounts while the next
+  // account is loading; effects run after render and cannot clear them in time.
+  const [authorizationResult,setAuthorizationResult]=useState<{
+    owner:string;notices:HostedAuthorization[];error:string;
+  }|null>(null);
+  const [previewPaymentResult,setPreviewPaymentResult]=useState<{
+    owner:string;events:DemoSimulationActivity[];error:string;
+  }|null>(null);
+  const authorizationNotices=previewAccount && authorizationResult?.owner===previewAccount.id
+    ?authorizationResult.notices:[];
+  const authorizationError=previewAccount && authorizationResult?.owner===previewAccount.id
+    ?authorizationResult.error:'';
+  const previewPaymentEvents=previewAccount && previewPaymentResult?.owner===previewAccount.id
+    ?previewPaymentResult.events:[];
+  const previewPaymentError=previewAccount && previewPaymentResult?.owner===previewAccount.id
+    ?previewPaymentResult.error:'';
   const [authorizationSearch,setAuthorizationSearch]=useState('');
   const [authorizationFilter,setAuthorizationFilter]=useState('all');
   const [paymentSearch,setPaymentSearch]=useState('');
@@ -63,28 +76,35 @@ export const NotificationsView:React.FC=()=>{
     return copy?label(...copy):state.replaceAll('_',' ').toLowerCase();
   };
   useEffect(()=>{
-    if(!previewAccount){setAuthorizationNotices([]);return;}
+    if(!previewAccount){setAuthorizationResult(null);return;}
     let active=true;
+    const owner=previewAccount.id;
     const refresh=async()=>{
-      try{const records=await getHostedAuthorizations(previewAccount.id);
-        if(active){setAuthorizationNotices(records);setAuthorizationError('');}}
-      catch(e){if(active)setAuthorizationError(e instanceof Error?e.message:'Could not load authorization notices');}
+      try{const records=await getHostedAuthorizations(owner);
+        if(active)setAuthorizationResult({owner,notices:records,error:''});}
+      catch(e){if(active)setAuthorizationResult(current=>({
+        owner,notices:current?.owner===owner?current.notices:[],
+        error:e instanceof Error?e.message:'Could not load authorization notices',
+      }));}
     };
     void refresh();const timer=window.setInterval(()=>void refresh(),5000);
     return()=>{active=false;window.clearInterval(timer);};
   },[previewAccount?.id]);
   useEffect(()=>{
-    if(!previewAccount){setPreviewPaymentEvents([]);setPreviewPaymentError('');return;}
+    if(!previewAccount){setPreviewPaymentResult(null);return;}
     let active=true;
+    const owner=previewAccount.id;
     const refresh=async()=>{
       try{
         const [payerRows,beneficiaryRows]=await Promise.all([
-          getDemoStoryPaymentHistory(previewAccount.id,'payer'),
-          getDemoStoryPaymentHistory(previewAccount.id,'beneficiary'),
+          getDemoStoryPaymentHistory(owner,'payer'),
+          getDemoStoryPaymentHistory(owner,'beneficiary'),
         ]);
-        const records=reconcileDemoSimulationActivity(previewAccount.id,payerRows,beneficiaryRows);
-        if(active){setPreviewPaymentEvents(records);setPreviewPaymentError('');}
-      }catch(e){if(active){setPreviewPaymentEvents([]);setPreviewPaymentError(e instanceof Error?e.message:'Payment updates unavailable');}}
+        const records=reconcileDemoSimulationActivity(owner,payerRows,beneficiaryRows);
+        if(active)setPreviewPaymentResult({owner,events:records,error:''});
+      }catch(e){if(active)setPreviewPaymentResult({
+        owner,events:[],error:e instanceof Error?e.message:'Payment updates unavailable',
+      });}
     };
     void refresh();const timer=window.setInterval(()=>void refresh(),7000);
     return()=>{active=false;window.clearInterval(timer);};
