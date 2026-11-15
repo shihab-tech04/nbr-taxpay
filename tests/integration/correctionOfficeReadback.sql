@@ -646,6 +646,67 @@ BEGIN
 END;
 $unsolicited_outbox$;
 
+-- F-093: a recipient who is not the payer can request review of only the
+-- allocation whose TIN is bound to their already verified account.
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000002',true);
+DO $recipient_allocation_entitlement$
+DECLARE v_id uuid;v_parent uuid;v_target text;
+BEGIN
+  INSERT INTO public.taxpay_correction_inquiries(
+    requester_uid,original_reference,reason,requested_outcome,target_allocation_id
+  ) VALUES(
+    '80000000-0000-4000-8000-000000000002','SYN-REF-003',
+    'Recipient correction request for a distinct verified allocation',
+    'Review only my allocation, not the other taxpayer allocation',
+    'ws3-verified-other-recipient'
+  ) RETURNING inquiry_id,original_payment_id,target_allocation_id
+    INTO v_id,v_parent,v_target;
+  IF v_parent IS DISTINCT FROM '80000000-0000-4000-8000-000000000041'::uuid
+     OR v_target IS DISTINCT FROM 'ws3-verified-other-recipient'
+  THEN RAISE EXCEPTION 'RECIPIENT_EXACT_SOURCE_ALLOCATION_NOT_BOUND'; END IF;
+  BEGIN
+    INSERT INTO public.taxpay_correction_inquiries(
+      requester_uid,original_reference,reason,requested_outcome,target_allocation_id
+    ) VALUES(
+      '80000000-0000-4000-8000-000000000002','SYN-REF-003',
+      'Unrelated allocation must remain unavailable','Reject different recipient',
+      'ws3-parent-owner-line'
+    );
+    RAISE EXCEPTION 'TEST_UNRELATED_ALLOCATION_ACCEPTED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM='TEST_UNRELATED_ALLOCATION_ACCEPTED' THEN RAISE; END IF;
+    IF SQLERRM NOT LIKE '%CORRECTION_ORIGINAL_PAYMENT_NOT_LINKED%' THEN RAISE; END IF;
+  END;
+  BEGIN
+    INSERT INTO public.taxpay_correction_inquiries(
+      requester_uid,original_reference,reason,requested_outcome
+    ) VALUES(
+      '80000000-0000-4000-8000-000000000002','SYN-REF-003',
+      'Reference-only attempt','Must specify exactly my allocation'
+    );
+    RAISE EXCEPTION 'TEST_UNSCOPED_BENEFICIARY_ACCEPTED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM='TEST_UNSCOPED_BENEFICIARY_ACCEPTED' THEN RAISE; END IF;
+    IF SQLERRM NOT LIKE '%CORRECTION_ORIGINAL_PAYMENT_NOT_LINKED%' THEN RAISE; END IF;
+  END;
+END;
+$recipient_allocation_entitlement$;
+RESET ROLE;
+DO $recipient_outbox$
+DECLARE v_payload jsonb;
+BEGIN
+  SELECT o.event_payload INTO v_payload FROM payment_sync.correction_outbox o
+  JOIN public.taxpay_correction_inquiries i ON i.inquiry_id=o.inquiry_id
+  WHERE i.reason='Recipient correction request for a distinct verified allocation';
+  IF v_payload->>'targetAllocationId' IS DISTINCT FROM 'ws3-verified-other-recipient'
+     OR v_payload->>'originalPaymentId' IS DISTINCT FROM
+       '80000000-0000-4000-8000-000000000041'
+     OR v_payload ? 'taxpayerTin' OR v_payload ? 'requesterUid'
+  THEN RAISE EXCEPTION 'RECIPIENT_OUTBOX_PROVENANCE_OR_PRIVACY_REGRESSION'; END IF;
+END;
+$recipient_outbox$;
+
 DO $financial_unchanged$
 DECLARE v_relation regclass; v_name text; v_count bigint; v_digest text; v_expected record;
 BEGIN
