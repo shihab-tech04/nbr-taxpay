@@ -715,18 +715,28 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <div className="taxpay-bento-tasks__heading">
         <h2>{tr('Follow-ups','পরবর্তী করণীয়')}</h2>
         <div className="taxpay-bento-tasks__tabs" role="group" aria-label={tr('Follow-up type','পরবর্তী করণীয়ের ধরন')}>
-          <button type="button" aria-pressed={followupTab==='drafts'} onClick={()=>setFollowupTab('drafts')}>
+          <button type="button" aria-controls="taxpayer-dashboard-draft-section" aria-pressed={followupTab==='drafts'} onClick={()=>setFollowupTab('drafts')}>
             {tr('Drafts','খসড়া')} <span>{savedDraftCount===null?'—':savedDraftCount}</span>
           </button>
-          <button type="button" aria-pressed={followupTab==='requests'} onClick={()=>setFollowupTab('requests')}>
+          <button type="button" aria-controls="dashboard-correction-requests" aria-pressed={followupTab==='requests'} onClick={()=>setFollowupTab('requests')}>
             {tr('Requests','আবেদন')} <span>{correctionRequestCount===null?'—':correctionRequestCount}</span>
           </button>
         </div>
       </div>
-    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1} hidden={followupTab!=='drafts'}>
-      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
-        onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
-    </div>}
+    <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1} hidden={followupTab!=='drafts'}>
+      {onResumePaymentDraft
+        ? <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
+            onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
+        : <section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts"
+            aria-labelledby="dashboard-payment-drafts-title" className={panel}>
+            <h2 id="dashboard-payment-drafts-title" className="text-lg font-semibold text-taxpay-text">
+              {tr('Saved payment drafts','সংরক্ষিত পেমেন্ট খসড়া')}
+            </h2>
+            <p className="mt-2 text-sm text-taxpay-muted" role="status">
+              {tr('Draft actions are unavailable in this view.','এই দৃশ্যে খসড়ার কাজ পাওয়া যাচ্ছে না।')}
+            </p>
+          </section>}
+    </div>
     <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} hidden={followupTab!=='requests'} aria-labelledby="dashboard-correction-requests-title">
       <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
       <p className="mt-2 text-sm text-taxpay-muted">{overviewSource==='example'
