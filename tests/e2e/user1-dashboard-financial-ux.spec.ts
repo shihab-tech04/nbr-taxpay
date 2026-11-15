@@ -19,6 +19,7 @@ test('bento analytics never display unverified tax-liability charts and separate
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await sources.getByRole('button',{name:'Examples'}).click();
   await expect(sources.getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
+  await analytics.getByTestId('dashboard-payment-extra').locator('summary').click();
   const chart=analytics.getByTestId('dashboard-service-breakdown');
   await expect(chart.locator('[data-service="income"]')).toBeVisible();
   await chart.locator('[data-service="income"]').click();
@@ -39,7 +40,7 @@ test('dashboard shows the three requested counters with working destinations',as
   await page.goto(dashboard);
   await page.getByTestId('taxpayer-overview-bento').locator('.taxpay-bento-hero__status')
     .getByRole('button',{name:/Correction Requests/}).click();
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   await expect(page.getByTestId('dashboard-correction-request-list').getByRole('listitem')).toHaveCount(2);
 });
 
@@ -48,12 +49,14 @@ test('interactive service bars and beneficiary categories support keyboard and s
   const sources=page.getByTestId('dashboard-chart-source');
   await sources.getByRole('button',{name:'Examples'}).click();
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  await page.getByTestId('dashboard-payment-extra').locator('summary').click();
   const chart=page.getByTestId('dashboard-service-breakdown');
   const income=chart.locator('[data-service="income"]');
   await income.focus();
   await page.keyboard.press('Enter');
   await expect(income).toHaveAttribute('aria-pressed','true');
   const tags=page.getByTestId('dashboard-beneficiary-breakdown');
+  await tags.locator('.taxpay-recipient-extra > summary').click();
   const unknown=tags.locator('[data-tag="unassigned"]');
   await expect(unknown).toBeVisible();
   await unknown.focus();
@@ -95,8 +98,9 @@ test('interactive bento charts and existing payment actions remain responsive fr
     const bento=page.getByTestId('taxpayer-overview-bento');
     await expect(bento).toBeVisible();
     await expect(bento.getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
-    await expect(bento.getByRole('heading',{name:'By payment service'})).toBeVisible();
-    await expect(bento.getByRole('heading',{name:'Beneficiary Breakdown'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'Payment recipients'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'Payment relationships'})).toBeVisible();
+    await expect(bento.getByTestId('dashboard-payment-extra').locator('summary')).toBeVisible();
     await expect(bento.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
     await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
