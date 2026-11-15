@@ -130,7 +130,7 @@ export const TaxLedger:React.FC=()=>{
   const events=useMemo(()=>[...projectRecordedEvents(state.rows,language),...external.events],
     [state.rows,language,external.events]);
   const exportLedger=()=>{
-    if(state.state!=='ready'||!events.length)return;
+    if((state.state!=='ready'&&external.state!=='ready')||!events.length)return;
     const headers=['Date','Source','Dhara','Assessment year','Tax head','Event','Source status','Recorded amount (paisa)','Confirmed credit effect (paisa)','Challan','Reference','Credit evidence'];
     const csvCell=(value:string|number|null|undefined)=>{
       // CSV quoting alone cannot neutralize formulas in external provider references.
@@ -153,16 +153,20 @@ export const TaxLedger:React.FC=()=>{
   };
   return <div className="mx-auto max-w-7xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={t('Tax ledger','কর লেজার')} description={t('Ledger information','লেজারের তথ্য')} />
-    <div className="flex justify-end"><button type="button" onClick={exportLedger} disabled={state.state!=='ready'||!events.length}
+    <div className="flex justify-end"><button type="button" onClick={exportLedger} disabled={(state.state!=='ready'&&external.state!=='ready')||!events.length}
       className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-dark disabled:opacity-50">{t('Export ledger data','লেজারের তথ্য রপ্তানি')}</button></div>
-    {identityPending||state.state==='loading'?<p role="status" className="rounded-xl border border-taxpay-border bg-white p-5 text-sm text-taxpay-muted">
+    {identityPending||(state.state==='loading'&&external.state!=='ready'&&external.state!=='error')?<p role="status" className="rounded-xl border border-taxpay-border bg-white p-5 text-sm text-taxpay-muted">
       {t('Loading recorded events…','নথিভুক্ত ঘটনা লোড হচ্ছে…')}</p>:
-    state.state==='error'?<section role="alert" className="space-y-3 rounded-xl border border-taxpay-border bg-white p-5">
+    state.state==='error'&&external.state!=='ready'?<section role="alert" className="space-y-3 rounded-xl border border-taxpay-border bg-white p-5">
       <p className="text-sm text-taxpay-muted">{t('Unable to verify this account’s event history.','অ্যাকাউন্টের ঘটনার ইতিহাস যাচাই করা যাচ্ছে না।')}</p>
       <button className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-dark" type="button" onClick={()=>setRevision(i=>i+1)}>
         {t('Retry','আবার চেষ্টা করুন')}</button>
     </section>:
     <>
+      {state.state==='error'&&<section role="alert" className="space-y-3 rounded-xl border border-taxpay-border bg-white p-5">
+        <p className="text-sm text-taxpay-muted">{t('Sohojkor event history could not be verified. Available external records remain separate.','সহজকরের ঘটনার ইতিহাস যাচাই করা যায়নি। উপলব্ধ বহিরাগত রেকর্ড আলাদাভাবে দেখানো হচ্ছে।')}</p>
+        <button className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-dark" type="button" onClick={()=>setRevision(i=>i+1)}>{t('Retry','আবার চেষ্টা করুন')}</button>
+      </section>}
       {authenticatedUser&&external.state!=='ready'&&<div role={external.state==='error'?'alert':'status'} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-taxpay-border bg-white p-3 text-sm text-taxpay-muted">
         <span>{external.state==='loading'
           ?t('Checking the external payment ledger…','বহিরাগত পেমেন্ট লেজার পরীক্ষা করা হচ্ছে…')
