@@ -144,7 +144,14 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       // and the local unsaved form without silently choosing a winner.
       const existing = !asNewDraft && ownedSelectedDraft?.service === service ? ownedSelectedDraft : undefined;
       const result = await savePaymentFormDraft(actor, service, payload, existing);
-      if (!ownerStillCurrent()) return;
+      if (!ownerStillCurrent()) {
+        // A modal exit may proceed only when this owner received a verified
+        // save. Switching accounts during readback is not a successful close.
+        if (rethrowFailure) throw new Error(bn
+          ? 'অ্যাকাউন্ট পরিবর্তিত হয়েছে। খসড়া যাচাই করে আবার সংরক্ষণ করুন।'
+          : 'Account changed during save. Review the draft and retry.');
+        return;
+      }
       onSelectedDraft(result);
       setConflictDraftId(null);
       setRows(rows => [result, ...rows.filter(row => row.id !== result.id)].sort(
@@ -154,7 +161,10 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       // the button; no extra success banner below the payment form.
       setSavedSnapshot(JSON.stringify(payload));
     } catch (cause) {
-      if (!ownerStillCurrent()) return;
+      if (!ownerStillCurrent()) {
+        if (rethrowFailure) throw cause;
+        return;
+      }
       setError(cause instanceof Error ? cause.message : 'Save was not confirmed.');
       if (cause instanceof PaymentDraftConflictError && existingDraftId()) {
         setConflictDraftId(existingDraftId());
