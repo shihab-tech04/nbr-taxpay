@@ -10,6 +10,7 @@ type Row=Readonly<{
  inquiry_id:string; original_reference:string; case_kind:CorrectionCaseKind; evidence_state:string; created_at:string;
  reason:string; requested_outcome:string; evidence_note?:string|null; change_kind:ProposedAttributionField|null; old_value:string|null; new_value:string|null;
  office_review_state:string|null; office_review_revision:number|null; office_review_updated_at:string|null;
+ origin_system?:'TAXPAY_SQL'|'OFFICE_SQL';
 }>;
 
 type CorrectionHistoryEvent=Readonly<{
@@ -42,7 +43,7 @@ const t={
  statusUnavailable:'Status unavailable',details:'Request details',reasonLabel:'Reason provided',outcomeLabel:'Requested outcome',
  changeLabel:'Unverified attribution proposal',oldValueLabel:'Previous value (unverified)',newValueLabel:'Requested value (unverified)',
  changeKinds:{ASSESSMENT_YEAR:'Assessment year',CIRCLE:'Circle',PAYMENT_HEAD:'Payment head',ATTRIBUTION:'Payment attribution'},
- loading:'Loading private inquiries…',retry:'Retry loading inquiries',historyRefreshed:'Private inquiry history refreshed.',reviewHistory:'Correction history',reviewHistoryUnavailable:'Correction history is unavailable. Retry to refresh this request.',reviewHistoryEmpty:'No recorded review events are available for this request.',historyActor:'Actor',historySource:'Source',historyRevision:'Revision',historyState:'Status',historyReason:'Office decision reason',historyActions:{SUBMITTED:'Inquiry submitted',MAKER_ACKNOWLEDGE:'Maker acknowledged',REVIEWER_VERIFY:'Reviewer verified',APPROVER_CLOSE:'Approver closed',REJECT:'Review rejected'},historyActors:{TAXPAYER:'You',MAKER:'Office Maker',REVIEWER:'Office Reviewer',APPROVER:'Office Approver'},historySources:{TAXPAY_SQL:'TaxPay SQL',OFFICE_SQL:'Office SQL'},notLinked:'No payment in your linked account matches this reference. Check it or use the account that owns the payment.'
+ loading:'Loading private inquiries…',retry:'Retry loading inquiries',historyRefreshed:'Private inquiry history refreshed.',reviewHistory:'Correction history',reviewHistoryUnavailable:'Correction history is unavailable. Retry to refresh this request.',reviewHistoryEmpty:'No recorded review events are available for this request.',historyActor:'Actor',historySource:'Source',historyRevision:'Revision',historyState:'Status',historyReason:'Office decision reason',historyActions:{SUBMITTED:'Inquiry submitted',OFFICE_INITIATED:'Office initiated correction review',MAKER_ACKNOWLEDGE:'Maker acknowledged',REVIEWER_VERIFY:'Reviewer verified',APPROVER_CLOSE:'Approver closed',REJECT:'Review rejected'},historyActors:{TAXPAYER:'You',MAKER:'Office Maker',REVIEWER:'Office Reviewer',APPROVER:'Office Approver'},historySources:{TAXPAY_SQL:'TaxPay SQL',OFFICE_SQL:'Office SQL'},notLinked:'No payment in your linked account matches this reference. Check it or use the account that owns the payment.'
  },
  bn:{
  title:'মূল রেফারেন্স পর্যালোচনার অনুরোধ',
@@ -66,7 +67,7 @@ const t={
  statusUnavailable:'অবস্থা অনুপলব্ধ',details:'অনুরোধের বিবরণ',reasonLabel:'প্রদত্ত কারণ',outcomeLabel:'অনুরোধের ফলাফল',
  changeLabel:'যাচাই না হওয়া পরিচিতি প্রস্তাব',oldValueLabel:'পূর্বের মান (যাচাই হয়নি)',newValueLabel:'অনুরোধের মান (যাচাই হয়নি)',
  changeKinds:{ASSESSMENT_YEAR:'করবর্ষ',CIRCLE:'কর সার্কেল',PAYMENT_HEAD:'কর খাত',ATTRIBUTION:'পরিশোধের পরিচিতি'},
- loading:'ব্যক্তিগত অনুসন্ধান লোড হচ্ছে…',retry:'অনুসন্ধান আবার লোড করুন',historyRefreshed:'ব্যক্তিগত অনুসন্ধানের ইতিহাস হালনাগাদ হয়েছে।',reviewHistory:'সংশোধনের ইতিহাস',reviewHistoryUnavailable:'সংশোধনের ইতিহাস পাওয়া যাচ্ছে না। এই অনুরোধের তথ্য আবার হালনাগাদ করুন।',reviewHistoryEmpty:'এই অনুরোধের কোনো পর্যালোচনা ঘটনা নেই।',historyActor:'কর্তা',historySource:'উৎস',historyRevision:'সংস্করণ',historyState:'অবস্থা',historyReason:'অফিসের সিদ্ধান্তের কারণ',historyActions:{SUBMITTED:'অনুসন্ধান জমা হয়েছে',MAKER_ACKNOWLEDGE:'মেকার গ্রহণ করেছেন',REVIEWER_VERIFY:'রিভিউয়ার যাচাই করেছেন',APPROVER_CLOSE:'অ্যাপ্রুভার বন্ধ করেছেন',REJECT:'পর্যালোচনা প্রত্যাখ্যাত'},historyActors:{TAXPAYER:'আপনি',MAKER:'অফিস মেকার',REVIEWER:'অফিস রিভিউয়ার',APPROVER:'অফিস অ্যাপ্রুভার'},historySources:{TAXPAY_SQL:'TaxPay SQL',OFFICE_SQL:'Office SQL'},notLinked:'আপনার সংযুক্ত অ্যাকাউন্টে এই রেফারেন্সের কোনো পরিশোধ পাওয়া যায়নি। রেফারেন্স যাচাই করুন অথবা যে অ্যাকাউন্টে পেমেন্টটি রয়েছে সেটিতে সাইন ইন করুন।'
+ loading:'ব্যক্তিগত অনুসন্ধান লোড হচ্ছে…',retry:'অনুসন্ধান আবার লোড করুন',historyRefreshed:'ব্যক্তিগত অনুসন্ধানের ইতিহাস হালনাগাদ হয়েছে।',reviewHistory:'সংশোধনের ইতিহাস',reviewHistoryUnavailable:'সংশোধনের ইতিহাস পাওয়া যাচ্ছে না। এই অনুরোধের তথ্য আবার হালনাগাদ করুন।',reviewHistoryEmpty:'এই অনুরোধের কোনো পর্যালোচনা ঘটনা নেই।',historyActor:'কর্তা',historySource:'উৎস',historyRevision:'সংস্করণ',historyState:'অবস্থা',historyReason:'অফিসের সিদ্ধান্তের কারণ',historyActions:{SUBMITTED:'অনুসন্ধান জমা হয়েছে',OFFICE_INITIATED:'অফিস থেকে সংশোধন পর্যালোচনা শুরু হয়েছে',MAKER_ACKNOWLEDGE:'মেকার গ্রহণ করেছেন',REVIEWER_VERIFY:'রিভিউয়ার যাচাই করেছেন',APPROVER_CLOSE:'অ্যাপ্রুভার বন্ধ করেছেন',REJECT:'পর্যালোচনা প্রত্যাখ্যাত'},historyActors:{TAXPAYER:'আপনি',MAKER:'অফিস মেকার',REVIEWER:'অফিস রিভিউয়ার',APPROVER:'অফিস অ্যাপ্রুভার'},historySources:{TAXPAY_SQL:'TaxPay SQL',OFFICE_SQL:'Office SQL'},notLinked:'আপনার সংযুক্ত অ্যাকাউন্টে এই রেফারেন্সের কোনো পরিশোধ পাওয়া যায়নি। রেফারেন্স যাচাই করুন অথবা যে অ্যাকাউন্টে পেমেন্টটি রয়েছে সেটিতে সাইন ইন করুন।'
  }
 } as const;
 
@@ -92,11 +93,16 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   if(!supabase) throw new Error(labels.fail);
   const {data:who,error:idError}=await supabase.auth.getUser();
   if(idError||!sameAuthenticatedOwner(who.user?.id,authenticatedUserId))throw new Error(labels.auth);
+  // Only the genuinely signed-in TIN-bound taxpayer may claim an Office initiated
+  // case; no privileged bridge may invent the taxpayer's identity.
+  const {error:officeClaimError}=await supabase.rpc('taxpay_claim_office_initiated_corrections',{p_limit:20});
+  if(officeClaimError && !(officeClaimError.code==='PGRST202' &&
+     /taxpay_claim_office_initiated_corrections/i.test(officeClaimError.message??'')))throw officeClaimError;
   // Request kinds and Office status are added by separate ordered migrations.
   // Fall back only for absent columns; never swallow other owner/permission failures.
   const base='inquiry_id,original_reference,evidence_state,created_at,reason,requested_outcome,change_kind,old_value,new_value';
   const office=',office_review_state,office_review_revision,office_review_updated_at';
-  const projections=[`${base},evidence_note,case_kind${office}`,`${base},case_kind${office}`,`${base}${office}`,`${base},case_kind`,base] as const;
+  const projections=[`${base},evidence_note,case_kind,origin_system${office}`,`${base},evidence_note,case_kind${office}`,`${base},case_kind${office}`,`${base}${office}`,`${base},case_kind`,base] as const;
   let inquiries:Row[]|null=null;
   let missingFieldError:Error|null=null;
   for(const projection of projections){
@@ -105,6 +111,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
    if(!error){
     inquiries=((data??[]) as unknown as Partial<Row>[]).map(row=>({
      ...row,case_kind:row.case_kind??'CORRECTION_REVIEW',evidence_note:row.evidence_note??null,
+      origin_system:row.origin_system??'TAXPAY_SQL',
      office_review_state:row.office_review_state??null,
      office_review_revision:row.office_review_revision??null,
      office_review_updated_at:row.office_review_updated_at??null
@@ -112,7 +119,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
     break;
    }
    if(!['42703','PGRST204'].includes(error.code??'')||
-      !/evidence_note|case_kind|office_review_state|office_review_revision|office_review_updated_at/i.test(error.message??''))throw error;
+      !/evidence_note|origin_system|case_kind|office_review_state|office_review_revision|office_review_updated_at/i.test(error.message??''))throw error;
    missingFieldError=error;
   }
   if(!inquiries)throw missingFieldError??new Error(labels.fail);
@@ -264,7 +271,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
               <time dateTime={r.created_at} className="text-sm text-taxpay-muted">{r.created_at}</time>
             </div>},
             {key:'reason',header:language==='bn'?'অনুরোধের কারণ':'Recorded reason',renderCell:r=><div>
-              <p className="text-sm font-semibold text-taxpay-muted">{r.case_kind==='UNSOLICITED_PAYMENT_REPORT'?labels.caseUnsolicited:labels.caseCorrection}</p>
+              <p className="text-sm font-semibold text-taxpay-muted">{r.origin_system==='OFFICE_SQL'?labels.historyActions.OFFICE_INITIATED:(r.case_kind==='UNSOLICITED_PAYMENT_REPORT'?labels.caseUnsolicited:labels.caseCorrection)}</p>
               <p className="line-clamp-2 break-words text-taxpay-text">{r.reason}</p>
             </div>},
             {key:'status',header:labels.officeReview,renderCell:r=><div aria-live="polite" aria-atomic="true">
