@@ -1,6 +1,6 @@
 import {expect,test} from '@playwright/test';
 
-const demo='/?action=taxpayer_home&demoUser=user1';
+const demo='/?action=taxpayer_home&demoUser=user1&qaScenario=1';
 
 test('Overview keeps compact metrics, saved drafts, corrections and interactive bento reports',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Desktop bento acceptance');
