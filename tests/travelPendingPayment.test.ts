@@ -32,7 +32,9 @@ const saved = {
 };
 const snapshot=JSON.stringify(saved);
 const candidate = (mutate:(payment:typeof saved)=>void) => {
-  const payment=structuredClone(saved);mutate(payment);
+  // A browser refresh restores JSON, which breaks shared object references
+  // between the UI's saved passenger arrays and receiptSnapshot.
+  const payment=JSON.parse(snapshot) as typeof saved;mutate(payment);
   return parseRecoverableTravelPayment(JSON.stringify(payment),session);
 };
 
