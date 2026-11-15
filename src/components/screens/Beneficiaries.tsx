@@ -548,7 +548,7 @@ export function Beneficiaries(){
       </div>
     </header>
     {(owner||previewAccount)&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
-      <p className="text-sm text-taxpay-text">{tr('Earlier saved beneficiaries can be restored only if this browser's original guest session is still valid. Your current profile records will be kept.','এই ব্রাউজারের আগের অতিথি সেশন এখনও বৈধ থাকলেই সংরক্ষিত উপকারভোগী ফিরিয়ে আনা যাবে। প্রোফাইলের বর্তমান তথ্য অক্ষত থাকবে।')}</p>
+      <p className="text-sm text-taxpay-text">{tr("Earlier saved beneficiaries can be restored only if this browser's original guest session is still valid. Your current profile records will be kept.",'এই ব্রাউজারের আগের অতিথি সেশন এখনও বৈধ থাকলেই সংরক্ষিত উপকারভোগী ফিরিয়ে আনা যাবে। প্রোফাইলের বর্তমান তথ্য অক্ষত থাকবে।')}</p>
       <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>
     </div>}
     {recoveryError&&<div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
