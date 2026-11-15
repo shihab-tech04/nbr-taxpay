@@ -82,6 +82,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
+          WS1_CAPTURE_BROWSER_REQUEST: '1'
         # This legacy fail-closed matrix intentionally has no configured backend.
         # The one explicit F-039 fixture runs immediately below with an isolated
         # local-only mocked endpoint so it can test the real signed-in list read.
@@ -93,7 +94,16 @@ jobs:
           # Non-secret test token: requests are fulfilled by page.route; this
           # workflow does not start, authenticate with, or write to hosted SQL.
           VITE_SUPABASE_PUBLISHABLE_KEY: 'ws1-local-only-f039-test-key'
+          WS1_CAPTURE_BROWSER_REQUEST: '1'
         run: npx playwright test tests/e2e/other-tax-batch-v11.spec.ts --grep "F-039"
+      - name: Export WS1 browser-origin guest and signed-in F-137 request evidence
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ws1-f137-ui-origin-requests
+          path: ws1-f137-evidence/ui-*.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload Playwright evidence on failure
         if: failure()
         uses: actions/upload-artifact@v4
