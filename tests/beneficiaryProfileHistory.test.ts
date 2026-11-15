@@ -67,6 +67,8 @@ test('beneficiary profile remains within existing signed-in route and table acti
   // merely after an effect clears a previously opened payment receipt.
   assert.match(profile,/selection\?\.identity===identity\?selection.payment:null/);
   assert.match(profile,/onClick=\{\(\)=>setSelection\(\{identity,payment:row\}\)\}/);
+  assert.match(profile,/reduce\(\(sum,row\)=>sum\+BigInt\(row.amountMinor\),0n\)/);
+  assert.match(profile,/yearTotal<=BigInt\(Number.MAX_SAFE_INTEGER\)/);
 });
 
 test('only an explicitly unbound synthetic profile is optional for signed-in story history',()=>{
