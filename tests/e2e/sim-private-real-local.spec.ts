@@ -277,7 +277,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByRole('button',{name:'Payments I initiated'}))
    .toHaveAttribute('aria-pressed','true',{timeout:15000});
  // The recorded payer, not a beneficiary, can reuse the complete historical
- // transaction. The previous-year allocation must be reset individually.
+ // transaction. A supported historical year remains selected and editable.
  await expect(one.page.getByTestId('pay-again-mobile').first()).toBeVisible({timeout:15000});
  await one.page.getByTestId('pay-again-mobile').first().click();
  await expect(one.page.getByTestId('pay-again-copy-status')).toContainText(tx!.id);
@@ -286,7 +286,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByLabel('Amount (৳)').nth(0)).toHaveValue('150.25');
  await expect(one.page.getByLabel('Amount (৳)').nth(1)).toHaveValue('23.50');
  await expect(one.page.getByLabel('Assessment year').nth(0)).toHaveValue('2026-27');
- await expect(one.page.getByLabel('Assessment year').nth(1)).toHaveValue('');
+ await expect(one.page.getByLabel('Assessment year').nth(1)).toHaveValue('2025-26');
  // Reuse remains editable. Simply opening/changing a copy cannot mutate the
  // immutable SQL payment or produce a second receipt.
  await one.page.getByLabel('Assessment year').nth(1).selectOption('2026-27');
