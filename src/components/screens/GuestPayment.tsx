@@ -1228,6 +1228,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             receiptEmail: normaliseReceiptEmail(receiptEmail),
             noticeReference,
             ...(newReceipt.paymentRemarks ? { paymentRemarks: newReceipt.paymentRemarks } : {}),
+            ...(newReceipt.paymentRemarks ? { challanRemarks: newReceipt.paymentRemarks } : {}),
             incomeTaxType,
             isWithholding: isWithholdingMode,
             paymentChannel, paymentMethod,
