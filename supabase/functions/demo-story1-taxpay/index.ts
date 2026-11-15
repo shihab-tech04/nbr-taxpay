@@ -154,7 +154,10 @@ Deno.serve(async(req)=>{
     console.error("Authorization mirror pending",e);
     return respond({success:false,error:"OFFICE_SYNC_PENDING",requestId:result.id,retryable:true},503);
    }
-   return respond({success:true,data:result,mirrored:true,simulationOnly:true});
+   // Public retry needs only an acknowledgement. Never return a private
+   // authorization snapshot to a caller who merely knows its request UUID.
+   const returned=action==="sync"?{id:result.id}:result;
+   return respond({success:true,data:returned,mirrored:true,simulationOnly:true});
   }
   if(req.method==="POST"&&path==="/payments"){
     const raw=await req.text();
