@@ -505,6 +505,9 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 rounded-lg px-3 text-sm font-medium text-taxpay-primary hover:bg-taxpay-light">
                {txt('Timeline','সময়রেখা')}</button>
+             <button type="button" onClick={()=>navigate('corrections',{originalReference:tx.id})}
+               className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
+               {txt('Request correction','সংশোধনের আবেদন')}</button>
              {canPayAgain(tx,id??'',view)&&<button type="button" data-testid="pay-again-desktop"
                onClick={e=>{e.stopPropagation();payAgain(tx);}}
                className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
@@ -534,6 +537,9 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
                className="min-h-11 flex-1 rounded-lg border border-taxpay-border px-3 text-sm">{txt('View details','বিস্তারিত দেখুন')}</button>
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 flex-1 rounded-lg bg-taxpay-light px-3 text-sm">{txt('Timeline','সময়রেখা')}</button>
+             <button type="button" onClick={()=>navigate('corrections',{originalReference:tx.id})}
+               className="min-h-11 w-full rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary">
+               {txt('Request correction','সংশোধনের আবেদন')}</button>
              {canPayAgain(tx,id??'',view)&&<button type="button" data-testid="pay-again-mobile"
                onClick={()=>payAgain(tx)} className="min-h-11 w-full rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary">
                {txt('Pay Again','আবার পরিশোধ')}</button>}
