@@ -123,8 +123,18 @@ export async function verifyWs3BrowserOrigin({
       .getByRole('button',{name:'Continue',exact:true}).click();
     const picker=dialog.getByTestId('saved-beneficiary-picker');
     await expect(picker).toBeVisible({timeout:30000});
-    await picker.getByRole('checkbox',{name:/WS3 recipient 2/}).check();
-    await picker.getByRole('checkbox',{name:/WS3 recipient 3/}).check();
+    // The disposable SQL fixture adds a new named list, not necessarily the
+    // first expanded list. Exercise the real saved-first search across all
+    // owned lists; never forge selection or bypass the capability-bound reader.
+    const savedSearch=picker.getByRole('searchbox',{name:'Search beneficiaries'});
+    await expect(savedSearch).toBeVisible({timeout:30000});
+    await savedSearch.fill('WS3 recipient');
+    const recipient2=picker.getByRole('checkbox',{name:/WS3 recipient 2/});
+    const recipient3=picker.getByRole('checkbox',{name:/WS3 recipient 3/});
+    await expect(recipient2).toBeVisible();
+    await expect(recipient3).toBeVisible();
+    await recipient2.check();
+    await recipient3.check();
     await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
     const batch=dialog.getByTestId('other-tax-batch');
     await batch.locator('[data-head-group="Advance Tax"] summary').click();
