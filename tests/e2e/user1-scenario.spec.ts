@@ -145,6 +145,18 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   const profile=page.getByTestId('user1-taxpayer-profile');
   const content=profile.getByTestId('user1-profile-unified-content');
   await expect(profile).toBeVisible();
+  if (process.env.VITE_SUPABASE_DISABLED === 'true') {
+    // This Pages shard has no authenticated SQL/Edge source. Confirm the
+    // private registration profile is never replaced by bundled reference
+    // values; the complete 24-field journey is exercised only with a real
+    // capability-bound backend.
+    await expect(content).toHaveCount(0);
+    await expect(profile.getByRole('alert')).toContainText(
+      /Taxpayer profile is not available for this account|Could not load taxpayer information/
+    );
+    await expect(profile.locator('[data-profile-field]')).toHaveCount(0);
+    return;
+  }
   await expect(content).toBeVisible();
   const nameHeading=profile.locator('h2[data-profile-field="taxpayerName"]');
   await expect(nameHeading).not.toBeEmpty();
