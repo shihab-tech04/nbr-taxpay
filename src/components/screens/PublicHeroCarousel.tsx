@@ -8,6 +8,7 @@ import withholdingTaxIllustration from '../../assets/taxpay-hero-withholding-v9.
 import travelTaxIllustration from '../../assets/taxpay-hero-travel-v9.webp';
 import { supabase } from '../../services/supabaseClient';
 import { allowBrandingManualRetry, brandingRequestsAllowed, noteBrandingHttpStatus } from '../../services/brandingRequestGuard';
+import { BRANDING_CMS_CONNECTION_ENABLED } from '../../config/brandingCmsConnection';
 
 const AUTOPLAY_INTERVAL_MS = 8_000;
 const CMS_FALLBACK_POLL_MS = 5 * 60_000;
@@ -221,6 +222,14 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   }, [slides, activeIndex]);
 
   useEffect(() => {
+    if (!BRANDING_CMS_CONNECTION_ENABLED) {
+      // Temporarily use approved bundled artwork and copy, retaining all five
+      // EN/BN slides, actions, navigation and responsive presentation.
+      // No logo/banner REST, Storage URLs or Realtime subscriptions are made.
+      setSlides(fallbackSlides);
+      setBannerStatus('ready');
+      return;
+    }
     let active = true;
     let fetching = false;
     let refreshQueued = false;
