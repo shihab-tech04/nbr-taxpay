@@ -179,18 +179,25 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   try{
    const {data:who,error:idError}=await supabase.auth.getUser();
    if(idError||!sameAuthenticatedOwner(who.user?.id,authenticatedUserId)){setMessage(labels.auth);return;}
-   const {error:sessionClaimError}=await supabase.rpc('taxpay_claim_story1_session',{p_session_id:getStorySessionId()});
-   if(sessionClaimError){setMessage(labels.fail);return;}
-   const {error:walkinClaimError}=await supabase.rpc('taxpay_claim_walkin_payer_payments');
-   if(walkinClaimError){setMessage(labels.fail);return;}
+   // A beneficiary's received allocation is not the payer's browser session.
+   // Skip payer-only history claims for an exact notice allocation and allow
+   // the existing SQL trigger to verify the recipient's Auth-owned TIN link.
+   // For ordinary correction inquiries, retain the legacy payer claim flow.
+   const recipientAllocation=receivedIntent?.targetAllocationId &&
+     originalReference.trim()===receivedIntent.originalReference
+       ?receivedIntent.targetAllocationId:null;
+   if(!recipientAllocation){
+     const {error:sessionClaimError}=await supabase.rpc('taxpay_claim_story1_session',{p_session_id:getStorySessionId()});
+     if(sessionClaimError){setMessage(labels.fail);return;}
+     const {error:walkinClaimError}=await supabase.rpc('taxpay_claim_walkin_payer_payments');
+     if(walkinClaimError){setMessage(labels.fail);return;}
+   }
    const {error}=await supabase.from('taxpay_correction_inquiries').insert({
      requester_uid:authenticatedUserId,
      original_reference:originalReference.trim(),
      // Bind to the exact notified allocation where applicable, but only when
      // the form still matches the original handoff. The SQL trigger is authoritative.
-     ...(receivedIntent?.targetAllocationId &&
-       originalReference.trim()===receivedIntent.originalReference
-       ?{target_allocation_id:receivedIntent.targetAllocationId}:{}),
+     ...(recipientAllocation?{target_allocation_id:recipientAllocation}:{}),
       ...(caseKind==='UNSOLICITED_PAYMENT_REPORT'?{case_kind:caseKind}:{}),
      reason:reason.trim(),
      requested_outcome:desiredOutcome.trim(),
