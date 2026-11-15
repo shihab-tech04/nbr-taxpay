@@ -255,8 +255,8 @@ export const BentoPaymentAnalytics:React.FC<{
         </label>}
         {filtered.totalMinor>0n&&beneficiaryView==='relationships'?<>
           {onlyUnclassified&&<p className="taxpay-bento-analytics__unclassified-intro" role="status">
-            {tr('No saved beneficiary relationship is linked to these allocations. The figures below distinguish payments to identified recipients from payments with no recorded recipient.',
-              'এই বরাদ্দগুলোর সঙ্গে কোনো সংরক্ষিত উপকারভোগীর সম্পর্ক যুক্ত নেই। নিচে শনাক্তকৃত প্রাপকের পেমেন্ট এবং প্রাপকবিহীন পেমেন্ট আলাদাভাবে দেখানো হয়েছে।')}
+            {tr('No saved relationships match these payments. Review the unmatched amounts below.',
+              'এই পেমেন্টগুলোর সঙ্গে সংরক্ষিত কোনো সম্পর্ক মেলেনি। নিচে শ্রেণিবিহীন পরিমাণ দেখুন।')}
           </p>}
           {!onlyUnclassified&&<div className="taxpay-bento-analytics__segments" role="img"
             aria-label={tr('Beneficiary spending proportions','উপকারভোগী অনুযায়ী ব্যয়ের অনুপাত')}>
