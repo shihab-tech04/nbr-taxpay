@@ -5,6 +5,10 @@ import type { Beneficiary, BeneficiaryInput, BeneficiaryList } from './beneficia
 const capabilityKey = 'korbritto.guest-beneficiaries.capability.v1';
 const initializedKey = 'korbritto.guest-beneficiaries.initialized.v1';
 const capabilityPattern = /^[A-Za-z0-9_-]{43}$/;
+// Notify mounted guest payment drafts of same-tab capability creation.
+// No bearer token or identifying value is included in the event.
+export const GUEST_DRAFT_OWNER_CHANGED_EVENT = 'taxpay-guest-draft-owner-changed';
+
 // Keep only an opaque UI generation, never any part of the private guest
 // capability, in React owner keys. A guest access key can change in another
 // browser tab while a payment form stays mounted. Even A -> B -> A must be
@@ -90,6 +94,10 @@ function getCapability(source:GuestSource='active'): { value: string; needsRegis
   } catch {
     throw new Error('Guest beneficiary storage is unavailable in this browser. Allow site storage and try again.');
   }
+  // Storage events are emitted only in other tabs, so a mounted payment draft
+  // must be notified when its first capability is created in this tab.
+  try { window.dispatchEvent(new Event(GUEST_DRAFT_OWNER_CHANGED_EVENT)); }
+  catch { /* Registration remains valid without a DOM. */ }
   return { value: created, needsRegistration: true };
 }
 
