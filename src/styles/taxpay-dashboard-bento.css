@@ -416,19 +416,39 @@
 .taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-analytics[data-empty="true"] .taxpay-bento-analytics__link{
   align-self:flex-start;margin-top:auto;
 }
+/* The original V3 .taxpay-bento-hero rule has greater specificity than
+   .taxpay-bento-summary, silently forcing the "full-width" summary to span
+   only five columns. Keep the empty-state summary full-width on every device. */
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"][data-dashboard-empty="true"]
+  > .taxpay-bento-request-row > .taxpay-bento-summary{
+  grid-column:1/-1;
+}
 @media(min-width:1200px){
-  .taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-request-row > .taxpay-bento-tasks{display:contents}
-  .taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-drafts{
-    grid-column:span 7;order:2;
+  .taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-request-row > .taxpay-bento-tasks{
+    display:contents;
   }
-  .taxpay-bento-grid[data-dashboard-empty="true"] > .taxpay-bento-analytics{
-    grid-column:span 5;order:3;
+  /* Explicit rows prevent auto-placement from pairing the summary with
+     drafts, leaving corrections stranded on a third line. DOM/focus order:
+     summary, drafts, corrections, journey, breakdown. */
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"][data-dashboard-empty="true"]
+    > .taxpay-bento-request-row > .taxpay-bento-summary{
+    grid-column:1/13;grid-row:1;order:1;
   }
-  .taxpay-bento-grid[data-dashboard-empty="true"] > .taxpay-bento-recent{
-    grid-column:span 7;order:4;
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"][data-dashboard-empty="true"]
+    .taxpay-bento-drafts{
+    grid-column:1/8;grid-row:2;order:2;
   }
-  .taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-corrections{
-    grid-column:span 5;order:5;
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"][data-dashboard-empty="true"]
+    .taxpay-bento-corrections{
+    grid-column:8/13;grid-row:2;order:3;
+  }
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"][data-dashboard-empty="true"]
+    > .taxpay-bento-recent{
+    grid-column:1/8;grid-row:3;order:4;
+  }
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"][data-dashboard-empty="true"]
+    > .taxpay-bento-analytics{
+    grid-column:8/13;grid-row:3;order:5;
   }
 }
 @media(max-width:1199px){

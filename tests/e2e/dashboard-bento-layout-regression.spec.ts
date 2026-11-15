@@ -98,15 +98,25 @@ test('empty recorded dashboard prioritizes drafts and tasks without changing sid
     const journey=grid.locator('.taxpay-bento-recent');
     const correction=grid.locator('#dashboard-correction-requests');
     for(const item of [draft,journey,correction])await expect(item).toBeVisible();
-    const [d,a,j,c]=await Promise.all([draft,analytics,journey,correction].map(item=>item.boundingBox()));
-    expect([d,a,j,c].every(Boolean),'all four sections visible at '+width).toBe(true);
-    if(!d||!a||!j||!c)continue;
+    const summary=grid.locator('.taxpay-bento-summary');
+    const [g,s,d,a,j,c]=await Promise.all(
+      [grid,summary,draft,analytics,journey,correction].map(item=>item.boundingBox()));
+    expect([g,s,d,a,j,c].every(Boolean),'all bento sections visible at '+width).toBe(true);
+    if(!g||!s||!d||!a||!j||!c)continue;
+    expect(Math.abs(s.width-g.width),'summary fills dashboard width at '+width).toBeLessThan(5);
     if(width>=1200){
-      expect(Math.abs(d.y-a.y),'draft and empty insight row aligned').toBeLessThan(4);
-      expect(d.x+d.width).toBeLessThanOrEqual(a.x+4);
-      expect(Math.abs(j.y-c.y),'journey and corrections row aligned').toBeLessThan(4);
-      expect(j.x+j.width).toBeLessThanOrEqual(c.x+4);
+      // The old specificity bug put the summary next to drafts, then left
+      // corrections stranded below. Assert the actual visual, not just DOM.
+      expect(s.y+s.height).toBeLessThanOrEqual(d.y+4);
+      expect(Math.abs(d.y-c.y),'draft and corrections row aligned').toBeLessThan(4);
+      expect(d.x+d.width).toBeLessThanOrEqual(c.x+4);
+      expect(Math.abs(j.y-a.y),'journey and empty insight row aligned').toBeLessThan(4);
+      expect(j.x+j.width).toBeLessThanOrEqual(a.x+4);
+      expect(d.y+d.height).toBeLessThanOrEqual(j.y+4);
+      expect(c.y+c.height).toBeLessThanOrEqual(j.y+4);
     }else{
+      expect(d.y,'draft follows summary').toBeGreaterThan(s.y);
+      expect(c.y,'correction follows draft').toBeGreaterThan(d.y);
       expect(j.y,'journey follows continuation tasks').toBeGreaterThan(c.y);
       expect(a.y,'empty insight follows actionable sections').toBeGreaterThan(j.y);
     }
