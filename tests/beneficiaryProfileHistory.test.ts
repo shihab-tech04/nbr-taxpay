@@ -155,3 +155,11 @@ test('authenticated beneficiary history rejects sign-out or account switch after
   const loader=readFileSync('src/services/beneficiaryProfileHistory.ts','utf8');
   assert.match(loader,/const simulations=boundId\?await getPrivateSimulationHistory\('payer'\):\[\];[\s\S]*await supabase\.auth\.getUser\(\);[\s\S]*requireCurrentBeneficiaryHistoryOwner\(ownerUid,data\.user\?\.id\)/);
 });
+
+test('beneficiary history Pay Again does not mistake an unlinked account for another taxpayer',()=>{
+  const ui=readFileSync('src/components/screens/AccountBeneficiaryHistory.tsx','utf8');
+  assert.match(ui,/entry\.receipt\.paymentCategory !== 'TRAVEL_TAX'/);
+  assert.match(ui,/profile\.status !== 'ready' \|\| !profile\.profile\?\.tin/);
+  assert.match(ui,/reuseRecordedPayment\(unique,ownerUid,profile\.profile\?\.tin\?\?null/);
+  assert.match(ui,/Your taxpayer identity is not verified for Pay Again/);
+});
