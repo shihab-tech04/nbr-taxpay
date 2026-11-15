@@ -129,8 +129,11 @@ export async function verifyWs3BrowserOrigin({
     const savedSearch=picker.getByRole('searchbox',{name:'Search beneficiaries'});
     await expect(savedSearch).toBeVisible({timeout:30000});
     await savedSearch.fill('WS3 recipient');
-    const recipient2=picker.getByRole('checkbox',{name:/WS3 recipient 2/});
-    const recipient3=picker.getByRole('checkbox',{name:/WS3 recipient 3/});
+    // A saved TIN can appear in multiple owned lists. This payment selects
+    // the first matching saved contact for each distinct recipient TIN;
+    // duplicate list cards are not duplicate payment beneficiaries.
+    const recipient2=picker.getByRole('checkbox',{name:'Select WS3 recipient 2',exact:true}).first();
+    const recipient3=picker.getByRole('checkbox',{name:'Select WS3 recipient 3',exact:true}).first();
     await expect(recipient2).toBeVisible();
     await expect(recipient3).toBeVisible();
     await recipient2.check();
