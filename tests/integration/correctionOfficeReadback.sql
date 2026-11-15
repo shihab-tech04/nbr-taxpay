@@ -445,6 +445,7 @@ DECLARE
   v_reviewer boolean;
   v_approver boolean;
   v_timestamps boolean;
+  v_parent_link boolean;
 BEGIN
   SELECT count(*),
     array_agg(h.event_kind||':'||h.action_code ORDER BY h.occurred_at,h.revision,h.event_id),
@@ -468,8 +469,9 @@ BEGIN
       AND h.next_state='APPROVER_CLOSED'
       AND h.reason='Synthetic approver closure for SQL contract test'
        AND h.actor_uid='80000000-0000-4000-8000-000000000023'::uuid),
-    bool_and(h.occurred_at IS NOT NULL)
-  INTO v_count,v_order,v_revisions,v_initial,v_maker,v_reviewer,v_approver,v_timestamps
+    bool_and(h.occurred_at IS NOT NULL),
+    bool_and(h.original_payment_id='80000000-0000-4000-8000-000000000041'::uuid)
+  INTO v_count,v_order,v_revisions,v_initial,v_maker,v_reviewer,v_approver,v_timestamps,v_parent_link
   FROM public.taxpay_correction_my_history(50) h
   WHERE h.inquiry_id=(SELECT inquiry_id FROM correction_bridge_test_state);
 
@@ -483,8 +485,9 @@ BEGIN
      OR v_revisions IS DISTINCT FROM ARRAY[1,2,3,4]::integer[]
      OR v_initial IS DISTINCT FROM true OR v_maker IS DISTINCT FROM true
      OR v_reviewer IS DISTINCT FROM true OR v_approver IS DISTINCT FROM true
-     OR v_timestamps IS DISTINCT FROM true THEN
-    RAISE EXCEPTION 'Owner correction history lost order, exact actor UID, source, state, reason or timestamp';
+     OR v_timestamps IS DISTINCT FROM true
+     OR v_parent_link IS DISTINCT FROM true THEN
+    RAISE EXCEPTION 'Owner correction history lost order, exact actor UID, source parent, state, reason or timestamp';
   END IF;
 END;
 $owner_correction_history$;
