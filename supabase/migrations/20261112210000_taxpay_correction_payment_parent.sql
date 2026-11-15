@@ -17,6 +17,21 @@ ALTER TABLE public.taxpay_correction_inquiries
 GRANT INSERT (case_kind), SELECT (case_kind)
   ON TABLE public.taxpay_correction_inquiries TO authenticated;
 
+-- A beneficiary may request review only for a unique allocation matching
+-- an existing verified account/TIN binding; arbitrary typed TIN is insufficient.
+ALTER TABLE public.taxpay_correction_inquiries
+  ADD COLUMN target_allocation_id text;
+ALTER TABLE public.taxpay_correction_inquiries
+  ADD CONSTRAINT taxpay_correction_target_allocation_id_check CHECK (
+    target_allocation_id IS NULL OR
+    (length(target_allocation_id) BETWEEN 1 AND 128 AND
+      target_allocation_id = pg_catalog.btrim(target_allocation_id))
+  ) NOT VALID;
+ALTER TABLE public.taxpay_correction_inquiries
+  VALIDATE CONSTRAINT taxpay_correction_target_allocation_id_check;
+GRANT INSERT (target_allocation_id), SELECT (target_allocation_id)
+  ON TABLE public.taxpay_correction_inquiries TO authenticated;
+
 ALTER TABLE public.taxpay_correction_inquiries
   ADD COLUMN original_payment_id uuid
     REFERENCES demo_payment.story_payments(id),
@@ -44,6 +59,7 @@ DECLARE
   v_actor uuid := auth.uid();
   v_match_count bigint;
   v_parent uuid;
+  v_allocation_matches bigint;
 BEGIN
   IF v_actor IS NULL OR NEW.requester_uid IS DISTINCT FROM v_actor THEN
     RAISE EXCEPTION 'AUTHENTICATED_REQUESTER_REQUIRED';
@@ -53,11 +69,28 @@ BEGIN
          (pg_catalog.array_agg(p.id ORDER BY p.created_at DESC,p.id DESC))[1]
     INTO v_match_count,v_parent
   FROM demo_payment.story_payments p
-  JOIN public.taxpay_story1_payment_owners owner_link
-    ON owner_link.payment_id=p.id
-  WHERE owner_link.owner_uid=v_actor
-    AND p.status='SIMULATED_SUCCESS'
+  WHERE p.status='SIMULATED_SUCCESS'
     AND p.data->>'origin'='TAXPAY_UI'
+    AND (
+      EXISTS (SELECT 1 FROM public.taxpay_story1_payment_owners owner_link
+        WHERE owner_link.payment_id=p.id AND owner_link.owner_uid=v_actor)
+      OR (
+        NEW.target_allocation_id IS NOT NULL AND
+        EXISTS (
+          SELECT 1
+          FROM public.sim_payment_account_bindings b
+          JOIN public.taxpay_taxpayer_registration_profiles profile
+            ON profile.account_id=b.user_id
+          CROSS JOIN LATERAL pg_catalog.jsonb_array_elements(
+            CASE WHEN pg_catalog.jsonb_typeof(p.data#>'{details,allocations}')='array'
+            THEN p.data#>'{details,allocations}' ELSE '[]'::jsonb END
+          ) AS alloc(line)
+          WHERE b.owner_uid=v_actor
+            AND alloc.line->>'allocationId'=NEW.target_allocation_id
+            AND alloc.line->>'taxpayerTin'=profile.tin
+        )
+      )
+    )
     AND (
       p.id::text=NEW.original_reference
       OR p.data->'details'->>'receiptReference'=NEW.original_reference
@@ -74,6 +107,18 @@ BEGIN
   IF NEW.original_payment_kind IS NOT NULL
      AND NEW.original_payment_kind IS DISTINCT FROM 'TAXPAY_STORY_PAYMENT' THEN
     RAISE EXCEPTION 'CORRECTION_ORIGINAL_PAYMENT_KIND_INVALID';
+  END IF;
+  IF NEW.target_allocation_id IS NOT NULL THEN
+    SELECT count(*) INTO v_allocation_matches
+    FROM demo_payment.story_payments p
+    CROSS JOIN LATERAL pg_catalog.jsonb_array_elements(
+      CASE WHEN pg_catalog.jsonb_typeof(p.data#>'{details,allocations}')='array'
+      THEN p.data#>'{details,allocations}' ELSE '[]'::jsonb END
+    ) AS alloc(line)
+    WHERE p.id=v_parent AND alloc.line->>'allocationId'=NEW.target_allocation_id;
+    IF v_allocation_matches<>1 THEN
+      RAISE EXCEPTION 'CORRECTION_TARGET_ALLOCATION_INVALID';
+    END IF;
   END IF;
 
   NEW.original_payment_id:=v_parent;
@@ -96,6 +141,7 @@ BEGIN
     'originalReference',NEW.original_reference,
     'originalPaymentId',NEW.original_payment_id,
     'originalPaymentKind',NEW.original_payment_kind,
+    'targetAllocationId',NEW.target_allocation_id,
     'caseKind',NEW.case_kind,
     'reason',NEW.reason,
     'requestedOutcome',NEW.requested_outcome,
@@ -114,6 +160,8 @@ $function$;
 REVOKE ALL ON FUNCTION public.taxpay_enqueue_correction_submission()
   FROM PUBLIC,anon,authenticated;
 
+COMMENT ON COLUMN public.taxpay_correction_inquiries.target_allocation_id IS
+  'Optional exact source allocation ID. A non-payer requester must have a verified account TIN matching this allocation; never infer ownership from a typed TIN.';
 COMMENT ON COLUMN public.taxpay_correction_inquiries.case_kind IS
   'Owner-verified correction review versus unsolicited-payment allegation; neither category changes financial records.';
 COMMENT ON COLUMN public.taxpay_correction_inquiries.original_payment_id IS
@@ -121,6 +169,6 @@ COMMENT ON COLUMN public.taxpay_correction_inquiries.original_payment_id IS
 COMMENT ON COLUMN public.taxpay_correction_inquiries.original_payment_kind IS
   'Typed source parent for the separate Office mirror; new inquiries use TAXPAY_STORY_PAYMENT.';
 COMMENT ON FUNCTION public.taxpay_bind_correction_parent() IS
-  'Binds a new correction inquiry to exactly one already owner-linked TaxPay story payment; typed TIN or arbitrary reference does not establish ownership.';
+  'Binds an owner payment or one exact allocation matching an existing verified account/TIN binding; typed TIN, request reference, or actor claim alone never establishes entitlement.';
 
 COMMIT;
