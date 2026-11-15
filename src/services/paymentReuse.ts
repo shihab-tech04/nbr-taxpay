@@ -226,6 +226,7 @@ export function reuseRecordedPayment(
     assessmentYear: years[0],
     // Old notice/demand references are historical, not new payment authority.
     noticeReference: '',
+    paymentRemarks: initial.paymentRemarks ?? '',
     incomeTaxType: null,
     selectedHeadIds: isAllocationPayment ? [] : [...new Set(allocations.map(a=>a.headId))],
     amountInputs: isAllocationPayment ? {} : Object.fromEntries(

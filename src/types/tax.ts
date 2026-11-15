@@ -144,6 +144,8 @@ export interface ChallanReceipt {
     }>;
   };
   noticeReference?: string;
+  /** Optional taxpayer-supplied parent-challan comments, distinct from NBR reference. */
+  paymentRemarks?: string;
   isRepresentativePayment: boolean;
   representativeTin?: string;
   taxZone: string;

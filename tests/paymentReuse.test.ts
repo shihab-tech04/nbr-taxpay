@@ -27,6 +27,18 @@ test('copies original mixed own/other/head/year allocations without altering pai
  assert.equal(draft.formPayload.noticeReference,'');
  assert.equal(JSON.stringify(receipt),before);
 });
+test('Pay Again carries editable long, bilingual challan comments without mutating the source',()=>{
+  const remarks='Payment covers multiple years; explanation supplied by taxpayer. বাংলা মন্তব্য: তথ্য যাচাই করুন।';
+  assert.ok(remarks.length > 20);
+  const original={...receipt,paymentRemarks:remarks};
+  const frozen=JSON.stringify(original);
+  const draft=reuseRecordedPayment([original],'ownerUid','1234567890123','original-payment');
+  assert.equal(draft.formPayload.paymentRemarks,remarks);
+  draft.formPayload.paymentRemarks='An edited comment for the new challan';
+  assert.equal(original.paymentRemarks,remarks);
+  assert.equal(JSON.stringify(original),frozen);
+});
+
 test('refuses incomplete and mismatched receipt data',()=>{
  assert.throws(()=>reuseRecordedPayment([{...receipt,allocationItems:[]}],'owner','1234567890123','ref'));
  assert.throws(()=>reuseRecordedPayment([{...receipt,totalAmount:99}],'owner','1234567890123','ref'));
