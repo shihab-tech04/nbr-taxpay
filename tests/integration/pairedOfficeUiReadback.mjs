@@ -105,9 +105,32 @@ try {
     }
   });
 
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(String(error?.message || error).slice(0, 450)));
   await page.goto(baseUrl + '/payments/transactions');
   const screen = page.locator('[data-testid="payment-transactions"]');
-  await screen.waitFor({ state: 'visible', timeout: 30000 });
+  try {
+    await screen.waitFor({ state: 'visible', timeout: 30000 });
+  } catch (error) {
+    // Diagnostic only: retain the mandatory screen assertion without bypassing it.
+    // Never log bearer tokens, storage, request headers, fixture TINs or account data.
+    const snapshot = await page.evaluate(() => ({
+      title: document.title,
+      headings: Array.from(document.querySelectorAll('h1,h2')).slice(0,6).map(x => x.textContent?.trim().slice(0,100)),
+      alerts: Array.from(document.querySelectorAll('[role="alert"]')).slice(0,4).map(x => x.textContent?.trim().slice(0,100)),
+      testids: Array.from(document.querySelectorAll('[data-testid]')).slice(0,15).map(x => x.getAttribute('data-testid')),
+      visibleText: document.body?.innerText?.slice(0,700),
+    })).catch(() => ({ unavailable: true }));
+    console.error('Office UI route diagnostic:', JSON.stringify({
+      path: new URL(page.url()).pathname,
+      paymentRequests,
+      missingBearer,
+      routeError: Boolean(routeError),
+      pageErrors: pageErrors.slice(0,5),
+      snapshot,
+    }));
+    throw error;
+  }
   assert.ok(paymentRequests > 0, 'Office UI must request the existing authorized payments endpoint');
   assert.equal(missingBearer, false);
   assert.equal(routeError, null, routeError || undefined);
