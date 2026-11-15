@@ -87,7 +87,13 @@ export function buildPaymentCertificateModel(receipt: ChallanReceipt): PaymentCe
         !Array.isArray(details.passengers) || details.passengers.length < 1) return null;
     lines = details.passengers.map((passenger): PaymentCertificateLine | null => {
       const amountMinor = toMinor(passenger.amount);
-      if (amountMinor === null || !passenger.name.trim() || !passenger.passportMasked.trim()) return null;
+      // Never print a plaintext passport or mislabel an invalid nationality in
+      // an official-looking internal payment certificate. The source preview
+      // stores only a four-character masked suffix, never a passport identity.
+      if (amountMinor === null || !passenger.name.trim() ||
+          !/^••••[^\s\u0000-\u001F\u007F-\u009F]{4}$/.test(passenger.passportMasked) ||
+          !['BD', 'FOREIGN'].includes(passenger.nationality) ||
+          (passenger.nationality === 'FOREIGN' && !passenger.country?.trim())) return null;
       return {
         recipientName: passenger.name.trim(),
         descriptionEn: 'Travel Tax',
@@ -101,11 +107,40 @@ export function buildPaymentCertificateModel(receipt: ChallanReceipt): PaymentCe
       };
     }).filter((line): line is PaymentCertificateLine => line !== null);
     if (lines.length !== details.passengers.length) return null;
+    // A displayed passenger certificate may be supported by a saved itemized
+    // receipt. Check the *same passenger* against the *same* accounting row:
+    // matching totals alone can conceal swapped names, wrong heads or fees.
+    // Older snapshots without saved item rows retain their prior fallback.
+    if (receipt.items.length > 0 && (
+      receipt.items.length !== details.passengers.length ||
+      receipt.items.some((item, index) => {
+        const person = details.passengers[index];
+        const value = toMinor(person.amount);
+        return value === null || item.headId !== 155 + index ||
+          item.headNameEn.trim() !== 'Travel tax — ' + person.name.trim() ||
+          item.economicCode.trim() !== details.economicCode.trim() ||
+          toMinor(item.totalAmount) !== value || toMinor(item.taxAmount) !== value ||
+          toMinor(item.penaltyAmount) !== 0 || toMinor(item.surchargeAmount) !== 0 ||
+          toMinor(item.interestAmount) !== 0;
+      })
+    )) return null;
     const lineTotal = lines.reduce((sum, line) => sum + line.amountMinor, 0);
     if (!Number.isSafeInteger(lineTotal) || lineTotal !== totalMinor) return null;
     travel = details;
   } else if (receipt.allocationItems) {
     if (receipt.allocationItems.length < 1) return null;
+    // A combined certificate must not claim a different head, economic code,
+    // recipient amount or row count from the saved itemized receipt.
+    // Historical receipts with no saved head rows use reconciled allocations.
+    if (receipt.items.length > 0 && (
+      receipt.items.length !== receipt.allocationItems.length ||
+      receipt.items.some((item, index) => {
+        const allocation = receipt.allocationItems![index];
+        return toMinor(item.totalAmount) !== allocation.amountMinor ||
+          item.headNameEn.trim() !== allocation.paymentServiceEn.trim() ||
+          item.economicCode.trim() !== (allocation.economicCode ?? '').trim();
+      })
+    )) return null;
     lines = receipt.allocationItems.map((allocation): PaymentCertificateLine | null => {
       const recipientTin = validTin(allocation.taxpayerTin) ? allocation.taxpayerTin.trim() : undefined;
       const assessmentYear = allocation.assessmentYear.trim() || receipt.assessmentYear.trim();
