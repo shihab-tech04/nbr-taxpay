@@ -19,7 +19,8 @@ test('public hero opens receipt lookup and its Travel Tax banner starts the jour
  await homeSearch.fill('NO-SUCH-DEMO-REFERENCE-12345');
  await page.locator('.public-record-search').getByRole('button',{name:'Search records'}).click();
  await expect(page).toHaveURL(/action=verify/);
- await expect(page.getByRole('heading',{name:'No matching record'})).toBeVisible();
+ await expect(page.getByTestId('receipt-mobile-required')).toBeVisible();
+ await expect(page.getByRole('heading',{name:'No matching record'})).toHaveCount(0);
  await page.goto('/?action=landing');
  await openTravelTaxFromBanner(page);
  const travel=page.getByRole('dialog',{name:'Travel tax'});
@@ -267,7 +268,7 @@ test('floating help uses guide answers and report offers an editable review with
  test.skip(info.project.name!=='desktop-1280','One assistant and report E2E journey');
  await page.goto('/?action=landing');
  await page.getByRole('button',{name:'Chat support'}).click();
- await expect(page.getByRole('heading',{name:'Korbritto help'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Sohojkor help'})).toBeVisible();
  await page.getByRole('button',{name:'Payment status',exact:true}).click();
  await expect(page.locator('.public-help-message--assistant')).toContainText('verified reconciliation');
  await page.getByRole('link',{name:'Open user guide'}).click();
@@ -333,7 +334,8 @@ test('guest receipt search is under the banner and opens receipt results in the 
  const lookup=page.getByRole('dialog',{name:'Payment status & receipt'});
  await expect(lookup).toBeVisible();
  await expect(lookup.getByLabel('Challan, token or transaction reference')).toHaveValue('NO-SUCH-DEMO-REFERENCE-12345');
- await expect(lookup.getByRole('heading',{name:'No matching record'})).toBeVisible();
+ await expect(lookup.getByTestId('receipt-mobile-required')).toBeVisible();
+ await expect(lookup.getByRole('heading',{name:'No matching record'})).toHaveCount(0);
  const samples=lookup.locator('.receipt-lookup__sample');
  await expect(samples).toHaveCount(3);
  await samples.first().click();
@@ -360,7 +362,8 @@ test('Bangla homepage reference search keeps keyboard access and modal receipt d
  const lookup=page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'});
  await expect(lookup).toBeVisible();
  await expect(lookup.getByLabel('চালান, টোকেন বা লেনদেনের রেফারেন্স')).toHaveValue('SYNTHETIC-NO-MATCH-2026');
- await expect(lookup.getByText('কোনো মিল পাওয়া যায়নি')).toBeVisible();
+ await expect(lookup.getByTestId('receipt-mobile-required')).toContainText('১১ সংখ্যার মোবাইল নম্বর');
+ await expect(lookup.getByText('কোনো মিল পাওয়া যায়নি')).toHaveCount(0);
  await lookup.locator('.receipt-lookup__sample').first().click();
  await expect(lookup.getByRole('button',{name:'রসিদ প্রিন্ট'})).toBeVisible();
  await expect(lookup.locator('.receipt-view__paper')).toBeVisible();

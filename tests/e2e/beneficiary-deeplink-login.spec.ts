@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 // The existing TaxPay modal is shared by header login and private-route entry.
 test('Beneficiaries direct link restores approved User ID/password and resumes the list',async({page})=>{
   await page.goto('/?action=beneficiaries');
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await expect(dialog).toBeVisible();
   await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
@@ -32,24 +32,24 @@ test('Beneficiaries sign-in retains Bengali and closes to the public home',async
   await expect(page).toHaveURL(/lang=bn/);
   await dialog.getByRole('button',{name:'বন্ধ করুন'}).click();
   await expect(page).toHaveURL(/action=landing/);
-  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
 });
 
 test('already signed-in Beneficiaries deep links never reopen login or workspace gate',async({page})=>{
   await page.goto('/?action=taxpayer_login');
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
   await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
   await page.goto('/?action=beneficiaries');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
-  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
 });
 
 test('sample Beneficiaries keeps saved lists without an unsolicited email sign-in prompt',async({page})=>{
   await page.goto('/?action=taxpayer_login');
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
   await dialog.getByRole('button',{name:'Sign In',exact:true}).click();

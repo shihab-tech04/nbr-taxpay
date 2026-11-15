@@ -20,6 +20,8 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   const [searchResult, setSearchResult] = useState<ChallanReceipt | null | 'NOT_FOUND'>(null);
   const [lookupPending, setLookupPending] = useState(false);
   const [lookupError, setLookupError] = useState(false);
+  // A reference without required session verification is not a confirmed no-match.
+  const [needsReceiptMobile, setNeedsReceiptMobile] = useState(false);
   const lookupSequence = useRef(0);
   useEffect(() => () => { lookupSequence.current += 1; }, []);
   const resetLookup = () => {
@@ -27,16 +29,19 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
     setSearchResult(null);
     setLookupPending(false);
     setLookupError(false);
+    setNeedsReceiptMobile(false);
   };
   // Never suggest sample/session receipts in the signed-in account tracking journey.
   // Users must provide the actual reference; public lookup examples remain unchanged.
-  const sampleReceipts = accountContext ? [] : receipts.filter(receipt => !receipt.receiptMobile).slice(0, 3);
+  const sampleReceipts = accountContext ? [] : receipts.filter(receipt =>
+    receipt.isSimulatedDemo === true && !receipt.receiptMobile).slice(0, 3);
 
   const searchReference = (reference: string, mobile: string) => {
     if (!reference) return;
     const sequence = ++lookupSequence.current;
     setSearchedReference(reference);
     setLookupError(false);
+    setNeedsReceiptMobile(false);
     const local = lookupReceipt(reference, mobile);
     if (local) {
       setLookupPending(false);
@@ -48,7 +53,8 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
     // recovery route only reads simulated records from this browser session.
     if (!/^01\d{9}$/.test(mobile)) {
       setLookupPending(false);
-      setSearchResult('NOT_FOUND');
+      setSearchResult(null);
+      setNeedsReceiptMobile(true);
       return;
     }
     setSearchResult(null);
@@ -158,6 +164,9 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             </div>
           )}
         </form>}
+        {needsReceiptMobile && <p role="status" className="receipt-lookup__hint" data-testid="receipt-mobile-required">
+          {t('Enter the 11-digit receipt mobile number to check this reference in saved session records.', 'সংরক্ষিত সেশন রেকর্ডে এই রেফারেন্স খুঁজতে রসিদের ১১ সংখ্যার মোবাইল নম্বর লিখুন।')}
+        </p>}
         {lookupPending && <p role="status" className="receipt-lookup__hint">
           {t('Checking records from this browser session…', 'এই ব্রাউজার সেশনের রেকর্ড খোঁজা হচ্ছে…')}
         </p>}
@@ -171,6 +180,10 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             <div className="receipt-lookup__result-copy">
               <h2>{t('No matching record', 'কোনো মিল পাওয়া যায়নি')}</h2>
               <p>{t('No record found for:', 'এই রেফারেন্সে কোনো রেকর্ড পাওয়া যায়নি:')} <strong className="font-mono-plex">{searchedReference}</strong></p>
+              <p data-testid="receipt-session-only-notice">{t(
+                'Only saved payments from this browser session were checked. This does not confirm whether an official payment record exists.',
+                'শুধু এই ব্রাউজার সেশনে সংরক্ষিত পেমেন্ট খোঁজা হয়েছে। সরকারি পেমেন্ট রেকর্ড আছে কি না, এই ফল তা নিশ্চিত করে না।'
+              )}</p>
               <button type="button" className="receipt-lookup__issue-link" onClick={() => navigate(accountContext ? 'corrections' : 'incident')}>
                 {t('Report a payment issue', 'পেমেন্টের সমস্যা জানান')}
               </button>
