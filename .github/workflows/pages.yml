@@ -39,7 +39,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Check verifier regression cases
-        run: node --test scripts/ci/verified-merge-release.test.mjs
+        run: |
+          node --test scripts/ci/verified-merge-release.test.mjs
+          node --test scripts/ci/sohojkor-v2-cutover-gate.test.mjs
       - name: Confirm exact-source PR acceptance and review artifact
         id: probe
         env:
@@ -761,6 +763,16 @@ jobs:
       pages: write
       id-token: write
     steps:
+      - name: Check out release guard before any production publication
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Block unverified V2 primary and unsafe legacy/Office swaps
+        env:
+          SOHOJKOR_PRODUCTION_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
+          SOHOJKOR_ORIGINAL_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          SOHOJKOR_OFFICE_SUPABASE_URL: 'https://ihbtabrvmyiwikqqbhrf.supabase.co'
+        run: node scripts/ci/sohojkor-v2-cutover-gate.mjs
       - name: Deploy compiled application
         id: deployment
         uses: actions/deploy-pages@v5.0.1
