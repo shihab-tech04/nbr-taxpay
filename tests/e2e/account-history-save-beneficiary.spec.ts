@@ -578,7 +578,7 @@ for(const language of ['en','bn'] as const){
         if(!Array.isArray(draftLines) || draftLines.length!==savedAllocations.length)return false;
         const ids=draftLines.map((line:{id:string})=>line.id);
         return ids.every((id:string)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id) &&
-          !sourceAllocationIds.includes(id)) && new Set(ids).size===ids.length;
+          !sourceAllocationIds.some(sourceId => sourceId === id)) && new Set(ids).size===ids.length;
       })).toBe(true);
       await repeatModal.locator('.taxpay-modal__close').click();
 
