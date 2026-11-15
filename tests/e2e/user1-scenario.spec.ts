@@ -68,6 +68,14 @@ test('user1 exceptions, profile and notifications are correlated but not governm
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
   await page.goto('/?action=account_profile&demoUser=user1');
+  if (process.env.VITE_SUPABASE_DISABLED === 'true') {
+    const profile=page.getByTestId('user1-taxpayer-profile');
+    await expect(profile.getByRole('alert')).toContainText(
+      /Taxpayer profile is not available for this account|Could not load taxpayer information/
+    );
+    await expect(profile.locator('[data-profile-field]')).toHaveCount(0);
+    return;
+  }
   await expect(page.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await expect(page.getByText('Taxpayer status')).toBeVisible();
   await expect(page.getByTestId('user1-taxpayer-profile').getByText('Individual',{exact:true}).first()).toBeVisible();
@@ -368,6 +376,14 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
 test('user1 profile export contains supplied TIN fields without unnecessary copy',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Download verification');
   await page.goto('/?action=account_profile&demoUser=user1');
+  if (process.env.VITE_SUPABASE_DISABLED === 'true') {
+    const profile=page.getByTestId('user1-taxpayer-profile');
+    await expect(profile.getByRole('alert')).toContainText(
+      /Taxpayer profile is not available for this account|Could not load taxpayer information/
+    );
+    await expect(profile.getByRole('button',{name:'Download profile'})).toHaveCount(0);
+    return;
+  }
   const [download]=await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('button',{name:'Download profile'}).click()
