@@ -14,7 +14,7 @@ import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} 
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
-type ReviewNotice = { id: string; request_id: string; message_code: string; is_read: boolean; created_at: string };
+type ReviewNotice = { id: string; request_id: string | null; correction_inquiry_id?: string | null; message_code: string; is_read: boolean; created_at: string };
 
 const I18N = {
   en: {
@@ -29,6 +29,11 @@ const I18N = {
     alertsHelp: 'In-app notifications only.',
     notificationsTitle: 'Account notifications', noticesInfo: 'Your private draft activity and officer review updates. Review actions do not confirm a payment.',
     reviewTitle: 'Officer review updates', reviewLabel: 'Non-financial review',
+    officeInitiated: 'Office has opened a correction review — check your correction history',
+    correctionMaker: 'Office Maker acknowledged the correction',
+    correctionReviewer: 'Office Reviewer verified the correction review',
+    correctionApprover: 'Office Approver closed the review — payment unchanged',
+    correctionRejected: 'Office rejected the correction review',
     reviewReceived: 'Review request submitted', reviewAcknowledged: 'Officer acknowledged your request',
     reviewInfo: 'Officer requested additional information', reviewClosed: 'Officer completed the review',
     noNotices: 'No stored draft activity for this account.', noDemoNotices: 'No notifications yet.',
@@ -53,6 +58,11 @@ const I18N = {
     alertsHelp: 'শুধু অ্যাপের বিজ্ঞপ্তি।',
     notificationsTitle: 'অ্যাকাউন্টের বিজ্ঞপ্তি', noticesInfo: 'আপনার ব্যক্তিগত খসড়া ও কর্মকর্তার পর্যালোচনার খবর। পর্যালোচনা মানে অর্থ পরিশোধ নিশ্চিত হওয়া নয়।',
     reviewTitle: 'কর্মকর্তার পর্যালোচনার হালনাগাদ', reviewLabel: 'অ-আর্থিক পর্যালোচনা',
+    officeInitiated: 'অফিস সংশোধন পর্যালোচনা শুরু করেছে — সংশোধনের ইতিহাস দেখুন',
+    correctionMaker: 'অফিসের মেকার সংশোধনের আবেদন গ্রহণ করেছেন',
+    correctionReviewer: 'অফিস রিভিউয়ার সংশোধনের আবেদন যাচাই করেছেন',
+    correctionApprover: 'অফিস অ্যাপ্রুভার পর্যালোচনা বন্ধ করেছেন — পেমেন্ট অপরিবর্তিত',
+    correctionRejected: 'অফিস সংশোধনের আবেদন প্রত্যাখ্যান করেছে',
     reviewReceived: 'রিভিউ অনুরোধ জমা হয়েছে', reviewAcknowledged: 'কর্মকর্তা অনুরোধ গ্রহণ করেছেন',
     reviewInfo: 'কর্মকর্তা অতিরিক্ত তথ্য চেয়েছেন', reviewClosed: 'কর্মকর্তা পর্যালোচনা শেষ করেছেন',
     noNotices: 'এই অ্যাকাউন্টে সংরক্ষিত ড্রাফটের কার্যক্রম নেই।', noDemoNotices: 'এখনো কোনো বিজ্ঞপ্তি নেই।',
@@ -116,7 +126,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       const [draftResult, reviewResult] = await Promise.all([
         client.from('taxpay_payment_drafts').select('id,owner_uid,created_at,category,assessment_year')
           .eq('owner_uid', uid).order('created_at', { ascending: false }).limit(30),
-        client.from('taxpay_in_app_notifications').select('id,request_id,message_code,is_read,created_at')
+        client.from('taxpay_in_app_notifications').select('id,request_id,correction_inquiry_id,message_code,is_read,created_at')
           .order('created_at', { ascending: false }).limit(50)
       ]);
       if (draftResult.error || reviewResult.error) throw draftResult.error ?? reviewResult.error;
@@ -199,7 +209,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   };
   const normalizedNotificationSearch=notificationSearch.trim().toLocaleLowerCase(language==='bn'?'bn-BD':'en-GB');
   const filteredReviewNotices=reviewNotices.filter(item=>
-    !normalizedNotificationSearch || [item.request_id,item.message_code,
+    !normalizedNotificationSearch || [item.request_id??'',item.correction_inquiry_id??'',item.message_code,
       date(item.created_at)].some(text=>text.toLocaleLowerCase().includes(normalizedNotificationSearch)));
   const filteredDraftNotices=notices.filter(item=>
     !normalizedNotificationSearch || [item.category,item.assessment_year,item.id,
@@ -340,9 +350,14 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                               REQUEST_SUBMITTED:t.reviewReceived,
                               REQUEST_ACKNOWLEDGED:t.reviewAcknowledged,
                               REQUEST_INFO_REQUESTED:t.reviewInfo,
-                              REQUEST_REVIEW_CLOSED:t.reviewClosed
+                              REQUEST_REVIEW_CLOSED:t.reviewClosed,
+                              CORRECTION_OFFICE_INITIATED:t.officeInitiated,
+                              CORRECTION_MAKER_ACKNOWLEDGED:t.correctionMaker,
+                              CORRECTION_REVIEWER_VERIFIED:t.correctionReviewer,
+                              CORRECTION_APPROVER_CLOSED:t.correctionApprover,
+                              CORRECTION_REJECTED:t.correctionRejected
                             } as Record<string,string>)[item.message_code]??t.reviewLabel}</p>},
-                            {key:'reference',header:language==='bn'?'অনুরোধের রেফারেন্স':'Request reference',renderCell:item=><p className="break-all font-mono-plex text-sm text-taxpay-muted">{item.request_id}</p>},
+                            {key:'reference',header:language==='bn'?'অনুরোধের রেফারেন্স':'Request reference',renderCell:item=><p className="break-all font-mono-plex text-sm text-taxpay-muted">{item.correction_inquiry_id??item.request_id??'—'}</p>},
                             {key:'recorded',header:language==='bn'?'রেকর্ডের তারিখ':'Recorded',renderCell:item=><time dateTime={item.created_at} className="text-sm text-taxpay-muted">{date(item.created_at)}</time>},
                             {key:'status',header:language==='bn'?'অবস্থা':'Status',renderCell:item=><p className="font-semibold">{item.is_read?t.viewed:t.new}</p>}
                           ]}/>
