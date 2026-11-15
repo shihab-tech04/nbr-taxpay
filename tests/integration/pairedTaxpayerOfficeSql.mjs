@@ -84,6 +84,8 @@ assert.equal(Number(row.amountMinor),5000);assert.equal(row.certificateReference
 assert.deepEqual(row.details.allocations,details.allocations);
 assert.deepEqual(row.details.lines,details.lines);
 assert.deepEqual(row.details.receiptSnapshot,details.receiptSnapshot);
+assert.equal(details.challanRemarks,'বাংলা মন্তব্য: করের বিস্তারিত তথ্য\nThis comment is longer than twenty characters.');
+assert.equal(row.details.challanRemarks,details.challanRemarks,'Office must preserve original BN/EN multiline remarks');
 assert.equal(row.details.receiptReference,details.receiptReference);
 assert.equal(row.details.payerId,details.payerId);
 const office=psql(dst,[
