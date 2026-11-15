@@ -19,7 +19,8 @@ const row={
 test('accept only private, source-proven recipient notice pages',()=>{
   const page={items:[row],total:1,hasMore:false,offset:0,limit:100};
   assert.equal(validateAccountReceivedPaymentPage(page),page);
-  assert.equal(validateAccountReceivedPaymentPage({...page,items:[]})?.items.length,0);
+  const empty={...page,items:[]};
+  assert.equal(validateAccountReceivedPaymentPage(empty),empty);
 });
 test('reject any disclosed TIN, missing provenance or false credit claim',()=>{
   for(const item of [
