@@ -110,12 +110,28 @@ export function bindPreviewStoryPayer(
       (/^\d{12,13}$/.test(tin)?`SAVED_TIN:${tin}`:null)
     : preview.profileId;
   if(!selected)throw new Error('Choose a saved demo beneficiary for this simulation.');
+  // M04 is an exclusive one-head Return transaction. The UI holds accounting
+  // items, while the legacy profile transport needs a beneficiary allocation.
+  // Keep BOTH identities and exactly the original head/amount; never turn a
+  // valid Return into an untyped allocation or a combined Other Tax payment.
+  const isExclusiveReturn=input.service==='TAX_WITH_RETURN';
+  if(isExclusiveReturn){
+    const sourceItems=details.lines as Array<Record<string,unknown>>;
+    const receiptItems=(details.receiptSnapshot as {items?:Array<Record<string,unknown>>}).items;
+    if(sourceItems.length!==1 || sourceItems[0]?.headId!==125 ||
+      Math.round(Number(sourceItems[0]?.totalAmount)*100)!==input.amountMinor ||
+      !Array.isArray(receiptItems) || receiptItems.length!==1 ||
+      receiptItems[0]?.headId!==125 ||
+      Math.round(Number(receiptItems[0]?.totalAmount)*100)!==input.amountMinor)
+      throw new Error('RETURN_EXCLUSIVE_SINGLE_HEAD_RECIPIENT');
+  }
   return {...input,details:{
     ...details,
     receiptLines:details.lines,
     lines:[{
       beneficiary:selected,
       category:input.service,
+      ...(isExclusiveReturn?{headId:125,totalAmount:input.amountMinor/100}:{}),
       assessmentYear:typeof details.assessmentYear==='string'?details.assessmentYear:'2026-27',
       amountMinor:input.amountMinor
     }]
