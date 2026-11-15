@@ -34,6 +34,11 @@ type SourceAllocation = {
   tin: string; name: string; headId: number; year: string; amountMinor: number;
 };
 
+/** A receipt may hide duplicate accounting rows while displaying verified SQL
+ * allocation groups. Only use those saved head rows after readback reconciliation. */
+const reusableHeads = (receipt: ChallanReceipt) =>
+  receipt.items?.length ? receipt.items : receipt.reusableAccountingLines ?? [];
+
 /** A grouped historical batch has one Pay Again choice, not one per receipt.
  * Keep the full original row list available to the reconstruction validator.
  * Prefix batch and individual identities so unrelated IDs cannot collide. */
@@ -123,12 +128,12 @@ export function reuseRecordedPayment(
     return {ownerUid,sourcePaymentId,service,formPayload:payload};
   }
   if (!supported.has(service)) throw Error('This payment service needs a fresh payment journey.');
-  if (source.some(r => !r.isSimulatedDemo || r.paymentCategory !== service || !r.items?.length))
+  if (source.some(r => !r.isSimulatedDemo || r.paymentCategory !== service || !reusableHeads(r).length))
     throw Error('The original payment is incomplete and cannot be copied.');
   // Historical or newly recorded Return receipts cannot introduce a non-return
   // head through Pay Again, even when an old receipt lacks allocation metadata.
   if (service === 'TAX_WITH_RETURN' && source.some(r =>
-    r.items.some(head => head.headId !== 125)))
+    reusableHeads(r).some(head => head.headId !== 125)))
     throw Error('Tax with Return cannot be combined with another payment head.');
   // A single fetched row may still belong to a larger multi-item batch.
   // Never treat a partial history page or missing item as an entire payment.
@@ -157,11 +162,12 @@ export function reuseRecordedPayment(
     sorted.some(receipt => (receipt.allocationItems?.length ?? 0) > 0);
   const allocations: SourceAllocation[] = [];
   for (const receipt of sorted) {
+    const savedHeads = reusableHeads(receipt);
     if (hasAllocationSnapshot) {
-      if (!receipt.allocationItems?.length || receipt.items.length !== receipt.allocationItems.length)
+      if (!receipt.allocationItems?.length || savedHeads.length !== receipt.allocationItems.length)
         throw Error('Original taxpayer/head/year allocations are incomplete.');
-      for (let index = 0; index < receipt.items.length; index++) {
-        const head = receipt.items[index];
+      for (let index = 0; index < savedHeads.length; index++) {
+        const head = savedHeads[index];
         const allocation = receipt.allocationItems[index];
         const tin = allocation.taxpayerTin ?? '';
         const value = checkedMinor(head.totalAmount);
@@ -175,14 +181,14 @@ export function reuseRecordedPayment(
     } else {
       const tin = receipt.taxpayerTin ?? '';
       if (!validTin(tin)) throw Error('Original taxpayer identity cannot be verified.');
-      for (const head of receipt.items) {
+      for (const head of savedHeads) {
         if (!Number.isSafeInteger(head.headId) || head.headId <= 0)
           throw Error('Original payment head is missing.');
         allocations.push({tin, name: '', headId: head.headId,
           year: receipt.assessmentYear, amountMinor: checkedMinor(head.totalAmount)});
       }
     }
-    const receiptSum = receipt.items.reduce((sum, h) => sum + checkedMinor(h.totalAmount), 0);
+    const receiptSum = savedHeads.reduce((sum, h) => sum + checkedMinor(h.totalAmount), 0);
     if (receiptSum !== checkedMinor(receipt.totalAmount))
       throw Error('Original payment amount does not reconcile.');
   }
