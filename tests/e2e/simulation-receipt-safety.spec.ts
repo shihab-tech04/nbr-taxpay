@@ -134,7 +134,7 @@ for (const language of ['en', 'bn'] as const) test(`legacy ${language} receipt s
       penaltyAmount: 0, surchargeAmount: 0, interestAmount: 0, totalAmount: 1 }],
     totalAmount: 1, paymentMethod: 'BKASH', treasuryStatus: 'TREASURY_SCROLLED',
     treasuryScrollNo: 'BB-SCRL-2026-99999', taxCreditStatus: 'PENDING_RECONCILIATION',
-    createdAt: '2026-10-24 10:00:00', isSimulatedDemo: true,
+    createdAt: '2026-10-24 10:00:00', completedAt: '2026-10-24 10:00:00', isSimulatedDemo: true,
   };
   await page.route('**/*.supabase.co/**', route => route.abort());
   await page.route(/\/demo-story1-taxpay\/payments\?sessionId=/, route => route.fulfill({
@@ -155,6 +155,15 @@ for (const language of ['en', 'bn'] as const) test(`legacy ${language} receipt s
   await expect(receipt).toContainText(reference);
   await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারি স্ক্রল রেফারেন্স' : 'Treasury scroll reference');
   await expect(receipt).toContainText(language === 'bn' ? 'ট্রেজারি স্ক্রল ইস্যু হয়নি' : 'No Treasury scroll issued');
+  await expect(receipt).not.toContainText('BB-SCRL-2026-99999');
+  await expect(receipt.getByRole('button', { name: language === 'bn' ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate' })).toBeVisible();
+  await expect(receipt.getByTestId('payment-certificate-reference')).toHaveCount(0);
+  await page.goto('/?action=verify&lang=' + language);
+  await page.locator('#receipt-lookup-reference').fill('SK-PC-' + paymentId);
+  await page.locator('#receipt-lookup-mobile').fill('01712345678');
+  await page.locator('.receipt-lookup__submit').click();
+  await expect(receipt.getByTestId('payment-certificate-reference')).toContainText('SK-PC-' + paymentId);
+  await expect(receipt).toContainText(reference);
   await expect(receipt).not.toContainText('BB-SCRL-2026-99999');
 });
 

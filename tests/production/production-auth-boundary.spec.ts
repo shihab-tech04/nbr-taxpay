@@ -1,16 +1,14 @@
 import { expect, test } from '@playwright/test';
 
-const site = '/nbr-taxpay/';
- 
-// CI validates the production bundle's auth/route boundaries, not CDN transfer.
-// Keep public artwork off the real Taxpayer Storage service in repeatable tests;
-// the application still uses its existing bundled fallback image on failure.
+// CI route/auth checks must not download large live CMS artworks; app fallback stays intact.
 test.beforeEach(async ({ page }) => {
   await page.route(
     'https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**',
     route => route.abort('blockedbyclient'),
   );
 });
+
+const site = '/nbr-taxpay/';
 const privateRoutes = ['taxpayer_home', 'dashboard', 'history', 'ledger', 'account_profile', 'account_notifications', 'account_settings', 'beneficiaries', 'services'];
 
 test('the public TaxPay login restores the approved User ID/password modal', async ({ page }) => {
@@ -48,6 +46,10 @@ test('User ID login continues into the taxpayer workspace and survives refresh',
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
   await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+  const demoOtp=dialog.getByTestId('demo-otp-input');
+  await expect(demoOtp).toBeVisible();
+  await demoOtp.fill('111111');
+  await dialog.getByTestId('taxpayer-login-submit').click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.goto(site+'?action=beneficiaries');

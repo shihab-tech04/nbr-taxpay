@@ -91,10 +91,11 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
   </div>;
   const csv=()=>{
     const esc=(x:string|number)=>'"'+String(x).replace(/"/g,'""')+'"';
-    const body=[['Reference','Category','Assessment year','Amount ৳','Treasury status'],...records.map(r=>[r.challanNo,r.paymentCategory,r.assessmentYear,r.totalAmount,r.isSimulatedDemo && (r.treasuryStatus==='TREASURY_SCROLLED'||r.treasuryStatus==='GATEWAY_SUCCESS')?'Treasury status not verified':r.treasuryStatus])]
+    const headings=bn?['রেফারেন্স','কর পরিশোধের ধরন','করবর্ষ','পরিমাণ ৳','ট্রেজারি অবস্থা']:['Reference','Category','Assessment year','Amount ৳','Treasury status'];
+    const body=[headings,...records.map(r=>[r.challanNo,r.paymentCategory,r.assessmentYear,r.totalAmount,r.isSimulatedDemo && (r.treasuryStatus==='TREASURY_SCROLLED'||r.treasuryStatus==='GATEWAY_SUCCESS')?(bn?'ট্রেজারি অবস্থা যাচাই করা হয়নি':'Treasury status not verified'):r.treasuryStatus])]
       .map(r=>r.map(esc).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF'+body],{type:'text/csv;charset=utf-8'}));
-    const a=document.createElement('a');a.href=url;a.download='Korbritto_transactions.csv';a.click();URL.revokeObjectURL(url);
+    const a=document.createElement('a');a.href=url;a.download='Sohojkor_transactions.csv';a.click();URL.revokeObjectURL(url);
   };
   // Fail closed: there is no verified owner/year-scoped external assessment response.
   const verifiedExternalTaxPositionReady = false;

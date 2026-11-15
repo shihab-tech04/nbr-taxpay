@@ -1,15 +1,17 @@
 import type { ChallanReceipt, PaymentCategory } from '../types/tax';
 import { MAX_COMBINED_ALLOCATIONS } from './otherTaxCombinedPayment';
+import { PAY_AGAIN_YEAR_OPTIONS } from './payAgain';
 
 /** This is an editable INPUT snapshot, not a cloned receipt or authorization. */
 export type PaymentReuse = {
   ownerUid: string;
   sourcePaymentId: string;
+  /** Read-only original SQL allocation IDs; never new allocation IDs or payment authority. */
+  sourceAllocationIds?: readonly string[];
   service: PaymentCategory;
   formPayload: Record<string, unknown>;
 };
 
-const CURRENT_YEAR = '2026-27';
 const supported = new Set<PaymentCategory>([
   'TAX_WITH_RETURN', 'ADVANCE_TAX', 'ASSESSED_DEMAND', 'PENALTY',
   'SOURCE_TAX_DEPOSIT', 'APPELLATE_TRIBUNAL', 'OTHER_TAX_PAYMENT',
@@ -24,12 +26,29 @@ const checkedMinor = (amount: number) => {
 };
 const copiedYear = (year: string) => {
   if (!validYear(year)) throw Error('Historical assessment year is missing or invalid.');
-  return year === CURRENT_YEAR ? year : '';
+  // Retain the exact original valid AY as an editable input; unsupported years require re-selection.
+  return PAY_AGAIN_YEAR_OPTIONS.some(option => option === year) ? year : '';
 };
 
 type SourceAllocation = {
   tin: string; name: string; headId: number; year: string; amountMinor: number;
 };
+
+/** A grouped historical batch has one Pay Again choice, not one per receipt.
+ * Keep the full original row list available to the reconstruction validator.
+ * Prefix batch and individual identities so unrelated IDs cannot collide. */
+export function oneChoicePerRecordedParent<T extends {id: string}>(
+  rows: readonly T[], batchIdOf: (row: T) => string | undefined,
+): T[] {
+  const seen = new Set<string>();
+  return rows.filter(row => {
+    const batchId = batchIdOf(row);
+    const key = batchId ? 'batch:' + batchId : 'payment:' + row.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 /**
  * Never infer a missing taxpayer/head/year from a batch summary label. Only
@@ -134,8 +153,8 @@ export function reuseRecordedPayment(
   // Explicit allocation data takes precedence over legacy receipt summaries.
   const returnWithAllocations = service === 'TAX_WITH_RETURN' &&
     sorted.some(receipt => (receipt.allocationItems?.length ?? 0) > 0);
-  const hasAllocationSnapshot = service === 'OTHER_TAX_PAYMENT' || returnWithAllocations;
-  const isAllocationPayment = service === 'OTHER_TAX_PAYMENT';
+  const hasAllocationSnapshot = service === 'OTHER_TAX_PAYMENT' || returnWithAllocations ||
+    sorted.some(receipt => (receipt.allocationItems?.length ?? 0) > 0);
   const allocations: SourceAllocation[] = [];
   for (const receipt of sorted) {
     if (hasAllocationSnapshot) {
@@ -169,6 +188,11 @@ export function reuseRecordedPayment(
   }
   if (!allocations.length || allocations.length > MAX_COMBINED_ALLOCATIONS)
     throw Error('The original payment exceeds the supported allocation limit.');
+  // A saved non-Return transaction may contain multiple independently dated,
+  // headed or recipient-owned allocations even if its original category was
+  // a single-head service. Use the existing combined editor; never flatten it.
+  const isAllocationPayment = service === 'OTHER_TAX_PAYMENT' ||
+    (service !== 'TAX_WITH_RETURN' && allocations.length > 1);
   if (service === 'TAX_WITH_RETURN' && allocations.length !== 1)
     throw Error('Tax with Return requires exactly one taxpayer and one assessment year.');
   const exactAllocations = allocations.map(item => item.tin + ':' + item.headId + ':' + item.year);
@@ -185,13 +209,16 @@ export function reuseRecordedPayment(
   const initial = sorted[0];
   const years = allocations.map(item => copiedYear(item.year));
   const payload: Record<string, unknown> = {
-    schemaVersion: 1, category: service, step: 1, forSelf: ownerIsPayee,
+    schemaVersion: 1, category: isAllocationPayment ? 'OTHER_TAX_PAYMENT' : service,
+    step: 1, forSelf: ownerIsPayee,
     tin: ownerIsPayee ? '' : first.tin,
     payerName: '', otherTaxpayerName: first.name,
     additionalTaxpayers: others,
     otherTaxLines: isAllocationPayment
       ? allocations.map((item,index) => ({
-          id:`repeat-line-${index + 1}`,
+          // A repeat is a NEW payment. Historical source IDs remain read-only;
+          // each editable copy receives independent, valid allocation identities.
+          id: crypto.randomUUID(),
           taxpayerId: people.get(item.tin)!.id,
           headId: item.headId,
           assessmentYear: years[index], amount: money(item.amountMinor)
@@ -201,6 +228,7 @@ export function reuseRecordedPayment(
     assessmentYear: years[0],
     // Old notice/demand references are historical, not new payment authority.
     noticeReference: '',
+    paymentRemarks: initial.paymentRemarks ?? '',
     incomeTaxType: null,
     selectedHeadIds: isAllocationPayment ? [] : [...new Set(allocations.map(a=>a.headId))],
     amountInputs: isAllocationPayment ? {} : Object.fromEntries(
@@ -210,8 +238,17 @@ export function reuseRecordedPayment(
     throw Error('Mixed assessment years require the allocation payment service.');
   if (!isAllocationPayment && allocations.some(a => a.tin !== allocations[0].tin))
     throw Error('Mixed taxpayers require the allocation payment service.');
-  // A copied source record is retained only as informational context, not a receipt.
-  return {ownerUid,sourcePaymentId,service,formPayload:payload};
+  // Old allocation identities remain historical provenance, not IDs for the
+  // new payment. The new composer generates independent IDs on submission.
+  const historicalIds=sorted.flatMap(receipt => (receipt.allocationItems ?? [])
+    .map(item => item.allocationId).filter((id):id is string=>typeof id==='string'&&!!id.trim()));
+  const sourceAllocationIds=historicalIds.length===allocations.length &&
+    new Set(historicalIds).size===historicalIds.length ? historicalIds : undefined;
+  // The source parent stays immutable. Only a multi-allocation NON-Return copy
+  // changes editor service to the approved general combined-payment composer.
+  return {ownerUid,sourcePaymentId,
+    service:isAllocationPayment?'OTHER_TAX_PAYMENT':service,
+    ...(sourceAllocationIds?{sourceAllocationIds}:{}),formPayload:payload};
 }
 
 

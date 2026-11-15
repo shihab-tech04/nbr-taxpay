@@ -26,7 +26,9 @@ type RpcName =
   | 'taxpay_demo_profile_login'
   | 'taxpay_demo_profile_settings'
   | 'taxpay_demo_recover_story1_session'
-  | 'taxpay_demo_payment_form_drafts';
+  | 'taxpay_demo_payment_form_drafts'
+  | 'taxpay_guest_payment_form_drafts'
+  | 'taxpay_demo_received_payment_notices';
 
 function response(value: unknown, status: number, origin: string): Response {
   return new Response(status === 204 ? null : JSON.stringify(value), {
@@ -59,6 +61,8 @@ function publicError(error: unknown): { status: number; code: string } {
     return { status: 400, code: message.split(':')[0] };
   if (/DRAFT_CONFLICT/.test(message)) return { status: 409, code: 'DRAFT_CONFLICT' };
   if (/DRAFT_NOT_FOUND/.test(message)) return { status: 404, code: 'DRAFT_NOT_FOUND' };
+  if (/INVALID_NOTICE_REQUEST/.test(message)) return { status: 400, code: 'INVALID_NOTICE_REQUEST' };
+  if (/NOTICE_NOT_FOUND/.test(message)) return { status: 404, code: 'NOTICE_NOT_FOUND' };
   if (/23505|duplicate key value|already exists/.test(message)) return { status: 409, code: 'LIST_NAME_TAKEN' };
   if (/NOT_FOUND/.test(message)) return { status: 404, code: 'NOT_FOUND' };
   return { status: 503, code: 'SERVICE_UNAVAILABLE' };
@@ -162,8 +166,28 @@ Deno.serve(async (request: Request) => {
       data = await rpc(client, 'taxpay_demo_profile_settings', {
         p_capability_hash, p_key: key, p_value: value,
       });
-    } else if (typeof action === 'string' && action.startsWith('payment-draft-')) {
-      const draftAction = action.slice('payment-draft-'.length);
+    } else if (typeof action === 'string' && action.startsWith('received-notices-')) {
+      const noticeAction = action.slice('received-notices-'.length);
+      if (!['list', 'unread', 'ack'].includes(noticeAction))
+        throw new Error('INVALID_NOTICE_REQUEST');
+      const eventId = body.eventId ?? null;
+      const offset = body.offset ?? 0;
+      const limit = body.limit ?? 100;
+      if ((eventId !== null && (typeof eventId !== 'string' || eventId.length > 200)) ||
+          !Number.isSafeInteger(offset) || offset < 0 || offset > 100000 ||
+          !Number.isSafeInteger(limit) || limit < 1 || limit > 100 ||
+          (noticeAction === 'ack' && !eventId))
+        throw new Error('INVALID_NOTICE_REQUEST');
+      data = await rpc(client, 'taxpay_demo_received_payment_notices', {
+        p_capability_hash, p_action: noticeAction, p_event_id: eventId,
+        p_offset: offset, p_limit: limit,
+      });
+    } else if (typeof action === 'string' &&
+      (action.startsWith('payment-draft-') || action.startsWith('guest-payment-draft-'))) {
+      // Keep the existing demo-profile draft action unchanged. Unsigned guests
+      // use their same opaque capability but a different session-scoped SQL RPC.
+      const isUnsignedGuestDraft = action.startsWith('guest-payment-draft-');
+      const draftAction = action.slice((isUnsignedGuestDraft ? 'guest-payment-draft-' : 'payment-draft-').length);
       if (!['list', 'get', 'create', 'update', 'delete'].includes(draftAction))
         throw new Error('INVALID_DRAFT_ACTION');
       const id = body.id ?? null;
@@ -186,7 +210,8 @@ Deno.serve(async (request: Request) => {
       if (draftAction === 'create' && (id !== null || revision !== null)) throw new Error('INVALID_DRAFT_PAYLOAD');
       if (draftAction === 'update' && (!id || revision === null)) throw new Error('INVALID_DRAFT_PAYLOAD');
       if (draftAction === 'delete' && (!id || revision === null)) throw new Error('INVALID_DRAFT_PAYLOAD');
-      data = await rpc(client, 'taxpay_demo_payment_form_drafts', {
+      data = await rpc(client,
+        isUnsignedGuestDraft ? 'taxpay_guest_payment_form_drafts' : 'taxpay_demo_payment_form_drafts', {
         p_capability_hash, p_action: draftAction, p_draft_id: id,
         p_service: service, p_payload: payload, p_revision: revision,
       });
@@ -224,7 +249,8 @@ Deno.serve(async (request: Request) => {
       data = await rpc(client, 'taxpay_guest_beneficiary_delete_list', {
         p_capability_hash, p_list_id: body.id,
       });
-    } else if (action === 'add') {
+    } else if (action === 'add' || action === 'restore-legacy-add') {
+      const legacyRecovery = action === 'restore-legacy-add';
       if (!uuidPattern.test(String(body.listId ?? '')) || !Array.isArray(body.rows) || body.rows.length > 1000)
         throw new Error('INVALID_ROWS');
       const rows = body.rows.map((row) => {
@@ -235,11 +261,12 @@ Deno.serve(async (request: Request) => {
         if (typeof tin !== 'string' || !/^\d{12}$/.test(tin)) throw new Error('INVALID_BENEFICIARY');
         const tag = value.tag ?? null;
         const relationship = value.relationship ?? null;
+        if (!legacyRecovery && tag === null) throw new Error('INVALID_BENEFICIARY');
         const other_label = tag === 'others'
           ? validateName(value.other_label, 80, 'INVALID_BENEFICIARY')
           : null;
         if (tag !== 'others' && value.other_label != null) throw new Error('INVALID_BENEFICIARY');
-        if (!((tag === null && relationship === null) ||
+        if (!((legacyRecovery && tag === null && relationship === null) ||
           ((tag === 'clients' || tag === 'others') && relationship === null) ||
           (tag === 'friends_family' && typeof relationship === 'string' &&
             ['father','mother','siblings','son','daughter','spouse','friends'].includes(relationship))))

@@ -64,22 +64,24 @@ test('profile and e-TIN certificate fields match the canonical UI/export field m
   assert.equal(new Set(all).size,all.length,'no repeated profile, date, circle, or address field');
   assert.deepEqual([...all].sort(),expected.sort(),'no source field omitted and no new unsupported field');
   assert.deepEqual(TAXPAYER_PROFILE_LAYOUT.identity.map(([key])=>key),['taxpayerName','tin']);
-  assert.deepEqual(TAXPAYER_PROFILE_LAYOUT.summary.map(([key])=>key),['tinType','registeredOn','previousTin','lastLoginAt']);
-  assert.deepEqual(TAXPAYER_PROFILE_LAYOUT.jurisdiction.slice(0,3).map(([key])=>key),
-    ['taxesCircle','taxesZone','taxesRange']);
+  assert.deepEqual(TAXPAYER_PROFILE_LAYOUT.summary.map(([key])=>key),['tinType','taxesCircle','registeredOn','lastLoginAt']);
+  assert.deepEqual(TAXPAYER_PROFILE_LAYOUT.jurisdiction.map(([key])=>key),
+    ['taxesZone','taxesRange','district','country']);
   const fromCertificate=['tin','taxpayerName','taxpayerStatus','previousTin',
     'registeredAddress','currentAddress','taxesCircle','taxesZone','certificateIssuedOn',
     'certificateLastUpdatedOn','issuingOfficer','taxOfficeAddress','taxOfficePhone'];
   assert.deepEqual(
     TAXPAYER_PROFILE_FIELD_ORDER.filter(row=>row[2]==='certificate').map(row=>row[0]).sort(),
     fromCertificate.sort(),'all certificate fields appear once in the combined profile');
-  assert.equal(TAXPAYER_PROFILE_LAYOUT.summary[1][2],'tin_profile',
+  assert.equal(TAXPAYER_PROFILE_LAYOUT.summary[1][2],'certificate',
+    'the summary tax circle is sourced from the certificate');
+  assert.equal(TAXPAYER_PROFILE_LAYOUT.summary[2][2],'tin_profile',
     'registered since is a separate TIN profile field, not falsely a certificate date');
   assert.equal(TAXPAYER_PROFILE_LAYOUT.summary[3][2],'account',
     'last account login does not come from the certificate');
   assert.equal(TAXPAYER_PROFILE_LAYOUT.contact[0][2],'tin_profile');
   assert.equal(TAXPAYER_PROFILE_LAYOUT.contact[1][2],'tin_profile');
-  assert.equal(TAXPAYER_PROFILE_LAYOUT.certificate[4][0],'taxOfficePhone');
+  assert.equal(TAXPAYER_PROFILE_LAYOUT.certificate[5][0],'taxOfficePhone');
   assert.equal(sample.taxesCircle,'Circle-245 (Company)');
   assert.equal(sample.taxpayerStatus,'Individual');
   assert.equal(sample.tinType,'Individual');

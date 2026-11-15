@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {reuseRecordedPayment,reuseLegacySingleHeadPayment} from '../src/services/paymentReuse.ts';
+import {reuseRecordedPayment,reuseLegacySingleHeadPayment,oneChoicePerRecordedParent} from '../src/services/paymentReuse.ts';
 import type {ChallanReceipt} from '../src/types/tax.ts';
+import {V11_PAYMENT_OPTIONS} from '../src/data/v11PaymentOptions.ts';
 const receipt = {
   id:'r1',challanNo:'SIM-1',tokenNumber:'SIM-token',paymentCategory:'OTHER_TAX_PAYMENT',
   assessmentYear:'2025-26, 2026-27',payerName:'Payer',payerTin:'1234567890123',
@@ -20,12 +21,47 @@ test('copies original mixed own/other/head/year allocations without altering pai
  const draft=reuseRecordedPayment([receipt],'ownerUid','1234567890123','original-payment');
  assert.equal(draft.ownerUid,'ownerUid');assert.equal(draft.service,'OTHER_TAX_PAYMENT');
  assert.equal(draft.formPayload.forSelf,true);
- assert.deepEqual((draft.formPayload.otherTaxLines as Array<{assessmentYear:string}>).map(l=>l.assessmentYear),['2026-27','']);
+ assert.deepEqual((draft.formPayload.otherTaxLines as Array<{assessmentYear:string}>).map(l=>l.assessmentYear),['2026-27','2025-26']);
  assert.deepEqual((draft.formPayload.otherTaxLines as Array<{amount:string}>).map(l=>l.amount),['10.00','20.00']);
  assert.equal((draft.formPayload.additionalTaxpayers as unknown[]).length,1);
  assert.equal(draft.formPayload.noticeReference,'');
  assert.equal(JSON.stringify(receipt),before);
 });
+test('Pay Again carries editable long, bilingual challan comments without mutating the source',()=>{
+  const remarks='Payment covers multiple years; explanation supplied by taxpayer. বাংলা মন্তব্য: তথ্য যাচাই করুন।';
+  assert.ok(remarks.length > 20);
+  const original={...receipt,paymentRemarks:remarks};
+  const frozen=JSON.stringify(original);
+  const draft=reuseRecordedPayment([original],'ownerUid','1234567890123','original-payment');
+  assert.equal(draft.formPayload.paymentRemarks,remarks);
+  draft.formPayload.paymentRemarks='An edited comment for the new challan';
+  assert.equal(original.paymentRemarks,remarks);
+  assert.equal(JSON.stringify(original),frozen);
+});
+
+test('Pay Again allocates independent UUIDs for every new combined line while retaining historical provenance',()=>{
+  const sourceId='11111111-2222-4333-8444-555555555555';
+  const historicalIds=['aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee','cccccccc-dddd-4eee-8fff-aaaaaaaaaaaa'];
+  const original={...receipt,paymentTransactionId:sourceId,
+    allocationItems:receipt.allocationItems!.map((a,i)=>({...a,allocationId:historicalIds[i]}))};
+  const frozen=JSON.stringify(original);
+  const first=reuseRecordedPayment([original],'ownerUid','1234567890123',sourceId);
+  const second=reuseRecordedPayment([original],'ownerUid','1234567890123',sourceId);
+  const getIds=(copy:typeof first)=>(copy.formPayload.otherTaxLines as Array<{id:string}>).map(x=>x.id);
+  const firstIds=getIds(first),secondIds=getIds(second);
+  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  assert.equal(firstIds.length,2);
+  assert.equal(new Set([...firstIds,...secondIds]).size,4,'each Pay Again copy needs independent allocation IDs');
+  for(const id of [...firstIds,...secondIds]){
+    assert.match(id,uuid);
+    assert.equal(historicalIds.includes(id),false,'never use an original allocation ID for a new line');
+  }
+  assert.deepEqual(first.sourceAllocationIds,historicalIds);
+  assert.deepEqual(second.sourceAllocationIds,historicalIds);
+  assert.equal(first.sourcePaymentId,sourceId);
+  assert.equal(JSON.stringify(original),frozen);
+});
+
 test('refuses incomplete and mismatched receipt data',()=>{
  assert.throws(()=>reuseRecordedPayment([{...receipt,allocationItems:[]}],'owner','1234567890123','ref'));
  assert.throws(()=>reuseRecordedPayment([{...receipt,totalAmount:99}],'owner','1234567890123','ref'));
@@ -47,7 +83,7 @@ test('preserves complete multi-taxpayer mixed-head multi-year source without reu
  const lines=copy.formPayload.otherTaxLines as Array<{taxpayerId:string;headId:number;assessmentYear:string;amount:string}>;
  assert.equal(lines.length,4);
  assert.deepEqual(lines.map(line=>line.headId),[1,2,3,4]);
- assert.deepEqual(lines.map(line=>line.assessmentYear),['2026-27','','','2026-27']);
+ assert.deepEqual(lines.map(line=>line.assessmentYear),['2026-27','2025-26','2027-28','2026-27']);
  assert.deepEqual(lines.map(line=>line.amount),['10.00','20.00','5.00','5.00']);
  assert.equal(copy.formPayload.forSelf,true);
  assert.equal((copy.formPayload.additionalTaxpayers as unknown[]).length,2);
@@ -56,6 +92,38 @@ test('preserves complete multi-taxpayer mixed-head multi-year source without reu
  lines[0].amount='1.00';
  assert.equal(JSON.stringify(extended),before);
 });
+test('Pay Again keeps all non-Return SQL allocations even when the original parent was filed under one tax category',()=>{
+  const originalId='11111111-2222-4333-8444-555555555555';
+  const historicalIds=['historical-allocation-a','historical-allocation-b'];
+  const original={...receipt,
+    paymentTransactionId:originalId,paymentCategory:'ADVANCE_TAX' as const,
+    allocationItems:receipt.allocationItems!.map((line,index)=>({
+      ...line,allocationId:historicalIds[index]
+    }))
+  } as ChallanReceipt;
+  const frozen=JSON.stringify(original);
+  const repeated=reuseRecordedPayment([original],'signed-in-owner','1234567890123',originalId);
+  // Both heads, beneficiaries, exact years and amounts belong to ONE new
+  // editable composer, not a silently downgraded single-head payment.
+  assert.equal(repeated.service,'OTHER_TAX_PAYMENT');
+  assert.equal(repeated.formPayload.category,'OTHER_TAX_PAYMENT');
+  assert.equal(repeated.sourcePaymentId,originalId);
+  assert.deepEqual(repeated.sourceAllocationIds,historicalIds);
+  const lines=repeated.formPayload.otherTaxLines as Array<{
+    id:string;taxpayerId:string;headId:number;assessmentYear:string;amount:string
+  }>;
+  assert.equal(lines.length,2);
+  assert.deepEqual(lines.map(line=>[line.headId,line.assessmentYear,line.amount]),[
+    [1,'2026-27','10.00'],[2,'2025-26','20.00']
+  ]);
+  assert.equal(new Set(lines.map(line=>line.taxpayerId)).size,2);
+  assert.equal(lines.some(line=>historicalIds.includes(line.id)),false);
+  lines[0].amount='12.50';
+  assert.equal(JSON.stringify(original),frozen);
+  assert.throws(()=>reuseRecordedPayment([{...original,allocationItems:[original.allocationItems![0]]}],
+    'signed-in-owner','1234567890123',originalId),/incomplete/);
+});
+
 test('cannot reuse a partial grouped batch or unreconciled line amount',()=>{
  const grouped={...receipt,batchId:'batch-1',batchItemCount:2,batchItemIndex:1};
  assert.throws(()=>reuseRecordedPayment([grouped],'owner','1234567890123','batch-1'),/complete original batch/);
@@ -77,8 +145,10 @@ test('Travel Tax reuse copies itinerary and people but never treats masked passp
      passengers:[{name:'Test Passenger',passportMasked:'••••1234',nationality:'BD' as const,
        country:'Bangladesh',ageBand:'ADULT' as const,age:34,amount:30}]
    }};
+ const before=JSON.stringify(travel);
  const draft=reuseRecordedPayment([travel],'owner','1234567890123','travel-origin');
  assert.equal(draft.service,'TRAVEL_TAX');
+ assert.equal(draft.sourcePaymentId,'travel-origin');
  assert.equal(draft.formPayload.travelDate,'');
  assert.equal(draft.formPayload.port,'Benapole');
  assert.equal(draft.formPayload.destination,'India');
@@ -88,6 +158,9 @@ test('Travel Tax reuse copies itinerary and people but never treats masked passp
  assert.deepEqual(people.map(p=>p.birthDate),['']);
  assert.deepEqual(people.map(p=>p.identitySource),['PENDING']);
  assert.equal(JSON.stringify(draft).includes('••••1234'),false);
+ for(const priorDocumentRef of ['SIM-1','SIM-token','SIM-TXN'])
+  assert.equal(JSON.stringify(draft.formPayload).includes(priorDocumentRef),false);
+ assert.equal(JSON.stringify(travel),before);
  assert.throws(()=>reuseRecordedPayment([{...travel,
    travelDetails:{...travel.travelDetails,passengers:[{...travel.travelDetails.passengers[0],amount:0}]}
  }],'owner','1234567890123','travel-origin'),/cannot be reconciled/);
@@ -115,7 +188,7 @@ test('historical SQL single-head payment opens editable repeat without guessing 
   assert.equal(draft.service,'TAX_WITH_RETURN');
   assert.equal(draft.formPayload.forSelf,true);
   assert.equal(draft.formPayload.legacySourceAmount,'25000.00');
-  assert.equal(draft.formPayload.assessmentYear,'');
+  assert.equal(draft.formPayload.assessmentYear,'2025-26');
   assert.deepEqual(draft.formPayload.selectedHeadIds,[]);
   assert.deepEqual(draft.formPayload.amountInputs,{});
   assert.equal(draft.formPayload.incomeTaxType,null);
@@ -138,7 +211,7 @@ test('historical head IDs never auto-select a current payment head',()=>{
   assert.equal(result.formPayload.legacySourceAmount,'55.00');
   assert.deepEqual(result.formPayload.selectedHeadIds,[]);
   assert.deepEqual(result.formPayload.amountInputs,{});
-  assert.equal(result.formPayload.assessmentYear,'');
+  assert.equal(result.formPayload.assessmentYear,'2025-26');
   assert.throws(()=>reuseLegacySingleHeadPayment({
     ...source,details:{...source.details,lines:[{...source.details.lines[0],headId:-1}]}
   },'user1','1111111111111'));
@@ -184,7 +257,7 @@ test('Pay Again uses the single explicit Return allocation in the standard wizar
     items:[{...receipt.items[0],headId:125}],totalAmount:10,
     allocationItems:[{...receipt.allocationItems![0],assessmentYear:'2025-26'}]};
   const copy=reuseRecordedPayment([single],'owner','1234567890123','single-source');
-  assert.equal(copy.formPayload.assessmentYear,'');
+  assert.equal(copy.formPayload.assessmentYear,'2025-26');
   assert.deepEqual(copy.formPayload.otherTaxLines,[]);
   assert.deepEqual(copy.formPayload.selectedHeadIds,[125]);
   assert.deepEqual(copy.formPayload.amountInputs,{125:'10.00'});
@@ -242,7 +315,7 @@ test('Pay Again keeps a genuine complete two-row batch as one editable copy',()=
  const lines=copy.formPayload.otherTaxLines as Array<{headId:number;assessmentYear:string;amount:string}>;
  assert.equal(lines.length,4);
  assert.deepEqual(lines.map(l=>l.headId),[1,2,51,52]);
- assert.deepEqual(lines.map(l=>l.assessmentYear),['2026-27','','','']);
+ assert.deepEqual(lines.map(l=>l.assessmentYear),['2026-27','2025-26','2027-28','2027-28']);
  assert.equal(lines.reduce((total,line)=>total+Number(line.amount),0),60);
  assert.equal(copy.sourcePaymentId,'batch-checked');
 });
@@ -259,4 +332,52 @@ test('Pay Again must bind the selected source ID to the original immutable SQL p
  assert.equal(reuseRecordedPayment([batch],'owner','1234567890123',batchId).sourcePaymentId,batchId);
  assert.throws(()=>reuseRecordedPayment([batch],'owner','1234567890123',otherId),
   /original payment|source payment|batch/i,'a mismatched batch ID must never be attached to a receipt');
+});
+
+// The approved Pay Again entry is not limited to OTHER_TAX_PAYMENT. These
+// recorded service journeys still use their existing single-head wizard and
+// must not manufacture a new beneficiary, historical year or source payment.
+test('single-head Pay Again service matrix retains editable source inputs and exact year rules',()=>{
+  const services = ['ADVANCE_TAX','ASSESSED_DEMAND','PENALTY',
+    'SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL'] as const;
+  for(const service of services){
+    const head=V11_PAYMENT_OPTIONS.find(item=>item.category===service && item.status==='ACTIVE');
+    assert.ok(head,service+' must have an available source-catalogue head');
+    for(const assessmentYear of ['2026-27','2025-26','2027-28'] as const){
+      const original={...receipt,paymentCategory:service,taxpayerTin:'1234567890123',
+        assessmentYear,allocationItems:undefined,
+        items:[{...receipt.items[0],headId:head.id,economicCode:head.economicCode,
+          headNameEn:head.nameEn,totalAmount:10,taxAmount:10}],totalAmount:10} as ChallanReceipt;
+      const immutable=JSON.stringify(original);
+      const sourceId=service+'-'+assessmentYear;
+      const reused=reuseRecordedPayment([original],'ownerUid','1234567890123',sourceId);
+      assert.equal(reused.service,service);
+      assert.equal(reused.sourcePaymentId,sourceId);
+      assert.equal(reused.formPayload.forSelf,true);
+      assert.deepEqual(reused.formPayload.additionalTaxpayers,[]);
+      assert.deepEqual(reused.formPayload.otherTaxLines,[]);
+      assert.deepEqual(reused.formPayload.selectedHeadIds,[head.id]);
+      assert.deepEqual(reused.formPayload.amountInputs,{[head.id]:'10.00'});
+      assert.equal(reused.formPayload.assessmentYear,assessmentYear);
+      assert.equal(JSON.stringify(original),immutable,'original payment must remain unchanged');
+    }
+  }
+});
+
+test('Pay Again offers one choice per recorded parent, never one per legacy batch line',()=>{
+  const source=[
+    {id:'payment-1',batchId:'batch-A',amountMinor:1500},
+    {id:'payment-2',batchId:'batch-A',amountMinor:3500},
+    {id:'batch-A',amountMinor:700},
+    {id:'payment-3',batchId:'batch-B',amountMinor:900},
+    {id:'payment-4',batchId:'batch-B',amountMinor:1100},
+    {id:'payment-5',amountMinor:800},
+  ];
+  const original=JSON.stringify(source);
+  const choices=oneChoicePerRecordedParent(source,payment=>payment.batchId);
+  assert.deepEqual(choices.map(item=>item.id),['payment-1','batch-A','payment-3','payment-5']);
+  // Grouped rows are display-only; all saved allocations stay available to
+  // the existing complete-batch reconstruction and idempotency checks.
+  assert.equal(source.length,6);
+  assert.equal(JSON.stringify(source),original);
 });
