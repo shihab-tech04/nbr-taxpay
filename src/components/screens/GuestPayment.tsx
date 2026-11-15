@@ -766,7 +766,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const taxpayerLookupResult = (
     <div className="tin-lookup__result" role="status" aria-live="polite" data-lookup-state={tinLookupState}>
       {tinLookupState === 'idle' ? <p>{language === 'bn' ? 'টিআইএন খুঁজে নাম দেখুন।' : 'Search TIN to fill taxpayer name.'}</p>
-        : sampleTaxpayer ? <p className="sr-only">{language === 'bn' ? 'করদাতার নাম পাওয়া গেছে।' : 'Taxpayer name found.'}</p>
+        : sampleTaxpayer ? <p className="text-xs text-slate-600" data-testid="tin-sample-origin">{language === 'bn'
+          ? 'নমুনা প্রোফাইলে নাম মিলেছে। এটি সরকারি NBR রেকর্ড বা পরিচয় যাচাই নয়।'
+          : 'Name matched a sample profile; this is not an official NBR record or identity verification.'}</p>
         : <p>{language === 'bn' ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.'}</p>}
     </div>
   );
@@ -1681,6 +1683,9 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   <p className="text-xs text-slate-600">{language === 'bn' ? 'করদাতার নাম' : 'Taxpayer name'}</p>
                   <p className="font-semibold text-taxpay-text">{language === 'bn' ? oneTimeSearchMatch.nameBn : oneTimeSearchMatch.nameEn}</p>
                   <p className="break-all text-sm text-slate-600">{oneTimeSearchMatch.tin}</p>
+                  <p className="mt-1 text-xs text-slate-600" data-testid="one-time-sample-origin">{language === 'bn'
+                    ? 'নমুনা প্রোফাইল — NBR-এর সরকারি রেকর্ড নয়; ব্যক্তিগত ইতিহাস দেখার অনুমতি দেয় না।'
+                    : 'Sample profile — not an official NBR record or permission to view private history.'}</p>
                   <button type="button" className="mt-3 min-h-10 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white"
                     disabled={!availableSavedTins || !savedBatchTaxpayers.some(person => Boolean(person.tin)) || Boolean(oneTimeLookupError) || beneficiaryChecking}
                     onClick={() => {

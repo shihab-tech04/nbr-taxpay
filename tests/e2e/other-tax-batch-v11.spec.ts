@@ -991,6 +991,7 @@ test('F-039 Bengali saved-and-one-time recipient selection preserves the saved l
   await oneTime.locator('#other-tax-one-time-tin').fill('444444444444');
   await oneTime.getByRole('button',{name:'করদাতার টিআইএন খুঁজুন'}).click();
   await expect(oneTime.getByTestId('one-time-taxpayer-preview')).toContainText('444444444444');
+  await expect(oneTime.getByTestId('one-time-sample-origin')).toContainText('NBR-এর সরকারি রেকর্ড নয়');
   await oneTime.getByRole('button',{name:'এই পেমেন্টে যোগ করুন'}).click();
   await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
   await oneTime.getByRole('button',{name:'পেমেন্ট থেকে সরান'}).click();
