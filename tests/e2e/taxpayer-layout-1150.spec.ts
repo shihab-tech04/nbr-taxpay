@@ -30,6 +30,7 @@ test('User1 bento retains the approved blue surface and keyboard-operable servic
   await expect(page.locator('.taxpay-bento-position__highlight')).toHaveCount(0);
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
+  await page.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   const bar=page.getByTestId('dashboard-service-breakdown').locator('[data-service="income"]');
   await bar.focus();
   await page.keyboard.press('Space');
