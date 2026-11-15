@@ -74,6 +74,11 @@ export function OtherTaxTaxpayerList({
         <div><dt>{bn ? 'করদাতার নাম' : 'Taxpayer name'}</dt><dd>{displayName}</dd></div>
         <div><dt>{bn ? 'টিআইএন' : 'TIN'}</dt><dd>{tin}</dd></div>
       </dl>
+      {match && <p className="mt-2 text-xs text-slate-600" data-testid="taxpayer-sample-source">
+        {bn
+          ? 'নমুনা প্রোফাইল — এটি NBR-এর যাচাইকৃত পরিচয় বা ব্যক্তিগত রেকর্ডে প্রবেশের অনুমতি নয়।'
+          : 'Sample profile — not a verified NBR identity or permission to access private records.'}
+      </p>}
     </section>;
   };
   // Match Travel Tax: identity preview first, followed by a distinct confirmation
@@ -81,7 +86,12 @@ export function OtherTaxTaxpayerList({
   const addTaxpayerAction = (id: string, tin: string) =>
     <div className="taxpay-taxpayer-row__confirm-add">
       <button type="button" className="taxpay-taxpayer-row__add"
-        onClick={() => { onConfirmTaxpayer(id, tin); onClearError(); }}>
+        onClick={() => {
+          // A typed TIN or stale displayed name cannot become a confirmed
+          // recipient unless the current lookup actually returned this TIN.
+          if (!canSearch(tin) || lookupSampleTaxpayer(tin)?.tin !== tin) return;
+          onConfirmTaxpayer(id, tin); onClearError();
+        }}>
         <Plus size={18} aria-hidden="true"/>{bn ? 'করদাতা যোগ করুন' : 'Add taxpayer'}
       </button>
     </div>;
@@ -131,7 +141,8 @@ export function OtherTaxTaxpayerList({
           status={Boolean(primaryTin) && searchedTins.primary === primaryTin && !lookupSampleTaxpayer(primaryTin)
             ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined}/>
         {progressive && !primaryConfirmed && searchedTins.primary === primaryTin &&
-          canSearch(primaryTin) && !duplicate('primary', primaryTin) &&
+          canSearch(primaryTin) && lookupSampleTaxpayer(primaryTin)?.tin === primaryTin &&
+          !duplicate('primary', primaryTin) &&
           <>{identityCard('primary', primaryTin, primaryName, false)}
             {addTaxpayerAction('primary', primaryTin)}</>}
       </div>}
@@ -178,7 +189,8 @@ export function OtherTaxTaxpayerList({
             status={Boolean(person.tin) && searchedTins[person.id] === person.tin && !lookupSampleTaxpayer(person.tin)
               ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined} />
           {requireConfirmation && !personConfirmed && searchedTins[person.id] === person.tin &&
-            canSearch(person.tin) && !duplicate(person.id, person.tin) &&
+            canSearch(person.tin) && lookupSampleTaxpayer(person.tin)?.tin === person.tin &&
+            !duplicate(person.id, person.tin) &&
             <>{identityCard(person.id, person.tin, person.name, false)}
               {addTaxpayerAction(person.id, person.tin)}</>}
         </div>}
