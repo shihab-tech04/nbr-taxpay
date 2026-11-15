@@ -8,6 +8,7 @@ import { downloadDisplayedCertificateSummary } from '../../services/receiptDocum
 import { getAccountStoryPayments, getDetailedStorySessionPayments, beneficiaryPaymentEntries, type BeneficiaryPaymentEntry } from '../../services/story1AccountPaymentHistory';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { ReceiptView } from '../common/ReceiptView';
+import { canViewPaymentCertificate } from '../../services/paymentCertificateModel';
 import type { ChallanReceipt } from '../../types/tax';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
@@ -26,12 +27,19 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [sqlPayments, setSqlPayments] = useState<BeneficiaryPaymentEntry[]>([]);
   const [selectedReceipt, setSelectedReceipt] = useState<ChallanReceipt | null>(null);
+  const [selectedDocumentMode, setSelectedDocumentMode] = useState<'receipt' | 'certificate'>('receipt');
   const [sqlError, setSqlError] = useState(false);
   const [sqlLoading,setSqlLoading]=useState(true);
   const [recordSearch,setRecordSearch]=useState('');
   const [receiptReturnToSummary,setReceiptReturnToSummary]=useState(false);
   const bn = language === 'bn';
   const label = (en: string, bengali: string) => bn ? bengali : en;
+  const openDocument = (receipt: ChallanReceipt, mode: 'receipt' | 'certificate', fromSummary = false) => {
+    if (mode === 'certificate' && !canViewPaymentCertificate(receipt)) return;
+    setReceiptReturnToSummary(fromSummary);
+    setSelectedDocumentMode(mode);
+    setSelectedReceipt(receipt);
+  };
 
   useEffect(() => {
     let active = true;
@@ -177,9 +185,13 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
              {key:'reference',header:label('Reference','রেফারেন্স'),renderCell:row=><p className="break-all font-mono-plex text-sm">{row.paymentId}</p>},
              {key:'amount',header:label('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',
                renderCell:row=><p className="font-semibold">{formatCurrency(row.amountMinor/100,language)}</p>},
-             {key:'receipt',header:label('Receipt','রসিদ'),renderCell:row=><button type="button"
-               className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-               onClick={()=>{setReceiptReturnToSummary(false);setSelectedReceipt(row.receipt);}}>{label('View receipt','রসিদ দেখুন')}</button>}
+             {key:'receipt',header:label('Documents','নথি'),renderCell:row=><div className="flex flex-wrap gap-2">
+               <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+                 onClick={()=>openDocument(row.receipt,'receipt')}>{label('View receipt','রসিদ দেখুন')}</button>
+               {canViewPaymentCertificate(row.receipt) && <button type="button"
+                 className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+                 onClick={()=>openDocument(row.receipt,'certificate')}>{label('View payment certificate','পেমেন্ট সনদ দেখুন')}</button>}
+             </div>}
            ]}
            renderMobileCard={row=><>
              <div className="taxpay-mobile-table-card__header">
@@ -191,7 +203,10 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
              <p className="taxpay-mobile-table-card__meta break-all">{label('Reference','রেফারেন্স')}: {row.paymentId}</p>
              <div className="taxpay-mobile-table-card__actions">
                <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-                 onClick={()=>{setReceiptReturnToSummary(false);setSelectedReceipt(row.receipt);}}>{label('View receipt','রসিদ দেখুন')}</button>
+                 onClick={()=>openDocument(row.receipt,'receipt')}>{label('View receipt','রসিদ দেখুন')}</button>
+               {canViewPaymentCertificate(row.receipt) && <button type="button"
+                 className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+                 onClick={()=>openDocument(row.receipt,'certificate')}>{label('View payment certificate','পেমেন্ট সনদ দেখুন')}</button>}
              </div>
            </>}/>}
       </section>
@@ -277,8 +292,13 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
                           <p className="mt-1 text-sm">{row.paymentHead} · {row.assessmentYear}</p>
                           <p className="mt-1 break-all font-mono-plex text-xs">{row.paymentId}</p>
                           <p className="mt-2 text-sm font-bold">{formatCurrency(row.amountMinor / 100, language)}</p>
-                          <button type="button" className="mt-2 min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-                            onClick={()=>{setSummaryOpen(false);setReceiptReturnToSummary(true);setSelectedReceipt(row.receipt);}}>{label('View receipt','রসিদ দেখুন')}</button>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+                              onClick={()=>{setSummaryOpen(false);openDocument(row.receipt,'receipt',true);}}>{label('View receipt','রসিদ দেখুন')}</button>
+                            {canViewPaymentCertificate(row.receipt) && <button type="button"
+                              className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
+                              onClick={()=>{setSummaryOpen(false);openDocument(row.receipt,'certificate',true);}}>{label('View payment certificate','পেমেন্ট সনদ দেখুন')}</button>}
+                          </div>
                         </article>
                       ))}
                     </div>
@@ -302,8 +322,12 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
                               <td>{row.paymentHead}{row.economicCode&&<small className="block">{row.economicCode}</small>}</td>
                               <td>{row.assessmentYear}</td>
                               <td className="text-right font-mono-plex">{formatCurrency(row.amountMinor / 100, language)}</td>
-                              <td><button type="button" className="min-h-11 font-semibold text-taxpay-primary"
-                                onClick={()=>{setSummaryOpen(false);setReceiptReturnToSummary(true);setSelectedReceipt(row.receipt);}}>{label('View','দেখুন')}</button></td>
+                              <td><div className="flex flex-wrap gap-2">
+                                <button type="button" className="min-h-11 font-semibold text-taxpay-primary"
+                                  onClick={()=>{setSummaryOpen(false);openDocument(row.receipt,'receipt',true);}}>{label('View receipt','রসিদ দেখুন')}</button>
+                                {canViewPaymentCertificate(row.receipt) && <button type="button" className="min-h-11 font-semibold text-taxpay-primary"
+                                  onClick={()=>{setSummaryOpen(false);openDocument(row.receipt,'certificate',true);}}>{label('View payment certificate','পেমেন্ট সনদ দেখুন')}</button>}
+                              </div></td>
                             </tr>
                           ))}
                         </tbody>
@@ -316,10 +340,12 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
           </div>
         </TaxPayModal>
       )}
-      {selectedReceipt&&<TaxPayModal title={label('Payment receipt','পেমেন্ট রসিদ')} service="status"
+      {selectedReceipt&&<TaxPayModal title={selectedDocumentMode === 'certificate'
+          ? label('Sohojkor Payment Certificate','সহজকর পেমেন্ট সনদ')
+          : label('Payment receipt','পেমেন্ট রসিদ')} service="status"
         className="receipt-modal" footer={<></>}
         onClose={()=>{setSelectedReceipt(null);if(receiptReturnToSummary)setSummaryOpen(true);}}>
-        <ReceiptView receipt={selectedReceipt} embedded/>
+        <ReceiptView receipt={selectedReceipt} embedded certificate={selectedDocumentMode === 'certificate'}/>
       </TaxPayModal>}
     </div>
   );
