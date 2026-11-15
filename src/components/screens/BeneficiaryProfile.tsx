@@ -34,11 +34,14 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
   const [status,setStatus]=useState('all');
   const [dateFrom,setDateFrom]=useState('');
   const [dateTo,setDateTo]=useState('');
-  const [selected,setSelected]=useState<BeneficiaryProfilePayment|null>(null);
+  const [selection,setSelection]=useState<{identity:string;payment:BeneficiaryProfilePayment}|null>(null);
   const identity=(ownerUid??previewId??'')+':'+person.id+':'+person.tin;
+  // An open receipt must never outlive the precise owner + saved beneficiary.
+  // Check before render, not only when a subsequent effect clears old state.
+  const selected=selection?.identity===identity?selection.payment:null;
   useEffect(()=>{
     let active=true;
-    setSnapshot({identity,state:'loading',rows:[]});setSelected(null);
+    setSnapshot({identity,state:'loading',rows:[]});setSelection(null);
     void loadBeneficiaryProfilePayments(person.tin,ownerUid,previewId,language).then(rows=>{
       if(active)setSnapshot({identity,state:'ready',rows});
     }).catch(()=>{
@@ -212,7 +215,7 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <UiButton type="button" variant="outline" className="gap-2"
-                    onClick={()=>setSelected(row)}><FileText size={16} aria-hidden="true"/>
+                    onClick={()=>setSelection({identity,payment:row})}><FileText size={16} aria-hidden="true"/>
                     {row.receipt?tr('View original record','মূল রেকর্ড দেখুন'):tr('View details','বিস্তারিত দেখুন')}
                   </UiButton>
                 </div>
@@ -223,7 +226,7 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
       </section>
     </>}
     {selected&&<TaxPayModal title={tr('Payment details','পেমেন্টের বিবরণ')} service="status"
-      className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
+      className="receipt-modal" onClose={()=>setSelection(null)} footer={<></>}>
       {selected.receipt?<>
         {selected.batchId&&<p className="mb-3 text-sm text-taxpay-muted">
           {tr('This allocation belongs to an original combined transaction. It is not a separate payment.',
