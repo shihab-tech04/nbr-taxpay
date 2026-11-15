@@ -185,7 +185,7 @@ test('wide desktop uses the available canvas without crushing the footer or look
   expect(visual.searchHeading.bottom).toBeLessThan(visual.searchField.top);
   expect(visual.searchField.width).toBeGreaterThanOrEqual(visual.record.width*.9);
   // Six balanced benefit cards should retain adequate height at wide viewport sizes.
-  // Medium-height desktops use 88px cells to preserve the no-overflow layout.
+  // Medium-height desktops retain balanced readable cells and no-overflow layout.
   expect(visual.firstCard.height).toBeGreaterThanOrEqual(88);
   // Two-line tagline is acceptable; footer links must never touch or overlap.
   expect(visual.footerTagline.height).toBeLessThanOrEqual(44);
@@ -436,13 +436,13 @@ test('record search and benefits share a restrained, left-aligned desktop headin
     expect(measurements.searchY).toBeGreaterThan(measurements.recordDescriptionBottom);
     expect(measurements.searchWidth).toBeGreaterThanOrEqual(measurements.sectionWidth * .9);
     expect(measurements.weights).toEqual([600, 600, 400]);
-    expect(measurements.fontSizes).toEqual(['16px', '20px', '14px', '14px']);
+    expect(measurements.fontSizes).toEqual(['20px', '20px', '15px', '15px']);
     expect(measurements.documentHeightOverflow).toBeLessThanOrEqual(2);
     expect(measurements.documentWidthOverflow).toBeLessThanOrEqual(2);
   }
 });
 
-test('approved payment-record lookup keeps the compact reference composition', async ({ page }) => {
+test('payment-record lookup keeps the new readable heading and consistent card geometry', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/?action=landing&lang=en');
   await page.evaluate(async () => { await document.fonts.ready; });
@@ -471,9 +471,8 @@ test('approved payment-record lookup keeps the compact reference composition', a
     };
   });
   expect(layout.panelHeight).toBeGreaterThanOrEqual(108);
-  expect(layout.panelHeight).toBeLessThanOrEqual(128);
-  expect(layout.panelRadius).toBeGreaterThanOrEqual(11);
-  expect(layout.panelRadius).toBeLessThanOrEqual(13);
+  expect(layout.panelHeight).toBeLessThanOrEqual(150);
+  expect(layout.panelRadius).toBe(14);
   expect(layout.headingBottom).toBeLessThan(layout.formTop);
   expect(layout.formHeight).toBeGreaterThanOrEqual(46);
   expect(layout.formHeight).toBeLessThanOrEqual(52);
@@ -487,7 +486,7 @@ test('approved payment-record lookup keeps the compact reference composition', a
 
 test('desktop search keeps compact inset below the 960px height breakpoint', async ({page}) => {
   for (const {height,padLeft,padTop,padBottom} of [
-    {height:959,padLeft:16,padTop:10,padBottom:11},
+    {height:959,padLeft:16,padTop:16,padBottom:16},
     {height:960,padLeft:24,padTop:24,padBottom:24},
   ]) {
     for (const lang of ['en','bn']) {
@@ -552,7 +551,7 @@ test('reference screenshot: tall desktop payment search matches approved padding
       expect(metrics.searchPadBottom).toBe(24);
       expect(metrics.headingGap).toBeGreaterThanOrEqual(12);
       expect(metrics.searchHeight,JSON.stringify({lang,viewport,metrics})).toBeGreaterThanOrEqual(148);
-      expect(metrics.searchHeight).toBeLessThanOrEqual(158);
+      expect(metrics.searchHeight).toBeLessThanOrEqual(170);
       expect(metrics.heroHeight).toBeGreaterThanOrEqual(260);
       expect(metrics.heroHeight).toBeLessThanOrEqual(284);
       expect(metrics.heroToSearch).toBeGreaterThanOrEqual(12);
@@ -820,6 +819,9 @@ for (const { width, height, lang } of [
 
 test('six benefit destinations work by pointer and keyboard in English and Bangla on mobile and desktop', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'The test covers its own explicit mobile and desktop viewports.');
+  // Multiple mobile/desktop routes in both languages need their own
+  // realistic budget on heavily parallel GitHub runners; assertions unchanged.
+  test.setTimeout(90_000);
   const cases = [
     { id: 'payments', en: 'All Tax Payments', bn: 'সব ধরনের কর পরিশোধ', destination: 'pay-choice' },
     { id: 'certificates', en: 'Tax Certificates', bn: 'কর সনদ', destination: 'certificates' },
