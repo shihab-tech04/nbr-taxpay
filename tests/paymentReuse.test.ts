@@ -71,6 +71,7 @@ test('Pay Again keeps all non-Return SQL allocations even when the original pare
   // Both heads, beneficiaries, exact years and amounts belong to ONE new
   // editable composer, not a silently downgraded single-head payment.
   assert.equal(repeated.service,'OTHER_TAX_PAYMENT');
+  assert.equal(repeated.formPayload.category,'OTHER_TAX_PAYMENT');
   assert.equal(repeated.sourcePaymentId,originalId);
   assert.deepEqual(repeated.sourceAllocationIds,historicalIds);
   const lines=repeated.formPayload.otherTaxLines as Array<{
