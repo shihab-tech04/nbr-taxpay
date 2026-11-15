@@ -150,3 +150,36 @@ test('received-notice search, read filter and exact SQL UTC dates retain only ma
     dateFrom:'2026-11-16',dateTo:'2026-11-13'}),[]);
   assert.equal(rows.length,3,'Filters never rewrite the SQL snapshot');
 });
+
+test('SQL microsecond recipient order survives same-millisecond cross-page payment UUID ties',async()=>{
+  const {loadUnreadReceivedPaymentNotices,loadStoredReceivedPaymentNotices}=
+    await import('../src/services/demoReceivedPaymentNotices');
+  const earlier={...valid,eventId:'event-micro-1',
+    paymentId:'ffffffff-ffff-4fff-8fff-ffffffffffff',
+    createdAt:'2026-11-13T18:00:00.123001+00:00'};
+  const later={...valid,eventId:'event-micro-2',
+    paymentId:'11111111-1111-4111-8111-111111111111',
+    createdAt:'2026-11-13T18:00:00.123002+00:00'};
+  const rows=[earlier,later];
+  const page=async(offset:number,limit:number)=>({
+    items:rows.slice(offset,offset+limit),total:2,offset,limit,hasMore:offset+limit<2,
+  });
+  const unread=await loadUnreadReceivedPaymentNotices(page,1);
+  assert.deepEqual(unread.map(row=>row.eventId),rows.map(row=>row.eventId));
+  const stored=await loadStoredReceivedPaymentNotices(async(offset,limit)=>({
+    ...(await page(offset,limit)),
+    items:rows.slice(offset,offset+limit).map(row=>({...row,
+      acknowledgedAt:null})),
+  }),1);
+  assert.deepEqual(stored.map(row=>row.eventId),rows.map(row=>row.eventId));
+  // Reverse the SQL microsecond order even though UUID ordering seems correct;
+  // the consumer must reject this before presenting a first-login popup.
+  const backwards=[later,earlier];
+  await assert.rejects(loadUnreadReceivedPaymentNotices(async(offset,limit)=>({
+    items:backwards.slice(offset,offset+limit),total:2,offset,limit,hasMore:offset+limit<2,
+  }),1),/ordering/);
+  await assert.rejects(loadStoredReceivedPaymentNotices(async(offset,limit)=>({
+    items:backwards.slice(offset,offset+limit).map(row=>({...row,acknowledgedAt:null})),
+    total:2,offset,limit,hasMore:offset+limit<2,
+  }),1),/ordering/);
+});
