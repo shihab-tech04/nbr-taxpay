@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore, useState, type ImgHTMLAttributes } fro
 import defaultWordmark from '../../assets/korbritto-brand-locked.svg';
 import { supabase } from '../../services/supabaseClient';
 import { brandingRequestsAllowed, noteBrandingHttpStatus } from '../../services/brandingRequestGuard';
+import { BRANDING_CMS_CONNECTION_ENABLED } from '../../config/brandingCmsConnection';
 
 // One shared logo source for the public header/footer and taxpayer navigation.
 // A static bundled image keeps every shell usable while the CMS is offline.
@@ -71,7 +72,7 @@ async function refreshLogo(force = false): Promise<boolean> {
 function subscribe(subscriber: () => void) {
   subscribers.add(subscriber);
   const client = supabase;
-  if (subscribers.size === 1 && client) {
+  if (BRANDING_CMS_CONNECTION_ENABLED && subscribers.size === 1 && client) {
     let listening = true;
     let realtimeConnected = false;
     let channel: ReturnType<typeof client.channel> | null = null;
