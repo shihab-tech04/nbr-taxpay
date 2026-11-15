@@ -73,12 +73,13 @@ function sqlRpc(origin,name,args,authenticatedOffice=false){
     OFFICE_SQL:{
       demo_story1_mirror:`public.demo_story1_mirror(${sqlJson(args.p_input)})`,
       payment_v1_office_guarded_story_page:`public.payment_v1_office_guarded_story_page(${args.p_page}::integer,${args.p_per_page}::integer)`,
+      payment_v1_office_guarded_pay_again_lineage:`public.payment_v1_office_guarded_pay_again_lineage(${sqlText(args.p_payment_id)}::uuid)`,
     },
   };
   const expression=definitions[databaseOrigin]?.[name];
   if(!expression)throw Error('Unexpected SQL RPC '+origin+'.'+name);
   const role=name==='demo_story1_submit'?'anon'
-    :databaseOrigin==='OFFICE_SQL'&&name==='payment_v1_office_guarded_story_page'
+    :databaseOrigin==='OFFICE_SQL'&&['payment_v1_office_guarded_story_page','payment_v1_office_guarded_pay_again_lineage'].includes(name)
       ?'authenticated':'service_role';
   const claims=role==='authenticated'
     ?`SELECT set_config('request.jwt.claim.sub',${sqlText(authenticatedOffice?officerId:randomUUID())},true);\n`
@@ -455,6 +456,33 @@ try{
   assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(payAgainId)}::uuid;`),1);
 
 
+
+  const deniedLineage=await request('OFFICE_SQL',
+    '/payments/'+payAgainId+'/lineage');
+  assert.equal(deniedLineage.status,401,
+    'Office Pay Again source ledger must require an authenticated officer');
+  const originalLineage=await request('OFFICE_SQL',
+    '/payments/'+payAgainId+'/lineage','GET',undefined,
+    {authorization:'Bearer '+officeToken});
+  assert.equal(originalLineage.status,200,
+    'Existing authorized Office officer must retrieve original Pay Again lineage');
+  const lineage=originalLineage.data.data;
+  assert.equal(lineage.sourceMirrored,true);
+  assert.equal(lineage.paymentId,payAgainId);
+  assert.equal(lineage.sourcePaymentId,sourceId);
+  assert.equal(lineage.payerId,'user1');
+  assert.equal(lineage.sourceReceiptReference,'SIM-'+idempotencyKey);
+  assert.equal(lineage.sourceCertificateReference,'SK-PC-'+sourceId);
+  assert.equal(lineage.repeatReceiptReference,'SIM-'+payAgainKey);
+  assert.equal(lineage.repeatCertificateReference,'SK-PC-'+payAgainId);
+  assert.deepEqual(lineage.sourceAllocations.map(a=>a.allocationId),allocationIds);
+  assert.deepEqual(lineage.repeatAllocations.map(a=>a.allocationId),payAgainAllocationIds);
+  assert.deepEqual(lineage.sourceAllocations.map(a=>a.taxpayerTin),
+    ['222222222222','333333333333']);
+  assert.deepEqual(lineage.repeatAllocations.map(a=>a.assessmentYear),
+    ['2026-27','2025-26']);
+  assert.equal(lineage.sourceAmountMinor,'5000');
+  assert.equal(lineage.repeatAmountMinor,'5000');
 
   // P0 Pay Again: protect the original recorded parent and prove a repeat is
   // independently identified. The original allocations remain historically
