@@ -80,7 +80,7 @@ test('Bangla chart headings and source tabs remain accessible and interactive',a
   await page.goto(demo+'&lang=bn');
   const chart=page.getByTestId('dashboard-payment-analytics');
   await expect(chart.getByRole('heading',{name:'পেমেন্টের ধরন অনুযায়ী'})).toBeVisible();
-  await expect(chart.getByRole('heading',{name:'উপকারভোগীর সম্পর্ক অনুযায়ী'})).toBeVisible();
+  await expect(chart.getByRole('heading',{name:'উপকারভোগীর বিস্তারিত'})).toBeVisible();
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'নমুনা'}).click();
   await expect(chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'নমুনা'})).toHaveAttribute('aria-pressed','true');
   await expect(page.getByTestId('taxpayer-overview-bento').locator('.taxpay-bento-summary').getByRole('button')).toHaveCount(3);

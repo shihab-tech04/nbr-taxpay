@@ -25,7 +25,8 @@ test('User1 dashboard omits the redundant register and lengthy data notice but p
 test('User1 bento retains the approved blue surface and keyboard-operable service bars',async({page})=>{
   await page.goto(url('taxpayer_home'));
   const hero=page.locator('.taxpay-bento-hero');
-  await expect(hero).toHaveCSS('background-color','rgb(255, 255, 255)');
+  await expect(hero).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
+  await expect(hero.locator('.taxpay-summary-metric').first()).toHaveCSS('background-color','rgb(255, 255, 255)');
   await expect(page.locator('.taxpay-bento-position__highlight')).toHaveCount(0);
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();

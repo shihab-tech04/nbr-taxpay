@@ -46,7 +46,7 @@ export const BentoPaymentAnalytics:React.FC<{
   const [sourceChoice,setSourceChoice]=useState<{year:string;source:DashboardChartSource}|null>(null);
   const [service,setService]=useState<DashboardChartService|'all'>('all');
   const [tag,setTag]=useState<DashboardChartTag|null>(null);
-  const [beneficiaryView,setBeneficiaryView]=useState<'relationships'|'top'>('relationships');
+  const [beneficiaryView,setBeneficiaryView]=useState<'relationships'|'tags'|'top'>('relationships');
   const recorded=projectDashboardChartRecords(records,year,'recorded',people,ownerTin);
   const examples=projectDashboardChartRecords(records,year,'example',people,ownerTin);
   const defaultSource=chooseDashboardChartSource(records,year,people,ownerTin);
@@ -67,6 +67,14 @@ export const BentoPaymentAnalytics:React.FC<{
   const topMax=topBeneficiaries[0]?.amountMinor??0n;
   const displayedBeneficiaryTotal=beneficiaryView==='top'&&selectedTag
     ?selectedTag.amountMinor:filtered.totalMinor;
+  // Role breakdown is strictly payer-initiated: received payments have a
+  // different ownership boundary and are never added to the payer denominator.
+  const selfMinor=all.byTag.find(item=>item.key==='own')?.amountMinor??0n;
+  const unknownRecipientMinor=all.unclassified.recipientMissingMinor;
+  const forOthersMinor=all.totalMinor-selfMinor-unknownRecipientMinor;
+  const rolePercent=(minor:bigint)=>dashboardChartPercentage(minor,all.totalMinor);
+  const rankedPeople=filtered.byBeneficiary.filter(person=>person.tin!==ownerTin).slice(0,5);
+  const rankedMax=rankedPeople[0]?.amountMinor??0n;
   const maskedTin=(tin:string)=>'••••'+tin.slice(-4);
   return <section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
     data-testid="dashboard-payment-analytics" data-chart-source={source}>
@@ -141,13 +149,54 @@ export const BentoPaymentAnalytics:React.FC<{
               'কিছু পুরনো রেকর্ডে পৃথক বরাদ্দ নেই; এগুলো এই মোট হিসাব থেকে বাদ রাখা হয়েছে।')}
           </p>}
       </section>
+
+      <section className="taxpay-bento-analytics__card taxpay-bento-analytics__card--roles"
+        data-testid="dashboard-role-breakdown" aria-labelledby="dashboard-role-breakdown-title">
+        <div className="taxpay-bento-analytics__card-header">
+          <div><h3 id="dashboard-role-breakdown-title">{tr('Payment relationships','পেমেন্টের সম্পর্ক')}</h3>
+            <p>{tr('Who received the payments I initiated?','আমার শুরু করা পেমেন্ট কার নামে হয়েছে?')}</p></div>
+        </div>
+        {hasData?<div className="taxpay-bento-analytics__role-layout">
+          <svg viewBox="0 0 160 160" role="img" className="taxpay-bento-analytics__role-donut"
+            aria-label={tr('My tax','নিজের কর')+': '+money(selfMinor)+', '+tr('Paid for others','অন্যদের জন্য পরিশোধ')+': '+money(forOthersMinor)+', '+tr('Recipient not recorded','প্রাপক নথিভুক্ত নয়')+': '+money(unknownRecipientMinor)}>
+            <circle cx="80" cy="80" r="55" fill="none" stroke="#e8eef4" strokeWidth="19"/>
+            <circle cx="80" cy="80" r="55" fill="none" stroke="#085587" strokeWidth="19"
+              pathLength="100" strokeDasharray={rolePercent(selfMinor)+' 100'} transform="rotate(-90 80 80)"/>
+            <circle cx="80" cy="80" r="55" fill="none" stroke="#568fb7" strokeWidth="19"
+              pathLength="100" strokeDasharray={rolePercent(forOthersMinor)+' 100'}
+              strokeDashoffset={-rolePercent(selfMinor)} transform="rotate(-90 80 80)"/>
+            <circle cx="80" cy="80" r="55" fill="none" stroke="#a9bacb" strokeWidth="19"
+              pathLength="100" strokeDasharray={rolePercent(unknownRecipientMinor)+' 100'}
+              strokeDashoffset={-(rolePercent(selfMinor)+rolePercent(forOthersMinor))} transform="rotate(-90 80 80)"/>
+            <text x="80" y="77" fontSize="13" textAnchor="middle" fill="currentColor" fontWeight="600">{tr('Paid by me','আমার পেমেন্ট')}</text>
+            <text x="80" y="94" fontSize="12" textAnchor="middle" fill="currentColor">{new Intl.NumberFormat(bn?'bn-BD':'en-BD').format(all.paymentCount)}</text>
+          </svg>
+          <dl className="taxpay-bento-analytics__role-legend">
+            {([
+              {en:'For myself',bn:'নিজের জন্য',minor:selfMinor,color:'#085587'},
+              {en:'For other taxpayers',bn:'অন্য করদাতাদের জন্য',minor:forOthersMinor,color:'#568fb7'},
+              {en:'Recipient not recorded',bn:'প্রাপক নথিভুক্ত নয়',minor:unknownRecipientMinor,color:'#a9bacb'}
+            ] as const).map(row=><div key={row.en}>
+              <dt><span style={{background:row.color}} aria-hidden="true"/>{tr(row.en,row.bn)}</dt>
+              <dd className="tabular-nums">{money(row.minor)}</dd>
+            </div>)}
+          </dl>
+        </div>:<p className="taxpay-bento-analytics__empty" role="status">
+          {tr('No payer allocations to chart for this year.','এই করবর্ষে দেখানোর মতো পরিশোধকারীর বরাদ্দ নেই।')}
+        </p>}
+        <p className="taxpay-bento-analytics__footnote">
+          {tr('Payments received from other people are separate from my spending. View Activity for received payments.',
+            'অন্যদের কাছ থেকে প্রাপ্ত পেমেন্ট আমার ব্যয় থেকে পৃথক। প্রাপ্ত পেমেন্ট কার্যক্রমে দেখুন।')}
+        </p>
+        <button type="button" className="taxpay-bento-analytics__link" onClick={()=>onOpenHistory(undefined,'all')}>
+          {tr('View payment history','পেমেন্টের ইতিহাস দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
+        </button>
+      </section>
       <section className="taxpay-bento-analytics__card" data-testid="dashboard-beneficiary-breakdown"
         aria-labelledby="dashboard-beneficiary-breakdown-title">
         <div className="taxpay-bento-analytics__card-header">
           <div>
-            <h3 id="dashboard-beneficiary-breakdown-title">{beneficiaryView==='relationships'
-              ?tr('By beneficiary relationship','উপকারভোগীর সম্পর্ক অনুযায়ী')
-              :tr('Top beneficiaries','শীর্ষ উপকারভোগী')}</h3>
+            <h3 id="dashboard-beneficiary-breakdown-title">{tr('Beneficiary Breakdown','উপকারভোগীর বিস্তারিত')}</h3>
             <p>{service==='all'?tr('All payment services','সব ধরনের পেমেন্ট'):SERVICE_LABELS[service][language]}</p>
           </div>
           <strong className="taxpay-bento-analytics__total tabular-nums">{filtered.totalMinor>0n?money(displayedBeneficiaryTotal):'—'}</strong>
@@ -156,6 +205,9 @@ export const BentoPaymentAnalytics:React.FC<{
           aria-label={tr('Beneficiary chart view','উপকারভোগীর চার্টের ধরন')} data-testid="dashboard-beneficiary-view">
           <button type="button" aria-pressed={beneficiaryView==='relationships'} onClick={()=>{setBeneficiaryView('relationships');setTag(null);}}>
             {tr('Relationships','সম্পর্ক')}
+          </button>
+          <button type="button" aria-pressed={beneficiaryView==='tags'} onClick={()=>{setBeneficiaryView('tags');setTag(null);}}>
+            {tr('Tags','ট্যাগ')}
           </button>
           <button type="button" aria-pressed={beneficiaryView==='top'} onClick={()=>setBeneficiaryView('top')}>
             {tr('Top 5','শীর্ষ ৫')}
@@ -215,6 +267,20 @@ export const BentoPaymentAnalytics:React.FC<{
                 </button>}
             </div>}
         </>:null}
+        {filtered.totalMinor>0n&&beneficiaryView==='tags'&&
+          <div className="taxpay-bento-analytics__bars" role="group" aria-label={tr('Saved beneficiary tag allocations','সংরক্ষিত উপকারভোগী ট্যাগের বরাদ্দ')}
+            data-testid="dashboard-beneficiary-tags-chart">
+            {[...filtered.byTag].filter(item=>item.amountMinor>0n).sort((a,b)=>a.amountMinor>b.amountMinor?-1:a.amountMinor<b.amountMinor?1:0).map(item=>
+              <button type="button" key={item.key} className="taxpay-bento-analytics__bar-item"
+                aria-pressed={tag===item.key} onClick={()=>setTag(current=>current===item.key?null:item.key)}>
+                <span className="taxpay-bento-analytics__bar-top">
+                  <span>{TAG_LABELS[item.key][language]}</span><strong className="tabular-nums">{money(item.amountMinor)}</strong>
+                </span>
+                <span className="taxpay-bento-analytics__bar-track" aria-hidden="true">
+                  <span style={{width:dashboardChartPercentage(item.amountMinor,filtered.totalMinor)+'%'}}/>
+                </span>
+              </button>)}
+          </div>}
         {filtered.totalMinor>0n&&beneficiaryView==='top'&&<>
           {topBeneficiaries.length?<div className="taxpay-bento-analytics__top-list" role="group"
             aria-label={tr('Top five beneficiaries by payment amount','অর্থের পরিমাণ অনুযায়ী শীর্ষ পাঁচ উপকারভোগী')}
@@ -263,6 +329,47 @@ export const BentoPaymentAnalytics:React.FC<{
         </button>}
         {!filtered.totalMinor&&<p role="status" className="taxpay-bento-analytics__empty">{tr(
           'No beneficiary allocations for this selection.','এই বাছাইয়ের জন্য কোনো উপকারভোগী বরাদ্দ নেই।')}</p>}
+      </section>
+
+      <section className="taxpay-bento-analytics__card taxpay-bento-analytics__card--ranking"
+        data-testid="dashboard-ranked-beneficiaries" aria-labelledby="dashboard-ranked-beneficiaries-title">
+        <div className="taxpay-bento-analytics__card-header">
+          <div><h3 id="dashboard-ranked-beneficiaries-title">{tr('Top beneficiaries','শীর্ষ উপকারভোগী')}</h3>
+            <p>{tr('Highest amounts I paid for others','অন্যদের জন্য আমার সর্বোচ্চ পরিশোধ')}</p></div>
+        </div>
+        {rankedPeople.length?<div className="taxpay-bento-analytics__top-list" role="group"
+          aria-label={tr('Top five beneficiaries','শীর্ষ পাঁচ উপকারভোগী')}>
+          {rankedPeople.map((person,index)=>{
+            const personName=person.name??tr('Recipient','প্রাপক')+' '+maskedTin(person.tin);
+            const target=person.saved&&onOpenBeneficiary
+              ?()=>onOpenBeneficiary(person.tin)
+              :()=>onOpenHistory(undefined,service,person.tin);
+            return <button key={person.tin} type="button" className="taxpay-bento-analytics__top-item"
+              onClick={target} title={tr('Open beneficiary payment history','উপকারভোগীর পেমেন্ট ইতিহাস দেখুন')}
+              aria-label={personName+': '+money(person.amountMinor)}>
+              <span className="taxpay-bento-analytics__top-heading">
+                <span className="taxpay-bento-analytics__top-name">{index+1}. {personName}</span>
+                <strong className="tabular-nums">{money(person.amountMinor)}</strong>
+              </span>
+              <span className="taxpay-bento-analytics__top-meta">
+                {maskedTin(person.tin)} · {TAG_LABELS[person.tag][language]}
+              </span>
+              <span className="taxpay-bento-analytics__bar-track" aria-hidden="true">
+                <span style={{width:dashboardChartPercentage(person.amountMinor,rankedMax)+'%'}}/>
+              </span>
+            </button>;
+          })}
+        </div>:<p className="taxpay-bento-analytics__empty" role="status">
+          {tr('No identifiable third-party beneficiaries in the selected records.',
+            'নির্বাচিত রেকর্ডে শনাক্তযোগ্য অন্য কোনো উপকারভোগী নেই।')}
+        </p>}
+        {filtered.unclassified.recipientMissingMinor>0n&&<p className="taxpay-bento-analytics__footnote">
+          {tr('Unranked payments without a recorded recipient','নথিভুক্ত প্রাপক না থাকায় তালিকার বাইরে')}
+          {' · '}{money(filtered.unclassified.recipientMissingMinor)}
+        </p>}
+        {onManageBeneficiaries&&<button type="button" className="taxpay-bento-analytics__link"
+          onClick={onManageBeneficiaries}>{tr('View all beneficiaries','সব উপকারভোগী দেখুন')}
+          <ArrowRight size={16} aria-hidden="true"/></button>}
       </section>
     </div>
   </section>;

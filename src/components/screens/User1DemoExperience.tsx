@@ -596,7 +596,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     </section>
     </>}
     <div className="taxpay-bento-request-row">
-    <div className="taxpay-bento-summary-column">
       <section className={panel+' taxpay-bento-hero taxpay-bento-summary'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
         <h2 className="text-base font-semibold">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h2>
         <p className="mt-1 text-xs text-taxpay-muted" data-testid="dashboard-source-indicator">
@@ -621,11 +620,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             ?tr('Draft count unavailable. Sign in or refresh to check again.','খসড়ার সংখ্যা পাওয়া যায়নি। সাইন ইন করুন অথবা রিফ্রেশ করে আবার দেখুন।')
             :tr('No saved drafts yet. Use Save Draft during a payment to continue it later.','এখনও সংরক্ষিত খসড়া নেই। পরে চালু করতে পেমেন্টের সময় খসড়া সংরক্ষণ করুন।')}</p>}
       </section>
+    <div className="taxpay-bento-tasks" aria-label={tr('Continue and track','চালিয়ে যান ও অনুসরণ করুন')}>
     {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1}>
       <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
         onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
     </div>}
-    </div>
     <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} aria-labelledby="dashboard-correction-requests-title">
       <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
       <p className="mt-2 text-sm text-taxpay-muted">{overviewSource==='example'
@@ -649,10 +648,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         :tr('No example requests for this assessment year.','এই করবর্ষে কোনো উদাহরণভিত্তিক আবেদন নেই।')}</p>}
     </section>
     </div>
+    </div>
     <div className="taxpay-bento-recent">
     <section className={panel} aria-labelledby="taxpayer-recent-activity-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="taxpayer-recent-activity-title" className="text-base font-semibold">{tr('Recent activity','সাম্প্রতিক কার্যক্রম')}</h2>
+        <h2 id="taxpayer-recent-activity-title" className="text-base font-semibold">{tr('My Tax Journey','আমার কর যাত্রা')}</h2>
         {view('history','View all activity','সব কার্যক্রম দেখুন')}
       </div>
       <p className="mt-1 text-xs text-taxpay-muted">{overviewSource==='example'

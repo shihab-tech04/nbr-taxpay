@@ -15,7 +15,7 @@ test('taxpayer dashboard contains no repeated demonstration badges, tooltips or 
   await expect(main.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   await expect(main.getByRole('heading',{name:'What needs your attention?'})).toHaveCount(0);
   await expect(main.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
-  await expect(main.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'Beneficiary Breakdown'})).toBeVisible();
   await expect(main.getByRole('heading',{name:'By payment service'})).toBeVisible();
   await expect(main.locator('.taxpay-bento-position')).toHaveCount(0);
   await expect(main.getByTestId('dashboard-payment-analytics')).toBeVisible();
