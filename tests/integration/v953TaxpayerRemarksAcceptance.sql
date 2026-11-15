@@ -36,6 +36,24 @@ BEGIN
   '{"details":{"challanRemarks":""}}'::jsonb);
  IF (SELECT count(*) FROM demo_payment.story_payments)<>4
  THEN RAISE EXCEPTION 'F178_T01_OPTIONAL_CASES_FAILED'; END IF;
+ -- Storage/transport ceiling: accepts 4,000 UTF-8 Unicode codepoints
+ -- (including supplementary plane characters), rejects 4,001 without truncation.
+ INSERT INTO demo_payment.story_payments(id,data)
+ VALUES('92000000-0000-4000-8000-000000000005',
+   jsonb_build_object('details',jsonb_build_object('challanRemarks',repeat('😀',4000))));
+ IF (SELECT data#>>'{details,challanRemarks}' FROM demo_payment.story_payments
+     WHERE id='92000000-0000-4000-8000-000000000005') IS DISTINCT FROM repeat('😀',4000)
+ THEN RAISE EXCEPTION 'F178_T03_REMARKS_4000_UNICODE_ROUNDTRIP_FAILED'; END IF;
+ v_denied:=false;
+ BEGIN
+   INSERT INTO demo_payment.story_payments(id,data)
+   VALUES(gen_random_uuid(),jsonb_build_object('details',
+     jsonb_build_object('challanRemarks',repeat('অ',4001))));
+ EXCEPTION WHEN OTHERS THEN
+   IF SQLERRM='CHALLAN_REMARKS_TOO_LONG' THEN v_denied:=true;
+   ELSE RAISE; END IF;
+ END;
+ IF NOT v_denied THEN RAISE EXCEPTION 'F178_T03_REMARKS_4001_ACCEPTED'; END IF;
  -- Reject forged non-text remarks; do not let JSON arrays/objects/numbers
  -- become unreviewed state changes in the payment envelope.
  FOR v_data IN
