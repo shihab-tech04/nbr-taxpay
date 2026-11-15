@@ -181,6 +181,45 @@ test('Travel Tax certificate permits itemized zero-rated UNDER5 traveller withou
 });
 
 
+test('M07 Travel Tax certificate reconciles each saved passenger with its original accounting head',()=>{
+  const original:ChallanReceipt={...baseReceipt,paymentCategory:'TRAVEL_TAX',
+    payerTin:'NON-TIN-PASSENGER',payerName:'Adult Traveller',totalAmount:1500,
+    travelDetails:{mode:'LAND',departurePort:'Benapole',destination:'India',
+      travelDate:'2026-11-20',economicCode:'1144102',passengers:[
+        {name:'Adult Traveller',passportMasked:'••••4321',nationality:'BD',
+          country:'Bangladesh',ageBand:'ADULT',age:34,amount:1000},
+        {name:'Child Traveller',passportMasked:'••••9876',nationality:'FOREIGN',
+          country:'India',ageBand:'CHILD',age:9,amount:500}]},
+    items:[
+      {headId:155,economicCode:'1144102',headNameEn:'Travel tax — Adult Traveller',
+        taxAmount:1000,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:1000},
+      {headId:156,economicCode:'1144102',headNameEn:'Travel tax — Child Traveller',
+        taxAmount:500,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:500}]
+  };
+  const before=JSON.stringify(original);
+  assert.deepEqual(buildPaymentCertificateModel(original)?.lines.map(x=>[x.recipientName,x.amountMinor]),
+    [['Adult Traveller',100000],['Child Traveller',50000]]);
+  const badLine=(index:number,change:(value:ChallanReceipt['items'][number])=>void)=>{
+    const tampered=structuredClone(original);
+    change(tampered.items[index]);
+    assert.equal(buildPaymentCertificateModel(tampered),null);
+    assert.equal(canViewPaymentCertificate(tampered),false);
+  };
+  badLine(0,head=>{head.headId=156;});
+  badLine(0,head=>{head.headNameEn='Travel tax — Child Traveller';});
+  badLine(1,head=>{head.economicCode='WRONG';});
+  badLine(0,head=>{head.taxAmount=900;});
+  badLine(0,head=>{head.penaltyAmount=100;});
+  badLine(0,head=>{head.totalAmount=500;});
+  const fewer=structuredClone(original);
+  fewer.items.pop();
+  assert.equal(buildPaymentCertificateModel(fewer),null);
+  const legacy={...original,items:[]};
+  assert.equal(buildPaymentCertificateModel(legacy)?.lines.length,2,
+    'historical allocation-only certificate can still fall back to saved passenger rows');
+  assert.equal(JSON.stringify(original),before,'certificate model must not rewrite the source record');
+});
+
 test('saved payment certificate action is offered only for a completed, reconciled parent', () => {
   assert.equal(canViewPaymentCertificate(baseReceipt), true);
   assert.equal(canViewPaymentCertificate({ ...baseReceipt, treasuryStatus: 'TREASURY_SCROLLED' }), true);
