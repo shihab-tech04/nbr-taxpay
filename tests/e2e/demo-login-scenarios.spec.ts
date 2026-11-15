@@ -67,11 +67,14 @@ test('User 1 login keeps the bento Overview and financial sources after refresh'
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'What needs your attention?'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:'By payment service'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
+  // A genuine sign-in must never be replaced by synthetic dashboard totals.
+  await expect(page.getByRole('heading',{name:'Payment breakdown'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'By payment service'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Beneficiary Breakdown'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
-  await expect(page.getByTestId('dashboard-chart-source')).toBeVisible();
+  await expect(page.getByTestId('dashboard-chart-source')).toHaveCount(0);
+  await expect(page.getByTestId('dashboard-payment-analytics')).toContainText('No itemized account payments');
   await page.reload();
   await expect(page.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);

@@ -13,6 +13,8 @@ await mkdir('test-results',{recursive:true});
 const browser=await chromium.launch({headless:true});
 try{
   const page=await browser.newPage({viewport:{width:1280,height:900}});
+  // Budget guard: live readback tests use bundled image fallback rather than remote CMS bytes.
+  await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**', route => route.abort('blockedbyclient'));
   await page.goto(url('taxpayer_login'),{waitUntil:'domcontentloaded',timeout:45000});
   await expect(page.locator('#taxpayer-login-user-id')).toBeVisible({timeout:30000});
   await page.locator('#taxpayer-login-user-id').fill('user1');

@@ -11,12 +11,13 @@ test('taxpayer dashboard contains no repeated demonstration badges, tooltips or 
   await expect(page.getByRole('complementary',{name:'Taxpayer desktop navigation'}).getByRole('button',{name:'Overview'})).toBeVisible();
   await expect(main.locator('summary[aria-label="About Sample"]')).toHaveCount(0);
   expect(await main.innerText()).not.toMatch(banned);
-  await expect(main.getByRole('heading',{name:'By payment service'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'By payment service'})).toHaveCount(0);
   await expect(main.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   await expect(main.getByRole('heading',{name:'What needs your attention?'})).toHaveCount(0);
   await expect(main.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
-  await expect(main.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
-  await expect(main.getByRole('heading',{name:'By payment service'})).toBeVisible();
+  await expect(main.getByRole('heading',{name:'Payment breakdown'})).toBeVisible();
+  await expect(main.getByTestId('dashboard-chart-source')).toHaveCount(0);
+  await expect(main.getByRole('heading',{name:'By payment service'})).toHaveCount(0);
   await expect(main.locator('.taxpay-bento-position')).toHaveCount(0);
   await expect(main.getByTestId('dashboard-payment-analytics')).toBeVisible();
   // This boundary remains visible: records are fictional and must not be mistaken for an authenticated account.

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const dashboard='/?action=taxpayer_home&demoUser=user1';
+const dashboard='/?action=taxpayer_home&demoUser=user1&qaScenario=1';
 
 test('bento analytics never display unverified tax-liability charts and separate recorded payments from examples',async({page})=>{
   await page.goto(dashboard);
@@ -96,31 +96,37 @@ test('interactive bento charts and existing payment actions remain responsive fr
     await expect(bento).toBeVisible();
     await expect(bento.getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
     await expect(bento.getByRole('heading',{name:'By payment service'})).toBeVisible();
-    await expect(bento.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
-    await expect(bento.getByRole('heading',{name:'Recent activity'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'Beneficiary Breakdown'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
     await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'Horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }
 });
 
-test('bento sections remain readable, and saved work remains ahead of analytics',async({page},info)=>{
+test('bento keeps approved summary, analytics and side-by-side journey/continuation order',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','One representative desktop/mobile matrix');
   for(const width of [375,768,1024,1199,1200,1280,1600]){
     await page.setViewportSize({width,height:900});
     await page.goto(dashboard);
     const grid=page.getByTestId('taxpayer-overview-bento');
     const summary=grid.locator('.taxpay-bento-request-row .taxpay-bento-summary');
-    const correction=grid.locator('.taxpay-bento-request-row .taxpay-bento-corrections');
+    const tasks=grid.locator('.taxpay-bento-request-row .taxpay-bento-tasks');
+    const correction=tasks.locator('.taxpay-bento-corrections');
     const activity=grid.locator('.taxpay-bento-recent');
     const analytics=grid.getByTestId('dashboard-payment-analytics');
-    const bounds=await Promise.all([summary.boundingBox(),correction.boundingBox(),activity.boundingBox(),analytics.boundingBox()]);
+    const bounds=await Promise.all([summary.boundingBox(),tasks.boundingBox(),activity.boundingBox(),analytics.boundingBox(),correction.boundingBox()]);
     expect(bounds.every(Boolean),'Every requested dashboard section renders at '+width).toBeTruthy();
     expect(bounds[0]!.y,'Summary before analytics').toBeLessThan(bounds[3]!.y);
-    expect(bounds[2]!.y,'Recent activity before charts').toBeLessThan(bounds[3]!.y);
+    expect(bounds[2]!.y,'Tax Journey follows analytic bento charts').toBeGreaterThan(bounds[3]!.y);
+    expect(bounds[1]!.y,'Continue & Track follows analytic bento charts').toBeGreaterThan(bounds[3]!.y);
+    // The continuation column contains drafts and the correction register.
+    // Align the columns, not the correction child after its own 12px gap.
+    expect(bounds[4]!.y,'Corrections stay within Continue & Track').toBeGreaterThanOrEqual(bounds[1]!.y);
     if(width>=1200){
-      expect(Math.abs(bounds[0]!.y-bounds[1]!.y)).toBeLessThan(4);
-    }else expect(bounds[1]!.y).toBeGreaterThan(bounds[0]!.y);
+      expect(Math.abs(bounds[2]!.y-bounds[1]!.y)).toBeLessThan(4);
+      expect(bounds[2]!.x+bounds[2]!.width).toBeLessThanOrEqual(bounds[1]!.x+4);
+    }else expect(bounds[1]!.y).toBeGreaterThan(bounds[2]!.y);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'No horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }

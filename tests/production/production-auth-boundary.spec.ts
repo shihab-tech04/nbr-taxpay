@@ -1,6 +1,16 @@
 import { expect, test } from '@playwright/test';
 
 const site = '/nbr-taxpay/';
+ 
+// CI validates the production bundle's auth/route boundaries, not CDN transfer.
+// Keep public artwork off the real Taxpayer Storage service in repeatable tests;
+// the application still uses its existing bundled fallback image on failure.
+test.beforeEach(async ({ page }) => {
+  await page.route(
+    'https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**',
+    route => route.abort('blockedbyclient'),
+  );
+});
 const privateRoutes = ['taxpayer_home', 'dashboard', 'history', 'ledger', 'account_profile', 'account_notifications', 'account_settings', 'beneficiaries', 'services'];
 
 test('the public TaxPay login restores the approved User ID/password modal', async ({ page }) => {

@@ -1,6 +1,6 @@
 import {expect,test} from '@playwright/test';
 
-const demo='/?action=taxpayer_home&demoUser=user1';
+const demo='/?action=taxpayer_home&demoUser=user1&qaScenario=1';
 
 test('Overview keeps compact metrics, saved drafts, corrections and interactive bento reports',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Desktop bento acceptance');
@@ -80,7 +80,7 @@ test('Bangla chart headings and source tabs remain accessible and interactive',a
   await page.goto(demo+'&lang=bn');
   const chart=page.getByTestId('dashboard-payment-analytics');
   await expect(chart.getByRole('heading',{name:'পেমেন্টের ধরন অনুযায়ী'})).toBeVisible();
-  await expect(chart.getByRole('heading',{name:'উপকারভোগীর সম্পর্ক অনুযায়ী'})).toBeVisible();
+  await expect(chart.getByRole('heading',{name:'উপকারভোগীর বিস্তারিত'})).toBeVisible();
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'নমুনা'}).click();
   await expect(chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'নমুনা'})).toHaveAttribute('aria-pressed','true');
   await expect(page.getByTestId('taxpayer-overview-bento').locator('.taxpay-bento-summary').getByRole('button')).toHaveCount(3);
@@ -106,7 +106,7 @@ test('2025-2026 overview defaults to available example charts, never imaginary r
   await expect(unknown).toContainText('2 payments without a recorded recipient');
   await expect(unknown).toContainText('32,000');
   await expect(overview.getByTestId('dashboard-correction-request-list')).not.toContainText('DEMO-REFUND-01');
-  await expect(analytics).toContainText('Example payer spending for this year');
+  await expect(analytics).toContainText('Local QA scenario only');
   await expect(overview.getByRole('button',{name:/Completed Payments/}).first()).toContainText('5');
   await sources.getByRole('button',{name:'Recorded'}).click();
   await expect(sources.getByRole('button',{name:'Recorded'})).toHaveAttribute('aria-pressed','true');

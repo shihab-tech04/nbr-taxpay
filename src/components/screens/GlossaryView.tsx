@@ -1,108 +1,112 @@
 import React, { useState } from 'react';
-import { 
-  BookOpen, 
-  Search, 
-  Filter, 
-  FileText, 
-  Building2, 
-  CheckCircle2 
-} from 'lucide-react';
-import { GLOSSARY_TERMS, GlossaryTerm } from '../../data/glossaryData';
+import { BookOpen, Search } from 'lucide-react';
+import { GLOSSARY_TERMS } from '../../data/glossaryData';
 import { useTaxState } from '../../services/taxState';
+import '../../styles/public-guide-p3.css';
+
+const COPY = {
+  en: {
+    title: 'Payment terms',
+    description: 'Plain-language meanings for terms used in this service. Check NBR publications for current legal requirements.',
+    search: 'Search terms',
+    searchPlaceholder: 'Search in English or Bangla',
+    category: 'Topic',
+    all: 'All topics',
+    noResults: 'No terms match this search. Try another word or clear the search.',
+    categories: {
+      IDENTITY: 'Taxpayer identity',
+      TAX: 'Tax terms',
+      PAYMENT: 'Payment services',
+      RECORD: 'Records and status',
+      PROCESS: 'Other processes'
+    }
+  },
+  bn: {
+    title: 'কর ও পেমেন্টের শব্দ',
+    description: 'এই সেবায় ব্যবহৃত শব্দের সহজ অর্থ। বর্তমান আইনি শর্ত এনবিআরের প্রকাশনায় যাচাই করুন।',
+    search: 'শব্দ খুঁজুন',
+    searchPlaceholder: 'বাংলা বা ইংরেজিতে খুঁজুন',
+    category: 'বিষয়',
+    all: 'সব বিষয়',
+    noResults: 'এই অনুসন্ধানে কোনো শব্দ মেলেনি। অন্য শব্দ লিখুন বা অনুসন্ধান মুছুন।',
+    categories: {
+      IDENTITY: 'করদাতার পরিচয়',
+      TAX: 'কর বিষয়ক শব্দ',
+      PAYMENT: 'পেমেন্ট সেবা',
+      RECORD: 'রেকর্ড ও অবস্থা',
+      PROCESS: 'অন্যান্য প্রক্রিয়া'
+    }
+  }
+} as const;
+
+type Category = keyof typeof COPY.en.categories;
+const CATEGORIES = Object.keys(COPY.en.categories) as Category[];
 
 export const GlossaryView: React.FC = () => {
   const { language } = useTaxState();
+  const bn = language === 'bn';
+  const copy = COPY[bn ? 'bn' : 'en'];
   const [search, setSearch] = useState('');
-  const [catFilter, setCatFilter] = useState('ALL');
+  const [catFilter, setCatFilter] = useState<'ALL' | Category>('ALL');
+  const query = search.trim().toLocaleLowerCase();
 
   const filtered = GLOSSARY_TERMS.filter(term => {
-    const matchCat = catFilter === 'ALL' || term.category === catFilter;
-    const matchSearch = search
-      ? term.termEn.toLowerCase().includes(search.toLowerCase()) ||
-        term.termBn.includes(search) ||
-        (term.acronym && term.acronym.toLowerCase().includes(search.toLowerCase())) ||
-        term.definitionEn.toLowerCase().includes(search.toLowerCase())
-      : true;
-    return matchCat && matchSearch;
+    const matchCategory = catFilter === 'ALL' || term.category === catFilter;
+    const matchSearch = !query || [
+      term.termEn, term.termBn, term.acronym || '', term.definitionEn, term.definitionBn
+    ].some(value => value.toLocaleLowerCase().includes(query));
+    return matchCategory && matchSearch;
   });
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 pb-4 mb-5">
-          <div className="w-10 h-10 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center">
-            <BookOpen className="w-5 h-5" />
-          </div>
+    <main className="public-glossary" aria-labelledby="public-glossary-title">
+      <section className="public-glossary-card">
+        <header className="public-glossary-header">
+          <span className="public-glossary-icon" aria-hidden="true"><BookOpen size={22}/></span>
           <div>
-            <h1 className="font-serif-fraunces text-2xl font-bold text-slate-900">
-              Statutory Tax & Financial Glossary
-            </h1>
-            <p className="text-xs text-slate-500">
-              Official terminology and definitions under the Income Tax Act 2023 and Bangladesh Treasury Rules.
-            </p>
+            <h1 id="public-glossary-title">{copy.title}</h1>
+            <p>{copy.description}</p>
+          </div>
+        </header>
+
+        <div className="public-glossary-filters">
+          <div className="public-glossary-field">
+            <label htmlFor="public-glossary-search">{copy.search}</label>
+            <div className="public-glossary-search">
+              <Search size={18} aria-hidden="true"/>
+              <input
+                id="public-glossary-search"
+                type="search"
+                value={search}
+                onChange={event => setSearch(event.target.value)}
+                placeholder={copy.searchPlaceholder}
+                autoComplete="off"
+              />
+            </div>
+          </div>
+          <div className="public-glossary-field">
+            <label htmlFor="public-glossary-topic">{copy.category}</label>
+            <select id="public-glossary-topic" value={catFilter} onChange={event => setCatFilter(event.target.value as 'ALL' | Category)}>
+              <option value="ALL">{copy.all}</option>
+              {CATEGORIES.map(category => <option key={category} value={category}>{copy.categories[category]}</option>)}
+            </select>
           </div>
         </div>
 
-        {/* Filter controls */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 text-xs">
-          <input
-            type="text"
-            placeholder="Search glossary terms or acronyms..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-slate-300"
-          />
-
-          <select
-            value={catFilter}
-            onChange={(e) => setCatFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-slate-300 font-medium"
-          >
-            <option value="ALL">All Categories</option>
-            <option value="STATUTORY">Statutory Legal Terms</option>
-            <option value="PROCEDURAL">Procedural Tax Administration</option>
-            <option value="BANKING">Banking & Treasury Clearing</option>
-            <option value="TAX_HEAD">Tax Head Categories</option>
-          </select>
-        </div>
-
-        {/* Terms Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          {filtered.map((item, idx) => (
-            <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-serif-fraunces font-bold text-base text-slate-900">
-                    {item.termEn}
-                  </h3>
-                  {item.acronym && (
-                    <span className="font-mono text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold">
-                      {item.acronym}
-                    </span>
-                  )}
-                </div>
-                <span className="text-[10px] font-mono text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded font-semibold">
-                  {item.category}
-                </span>
+        {filtered.length ? <div className="public-glossary-terms" aria-live="polite">
+          {filtered.map(term => <article className="public-glossary-term" key={term.termEn}>
+            <div className="public-glossary-term-head">
+              <div className="public-glossary-term-name">
+                <h2>{term.termEn}</h2>
+                {term.acronym && <span>{term.acronym}</span>}
               </div>
-
-              <div className="text-[12px] text-emerald-900 font-bengali font-semibold">
-                {item.termBn}
-              </div>
-
-              <p className="text-slate-600 leading-relaxed bg-white p-2.5 rounded-lg border border-slate-200">
-                {language === 'bn' ? item.definitionBn : item.definitionEn}
-              </p>
-
-              {item.actReference && (
-                <div className="text-[10px] text-slate-400 font-mono">
-                  Reference: {item.actReference}
-                </div>
-              )}
+              <span className="public-glossary-category">{copy.categories[term.category]}</span>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
+            <p className="public-glossary-term-bn">{term.termBn}</p>
+            <p className="public-glossary-definition">{bn ? term.definitionBn : term.definitionEn}</p>
+          </article>)}
+        </div> : <p className="public-glossary-empty" role="status">{copy.noResults}</p>}
+      </section>
+    </main>
   );
 };

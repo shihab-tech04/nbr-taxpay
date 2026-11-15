@@ -1,5 +1,5 @@
 import {expect,test} from '@playwright/test';
-const dashboard='/?action=taxpayer_home&demoUser=user1';
+const dashboard='/?action=taxpayer_home&demoUser=user1&qaScenario=1';
 
 test('dashboard year selector changes the original recorded payment view, never inventing tax position',async({page})=>{
   await page.goto(dashboard);
@@ -15,7 +15,7 @@ test('dashboard year selector changes the original recorded payment view, never 
 test('recent activity links to original transaction history without duplicate service panels',async({page})=>{
   await page.goto(dashboard);
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
-  await expect(page.getByRole('heading',{name:'Recent activity'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
   await page.getByRole('button',{name:'View all activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
@@ -157,7 +157,7 @@ test('Top five chart stays accessible at 320px with Bengali labels',async({page}
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth))
     .toBeLessThanOrEqual(2);
   await tabs.getByRole('button',{name:'সম্পর্ক'}).click();
-  await expect(chart.getByRole('heading',{name:'উপকারভোগীর সম্পর্ক অনুযায়ী'})).toBeVisible();
+  await expect(chart.getByRole('heading',{name:'উপকারভোগীর বিস্তারিত'})).toBeVisible();
 });
 
 test('returning from Top 5 clears the hidden relationship filter and restores the total',async({page})=>{
