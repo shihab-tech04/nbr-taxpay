@@ -207,3 +207,21 @@ test('Phase 3: Return remains exclusive; invalid mixed source and partial histor
   assert.throws(()=>reuseRecordedPayment([{...historical,allocationItems:[]}],
     payerUid,payerTin,historical.paymentTransactionId!),/incomplete/);
 });
+
+test('Phase 3: Return head hidden under a non-Return parent is refused without modifying history',()=>{
+  const returnHead=supported.find(head=>head.category==='TAX_WITH_RETURN')!;
+  const otherHead=nonReturn[0];
+  assert.equal(returnHead.id,125);
+  const original=receipt(otherHead,payerTin,years[0],1234,crypto.randomUUID(),crypto.randomUUID());
+  original.items=[paymentHead(returnHead,1234)];
+  original.allocationItems=[{...original.allocationItems![0],
+    paymentServiceEn:returnHead.nameEn,paymentServiceBn:returnHead.nameBn,
+    economicCode:returnHead.economicCode}];
+  for(const category of ['OTHER_TAX_PAYMENT',otherHead.category] as const){
+    const damaged={...original,paymentCategory:category};
+    const untouched=JSON.stringify(damaged);
+    assert.throws(()=>reuseRecordedPayment([damaged],payerUid,payerTin,original.paymentTransactionId!),
+      /Tax with Return cannot be combined/);
+    assert.equal(JSON.stringify(damaged),untouched);
+  }
+});
