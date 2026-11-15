@@ -67,7 +67,7 @@ export function parseRecoverableTravelPayment(raw: string | null, sessionId: str
           !['BD', 'FOREIGN'].includes(String(person.nationality)) ||
           !['ADULT', 'CHILD', 'UNDER5'].includes(String(person.ageBand)) ||
           typeof person.passportMasked !== 'string' ||
-          !/^••••[A-Za-z0-9]{4}$/.test(person.passportMasked) ||
+          !/^••••[^\s\u0000-\u001F\u007F-\u009F]{4}$/.test(person.passportMasked) ||
           (person.nationality === 'FOREIGN' && (typeof person.country !== 'string' || !person.country.trim())) ||
           typeof person.age !== 'number' || !Number.isInteger(person.age) || person.age < 0 || person.age >= 130 ||
           storedPerson.name !== person.name || storedPerson.passportMasked !== person.passportMasked ||
