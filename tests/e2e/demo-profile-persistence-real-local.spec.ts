@@ -1,7 +1,8 @@
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test,type BrowserContext,type Page} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
-import type {DemoUserId} from '../../src/data/demoUsers';
+import {DEMO_USERS,type DemoUserId} from '../../src/data/demoUsers';
+import {sampleTinForUserNumber} from '../../src/data/sampleTinSuggestions';
 
 /** Real browser + local Edge Function/Postgres only. Never use hosted credentials. */
 test('demo User ID retains nonempty lists, tagged beneficiary and language across sign-out, refresh and browsers',async({browser},info)=>{
@@ -223,6 +224,166 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     expect(otherSnapshot.body.data.profileId).toBe(otherUser);
     expect(otherSnapshot.body.data.people.some((person:{tin:string})=>person.tin===tin)).toBe(false);
     expect(otherSnapshot.body.data.lists.some((list:{name:string})=>list.name===listName)).toBe(false);
+  }finally{
+    await Promise.all(contexts.map(context=>context.close()));
+  }
+});
+
+
+/** WS2 Stage 5: isolated disposable User1 *preview* capability, not a real
+ * production Supabase Auth account or settled finance record. The ten aliases
+ * are existing eligible public fixture profiles, never issued TINs. */
+test('User1 fixture has ten beneficiary recipients in three owned lists with cross-browser and other-user isolation',async({browser},info)=>{
+  test.setTimeout(150_000);
+  const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL;
+  const key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+  if(!raw||!key)throw Error('Disposable Supabase configuration required');
+  const target=new URL(raw);
+  if(target.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(target.hostname))
+    throw Error('Refusing User1 fixture writes to a hosted environment');
+  const viewport=info.project.name.startsWith('mobile')?{width:375,height:812}:{width:1280,height:800};
+  const suffix=randomUUID().slice(0,8);
+  const names={
+    clients:'User1 Clients '+suffix,
+    family:'User1 Friends & Family '+suffix,
+    others:'User1 Others '+suffix,
+  };
+  const categories=[
+    {name:names.clients,tag:'clients',recipients:[2,3,4,5],relations:[null,null,null,null],labels:[null,null,null,null]},
+    {name:names.family,tag:'friends_family',recipients:[6,7,8,9],
+      relations:['father','mother','siblings','friends'],labels:[null,null,null,null]},
+    {name:names.others,tag:'others',recipients:[11,12],relations:[null,null],
+      labels:['Professional contact','Community representative']},
+  ] as const;
+  const expected=categories.flatMap(group=>group.recipients.map((n,i)=>({
+    tin:sampleTinForUserNumber(n),display_name:DEMO_USERS[('user'+n) as DemoUserId].nameEn,
+    tag:group.tag,relationship:group.relations[i],other_label:group.labels[i],list:group.name,
+  })));
+  expect(expected).toHaveLength(10);
+  expect(new Set(expected.map(row=>row.tin)).size).toBe(10);
+  expect(expected.every(row=>typeof row.tin==='string'&&/^\d{12}$/.test(row.tin))).toBe(true);
+
+  const contexts:BrowserContext[]=[];
+  const newContext=async()=>{
+    const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
+    contexts.push(context);
+    return context;
+  };
+  const signIn=async(page:Page,id:'user1'|'user2')=>{
+    await page.goto('/?action=taxpayer_login');
+    await page.getByRole('textbox',{name:'User ID'}).fill(id);
+    await page.getByLabel('Password',{exact:true}).fill(id);
+    await page.getByRole('button',{name:'Sign In',exact:true}).click();
+    await expect(page).toHaveURL(/action=taxpayer_home/);
+    const session=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
+    expect(session?.profileId).toBe(id);
+    expect(typeof session.capability).toBe('string');
+    return session as {profileId:string;capability:string};
+  };
+  const apiRequest=async(page:Page,capability:string,action:string,fields:Record<string,unknown>={})=>
+    page.evaluate(async({url,key,capability,action,fields})=>{
+      const response=await fetch(url+'/functions/v1/taxpay-guest-beneficiaries',{
+        method:'POST',cache:'no-store',
+        headers:{apikey:key,'content-type':'application/json','x-taxpay-guest-capability':capability},
+        body:JSON.stringify({action,...fields}),
+      });
+      return {status:response.status,body:await response.json()};
+    },{url:target.origin,key,capability,action,fields});
+  try{
+    const first=await (await newContext()).newPage();
+    const user1=await signIn(first,'user1');
+    const lists:{name:string;id:string}[]=[];
+    for(const category of categories){
+      const created=await apiRequest(first,user1.capability,'create-list',{name:category.name});
+      expect(created.status,JSON.stringify(created.body)).toBe(200);
+      expect(created.body.success).toBe(true);
+      const listId=created.body.data?.id as string;
+      expect(listId).toMatch(/^[a-f\d-]{36}$/i);
+      lists.push({name:category.name,id:listId});
+      const rows=category.recipients.map((n,i)=>({
+        tin:sampleTinForUserNumber(n),
+        display_name:DEMO_USERS[('user'+n) as DemoUserId].nameEn,
+        tag:category.tag,relationship:category.relations[i],other_label:category.labels[i],
+      }));
+      const added=await apiRequest(first,user1.capability,'add',{listId,rows});
+      expect(added.status,JSON.stringify(added.body)).toBe(200);
+      expect(added.body.success).toBe(true);
+      expect(added.body.data).toBe(category.recipients.length);
+    }
+    const snapshot=async(page:Page,cap:string)=>{
+      const result=await apiRequest(page,cap,'snapshot');
+      expect(result.status,JSON.stringify(result.body)).toBe(200);
+      expect(result.body.success).toBe(true);
+      return result.body.data as {profileId:string;lists:Array<{id:string;name:string}>;
+        people:Array<{id:string;list_id:string;tin:string;display_name:string;
+          tag:string;relationship:string|null;other_label:string|null}>};
+    };
+    const firstRead=await snapshot(first,user1.capability);
+    expect(firstRead.profileId).toBe('user1');
+    for(const category of categories){
+      const list=lists.find(item=>item.name===category.name)!;
+      expect(firstRead.lists).toContainEqual(expect.objectContaining({id:list.id,name:list.name}));
+      const saved=firstRead.people.filter(person=>person.list_id===list.id);
+      expect(saved).toHaveLength(category.recipients.length);
+      for(let i=0;i<category.recipients.length;i++){
+        const original=expected.find(e=>e.tin===sampleTinForUserNumber(category.recipients[i]))!;
+        expect(saved).toContainEqual(expect.objectContaining({
+          tin:original.tin,display_name:original.display_name,tag:original.tag,
+          relationship:original.relationship,other_label:original.other_label,
+        }));
+      }
+    }
+    await first.goto('/?action=beneficiaries');
+    await expect(first.getByTestId('beneficiaries-page')).toBeVisible();
+    if(await first.locator('#beneficiary-list').count()===0)
+      await first.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
+    await first.locator('#beneficiary-list').click();
+    await first.locator('#beneficiary-list-menu').getByRole('button',{name:names.clients,exact:true}).click();
+    await expect(first.getByTestId('beneficiary-records')).toContainText(expected[0].display_name);
+    const search=first.getByRole('searchbox',{name:/^(Search this list|এই তালিকায় খুঁজুন)$/});
+    await search.fill(expected[0].tin!);
+    await expect(first.getByTestId('beneficiary-records')).toContainText(expected[0].display_name);
+    await expect(first.getByTestId('beneficiary-records')).not.toContainText(expected[1].display_name);
+    await search.fill('');
+    await first.reload();
+    if(await first.locator('#beneficiary-list').count()===0)
+      await first.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
+    await expect(first.locator('#beneficiary-list')).toContainText(names.clients);
+
+    // A fresh browser with User1's independently reissued capability reads
+    // the same three owned SQL lists. Do not share the first browser session.
+    const again=await (await newContext()).newPage();
+    const secondUser1=await signIn(again,'user1');
+    const reread=await snapshot(again,secondUser1.capability);
+    for(const entry of expected){
+      const list=lists.find(item=>item.name===entry.list)!;
+      expect(reread.people).toContainEqual(expect.objectContaining({
+        list_id:list.id,tin:entry.tin,tag:entry.tag,relationship:entry.relationship,
+        other_label:entry.other_label,
+      }));
+    }
+    await again.goto('/?action=beneficiaries');
+    await expect(again.getByTestId('beneficiaries-page')).toBeVisible();
+    if(await again.locator('#beneficiary-list').count()===0)
+      await again.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
+    await again.locator('#beneficiary-list').click();
+    await again.locator('#beneficiary-list-menu').getByRole('button',{name:names.others,exact:true}).click();
+    await expect(again.getByTestId('beneficiary-records')).toContainText('Professional contact');
+    await expect(again.getByTestId('beneficiary-records')).toContainText('Community representative');
+
+    const foreign=await (await newContext()).newPage();
+    const user2=await signIn(foreign,'user2');
+    const foreignRead=await snapshot(foreign,user2.capability);
+    for(const entry of expected){
+      expect(foreignRead.people.some(row=>row.tin===entry.tin&&
+        lists.some(list=>list.id===row.list_id))).toBe(false);
+    }
+    for(const list of lists)expect(foreignRead.lists.some(row=>row.id===list.id)).toBe(false);
+    await foreign.goto('/?action=beneficiaries');
+    await expect(foreign.getByTestId('beneficiaries-page')).toBeVisible();
+    for(const list of lists)await expect(foreign.getByTestId('beneficiaries-page')).not.toContainText(list.name);
+    // No settled financial record is created: WS1/WS3 own associated
+    // payment/allocation fixtures and payer/recipient readback.
   }finally{
     await Promise.all(contexts.map(context=>context.close()));
   }
