@@ -671,6 +671,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       if (next !== category) {
         setCategory(next);
         setSelectedHeadIds([]);
+        // Changing explicitly into exclusive Return must discard hidden
+        // non-Return payer allocations rather than trapping the user in a
+        // form where those prohibited lines cannot be edited or removed.
+        if (next === 'TAX_WITH_RETURN') {
+          setOtherTaxLines([]);
+          setAdditionalTaxpayers([]);
+          setOneTimeTaxpayer(null);
+          setAmountInputs({});
+        }
       }
     }
   }, [routeParams, initialCategory, isWithholdingMode]);
