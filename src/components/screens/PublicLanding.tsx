@@ -196,9 +196,8 @@ export const PublicLanding: React.FC = () => {
             aria-describedby="public-record-discovery-help"
             aria-autocomplete="list"
             aria-controls={searchOpen ? "public-record-suggestions" : undefined}
-            aria-expanded={searchOpen}
-            aria-activedescendant={searchOpen && activeSuggestion >= 0 && suggestions[activeSuggestion]
-              ? `public-search-option-${activeSuggestion}` : undefined}
+            {/* Native searchbox keeps its searchbox role. The live status announces
+                matches; combobox-only ARIA attributes are intentionally omitted. */}
             onFocus={() => setSearchOpen(true)}
             onClick={() => setSearchOpen(true)}
             onChange={event => { setPaymentReference(event.target.value); setSearchOpen(true); setActiveSuggestion(-1); }}
