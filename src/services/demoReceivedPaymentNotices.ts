@@ -58,6 +58,22 @@ async function scopedRequest(profileId:string,action:'received-notices-unread'|'
  * capability-scoped offset contract, without silently losing item 101+.
  * Concurrent ack/addition is fail-closed and retried by the existing poll.
  */
+// PostgreSQL timestamptz has microsecond precision. Date.parse() discards
+// digits 4-6, which can falsely mark correctly ordered same-millisecond
+// allocation events as out of order. Keep the SQL microsecond tie-breaker.
+type NoticeOrderKey = readonly [epochMicroseconds: bigint, paymentId: string, eventId: string];
+function noticeOrderKey(row: Pick<ReceivedPaymentNotice,'createdAt'|'paymentId'|'eventId'>): NoticeOrderKey {
+  const milliseconds=Date.parse(row.createdAt);
+  if(!Number.isFinite(milliseconds))throw Error('Invalid received-payment timestamp');
+  const fraction=row.createdAt.match(/\.(\d{1,6})(?=(?:Z|[+-]\d{2}:?\d{2})$)/i)?.[1]??'';
+  const remainingMicros=BigInt(fraction.padEnd(6,'0').slice(3)||'0');
+  return [BigInt(milliseconds)*1000n+remainingMicros,row.paymentId,row.eventId];
+}
+function beforeNoticeOrder(a:NoticeOrderKey,b:NoticeOrderKey):boolean {
+  return a[0]<b[0]||(a[0]===b[0]&&
+    (a[1]<b[1]||(a[1]===b[1]&&a[2]<b[2])));
+}
+
 export async function loadUnreadReceivedPaymentNotices(
   requestPage:(offset:number,limit:number)=>Promise<unknown>,
   limit=100,maxPages=200,
@@ -67,7 +83,7 @@ export async function loadUnreadReceivedPaymentNotices(
   const items:ReceivedPaymentNotice[]=[];
   const seen=new Set<string>();
   let total:number|null=null;
-  let previousOrderKey:string|null=null;
+  let previousOrderKey:NoticeOrderKey|null=null;
   for(let index=0;index<maxPages;index++){
     const offset=items.length;
     const value=await requestPage(offset,limit);
@@ -87,9 +103,8 @@ export async function loadUnreadReceivedPaymentNotices(
       if(seen.has(item.eventId))throw Error('Duplicate received-payment notice');
       // The SQL contract orders notices by event time, payment UUID and exact
       // string event ID. Enforce that ordering before opening the first popup.
-      const stamp=Date.parse(item.createdAt);
-      const key=String(stamp).padStart(16,'0')+'|'+item.paymentId+'|'+item.eventId;
-      if(previousOrderKey!==null&&key<previousOrderKey)
+      const key=noticeOrderKey(item);
+      if(previousOrderKey!==null&&beforeNoticeOrder(key,previousOrderKey))
         throw Error('Unread received-payment notices changed ordering');
       previousOrderKey=key;
       seen.add(item.eventId);items.push(item);
@@ -153,7 +168,7 @@ export async function loadStoredReceivedPaymentNotices(
   const items:StoredReceivedPaymentNotice[]=[];
   const seen=new Set<string>();
   let total:number|null=null;
-  let previousOrderKey:string|null=null;
+  let previousOrderKey:NoticeOrderKey|null=null;
   for(let index=0;index<maxPages;index++){
     const offset=items.length;
     const value=await requestPage(offset,limit);
@@ -173,9 +188,8 @@ export async function loadStoredReceivedPaymentNotices(
       if(seen.has(item.eventId))throw Error('Duplicate received-payment notice');
       // WS3 SQL sorts by createdAt, paymentId and eventId, ascending.
       // Compare timestamps as epochs: their ISO formatting may differ.
-      const stamp=Date.parse(item.createdAt);
-      const key=String(stamp).padStart(16,'0')+'|'+item.paymentId+'|'+item.eventId;
-      if(previousOrderKey!==null&&key<previousOrderKey)
+      const key=noticeOrderKey(item);
+      if(previousOrderKey!==null&&beforeNoticeOrder(key,previousOrderKey))
         throw Error('Received-payment notices changed ordering');
       previousOrderKey=key;seen.add(item.eventId);items.push(item);
     }
