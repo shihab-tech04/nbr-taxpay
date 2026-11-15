@@ -55,6 +55,7 @@ import { userIdForHostedTin } from '../../services/hostedDemoAuthorizations';
 import { isSupportedBeneficiaryTin } from '../../services/taxpayerTinValidation';
 import { lookupSampleTaxpayer } from '../../services/sampleTaxpayerLookup';
 import { resolvePaymentPartyIdentity } from '../../services/paymentPartyIdentity';
+import { RETURN_HEAD_ID, RETURN_YEARS, returnOnlyIssue, assertReturnDraftExclusive } from '../../services/taxWithReturnContract';
 import { V11_SOURCE_HEADS } from '../../data/v11SourceHeads';
 import type { DemoUserId } from '../../data/demoUsers';
 import { OtherTaxBatchComposer, otherTaxAllocationTotal, otherTaxAllocationHead, isOtherTaxHeadEligible, OTHER_TAX_YEARS, type OtherTaxTaxpayer, type OtherTaxAllocation } from './OtherTaxBatchComposer';
@@ -136,7 +137,7 @@ const GUEST_COPY = {
   },
 } as const;
 
-type GuestErrorField = 'payerChoice' | 'tin' | 'payerName' | 'payerTin' | 'phone' | 'email' | 'noticeReference' | 'incomeTaxType' | 'headId' | 'taxAmount';
+type GuestErrorField = 'payerChoice' | 'tin' | 'payerName' | 'payerTin' | 'phone' | 'email' | 'noticeReference' | 'incomeTaxType' | 'headId' | 'assessmentYear' | 'taxAmount';
 const ERROR_ID = 'guest-payment-error';
 
 type LifecycleStage = 'INITIATED' | 'AUTHORIZED' | 'ACS_REFERENCE_CREATED' | 'PROCESSING' | 'TREASURY_SETTLED' | 'NBR_LEDGER_POSTED' | 'CREDITED' | 'FAILED';
@@ -311,6 +312,16 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const savedBatchTaxpayers: OtherTaxTaxpayer[] = [{ id: 'primary', tin: taxpayerTin, name: ownAccountTax ? accountName : otherTaxpayerName }, ...additionalTaxpayers];
   const batchTaxpayers: OtherTaxTaxpayer[] = oneTimeTaxpayer
     ? [...savedBatchTaxpayers, oneTimeTaxpayer] : savedBatchTaxpayers;
+  // A confirmed one-time recipient may occupy the primary slot when no saved
+  // beneficiary was selected. Never silently save or duplicate that recipient.
+  const primaryOneTimeRecipient: OtherTaxTaxpayer | null =
+    signedInBeneficiarySelection && activeOneTimeRecipient?.tin === taxpayerTin && !oneTimeTaxpayer
+      ? {id:'primary',tin:taxpayerTin,name:activeOneTimeRecipient.nameEn} : null;
+  const currentOneTimeRecipient = oneTimeTaxpayer ?? primaryOneTimeRecipient;
+  const savedRecipientSelectionValid = Boolean(availableSavedTins) &&
+    savedBatchTaxpayers.every(person=>Boolean(person.tin) &&
+      (availableSavedTins!.includes(person.tin) ||
+        (person.id==='primary' && primaryOneTimeRecipient?.tin===person.tin)));
   const batchAmount = otherTaxAllocationTotal(otherTaxLines);
   const missingBatchTaxpayer = batchTaxpayers.find(person => !otherTaxLines.some(line => line.taxpayerId === person.id));
   const uniqueBatchAllocations = new Set(otherTaxLines.map(line =>
@@ -325,8 +336,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // Saved-beneficiary ownership is rechecked against current lists on Continue.
   const canContinueStep1 = (() => {
     if (beneficiaryChecking || forSelf === null || (ownAccountTax && !ownProfile)) return false;
-    if (signedInBeneficiarySelection && (!availableSavedTins ||
-      !savedBatchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) return false;
+    if (signedInBeneficiarySelection && !savedRecipientSelectionValid) return false;
     if (ownAccountTax && additionalTaxpayers.length && (!availableSavedTins ||
       !additionalTaxpayers.every(person => availableSavedTins.includes(person.tin)))) return false;
     const tinValid = ownAccountTax
@@ -412,6 +422,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const restoreAccountDraft = (saved: Record<string, unknown>) => {
     if (saved.schemaVersion !== 1 || saved.category !== category)
       throw new Error('Saved payment category does not match the selected service.');
+    assertReturnDraftExclusive(saved);
     const stringField = (key: string) => typeof saved[key] === 'string' ? String(saved[key]) : '';
     const restoredSourcePaymentId = stringField('sourcePaymentId').trim();
     setSourcePaymentId(initialReuse?.sourcePaymentId ?? (restoredSourcePaymentId || null));
@@ -617,7 +628,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const id: Record<GuestErrorField, string> = {
       payerChoice: 'guest-payer-self', tin: invalidBatchTaxpayerId && invalidBatchTaxpayerId !== 'primary' ? `other-tax-tin-${invalidBatchTaxpayerId}` : 'guest-tin', payerName: 'guest-payer-name', payerTin: 'guest-payer-tin', phone: 'guest-phone', email: 'guest-receipt-email',
       noticeReference: 'guest-notice-ref', incomeTaxType: 'guest-income-type-NON_COMPANY',
-      headId: 'guest-head-static', taxAmount: errorHeadId && selectedHeadIds.length > 0 && selectedHeadIds[0] !== errorHeadId ? `guest-tax-amount-${errorHeadId}` : 'guest-tax-amount'
+      headId: 'guest-head-static', assessmentYear: 'guest-assessment-year', taxAmount: errorHeadId && selectedHeadIds.length > 0 && selectedHeadIds[0] !== errorHeadId ? `guest-tax-amount-${errorHeadId}` : 'guest-tax-amount'
     };
     const control = document.getElementById(id[errorField]) ||
       (errorField === 'headId' ? document.querySelector<HTMLElement>('#guest-head-search, .payment-head-options input') : null);
@@ -660,6 +671,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       if (next !== category) {
         setCategory(next);
         setSelectedHeadIds([]);
+        // Changing explicitly into exclusive Return must discard hidden
+        // non-Return payer allocations rather than trapping the user in a
+        // form where those prohibited lines cannot be edited or removed.
+        if (next === 'TAX_WITH_RETURN') {
+          setOtherTaxLines([]);
+          setAdditionalTaxpayers([]);
+          setOneTimeTaxpayer(null);
+          setAmountInputs({});
+        }
       }
     }
   }, [routeParams, initialCategory, isWithholdingMode]);
@@ -683,6 +703,21 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     ? categoryHeads.filter(head => head.status === 'ACTIVE' && !BLOCKED_HEAD_IDS.includes(head.id))
     : categoryHeads.filter(head => selectedHeadIds.includes(head.id));
   const selectedHead = selectedHeads[0];
+  const exclusiveReturnIssue = category === 'TAX_WITH_RETURN' ? returnOnlyIssue({
+    assessmentYear, additionalTaxpayers, oneTimeTaxpayer, otherTaxLines, selectedHeadIds,
+    sourceAllocationIds,
+  }) : null;
+  const blockInvalidReturn = () => {
+    if (!exclusiveReturnIssue) return false;
+    const field: GuestErrorField = exclusiveReturnIssue === 'year' ? 'assessmentYear'
+      : exclusiveReturnIssue === 'recipient' ? 'tin' : 'headId';
+    setValidationError(exclusiveReturnIssue === 'year'
+      ? (language === 'bn' ? 'রিটার্নসহ করের জন্য একটি বৈধ করবর্ষ নির্বাচন করুন।' : 'Select one valid assessment year for Tax with Return.')
+      : exclusiveReturnIssue === 'recipient'
+      ? (language === 'bn' ? 'রিটার্নসহ করে একজন করদাতাই রাখা যাবে।' : 'Tax with Return allows only one taxpayer.')
+      : (language === 'bn' ? 'রিটার্নসহ করের সঙ্গে অন্য খাত যোগ করা যাবে না।' : 'Tax with Return cannot contain another payment head.'), field);
+    return true;
+  };
   const suggestionGroup: SuggestedAmountGroup | null =
     category === 'TAX_WITH_RETURN' ? 'Tax with Return' :
     category === 'ADVANCE_TAX' ? 'Advance Tax' :
@@ -896,7 +931,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     // public lookup identity again, and still recheck all saved recipients.
     if (confirmedOneTime) {
       const match = lookupSampleTaxpayer(confirmedOneTime.tin);
-      if (!signedInBeneficiarySelection || !otherBatch ||
+      if (!signedInBeneficiarySelection ||
         !match || match.tin !== confirmedOneTime.tin ||
         match.nameEn !== confirmedOneTime.name ||
         !tins.includes(confirmedOneTime.tin) ||
@@ -908,17 +943,18 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   const handleStep1Next = async () => {
-    if (signedInBeneficiarySelection && (!availableSavedTins ||
-      !savedBatchTaxpayers.every(person=>Boolean(person.tin)&&availableSavedTins.includes(person.tin)))) {
-      setValidationError(language === 'bn' ? 'এগোনোর আগে আপনার সংরক্ষিত তালিকা থেকে উপকারভোগী নির্বাচন করুন।' : 'Select beneficiaries from your saved lists before continuing.', 'tin');
+    if (signedInBeneficiarySelection && !savedRecipientSelectionValid) {
+      setValidationError(language === 'bn'
+        ? 'সংরক্ষিত উপকারভোগী নির্বাচন করুন অথবা নতুন টিআইএন খুঁজে নিশ্চিত করুন।'
+        : 'Select a saved beneficiary or search and confirm a one-time TIN.', 'tin');
       return;
     }
     if (beneficiaryChecking || !validateIdentity()) return;
     if (signedInBeneficiarySelection || (ownAccountTax && additionalTaxpayers.length > 0)) {
       setBeneficiaryChecking(true);
       try {
-        const tins = (otherBatch ? savedBatchTaxpayers : batchTaxpayers.slice(0, 1)).map(person => person.tin);
-        if (!(await areCurrentSavedBeneficiaries(tins))) {
+        const tins = (otherBatch ? batchTaxpayers : batchTaxpayers.slice(0, 1)).map(person => person.tin);
+        if (!(await areCurrentSavedBeneficiaries(tins,currentOneTimeRecipient))) {
           setBeneficiaryRefreshKey(key => key + 1);
           setValidationError(language === 'bn'
             ? 'নির্বাচিত উপকারভোগী আপনার সংরক্ষিত তালিকায় নেই। তালিকাটি আবার লোড করে নির্বাচন করুন।'
@@ -942,6 +978,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   const handleStep2Next = () => {
+    if (blockInvalidReturn()) return;
     if (otherBatch) {
       const invalid = otherTaxLines.find(line =>
         !isOtherTaxHeadEligible(line.headId) || !OTHER_TAX_YEARS.some(year => year === line.assessmentYear) ||
@@ -1004,7 +1041,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 ? (item as Record<string,unknown>).taxpayerTin : null) : []
           : [pending.payload.details.taxpayerTin];
         if (!tins.length || tins.some(tin => typeof tin !== 'string' || !/^\d{12,13}$/.test(tin)) ||
-          !(await areCurrentSavedBeneficiaries(tins as string[], combined ? oneTimeTaxpayer : null)))
+          !(await areCurrentSavedBeneficiaries(tins as string[], currentOneTimeRecipient)))
           throw new Error('Selected beneficiary no longer belongs to the signed-in account.');
       }
       const confirmed = await persistSimulatedPayment(pending.payload);
@@ -1064,7 +1101,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       if (signedInAccount && batch.items[0].payload.details.payerMode === 'OTHER') {
         const tins = batch.items.map(item => item.payload.details.taxpayerTin);
         if (tins.some(tin => typeof tin !== 'string') ||
-            !(await areCurrentSavedBeneficiaries(tins as string[])))
+            !(await areCurrentSavedBeneficiaries(tins as string[],currentOneTimeRecipient)))
           throw new Error('A selected beneficiary no longer belongs to the signed-in account.');
       }
       const completedBatch=await syncOtherTaxBatch(batch, persistSimulatedPayment, progress => {
@@ -1114,6 +1151,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   const handleExecutePayment = () => {
+    if (blockInvalidReturn()) { setStep(exclusiveReturnIssue === 'year' ? 2 : 1); return; }
     if (batchRecoveryError || isProcessing || !acknowledged || !paymentChannel || !paymentMethod ||
       !(otherBatch ? batchValid : amountsValid) || (initialReuse && !otherBatch && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) ||
       !storyAmountSupported || storyAmountMinor === null) return;
@@ -1585,6 +1623,10 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               fallbackSelection={activeOneTimeRecipient?{tin:activeOneTimeRecipient.tin,name:language==='bn'?activeOneTimeRecipient.nameBn:activeOneTimeRecipient.nameEn}:null}
               onFallbackClear={()=>{
                 if(oneTimeTaxpayer)setOtherTaxLines(lines=>lines.filter(line=>line.taxpayerId!==oneTimeTaxpayer.id));
+                if(primaryOneTimeRecipient){
+                  setOtherTaxLines(lines=>lines.filter(line=>line.taxpayerId!=='primary'));
+                  setTin('');setOtherTaxpayerName('');
+                }
                 setOneTimeTaxpayer(null);
                 setOneTimeRecipient(null);
                 setOneTimeTinDraft('');setOneTimeSearchedTin(null);setOneTimeLookupError('');
@@ -1592,13 +1634,21 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               onFallbackSelect={person=>{
                 const ownerId=paymentOwnerId;
                 const match=lookupSampleTaxpayer(person.tin);
-                if(!ownerId||!otherBatch||!signedInBeneficiarySelection||!availableSavedTins||
+                if(!ownerId||!signedInBeneficiarySelection||!availableSavedTins||
                   availableSavedTins.includes(person.tin)||person.tin===signedInProfile?.tin||
-                  !savedBatchTaxpayers.some(candidate=>Boolean(candidate.tin)&&availableSavedTins.includes(candidate.tin))||
                   !match||match.nameEn!==person.name&&match.nameBn!==person.name)return;
+                const savedPrimary=Boolean(taxpayerTin&&availableSavedTins.includes(taxpayerTin));
                 if(oneTimeTaxpayer)setOtherTaxLines(lines=>lines.filter(line=>line.taxpayerId!==oneTimeTaxpayer.id));
                 setOneTimeRecipient({ownerId,tin:match.tin,nameEn:match.nameEn,nameBn:match.nameBn});
-                setOneTimeTaxpayer({id:crypto.randomUUID(),tin:match.tin,name:match.nameEn});
+                if(otherBatch && savedPrimary){
+                  setOneTimeTaxpayer({id:crypto.randomUUID(),tin:match.tin,name:match.nameEn});
+                }else{
+                  // Only one beneficiary in this payment: allow one-time without
+                  // a saved list, including Tax With Return's exclusive route.
+                  setTin(match.tin);setOtherTaxpayerName(match.nameEn);
+                  setOneTimeTaxpayer(null);setAdditionalTaxpayers([]);
+                  setOtherTaxLines([]);setSelectedHeadIds([]);setAmountInputs({});
+                }
                 setOneTimeTinDraft('');setOneTimeSearchedTin(null);setOneTimeLookupError('');
               }}
                             onChoose={selected => {
@@ -1611,6 +1661,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   .filter(person=>Boolean(availableSavedTins?.includes(person.tin)));
                 const first=unique[0];
                 const priorPrimaryTin=taxpayerTin;
+                if(primaryOneTimeRecipient && first?.tin!==primaryOneTimeRecipient.tin) setOneTimeRecipient(null);
                 if (oneTimeTaxpayer && unique.some(person => person.tin === oneTimeTaxpayer.tin)) {
                   setOneTimeLookupError(language === 'bn'
                     ? 'এই টিআইএনটি সংরক্ষিত তালিকায় আছে। পেমেন্টে সংরক্ষিত উপকারভোগী নির্বাচন করুন।'
@@ -1634,7 +1685,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                 setAuthorizedTaxpayerIds({});
                 clearValidationError();
               }} />}
-            {signedInBeneficiarySelection && otherBatch && <section className="col-span-full space-y-3 rounded-lg border border-taxpay-border p-3"
+            {signedInBeneficiarySelection && otherBatch && !primaryOneTimeRecipient && <section className="col-span-full space-y-3 rounded-lg border border-taxpay-border p-3"
               data-testid="one-time-taxpayer-entry" aria-label={language === 'bn' ? 'একবারের করদাতা' : 'One-time taxpayer'}>
               <div>
                 <h3 className="text-sm font-semibold text-taxpay-dark">
@@ -2032,14 +2083,19 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
             <div className="payment-amount-fields payment-amount-fields--simple">
               <div>
                 <label htmlFor="guest-assessment-year" className="block text-slate-600 font-medium mb-1">{commonCopy.assessmentYear} *</label>
-                <select id="guest-assessment-year" required disabled={!!verifiedReference} value={assessmentYear} onChange={event => {
+                <select id="guest-assessment-year" required disabled={!!verifiedReference} value={assessmentYear}
+                  aria-invalid={isFieldInvalid('assessmentYear') || undefined}
+                  aria-describedby={errorDescription('assessmentYear')}
+                  onChange={event => {
                   setAssessmentYear(event.target.value);
+                  if (isFieldInvalid('assessmentYear')) clearValidationError();
                   // A User1 amount belongs to its assessment year, not every year.
                   if (suggestionUserId === 'user1') setAmountInputs({});
                 }} className="min-h-11 w-full px-3 py-2 rounded border border-slate-300">
                   <option value="" disabled>{language==='bn'?'করবর্ষ নির্বাচন করুন':'Select assessment year'}</option>
-                  {['2027-28', '2026-27', '2025-26', '2024-25'].map(year => <option value={year} key={year}>{year}</option>)}
+                  {[...RETURN_YEARS].reverse().map(year => <option value={year} key={year}>{year}</option>)}
                 </select>
+                {fieldError('assessmentYear')}
               </div>
             </div>
             <div className="payment-head-amount-grid">
