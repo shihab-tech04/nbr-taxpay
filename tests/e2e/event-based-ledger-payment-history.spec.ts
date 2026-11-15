@@ -192,3 +192,22 @@ test('all six ledger categories retain their own source events and selection sta
     await expect(panel.getByRole('button',{name:new RegExp(record)}).first()).toBeVisible();
   }
 });
+
+test('read-only payment detail notes preserve line breaks without changing the shared modal',async({page})=>{
+  for(const width of [320,1280]){
+    await page.setViewportSize({width,height:800});
+    for(const language of ['en','bn'] as const){
+      await page.goto(history+'&lang='+language);
+      const search=page.getByRole('searchbox');
+      await search.fill('DEMO-ETDS-SAL-01');
+      const label=language==='bn'?'বিস্তারিত: বেতনের উৎসে কর':'Details for Salary withholding';
+      await page.getByRole('button',{name:label}).click();
+      const note=page.getByTestId('payment-lifecycle-details').locator('p.whitespace-pre-wrap').first();
+      await expect(note).toBeVisible();
+      await expect(note).toHaveCSS('white-space','pre-wrap');
+      await expect(note).toHaveCSS('overflow-wrap','break-word');
+      await expect(page.getByRole('dialog')).toBeVisible();
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+    }
+  }
+});
