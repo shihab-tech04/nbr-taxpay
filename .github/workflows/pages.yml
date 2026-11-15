@@ -17,6 +17,27 @@ concurrency:
 
 jobs:
 
+  v2-read-preflight:
+    name: Taxpayer-v2 public read-only API acceptance
+    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'ws5/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Verify zero-write preflight regression
+        run: node --test scripts/ci/v2-public-read-preflight.test.mjs
+      - name: Confirm Taxpayer-v2 hosted public CMS and source catalogue
+        env:
+          V2_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
+        run: node scripts/ci/v2-public-read-preflight.mjs
+
   preflight:
     name: Verified PR and immutable build provenance
     runs-on: ubuntu-24.04
