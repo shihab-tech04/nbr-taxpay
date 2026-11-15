@@ -156,7 +156,10 @@ export function TaxpayerTinLookup({
             onChange={event => {
               const next = event.target.value.replace(/\D/g, '').slice(0, maxTinLength);
               change(next);
-              setShowSuggestions(Boolean(next && suggestedTins?.length));
+              // A complete valid TIN is ready for the separate Search action.
+              // Close the optional popup so it cannot cover that action in a
+              // narrow dialog; partial TINs still offer suggestions/keyboard use.
+              setShowSuggestions(Boolean(next && suggestedTins?.length && !canSearch(next)));
             }} />
           {Boolean(tin) && !locked && <button type="button"
             className="taxpayer-tin-lookup__clear taxpay-taxpayer-row__tin-clear"
