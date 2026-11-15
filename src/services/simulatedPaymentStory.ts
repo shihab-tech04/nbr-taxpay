@@ -257,6 +257,10 @@ export async function findSessionReceiptByReference(reference: string, mobile: s
         typeof receipt.gatewayTransactionId !== 'string' ||
         !Array.isArray(receipt.items) ||
         typeof receipt.totalAmount !== 'number' ||
+        !Number.isFinite(receipt.totalAmount) ||
+        !Number.isSafeInteger(record.amountMinor) || record.amountMinor <= 0 ||
+        Math.round(receipt.totalAmount * 100) !== record.amountMinor ||
+        receipt.paymentCategory !== record.service ||
         receipt.receiptMobile !== receiptMobile) continue;
     const knownReferences = [receipt.challanNo, receipt.tokenNumber, receipt.gatewayTransactionId,
       receipt.paymentTransactionId, record.id];
