@@ -78,10 +78,14 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   if(!a||!b){console.error('Usage: phase4-reconcile.mjs taxpayer.json office.json [v2.json]');process.exitCode=2;}
   else try{
     const load=f=>JSON.parse(readFileSync(f,'utf8'));
-    const historical=reconcile(load(a),load(b));
+    const originalRows=load(a),officeRows=load(b);
+    const originalIds=new Set(originalRows.map(r=>r?.id));
+    const historical=reconcile(originalRows,officeRows.filter(r=>originalIds.has(r?.id)));
     const report={historical};
-    if(v2)report.v2=reconcile(load(v2),load(b));
+    // V2 is the prospective primary writer; original is read-only fallback.
+    // Office must eventually contain BOTH sets without duplicate source IDs.
+    if(v2)report.combined=reconcile([...originalRows,...load(v2)],officeRows);
     console.log(JSON.stringify(report,null,2));
-    if(!historical.parityPassed||(v2&&!report.v2.parityPassed))process.exitCode=1;
+    if(!historical.parityPassed||(v2&&!report.combined.parityPassed))process.exitCode=1;
   }catch(e){console.error('Reconciliation verification failed:',e.message);process.exitCode=2;}
 }
