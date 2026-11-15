@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {V11_PAYMENT_OPTIONS} from '../src/data/v11PaymentOptions.ts';
-import {isOtherTaxHeadEligible,prepareCombinedOtherTaxPayment} from '../src/services/otherTaxCombinedPayment.ts';
+import {prepareCombinedOtherTaxPayment} from '../src/services/otherTaxCombinedPayment.ts';
+import {V11_SOURCE_HEADS,isV11HeadReviewBlocked} from '../src/data/v11SourceHeads.ts';
+import {BLOCKED_HEAD_IDS} from '../src/data/paymentHeads.ts';
 import {reuseRecordedPayment} from '../src/services/paymentReuse.ts';
 import type {ChallanReceipt,MasterPaymentHead,PaymentLineItem} from '../src/types/tax.ts';
 
@@ -16,9 +18,13 @@ const otherTin='9876543210987';
 const thirdTin='4567890123456';
 const payerUid='payer-owner';
 const years=['2024-25','2025-26','2026-27','2027-28'] as const;
+const nonReturnEligible=new Set(V11_SOURCE_HEADS.filter(head =>
+  head.active && head.map==='MAPPED' && head.purpose!=='return' &&
+  !isV11HeadReviewBlocked(head) && !BLOCKED_HEAD_IDS.includes(head.id)
+).map(head=>head.id));
 const supported=V11_PAYMENT_OPTIONS.filter(head =>
   head.status==='ACTIVE' && (head.category==='TAX_WITH_RETURN'
-    ? head.id===125 : isOtherTaxHeadEligible(head.id)));
+    ? head.id===125 : nonReturnEligible.has(head.id)));
 const nonReturn=supported.filter(head=>head.category!=='TAX_WITH_RETURN');
 const amountText=(minor:number)=>String(Math.floor(minor/100))+'.'+String(minor%100).padStart(2,'0');
 
@@ -118,7 +124,7 @@ test('Phase 3: mixed heads, years and self/other allocations become editable new
   ];
   assert.ok(selected.every(Boolean));
   const oldPaymentId=crypto.randomUUID();
-  const oldAllocationIds=selected.map(()=>crypto.randomUUID());
+  const oldAllocationIds:string[]=selected.map(()=>crypto.randomUUID());
   const taxpayers=[payerTin,otherTin,thirdTin];
   const originalLines=selected.map((head,index)=>paymentHead(head,1011+index*109));
   const source=receipt(selected[0],payerTin,years[0],1011,oldPaymentId,oldAllocationIds[0]);
