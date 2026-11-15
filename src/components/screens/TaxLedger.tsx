@@ -9,6 +9,7 @@ import {
 } from '../../services/simulatedPaymentsApi';
 import {EventBasedTaxLedger,PaymentLifecycleDetails,type TaxAccountEvent,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
 import {TaxPayModal} from '../ui/TaxPayModal';
+import {loadExternalLedgerEvents} from '../../services/externalLedgerRecords';
 
 function projectRecordedEvents(rows:readonly SimulationTransaction[],language:'en'|'bn'):TaxAccountEvent[]{
   return rows.flatMap(tx=>{
@@ -64,6 +65,7 @@ export const TaxLedger:React.FC=()=>{
     key:'',rows:[],state:'loading',error:''
   });
   const [revision,setRevision]=useState(0);
+  const [externalSnapshot,setExternalSnapshot]=useState<{key:string;events:TaxAccountEvent[];state:'loading'|'ready'|'unavailable'|'error'}>({key:'',events:[],state:'loading'});
   const [selected,setSelected]=useState<PaymentLifecycleRecord|null>(null);
   const bn=language==='bn',t=(en:string,other:string)=>bn?other:en;
   const ownerKey=authenticatedUser?'auth:'+authenticatedUser.id:previewAccount?'preview:'+previewAccount.id:'unbound';
@@ -102,15 +104,50 @@ export const TaxLedger:React.FC=()=>{
         error:error instanceof Error?error.message:'History unavailable'});});
     return()=>{live=false;};
   },[ownerKey,revision]);
+  useEffect(()=>{
+    let active=true;
+    const key=ownerKey+':'+language;
+    setExternalSnapshot({key,events:[],state:'loading'});
+    if(!authenticatedUser){
+      setExternalSnapshot({key,events:[],state:'unavailable'});
+      return()=>{active=false;};
+    }
+    void loadExternalLedgerEvents(authenticatedUser.id,language).then(events=>{
+      if(active)setExternalSnapshot({key,events,state:'ready'});
+    }).catch(error=>{
+      if(!active)return;
+      // Existing deployments without the Phase 5 migration must keep the
+      // Sohojkor ledger available, without implying the external feed is live.
+      const code=(error as {code?:string})?.code;
+      const state=code==='PGRST205'||code==='42P01'?'unavailable':'error';
+      setExternalSnapshot({key,events:[],state});
+    });
+    return()=>{active=false;};
+  },[ownerKey,language,revision]);
   const state=snapshot.key===ownerKey?snapshot:{key:ownerKey,rows:[],state:'loading' as const,error:''};
-  const events=useMemo(()=>projectRecordedEvents(state.rows,language),[state.rows,language]);
+  const external=externalSnapshot.key===ownerKey+':'+language
+    ?externalSnapshot:{key:'',events:[],state:'loading' as const};
+  const events=useMemo(()=>[...projectRecordedEvents(state.rows,language),...external.events],
+    [state.rows,language,external.events]);
+  const exportLedger=()=>{
+    if(state.state!=='ready'||!events.length)return;
+    const headers=['Date','Source','Dhara','Assessment year','Tax head','Event','Source status','Recorded amount (paisa)','Confirmed credit effect (paisa)','Challan','Reference','Credit evidence'];
+    const csvCell=(value:string|number|null|undefined)=>'"'+String(value??'').replaceAll('"','""')+'"';
+    const lines=events.map(e=>[e.occurredAt,e.source,e.dhara,e.assessmentYear,e.component,e.code,e.status,
+      e.amountMinor,e.effectMinor,e.challanNo,e.reference,e.creditEvidenceStatus].map(csvCell).join(','));
+    const blob=new Blob(['\uFEFF',headers.map(csvCell).join(','),'\r\n',lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+    const href=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=href;a.download='sohojkor-tax-ledger.csv';a.click();
+    URL.revokeObjectURL(href);
+  };
   const openPayment=(id:string)=>{
     const tx=state.rows.find(r=>r.transactionId===id);
     if(tx)setSelected(paymentRecord(tx,language));
   };
   return <div className="mx-auto max-w-7xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={t('Tax ledger','কর লেজার')} description={t('Ledger information','লেজারের তথ্য')} />
-    <div className="flex justify-end"><button type="button" disabled className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-muted opacity-50">{t('Export ledger data','লেজারের তথ্য রপ্তানি')}</button></div>
+    <div className="flex justify-end"><button type="button" onClick={exportLedger} disabled={state.state!=='ready'||!events.length}
+      className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-dark disabled:opacity-50">{t('Export ledger data','লেজারের তথ্য রপ্তানি')}</button></div>
     {identityPending||state.state==='loading'?<p role="status" className="rounded-xl border border-taxpay-border bg-white p-5 text-sm text-taxpay-muted">
       {t('Loading recorded events…','নথিভুক্ত ঘটনা লোড হচ্ছে…')}</p>:
     state.state==='error'?<section role="alert" className="space-y-3 rounded-xl border border-taxpay-border bg-white p-5">
@@ -119,9 +156,18 @@ export const TaxLedger:React.FC=()=>{
         {t('Retry','আবার চেষ্টা করুন')}</button>
     </section>:
     <>
-      <EventBasedTaxLedger events={events} language={language} onOpenPayment={openPayment}/>
-      <p className="text-xs text-taxpay-muted">{t('TaxPay and Office activity may be recorded here. An official liability, settlement or credit balance requires verified source events.',
-        'এখানে ট্যাক্সপে ও অফিসের কার্যক্রম দেখা যেতে পারে। সরকারি দায়, নিষ্পত্তি বা ক্রেডিট ব্যালেন্সের জন্য যাচাইকৃত ঘটনা প্রয়োজন।')}</p>
+      {authenticatedUser&&external.state!=='ready'&&<div role={external.state==='error'?'alert':'status'} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-taxpay-border bg-white p-3 text-sm text-taxpay-muted">
+        <span>{external.state==='loading'
+          ?t('Checking the external payment ledger…','বহিরাগত পেমেন্ট লেজার পরীক্ষা করা হচ্ছে…')
+          :external.state==='unavailable'
+            ?t('External source records are not connected yet. Sohojkor records are shown separately.','বহিরাগত উৎসের রেকর্ড এখনো সংযুক্ত নয়। সহজকরের রেকর্ড আলাদাভাবে দেখানো হচ্ছে।')
+            :t('External records could not be read. Showing available Sohojkor records only.','বহিরাগত রেকর্ড পড়া যায়নি। শুধু সহজকরের উপলব্ধ রেকর্ড দেখানো হচ্ছে।')}</span>
+        {external.state==='error'&&<button type="button" onClick={()=>setRevision(i=>i+1)}
+          className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-dark">{t('Retry','আবার চেষ্টা করুন')}</button>}
+      </div>}
+      <EventBasedTaxLedger events={events} language={language} onOpenPayment={openPayment} showExternalSources/>
+      <p className="text-xs text-taxpay-muted">{t('Sohojkor and imported external records are kept by their original source. An official liability, settlement or tax credit requires independently verified postings.',
+        'সহজকর ও বহিরাগত রেকর্ড মূল উৎস অনুযায়ী পৃথক রাখা হয়। সরকারি দায়, নিষ্পত্তি বা কর ক্রেডিটের জন্য স্বতন্ত্রভাবে যাচাইকৃত পোস্টিং প্রয়োজন।')}</p>
     </>}
     {previewAccount&&<DemoServiceRecordsPanel userId={previewAccount.id} language={language}/>}
     {selected&&<TaxPayModal title={t('Payment details','পেমেন্টের বিবরণ')} onClose={()=>setSelected(null)} hideFooter className="taxpayer-transaction-detail">
