@@ -87,7 +87,9 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   const [rowsOwnerKey, setRowsOwnerKey] = useState('');
   // Render only rows fetched for the current account, even before effects clear
   // old state or when an earlier owner's request finishes after switching.
-  const visibleRows = rowsOwnerKey === ownerKey ? rows : [];
+  // A service switch under the same account must not render the previous
+  // payment service's saved draft rows before the new query is settled.
+  const visibleRows = rowsOwnerKey === selectionScope ? rows : [];
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -115,7 +117,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     void listPaymentFormDrafts(actor, service).then(result => {
       if (active) {
         setRows(result);
-        setRowsOwnerKey(ownerKey);
+        setRowsOwnerKey(selectionScope);
         if (actor.kind === 'guest') setGuestReadyOwnerKey(ownerKey);
       }
     }).catch(() => {
@@ -132,7 +134,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     const result = await listPaymentFormDrafts(actor, service);
     if (!ownerStillCurrent()) return;
     setRows(result);
-    setRowsOwnerKey(ownerKey);
+    setRowsOwnerKey(selectionScope);
   };
 
   const existingDraftId = () => ownedSelectedDraft?.service === service ? ownedSelectedDraft.id : null;
@@ -161,7 +163,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       setConflictDraftId(null);
       setRows(rows => [result, ...rows.filter(row => row.id !== result.id)].sort(
         (a, b) => b.updated_at.localeCompare(a.updated_at)));
-      setRowsOwnerKey(ownerKey);
+      setRowsOwnerKey(selectionScope);
       // The SQL write and readback have already completed. Show success only in
       // the button; no extra success banner below the payment form.
       setSavedSnapshot(JSON.stringify(payload));
