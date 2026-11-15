@@ -101,11 +101,32 @@ export function buildPaymentCertificateModel(receipt: ChallanReceipt): PaymentCe
       };
     }).filter((line): line is PaymentCertificateLine => line !== null);
     if (lines.length !== details.passengers.length) return null;
+    // New Travel Tax receipts save one accounting row per passenger.
+    // Reconcile those rows before issuing a passenger-itemized certificate;
+    // older records without source rows retain their existing fallback.
+    if (receipt.items.length > 0 && (
+      receipt.items.length !== lines.length ||
+      receipt.items.some((item, index) =>
+        toMinor(item.totalAmount) !== lines[index].amountMinor ||
+        item.economicCode.trim() !== details.economicCode.trim())
+    )) return null;
     const lineTotal = lines.reduce((sum, line) => sum + line.amountMinor, 0);
     if (!Number.isSafeInteger(lineTotal) || lineTotal !== totalMinor) return null;
     travel = details;
   } else if (receipt.allocationItems) {
     if (receipt.allocationItems.length < 1) return null;
+    // A combined certificate must not claim a different head, economic code,
+    // recipient amount or row count from the saved itemized receipt.
+    // Historical receipts with no saved head rows use reconciled allocations.
+    if (receipt.items.length > 0 && (
+      receipt.items.length !== receipt.allocationItems.length ||
+      receipt.items.some((item, index) => {
+        const allocation = receipt.allocationItems![index];
+        return toMinor(item.totalAmount) !== allocation.amountMinor ||
+          item.headNameEn.trim() !== allocation.paymentServiceEn.trim() ||
+          item.economicCode.trim() !== (allocation.economicCode ?? '').trim();
+      })
+    )) return null;
     lines = receipt.allocationItems.map((allocation): PaymentCertificateLine | null => {
       const recipientTin = validTin(allocation.taxpayerTin) ? allocation.taxpayerTin.trim() : undefined;
       const assessmentYear = allocation.assessmentYear.trim() || receipt.assessmentYear.trim();
