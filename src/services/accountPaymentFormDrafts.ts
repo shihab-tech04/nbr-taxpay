@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient';
 import { activePreviewSession } from './previewAccountSession';
-import { unsignedGuestPaymentDraftRequest } from './guestBeneficiaries';
+import { guestPaymentDraftOwnerScope, unsignedGuestPaymentDraftRequest } from './guestBeneficiaries';
 import { TAXPAY_PUBLIC_ENDPOINT } from '../config/publicBackend';
 
 const services = [
@@ -21,7 +21,7 @@ export type PaymentDraftActor =
 export function paymentDraftOwnerScope(actor:PaymentDraftActor|null):string {
   if(!actor)return '';
   if(actor.kind==='authenticated')return 'authenticated:'+actor.userId;
-  if(actor.kind==='guest')return 'guest:session';
+  if(actor.kind==='guest')return guestPaymentDraftOwnerScope();
   const session=activePreviewSession();
   return 'preview:'+actor.profileId+':'+
     (session?.profileId===actor.profileId?session.paymentSessionId:'unavailable');
