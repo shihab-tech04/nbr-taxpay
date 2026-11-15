@@ -79,9 +79,9 @@ test('switching draft owner invalidates a selected draft and ignores stale refre
   // account's loading/error state untouched. SQL already checks its own actor.
   assert.match(ui, /void refresh\(\)\.catch\(\(\) => \{\s*if \(ownerStillCurrent\(\)\) setError/);
   assert.match(ui, /\.finally\(\(\) => \{ if \(ownerStillCurrent\(\)\) setLoading\(false\); \}\)/);
-  assert.match(ui, /currentOwnerRef = useRef\\(\\{ key: requestOwnerKey, generation: 0 \\}\\)/);
-  assert.match(ui, /currentOwnerRef\\.current\\.generation === requestGeneration/);
-  assert.match(dashboard, /latestOwner = useRef\\(\\{key:ownerKey,generation:0\\}\\)/);
-  assert.match(dashboard, /latestOwner\\.current\\.generation===requestGeneration/);
+  assert.match(ui, /currentOwnerRef = useRef\(\{ key: requestOwnerKey, generation: 0 \}\)/);
+  assert.match(ui, /currentOwnerRef\.current\.generation === requestGeneration/);
+  assert.match(dashboard, /latestOwner = useRef\(\{key:ownerKey,generation:0\}\)/);
+  assert.match(dashboard, /latestOwner\.current\.generation===requestGeneration/);
   assert.match(dashboard, /if \(sameOwner\(\)\) setCatalog/);
 });
