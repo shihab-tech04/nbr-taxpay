@@ -320,7 +320,8 @@ for(const language of ['en','bn'] as const){
     // row, it retains both original immutable allocation identities and heads.
     const repeatableId=randomUUID(),repeatableNonce=randomUUID();
     const sourceAllocationIds=[randomUUID(),randomUUID()];
-    const boundTin=language==='en'?'9000000000027':'9000000000029';
+    const boundTin='812345678900';
+    const actualPayerTin=language==='en'?'9000000000027':'9000000000029';
     const anotherTin=language==='en'?'812345678901':'812345678902';
     const savedAt='2026-10-24T08:00:00.000Z';
     const repeatableItems=[
@@ -337,9 +338,9 @@ for(const language of ['en','bn'] as const){
     ];
     const savedReceipt={
       id:'record-'+repeatableId,paymentTransactionId:repeatableId,
-      challanNo:'SAVED-'+repeatableId,tokenNumber:'TOKEN-'+repeatableId,
+      challanNo:'SIM-'+repeatableNonce,tokenNumber:'TOKEN-'+repeatableId,
       paymentCategory:'OTHER_TAX_PAYMENT',assessmentYear:'2026-27, 2025-26',
-      payerName:'Original payment owner',payerTin:boundTin,
+      payerName:'Original payment owner',payerTin:actualPayerTin,
       taxpayerTin:undefined,isRepresentativePayment:true,
       taxZone:'—',taxCircle:'—',isWithholding:false,
       items:repeatableItems,
@@ -356,7 +357,8 @@ for(const language of ['en','bn'] as const){
     };
     const repeatableSource={origin:'TAXPAY_UI',idempotencyKey:repeatableNonce,
       sessionId:payerSessionId,service:'OTHER_TAX_PAYMENT',amountMinor:7500,
-      details:{payerId,payerMode:'OTHER',payerName:'Original payment owner',payerTin:boundTin,
+      details:{payerId,payerMode:'OTHER',payerName:'Original payment owner',payerTin:actualPayerTin,
+        receiptReference:'SIM-'+repeatableNonce,
         allocationContractVersion:3,combinedPayment:true,allocationCount:2,taxpayerCount:2,
         paymentMethod:'BKASH',lines:repeatableItems,receiptLines:repeatableItems,
         allocations:savedAllocations,receiptSnapshot:savedReceipt}};
@@ -374,6 +376,31 @@ for(const language of ['en','bn'] as const){
         quote(paymentId)+"::uuid,"+quote(idempotencyKey)+"::uuid,"+
         quote(payerSessionId)+"::uuid,'OTHER_TAX_PAYMENT',5000,"+
         quote(JSON.stringify(sourceData))+"::jsonb,'SIMULATED_SUCCESS');"
+    );
+    // The existing SQL trigger requires OTHER-mode recipients to be in the
+    // payer's capability-scoped private list. Seed only the disposable local
+    // profile, preserving the real authorization check during original insert.
+    const savedListName='WS1 payer-approved recipients '+payerId;
+    psql(
+      "INSERT INTO taxpay_guest_private.sessions(capability_hash) "+
+      "SELECT encode(extensions.digest(convert_to(capability_token,'UTF8'),'sha256'),'hex') "+
+      "FROM taxpay_guest_private.demo_profiles WHERE demo_id="+quote(payerId)+
+      " ON CONFLICT (capability_hash) DO NOTHING;"+
+      "INSERT INTO taxpay_guest_private.lists(session_id,name) "+
+      "SELECT sess.id,"+quote(savedListName)+" FROM taxpay_guest_private.sessions sess "+
+      "JOIN taxpay_guest_private.demo_profiles prof ON sess.capability_hash="+
+        "encode(extensions.digest(convert_to(prof.capability_token,'UTF8'),'sha256'),'hex') "+
+      "WHERE prof.demo_id="+quote(payerId)+" ON CONFLICT DO NOTHING;"+
+      "INSERT INTO taxpay_guest_private.beneficiaries(session_id,list_id,tin,display_name,tag) "+
+      "SELECT lists.session_id,lists.id,people.tin,people.name,'clients' "+
+      "FROM taxpay_guest_private.lists lists "+
+      "JOIN taxpay_guest_private.sessions sess ON sess.id=lists.session_id "+
+      "JOIN taxpay_guest_private.demo_profiles prof ON sess.capability_hash="+
+        "encode(extensions.digest(convert_to(prof.capability_token,'UTF8'),'sha256'),'hex') "+
+      "CROSS JOIN (VALUES ("+quote(boundTin)+","+quote('Historical recipient A')+"),("+
+        quote(anotherTin)+","+quote('Historical recipient B')+")) AS people(tin,name) "+
+      "WHERE prof.demo_id="+quote(payerId)+" AND lists.name="+quote(savedListName)+
+      " ON CONFLICT DO NOTHING;"
     );
     psql("INSERT INTO demo_payment.story_payments"+
       "(id,idempotency_key,session_id,service_code,amount_minor,data,status) VALUES("+
