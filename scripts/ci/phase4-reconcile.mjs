@@ -16,7 +16,9 @@ function projection(row){
     head:a?.headId??null,year:txt(a?.assessmentYear),dhara:txt(a?.dhara)??txt(a?.section),
     source:txt(a?.source),amount:money(a?.amountMinor)
   }));
-  return {payment:row.id,service:row.service_code,source:txt(row.data.origin),
+  return {payment:row.id,service:row.service_code,origin:txt(row.data.origin),
+    // Application origin (TAXPAY_UI/QA_BROWSER) is NOT a verified provider/source.
+    source:txt(d.paymentSource)??txt(d.source)??txt(row.data.paymentSource)??txt(row.data.source),
     amount:money(row.amount_minor),status:row.status,
     payer:{id:txt(d.payerId),tin:txt(d.payerTin)??txt(r.payerTin),mode:txt(d.payerMode)},
     recipient:txt(d.taxpayerTin)??txt(r.taxpayerTin),year:txt(d.assessmentYear)??txt(r.assessmentYear),
@@ -65,7 +67,7 @@ export function reconcile(taxpayerRows,officeRows){
     }
     const other=dst.get(id);
     if(!other){issues.push({record,field:'payment',reason:'MISSING_OFFICE'});continue;}
-    for(const field of ['payment','service','source','amount','status','payer','recipient','year',
+    for(const field of ['payment','service','origin','source','amount','status','payer','recipient','year',
       'dhara','challan','references','allocations','lines','raw'])diff(p[field],other[field],field,record,issues);
     if(before===issues.length)matched++;
   }
@@ -93,6 +95,8 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
     // Office must eventually contain BOTH sets without duplicate source IDs.
     if(v2)report.combined=reconcile([...originalRows,...load(v2)],officeRows);
     console.log(JSON.stringify(report,null,2));
-    if(!historical.parityPassed||(v2&&!report.combined.parityPassed))process.exitCode=1;
+    // Fail closed: row equality alone cannot authorize a financial release.
+    if(!historical.fieldComplete||historical.simulated>0||
+      (v2&&(!report.combined.fieldComplete||report.combined.simulated>0)))process.exitCode=1;
   }catch(e){console.error('Reconciliation verification failed:',e.message);process.exitCode=2;}
 }
