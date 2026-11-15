@@ -138,6 +138,9 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
                 blurTimerRef.current = null;
                 setHighlighted(0);setSuggestionsOpen(true);
               }}
+              // A selected ID keeps focus here. A second click must reopen
+              // choices without forcing the user to blur and refocus.
+              onClick={()=>{setHighlighted(0);setSuggestionsOpen(true);}}
               onBlur={()=>{
                 // Dismissing the in-flow list synchronously on pointer-down
                 // moves the Recover button before pointer-up, losing its click.
