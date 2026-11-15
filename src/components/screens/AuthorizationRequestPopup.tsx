@@ -14,7 +14,7 @@ import {
 
 /** In-app live popup for synthetic accounts; also appears in Notifications/Manage Authorization. */
 export function AuthorizationRequestPopup(){
-  const {previewAccount,language,navigate}=useTaxState();
+  const {previewAccount,language,navigate,currentRoute}=useTaxState();
   const {user:authenticatedUser}=useAccountIdentity();
   const actor=previewAccount?.id;
   const bn=language==='bn';
@@ -28,9 +28,14 @@ export function AuthorizationRequestPopup(){
   const [dismissedReceived,setDismissedReceived]=useState<string[]>([]);
   const [receivedBusy,setReceivedBusy]=useState(false);
   const [receivedError,setReceivedError]=useState('');
+  const [welcomeOwner,setWelcomeOwner]=useState<string|null>(null);
   useEffect(()=>{
     setIncoming(null);setDismissed([]);setCode(null);setError('');
     setReceived(null);setReceivedOwner(null);setDismissedReceived([]);setReceivedError('');setReceivedBusy(false);
+  },[actor]);
+  useEffect(()=>{
+    try{setWelcomeOwner(actor&&window.sessionStorage.getItem('sohojkor.preview-first-login-welcome.v1')===actor?actor:null);}
+    catch{setWelcomeOwner(null);}
   },[actor]);
   useEffect(()=>{
     if(!actor)return;
@@ -113,6 +118,22 @@ export function AuthorizationRequestPopup(){
   };
 
   if(!actor)return null;
+  if(welcomeOwner===actor&&currentRoute!=='taxpayer_login'){
+    const continueAfterWelcome=()=>{
+      try{window.sessionStorage.removeItem('sohojkor.preview-first-login-welcome.v1');}
+      catch{/* Preview welcome is cosmetic, not a security control. */}
+      setWelcomeOwner(null);
+    };
+    return <TaxPayModal title={bn?'সহজকরে স্বাগতম':'Welcome to Sohojkor'}
+      onClose={continueAfterWelcome} closeIconLabel={bn?'বন্ধ করুন':'Close modal'}
+      className="taxpayer-authorization-modal"
+      footer={<button type="button" className="tax-service-choice__continue"
+        onClick={continueAfterWelcome}>{bn?'বিজ্ঞপ্তি দেখুন':'Continue to notifications'}</button>}>
+      <p className="mt-4 text-sm leading-6 text-taxpay-text" role="status" data-testid="first-login-welcome">
+        {bn?'আপনার নমুনা অ্যাকাউন্টের সাইন ইন নিশ্চিত হয়েছে। এখন প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি থাকলে সেগুলো একে একে দেখতে পারবেন।':'Your sample-account sign-in is confirmed. Any received-payment notices will appear one at a time.'}
+      </p>
+    </TaxPayModal>;
+  }
   if(!visibleIncoming&&visibleReceived){
     const money=formatCurrency(visibleReceived.amountMinor/100,language);
     return <TaxPayModal
