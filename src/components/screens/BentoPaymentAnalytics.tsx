@@ -79,7 +79,7 @@ export const BentoPaymentAnalytics:React.FC<{
   // A missing account projection must not turn into a fictional dashboard.
   // Keep its next step visible rather than rendering four empty giant cards.
   if(!hasData&&!allowExamples)return <section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
-    data-testid="dashboard-payment-analytics" data-chart-source="recorded">
+    data-testid="dashboard-payment-analytics" data-chart-source="recorded" data-empty="true">
     <div className="taxpay-bento-analytics__header">
       <div>
         <h2 id="dashboard-payment-analytics-title">{tr('Payment breakdown','পেমেন্টের বিস্তারিত')}</h2>
