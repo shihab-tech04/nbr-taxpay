@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check } from 'lucide-react';
 import { PaymentDraftExitContext } from './TaxPayModal';
@@ -38,6 +38,11 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     : previewAccount ? { kind: 'preview', profileId: previewAccount.id }
     : allowGuest ? { kind: 'guest' } : null;
   const ownerKey = actor ? actor.kind + ':' + (actor.kind === 'preview' ? actor.profileId : actor.kind === 'authenticated' ? actor.userId : 'session') : '';
+  // An old save/resume/delete promise may resolve after this form changes
+  // accounts. Check the latest render's owner before applying its result.
+  const currentOwnerRef = useRef(ownerKey);
+  currentOwnerRef.current = ownerKey;
+  const ownerStillCurrent = () => currentOwnerRef.current === ownerKey;
   const [rows, setRows] = useState<PaymentFormDraft[]>([]);
   const [rowsOwnerKey, setRowsOwnerKey] = useState('');
   // Render only rows fetched for the current account, even before effects clear
@@ -58,6 +63,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     let active = true;
     setRows([]);
     setRowsOwnerKey('');
+    setBusy(false);
     setGuestContractReady(false);
     setPendingDelete(null);
     setConflictDraftId(null);
@@ -84,6 +90,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   const refresh = async () => {
     if (!actor) return;
     const result = await listPaymentFormDrafts(actor, service);
+    if (!ownerStillCurrent()) return;
     setRows(result);
     setRowsOwnerKey(ownerKey);
   };
@@ -102,6 +109,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       // and the local unsaved form without silently choosing a winner.
       const existing = !asNewDraft && selectedDraft?.service === service ? selectedDraft : undefined;
       const result = await savePaymentFormDraft(actor, service, payload, existing);
+      if (!ownerStillCurrent()) return;
       onSelectedDraft(result);
       setConflictDraftId(null);
       setRows(rows => [result, ...rows.filter(row => row.id !== result.id)].sort(
@@ -111,6 +119,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       // the button; no extra success banner below the payment form.
       setSavedSnapshot(JSON.stringify(payload));
     } catch (cause) {
+      if (!ownerStillCurrent()) return;
       setError(cause instanceof Error ? cause.message : 'Save was not confirmed.');
       if (cause instanceof PaymentDraftConflictError && existingDraftId()) {
         setConflictDraftId(existingDraftId());
@@ -119,7 +128,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       }
       // The close dialog must remain open unless the SQL write/readback succeeded.
       if (rethrowFailure) throw cause;
-    } finally { setBusy(false); }
+    } finally { if (ownerStillCurrent()) setBusy(false); }
   };
 
   const resume = async (draft: PaymentFormDraft) => {
@@ -127,6 +136,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     setBusy(true); setError(null); setFeedback(null);
     try {
       const latest = await listPaymentFormDrafts(actor, service);
+      if (!ownerStillCurrent()) return;
       const current = latest.find(row => row.id === draft.id);
       if (!current) throw new Error(bn ? 'খসড়াটি আর পাওয়া যাচ্ছে না।' : 'Draft was not found.');
       restore(current.form_payload);
@@ -139,8 +149,8 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       setFeedback(bn ? 'সংরক্ষিত তথ্য ফর্মে ফিরিয়ে আনা হয়েছে। জমা দেওয়ার আগে যাচাই করুন।'
         : 'Saved form restored. Review details before submitting.');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Draft could not be resumed.');
-    } finally { setBusy(false); }
+      if (ownerStillCurrent()) setError(cause instanceof Error ? cause.message : 'Draft could not be resumed.');
+    } finally { if (ownerStillCurrent()) setBusy(false); }
   };
 
   const remove = async (draft: PaymentFormDraft) => {
@@ -149,13 +159,14 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     setBusy(true); setError(null); setFeedback(null);
     try {
       await deletePaymentFormDraft(actor, draft);
+      if (!ownerStillCurrent()) return;
       if (selectedDraft?.id === draft.id) onSelectedDraft(null);
       await refresh();
       setPendingDelete(null);
       setFeedback(bn ? 'খসড়া মুছে ফেলা হয়েছে।' : 'Draft deleted.');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Draft deletion was not confirmed.');
-    } finally { setBusy(false); }
+      if (ownerStillCurrent()) setError(cause instanceof Error ? cause.message : 'Draft deletion was not confirmed.');
+    } finally { if (ownerStillCurrent()) setBusy(false); }
   };
 
   // Keep the exit guard bound to the same save routine as the visible Save Draft
