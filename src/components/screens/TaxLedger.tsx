@@ -147,7 +147,7 @@ export const TaxLedger:React.FC=()=>{
     <TaxpayerPageHeading title={t('Tax ledger','কর লেজার')} description={t('Ledger information','লেজারের তথ্য')} />
     <div className="flex justify-end"><button type="button" onClick={exportLedger} disabled={(state.state!=='ready'&&external.state!=='ready')||!events.length}
       className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-dark disabled:opacity-50">{t('Export ledger data','লেজারের তথ্য রপ্তানি')}</button></div>
-    {identityPending||(state.state==='loading'&&external.state!=='ready'&&external.state!=='error')?<p role="status" className="rounded-xl border border-taxpay-border bg-white p-5 text-sm text-taxpay-muted">
+    {identityPending||(state.state==='loading'&&external.state!=='ready')?<p role="status" className="rounded-xl border border-taxpay-border bg-white p-5 text-sm text-taxpay-muted">
       {t('Loading recorded events…','নথিভুক্ত ঘটনা লোড হচ্ছে…')}</p>:
     state.state==='error'&&external.state!=='ready'?<section role="alert" className="space-y-3 rounded-xl border border-taxpay-border bg-white p-5">
       <p className="text-sm text-taxpay-muted">{t('Unable to verify this account’s event history.','অ্যাকাউন্টের ঘটনার ইতিহাস যাচাই করা যাচ্ছে না।')}</p>
