@@ -141,12 +141,12 @@ test('dashboard only: calm card surfaces preserve action contrast and mobile con
     await page.goto(demo);
     const bento=page.getByTestId('taxpayer-overview-bento');
     const hero=bento.locator('.taxpay-bento-hero');
-    await expect(hero).toHaveCSS('background-color','rgb(255, 255, 255)');
+    await expect(hero).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
     await expect(bento.locator('.taxpay-bento-position__highlight')).toHaveCount(0);
     const status=hero.locator('.taxpay-bento-hero__status');
     await expect(status.getByRole('button')).toHaveCount(3);
     for(const button of await status.getByRole('button').all()){
-      await expect(button).toHaveCSS('background-color','rgb(247, 249, 252)');
+      await expect(button).toHaveCSS('background-color','rgb(255, 255, 255)');
       expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     }
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
@@ -164,14 +164,20 @@ test('Overview uses task-first bento sections with independently sized interacti
   expect(order[2]).toContain('taxpay-bento-analytics');
   await expect(bento.locator('.taxpay-bento-request-row .taxpay-bento-drafts')).toHaveCount(1);
   const positions=await bento.evaluate(el=>{
-    const y=(selector:string)=>el.querySelector(selector)!.getBoundingClientRect().y;
-    return {actions:y('.taxpay-bento-request-row'),recent:y('.taxpay-bento-recent'),
-      charts:y('.taxpay-bento-analytics'),left:y('[data-testid="dashboard-service-breakdown"]'),
-      right:y('[data-testid="dashboard-beneficiary-breakdown"]')};
+    const rect=(selector:string)=>el.querySelector(selector)!.getBoundingClientRect();
+    return {summary:rect('.taxpay-bento-summary'),recent:rect('.taxpay-bento-recent'),
+      charts:rect('.taxpay-bento-analytics'),tasks:rect('.taxpay-bento-tasks'),
+      service:rect('[data-testid="dashboard-service-breakdown"]'),
+      roles:rect('[data-testid="dashboard-role-breakdown"]'),
+      beneficiary:rect('[data-testid="dashboard-beneficiary-breakdown"]'),
+      ranking:rect('[data-testid="dashboard-ranked-beneficiaries"]')};
   });
-  expect(positions.actions).toBeLessThan(positions.recent);
-  expect(positions.recent).toBeLessThan(positions.charts);
-  expect(Math.abs(positions.left-positions.right)).toBeLessThan(4);
+  expect(positions.summary.y).toBeLessThan(positions.charts.y);
+  expect(positions.charts.y).toBeLessThan(positions.recent.y);
+  expect(Math.abs(positions.service.y-positions.roles.y)).toBeLessThan(4);
+  expect(Math.abs(positions.beneficiary.y-positions.ranking.y)).toBeLessThan(4);
+  expect(positions.beneficiary.width).toBeGreaterThan(positions.ranking.width);
+  expect(Math.abs(positions.recent.y-positions.tasks.y)).toBeLessThan(4);
   await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(3);
   await expect(bento.getByRole('heading',{name:'Recorded payments by month'})).toHaveCount(0);
 });
