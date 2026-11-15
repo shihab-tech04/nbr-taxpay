@@ -64,6 +64,7 @@ BEGIN
       'payerId','user1','payerName','WS3 disposable payer','payerMode','OTHER',
       'combinedPayment',true,'allocationContractVersion',3,'allocationCount',2,'taxpayerCount',2,
       'receiptReference','SIM-'||payment_key::text,
+      'challanRemarks',E'বাংলা মন্তব্য: করের বিস্তারিত তথ্য\\nThis comment is longer than twenty characters.',
       'totalAmount',50,'assessmentYear','2026-27, 2025-26','taxpayerTin','',
       'lines',lines,'receiptLines',lines,'allocations',allocations,
       'receiptSnapshot',snapshot));
