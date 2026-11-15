@@ -31,11 +31,21 @@ export function activePreviewSession():PreviewSession|null {
     return id&&value?.profileId===id?value:null;
   }catch{return null;}
 }
+/** Reject async results whenever the server-issued session has changed, even for the same profile ID. */
+function samePreviewSession(session:PreviewSession):boolean {
+  const active=activePreviewSession();
+  return active?.profileId===session.profileId && active.capability===session.capability &&
+    active.paymentSessionId===session.paymentSessionId;
+}
 function remember(session:PreviewSession):void {
   window.sessionStorage.setItem(PREVIEW_SESSION_KEY,JSON.stringify(session));
   window.sessionStorage.setItem(PREVIEW_USER_KEY,session.profileId);
 }
 export function clearPreviewSession():void {
+  // Discard stale queued writes: a later sign-in with the same profile ID
+  // must never replay settings from a previously issued capability.
+  outstanding.clear();
+  pending.clear();
   try{
     window.sessionStorage.removeItem(PREVIEW_USER_KEY);
     window.sessionStorage.removeItem(PREVIEW_SESSION_KEY);
@@ -60,6 +70,7 @@ export async function signInPreviewProfile(id:string,password:string):Promise<Pr
   const raw=await send<PreviewSession>('demo-login',{userId:id,password});
   const session=valid(raw);
   if(!session||session.profileId!==id)throw new Error('Demo account response could not be verified.');
+  clearPreviewSession();
   remember(session);
   return session;
 }
@@ -70,6 +81,7 @@ export async function getPreviewSettings():Promise<DemoSettings>{
   if((data.language!=='en'&&data.language!=='bn')||!uuidPattern.test(data.paymentSessionId)||
     data.paymentSessionId!==session.paymentSessionId)
     throw new Error('The saved demo settings could not be verified.');
+  if(!samePreviewSession(session))throw new Error('Demo account changed.');
   remember({...session,language:data.language,selectedListId:data.selectedListId??null});
   return data;
 }
@@ -84,15 +96,14 @@ export function savePreviewSetting(key:'language'|'selected-list',value:string):
   outstanding.set(profile,values);
   const prior=pending.get(profile)??Promise.resolve();
   const next=prior.catch(()=>undefined).then(async()=>{
-    if(activePreviewSession()?.profileId!==profile)throw new Error('Demo account changed.');
+    if(!samePreviewSession(session))throw new Error('Demo account changed.');
     const saved=await send<DemoSettings>('demo-settings',{key,value},session.capability);
     if(key==='language'&&saved.language!==value ||
       key==='selected-list'&&(saved.selectedListId??'')!==value)
       throw new Error('The account setting was not confirmed.');
-    const current=activePreviewSession();
-    if(current?.profileId===profile){
-      remember({...current,language:saved.language,selectedListId:saved.selectedListId??null});
-    }
+    if(!samePreviewSession(session))throw new Error('Demo account changed.');
+    const current=activePreviewSession()!;
+    remember({...current,language:saved.language,selectedListId:saved.selectedListId??null});
     if(values.get(key)===value){
       values.delete(key);
       if(!values.size)outstanding.delete(profile);
@@ -106,9 +117,11 @@ export async function flushPreviewSettings():Promise<void>{
   const session=activePreviewSession();
   if(!session)return;
   await pending.get(session.profileId)?.catch(()=>undefined);
+  if(!samePreviewSession(session))throw new Error('Demo account changed.');
   const values=outstanding.get(session.profileId);
   if(!values?.size)return;
   for(const [key,value] of [...values]){
+    if(!samePreviewSession(session))throw new Error('Demo account changed.');
     if(values.get(key)===value)await savePreviewSetting(key,value);
   }
   if(outstanding.get(session.profileId)?.size)throw new Error('Could not confirm saved settings.');
