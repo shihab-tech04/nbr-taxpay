@@ -203,6 +203,19 @@ test('M06 Pay Again preserves child and exempt passenger categories, but require
  assert.equal(copy.formPayload.travelDate,'');
  assert.equal(JSON.stringify(copy).includes('••••3456'),false);
  assert.equal(JSON.stringify(original),before);
+ // A previously recorded Travel Tax receipt must not carry a hidden fee into
+ // the repeat wizard, even if the visible passenger/parent totals match.
+ for(const feeKey of ['penaltyAmount','surchargeAmount','interestAmount'] as const){
+   const invalid={...original,items:[
+     {...original.items[0],[feeKey]:0.01},...original.items.slice(1)]};
+   assert.throws(()=>reuseRecordedPayment([invalid],'owner','1234567890123','travel-origin'),
+     /cannot be reconciled/,feeKey+' must not be hidden in a Travel Tax repeat');
+ }
+ assert.throws(()=>reuseRecordedPayment([{...original,items:[
+   {...original.items[0],taxAmount:1000.0001},...original.items.slice(1)]}],
+   'owner','1234567890123','travel-origin'),/cannot be reconciled/,
+   'fractional-cent saved tax must not be rounded into a valid repeat');
+ assert.equal(JSON.stringify(original),before);
  assert.throws(()=>reuseRecordedPayment([{...original,items:[
    {...original.items[0],headId:156},...original.items.slice(1)]}],
    'owner','1234567890123','travel-origin'),/cannot be reconciled/);
