@@ -42,3 +42,14 @@ test('payment modal hides and closes an old draft immediately after an establish
   assert.match(source,/if \(paymentOwnerChanged\) setPaymentServiceChoiceOpen\(false\)/);
   assert.match(source,/if \(paymentOwnerChanged\) return null;\s*return \(\s*<TaxPayModal/);
 });
+
+test('dashboard draft cards and counts reject an earlier generation of the same account',()=>{
+  const source=readFileSync('src/components/screens/DashboardPaymentDrafts.tsx','utf8');
+  assert.match(source,/generation: number/);
+  assert.match(source,/catalog\.generation === requestGeneration && catalog\.status === 'ready'/);
+  assert.match(source,/previous\.generation === requestGeneration && previous\.status === 'ready'/);
+  assert.match(source,/catalog\.ownerKey !== ownerKey \|\| catalog\.generation !== requestGeneration/);
+  assert.match(source,/onCountChange\?\.\(catalog\.ownerKey === ownerKey && catalog\.generation === requestGeneration/);
+  assert.match(source,/if \(sameOwner\(\)\) setCatalog\(previous => previous\.ownerKey === ownerKey && previous\.generation === requestGeneration/);
+  assert.match(source,/setCatalog\(previous => previous\.ownerKey === ownerKey && previous\.generation === requestGeneration/);
+});
