@@ -281,7 +281,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
             <span className="text-sm text-taxpay-muted">{dateTime(e.occurredAt,language)} · {e.assessmentYear} · {e.component}</span>
             <span className="break-all text-sm">{e.reference||e.taxEventId||e.id}</span>
             <span className="grid w-full grid-cols-2 gap-x-4 gap-y-2 border-t border-taxpay-border pt-2">
-              <span className="min-w-0"><span className="block text-sm text-taxpay-muted">{t('Recorded amount','নথিভুক্ত পরিমাণ')}</span>
+              <span className="min-w-0"><span className="block text-sm text-taxpay-muted">{e.creditEvidenceStatus==='OFFICIAL_POSTING'?t('Verified credit','যাচাইকৃত ক্রেডিট'):t('Recorded amount','নথিভুক্ত পরিমাণ')}</span>
                 <strong className="block break-words text-sm tabular-nums">{e.amountMinor===null?t('Not recorded','নথিভুক্ত নয়'):money(e.amountMinor,language)}</strong></span>
               <span className="min-w-0"><span className="block text-sm text-taxpay-muted">{t('Effect on balance','ব্যালেন্সের প্রভাব')}</span>
                 <strong className="block break-words text-sm tabular-nums">{e.effectMinor===null?t('Not verified','যাচাই হয়নি'):(e.effectMinor>0?'+':e.effectMinor<0?'−':'')+money(Math.abs(e.effectMinor),language)}</strong></span>
