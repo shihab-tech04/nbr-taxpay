@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { setWorkspaceLanguage } from './workspace-language';
 
-test('approved Korbritto branding stays consistent across public and taxpayer shells', async ({ page }) => {
+test('approved Sohojkor branding stays consistent across public and taxpayer shells', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle(/সহজকর \| Sohojkor/);
   await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'Sohojkor');
@@ -16,16 +16,16 @@ test('approved Korbritto branding stays consistent across public and taxpayer sh
   await expect(page.locator('.public-footer__wordmark')).toHaveAttribute('alt', 'সহজকর');
 
   await page.goto('/?action=office_login&lang=bn');
-  const bengaliDialog = page.getByRole('dialog', { name: 'আপনার করবৃত্ত অ্যাকাউন্টে সাইন ইন করুন' });
+  const bengaliDialog = page.getByRole('dialog', { name: 'আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন' });
   await expect(bengaliDialog).toBeVisible();
   await bengaliDialog.getByRole('button', { name: 'বন্ধ করুন' }).click();
   await setWorkspaceLanguage(page, 'en');
   await expect(page.locator('.public-home-wordmark')).toHaveAttribute('alt', 'Sohojkor');
   await page.goto('/?action=office_login&lang=en');
-  await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' })).toBeVisible();
 });
 
-test('Korbritto primary logo stays solid brand blue and 20 percent smaller across header breakpoints', async ({ page }) => {
+test('bundled fallback wordmark retains approved header dimensions across breakpoints', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/?action=landing');
   const logo = page.locator('.public-home-wordmark');

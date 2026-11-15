@@ -21,8 +21,15 @@ export function maskProfileValue(value:string,kind:SensitiveProfileKind):string{
     return local.slice(0,2)+'*'.repeat(Math.max(3,local.length-2))+'@****.***';
   }
   const digitCount=value.match(/[0-9]/g)?.length??0;
-  let toMask=digitCount>3?digitCount-3:digitCount;
-  return [...value].map(char=>/[0-9]/.test(char)&&toMask-->0?'*':char).join('');
+  // Show the first three digits only; do not leak the final digits of a TIN
+  // or phone number. Short identifiers remain fully masked.
+  const visibleDigits=digitCount>3?3:0;
+  let seen=0;
+  return [...value].map(char=>{
+    if(!/[0-9]/.test(char))return char;
+    seen++;
+    return seen<=visibleDigits?char:'*';
+  }).join('');
 }
 
 /** Independent, keyboard-accessible reveal state, never persisted to storage. */

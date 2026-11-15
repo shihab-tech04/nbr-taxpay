@@ -15,6 +15,7 @@ export function PublicHomeHeader() {
   const {language,setLanguage,currentRoute,navigate,previewAccount,logoutPreviewAccount,setUserRole} = useTaxState();
   const {user,loading:checkingAccount} = useAccountIdentity();
   const signedIn = Boolean(user || previewAccount);
+  const logoHomeRoute = signedIn ? 'taxpayer_home' : 'landing';
   const [menuOpen,setMenuOpen] = useState(false);
   const [profileOpen,setProfileOpen] = useState(false);
   const [signingOut,setSigningOut] = useState(false);
@@ -97,9 +98,10 @@ export function PublicHomeHeader() {
   return <header className="public-home-header">
     <a className="public-home-skip-link" href="#main-content">{bn?'মূল কনটেন্টে যান':'Skip to main content'} <ArrowRight size={16} aria-hidden="true"/></a>
     <div className="public-home-header__inner">
-      <a href={import.meta.env.BASE_URL + (bn ? '?lang=bn' : '')} className="public-home-brand" onClick={event=>{
+      <a href={import.meta.env.BASE_URL + (signedIn ? '?action=taxpayer_home'+(bn?'&lang=bn':'') : bn ? '?lang=bn' : '')}
+        className="public-home-brand" onClick={event=>{
         if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey) return;
-        event.preventDefault();go('landing');
+        event.preventDefault();go(logoHomeRoute);
       }}>
         <span className="public-home-brand__copy">
           <SiteLogo className="public-home-wordmark" alt={bn?'সহজকর':'Sohojkor'}/>

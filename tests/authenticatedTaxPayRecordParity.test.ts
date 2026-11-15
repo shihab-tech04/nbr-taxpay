@@ -58,7 +58,9 @@ test('real receipts page exposes searchable payment-record register outside gove
   assert.match(source,/getRowKey=\{row=>row.key\}/);
   assert.match(source,/getAccountStoryPayments\(authenticatedUser.id\)/);
   assert.match(source,/getDetailedStorySessionPayments\(\)/);
-  assert.match(source,/setReceiptReturnToSummary\(false\)/);
+  assert.match(source,/setReceiptReturnToSummary\(fromSummary\)/);
+  assert.match(source,/openDocument\(row\.receipt,'receipt'\)/);
+  assert.match(source,/mode === 'certificate' && !canViewPaymentCertificate\(receipt\)/);
   assert.match(source,/if\(receiptReturnToSummary\)setSummaryOpen\(true\)/);
   assert.match(source,/receipt-view__financial-table/);
   assert.match(source,/Saved payment records are not government-issued certificates/);

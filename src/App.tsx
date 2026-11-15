@@ -231,7 +231,7 @@ const MainRouter: React.FC = () => {
         {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : beneficiaryLoginRequired ? <PublicLanding /> : (
           <section className="citizen-account-gate">
             <h1>{language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace'}</h1>
-            <p>{language === 'bn' ? 'আপনার করবৃত্ত অ্যাকাউন্টে সাইন ইন করুন।' : 'Sign in to your Korbritto account to continue.'}</p>
+            <p>{language === 'bn' ? 'আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন।' : 'Sign in to your Sohojkor account to continue.'}</p>
             <a className="citizen-account-gate__preview"
               href={language === 'bn' ? '?action=taxpayer_login&lang=bn' : '?action=taxpayer_login'}>
               {language === 'bn' ? 'সাইন ইন' : 'Sign In'}

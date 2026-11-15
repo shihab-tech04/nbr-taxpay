@@ -24,7 +24,8 @@ export function SharedReviewRequests({authenticatedUserId,language,drafts}:{auth
     if(identityError || identity.user?.id!==authenticatedUserId) throw new Error('Session changed');
     const [r,n]=await Promise.all([
       supabase.from('taxpay_payment_requests').select('id,source_draft_id,category,assessment_year,amount_minor,request_status,financial_receipt_status,tax_credit_status,submitted_at').eq('owner_uid',authenticatedUserId).order('submitted_at',{ascending:false}).limit(50),
-      supabase.from('taxpay_in_app_notifications').select('id,request_id,message_code,is_read,created_at').order('created_at',{ascending:false}).limit(50)
+      supabase.from('taxpay_in_app_notifications').select('id,request_id,message_code,is_read,created_at')
+        .eq('recipient_uid',authenticatedUserId).order('created_at',{ascending:false}).limit(50)
     ]);
     if(r.error || n.error) throw new Error(r.error?.message||n.error?.message||'Unable to read back');
     const {data:stillCurrent}=await supabase.auth.getUser();
@@ -63,8 +64,10 @@ export function SharedReviewRequests({authenticatedUserId,language,drafts}:{auth
     try{
       const {data:identity}=await supabase.auth.getUser();
       if(identity.user?.id!==authenticatedUserId)throw new Error('Session changed');
-      const {error:updateError}=await supabase.from('taxpay_in_app_notifications').update({is_read:true}).eq('id',notice.id);
-      if(updateError)throw updateError;
+      const {data:updated,error:updateError}=await supabase.from('taxpay_in_app_notifications')
+        .update({is_read:true}).eq('recipient_uid',authenticatedUserId).eq('id',notice.id)
+        .select('id').maybeSingle();
+      if(updateError||updated?.id!==notice.id)throw updateError||new Error('Notification read-back not confirmed');
       await refresh();
     }catch(e){setError(e instanceof Error?e.message:'Update failed');}finally{setBusy(null);}
   };

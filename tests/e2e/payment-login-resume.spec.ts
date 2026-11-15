@@ -77,6 +77,13 @@ test('payment account login preserves payer and access on Back, errors and close
   const retry = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
   await expect(retry.getByRole('textbox', { name: 'User ID' })).toHaveValue('');
   await expect(retry.getByRole('button', { name: 'Sign In' })).toBeDisabled();
+  // The first Escape dismisses the 55-account suggestions; the second closes
+  // the parent Pay Tax modal. Keep the approved selections on Back and retry.
+  const userId=retry.getByRole('textbox', { name: 'User ID' });
+  await expect(userId).toHaveAttribute('aria-expanded','true');
+  await page.keyboard.press('Escape');
+  await expect(userId).toHaveAttribute('aria-expanded','false');
+  await expect(retry).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('.taxpay-modal__overlay')).toHaveCount(0);

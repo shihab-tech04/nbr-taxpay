@@ -48,7 +48,7 @@ export interface DemoSqlProfileData {
 }
 
 const validUserId = (value: unknown): value is DemoUserId =>
-  typeof value === 'string' && /^user(?:10|[1-9])$/.test(value);
+  typeof value === 'string' && /^user(?:[1-9]|[1-4][0-9]|5[0-5])$/.test(value);
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 const requiredText = (value: unknown, field: string): string => {

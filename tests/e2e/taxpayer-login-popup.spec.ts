@@ -24,15 +24,70 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
   await dialog.getByRole('button',{name:'Hide password'}).click();
   await expect(dialog.getByLabel('Password', {exact:true})).toHaveAttribute('type','password');
   await expect(page.locator('#public-home-title')).toBeVisible();
-  await dialog.getByRole('textbox',{name:'User ID'}).fill('user31');
-  await dialog.getByLabel('Password',{exact:true}).fill('user31');
+  await dialog.getByRole('textbox',{name:'User ID'}).fill('user56');
+  await dialog.getByLabel('Password',{exact:true}).fill('user56');
   await dialog.getByRole('button',{name:'Sign In'}).click();
   await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password');
   await expect(page).toHaveURL(/action=taxpayer_login/);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
+  const userIdInput=dialog.locator('#taxpayer-login-user-id');
+  // An invalid login refocuses User ID and reopens suggestions: first Escape
+  // closes those choices; second Escape dismisses the existing shared modal.
+  await expect(userIdInput).toHaveAttribute('aria-expanded','true');
+  await page.keyboard.press('Escape');
+  await expect(userIdInput).toHaveAttribute('aria-expanded','false');
+  await expect(dialog).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(page).toHaveURL(/action=landing/);
+});
+
+test('user1-user55 selector filters, keyboard-selects, fills only QA credentials and dismisses',async({page})=>{
+  await page.goto('/?action=taxpayer_login');
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const input=dialog.getByRole('textbox',{name:'User ID'});
+  await input.focus();
+  await expect(input).toHaveAttribute('aria-expanded','true');
+  const allAccounts=dialog.getByRole('listbox',{name:'Test accounts'});
+  await expect(allAccounts.getByRole('option')).toHaveCount(55);
+  // The first ArrowUp wraps to the final account and must scroll inside the
+  // list; a keyboard user should never lose sight of the active option.
+  await input.press('ArrowUp');
+  await expect(input).toHaveAttribute('aria-activedescendant','taxpayer-login-account-user55');
+  await expect.poll(()=>allAccounts.evaluate(element=>element.scrollTop)).toBeGreaterThan(0);
+  await input.press('ArrowDown');
+  await expect(input).toHaveAttribute('aria-activedescendant','taxpayer-login-account-user1');
+  await input.fill('user55');
+  const list=dialog.getByRole('listbox',{name:'Test accounts'});
+  await expect(list.getByRole('option')).toHaveCount(1);
+  await input.press('ArrowDown');
+  await input.press('Enter');
+  await expect(input).toHaveValue('user55');
+  await expect(dialog.getByLabel('Password',{exact:true})).toHaveValue('user55');
+  await expect(input).toHaveAttribute('aria-expanded','false');
+  await input.click(); // already focused: explicit user click reopens choices
+  await expect(input).toHaveAttribute('aria-expanded','true');
+  await input.press('Escape');
+  await expect(dialog).toBeVisible();
+  await expect(input).toHaveAttribute('aria-expanded','false');
+  await input.fill('user56');
+  await expect(dialog.getByRole('listbox',{name:'Test accounts'}).getByText('No test accounts found')).toBeVisible();
+  await expect(dialog.getByLabel('Password',{exact:true})).toBeEmpty();
+});
+
+test('Bangla account search matches a Bengali profile name and only fills synthetic QA credentials',async({page})=>{
+  await page.goto('/?action=taxpayer_login&lang=bn');
+  const userId=page.locator('#taxpayer-login-user-id');
+  await expect(userId).toBeVisible();
+  await userId.fill('করদাতা অ্যাকাউন্ট 55');
+  const options=page.getByRole('listbox',{name:'পরীক্ষামূলক অ্যাকাউন্ট'});
+  await expect(options.getByRole('option')).toHaveCount(1);
+  await expect(options.getByRole('option')).toContainText('user55');
+  await userId.press('ArrowDown');
+  await userId.press('Enter');
+  await expect(userId).toHaveValue('user55');
+  await expect(page.locator('#taxpayer-login-password')).toHaveValue('user55');
+  await expect(userId).toHaveAttribute('aria-expanded','false');
 });
 
 test('all ten matching ID/password pairs open their own taxpayer dashboard and profile, then sign out', async ({page}, info) => {
@@ -73,6 +128,8 @@ test('refresh keeps selected preview identity without turning URL into authentic
   await page.getByRole('textbox',{name:'User ID'}).fill('user8');
   await page.getByLabel('Password',{exact:true}).fill('user8');
   await page.getByRole('button',{name:'Sign In'}).click();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page).not.toHaveURL(/demoUser=/);

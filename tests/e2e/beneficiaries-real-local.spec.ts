@@ -43,6 +43,8 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   // Add beneficiary opens the existing individual form directly while Excel import is hidden.
   const addDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await expect(addDialog).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Choose how to add beneficiaries'})).toHaveCount(0);
   await addDialog.locator('#beneficiary-tin').fill('012345678901');
   await addDialog.locator('#beneficiary-name').fill('Local Beneficiary One');
   await chooseBeneficiaryOption(addDialog,'beneficiary-tag','friends_family:father');
@@ -79,14 +81,17 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(records).toContainText('Local Beneficiary One');
 
-  // Excel entry is intentionally hidden; add the second taxpayer through
-  // the existing individual form while retaining owner-isolation coverage.
+  // Excel entry is hidden; adding the second taxpayer uses the existing form while retaining owner-isolation coverage.
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  const individual=page.getByRole('dialog',{name:'Beneficiary entry'});
-  await individual.locator('#beneficiary-tin').fill('987654321098');
-  await individual.locator('#beneficiary-name').fill('Local Beneficiary Two');
-  await chooseBeneficiaryOption(individual,'beneficiary-tag','clients');
-  await individual.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  const secondAddDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await expect(secondAddDialog).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Choose how to add beneficiaries'})).toHaveCount(0);
+  await expect(page.getByText('Import from Excel',{exact:true})).toHaveCount(0);
+  await secondAddDialog.locator('#beneficiary-tin').fill('987654321098');
+  await secondAddDialog.locator('#beneficiary-name').fill('Local Beneficiary Two');
+  await chooseBeneficiaryOption(secondAddDialog,'beneficiary-tag','clients');
+  await secondAddDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await expect(page.getByText('Beneficiary saved.')).toBeVisible({timeout:15000});
   await expect(records).toContainText('Local Beneficiary Two');
   await page.reload();
   await expect(records).toContainText('Local Beneficiary Two');
@@ -138,5 +143,84 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(picker).toContainText('012345678901');
   await expect(modal.locator('#guest-tin, #guest-payer-name')).toHaveCount(0);
   await expect(modal.getByRole('button',{name:'Add another taxpayer'})).toHaveCount(0);
+
+  // Exact accepted deletion must round-trip through real owner-scoped SQL.
+  // A zero-row RLS/stale delete must never be reported as successful.
+  const savedUrl=new URL('/rest/v1/taxpay_beneficiaries',api.origin);
+  savedUrl.searchParams.set('select','id,tin');
+  savedUrl.searchParams.set('owner_uid','eq.'+ownerA.id);
+  const savedResponse=await fetch(savedUrl,{headers:{apikey:key,Authorization:'Bearer '+ownerA.session.access_token}});
+  expect(savedResponse.status).toBe(200);
+  const savedRows=await savedResponse.json() as Array<{id:string;tin:string}>;
+  expect(savedRows).toHaveLength(2);
+  const first=savedRows.find(row=>row.tin==='012345678901');
+  const second=savedRows.find(row=>row.tin==='987654321098');
+  expect(first?.id).toBeTruthy();
+  expect(second?.id).toBeTruthy();
+
+  const deleteUrl=(id:string)=>new URL('/rest/v1/taxpay_beneficiaries?id=eq.'+id,api.origin);
+  const denied=await fetch(deleteUrl(first!.id),{
+    method:'DELETE',
+    headers:{apikey:key,Authorization:'Bearer '+ownerB.session.access_token,Prefer:'return=representation'},
+  });
+  expect(denied.status).toBe(200);
+  expect(await denied.json()).toEqual([]);
+  expect((await read(ownerA.session.access_token))).toHaveLength(2);
+
+  await page.goto('/?action=beneficiaries');
+  await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+  await expect(page.getByTestId('beneficiary-directory-mobile')).toContainText('Local Beneficiary One');
+  await page.getByTestId('beneficiary-directory-mobile').locator('li')
+    .filter({hasText:'Local Beneficiary One'})
+    .getByRole('button',{name:'Edit',exact:true}).click();
+  const editor=page.getByRole('dialog',{name:'Edit beneficiary'});
+  await expect(editor).toContainText('Local Beneficiary One');
+  // Edit must persist the exact mandatory final relationship, not just repaint UI.
+  await chooseBeneficiaryOption(editor,'beneficiary-edit-tag','friends_family:friends');
+  await editor.getByRole('button',{name:'Save changes'}).click();
+  await expect(page.getByText('Beneficiary details updated.')).toBeVisible();
+  expect((await read(ownerA.session.access_token)).find(
+    (row:{tin:string})=>row.tin==='012345678901')).toMatchObject({
+      owner_uid:ownerA.id,tag:'friends_family',relationship:'friends',
+    });
+  await page.reload();
+  await expect(page.getByTestId('beneficiary-directory-mobile')).toContainText('Local Beneficiary One');
+  await page.getByTestId('beneficiary-directory-mobile').locator('li')
+    .filter({hasText:'Local Beneficiary One'})
+    .getByRole('button',{name:'Edit',exact:true}).click();
+  const updatedEditor=page.getByRole('dialog',{name:'Edit beneficiary'});
+  await expect(updatedEditor).toContainText('Local Beneficiary One');
+  await updatedEditor.getByRole('button',{name:'Delete beneficiary'}).click();
+  const confirmation=page.getByRole('dialog',{name:'Confirm beneficiary removal'});
+  await confirmation.getByRole('button',{name:'Remove',exact:true}).click();
+  await expect(page.getByText('Beneficiary removed.')).toBeVisible();
+  const afterConfirmed=await read(ownerA.session.access_token);
+  expect(afterConfirmed).toHaveLength(1);
+  expect(afterConfirmed[0].tin).toBe('987654321098');
+
+  // Simulate a legitimate second device removing the remaining contact while
+  // the owner's confirmation modal is open. A stale click is a recoverable error.
+  await page.getByTestId('beneficiary-directory-mobile').locator('li')
+    .filter({hasText:'Local Beneficiary Two'})
+    .getByRole('button',{name:'Edit',exact:true}).click();
+  const staleEditor=page.getByRole('dialog',{name:'Edit beneficiary'});
+  await expect(staleEditor).toContainText('Local Beneficiary Two');
+  await staleEditor.getByRole('button',{name:'Delete beneficiary'}).click();
+  const staleConfirmation=page.getByRole('dialog',{name:'Confirm beneficiary removal'});
+  const concurrent=await fetch(deleteUrl(second!.id),{
+    method:'DELETE',
+    headers:{apikey:key,Authorization:'Bearer '+ownerA.session.access_token,Prefer:'return=representation'},
+  });
+  expect(concurrent.status).toBe(200);
+  const deletedRows=await concurrent.json() as Array<{id:string}>;
+  expect(deletedRows.map(row=>row.id)).toEqual([second!.id]);
+  await staleConfirmation.getByRole('button',{name:'Remove',exact:true}).click();
+  await expect(staleConfirmation.getByRole('alert')).toContainText(
+    'The beneficiary is no longer saved. Refresh and try again.');
+  await staleConfirmation.getByRole('button',{name:'Cancel'}).click();
+  await page.reload();
+  await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+  expect(await read(ownerA.session.access_token)).toEqual([]);
+  expect(await read(ownerB.session.access_token)).toEqual([]);
   await context.close();
 });

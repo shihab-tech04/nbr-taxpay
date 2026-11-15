@@ -1,12 +1,16 @@
+import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
+import {getStorySessionId,storyApiHeaders} from './simulatedPaymentStory';
+import {activePreviewSession} from './previewAccountSession';
+import {supabase} from './supabaseClient';
 import { CATEGORY_LABELS, MASTER_PAYMENT_HEADS } from '../data/paymentHeads';
 import { validCertificateTransactionId } from './transactionId';
 export { validCertificateTransactionId } from './transactionId';
 import type { ChallanReceipt, PaymentCategory, PaymentLineItem, ReceiptAllocationItem } from '../types/tax';
 import {sampleTinForUserNumber} from '../data/sampleTinSuggestions';
 
-/** Both Office and TaxPay link to this same TaxPay receipt route.
- * It reads SQL-confirmed Office records, never browser-local sample receipts. */
-const OFFICE_API='https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office';
+/** Public receipt reads are restricted to the original Taxpayer SQL owner
+ * or active guest-session capability. The Office API remains officer-only. */
+const TAXPAY_API=TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'')+'/functions/v1/demo-story1-taxpay';
 const serviceCodes=new Set<PaymentCategory>([
  'TAX_WITH_RETURN','ADVANCE_TAX','ASSESSED_DEMAND','PENALTY',
  'SOURCE_TAX_DEPOSIT','APPELLATE_TRIBUNAL','OTHER_TAX_PAYMENT','TRAVEL_TAX'
@@ -19,7 +23,6 @@ interface StoredPayment {
  id:string;service:string;amountMinor:number;status:string;createdAt:string;
  details?:Record<string,unknown>;
 }
-type StoredPage={items:StoredPayment[];total:number};
 function stringValue(value:unknown):string{return typeof value==='string'?value:'';}
 function numberValue(value:unknown):number{return typeof value==='number'&&Number.isFinite(value)?value:0;}
 function toItems(value:unknown):PaymentLineItem[]{
@@ -56,12 +59,22 @@ function legacySyntheticTin(beneficiary:string):string|undefined {
 
 function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
  const d=tx.details??{};
+ const contractVersion=d.allocationContractVersion;
+ if(contractVersion!==undefined&&contractVersion!==2&&contractVersion!==3)return undefined;
+ const version3=contractVersion===3;
  const lines=Array.isArray(d.lines)
   ?d.lines.filter(line=>line&&typeof line==='object'&&!Array.isArray(line)) as Array<Record<string,unknown>>
   :[];
  const explicit=Array.isArray(d.allocations)
   ?d.allocations.filter(item=>item&&typeof item==='object'&&!Array.isArray(item)) as Array<Record<string,unknown>>
   :[];
+ const allocationIds=new Set<string>();
+ if(version3&&(explicit.length===0||explicit.some(allocation=>{
+   const id=allocation.allocationId;
+   if(typeof id!=='string'||!id.trim()||allocationIds.has(id))return true;
+   allocationIds.add(id);
+   return false;
+ })))return undefined;
  const synthetic=lines.some(line=>typeof line.beneficiary==='string');
  let items:ReceiptAllocationItem[]=[];
  if(synthetic && explicit.length){
@@ -93,7 +106,8 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
     const head=receiptLines[index];
     const name=stringValue(allocation.taxpayerName).trim();
     const serviceEn=stringValue(head.headNameEn).trim()||CATEGORY_LABELS[tx.service]?.en||tx.service;
-    return {taxpayerName:name||'TIN '+stringValue(allocation.taxpayerTin),
+    return {...(version3?{allocationId:stringValue(allocation.allocationId)}:{}),
+      taxpayerName:name||'TIN '+stringValue(allocation.taxpayerTin),
       taxpayerTin:stringValue(allocation.taxpayerTin),
       paymentServiceEn:serviceEn,
       paymentServiceBn:stringValue(head.headNameBn).trim()||MASTER_PAYMENT_HEADS.find(item=>item.id===head.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn,
@@ -122,19 +136,52 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
  }else if(explicit.length){
   if(explicit.some(item=>!validTin(item.taxpayerTin)||typeof item.headId!=='number'||
     !Number.isSafeInteger(item.headId)||!validMinorAmount(item.amountMinor)||
-    typeof item.assessmentYear!=='string'||!item.assessmentYear.trim()))return undefined;
+    typeof item.assessmentYear!=='string'||!item.assessmentYear.trim())||
+    (version3&&(lines.length!==explicit.length||explicit.some((item,index)=>{
+      const line=lines[index];
+      return !line||line.headId!==item.headId||
+        !validMinorAmount(item.amountMinor)||
+        Math.round(numberValue(line.totalAmount)*100)!==item.amountMinor;
+    }))))return undefined;
   items=explicit.map(item=>{
    const head=lines.find(line=>line.headId===item.headId);
    const name=stringValue(item.taxpayerName);
    const serviceEn=stringValue(head?.headNameEn).trim()||CATEGORY_LABELS[tx.service]?.en||tx.service;
    const serviceBn=stringValue(head?.headNameBn).trim()||MASTER_PAYMENT_HEADS.find(item=>item.id===head?.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn;
-   return {taxpayerName:name||'TIN '+stringValue(item.taxpayerTin),
+   return {...(version3?{allocationId:stringValue(item.allocationId)}:{}),
+    taxpayerName:name||'TIN '+stringValue(item.taxpayerTin),
     taxpayerTin:stringValue(item.taxpayerTin),paymentServiceEn:serviceEn,paymentServiceBn:serviceBn,
     assessmentYear:stringValue(item.assessmentYear),amountMinor:item.amountMinor as number,
     ...(stringValue(head?.economicCode)?{economicCode:stringValue(head?.economicCode)}:{})};
   });
  }else return undefined;
  if(!items.length)return undefined;
+ if(version3){
+  const rawSnapshot=d.receiptSnapshot;
+  if(!rawSnapshot||typeof rawSnapshot!=='object'||Array.isArray(rawSnapshot))return undefined;
+  const snapshot=rawSnapshot as Record<string,unknown>;
+  const snapshotItems=snapshot.allocationItems;
+  const savedLines=Array.isArray(d.receiptLines)
+    ?d.receiptLines.filter(line=>line&&typeof line==='object'&&!Array.isArray(line)) as Array<Record<string,unknown>>
+    :lines;
+  if(snapshot.paymentCategory!==tx.service||
+    Math.round(numberValue(snapshot.totalAmount)*100)!==tx.amountMinor||
+    !Array.isArray(snapshot.items)||snapshot.items.length!==savedLines.length||
+    snapshot.items.some((raw,index)=>{
+      if(!raw||typeof raw!=='object'||Array.isArray(raw))return true;
+      const saved=raw as Record<string,unknown>,line=savedLines[index];
+      return ['headId','headNameEn','economicCode','totalAmount'].some(key=>
+        line[key]!==undefined&&line[key]!==saved[key]);
+    })||!Array.isArray(snapshotItems)||snapshotItems.length!==items.length||
+    snapshotItems.some((raw,index)=>{
+      if(!raw||typeof raw!=='object'||Array.isArray(raw))return true;
+      const saved=raw as Record<string,unknown>,item=items[index];
+      return saved.allocationId!==item.allocationId||saved.taxpayerTin!==item.taxpayerTin||
+        saved.taxpayerName!==item.taxpayerName||saved.paymentServiceEn!==item.paymentServiceEn||
+        saved.paymentServiceBn!==item.paymentServiceBn||saved.assessmentYear!==item.assessmentYear||
+        saved.amountMinor!==item.amountMinor||saved.economicCode!==item.economicCode;
+    }))return undefined;
+ }
  let total=0;
  for(const item of items){total+=item.amountMinor;if(!Number.isSafeInteger(total))return undefined;}
  return total===tx.amountMinor?items:undefined;
@@ -199,6 +246,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   challanNo:stringValue(d.receiptReference)||tx.id,tokenNumber:'—',
   paymentCategory:category,assessmentYear:allocationYears.length?allocationYears.join(', '):stringValue(d.assessmentYear)||'—',
   payerName:stringValue(d.payerName)||'—',payerTin:stringValue(d.payerTin)||'—',
+  taxpayerName:stringValue(d.taxpayerName)||undefined,
   taxpayerTin:stringValue(d.taxpayerTin),receiptMobile:stringValue(d.receiptMobile),
   noticeReference:stringValue(d.noticeReference),
   isRepresentativePayment:d.payerMode==='OTHER',
@@ -213,22 +261,182 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
  };
  return fallback;
 }
-export async function getConfirmedReceipt(transactionId:string):Promise<ChallanReceipt>{
- if(!validCertificateTransactionId(transactionId))throw new Error('Invalid transaction reference');
- // The Office feed contains only UI-submitted, SQL-mirrored simulated payments.
- // Page through all rows rather than silently displaying a fixture for a missing record.
- for(let page=1;page<=2000;page++){
-  const response=await fetch(OFFICE_API+'/payments?page='+page+'&perPage=100',{cache:'no-store'});
-  if(!response.ok)throw new Error('Certificate record service unavailable');
-  const envelope=await response.json() as {success:boolean;data:StoredPage};
-  if(!envelope.success||!envelope.data||!Array.isArray(envelope.data.items))
-   throw new Error('Invalid certificate response');
-  const matched=envelope.data.items.find(p=>p.id===transactionId);
-  if(matched)return makeConfirmedReceipt(matched);
-  if(page*100>=envelope.data.total)break;
- }
- throw new Error('No synchronized payment record found for this transaction');
+const isRecord=(value:unknown):value is Record<string,unknown> =>
+ Boolean(value&&typeof value==='object'&&!Array.isArray(value));
+
+function checkedParent(value:unknown,transactionId:string):StoredPayment{
+ if(!isRecord(value)||value.id!==transactionId||
+   typeof value.service!=='string'||typeof value.status!=='string'||
+   typeof value.createdAt!=='string'||!Number.isFinite(Date.parse(value.createdAt))||
+   typeof value.amountMinor!=='number'||!Number.isSafeInteger(value.amountMinor)||
+   value.amountMinor<=0||!isRecord(value.details))
+   throw Error('Invalid Taxpayer payment record');
+ return {id:transactionId,service:value.service,amountMinor:value.amountMinor,
+   status:value.status,createdAt:value.createdAt,details:value.details};
 }
+
+/** Existing Taxpayer Auth RPC projects only this owner’s claimed payments.
+ * Do not fall back to an unrelated browser session when the owner has no row.
+ */
+async function signedInParent(transactionId:string):Promise<StoredPayment|null>{
+ if(!supabase)return null;
+ const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
+ if(sessionError)throw Error('Account session could not be verified');
+ const session=sessionData.session;
+ if(!session?.access_token)return null;
+ const {data:identity,error:identityError}=await supabase.auth.getUser();
+ const owner=identity.user?.id;
+ if(identityError||!owner||owner!==session.user.id)
+   throw Error('Account ownership could not be verified');
+ for(let page=1;page<=2000;page++){
+   const {data,error}=await supabase.rpc('taxpay_my_story1_payments',{
+     p_page:page,p_per_page:100,
+   });
+   if(error)throw Error('Account payment records are temporarily unavailable');
+   if(!isRecord(data)||!Array.isArray(data.items)||
+     typeof data.total!=='number'||!Number.isSafeInteger(data.total)||
+     data.total<0||data.items.length>100)
+     throw Error('Invalid account payment response');
+   const match=data.items.find(item=>isRecord(item)&&item.id===transactionId);
+   if(match){
+     const {data:recheck,error:recheckError}=await supabase.auth.getUser();
+     if(recheckError||recheck.user?.id!==owner)
+       throw Error('Account changed during payment lookup');
+     return checkedParent(match,transactionId);
+   }
+   if(page*100>=data.total)break;
+   if(data.items.length===0)throw Error('Incomplete account payment history');
+ }
+ throw Error('Payment record is not linked to this account');
+}
+
+/** A UUID is not an ownership proof. The original Taxpayer Edge endpoint
+ * verifies the current session/preview capability before returning one parent.
+ * Never query Office's privileged global payment page from a public browser.
+ */
+export async function getConfirmedReceipt(transactionId:string):Promise<ChallanReceipt>{
+ if(!validCertificateTransactionId(transactionId))
+   throw Error('Invalid transaction reference');
+ const owner=await signedInParent(transactionId);
+ if(owner)return makeConfirmedReceipt(owner);
+ const sessionId=getStorySessionId();
+ const preview=activePreviewSession();
+ const response=await fetch(TAXPAY_API+'/payments/'+encodeURIComponent(transactionId)+
+   '?sessionId='+encodeURIComponent(sessionId),{
+     cache:'no-store',headers:storyApiHeaders(sessionId),
+   });
+ if(!response.ok)throw Error('Payment record unavailable for this session');
+ const payload:unknown=await response.json().catch(()=>null);
+ if(!isRecord(payload)||payload.success!==true||payload.simulationOnly!==true||
+   !isRecord(payload.data)||payload.data.id!==transactionId||
+   !isRecord(payload.data.data)||payload.data.data.origin!=='TAXPAY_UI')
+   throw Error('Unverified Taxpayer payment response');
+ const now=activePreviewSession();
+ if(getStorySessionId()!==sessionId||
+   (now?.capability??null)!==(preview?.capability??null)||
+   (now?.profileId??null)!==(preview?.profileId??null))
+   throw Error('Payment session changed during lookup');
+ const row=payload.data;
+ const data=row.data;
+ if(!isRecord(data))throw Error('Unverified Taxpayer payment response');
+ return makeConfirmedReceipt(checkedParent({
+   id:row.id,status:row.status,createdAt:row.createdAt,
+   service:data.service,amountMinor:data.amountMinor,
+   details:data.details,
+ },transactionId));
+}
+
+/** F-129 / US-050: an authenticated owner may recover a stored original
+ * Taxpayer SQL receipt by challan/token/gateway/parent/certificate reference.
+ * A reference or receipt mobile NEVER grants cross-account authorization.
+ * Guest lookups continue through their original session-bound API.
+ */
+export async function findOwnedReceiptByReference(
+ reference:string,receiptMobile:string
+):Promise<{authenticated:boolean;receipt:ChallanReceipt|null}> {
+ const wanted=reference.trim().toUpperCase();
+ if(!wanted||wanted.length>200)return {authenticated:false,receipt:null};
+ if(!supabase)return {authenticated:false,receipt:null};
+ const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
+ if(sessionError)throw Error('Account session could not be verified');
+ const session=sessionData.session;
+ if(!session?.access_token)return {authenticated:false,receipt:null};
+ const {data:identity,error:identityError}=await supabase.auth.getUser();
+ const owner=identity.user?.id;
+ if(identityError||!owner||session.user.id!==owner)
+   throw Error('Account ownership could not be verified');
+ const mobile=receiptMobile.trim();
+ // Prefer Work B's original owner-scoped targeted SQL reference read.
+ // The legacy paged RPC is retained only for an *absent* new migration,
+ // never for an ownership denial, service outage or malformed response.
+ const {data:targeted,error:targetedError}=await supabase.rpc(
+   'taxpay_my_story1_payment_by_reference',{
+     p_reference:wanted,p_receipt_mobile:mobile||null,
+   });
+ if(!targetedError){
+   const {data:recheck,error:recheckError}=await supabase.auth.getUser();
+   if(recheckError||recheck.user?.id!==owner)
+     throw Error('Account changed during payment lookup');
+   if(targeted===null)return {authenticated:true,receipt:null};
+   if(!isRecord(targeted)||!validCertificateTransactionId(targeted.id))
+     throw Error('Invalid account payment response');
+   const id=targeted.id as string;
+   const confirmed=checkedParent(targeted,id);
+   const d=confirmed.details??{};
+   const snapshot=isRecord(d.receiptSnapshot)?d.receiptSnapshot:null;
+   const references=[id,'SK-PC-'+id,d.receiptReference,d.tokenNumber,
+     d.gatewayTransactionId,snapshot?.challanNo,snapshot?.tokenNumber,
+     snapshot?.gatewayTransactionId,snapshot?.paymentTransactionId];
+   if(!references.some(value=>stringValue(value).trim().toUpperCase()===wanted))
+     throw Error('Account payment reference mismatch');
+   if(mobile){
+     const saved=stringValue(snapshot?.receiptMobile)||stringValue(d.receiptMobile);
+     if(!/^01\d{9}$/.test(mobile)||mobile!==saved)
+       throw Error('Account receipt mobile mismatch');
+   }
+   return {authenticated:true,receipt:makeConfirmedReceipt(confirmed)};
+ }
+ // PostgREST uses PGRST202 for a missing function. Any other error is
+ // an original-source failure and must never become NOT_FOUND or a guest read.
+ if(targetedError.code!=='PGRST202')
+   throw Error('Account payment records are temporarily unavailable');
+ for(let page=1;page<=2000;page++){
+   const {data,error}=await supabase.rpc('taxpay_my_story1_payments',{
+     p_page:page,p_per_page:100
+   });
+   if(error)throw Error('Account payment records are temporarily unavailable');
+   if(!isRecord(data)||!Array.isArray(data.items)||
+     typeof data.total!=='number'||!Number.isSafeInteger(data.total)||
+     data.total<0||data.items.length>100)
+     throw Error('Invalid account payment response');
+   for(const raw of data.items){
+     if(!isRecord(raw)||!validCertificateTransactionId(raw.id)||!isRecord(raw.details))continue;
+     const id=raw.id as string;
+     const details=raw.details;
+     const snap=isRecord(details.receiptSnapshot)?details.receiptSnapshot:null;
+     const refs=[id,'SK-PC-'+id,details.receiptReference,details.tokenNumber,
+       details.gatewayTransactionId,snap?.challanNo,snap?.tokenNumber,
+       snap?.gatewayTransactionId,snap?.paymentTransactionId];
+     if(!refs.some(value=>stringValue(value).trim().toUpperCase()===wanted))continue;
+     if(mobile){
+       const stored=stringValue(snap?.receiptMobile)||stringValue(details.receiptMobile);
+       if(!/^01\d{9}$/.test(mobile)||stored!==mobile)continue;
+     }
+     const {data:recheck,error:recheckError}=await supabase.auth.getUser();
+     if(recheckError||recheck.user?.id!==owner)
+       throw Error('Account changed during payment lookup');
+     const receipt=makeConfirmedReceipt(checkedParent(raw,id));
+     return {authenticated:true,receipt};
+   }
+   if(page*100>=data.total)break;
+   if(data.items.length===0)throw Error('Incomplete account payment history');
+ }
+ const {data:recheck,error:recheckError}=await supabase.auth.getUser();
+ if(recheckError||recheck.user?.id!==owner)
+   throw Error('Account changed during payment lookup');
+ return {authenticated:true,receipt:null};
+}
+
 export const certificateDocumentUrl=(transactionId:string,action?:'print'|'download')=>{
  const url=new URL(window.location.origin+import.meta.env.BASE_URL);
  url.searchParams.set('action','payment_details');

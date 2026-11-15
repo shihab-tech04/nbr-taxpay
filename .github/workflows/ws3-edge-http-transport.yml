@@ -1,0 +1,53 @@
+name: WS3 signed Edge HTTP transport - isolated endpoints
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/payment-sync-bridge/**'
+      - 'supabase/functions/payment-command-bridge/**'
+      - 'tests/integration/ws3EdgeHttpBridge.mjs'
+      - 'tests/integration/ws3StoryMirrorProofHttp.mjs'
+      - 'tests/integration/ws3CommandDispatchOriginHttp.mjs'
+      - '.github/workflows/ws3-edge-http-transport.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  signed-http-transport:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact Taxpayer PR source
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Load and pin canonical Office #270 source without touching Office branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          OFFICE_DIR="$RUNNER_TEMP/ws3-office-http-source"
+          # Capture the exact current Office integration branch head at checkout.
+          # A hardcoded historical SHA fails whenever the parallel Office owner
+          # adds compatible commits; never substitute Office Main or a clone.
+          git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
+            https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
+          OFFICE_SHA="$(git -C "$OFFICE_DIR" rev-parse HEAD)"
+          test -n "$OFFICE_SHA"
+          git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
+          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
+          echo "WS3_OFFICE_SOURCE=$OFFICE_DIR" >> "$GITHUB_ENV"
+          echo "WS3_OFFICE_SHA=$OFFICE_SHA" >> "$GITHUB_ENV"
+          echo "Verified exact Office #270 checkout: $OFFICE_SHA"
+      - name: Execute actual Taxpayer and Office Edge handlers through loopback HTTP
+        run: node tests/integration/ws3EdgeHttpBridge.mjs
+      - name: Verify signed source-bound Story 1 proof, outage recovery and submitted Travel Tax
+        run: node tests/integration/ws3StoryMirrorProofHttp.mjs
+      - name: Verify wrong-origin denial and authorized Office command dispatch
+        run: node tests/integration/ws3CommandDispatchOriginHttp.mjs

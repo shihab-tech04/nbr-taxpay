@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {maskProfileValue,sensitiveProfileKind} from '../src/components/ui/MaskedProfileValue';
 
-test('TIN and personal phone values expose only the last three digits',()=>{
-  assert.equal(maskProfileValue('577935451798','tin'),'*********798');
-  assert.equal(maskProfileValue('+8801857648765','phone'),'+**********765');
-  assert.equal(maskProfileValue('02-9588253','phone'),'**-****253');
+test('TIN and phone values retain only the first three digits',()=>{
+  assert.equal(maskProfileValue('577935451798','tin'),'577*********');
+  assert.equal(maskProfileValue('+8801857648765','phone'),'+880**********');
+  assert.equal(maskProfileValue('02-9588253','phone'),'02-9******');
   assert.equal(maskProfileValue('123','tin'),'***');
 });
 test('email keeps two local characters but never shows the private domain',()=>{
