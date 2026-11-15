@@ -138,26 +138,44 @@ try {
   const drawer = page.locator('.dynamic-drawer');
   await drawer.waitFor({ state: 'visible', timeout: 10000 });
   const drawerText = await drawer.innerText();
-  const expectedValues = [
-    payment.id,
-    'user1',
-    '222222222222',
-    'WS3 recipient 2',
-    'Advance Tax',
-    '2026-27',
-    '৳15.00',
-    '333333333333',
-    'WS3 recipient 3',
-    'Tax on notice of demand',
-    '2025-26',
-    '৳35.00',
-    'Payment record saved',
-    'SIMULATED SUCCESS',
-    fixture.expected.receiptReference,
+  // The same drawer must work for both the original fixed SQL fixture and
+  // a current Work A browser-generated payment. Never assert that a real
+  // browser's selected 68A/68B source heads are the older 121/145 fixture.
+  const sourceAllocations = payment.details.allocations;
+  const sourceLines = payment.details.lines;
+  assert.equal(sourceAllocations.length, 2, 'Both original allocations must survive Office readback');
+  assert.ok(Array.isArray(sourceLines) && sourceLines.length === sourceAllocations.length,
+    'Immutable source receipt lines must correspond one-to-one with allocations');
+  assert.deepEqual(sourceAllocations.map(item => item.allocationId), fixture.expected.allocationIds);
+  assert.deepEqual(sourceAllocations.map(item => item.taxpayerTin), fixture.expected.allocationTins);
+  assert.deepEqual(sourceAllocations.map(item => item.headId), fixture.expected.headIds);
+  assert.deepEqual(sourceAllocations.map(item => item.assessmentYear), fixture.expected.assessmentYears);
+  assert.deepEqual(sourceAllocations.map(item => item.amountMinor), fixture.expected.amountsMinor);
+  assert.equal(sourceAllocations.reduce((sum, item) => sum + item.amountMinor, 0),
+    payment.amountMinor, 'Original allocations must reconcile to parent in minor units');
+  const expectedAllocations = sourceAllocations.map((allocation, index) => {
+    const line = sourceLines[index];
+    assert.equal(line?.headId, allocation.headId, 'Head ID must match source line at allocation index ' + index);
+    assert.ok(typeof line?.headNameEn === 'string' && line.headNameEn.trim(),
+      'Source line must carry the authentic display name for head ' + allocation.headId);
+    assert.ok(typeof allocation.taxpayerName === 'string' && allocation.taxpayerName.trim());
+    assert.match(allocation.taxpayerTin, /^\\d{12,13}$/);
+    return {
+      name: allocation.taxpayerName,
+      tin: allocation.taxpayerTin,
+      head: line.headNameEn.trim(),
+      year: allocation.assessmentYear,
+      minor: allocation.amountMinor,
+    };
+  });
+  for (const value of [
+    payment.id, fixture.expected.payerId, 'Payment record saved',
+    'SIMULATED SUCCESS', fixture.expected.receiptReference,
     payment.certificateReference,
-  ];
-  for (const value of expectedValues) {
-    assert.ok(drawerText.includes(value), 'Office drawer must render paired field: ' + value);
+    ...expectedAllocations.flatMap(item => [item.name, item.tin, item.head, item.year]),
+  ]) {
+    assert.ok(drawerText.includes(value),
+      'Office drawer must render original source-backed field: ' + value);
   }
   // Office may render the parent with or without trailing .00;
   // allocation lines display two decimals. Both represent the same paisa.
@@ -170,10 +188,6 @@ try {
   // Prove the allocation field itself is present, not merely a collection of
   // matching strings elsewhere in the drawer. Each beneficiary must retain
   // their own immutable head, assessment year and amount in both languages.
-  const expectedAllocations = [
-    { name: 'WS3 recipient 2', tin: '222222222222', head: 'Advance Tax', year: '2026-27', minor: 1500 },
-    { name: 'WS3 recipient 3', tin: '333333333333', head: 'Tax on notice of demand', year: '2025-26', minor: 3500 },
-  ];
   const normalizeDigits = (value) => value.replace(/[০-৯]/g,
     digit => String(digit.charCodeAt(0) - 0x09e6));
   const parseAmountMinor = (value) => {
