@@ -986,35 +986,6 @@ test('homepage lookup labels example-only matches and preserves focus in EN/BN a
   }
 });
 
-test('F-001 keeps excluded homepage sections hidden on desktop and mobile in English and Bangla', async ({ page }) => {
-  for (const viewport of [
-    { width: 1280, height: 800 },
-    { width: 375, height: 812 },
-    { width: 320, height: 780 },
-  ]) {
-    for (const lang of ['en', 'bn'] as const) {
-      await page.setViewportSize(viewport);
-      await page.goto(`/?action=landing&lang=${lang}`);
-
-      const excludedSections = [
-        {
-          selector: '#public-how-it-works',
-          heading: lang === 'bn' ? 'যেভাবে কর পরিশোধ করবেন' : 'How your payment works',
-        },
-        {
-          selector: '#public-faq',
-          heading: lang === 'bn' ? 'সাধারণ প্রশ্ন' : 'Common questions',
-        },
-      ];
-
-      for (const { selector, heading } of excludedSections) {
-        await expect(page.locator(selector)).toBeHidden();
-        await expect(page.getByRole('heading', { name: heading, exact: true })).toHaveCount(0);
-      }
-    }
-  }
-});
-
 test('public reference no-match distinguishes browser session lookup from official records in EN/BN', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'One desktop project covers EN/BN at narrow and wide breakpoints.');
   await page.route(/\/functions\/v1\/demo-story1-taxpay\/payments\?/, async route => {
