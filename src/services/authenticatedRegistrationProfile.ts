@@ -1,5 +1,6 @@
 import {supabase} from './supabaseClient';
 import {isWellFormedTinProfile,type TaxpayerTinProfile} from '../contracts/taxpayerTinProfile';
+import {TAXPAYER_PROFILE_FIELD_ORDER} from '../contracts/taxpayerProfileFieldLayout';
 
 /**
  * Application Auth alone never proves a TIN. The existing server-side
@@ -21,6 +22,16 @@ export function parseOwnerRegistrationRow(raw:unknown,accountId:string):Taxpayer
      !Number.isSafeInteger(row.revision)||(row.revision as number)<1||
      typeof row.updated_at!=='string'||!Number.isFinite(Date.parse(row.updated_at)))
     throw Error('Registration profile owner/source mismatch');
+  // Exactly the 24 approved registration fields plus two source metadata keys.
+  // Never silently accept a missing field or introduce extra rendered identity data.
+  const fields=row.profile as Record<string,unknown>;
+  const approved=['source','sourceUpdatedAt',...TAXPAYER_PROFILE_FIELD_ORDER.map(([field])=>field)];
+  if(approved.length!==26||new Set(approved).size!==26||
+     Object.keys(fields).length!==approved.length ||
+     !approved.every(field=>Object.hasOwn(fields,field)) ||
+     TAXPAYER_PROFILE_FIELD_ORDER.some(([field])=>{
+       const value=fields[field];return value!==null&&typeof value!=='string';
+     }))throw Error('Registration profile field contract mismatch');
   return row.profile as TaxpayerTinProfile;
 }
 
