@@ -138,13 +138,17 @@
   border: 1px solid var(--color-taxpay-border);
 }
 
-/* Preserve the approved centered reading column below the large-desktop breakpoint. */
-.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main > * {
+/* Preserve the original centered reading column for public/guest routes.
+ * Authenticated content uses its already approved 1150px desktop cap below
+ * 1400px, and the explicit 70% main-area contract from 1400px upward. */
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow):not(.taxpay-authenticated-content) > main > * {
   max-width: 900px;
   min-width: 0;
 }
-.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace {
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow):not(.taxpay-authenticated-content) .taxpayer-workspace {
   max-width: 900px;
+}
+.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace {
   font-family: var(--font-text);
   color: var(--color-taxpay-text);
   line-height: 1.625;
