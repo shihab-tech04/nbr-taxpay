@@ -527,6 +527,26 @@ for(const language of ['en','bn'] as const){
         allocations:savedAllocations
       });
       expect(savedAllocations.map(item=>item.allocationId)).toEqual(sourceAllocationIds);
+      // The same authenticated owner keeps the original ID lineage when
+      // saving the editable Pay Again copy; no new payment is submitted.
+      await repeatModal.getByRole('button',{name:language==='bn'?'খসড়া সংরক্ষণ করুন':'Save Draft',exact:true}).click();
+      await expect(repeatModal.getByRole('button',{
+        name:language==='bn'?'খসড়া সংরক্ষিত':'Draft Saved',exact:true
+      })).toBeVisible({timeout:15_000});
+      const savedDraftsUrl=new URL('/rest/v1/taxpay_account_payment_form_drafts',endpoint.origin);
+      savedDraftsUrl.searchParams.set('select','form_payload,owner_uid');
+      savedDraftsUrl.searchParams.set('owner_uid','eq.'+owner.id);
+      const savedDraftsResponse=await fetch(savedDraftsUrl,{
+        headers:{apikey:key,Authorization:'Bearer '+owner.session.access_token}
+      });
+      expect(savedDraftsResponse.status).toBe(200);
+      const savedDrafts=await savedDraftsResponse.json() as Array<{
+        owner_uid:string;form_payload:Record<string,unknown>
+      }>;
+      expect(savedDrafts.some(row=>row.owner_uid===owner.id &&
+        row.form_payload.sourcePaymentId===repeatableId &&
+        JSON.stringify(row.form_payload.sourceAllocationIds)===JSON.stringify(sourceAllocationIds)
+      )).toBe(true);
       await repeatModal.locator('.taxpay-modal__close').click();
 
       const persisted=psql("SELECT data::text FROM demo_payment.story_payments WHERE id="+quote(paymentId)+"::uuid");
