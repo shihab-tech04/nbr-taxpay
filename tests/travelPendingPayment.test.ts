@@ -32,7 +32,9 @@ const saved = {
 };
 const snapshot=JSON.stringify(saved);
 const candidate = (mutate:(payment:typeof saved)=>void) => {
-  const payment=structuredClone(saved);mutate(payment);
+  // A browser refresh restores JSON, which breaks shared object references
+  // between the UI's saved passenger arrays and receiptSnapshot.
+  const payment=JSON.parse(snapshot) as typeof saved;mutate(payment);
   return parseRecoverableTravelPayment(JSON.stringify(payment),session);
 };
 
@@ -48,7 +50,20 @@ test('M06 corrupted amount/head/passenger/identity retry is rejected without a n
   assert.equal(candidate(payment=>{payment.details.receiptSnapshot.items[1].economicCode='WRONG'}),null);
   assert.equal(candidate(payment=>{payment.details.receiptSnapshot.items[1].headId=155}),null);
   assert.equal(candidate(payment=>{payment.details.passengers[1].amount=1000}),null);
+  assert.equal(candidate(payment=>{payment.details.passengers[1].country='Bangladesh'}),null);
+  assert.equal(candidate(payment=>{payment.details.passengers[1].age=11}),null);
+  assert.equal(candidate(payment=>{payment.details.receiptSnapshot.items[0].penaltyAmount=100}),null);
+  assert.equal(candidate(payment=>{payment.details.lines[0].surchargeAmount=50}),null);
+  assert.equal(candidate(payment=>{payment.details.lines[1].interestAmount=1}),null);
   assert.equal(candidate(payment=>{payment.details.receiptSnapshot.travelDetails.passengers[0].passportMasked='TEST123456'}),null);
+  assert.equal(candidate(payment=>{payment.details.receiptSnapshot.travelDetails.passengers[0].passportMasked='••••1\n23'}),null);
+  // The current foreign-passport input permits punctuation; masking must not
+  // invalidate a legitimate stored retry with a four-character suffix.
+  const punctuation=candidate(payment=>{
+    payment.details.receiptSnapshot.travelDetails.passengers[1].passportMasked='••••3-45';
+    payment.details.passengers[1].passportMasked='••••3-45';
+  });
+  assert.equal(punctuation?.details.receiptSnapshot.travelDetails?.passengers[1].passportMasked,'••••3-45');
   assert.equal(candidate(payment=>{payment.details.receiptSnapshot.travelDetails.passengers.pop()}),null);
   assert.equal(candidate(payment=>{payment.amountMinor=150001}),null);
   assert.equal(candidate(payment=>{payment.idempotencyKey='wrong'}),null);
