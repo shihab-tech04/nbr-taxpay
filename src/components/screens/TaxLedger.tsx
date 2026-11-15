@@ -133,12 +133,12 @@ export const TaxLedger:React.FC=()=>{
     if(state.state!=='ready'||!events.length)return;
     const headers=['Date','Source','Dhara','Assessment year','Tax head','Event','Source status','Recorded amount (paisa)','Confirmed credit effect (paisa)','Challan','Reference','Credit evidence'];
     const csvCell=(value:string|number|null|undefined)=>{
-      // External provider references are untrusted. Quoting alone does not stop
-      // spreadsheet programs from interpreting formula-like CSV cells.
+      // CSV quoting alone cannot neutralize formulas in external provider references.
       const raw=String(value??'');
-      const safe=/^[\\s\\uFEFF]*[=+@-]/u.test(raw)||/^[\\t\\r\
-]/u.test(raw) ? '\''+raw : raw;
-      return '\"'+safe.replaceAll('\"','\"\"')+'\"';
+      const first=raw.trimStart().charAt(0);
+      const unsafe=['=','+','-','@'].includes(first)||[9,10,13].includes(raw.charCodeAt(0));
+      const safe=unsafe?"'"+raw:raw;
+      return '"'+safe.replaceAll('"','""')+'"';
     };
     const lines=events.map(e=>[e.occurredAt,e.source,e.dhara,e.assessmentYear,e.component,e.code,e.status,
       e.amountMinor,e.effectMinor,e.challanNo,e.reference,e.creditEvidenceStatus].map(csvCell).join(','));
