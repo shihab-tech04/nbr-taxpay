@@ -86,7 +86,10 @@ export function CitizenNavigation() {
   const inTransaction = transactionRoutes.has(currentRoute);
   const home = isTaxpayer ? 'taxpayer_home' : 'landing';
   const links = isTaxpayer ? taxpayerLinks : guestLinks;
-  const [compact, setCompact] = useState(false);
+  const [scrollCompact, setCompact] = useState(false);
+  // Signed-in taxpayers keep the approved mobile header, bottom dock and Pay
+  // action through scrolling. Compact corner navigation is guest-only.
+  const compact = scrollCompact && !isTaxpayer;
   const [menuOpen, setMenuOpen] = useState(false);
   const [payPopoverOpen, setPayPopoverOpen] = useState(false);
   const payPopoverRef = useRef<HTMLDivElement>(null);
