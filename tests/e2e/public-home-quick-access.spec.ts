@@ -934,6 +934,8 @@ test('homepage lookup labels example-only matches and preserves focus in EN/BN a
       await page.goto(`/?action=landing&lang=${lang}`);
       const section = page.locator('.public-record-discovery');
       const search = section.getByRole('searchbox');
+      // Prevent the integration merge from duplicating the one live status region.
+      await expect(section.getByTestId('public-search-match-status')).toHaveCount(1);
       await expect(section.getByTestId('public-search-match-status')).toBeEmpty();
       await expect(search).toHaveAttribute('aria-expanded', 'false');
       await search.focus();
