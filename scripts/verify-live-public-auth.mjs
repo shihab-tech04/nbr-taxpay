@@ -88,6 +88,9 @@ try {
         await expect(bento.locator('.taxpay-summary-metric--requests strong')).toHaveText('2');
         await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
         await expect(bento.getByTestId('dashboard-correction-request-list').getByRole('listitem')).toHaveCount(2);
+        // Detailed service chart is intentionally disclosed in the approved recipient-first layout.
+        const serviceDetails=chart.getByTestId('dashboard-payment-extra');
+        if(await serviceDetails.count())await serviceDetails.locator('summary').click();
         const services=chart.getByTestId('dashboard-service-breakdown');
         if(await services.count()){
           const selection=services.locator('[data-service]').first();
@@ -96,6 +99,8 @@ try {
           await expect(selection).toHaveAttribute('aria-pressed','true');
           await services.getByRole('button',{name:'Show all payment services'}).click();
           const spending=chart.getByTestId('dashboard-beneficiary-breakdown');
+          const recipientDetails=spending.locator('.taxpay-recipient-extra');
+          if(await recipientDetails.count())await recipientDetails.locator('summary').click();
           if(await spending.locator('[data-tag]').count()){
             await spending.locator('[data-tag]').first().click();
             await expect(spending.getByTestId('dashboard-selected-tag')).toBeVisible();
