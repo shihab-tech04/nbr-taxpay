@@ -16,6 +16,8 @@ export type ExternalLedgerSource = keyof typeof EXTERNAL_LEDGER_SOURCES;
 
 export type ExternalPaymentRecord = {
   id:string; owner_uid:string; source_system:string; source_transaction_id:string;
+  source_allocation_id:string; taxpayer_tin:string; payer_tin:string|null;
+  identity_binding_evidence_ref:string;
   source_reference:string|null; challan_no:string|null; dhara:string|null;
   assessment_year:string; tax_head:string; amount_minor:number|string;
   source_status:string; occurred_at:string; source_evidence_ref:string;
@@ -63,7 +65,10 @@ export function projectExternalLedgerEvents(
   const events:TaxAccountEvent[]=[];
   for(const payment of payments){
     if(!present(payment.id)||payment.owner_uid!==ownerUid||byId.has(payment.id)||
-      !present(payment.source_transaction_id)||!present(payment.tax_head)||
+      !present(payment.source_transaction_id)||!present(payment.source_allocation_id)||
+      !/^[0-9]{12,13}$/.test(payment.taxpayer_tin)||
+      (payment.payer_tin!==null&&!/^[0-9]{12,13}$/.test(payment.payer_tin))||
+      !present(payment.identity_binding_evidence_ref)||!present(payment.tax_head)||
       !present(payment.assessment_year)||!present(payment.source_status)||
       !present(payment.source_evidence_ref)||!optional(payment.source_reference)||
       !optional(payment.challan_no)||!optional(payment.dhara)||!timestamp(payment.occurred_at)){
@@ -86,7 +91,7 @@ export function projectExternalLedgerEvents(
       reason:language==='bn'
         ?'এই পেমেন্টের নথি কর ক্রেডিট প্রমাণ করে না।'
         :'A recorded source payment does not establish tax credit.',
-      linkedReferences:[payment.source_transaction_id,payment.source_evidence_ref,
+      linkedReferences:[payment.source_transaction_id,payment.source_allocation_id,payment.source_evidence_ref,
         payment.source_reference,payment.challan_no].filter(present)
     });
   }
@@ -148,7 +153,7 @@ export async function loadExternalLedgerEvents(ownerUid:string,language:Language
   if(error||!data.user||data.user.id!==ownerUid)throw new Error('External ledger owner not verified');
   const payments=await allRows<ExternalPaymentRecord>(
     'taxpay_external_payment_records',
-    'id,owner_uid,source_system,source_transaction_id,source_reference,challan_no,dhara,assessment_year,tax_head,amount_minor,source_status,occurred_at,source_evidence_ref',
+    'id,owner_uid,source_system,source_transaction_id,source_allocation_id,taxpayer_tin,payer_tin,identity_binding_evidence_ref,source_reference,challan_no,dhara,assessment_year,tax_head,amount_minor,source_status,occurred_at,source_evidence_ref',
     ownerUid
   );
   const credits=await allRows<ExternalCreditPosting>(
