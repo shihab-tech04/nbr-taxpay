@@ -3,11 +3,13 @@ on:
   pull_request:
     paths:
       - 'scripts/ci/phase4-reconcile*.mjs'
+      - 'scripts/ci/phase4-bridge-readiness*.mjs'
       - '.github/workflows/phase4-reconciliation.yml'
   push:
     branches: [main]
     paths:
       - 'scripts/ci/phase4-reconcile*.mjs'
+      - 'scripts/ci/phase4-bridge-readiness*.mjs'
       - '.github/workflows/phase4-reconciliation.yml'
 permissions:
   contents: read
@@ -21,4 +23,6 @@ jobs:
         with:
           node-version: '22'
       - name: Reject invented payment or Office SQL readiness
-        run: |\n          node --test scripts/ci/phase4-reconcile.test.mjs\n          node --test scripts/ci/phase4-bridge-readiness.test.mjs
+        run: |
+          node --test scripts/ci/phase4-reconcile.test.mjs
+          node --test scripts/ci/phase4-bridge-readiness.test.mjs
