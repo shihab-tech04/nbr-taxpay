@@ -113,9 +113,20 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     const firstProfile=await first.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
     expect(firstProfile?.profileId).toBe(firstUser);
     const payment=await first.evaluate(async({apiUrl,key,capability,paymentSessionId,idempotencyKey,payerName,profileId})=>{
+      // One exclusive Return head, independent of the combined Other Tax route.
+      // The valid local source may remain pending Office synchronization, but
+      // it must not be rejected for an incomplete accounting/receipt envelope.
+      const taxpayerTin='1010101010101';
+      const assessmentYear='2026-27';
+      const receiptReference='SIM-'+idempotencyKey;
+      const line={beneficiary:profileId,category:'TAX_WITH_RETURN',headId:125,
+        assessmentYear,amountMinor:12345,totalAmount:123.45};
       const data={origin:'TAXPAY_UI',service:'TAX_WITH_RETURN',amountMinor:12345,sessionId:paymentSessionId,idempotencyKey,
-        details:{payerId:profileId,payerName,lines:[{beneficiary:profileId,category:'TAX_WITH_RETURN',
-          assessmentYear:'2026-27',amountMinor:12345}]}};
+        details:{payerId:profileId,payerName,payerMode:'SELF',payerTin:taxpayerTin,
+          taxpayerTin,assessmentYear,receiptReference,lines:[line],
+          receiptSnapshot:{paymentCategory:'TAX_WITH_RETURN',payerTin:taxpayerTin,
+            taxpayerTin,assessmentYear,challanNo:receiptReference,totalAmount:123.45,
+            items:[{headId:125,totalAmount:123.45}]}}};
       const response=await fetch(apiUrl+'/functions/v1/demo-story1-taxpay/payments',{
         method:'POST',headers:{apikey:key,'x-taxpay-guest-capability':capability,'content-type':'application/json'},
         body:JSON.stringify(data)

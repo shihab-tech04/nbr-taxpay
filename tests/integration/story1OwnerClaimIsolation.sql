@@ -51,16 +51,22 @@ BEGIN
     'sessionId',v_session,'idempotencyKey',v_key,
     'details',pg_catalog.jsonb_build_object(
       'payerId','user1','payerName','WS3 disposable owner',
+      'payerMode','SELF','payerTin','111111111111',
+      'taxpayerTin','111111111111','assessmentYear','2026-27',
       'receiptReference',v_ref,'receiptMobile','01700000000',
       'tokenNumber','WS3-TOKEN-'||v_key::text,
       'gatewayTransactionId','WS3-GW-'||v_key::text,
       'receiptSnapshot',pg_catalog.jsonb_build_object(
         'challanNo',v_ref,'receiptMobile','01700000000',
         'tokenNumber','WS3-TOKEN-'||v_key::text,
-        'gatewayTransactionId','WS3-GW-'||v_key::text),
+        'gatewayTransactionId','WS3-GW-'||v_key::text,
+        'paymentCategory','TAX_WITH_RETURN','payerTin','111111111111',
+        'taxpayerTin','111111111111','assessmentYear','2026-27','totalAmount',123.45,
+        'items',pg_catalog.jsonb_build_array(pg_catalog.jsonb_build_object(
+          'headId',125,'totalAmount',123.45))),
       'lines',pg_catalog.jsonb_build_array(pg_catalog.jsonb_build_object(
-        'beneficiary','user1','category','TAX_WITH_RETURN',
-        'assessmentYear','2026-27','amountMinor',12345))));
+        'beneficiary','user1','category','TAX_WITH_RETURN','headId',125,
+        'assessmentYear','2026-27','amountMinor',12345,'totalAmount',123.45))));
   v_result:=public.taxpay_demo_story1_submit(v_cap,v_payload);
   IF v_result->>'replayed' IS DISTINCT FROM 'false'
   THEN RAISE EXCEPTION 'OWNER_REFERENCE_SOURCE_INSERT_NOT_NEW'; END IF;

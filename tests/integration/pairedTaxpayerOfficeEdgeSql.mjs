@@ -535,15 +535,21 @@ try{
   });
 
   const foreignKey=randomUUID();
+  // A second account has a valid exclusive Return parent; cross-owner Pay Again
+  // must still fail. Keep this isolation fixture canonical under M04 instead of
+  // relaxing the source ownership or Return validation.
   const foreignPayload={
     origin:'TAXPAY_UI',sessionId:unrelatedProfile.paymentSessionId,
     idempotencyKey:foreignKey,service:'TAX_WITH_RETURN',amountMinor:700,
     details:{payerId:'user4',payerName:'Other disposable account',payerMode:'SELF',
-      taxpayerTin:'444444444444',receiptReference:'SIM-'+foreignKey,
+      taxpayerTin:'444444444444',payerTin:'444444444444',assessmentYear:'2026-27',
+      receiptReference:'SIM-'+foreignKey,
       receiptSnapshot:{challanNo:'SIM-'+foreignKey,totalAmount:7,
-        paymentCategory:'TAX_WITH_RETURN',items:[]},
-      lines:[{beneficiary:'user4',category:'TAX_WITH_RETURN',
-        assessmentYear:'2026-27',amountMinor:700}]}
+        payerTin:'444444444444',taxpayerTin:'444444444444',
+        assessmentYear:'2026-27',paymentCategory:'TAX_WITH_RETURN',
+        items:[{headId:125,totalAmount:7}]},
+      lines:[{beneficiary:'user4',category:'TAX_WITH_RETURN',headId:125,
+        assessmentYear:'2026-27',amountMinor:700,totalAmount:7}]}
   };
   const foreignHash=createHash('sha256').update(unrelatedProfile.capability).digest('hex');
   const foreignSource=psql(sourceDb,
