@@ -223,6 +223,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   useEffect(() => {
     let active = true;
     let fetching = false;
+    let refreshQueued = false;
     let channel: ReturnType<NonNullable<typeof supabase>['channel']> | null = null;
     let realtimeConnected = false;
     const disconnect = () => {
@@ -250,7 +251,8 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       });
     };
     const refresh = () => {
-      if (!active || fetching) return;
+      if (!active) return;
+      if (fetching) { refreshQueued = true; return; }
       if (!brandingRequestsAllowed()) {
         // A logo read may already have identified an organization-wide 402.
         // Do not leave the published banner area in an endless loading state.
@@ -282,7 +284,15 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         setSlides([]);
         setBannerStatus('unavailable');
         if (!brandingRequestsAllowed()) disconnect();
-      }).finally(() => { fetching = false; });
+      }).finally(() => {
+        fetching = false;
+        // Preserve a CMS update that arrives during an ongoing read. Coalesce
+        // many focus/realtime events into one follow-up, subject to 402 guard.
+        if (active && refreshQueued) {
+          refreshQueued = false;
+          refresh();
+        }
+      });
     };
     refresh();
     const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
