@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
+import { recordWs1BrowserOrigin } from './ws1-browser-origin-evidence';
 
 async function openOtherTax(page: Page) {
   await page.goto('/');
@@ -142,7 +143,11 @@ test('a bank-branch request remains pending across reload until continued', asyn
 
 test('source-tax and demand heads combine across beneficiaries into one exact receipt', async ({ page }) => {
   const submitted: Record<string, any>[]=[];
+  const exactPostBodies: string[]=[];
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
+    const rawBody=route.request().postData();
+    if (typeof rawBody !== 'string') throw Error('Browser payment POST body unavailable');
+    exactPostBodies.push(rawBody);
     const request=route.request().postDataJSON() as Record<string,any>;
     submitted.push(request);
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
@@ -198,6 +203,8 @@ test('source-tax and demand heads combine across beneficiaries into one exact re
     [x.serviceCode,x.isWithholding])).toEqual([['SOURCE_TAX_DEPOSIT',true],['ASSESSED_DEMAND',false]]);
   expect(submitted[0].details.allocations.map((x:{taxpayerTin:string;assessmentYear:string})=>[x.taxpayerTin,x.assessmentYear]))
     .toEqual([['111111111111','2026-27'],['222222222222','2025-26']]);
+  expect(exactPostBodies).toHaveLength(1);
+  await recordWs1BrowserOrigin('guest',exactPostBodies[0],test.info().project.name);
   await dialog.getByRole('button',{name:'Receipt details'}).click();
   const receipt=dialog.locator('.receipt-view__paper');
   await expect(receipt).toContainText('Deduction from Salary');
