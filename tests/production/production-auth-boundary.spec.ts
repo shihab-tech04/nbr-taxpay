@@ -51,7 +51,7 @@ test('User ID login continues into the taxpayer workspace and survives refresh',
   await demoOtp.fill('111111');
   await dialog.getByTestId('taxpayer-login-submit').click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await page.goto(site+'?action=beneficiaries');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
