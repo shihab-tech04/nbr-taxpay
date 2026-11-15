@@ -85,6 +85,7 @@ export function reuseRecordedPayment(
       throw Error('The original travel payment is incomplete.');
     const receipt = source[0];
     const trip = receipt.travelDetails;
+    const parentMinor = Math.round(receipt.totalAmount * 100);
     if (!trip || !['LAND','WATER'].includes(trip.mode) ||
         typeof trip.departurePort !== 'string' || !trip.departurePort.trim() ||
         typeof trip.destination !== 'string' || !trip.destination.trim() ||
@@ -92,8 +93,8 @@ export function reuseRecordedPayment(
         trip.economicCode !== TRAVEL_TAX_ECONOMIC_CODE ||
         !Array.isArray(trip.passengers) || !trip.passengers.length ||
         trip.passengers.length > 20 || receipt.items.length !== trip.passengers.length ||
-        !(receipt.totalAmount > 0) ||
-        !Number.isSafeInteger(Math.round(receipt.totalAmount * 100)))
+        !(receipt.totalAmount > 0) || !Number.isSafeInteger(parentMinor) ||
+        Math.abs(receipt.totalAmount * 100 - parentMinor) > 0.000001)
       throw Error('Original travel details are incomplete.');
     const sum = trip.passengers.reduce((total, passenger, index) => {
       const minor = Math.round(passenger.amount * 100);
@@ -108,7 +109,12 @@ export function reuseRecordedPayment(
           minor !== lineMinor || head.headId !== 155 + index ||
           head.economicCode !== trip.economicCode ||
           head.headNameEn !== 'Travel tax — ' + passenger.name ||
-          Math.round(head.taxAmount * 100) !== minor ||
+          // Travel Tax has no permitted hidden fees. Compare the saved tax
+          // exactly in minor units rather than rounding away fractional cents.
+          !Number.isFinite(head.taxAmount) ||
+          Math.abs(head.taxAmount * 100 - minor) > 0.000001 ||
+          head.penaltyAmount !== 0 || head.surchargeAmount !== 0 ||
+          head.interestAmount !== 0 ||
           !['ADULT','CHILD','UNDER5'].includes(passenger.ageBand) ||
           typeof passenger.name !== 'string' || !passenger.name.trim() ||
           !['BD','FOREIGN'].includes(passenger.nationality) ||
@@ -116,7 +122,7 @@ export function reuseRecordedPayment(
         throw Error('Original travel passenger details cannot be reconciled.');
       return total + minor;
     }, 0);
-    if (sum !== Math.round(receipt.totalAmount * 100))
+    if (sum !== parentMinor)
       throw Error('Original travel amount does not reconcile.');
     const passengers = trip.passengers.map((passenger,index) => ({
       id: 'repeat-traveller-' + (index + 1),
