@@ -94,7 +94,8 @@ test('F-129 / US-050 rejects a same-session receipt whose saved amount or servic
   await dialog.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill(reference);
   await dialog.getByRole('textbox', { name: 'Receipt mobile number' }).fill(mobile);
   await dialog.getByRole('button', { name: 'Search records' }).click();
-  await expect(dialog.getByRole('heading', { name: 'No matching record' })).toBeVisible();
+  await expect(dialog.getByRole('alert')).toContainText('Saved session records are temporarily unavailable');
+  await expect(dialog.getByRole('heading', { name: 'No matching record' })).toHaveCount(0);
   await expect(dialog.locator('.receipt-view')).toHaveCount(0);
 
   await page.route(/\/demo-story1-taxpay\/payments\/[0-9a-f-]+\?sessionId=/, async route => {
@@ -106,7 +107,8 @@ test('F-129 / US-050 rejects a same-session receipt whose saved amount or servic
     });
   });
   await dialog.getByRole('button', { name: 'Search records' }).click();
-  await expect(dialog.getByRole('heading', { name: 'No matching record' })).toBeVisible();
+  await expect(dialog.getByRole('alert')).toContainText('Saved session records are temporarily unavailable');
+  await expect(dialog.getByRole('heading', { name: 'No matching record' })).toHaveCount(0);
   await expect(dialog.locator('.receipt-view')).toHaveCount(0);
 
   await stubSessionRecord(page);
