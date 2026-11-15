@@ -465,3 +465,46 @@ test('M09 Pay Again restores verified SQL accounting rows hidden from combined r
       source.details.receiptLines[1]]}};
   assert.throws(()=>makeConfirmedReceipt(badAmount),/allocations could not be reconciled/);
 });
+
+
+test('M09 reuses v2 SQL accounting lines when no receiptLines or display snapshot was saved',()=>{
+  const id='a5f1bf08-d3b1-4284-8d20-3356c25f64af';
+  const headOne={headId:121,headNameEn:'Advance Tax',economicCode:'64',
+    taxAmount:10,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:10};
+  const headTwo={headId:145,headNameEn:'Tax on notice of demand',economicCode:'135',
+    taxAmount:15,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:15};
+  const original={
+    id,service:'OTHER_TAX_PAYMENT',status:'SIMULATED_SUCCESS',amountMinor:2500,
+    createdAt:'2026-11-15T08:00:00.000Z',
+    details:{
+      payerName:'Recorded payer',payerTin:'1111111111111',
+      allocationContractVersion:2,
+      lines:[headOne,headTwo],
+      allocations:[
+        {taxpayerName:'Recorded payer',taxpayerTin:'1111111111111',headId:121,
+          assessmentYear:'2025-26',amountMinor:1000},
+        {taxpayerName:'Recipient two',taxpayerTin:'2222222222222',headId:145,
+          assessmentYear:'2026-27',amountMinor:1500},
+      ],
+    },
+  };
+  const before=JSON.stringify(original);
+  const confirmed=makeConfirmedReceipt(original);
+  assert.deepEqual(confirmed.items,[],'existing receipt display stays allocation-only');
+  assert.deepEqual(confirmed.reusableAccountingLines?.map(item=>item.headId),[121,145]);
+  const copy=reuseRecordedPayment([confirmed],'owner-1','1111111111111',id);
+  assert.equal(copy.sourcePaymentId,id);
+  assert.equal(copy.service,'OTHER_TAX_PAYMENT');
+  assert.deepEqual((copy.formPayload.otherTaxLines as Array<{
+    headId:number;assessmentYear:string;amount:string
+  }>).map(item=>[item.headId,item.assessmentYear,item.amount]),[
+    [121,'2025-26','10.00'],[145,'2026-27','15.00'],
+  ]);
+  assert.equal(JSON.stringify(original),before,'a new editable copy cannot rewrite original SQL');
+  const malformed=makeConfirmedReceipt({...original,
+    details:{...original.details,lines:[{...headOne,headNameEn:'Wrong head'},headTwo]}});
+  assert.equal(malformed.reusableAccountingLines?.[0].headNameEn,'Wrong head',
+    'the verified source head remains authoritative, not guessed from labels');
+  assert.throws(()=>reuseRecordedPayment([{...confirmed,reusableAccountingLines:undefined}],
+    'owner-1','1111111111111',id),/incomplete/);
+});
