@@ -14,6 +14,7 @@ test('Overview keeps compact metrics, saved drafts, corrections and interactive 
   await expect(metrics.getByRole('button',{name:/Correction Requests/})).toContainText('2');
   await expect(cases.getByTestId('dashboard-correction-request-list').locator('li')).toHaveCount(2);
   const charts=dashboard.getByTestId('dashboard-payment-analytics');
+  await charts.getByTestId('dashboard-payment-extra').locator('summary').click();
   await expect(charts.getByTestId('dashboard-service-breakdown')).toBeVisible();
   await expect(charts.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
   await expect(charts.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
@@ -36,7 +37,7 @@ test('Saved Drafts zero-state offers accessible feedback without losing the exis
   await expect(drafts).toContainText(/0|—/);
   await drafts.click();
   await expect(metrics.getByRole('status')).toContainText(count.includes('0')?'No saved drafts yet':'Draft count unavailable');
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   await drafts.click();
   await expect(metrics.getByRole('status')).toHaveCount(0);
 });
@@ -63,7 +64,8 @@ test('interactive chart cards, summary and corrections stay contained across res
     const dashboard=page.getByTestId('taxpayer-overview-bento');
     const charts=dashboard.getByTestId('dashboard-payment-analytics');
     const metrics=dashboard.locator('.taxpay-bento-summary');
-    await expect(charts.getByTestId('dashboard-service-breakdown')).toBeVisible();
+    await charts.getByTestId('dashboard-payment-extra').locator('summary').click();
+  await expect(charts.getByTestId('dashboard-service-breakdown')).toBeVisible();
     await expect(charts.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
     await expect(metrics.getByRole('button')).toHaveCount(3);
     await expect(dashboard.locator('#dashboard-correction-requests')).toBeVisible();
