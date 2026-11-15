@@ -371,6 +371,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [simulateDecline, setSimulateDecline] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [sourcePaymentId, setSourcePaymentId] = useState<string | null>(initialReuse?.sourcePaymentId ?? null);
+  // Read-only historical SQL allocation references. New payment lines always
+  // receive fresh IDs; these are only linked to the immutable source parent.
+  const [sourceAllocationIds, setSourceAllocationIds] = useState<string[]>(
+    initialReuse?.sourceAllocationIds ? [...initialReuse.sourceAllocationIds] : []);
   const [paymentPhase, setPaymentPhase] = useState<PaymentPhase>('review');
   const [officeMirrorPending, setOfficeMirrorPending] = useState(false);
   const [paymentValidationBlocked, setPaymentValidationBlocked] = useState(false);
@@ -401,7 +405,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     schemaVersion: 1, category, step: Math.min(step, 2),
     forSelf, tin, payerName, walkInPayerTin, otherTaxpayerName, additionalTaxpayers, oneTimeTaxpayer,
     otherTaxLines, phone, receiptEmail, assessmentYear, noticeReference,
-    incomeTaxType, selectedHeadIds, amountInputs, sourcePaymentId,
+    incomeTaxType, selectedHeadIds, amountInputs, sourcePaymentId, sourceAllocationIds,
   });
   const restoreAccountDraft = (saved: Record<string, unknown>) => {
     if (saved.schemaVersion !== 1 || saved.category !== category)
@@ -409,6 +413,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const stringField = (key: string) => typeof saved[key] === 'string' ? String(saved[key]) : '';
     const restoredSourcePaymentId = stringField('sourcePaymentId').trim();
     setSourcePaymentId(initialReuse?.sourcePaymentId ?? (restoredSourcePaymentId || null));
+    const savedAllocationIds = Array.isArray(saved.sourceAllocationIds) &&
+      saved.sourceAllocationIds.length <= MAX_COMBINED_ALLOCATIONS &&
+      saved.sourceAllocationIds.every(id=>typeof id==='string' && id.length>0 && id.length<=128) &&
+      new Set(saved.sourceAllocationIds).size===saved.sourceAllocationIds.length
+        ? saved.sourceAllocationIds as string[] : [];
+    setSourceAllocationIds((initialReuse?.sourceAllocationIds ??
+      (restoredSourcePaymentId ? savedAllocationIds : [])).slice());
     if (saved.forSelf !== null && typeof saved.forSelf !== 'boolean')
       throw new Error('Saved payer relationship is invalid.');
     setForSelf(saved.forSelf === null ? null : saved.forSelf as boolean);
@@ -1186,6 +1197,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           details: {
             receiptReference: newReceipt.challanNo,
             ...(sourcePaymentId ? { sourcePaymentId } : {}),
+            ...(sourcePaymentId && sourceAllocationIds.length ? { sourceAllocationIds } : {}),
             taxpayerTin,
             payerName: newReceipt.payerName,
             payerTin: newReceipt.payerTin,
