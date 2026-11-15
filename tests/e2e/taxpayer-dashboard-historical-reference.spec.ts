@@ -281,3 +281,50 @@ test('populated Overview uses full-width balanced KPIs and readable charts acros
   expect(serviceBox!.y+serviceBox!.height-(lastBarBox!.y+lastBarBox!.height),
     'service bars use the height instead of leaving a large empty bottom').toBeLessThan(70);
 });
+
+
+test('Overview KPIs retain values and actions with proper metric-card hierarchy', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Cross-viewport visual acceptance once per build');
+  for (const width of [375, 768, 1280, 1780]) {
+    await page.setViewportSize({ width, height: 880 });
+    await page.goto('/?action=taxpayer_home&demoUser=user1&qaScenario=1&scenarioYear=2025-2026');
+    const summary = page.getByTestId('taxpayer-overview-bento').locator('.taxpay-bento-summary');
+    const metrics = summary.locator('.taxpay-summary-metric');
+    await expect(metrics).toHaveCount(3);
+    await expect(metrics.nth(0).locator('strong')).toHaveText('5');
+    await expect(metrics.nth(2).locator('strong')).toHaveText('2');
+    const geometry = await metrics.evaluateAll(elements => elements.map(element => {
+      const style = getComputedStyle(element);
+      const label = element.querySelector('.taxpay-summary-metric__label')!.getBoundingClientRect();
+      const value = element.querySelector('strong')!.getBoundingClientRect();
+      const rect = element.getBoundingClientRect();
+      return {
+        x: rect.x, y: rect.y, width: rect.width,
+        radius: parseFloat(style.borderTopLeftRadius),
+        borders: [parseFloat(style.borderTopWidth), parseFloat(style.borderLeftWidth)],
+        direction: style.flexDirection,
+        labelSize: parseFloat(getComputedStyle(element.querySelector('.taxpay-summary-metric__label')!).fontSize),
+        valueSize: parseFloat(getComputedStyle(element.querySelector('strong')!).fontSize),
+        valueBelowLabel: value.y >= label.bottom - 1,
+      };
+    }));
+    expect(geometry.every(card => card.radius === 14), 'consistent, not pill-shaped KPI corners').toBe(true);
+    expect(geometry.every(card => card.borders.every(border => border === 1)), 'no thick status strips').toBe(true);
+    expect(geometry.every(card => card.direction === 'column'), 'number is a distinct hierarchy level').toBe(true);
+    expect(geometry.every(card => card.valueBelowLabel), 'values are below their labels').toBe(true);
+    expect(Math.min(...geometry.map(card => card.labelSize))).toBeGreaterThanOrEqual(14);
+    expect(Math.min(...geometry.map(card => card.valueSize))).toBeGreaterThanOrEqual(28);
+    if (width >= 1200) {
+      expect(Math.abs(geometry[0].y - geometry[2].y)).toBeLessThan(3);
+      expect(Math.abs(geometry[0].width - geometry[2].width)).toBeLessThan(3);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth),
+      'no horizontal overflow at ' + width).toBeLessThanOrEqual(2);
+  }
+  await metricsCheck();
+  async function metricsCheck() {
+    await page.getByTestId('taxpayer-overview-bento')
+      .locator('.taxpay-summary-metric--requests').click();
+    await expect(page.locator('#dashboard-correction-requests')).toBeFocused();
+  }
+});
