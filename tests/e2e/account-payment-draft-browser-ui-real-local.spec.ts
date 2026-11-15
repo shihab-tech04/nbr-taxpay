@@ -245,6 +245,8 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     await page.goto('/?action=taxpayer_home');
     const workspace = page.getByTestId('user1-synthetic-workspace');
     const cards = workspace.getByTestId('dashboard-payment-drafts');
+    // Follow-ups is tabbed in the approved overview; expose the saved-draft panel before its actions.
+    await workspace.getByRole('button', { name: /^Drafts/ }).click();
     await expect(cards.getByRole('heading', { name: 'Saved payment drafts' })).toBeVisible();
     const savedCard = cards.locator('[data-draft-id]').first();
     await expect(savedCard).toBeVisible();
