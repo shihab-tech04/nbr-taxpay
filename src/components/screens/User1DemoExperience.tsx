@@ -636,10 +636,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         <div className="taxpay-overview-feature">
           <p className="taxpay-overview-feature__eyebrow"><FileCheck2 size={17} aria-hidden="true"/>
             {tr('PAYMENT ACTIVITY','পেমেন্ট কার্যক্রম')} · {year}</p>
-          <h2>{tr('Your tax overview','আপনার করের সারসংক্ষেপ')}</h2>
+          <h2>{tr('Payments at a glance','এক নজরে আপনার পেমেন্ট')}</h2>
+          <h3 className="sr-only">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h3>
           <p className="taxpay-overview-feature__source" data-testid="dashboard-source-indicator">
             {overviewSource==='example'
-              ?tr('Illustrative example — not real payments or tax credits','শুধু উদাহরণ — প্রকৃত পেমেন্ট বা কর ক্রেডিট নয়')
+              ?tr('Example activity (simulated) — not real payments or tax credits','উদাহরণভিত্তিক কার্যক্রম (সিমুলেশন) — প্রকৃত পেমেন্ট বা কর ক্রেডিট নয়')
               :tr('Payments linked to this session — not verified tax credits','এই সেশনের পেমেন্ট — যাচাইকৃত কর ক্রেডিট নয়')}
           </p>
           <div className="taxpay-overview-feature__main">
@@ -664,9 +665,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
               })}
             </div>}
           </div>
-          <button type="button" className="taxpay-overview-feature__action" onClick={openOverviewPayments}>
+          <a href="?action=history" className="taxpay-overview-feature__action" onClick={event=>{event.preventDefault();openOverviewPayments();}}>
             {tr('View payment history','পেমেন্ট ইতিহাস দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
-          </button>
+          </a>
         </div>
         <div className="taxpay-bento-hero__status" role="group" aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--completed" onClick={openOverviewPayments}>
