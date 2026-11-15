@@ -792,6 +792,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                   }}/>
                 <p>{tr('Request manual assessment at departure port','বন্দরে সরাসরি কর অব্যাহতির আবেদন করব')}</p>
               </label>
+              {item.medicalPortReferral && <p role="status" data-testid="travel-manual-assessment-blocker"
+                className="travel-flow__medical-note">
+                {tr('Manual medical assessment is requested. Online Continue is unavailable until this is resolved at the departure port. If you selected this by mistake, untick the box to continue the regular travel-tax steps.',
+                    'সরাসরি চিকিৎসাজনিত যাচাইয়ের অনুরোধ করা হয়েছে। বন্দরে যাচাই সম্পন্ন না হওয়া পর্যন্ত অনলাইনে এগোনো যাবে না। ভুল করে টিক দিলে সাধারণ ভ্রমণ করের ধাপে যেতে টিক তুলে দিন।')}
+              </p>}
               <div className="travel-flow__medical-help" data-open={medicalHelpFor === item.id}>
                 <button type="button" aria-label={tr('What is manual assessment?', 'সরাসরি যাচাই কী?')}
                   aria-expanded={medicalHelpFor === item.id}
