@@ -1,0 +1,38 @@
+name: Branding CMS 402 request-storm regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/components/layout/SiteLogo.tsx'
+      - 'src/components/screens/PublicHeroCarousel.tsx'
+      - 'src/services/brandingRequestGuard.ts'
+      - 'tests/brandingRequestGuard.test.ts'
+      - 'tests/e2e/branding-402-no-reconnect.spec.ts'
+      - '.github/workflows/branding-402-regression.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-402-browser:
+    name: Mocked 402 branding REST and Realtime acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: node --import tsx --test tests/brandingRequestGuard.test.ts
+      - run: npx playwright install chromium --only-shell
+      - name: Verify 402 recovery without contacting hosted Supabase
+        env:
+          VITE_SUPABASE_URL: https://branding-402.test.invalid
+          VITE_SUPABASE_PUBLISHABLE_KEY: synthetic-public-test-key
+          VITE_SUPABASE_DISABLED: 'false'
+        run: npx playwright test tests/e2e/branding-402-no-reconnect.spec.ts --project=desktop-1280 --project=mobile-375
