@@ -191,14 +191,24 @@ function installOfficeCommandClaim(){
 }
 const owner='80000000-0000-4000-8000-000000000001';
 const outsider='80000000-0000-4000-8000-000000000002';
-const correctionFixture=readFileSync('tests/integration/correctionOfficeReadback.sql','utf8');
+// This paired source/Office round trip exercises F-094's explicit allegation
+// classification; the underlying base SQL acceptance still tests the legacy
+// correction default separately. No hosted SQL data is used.
+const originalCorrectionFixture=readFileSync('tests/integration/correctionOfficeReadback.sql','utf8');
+const fixtureColumns='(requester_uid,original_reference,reason,requested_outcome,change_kind,old_value,new_value)';
+const fixtureValues="'CIRCLE','Circle A','Circle B')";
+assert.equal(originalCorrectionFixture.split(fixtureColumns).length,2);
+assert.equal(originalCorrectionFixture.split(fixtureValues).length,2);
+const correctionFixture=originalCorrectionFixture
+ .replace(fixtureColumns,'(requester_uid,original_reference,reason,requested_outcome,change_kind,old_value,new_value,case_kind)')
+ .replace(fixtureValues,"'CIRCLE','Circle A','Circle B','UNSOLICITED_PAYMENT_REPORT')");
 const cut=correctionFixture.indexOf('DO $owner_initial$\n');
 assert.ok(cut>0,'Passing correction fixture anchor missing');
 const initial=correctionFixture.slice(0,cut)+[
  'RESET ROLE;',
  'SELECT jsonb_build_object(',
  " 'inquiryId',i.inquiry_id,'sourcePaymentId',i.original_payment_id,",
- " 'sourcePaymentKind',i.original_payment_kind,'ownerUid',i.requester_uid,",
+ " 'sourcePaymentKind',i.original_payment_kind,'ownerUid',i.requester_uid,'caseKind',i.case_kind,",
  " 'originalPayment',(SELECT data FROM demo_payment.story_payments p WHERE p.id=i.original_payment_id),",
  " 'eventId',o.event_id,'outboxState',o.delivery_state)",
  ' FROM public.taxpay_correction_inquiries i',
@@ -209,6 +219,7 @@ const initial=correctionFixture.slice(0,cut)+[
 const started=db(source,initial);
 assert.equal(started.ownerUid,owner);
 assert.equal(started.sourcePaymentKind,'TAXPAY_STORY_PAYMENT');
+assert.equal(started.caseKind,'UNSOLICITED_PAYMENT_REPORT');
 assert.equal(started.sourcePaymentId,'80000000-0000-4000-8000-000000000041');
 assert.equal(started.outboxState,'PENDING');
 assert.equal(started.originalPayment.details.receiptReference,'SYN-REF-003');
@@ -260,6 +271,7 @@ const retryEvent={schemaVersion:'1.0.0',eventId:outboxAfterRetry.eventId,request
  payload:outboxAfterRetry.payload};
 assert.equal(retryEvent.payload.originalPaymentId,started.sourcePaymentId);
 assert.equal(retryEvent.payload.originalPaymentKind,'TAXPAY_STORY_PAYMENT');
+assert.equal(retryEvent.payload.caseKind,'UNSOLICITED_PAYMENT_REPORT');
 assert.ok(!('requesterUid' in retryEvent.payload),'Private owner identity leaked to Office');
 
 const maker='80000000-0000-4000-8000-000000000011';
@@ -298,6 +310,8 @@ assert.equal(correctionReplay.data.stored,true);assert.equal(correctionReplay.da
 const queue=db(office,auth(maker,'SELECT public.payment_v1_correction_queue_page(200,NULL,NULL);'));
 const item=queue.items.find(v=>v.requestId===started.inquiryId);
 assert.ok(item);assert.equal(item.sourcePaymentId,started.sourcePaymentId);
+assert.equal(item.caseKind,'UNSOLICITED_PAYMENT_REPORT',
+ 'Original source case category must survive signed Edge delivery to separate Office SQL');
 assert.equal(item.sourceEventId,started.eventId);
 assert.equal(item.reviewState,'PENDING_OFFICER');
 assert.deepEqual(item.availableActions,['MAKER_ACKNOWLEDGE']);
@@ -368,6 +382,7 @@ for(const stage of stages){
   "SELECT public.payment_v1_correction_queue_page(200,NULL,NULL);"));
  const adminItem=adminReadback.items.find(v=>v.requestId===started.inquiryId);
  assert.equal(adminItem.reviewState,stage.state);
+assert.equal(adminItem.caseKind,'UNSOLICITED_PAYMENT_REPORT');
 }
 const completed=db(source,"SELECT jsonb_build_object("+
  " 'state',i.office_review_state,'revision',i.office_review_revision,"+
