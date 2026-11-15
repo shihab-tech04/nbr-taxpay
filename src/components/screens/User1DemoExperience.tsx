@@ -543,7 +543,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Overview','সংক্ষিপ্ত বিবরণ');
-  const header=<TaxpayerPageHeading title={pageTitle} className={'taxpayer-dashboard-header'+(overviewRoute?' taxpayer-dashboard-header--overview':'')}
+  const header=<TaxpayerPageHeading title={overviewRoute?tr('Your tax overview','আপনার করের সারসংক্ষেপ'):pageTitle} description={overviewRoute?tr('Payments, recipients and follow-ups for your assessment year.','আপনার করবর্ষের পেমেন্ট, প্রাপক ও পরবর্তী করণীয়।'):undefined} className={'taxpayer-dashboard-header'+(overviewRoute?' taxpayer-dashboard-header--overview':'')}
     actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   // Keep the existing external-data UI gated until a verified, nonempty source is linked.
   const verifiedExternalTaxPositionReady=false;
@@ -649,20 +649,39 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
                 {overviewHasAmount?formatDashboardChartMoney(overviewProjection.totalMinor,language):'—'}
               </strong>
               <p>{overviewHasAmount
-                ?tr('Payer-initiated allocations for this assessment year','এই করবর্ষে আপনার শুরু করা পেমেন্ট বরাদ্দ')
+                ?([ ...overviewCompletedRows ].length
+                  ?tr('Latest payment activity','সর্বশেষ পেমেন্ট কার্যক্রম')+': '+money([...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date))[0].amount)+' · '+formatDate([...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date))[0].date)
+                  :tr('Payer-initiated allocations for this assessment year','এই করবর্ষে আপনার শুরু করা পেমেন্ট বরাদ্দ'))
                 :overviewSource==='recorded'&&sqlLoadError
                   ?tr('Payment records could not be loaded','পেমেন্ট রেকর্ড লোড করা যায়নি')
                   :tr('No itemized payments for this year','এই করবর্ষে কোনো বিস্তারিত পেমেন্ট নেই')}</p>
             </div>
-            {overviewHasAmount&&<div className="taxpay-overview-feature__services"
-              aria-label={tr('Payment service shares','পেমেন্টের ধরনের অংশ')}>
-              {overviewServices.map(item=>{
-                const share=dashboardChartPercentage(item.amountMinor,overviewProjection.totalMinor);
-                return <div key={item.key} className="taxpay-overview-feature__service">
-                  <div><span>{overviewServiceNames[item.key]}</span><strong className="tabular-nums">{share}%</strong></div>
-                  <span className="taxpay-overview-feature__track" aria-hidden="true"><span style={{width:share+'%'}}/></span>
-                </div>;
-              })}
+            {overviewHasAmount&&<div className="taxpay-overview-feature__chart">
+              <svg viewBox="0 0 120 120" className="taxpay-overview-feature__donut" role="img"
+                aria-label={tr('Distribution of payer-initiated payment activity','আপনার শুরু করা পেমেন্টের বিভাজন')}>
+                <circle cx="60" cy="60" r="43" pathLength="100" strokeWidth="18" fill="none" stroke="rgba(255,255,255,.23)"/>
+                {overviewServices.map((item,index)=>{
+                  const share=Number(item.amountMinor*10000n/overviewProjection.totalMinor)/100;
+                  const previous=overviewServices.slice(0,index).reduce((sum,row)=>sum+Number(row.amountMinor*10000n/overviewProjection.totalMinor)/100,0);
+                  return <circle key={item.key} cx="60" cy="60" r="43" pathLength="100"
+                    className={'taxpay-overview-feature__slice taxpay-overview-feature__slice--'+index}
+                    strokeWidth="18" fill="none" strokeDasharray={share+' '+(100-share)}
+                    strokeDashoffset={-previous} transform="rotate(-90 60 60)"/>;
+                })}
+                <text x="60" y="59" fill="#fff" textAnchor="middle" fontSize="19" fontWeight="700">
+                  {dashboardChartPercentage(overviewServices[0]?.amountMinor??0n,overviewProjection.totalMinor)}%
+                </text>
+                <text x="60" y="73" fill="#e4efff" textAnchor="middle" fontSize="8">
+                  {tr('Largest share','সর্বোচ্চ অংশ')}
+                </text>
+              </svg>
+              <div className="taxpay-overview-feature__services" aria-label={tr('Payment service amounts','পেমেন্টের ধরন অনুযায়ী পরিমাণ')}>
+                {overviewServices.map((item,index)=><div key={item.key} className="taxpay-overview-feature__service">
+                  <span className={'taxpay-overview-feature__legend-dot taxpay-overview-feature__legend-dot--'+index} aria-hidden="true"/>
+                  <span>{overviewServiceNames[item.key]}</span>
+                  <strong className="tabular-nums">{formatDashboardChartMoney(item.amountMinor,language)}</strong>
+                </div>)}
+              </div>
             </div>}
           </div>
           <a href="?action=history" className="taxpay-overview-feature__action" onClick={event=>{event.preventDefault();openOverviewPayments();}}>
