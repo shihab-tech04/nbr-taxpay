@@ -69,7 +69,7 @@ export function parseRecoverableTravelPayment(raw: string | null, sessionId: str
           typeof person.passportMasked !== 'string' ||
           !/^••••[A-Za-z0-9]{4}$/.test(person.passportMasked) ||
           (person.nationality === 'FOREIGN' && (typeof person.country !== 'string' || !person.country.trim())) ||
-          !Number.isInteger(person.age) || person.age < 0 || person.age >= 130 ||
+          typeof person.age !== 'number' || !Number.isInteger(person.age) || person.age < 0 || person.age >= 130 ||
           storedPerson.name !== person.name || storedPerson.passportMasked !== person.passportMasked ||
           storedPerson.nationality !== person.nationality || storedPerson.ageBand !== person.ageBand ||
           storedPerson.country !== person.country || storedPerson.age !== person.age ||
