@@ -114,7 +114,10 @@ BEGIN
     IF v_result->>'replayed' IS DISTINCT FROM 'false'
       OR v_result->>'status' IS DISTINCT FROM 'SIMULATED_SUCCESS'
     THEN RAISE EXCEPTION 'WS3_USER1_SOURCE_PAYMENT_FAILED_%',v_case; END IF;
-    IF v_case=1 THEN v_first:=v_id;v_first_data:=v_payload; END IF;
+    IF v_case=1 THEN
+      v_first:=v_id;
+      SELECT data INTO v_first_data FROM demo_payment.story_payments WHERE id=v_id;
+    END IF;
     INSERT INTO ws3_user1_created VALUES
       (v_case,v_id,'SIM-'||v_key::text,v_lines,v_total,NULL,'OTHER_TAX_PAYMENT');
     v_replay:=public.taxpay_demo_story1_submit(v_cap,v_payload);
