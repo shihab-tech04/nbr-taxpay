@@ -40,7 +40,7 @@ test('all seven external sources preserve provider, Dhara and year; recorded pay
     const event=events.find(e=>e.sourceCode===p.source_system);
     assert.equal(event?.dhara,p.dhara);
     assert.equal(event?.assessmentYear,p.assessment_year);
-    assert.equal(event?.amountMinor,p.amount_minor);
+    assert.equal(event?.amountMinor,Number(p.amount_minor));
     assert.equal(event?.challanNo,p.challan_no);
   });
 });
