@@ -42,7 +42,7 @@ try {
       const userIdEntry=page.getByRole('link',{name:'Sign In'});
       await expect(userIdEntry).toHaveAttribute('href',/action=taxpayer_login/);
       await userIdEntry.click();
-      const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+      const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
       await expect(dialog).toBeVisible();
       await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeVisible();
       await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
@@ -112,7 +112,7 @@ try {
       await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
       await page.reload();
       await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
-      await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
+      await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
       await page.screenshot({path:'test-results/live-auth-restored-'+name+'.png',fullPage:true});
     }
     await page.close();
