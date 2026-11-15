@@ -48,7 +48,13 @@ test('M06 corrupted amount/head/passenger/identity retry is rejected without a n
   assert.equal(candidate(payment=>{payment.details.receiptSnapshot.items[1].economicCode='WRONG'}),null);
   assert.equal(candidate(payment=>{payment.details.receiptSnapshot.items[1].headId=155}),null);
   assert.equal(candidate(payment=>{payment.details.passengers[1].amount=1000}),null);
+  assert.equal(candidate(payment=>{payment.details.passengers[1].country='Bangladesh'}),null);
+  assert.equal(candidate(payment=>{payment.details.passengers[1].age=11}),null);
+  assert.equal(candidate(payment=>{payment.details.receiptSnapshot.items[0].penaltyAmount=100}),null);
+  assert.equal(candidate(payment=>{payment.details.lines[0].surchargeAmount=50}),null);
+  assert.equal(candidate(payment=>{payment.details.lines[1].interestAmount=1}),null);
   assert.equal(candidate(payment=>{payment.details.receiptSnapshot.travelDetails.passengers[0].passportMasked='TEST123456'}),null);
+  assert.equal(candidate(payment=>{payment.details.receiptSnapshot.travelDetails.passengers[0].passportMasked='••••?<>{'}),null);
   assert.equal(candidate(payment=>{payment.details.receiptSnapshot.travelDetails.passengers.pop()}),null);
   assert.equal(candidate(payment=>{payment.amountMinor=150001}),null);
   assert.equal(candidate(payment=>{payment.idempotencyKey='wrong'}),null);
