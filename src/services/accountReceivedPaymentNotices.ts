@@ -6,7 +6,7 @@ import {loadUnreadReceivedPaymentNotices,loadStoredReceivedPaymentNotices,
  * payment session. The database obtains the approved profile from auth.uid().
  */
 type Action='unread'|'list'|'ack';
-function verifiedRecordedPage(raw:unknown):unknown {
+export function verifiedRecordedPage(raw:unknown):unknown {
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Invalid recipient page');
   const data=raw as Record<string,unknown>;
   if(!Array.isArray(data.items))throw Error('Invalid recipient page');
