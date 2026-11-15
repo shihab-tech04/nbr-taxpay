@@ -83,7 +83,8 @@ export const DashboardPaymentDrafts: React.FC<{
     onCountChange?.(catalog.ownerKey === ownerKey && catalog.generation === requestGeneration && catalog.status === 'ready' ? catalog.rows.length : null);
   }, [catalog.ownerKey, catalog.generation, catalog.status, catalog.rows.length, ownerKey, requestGeneration, onCountChange]);
 
-  const catalogOwnerMatches = catalog.ownerKey === ownerKey && catalog.generation === requestGeneration;
+  const catalogOwnerChanged = catalog.ownerKey !== ownerKey || catalog.generation !== requestGeneration;
+  const catalogOwnerMatches = !catalogOwnerChanged;
   const statusPanel = (message: string, busy = false) => <section id="dashboard-payment-drafts" tabIndex={-1}
     data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
     aria-busy={busy ? 'true' : undefined}
