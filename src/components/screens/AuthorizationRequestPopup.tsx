@@ -2,6 +2,9 @@ import React,{useEffect,useState} from 'react';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {useTaxState} from '../../services/taxState';
+import {useAccountIdentity} from '../../services/accountIdentity';
+import {queueReceivedPaymentCaseIntent} from '../../services/receivedPaymentCaseIntent';
+import type {CorrectionCaseKind} from '../../services/correctionInquiryValidation';
 import {formatCurrency} from '../../services/numberFormat';
 import {unreadReceivedPaymentNotices,acknowledgeReceivedPaymentNotice,type ReceivedPaymentNotice}
   from '../../services/demoReceivedPaymentNotices';
@@ -11,7 +14,8 @@ import {
 
 /** In-app live popup for synthetic accounts; also appears in Notifications/Manage Authorization. */
 export function AuthorizationRequestPopup(){
-  const {previewAccount,language,navigate}=useTaxState();
+  const {previewAccount,language,navigate,currentRoute}=useTaxState();
+  const {user:authenticatedUser}=useAccountIdentity();
   const actor=previewAccount?.id;
   const bn=language==='bn';
   const [incoming,setIncoming]=useState<HostedAuthorization|null>(null);
@@ -24,9 +28,14 @@ export function AuthorizationRequestPopup(){
   const [dismissedReceived,setDismissedReceived]=useState<string[]>([]);
   const [receivedBusy,setReceivedBusy]=useState(false);
   const [receivedError,setReceivedError]=useState('');
+  const [welcomeOwner,setWelcomeOwner]=useState<string|null>(null);
   useEffect(()=>{
     setIncoming(null);setDismissed([]);setCode(null);setError('');
     setReceived(null);setReceivedOwner(null);setDismissedReceived([]);setReceivedError('');setReceivedBusy(false);
+  },[actor]);
+  useEffect(()=>{
+    try{setWelcomeOwner(actor&&window.sessionStorage.getItem('sohojkor.preview-first-login-welcome.v1')===actor?actor:null);}
+    catch{setWelcomeOwner(null);}
   },[actor]);
   useEffect(()=>{
     if(!actor)return;
@@ -72,12 +81,27 @@ export function AuthorizationRequestPopup(){
   },[actor,dismissedReceived,receivedBusy]);
 
   // Guard synchronously during a profile switch, before the reset effect runs.
-  const visibleReceived=receivedOwner===actor?received:null;
+  // A recipient who opened the correction/report form must not be covered by
+  // the same unread notice modal while entering the request.
+  const visibleReceived=receivedOwner===actor&&currentRoute!=='corrections'?received:null;
   const visibleIncoming=incoming?.taxpayerId===actor?incoming:null;
   const dismissReceived=()=>{
     if(!visibleReceived||receivedBusy)return;
     setDismissedReceived(previous=>[...previous,visibleReceived.eventId]);
     setReceived(null);setReceivedError('');
+  };
+  // This carries only an untrusted, short-lived form draft. The linked SQL
+  // inquiry independently verifies the real Auth UID and payment allocation.
+  const openReceivedCase=(caseKind:CorrectionCaseKind)=>{
+    if(!visibleReceived||receivedBusy)return;
+    try{
+      queueReceivedPaymentCaseIntent(visibleReceived,caseKind);
+      setReceivedError('');
+      if(authenticatedUser)navigate('corrections');
+      else navigate('secure_workspace',{returnTo:'corrections'});
+    }catch{
+      setReceivedError(bn?'অনুরোধের তথ্য প্রস্তুত করা যায়নি। আবার চেষ্টা করুন।':'Could not prepare the request. Please retry.');
+    }
   };
   const acknowledgeReceived=async()=>{
     if(!actor||!visibleReceived||receivedBusy)return;
@@ -96,6 +120,22 @@ export function AuthorizationRequestPopup(){
   };
 
   if(!actor)return null;
+  if(welcomeOwner===actor&&currentRoute!=='taxpayer_login'){
+    const continueAfterWelcome=()=>{
+      try{window.sessionStorage.removeItem('sohojkor.preview-first-login-welcome.v1');}
+      catch{/* Preview welcome is cosmetic, not a security control. */}
+      setWelcomeOwner(null);
+    };
+    return <TaxPayModal title={bn?'সহজকরে স্বাগতম':'Welcome to Sohojkor'}
+      onClose={continueAfterWelcome} closeIconLabel={bn?'বন্ধ করুন':'Close modal'}
+      className="taxpayer-authorization-modal"
+      footer={<button type="button" className="tax-service-choice__continue"
+        onClick={continueAfterWelcome}>{bn?'বিজ্ঞপ্তি দেখুন':'Continue to notifications'}</button>}>
+      <p className="mt-4 text-sm leading-6 text-taxpay-text" role="status" data-testid="first-login-welcome">
+        {bn?'আপনার নমুনা অ্যাকাউন্টের সাইন ইন নিশ্চিত হয়েছে। এখন প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি থাকলে সেগুলো একে একে দেখতে পারবেন।':'Your sample-account sign-in is confirmed. Any received-payment notices will appear one at a time.'}
+      </p>
+    </TaxPayModal>;
+  }
   if(!visibleIncoming&&visibleReceived){
     const money=formatCurrency(visibleReceived.amountMinor/100,language);
     return <TaxPayModal
@@ -103,10 +143,22 @@ export function AuthorizationRequestPopup(){
       onClose={dismissReceived}
       closeIconLabel={bn?'বন্ধ করুন':'Close modal'}
       className="taxpayer-authorization-modal"
-      footer={<button type="button" disabled={receivedBusy}
-        className="tax-service-choice__continue" onClick={()=>void acknowledgeReceived()}>
-        {receivedBusy?(bn?'নিশ্চিত করা হচ্ছে…':'Confirming…'):(bn?'পড়েছি, পরেরটি দেখুন':'Acknowledge and continue')}
-      </button>}
+      footer={<div className="tax-service-choice__actions flex flex-wrap gap-2">
+        <button type="button" disabled={receivedBusy} className="taxpay-modal__footer-close"
+          onClick={dismissReceived}>{bn?'পরে দেখব':'Dismiss for now'}</button>
+        <button type="button" disabled={receivedBusy} className="taxpay-modal__footer-close"
+          onClick={()=>openReceivedCase('CORRECTION_REVIEW')}>
+          {bn?'সংশোধনের অনুরোধ':'Request correction'}
+        </button>
+        <button type="button" disabled={receivedBusy} className="taxpay-modal__footer-close"
+          onClick={()=>openReceivedCase('UNSOLICITED_PAYMENT_REPORT')}>
+          {bn?'পেমেন্ট রিপোর্ট করুন':'Report payment'}
+        </button>
+        <button type="button" disabled={receivedBusy}
+          className="tax-service-choice__continue" onClick={()=>void acknowledgeReceived()}>
+          {receivedBusy?(bn?'নিশ্চিত করা হচ্ছে…':'Confirming…'):(bn?'পড়েছি, পরেরটি দেখুন':'Acknowledge and continue')}
+        </button>
+      </div>}
     >
       <div className="mt-4 space-y-3" data-testid="received-payment-notice">
         <p className="text-sm leading-6 text-taxpay-text">
@@ -119,6 +171,7 @@ export function AuthorizationRequestPopup(){
           <div><dt>{bn?'রেফারেন্স':'Reference'}</dt><dd className="break-all">{visibleReceived.receiptReference??visibleReceived.paymentId}</dd></div>
         </dl>
         <p className="text-xs text-taxpay-muted">{bn?'এটি নথিভুক্ত পেমেন্টের তথ্য; সরকারি নিষ্পত্তির প্রমাণ নয়।':'This is a recorded payment, not confirmation of government settlement.'}</p>
+        <p className="text-xs text-taxpay-muted">{bn?'সংশোধন বা রিপোর্ট জমা দিতে যাচাইকৃত অ্যাকাউন্টে সাইন ইন করতে হবে।':'Submitting a correction or report requires a verified account sign-in.'}</p>
         {receivedError&&<p role="alert" className="text-sm text-taxpay-error">{receivedError}</p>}
       </div>
     </TaxPayModal>;

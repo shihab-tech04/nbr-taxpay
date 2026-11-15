@@ -143,7 +143,14 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
       // calls Supabase Auth or authenticates a production taxpayer account.
       const success=await loginPreviewAccount(userId.trim().toLowerCase(),password,{preserveRoute:true});
       if(!success){setStep('credentials');setError('invalid');inputRef.current?.focus();return;}
-      if(usedOtp)rememberDemoOtp(userId.trim().toLowerCase());
+      if(usedOtp){
+        const profileId=userId.trim().toLowerCase();
+        rememberDemoOtp(profileId);
+        // Preview-only first-login welcome is displayed after the sign-in
+        // confirmation and before the recipient notice queue, once per visit.
+        try{window.sessionStorage.setItem('sohojkor.preview-first-login-welcome.v1',profileId);}
+        catch{/* The sign-in remains usable if storage is unavailable. */}
+      }
       setStep('success');
       transitionTimer.current=window.setTimeout(()=>{
         if(onSuccess)onSuccess();

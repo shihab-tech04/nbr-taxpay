@@ -1,6 +1,10 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {TaxPayDataGrid,TaxPayTableCounter,TaxPayTableState,TaxPayTableControls} from '../ui/TaxPayDataTable';
 import {formatCurrency} from '../../services/numberFormat';
+import {useTaxState} from '../../services/taxState';
+import {useAccountIdentity} from '../../services/accountIdentity';
+import {queueReceivedPaymentCaseIntent} from '../../services/receivedPaymentCaseIntent';
+import type {CorrectionCaseKind} from '../../services/correctionInquiryValidation';
 import {
   acknowledgeReceivedPaymentNotice,listReceivedPaymentNotices,filterStoredReceivedPaymentNotices,
   type StoredReceivedPaymentNotice,
@@ -16,6 +20,8 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
   profileId:string;language:'en'|'bn';
 }){
   const enabled=import.meta.env.VITE_RECIPIENT_NOTICE_FEED_ENABLED==='true';
+  const {navigate}=useTaxState();
+  const {user:authenticatedUser}=useAccountIdentity();
   const [state,setState]=useState<Snapshot>({owner:null,status:'loading',rows:[]});
   const [revision,setRevision]=useState(0);
   const [busy,setBusy]=useState<string|null>(null);
@@ -59,6 +65,18 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
       window.removeEventListener('focus',refresh);
     };
   },[profileId,revision,enabled]);
+
+  const openCase=(notice:StoredReceivedPaymentNotice,caseKind:CorrectionCaseKind)=>{
+    if(state.owner!==profileId)return;
+    try{
+      queueReceivedPaymentCaseIntent(notice,caseKind);
+      if(authenticatedUser)navigate('corrections');
+      else navigate('secure_workspace',{returnTo:'corrections'});
+    }catch{
+      setAckError(tr('Could not prepare the request. Please retry.',
+        'অনুরোধের তথ্য প্রস্তুত করা যায়নি। আবার চেষ্টা করুন।'));
+    }
+  };
 
   const acknowledge=async(notice:StoredReceivedPaymentNotice)=>{
     if(busyRef.current||notice.isRead||state.owner!==profileId)return;
@@ -167,13 +185,25 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
                   {new Date(row.createdAt).toLocaleDateString(bn?'bn-BD':'en-BD',{dateStyle:'medium'})}
                 </time>},
               {key:'read',header:tr('Status / action','অবস্থা / কার্যক্রম'),renderCell:row=>
-                row.isRead
-                  ?<span>{tr('Read','পঠিত')}</span>
-                  :<button type="button" disabled={busy!==null}
+                <div className="flex flex-wrap items-center gap-2">
+                  {row.isRead
+                    ?<span className="text-sm text-taxpay-muted">{tr('Read','পঠিত')}</span>
+                    :<button type="button" disabled={busy!==null}
+                      className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary"
+                      onClick={()=>void acknowledge(row)}>
+                      {busy===row.eventId?tr('Confirming…','নিশ্চিত করা হচ্ছে…'):tr('Mark as read','পঠিত করুন')}
+                    </button>}
+                  <button type="button" disabled={busy!==null}
                     className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary"
-                    onClick={()=>void acknowledge(row)}>
-                    {busy===row.eventId?tr('Confirming…','নিশ্চিত করা হচ্ছে…'):tr('Mark as read','পঠিত করুন')}
-                  </button>},
+                    onClick={()=>openCase(row,'CORRECTION_REVIEW')}>
+                    {tr('Request correction','সংশোধনের অনুরোধ')}
+                  </button>
+                  <button type="button" disabled={busy!==null}
+                    className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary"
+                    onClick={()=>openCase(row,'UNSOLICITED_PAYMENT_REPORT')}>
+                    {tr('Report payment','পেমেন্ট রিপোর্ট করুন')}
+                  </button>
+                </div>},
             ]}/>}
   </section>;
 }
