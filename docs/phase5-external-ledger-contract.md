@@ -4,7 +4,7 @@ This is a read model for Sohojkor's authenticated taxpayer ledger, **not** an ex
 
 ## Exact input contract
 
-Seven supported provider codes are `BRTA`, `E_TDS` (e-TDS), `IBAS_PP` (iBAS++), `NSD`, `SUB_REGISTRAR_OFFICE` (Sub-Registrar Office), `BANK`, and `SA_CODER` (SA Coder).
+Seven supported provider codes are `BRTA`, `E_TDS` (e-TDS), `IBAS_PLUS_PLUS` (iBAS++), `NSD`, `SUB_REGISTRAR_OFFICE` (Sub-Registrar Office), `BANK`, and `SA_CODER` (SA Coder).
 
 Each independently attested source allocation must preserve:
 
