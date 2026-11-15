@@ -152,10 +152,11 @@ END;
 $walkin_claim$;
 WITH inserted AS (
   INSERT INTO public.taxpay_correction_inquiries
-    (requester_uid,original_reference,reason,requested_outcome,change_kind,old_value,new_value)
+    (requester_uid,original_reference,reason,requested_outcome,evidence_note,change_kind,old_value,new_value)
   VALUES
     ('80000000-0000-4000-8000-000000000001','SYN-REF-003',
      'Synthetic evidence-pending review request','Review this synthetic payment reference',
+     E'বাংলা সহায়ক প্রমাণ\\nOffice intake details longer than twenty characters',
      'CIRCLE','Circle A','Circle B')
   RETURNING inquiry_id
 )
@@ -586,6 +587,7 @@ BEGIN
   IF v_payload->>'originalReference'<>'SYN-REF-003'
      OR v_payload->>'originalPaymentId'<>'80000000-0000-4000-8000-000000000041'
      OR v_payload->>'originalPaymentKind'<>'TAXPAY_STORY_PAYMENT'
+     OR v_payload->>'evidenceNote' IS DISTINCT FROM E'বাংলা সহায়ক প্রমাণ\\nOffice intake details longer than twenty characters'
       OR v_payload->>'caseKind'<>'CORRECTION_REVIEW'
      OR v_payload ? 'requesterUid' OR v_payload ? 'requester_uid'
      OR v_payload ? 'taxpayerTin' OR v_payload ? 'tin' THEN
