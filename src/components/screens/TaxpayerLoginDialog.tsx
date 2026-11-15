@@ -74,6 +74,19 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   };
   const { user: verifiedApplicationUser } = useAccountIdentity();
   const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionListRef = useRef<HTMLUListElement>(null);
+  // Keep the active option visible during keyboard travel through 55 IDs.
+  // Scroll the list itself, never the payment modal or the underlying page.
+  useEffect(() => {
+    if (!suggestionsOpen) return;
+    const list = suggestionListRef.current;
+    const option = list?.querySelectorAll<HTMLElement>('[role="option"]')[highlighted];
+    if (!list || !option) return;
+    const viewport = list.getBoundingClientRect();
+    const active = option.getBoundingClientRect();
+    if (active.top < viewport.top) list.scrollTop -= viewport.top - active.top;
+    else if (active.bottom > viewport.bottom) list.scrollTop += active.bottom - viewport.bottom;
+  }, [suggestionsOpen, highlighted, userId]);
   const bn = language === 'bn';
   const close = () => onClose ? onClose() : navigate('landing');
   const credentialsReady = Boolean(userId.trim() && password.trim());
@@ -120,7 +133,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
               onKeyDown={onUserIdKeyDown}
               onChange={event => { setUserId(event.target.value);setPassword('');setHighlighted(0);setSuggestionsOpen(true);setError(null); }} />
           </div>
-          {suggestionsOpen && <ul id="taxpayer-login-account-options" className="taxpayer-login-suggestions" role="listbox" aria-label={bn?'পরীক্ষামূলক অ্যাকাউন্ট':'Test accounts'}>
+          {suggestionsOpen && <ul ref={suggestionListRef} id="taxpayer-login-account-options" className="taxpayer-login-suggestions" role="listbox" aria-label={bn?'পরীক্ষামূলক অ্যাকাউন্ট':'Test accounts'}>
               {suggestions.map((id,index)=><li id={`taxpayer-login-account-${id}`} key={id} role="option" aria-selected={index===highlighted}
                 className={index===highlighted?'taxpayer-login-suggestion--active':undefined}
                 onPointerDown={event=>{event.preventDefault();choosePreview(id);}}
