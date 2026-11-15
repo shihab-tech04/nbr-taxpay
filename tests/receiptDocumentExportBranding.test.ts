@@ -1,6 +1,14 @@
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { downloadDisplayedCertificateSummary } from '../src/services/receiptDocumentExport';
+
+test('ReceiptView modal headings use approved Sohojkor branding in EN and BN', () => {
+  const receiptView = readFileSync(new URL('../src/components/common/ReceiptView.tsx', import.meta.url), 'utf8');
+  assert.match(receiptView, /title: 'Sohojkor — Receipt details'/);
+  assert.match(receiptView, /title: 'সহজকর — রসিদের বিবরণ'/);
+  assert.doesNotMatch(receiptView, /Korbritto|করবৃত্ত/);
+});
 
 test('certificate summary HTML exports use Sohojkor name and retain EN/BN document language', async () => {
   const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
