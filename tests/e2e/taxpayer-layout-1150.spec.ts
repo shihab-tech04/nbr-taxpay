@@ -113,19 +113,21 @@ test('both signed-in taxpayer profiles use available main width without horizont
       const size = await page.evaluate(() => {
         const main = document.querySelector('#main-content') as HTMLElement;
         const content = main.firstElementChild as HTMLElement;
+        const style = getComputedStyle(main);
+        const area = main.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
         return {
           main: main.getBoundingClientRect().width,
+          area,
           content: content.getBoundingClientRect().width,
           overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         };
       });
       expect(size.overflow,`${account} overflow at ${viewport}px`).toBeLessThanOrEqual(2);
-      if (viewport < 1400) {
-        expect(size.content,`${account} unexpectedly changed at ${viewport}px`).toBeLessThanOrEqual(1152);
-      } else {
-        expect(size.content,`${account} does not fill its flexible workspace at ${viewport}px`).toBeGreaterThan(size.main * .82);
-        expect(size.content,`${account} exceeds main at ${viewport}px`).toBeLessThanOrEqual(size.main);
-      }
+      const target=viewport < 1400 ? Math.min(size.area,1150) : size.area*.7;
+      expect(Math.abs(size.content-target),
+        `${account} F-124 authenticated width at ${viewport}px, expected ${target} got ${size.content}`)
+        .toBeLessThanOrEqual(2);
+      expect(size.content,`${account} exceeds main at ${viewport}px`).toBeLessThanOrEqual(size.main);
     }
   }
 });
