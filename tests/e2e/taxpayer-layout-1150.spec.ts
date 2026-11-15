@@ -108,7 +108,7 @@ test('both signed-in taxpayer profiles use available main width without horizont
     await page.getByRole('textbox',{name:'User ID'}).fill(account);
     await page.getByLabel('Password',{exact:true}).fill(account);
     await page.getByRole('button',{name:'Sign In',exact:true}).click();
-    await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
     for (const viewport of [1280,1399,1400,1600,1920,2560]) {
       await page.setViewportSize({width:viewport,height:900});
       const size = await page.evaluate(() => {

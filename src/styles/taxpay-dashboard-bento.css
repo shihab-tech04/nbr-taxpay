@@ -1093,3 +1093,11 @@
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"][data-dashboard-empty="true"]
     > .taxpay-bento-analytics{order:4}
 }
+
+/* Exact overview-heading specificity above the legacy taxpayer layout rule. */
+@media(min-width:1200px){
+ .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace[data-dashboard-view="true"]
+ .taxpayer-page-heading.taxpayer-dashboard-header--overview h1{
+  font-size:clamp(30px,2.2vw,34px);line-height:1.2;font-weight:650;
+ }
+}

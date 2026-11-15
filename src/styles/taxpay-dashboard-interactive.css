@@ -385,3 +385,11 @@
     grid-column:1/-1;
   }
 }
+
+/* Keep legacy service-chart height acceptance inside the new disclosure. */
+.taxpay-payment-extra__cards > .taxpay-bento-analytics__card:first-child{
+  display:grid;grid-template-rows:auto minmax(0,1fr);align-content:stretch;
+}
+.taxpay-payment-extra__cards > .taxpay-bento-analytics__card:first-child > .taxpay-bento-analytics__bars{
+  align-content:space-evenly;
+}

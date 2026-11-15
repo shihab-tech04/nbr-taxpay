@@ -109,7 +109,7 @@ export const BentoPaymentAnalytics:React.FC<{
     data-testid="dashboard-payment-analytics" data-chart-source={source}>
     <div className="taxpay-bento-analytics__header">
       <div>
-        <h2 id="dashboard-payment-analytics-title">{tr('Payment breakdown','পেমেন্টের বিস্তারিত')}</h2>
+        <h2 id="dashboard-payment-analytics-title">{tr('Payment recipients','পেমেন্টের প্রাপক')}</h2>
         <p>{source==='example'
           ?(previewOnlyExamples
             ?tr('Simulated Activity preview — not real payments, Treasury settlements or tax credits.',

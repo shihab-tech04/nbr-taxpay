@@ -31,6 +31,7 @@ test('profile-scoped tags reconcile dashboard family/friends/clients and filter 
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
   const summary=page.getByTestId('dashboard-beneficiary-breakdown');
+  await summary.locator('.taxpay-recipient-extra > summary').click();
   await expect(summary).toContainText('113,500');
   await expect(summary.locator('[data-tag="family"]')).toContainText('30,000');
   await expect(summary.locator('[data-tag="friends"]')).toContainText('6,500');
@@ -86,6 +87,7 @@ test('unclassified saved beneficiary payments remain unassigned with an actionab
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
   const spending=page.getByTestId('dashboard-beneficiary-breakdown');
+  await spending.locator('.taxpay-recipient-extra > summary').click();
   await expect(spending).toContainText('113,500');
   await expect(spending.locator('[data-tag="family"]')).toHaveCount(0);
   await expect(spending.locator('[data-tag="friends"]')).toContainText('6,500');

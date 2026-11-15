@@ -92,6 +92,7 @@ test('Overview summary and charts use the same year/source, and unknown benefici
   await chart.getByTestId('dashboard-payment-extra').locator('summary').click();
   const advance=chart.getByTestId('dashboard-service-breakdown').locator('[data-service="ait"]');
   await advance.click();
+  await chart.locator('.taxpay-recipient-extra > summary').click();
   await chart.getByRole('button',{name:'View payment records'}).click();
   await expect(page).toHaveURL(/action=history/);
   const desktopRecords=page.getByTestId('taxpayer-transaction-table');
