@@ -19,6 +19,7 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
   await expect(dialog.getByText('Forgot your details?')).toBeVisible();
   await dialog.getByRole('button',{name:'Recover Account'}).click();
   await expect(dialog.getByRole('status')).toContainText('password is the same as the User ID');
+  await expect(dialog.getByRole('status')).toContainText('user1–user30');
   await dialog.getByRole('button',{name:'Show password'}).click();
   await expect(dialog.getByLabel('Password', {exact:true})).toHaveAttribute('type','text');
   await dialog.getByRole('button',{name:'Hide password'}).click();
@@ -79,6 +80,8 @@ test('Bangla account search matches a Bengali profile name and only fills synthe
   await page.goto('/?action=taxpayer_login&lang=bn');
   const userId=page.locator('#taxpayer-login-user-id');
   await expect(userId).toBeVisible();
+  await page.getByRole('button',{name:'অ্যাকাউন্ট পুনরুদ্ধার'}).click();
+  await expect(page.locator('#taxpayer-login-recovery')).toContainText('user1–user30');
   await userId.fill('করদাতা অ্যাকাউন্ট 30');
   const options=page.getByRole('listbox',{name:'পরীক্ষামূলক অ্যাকাউন্ট'});
   await expect(options.getByRole('option')).toHaveCount(1);
