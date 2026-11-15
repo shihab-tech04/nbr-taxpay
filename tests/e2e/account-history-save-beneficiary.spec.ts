@@ -332,9 +332,9 @@ for(const language of ['en','bn'] as const){
     ];
     const savedAllocations=[
       {allocationId:sourceAllocationIds[0],taxpayerTin:boundTin,taxpayerName:'Original payment owner',
-        headId:1,assessmentYear:'2026-27',amountMinor:4500},
+        headId:1,serviceCode:'OTHER_TAX_PAYMENT',isWithholding:false,assessmentYear:'2026-27',amountMinor:4500},
       {allocationId:sourceAllocationIds[1],taxpayerTin:anotherTin,taxpayerName:'Original recipient',
-        headId:8,assessmentYear:'2025-26',amountMinor:3000},
+        headId:8,serviceCode:'OTHER_TAX_PAYMENT',isWithholding:false,assessmentYear:'2025-26',amountMinor:3000},
     ];
     const savedReceipt={
       id:'record-'+repeatableId,paymentTransactionId:repeatableId,
