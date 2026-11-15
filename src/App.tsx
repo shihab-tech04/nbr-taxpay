@@ -188,7 +188,8 @@ const MainRouter: React.FC = () => {
         // correction inquiry without a TIN binding. Fictional previews keep
         // their separate, local-only correction journey.
         return verifiedApplicationUser
-          ? <CorrectionInquiries authenticatedUserId={verifiedApplicationUser.id} language={language} />
+          ? <CorrectionInquiries authenticatedUserId={verifiedApplicationUser.id} language={language}
+              initialReference={typeof routeParams.originalReference==='string'?routeParams.originalReference:undefined} />
           : <CorrectionRequests activityTabs={showActivitySections} />;
       case 'notifications':
         return <NotificationsView />;
