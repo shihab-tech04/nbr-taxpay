@@ -1,5 +1,4 @@
-import React, {useState} from 'react';
-import {Check, Copy} from 'lucide-react';
+import React from 'react';
 import {MaskedProfileValue,sensitiveProfileKind} from '../ui/MaskedProfileValue';
 import {isWellFormedTinProfile,type TaxpayerTinProfile,type TaxpayerTinField} from '../../contracts/taxpayerTinProfile';
 
@@ -53,13 +52,6 @@ export function TaxpayerTinInformation({language,record}:Props){
   const bn=language==='bn';
   const tr=(pair:Bilingual)=>pair[bn?1:0];
   const sourced=isWellFormedTinProfile(record);
-  const [copied,setCopied]=useState<TaxpayerTinField|null>(null);
-  const [copyError,setCopyError]=useState<TaxpayerTinField|null>(null);
-  const copy=async(field:TaxpayerTinField,raw:string)=>{
-    setCopyError(null);
-    try{await navigator.clipboard.writeText(raw);setCopied(field);}
-    catch{setCopyError(field);setCopied(null);}
-  };
   const value=(field:TaxpayerTinField)=>{
     if(!sourced)return bn?'পাওয়া যায়নি':'Not available';
     const current=record[field];
@@ -89,17 +81,8 @@ export function TaxpayerTinInformation({language,record}:Props){
             <dd className="mt-1 break-words text-sm font-medium text-taxpay-text">{(()=>{
               const raw=record?.[field];
               const kind=sourced&&typeof raw==='string'?sensitiveProfileKind(field,raw):null;
-              return kind?<span className="inline-flex max-w-full flex-wrap items-center gap-1">
-                <MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
-                  label={tr(label)} language={language}/>
-                <button type="button" onClick={()=>void copy(field,raw as string)}
-                  aria-label={bn?'কপি করুন: '+tr(label):'Copy '+tr(label)}
-                  title={bn?'কপি করুন':'Copy'}
-                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">
-                  {copied===field?<Check size={18} aria-hidden="true"/>:<Copy size={18} aria-hidden="true"/>}
-                </button>
-                {copyError===field&&<span role="alert" className="text-sm text-taxpay-error">{bn?'কপি করা যায়নি':'Could not copy'}</span>}
-              </span>:value(field);
+              return kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
+                label={tr(label)} language={language} allowCopy/>:value(field);
             })()}</dd>
           </div>)}
         </dl>
