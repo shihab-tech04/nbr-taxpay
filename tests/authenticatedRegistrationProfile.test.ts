@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  parseOwnerRegistrationRow,resolveAuthenticatedRegistrationProfile,
+  isUnboundRegistrationRpcError,parseOwnerRegistrationRow,resolveAuthenticatedRegistrationProfile,
   type VerifiedRegistrationReader,
 } from '../src/services/authenticatedRegistrationProfile';
 import type {TaxpayerTinProfile} from '../src/contracts/taxpayerTinProfile';
@@ -82,4 +82,18 @@ test('foreign, malformed or inconsistent source rows fail closed and cannot leak
    {...row(),profile:{...profile,unapprovedIdentifier:'not allowed'}},
    {...row(),profile:{...profile,taxesCircle:123}},
  ])assert.throws(()=>parseOwnerRegistrationRow(invalid,accountId),/mismatch/);
+});
+
+test('only the exact existing SQL missing-binding exception becomes a safe unlinked state',()=>{
+ assert.equal(isUnboundRegistrationRpcError({
+   code:'P0001',message:'No approved synthetic profile binding',
+ }),true);
+ for(const error of [
+   null,
+   {code:'42501',message:'No approved synthetic profile binding'},
+   {code:'P0001',message:'Authentication required'},
+   {code:'P0001',message:'Another database rule failed'},
+   {code:'PGRST301',message:'Unauthorized'},
+   {code:'P0001',message:'No approved synthetic profile binding for another actor'},
+ ])assert.equal(isUnboundRegistrationRpcError(error),false);
 });
