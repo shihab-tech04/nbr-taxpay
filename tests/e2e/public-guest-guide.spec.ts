@@ -164,6 +164,9 @@ test('User guide search and text weights follow the citizen typography contract'
 test('User guide has real platform-specific steps and searches across all topics', async ({ page }) => {
   await page.goto('/?action=user_guide');
   const guide = page.locator('.public-guide-page');
+  // Initial device instructions are viewport-specific. Explicitly select Web
+  // before checking its text; separate tests verify the mobile default.
+  await guide.getByRole('button', { name: 'Web', exact: true }).click();
   await expect(guide.getByText('On Home, choose Pay Tax', { exact: false })).toBeVisible();
   await guide.getByRole('button', { name: 'Mobile', exact: true }).click();
   await expect(guide.getByText('Tap Pay Tax on Home', { exact: false })).toBeVisible();
@@ -190,6 +193,9 @@ test('Guide search covers steps and answers, while topic FAQs stay contextual', 
   const guide=page.locator('.public-guide-page');
   await expect(guide.locator('.public-guide-questions details')).toHaveCount(1);
   await expect(guide.getByText('Are the rates final?')).toHaveCount(0);
+  // This assertion checks the Web-specific passport caution; choose that
+  // device instead of relying on the former hard-coded Web default.
+  await guide.getByRole('button',{name:'Web',exact:true}).click();
   const field=guide.getByRole('searchbox',{name:'Search the guide'});
   await field.fill('passport');
   await expect(guide.getByRole('heading',{name:'Search results'})).toBeVisible();
@@ -628,9 +634,10 @@ test('guide no-results has a directly operable EN/BN recovery button and Bengali
  await expect(guide.locator('.public-guide-result-step')).not.toHaveCount(0);
  await expect(guide.locator('.public-guide-results-head [role="status"]')).toContainText(/[০-৯]/);
  await setWorkspaceLanguage(page,'en');
- await input.fill('another-completely-absent-topic-xyz');
+ const inputEn=guide.getByRole('searchbox',{name:'Search the guide'});
+ await inputEn.fill('another-completely-absent-topic-xyz');
  await guide.locator('.public-guide-no-results').getByRole('button',{name:'Clear search'}).click();
- await expect(input).toBeFocused();
+ await expect(inputEn).toBeFocused();
  await expect(guide.getByRole('navigation',{name:'Guide topics'})).toBeVisible();
 });
 
