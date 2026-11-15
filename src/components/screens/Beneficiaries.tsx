@@ -113,6 +113,7 @@ export function Beneficiaries(){
   const [deletePerson,setDeletePerson]=useState<Beneficiary|null>(null);
   const [bulkRemoveIds,setBulkRemoveIds]=useState<string[]|null>(null);
   const [listMenuOpen,setListMenuOpen]=useState(false);
+  const [listMenuPosition,setListMenuPosition]=useState<{left:number;top:number;width:number;maxHeight:number}|null>(null);
   const [editingList,setEditingList]=useState<BeneficiaryList|null>(null);
   const [editingListName,setEditingListName]=useState('');
   const [confirmListDelete,setConfirmListDelete]=useState(false);
@@ -121,11 +122,28 @@ export function Beneficiaries(){
   const fileRef=useRef<HTMLInputElement>(null);
   useEffect(()=>{
     if(!listMenuOpen)return;
+    // Position against the viewport, not the register's clipped scrolling surface.
+    const reposition=()=>{
+      const rect=listTriggerRef.current?.getBoundingClientRect();
+      if(!rect)return;
+      const margin=12;
+      const width=Math.min(Math.max(rect.width,220),Math.max(160,window.innerWidth-margin*2));
+      const below=window.innerHeight-rect.bottom-margin-4;
+      const above=rect.top-margin-4;
+      const openAbove=below<180&&above>below;
+      const maxHeight=Math.max(80,Math.min(300,openAbove?above:below));
+      const top=openAbove?Math.max(margin,rect.top-maxHeight-4):Math.min(rect.bottom+4,Math.max(margin,window.innerHeight-maxHeight-margin));
+      const left=Math.max(margin,Math.min(rect.right-width,window.innerWidth-width-margin));
+      setListMenuPosition({top,left,width,maxHeight});
+    };
+    reposition();
+    window.addEventListener('resize',reposition);
+    window.addEventListener('scroll',reposition,true);
     const closeOutside=(event:PointerEvent)=>{if(!listMenuRef.current?.contains(event.target as Node))setListMenuOpen(false);};
     const closeEscape=(event:KeyboardEvent)=>{if(event.key==='Escape'){setListMenuOpen(false);listTriggerRef.current?.focus();}};
     document.addEventListener('pointerdown',closeOutside);
     document.addEventListener('keydown',closeEscape);
-    return()=>{document.removeEventListener('pointerdown',closeOutside);document.removeEventListener('keydown',closeEscape);};
+    return()=>{window.removeEventListener('resize',reposition);window.removeEventListener('scroll',reposition,true);document.removeEventListener('pointerdown',closeOutside);document.removeEventListener('keydown',closeEscape);};
   },[listMenuOpen]);
   const owner=user?.id??null;
   const savedListId=owner
@@ -566,7 +584,7 @@ export function Beneficiaries(){
                   <span className="truncate text-left">{activeList==='all'?tr('All beneficiaries','সব উপকারভোগী'):activeListRecord?.name??tr('Choose a list','তালিকা বাছুন')}</span>
                   <ChevronDown size={18} className={listMenuOpen?'rotate-180 transition-transform':'transition-transform'} aria-hidden="true"/>
                 </button>
-                {listMenuOpen&&<div id="beneficiary-list-menu" className="beneficiary-list-picker__menu" role="dialog" aria-label={tr('Choose beneficiary list','উপকারভোগীর তালিকা বাছুন')}>
+                {listMenuOpen&&<div id="beneficiary-list-menu" className="beneficiary-list-picker__menu" role="dialog" style={listMenuPosition?{position:"fixed",top:listMenuPosition.top,left:listMenuPosition.left,width:listMenuPosition.width,maxHeight:listMenuPosition.maxHeight,insetInline:"auto",zIndex:1000}:undefined} aria-label={tr('Choose beneficiary list','উপকারভোগীর তালিকা বাছুন')}>
                   <p className="beneficiary-list-picker__caption">{tr('Your lists','আপনার তালিকা')}</p>
                   <div className="beneficiary-list-picker__row">
                       <button type="button" className="beneficiary-list-picker__select" aria-current={activeList==='all'?'true':undefined} onClick={()=>switchList('all')}>
@@ -578,6 +596,7 @@ export function Beneficiaries(){
                       <span className="truncate">{list.name}</span>{activeList===list.id&&<Check size={18} aria-hidden="true"/>}
                     </button>
                     <button type="button" className="beneficiary-list-picker__edit" aria-label={tr(`Edit ${list.name}`,`${list.name} সম্পাদনা`)} title={tr('Edit list','তালিকা সম্পাদনা')} onClick={()=>openListEditor(list)}><Pencil size={17} aria-hidden="true"/></button>
+                    <button type="button" className="beneficiary-list-picker__edit" aria-label={tr(`Delete ${list.name}`,`${list.name} মুছুন`)} title={tr("Delete list","তালিকা মুছুন")} onClick={()=>{setEditingList(list);setConfirmListDelete(true);setListMenuOpen(false);setModalError("");}}><Trash2 size={17} aria-hidden="true"/></button>
                   </div>)}
                 </div>}
               </div>
