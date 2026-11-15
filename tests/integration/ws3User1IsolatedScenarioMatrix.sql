@@ -131,19 +131,29 @@ BEGIN
   -- heads or AYs; keep separate original parent receipts and events.
   FOR v_case IN 17..18 LOOP
     v_key:=gen_random_uuid();
+    -- M04 requires one Return taxpayer/AY/head per transaction. Each
+    -- distinct row below gets a complete immutable one-head receipt.
     v_payload:=jsonb_build_object(
       'origin','TAXPAY_UI','service','TAX_WITH_RETURN',
       'idempotencyKey',v_key,'sessionId',v_sid,'amountMinor',1000*v_case,
       'details',jsonb_build_object(
         'payerId','user1','payerTin','111111111111',
+        'taxpayerTin','111111111111','payerMode','SELF',
+        'assessmentYear',CASE WHEN v_case=17 THEN '2025-26' ELSE '2026-27' END,
         'payerName','WS3 User1 isolated payer',
         'challanRemarks',E'রিটার্ন করের জন্য মন্তব্য\nAdditional text',
         'receiptReference','SIM-'||v_key::text,
-        'receiptSnapshot',jsonb_build_object('challanNo','SIM-'||v_key::text),
+        'receiptSnapshot',jsonb_build_object(
+          'challanNo','SIM-'||v_key::text,
+          'paymentCategory','TAX_WITH_RETURN','payerTin','111111111111',
+          'taxpayerTin','111111111111',
+          'assessmentYear',CASE WHEN v_case=17 THEN '2025-26' ELSE '2026-27' END,
+          'totalAmount',v_case*10,
+          'items',jsonb_build_array(jsonb_build_object('headId',125,'totalAmount',v_case*10))),
         'lines',jsonb_build_array(jsonb_build_object(
-           'beneficiary','user1','category','TAX_WITH_RETURN',
+           'beneficiary','user1','category','TAX_WITH_RETURN','headId',125,
            'assessmentYear',CASE WHEN v_case=17 THEN '2025-26' ELSE '2026-27' END,
-           'amountMinor',1000*v_case))));
+           'amountMinor',1000*v_case,'totalAmount',v_case*10))));
     v_result:=public.taxpay_demo_story1_submit(v_cap,v_payload);
     v_id:=(v_result->>'id')::uuid;
     IF v_result->>'replayed' IS DISTINCT FROM 'false'
