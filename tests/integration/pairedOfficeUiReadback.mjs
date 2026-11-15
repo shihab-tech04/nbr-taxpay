@@ -159,7 +159,7 @@ try {
     assert.ok(typeof line?.headNameEn === 'string' && line.headNameEn.trim(),
       'Source line must carry the authentic display name for head ' + allocation.headId);
     assert.ok(typeof allocation.taxpayerName === 'string' && allocation.taxpayerName.trim());
-    assert.match(allocation.taxpayerTin, /^\\d{12,13}$/);
+    assert.match(allocation.taxpayerTin, /^\d{12,13}$/);
     return {
       name: allocation.taxpayerName,
       tin: allocation.taxpayerTin,
