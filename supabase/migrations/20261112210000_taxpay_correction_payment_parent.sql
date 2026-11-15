@@ -13,6 +13,10 @@ ALTER TABLE public.taxpay_correction_inquiries
 ALTER TABLE public.taxpay_correction_inquiries
   VALIDATE CONSTRAINT taxpay_correction_case_kind_check;
 
+-- Reuse the existing authenticated requester RLS; no anonymous permission.
+GRANT INSERT (case_kind), SELECT (case_kind)
+  ON TABLE public.taxpay_correction_inquiries TO authenticated;
+
 ALTER TABLE public.taxpay_correction_inquiries
   ADD COLUMN original_payment_id uuid
     REFERENCES demo_payment.story_payments(id),
