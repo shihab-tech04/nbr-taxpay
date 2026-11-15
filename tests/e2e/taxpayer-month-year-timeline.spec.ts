@@ -1,7 +1,7 @@
 import {expect,test} from '@playwright/test';
 import {openTaxpayerTravelTax} from './taxpayer-travel-menu-helper';
 
-const dashboard='/?action=taxpayer_home&demoUser=user1';
+const dashboard='/?action=taxpayer_home&demoUser=user1&qaScenario=1';
 
 test('current assessment year is available without invented liability or monthly trend charts',async({page})=>{
   await page.goto(dashboard);

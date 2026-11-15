@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const url = (route: string) => '/?action=' + route + '&demoUser=user1';
+const url = (route: string) => '/?action=' + route + '&demoUser=user1&qaScenario=1';
 
 test('User1 dashboard omits the redundant register and lengthy data notice but preserves Activity records', async ({page}) => {
   await page.goto(url('taxpayer_home'));

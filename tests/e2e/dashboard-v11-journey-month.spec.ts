@@ -1,6 +1,6 @@
 import {expect,test} from '@playwright/test';
 
-const preview='/?action=taxpayer_home&demoUser=user1';
+const preview='/?action=taxpayer_home&demoUser=user1&qaScenario=1';
 
 test('Overview tax-year chart replaces monthly chart while Activity retains its complete month filters',async({page})=>{
   await page.goto(preview);
