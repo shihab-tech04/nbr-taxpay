@@ -181,15 +181,17 @@ BEGIN
      IS DISTINCT FROM v_first_data
   THEN RAISE EXCEPTION 'WS3_USER1_SOURCE_PAYMENT_WAS_MUTATED'; END IF;
 
-  -- A separate Travel Tax story uses the existing guest Story 1 path,
+  -- A separate User1 Travel Tax story uses the existing capability-bound source path,
   -- never the combined OTHER_TAX_PAYMENT allocations.
   v_key:=gen_random_uuid();
-  v_result:=public.demo_story1_submit(jsonb_build_object(
+  v_result:=public.taxpay_demo_story1_submit(v_cap,jsonb_build_object(
     'idempotencyKey',v_key,'sessionId',v_sid,'service','TRAVEL_TAX',
     'amountMinor',1200,'origin','TAXPAY_UI',
     'details',jsonb_build_object(
        'payerId','user1','payerName','WS3 User1 travel scenario',
        'travelRoute','WS3 isolated travel route','challanRemarks','',
+       'lines',jsonb_build_array(jsonb_build_object(
+          'beneficiary','user1','category','TRAVEL_TAX','amountMinor',1200)),
        'receiptReference','SIM-'||v_key::text)));
   v_id:=(v_result->>'id')::uuid;
   INSERT INTO ws3_user1_created VALUES
