@@ -9,7 +9,9 @@ import {
 const owner='00000000-0000-4000-8000-000000000111';
 const base:ExternalPaymentRecord={
   id:'payment-1',owner_uid:owner,source_system:'BRTA',
-  source_transaction_id:'BRTA-transaction-1',source_reference:'BRTA-reference-1',
+  source_transaction_id:'BRTA-transaction-1',source_allocation_id:'line-1',
+  taxpayer_tin:'100000000001',payer_tin:null,identity_binding_evidence_ref:'verified-binding-1',
+  source_reference:'BRTA-reference-1',
   challan_no:'CH-1',dhara:'Section supplied by source',assessment_year:'2026-27',
   tax_head:'Source-tax head',amount_minor:'12501',source_status:'RECORDED_AT_SOURCE',
   occurred_at:'2026-11-15T05:00:00Z',source_evidence_ref:'BRTA-import-evidence-1'
@@ -24,6 +26,7 @@ const credit:ExternalCreditPosting={
 test('all seven external sources preserve provider, Dhara and year; recorded payments are not credits',()=>{
   const payments=Object.keys(EXTERNAL_LEDGER_SOURCES).map((source_system,i)=>({
     ...base,id:'payment-'+(i+1),source_system,source_transaction_id:'provider-tx-'+(i+1),
+    source_allocation_id:'provider-line-'+(i+1),
     source_reference:'provider-ref-'+(i+1),dhara:'Dhara-'+(i+1),
     assessment_year:i%2?'2025-26':'2026-27',
     amount_minor:i%2?10001:'12501'
