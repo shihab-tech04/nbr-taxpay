@@ -1171,7 +1171,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         receiptMobile: receiptPhone,
         receiptEmail: normaliseReceiptEmail(receiptEmail),
         noticeReference: noticeReference.trim() || undefined,
-        paymentRemarks: paymentRemarks.trim() || undefined,
+        paymentRemarks: paymentRemarks || undefined,
         isRepresentativePayment: !forSelf || additionalTaxpayers.length > 0,
         representativeTin: undefined,
         taxZone,
@@ -2091,10 +2091,10 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   {language === 'bn' ? 'নির্বাচিত সব করদাতা ও খাতের জন্য একটি সম্মিলিত সিমুলেশন পেমেন্ট রেকর্ড ও রসিদ তৈরি হবে।' :
                     'One combined simulated payment record and receipt will cover all selected taxpayers and heads.'}
                 </p>}
-                {paymentRemarks.trim() && (
+                {paymentRemarks !== '' && (
                   <div className="mb-3 rounded-lg border border-taxpay-border p-3 text-sm" data-testid="payment-review-remarks">
                     <strong className="text-taxpay-dark">{copy.remarks}</strong>
-                    <p className="mt-1 whitespace-pre-wrap break-words text-slate-700">{paymentRemarks.trim()}</p>
+                    <p className="mt-1 whitespace-pre-wrap break-words text-slate-700">{paymentRemarks}</p>
                   </div>
                 )}
                 <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
