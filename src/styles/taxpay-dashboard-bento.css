@@ -671,3 +671,183 @@
     grid-column:1;grid-row:4;margin-top:8px;justify-content:flex-start;
   }
 }
+
+
+/* Dashboard visual refinement 2026-11-15 — scoped to the existing Overview.
+   Reference inspiration: prominent account-activity surface and compact task
+   cards. Retain Sohojkor tokens, real source isolation, sidebar and actions. */
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary{
+  display:grid;
+  grid-template-columns:minmax(0,1.52fr) minmax(0,1fr);
+  align-items:stretch;
+  gap:14px;
+  padding:0;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+  color:var(--color-taxpay-text,#17243c);
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature{
+  min-width:0;
+  min-height:302px;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:13px;
+  padding:24px 26px;
+  border:1px solid var(--color-taxpay-primary,#085587);
+  border-radius:16px;
+  background:var(--color-taxpay-primary,#085587);
+  color:#fff;
+}
+.taxpay-overview-feature__eyebrow{
+  display:flex;align-items:center;gap:9px;min-width:0;
+  margin:0;color:#e8f3ff;font-size:14px;line-height:1.5;font-weight:600;
+}
+.taxpay-overview-feature__eyebrow svg{
+  width:18px;height:18px;flex:none;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature h2{
+  margin:0;color:#fff;
+  font-size:clamp(22px,2.1vw,30px);
+  line-height:1.22;font-weight:650;letter-spacing:-.012em;
+}
+.taxpay-overview-feature__source{
+  margin:0;color:#e3eefb;font-size:14px;line-height:1.5;
+}
+.taxpay-overview-feature__main{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(170px,.8fr);
+  align-items:center;
+  gap:16px 26px;
+  min-width:0;
+  margin-top:auto;
+}
+.taxpay-overview-feature__amount{min-width:0}
+.taxpay-overview-feature__amount>strong{
+  display:block;overflow-wrap:anywhere;
+  color:#fff;
+  font-family:var(--font-ibm-plex-mono,var(--font-mono),monospace);
+  font-size:clamp(28px,3.4vw,46px);
+  line-height:1.18;font-weight:650;
+  letter-spacing:-.035em;
+}
+.taxpay-overview-feature__amount>p{
+  max-width:310px;margin-top:9px;color:#e3eefb;
+  font-size:14px;line-height:1.6;
+}
+.taxpay-overview-feature__services{display:grid;gap:11px;min-width:0}
+.taxpay-overview-feature__service{display:grid;gap:5px;min-width:0}
+.taxpay-overview-feature__service>div{
+  display:flex;justify-content:space-between;align-items:baseline;
+  gap:8px;min-width:0;color:#fff;font-size:14px;line-height:1.4;
+}
+.taxpay-overview-feature__service>div span{min-width:0;overflow-wrap:anywhere}
+.taxpay-overview-feature__service strong{flex:none;font-weight:600}
+.taxpay-overview-feature__track{
+  display:block;height:7px;width:100%;border-radius:999px;
+  overflow:hidden;background:rgba(255,255,255,.24);
+}
+.taxpay-overview-feature__track>span{
+  display:block;height:100%;border-radius:inherit;background:#fff;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__action{
+  display:inline-flex;align-items:center;justify-content:center;
+  align-self:flex-start;gap:9px;min-height:44px;
+  margin-top:4px;padding:9px 15px;
+  border:1px solid #fff;border-radius:10px;
+  background:#fff;color:var(--color-taxpay-primary,#085587);
+  font-size:14px;line-height:1.3;font-weight:600;
+  transition:background-color .16s ease,border-color .16s ease;
+}
+.taxpay-overview-feature__action:hover{background:#e9f3ff;border-color:#e9f3ff}
+.taxpay-overview-feature__action:focus-visible{
+  outline:3px solid #fff;outline-offset:3px;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-bento-hero__status{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+  margin:0;
+  min-width:0;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric{
+  display:flex;flex-direction:row;align-items:center;
+  justify-content:space-between;
+  min-height:91px;gap:12px;
+  padding:15px 18px;
+  border:1px solid var(--color-taxpay-border,#e0e8f1);
+  border-radius:14px;
+  box-shadow:0 1px 2px rgba(18,48,86,.04);
+  background:#fff;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric:hover{
+  border-color:#b8cde5;box-shadow:0 3px 9px rgba(18,48,86,.08);
+}
+.taxpay-bento-summary .taxpay-summary-metric__label{
+  min-width:0;font-size:14px;line-height:1.5;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric strong{
+  font-size:27px;line-height:1.1;white-space:nowrap;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-draft-hint{
+  grid-column:1/-1;margin:0;padding:11px 14px;
+  border:1px solid var(--color-taxpay-border,#e0e8f1);
+  border-radius:10px;background:#fff;font-size:14px;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-recent>section,
+.taxpay-bento-request-row .taxpay-bento-corrections,
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-drafts>section{
+  border-radius:16px;
+  box-shadow:0 1px 2px rgba(18,48,86,.035);
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-recent li{
+  padding-block:15px;
+  row-gap:10px;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-recent li .tabular-nums{
+  font-size:15px;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-recent li button{
+  min-height:44px;
+}
+@media(max-width:1023px){
+  .taxpay-overview-feature__main{
+    grid-template-columns:minmax(0,1fr);
+    gap:18px;
+  }
+  .taxpay-overview-feature__services{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:12px;
+  }
+}
+@media(max-width:899px){
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary{
+    grid-template-columns:minmax(0,1fr);
+    gap:12px;
+  }
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-bento-hero__status{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric{
+    min-height:106px;
+    flex-direction:column;align-items:flex-start;
+  }
+}
+@media(max-width:599px){
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature{
+    min-height:0;padding:20px 18px;
+  }
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-bento-hero__status{
+    grid-template-columns:minmax(0,1fr);
+  }
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric{
+    min-height:80px;flex-direction:row;align-items:center;
+    padding:12px 14px;
+  }
+  .taxpay-overview-feature__services{grid-template-columns:minmax(0,1fr);gap:11px}
+  .taxpay-overview-feature__amount>strong{font-size:clamp(27px,9vw,38px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .taxpay-overview-feature__action{transition:none}
+}
