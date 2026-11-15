@@ -72,7 +72,7 @@ export function TaxpayerTinInformation({language,record}:Props){
         : (bn?'উৎস: পর্যালোচিত সনদ; সরাসরি টিআইএন সিঙ্ক নয়':'Source: reviewed certificate; not a live TIN sync')}
       {' · '}{tr(['Record updated','তথ্য হালনাগাদ'])}: {record.sourceUpdatedAt}
     </p>}
-    {sourced && <div className="mt-4 space-y-5">
+    <div className="mt-4 space-y-5">
       {groups.map(group=><section key={group.title[0]}>
         <h3 className="text-sm font-semibold text-taxpay-text">{tr(group.title)}</h3>
         <dl className="mt-2 grid gap-3 sm:grid-cols-2">
@@ -87,6 +87,6 @@ export function TaxpayerTinInformation({language,record}:Props){
           </div>)}
         </dl>
       </section>)}
-    </div>}
+    </div>
   </section>;
 }
