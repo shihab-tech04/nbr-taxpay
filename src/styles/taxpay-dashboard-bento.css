@@ -570,7 +570,7 @@
   }
 }
 /* Long Bengali labels get two columns on tablets, one on narrow screens. */
-@media(max-width:959px){
+@media(max-width:1199px){
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-bento-hero__status{
     grid-template-columns:repeat(2,minmax(0,1fr));
   }
