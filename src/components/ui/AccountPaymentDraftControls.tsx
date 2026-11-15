@@ -178,6 +178,8 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       if (!ownerStillCurrent()) return;
       if (ownedSelectedDraft?.id === draft.id) onSelectedDraft(null);
       await refresh();
+      // Ignore a completion from a different account after the list readback.
+      if (!ownerStillCurrent()) return;
       setPendingDelete(null);
       setFeedback(bn ? 'খসড়া মুছে ফেলা হয়েছে।' : 'Draft deleted.');
     } catch (cause) {
