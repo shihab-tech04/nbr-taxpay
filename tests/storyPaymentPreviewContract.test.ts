@@ -24,7 +24,7 @@ test('signed-in wizard simulates own tax with the SQL authorization allocation c
 test('saved beneficiary payment uses the exact selected TIN without inventing consent',()=>{
  const input={...payment,details:{...payment.details,payerMode:'OTHER',taxpayerTin:'2222222222222'}};
  const bound=bindPreviewStoryPayer(input,preview);
- assert.deepEqual(bound.details.lines,[{beneficiary:'user2',category:'TAX_WITH_RETURN',assessmentYear:'2025-2026',amountMinor:1000}]);
+ assert.deepEqual(bound.details.lines,[{beneficiary:'SAVED_TIN:2222222222222',category:'TAX_WITH_RETURN',assessmentYear:'2025-2026',amountMinor:1000}]);
  assert.deepEqual(bound.details.receiptLines,payment.details.lines);
  assert.throws(()=>bindPreviewStoryPayer({...input,details:{...input.details,taxpayerTin:'not-in-the-demo-directory'}},preview),/saved demo beneficiary/);
 });
