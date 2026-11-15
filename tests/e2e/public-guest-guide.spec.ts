@@ -569,3 +569,18 @@ test('guide search keeps existing Travel Tax action reachable in English and Ban
     await expect(page.getByRole('dialog', {name: bn ? 'ভ্রমণ কর' : 'Travel tax'})).toBeVisible();
   }
 });
+
+test('maintained public guide revision is dated in both languages without changing service actions', async ({page})=>{
+  await page.goto('/?action=user_guide&lang=en');
+  const guide=page.locator('.public-guide-page');
+  const updated=guide.getByTestId('public-guide-last-updated');
+  await expect(updated).toContainText('Guide last updated:');
+  await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  await expect(updated.locator('time')).toContainText('14 November 2026');
+  await expect(guide.getByRole('button',{name:'Open payment services'})).toBeVisible();
+  await page.goto('/?action=user_guide&lang=bn');
+  const updatedBn=page.locator('.public-guide-page').getByTestId('public-guide-last-updated');
+  await expect(updatedBn).toContainText('নির্দেশিকা সর্বশেষ হালনাগাদ:');
+  await expect(updatedBn.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  await expect(updatedBn.locator('time')).toContainText('নভেম্বর');
+});
