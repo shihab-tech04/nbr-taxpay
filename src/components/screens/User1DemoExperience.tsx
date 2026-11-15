@@ -325,7 +325,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   // Overview is always account-linked. Example events are retained only for
   // isolated preview fixtures and must never become payment KPIs or charts.
   const dashboardChartRecords=useMemo(()=>[...sqlRows],[sqlRows]);
-  const overviewSource:DashboardChartSource='recorded';
+  const overviewSource='recorded' as DashboardChartSource;
   const overviewCompletedRows=overviewSource==='recorded'
     ?sqlRows.filter(item=>item.state==='POSTED'&&item.years?.includes(year))
     :scoped.filter(item=>item.state==='POSTED'&&['income','ait','travel'].includes(item.kind));
