@@ -51,10 +51,12 @@ type Props = {
   onChange: (lines: OtherTaxAllocation[]) => void;
   error?: string;
   summary?: React.ReactNode;
+  /** Optional challan comments stay inside the editor scroll column. */
+  remarks?: React.ReactNode;
   focusRequest?: { lineId: string; requestId: number } | null;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, preserveSourcePaymentAmounts = false, onChange, error, summary, focusRequest }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, preserveSourcePaymentAmounts = false, onChange, error, summary, remarks, focusRequest }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -410,6 +412,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
 
           </div>
         </section>
+        {remarks}
       </div>
       {summary}
     </div>
