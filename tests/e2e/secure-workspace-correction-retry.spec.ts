@@ -113,7 +113,8 @@ test('owner can recover a failed private inquiry history load without duplicatin
       insertPayload = request.postDataJSON();
       expect((insertPayload as Record<string, unknown>).requester_uid).toBe(userId);
       submitted = true;
-      failPostSaveRefresh = true;
+      // Only the initial submission tests a transient history refresh failure.
+      if (insertCount === 1) failPostSaveRefresh = true;
       return json([inquiry]);
     }
     if (request.method() === 'GET') return json([]);
@@ -203,4 +204,21 @@ test('owner can recover a failed private inquiry history load without duplicatin
     scroll: document.documentElement.scrollWidth,
   }));
   expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.client + 1);
+
+  // F-094: Bengali unsolicited payment reporting uses the new stored type.
+  await page.getByTestId('correction-case-type').selectOption('UNSOLICITED_PAYMENT_REPORT');
+  await page.getByLabel('মূল পরিশোধ রেফারেন্স (আপনার সংযুক্ত পেমেন্ট ইতিহাসের সঙ্গে মিলতে হবে)')
+    .fill('SYN-REF-654321');
+  await page.getByLabel('কেন এই পরিশোধটি অনাকাঙ্ক্ষিত?')
+    .fill('আমি এই পরিশোধের অনুমোদন দিইনি এবং বিষয়টি যাচাই করতে চাই।');
+  await page.getByLabel('কী ফলাফল চান?')
+    .fill('অফিসের তথ্যগত পর্যালোচনা ও একটি ব্যাখ্যা চাই।');
+  await page.getByRole('button',{name:'প্রমাণের অপেক্ষায় থাকা অনুসন্ধান সংরক্ষণ করুন'}).click();
+  await expect.poll(()=>insertCount).toBe(2);
+  expect(insertPayload).toMatchObject({
+    requester_uid:userId,
+    original_reference:'SYN-REF-654321',
+    case_kind:'UNSOLICITED_PAYMENT_REPORT',
+  });
+  await expect(page.getByTestId('correction-case-type')).toHaveValue('CORRECTION_REVIEW');
 });
