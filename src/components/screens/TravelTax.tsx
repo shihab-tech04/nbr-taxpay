@@ -4,7 +4,8 @@ import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
+import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
+import {parseRecoverableTravelPayment, type PendingTravelPayment} from '../../services/travelPendingPayment';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import type { PaymentReuse } from '../../services/paymentReuse';
@@ -41,27 +42,9 @@ function maskPassport(passport: string) {
   return passport.length <= 4 ? '••••' : '••••' + passport.slice(-4);
 }
 
-type PendingTravelPayment = StoryPaymentInput & {
-  service: 'TRAVEL_TAX';
-  details: StoryPaymentInput['details'] & { receiptSnapshot: ChallanReceipt };
-};
-
 function readPendingTravelPayment(key: string, sessionId: string): PendingTravelPayment | null {
-  try {
-    const stored = sessionStorage.getItem(key);
-    if (!stored) return null;
-    const payment = JSON.parse(stored) as Partial<PendingTravelPayment>;
-    const receipt = payment.details?.receiptSnapshot;
-    if (payment.service !== 'TRAVEL_TAX' || payment.sessionId !== sessionId ||
-        typeof payment.idempotencyKey !== 'string' || !Number.isSafeInteger(payment.amountMinor) ||
-        !receipt || receipt.paymentCategory !== 'TRAVEL_TAX' ||
-        receipt.tokenNumber !== 'SIM-TOKEN-' + payment.idempotencyKey ||
-        !Array.isArray(receipt.travelDetails?.passengers) || !Array.isArray(receipt.items) ||
-        Math.round(receipt.totalAmount * 100) !== payment.amountMinor) return null;
-    return payment as PendingTravelPayment;
-  } catch {
-    return null;
-  }
+  try { return parseRecoverableTravelPayment(sessionStorage.getItem(key), sessionId); }
+  catch { return null; } // Storage may be unavailable in a private browser session.
 }
 
 /**
