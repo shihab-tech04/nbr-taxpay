@@ -200,7 +200,7 @@ test('read-only payment detail notes preserve line breaks without changing the s
       await page.goto(history+'&lang='+language);
       const search=page.getByRole('searchbox');
       await search.fill('DEMO-ETDS-SAL-01');
-      const label=language==='bn'?'বিস্তারিত: বেতনের উৎসে কর':'Details for Salary withholding';
+      const label=language==='bn'?'বিস্তারিত: Salary withholding':'Details for Salary withholding';
       await page.getByRole('button',{name:label}).click();
       const note=page.getByTestId('payment-lifecycle-details').locator('p.whitespace-pre-wrap').first();
       await expect(note).toBeVisible();
