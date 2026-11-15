@@ -8,7 +8,9 @@ import { useDemoSqlProfileAndServiceRecords } from '../../services/demoSqlProfil
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import {AccountRecentActivity} from './AccountRecentActivity';
 import {TaxpayerTinInformation} from './TaxpayerTinInformation';
-import {USER1_FICTIONAL_TIN_PROFILE} from '../../data/user1FictionalTinProfile';
+import {loadTaxpayerRegistrationProfile} from '../../services/taxpayerRegistrationProfile';
+import {loadAuthenticatedRegistrationProfile} from '../../services/authenticatedRegistrationProfile';
+import type {TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
@@ -144,10 +146,35 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ error: boolean; content: string } | null>(null);
   const [previewSigningOut,setPreviewSigningOut]=useState(false);
+  const [registrationRetry,setRegistrationRetry]=useState(0);
+  const [registrationSnapshot,setRegistrationSnapshot]=useState<{
+    ownerKey:string;status:'loading'|'ready'|'unlinked'|'error';record:TaxpayerTinProfile|null;
+  }|null>(null);
+  const registrationOwnerKey=user?.id?'auth:'+user.id:previewAccount?.id==='user1'?'preview:user1':null;
+  const registrationRecord=registrationOwnerKey&&registrationSnapshot?.ownerKey===registrationOwnerKey&&registrationSnapshot.status==='ready'
+    ?registrationSnapshot.record:null;
+  const registrationStatus=registrationOwnerKey&&registrationSnapshot?.ownerKey===registrationOwnerKey
+    ?registrationSnapshot.status:null;
   const title = page === 'profile' ? t.profile : page === 'settings' ? t.settings : t.notifications;
   const allowed = user?.user_metadata?.taxpay_in_app_notifications !== false;
   const readAt = typeof user?.user_metadata?.taxpay_notifications_read_at === 'string'
     ? Date.parse(user.user_metadata.taxpay_notifications_read_at) : NaN;
+
+  useEffect(()=>{
+    if(page!=='profile'||!registrationOwnerKey){setRegistrationSnapshot(null);return;}
+    let active=true;
+    const ownerKey=registrationOwnerKey;
+    setRegistrationSnapshot({ownerKey,status:'loading',record:null});
+    const load=user?.id
+      ?loadAuthenticatedRegistrationProfile(user.id)
+      :loadTaxpayerRegistrationProfile('user1').then(snapshot=>snapshot?.profile??null);
+    void load.then(record=>{
+      if(active)setRegistrationSnapshot({ownerKey,status:record?'ready':'unlinked',record});
+    }).catch(()=>{
+      if(active)setRegistrationSnapshot({ownerKey,status:'error',record:null});
+    });
+    return()=>{active=false;};
+  },[page,registrationOwnerKey,registrationRetry]);
 
   useEffect(() => {
     setName(typeof user?.user_metadata?.taxpay_display_name === 'string'
@@ -322,7 +349,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                       <div><dt>{language === 'bn' ? 'কর সার্কেল' : 'Tax circle'}</dt><dd>{previewAccount?.taxCircle ?? demoSql.profile?.jurisdictionLabel ?? '—'}</dd></div>
                     </>}
                 </dl>
-                {previewAccount && <TaxpayerTinInformation language={language} record={previewAccount.id==='user1'?USER1_FICTIONAL_TIN_PROFILE:null} />}
+                {previewAccount && <TaxpayerTinInformation language={language} record={registrationRecord} />}
               </>
             )}
             {sampleOnly && page === 'settings' && (
@@ -365,7 +392,9 @@ export function AccountCenter({ page }: { page: AccountPage }) {
               </section>
             )}
             {page === 'profile' && <AccountRecentActivity ownerUid={user.id} language={language}/>}
-            {page === 'profile' && <TaxpayerTinInformation language={language} />}
+            {page === 'profile' && registrationStatus==='loading' && <p role="status" className="taxpayer-account-panel">{language==='bn'?'করদাতার নিবন্ধন তথ্য যাচাই হচ্ছে…':'Checking taxpayer registration information…'}</p>}
+            {page === 'profile' && registrationStatus==='error' && <div className="taxpayer-account-panel"><p role="alert">{language==='bn'?'নিবন্ধন তথ্য পাওয়া যায়নি। আবার চেষ্টা করুন।':'Registration information could not be loaded. Retry.'}</p><button type="button" onClick={()=>setRegistrationRetry(value=>value+1)}>{t.retry}</button></div>}
+            {page === 'profile' && <TaxpayerTinInformation key={user.id} language={language} record={registrationRecord} />}
             {(page === 'profile' || page === 'settings') && (
               <form className="taxpayer-account-panel taxpayer-account-fields" onSubmit={savePreferences}>
                 <h2>{t.preferences}</h2>
