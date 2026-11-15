@@ -84,8 +84,13 @@ for (const locale of ['en', 'bn'] as const) {
     await secondTin.press('Escape');
     await expect(secondSuggestions).toHaveCount(0);
     await expect(modal).toBeVisible(); // Escape closes suggestions, never the payment modal.
+    // Reopen with a partial TIN. A completed 12-digit TIN deliberately
+    // hides suggestions; Escape at that point would close the payment modal.
+    await secondTin.press('Backspace');
     await secondTin.press('0');
+    await expect(secondSuggestions).toBeVisible();
     await secondTin.press('ArrowDown');
+    await expect(secondSuggestions.getByRole('option', {name: '000000000000'})).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(secondSuggestions).toHaveCount(0);
     await expect(secondTin).toBeFocused();
