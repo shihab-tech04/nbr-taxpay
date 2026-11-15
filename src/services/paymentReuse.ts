@@ -173,10 +173,14 @@ export function reuseRecordedPayment(
   if (!supported.has(service)) throw Error('This payment service needs a fresh payment journey.');
   if (source.some(r => !r.isSimulatedDemo || r.paymentCategory !== service || !reusableHeads(r).length))
     throw Error('The original payment is incomplete and cannot be copied.');
-  // Historical or newly recorded Return receipts cannot introduce a non-return
-  // head through Pay Again, even when an old receipt lacks allocation metadata.
-  if (service === 'TAX_WITH_RETURN' && source.some(r =>
-    reusableHeads(r).some(head => head.headId !== 125)))
+  // Return is exclusive in BOTH directions. Historical records sometimes
+  // carry an OTHER_TAX_PAYMENT parent category even when an invalid line is a
+  // Return head. Never reconstruct that line into an editable combined draft.
+  // The original remains untouched; the payer must start a valid new journey.
+  const hasReturnHead = source.some(r => reusableHeads(r).some(head => head.headId === 125));
+  if ((service === 'TAX_WITH_RETURN' && source.some(r =>
+      reusableHeads(r).some(head => head.headId !== 125))) ||
+      (service !== 'TAX_WITH_RETURN' && hasReturnHead))
     throw Error('Tax with Return cannot be combined with another payment head.');
   // A single fetched row may still belong to a larger multi-item batch.
   // Never treat a partial history page or missing item as an entire payment.
