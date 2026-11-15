@@ -115,7 +115,7 @@ test('signed-in workspace mirrors Sobaike Public design tokens without changing 
   expect(desktop.cardRadius).toBe('16px');
   const headingBounds=await page.locator('.taxpayer-dashboard-header--overview').boundingBox();
   expect(headingBounds).not.toBeNull();
-  expect(headingBounds!.height,'Overview heading must remain compact').toBeLessThan(90);
+  expect(headingBounds!.height,'Overview heading must remain compact with its descriptive subtitle').toBeLessThan(112);
   expect(desktop.brandButton).toBe('rgb(44, 94, 173)');
   expect(desktop.brandVariable.toUpperCase()).toBe('#2C5EAD');
 

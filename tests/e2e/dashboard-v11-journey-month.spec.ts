@@ -9,7 +9,7 @@ test('Overview tax-year chart replaces monthly chart while Activity retains its 
   await expect(bento.getByRole('heading',{name:'By payment service'})).toBeVisible();
   await expect(bento.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   await expect(bento.locator('.taxpay-bento-hero__status')).toContainText('Completed Payments');
-  await expect(bento.getByRole('heading',{name:'Payment relationships'})).toBeVisible();
+  await expect(bento.getByTestId('dashboard-beneficiary-breakdown').getByRole('heading',{name:'Payment relationships'})).toBeVisible();
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await bento.getByRole('button',{name:'View all activity'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
