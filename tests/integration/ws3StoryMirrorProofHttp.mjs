@@ -274,11 +274,14 @@ try{
  assert.equal(authSynced.status,200);
  assert.equal(authSynced.data.mirrored,true);
  assert.equal(authSynced.data.data.id,authId);
+ assert.deepEqual(Object.keys(authSynced.data.data),['id'],
+   'Public retry must not return the private authorization status/actor snapshot');
  assert.equal(authorizationOffice.size,1);
  assert.equal(authorizationOffice.get(authId).status,'PENDING');
  assert.equal(authorizationSnapshotReads,2,'Source retry and Office source readback both required');
  const authRetried=await post('TAXPAY_SQL','/demo-story1-taxpay/authorizations/sync',{id:authId});
  assert.equal(authRetried.status,200);
+ assert.deepEqual(Object.keys(authRetried.data.data),['id']);
  assert.equal(authorizationOffice.size,1);
  assert.equal(authorizationSnapshotReads,4);
  console.log('PASS WS3 Story 1 Edge HTTP: Office requires signed proof, forged/missing proof denied, source signed proof verified on fetch, same-parent source-outage retry and single Office mirror, original v3 allocation/receipt IDs, Pay Again distinct parent/source parent lineage, and submitted masked Travel Tax passengers; RPC persistence is isolated stand-in, not production SQL');
