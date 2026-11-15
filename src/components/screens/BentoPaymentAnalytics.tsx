@@ -63,6 +63,10 @@ export const BentoPaymentAnalytics:React.FC<{
   useEffect(()=>{setService('all');setTag(null);},[year]);
   const all=source==='example'&&examples?examples:recorded;
   const filtered=projectDashboardChartRecords(records,year,source,people,ownerTin,service);
+  // The unassigned category contains no meaningful relationship distribution;
+  // explain the missing classification rather than presenting a 100% grey chart.
+  const onlyUnclassified=filtered.totalMinor>0n&&
+    !filtered.byTag.some(item=>item.key!=='unassigned'&&item.amountMinor>0n);
   const money=(minor:bigint)=>formatDashboardChartMoney(minor,language);
   const hasData=all.totalMinor>0n;
   const selectedTag=tag===null?null:filtered.byTag.find(item=>item.key===tag);
@@ -250,12 +254,16 @@ export const BentoPaymentAnalytics:React.FC<{
           </select>
         </label>}
         {filtered.totalMinor>0n&&beneficiaryView==='relationships'?<>
-          <div className="taxpay-bento-analytics__segments" role="img"
+          {onlyUnclassified&&<p className="taxpay-bento-analytics__unclassified-intro" role="status">
+            {tr('No saved relationships match these payments. Review the unmatched amounts below.',
+              'এই পেমেন্টগুলোর সঙ্গে সংরক্ষিত কোনো সম্পর্ক মেলেনি। নিচে শ্রেণিবিহীন পরিমাণ দেখুন।')}
+          </p>}
+          {!onlyUnclassified&&<div className="taxpay-bento-analytics__segments" role="img"
             aria-label={tr('Beneficiary spending proportions','উপকারভোগী অনুযায়ী ব্যয়ের অনুপাত')}>
             {filtered.byTag.filter(item=>item.amountMinor>0n).map(item=>
               <span key={item.key} className={'taxpay-bento-analytics__segment taxpay-bento-analytics__segment--'+item.key}
                 style={{width:dashboardChartPercentage(item.amountMinor,filtered.totalMinor)+'%'}}/>)}
-          </div>
+          </div>}
           <div className="taxpay-bento-analytics__tags" role="group"
             aria-label={tr('Select beneficiary category','উপকারভোগীর শ্রেণি নির্বাচন')}>
             {filtered.byTag.filter(item=>item.amountMinor>0n).map(item=>
@@ -375,7 +383,7 @@ export const BentoPaymentAnalytics:React.FC<{
                 <strong className="tabular-nums">{money(person.amountMinor)}</strong>
               </span>
               <span className="taxpay-bento-analytics__top-meta">
-                {maskedTin(person.tin)} · {TAG_LABELS[person.tag][language]}
+                {TAG_LABELS[person.tag][language]} · {new Intl.NumberFormat(bn?'bn-BD':'en-BD').format(person.paymentCount)} {tr('payments','টি পেমেন্ট')}
               </span>
               <span className="taxpay-bento-analytics__bar-track" aria-hidden="true">
                 <span style={{width:dashboardChartPercentage(person.amountMinor,rankedMax)+'%'}}/>

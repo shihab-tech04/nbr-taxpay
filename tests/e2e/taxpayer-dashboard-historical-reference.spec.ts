@@ -226,3 +226,58 @@ test('authorized user1 preview reconciles Overview with Activity without a sourc
   await expect(page.getByTestId('taxpayer-overview-bento')
     .locator('.taxpay-summary-metric--requests strong')).toHaveText('0');
 });
+
+test('populated Overview uses full-width balanced KPIs and readable charts across screen widths',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Single targeted responsive visual acceptance');
+  test.setTimeout(90_000);
+  for(const width of [375,768,1024,1600]){
+    await page.setViewportSize({width,height:850});
+    await page.goto('/?action=taxpayer_home&demoUser=user1&qaScenario=1&scenarioYear=2025-2026');
+    const grid=page.getByTestId('taxpayer-overview-bento');
+    const summary=grid.locator('.taxpay-bento-summary');
+    const [gridBox,summaryBox]=await Promise.all([grid.boundingBox(),summary.boundingBox()]);
+    expect(gridBox&&summaryBox,'summary and grid exist at '+width).toBeTruthy();
+    expect(Math.abs(summaryBox!.width-gridBox!.width),'populated KPI summary spans entire dashboard at '+width).toBeLessThan(5);
+    const cards=summary.locator('.taxpay-summary-metric');
+    await expect(cards).toHaveCount(3);
+    const boxes=await Promise.all([0,1,2].map(n=>cards.nth(n).boundingBox()));
+    expect(boxes.every(Boolean)).toBeTruthy();
+    if(width>=1200){
+      expect(Math.abs(boxes[0]!.y-boxes[2]!.y),'three evenly aligned desktop metrics').toBeLessThan(3);
+      expect(Math.abs(boxes[0]!.width-boxes[2]!.width),'balanced desktop metrics').toBeLessThan(3);
+    }else if(width>=600){
+      expect(Math.abs(boxes[0]!.y-boxes[1]!.y),'two-column tablet metrics').toBeLessThan(3);
+      expect(boxes[2]!.y,'third metric wraps without overflow').toBeGreaterThan(boxes[1]!.y);
+    }else{
+      expect(boxes[1]!.y).toBeGreaterThan(boxes[0]!.y);
+      expect(boxes[2]!.y).toBeGreaterThan(boxes[1]!.y);
+    }
+    const firstBorder=await cards.first().evaluate(el=>({
+      width:getComputedStyle(el).borderLeftWidth,
+      labelSize:getComputedStyle(el.querySelector('.taxpay-summary-metric__label')!).fontSize
+    }));
+    expect(firstBorder.width,'no legacy red 3px first-child border').toBe('1px');
+    expect(Number.parseFloat(firstBorder.labelSize)).toBeGreaterThanOrEqual(14);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth),
+      'no horizontal overflow at '+width).toBeLessThanOrEqual(2);
+  }
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto('/?action=taxpayer_home&demoUser=user1&qaScenario=1&scenarioYear=2025-2026');
+  const grid=page.getByTestId('taxpayer-overview-bento');
+  const analytics=grid.getByTestId('dashboard-payment-analytics');
+  await expect(grid.locator('.taxpay-summary-metric--completed strong')).toHaveText('5');
+  await expect(grid.locator('.taxpay-summary-metric--requests strong')).toHaveText('2');
+  await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
+  const beneficiary=analytics.getByTestId('dashboard-beneficiary-breakdown');
+  await expect(beneficiary.locator('.taxpay-bento-analytics__unclassified-intro')).toBeVisible();
+  await expect(beneficiary.locator('.taxpay-bento-analytics__segments')).toHaveCount(0);
+  await expect(beneficiary.getByTestId('dashboard-unclassified-recovery')).toContainText('81,500');
+  await expect(beneficiary.getByTestId('dashboard-unclassified-recovery')).toContainText('32,000');
+  await expect(grid.locator('.taxpay-bento-recent li')).toHaveCount(5);
+  const service=analytics.getByTestId('dashboard-service-breakdown');
+  const serviceBox=await service.boundingBox();
+  const lastBarBox=await service.locator('.taxpay-bento-analytics__bar-item').last().boundingBox();
+  expect(serviceBox&&lastBarBox).toBeTruthy();
+  expect(serviceBox!.y+serviceBox!.height-(lastBarBox!.y+lastBarBox!.height),
+    'service bars use the height instead of leaving a large empty bottom').toBeLessThan(70);
+});
