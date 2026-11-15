@@ -142,6 +142,10 @@ test('local sign-out clears private UI and re-authentication loads only the new 
       expect(ownerFromToken()).toBe(ownerId);
       return json(ownerId && ownerId in drafts ? drafts[ownerId as keyof typeof drafts] : []);
     }
+    if (url.pathname === '/rest/v1/rpc/taxpay_claim_office_initiated_corrections' && request.method() === 'POST') {
+      expect(request.postDataJSON()).toEqual({ p_limit: 20 });
+      return json(0); // The isolated users have no Office-originated correction cases.
+    }
     if (url.pathname === '/rest/v1/taxpay_correction_inquiries' && request.method() === 'GET') {
       const ownerId = url.searchParams.get('requester_uid')?.replace(/^eq\./, '');
       expect(ownerFromToken()).toBe(ownerId);
