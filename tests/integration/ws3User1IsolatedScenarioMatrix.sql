@@ -161,7 +161,7 @@ BEGIN
   v_payload:=jsonb_set(v_payload,'{details,receiptSnapshot,challanNo}',
     to_jsonb('SIM-'||v_key::text));
   v_payload:=jsonb_set(v_payload,'{details,challanRemarks}',
-    to_jsonb(E'Pay Again: পুনরায় পরিশোধ\nUpdated independent remarks'));
+    to_jsonb(E'Pay Again: পুনরায় পরিশোধ\nUpdated independent remarks'::text));
   FOR v_line IN 0..jsonb_array_length(v_payload#>'{details,allocations}')-1 LOOP
     v_alloc_id:='ws3-user1-repeat-line-'||(v_line+1);
     v_payload:=jsonb_set(v_payload,
