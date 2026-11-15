@@ -9,7 +9,7 @@ import {
 } from '../../services/simulatedPaymentsApi';
 import {EventBasedTaxLedger,PaymentLifecycleDetails,type TaxAccountEvent,type PaymentLifecycleRecord} from './EventBasedTaxLedger';
 import {TaxPayModal} from '../ui/TaxPayModal';
-import {loadExternalLedgerEvents} from '../../services/externalLedgerRecords';
+import {escapeLedgerCsvCell,loadExternalLedgerEvents} from '../../services/externalLedgerRecords';
 
 function projectRecordedEvents(rows:readonly SimulationTransaction[],language:'en'|'bn'):TaxAccountEvent[]{
   return rows.flatMap(tx=>{
@@ -132,17 +132,9 @@ export const TaxLedger:React.FC=()=>{
   const exportLedger=()=>{
     if((state.state!=='ready'&&external.state!=='ready')||!events.length)return;
     const headers=['Date','Source','Dhara','Assessment year','Tax head','Event','Source status','Recorded amount (paisa)','Confirmed credit effect (paisa)','Challan','Reference','Credit evidence'];
-    const csvCell=(value:string|number|null|undefined)=>{
-      // CSV quoting alone cannot neutralize formulas in external provider references.
-      const raw=String(value??'');
-      const first=raw.trimStart().charAt(0);
-      const unsafe=typeof value==='string' && (['=','+','-','@'].includes(first)||[9,10,13].includes(raw.charCodeAt(0)));
-      const safe=unsafe?"'"+raw:raw;
-      return '"'+safe.replaceAll('"','""')+'"';
-    };
     const lines=events.map(e=>[e.occurredAt,e.source,e.dhara,e.assessmentYear,e.component,e.code,e.status,
-      e.amountMinor,e.effectMinor,e.challanNo,e.reference,e.creditEvidenceStatus].map(csvCell).join(','));
-    const blob=new Blob(['\uFEFF',headers.map(csvCell).join(','),'\r\n',lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+      e.amountMinor,e.effectMinor,e.challanNo,e.reference,e.creditEvidenceStatus].map(escapeLedgerCsvCell).join(','));
+    const blob=new Blob(['\uFEFF',headers.map(escapeLedgerCsvCell).join(','),'\r\n',lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
     const href=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=href;a.download='sohojkor-tax-ledger.csv';a.click();
     URL.revokeObjectURL(href);
