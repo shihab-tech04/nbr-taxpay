@@ -198,6 +198,26 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     const other=await otherContext.newPage();
     await login(other,otherUser);
     await setLanguage(other,'en');
+    // Phase 1 / M02: a new preview account has no issued e-TIN. Keep all 24
+    // approved fields in the same structure, but never invent identity values.
+    // This runs at both 1280px desktop and 375px mobile against real local SQL.
+    await other.goto('/?action=account_profile');
+    const profilePanel=other.getByTestId('taxpayer-tin-information');
+    await expect(profilePanel).toBeVisible();
+    await expect(profilePanel.locator('dt')).toHaveCount(24);
+    await expect(profilePanel.getByText('Not available',{exact:true})).toHaveCount(24);
+    await expect(profilePanel.getByText('Verified e-TIN data is not connected to this account.',{exact:false})).toBeVisible();
+    const profileWidth=await profilePanel.evaluate(element=>({
+      left:element.getBoundingClientRect().left,
+      right:element.getBoundingClientRect().right,
+      viewport:window.innerWidth,
+    }));
+    expect(profileWidth.left).toBeGreaterThanOrEqual(-1);
+    expect(profileWidth.right).toBeLessThanOrEqual(profileWidth.viewport+1);
+    await setLanguage(other,'bn');
+    await expect(profilePanel.locator('dt')).toHaveCount(24);
+    await expect(profilePanel.getByText('পাওয়া যায়নি',{exact:true})).toHaveCount(24);
+    await setLanguage(other,'en');
     await openBeneficiaries(other);
     await expect(other.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
     const otherBeneficiaries=other.getByTestId('beneficiaries-page');
