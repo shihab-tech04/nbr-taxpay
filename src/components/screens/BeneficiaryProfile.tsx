@@ -187,13 +187,17 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
         </div>}
         {groups.map(item=>{
           const entries=filtered.filter(row=>calendarYear(row.createdAt)===item);
+          // Match the top summary's exact minor-unit arithmetic. Summing as
+          // Number can silently round large multi-allocation year totals.
           const yearTotal=entries.filter(countsTowardBeneficiaryPaidTotal)
-            .reduce((sum,row)=>sum+row.amountMinor,0);
+            .reduce((sum,row)=>sum+BigInt(row.amountMinor),0n);
+          const yearTotalDisplay=yearTotal<=BigInt(Number.MAX_SAFE_INTEGER)
+            ?formatCurrency(Number(yearTotal)/100,language):tr('Amount unavailable','পরিমাণ পাওয়া যায়নি');
           return <div key={item} className="mt-5">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-taxpay-border pb-2">
               <h3 className="font-semibold text-taxpay-text">{item} · {tr('Payment date','পেমেন্টের তারিখ')}</h3>
               <span className="text-sm tabular-nums text-taxpay-muted">
-                {tr('Recorded','নথিভুক্ত')}: {formatCurrency(yearTotal/100,language)}
+                {tr('Recorded','নথিভুক্ত')}: {yearTotalDisplay}
               </span>
             </div>
             <ol className="relative ms-2 mt-4 space-y-3 border-s-2 border-taxpay-primary/30 ps-5"
