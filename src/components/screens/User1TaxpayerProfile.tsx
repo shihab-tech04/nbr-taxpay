@@ -1,5 +1,5 @@
 import React, {useEffect,useState} from 'react';
-import {Check, Copy, Download} from 'lucide-react';
+import {Check, Copy, Download, UserRound} from 'lucide-react';
 import {MaskedProfileValue, sensitiveProfileKind} from '../ui/MaskedProfileValue';
 import {TAXPAYER_PROFILE_LAYOUT,TAXPAYER_PROFILE_FIELD_ORDER,type ProfileFieldRow} from '../../contracts/taxpayerProfileFieldLayout';
 import {user1FictionalTinValue} from '../../data/user1FictionalTinProfile';
@@ -38,6 +38,11 @@ export function User1TaxpayerProfile({language}:{language:Language}){
   const [copied,setCopied]=useState<'idle'|'done'|'failed'>('idle');
   const [downloadError,setDownloadError]=useState(false);
   const tin=record?.tin??'';
+  // The decorative identity badge follows the loaded profile name. Never
+  // display fixed initials when the server-sourced name changes or is missing.
+  const displayName=record?.taxpayerName?.trim()?value('taxpayerName',language):'';
+  const identityParts=displayName.trim().split(/\s+/u).filter(Boolean);
+  const identityInitials=identityParts.slice(-2).map(part=>Array.from(part)[0]??'').join('').toLocaleUpperCase();
   const details=(rows:readonly Row[])=><dl className="divide-y divide-taxpay-border">
     {rows.map(([field,label])=>{
       const raw=record?.[field];
@@ -106,7 +111,7 @@ export function User1TaxpayerProfile({language}:{language:Language}){
     <section className="overflow-hidden rounded-2xl border border-taxpay-border bg-white">
       <div className="flex flex-col items-start gap-4 p-5 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:p-6">
         <div className="flex w-full min-w-0 items-start gap-4 sm:w-auto sm:flex-1">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-taxpay-light text-lg font-semibold text-taxpay-primary" aria-hidden="true">AR</div>
+          <div data-testid="user1-profile-identity-badge" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-taxpay-light text-lg font-semibold text-taxpay-primary" aria-hidden="true">{identityInitials||<UserRound size={20}/>}</div>
           <div className="min-w-0 space-y-1.5">
             <p className="text-xs text-taxpay-muted">{tr(['Account','অ্যাকাউন্ট'])}: user1</p>
             <h2 data-profile-field="taxpayerName" className="break-words text-xl font-semibold leading-snug text-taxpay-text sm:text-2xl">
