@@ -242,7 +242,16 @@ export async function verifyWs3BrowserOrigin({
       .getByRole('button',{name:'Continue',exact:true}).click();
     const f039Picker=oneTimeDialog.getByTestId('saved-beneficiary-picker');
     await expect(f039Picker).toBeVisible({timeout:20000});
-    await f039Picker.getByRole('checkbox',{name:/WS3 recipient 2/}).check();
+    // This is a fresh payment entry. Saved lists are collapsed until the
+    // payer explicitly searches or expands a list; a previously selected
+    // contact must not be carried across transactions by the browser test.
+    const f039Search=f039Picker.getByRole('searchbox',{name:'Search beneficiaries'});
+    await expect(f039Search).toBeVisible();
+    await f039Search.fill('WS3 recipient 2');
+    const savedRecipient=f039Picker.getByRole('checkbox',
+      {name:'Select WS3 recipient 2',exact:true}).first();
+    await expect(savedRecipient).toBeVisible();
+    await savedRecipient.check();
     const oneTimeEntry=oneTimeDialog.getByTestId('one-time-taxpayer-entry');
     await expect(oneTimeEntry).toBeVisible();
     await oneTimeEntry.locator('#other-tax-one-time-tin').fill(unsavedTin);
