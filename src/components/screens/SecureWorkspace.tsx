@@ -178,8 +178,7 @@ export const SecureWorkspace: React.FC = () => {
   // Supabase Auth, not the preview 111111 step, verifies this real email code.
   // The hosted project's email template must include {{ .Token }} before it
   // will send codes; existing one-time sign-in links remain supported.
-  const verifyEmailCode=async(event:React.FormEvent)=>{
-    event.preventDefault();
+  const verifyEmailCode=async()=>{
     if(!supabase||busy||!codeRequestSent||!isCompleteEmailOneTimeCode(emailCode))return;
     setBusy(true);setEmailCodeMessage('');
     try {
@@ -416,7 +415,7 @@ export const SecureWorkspace: React.FC = () => {
               onChange={e=>{setEmailCode(normalizeEmailOneTimeCode(e.target.value));setEmailCodeMessage('');}}
               placeholder={bn?'৬ সংখ্যার কোড':'6-digit code'} />
             {emailCodeMessage&&<p role="alert" className="text-sm text-taxpay-error">{emailCodeMessage}</p>}
-            <UiButton type="button" onClick={()=>void verifyEmailCode({preventDefault:()=>{}} as React.FormEvent)}
+            <UiButton type="button" onClick={()=>void verifyEmailCode()}
               disabled={busy||!isCompleteEmailOneTimeCode(emailCode)}>
               {busy?(bn?'যাচাই হচ্ছে…':'Verifying…'):(bn?'কোড যাচাই ও সাইন ইন':'Verify code and sign in')}
             </UiButton>
