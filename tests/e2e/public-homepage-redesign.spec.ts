@@ -214,7 +214,7 @@ test('six connected benefit cells have soft non-moving hover/focus shadows and c
     });
     expect(measures.outer).toEqual(['10px','10px']);
     expect(measures.searchInput).toBe('8px');
-    if (width >= 981) expect(measures.grid, 'no double-curved nested border').toBe('0px');
+    if (width >= 981) expect(measures.grid, 'connected six-cell grid has rounded outer corners').toBe('16px');
     expect(measures.overflow).toBeLessThanOrEqual(2);
   }
 
@@ -236,9 +236,20 @@ test('six connected benefit cells have soft non-moving hover/focus shadows and c
 
   await page.mouse.move(0,0);
   const first = cards.first();
-  await first.locator('.public-benefits__action').focus();
-  await expect(first).not.toHaveCSS('box-shadow', 'none');
+  await expect(first.getByRole('link')).toHaveCount(0);
+  await expect(first.getByRole('button')).toHaveCount(0);
   await page.emulateMedia({ reducedMotion:'reduce' });
   await expect(first).toHaveCSS('transition-duration','0s');
-  await expect(first.locator('.public-benefits__action')).toBeFocused();
+  const cornerRadii = await cards.evaluateAll(items => items.map(item => {
+    const css = getComputedStyle(item);
+    return [css.borderTopLeftRadius, css.borderTopRightRadius, css.borderBottomLeftRadius, css.borderBottomRightRadius];
+  }));
+  expect(cornerRadii).toEqual([
+    ['16px', '0px', '0px', '0px'],
+    ['0px', '0px', '0px', '0px'],
+    ['0px', '16px', '0px', '0px'],
+    ['0px', '0px', '16px', '0px'],
+    ['0px', '0px', '0px', '0px'],
+    ['0px', '0px', '0px', '16px'],
+  ]);
 });
