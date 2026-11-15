@@ -125,6 +125,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
     else if (active.bottom > viewport.bottom) list.scrollTop += active.bottom - viewport.bottom;
   }, [suggestionsOpen, highlighted, userId]);
   const bn = language === 'bn';
+  const lastSelectableAccount = DEMO_USER_IDS[DEMO_USER_IDS.length - 1];
   const close = () => onClose ? onClose() : navigate('landing');
   const credentialsReady = Boolean(userId.trim() && password.trim());
   const canSubmit=step==='credentials'?credentialsReady:step==='otp'?credentialsReady&&/^\d{6}$/.test(otpCode):false;
@@ -251,7 +252,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
             onClick={() => setShowRecovery(open => !open)}>{bn ? 'অ্যাকাউন্ট পুনরুদ্ধার' : 'Recover Account'}</button>
         </div>
         {showRecovery && <p id="taxpayer-login-recovery" className="taxpayer-login-recovery" role="status">
-          {bn ? 'বর্তমান user1–user55 অ্যাকাউন্টের পাসওয়ার্ড তার ইউজার আইডির সমান।' : 'For the current user1–user55 accounts, the password is the same as the User ID.'}
+          {bn ? `বর্তমান user1–${lastSelectableAccount} অ্যাকাউন্টগুলোর পাসওয়ার্ড তাদের ইউজার আইডির সমান।` : `For the current user1–${lastSelectableAccount} accounts, the password is the same as the User ID.`}
         </p>}
         </>}
         {step==='otp'&&<div className="space-y-4">
