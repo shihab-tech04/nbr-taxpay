@@ -2,6 +2,17 @@
 -- Parent linkage is owner-verified; claimant, receipt and financial decisions remain pending.
 BEGIN;
 
+-- Distinguish an allegation about an unsolicited payment from a correction
+-- proposal, without interpreting the allegation as a reversal or ownership.
+-- Existing cases retain the original CORRECTION_REVIEW classification.
+ALTER TABLE public.taxpay_correction_inquiries
+  ADD COLUMN case_kind text NOT NULL DEFAULT 'CORRECTION_REVIEW';
+ALTER TABLE public.taxpay_correction_inquiries
+  ADD CONSTRAINT taxpay_correction_case_kind_check
+  CHECK (case_kind IN ('CORRECTION_REVIEW','UNSOLICITED_PAYMENT_REPORT')) NOT VALID;
+ALTER TABLE public.taxpay_correction_inquiries
+  VALIDATE CONSTRAINT taxpay_correction_case_kind_check;
+
 ALTER TABLE public.taxpay_correction_inquiries
   ADD COLUMN original_payment_id uuid
     REFERENCES demo_payment.story_payments(id),
@@ -81,6 +92,7 @@ BEGIN
     'originalReference',NEW.original_reference,
     'originalPaymentId',NEW.original_payment_id,
     'originalPaymentKind',NEW.original_payment_kind,
+    'caseKind',NEW.case_kind,
     'reason',NEW.reason,
     'requestedOutcome',NEW.requested_outcome,
     'evidenceState',NEW.evidence_state,
@@ -98,6 +110,8 @@ $function$;
 REVOKE ALL ON FUNCTION public.taxpay_enqueue_correction_submission()
   FROM PUBLIC,anon,authenticated;
 
+COMMENT ON COLUMN public.taxpay_correction_inquiries.case_kind IS
+  'Owner-verified correction review versus unsolicited-payment allegation; neither category changes financial records.';
 COMMENT ON COLUMN public.taxpay_correction_inquiries.original_payment_id IS
   'Exact TaxPay demo story payment parent resolved against the authenticated owner link; nullable only for preserved legacy inquiries.';
 COMMENT ON COLUMN public.taxpay_correction_inquiries.original_payment_kind IS
