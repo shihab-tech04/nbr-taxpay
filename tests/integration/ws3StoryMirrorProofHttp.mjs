@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 import {createServer} from 'node:http';
-import {randomUUID,webcrypto} from 'node:crypto';
+import {randomUUID,webcrypto,createHmac} from 'node:crypto';
 import vm from 'node:vm';
 import {transformSync} from 'esbuild';
 
@@ -15,9 +15,15 @@ const officeRoot=process.env.WS3_OFFICE_SOURCE;
 assert.ok(officeRoot,'Office #270 exact source must be pinned');
 const secret='ws3-isolated-service-key-with-no-hosted-access';
 const store=new Map(),keys=new Map(),office=new Map();
+const authorizationSource=new Map(),authorizationOffice=new Map();
+let authorizationSnapshotReads=0;
 const urls={};let failOfficeOnce=false,sourceReads=0;
 function dataAccess(origin,name,args={}){
  if(origin==='TAXPAY_SQL'){
+  if(name==='demo_auth_public_snapshot'){
+   authorizationSnapshotReads++;
+   return authorizationSource.get(args.p_request)??null;
+  }
   if(name==='demo_story1_submit'){
    const p=args.p_input,previous=keys.get(p.idempotencyKey);
    if(previous){
@@ -39,6 +45,13 @@ function dataAccess(origin,name,args={}){
    return p?.sessionId===args.p_session?p:null;
   }
   throw Error('Unsupported source SQL stand-in: '+name);
+ }
+ if(name==='demo_auth_office_mirror'){
+  const snapshot=args.p_input,prior=authorizationOffice.get(snapshot.id);
+  if(prior)assert.equal(JSON.stringify(prior),JSON.stringify(snapshot),
+    'Office must not silently replace an authorization snapshot');
+  else authorizationOffice.set(snapshot.id,structuredClone(snapshot));
+  return {id:snapshot.id,status:snapshot.status};
  }
  if(name==='demo_story1_mirror'){
   const p=args.p_input, prior=office.get(p.id);
@@ -228,5 +241,48 @@ try{
  const replay=await post('TAXPAY_SQL','/demo-story1-taxpay/payments',travel);
  assert.equal(replay.status,200);assert.equal(replay.data.id,submitted.data.id);
  assert.equal(office.size,3);assert.equal(store.size,3);
+ // Authorization-mirror proof is separate from payment proof. The real source
+ // Edge and Office Edge handlers must both reject forged, expired or missing
+ // evidence before accessing a privileged SQL snapshot. This test is isolated.
+ const authId=randomUUID();
+ const snapshot={id:authId,payerId:'user1',taxpayerId:'user2',status:'PENDING',
+  requestedAt:'2026-11-15T00:00:00Z',codeResends:0};
+ authorizationSource.set(authId,snapshot);
+ const authOfficePath='/demo-story1-office/authorization/mirror';
+ const authSnapshotPath='/demo-story1-taxpay/authorizations/'+authId+'/snapshot';
+ let noProof=await post('OFFICE_SQL',authOfficePath,{id:authId});
+ assert.equal(noProof.status,403);
+ assert.equal(noProof.data.error,'AUTHORIZATION_MIRROR_PROOF_REQUIRED');
+ let direct=await fetch(urls.TAXPAY_SQL+authSnapshotPath);
+ assert.equal(direct.status,403);
+ assert.equal(authorizationSnapshotReads,0);
+ assert.equal(authorizationOffice.size,0);
+ const timestamp=Math.floor(Date.now()/1000);
+ const paymentScoped='v1.'+timestamp+'.'+createHmac('sha256',secret)
+  .update('taxpay:office:simulated-payment:v1:'+authId.toLowerCase()+':'+authId.toLowerCase()+':'+timestamp)
+  .digest('base64url');
+ const bad=await fetch(urls.OFFICE_SQL+authOfficePath,{method:'POST',
+  headers:{'content-type':'application/json',
+    'x-taxpay-office-authorization-proof':paymentScoped},
+  body:JSON.stringify({id:authId})});
+ assert.equal(bad.status,424,'Payment-scoped proof cannot mirror authorization');
+ assert.equal(authorizationSnapshotReads,0);
+ assert.equal(authorizationOffice.size,0);
+ // The genuine Taxpayer handler signs with the authorization-only purpose,
+ // reads source SQL privately and then Office reads the same source with proof.
+ const authSynced=await post('TAXPAY_SQL','/demo-story1-taxpay/authorizations/sync',{id:authId});
+ assert.equal(authSynced.status,200);
+ assert.equal(authSynced.data.mirrored,true);
+ assert.equal(authSynced.data.data.id,authId);
+ assert.deepEqual(Object.keys(authSynced.data.data),['id'],
+   'Public retry must not return the private authorization status/actor snapshot');
+ assert.equal(authorizationOffice.size,1);
+ assert.equal(authorizationOffice.get(authId).status,'PENDING');
+ assert.equal(authorizationSnapshotReads,2,'Source retry and Office source readback both required');
+ const authRetried=await post('TAXPAY_SQL','/demo-story1-taxpay/authorizations/sync',{id:authId});
+ assert.equal(authRetried.status,200);
+ assert.deepEqual(Object.keys(authRetried.data.data),['id']);
+ assert.equal(authorizationOffice.size,1);
+ assert.equal(authorizationSnapshotReads,4);
  console.log('PASS WS3 Story 1 Edge HTTP: Office requires signed proof, forged/missing proof denied, source signed proof verified on fetch, same-parent source-outage retry and single Office mirror, original v3 allocation/receipt IDs, Pay Again distinct parent/source parent lineage, and submitted masked Travel Tax passengers; RPC persistence is isolated stand-in, not production SQL');
 }finally{await Promise.all(servers.map(s=>new Promise(ok=>s.close(ok))));}

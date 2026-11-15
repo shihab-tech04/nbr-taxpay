@@ -1,6 +1,6 @@
 import {acceptPaymentRequestSize,MAX_COMBINED_PAYMENT_PAYLOAD_CHARS,officeMirrorIdentity} from "./combinedPaymentRequest.ts";
 import {createClient} from "npm:@supabase/supabase-js@2.57.0";
-import {createOfficeMirrorProof,verifyOfficeMirrorProof} from "./mirrorProof.ts";
+import {createOfficeMirrorProof,verifyOfficeMirrorProof,createOfficeAuthorizationProof,verifyOfficeAuthorizationProof} from "./mirrorProof.ts";
 const headers={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"content-type,authorization,apikey,x-taxpay-guest-capability","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};
 const respond=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
 const uuid=/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -25,7 +25,9 @@ function serviceClient(url:string){
 const office="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/mirror";
 const officeAuthorization="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/authorization/mirror";
 async function mirrorAuthorization(id:string){
- const res=await fetch(officeAuthorization,{method:"POST",headers:{"Content-Type":"application/json"},
+ const proof=await createOfficeAuthorizationProof(serviceCredential(),id);
+ const res=await fetch(officeAuthorization,{method:"POST",headers:{"Content-Type":"application/json",
+  "x-taxpay-office-authorization-proof":proof},
   body:JSON.stringify({id}),signal:AbortSignal.timeout(10000)});
  const receipt=await res.json();
  return res.ok&&receipt.success&&receipt.data?.id===id;
@@ -118,7 +120,12 @@ Deno.serve(async(req)=>{
   }
   const snapshotPath=path.match(new RegExp("^/authorizations/([0-9a-fA-F-]{36})/snapshot$"));
   if(req.method==="GET"&&snapshotPath&&uuid.test(snapshotPath[1])){
-   const {data,error}=await db.rpc("demo_auth_public_snapshot",{p_request:snapshotPath[1]});
+   // This snapshot is for the Office mirror, not a public UUID lookup.
+   // Validate a distinct, 120-second signed proof BEFORE invoking privileged SQL.
+   const proof=req.headers.get("x-taxpay-office-authorization-proof")??"";
+   if(!await verifyOfficeAuthorizationProof(serviceCredential(),snapshotPath[1],proof))
+     return respond({success:false,error:"UNAUTHORIZED_AUTHORIZATION_MIRROR_PROOF"},403);
+   const {data,error}=await serviceClient(url).rpc("demo_auth_public_snapshot",{p_request:snapshotPath[1]});
    if(error)return respond({success:false,error:"REQUEST_NOT_FOUND"},404);
    return respond({success:true,data,simulationOnly:true});
   }
@@ -128,7 +135,7 @@ Deno.serve(async(req)=>{
    let result:{id:string;status:string;consentCode?:string|null;attempts?:number};
    if(action==="sync"){
     if(!uuid.test(input.id))return respond({success:false,error:"INVALID_ID"},400);
-    const check=await db.rpc("demo_auth_public_snapshot",{p_request:input.id});
+    const check=await serviceClient(url).rpc("demo_auth_public_snapshot",{p_request:input.id});
     if(check.error)return respond({success:false,error:"REQUEST_NOT_FOUND"},404);
     result=check.data;
    }else{
@@ -147,7 +154,10 @@ Deno.serve(async(req)=>{
     console.error("Authorization mirror pending",e);
     return respond({success:false,error:"OFFICE_SYNC_PENDING",requestId:result.id,retryable:true},503);
    }
-   return respond({success:true,data:result,mirrored:true,simulationOnly:true});
+   // Public retry needs only an acknowledgement. Never return a private
+   // authorization snapshot to a caller who merely knows its request UUID.
+   const returned=action==="sync"?{id:result.id}:result;
+   return respond({success:true,data:returned,mirrored:true,simulationOnly:true});
   }
   if(req.method==="POST"&&path==="/payments"){
     const raw=await req.text();

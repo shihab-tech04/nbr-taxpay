@@ -2,6 +2,15 @@
 BEGIN;
 DO $verify_grants$
 BEGIN
+  -- A guessed request UUID must never expose an Office authorization
+  -- snapshot through the public Taxpayer Data API.
+  IF has_function_privilege('anon',
+       'public.demo_auth_public_snapshot(uuid)','EXECUTE')
+     OR has_function_privilege('authenticated',
+       'public.demo_auth_public_snapshot(uuid)','EXECUTE')
+     OR NOT has_function_privilege('service_role',
+       'public.demo_auth_public_snapshot(uuid)','EXECUTE')
+  THEN RAISE EXCEPTION 'AUTHORIZATION_SNAPSHOT_PUBLIC_LEAK'; END IF;
   IF has_function_privilege('anon','public.taxpay_claim_story1_session(uuid)','EXECUTE') THEN
     RAISE EXCEPTION 'CLAIM_ANONYMOUS_EXECUTE_NOT_REVOKED';
   END IF;
