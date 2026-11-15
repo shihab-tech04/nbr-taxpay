@@ -69,6 +69,58 @@ BEGIN
 END;
 $create_owner_reference_fixture$;
 
+-- Pay Again from the original recorded SQL payment: verify that the same
+-- genuine local Supabase Auth UID can claim and read BOTH immutable parents
+-- after a new browser session, without an old guest capability or typed TIN.
+CREATE TEMP TABLE verified_pay_again_expected(
+ payment_id uuid NOT NULL,source_payment_id uuid NOT NULL,
+ reference text NOT NULL
+) ON COMMIT DROP;
+GRANT SELECT ON verified_pay_again_expected TO authenticated;
+DO $create_owned_repeat$
+DECLARE
+  v_original demo_payment.story_payments%ROWTYPE;
+  v_login jsonb;
+  v_cap text;
+  v_new_key uuid:=pg_catalog.gen_random_uuid();
+  v_new_ref text:='SIM-'||v_new_key::text;
+  v_payload jsonb;
+  v_repeat jsonb;
+BEGIN
+  SELECT * INTO v_original FROM demo_payment.story_payments
+  WHERE id=(SELECT payment_id FROM verified_story_lookup_expected);
+  IF NOT FOUND THEN RAISE EXCEPTION 'PAY_AGAIN_ORIGINAL_SOURCE_NOT_FOUND'; END IF;
+  v_login:=public.taxpay_demo_profile_login('user1','user1');
+  v_cap:=pg_catalog.encode(extensions.digest(
+     pg_catalog.convert_to(v_login->>'capability','UTF8'),'sha256'),'hex');
+  v_payload:=pg_catalog.jsonb_set(v_original.data,'{idempotencyKey}',
+    pg_catalog.to_jsonb(v_new_key::text));
+  v_payload:=pg_catalog.jsonb_set(v_payload,'{details,sourcePaymentId}',
+    pg_catalog.to_jsonb(v_original.id::text),true);
+  v_payload:=pg_catalog.jsonb_set(v_payload,'{details,receiptReference}',
+    pg_catalog.to_jsonb(v_new_ref),true);
+  v_payload:=pg_catalog.jsonb_set(v_payload,'{details,receiptSnapshot,challanNo}',
+    pg_catalog.to_jsonb(v_new_ref),true);
+  v_payload:=pg_catalog.jsonb_set(v_payload,'{details,receiptSnapshot,tokenNumber}',
+    pg_catalog.to_jsonb('WS3-NEW-TOKEN-'||v_new_key::text),true);
+  v_payload:=pg_catalog.jsonb_set(v_payload,'{details,receiptSnapshot,gatewayTransactionId}',
+    pg_catalog.to_jsonb('WS3-NEW-GW-'||v_new_key::text),true);
+  v_payload:=pg_catalog.jsonb_set(v_payload,'{details,tokenNumber}',
+    pg_catalog.to_jsonb('WS3-NEW-TOKEN-'||v_new_key::text),true);
+  v_payload:=pg_catalog.jsonb_set(v_payload,'{details,gatewayTransactionId}',
+    pg_catalog.to_jsonb('WS3-NEW-GW-'||v_new_key::text),true);
+  v_repeat:=public.taxpay_demo_story1_submit(v_cap,v_payload);
+  IF v_repeat->>'replayed' IS DISTINCT FROM 'false' OR
+     v_repeat->>'id' IS NOT DISTINCT FROM v_original.id::text
+  THEN RAISE EXCEPTION 'PAY_AGAIN_VERIFIED_OWNER_REPEAT_FAILED'; END IF;
+  IF (SELECT data FROM demo_payment.story_payments WHERE id=v_original.id)
+     IS DISTINCT FROM v_original.data
+  THEN RAISE EXCEPTION 'PAY_AGAIN_ORIGINAL_FINANCIAL_RECORD_MUTATED'; END IF;
+  INSERT INTO verified_pay_again_expected
+  VALUES((v_repeat->>'id')::uuid,v_original.id,v_new_ref);
+END;
+$create_owned_repeat$;
+
 CREATE TEMP TABLE verified_story_claim_expected (expected integer NOT NULL) ON COMMIT DROP;
 INSERT INTO verified_story_claim_expected(expected)
 SELECT COUNT(*) FROM demo_payment.story_payments p
@@ -96,6 +148,9 @@ BEGIN
   IF public.taxpay_my_story1_payment_by_reference(
        (SELECT reference FROM verified_story_lookup_expected),NULL) IS NOT NULL
   THEN RAISE EXCEPTION 'OTHER_ACCOUNT_REFERENCE_DATA_EXPOSED'; END IF;
+  IF public.taxpay_my_story1_payment_by_reference(
+       (SELECT reference FROM verified_pay_again_expected),NULL) IS NOT NULL
+  THEN RAISE EXCEPTION 'OTHER_AUTH_ACCOUNT_PAY_AGAIN_EXPOSED'; END IF;
 
 END $unrelated$;
 
@@ -118,6 +173,18 @@ BEGIN
        (SELECT reference FROM verified_story_lookup_expected),NULL)->>'id'
          IS DISTINCT FROM (SELECT payment_id::text FROM verified_story_lookup_expected)
   THEN RAISE EXCEPTION 'OWNER_REFERENCE_LOOKUP_FAILED'; END IF;
+  IF public.taxpay_my_story1_payment_by_reference(
+       (SELECT reference FROM verified_pay_again_expected),NULL)->>'id'
+         IS DISTINCT FROM (SELECT payment_id::text FROM verified_pay_again_expected)
+     OR public.taxpay_my_story1_payment_by_reference(
+       (SELECT reference FROM verified_pay_again_expected),NULL)
+          #>>'{details,sourcePaymentId}'
+         IS DISTINCT FROM (SELECT source_payment_id::text FROM verified_pay_again_expected)
+     OR public.taxpay_my_story1_payment_by_reference(
+       (SELECT reference FROM verified_pay_again_expected),NULL)->>'certificateReference'
+         IS DISTINCT FROM 'SK-PC-'||
+           (SELECT payment_id::text FROM verified_pay_again_expected)
+  THEN RAISE EXCEPTION 'AUTH_OWNER_REPEAT_HISTORY_LINEAGE_MISMATCH'; END IF;
   IF public.taxpay_my_story1_payment_by_reference(
        (SELECT payment_id::text FROM verified_story_lookup_expected),NULL)->>'amountMinor'
          IS DISTINCT FROM '12345'
