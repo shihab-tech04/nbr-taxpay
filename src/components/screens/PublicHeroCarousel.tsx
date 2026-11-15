@@ -7,6 +7,7 @@ import advanceTaxIllustration from '../../assets/taxpay-hero-advance-v9.webp';
 import withholdingTaxIllustration from '../../assets/taxpay-hero-withholding-v9.webp';
 import travelTaxIllustration from '../../assets/taxpay-hero-travel-v9.webp';
 import { supabase } from '../../services/supabaseClient';
+import { allowBrandingManualRetry, brandingRequestsAllowed, noteBrandingHttpStatus } from '../../services/brandingRequestGuard';
 
 const AUTOPLAY_INTERVAL_MS = 8_000;
 const CMS_FALLBACK_POLL_MS = 5 * 60_000;
@@ -159,8 +160,9 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
     return fallbackSlides;
   }
   if (!supabase) throw new Error('The public banner service is unavailable.');
-  const { data, error } = await supabase.from('taxpay_site_banners').select('*')
+  const { data, error, status } = await supabase.from('taxpay_site_banners').select('*')
     .eq('published', true).order('sort_order', { ascending: true });
+  noteBrandingHttpStatus(status);
   if (error) throw error;
   return (data || []).map(row => {
     // Banner IDs identify editable records, while service_code identifies the
@@ -220,49 +222,60 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
 
   useEffect(() => {
     let active = true;
-    // Concurrent focus/Realtime updates must not publish an older response
-    // over a newer CMS revision. Skip identical snapshots altogether.
-    let requestSerial = 0;
+    let fetching = false;
+    let channel: ReturnType<NonNullable<typeof supabase>['channel']> | null = null;
     let realtimeConnected = false;
-    let previouslyConnected = false;
+    const disconnect = () => {
+      realtimeConnected = false;
+      if (channel && supabase) {
+        const old = channel;
+        channel = null;
+        void supabase.removeChannel(old);
+      }
+    };
+    // Only connect after the authoritative banner REST read succeeds.
+    // On a refused socket, stop the SDK reconnection timer until next poll.
+    const connect = () => {
+      if (!supabase || channel || !brandingRequestsAllowed()) return;
+      const next = supabase.channel('published-taxpay-banners')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'taxpay_site_banners' },
+          () => refresh());
+      channel = next;
+      next.subscribe(status => {
+        if (channel !== next) return;
+        if (status === 'SUBSCRIBED') realtimeConnected = true;
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          disconnect();
+        }
+      });
+    };
     const refresh = () => {
-      const serial = ++requestSerial;
+      if (!active || fetching || !brandingRequestsAllowed()) return;
+      fetching = true;
       void fetchPublishedBanners().then(next => {
-        if (!active || serial !== requestSerial) return;
+        if (!active) return;
         const signature = JSON.stringify(next);
         if (signature !== lastPublishedSignature.current) {
           const keepId = activeBannerId.current;
           lastPublishedSignature.current = signature;
           setSlides(next);
-          // Keep the visitor's selected service visible if an editor reorders
-          // the five slides. If unpublished, fall back to the nearest index.
           setActiveIndex(index => {
             const retained = next.findIndex(slide => slide.id === keepId);
             return retained >= 0 ? retained : Math.min(index, Math.max(0, next.length - 1));
           });
         }
         setBannerStatus('ready');
+        connect();
       }).catch(() => {
-        if (!active || serial !== requestSerial) return;
-        // Never resurrect unpublished/unknown CMS artwork after a failed read.
+        if (!active) return;
+        // No unverified CMS content may be shown during a service restriction.
         lastPublishedSignature.current = null;
         setSlides([]);
         setBannerStatus('unavailable');
-      });
+        if (!brandingRequestsAllowed()) disconnect();
+      }).finally(() => { fetching = false; });
     };
     refresh();
-    const channel = supabase?.channel('published-taxpay-banners')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'taxpay_site_banners' }, refresh)
-      .subscribe(status => {
-        if (status === 'SUBSCRIBED') {
-          if (previouslyConnected && !realtimeConnected) refresh();
-          previouslyConnected = true;
-          realtimeConnected = true;
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          realtimeConnected = false;
-        }
-      });
-    // Reconcile missed Realtime messages after inactive tabs or intermittent networks.
     const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
     window.addEventListener('focus', refresh);
     window.addEventListener('online', refresh);
@@ -276,7 +289,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       window.removeEventListener('focus', refresh);
       window.removeEventListener('online', refresh);
       document.removeEventListener('visibilitychange', onVisible);
-      if (channel && supabase) void supabase.removeChannel(channel);
+      disconnect();
     };
   }, [retryNonce]);
 
