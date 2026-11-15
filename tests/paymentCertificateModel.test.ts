@@ -78,6 +78,35 @@ test('one combined certificate retains each reconciled beneficiary, head, year a
   assert.equal(model.totalMinor, 5000);
 });
 
+test('combined certificate rejects mismatched original receipt head, amount and row count', () => {
+  const lines = [
+    { headId: 121, economicCode: '64', headNameEn: 'Advance Tax',
+      taxAmount: 15, penaltyAmount: 0, surchargeAmount: 0, interestAmount: 0, totalAmount: 15 },
+    { headId: 145, economicCode: '135', headNameEn: 'Demand Notice Tax',
+      taxAmount: 35, penaltyAmount: 0, surchargeAmount: 0, interestAmount: 0, totalAmount: 35 },
+  ];
+  const allocations = [
+    { taxpayerName: 'Recipient One', taxpayerTin: '2222222222222', paymentServiceEn: 'Advance Tax',
+      paymentServiceBn: 'অগ্রিম কর', assessmentYear: '2025-26', amountMinor: 1500, economicCode: '64' },
+    { taxpayerName: 'Recipient Two', taxpayerTin: '3333333333333', paymentServiceEn: 'Demand Notice Tax',
+      paymentServiceBn: 'দাবিনামার কর', assessmentYear: '2026-27', amountMinor: 3500, economicCode: '135' },
+  ];
+  const saved: ChallanReceipt = { ...baseReceipt, paymentCategory: 'OTHER_TAX_PAYMENT',
+    assessmentYear: '2025-26, 2026-27', items: lines, allocationItems: allocations, totalAmount: 50 };
+  const original = JSON.stringify(saved);
+  assert.equal(buildPaymentCertificateModel(saved)?.lines.length, 2);
+  // Older recorded parents without receipt line rows can still use their saved allocations.
+  assert.equal(buildPaymentCertificateModel({ ...saved, items: [] })?.lines.length, 2);
+  assert.equal(buildPaymentCertificateModel({ ...saved, items: [lines[0]] }), null);
+  assert.equal(buildPaymentCertificateModel({ ...saved,
+    items: [{ ...lines[0], totalAmount: 35 }, { ...lines[1], totalAmount: 15 }] }), null);
+  assert.equal(buildPaymentCertificateModel({ ...saved,
+    items: [{ ...lines[0], headNameEn: 'Wrong Tax Head' }, lines[1]] }), null);
+  assert.equal(buildPaymentCertificateModel({ ...saved,
+    items: [lines[0], { ...lines[1], economicCode: 'WRONG' }] }), null);
+  assert.equal(JSON.stringify(saved), original, 'certificate validation must not mutate saved payment');
+});
+
 test('certificate refuses a mismatched allocation sum, malformed reference, or incomplete parent', () => {
   assert.equal(buildPaymentCertificateModel({
     ...baseReceipt,
