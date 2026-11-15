@@ -1,23 +1,10 @@
 import {supabase} from './supabaseClient';
+import {validateAccountReceivedPaymentPage} from './verifiedAccountNoticePage';
 import {loadUnreadReceivedPaymentNotices,loadStoredReceivedPaymentNotices,
   type ReceivedPaymentNotice,type StoredReceivedPaymentNotice} from './demoReceivedPaymentNotices';
 
-/** Auth-owned SQL queue: never accept TIN, fictional capability or a caller-owned
- * payment session. The database obtains the approved profile from auth.uid().
- */
+/** Auth-owned SQL queue: no client TIN, fictional capability or payer session. */
 type Action='unread'|'list'|'ack';
-export function verifiedRecordedPage(raw:unknown):unknown {
-  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Invalid recipient page');
-  const data=raw as Record<string,unknown>;
-  if(!Array.isArray(data.items))throw Error('Invalid recipient page');
-  for(const item of data.items) {
-    if(!item||typeof item!=='object'||Array.isArray(item))throw Error('Invalid recipient event');
-    const row=item as Record<string,unknown>;
-    if(row.recordState!=='RECORDED_NOT_CONFIRMED_TAX_CREDIT'||row.recipientTin!==null)
-      throw Error('Recipient provenance or privacy not verified');
-  }
-  return data;
-}
 
 async function authenticatedNoticeRequest(ownerUid:string,action:Action,
   extras:{offset?:number;limit?:number;eventId?:string}={}):Promise<unknown> {
@@ -36,7 +23,7 @@ async function authenticatedNoticeRequest(ownerUid:string,action:Action,
   const {data:after,error:afterError}=await client.auth.getUser();
   if(afterError||after.user?.id!==ownerUid)
     throw Error('Signed-in account changed during the request.');
-  return action==='ack'?data:verifiedRecordedPage(data);
+  return action==='ack'?data:validateAccountReceivedPaymentPage(data);
 }
 
 export function loadAccountUnreadReceivedPayments(ownerUid:string):Promise<ReceivedPaymentNotice[]> {
