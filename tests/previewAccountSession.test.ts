@@ -177,3 +177,20 @@ test('preview draft list still accepts a response from the unchanged capability'
   assert.deepEqual(await reading,[]);
   assert.equal(session.activePreviewSession()?.capability,current.capability);
 });
+
+test('draft owner scope distinguishes two capabilities for the same preview account',async()=>{
+  const drafts=await import('../src/services/accountPaymentFormDrafts');
+  const actor={kind:'preview' as const,profileId:'user1'};
+  const first=await session.signInPreviewProfile('user1','user1');
+  assert.ok(first);
+  const before=drafts.paymentDraftOwnerScope(actor);
+  assert.equal(before,'preview:user1:'+first.paymentSessionId);
+  const second=await session.signInPreviewProfile('user1','user1');
+  assert.ok(second);
+  assert.notEqual(second.paymentSessionId,first.paymentSessionId);
+  const after=drafts.paymentDraftOwnerScope(actor);
+  assert.equal(after,'preview:user1:'+second.paymentSessionId);
+  assert.notEqual(before,after);
+  assert.equal(drafts.paymentDraftOwnerScope({kind:'authenticated',userId:'owner-a'}),'authenticated:owner-a');
+  assert.equal(drafts.paymentDraftOwnerScope(null),'');
+});
