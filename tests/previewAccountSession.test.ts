@@ -8,11 +8,17 @@ process.env.VITE_SUPABASE_PUBLISHABLE_KEY='test-public-key';
 delete process.env.VITE_SUPABASE_DISABLED;
 
 const storage=new Map<string,string>();
+const localStorage=new Map<string,string>();
 Object.defineProperty(globalThis,'window',{configurable:true,value:{
   sessionStorage:{
     getItem:(key:string)=>storage.get(key)??null,
     setItem:(key:string,value:string)=>{storage.set(key,value);},
     removeItem:(key:string)=>{storage.delete(key);},
+  },
+  localStorage:{
+    getItem:(key:string)=>localStorage.get(key)??null,
+    setItem:(key:string,value:string)=>{localStorage.set(key,value);},
+    removeItem:(key:string)=>{localStorage.delete(key);},
   },
 }});
 const originalFetch=globalThis.fetch;
@@ -53,11 +59,18 @@ const session=await import('../src/services/previewAccountSession');
 beforeEach(()=>{
   session.clearPreviewSession();
   storage.clear();
+  localStorage.clear();
   waiting.length=0;
   delayedLoginIds.clear();
   loginCount=0;
 });
-after(()=>{globalThis.fetch=originalFetch;});
+after(async()=>{
+  // The draft service constructs a real Supabase client against this invalid
+  // test origin. Stop its refresh timer before removing the browser stub.
+  const {supabase}=await import('../src/services/supabaseClient');
+  await supabase?.auth.stopAutoRefresh();
+  globalThis.fetch=originalFetch;
+});
 
 test('late settings read cannot resurrect a different preview owner after account switch',async()=>{
   const first=await session.signInPreviewProfile('user1','user1');
