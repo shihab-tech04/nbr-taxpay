@@ -127,6 +127,14 @@ BEGIN
          IS DISTINCT FROM (SELECT payment_id::text FROM verified_story_lookup_expected)
   THEN RAISE EXCEPTION 'OWNER_CERTIFICATE_REFERENCE_NOT_FOUND'; END IF;
   IF public.taxpay_my_story1_payment_by_reference(
+       (SELECT reference FROM verified_story_lookup_expected),NULL)->>'receiptReference'
+         IS DISTINCT FROM (SELECT reference FROM verified_story_lookup_expected)
+     OR public.taxpay_my_story1_payment_by_reference(
+       (SELECT reference FROM verified_story_lookup_expected),NULL)->>'certificateReference'
+         IS DISTINCT FROM 'SK-PC-'||
+           (SELECT payment_id::text FROM verified_story_lookup_expected)
+  THEN RAISE EXCEPTION 'OWNER_RECEIPT_CERTIFICATE_REFERENCE_MISMATCH'; END IF;
+  IF public.taxpay_my_story1_payment_by_reference(
        (SELECT reference FROM verified_story_lookup_expected),'01799999999') IS NOT NULL
   THEN RAISE EXCEPTION 'OWNER_WRONG_MOBILE_RETURNED_PAYMENT'; END IF;
   IF public.taxpay_my_story1_payment_by_reference(
