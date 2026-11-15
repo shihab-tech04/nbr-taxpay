@@ -32,6 +32,9 @@ export function parseRecoverableTravelPayment(raw: string | null, sessionId: str
     if (!record(details.receiptSnapshot)) return null;
     const receipt = details.receiptSnapshot;
     if (receipt.paymentCategory !== 'TRAVEL_TAX' ||
+        receipt.id !== 'rcpt-trv-' + payment.idempotencyKey ||
+        receipt.taxEventId !== 'SIM-EVENT-' + payment.idempotencyKey ||
+        receipt.paymentTransactionId !== 'SIM-TOKEN-' + payment.idempotencyKey ||
         receipt.tokenNumber !== 'SIM-TOKEN-' + payment.idempotencyKey ||
         receipt.challanNo !== 'SIM-' + payment.idempotencyKey ||
         receipt.gatewayTransactionId !== 'SIM-TXN-' + payment.idempotencyKey ||
