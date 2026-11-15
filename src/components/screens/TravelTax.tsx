@@ -290,7 +290,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const allPassengersComplete = firstIdentityIssue() === null &&
     passengers.every(item => confirmedPassengerIds.includes(item.id));
   const receiptMobileComplete = /^01\d{9}$/.test(phone);
-  const canContinueToTravel = allPassengersComplete && receiptMobileComplete;
   const reportIdentityIssue = (issue: {id: string; message: string}) => {
     setEditingPassengerId(issue.id); setPassengerIssue(issue);
     showError(issue.message);
@@ -314,13 +313,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   };
   const continueStep = () => {
     if (step === 0) {
+      const issue = firstIdentityIssue();
+      if (issue) { reportIdentityIssue(issue); return; }
       if (!allPassengersComplete) {
         showError(tr('Confirm each checked passenger with Add passenger first.', 'প্রতিটি যাচাইকৃত যাত্রী যোগ করুন বোতামে নিশ্চিত করুন।'));
         return;
       }
-      const issue = firstIdentityIssue();
-      if (issue) { reportIdentityIssue(issue); return; }
-      if (!/^01\d{9}$/.test(phone)) {
+      if (!receiptMobileComplete) {
         showError(tr('Enter a valid 11-digit receipt mobile number.', 'রসিদের জন্য ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।'));
         requestAnimationFrame(() => document.getElementById('travel-mobile')?.focus());
         return;
@@ -698,7 +697,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   ) : (
     <button type="button" className="travel-flow__primary"
       aria-label={step === 0 ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান') : tr('Continue to review','পেমেন্ট পর্যালোচনায় যান')}
-      disabled={step === 0 && !canContinueToTravel} onClick={continueStep}>
+      onClick={continueStep}>
       <span className="travel-flow__action-long">{step === 0 ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান')
         : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}</span>
       <span className="travel-flow__action-short" aria-hidden="true">{tr('Continue', 'এগিয়ে যান')}</span>
