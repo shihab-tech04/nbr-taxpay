@@ -705,7 +705,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--completed" onClick={openOverviewPayments}>
             <span className="taxpay-summary-metric__icon"><FileCheck2 size={20} aria-hidden="true"/></span>
             <span className="taxpay-summary-metric__details">
-              <span className="taxpay-summary-metric__label">{tr('Completed payments','সম্পন্ন পেমেন্ট')}</span>
+              <span className="taxpay-summary-metric__label">{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span>
               <strong className="tabular-nums">{overviewSource==='recorded'&&sqlLoadError?'—':completedPayments}</strong>
             </span>
             <span className="taxpay-summary-metric__pill">{tr('This year','এই বছরে')}</span>
@@ -714,7 +714,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             aria-expanded={draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0)}>
             <span className="taxpay-summary-metric__icon"><FilePenLine size={20} aria-hidden="true"/></span>
             <span className="taxpay-summary-metric__details">
-              <span className="taxpay-summary-metric__label">{tr('Saved drafts','সংরক্ষিত খসড়া')}</span>
+              <span className="taxpay-summary-metric__label">{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span>
               <strong className="tabular-nums">{savedDraftCount===null?'—':savedDraftCount}</strong>
             </span>
             <span className="taxpay-summary-metric__pill">{savedDraftCount===0?tr('No drafts','খসড়া নেই'):tr('Continue','চালিয়ে যান')}</span>
@@ -722,7 +722,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--requests" onClick={focusCorrectionRequests}>
             <span className="taxpay-summary-metric__icon"><ReceiptText size={20} aria-hidden="true"/></span>
             <span className="taxpay-summary-metric__details">
-              <span className="taxpay-summary-metric__label">{tr('Correction requests','সংশোধনের আবেদন')}</span>
+              <span className="taxpay-summary-metric__label">{tr('Correction Requests','সংশোধনের আবেদন')}</span>
               <strong className="tabular-nums">{correctionRequestCount===null?'—':correctionRequestCount}</strong>
             </span>
             <span className="taxpay-summary-metric__pill">{tr('View requests','আবেদন দেখুন')}</span>
