@@ -1688,7 +1688,11 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                     ? 'নমুনা প্রোফাইল — NBR-এর সরকারি রেকর্ড নয়; ব্যক্তিগত ইতিহাস দেখার অনুমতি দেয় না।'
                     : 'Sample profile — not an official NBR record or permission to view private history.'}</p>
                   <button type="button" className="mt-3 min-h-10 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white"
-                    disabled={!availableSavedTins || !savedBatchTaxpayers.some(person => Boolean(person.tin)) || Boolean(oneTimeLookupError) || beneficiaryChecking}
+                    disabled={!availableSavedTins || !paymentOwnerId || !oneTimeSearchMatch ||
+                       oneTimeSearchMatch.tin !== oneTimeTinDraft ||
+                       availableSavedTins.includes(oneTimeTinDraft) ||
+                       savedBatchTaxpayers.some(person => person.tin === oneTimeTinDraft) ||
+                       Boolean(oneTimeLookupError) || beneficiaryChecking}
                     onClick={() => {
                       if (!oneTimeSearchMatch || oneTimeSearchMatch.tin !== oneTimeTinDraft) return;
                       if (!availableSavedTins || availableSavedTins.includes(oneTimeTinDraft) ||
