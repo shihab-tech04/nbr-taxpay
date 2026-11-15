@@ -1020,6 +1020,27 @@
     padding: .4rem .75rem;
   }
 }
+/* Short/medium wide desktops: use smaller outer chrome and inter-section gaps
+   while retaining the approved 220/270px banner, 20px section headings, 16px
+   search/benefits insets and minimum 88px benefit-cell height. */
+@media (min-width:981px) and (min-height:821px) and (max-height:959px) {
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) {margin-top:4px;}
+  .public-home-sections .public-benefits__heading {margin-bottom:.5rem;}
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    padding-top:.55rem;
+    padding-bottom:.55rem;
+  }
+}
+@media (min-width:1121px) and (max-height:820px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-home-header__inner {
+    min-height:72px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    padding-top:.55rem;
+    padding-bottom:.55rem;
+  }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) {margin-top:3px;}
+}
 /* 1024px short desktop: preserve the approved 220px hero and all typography.
    Spend only unused outer vertical space, not the approved banner/CTA geometry. */
 @media (min-width:981px) and (max-width:1120px) and (max-height:820px) {
