@@ -64,7 +64,16 @@ function readHistoryFilters(ownerUid:string):StoredHistoryFilters {
  * Each beneficiary allocation keeps its own TIN, assessment year, head and
  * amount; never present the combined batch total as an individual's payment.
  */
-export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: string; language: 'en'|'bn' }) {
+type AccountBeneficiaryHistoryProps = { ownerUid: string; language: 'en'|'bn' };
+
+/** Remount the private history when the owner changes. State and session-scoped
+ * filters from account A must never render, even briefly, under account B.
+ */
+export function AccountBeneficiaryHistory(props: AccountBeneficiaryHistoryProps) {
+  return <AccountBeneficiaryHistoryForOwner key={props.ownerUid} {...props} />;
+}
+
+function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBeneficiaryHistoryProps) {
   const [rows,setRows]=useState<BeneficiaryPaymentEntry[]>([]);
   const {startPaymentReuse,startBeneficiarySave,navigate}=useTaxState();
   const profile=usePaymentAccountProfile(ownerUid,null);
