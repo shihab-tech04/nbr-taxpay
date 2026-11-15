@@ -224,9 +224,12 @@ export async function verifyWs3BrowserOrigin({
       ' -> authorized Office readback, two original allocation IDs and exact values');
     // F-039 original current Work A UI: one saved payer-owned recipient
     // and one confirmed fictional public-lookup TIN, without saving the second.
-    const unsavedTin='444444444444';
+    // The shared user1 fixture saves user4. User10 is deliberately absent,
+    // so the test must use a genuinely unsaved fictional lookup identity.
+    const unsavedTin='000000000000';
     const savedBefore=Number(psql(sourceDb,
       "SELECT count(*) FROM taxpay_guest_private.beneficiaries WHERE tin='"+unsavedTin+"';"));
+    assert.equal(savedBefore,0,'F039 one-time fixture must begin with unsaved TIN');
     await page.goto(base+'/?action=landing');
     await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
     const oneTimeDialog=page.getByRole('dialog',{name:'Pay Tax'});
@@ -257,7 +260,7 @@ export async function verifyWs3BrowserOrigin({
     await oneTimeEntry.locator('#other-tax-one-time-tin').fill(unsavedTin);
     await oneTimeEntry.getByRole('button',{name:'Search one-time taxpayer'}).click();
     await expect(oneTimeEntry.getByTestId('one-time-taxpayer-preview'))
-      .toContainText('User 4');
+      .toContainText('User 10');
     const addOneTime=oneTimeEntry.getByRole('button',{name:'Add to this payment'});
     if(!await addOneTime.isEnabled()){
       // Diagnostics only; never print the capability, full TIN or private data.
@@ -313,7 +316,7 @@ export async function verifyWs3BrowserOrigin({
     assert.deepEqual(oneTimeAllocations.map(a=>a.amountMinor),[1000,2000]);
     assert.deepEqual(oneTimeAllocations.map(a=>a.headId),[122,123]);
     assert.deepEqual(oneTimeAllocations.map(a=>a.assessmentYear),['2026-27','2025-26']);
-    assert.equal(oneTimeAllocations[1].taxpayerName,'User 4');
+    assert.equal(oneTimeAllocations[1].taxpayerName,'User 10');
     assert.equal(Number(psql(sourceDb,
       "SELECT count(*) FROM taxpay_guest_private.beneficiaries WHERE tin='"+unsavedTin+"';")),
       savedBefore,'F-039 must not create any saved beneficiary record');
