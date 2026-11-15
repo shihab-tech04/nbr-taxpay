@@ -62,6 +62,9 @@ function sqlRpc(origin,name,args,authenticatedOffice=false){
       // than receiving a fake successful list or an unsupported RPC error.
       taxpay_demo_payment_form_drafts:`public.taxpay_demo_payment_form_drafts(${sqlText(args.p_capability_hash)},${sqlText(args.p_action)},${args.p_draft_id==null?'NULL::uuid':sqlText(args.p_draft_id)+'::uuid'},${args.p_service==null?'NULL::text':sqlText(args.p_service)},${args.p_payload==null?'NULL::jsonb':sqlJson(args.p_payload)},${args.p_revision==null?'NULL::integer':args.p_revision+'::integer'})`,
       taxpay_guest_payment_form_drafts:`public.taxpay_guest_payment_form_drafts(${sqlText(args.p_capability_hash)},${sqlText(args.p_action)},${args.p_draft_id==null?'NULL::uuid':sqlText(args.p_draft_id)+'::uuid'},${args.p_service==null?'NULL::text':sqlText(args.p_service)},${args.p_payload==null?'NULL::jsonb':sqlJson(args.p_payload)},${args.p_revision==null?'NULL::integer':args.p_revision+'::integer'})`,
+      // Guest submission is the original anonymous-authorized RPC. Unlike
+      // preview-profile submit it must not gain service-role privileges.
+      demo_story1_submit:`public.demo_story1_submit(${sqlJson(args.p_input)})`,
       taxpay_demo_story1_submit:`public.taxpay_demo_story1_submit(${sqlText(args.p_capability_hash)},${sqlJson(args.p_input)})`,
       taxpay_demo_story1_session_payment:`public.taxpay_demo_story1_session_payment(${sqlText(args.p_capability_hash)},${sqlText(args.p_payment_id)}::uuid)`,
       taxpay_office_story1_mirror_read:`public.taxpay_office_story1_mirror_read(${sqlText(args.p_id)}::uuid,${sqlText(args.p_session)}::uuid)`,
@@ -74,8 +77,9 @@ function sqlRpc(origin,name,args,authenticatedOffice=false){
   };
   const expression=definitions[databaseOrigin]?.[name];
   if(!expression)throw Error('Unexpected SQL RPC '+origin+'.'+name);
-  const role=databaseOrigin==='OFFICE_SQL'&&name==='payment_v1_office_guarded_story_page'
-    ?'authenticated':'service_role';
+  const role=name==='demo_story1_submit'?'anon'
+    :databaseOrigin==='OFFICE_SQL'&&name==='payment_v1_office_guarded_story_page'
+      ?'authenticated':'service_role';
   const claims=role==='authenticated'
     ?`SELECT set_config('request.jwt.claim.sub',${sqlText(authenticatedOffice?officerId:randomUUID())},true);\n`
     :'';
