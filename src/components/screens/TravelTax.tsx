@@ -697,6 +697,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   ) : (
     <button type="button" className="travel-flow__primary"
       aria-label={step === 0 ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান') : tr('Continue to review','পেমেন্ট পর্যালোচনায় যান')}
+      disabled={step === 0 && (!allPassengersComplete || !receiptMobileComplete)}
       onClick={continueStep}>
       <span className="travel-flow__action-long">{step === 0 ? tr('Continue to travel details','ভ্রমণের তথ্য দিতে এগিয়ে যান')
         : tr('Continue to review', 'পেমেন্ট পর্যালোচনায় যান')}</span>
