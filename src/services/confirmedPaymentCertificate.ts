@@ -233,6 +233,8 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
       treasuryStatus:'GATEWAY_SUCCESS',
       isSimulatedDemo:true,
       ...(allocationItems?{allocationItems}:{}),...batchInfo,
+      // Original challan-level remarks come from the saved parent, not a stale display snapshot.
+      ...(typeof d.paymentRemarks==='string'?{paymentRemarks:d.paymentRemarks}:{}),
       taxCreditStatus:tx.service==='SOURCE_TAX_DEPOSIT'?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
     };
   }
@@ -249,6 +251,8 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   taxpayerName:stringValue(d.taxpayerName)||undefined,
   taxpayerTin:stringValue(d.taxpayerTin),receiptMobile:stringValue(d.receiptMobile),
   noticeReference:stringValue(d.noticeReference),
+  // Preserve Unicode, punctuation and line breaks even for pre-snapshot history records.
+  ...(typeof d.paymentRemarks==='string'?{paymentRemarks:d.paymentRemarks}:{}),
   isRepresentativePayment:d.payerMode==='OTHER',
   taxZone:stringValue(d.taxZone)||'—',taxCircle:stringValue(d.taxCircle)||'—',
   isWithholding:category==='SOURCE_TAX_DEPOSIT'||d.isWithholding===true,
