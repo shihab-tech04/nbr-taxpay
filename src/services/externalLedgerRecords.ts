@@ -161,5 +161,7 @@ export async function loadExternalLedgerEvents(ownerUid:string,language:Language
     'id,payment_record_id,owner_uid,official_credit_reference,official_credit_source,credited_amount_minor,credited_at,verification_evidence_ref',
     ownerUid
   );
+  const {data:confirmed,error:recheck}=await supabase.auth.getUser();
+  if(recheck||confirmed.user?.id!==ownerUid)throw new Error('External ledger owner changed during read');
   return projectExternalLedgerEvents(ownerUid,payments,credits,language);
 }
