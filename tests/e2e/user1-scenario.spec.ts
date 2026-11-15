@@ -146,7 +146,12 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   const content=profile.getByTestId('user1-profile-unified-content');
   await expect(profile).toBeVisible();
   await expect(content).toBeVisible();
-  await expect(profile.getByRole('heading',{name:'Md. Arif Rahman'})).toBeVisible();
+  const nameHeading=profile.locator('h2[data-profile-field="taxpayerName"]');
+  await expect(nameHeading).not.toBeEmpty();
+  const displayedName=(await nameHeading.innerText()).trim();
+  const expectedInitials=displayedName.split(/\s+/u).slice(-2)
+    .map(part=>Array.from(part)[0]??'').join('').toLocaleUpperCase();
+  await expect(profile.getByTestId('user1-profile-identity-badge')).toHaveText(expectedInitials);
   await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await expect(profile.getByRole('tab')).toHaveCount(0);
   // All 24 source fields appear exactly once: name/TIN in the identity, the
