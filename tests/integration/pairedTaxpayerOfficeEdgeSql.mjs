@@ -48,6 +48,15 @@ function sqlRpc(origin,name,args,authenticatedOffice=false){
   const databaseOrigin=origin==='OFFICE_SQL'?'OFFICE_SQL':'TAXPAY_SQL';
   const definitions={
     TAXPAY_SQL:{
+      // The real browser preview/login and saved-beneficiary routes use their
+      // existing server-issued capability through the same disposable Edge.
+      // These RPCs run on Taxpayer SQL only, never on the Office database.
+      taxpay_demo_profile_login:`public.taxpay_demo_profile_login(${sqlText(args.p_demo_id)},${sqlText(args.p_password)})`,
+      taxpay_demo_profile_settings:`public.taxpay_demo_profile_settings(${sqlText(args.p_capability_hash)},${args.p_key==null?'NULL::text':sqlText(args.p_key)},${args.p_value==null?'NULL::text':sqlText(args.p_value)})`,
+      taxpay_guest_beneficiary_open:`public.taxpay_guest_beneficiary_open(${sqlText(args.p_capability_hash)})`,
+      taxpay_guest_beneficiary_lists:`public.taxpay_guest_beneficiary_lists(${sqlText(args.p_capability_hash)})`,
+      taxpay_guest_beneficiary_snapshot:`public.taxpay_guest_beneficiary_snapshot(${sqlText(args.p_capability_hash)})`,
+      taxpay_guest_beneficiary_rows:`public.taxpay_guest_beneficiary_rows(${sqlText(args.p_capability_hash)},${args.p_offset}::integer,${args.p_limit}::integer)`,
       taxpay_demo_story1_submit:`public.taxpay_demo_story1_submit(${sqlText(args.p_capability_hash)},${sqlJson(args.p_input)})`,
       taxpay_demo_story1_session_payment:`public.taxpay_demo_story1_session_payment(${sqlText(args.p_capability_hash)},${sqlText(args.p_payment_id)}::uuid)`,
       taxpay_office_story1_mirror_read:`public.taxpay_office_story1_mirror_read(${sqlText(args.p_id)}::uuid,${sqlText(args.p_session)}::uuid)`,
