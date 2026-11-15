@@ -3,7 +3,7 @@ import {openTravelTaxFromBanner} from './public-travel-tax-entry';
 
 async function previewLogin(page:Page) {
   await page.goto('/?action=taxpayer_login');
-  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user2');
   await login.getByLabel('Password',{exact:true}).fill('user2');
   await login.getByRole('button',{name:'Sign In'}).click();

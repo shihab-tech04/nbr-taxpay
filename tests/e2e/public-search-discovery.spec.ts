@@ -16,7 +16,7 @@ test('search uses the established icon-free section heading and concise single-l
     return node.getBoundingClientRect().height / parseFloat(style.lineHeight);
   });
   expect(descriptionLines).toBeLessThan(1.2);
-  const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
+  const search = page.getByRole('combobox', { name: 'Search payment records by reference' });
   await search.click();
   await expect(section.getByRole('heading', { name: 'Example reference numbers' })).toBeVisible();
   await expect(section.locator('.public-record-suggestions__option')).toHaveCount(3);
@@ -29,7 +29,7 @@ test('typing opens a clean floating dropdown without changing the card height', 
   // initial measurement can change wrapped helper text by one line on 375px.
   await page.evaluate(async () => { await document.fonts.ready; });
   const section = page.getByRole('region', { name: 'Find a payment record' });
-  const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
+  const search = page.getByRole('combobox', { name: 'Search payment records by reference' });
   const cardHeightBefore = await section.evaluate(element => element.getBoundingClientRect().height);
   const nextGapBefore = await page.evaluate(() => {
     const card = document.querySelector('.public-record-discovery')!.getBoundingClientRect();
@@ -71,7 +71,7 @@ test('typing opens a clean floating dropdown without changing the card height', 
 
 test('keyboard can select a matching synthetic reference without leaking it into URL', async ({ page }) => {
   await page.goto('/?action=landing');
-  const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
+  const search = page.getByRole('combobox', { name: 'Search payment records by reference' });
   await search.fill('TKN-882190');
   await search.press('ArrowDown');
   await expect(page.locator('#public-search-option-0')).toHaveClass(/is-active/);
@@ -83,7 +83,7 @@ test('keyboard can select a matching synthetic reference without leaking it into
 
 test('matching reference opens the receipt modal without exposing the reference in the URL', async ({ page }) => {
   await page.goto('/?action=landing');
-  await page.getByRole('searchbox', { name: 'Search payment records by reference' }).fill('DEMO-REF-003');
+  await page.getByRole('combobox', { name: 'Search payment records by reference' }).fill('DEMO-REF-003');
   await page.locator('.public-record-suggestions__group:not(.public-record-suggestions__examples)').getByRole('button', { name: /AC-2025-06-DEMO-REF-003/ }).click();
   await expect(page).toHaveURL(/action=verify/);
   expect(page.url()).not.toContain('DEMO-REF');
@@ -92,12 +92,12 @@ test('matching reference opens the receipt modal without exposing the reference 
   await expect(modal.getByRole('button', { name: 'Back to search' })).toHaveCount(0);
   await modal.getByRole('button', { name: 'Close modal' }).click();
   await expect(page).toHaveURL(/action=landing/);
-  await expect(page.getByRole('searchbox', { name: 'Search payment records by reference' })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Search payment records by reference' })).toBeVisible();
 });
 
 test('suggestions close on Escape or outside click, and translate cleanly into Bangla', async ({ page }) => {
   await page.goto('/?action=landing');
-  const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
+  const search = page.getByRole('combobox', { name: 'Search payment records by reference' });
   await search.fill('DEMO');
   await expect(page.locator('.public-record-suggestions')).toBeVisible();
   await search.press('Escape');
@@ -116,7 +116,7 @@ test('dropdown overlays following content without resizing the card or overflowi
     await page.setViewportSize({ width, height: 820 });
     await page.goto('/?action=landing');
     const heightBefore = await page.locator('.public-record-discovery').evaluate(element => element.getBoundingClientRect().height);
-    await page.getByRole('searchbox', { name: 'Search payment records by reference' }).fill('DEMO');
+    await page.getByRole('combobox', { name: 'Search payment records by reference' }).fill('DEMO');
     const geometry = await page.evaluate(() => {
       const section = document.querySelector<HTMLElement>('.public-record-discovery')!;
       const dropdown = document.querySelector<HTMLElement>('.public-record-suggestions')!;
@@ -147,7 +147,7 @@ test('focus examples are keyboard-selectable, private-reference safe and do not 
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto('/?action=landing');
   const section = page.getByRole('region', { name: 'Find a payment record' });
-  const search = section.getByRole('searchbox', { name: 'Search payment records by reference' });
+  const search = section.getByRole('combobox', { name: 'Search payment records by reference' });
   const before = await section.evaluate(element => element.getBoundingClientRect().height);
   await search.focus();
   await expect(section.getByRole('heading', { name: 'Example reference numbers' })).toBeVisible();
@@ -165,7 +165,7 @@ test('focus examples are keyboard-selectable, private-reference safe and do not 
 
 test('typed search keeps matched references above a distinct bottom sample-number group', async ({ page }) => {
   await page.goto('/?action=landing');
-  const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
+  const search = page.getByRole('combobox', { name: 'Search payment records by reference' });
   await search.fill('DEMO-REF-001');
   const dropdown = page.locator('.public-record-suggestions');
   await expect(dropdown.locator('.public-record-suggestions__group')).toHaveCount(2);
@@ -180,7 +180,7 @@ test('typed search keeps matched references above a distinct bottom sample-numbe
 test('public suggestions announce only example matches and keyboard selection without exposing references in URL',async({page})=>{
   await page.goto('/?action=landing&lang=en');
   const discovery=page.locator('.public-record-discovery');
-  const search=discovery.getByRole('searchbox',{name:'Search payment records by reference'});
+  const search=discovery.getByRole('combobox',{name:'Search payment records by reference'});
   await search.fill('TKN-882190');
   await expect(search).toHaveAttribute('aria-autocomplete','list');
   await expect(search).toHaveAttribute('aria-describedby','public-record-discovery-help');

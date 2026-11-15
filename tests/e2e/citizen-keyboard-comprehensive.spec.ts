@@ -37,7 +37,7 @@ test('Public mobile shared menu traps focus, closes with Escape, and restores tr
 
 test('Travel Tax dialog keeps keyboard entry, close, and trigger focus return while receipt lookup is full page', async ({ page }) => {
   await page.goto('/?action=landing');
-  const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
+  const search = page.getByRole('combobox', { name: 'Search payment records by reference' });
   await expect(search).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Payment status & receipt' })).toHaveCount(0);
   const open = page.locator('[data-banner-service="intro"]').getByRole('button', { name: 'Pay Travel Tax' });

@@ -281,7 +281,7 @@ test('Public homepage hides only temporary payment steps and questions',async({p
   await expect(page.locator('#public-how-it-works')).toBeHidden();
   await expect(page.locator('#public-faq')).toBeHidden();
   await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
-  await expect(page.getByRole('searchbox',{name:'Search payment records by reference'})).toBeVisible();
+  await expect(page.getByRole('combobox',{name:'Search payment records by reference'})).toBeVisible();
 });
 test('Public keyboard Tab order and skip link remain operable with hidden FAQ',async({page})=>{
   await page.goto('/?action=landing');

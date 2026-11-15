@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('the former Office login deep link now opens the Korbritto taxpayer popup', async ({page}) => {
   await page.goto('/?action=office_login');
   await expect(page.locator('#public-home-title')).toBeVisible();
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeVisible();
   await expect(dialog.getByLabel('Password',{exact:true})).toHaveAttribute('type','password');

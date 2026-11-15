@@ -38,7 +38,7 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
   await page.goto('/?action=taxpayer_login');
-  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
   await login.getByLabel('Password',{exact:true}).fill('user1');
   await login.getByRole('button',{name:'Sign In'}).click();
@@ -656,7 +656,7 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
 
 test('signed-in SELF Other Tax preserves the locked account identity and canonical head catalogue', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();
@@ -686,7 +686,7 @@ test('signed-in OTHER Tax uses only saved beneficiaries and never exposes manual
     status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: [], simulationOnly: true }),
   }));
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
   await login.getByLabel('Password', { exact: true }).fill('user1');
   await login.getByRole('button', { name: 'Sign In' }).click();
@@ -741,7 +741,7 @@ test('additional taxpayers are not blocked by an unapproved 20-person limit', as
 
 test('own-tax payment hides redundant taxpayer picker and keeps bulk actions beside search', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user1');
   await login.getByLabel('Password', { exact: true }).fill('user1');
   await login.getByRole('button', { name: 'Sign In' }).click();

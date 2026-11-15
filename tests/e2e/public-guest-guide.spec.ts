@@ -13,7 +13,7 @@ test('public hero opens receipt lookup and its Travel Tax banner starts the jour
  const header=page.locator('.public-home-header');
  await expect(header.getByRole('link',{name:'Login'})).toHaveAttribute('href','?action=taxpayer_login');
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
- const homeSearch=page.getByRole('searchbox',{name:'Search payment records by reference'});
+ const homeSearch=page.getByRole('combobox',{name:'Search payment records by reference'});
  await expect(homeSearch).toBeVisible();
  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
  await homeSearch.fill('NO-SUCH-DEMO-REFERENCE-12345');
@@ -330,7 +330,7 @@ test('public guide and guest launcher pass WCAG automated A/AA',async({page},inf
 
 test('guest receipt search is under the banner and opens receipt results in the shared modal',async({page})=>{
  await page.goto('/?action=landing');
- const search=page.getByRole('searchbox',{name:'Search payment records by reference'});
+ const search=page.getByRole('combobox',{name:'Search payment records by reference'});
  await expect(search).toBeVisible();
  await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);

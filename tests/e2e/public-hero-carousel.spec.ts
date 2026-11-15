@@ -299,7 +299,7 @@ test('autoplay advances after eight seconds; reduced motion pauses autoplay', as
 
 test('public record search and 14px minimum primary label remain unchanged', async ({ page }) => {
   await page.goto('/?action=landing');
-  await expect(page.getByRole('searchbox', { name: 'Search payment records by reference' })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Search payment records by reference' })).toBeVisible();
   const button = page.locator('[data-banner-service="intro"] .public-guest-action').first();
   await expect(button).toBeVisible();
   expect(await button.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);

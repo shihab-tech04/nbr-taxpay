@@ -49,8 +49,21 @@ BEGIN
   v_sql := pg_get_functiondef(
     'demo_payment.validate_demo_authorized_payment()'::regprocedure
   );
-  IF position(v_old IN v_sql) = 0 OR
-     position('ONE_TIME_PREVIEW_PAYMENT_ONLY' IN v_sql) <> 0 THEN
+  -- WS5 integration compatibility: the earlier approved combined one-time
+  -- recipient migration can already have replaced the original exact guard.
+  -- Do not overwrite that stricter, authenticated, payment-session-bound
+  -- validator with a second independently authored version. Fail closed if
+  -- neither the exact old baseline nor the known stronger guard is present.
+  IF position(v_old IN v_sql) = 0 THEN
+    IF position('A one-time recipient is not saved' IN v_sql) > 0
+       AND position('walkin_sample_tin' IN v_sql) > 0
+       AND position('payment_session_id' IN v_sql) > 0
+       AND position('v_allocation_view' IN v_sql) > 0 THEN
+      RETURN; -- Already installed; no duplicate validator or permission change.
+    END IF;
+    RAISE EXCEPTION 'F039_COMBINED_VALIDATOR_BASELINE_MISMATCH';
+  END IF;
+  IF position('ONE_TIME_PREVIEW_PAYMENT_ONLY' IN v_sql) <> 0 THEN
     RAISE EXCEPTION 'F039_COMBINED_VALIDATOR_BASELINE_MISMATCH';
   END IF;
   v_sql := replace(v_sql,v_old,v_new);
