@@ -8,6 +8,7 @@ import {
   deletePaymentFormDraft, listPaymentFormDrafts, savePaymentFormDraft, PaymentDraftConflictError,
   type PaymentFormDraft, type PaymentDraftActor, type PaymentDraftService, paymentDraftOwnerScope,
 } from '../../services/accountPaymentFormDrafts';
+import { GUEST_DRAFT_OWNER_CHANGED_EVENT } from '../../services/guestBeneficiaries';
 
 type Props = {
   service: PaymentDraftService;
@@ -49,7 +50,11 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
         refreshGuestOwner(value => value + 1);
     };
     window.addEventListener('storage', onGuestStorage);
-    return () => window.removeEventListener('storage', onGuestStorage);
+    window.addEventListener(GUEST_DRAFT_OWNER_CHANGED_EVENT, onGuestStorage);
+    return () => {
+      window.removeEventListener('storage', onGuestStorage);
+      window.removeEventListener(GUEST_DRAFT_OWNER_CHANGED_EVENT, onGuestStorage);
+    };
   }, [actor?.kind, ownerKey]);
   // A parent payment form can remain mounted while a demo session or Auth
   // account changes. Its old selected draft must never be updated or deleted
