@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {TaxPayModal} from '../ui/TaxPayModal';
+import {AuthenticatedReceivedPaymentPopup} from './AuthenticatedReceivedPaymentPopup';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -119,7 +120,7 @@ export function AuthorizationRequestPopup(){
     }finally{setReceivedBusy(false);}
   };
 
-  if(!actor)return null;
+  if(!actor)return <AuthenticatedReceivedPaymentPopup/>;
   if(welcomeOwner===actor&&currentRoute!=='taxpayer_login'){
     const continueAfterWelcome=()=>{
       try{window.sessionStorage.removeItem('sohojkor.preview-first-login-welcome.v1');}
