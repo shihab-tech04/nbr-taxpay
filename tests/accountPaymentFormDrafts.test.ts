@@ -65,9 +65,10 @@ test('switching draft owner invalidates a selected draft and ignores stale refre
   const dashboard = read('src/components/screens/DashboardPaymentDrafts.tsx');
   // The parent form can stay mounted across a new Auth or preview capability.
   // A former owner's selection must not be supplied as a draft UPDATE.
-  assert.match(ui, /const selectedOwnerRef = useRef\(ownerKey\)/);
-  assert.match(ui, /selectedOwnerRef\.current === ownerKey \? selectedDraft : null/);
-  assert.match(ui, /if \(selectedOwnerRef\.current === ownerKey\) return;[\s\S]*?onSelectedDraft\(null\)/);
+  assert.match(ui, /const selectionScope = ownerKey \+ ':' \+ service/);
+  assert.match(ui, /const selectedOwnerRef = useRef\(selectionScope\)/);
+  assert.match(ui, /selectedOwnerRef\.current === selectionScope \? selectedDraft : null/);
+  assert.match(ui, /if \(selectedOwnerRef\.current === selectionScope\) return;[\s\S]*?onSelectedDraft\(null\)/);
   assert.match(ui, /const existing = !asNewDraft && ownedSelectedDraft\?\.service === service/);
   assert.match(ui, /if \(ownedSelectedDraft\?\.id === draft\.id\) onSelectedDraft\(null\)/);
   assert.match(ui, /await refresh\(\);[\s\S]*?if \(!ownerStillCurrent\(\)\) return;[\s\S]*?setPendingDelete\(null\)/);
