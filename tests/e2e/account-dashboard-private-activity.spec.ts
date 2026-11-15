@@ -777,6 +777,13 @@ test('F-124 logged-in main content uses exactly 70% of its own area from 1400px,
       expect(Math.abs(measure.leftInset-measure.rightInset)).toBeLessThanOrEqual(2);
       expect(measure.overflow).toBeLessThanOrEqual(2);
       await expect(page.locator('.taxpayer-reference-rail')).toBeVisible();
+      // Save actual Playwright-rendered evidence from the exact integrated head,
+      // not a synthetic screenshot or a viewport calculation alone.
+      if(lang==='en'){
+        await info.attach('authenticated-main-width-'+width+'-en',{
+          body:await page.screenshot({fullPage:true}),contentType:'image/png'
+        });
+      }
       if(width===1440){
         // The same authenticated content wrapper serves Activity/Profile.
         for(const route of ['history','account_profile']){
