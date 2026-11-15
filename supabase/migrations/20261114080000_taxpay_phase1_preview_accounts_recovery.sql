@@ -1,8 +1,8 @@
 -- Sohojkor Phase 1: recover missing *fictional preview* identities after the
 -- user1-only hosted cleanup. NOT an Auth/TIN issuance or financial migration.
 -- Exclusive WS3 SQL scope. Preserve all existing rows/capabilities/session IDs.
--- Depends on previously applied 30-profile guards. The later 55-profile
--- migration may be deployed before/after this repair without being downgraded.
+-- Depends on previously applied 30-profile guards; deploy this recovery
+-- BEFORE the 55-profile expansion. Existing preview identities stay unchanged.
 BEGIN;
 -- This recovery MUST apply before the 20261115090000 55-profile expansion,
 -- whose guard requires the original 30 preview rows to exist.
