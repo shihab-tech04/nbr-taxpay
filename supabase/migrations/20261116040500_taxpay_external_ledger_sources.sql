@@ -11,7 +11,9 @@ create table public.taxpay_external_payment_records (
   )),
   source_transaction_id text not null check (length(btrim(source_transaction_id)) between 1 and 160),
   source_allocation_id text not null check (length(btrim(source_allocation_id)) between 1 and 160),
-  taxpayer_tin text not null check (taxpayer_tin ~ '^[0-9]{12,13}
+  taxpayer_tin text not null check (taxpayer_tin ~ '^[0-9]{12,13}$'),
+  payer_tin text check (payer_tin is null or payer_tin ~ '^[0-9]{12,13}$'),
+  identity_binding_evidence_ref text not null check (length(btrim(identity_binding_evidence_ref)) between 1 and 240),
   source_reference text check (source_reference is null or length(btrim(source_reference)) between 1 and 160),
   challan_no text check (challan_no is null or length(btrim(challan_no)) between 1 and 160),
   dhara text check (dhara is null or length(btrim(dhara)) between 1 and 120),
