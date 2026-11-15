@@ -57,6 +57,37 @@ test('preserves complete multi-taxpayer mixed-head multi-year source without reu
  lines[0].amount='1.00';
  assert.equal(JSON.stringify(extended),before);
 });
+test('Pay Again keeps all non-Return SQL allocations even when the original parent was filed under one tax category',()=>{
+  const originalId='11111111-2222-4333-8444-555555555555';
+  const historicalIds=['historical-allocation-a','historical-allocation-b'];
+  const original={...receipt,
+    paymentTransactionId:originalId,paymentCategory:'ADVANCE_TAX' as const,
+    allocationItems:receipt.allocationItems!.map((line,index)=>({
+      ...line,allocationId:historicalIds[index]
+    }))
+  } as ChallanReceipt;
+  const frozen=JSON.stringify(original);
+  const repeated=reuseRecordedPayment([original],'signed-in-owner','1234567890123',originalId);
+  // Both heads, beneficiaries, exact years and amounts belong to ONE new
+  // editable composer, not a silently downgraded single-head payment.
+  assert.equal(repeated.service,'OTHER_TAX_PAYMENT');
+  assert.equal(repeated.sourcePaymentId,originalId);
+  assert.deepEqual(repeated.sourceAllocationIds,historicalIds);
+  const lines=repeated.formPayload.otherTaxLines as Array<{
+    id:string;taxpayerId:string;headId:number;assessmentYear:string;amount:string
+  }>;
+  assert.equal(lines.length,2);
+  assert.deepEqual(lines.map(line=>[line.headId,line.assessmentYear,line.amount]),[
+    [1,'2026-27','10.00'],[2,'2025-26','20.00']
+  ]);
+  assert.equal(new Set(lines.map(line=>line.taxpayerId)).size,2);
+  assert.equal(lines.some(line=>historicalIds.includes(line.id)),false);
+  lines[0].amount='12.50';
+  assert.equal(JSON.stringify(original),frozen);
+  assert.throws(()=>reuseRecordedPayment([{...original,allocationItems:[original.allocationItems![0]]}],
+    'signed-in-owner','1234567890123',originalId),/incomplete/);
+});
+
 test('cannot reuse a partial grouped batch or unreconciled line amount',()=>{
  const grouped={...receipt,batchId:'batch-1',batchItemCount:2,batchItemIndex:1};
  assert.throws(()=>reuseRecordedPayment([grouped],'owner','1234567890123','batch-1'),/complete original batch/);
