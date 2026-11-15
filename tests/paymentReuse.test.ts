@@ -139,7 +139,8 @@ test('cannot reuse a partial grouped batch or unreconciled line amount',()=>{
 
 test('Travel Tax reuse copies itinerary and people but never treats masked passports as verified',()=>{
  const travel={...receipt,paymentCategory:'TRAVEL_TAX' as const,
-   assessmentYear:'2026-27',items:[{...receipt.items[0],totalAmount:30,taxAmount:30}],
+   assessmentYear:'2026-27',items:[{...receipt.items[0],headId:155,
+     economicCode:'1144102',headNameEn:'Travel tax — Test Passenger',totalAmount:30,taxAmount:30}],
    totalAmount:30,travelDetails:{
      mode:'LAND' as const,departurePort:'Benapole',destination:'India',travelDate:'2026-11-12',
      economicCode:'1144102',
@@ -165,6 +166,54 @@ test('Travel Tax reuse copies itinerary and people but never treats masked passp
  assert.throws(()=>reuseRecordedPayment([{...travel,
    travelDetails:{...travel.travelDetails,passengers:[{...travel.travelDetails.passengers[0],amount:0}]}
  }],'owner','1234567890123','travel-origin'),/cannot be reconciled/);
+});
+
+test('M06 Pay Again preserves child and exempt passenger categories, but requires fresh identity and travel date',()=>{
+ const original={
+   ...receipt,paymentCategory:'TRAVEL_TAX' as const,totalAmount:1500,
+   items:[
+     {...receipt.items[0],headId:155,economicCode:'1144102',headNameEn:'Travel tax — Adult Traveller',
+       totalAmount:1000,taxAmount:1000},
+     {...receipt.items[1],headId:156,economicCode:'1144102',headNameEn:'Travel tax — Child Traveller',
+       totalAmount:500,taxAmount:500},
+     {...receipt.items[0],headId:157,economicCode:'1144102',headNameEn:'Travel tax — Exempt Traveller',
+       totalAmount:0,taxAmount:0},
+   ],
+   travelDetails:{mode:'LAND' as const,departurePort:'Benapole',destination:'India',
+     travelDate:'2026-11-12',economicCode:'1144102',
+     passengers:[
+       {name:'Adult Traveller',passportMasked:'••••3456',nationality:'BD' as const,
+         country:'Bangladesh',ageBand:'ADULT' as const,age:34,amount:1000},
+       {name:'Child Traveller',passportMasked:'••••4321',nationality:'FOREIGN' as const,
+         country:'India',ageBand:'CHILD' as const,age:9,amount:500},
+       {name:'Exempt Traveller',passportMasked:'••••8901',nationality:'FOREIGN' as const,
+         country:'India',ageBand:'UNDER5' as const,age:3,amount:0},
+     ]},
+ };
+ const before=JSON.stringify(original);
+ const copy=reuseRecordedPayment([original],'owner','1234567890123','travel-origin');
+ const people=copy.formPayload.passengers as Array<{
+   name:string;ageBand:string;birthDate:string;passport:string;identitySource:string
+ }>;
+ assert.deepEqual(people.map(x=>x.ageBand),['ADULT','CHILD','UNDER5']);
+ assert.deepEqual(people.map(x=>x.name),['Adult Traveller','Child Traveller','Exempt Traveller']);
+ assert.deepEqual(people.map(x=>x.birthDate),['','','']);
+ assert.deepEqual(people.map(x=>x.passport),['','','']);
+ assert.deepEqual(people.map(x=>x.identitySource),['PENDING','MANUAL','MANUAL']);
+ assert.equal(copy.formPayload.travelDate,'');
+ assert.equal(JSON.stringify(copy).includes('••••3456'),false);
+ assert.equal(JSON.stringify(original),before);
+ assert.throws(()=>reuseRecordedPayment([{...original,items:[
+   {...original.items[0],headId:156},...original.items.slice(1)]}],
+   'owner','1234567890123','travel-origin'),/cannot be reconciled/);
+ assert.throws(()=>reuseRecordedPayment([{...original,items:[
+   {...original.items[0],economicCode:'WRONG'},...original.items.slice(1)]}],
+   'owner','1234567890123','travel-origin'),/cannot be reconciled/);
+ assert.throws(()=>reuseRecordedPayment([{...original,travelDetails:{
+   ...original.travelDetails,passengers:[
+     original.travelDetails.passengers[0],{...original.travelDetails.passengers[1],ageBand:'UNKNOWN' as 'CHILD'},
+     original.travelDetails.passengers[2]]}}],
+   'owner','1234567890123','travel-origin'),/cannot be reconciled/);
 });
 
 test('does not reuse duplicate allocations for the same taxpayer, head and year',()=>{
