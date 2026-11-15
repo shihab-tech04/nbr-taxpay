@@ -33,14 +33,15 @@ test('source parent is used when received challan reference is invalid',()=>{
 });
 
 test('handoff never transports TIN, amount, contact info or bearer capabilities',()=>{
-  const hint=buildReceivedPaymentCaseIntent({
+  const noisyNotice={
     ...notice,recipientTin:'123456789012',amountMinor:25000,
-    capability:'private-token',phone:'private',
-  },'UNSOLICITED_PAYMENT_REPORT',100_000);
+    capability:'placeholder',phone:'placeholder',
+  };
+  const hint=buildReceivedPaymentCaseIntent(noisyNotice,'UNSOLICITED_PAYMENT_REPORT',100_000);
   const serialized=JSON.stringify(hint);
   assert.equal(serialized.includes('123456789012'),false);
   assert.equal(serialized.includes('25000'),false);
-  assert.equal(serialized.includes('private'),false);
+  assert.equal(serialized.includes('placeholder'),false);
   assert.equal(serialized.includes('capability'),false);
 });
 
