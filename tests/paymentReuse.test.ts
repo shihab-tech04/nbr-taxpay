@@ -200,7 +200,7 @@ test('historical SQL single-head payment opens editable repeat without guessing 
   assert.equal(newYear.formPayload.assessmentYear,'2026-27');
 });
 test('legacy Pay Again restores long bilingual remarks from original SQL parent',()=>{
-  const remarks='Prior payment reference 190.\\nবাংলা বিবরণ: পূর্ববর্তী করবর্ষের সংশোধিত চালান।';
+  const remarks='Prior payment reference 190.\nবাংলা বিবরণ: পূর্ববর্তী করবর্ষের সংশোধিত চালান।';
   const source={
     id:'572659b2-4f41-496f-b72c-a9189a3ccb61',
     service:'ADVANCE_TAX',status:'SIMULATED_SUCCESS',amountMinor:2500,
