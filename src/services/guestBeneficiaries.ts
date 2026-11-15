@@ -5,6 +5,9 @@ import type { Beneficiary, BeneficiaryInput, BeneficiaryList } from './beneficia
 const capabilityKey = 'korbritto.guest-beneficiaries.capability.v1';
 const initializedKey = 'korbritto.guest-beneficiaries.initialized.v1';
 const capabilityPattern = /^[A-Za-z0-9_-]{43}$/;
+// Notify mounted guest payment drafts of same-tab capability creation.
+// No bearer token or identifying value is included in the event.
+export const GUEST_DRAFT_OWNER_CHANGED_EVENT = 'taxpay-guest-draft-owner-changed';
 
 // Keep only an opaque UI generation, never any part of the private guest
 // capability, in React owner keys. A guest access key can change in another
@@ -91,6 +94,11 @@ function getCapability(source:GuestSource='active'): { value: string; needsRegis
   } catch {
     throw new Error('Guest beneficiary storage is unavailable in this browser. Allow site storage and try again.');
   }
+  // Storage events are emitted only in *other* tabs. Without a same-tab
+  // signal, the open Save Draft form could keep its original unavailable
+  // owner scope after the first capability is created by a draft/list read.
+  try { window.dispatchEvent(new Event(GUEST_DRAFT_OWNER_CHANGED_EVENT)); }
+  catch { /* Registration remains valid even in a non-DOM test context. */ }
   return { value: created, needsRegistration: true };
 }
 
