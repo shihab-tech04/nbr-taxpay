@@ -14,7 +14,8 @@ RETURNS TABLE (
   previous_state text,
   next_state text,
   reason text,
-  occurred_at timestamptz
+  occurred_at timestamptz,
+  actor_uid uuid
 )
 LANGUAGE plpgsql
 STABLE
@@ -33,7 +34,7 @@ BEGIN
 
   RETURN QUERY
   WITH owner_inquiries AS (
-    SELECT i.inquiry_id,i.created_at,i.reason
+    SELECT i.inquiry_id,i.created_at,i.reason,i.requester_uid
     FROM public.taxpay_correction_inquiries i
     WHERE i.requester_uid=v_actor
     ORDER BY i.created_at DESC,i.inquiry_id DESC
@@ -46,7 +47,8 @@ BEGIN
         WHEN 'MAKER_ACKNOWLEDGED' THEN 3
         WHEN 'REVIEWER_VERIFIED' THEN 4
       END::integer AS revision,
-      d.action_code,d.officer_role,d.previous_state,d.next_state,d.reason,d.created_at
+      d.action_code,d.officer_role,d.previous_state,d.next_state,d.reason,d.created_at,
+      d.officer_uid
     FROM public.taxpay_correction_review_decisions d
     JOIN owner_inquiries i ON i.inquiry_id=d.inquiry_id
   ),
@@ -55,16 +57,18 @@ BEGIN
       'INQUIRY_SUBMITTED'::text AS event_kind,1::integer AS revision,
       'SUBMITTED'::text AS action_code,'TAXPAYER'::text AS actor_role,
       'TAXPAY_SQL'::text AS source_system,NULL::text AS previous_state,
-      'PENDING_OFFICER'::text AS next_state,i.reason,i.created_at AS occurred_at
+      'PENDING_OFFICER'::text AS next_state,i.reason,i.created_at AS occurred_at,
+      i.requester_uid AS actor_uid
     FROM owner_inquiries i
     UNION ALL
     SELECT d.inquiry_id,d.message_id,'OFFICE_DECISION'::text,d.revision,
       d.action_code,d.officer_role,'OFFICE_SQL'::text,d.previous_state,
-      d.next_state,d.reason,d.created_at
+      d.next_state,d.reason,d.created_at,d.officer_uid
     FROM decision_events d
   )
   SELECT h.inquiry_id,h.event_id,h.event_kind,h.revision,h.action_code,
-    h.actor_role,h.source_system,h.previous_state,h.next_state,h.reason,h.occurred_at
+    h.actor_role,h.source_system,h.previous_state,h.next_state,h.reason,h.occurred_at,
+    h.actor_uid
   FROM history h
   ORDER BY h.occurred_at,h.revision,h.event_id;
 END;
@@ -76,6 +80,6 @@ GRANT EXECUTE ON FUNCTION public.taxpay_correction_my_history(integer)
   TO authenticated;
 
 COMMENT ON FUNCTION public.taxpay_correction_my_history(integer) IS
-  'Returns the latest correction inquiry events only for auth.uid(); preserves decision IDs, actors, source, state transitions and timestamps without granting direct access to the private audit table.';
+  'Returns the latest signed-in owner correction history, including immutable event and actor UUID provenance, actor roles, source, status transition and receive time; no direct private audit-table access.';
 
 COMMIT;
