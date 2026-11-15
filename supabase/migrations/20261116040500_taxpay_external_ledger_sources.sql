@@ -7,7 +7,7 @@ create table public.taxpay_external_payment_records (
   id uuid primary key default gen_random_uuid(),
   owner_uid uuid not null references auth.users(id) on delete restrict,
   source_system text not null check (source_system in (
-    'BRTA','E_TDS','IBAS_PP','NSD','SUB_REGISTRAR_OFFICE','BANK','SA_CODER'
+    'BRTA','E_TDS','IBAS_PLUS_PLUS','NSD','SUB_REGISTRAR_OFFICE','BANK','SA_CODER'
   )),
   source_transaction_id text not null check (length(btrim(source_transaction_id)) between 1 and 160),
   source_allocation_id text not null check (length(btrim(source_allocation_id)) between 1 and 160),
