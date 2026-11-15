@@ -109,7 +109,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const bn=language==='bn';
   // These historical fictional scenarios are available only on localhost and
   // only with an explicit QA flag. Production must never fall back to them.
-  const localQaScenario= /^(localhost|127\\.0\\.0\\.1)$/.test(window.location.hostname)&&
+  const localQaScenario=['localhost','127.0.0.1'].includes(window.location.hostname)&&
     new URLSearchParams(window.location.search).get('qaScenario')==='1';
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
