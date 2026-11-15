@@ -562,6 +562,7 @@ BEGIN
   IF v_payload->>'originalReference'<>'SYN-REF-003'
      OR v_payload->>'originalPaymentId'<>'80000000-0000-4000-8000-000000000041'
      OR v_payload->>'originalPaymentKind'<>'TAXPAY_STORY_PAYMENT'
+      OR v_payload->>'caseKind'<>'CORRECTION_REVIEW'
      OR v_payload ? 'requesterUid' OR v_payload ? 'requester_uid'
      OR v_payload ? 'taxpayerTin' OR v_payload ? 'tin' THEN
     RAISE EXCEPTION 'Correction outbox parent link is missing or payload is over-scoped';
@@ -571,6 +572,55 @@ BEGIN
   END IF;
 END;
 $test$;
+
+-- F-094: preserve an unsolicited-payment allegation as its own reviewed
+-- source case without changing the immutable original payment parent.
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000001',true);
+DO $unsolicited_case$
+DECLARE v_id uuid;v_kind text;
+BEGIN
+  INSERT INTO public.taxpay_correction_inquiries(
+    requester_uid,original_reference,reason,requested_outcome,case_kind
+  ) VALUES (
+    '80000000-0000-4000-8000-000000000001','SYN-REF-003',
+    'An unsolicited fictional payment was recorded on my behalf',
+    'Review this unwanted payment allegation without changing the record',
+    'UNSOLICITED_PAYMENT_REPORT'
+  ) RETURNING inquiry_id INTO v_id;
+  SELECT case_kind INTO v_kind FROM public.taxpay_correction_inquiries
+    WHERE inquiry_id=v_id;
+  IF v_kind IS DISTINCT FROM 'UNSOLICITED_PAYMENT_REPORT'
+    THEN RAISE EXCEPTION 'UNSOLICITED_CASE_KIND_NOT_PERSISTED'; END IF;
+  BEGIN
+    INSERT INTO public.taxpay_correction_inquiries(
+      requester_uid,original_reference,reason,requested_outcome,case_kind
+    ) VALUES (
+      '80000000-0000-4000-8000-000000000001','SYN-REF-003',
+      'An unrecognized case kind must not be accepted',
+      'Reject an invalid classification','UNKNOWN_CASE_KIND'
+    );
+    RAISE EXCEPTION 'TEST_INVALID_CASE_KIND_ACCEPTED';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+END;
+$unsolicited_case$;
+RESET ROLE;
+DO $unsolicited_outbox$
+DECLARE v_payload jsonb;v_kind text;
+BEGIN
+  SELECT o.event_payload,i.case_kind INTO v_payload,v_kind
+  FROM payment_sync.correction_outbox o
+  JOIN public.taxpay_correction_inquiries i ON i.inquiry_id=o.inquiry_id
+  WHERE i.reason='An unsolicited fictional payment was recorded on my behalf';
+  IF v_kind IS DISTINCT FROM 'UNSOLICITED_PAYMENT_REPORT'
+     OR v_payload->>'caseKind' IS DISTINCT FROM 'UNSOLICITED_PAYMENT_REPORT'
+     OR v_payload->>'originalPaymentId' IS DISTINCT FROM
+       '80000000-0000-4000-8000-000000000041'
+     OR v_payload->>'mayChangeFinancialRecords' IS DISTINCT FROM 'false'
+     OR v_payload ? 'requesterUid' OR v_payload ? 'taxpayerTin'
+  THEN RAISE EXCEPTION 'UNSOLICITED_OFFICE_EVENT_NOT_OWNER_SCOPED'; END IF;
+END;
+$unsolicited_outbox$;
 
 DO $financial_unchanged$
 DECLARE v_relation regclass; v_name text; v_count bigint; v_digest text; v_expected record;
