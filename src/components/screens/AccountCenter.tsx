@@ -13,6 +13,7 @@ import {loadAuthenticatedRegistrationProfile} from '../../services/authenticated
 import type {TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {MaskedProfileValue,sensitiveProfileKind} from '../ui/MaskedProfileValue';
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
@@ -345,7 +346,12 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                     <div><dt>{language === 'bn' ? 'অ্যাকাউন্টের ধরন' : 'Account type'}</dt><dd>{previewAccount?.role ?? demoSql.profile?.roleCode ?? taxpayerProfile.type}</dd></div>
                     {(previewAccount || demoSql.profile) && <>
                       <div><dt>{language === 'bn' ? 'সেবার ধরন' : 'Service focus'}</dt><dd>{previewAccount ? (language === 'bn' ? previewAccount.focusBn : previewAccount.focusEn) : ((language === 'bn' ? demoSql.profile?.focusBn : demoSql.profile?.focusEn) ?? '—')}</dd></div>
-                      <div><dt>{language === 'bn' ? 'করদাতা রেফারেন্স' : 'Taxpayer reference'}</dt><dd>{previewAccount?.tin ?? demoSql.profile?.tinStub ?? '—'}</dd></div>
+                      <div><dt>{language === 'bn' ? 'করদাতা রেফারেন্স' : 'Taxpayer reference'}</dt><dd>{(()=>{
+                         const tin=previewAccount?.tin ?? demoSql.profile?.tinStub ?? null;
+                         const kind=typeof tin==='string'?sensitiveProfileKind('tin',tin):null;
+                         return tin&&kind?<MaskedProfileValue value={tin} kind={kind}
+                           label={language==='bn'?'করদাতা রেফারেন্স':'Taxpayer reference'} language={language} allowCopy/>:tin??'—';
+                       })()}</dd></div>
                       <div><dt>{language === 'bn' ? 'কর সার্কেল' : 'Tax circle'}</dt><dd>{previewAccount?.taxCircle ?? demoSql.profile?.jurisdictionLabel ?? '—'}</dd></div>
                     </>}
                 </dl>
@@ -383,7 +389,9 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                 <h2>{language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details'}</h2>
                 <dl className="taxpayer-account-facts">
                   <div><dt>{t.name}</dt><dd>{typeof user.user_metadata?.taxpay_display_name === 'string' && user.user_metadata.taxpay_display_name.trim() ? user.user_metadata.taxpay_display_name : t.noName}</dd></div>
-                  <div><dt>{t.email}</dt><dd>{user.email ?? '—'}</dd></div>
+                  <div><dt>{t.email}</dt><dd>{user.email
+                     ?<MaskedProfileValue value={user.email} kind="email" label={t.email} language={language} allowCopy/>
+                     :'—'}</dd></div>
                   <div><dt>{t.verified}</dt><dd>{user.email_confirmed_at ? date(user.email_confirmed_at) : t.unverified}</dd></div>
                   <div><dt>{t.joined}</dt><dd>{date(user.created_at)}</dd></div>
                   <div><dt>{t.accountId}</dt><dd className="taxpayer-account-id">{user.id}</dd></div>
