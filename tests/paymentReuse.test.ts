@@ -215,6 +215,9 @@ test('M06 Pay Again preserves child and exempt passenger categories, but require
    {...original.items[0],taxAmount:1000.0001},...original.items.slice(1)]}],
    'owner','1234567890123','travel-origin'),/cannot be reconciled/,
    'fractional-cent saved tax must not be rounded into a valid repeat');
+ assert.throws(()=>reuseRecordedPayment([{...original,totalAmount:1500.0001}],
+   'owner','1234567890123','travel-origin'),/incomplete|reconcile/,
+   'fractional-cent original parent must not be rounded into a valid repeat');
  assert.equal(JSON.stringify(original),before);
  assert.throws(()=>reuseRecordedPayment([{...original,items:[
    {...original.items[0],headId:156},...original.items.slice(1)]}],
