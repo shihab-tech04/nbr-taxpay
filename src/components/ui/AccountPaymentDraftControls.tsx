@@ -40,9 +40,15 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   const ownerKey = actor ? actor.kind + ':' + (actor.kind === 'preview' ? actor.profileId : actor.kind === 'authenticated' ? actor.userId : 'session') : '';
   // An old save/resume/delete promise may resolve after this form changes
   // accounts. Check the latest render's owner before applying its result.
-  const currentOwnerRef = useRef(ownerKey);
-  currentOwnerRef.current = ownerKey;
-  const ownerStillCurrent = () => currentOwnerRef.current === ownerKey;
+  const requestOwnerKey = ownerKey + ':' + service;
+  const currentOwnerRef = useRef(requestOwnerKey);
+  const mountedRef = useRef(true);
+  currentOwnerRef.current = requestOwnerKey;
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+  const ownerStillCurrent = () => mountedRef.current && currentOwnerRef.current === requestOwnerKey;
   const [rows, setRows] = useState<PaymentFormDraft[]>([]);
   const [rowsOwnerKey, setRowsOwnerKey] = useState('');
   // Render only rows fetched for the current account, even before effects clear
