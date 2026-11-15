@@ -124,3 +124,19 @@ test('empty recorded dashboard prioritizes drafts and tasks without changing sid
       'no horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }
 });
+
+test('public overview opens the current assessment year and preserves explicit year selection',async({page})=>{
+  for(const width of [375,1600]){
+    await page.setViewportSize({width,height:900});
+    await page.goto('/?action=taxpayer_home&demoUser=user1');
+    const year=page.getByRole('combobox',{name:'Assessment year'});
+    await expect(year).toHaveValue('2026-2027');
+    await year.selectOption('2025-2026');
+    await expect(year).toHaveValue('2025-2026');
+    await page.reload();
+    await expect(year).toHaveValue('2025-2026');
+    await page.goto('/?action=taxpayer_home&demoUser=user1');
+    await expect(year).toHaveValue('2026-2027');
+    await expect(page.getByTestId('dashboard-chart-source')).toHaveCount(0);
+  }
+});

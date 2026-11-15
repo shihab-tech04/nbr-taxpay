@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {beneficiaryProfilePayments,countsTowardBeneficiaryPaidTotal,missingOptionalSimulationBinding,requireCurrentBeneficiaryHistoryOwner} from '../src/services/beneficiaryProfileHistory';
 import {sampleTinForUserNumber} from '../src/data/sampleTinSuggestions';
-import type {SimulationTransaction} from '../src/contracts/paymentSimulationContract';
+import type {SimulationTransaction,SimulationUser} from '../src/contracts/paymentSimulationContract';
 import type {OwnedStoryPayment} from '../src/services/story1AccountPaymentHistory';
 import {readFileSync} from 'node:fs';
 
@@ -160,4 +160,42 @@ test('authenticated beneficiary history rejects sign-out or account switch after
   assert.throws(()=>requireCurrentBeneficiaryHistoryOwner('',owner),/Account changed/);
   const loader=readFileSync('src/services/beneficiaryProfileHistory.ts','utf8');
   assert.match(loader,/const simulations=boundId\?await getPrivateSimulationHistory\('payer'\):\[\];[\s\S]*await supabase\.auth\.getUser\(\);[\s\S]*requireCurrentBeneficiaryHistoryOwner\(ownerUid,data\.user\?\.id\)/);
+});
+
+
+test('isolated User1 ten-recipient allocation fixture preserves payer/recipient lineage across mixed heads',()=>{
+  // Existing fictional TIN aliases only; no production DB, issuance or settlement.
+  const recipientNumbers=[2,3,4,5,6,7,8,9,11,12] as const;
+  const allocations=recipientNumbers.map((n,index)=>({
+    id:'user1-beneficiary-'+n,lineNo:index+1,beneficiary:('user'+n) as SimulationUser,
+    category:(['ADVANCE_TAX','PENALTY','OTHER_TAX_PAYMENT','ASSESSED_DEMAND'] as const)[index%4],
+    assessmentYear:index%2===0?'2026-27':'2025-26',amountMinor:10000+index*100,
+  }));
+  const groups=[allocations.slice(0,4),allocations.slice(4,8),allocations.slice(8,9),allocations.slice(9,10)];
+  const sources:SimulationTransaction[]=groups.map((rows,index)=>({
+    id:'ws2-user1-'+index,transactionId:'ws2-user1-'+index,payer:'user1',
+    state:'SIMULATED',simulationOnly:true,reviewStatus:'APPROVER_CLOSED',
+    createdAt:'2026-11-'+String(10+index).padStart(2,'0')+'T12:00:00Z',
+    totalMinor:rows.reduce((sum,row)=>sum+row.amountMinor,0),
+    allocations:rows,events:[],
+  }));
+  const distinct=new Set<string>();
+  for(const [index,n] of recipientNumbers.entries()){
+    const tin=sampleTinForUserNumber(n);
+    assert.ok(tin,'existing fictional recipient alias must exist');
+    assert.match(tin!,/^\d{12}$/);
+    distinct.add(tin!);
+    const entries=beneficiaryProfilePayments(tin!,[],sources,'user1','en');
+    assert.equal(entries.length,1,'User1 must see just the selected beneficiary allocation');
+    assert.equal(entries[0].amountMinor,allocations[index].amountMinor);
+    assert.equal(entries[0].taxpayerTin,tin);
+    assert.equal(entries[0].source,'simulation');
+    assert.equal(entries[0].transactionId,sources[index<4?0:index<8?1:index===8?2:3].transactionId);
+    assert.throws(()=>beneficiaryProfilePayments(tin!,[],sources,'user2','en'),
+      /payer-scoped|Invalid payer-scoped/,'unrelated payer cannot read User1 allocations');
+  }
+  assert.equal(distinct.size,10,'ten distinct eligible User1 saved-beneficiary aliases');
+  assert.equal(sources[0].allocations.length,4,'four lines under one combined parent');
+  assert.equal(sources[1].allocations.length,4,'four lines under another combined parent');
+  assert.ok(sources.every(x=>x.allocations.reduce((sum,row)=>sum+row.amountMinor,0)===x.totalMinor));
 });

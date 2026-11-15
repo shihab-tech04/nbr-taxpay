@@ -743,3 +743,69 @@ test('F-122 signed-in public desktop wordmark opens private dashboard, preservin
   expect(await page.evaluate(()=>
     document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+
+test('F-124 logged-in main content uses exactly 70% of its own area from 1400px, leaving rail and public pages unchanged',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','One browser checks its own explicit responsive viewports');
+  await mockPrivateAccount(page,'user1');
+  for(const width of [1399,1400,1440,1920]){
+    for(const lang of ['en','bn'] as const){
+      await page.setViewportSize({width,height:900});
+      await page.goto('/?action=taxpayer_home&lang='+lang);
+      await expect(page.getByTestId('account-workflow-summary')).toBeVisible();
+      const measure=await page.evaluate(()=>{
+        const shell=document.querySelector('.taxpay-citizen-shell')!;
+        const main=document.querySelector<HTMLElement>('main#main-content')!;
+        const content=main.firstElementChild as HTMLElement;
+        const rail=document.querySelector<HTMLElement>('.taxpayer-reference-rail')!;
+        const padding=getComputedStyle(main);
+        const area=main.clientWidth-parseFloat(padding.paddingLeft)-parseFloat(padding.paddingRight);
+        const rect=main.getBoundingClientRect();
+        const inner=content.getBoundingClientRect();
+        const nav=rail.getBoundingClientRect();
+        return {authenticated:shell.classList.contains('taxpay-authenticated-content'),
+          area,content:inner.width,mainLeft:rect.left,railRight:nav.right,
+          leftInset:inner.left-rect.left-parseFloat(padding.paddingLeft),
+          rightInset:rect.right-parseFloat(padding.paddingRight)-inner.right,
+          overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+      });
+      expect(measure.authenticated).toBe(true);
+      expect(Math.abs(measure.mainLeft-measure.railRight),JSON.stringify({width,lang,measure})).toBeLessThanOrEqual(2);
+      expect(measure.area).toBeGreaterThan(0);
+      const expected=width>=1400 ? measure.area*0.7 : Math.min(1150,measure.area);
+      expect(Math.abs(measure.content-expected),JSON.stringify({width,lang,measure})).toBeLessThanOrEqual(2);
+      expect(Math.abs(measure.leftInset-measure.rightInset)).toBeLessThanOrEqual(2);
+      expect(measure.overflow).toBeLessThanOrEqual(2);
+      await expect(page.locator('.taxpayer-reference-rail')).toBeVisible();
+      // Save actual Playwright-rendered evidence from the exact integrated head,
+      // not a synthetic screenshot or a viewport calculation alone.
+      if(lang==='en'){
+        await info.attach('authenticated-main-width-'+width+'-en',{
+          body:await page.screenshot({fullPage:true}),contentType:'image/png'
+        });
+      }
+      if(width===1440){
+        // The same authenticated content wrapper serves Activity/Profile.
+        for(const route of ['history','account_profile']){
+          await page.goto('/?action='+route+'&lang='+lang);
+          await expect(page.locator('.taxpay-authenticated-content main#main-content > *').first()).toBeVisible();
+          const ratio=await page.evaluate(()=>{
+            const main=document.querySelector<HTMLElement>('main#main-content')!;
+            const child=main.firstElementChild!.getBoundingClientRect();
+            const style=getComputedStyle(main);
+            const available=main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
+            return child.width/available;
+          });
+          expect(ratio,route+' '+lang).toBeGreaterThanOrEqual(.695);
+          expect(ratio,route+' '+lang).toBeLessThanOrEqual(.705);
+        }
+      }
+    }
+  }
+  // Signing in does not constrain the already approved public home.
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto('/?action=landing&lang=bn');
+  await expect(page.locator('.public-benefits__item')).toHaveCount(6);
+  await expect(page.locator('.taxpay-citizen-shell')).not.toHaveClass(/taxpay-authenticated-content/);
+  await expect(page.locator('main#main-content')).toHaveClass(/public-information-main/);
+});

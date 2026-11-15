@@ -937,9 +937,9 @@ test('homepage lookup labels example-only matches and preserves focus in EN/BN a
       // Exactly one live status announcement at a time, including when suggestions are open.
       await expect(section.getByTestId('public-search-match-status')).toHaveCount(1);
       await expect(section.getByTestId('public-search-match-status')).toBeEmpty();
-      await expect(search).toHaveAttribute('aria-expanded', 'false');
+      await expect(section.locator('#public-record-suggestions')).toHaveCount(0);
       await search.focus();
-      await expect(search).toHaveAttribute('aria-expanded', 'true');
+      await expect(section.locator('#public-record-suggestions')).toHaveCount(1);
       if (width === 1280 && lang === 'en') {
         const firstExample = (await section.locator('.public-record-suggestions__examples')
           .locator('.public-record-suggestions__value').first().innerText()).trim();
@@ -967,11 +967,11 @@ test('homepage lookup labels example-only matches and preserves focus in EN/BN a
         ? 'নমুনার মধ্যে মিলে যাওয়া রেফারেন্স নেই'
         : 'No matching references among the examples');
       await search.press('ArrowDown');
-      await expect(search).toHaveAttribute('aria-activedescendant', 'public-search-option-0');
+      await expect(section.locator('#public-search-option-0')).toHaveClass(/is-active/);
       await search.press('Escape');
       await expect(search).toBeFocused();
-      await expect(search).not.toHaveAttribute('aria-activedescendant', /./);
-      await expect(search).toHaveAttribute('aria-expanded', 'false');
+      await expect(section.locator('#public-search-option-0')).toHaveCount(0);
+      await expect(section.locator('#public-record-suggestions')).toHaveCount(0);
       await expect(section.getByTestId('public-search-match-status')).toBeEmpty();
       await search.fill('NOT-A-KNOWN-EXAMPLE');
       await section.getByRole('button', { name: lang === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
