@@ -117,3 +117,12 @@ test('new same-tab guest capability invalidates a mounted payment draft owner wi
   assert.match(controls,/paymentDraftOwnerScope\(\{kind:'guest'\}\) !== ownerKey/);
   assert.doesNotMatch(guest,/new CustomEvent\(GUEST_DRAFT_OWNER_CHANGED_EVENT,[^\n]*detail/);
 });
+
+test('switching payment service under one owner cannot display drafts from the previous service',()=>{
+  const ui=read('src/components/ui/AccountPaymentDraftControls.tsx');
+  assert.match(ui,/const selectionScope = ownerKey \+ ':' \+ service/);
+  assert.match(ui,/const visibleRows = rowsOwnerKey === selectionScope \? rows : \[\]/);
+  assert.match(ui,/setRowsOwnerKey\(selectionScope\)/);
+  assert.doesNotMatch(ui,/setRowsOwnerKey\(ownerKey\)/);
+  assert.doesNotMatch(ui,/rowsOwnerKey === ownerKey \? rows : \[\]/);
+});
