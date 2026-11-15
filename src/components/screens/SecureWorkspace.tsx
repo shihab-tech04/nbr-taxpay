@@ -413,6 +413,7 @@ export const SecureWorkspace: React.FC = () => {
             <UiInput id="taxpay-auth-email-code" type="text" inputMode="numeric" autoComplete="one-time-code"
               pattern="[0-9]{6}" maxLength={6} value={emailCode}
               onChange={e=>{setEmailCode(normalizeEmailOneTimeCode(e.target.value));setEmailCodeMessage('');}}
+              onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();void verifyEmailCode();}}}
               placeholder={bn?'৬ সংখ্যার কোড':'6-digit code'} />
             {emailCodeMessage&&<p role="alert" className="text-sm text-taxpay-error">{emailCodeMessage}</p>}
             <UiButton type="button" onClick={()=>void verifyEmailCode()}
