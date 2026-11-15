@@ -30,6 +30,13 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
   await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password');
   await expect(page).toHaveURL(/action=taxpayer_login/);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
+  const userIdInput=dialog.locator('#taxpayer-login-user-id');
+  // An invalid login refocuses User ID and reopens suggestions: first Escape
+  // closes those choices; second Escape dismisses the existing shared modal.
+  await expect(userIdInput).toHaveAttribute('aria-expanded','true');
+  await page.keyboard.press('Escape');
+  await expect(userIdInput).toHaveAttribute('aria-expanded','false');
+  await expect(dialog).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(page).toHaveURL(/action=landing/);
@@ -58,8 +65,10 @@ test('user1-user55 selector filters, keyboard-selects, fills only QA credentials
   await expect(input).toHaveValue('user55');
   await expect(dialog.getByLabel('Password',{exact:true})).toHaveValue('user55');
   await expect(input).toHaveAttribute('aria-expanded','false');
-  await input.focus();
+  await input.click(); // already focused: explicit user click reopens choices
+  await expect(input).toHaveAttribute('aria-expanded','true');
   await input.press('Escape');
+  await expect(dialog).toBeVisible();
   await expect(input).toHaveAttribute('aria-expanded','false');
   await input.fill('user56');
   await expect(dialog.getByRole('listbox',{name:'Test accounts'}).getByText('No test accounts found')).toBeVisible();
