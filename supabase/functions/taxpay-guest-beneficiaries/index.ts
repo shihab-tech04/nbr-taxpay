@@ -141,7 +141,9 @@ Deno.serve(async (request: Request) => {
       data = await rpc(client, 'taxpay_guest_beneficiary_lists', { p_capability_hash });
     } else if (action === 'demo-registration') {
       const id=body.profileId;
-      if(typeof id!=='string'||!/^user(?:[1-9]|[12][0-9]|30)$/.test(id))
+      // The same 55 fictional, capability-backed IDs are allowed for this
+      // read-only registration view; no eTIN or Auth ownership is inferred.
+      if(typeof id!=='string'||!/^user(?:[1-9]|[1-4][0-9]|5[0-5])$/.test(id))
         throw new Error('INVALID_DEMO_PROFILE');
       // Reuse the existing verified demo account login RPC instead of adding
       // a new privileged database function. It returns that exact account's
