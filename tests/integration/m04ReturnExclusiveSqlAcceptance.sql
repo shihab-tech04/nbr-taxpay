@@ -17,7 +17,7 @@ BEGIN
   'payerMode','SELF','assessmentYear','2025-26','receiptReference','SIM-M04',
   'lines',jsonb_build_array(jsonb_build_object('headId',125,'totalAmount',19.75)),
   'receiptSnapshot',jsonb_build_object('taxpayerTin','111111111111',
-   'assessmentYear','2025-26','paymentCategory','TAX_WITH_RETURN',
+   'assessmentYear','2025-26','payerTin','111111111111','paymentCategory','TAX_WITH_RETURN',
    'challanNo','SIM-M04','totalAmount',19.75,
    'items',jsonb_build_array(jsonb_build_object('headId',125,'totalAmount',19.75)))));
  PERFORM demo_payment.assert_new_head_exclusivity(v);
@@ -34,6 +34,14 @@ BEGIN
   ('wrong_recipient',jsonb_set(v,'{details,receiptSnapshot,taxpayerTin}','"222222222222"'::jsonb)),
   ('wrong_receipt_year',jsonb_set(v,'{details,receiptSnapshot,assessmentYear}','"2026-27"'::jsonb)),
   ('wrong_receipt_total',jsonb_set(v,'{details,receiptSnapshot,totalAmount}','10'::jsonb)),
+  ('missing_parent_amount',v - 'amountMinor'),
+  ('missing_taxpayer',jsonb_set(v,'{details}',(v->'details') - 'taxpayerTin')),
+  ('missing_year',jsonb_set(v,'{details}',(v->'details') - 'assessmentYear')),
+  ('missing_payer_mode',jsonb_set(v,'{details}',(v->'details') - 'payerMode')),
+  ('missing_head_total',jsonb_set(v,'{details,lines}','[{"headId":125}]'::jsonb)),
+  ('missing_receipt_total',jsonb_set(v,'{details,receiptSnapshot}',(v#>'{details,receiptSnapshot}') - 'totalAmount')),
+  ('mismatched_receipt_line',jsonb_set(v,'{details,receiptSnapshot,items,0,totalAmount}','20'::jsonb)),
+  ('wrong_receipt_payer',jsonb_set(v,'{details,receiptSnapshot,payerTin}','"222222222222"'::jsonb)),
   ('wrong_parent_amount',jsonb_set(v,'{amountMinor}','2000'::jsonb))
  ) AS tests(label_name,payload) LOOP
   blocked:=false;
