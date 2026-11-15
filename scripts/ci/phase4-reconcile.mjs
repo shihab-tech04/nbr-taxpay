@@ -69,7 +69,7 @@ export function reconcile(taxpayerRows,officeRows){
   }
   for(const id of dst.keys())if(!src.has(id))issues.push({record:ref(id),field:'payment',reason:'UNEXPECTED_OFFICE'});
   return {taxpayerCount:src.size,officeCount:dst.size,matched,simulated,missingDhara,missingChallan,
-    issues,parityPassed:issues.length===0&&src.size===dst.size,
+    issues,parityPassed:issues.length===0&&src.size===dst.size&&src.size>0,
     // SQL equality never proves settlement, taxpayer identity, authorization or deployment.
     releaseVerified:false};
 }
