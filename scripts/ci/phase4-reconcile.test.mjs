@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {reconcile} from './phase4-reconcile.mjs';
 const row={id:'8aeab741-1687-429b-abf3-ed8d0746c095',service_code:'OTHER_TAX_PAYMENT',amount_minor:5000,status:'SIMULATED_SUCCESS',
   data:{origin:'TAXPAY_UI',idempotencyKey:'safe-id',details:{payerTin:'111111111111',payerId:'payer',payerMode:'OTHER',
-    taxpayerTin:'222222222222',assessmentYear:'2026-27',receiptReference:'R',
+    taxpayerTin:'222222222222',assessmentYear:'2026-27',paymentSource:'BANK',receiptReference:'R',
     receiptSnapshot:{challanNo:'C',paymentTransactionId:'P',taxEventId:'E'},
     allocations:[{allocationId:'A',headId:121,taxpayerTin:'222222222222',assessmentYear:'2026-27',dhara:'verified-1',amountMinor:1500},
       {allocationId:'B',headId:145,taxpayerTin:'333333333333',assessmentYear:'2025-26',dhara:'verified-2',amountMinor:3500}],lines:[]}}};
@@ -15,7 +15,7 @@ test('historical parity preserves allocations but cannot prove payment success',
 test('all requested fields flag changes without revealing personal identifiers',()=>{
   const changes={payer:x=>x.data.details.payerTin='999999999999',recipient:x=>x.data.details.taxpayerTin='999999999999',
     year:x=>x.data.details.assessmentYear='2025-26',dhara:x=>x.data.details.allocations[0].dhara='changed',
-    source:x=>x.data.origin='OTHER',amount:x=>x.amount_minor=5001,status:x=>x.status='PENDING',
+    source:x=>x.data.details.paymentSource='BRTA',amount:x=>x.amount_minor=5001,status:x=>x.status='PENDING',
     challan:x=>x.data.details.receiptSnapshot.challanNo='DIFFERENT',
     references:x=>x.data.details.receiptReference='DIFFERENT',
     allocations:x=>x.data.details.allocations[0].allocationId='DIFFERENT'};
@@ -67,9 +67,20 @@ test('matching historical rows with absent allocation IDs are not field-complete
   assert.equal(x.releaseVerified,false);
 });
 test('missing source is reported without inventing legal or payment provenance',()=>{
-  const uncertain=copy(row);delete uncertain.data.origin;
+  const uncertain=copy(row);delete uncertain.data.details.paymentSource;
   const x=reconcile([uncertain],[copy(uncertain)]);
   assert.equal(x.parityPassed,true);
   assert.equal(x.missingSource,1);
   assert.equal(x.fieldComplete,false);
+});
+
+test('distinct source and application-origin provenance are compared separately',()=>{
+  const changed=copy(row);changed.data.origin='QA_BROWSER';
+  const result=reconcile([row],[changed]);
+  assert.equal(result.parityPassed,false);
+  assert.ok(result.issues.some(i=>i.field==='origin'));
+  const complete=reconcile([row],[copy(row)]);
+  assert.equal(complete.parityPassed,true);
+  assert.equal(complete.fieldComplete,true);
+  assert.equal(complete.releaseVerified,false);
 });
