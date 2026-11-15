@@ -27,6 +27,41 @@ test('copies original mixed own/other/head/year allocations without altering pai
  assert.equal(draft.formPayload.noticeReference,'');
  assert.equal(JSON.stringify(receipt),before);
 });
+test('Pay Again carries editable long, bilingual challan comments without mutating the source',()=>{
+  const remarks='Payment covers multiple years; explanation supplied by taxpayer. বাংলা মন্তব্য: তথ্য যাচাই করুন।';
+  assert.ok(remarks.length > 20);
+  const original={...receipt,paymentRemarks:remarks};
+  const frozen=JSON.stringify(original);
+  const draft=reuseRecordedPayment([original],'ownerUid','1234567890123','original-payment');
+  assert.equal(draft.formPayload.paymentRemarks,remarks);
+  draft.formPayload.paymentRemarks='An edited comment for the new challan';
+  assert.equal(original.paymentRemarks,remarks);
+  assert.equal(JSON.stringify(original),frozen);
+});
+
+test('Pay Again allocates independent UUIDs for every new combined line while retaining historical provenance',()=>{
+  const sourceId='11111111-2222-4333-8444-555555555555';
+  const historicalIds=['aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee','cccccccc-dddd-4eee-8fff-aaaaaaaaaaaa'];
+  const original={...receipt,paymentTransactionId:sourceId,
+    allocationItems:receipt.allocationItems!.map((a,i)=>({...a,allocationId:historicalIds[i]}))};
+  const frozen=JSON.stringify(original);
+  const first=reuseRecordedPayment([original],'ownerUid','1234567890123',sourceId);
+  const second=reuseRecordedPayment([original],'ownerUid','1234567890123',sourceId);
+  const getIds=(copy:typeof first)=>(copy.formPayload.otherTaxLines as Array<{id:string}>).map(x=>x.id);
+  const firstIds=getIds(first),secondIds=getIds(second);
+  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  assert.equal(firstIds.length,2);
+  assert.equal(new Set([...firstIds,...secondIds]).size,4,'each Pay Again copy needs independent allocation IDs');
+  for(const id of [...firstIds,...secondIds]){
+    assert.match(id,uuid);
+    assert.equal(historicalIds.includes(id),false,'never use an original allocation ID for a new line');
+  }
+  assert.deepEqual(first.sourceAllocationIds,historicalIds);
+  assert.deepEqual(second.sourceAllocationIds,historicalIds);
+  assert.equal(first.sourcePaymentId,sourceId);
+  assert.equal(JSON.stringify(original),frozen);
+});
+
 test('refuses incomplete and mismatched receipt data',()=>{
  assert.throws(()=>reuseRecordedPayment([{...receipt,allocationItems:[]}],'owner','1234567890123','ref'));
  assert.throws(()=>reuseRecordedPayment([{...receipt,totalAmount:99}],'owner','1234567890123','ref'));

@@ -203,6 +203,8 @@ jobs:
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/demoProfilePaymentScope.sql
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/combinedOtherTaxSqlAcceptance.sql
+          # All fictional user1 scenarios are transaction-rolled-back; never seed hosted data.
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/ws3User1IsolatedScenarioMatrix.sql
           # Verify session knowledge alone cannot claim another account's payment.
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/story1OwnerClaimIsolation.sql
           # F-167: guest payer TIN guards reject forged IDs and receipt data.

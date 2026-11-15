@@ -278,6 +278,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const taxZone = ownProfile?.taxZone ?? '—';
   const taxCircle = ownProfile?.taxCircle ?? '—';
   const [noticeReference, setNoticeReference] = useState('');
+  // Optional parent-challan note, separate from structured reference and head metadata.
+  const [paymentRemarks, setPaymentRemarks] = useState('');
   const [lastSearchedTin, setLastSearchedTin] = useState<string | null>(null);
   const sampleTaxpayer = lastSearchedTin === taxpayerTin ? (lookupSampleTaxpayer(taxpayerTin) ?? (ownAccountTax && ownProfile ? { tin: taxpayerTin, nameEn: ownProfile.nameEn, nameBn: ownProfile.nameBn } : null)) : null;
   const tinLookupState = lastSearchedTin !== taxpayerTin ? 'idle' : sampleTaxpayer ? 'found' : 'missing';
@@ -404,7 +406,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const snapshotAccountDraft = (): Record<string, unknown> => ({
     schemaVersion: 1, category, step: Math.min(step, 2),
     forSelf, tin, payerName, walkInPayerTin, otherTaxpayerName, additionalTaxpayers, oneTimeTaxpayer,
-    otherTaxLines, phone, receiptEmail, assessmentYear, noticeReference,
+    otherTaxLines, phone, receiptEmail, assessmentYear, noticeReference, paymentRemarks,
     incomeTaxType, selectedHeadIds, amountInputs, sourcePaymentId, sourceAllocationIds,
   });
   const restoreAccountDraft = (saved: Record<string, unknown>) => {
@@ -429,6 +431,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setOtherTaxpayerName(stringField('otherTaxpayerName')); setPhone(stringField('phone'));
     setReceiptEmail(stringField('receiptEmail')); setAssessmentYear(stringField('assessmentYear') || (initialReuse ? '' : '2026-27'));
     setNoticeReference(stringField('noticeReference'));
+    setPaymentRemarks(stringField('paymentRemarks'));
     setIncomeTaxType(saved.incomeTaxType === 'COMPANY' || saved.incomeTaxType === 'NON_COMPANY'
       ? saved.incomeTaxType : null);
     const heads = Array.isArray(saved.selectedHeadIds)
@@ -450,10 +453,23 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       typeof savedOneTime.name === 'string' && savedOneTime.name.length <= 160
       ? { id: savedOneTime.id, tin: savedOneTime.tin, name: savedOneTime.name } : null);
     setOneTimeTinDraft(''); setOneTimeSearchedTin(null); setOneTimeLookupError('');
-    setOtherTaxLines(Array.isArray(saved.otherTaxLines)
+    const restoredLines = Array.isArray(saved.otherTaxLines)
       ? saved.otherTaxLines.filter((line): line is OtherTaxAllocation =>
-        line && typeof line.taxpayerId === 'string' &&
-        typeof line.headId === 'number' && typeof line.assessmentYear === 'string').slice(0,300) : []);
+          line && typeof line.taxpayerId === 'string' &&
+          typeof line.headId === 'number' && typeof line.assessmentYear === 'string' &&
+          typeof line.amount === 'string').slice(0, MAX_COMBINED_ALLOCATIONS) : [];
+    // Old Pay Again drafts used non-UUID "repeat-line-N" identifiers. Repair
+    // only missing/invalid/duplicate IDs on input recovery, never original
+    // allocation provenance or a valid new payment line.
+    const usedIds = new Set<string>(initialReuse?.sourceAllocationIds ?? savedAllocationIds);
+    setOtherTaxLines(restoredLines.map(line => {
+      let id = typeof line.id === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(line.id) &&
+        !usedIds.has(line.id) ? line.id : crypto.randomUUID();
+      while (usedIds.has(id)) id = crypto.randomUUID();
+      usedIds.add(id);
+      return { ...line, id };
+    }));
     setLastSearchedTin(null); setVerifiedReference(null);
     setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); setConfirmedOtherTaxTins({});
     setPaymentChannel(null); setMethodGroup(null); setPaymentMethod(null); setAcknowledged(false);
@@ -1168,6 +1184,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         receiptMobile: receiptPhone,
         receiptEmail: normaliseReceiptEmail(receiptEmail),
         noticeReference: noticeReference.trim() || undefined,
+        paymentRemarks: paymentRemarks || undefined,
         isRepresentativePayment: !forSelf || additionalTaxpayers.length > 0,
         representativeTin: undefined,
         taxZone,
@@ -1208,6 +1225,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             receiptMobile: receiptPhone,
             receiptEmail: normaliseReceiptEmail(receiptEmail),
             noticeReference,
+            ...(newReceipt.paymentRemarks ? { paymentRemarks: newReceipt.paymentRemarks } : {}),
             incomeTaxType,
             isWithholding: isWithholdingMode,
             paymentChannel, paymentMethod,
@@ -1468,6 +1486,18 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary" />
       {fieldError('email')}
     </div>
+  );
+
+  const paymentRemarksControl = (
+    <section className="rounded-lg border border-taxpay-border bg-white p-3 sm:p-4" data-testid="challan-remarks-field">
+      <label htmlFor="guest-payment-remarks" className="mb-2 block text-sm font-semibold text-taxpay-dark">
+        {copy.remarks}
+      </label>
+      <textarea id="guest-payment-remarks" rows={3} value={paymentRemarks}
+        onChange={event => setPaymentRemarks(event.target.value)}
+        placeholder={copy.remarksPlaceholder}
+        className="min-h-24 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary" />
+    </section>
   );
 
   const legacySourceAmount = initialReuse?.formPayload.legacySourceAmount;
@@ -1837,7 +1867,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
         {/* STEP 2: Head Selection & Financial Amounts */}
         {step === 2 && (otherBatch ? (
           <>
-          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation}
+          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} remarks={paymentRemarksControl}
             lines={otherTaxLines} suggestionTaxpayerIds={ownAccountTax ? { primary: demoConsentActor } : undefined}
             preserveSourcePaymentAmounts={Boolean(sourcePaymentId)} focusRequest={summaryJump} onChange={next => {
               setOtherTaxLines(next);
@@ -2026,6 +2056,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
             </div>
             {isFieldInvalid('taxAmount') && errorHeadId === null && fieldError('taxAmount')}
             </PaymentFormSection>
+            {paymentRemarksControl}
 
             {!embedded && <div className="flex flex-wrap justify-between gap-2 pt-3">
               <button
@@ -2072,6 +2103,12 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   {language === 'bn' ? 'নির্বাচিত সব করদাতা ও খাতের জন্য একটি সম্মিলিত সিমুলেশন পেমেন্ট রেকর্ড ও রসিদ তৈরি হবে।' :
                     'One combined simulated payment record and receipt will cover all selected taxpayers and heads.'}
                 </p>}
+                {paymentRemarks !== '' && (
+                  <div className="mb-3 rounded-lg border border-taxpay-border p-3 text-sm" data-testid="payment-review-remarks">
+                    <strong className="text-taxpay-dark">{copy.remarks}</strong>
+                    <p className="mt-1 whitespace-pre-wrap break-words text-slate-700">{paymentRemarks}</p>
+                  </div>
+                )}
                 <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
                   onChannelChange={(channel, method) => { setPaymentChannel(channel); setPaymentMethod(method); setMethodGroup(null); setAcknowledged(false); }}
                   onGroupChange={group => { setMethodGroup(group); setPaymentMethod(null); setAcknowledged(false); }}

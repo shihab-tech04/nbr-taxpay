@@ -216,7 +216,9 @@ export function reuseRecordedPayment(
     additionalTaxpayers: others,
     otherTaxLines: isAllocationPayment
       ? allocations.map((item,index) => ({
-          id:`repeat-line-${index + 1}`,
+          // A repeat is a NEW payment. Historical source IDs remain read-only;
+          // each editable copy receives independent, valid allocation identities.
+          id: crypto.randomUUID(),
           taxpayerId: people.get(item.tin)!.id,
           headId: item.headId,
           assessmentYear: years[index], amount: money(item.amountMinor)
@@ -226,6 +228,7 @@ export function reuseRecordedPayment(
     assessmentYear: years[0],
     // Old notice/demand references are historical, not new payment authority.
     noticeReference: '',
+    paymentRemarks: initial.paymentRemarks ?? '',
     incomeTaxType: null,
     selectedHeadIds: isAllocationPayment ? [] : [...new Set(allocations.map(a=>a.headId))],
     amountInputs: isAllocationPayment ? {} : Object.fromEntries(

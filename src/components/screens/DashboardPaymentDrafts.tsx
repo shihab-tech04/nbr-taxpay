@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, FileText, RefreshCw, Trash2 } from 'lucide-react';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
@@ -31,6 +31,16 @@ export const DashboardPaymentDrafts: React.FC<{
     : previewAccount ? { kind: 'preview', profileId: previewAccount.id } : null;
   const ownerKey = actor ? actor.kind + ':' +
     (actor.kind === 'authenticated' ? actor.userId : actor.profileId) : '';
+  // SQL readback can finish after sign-out, account switching or unmount.
+  // Bind each action to the owner active at the time it started.
+  const latestOwner = useRef(ownerKey);
+  const mounted = useRef(true);
+  latestOwner.current = ownerKey;
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const sameOwner = () => mounted.current && latestOwner.current === ownerKey;
   const [catalog, setCatalog] = useState<Catalog>({ ownerKey: '', status: 'loading', rows: [] });
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -51,9 +61,9 @@ export const DashboardPaymentDrafts: React.FC<{
     setError(null);
     if (!actor || authLoading) return () => { active = false; };
     void listPaymentFormDrafts(actor).then(rows => {
-      if (active) setCatalog({ ownerKey, status: 'ready', rows });
+      if (active && sameOwner()) setCatalog({ ownerKey, status: 'ready', rows });
     }).catch(() => {
-      if (active) setCatalog({ ownerKey, status: 'error', rows: [] });
+      if (active && sameOwner()) setCatalog({ ownerKey, status: 'error', rows: [] });
     });
     return () => { active = false; };
     // Recheck only on identity or modal lifecycle changes, not ordinary rerenders.
@@ -74,10 +84,10 @@ export const DashboardPaymentDrafts: React.FC<{
     setCatalog({ ownerKey, status: 'loading', rows: [] });
     setError(null);
     void listPaymentFormDrafts(actor).then(rows => {
-      setCatalog(previous => previous.ownerKey === ownerKey
+      if (sameOwner()) setCatalog(previous => previous.ownerKey === ownerKey
         ? { ownerKey, status: 'ready', rows } : previous);
     }).catch(() => {
-      setCatalog(previous => previous.ownerKey === ownerKey
+      if (sameOwner()) setCatalog(previous => previous.ownerKey === ownerKey
         ? { ownerKey, status: 'error', rows: [] } : previous);
     });
   };
@@ -87,12 +97,13 @@ export const DashboardPaymentDrafts: React.FC<{
     setBusyId(draft.id); setError(null); setPendingDelete(null);
     try {
       const current = (await listPaymentFormDrafts(actor)).find(item => item.id === draft.id);
+      if (!sameOwner()) return;
       if (!current) throw new Error(tr('This draft is no longer available. Refresh your drafts.', 'এই খসড়াটি আর পাওয়া যাচ্ছে না। খসড়াগুলো নতুন করে লোড করুন।'));
       assertResumablePaymentDraft(current, language);
-      onResume(current);
+      if (sameOwner()) onResume(current);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : tr('Draft could not be opened.', 'খসড়া খোলা যায়নি।'));
-    } finally { setBusyId(null); }
+      if (sameOwner()) setError(reason instanceof Error ? reason.message : tr('Draft could not be opened.', 'খসড়া খোলা যায়নি।'));
+    } finally { if (sameOwner()) setBusyId(null); }
   };
 
   const remove = async (draft: PaymentFormDraft) => {
@@ -102,14 +113,17 @@ export const DashboardPaymentDrafts: React.FC<{
     try {
       // SQL enforces owner and revision; a changed draft is not silently deleted.
       await deletePaymentFormDraft(actor, draft);
+      if (!sameOwner()) return;
       setCatalog(previous => previous.ownerKey === ownerKey
         ? { ...previous, rows: previous.rows.filter(item => item.id !== draft.id) }
         : previous);
       setPendingDelete(null);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : tr('Draft could not be deleted.', 'খসড়া মুছে ফেলা যায়নি।'));
-      setPendingDelete(null);
-    } finally { setBusyId(null); }
+      if (sameOwner()) {
+        setError(reason instanceof Error ? reason.message : tr('Draft could not be deleted.', 'খসড়া মুছে ফেলা যায়নি।'));
+        setPendingDelete(null);
+      }
+    } finally { if (sameOwner()) setBusyId(null); }
   };
 
   const loading = catalog.ownerKey !== ownerKey || catalog.status === 'loading';

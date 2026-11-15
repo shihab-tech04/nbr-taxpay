@@ -68,6 +68,7 @@ BEGIN
       'taxpayerCount',2,'payerId','user1','payerMode','OTHER',
       'receiptReference','SIM-'||payment_key::text,'paymentChannel','NOW','paymentMethod','BKASH',
       'payerName','First recipient','payerTin','909000000013','totalAmount',50,'assessmentYear','2026-27, 2025-26',
+      'challanRemarks',E'বাংলা কর মন্তব্য: অতিরিক্ত ব্যাখ্যা এবং তথ্য\nEnglish second line longer than twenty characters',
       'taxpayerTin','','lines',lines,'receiptLines',ledger_lines,
       'allocations',allocations,'receiptSnapshot',snapshot));
   result:=public.taxpay_demo_story1_submit(owner_hash,payload);
@@ -94,9 +95,17 @@ BEGIN
     OR (SELECT count(*) FROM demo_payment.mirror_outbox WHERE entity_type='PAYMENT' AND entity_id=saved_id)<>1
     OR (SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=saved_id)<>1
   THEN RAISE EXCEPTION 'COMBINED_TEST_NOT_SINGLE_PAYMENT_OR_MIRROR'; END IF;
+  IF (SELECT data#>>'{details,challanRemarks}' FROM demo_payment.story_payments WHERE id=saved_id)
+       IS DISTINCT FROM E'বাংলা কর মন্তব্য: অতিরিক্ত ব্যাখ্যা এবং তথ্য\nEnglish second line longer than twenty characters'
+     OR (SELECT pg_catalog.length(data#>>'{details,challanRemarks}')
+           FROM demo_payment.story_payments WHERE id=saved_id) <= 20
+  THEN RAISE EXCEPTION 'CHALLAN_REMARKS_ORIGINAL_UNICODE_TRUNCATED'; END IF;
   replay:=public.taxpay_demo_story1_submit(owner_hash,payload);
   IF replay->>'id'<>saved_id::text OR replay->>'replayed'<>'true'
   THEN RAISE EXCEPTION 'COMBINED_TEST_IDEMPOTENCY_FAILED'; END IF;
+  IF (SELECT data#>>'{details,challanRemarks}' FROM demo_payment.story_payments WHERE id=saved_id)
+       IS DISTINCT FROM E'বাংলা কর মন্তব্য: অতিরিক্ত ব্যাখ্যা এবং তথ্য\nEnglish second line longer than twenty characters'
+  THEN RAISE EXCEPTION 'CHALLAN_REMARKS_CHANGED_ON_IDEMPOTENT_RETRY'; END IF;
   IF (SELECT count(*) FROM demo_payment.story_payments WHERE idempotency_key=payment_key)<>1
   THEN RAISE EXCEPTION 'COMBINED_TEST_DUPLICATE_ROW'; END IF;
 
@@ -210,7 +219,22 @@ BEGIN
   END;
   IF NOT blocked THEN RAISE EXCEPTION 'COMBINED_TEST_CROSS_ACCOUNT_ACCEPTED'; END IF;
 
-  RAISE NOTICE 'PASS: one combined TaxPay SQL row, one Office outbox, one notice, two allocations, exactly-one retry and denied cross-account mutations';
+  -- New parent validation must not allow non-text remarks or silently coerce
+  -- multiline strings; the existing source/outbox/receipt remains untouched.
+  bad_key:=gen_random_uuid();
+  bad_payload:=jsonb_set(payload,'{idempotencyKey}',to_jsonb(bad_key::text));
+  bad_payload:=jsonb_set(bad_payload,'{details,receiptReference}',to_jsonb('SIM-'||bad_key::text));
+  bad_payload:=jsonb_set(bad_payload,'{details,receiptSnapshot,challanNo}',to_jsonb('SIM-'||bad_key::text));
+  bad_payload:=jsonb_set(bad_payload,'{details,challanRemarks}','{"invalid":"type"}'::jsonb);
+  blocked:=false;
+  BEGIN
+    PERFORM public.taxpay_demo_story1_submit(owner_hash,bad_payload);
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE '%CHALLAN_REMARKS_MUST_BE_TEXT%' THEN blocked:=true; ELSE RAISE; END IF;
+  END;
+  IF NOT blocked THEN RAISE EXCEPTION 'CHALLAN_REMARKS_NON_TEXT_ACCEPTED'; END IF;
+
+  RAISE NOTICE 'PASS: one combined TaxPay SQL row, one Office outbox, one notice, two allocations, exactly-one retry, untruncated BN/EN remarks and denied cross-account mutations';
 END
 $combined$;
 -- F-039 / US-014 T04 original Taxpayer SQL: exactly one existing saved

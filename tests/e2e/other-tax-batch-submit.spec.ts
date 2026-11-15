@@ -52,7 +52,12 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
   await heads.getByRole('checkbox',{name:/Select 68B/}).check();
   await heads.getByTestId('other-tax-line').locator('select[id^="other-tax-year"]').selectOption('2025-26');
   await heads.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('35');
+  const remarks='  Challan clarification for two taxpayers and two assessment years.\nবাংলা বিবরণ: একাধিক করবর্ষের পরিশোধ। <b>literal text, not markup</b>  \n';
+  expect(remarks.length).toBeGreaterThan(20);
+  await dialog.getByLabel('Payment Remarks / Invoice Reference (Optional)').fill(remarks);
   await dialog.getByRole('button',{name:'Continue to payment channel'}).click();
+  await expect(dialog.getByTestId('payment-review-remarks')).toContainText('Challan clarification for two taxpayers');
+  expect(await dialog.getByTestId('payment-review-remarks').locator('p').textContent()).toBe(remarks);
   await dialog.getByRole('button',{name:'Pay online'}).click();
   await dialog.getByRole('button',{name:'Mobile banking'}).click();
   await dialog.getByRole('radio',{name:'bKash'}).check();
@@ -71,6 +76,8 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
   expect(calls[1]).toEqual(calls[0]);
   expect(calls[0].amountMinor).toBe(5000);
   expect(calls[0].details.combinedPayment).toBe(true);
+  expect(calls[0].details.paymentRemarks).toBe(remarks);
+  expect(calls[0].details.receiptSnapshot.paymentRemarks).toBe(remarks);
   expect(calls[0].details.allocations).toHaveLength(2);
   expect(calls[0].details.allocations.map((v:{taxpayerTin:string;assessmentYear:string;amountMinor:number})=>
     [v.taxpayerTin,v.assessmentYear,v.amountMinor])).toEqual([
@@ -81,6 +88,9 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
   await expect(receipt).toContainText('111111111111');
   await expect(receipt).toContainText('222222222222');
   await expect(receipt).toContainText('2025-26');
+  await expect(receipt.getByTestId('receipt-payment-remarks')).toContainText('Challan clarification for two taxpayers');
+  expect(await receipt.getByTestId('receipt-payment-remarks').locator('p').textContent()).toBe(remarks);
+  await expect(receipt.getByTestId('receipt-payment-remarks').locator('b')).toHaveCount(0);
   await expect(receipt).toContainText('৳ 50');
   await dialog.getByRole('button',{name:'View payment certificate'}).click();
   await expect(receipt.getByRole('heading',{name:'Payment Certificate'})).toBeVisible();

@@ -85,7 +85,33 @@ assert.equal(query(source,`BEGIN;SELECT set_config('request.jwt.claim.role','ser
 SELECT public.demo_story1_mirror_finish('PAYMENT','${parent.id}'::uuid,
 '${claim.claimToken}'::uuid,true,NULL);COMMIT;`),true);
 
-const page=query(office,'BEGIN;SET LOCAL ROLE authenticated;SELECT public.demo_story1_office_payment_page(1,100);COMMIT;');
+// Private Office projections are intentionally not client-executable.
+// Test a real bound Office officer through the existing guarded RPC instead:
+// no grant to anon/authenticated on the inner SECURITY DEFINER projection.
+const forbidden=spawnSync('psql',['-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-d',office],{
+  input:"BEGIN;SET LOCAL ROLE authenticated;SELECT public.demo_story1_office_payment_page(1,100);ROLLBACK;",
+  encoding:'utf8',timeout:90000,
+});
+assert.notEqual(forbidden.status,0,'Authenticated users must not execute the private inner page');
+
+const outsider=spawnSync('psql',['-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-d',office],{
+  input:"BEGIN;SET LOCAL ROLE authenticated;SELECT set_config('request.jwt.claim.sub','d2000000-0000-4000-8000-000000000099',true);SELECT public.payment_v1_office_guarded_story_page(1,100);ROLLBACK;",
+  encoding:'utf8',timeout:90000,
+});
+assert.notEqual(outsider.status,0,'A signed-in outsider without an active Office payment role is denied');
+
+const officerId='d2000000-0000-4000-8000-000000000001';
+const page=query(office,`BEGIN;
+INSERT INTO auth.users(id,email)
+VALUES ('${officerId}'::uuid,'ws3-f039-officer@example.invalid')
+ON CONFLICT(id) DO NOTHING;
+INSERT INTO payment_sync.officer_roles(user_uid,role,active)
+VALUES ('${officerId}'::uuid,'MAKER',true)
+ON CONFLICT(user_uid) DO UPDATE SET role='MAKER',active=true;
+SET LOCAL ROLE authenticated;
+SELECT pg_catalog.set_config('request.jwt.claim.sub','${officerId}',true);
+SELECT public.payment_v1_office_guarded_story_page(1,100);
+ROLLBACK;`);
 const row=page.items.find(item=>item.id===parent.id);
 assert.ok(row,'Authenticated Office page must contain the exact F-039 parent');
 assert.equal(Number(row.amountMinor),3000);
@@ -112,4 +138,4 @@ const unchanged=query(source,`SELECT jsonb_build_object(
 assert.deepEqual(unchanged.data,parent.data);
 assert.deepEqual(unchanged.outbox,{status:'ACKED',attempts:0});
 assert.deepEqual(unchanged.saved,parent.saved,'One-time TIN must remain unsaved');
-console.log('PASS F-039/US-014 T04: one original saved-plus-one-time source parent, unchanged saved list, exact independent Office SQL parent/allocations/receipt, authenticated Office page, denied anon mirror and idempotent replay');
+console.log('PASS F-039/US-014 T04: one original saved-plus-one-time source parent, unchanged saved list, exact independent Office SQL parent/allocations/receipt, guarded active-officer Office page, denied unprivileged reads and anon mirror, and idempotent replay');

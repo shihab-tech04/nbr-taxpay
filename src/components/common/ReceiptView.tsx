@@ -487,6 +487,16 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         </div>
         ))}
         </>}
+        {!isCertificate && receipt.paymentRemarks !== undefined && receipt.paymentRemarks !== '' && (
+          <section className="receipt-view__breakdown" data-testid="receipt-payment-remarks">
+            <h3 className="receipt-view__section-title">
+              {bn ? 'চালানের মন্তব্য' : 'Challan remarks'}
+            </h3>
+            <p className="whitespace-pre-wrap break-words text-sm text-slate-700">
+              {receipt.paymentRemarks}
+            </p>
+          </section>
+        )}
       </div>
     </div>
   );
