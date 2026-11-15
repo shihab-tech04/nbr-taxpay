@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {TaxPayModal} from '../ui/TaxPayModal';
+import {AuthenticatedReceivedPaymentPopup} from './AuthenticatedReceivedPaymentPopup';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -16,7 +17,9 @@ import {
 export function AuthorizationRequestPopup(){
   const {previewAccount,language,navigate,currentRoute}=useTaxState();
   const {user:authenticatedUser}=useAccountIdentity();
-  const actor=previewAccount?.id;
+  // A real Supabase Auth session must take precedence over any stale preview
+  // session so recipient notices never mix two identities.
+  const actor=authenticatedUser?undefined:previewAccount?.id;
   const bn=language==='bn';
   const [incoming,setIncoming]=useState<HostedAuthorization|null>(null);
   const [dismissed,setDismissed]=useState<string[]>([]);
@@ -119,7 +122,7 @@ export function AuthorizationRequestPopup(){
     }finally{setReceivedBusy(false);}
   };
 
-  if(!actor)return null;
+  if(!actor)return <AuthenticatedReceivedPaymentPopup/>;
   if(welcomeOwner===actor&&currentRoute!=='taxpayer_login'){
     const continueAfterWelcome=()=>{
       try{window.sessionStorage.removeItem('sohojkor.preview-first-login-welcome.v1');}
