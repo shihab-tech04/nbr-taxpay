@@ -75,6 +75,9 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   if (currentOwnerRef.current.key !== requestOwnerKey)
     currentOwnerRef.current = { key: requestOwnerKey, generation: currentOwnerRef.current.generation + 1 };
   const requestGeneration = currentOwnerRef.current.generation;
+  // Opaque account+service+generation ID prevents A -> B -> A rows/readiness
+  // from being displayed as current, even before effect cleanup finishes.
+  const renderScope = selectionScope + ':' + requestGeneration;
   const mountedRef = useRef(true);
   useEffect(() => {
     mountedRef.current = true;
@@ -89,7 +92,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   // old state or when an earlier owner's request finishes after switching.
   // A service switch under the same account must not render the previous
   // payment service's saved draft rows before the new query is settled.
-  const visibleRows = rowsOwnerKey === selectionScope ? rows : [];
+  const visibleRows = rowsOwnerKey === renderScope ? rows : [];
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -115,26 +118,26 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     if (!actor) return () => { active = false; };
     setLoading(true);
     void listPaymentFormDrafts(actor, service).then(result => {
-      if (active) {
+      if (active && ownerStillCurrent()) {
         setRows(result);
-        setRowsOwnerKey(selectionScope);
-        if (actor.kind === 'guest') setGuestReadyOwnerKey(ownerKey);
+        setRowsOwnerKey(renderScope);
+        if (actor.kind === 'guest') setGuestReadyOwnerKey(renderScope);
       }
     }).catch(() => {
-      if (active && actor.kind !== 'guest')
+      if (active && ownerStillCurrent() && actor.kind !== 'guest')
         setError(bn ? 'সংরক্ষিত খসড়া লোড করা যায়নি। আবার চেষ্টা করুন।' : 'Saved drafts could not be loaded. Retry.');
-    }).finally(() => { if (active) setLoading(false); });
+    }).finally(() => { if (active && ownerStillCurrent()) setLoading(false); });
     return () => { active = false; };
   // A new owner cannot see stale rows while an async query is pending.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownerKey, service]);
+  }, [ownerKey, service, requestGeneration]);
 
   const refresh = async () => {
     if (!actor) return;
     const result = await listPaymentFormDrafts(actor, service);
     if (!ownerStillCurrent()) return;
     setRows(result);
-    setRowsOwnerKey(selectionScope);
+    setRowsOwnerKey(renderScope);
   };
 
   const existingDraftId = () => ownedSelectedDraft?.service === service ? ownedSelectedDraft.id : null;
@@ -163,7 +166,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       setConflictDraftId(null);
       setRows(rows => [result, ...rows.filter(row => row.id !== result.id)].sort(
         (a, b) => b.updated_at.localeCompare(a.updated_at)));
-      setRowsOwnerKey(selectionScope);
+      setRowsOwnerKey(renderScope);
       // The SQL write and readback have already completed. Show success only in
       // the button; no extra success banner below the payment form.
       setSavedSnapshot(JSON.stringify(payload));
@@ -231,7 +234,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     return () => registerDraftExit(null);
   }, [registerDraftExit, ownerKey, service, authLoading, busy, loading, snapshot, ownedSelectedDraft]);
 
-  if (!actor || authLoading || (actor.kind === 'guest' && guestReadyOwnerKey !== ownerKey)) return null;
+  if (!actor || authLoading || (actor.kind === 'guest' && guestReadyOwnerKey !== renderScope)) return null;
   const savedNow = savedSnapshot !== null && savedSnapshot === JSON.stringify(snapshot());
   const actions = <div className="payment-form-draft-controls__actions">
     <button type="button" className="payment-form-draft-controls__save"
