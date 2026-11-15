@@ -946,7 +946,7 @@
   gap:6px;
 }
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric strong{
-  font-size:27px;
+  font-size:28px;
 }
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-analytics{
   order:2;gap:14px;
