@@ -71,7 +71,7 @@ test('switching draft owner invalidates a selected draft and ignores stale refre
   assert.match(ui, /guestReadyOwnerKey !== ownerKey/);
   assert.match(ui, /if \(rethrowFailure\) throw new Error\(bn[\s\S]*?Account changed during save/);
   assert.match(ui, /if \(rethrowFailure\) throw cause;/);
-  assert.match(ui, /setGuestReadyOwnerKey\(ownerKey\)/);
+  assert.match(ui, /setGuestReadyOwnerKey\(renderScope\)/);
   assert.match(ui, /window\.removeEventListener\('storage', onGuestStorage\)/);
   assert.match(ui, /if \(paymentDraftOwnerScope\(\{kind:'guest'\}\) !== ownerKey\)/);
   assert.match(ui, /selectedOwnerRef\.current === selectionScope \? selectedDraft : null/);
@@ -121,8 +121,20 @@ test('new same-tab guest capability invalidates a mounted payment draft owner wi
 test('switching payment service under one owner cannot display drafts from the previous service',()=>{
   const ui=read('src/components/ui/AccountPaymentDraftControls.tsx');
   assert.match(ui,/const selectionScope = ownerKey \+ ':' \+ service/);
-  assert.match(ui,/const visibleRows = rowsOwnerKey === selectionScope \? rows : \[\]/);
-  assert.match(ui,/setRowsOwnerKey\(selectionScope\)/);
+  assert.match(ui,/const visibleRows = rowsOwnerKey === renderScope \? rows : \[\]/);
+  assert.match(ui,/setRowsOwnerKey\(renderScope\)/);
   assert.doesNotMatch(ui,/setRowsOwnerKey\(ownerKey\)/);
   assert.doesNotMatch(ui,/rowsOwnerKey === ownerKey \? rows : \[\]/);
+});
+
+test('A to B to A draft catalog and guest readiness reject stale owner generations',()=>{
+  const ui=read('src/components/ui/AccountPaymentDraftControls.tsx');
+  assert.match(ui,/const renderScope = selectionScope \+ ':' \+ requestGeneration/);
+  assert.match(ui,/const visibleRows = rowsOwnerKey === renderScope \? rows : \[\]/);
+  assert.match(ui,/if \(active && ownerStillCurrent\(\)\) \{\s*setRows\(result\)/);
+  assert.match(ui,/if \(active && ownerStillCurrent\(\) && actor\.kind !== 'guest'\)/);
+  assert.match(ui,/if \(active && ownerStillCurrent\(\)\) setLoading\(false\)/);
+  assert.match(ui,/setGuestReadyOwnerKey\(renderScope\)/);
+  assert.match(ui,/guestReadyOwnerKey !== renderScope/);
+  assert.match(ui,/\}, \[ownerKey, service, requestGeneration\]\)/);
 });
