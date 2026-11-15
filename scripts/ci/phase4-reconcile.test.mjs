@@ -55,3 +55,21 @@ test('legacy fallback and V2 candidate form one deduplicated Office ledger',()=>
 });
 
 test('zero record populations are not reconciliation evidence',()=>{ assert.equal(reconcile([],[]).parityPassed,false); });
+
+
+test('matching historical rows with absent allocation IDs are not field-complete',()=>{
+  const legacy=copy(row); delete legacy.data.details.allocations[0].allocationId;
+  delete legacy.data.details.allocations[1].allocationId;
+  const x=reconcile([legacy],[copy(legacy)]);
+  assert.equal(x.parityPassed,true);
+  assert.equal(x.fieldComplete,false);
+  assert.equal(x.missingAllocationIds,1);
+  assert.equal(x.releaseVerified,false);
+});
+test('missing source is reported without inventing legal or payment provenance',()=>{
+  const uncertain=copy(row);delete uncertain.data.origin;
+  const x=reconcile([uncertain],[copy(uncertain)]);
+  assert.equal(x.parityPassed,true);
+  assert.equal(x.missingSource,1);
+  assert.equal(x.fieldComplete,false);
+});
