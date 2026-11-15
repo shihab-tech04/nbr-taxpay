@@ -73,3 +73,14 @@ export function clearReceivedPaymentCaseIntent():void {
   try{window.sessionStorage.removeItem(STORAGE_KEY);}
   catch{/* Leave the server-side owner check authoritative. */}
 }
+
+/** An exact source reference is required before this hint may bypass a payer
+ * session claim. SQL still has to authenticate and authorize this allocation.
+ */
+export function receivedAllocationForReference(
+  intent:ReceivedPaymentCaseIntent|null,reference:string
+):string|null {
+  if(!intent||!intent.targetAllocationId||
+     intent.originalReference!==reference.trim())return null;
+  return intent.targetAllocationId;
+}
