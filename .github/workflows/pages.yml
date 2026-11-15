@@ -39,7 +39,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Check verifier regression cases
-        run: node --test scripts/ci/verified-merge-release.test.mjs
+        run: |
+          node --test scripts/ci/verified-merge-release.test.mjs scripts/ci/hybrid-cutover-gate.test.mjs
       - name: Confirm exact-source PR acceptance and review artifact
         id: probe
         env:
@@ -87,7 +88,11 @@ jobs:
           VITE_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
           # Publishable key only. NEVER use service_role, secret or JWT signing keys in a web bundle.
           VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
-        run: npm run build
+          SOHOJKOR_CUTOVER_SIGNED_PROOF: ${{ secrets.SOHOJKOR_CUTOVER_SIGNED_PROOF }}
+          SOHOJKOR_CUTOVER_APPROVER_PUBLIC_KEY: ${{ vars.SOHOJKOR_CUTOVER_APPROVER_PUBLIC_KEY }}
+        run: |
+          node scripts/ci/hybrid-cutover-gate.mjs
+          npm run build
       - name: Enforce approved public startup transfer budget
         run: |
           node scripts/ci/check-public-startup-budget.mjs
