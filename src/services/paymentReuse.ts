@@ -1,6 +1,7 @@
 import type { ChallanReceipt, PaymentCategory } from '../types/tax';
 import { MAX_COMBINED_ALLOCATIONS } from './otherTaxCombinedPayment';
 import { PAY_AGAIN_YEAR_OPTIONS } from './payAgain';
+import { TRAVEL_TAX_ECONOMIC_CODE } from '../data/travelTax2026';
 
 /** This is an editable INPUT snapshot, not a cloned receipt or authorization. */
 export type PaymentReuse = {
@@ -88,6 +89,7 @@ export function reuseRecordedPayment(
         typeof trip.departurePort !== 'string' || !trip.departurePort.trim() ||
         typeof trip.destination !== 'string' || !trip.destination.trim() ||
         typeof trip.travelDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(trip.travelDate) ||
+        trip.economicCode !== TRAVEL_TAX_ECONOMIC_CODE ||
         !Array.isArray(trip.passengers) || !trip.passengers.length ||
         trip.passengers.length > 20 || receipt.items.length !== trip.passengers.length ||
         !(receipt.totalAmount > 0) ||
@@ -95,8 +97,19 @@ export function reuseRecordedPayment(
       throw Error('Original travel details are incomplete.');
     const sum = trip.passengers.reduce((total, passenger, index) => {
       const minor = Math.round(passenger.amount * 100);
-      const lineMinor = Math.round(receipt.items[index].totalAmount * 100);
-      if (!Number.isSafeInteger(minor) || minor < 0 || minor !== lineMinor ||
+      const head = receipt.items[index];
+      const lineMinor = Math.round(head.totalAmount * 100);
+      // The old receipt is historical evidence, not a reusable rate authority.
+      // A wrong passenger head, age band or unit amount must never be copied
+      // into another journey under a convincing but unrelated receipt total.
+      if (!Number.isFinite(passenger.amount) || passenger.amount < 0 ||
+          !Number.isSafeInteger(minor) || Math.abs(passenger.amount * 100 - minor) > 0.000001 ||
+          !Number.isFinite(head.totalAmount) || Math.abs(head.totalAmount * 100 - lineMinor) > 0.000001 ||
+          minor !== lineMinor || head.headId !== 155 + index ||
+          head.economicCode !== trip.economicCode ||
+          head.headNameEn !== 'Travel tax — ' + passenger.name ||
+          Math.round(head.taxAmount * 100) !== minor ||
+          !['ADULT','CHILD','UNDER5'].includes(passenger.ageBand) ||
           typeof passenger.name !== 'string' || !passenger.name.trim() ||
           !['BD','FOREIGN'].includes(passenger.nationality) ||
           (passenger.nationality === 'FOREIGN' && !passenger.country?.trim()))
@@ -110,7 +123,9 @@ export function reuseRecordedPayment(
       nationality: passenger.nationality,
       passport: '',
       name: passenger.name,
-      ageBand: 'ADULT' as const,
+      // Preserve the recorded category for the editable copy; the new journey
+      // still requires fresh DOB, date and passport validation before rating.
+      ageBand: passenger.ageBand,
       birthDate: '',
       country: passenger.country || (passenger.nationality === 'BD' ? 'Bangladesh' : ''),
       identitySource: (passenger.nationality === 'BD' ? 'PENDING' : 'MANUAL') as 'PENDING' | 'MANUAL',
