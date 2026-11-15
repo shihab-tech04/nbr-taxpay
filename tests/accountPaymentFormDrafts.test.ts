@@ -89,3 +89,18 @@ test('switching draft owner invalidates a selected draft and ignores stale refre
   assert.match(dashboard, /latestOwner\.current\.generation===requestGeneration/);
   assert.match(dashboard, /if \(sameOwner\(\)\) setCatalog/);
 });
+
+test('authenticated draft catalog paginates every owner-scoped assessment-year record without silent truncation', () => {
+  const api = read('src/services/accountPaymentFormDrafts.ts');
+  assert.match(api, /const pageSize = 100/);
+  assert.match(api, /const maxPages = 50/);
+  assert.match(api, /\.eq\('owner_uid', actor\.userId\)/);
+  assert.match(api, /\.order\('updated_at', \{ ascending: false \}\)/);
+  assert.match(api, /\.order\('id', \{ ascending: true \}\)/);
+  assert.match(api, /\.range\(page \* pageSize, \(page \+ 1\) \* pageSize - 1\)/);
+  assert.match(api, /await checkActorStillSignedIn\(actor\)/);
+  assert.match(api, /if \(seen\.has\(row\.id\)\) throw new Error/);
+  assert.match(api, /if \(data\.length < pageSize\) return rows/);
+  assert.match(api, /throw new Error\('Saved draft list exceeds the supported retrieval limit/);
+  assert.doesNotMatch(api, /\.limit\(100\)/);
+});
