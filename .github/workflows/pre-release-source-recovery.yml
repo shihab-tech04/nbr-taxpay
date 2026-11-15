@@ -75,7 +75,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           git branch candidate-recovery "$CANDIDATE_SHA"
           mkdir -p candidate-recovery
-          git bundle create candidate-recovery/candidate-history.bundle candidate-recovery
+          git bundle create candidate-recovery/candidate-history.bundle refs/heads/candidate-recovery
           git bundle verify candidate-recovery/candidate-history.bundle
           git archive --format=tar "$CANDIDATE_SHA" | gzip -n -9 > candidate-recovery/candidate-source.tar.gz
           printf '%s\n' "$CANDIDATE_SHA" > candidate-recovery/CANDIDATE_SHA
