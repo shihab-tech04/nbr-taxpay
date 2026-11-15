@@ -157,6 +157,20 @@ test('Home search and six-benefit panel share readable typography, spacing and c
         radii: [parseFloat(searchStyle.borderTopLeftRadius), parseFloat(benefitStyle.borderTopLeftRadius)],
         horizontalPadding: [parseFloat(searchStyle.paddingLeft), parseFloat(benefitStyle.paddingLeft)],
         verticalPadding: [parseFloat(searchStyle.paddingTop), parseFloat(benefitStyle.paddingTop)],
+        bottomPadding: [parseFloat(searchStyle.paddingBottom), parseFloat(benefitStyle.paddingBottom)],
+        headingAfter: [
+          parseFloat(css('.public-record-discovery__heading').marginBottom),
+          parseFloat(css('.public-benefits__heading').marginBottom),
+        ],
+        subtitleBefore: [
+          parseFloat(searchHelp.marginTop),
+          parseFloat(benefitHelp.marginTop),
+        ],
+        icons: [...document.querySelectorAll<HTMLElement>('.public-benefits__item')].map(item => {
+          const iconStyle = getComputedStyle(item.querySelector<HTMLElement>('.public-benefits__icon')!);
+          return { id: item.dataset.benefit, background: iconStyle.backgroundColor,
+            foreground: iconStyle.color, image: iconStyle.backgroundImage };
+        }),
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       };
     });
@@ -164,10 +178,19 @@ test('Home search and six-benefit panel share readable typography, spacing and c
     expect(computed.titleSizes[0]).toBeGreaterThanOrEqual(20);
     expect(Math.min(...computed.bodySizes.slice(0,2)), 'home helper text remains readable').toBeGreaterThanOrEqual(15);
     expect(computed.bodySizes[2], 'benefit details retain the approved 14px baseline').toBeGreaterThanOrEqual(14);
-    expect(computed.radii[0], 'home cards use the same outer radius').toBe(computed.radii[1]);
-    expect(computed.radii[0]).toBe(14);
+    expect(computed.radii, 'matching understated home card corners').toEqual([12,12]);
+    expect(computed.horizontalPadding[0], 'same left/right insets').toBe(computed.horizontalPadding[1]);
+    expect(computed.verticalPadding[0], 'same top inset').toBe(computed.verticalPadding[1]);
+    expect(computed.bottomPadding[0], 'same bottom inset').toBe(computed.bottomPadding[1]);
+    expect(computed.headingAfter[0], 'equal heading-to-control/grid spacing').toBe(computed.headingAfter[1]);
+    expect(computed.subtitleBefore[0], 'equal title-to-subtitle spacing').toBe(computed.subtitleBefore[1]);
     expect(Math.min(...computed.horizontalPadding)).toBeGreaterThanOrEqual(14);
     expect(Math.min(...computed.verticalPadding)).toBeGreaterThanOrEqual(14);
+    expect(computed.icons.map(icon => icon.id)).toEqual([
+      'payments','certificates','corrections','history','pay-again','saved-drafts']);
+    expect(new Set(computed.icons.map(icon => icon.background)).size).toBe(6);
+    expect(new Set(computed.icons.map(icon => icon.foreground)).size).toBe(6);
+    expect(computed.icons.every(icon => icon.image === 'none'), 'flat icons, no gradients').toBe(true);
     expect(computed.overflow, 'no horizontal overflow at ' + viewport.width).toBeLessThanOrEqual(2);
     await expect(page.getByRole('searchbox', { name: 'Search payment records by reference' })).toBeVisible();
   }
