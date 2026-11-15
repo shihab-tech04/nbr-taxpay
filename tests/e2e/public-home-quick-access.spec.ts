@@ -481,7 +481,7 @@ test('approved payment-record lookup keeps the compact reference composition', a
   expect(layout.buttonWidth).toBeGreaterThanOrEqual(40);
   expect(layout.bg).not.toBe('rgba(0, 0, 0, 0)');
   expect(layout.formShadow).not.toBe('none');
-  await expect(panel.getByRole('searchbox')).toHaveAttribute('placeholder',
+  await expect(panel.getByRole('combobox')).toHaveAttribute('placeholder',
     'Enter challan, token or transaction reference');
 });
 
@@ -910,7 +910,7 @@ test('homepage reference entry does not claim a missing SQL record before sessio
       await page.goto(`/?action=landing&lang=${language}`);
       const reference = `UNVERIFIED-REFERENCE-${width}`;
       const landing = page.locator('.public-record-discovery');
-      await landing.getByRole('searchbox').fill(reference);
+      await landing.getByRole('combobox').fill(reference);
       await landing.getByRole('button', { name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
       const modal = page.getByRole('dialog', { name: language === 'bn' ? 'পেমেন্টের অবস্থা ও রসিদ' : 'Payment status & receipt' });
       await expect(modal).toBeVisible();
@@ -933,7 +933,7 @@ test('homepage lookup labels example-only matches and preserves focus in EN/BN a
     for (const lang of ['en', 'bn'] as const) {
       await page.goto(`/?action=landing&lang=${lang}`);
       const section = page.locator('.public-record-discovery');
-      const search = section.getByRole('searchbox');
+      const search = section.getByRole('combobox');
       await expect(section.getByTestId('public-search-match-status')).toBeEmpty();
       await expect(search).toHaveAttribute('aria-expanded', 'false');
       await search.focus();
@@ -953,7 +953,7 @@ test('homepage lookup labels example-only matches and preserves focus in EN/BN a
         await expect(verification.getByRole('textbox',
           { name: 'Challan, token or transaction reference' })).toHaveValue(firstExample);
         await page.goto('/?action=landing&lang=en');
-        await section.getByRole('searchbox').focus();
+        await section.getByRole('combobox').focus();
       }
       await expect(search).toHaveAttribute('aria-autocomplete', 'list');
       await expect(search).toHaveAttribute('aria-describedby', 'public-record-discovery-help');
