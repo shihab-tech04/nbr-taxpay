@@ -72,6 +72,7 @@ function subscribe(subscriber: () => void) {
   subscribers.add(subscriber);
   const client = supabase;
   if (subscribers.size === 1 && client) {
+    let listening = true;
     let realtimeConnected = false;
     let channel: ReturnType<typeof client.channel> | null = null;
     const disconnect = () => {
@@ -82,7 +83,7 @@ function subscribe(subscriber: () => void) {
       void client.removeChannel(previous);
     };
     const connect = () => {
-      if (channel || !brandingRequestsAllowed()) return;
+      if (!listening || channel || !brandingRequestsAllowed()) return;
       const nextChannel = client.channel('taxpay-site-logo-public')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'taxpay_site_logo' },
           () => { void refreshAndConnect(true); });
@@ -99,7 +100,7 @@ function subscribe(subscriber: () => void) {
     };
     const refreshAndConnect = (force = false) => {
       void refreshLogo(force).then(ok => {
-        if (subscribers.size === 0) return;
+        if (!listening || subscribers.size === 0) return;
         if (!ok && !brandingRequestsAllowed()) disconnect();
         if (ok) connect();
       });
@@ -120,6 +121,7 @@ function subscribe(subscriber: () => void) {
       if (!realtimeConnected && document.visibilityState === 'visible') refreshAndConnect();
     }, OFFLINE_POLL_MS);
     stopListening = () => {
+      listening = false;
       window.clearInterval(interval);
       document.removeEventListener('visibilitychange', onForeground);
       window.removeEventListener('focus', onForeground);
