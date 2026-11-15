@@ -306,7 +306,8 @@ for (const [language, project] of [['en', 'desktop-1280'], ['bn', 'mobile-320']]
       expect(await page.evaluate(() => (window as unknown as { __taxpayFixturePrintCalls: number }).__taxpayFixturePrintCalls)).toBe(1);
     }
 
-    await page.getByRole('button', { name: certificateAction, exact: true }).click();
+    await page.getByRole('dialog', { name: language === 'bn' ? 'পেমেন্ট রসিদ' : 'Payment receipt' })
+      .getByRole('button', { name: certificateAction, exact: true }).click();
     const certificate = page.getByTestId('payment-certificate-document');
     await expect(certificate).toBeVisible();
     await expect(certificate.getByRole('heading', {
@@ -339,6 +340,24 @@ for (const [language, project] of [['en', 'desktop-1280'], ['bn', 'mobile-320']]
     expect(fixture.ledgerRequests.length).toBeGreaterThan(0);
   });
 }
+
+test('F-168 / US-169 opens the reconciled payment certificate directly from recorded payments', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Representative direct-document path.');
+  await installCertificateAccountFixture(page, accountCertificateOwner);
+  await page.goto('/?action=certificates');
+  const register = page.getByTestId('account-certificate-record-register');
+  const documentAction = register.getByRole('button', { name: 'View payment certificate', exact: true });
+  await expect(documentAction).toBeVisible();
+  await documentAction.click();
+
+  const document = page.getByRole('dialog', { name: 'Sohojkor Payment Certificate' });
+  await expect(document.getByTestId('payment-certificate-document')).toBeVisible();
+  await expect(document.getByTestId('payment-certificate-reference')).toContainText('SK-PC-' + accountCertificateId);
+  await expect(document.getByTestId('payment-certificate-total')).toContainText('130');
+  await expect(document.getByText('Nusrat Jahan')).toBeVisible();
+  await expect(document.getByRole('button', { name: 'Download', exact: true })).toBeVisible();
+  await expect(document.getByRole('button', { name: 'Print certificate', exact: true })).toBeVisible();
+});
 
 test('F-168 / US-169 restores the account payment register after a temporary document-read failure', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Representative recovery breakpoint.');
