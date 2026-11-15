@@ -747,6 +747,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1} hidden={followupTab!=='drafts'}>
       <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
         onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
+      {previewAccount?.id==='user1'&&activePreviewSession()?.profileId!=='user1'&&
+        <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-taxpay-muted">
+          <p role="status">{tr('Sign in to view saved drafts, or start a new payment.',
+            'সংরক্ষিত খসড়া দেখতে সাইন ইন করুন, অথবা নতুন পেমেন্ট শুরু করুন।')}</p>
+          <button type="button" className="mt-2 min-h-11 rounded-lg border border-taxpay-border bg-white px-3 font-semibold text-taxpay-primary"
+            onClick={()=>openPaymentServiceChoice()}>{tr('Start a payment','পেমেন্ট শুরু করুন')}</button>
+        </div>}
     </div>}
     <section id="dashboard-correction-requests" tabIndex={-1} hidden={followupTab!=='requests'}
       className={panel+' taxpay-bento-corrections'} aria-labelledby="dashboard-correction-requests-title">
