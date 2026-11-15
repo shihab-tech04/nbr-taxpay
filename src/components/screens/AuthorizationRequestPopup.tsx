@@ -2,6 +2,9 @@ import React,{useEffect,useState} from 'react';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DEMO_USERS} from '../../data/demoUsers';
 import {useTaxState} from '../../services/taxState';
+import {useAccountIdentity} from '../../services/accountIdentity';
+import {queueReceivedPaymentCaseIntent} from '../../services/receivedPaymentCaseIntent';
+import type {CorrectionCaseKind} from '../../services/correctionInquiryValidation';
 import {formatCurrency} from '../../services/numberFormat';
 import {unreadReceivedPaymentNotices,acknowledgeReceivedPaymentNotice,type ReceivedPaymentNotice}
   from '../../services/demoReceivedPaymentNotices';
@@ -12,6 +15,7 @@ import {
 /** In-app live popup for synthetic accounts; also appears in Notifications/Manage Authorization. */
 export function AuthorizationRequestPopup(){
   const {previewAccount,language,navigate}=useTaxState();
+  const {user:authenticatedUser}=useAccountIdentity();
   const actor=previewAccount?.id;
   const bn=language==='bn';
   const [incoming,setIncoming]=useState<HostedAuthorization|null>(null);
@@ -79,6 +83,19 @@ export function AuthorizationRequestPopup(){
     setDismissedReceived(previous=>[...previous,visibleReceived.eventId]);
     setReceived(null);setReceivedError('');
   };
+  // This carries only an untrusted, short-lived form draft. The linked SQL
+  // inquiry independently verifies the real Auth UID and payment allocation.
+  const openReceivedCase=(caseKind:CorrectionCaseKind)=>{
+    if(!visibleReceived||receivedBusy)return;
+    try{
+      queueReceivedPaymentCaseIntent(visibleReceived,caseKind);
+      setReceivedError('');
+      if(authenticatedUser)navigate('corrections');
+      else navigate('secure_workspace',{returnTo:'corrections'});
+    }catch{
+      setReceivedError(bn?'অনুরোধের তথ্য প্রস্তুত করা যায়নি। আবার চেষ্টা করুন।':'Could not prepare the request. Please retry.');
+    }
+  };
   const acknowledgeReceived=async()=>{
     if(!actor||!visibleReceived||receivedBusy)return;
     const eventId=visibleReceived.eventId;
@@ -103,10 +120,22 @@ export function AuthorizationRequestPopup(){
       onClose={dismissReceived}
       closeIconLabel={bn?'বন্ধ করুন':'Close modal'}
       className="taxpayer-authorization-modal"
-      footer={<button type="button" disabled={receivedBusy}
-        className="tax-service-choice__continue" onClick={()=>void acknowledgeReceived()}>
-        {receivedBusy?(bn?'নিশ্চিত করা হচ্ছে…':'Confirming…'):(bn?'পড়েছি, পরেরটি দেখুন':'Acknowledge and continue')}
-      </button>}
+      footer={<div className="tax-service-choice__actions flex flex-wrap gap-2">
+        <button type="button" disabled={receivedBusy} className="taxpay-modal__footer-close"
+          onClick={dismissReceived}>{bn?'পরে দেখব':'Dismiss for now'}</button>
+        <button type="button" disabled={receivedBusy} className="taxpay-modal__footer-close"
+          onClick={()=>openReceivedCase('CORRECTION_REVIEW')}>
+          {bn?'সংশোধনের অনুরোধ':'Request correction'}
+        </button>
+        <button type="button" disabled={receivedBusy} className="taxpay-modal__footer-close"
+          onClick={()=>openReceivedCase('UNSOLICITED_PAYMENT_REPORT')}>
+          {bn?'পেমেন্ট রিপোর্ট করুন':'Report payment'}
+        </button>
+        <button type="button" disabled={receivedBusy}
+          className="tax-service-choice__continue" onClick={()=>void acknowledgeReceived()}>
+          {receivedBusy?(bn?'নিশ্চিত করা হচ্ছে…':'Confirming…'):(bn?'পড়েছি, পরেরটি দেখুন':'Acknowledge and continue')}
+        </button>
+      </div>}
     >
       <div className="mt-4 space-y-3" data-testid="received-payment-notice">
         <p className="text-sm leading-6 text-taxpay-text">
@@ -119,6 +148,7 @@ export function AuthorizationRequestPopup(){
           <div><dt>{bn?'রেফারেন্স':'Reference'}</dt><dd className="break-all">{visibleReceived.receiptReference??visibleReceived.paymentId}</dd></div>
         </dl>
         <p className="text-xs text-taxpay-muted">{bn?'এটি নথিভুক্ত পেমেন্টের তথ্য; সরকারি নিষ্পত্তির প্রমাণ নয়।':'This is a recorded payment, not confirmation of government settlement.'}</p>
+        <p className="text-xs text-taxpay-muted">{bn?'সংশোধন বা রিপোর্ট জমা দিতে যাচাইকৃত অ্যাকাউন্টে সাইন ইন করতে হবে।':'Submitting a correction or report requires a verified account sign-in.'}</p>
         {receivedError&&<p role="alert" className="text-sm text-taxpay-error">{receivedError}</p>}
       </div>
     </TaxPayModal>;
