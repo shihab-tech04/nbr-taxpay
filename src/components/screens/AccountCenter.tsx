@@ -126,6 +126,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   const [name, setName] = useState('');
   const [showNotifications, setShowNotifications] = useState(true);
   const [preferredLanguage, setPreferredLanguage] = useState<'en'|'bn'>(language);
+  const [settingsOwnerUid,setSettingsOwnerUid] = useState<string | null>(null);
+  const settingsReady = Boolean(user && settingsOwnerUid === user.id);
   // Private records are coupled to the Auth owner at render time, before
   // effects reset state on account change.
   const [noticeSnapshot, setNoticeSnapshot] = useState<{
@@ -153,6 +155,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     setShowNotifications(user?.user_metadata?.taxpay_in_app_notifications !== false);
     const storedLanguage = user?.user_metadata?.taxpay_language;
     setPreferredLanguage(storedLanguage === 'bn' || storedLanguage === 'en' ? storedLanguage : language);
+    setSettingsOwnerUid(user?.id ?? null);
+    setBusy(false);
     setFeedback(null);
   }, [user?.id]);
 
@@ -195,7 +199,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
 
   const savePreferences = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!user || !supabase) return;
+    if (!user || !supabase || !settingsReady) return;
+    const requestUid = user.id;
     if (name.trim().length > 80) { setFeedback({error:true,content:t.saveFailed}); return; }
     setBusy(true); setFeedback(null);
     try {
@@ -207,16 +212,18 @@ export function AccountCenter({ page }: { page: AccountPage }) {
         taxpay_language: preferredLanguage
       }});
       if (error) throw error;
-      if (updated.user?.id !== user.id ||
+      if (!isCurrentUid(requestUid)) return;
+      if (updated.user?.id !== requestUid ||
           updated.user.user_metadata?.taxpay_display_name !== name.trim() ||
           updated.user.user_metadata?.taxpay_in_app_notifications !== showNotifications ||
           updated.user.user_metadata?.taxpay_language !== preferredLanguage)
         throw new Error('Account settings were not confirmed.');
-      void recordAccountActivity(user.id,'PROFILE_SAVED','account_settings').catch(()=>undefined);
+      void recordAccountActivity(requestUid,'PROFILE_SAVED','account_settings').catch(()=>undefined);
+      if (!isCurrentUid(requestUid)) return;
       setLanguage(preferredLanguage);
       setFeedback({error:false,content:I18N[preferredLanguage].settingsSaved});
-    } catch { setFeedback({error:true,content:t.saveFailed}); }
-    finally { setBusy(false); }
+    } catch { if (isCurrentUid(requestUid)) setFeedback({error:true,content:t.saveFailed}); }
+    finally { if (isCurrentUid(requestUid)) setBusy(false); }
   };
 
   const markViewed = async () => {
@@ -354,19 +361,21 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                 <h2>{t.preferences}</h2>
                 <label htmlFor="taxpay-profile-display-name">{t.name}</label>
                 <input id="taxpay-profile-display-name" maxLength={80} autoComplete="nickname"
-                  value={name} onChange={e => setName(e.target.value)} />
+                  value={settingsReady ? name : (typeof user.user_metadata?.taxpay_display_name === 'string' ? user.user_metadata.taxpay_display_name : '')}
+                  onChange={e => setName(e.target.value)} />
                 <label htmlFor="taxpay-profile-language">{t.language}</label>
-                <select id="taxpay-profile-language" value={preferredLanguage}
+                <select id="taxpay-profile-language" value={settingsReady ? preferredLanguage : (user.user_metadata?.taxpay_language === 'bn' ? 'bn' : user.user_metadata?.taxpay_language === 'en' ? 'en' : language)}
                   onChange={e => setPreferredLanguage(e.target.value as 'en'|'bn')}>
                   <option value="en">{t.english}</option><option value="bn">{t.bangla}</option>
                 </select>
                 <label className="taxpayer-account-toggle">
-                  <input type="checkbox" checked={showNotifications} onChange={e=>setShowNotifications(e.target.checked)}/>
+                  <input type="checkbox" checked={settingsReady ? showNotifications : user.user_metadata?.taxpay_in_app_notifications !== false}
+                    onChange={e=>setShowNotifications(e.target.checked)}/>
                   <span>{t.alertsEnabled}</span>
                 </label>
                 <p>{t.alertsHelp}</p>
                 <p>{t.consent}</p>
-                <button type="submit" disabled={busy}>{busy ? t.saving : t.save}</button>
+                <button type="submit" disabled={busy || !settingsReady}>{busy ? t.saving : t.save}</button>
               </form>
             )}
             {page === 'notifications' && (
