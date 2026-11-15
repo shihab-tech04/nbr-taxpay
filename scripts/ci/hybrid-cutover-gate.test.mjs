@@ -47,6 +47,27 @@ test('accepts signed, fresh, exact-tree release evidence in isolated tests only'
   assert.deepEqual(validateCutover({ url: TARGET, proofJson: fixture(), verifierKey: pub, treeSha, now }),
     { mode: 'v2-approved', treeSha });
 });
+test('permits no-history only with signed legacy and nonfinancial proofs', () => {
+  const verified = fixture(p => {
+    p.historyMode = 'no-settled-payments';
+    delete p.evidence.originalPaymentOwnerScope;
+    for (const k of ['legacyNonFinancialEvidence', 'legacyRecordsRetainedReadOnly']) {
+      p.evidence[k] = { passed:true, sha256:'b'.repeat(64), verifiedAt:'2026-11-15T14:50:00Z' };
+    }
+  });
+  assert.deepEqual(validateCutover({ url:TARGET, proofJson:verified, verifierKey:pub, treeSha, now }),
+    { mode:'v2-approved', treeSha });
+  assert.throws(() => validateCutover({ url:TARGET, proofJson:fixture(p => {
+    p.historyMode = 'no-settled-payments';
+    delete p.evidence.originalPaymentOwnerScope;
+  }), verifierKey:pub, treeSha, now }), /legacyNonFinancialEvidence/);
+  assert.throws(() => validateCutover({ url:TARGET, proofJson:fixture(p => {
+    p.historyMode = 'unsupported';
+  }), verifierKey:pub, treeSha, now }), /unsupported historical payment policy/);
+  const edited = JSON.parse(verified);
+  edited.payload.evidence.legacyRecordsRetainedReadOnly.passed = false;
+  assert.throws(() => validateCutover({ url:TARGET, proofJson:JSON.stringify(edited), verifierKey:pub, treeSha, now }), /legacyRecordsRetainedReadOnly/);
+});
 test('blocks a different source tree even with a genuine signature', () => {
   assert.throws(() => validateCutover({ url: TARGET, proofJson: fixture(), verifierKey: pub, treeSha: 'c'.repeat(40), now }), /wrong scope/);
 });
