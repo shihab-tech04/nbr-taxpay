@@ -9,7 +9,7 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
   } else {
     await page.locator('.public-home-header__tools .public-home-login-link--desktop').click();
   }
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveClass(/taxpay-modal/);
   await expect(dialog.locator('.taxpay-modal__footer .tax-service-choice__continue')).toBeVisible();
@@ -44,7 +44,7 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
 
 test('user1-user55 selector filters, keyboard-selects, fills only QA credentials and dismisses',async({page})=>{
   await page.goto('/?action=taxpayer_login');
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   const input=dialog.getByRole('textbox',{name:'User ID'});
   await input.focus();
   await expect(input).toHaveAttribute('aria-expanded','true');
@@ -104,7 +104,7 @@ test('all ten matching ID/password pairs open their own taxpayer dashboard and p
   });
   for(let id=1;id<=10;id++){
     await page.goto('/?action=taxpayer_login');
-    const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+    const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
     await dialog.getByRole('textbox',{name:'User ID'}).fill('user'+id);
     await dialog.getByLabel('Password',{exact:true}).fill('user'+id);
     await dialog.getByRole('button',{name:'Sign In'}).click();
@@ -141,7 +141,7 @@ test('refresh keeps selected preview identity without turning URL into authentic
 test('empty and mismatched passwords cannot sign in even with a valid User ID', async ({page},info) => {
   test.skip(info.project.name!=='desktop-1280','One password validation case');
   await page.goto('/?action=taxpayer_login');
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
   await expect(dialog.getByRole('button',{name:'Sign In'})).toBeDisabled();
   await dialog.getByLabel('Password',{exact:true}).fill('user2');
