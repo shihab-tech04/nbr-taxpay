@@ -66,6 +66,21 @@ test('user1-user55 selector filters, keyboard-selects, fills only QA credentials
   await expect(dialog.getByLabel('Password',{exact:true})).toBeEmpty();
 });
 
+test('Bangla account search matches a Bengali profile name and only fills synthetic QA credentials',async({page})=>{
+  await page.goto('/?action=taxpayer_login&lang=bn');
+  const userId=page.locator('#taxpayer-login-user-id');
+  await expect(userId).toBeVisible();
+  await userId.fill('করদাতা অ্যাকাউন্ট 55');
+  const options=page.getByRole('listbox',{name:'পরীক্ষামূলক অ্যাকাউন্ট'});
+  await expect(options.getByRole('option')).toHaveCount(1);
+  await expect(options.getByRole('option')).toContainText('user55');
+  await userId.press('ArrowDown');
+  await userId.press('Enter');
+  await expect(userId).toHaveValue('user55');
+  await expect(page.locator('#taxpayer-login-password')).toHaveValue('user55');
+  await expect(userId).toHaveAttribute('aria-expanded','false');
+});
+
 test('all ten matching ID/password pairs open their own taxpayer dashboard and profile, then sign out', async ({page}, info) => {
   test.skip(info.project.name!=='desktop-1280','Complete ID matrix on desktop');
   await page.setViewportSize({width:1600,height:900});
