@@ -416,7 +416,9 @@ for(const language of ['en','bn'] as const){
       await page.goto(appUrl('history',owner.session));
       const history=page.getByTestId('beneficiary-payment-history');
       await expect(history).toContainText(paymentId,{timeout:15_000});
-      await history.getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
+      await history.getByTestId('beneficiary-payment-mobile-cards').locator('li')
+        .filter({hasText:paymentId}).filter({hasText:recipientTin}).first()
+        .getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).click();
       const receipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
       await expect(receipt).toContainText(recipientTin);
       await expect(receipt).toContainText(selfTin);
@@ -495,7 +497,9 @@ for(const language of ['en','bn'] as const){
       await page.goto(appUrl('history',owner.session));
       await expect(page.getByTestId('beneficiary-payment-history')).toContainText(paymentId);
       await page.getByTestId('beneficiary-payment-history')
-        .getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).first().click();
+        .getByTestId('beneficiary-payment-mobile-cards').locator('li')
+        .filter({hasText:paymentId}).filter({hasText:recipientTin}).first()
+        .getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).click();
       await expect(page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'})
         .getByTestId('account-save-beneficiary-receipt')).toHaveCount(0);
       // F-071/F-072: real Auth UID → Taxpayer SQL owner RPC → whole combined
