@@ -104,3 +104,16 @@ test('authenticated draft catalog paginates every owner-scoped assessment-year r
   assert.match(api, /throw new Error\('Saved draft list exceeds the supported retrieval limit/);
   assert.doesNotMatch(api, /\.limit\(100\)/);
 });
+
+test('new same-tab guest capability invalidates a mounted payment draft owner without revealing the token',()=>{
+  const guest=read('src/services/guestBeneficiaries.ts');
+  const controls=read('src/components/ui/AccountPaymentDraftControls.tsx');
+  assert.match(guest,/export const GUEST_DRAFT_OWNER_CHANGED_EVENT = 'taxpay-guest-draft-owner-changed'/);
+  assert.match(guest,/storage\.setItem\(capabilityKey, created\)/);
+  assert.match(guest,/window\.dispatchEvent\(new Event\(GUEST_DRAFT_OWNER_CHANGED_EVENT\)\)/);
+  assert.match(controls,/import \{ GUEST_DRAFT_OWNER_CHANGED_EVENT \} from '\.\.\/\.\.\/services\/guestBeneficiaries'/);
+  assert.match(controls,/window\.addEventListener\(GUEST_DRAFT_OWNER_CHANGED_EVENT, onGuestStorage\)/);
+  assert.match(controls,/window\.removeEventListener\(GUEST_DRAFT_OWNER_CHANGED_EVENT, onGuestStorage\)/);
+  assert.match(controls,/paymentDraftOwnerScope\(\{kind:'guest'\}\) !== ownerKey/);
+  assert.doesNotMatch(guest,/new CustomEvent\(GUEST_DRAFT_OWNER_CHANGED_EVENT,[^\n]*detail/);
+});
