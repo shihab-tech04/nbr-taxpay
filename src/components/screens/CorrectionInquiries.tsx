@@ -10,7 +10,7 @@ type Row=Readonly<{
  reason:string; requested_outcome:string; change_kind:ProposedAttributionField|null; old_value:string|null; new_value:string|null;
  office_review_state:string|null; office_review_revision:number|null; office_review_updated_at:string|null;
 }>;
-type Props={readonly authenticatedUserId:string;readonly language:'en'|'bn';readonly dashboard?:boolean};
+type Props={readonly authenticatedUserId:string;readonly language:'en'|'bn';readonly dashboard?:boolean;readonly initialReference?:string};
 const t={
  en:{
  title:'Request a review of an original reference',
@@ -60,9 +60,10 @@ const t={
  }
 } as const;
 
-export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,dashboard=false})=>{
+export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,dashboard=false,initialReference})=>{
  const labels=t[language];
- const [originalReference,setOriginalReference]=useState('');
+ const [originalReference,setOriginalReference]=useState(()=>initialReference?.slice(0,160)??'');
+ useEffect(()=>{if(initialReference)setOriginalReference(initialReference.slice(0,160));},[initialReference]);
  const [reason,setReason]=useState('');
  const [desiredOutcome,setDesiredOutcome]=useState('');
  const [changeKind,setChangeKind]=useState<ProposedAttributionField|''>('');
