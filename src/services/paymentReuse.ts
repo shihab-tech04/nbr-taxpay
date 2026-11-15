@@ -1,5 +1,6 @@
 import type { ChallanReceipt, PaymentCategory } from '../types/tax';
 import { MAX_COMBINED_ALLOCATIONS } from './otherTaxCombinedPayment';
+import { PAY_AGAIN_YEAR_OPTIONS } from './payAgain';
 
 /** This is an editable INPUT snapshot, not a cloned receipt or authorization. */
 export type PaymentReuse = {
@@ -9,7 +10,6 @@ export type PaymentReuse = {
   formPayload: Record<string, unknown>;
 };
 
-const CURRENT_YEAR = '2026-27';
 const supported = new Set<PaymentCategory>([
   'TAX_WITH_RETURN', 'ADVANCE_TAX', 'ASSESSED_DEMAND', 'PENALTY',
   'SOURCE_TAX_DEPOSIT', 'APPELLATE_TRIBUNAL', 'OTHER_TAX_PAYMENT',
@@ -24,7 +24,8 @@ const checkedMinor = (amount: number) => {
 };
 const copiedYear = (year: string) => {
   if (!validYear(year)) throw Error('Historical assessment year is missing or invalid.');
-  return year === CURRENT_YEAR ? year : '';
+  // Retain the exact original valid AY as an editable input; unsupported years require re-selection.
+  return PAY_AGAIN_YEAR_OPTIONS.some(option => option === year) ? year : '';
 };
 
 type SourceAllocation = {
