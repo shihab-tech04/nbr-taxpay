@@ -202,12 +202,12 @@ const outsider='80000000-0000-4000-8000-000000000002';
 // classification; the underlying base SQL acceptance still tests the legacy
 // correction default separately. No hosted SQL data is used.
 const originalCorrectionFixture=readFileSync('tests/integration/correctionOfficeReadback.sql','utf8');
-const fixtureColumns='(requester_uid,original_reference,reason,requested_outcome,change_kind,old_value,new_value)';
+const fixtureColumns='(requester_uid,original_reference,reason,requested_outcome,evidence_note,change_kind,old_value,new_value)';
 const fixtureValues="'CIRCLE','Circle A','Circle B')";
 assert.equal(originalCorrectionFixture.split(fixtureColumns).length,2);
 assert.equal(originalCorrectionFixture.split(fixtureValues).length,2);
 const correctionFixture=originalCorrectionFixture
- .replace(fixtureColumns,'(requester_uid,original_reference,reason,requested_outcome,change_kind,old_value,new_value,case_kind)')
+ .replace(fixtureColumns,'(requester_uid,original_reference,reason,requested_outcome,evidence_note,change_kind,old_value,new_value,case_kind)')
  .replace(fixtureValues,"'CIRCLE','Circle A','Circle B','UNSOLICITED_PAYMENT_REPORT')");
 const cut=correctionFixture.indexOf('DO $owner_initial$\n');
 assert.ok(cut>0,'Passing correction fixture anchor missing');
