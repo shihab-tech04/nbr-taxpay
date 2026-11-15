@@ -3,6 +3,7 @@ import {supabase} from '../../services/supabaseClient';
 import {getStorySessionId} from '../../services/simulatedPaymentStory';
 import {sameAuthenticatedOwner} from '../../services/secureWorkspacePolicy';
 import {validateCorrectionInquiry, type ProposedAttributionField, type CorrectionCaseKind} from '../../services/correctionInquiryValidation';
+import {readReceivedPaymentCaseIntent,clearReceivedPaymentCaseIntent} from '../../services/receivedPaymentCaseIntent';
 import {UiButton,UiInput,UiTextarea,UiSelect} from '../ui/Controls';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 import {useTaxState} from '../../services/taxState';
@@ -80,8 +81,11 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
  const selectedInquiryId=typeof candidateInquiryId==='string'&&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidateInquiryId)
    ?candidateInquiryId:null;
- const [caseKind,setCaseKind]=useState<CorrectionCaseKind>('CORRECTION_REVIEW');
- const [originalReference,setOriginalReference]=useState('');
+ // The notice selection is an untrusted form hint, never taxpayer ownership.
+ // SQL independently matches the signed-in UID to the original allocation.
+ const [receivedIntent,setReceivedIntent]=useState(()=>readReceivedPaymentCaseIntent());
+ const [caseKind,setCaseKind]=useState<CorrectionCaseKind>(receivedIntent?.caseKind??'CORRECTION_REVIEW');
+ const [originalReference,setOriginalReference]=useState(receivedIntent?.originalReference??'');
  const [reason,setReason]=useState('');
  const [desiredOutcome,setDesiredOutcome]=useState('');
  const [changeKind,setChangeKind]=useState<ProposedAttributionField|''>('');
@@ -182,6 +186,11 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
    const {error}=await supabase.from('taxpay_correction_inquiries').insert({
      requester_uid:authenticatedUserId,
      original_reference:originalReference.trim(),
+     // Bind to the exact notified allocation where applicable, but only when
+     // the form still matches the original handoff. The SQL trigger is authoritative.
+     ...(receivedIntent?.targetAllocationId &&
+       originalReference.trim()===receivedIntent.originalReference
+       ?{target_allocation_id:receivedIntent.targetAllocationId}:{}),
       ...(caseKind==='UNSOLICITED_PAYMENT_REPORT'?{case_kind:caseKind}:{}),
      reason:reason.trim(),
      requested_outcome:desiredOutcome.trim(),
@@ -193,6 +202,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
     return;
    }
    persisted=true;
+   clearReceivedPaymentCaseIntent();setReceivedIntent(null);
    setCaseKind('CORRECTION_REVIEW');setOriginalReference('');setReason('');setDesiredOutcome('');setChangeKind('');setPreviousValue('');setProposedValue('');
    try{const historyLoaded=await load(()=>true);setLoadError(false);if(!historyLoaded){setMessage(labels.savedHistoryFail);return;}}
    catch{setLoadError(true);setMessage(labels.savedHistoryFail);return;}
@@ -245,6 +255,11 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
    <h2 id="inquiry-title" className="text-xl font-semibold text-taxpay-text">{dashboard?(language==='bn'?'সংশোধনের আবেদন':'Correction Requests'):labels.title}</h2>
    <p className="text-sm leading-6 text-taxpay-muted">{dashboard?(language==='bn'?'আপনার নিজের অ্যাকাউন্টের আবেদন, কারণ ও পর্যালোচনার অবস্থা এখানে দেখুন।':'View your account-linked requests, reasons and current review statuses here.'):labels.intro}</p>
   </header>
+  {receivedIntent && !dashboard && <p className="rounded-lg border border-taxpay-border p-3 text-sm text-taxpay-muted" role="status" data-testid="received-payment-case-handoff">
+    {language==='bn'
+      ?'প্রাপ্ত পেমেন্টের রেফারেন্স ও অনুরোধের ধরন পূরণ করা হয়েছে। তথ্য যাচাই করে কারণ লিখে জমা দিন। পেমেন্টের মালিকানা সার্ভার যাচাই করবে।'
+      :'The received-payment reference and request type are prefilled. Check the details, add your reason and submit. The server will verify account ownership.'}
+  </p>}
   {!dashboard && form}
   {message&&<p role="status" aria-live="polite" className="rounded-lg border border-slate-300 p-3 text-sm break-words">{message}</p>}
   <section aria-labelledby="inquiry-history-title" className="space-y-3">
