@@ -87,7 +87,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   // Do not display inert guest draft buttons against older SQL/Edge deployments.
-  const [guestContractReady, setGuestContractReady] = useState(false);
+  const [guestReadyOwnerKey, setGuestReadyOwnerKey] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
@@ -99,7 +99,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     setRows([]);
     setRowsOwnerKey('');
     setBusy(false);
-    setGuestContractReady(false);
+    setGuestReadyOwnerKey('');
     setPendingDelete(null);
     setConflictDraftId(null);
     setError(null);
@@ -111,7 +111,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       if (active) {
         setRows(result);
         setRowsOwnerKey(ownerKey);
-        if (actor.kind === 'guest') setGuestContractReady(true);
+        if (actor.kind === 'guest') setGuestReadyOwnerKey(ownerKey);
       }
     }).catch(() => {
       if (active && actor.kind !== 'guest')
@@ -214,7 +214,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     return () => registerDraftExit(null);
   }, [registerDraftExit, ownerKey, service, authLoading, busy, loading, snapshot, ownedSelectedDraft]);
 
-  if (!actor || authLoading || (actor.kind === 'guest' && !guestContractReady)) return null;
+  if (!actor || authLoading || (actor.kind === 'guest' && guestReadyOwnerKey !== ownerKey)) return null;
   const savedNow = savedSnapshot !== null && savedSnapshot === JSON.stringify(snapshot());
   const actions = <div className="payment-form-draft-controls__actions">
     <button type="button" className="payment-form-draft-controls__save"
