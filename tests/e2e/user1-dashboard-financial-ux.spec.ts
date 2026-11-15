@@ -9,6 +9,7 @@ test('bento analytics never display unverified tax-liability charts and separate
   await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
   const analytics=bento.getByTestId('dashboard-payment-analytics');
   await expect(analytics).toBeVisible();
+  await analytics.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   const sources=analytics.getByTestId('dashboard-chart-source');
   // The available illustrated payment history must be visible by default.
   // The account-backed view stays explicit, reversible and never combines sources.
@@ -48,6 +49,7 @@ test('interactive service bars and beneficiary categories support keyboard and s
   const sources=page.getByTestId('dashboard-chart-source');
   await sources.getByRole('button',{name:'Examples'}).click();
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  await page.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   const chart=page.getByTestId('dashboard-service-breakdown');
   const income=chart.locator('[data-service="income"]');
   await income.focus();
@@ -95,8 +97,8 @@ test('interactive bento charts and existing payment actions remain responsive fr
     const bento=page.getByTestId('taxpayer-overview-bento');
     await expect(bento).toBeVisible();
     await expect(bento.getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
-    await expect(bento.getByRole('heading',{name:'By payment service'})).toBeVisible();
-    await expect(bento.getByRole('heading',{name:'Beneficiary Breakdown'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'Payment recipients'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'Payment relationships'})).toBeVisible();
     await expect(bento.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
     await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);

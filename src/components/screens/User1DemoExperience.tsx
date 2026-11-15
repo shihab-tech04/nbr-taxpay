@@ -206,6 +206,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [caseStatus,setCaseStatus]=useState<State|'all'>('all');
   const [savedDraftCount,setSavedDraftCount]=useState<number|null>(null);
   const [draftHelpVisible,setDraftHelpVisible]=useState(false);
+  const [followupTab,setFollowupTab]=useState<'drafts'|'requests'>('requests');
   const [kind,setKind]=useState<Kind|'all'>('all');
   const [status,setStatus]=useState<State|'all'>('all');
   const [monthFilter,setMonthFilter]=useState('all');
@@ -543,7 +544,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Overview','সংক্ষিপ্ত বিবরণ');
-  const header=<TaxpayerPageHeading title={pageTitle} className={'taxpayer-dashboard-header'+(overviewRoute?' taxpayer-dashboard-header--overview':'')}
+  const header=<TaxpayerPageHeading title={overviewRoute?tr('Your tax overview','আপনার করের সারসংক্ষেপ'):pageTitle}
+    description={overviewRoute?greeting.welcome+'. '+tr('Here is your account activity for the selected assessment year.',
+      'নির্বাচিত করবর্ষে আপনার অ্যাকাউন্টের কার্যক্রম এখানে দেখুন।'):undefined}
+    className={'taxpayer-dashboard-header'+(overviewRoute?' taxpayer-dashboard-header--overview':'')}
     actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   // Keep the existing external-data UI gated until a verified, nonempty source is linked.
   const verifiedExternalTaxPositionReady=false;
@@ -561,7 +565,22 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const overviewHasAmount=!(overviewSource==='recorded'&&sqlLoadError)&&overviewProjection.totalMinor>0n;
   const overviewServices=[...overviewProjection.byService]
     .filter(item=>item.amountMinor>0n)
-    .sort((a,b)=>a.amountMinor>b.amountMinor?-1:a.amountMinor<b.amountMinor?1:0).slice(0,3);
+    .sort((a,b)=>a.amountMinor>b.amountMinor?-1:a.amountMinor<b.amountMinor?1:0);
+  // The ring is a share of payer-initiated, year-scoped allocations only.
+  // Every segment is calculated from the same source as the recipient cards.
+  const overviewRingColors=['#75b2e5','#56a5d7','#b0d1eb','#337eb9','#9cc4e6'];
+  let overviewArcStart=0;
+  const overviewArcStops=overviewServices.map((item,index)=>{
+    const share=Number(item.amountMinor*10000n/overviewProjection.totalMinor)/100;
+    const start=overviewArcStart;
+    overviewArcStart+=share;
+    return overviewRingColors[index%overviewRingColors.length]+' '+start+'% '+Math.min(100,overviewArcStart)+'%';
+  });
+  if(overviewArcStops.length&&overviewArcStart<100){
+    overviewArcStops.push(overviewRingColors[(overviewServices.length-1)%overviewRingColors.length]+' '+overviewArcStart+'% 100%');
+  }
+  const overviewLatest=[...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date))[0]??null;
+  const overviewLead=overviewServices[0]??null;
   const overviewServiceNames:Record<DashboardChartService,string>={
     income:tr('Tax with return','রিটার্নের সঙ্গে কর'),
     ait:tr('Advance tax','অগ্রিম কর'),
@@ -578,16 +597,17 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     dashboardSource:overviewSource,dashboardOnlyCompleted:true
   });
   const openSavedDrafts=()=>{
-    const list=document.getElementById('taxpayer-dashboard-draft-section');
-    if(list && previewAccount?.id==='user1' && activePreviewSession()?.profileId==='user1'){
-      list.scrollIntoView({behavior:'smooth',block:'start'});
-      list.focus({preventScroll:true});
+    setFollowupTab('drafts');
+    const panel=document.getElementById('dashboard-followups');
+    panel?.scrollIntoView({behavior:'smooth',block:'start'});
+    if(previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1'){
+      window.requestAnimationFrame(()=>document.getElementById('taxpayer-dashboard-draft-section')?.focus({preventScroll:true}));
     }else setDraftHelpVisible(visible=>!visible);
   };
   const focusCorrectionRequests=()=>{
-    const target=document.getElementById('dashboard-correction-requests');
-    target?.scrollIntoView({behavior:'smooth',block:'start'});
-    target?.focus({preventScroll:true});
+    setFollowupTab('requests');
+    document.getElementById('dashboard-followups')?.scrollIntoView({behavior:'smooth',block:'start'});
+    window.requestAnimationFrame(()=>document.getElementById('dashboard-correction-requests')?.focus({preventScroll:true}));
   };
   const overview=<div className="taxpay-bento-grid" data-testid="taxpayer-overview-bento"
     data-drafts-empty={savedDraftCount===0?'true':'false'} data-dashboard-empty={compactEmptyOverview?'true':'false'}>
@@ -634,54 +654,80 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     <div className="taxpay-bento-request-row">
       <section className={panel+' taxpay-bento-hero taxpay-bento-summary'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
         <div className="taxpay-overview-feature">
-          <p className="taxpay-overview-feature__eyebrow"><FileCheck2 size={17} aria-hidden="true"/>
-            {tr('PAYMENT ACTIVITY','পেমেন্ট কার্যক্রম')} · {year}</p>
-          <h2>{tr('Payments at a glance','এক নজরে আপনার পেমেন্ট')}</h2>
-          <h3 className="sr-only">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h3>
-          <p className="taxpay-overview-feature__source" data-testid="dashboard-source-indicator">
-            {overviewSource==='example'
-              ?tr('Example activity (simulated) — not real payments or tax credits','উদাহরণভিত্তিক কার্যক্রম (সিমুলেশন) — প্রকৃত পেমেন্ট বা কর ক্রেডিট নয়')
-              :tr('Payments linked to this session — not verified tax credits','এই সেশনের পেমেন্ট — যাচাইকৃত কর ক্রেডিট নয়')}
-          </p>
-          <div className="taxpay-overview-feature__main">
-            <div className="taxpay-overview-feature__amount">
-              <strong className="tabular-nums" data-testid="dashboard-overview-total">
-                {overviewHasAmount?formatDashboardChartMoney(overviewProjection.totalMinor,language):'—'}
-              </strong>
-              <p>{overviewHasAmount
-                ?tr('Payer-initiated allocations for this assessment year','এই করবর্ষে আপনার শুরু করা পেমেন্ট বরাদ্দ')
+          <div className="taxpay-overview-feature__content">
+            <p className="taxpay-overview-feature__eyebrow"><FileCheck2 size={17} aria-hidden="true"/>
+              {tr('Total recorded activity','মোট নথিভুক্ত কার্যক্রম')} · {year}</p>
+            <h2>{tr('Payments at a glance','এক নজরে আপনার পেমেন্ট')}</h2>
+            <h3 className="sr-only">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h3>
+            <strong className="taxpay-overview-feature__amount tabular-nums" data-testid="dashboard-overview-total">
+              {overviewHasAmount?formatDashboardChartMoney(overviewProjection.totalMinor,language):'—'}
+            </strong>
+            <p className="taxpay-overview-feature__latest">
+              {overviewHasAmount&&overviewLatest
+                ?tr('Latest completed activity','সর্বশেষ সম্পন্ন কার্যক্রম')+': '+money(overviewLatest.amount)+' · '+formatDate(overviewLatest.date)
                 :overviewSource==='recorded'&&sqlLoadError
-                  ?tr('Payment records could not be loaded','পেমেন্ট রেকর্ড লোড করা যায়নি')
-                  :tr('No itemized payments for this year','এই করবর্ষে কোনো বিস্তারিত পেমেন্ট নেই')}</p>
-            </div>
-            {overviewHasAmount&&<div className="taxpay-overview-feature__services"
-              aria-label={tr('Payment service shares','পেমেন্টের ধরনের অংশ')}>
-              {overviewServices.map(item=>{
-                const share=dashboardChartPercentage(item.amountMinor,overviewProjection.totalMinor);
-                return <div key={item.key} className="taxpay-overview-feature__service">
-                  <div><span>{overviewServiceNames[item.key]}</span><strong className="tabular-nums">{share}%</strong></div>
-                  <span className="taxpay-overview-feature__track" aria-hidden="true"><span style={{width:share+'%'}}/></span>
-                </div>;
-              })}
-            </div>}
+                  ?tr('Payment records could not be loaded.','পেমেন্ট রেকর্ড লোড করা যায়নি।')
+                  :tr('No itemized payer payments for this assessment year.','এই করবর্ষে কোনো বিস্তারিত পরিশোধকারীর পেমেন্ট নেই।')}
+            </p>
+            <p className="taxpay-overview-feature__source" data-testid="dashboard-source-indicator">
+              {overviewSource==='example'
+                ?tr('Example activity (simulated) — not real payments or tax credits',
+                  'উদাহরণভিত্তিক কার্যক্রম (সিমুলেশন) — প্রকৃত পেমেন্ট বা কর ক্রেডিট নয়')
+                :tr('Recorded payments; not verified Treasury tax credits',
+                  'সংরক্ষিত পেমেন্ট; যাচাইকৃত ট্রেজারি কর ক্রেডিট নয়')}
+            </p>
+            <a href="?action=history" className="taxpay-overview-feature__action"
+              onClick={event=>{event.preventDefault();openOverviewPayments();}}>
+              {tr('View payment history','পেমেন্ট ইতিহাস দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
+            </a>
           </div>
-          <a href="?action=history" className="taxpay-overview-feature__action" onClick={event=>{event.preventDefault();openOverviewPayments();}}>
-            {tr('View payment history','পেমেন্ট ইতিহাস দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
-          </a>
+          {overviewHasAmount&&overviewLead&&<div className="taxpay-overview-feature__visual">
+            <div className="taxpay-overview-feature__ring"
+              role="img"
+              aria-label={overviewServices.map(item=>overviewServiceNames[item.key]+': '+
+                formatDashboardChartMoney(item.amountMinor,language)).join(', ')}
+              style={{background:'conic-gradient('+overviewArcStops.join(', ')+')'}}>
+              <div className="taxpay-overview-feature__ring-center">
+                <strong>{Math.round(dashboardChartPercentage(overviewLead.amountMinor,overviewProjection.totalMinor))}%</strong>
+                <span>{overviewServiceNames[overviewLead.key]}</span>
+              </div>
+            </div>
+            <dl className="taxpay-overview-feature__legend">
+              {overviewServices.map((item,index)=><div key={item.key}>
+                <dt><i aria-hidden="true" style={{background:overviewRingColors[index%overviewRingColors.length]}}/>
+                  {overviewServiceNames[item.key]}</dt>
+                <dd className="tabular-nums">{formatDashboardChartMoney(item.amountMinor,language)}</dd>
+              </div>)}
+            </dl>
+          </div>}
         </div>
         <div className="taxpay-bento-hero__status" role="group" aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--completed" onClick={openOverviewPayments}>
-            <span className="taxpay-summary-metric__label"><FileCheck2 size={17} aria-hidden="true"/>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span>
-            <strong className="tabular-nums">{overviewSource==='recorded'&&sqlLoadError?'—':completedPayments}</strong>
+            <span className="taxpay-summary-metric__icon"><FileCheck2 size={20} aria-hidden="true"/></span>
+            <span className="taxpay-summary-metric__details">
+              <span className="taxpay-summary-metric__label">{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span>
+              <strong className="tabular-nums">{overviewSource==='recorded'&&sqlLoadError?'—':completedPayments}</strong>
+            </span>
+            <span className="taxpay-summary-metric__pill">{tr('This year','এই বছরে')}</span>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--drafts" onClick={openSavedDrafts}
             aria-expanded={draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0)}>
-            <span className="taxpay-summary-metric__label"><FilePenLine size={17} aria-hidden="true"/>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span>
-            <strong className="tabular-nums">{savedDraftCount===null?'—':savedDraftCount}</strong>
+            <span className="taxpay-summary-metric__icon"><FilePenLine size={20} aria-hidden="true"/></span>
+            <span className="taxpay-summary-metric__details">
+              <span className="taxpay-summary-metric__label">{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span>
+              <strong className="tabular-nums">{savedDraftCount===null?'—':savedDraftCount}</strong>
+            </span>
+            <span className="taxpay-summary-metric__pill">{savedDraftCount===null
+              ?tr('Unavailable','পাওয়া যায়নি')
+              :savedDraftCount===0?tr('No drafts','খসড়া নেই'):tr('Continue','চালিয়ে যান')}</span>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--requests" onClick={focusCorrectionRequests}>
-            <span className="taxpay-summary-metric__label"><ReceiptText size={17} aria-hidden="true"/>{tr('Correction Requests','সংশোধনের আবেদন')}</span>
-            <strong className="tabular-nums">{correctionRequestCount===null?'—':correctionRequestCount}</strong>
+            <span className="taxpay-summary-metric__icon"><ReceiptText size={20} aria-hidden="true"/></span>
+            <span className="taxpay-summary-metric__details">
+              <span className="taxpay-summary-metric__label">{tr('Correction Requests','সংশোধনের আবেদন')}</span>
+              <strong className="tabular-nums">{correctionRequestCount===null?'—':correctionRequestCount}</strong>
+            </span>
+            <span className="taxpay-summary-metric__pill">{tr('View requests','আবেদন দেখুন')}</span>
           </button>
         </div>
         {draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0) &&
@@ -690,11 +736,29 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             :tr('No saved drafts yet. Use Save Draft during a payment to continue it later.','এখনও সংরক্ষিত খসড়া নেই। পরে চালু করতে পেমেন্টের সময় খসড়া সংরক্ষণ করুন।')}</p>}
       </section>
     <div className="taxpay-bento-tasks" aria-label={tr('Continue and track','চালিয়ে যান ও অনুসরণ করুন')}>
-    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1}>
+    <section className={panel+' taxpay-bento-followups'} id="dashboard-followups" aria-labelledby="dashboard-followups-title" tabIndex={-1}>
+      <h2 id="dashboard-followups-title">{tr('Follow-ups','পরবর্তী করণীয়')}</h2>
+      <div className="taxpay-followups__switch" role="group" aria-label={tr('Follow-up view','পরবর্তী করণীয় দেখুন')}>
+        <button type="button" aria-pressed={followupTab==='drafts'} onClick={()=>setFollowupTab('drafts')}>
+          {tr('Drafts','খসড়া')} <span>{savedDraftCount===null?'—':savedDraftCount}</span>
+        </button>
+        <button type="button" aria-pressed={followupTab==='requests'} onClick={()=>setFollowupTab('requests')}>
+          {tr('Requests','আবেদন')} <span>{correctionRequestCount===null?'—':correctionRequestCount}</span>
+        </button>
+      </div>
+    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1} hidden={followupTab!=='drafts'}>
       <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
         onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
+      {activePreviewSession()?.profileId!=='user1'&&
+        <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-taxpay-muted">
+          <p role="status">{tr('Sign in to view saved drafts, or start a new payment.',
+            'সংরক্ষিত খসড়া দেখতে সাইন ইন করুন, অথবা নতুন পেমেন্ট শুরু করুন।')}</p>
+          <button type="button" className="mt-2 min-h-11 rounded-lg border border-taxpay-border bg-white px-3 font-semibold text-taxpay-primary"
+            onClick={()=>openPaymentServiceChoice()}>{tr('Start a payment','পেমেন্ট শুরু করুন')}</button>
+        </div>}
     </div>}
-    <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} aria-labelledby="dashboard-correction-requests-title">
+    <section id="dashboard-correction-requests" tabIndex={-1} hidden={followupTab!=='requests'}
+      className={panel+' taxpay-bento-corrections'} aria-labelledby="dashboard-correction-requests-title">
       <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
       <p className="mt-2 text-sm text-taxpay-muted">{overviewSource==='example'
         ?tr('Example requests and their displayed status.','উদাহরণভিত্তিক আবেদন ও প্রদর্শিত অবস্থা।')
@@ -715,6 +779,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       </ul> : overviewSource==='example'
         ?<p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No example requests for this assessment year.','এই করবর্ষে কোনো উদাহরণভিত্তিক আবেদন নেই।')}</p>
         :null}
+    </section>
     </section>
     </div>
     </div>
@@ -972,10 +1037,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   </section>;
   const content=route==='ledger'?ledger:route==='history'?transactionList:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-taxpay-register-page={["history","ledger","certificates","corrections"].includes(route)?"true":undefined} data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
-    {overviewRoute && <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
-      <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
-      <p className="text-lg font-semibold text-taxpay-text">{greeting.welcome}</p>
-    </section>}
     {header}
     {activityTabs && <TaxpayerActivityTabs />}
     {content}

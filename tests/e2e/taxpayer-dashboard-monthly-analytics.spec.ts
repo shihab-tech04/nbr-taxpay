@@ -14,6 +14,7 @@ test('Overview keeps compact metrics, saved drafts, corrections and interactive 
   await expect(metrics.getByRole('button',{name:/Correction Requests/})).toContainText('2');
   await expect(cases.getByTestId('dashboard-correction-request-list').locator('li')).toHaveCount(2);
   const charts=dashboard.getByTestId('dashboard-payment-analytics');
+  await charts.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   await expect(charts.getByTestId('dashboard-service-breakdown')).toBeVisible();
   await expect(charts.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
   await expect(charts.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
@@ -45,6 +46,7 @@ test('changing assessment year updates the new chart totals without retaining th
   test.skip(info.project.name!=='desktop-1280','Assessment-year source isolation');
   await page.goto(demo);
   const chart=page.getByTestId('dashboard-payment-analytics');
+  await chart.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
   await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2024-2025');
@@ -62,6 +64,7 @@ test('interactive chart cards, summary and corrections stay contained across res
     await page.goto(demo);
     const dashboard=page.getByTestId('taxpayer-overview-bento');
     const charts=dashboard.getByTestId('dashboard-payment-analytics');
+  await charts.getByTestId('dashboard-recipient-advanced').locator('summary').click();
     const metrics=dashboard.locator('.taxpay-bento-summary');
     await expect(charts.getByTestId('dashboard-service-breakdown')).toBeVisible();
     await expect(charts.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
@@ -79,6 +82,7 @@ test('Bangla chart headings and source tabs remain accessible and interactive',a
   test.skip(info.project.name!=='mobile-375','Single Bangla check');
   await page.goto(demo+'&lang=bn');
   const chart=page.getByTestId('dashboard-payment-analytics');
+  await chart.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   await expect(chart.getByRole('heading',{name:'পেমেন্টের ধরন অনুযায়ী'})).toBeVisible();
   await expect(chart.getByRole('heading',{name:'উপকারভোগীর বিস্তারিত'})).toBeVisible();
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'নমুনা'}).click();
@@ -93,6 +97,7 @@ test('2025-2026 overview defaults to available example charts, never imaginary r
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const overview=page.getByTestId('taxpayer-overview-bento');
   const analytics=overview.getByTestId('dashboard-payment-analytics');
+  await analytics.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   const sources=analytics.getByTestId('dashboard-chart-source');
   await expect(sources.getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
   await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('113,500');

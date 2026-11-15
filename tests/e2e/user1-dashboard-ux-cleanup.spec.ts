@@ -12,7 +12,7 @@ test('Overview hides unverified external tax position and keeps drafts, correcti
   await expect(bento.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
   await expect(bento.getByTestId('dashboard-payment-analytics')).toBeVisible();
   await expect(bento.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
-  await expect(bento.getByRole('heading',{name:'Correction Requests'})).toBeVisible();
+  await expect(bento.getByRole('heading',{name:'Follow-ups'})).toBeVisible();
   await expect(bento.getByRole('button',{name:/Saved Drafts/})).toBeVisible();
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const requests=bento.getByTestId('dashboard-correction-request-list');
@@ -30,6 +30,7 @@ test('Overview links recent payments to Activity and filters interactive benefic
   await sources.getByRole('button',{name:'Examples'}).click();
   await expect(recent).toContainText('Example payer-initiated activity');
   await expect(recent).not.toContainText('Refund inquiry');
+  await bento.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   const beneficiary=bento.getByTestId('dashboard-beneficiary-breakdown');
   await expect(beneficiary.locator('[data-tag="unassigned"]')).toBeVisible();
   await beneficiary.getByRole('button',{name:'View payment records'}).click();
@@ -80,7 +81,7 @@ test('signed-in workspace mirrors Sobaike Public design tokens without changing 
   await page.goto(demo);
   const workspace=page.getByTestId('user1-synthetic-workspace');
   await expect(workspace).toBeVisible();
-  await expect(workspace.locator('section[aria-label="Welcome"]')).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
+  await expect(workspace.locator('.taxpayer-dashboard-header--overview')).toBeVisible();
   await expect(workspace.getByTestId('taxpayer-overview-bento')).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
   const desktop=await page.evaluate(()=>{
     const shell=document.querySelector('.taxpay-citizen-shell.taxpay-taxpayer-reference');
@@ -109,7 +110,7 @@ test('signed-in workspace mirrors Sobaike Public design tokens without changing 
   expect(desktop.page).toBe('rgb(240, 242, 245)');
   expect(desktop.ink).toBe('rgb(5, 5, 5)');
   expect(desktop.railWidth).toBe('250px');
-  expect(desktop.headingFont).toBe('24px');
+  expect(Number.parseFloat(desktop.headingFont)).toBeGreaterThanOrEqual(28);
   expect(desktop.cardBorder).toBe('rgb(228, 230, 235)');
   expect(desktop.cardRadius).toBe('16px');
   const headingBounds=await page.locator('.taxpayer-dashboard-header--overview').boundingBox();
@@ -131,7 +132,7 @@ test('signed-in workspace mirrors Sobaike Public design tokens without changing 
     };
   });
   expect(mobile.font).toContain('Noto Sans');
-  expect(mobile.heading).toBe('24px');
+  expect(Number.parseFloat(mobile.heading)).toBeGreaterThanOrEqual(26);
   expect(mobile.overflow).toBeLessThanOrEqual(2);
 });
 
@@ -167,17 +168,14 @@ test('Overview uses task-first bento sections with independently sized interacti
     const rect=(selector:string)=>el.querySelector(selector)!.getBoundingClientRect();
     return {summary:rect('.taxpay-bento-summary'),recent:rect('.taxpay-bento-recent'),
       charts:rect('.taxpay-bento-analytics'),tasks:rect('.taxpay-bento-tasks'),
-      service:rect('[data-testid="dashboard-service-breakdown"]'),
-      roles:rect('[data-testid="dashboard-role-breakdown"]'),
-      beneficiary:rect('[data-testid="dashboard-beneficiary-breakdown"]'),
+      relationship:rect('[data-testid="dashboard-recipient-relationships"]'),
       ranking:rect('[data-testid="dashboard-ranked-beneficiaries"]')};
   });
   expect(positions.summary.y).toBeLessThan(positions.charts.y);
   expect(positions.charts.y).toBeLessThan(positions.recent.y);
-  expect(Math.abs(positions.service.y-positions.roles.y)).toBeLessThan(4);
-  expect(Math.abs(positions.beneficiary.y-positions.ranking.y)).toBeLessThan(4);
-  expect(positions.beneficiary.width).toBeGreaterThan(positions.ranking.width);
+  expect(Math.abs(positions.relationship.y-positions.ranking.y)).toBeLessThan(4);
   expect(Math.abs(positions.recent.y-positions.tasks.y)).toBeLessThan(4);
+  await expect(bento.getByTestId('dashboard-recipient-advanced')).not.toHaveAttribute('open');
   await expect(bento.locator('.taxpay-bento-hero__status button')).toHaveCount(3);
   await expect(bento.getByRole('heading',{name:'Recorded payments by month'})).toHaveCount(0);
 });
@@ -190,7 +188,8 @@ test('selected assessment year updates recent activity and source-isolated spend
     await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
     await expect(bento.locator('.taxpay-bento-recent')).toContainText('20 Aug 2024');
     await bento.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
-    const beneficiary=bento.getByTestId('dashboard-beneficiary-breakdown');
+    await bento.getByTestId('dashboard-recipient-advanced').locator('summary').click();
+  const beneficiary=bento.getByTestId('dashboard-beneficiary-breakdown');
     await expect(beneficiary).toContainText('60,000');
     await expect(beneficiary.locator('[data-tag="unassigned"]')).toBeVisible();
     await expect(bento.getByTestId('dashboard-service-breakdown').locator('[data-service="income"]')).toBeVisible();
@@ -203,6 +202,7 @@ test('selecting a service interactively filters beneficiary amounts without muta
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const analytics=page.getByTestId('dashboard-payment-analytics');
   await analytics.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
+  await analytics.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   const service=analytics.getByTestId('dashboard-service-breakdown');
   const beneficiary=analytics.getByTestId('dashboard-beneficiary-breakdown');
   const before=await beneficiary.locator('.taxpay-bento-analytics__total').textContent();

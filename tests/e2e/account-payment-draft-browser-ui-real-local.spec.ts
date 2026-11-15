@@ -257,6 +257,8 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     await page.goto('/?action=taxpayer_home');
     const workspace = page.getByTestId('user1-synthetic-workspace');
     const cards = workspace.getByTestId('dashboard-payment-drafts');
+    // Follow-ups is tabbed in the approved overview; expose the saved-draft panel before its actions.
+    await workspace.getByRole('button', { name: /^Drafts/ }).click();
     await expect(cards.getByRole('heading', { name: 'Saved payment drafts' })).toBeVisible();
     const savedCard = cards.locator('[data-draft-id]').first();
     await expect(savedCard).toBeVisible();
@@ -331,7 +333,8 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     // Other user1 saved drafts must not be deleted or changed by this action.
     await page.reload();
     await expect(workspace.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="' + id + '"]')).toHaveCount(0);
-    // Zero records must remain a navigable, recoverable dashboard feature.
+    // Reload starts on Requests; open Drafts to verify the empty-state recovery action.
+    await workspace.getByRole('button', { name: /^Drafts/ }).click();
     const empty = workspace.getByTestId('dashboard-payment-drafts');
     await expect(empty).toBeVisible();
     await expect(empty.getByTestId('dashboard-drafts-empty')).toBeVisible();
