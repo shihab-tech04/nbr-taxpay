@@ -33,6 +33,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   const resetLookup = () => {
     lookupSequence.current += 1;
     setSearchResult(null);
+    setCertificateResult(false);
     setLookupPending(false);
     setLookupError(false);
     setNeedsReceiptMobile(false);
@@ -41,6 +42,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   useEffect(() => {
     lookupSequence.current += 1;
     setSearchResult(null);
+    setCertificateResult(false);
     setLookupPending(false);
     setLookupError(false);
     setNeedsReceiptMobile(false);
@@ -182,6 +184,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
                       setQuery(receipt.challanNo);
                       setSearchedReference(receipt.challanNo);
                       resetLookup();
+                      setCertificateResult(false);
                       setSearchResult(receipt);
                     }}
                   >
