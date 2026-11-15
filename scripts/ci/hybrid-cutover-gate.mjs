@@ -19,7 +19,6 @@ const requiredProofs = Object.freeze([
   'originalStorageRestore',
   'targetStorageRestore',
   'originalAccountIdentity',
-  'originalPaymentOwnerScope',
   'paymentIdempotency',
   'officeAuthorizedReadback',
   'storageByteIntegrity',
@@ -61,6 +60,20 @@ export function validateCutover({ url, disabled = false, proofJson, verifierKey,
   for (const key of requiredProofs) {
     if (!verifyProofItem(payload?.evidence?.[key], now))
       throw new Error('Taxpayer-v2 cutover blocked: missing verified ' + key);
+  }
+  // The two simulated test payments must not be silently claimed by a taxpayer.
+  // Bypass historical owner mapping ONLY with signed no-financial-history proof
+  // and separately verified read-only legacy record preservation.
+  if (payload.historyMode === 'no-settled-payments') {
+    for (const key of ['legacyNonFinancialEvidence', 'legacyRecordsRetainedReadOnly']) {
+      if (!verifyProofItem(payload?.evidence?.[key], now))
+        throw new Error('Taxpayer-v2 cutover blocked: missing verified ' + key);
+    }
+  } else if (payload.historyMode === undefined || payload.historyMode === 'reconcile') {
+    if (!verifyProofItem(payload?.evidence?.originalPaymentOwnerScope, now))
+      throw new Error('Taxpayer-v2 cutover blocked: missing verified originalPaymentOwnerScope');
+  } else {
+    throw new Error('Taxpayer-v2 cutover blocked: unsupported historical payment policy');
   }
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(envelope.signature || ''))
     throw new Error('Taxpayer-v2 cutover blocked: malformed signature');
