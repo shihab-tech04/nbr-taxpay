@@ -68,7 +68,7 @@ test('User 1 login keeps the bento Overview and financial sources after refresh'
   await expect(page.getByRole('heading',{name:'What needs your attention?'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Current tax position'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'By payment service'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Beneficiary Breakdown'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Monthly activity'})).toHaveCount(0);
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
   await expect(page.getByTestId('dashboard-chart-source')).toBeVisible();
