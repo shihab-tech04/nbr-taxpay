@@ -40,7 +40,9 @@ BEGIN
        OR v_snapshot->'items'->0->>'headId' IS DISTINCT FROM '125'
        OR v_snapshot->>'challanNo' IS DISTINCT FROM v_details->>'receiptReference'
        OR coalesce(v_snapshot->>'totalAmount','') !~ '^[0-9]+(\.[0-9]{1,2})?$'
-       OR coalesce(v_lines->0->>'totalAmount','') !~ '^[0-9]+(\.[0-9]{1,2})?
+       OR coalesce(v_lines->0->>'totalAmount','') !~ '^[0-9]+(\.[0-9]{1,2})?$'
+       OR coalesce(v_snapshot->'items'->0->>'totalAmount','') !~ '^[0-9]+(\.[0-9]{1,2})?$'
+       OR v_snapshot->>'payerTin' IS DISTINCT FROM v_details->>'payerTin'
     THEN RAISE EXCEPTION 'RETURN_EXCLUSIVE_RECEIPT_MISMATCH'; END IF;
     IF (v_snapshot->>'totalAmount')::numeric*100 <> v_value::numeric
        OR (v_lines->0->>'totalAmount')::numeric*100 <> v_value::numeric
