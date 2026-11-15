@@ -82,11 +82,6 @@ export const SecureWorkspace: React.FC = () => {
     if (!client) { setAuthLoading(false); return; }
     let active = true;
     const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
-      if (_event==='SIGNED_IN' && session?.user?.id) {
-        // A welcome is a session confirmation, NOT proof of taxpayer/TIN rights.
-        try {window.sessionStorage.setItem('sohojkor.verified-auth-welcome.v1',session.user.id);}
-        catch{/* Session confirmation never depends on browser storage. */}
-      }
       if (active) {
         const nextId = session?.user?.id ?? null;
         if (currentAuthUserId.current !== nextId) {
