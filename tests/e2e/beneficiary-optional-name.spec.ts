@@ -220,7 +220,7 @@ test('beneficiary suggestions match Other Tax and Search reveals the same taxpay
   const lookup=dialog.getByTestId('shared-taxpayer-tin-lookup');
   await expect(dialog.getByTestId('searched-taxpayer-card')).toHaveCount(0);
   await lookup.locator('#beneficiary-tin').focus();
-  const suggestions=dialog.getByRole('listbox',{name:'Suggested TIN numbers'});
+  const suggestions=dialog.getByRole('listbox',{name:'Sample TIN suggestions — not NBR verified'});
   // Opening Add one beneficiary must not reveal all TINs on focus.
   await expect(suggestions).toHaveCount(0);
   await lookup.locator('#beneficiary-tin').fill('0');
@@ -245,7 +245,7 @@ test('beneficiary suggestions match Other Tax and Search reveals the same taxpay
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   const nextLookup=dialog.getByTestId('shared-taxpayer-tin-lookup');
   await nextLookup.locator('#beneficiary-tin').focus();
-  await expect(dialog.getByRole('listbox',{name:'Suggested TIN numbers'})).toHaveCount(0);
+  await expect(dialog.getByRole('listbox',{name:'Sample TIN suggestions — not NBR verified'})).toHaveCount(0);
   await nextLookup.locator('#beneficiary-tin').fill('111111111111');
   await nextLookup.getByRole('button',{name:'Search',exact:true}).click();
   await expect(dialog.getByTestId('searched-taxpayer-card')).toContainText('User 1');

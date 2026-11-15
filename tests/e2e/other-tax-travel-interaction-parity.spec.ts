@@ -23,7 +23,7 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(modal.getByRole('button', {name: nextName})).toHaveCount(0);
     const before = await primary.evaluate(el => el.getBoundingClientRect().height);
     await tin.focus();
-    const suggestions = modal.getByRole('listbox', {name: locale === 'bn' ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'});
+    const suggestions = modal.getByRole('listbox', {name: locale === 'bn' ? 'নমুনা টিআইএন — সরকারি যাচাইকৃত নয়' : 'Sample TIN suggestions — not NBR verified'});
     await expect(suggestions).toHaveCount(0); // Focus does not open all suggestions.
     await tin.fill('1');
     await expect(suggestions).toBeVisible();
@@ -61,7 +61,7 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(clear).toBeVisible();
     await clear.click();
     const secondTin = second.locator('input[id^="other-tax-tin-"]');
-    const secondSuggestions = modal.getByRole('listbox', {name: locale === 'bn' ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'});
+    const secondSuggestions = modal.getByRole('listbox', {name: locale === 'bn' ? 'নমুনা টিআইএন — সরকারি যাচাইকৃত নয়' : 'Sample TIN suggestions — not NBR verified'});
     await expect(secondTin).toHaveValue('');
     await expect(secondTin).toBeFocused();
     await expect(secondSuggestions).toHaveCount(0); // Clear X restores focus without opening.
@@ -100,7 +100,7 @@ test('Other Tax TIN suggestions open below and remain reachable near the fixed f
   const input = first.locator('#guest-tin');
   await input.evaluate(element => element.scrollIntoView({block: 'end', inline: 'nearest', behavior: 'instant'}));
   await input.focus();
-  const options = modal.getByRole('listbox', {name: 'Suggested TIN numbers'});
+  const options = modal.getByRole('listbox', {name: 'Sample TIN suggestions — not NBR verified'});
   await expect(options).toHaveCount(0);
   await input.fill('9');
   await expect(options).toBeVisible();
