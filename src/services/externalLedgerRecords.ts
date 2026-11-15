@@ -132,7 +132,7 @@ async function allRows<T>(table:string,columns:string,ownerUid:string):Promise<T
   const rows:T[]=[];
   for(let offset=0;offset<20000;offset+=200){
     const {data,error}=await supabase.from(table).select(columns)
-      .eq('owner_uid',ownerUid).range(offset,offset+199);
+      .eq('owner_uid',ownerUid).order('id',{ascending:true}).range(offset,offset+199);
     if(error)throw error;
     const page=(data??[]) as T[];
     rows.push(...page);
