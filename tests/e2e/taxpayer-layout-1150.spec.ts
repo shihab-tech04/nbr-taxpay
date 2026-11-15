@@ -155,6 +155,7 @@ test('Phase 8 keeps English and Bengali signed-in navigation without overflow', 
         await page.locator('.taxpayer-reference-rail-bottom button').filter({hasText:language==='bn'?'বাংলা':'English'}).click();
         await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang',language);
       }
+      await page.setViewportSize({width,height:900});
       await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
       const results = await page.evaluate(() => ({
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
