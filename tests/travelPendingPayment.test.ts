@@ -56,7 +56,14 @@ test('M06 corrupted amount/head/passenger/identity retry is rejected without a n
   assert.equal(candidate(payment=>{payment.details.lines[0].surchargeAmount=50}),null);
   assert.equal(candidate(payment=>{payment.details.lines[1].interestAmount=1}),null);
   assert.equal(candidate(payment=>{payment.details.receiptSnapshot.travelDetails.passengers[0].passportMasked='TEST123456'}),null);
-  assert.equal(candidate(payment=>{payment.details.receiptSnapshot.travelDetails.passengers[0].passportMasked='••••?<>{'}),null);
+  assert.equal(candidate(payment=>{payment.details.receiptSnapshot.travelDetails.passengers[0].passportMasked='••••1\n23'}),null);
+  // The current foreign-passport input permits punctuation; masking must not
+  // invalidate a legitimate stored retry with a four-character suffix.
+  const punctuation=candidate(payment=>{
+    payment.details.receiptSnapshot.travelDetails.passengers[1].passportMasked='••••3-45';
+    payment.details.passengers[1].passportMasked='••••3-45';
+  });
+  assert.equal(punctuation?.details.receiptSnapshot.travelDetails?.passengers[1].passportMasked,'••••3-45');
   assert.equal(candidate(payment=>{payment.details.receiptSnapshot.travelDetails.passengers.pop()}),null);
   assert.equal(candidate(payment=>{payment.amountMinor=150001}),null);
   assert.equal(candidate(payment=>{payment.idempotencyKey='wrong'}),null);
