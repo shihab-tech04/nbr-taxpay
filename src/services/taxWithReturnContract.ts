@@ -6,7 +6,7 @@ export const RETURN_HEAD_ID = 125;
 export const RETURN_YEARS: readonly string[] = PAY_AGAIN_YEAR_OPTIONS;
 export type ReturnIssue = 'recipient' | 'head' | 'year';
 type ReturnSelection = {
-  assessmentYear: unknown;
+  assessmentYear?: unknown;
   additionalTaxpayers?: unknown;
   oneTimeTaxpayer?: unknown;
   otherTaxLines?: unknown;
