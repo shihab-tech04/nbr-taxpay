@@ -70,6 +70,7 @@ test('switching draft owner invalidates a selected draft and ignores stale refre
   assert.match(ui, /if \(selectedOwnerRef\.current === ownerKey\) return;[\s\S]*?onSelectedDraft\(null\)/);
   assert.match(ui, /const existing = !asNewDraft && ownedSelectedDraft\?\.service === service/);
   assert.match(ui, /if \(ownedSelectedDraft\?\.id === draft\.id\) onSelectedDraft\(null\)/);
+  assert.match(ui, /await refresh\(\);[\s\S]*?if \(!ownerStillCurrent\(\)\) return;[\s\S]*?setPendingDelete\(null\)/);
   // Both rejection and completion of an older refresh must leave the current
   // account's loading/error state untouched. SQL already checks its own actor.
   assert.match(ui, /void refresh\(\)\.catch\(\(\) => \{\s*if \(ownerStillCurrent\(\)\) setError/);
