@@ -1,6 +1,6 @@
 import {expect,test} from '@playwright/test';
 
-const demo='/?action=taxpayer_home&demoUser=user1';
+const demo='/?action=taxpayer_home&demoUser=user1&qaScenario=1';
 
 test('approved V3 overview is an asymmetric bento with real task destinations',async({page})=>{
   for(const width of [320,375,1024,1600]){
@@ -63,4 +63,22 @@ test('beneficiary charts retain real source isolation, tags, top five and histor
   await expect(analytics.getByTestId('dashboard-role-breakdown')).toContainText('No payer allocations');
   await expect(analytics.getByTestId('dashboard-ranked-beneficiaries')).toContainText('No identifiable third-party beneficiaries');
   await expect(analytics.getByTestId('dashboard-service-breakdown').locator('.taxpay-bento-analytics__total')).toHaveText('—');
+});
+
+test('public account overview never falls back to fictional totals, even when selected year lacks data',async({page})=>{
+  await page.setViewportSize({width:1280,height:800});
+  await page.goto('/?action=taxpayer_home&demoUser=user1');
+  const grid=page.getByTestId('taxpayer-overview-bento');
+  const analytics=grid.getByTestId('dashboard-payment-analytics');
+  await expect(analytics).toHaveAttribute('data-chart-source','recorded');
+  await expect(analytics.getByTestId('dashboard-chart-source')).toHaveCount(0);
+  await expect(analytics).toContainText('No itemized account payments');
+  await expect(grid.getByTestId('dashboard-source-indicator')).not.toContainText('Example activity');
+  await expect(grid.getByTestId('dashboard-correction-request-list')).toHaveCount(0);
+  await expect(grid.getByRole('button',{name:/Completed Payments/})).not.toContainText('5');
+  await expect(analytics).not.toContainText('113,500');
+  await expect(grid.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
+  await expect(grid.getByRole('button',{name:/Saved Drafts/})).toBeVisible();
+  await analytics.getByRole('button',{name:'View payment history'}).click();
+  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
 });

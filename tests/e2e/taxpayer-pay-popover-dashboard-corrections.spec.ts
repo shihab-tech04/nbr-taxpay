@@ -73,7 +73,7 @@ test('mobile split Pay popup keeps approved dock visible and exposes both journe
 
 test('Bengali labels and dashboard correction details stay on the account overview',async({page},info)=>{
  test.skip(info.project.name!=='mobile-375','Single responsive language check');
- await page.goto(demo+'&lang=bn');
+ await page.goto(demo+'&qaScenario=1&lang=bn');
  const section=page.locator('#dashboard-correction-requests');
  await expect(section).toBeVisible();
  await expect(section.getByTestId('dashboard-correction-request-list').locator('li')).toHaveCount(2);

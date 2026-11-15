@@ -107,6 +107,10 @@ export { user1DemoRoutes } from '../../config/user1DemoRoutes';
 export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;onResumePaymentDraft?: (draft:PaymentFormDraft)=>void}>=({route,activityTabs=false,onResumePaymentDraft})=>{
   const {navigate,language,setLanguage,routeParams,openPaymentServiceChoice,previewAccount,startPaymentReuse}=useTaxState();
   const bn=language==='bn';
+  // These historical fictional scenarios are available only on localhost and
+  // only with an explicit QA flag. Production must never fall back to them.
+  const localQaScenario=['localhost','127.0.0.1'].includes(window.location.hostname)&&
+    new URLSearchParams(window.location.search).get('qaScenario')==='1';
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [savedTagPeople,setSavedTagPeople]=useState<Beneficiary[]>([]);
@@ -323,11 +327,15 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const historyScoped=useMemo(()=>[...scoped,...sqlRows.filter(row=>row.years?.includes(year))],[scoped,sqlRows,year]);
   // One assessment-year/source selection drives KPIs, recent activity and charts.
   // Do not merge example events with owner-session SQL payments.
-  const dashboardChartRecords=useMemo(()=>[...events,...sqlRows],[sqlRows]);
-  const defaultOverviewSource=chooseDashboardChartSource(
-    dashboardChartRecords,year,savedTagPeople,DEMO_USERS.user1.tin);
-  const overviewSource=overviewSourceChoice?.year===year
-    ?overviewSourceChoice.source:defaultOverviewSource;
+  // Customer Overview is account-only. Local, explicitly opted-in QA scenarios
+  // retain the historical fixture projections for deterministic browser tests.
+  const dashboardChartRecords=useMemo(()=>localQaScenario?[...events,...sqlRows]:[...sqlRows],[sqlRows,localQaScenario]);
+  const defaultOverviewSource=localQaScenario
+    ?chooseDashboardChartSource(dashboardChartRecords,year,savedTagPeople,DEMO_USERS.user1.tin)
+    :'recorded';
+  const overviewSource=(localQaScenario
+    ?(overviewSourceChoice?.year===year?overviewSourceChoice.source:defaultOverviewSource)
+    :'recorded') as DashboardChartSource;
   const overviewCompletedRows=overviewSource==='recorded'
     ?sqlRows.filter(item=>item.state==='POSTED'&&item.years?.includes(year))
     :scoped.filter(item=>item.state==='POSTED'&&['income','ait','travel'].includes(item.kind));
@@ -675,7 +683,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         </li>)}
       </ul>
       {!overviewCompletedRows.length&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('No completed payment activity for the selected assessment year.','নির্বাচিত করবর্ষে সম্পন্ন পেমেন্ট নেই।')}</p>}
-      {sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-recorded payments could not be loaded. Sample activity remains visible.','অ্যাকাউন্টে সংরক্ষিত পেমেন্ট লোড হয়নি। নমুনা কার্যক্রম দেখা যাচ্ছে।')}</p>}
+      {sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-linked payment records could not be loaded. No example activity is included in this overview.','অ্যাকাউন্টের পেমেন্ট রেকর্ড লোড হয়নি। এই বিবরণে কোনো নমুনা কার্যক্রম যুক্ত করা হয়নি।')}</p>}
     </section>
     </div>
     <BentoPaymentAnalytics
@@ -685,8 +693,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       ownerTin={DEMO_USERS.user1.tin}
       language={language}
       sourceLoadError={sqlLoadError}
+      allowExamples={localQaScenario}
       selectedSource={overviewSource}
-      onSourceChange={source=>setOverviewSourceChoice({year,source})}
+      onSourceChange={source=>{if(localQaScenario)setOverviewSourceChoice({year,source});}}
       onManageBeneficiaries={()=>navigate('beneficiaries')}
       onOpenBeneficiary={tin=>navigate('beneficiaries',{
         openBeneficiaryTin:tin,returnTo:'taxpayer_home'

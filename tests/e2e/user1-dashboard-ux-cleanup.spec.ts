@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {openTaxpayerTravelTax} from './taxpayer-travel-menu-helper';
 
-const demo = '/?action=taxpayer_home&demoUser=user1';
+const demo = '/?action=taxpayer_home&demoUser=user1&qaScenario=1';
 
 test('Overview hides unverified external tax position and keeps drafts, corrections and useful bento charts',async({page})=>{
   await page.goto(demo);

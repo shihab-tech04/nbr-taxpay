@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const dashboard='/?action=taxpayer_home&demoUser=user1';
+const dashboard='/?action=taxpayer_home&demoUser=user1&qaScenario=1';
 
 test('bento analytics never display unverified tax-liability charts and separate recorded payments from examples',async({page})=>{
   await page.goto(dashboard);
