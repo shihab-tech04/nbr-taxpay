@@ -11,6 +11,7 @@ import { assertResumablePaymentDraft } from './PaymentDraftEntryGate';
 
 type Catalog = {
   ownerKey: string;
+  generation: number;
   status: 'loading' | 'ready' | 'error';
   rows: PaymentFormDraft[];
 };
@@ -46,7 +47,7 @@ export const DashboardPaymentDrafts: React.FC<{
   const sameOwner = () => mounted.current &&
     latestOwner.current.key===ownerKey &&
     latestOwner.current.generation===requestGeneration;
-  const [catalog, setCatalog] = useState<Catalog>({ ownerKey: '', status: 'loading', rows: [] });
+  const [catalog, setCatalog] = useState<Catalog>({ ownerKey: '', generation: -1, status: 'loading', rows: [] });
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,41 +60,42 @@ export const DashboardPaymentDrafts: React.FC<{
     if (isPaymentServiceChoiceOpen) return () => { active = false; };
     // Preserve the rendered cards while the dialog opens and during its close refresh.
     // Clear old rows immediately only when the account owner changes.
-    setCatalog(previous => previous.ownerKey === ownerKey && previous.status === 'ready'
-      ? previous : { ownerKey, status: 'loading', rows: [] });
+    setCatalog(previous => previous.ownerKey === ownerKey &&
+      previous.generation === requestGeneration && previous.status === 'ready'
+      ? previous : { ownerKey, generation: requestGeneration, status: 'loading', rows: [] });
     setPendingDelete(null);
     setBusyId(null);
     setError(null);
     if (!actor || authLoading) return () => { active = false; };
     void listPaymentFormDrafts(actor).then(rows => {
-      if (active && sameOwner()) setCatalog({ ownerKey, status: 'ready', rows });
+      if (active && sameOwner()) setCatalog({ ownerKey, generation: requestGeneration, status: 'ready', rows });
     }).catch(() => {
-      if (active && sameOwner()) setCatalog({ ownerKey, status: 'error', rows: [] });
+      if (active && sameOwner()) setCatalog({ ownerKey, generation: requestGeneration, status: 'error', rows: [] });
     });
     return () => { active = false; };
     // Recheck only on identity or modal lifecycle changes, not ordinary rerenders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownerKey, authLoading, isPaymentServiceChoiceOpen]);
+  }, [ownerKey, requestGeneration, authLoading, isPaymentServiceChoiceOpen]);
 
   // The Overview quick link is shown only when this account owns saved drafts.
   // Reuse the already loaded catalog: never duplicate SQL reads or share owners.
   useEffect(() => {
-    onCountChange?.(catalog.ownerKey === ownerKey && catalog.status === 'ready' ? catalog.rows.length : null);
-  }, [catalog.ownerKey, catalog.status, catalog.rows.length, ownerKey, onCountChange]);
+    onCountChange?.(catalog.ownerKey === ownerKey && catalog.generation === requestGeneration && catalog.status === 'ready' ? catalog.rows.length : null);
+  }, [catalog.ownerKey, catalog.generation, catalog.status, catalog.rows.length, ownerKey, requestGeneration, onCountChange]);
 
   if (!actor || authLoading ||
-      (catalog.ownerKey !== ownerKey && catalog.status !== 'loading')) return null;
+      ((catalog.ownerKey !== ownerKey || catalog.generation !== requestGeneration) && catalog.status !== 'loading')) return null;
 
   const retry = () => {
     if (busyId) return;
-    setCatalog({ ownerKey, status: 'loading', rows: [] });
+    setCatalog({ ownerKey, generation: requestGeneration, status: 'loading', rows: [] });
     setError(null);
     void listPaymentFormDrafts(actor).then(rows => {
-      if (sameOwner()) setCatalog(previous => previous.ownerKey === ownerKey
-        ? { ownerKey, status: 'ready', rows } : previous);
+      if (sameOwner()) setCatalog(previous => previous.ownerKey === ownerKey && previous.generation === requestGeneration
+        ? { ownerKey, generation: requestGeneration, status: 'ready', rows } : previous);
     }).catch(() => {
-      if (sameOwner()) setCatalog(previous => previous.ownerKey === ownerKey
-        ? { ownerKey, status: 'error', rows: [] } : previous);
+      if (sameOwner()) setCatalog(previous => previous.ownerKey === ownerKey && previous.generation === requestGeneration
+        ? { ownerKey, generation: requestGeneration, status: 'error', rows: [] } : previous);
     });
   };
 
@@ -119,7 +121,7 @@ export const DashboardPaymentDrafts: React.FC<{
       // SQL enforces owner and revision; a changed draft is not silently deleted.
       await deletePaymentFormDraft(actor, draft);
       if (!sameOwner()) return;
-      setCatalog(previous => previous.ownerKey === ownerKey
+      setCatalog(previous => previous.ownerKey === ownerKey && previous.generation === requestGeneration
         ? { ...previous, rows: previous.rows.filter(item => item.id !== draft.id) }
         : previous);
       setPendingDelete(null);
@@ -131,7 +133,7 @@ export const DashboardPaymentDrafts: React.FC<{
     } finally { if (sameOwner()) setBusyId(null); }
   };
 
-  const loading = catalog.ownerKey !== ownerKey || catalog.status === 'loading';
+  const loading = catalog.ownerKey !== ownerKey || catalog.generation !== requestGeneration || catalog.status === 'loading';
 
   return <section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
     className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5">
