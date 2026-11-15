@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Bell, CheckCheck, CircleUserRound, LogOut, RefreshCcw, Settings2, ShieldAlert } from 'lucide-react';
 import { supabase, backendConfigured } from '../../services/supabaseClient';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
@@ -126,8 +126,16 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   const [name, setName] = useState('');
   const [showNotifications, setShowNotifications] = useState(true);
   const [preferredLanguage, setPreferredLanguage] = useState<'en'|'bn'>(language);
-  const [notices, setNotices] = useState<DraftNotice[]>([]);
-  const [reviewNotices, setReviewNotices] = useState<ReviewNotice[]>([]);
+  // Private records are coupled to the Auth owner at render time, before
+  // effects reset state on account change.
+  const [noticeSnapshot, setNoticeSnapshot] = useState<{
+    ownerUid: string; drafts: DraftNotice[]; reviews: ReviewNotice[];
+  } | null>(null);
+  const notices = noticeSnapshot?.ownerUid === user?.id ? noticeSnapshot.drafts : [];
+  const reviewNotices = noticeSnapshot?.ownerUid === user?.id ? noticeSnapshot.reviews : [];
+  const currentUidRef = useRef(user?.id ?? null);
+  currentUidRef.current = user?.id ?? null;
+  const isCurrentUid = (uid: string) => currentUidRef.current === uid;
   const [loadState, setLoadState] = useState<'idle'|'loading'|'error'|'ready'>('idle');
   const [revision, setRevision] = useState(0);
   const [notificationSearch,setNotificationSearch]=useState('');
@@ -150,8 +158,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
 
   useEffect(() => {
     if (page !== 'notifications' || !user || !allowed) {
-      setNotices([]);
-      setReviewNotices([]);
+      setNoticeSnapshot(null);
       setLoadState('idle');
       return;
     }
@@ -159,6 +166,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     if (!client) return;
     let active = true;
     const uid = user.id;
+    setNoticeSnapshot(null);
     setLoadState('loading');
     const refreshNotices = () => (async () => {
       const { data: auth, error: authError } = await client.auth.getUser();
@@ -172,10 +180,12 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       const { data: stillCurrent, error: rereadError } = await client.auth.getUser();
       if (rereadError || stillCurrent.user?.id !== uid) throw new Error('Account session changed');
       if (!active) return;
-      setNotices((draftResult.data ?? []).filter((item: DraftNotice) => item.owner_uid === uid));
-      setReviewNotices(reviewResult);
+      if (!isCurrentUid(uid)) return;
+      setNoticeSnapshot({ownerUid: uid,
+        drafts: (draftResult.data ?? []).filter((item: DraftNotice) => item.owner_uid === uid),
+        reviews: reviewResult});
       setLoadState('ready');
-    })().catch(() => { if (active) { setNotices([]); setReviewNotices([]); setLoadState('error'); } });
+    })().catch(() => { if (active && isCurrentUid(uid)) { setNoticeSnapshot(null); setLoadState('error'); } });
     void refreshNotices();
     // New non-financial officer updates arrive without requiring a page reload.
     // Every poll revalidates the currently authenticated owner before and after SQL reads.
@@ -210,7 +220,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   };
 
   const markViewed = async () => {
-    if (!user || !supabase || loadState !== 'ready') return;
+    if (!user || !supabase || loadState !== 'ready' || noticeSnapshot?.ownerUid !== user.id) return;
+    const requestUid = user.id;
     setBusy(true); setFeedback(null);
     try {
       const { data: current, error: identityError } = await supabase.auth.getUser();
@@ -219,16 +230,22 @@ export function AccountCenter({ page }: { page: AccountPage }) {
         taxpay_notifications_read_at: new Date().toISOString()
       }});
       if (error) throw error;
+      if (!isCurrentUid(requestUid)) return;
+      const {data: session, error: sessionError} = await supabase.auth.getUser();
+      if (sessionError || session.user?.id !== requestUid || !isCurrentUid(requestUid))
+        throw new Error('Account session changed');
       const unread = reviewNotices.filter(n=>!n.is_read).map(n=>n.id);
       if (unread.length) {
         const { data: updated, error: reviewError } = await supabase.from('taxpay_in_app_notifications')
-          .update({is_read:true}).eq('recipient_uid', user.id).in('id',unread).select('id');
+          .update({is_read:true}).eq('recipient_uid', requestUid).in('id',unread).select('id');
+        if (!isCurrentUid(requestUid)) return;
         if (reviewError || updated?.length !== unread.length) throw new Error('Review notice read-back not confirmed');
-        setReviewNotices(prev=>prev.map(n=>unread.includes(n.id)?{...n,is_read:true}:n));
+        setNoticeSnapshot(prev=>prev?.ownerUid===requestUid
+          ?{...prev,reviews:prev.reviews.map(n=>unread.includes(n.id)?{...n,is_read:true}:n)}:prev);
       }
-      setFeedback({error:false,content:t.readSaved});
-    } catch { setFeedback({error:true,content:t.saveFailed}); }
-    finally { setBusy(false); }
+      if (isCurrentUid(requestUid)) setFeedback({error:false,content:t.readSaved});
+    } catch { if (isCurrentUid(requestUid)) setFeedback({error:true,content:t.saveFailed}); }
+    finally { if (isCurrentUid(requestUid)) setBusy(false); }
   };
 
   const signOut = async () => {
@@ -236,7 +253,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     try {
       const result = await signOutApplicationAccount();
       if (!result.ok) throw new Error(result.error);
-      setNotices([]); setReviewNotices([]); setUserRole('GUEST'); setFeedback({error:false,content:t.loggedOut});
+      setNoticeSnapshot(null); setUserRole('GUEST'); setFeedback({error:false,content:t.loggedOut});
       navigate('landing');
     } catch { setFeedback({error:true,content:t.logoutFailed}); }
     finally { setBusy(false); }
@@ -356,7 +373,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
               <section className="taxpayer-account-panel">
                 <h2>{t.notificationsTitle}</h2>
                 <p>{t.noticesInfo}</p>
-                {!allowed ? <p role="status">{t.off}</p> : loadState === 'loading' ? <p role="status">{t.load}</p>
+                {!allowed ? <p role="status">{t.off}</p> : loadState === 'loading' || (loadState === 'ready' && noticeSnapshot?.ownerUid !== user.id) ? <p role="status">{t.load}</p>
                   : loadState === 'error' ? <div><p role="alert">{t.loadError}</p>
                       <button type="button" onClick={()=>setRevision(n=>n+1)}>{t.retry} <RefreshCcw size={16} aria-hidden /></button></div>
                   : loadState === 'ready' && (notices.length || reviewNotices.length) ? <div className="space-y-4" data-testid="authenticated-notification-registers">
