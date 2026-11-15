@@ -341,7 +341,7 @@ for(const language of ['en','bn'] as const){
       challanNo:'SIM-'+repeatableNonce,tokenNumber:'TOKEN-'+repeatableId,
       paymentCategory:'OTHER_TAX_PAYMENT',assessmentYear:'2026-27, 2025-26',
       payerName:'Original payment owner',payerTin:actualPayerTin,
-      taxpayerTin:undefined,isRepresentativePayment:true,
+      isRepresentativePayment:true,
       taxZone:'—',taxCircle:'—',isWithholding:false,
       items:repeatableItems,
       allocationItems:savedAllocations.map((allocation,index)=>({
