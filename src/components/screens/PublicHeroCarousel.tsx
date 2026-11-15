@@ -379,7 +379,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
               onClick={() => onPayTax('TRAVEL_TAX')}>{bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}</button>
           </div>
           {bannerStatus === 'unavailable' && <button className="public-hero-carousel__retry"
-            type="button" onClick={() => {setBannerStatus('loading');setRetryNonce(n => n + 1);}}>
+            type="button" onClick={() => {if (!allowBrandingManualRetry()) return; setBannerStatus('loading');setRetryNonce(n => n + 1);}}>
             {bn ? 'আবার চেষ্টা করুন' : 'Retry banner loading'}
           </button>}
         </div>
