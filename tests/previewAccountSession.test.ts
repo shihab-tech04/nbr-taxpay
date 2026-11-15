@@ -134,3 +134,33 @@ test('sign-out invalidates a preview sign-in still waiting on the network',async
   await assert.rejects(oldAttempt,/Demo account changed/);
   assert.equal(session.activePreviewSession(),null);
 });
+
+test('preview draft list refuses a late response from an old capability for the same demo profile',async()=>{
+  const old=await session.signInPreviewProfile('user1','user1');
+  assert.ok(old);
+  const drafts=await import('../src/services/accountPaymentFormDrafts');
+  const reading=drafts.listPaymentFormDrafts({kind:'preview',profileId:'user1'});
+  const delayed=await takePending('payment-draft-list');
+
+  // User 1 signs in again while their earlier draft response is in flight.
+  // The newly issued server capability must invalidate the old response.
+  const current=await session.signInPreviewProfile('user1','user1');
+  assert.ok(current);
+  assert.notEqual(old.capability,current.capability);
+  delayed.resolve(response([]));
+
+  await assert.rejects(reading,/Sign in to your account again/);
+  assert.equal(session.activePreviewSession()?.capability,current.capability);
+  assert.equal(session.activePreviewSession()?.paymentSessionId,current.paymentSessionId);
+});
+
+test('preview draft list still accepts a response from the unchanged capability',async()=>{
+  const current=await session.signInPreviewProfile('user1','user1');
+  assert.ok(current);
+  const drafts=await import('../src/services/accountPaymentFormDrafts');
+  const reading=drafts.listPaymentFormDrafts({kind:'preview',profileId:'user1'});
+  const request=await takePending('payment-draft-list');
+  request.resolve(response([]));
+  assert.deepEqual(await reading,[]);
+  assert.equal(session.activePreviewSession()?.capability,current.capability);
+});
