@@ -100,7 +100,7 @@ test('All taxpayer inner pages preserve responsive access without a full-width s
   }
 });
 
-test('both signed-in taxpayer profiles use available main width without horizontal overflow', async ({page},info) => {
+test('both signed-in taxpayer profiles preserve the approved wide-screen reading width without overflow', async ({page},info) => {
   test.skip(info.project.name !== 'desktop-1280', 'One worker checks both signed-in profiles and breakpoints');
   test.setTimeout(120000);
   for (const account of ['user1','user2']) {
@@ -114,9 +114,15 @@ test('both signed-in taxpayer profiles use available main width without horizont
       const size = await page.evaluate(() => {
         const main = document.querySelector('#main-content') as HTMLElement;
         const content = main.firstElementChild as HTMLElement;
+        const style = getComputedStyle(main);
+        const rect = main.getBoundingClientRect();
+        const inner = content.getBoundingClientRect();
+        const area = main.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
         return {
-          main: main.getBoundingClientRect().width,
-          content: content.getBoundingClientRect().width,
+          area,
+          content: inner.width,
+          leftInset: inner.left - rect.left - parseFloat(style.paddingLeft),
+          rightInset: rect.right - parseFloat(style.paddingRight) - inner.right,
           overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         };
       });
@@ -124,8 +130,9 @@ test('both signed-in taxpayer profiles use available main width without horizont
       if (viewport < 1400) {
         expect(size.content,`${account} unexpectedly changed at ${viewport}px`).toBeLessThanOrEqual(1152);
       } else {
-        expect(size.content,`${account} does not fill its flexible workspace at ${viewport}px`).toBeGreaterThan(size.main * .82);
-        expect(size.content,`${account} exceeds main at ${viewport}px`).toBeLessThanOrEqual(size.main);
+        expect(Math.abs(size.content - size.area * .7),`${account} does not retain the approved 70% content width at ${viewport}px`).toBeLessThanOrEqual(2);
+        expect(Math.abs(size.leftInset - size.rightInset),`${account} reading column is not centered at ${viewport}px`).toBeLessThanOrEqual(2);
+        expect(size.content,`${account} exceeds available main area at ${viewport}px`).toBeLessThanOrEqual(size.area);
       }
     }
   }
