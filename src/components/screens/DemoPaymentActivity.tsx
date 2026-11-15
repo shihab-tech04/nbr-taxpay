@@ -4,7 +4,7 @@ import {useAccountIdentity} from '../../services/accountIdentity';
 import {getStorySessionId,persistSimulatedPayment} from '../../services/simulatedPaymentStory';
 import {parsePaymentPrefill} from '../../services/paymentPrefill';
 import {copyPreviousPayment,canPayAgain,CURRENT_PAY_AGAIN_YEAR,PAY_AGAIN_YEAR_OPTIONS} from '../../services/payAgain';
-import {DEMO_USERS} from '../../data/demoUsers';
+import {DEMO_USERS,type DemoUserId} from '../../data/demoUsers';
 import {sampleTinForUserNumber} from '../../data/sampleTinSuggestions';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
 import {beneficiaryFinalTagLabel} from '../../services/beneficiaryTags';
@@ -23,6 +23,11 @@ import {
   type SimulationUser,type SimulationCategory,type SimulationTransaction,type SimulationLine
 } from '../../services/simulatedPaymentsApi';
 
+/** The shared API contract can include user IDs without local fictional profiles.
+ * Preview-only paths must never manufacture TINs or call the 30-profile reader
+ * for those users. Real authenticated SQL journeys retain all contract IDs. */
+const isDefinedDemoUser=(user:SimulationUser):user is DemoUserId=>
+  Object.prototype.hasOwnProperty.call(DEMO_USERS,user);
 type EditableLine={beneficiary:SimulationUser;category:SimulationCategory;assessmentYear:string;amount:string};
 const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:CURRENT_PAY_AGAIN_YEAR,amount:'100.00'});
 /** Public, persistent synthetic transaction workspace. NEVER official payment evidence. */
@@ -108,11 +113,16 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   },[id,view,revision,privateMode,historyViewChosen]);
   useEffect(()=>{
     if(!id||!previewMode)return;
+    if(!isDefinedDemoUser(id)){
+      setRows([]);setLoading(false);setLoadError('No local preview profile exists for this account ID.');
+      return;
+    }
+    const previewUserId=id;
     let active=true;
     setRows([]);setLoading(true);setLoadError('');
     const run=async()=>{
       try{
-        const [next,authorizationRecords]=await Promise.all([getDemoStoryPaymentHistory(id,view),getHostedAuthorizations(id)]);
+        const [next,authorizationRecords]=await Promise.all([getDemoStoryPaymentHistory(previewUserId,view),getHostedAuthorizations(previewUserId)]);
         if(active){
           setRows(next);setPermittedBeneficiaries(
             authorizationRecords.filter(r=>r.payerId===id&&r.status==='ACTIVE').map(r=>r.taxpayerId));
@@ -194,20 +204,27 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       }));
       const expected=checked.reduce((sum,l)=>sum+l.amountMinor,0);
       if(previewMode){
+        if(!isDefinedDemoUser(id))throw Error('A local preview profile is required before submitting a preview payment.');
+        const previewUserId=id;
         // Every third-party allocation carries the confirmed consent ID. TaxPay
         // SQL checks it again inside the payment INSERT trigger before Office mirroring.
-        const authorizationRecords=await getHostedAuthorizations(id);
+        const authorizationRecords=await getHostedAuthorizations(previewUserId);
         const auditedLines=checked.map(line=>{
-          if(line.beneficiary===id)return line;
-          const consent=activeAuthorizationFor(authorizationRecords,id,line.beneficiary);
+          if(!isDefinedDemoUser(line.beneficiary))
+            throw Error('This recipient has no local preview identity. Select a verified beneficiary.');
+          if(line.beneficiary===previewUserId)return line;
+          const consent=activeAuthorizationFor(authorizationRecords,previewUserId,line.beneficiary);
           if(!consent)throw Error(`Authorization for ${line.beneficiary} is not active. Go to Manage Authorization first.`);
           return {...line,authorizationId:consent.id};
         });
+        const singleRecipient=auditedLines.length===1?auditedLines[0].beneficiary:null;
+        if(singleRecipient&&!isDefinedDemoUser(singleRecipient))
+          throw Error('No local preview identity exists for this recipient.');
         const synced=await persistSimulatedPayment({
           idempotencyKey:nonce,sessionId:getStorySessionId(),service:checked[0]?.category??parentCategory,
           amountMinor:expected,details:{
-            payerId:id,payerName:id,taxpayerTin:auditedLines.length===1?
-              DEMO_USERS[auditedLines[0].beneficiary].tin:'MULTIPLE_BENEFICIARIES',
+            payerId:previewUserId,payerName:previewUserId,
+            taxpayerTin:singleRecipient?DEMO_USERS[singleRecipient].tin:'MULTIPLE_BENEFICIARIES',
             assessmentYear:checked[0]?.assessmentYear??'2026-27',
             paymentMethod:'SIMULATED',paymentChannel:'NOW',lines:auditedLines,
           }
@@ -215,7 +232,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         // The source SQL receipt is authoritative for this *simulation*.
         // Office delivery runs through its durable retry outbox and is reported
         // separately; a delayed mirror must not masquerade as a bank decline.
-        const checkedRows=await getDemoStoryPaymentHistory(id,'payer');
+        const checkedRows=await getDemoStoryPaymentHistory(previewUserId,'payer');
         const confirmed=checkedRows.find(t=>t.transactionId===synced.id);
         if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)
           throw Error('Payment SQL read-back did not match. Retry the same payment.');
@@ -365,7 +382,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
             <label className="block text-sm font-semibold text-taxpay-text">{txt('Pay for','যার জন্য পেমেন্ট')}
               <select className="mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3" value={line.beneficiary} onChange={e=>modify(index,'beneficiary',e.target.value)}>
                 {simulationUsers.filter(u=>!previewMode||u===id||permittedBeneficiaries.includes(u)).map(u=>
-                  <option key={u} value={u}>{u}{u===id?txt(' (self)',' (নিজের)'):` · TIN ${DEMO_USERS[u].tin}`}</option>)}
+                  <option key={u} value={u}>{u}{u===id?txt(' (self)',' (নিজের)'):isDefinedDemoUser(u)?` · TIN ${DEMO_USERS[u].tin}`:''}</option>)}
               </select>
             </label>
             {previewMode&&<p className="text-xs text-slate-600 sm:col-span-2">
