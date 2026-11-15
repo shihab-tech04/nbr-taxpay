@@ -167,3 +167,11 @@ export function buildPaymentCertificateModel(receipt: ChallanReceipt): PaymentCe
     travel,
   };
 }
+
+/** A saved payment can offer its own Sohojkor document, never a tax-credit/settlement claim. */
+export function canViewPaymentCertificate(receipt: ChallanReceipt): boolean {
+  return validCertificateTransactionId(receipt.paymentTransactionId) &&
+    Boolean(receipt.completedAt) &&
+    (receipt.treasuryStatus === 'GATEWAY_SUCCESS' || receipt.treasuryStatus === 'TREASURY_SCROLLED') &&
+    buildPaymentCertificateModel(receipt) !== null;
+}
