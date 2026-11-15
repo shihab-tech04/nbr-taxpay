@@ -91,9 +91,15 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
     const originalIds=new Set(originalRows.map(r=>r?.id));
     const historical=reconcile(originalRows,officeRows.filter(r=>originalIds.has(r?.id)));
     const report={historical};
-    // V2 is the prospective primary writer; original is read-only fallback.
-    // Office must eventually contain BOTH sets without duplicate source IDs.
-    if(v2)report.combined=reconcile([...originalRows,...load(v2)],officeRows);
+    // V2 is the prospective primary; original is fallback only for records
+    // that were not cloned. Identical cloned parents are deduplicated safely.
+    if(v2){
+      const {reconcileThreeWay}=await import('./phase4-threeway.mjs');
+      const result=reconcileThreeWay(originalRows,load(v2),officeRows);
+      report.v2=result.v2;
+      report.combined=result.combined;
+      report.sourceProblems=result.sourceProblems;
+    }
     console.log(JSON.stringify(report,null,2));
     // Fail closed: row equality alone cannot authorize a financial release.
     if(!historical.fieldComplete||historical.simulated>0||
