@@ -194,3 +194,29 @@ test('draft owner scope distinguishes two capabilities for the same preview acco
   assert.equal(drafts.paymentDraftOwnerScope({kind:'authenticated',userId:'owner-a'}),'authenticated:owner-a');
   assert.equal(drafts.paymentDraftOwnerScope(null),'');
 });
+
+test('guest draft UI owner scope changes on capability rotation without exposing its token',async()=>{
+  const drafts=await import('../src/services/accountPaymentFormDrafts');
+  const actor={kind:'guest' as const};
+  const key='korbritto.guest-beneficiaries.capability.v1';
+  const oldToken='A'.repeat(43);
+  const newToken='B'.repeat(43);
+  const unavailable=drafts.paymentDraftOwnerScope(actor);
+  assert.match(unavailable,/^guest:unavailable:\d+$/);
+  localStorage.set(key,oldToken);
+  const first=drafts.paymentDraftOwnerScope(actor);
+  assert.match(first,/^guest:session:\d+$/);
+  assert.equal(first,drafts.paymentDraftOwnerScope(actor));
+  assert.equal(first.includes(oldToken),false,'React owner scope must not contain a bearer capability');
+  localStorage.set(key,newToken);
+  const second=drafts.paymentDraftOwnerScope(actor);
+  assert.notEqual(second,first,'a new guest capability invalidates the prior draft owner UI');
+  assert.equal(second.includes(newToken),false);
+  localStorage.delete(key);
+  assert.notEqual(drafts.paymentDraftOwnerScope(actor),second);
+  localStorage.set(key,oldToken);
+  assert.notEqual(drafts.paymentDraftOwnerScope(actor),first,
+    'A -> B -> A capability switch must not accept delayed results from the first A session');
+  localStorage.set(key,'not-a-capability');
+  assert.match(drafts.paymentDraftOwnerScope(actor),/^guest:unavailable:\d+$/);
+});
