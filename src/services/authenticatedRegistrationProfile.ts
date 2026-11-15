@@ -13,6 +13,19 @@ export type VerifiedRegistrationReader={
   readProfile:(accountId:string)=>Promise<unknown>;
 };
 
+/**
+ * The existing sim_my_taxpayer_profile() SQL raises P0001 specifically when
+ * the signed-in account has not been approved for any profile. That means
+ * "not linked", not a broken network connection or an authorization grant.
+ * Every other RPC error must remain a visible failure.
+ */
+export function isUnboundRegistrationRpcError(
+  error:{code?:string;message?:string}|null,
+):boolean {
+  return error?.code==='P0001'&&
+    error.message==='No approved synthetic profile binding';
+}
+
 export function parseOwnerRegistrationRow(raw:unknown,accountId:string):TaxpayerTinProfile{
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Invalid registration profile row');
   const row=raw as Record<string,unknown>;
@@ -65,6 +78,7 @@ export async function loadAuthenticatedRegistrationProfile(expectedUid:string):P
     },
     boundAccountId:async()=>{
       const {data,error}=await client.rpc('sim_my_taxpayer_profile');
+      if(isUnboundRegistrationRpcError(error))return null;
       if(error)throw Error('Unable to verify taxpayer ownership');
       return data;
     },
