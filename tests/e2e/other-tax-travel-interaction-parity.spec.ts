@@ -49,6 +49,11 @@ for (const locale of ['en', 'bn'] as const) {
     const second = modal.getByTestId('other-tax-taxpayer').last();
     await expect(second.getByTestId('searched-taxpayer-card')).toHaveCount(0);
     await second.locator('input[id^="other-tax-tin-"]').fill('222222222222');
+    // A fully entered valid TIN dismisses optional suggestions so the Search
+    // action stays directly tappable even inside a 320px payment dialog.
+    await expect(modal.getByRole('listbox', {name: locale === 'bn'
+      ? 'নমুনা টিআইএন — সরকারি যাচাইকৃত নয়'
+      : 'Sample TIN suggestions — not NBR verified'})).toHaveCount(0);
     await second.getByRole('button', {name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true}).click();
     await expect(second.getByTestId('searched-taxpayer-card')).toContainText(locale === 'bn' ? 'ইউজার 2' : 'User 2');
     await expect(second.getByTestId('searched-taxpayer-card').getByRole('button', {name: addName})).toHaveCount(0);
