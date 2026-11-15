@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  buildReceivedPaymentCaseIntent,isValidReceivedPaymentCaseIntent,
+  buildReceivedPaymentCaseIntent,isValidReceivedPaymentCaseIntent,receivedAllocationForReference,
 } from '../src/services/receivedPaymentCaseIntent';
 
 const paymentId='329c4d63-cc18-4f9b-9fda-e3b25ae4929c';
@@ -58,4 +58,13 @@ test('invalid, stale, future and tampered client hints are rejected',()=>{
   assert.throws(()=>buildReceivedPaymentCaseIntent({
     ...notice,allocationId:' '.repeat(129),
   },'CORRECTION_REVIEW',100_000));
+});
+
+test('recipient-only report bypasses payer claims only for same notice reference',()=>{
+  const intent=buildReceivedPaymentCaseIntent(notice,'UNSOLICITED_PAYMENT_REPORT',100_000);
+  assert.equal(receivedAllocationForReference(intent,'TPAY-REF-123456'),notice.allocationId);
+  assert.equal(receivedAllocationForReference(intent,'  TPAY-REF-123456  '),notice.allocationId);
+  assert.equal(receivedAllocationForReference(intent,'OTHER-REF-123456'),null);
+  assert.equal(receivedAllocationForReference(null,'TPAY-REF-123456'),null);
+  assert.equal(receivedAllocationForReference({...intent,targetAllocationId:null},'TPAY-REF-123456'),null);
 });
