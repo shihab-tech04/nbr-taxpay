@@ -74,11 +74,15 @@ export function OtherTaxTaxpayerList({
         <div><dt>{bn ? 'করদাতার নাম' : 'Taxpayer name'}</dt><dd>{displayName}</dd></div>
         <div><dt>{bn ? 'টিআইএন' : 'TIN'}</dt><dd>{tin}</dd></div>
       </dl>
-      {match && <p className="mt-2 text-xs text-slate-600" data-testid="taxpayer-sample-source">
-        {bn
-          ? 'নমুনা প্রোফাইল — এটি NBR-এর যাচাইকৃত পরিচয় বা ব্যক্তিগত রেকর্ডে প্রবেশের অনুমতি নয়।'
-          : 'Sample profile — not a verified NBR identity or permission to access private records.'}
-      </p>}
+      <p className="mt-2 text-xs text-slate-600" data-testid={match ? 'taxpayer-sample-source' : 'taxpayer-unmatched-source'}>
+        {match
+          ? (bn
+            ? 'নমুনা প্রোফাইল — এটি NBR-এর যাচাইকৃত পরিচয় বা ব্যক্তিগত রেকর্ডে প্রবেশের অনুমতি নয়।'
+            : 'Sample profile — not a verified NBR identity or permission to access private records.')
+          : (bn
+            ? 'নমুনা তথ্য পাওয়া যায়নি। এটি শুধু আপনার দেওয়া টিআইএন; পরিচয় বা ব্যক্তিগত রেকর্ড যাচাই করা হয়নি। পেমেন্টের আগে নম্বরটি নিশ্চিত করুন।'
+            : 'No sample profile found. This is your entered TIN, not a verified identity or permission to access private history. Check the number before payment.')}
+      </p>
     </section>;
   };
   // Match Travel Tax: identity preview first, followed by a distinct confirmation
@@ -87,9 +91,10 @@ export function OtherTaxTaxpayerList({
     <div className="taxpay-taxpayer-row__confirm-add">
       <button type="button" className="taxpay-taxpayer-row__add"
         onClick={() => {
-          // A typed TIN or stale displayed name cannot become a confirmed
-          // recipient unless the current lookup actually returned this TIN.
-          if (!canSearch(tin) || lookupSampleTaxpayer(tin)?.tin !== tin) return;
+          // Explicitly acknowledge the currently searched TIN, not an older
+          // lookup result. An unmatched TIN is permitted with an optional name
+          // but is never represented as a verified NBR identity.
+          if (!canSearch(tin) || searchedTins[id] !== tin) return;
           onConfirmTaxpayer(id, tin); onClearError();
         }}>
         <Plus size={18} aria-hidden="true"/>{bn ? 'করদাতা যোগ করুন' : 'Add taxpayer'}
@@ -141,7 +146,7 @@ export function OtherTaxTaxpayerList({
           status={Boolean(primaryTin) && searchedTins.primary === primaryTin && !lookupSampleTaxpayer(primaryTin)
             ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined}/>
         {progressive && !primaryConfirmed && searchedTins.primary === primaryTin &&
-          canSearch(primaryTin) && lookupSampleTaxpayer(primaryTin)?.tin === primaryTin &&
+          canSearch(primaryTin) &&
           !duplicate('primary', primaryTin) &&
           <>{identityCard('primary', primaryTin, primaryName, false)}
             {addTaxpayerAction('primary', primaryTin)}</>}
@@ -189,7 +194,7 @@ export function OtherTaxTaxpayerList({
             status={Boolean(person.tin) && searchedTins[person.id] === person.tin && !lookupSampleTaxpayer(person.tin)
               ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined} />
           {requireConfirmation && !personConfirmed && searchedTins[person.id] === person.tin &&
-            canSearch(person.tin) && lookupSampleTaxpayer(person.tin)?.tin === person.tin &&
+            canSearch(person.tin) &&
             !duplicate(person.id, person.tin) &&
             <>{identityCard(person.id, person.tin, person.name, false)}
               {addTaxpayerAction(person.id, person.tin)}</>}
