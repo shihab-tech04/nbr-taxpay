@@ -321,7 +321,8 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     // Other user1 saved drafts must not be deleted or changed by this action.
     await page.reload();
     await expect(workspace.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="' + id + '"]')).toHaveCount(0);
-    // Zero records must remain a navigable, recoverable dashboard feature.
+    // Reload starts on Requests; open Drafts to verify the empty-state recovery action.
+    await workspace.getByRole('button', { name: /^Drafts/ }).click();
     const empty = workspace.getByTestId('dashboard-payment-drafts');
     await expect(empty).toBeVisible();
     await expect(empty.getByTestId('dashboard-drafts-empty')).toBeVisible();
