@@ -153,3 +153,35 @@ test('empty and mismatched passwords cannot sign in even with a valid User ID', 
   await expect(page).toHaveURL(/action=taxpayer_login/);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
 });
+for (const language of ['en','bn'] as const) {
+  test(`clicking a demo account fills only its matching masked preview password (${language})`,async({page},info)=>{
+    test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Pointer acceptance at desktop and touch viewport');
+    await page.goto('/?action=taxpayer_login'+(language==='bn'?'&lang=bn':''));
+    const dialog=page.getByRole('dialog');
+    const userId=dialog.locator('#taxpayer-login-user-id');
+    const password=dialog.locator('#taxpayer-login-password');
+    const authRequests:string[]=[];
+    page.on('request',request=>{if(new URL(request.url()).pathname.startsWith('/auth/v1/'))authRequests.push(request.url());});
+    await userId.click();
+    const options=dialog.getByRole('listbox',{name:language==='bn'?'পরীক্ষামূলক অ্যাকাউন্ট':'Test accounts'});
+    await expect(options.getByRole('option')).toHaveCount(30);
+    await options.locator('#taxpayer-login-account-user2').click();
+    await expect(userId).toHaveValue('user2');
+    await expect(password).toHaveValue('user2');
+    await expect(password).toHaveAttribute('type','password');
+    await expect(userId).toHaveAttribute('aria-expanded','false');
+
+    // A second explicit click must reopen, replacing (never appending) the
+    // previous demo password when the selected user changes.
+    await userId.click();
+    await userId.fill('user30');
+    await expect(password).toBeEmpty();
+    await options.locator('#taxpayer-login-account-user30').click();
+    await expect(userId).toHaveValue('user30');
+    await expect(password).toHaveValue('user30');
+    await expect(password).toHaveAttribute('type','password');
+    await expect(userId).toHaveAttribute('aria-expanded','false');
+    expect(authRequests).toEqual([]);
+    expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
+  });
+}
