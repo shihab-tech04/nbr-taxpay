@@ -97,6 +97,9 @@ test('M03: unmatched TIN cannot be confirmed, and an edited confirmation require
   await expect(first.getByRole('button',{name:'Add taxpayer'})).toHaveCount(0);
   await expect(continueAction).toBeDisabled();
 
+  await tin.fill('111');
+  await expect(dialog.getByRole('listbox', {name:'Sample TIN suggestions — not NBR verified'})).toBeVisible();
+  await expect(dialog.getByText('Sample TIN numbers — not verified NBR records')).toBeVisible();
   await tin.fill('111111111111');
   await expect(first.getByTestId('searched-taxpayer-card')).toHaveCount(0);
   await first.getByRole('button',{name:'Search',exact:true}).click();
