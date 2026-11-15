@@ -129,6 +129,18 @@ export function buildPaymentCertificateModel(receipt: ChallanReceipt): PaymentCe
     travel = details;
   } else if (receipt.allocationItems) {
     if (receipt.allocationItems.length < 1) return null;
+    // A combined certificate must not claim a different head, economic code,
+    // recipient amount or row count from the saved itemized receipt.
+    // Historical receipts with no saved head rows use reconciled allocations.
+    if (receipt.items.length > 0 && (
+      receipt.items.length !== receipt.allocationItems.length ||
+      receipt.items.some((item, index) => {
+        const allocation = receipt.allocationItems![index];
+        return toMinor(item.totalAmount) !== allocation.amountMinor ||
+          item.headNameEn.trim() !== allocation.paymentServiceEn.trim() ||
+          item.economicCode.trim() !== (allocation.economicCode ?? '').trim();
+      })
+    )) return null;
     lines = receipt.allocationItems.map((allocation): PaymentCertificateLine | null => {
       const recipientTin = validTin(allocation.taxpayerTin) ? allocation.taxpayerTin.trim() : undefined;
       const assessmentYear = allocation.assessmentYear.trim() || receipt.assessmentYear.trim();
