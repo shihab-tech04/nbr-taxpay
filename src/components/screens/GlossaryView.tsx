@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { BookOpen, Search } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { BookOpen, Search, X } from 'lucide-react';
 import { GLOSSARY_TERMS } from '../../data/glossaryData';
 import { useTaxState } from '../../services/taxState';
 import '../../styles/public-guide-p3.css';
@@ -47,7 +47,13 @@ export const GlossaryView: React.FC = () => {
   const bn = language === 'bn';
   const copy = COPY[bn ? 'bn' : 'en'];
   const [search, setSearch] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
   const [catFilter, setCatFilter] = useState<'ALL' | Category>('ALL');
+  const resetFilters = () => {
+    setSearch('');
+    setCatFilter('ALL');
+    searchRef.current?.focus();
+  };
   const query = search.trim().toLocaleLowerCase();
 
   const filtered = GLOSSARY_TERMS.filter(term => {
@@ -75,6 +81,7 @@ export const GlossaryView: React.FC = () => {
             <div className="public-glossary-search">
               <Search size={18} aria-hidden="true"/>
               <input
+                ref={searchRef}
                 id="public-glossary-search"
                 type="search"
                 value={search}
@@ -82,6 +89,11 @@ export const GlossaryView: React.FC = () => {
                 placeholder={copy.searchPlaceholder}
                 autoComplete="off"
               />
+              {search && <button type="button" aria-label={bn?'অনুসন্ধান মুছুন':'Clear search'}
+                className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-taxpay-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
+                onClick={() => { setSearch(''); searchRef.current?.focus(); }}>
+                <X size={18} aria-hidden="true"/>
+              </button>}
             </div>
           </div>
           <div className="public-glossary-field">
@@ -93,6 +105,11 @@ export const GlossaryView: React.FC = () => {
           </div>
         </div>
 
+        {(query || catFilter !== 'ALL') && filtered.length > 0 &&
+          <p role="status" className="mb-3 text-sm text-taxpay-muted">
+            {bn?`${new Intl.NumberFormat('bn-BD').format(filtered.length)}টি শব্দ পাওয়া গেছে`:
+              `${filtered.length} ${filtered.length===1?'term':'terms'} found`}
+          </p>}
         {filtered.length ? <div className="public-glossary-terms" aria-live="polite">
           {filtered.map(term => <article className="public-glossary-term" key={term.termEn}>
             <div className="public-glossary-term-head">
@@ -105,7 +122,13 @@ export const GlossaryView: React.FC = () => {
             <p className="public-glossary-term-bn">{term.termBn}</p>
             <p className="public-glossary-definition">{bn ? term.definitionBn : term.definitionEn}</p>
           </article>)}
-        </div> : <p className="public-glossary-empty" role="status">{copy.noResults}</p>}
+        </div> : <div className="public-glossary-empty">
+          <p role="status">{copy.noResults}</p>
+          <button type="button" onClick={resetFilters}
+            className="mt-3 min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
+            {bn?'সব ফিল্টার মুছুন':'Clear filters'}
+          </button>
+        </div>}
       </section>
     </main>
   );
