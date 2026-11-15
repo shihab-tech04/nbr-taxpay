@@ -38,6 +38,19 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     : previewAccount ? { kind: 'preview', profileId: previewAccount.id }
     : allowGuest ? { kind: 'guest' } : null;
   const ownerKey = paymentDraftOwnerScope(actor);
+  // The browser's storage event runs in other tabs, not the tab that made
+  // the change. Refresh this mounted payment form only if its guest capability
+  // owner actually changed; the opaque owner key never contains the token.
+  const [, refreshGuestOwner] = useState(0);
+  useEffect(() => {
+    if (actor?.kind !== 'guest') return;
+    const onGuestStorage = () => {
+      if (paymentDraftOwnerScope({kind:'guest'}) !== ownerKey)
+        refreshGuestOwner(value => value + 1);
+    };
+    window.addEventListener('storage', onGuestStorage);
+    return () => window.removeEventListener('storage', onGuestStorage);
+  }, [actor?.kind, ownerKey]);
   // A parent payment form can remain mounted while a demo session or Auth
   // account changes. Its old selected draft must never be updated or deleted
   // as though it belonged to the new account.
