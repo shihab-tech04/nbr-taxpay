@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {getStoryNotices,getStorySessionPayments} from '../../services/simulatedPaymentStory';
@@ -28,6 +28,9 @@ export const NotificationsView:React.FC=()=>{
   const privateMode=Boolean(authenticatedUser);
   // Do not render the previous account's bound profile during an Auth switch.
   const id=(privateMode&&authenticatedUser&&boundOwnerUid===authenticatedUser.id?boundId:undefined) as SimulationUser|undefined;
+  const noticeIdentity=(authenticatedUser?.id??'')+':'+(id??'');
+  const currentNoticeIdentityRef=useRef(noticeIdentity);
+  currentNoticeIdentityRef.current=noticeIdentity;
   const [notices,setNotices]=useState<VerifiedPrivateSimulationNotice[]>([]);
   const [noticeOwner,setNoticeOwner]=useState<SimulationUser|null>(null);
   const [privatePaymentRows,setPrivatePaymentRows]=useState<{
@@ -133,7 +136,7 @@ export const NotificationsView:React.FC=()=>{
   },[authenticatedUser?.id]);
   useEffect(()=>{
     let active=true;
-    setNotices([]);setNoticeOwner(null);setPrivatePaymentRows(null);setSelectedPayment(null);setError('');
+    setNotices([]);setNoticeOwner(null);setPrivatePaymentRows(null);setSelectedPayment(null);setBusyNotice(null);setError('');
     if(!id||!privateMode){setLoading(false);return()=>{active=false;};}
     setLoading(true);
     const read=async()=>{
@@ -187,17 +190,21 @@ export const NotificationsView:React.FC=()=>{
     });
   };
   const markRead=async (notice:SimulationNotice)=>{
-    if(!privateMode||busyNotice!==null)return;
+    if(!privateMode||!id||busyNotice!==null)return;
+    const requestIdentity=noticeIdentity;
+    const stillCurrent=()=>currentNoticeIdentityRef.current===requestIdentity;
     setBusyNotice(notice.id);setError('');
     try{const confirmed=await setPrivateSimulationNoticeRead(notice.id,!notice.isRead);
+      if(!stillCurrent())return;
       if(confirmed.id!==notice.id||confirmed.isRead===notice.isRead)throw Error('Notification read-back mismatch');
       const [after,payerRows,beneficiaryRows]=await Promise.all([
         getPrivateSimulationNotices(),getPrivateSimulationHistory('payer'),getPrivateSimulationHistory('beneficiary'),
       ]);
+      if(!stillCurrent())return;
       if(!after.some(n=>n.id===notice.id&&n.isRead===confirmed.isRead))throw Error('SQL notification read-back failed');
-      setNotices(reconcilePrivateSimulationNotices(id!,after,payerRows,beneficiaryRows));
-    }catch(e){setError(e instanceof Error?e.message:'Notification update failed');}
-    finally{setBusyNotice(null);}
+      setNotices(reconcilePrivateSimulationNotices(id,after,payerRows,beneficiaryRows));
+    }catch(e){if(stillCurrent())setError(e instanceof Error?e.message:'Notification update failed');}
+    finally{if(stillCurrent())setBusyNotice(null);}
   };
   if(authLoading)return <main className="mx-auto max-w-4xl p-6"><p role="status">Checking account…</p></main>;
   const visibleAuthorizations=authorizationNotices.filter(r=>(authorizationFilter==="all"||r.status===authorizationFilter)&&
