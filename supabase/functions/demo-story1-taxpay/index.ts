@@ -135,7 +135,7 @@ Deno.serve(async(req)=>{
    let result:{id:string;status:string;consentCode?:string|null;attempts?:number};
    if(action==="sync"){
     if(!uuid.test(input.id))return respond({success:false,error:"INVALID_ID"},400);
-    const check=await db.rpc("demo_auth_public_snapshot",{p_request:input.id});
+    const check=await serviceClient(url).rpc("demo_auth_public_snapshot",{p_request:input.id});
     if(check.error)return respond({success:false,error:"REQUEST_NOT_FOUND"},404);
     result=check.data;
    }else{
