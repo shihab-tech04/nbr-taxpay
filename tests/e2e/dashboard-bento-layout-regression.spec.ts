@@ -82,3 +82,35 @@ test('public account overview never falls back to fictional totals, even when se
   await analytics.getByRole('button',{name:'View payment history'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
 });
+
+
+test('empty recorded dashboard prioritizes drafts and tasks without changing sidebar or showing fictitious charts',async({page})=>{
+  for(const width of [375,1024,1600]){
+    await page.setViewportSize({width,height:900});
+    await page.goto('/?action=taxpayer_home&demoUser=user1');
+    const grid=page.getByTestId('taxpayer-overview-bento');
+    await expect(grid).toHaveAttribute('data-dashboard-empty','true');
+    const analytics=grid.getByTestId('dashboard-payment-analytics');
+    await expect(analytics).toHaveAttribute('data-empty','true');
+    await expect(analytics.getByTestId('dashboard-chart-source')).toHaveCount(0);
+    await expect(analytics).not.toContainText('113,500');
+    const draft=grid.locator('.taxpay-bento-drafts');
+    const journey=grid.locator('.taxpay-bento-recent');
+    const correction=grid.locator('#dashboard-correction-requests');
+    for(const item of [draft,journey,correction])await expect(item).toBeVisible();
+    const [d,a,j,c]=await Promise.all([draft,analytics,journey,correction].map(item=>item.boundingBox()));
+    expect([d,a,j,c].every(Boolean),'all four sections visible at '+width).toBe(true);
+    if(!d||!a||!j||!c)continue;
+    if(width>=1200){
+      expect(Math.abs(d.y-a.y),'draft and empty insight row aligned').toBeLessThan(4);
+      expect(d.x+d.width).toBeLessThanOrEqual(a.x+4);
+      expect(Math.abs(j.y-c.y),'journey and corrections row aligned').toBeLessThan(4);
+      expect(j.x+j.width).toBeLessThanOrEqual(c.x+4);
+    }else{
+      expect(j.y,'journey follows continuation tasks').toBeGreaterThan(c.y);
+      expect(a.y,'empty insight follows actionable sections').toBeGreaterThan(j.y);
+    }
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth),
+      'no horizontal overflow at '+width).toBeLessThanOrEqual(2);
+  }
+});
