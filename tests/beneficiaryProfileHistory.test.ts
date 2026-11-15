@@ -63,6 +63,10 @@ test('beneficiary profile remains within existing signed-in route and table acti
   assert.match(profile,/onBack/);
   assert.match(profile,/loadBeneficiaryProfilePayments/);
   assert.match(profile,/ReceiptView receipt=\{selected.receipt\}/);
+  // The current owner/recipient identity must be checked during render, not
+  // merely after an effect clears a previously opened payment receipt.
+  assert.match(profile,/selection\?\.identity===identity\?selection.payment:null/);
+  assert.match(profile,/onClick=\{\(\)=>setSelection\(\{identity,payment:row\}\)\}/);
 });
 
 test('only an explicitly unbound synthetic profile is optional for signed-in story history',()=>{
