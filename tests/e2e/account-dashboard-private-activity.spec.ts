@@ -601,6 +601,19 @@ test('F-122 signed-in mobile bottom navigation survives scrolling, language swit
   await page.reload();
   await expect(banglaNav).toBeVisible();
   await expect(page.getByRole('button',{name:'কর পরিশোধের ধরন নির্বাচন'})).toBeVisible();
+
+  // The smallest supported viewport must keep the same approved taxpayer dock,
+  // even after scroll compaction and a persisted language/session refresh.
+  await page.setViewportSize({width:320,height:812});
+  await page.evaluate(()=>window.scrollTo(0,440));
+  await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(145);
+  await expect(banglaNav).toBeVisible();
+  for(const name of ['সংক্ষিপ্ত বিবরণ','লেনদেন','কর লেজার']){
+    await expect(banglaNav.getByRole('button',{name,exact:true})).toBeVisible();
+  }
+  await expect(page.getByRole('button',{name:'কর পরিশোধের ধরন নির্বাচন'})).toBeVisible();
+  await expect(page.locator('header.citizen-header--hidden')).toHaveCount(0);
+  await expect(page.locator('.citizen-corner--bottom-left')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 
