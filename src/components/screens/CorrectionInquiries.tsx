@@ -3,7 +3,7 @@ import {supabase} from '../../services/supabaseClient';
 import {getStorySessionId} from '../../services/simulatedPaymentStory';
 import {sameAuthenticatedOwner} from '../../services/secureWorkspacePolicy';
 import {validateCorrectionInquiry, type ProposedAttributionField, type CorrectionCaseKind} from '../../services/correctionInquiryValidation';
-import {readReceivedPaymentCaseIntent,clearReceivedPaymentCaseIntent} from '../../services/receivedPaymentCaseIntent';
+import {readReceivedPaymentCaseIntent,clearReceivedPaymentCaseIntent,receivedAllocationForReference} from '../../services/receivedPaymentCaseIntent';
 import {UiButton,UiInput,UiTextarea,UiSelect} from '../ui/Controls';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 import {useTaxState} from '../../services/taxState';
@@ -183,9 +183,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
    // Skip payer-only history claims for an exact notice allocation and allow
    // the existing SQL trigger to verify the recipient's Auth-owned TIN link.
    // For ordinary correction inquiries, retain the legacy payer claim flow.
-   const recipientAllocation=receivedIntent?.targetAllocationId &&
-     originalReference.trim()===receivedIntent.originalReference
-       ?receivedIntent.targetAllocationId:null;
+   const recipientAllocation=receivedAllocationForReference(receivedIntent,originalReference);
    if(!recipientAllocation){
      const {error:sessionClaimError}=await supabase.rpc('taxpay_claim_story1_session',{p_session_id:getStorySessionId()});
      if(sessionClaimError){setMessage(labels.fail);return;}
