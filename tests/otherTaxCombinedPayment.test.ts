@@ -39,6 +39,34 @@ const store=()=>{
  const map=new Map<string,string>();
  return {getItem:(k:string)=>map.get(k)??null,setItem:(k:string,v:string)=>{map.set(k,v);},removeItem:(k:string)=>{map.delete(k);}};
 };
+test('original challan remarks survive combined SQL readback and history fallback without truncation', () => {
+ const remarks='Invoice #190 / FY 2025–26.\nবাংলা মন্তব্য: করের বিবরণ যাচাই করুন!\nSecond line: A+B & C.';
+ assert.ok(remarks.length>20);
+ const source={...input,details:{...input.details,paymentRemarks:remarks}};
+ const savedReceipt={...receipt,paymentRemarks:remarks};
+ const originalSource=JSON.stringify(source),originalReceipt=JSON.stringify(savedReceipt);
+ const combined=prepareCombinedOtherTaxPayment(source,savedReceipt,allocations);
+ assert.equal(combined.payload.details.paymentRemarks,remarks);
+ assert.equal(combined.receipt.paymentRemarks,remarks);
+ assert.equal((combined.payload.details.receiptSnapshot as ChallanReceipt).paymentRemarks,remarks);
+ assert.equal((combined.payload.details.allocations as Array<Record<string,unknown>>).some(a=>'paymentRemarks' in a),false,
+  'comments belong to the parent challan only');
+ const parent={id,service:'OTHER_TAX_PAYMENT',amountMinor:5000,status:'SIMULATED_SUCCESS',
+  createdAt:'2026-11-08T12:00:00Z',details:combined.payload.details};
+ assert.equal(makeConfirmedReceipt(parent).paymentRemarks,remarks);
+ // The immutable SQL parent wins if a stale display snapshot disagrees.
+ const staleDetails={...combined.payload.details,
+  receiptSnapshot:{...(combined.payload.details.receiptSnapshot as ChallanReceipt),paymentRemarks:'outdated'}};
+ assert.equal(makeConfirmedReceipt({...parent,details:staleDetails}).paymentRemarks,remarks);
+ // Older, owner-authorized history may lack a snapshot but still store remarks.
+ const fallback=makeConfirmedReceipt({id,service:'ADVANCE_TAX',amountMinor:1500,
+  status:'SIMULATED_SUCCESS',createdAt:'2026-11-08T12:00:00Z',
+  details:{paymentRemarks:remarks,payerName:'Payer',lines:[items[0]],assessmentYear:'2025-26'}});
+ assert.equal(fallback.paymentRemarks,remarks);
+ assert.equal(JSON.stringify(source),originalSource);
+ assert.equal(JSON.stringify(savedReceipt),originalReceipt);
+});
+
 test('multi-taxpayer combined payment uses ONE idempotency key and ONE challan',()=>{
  const result=mk();
  assert.equal(result.payload.idempotencyKey,id);
