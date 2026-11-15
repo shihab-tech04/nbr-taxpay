@@ -190,6 +190,8 @@ BEGIN
     'details',jsonb_build_object(
        'payerId','user1','payerName','WS3 User1 travel scenario',
        'travelRoute','WS3 isolated travel route','challanRemarks','',
+       'lines',jsonb_build_array(jsonb_build_object(
+          'beneficiary','user1','category','TRAVEL_TAX','amountMinor',1200)),
        'receiptReference','SIM-'||v_key::text)));
   v_id:=(v_result->>'id')::uuid;
   INSERT INTO ws3_user1_created VALUES
