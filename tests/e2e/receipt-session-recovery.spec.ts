@@ -33,13 +33,13 @@ const snapshot = {
   isSimulatedDemo: true,
 };
 
-async function stubSessionRecord(page: import('@playwright/test').Page) {
+async function stubSessionRecord(page: import('@playwright/test').Page, amountMinor = 1250000) {
   await page.route(/\/demo-story1-taxpay\/payments\?sessionId=/, async route => {
     await route.fulfill({
       status: 200, contentType: 'application/json',
       body: JSON.stringify({ success: true, simulationOnly: true,
         data: { items: [{ id: paymentId, service: 'TAX_WITH_RETURN',
-          amountMinor: 1250000, status: 'SIMULATED_SUCCESS',
+          amountMinor, status: 'SIMULATED_SUCCESS',
           createdAt: '2026-10-24T10:00:00Z' }], total: 1 } }),
     });
   });
@@ -275,4 +275,16 @@ test('F-129 US-050 older Edge 404 preserves existing same-session receipt/mobile
   await dialog.getByRole('button',{name:'Search records'}).click();
   await expect(dialog.locator('.receipt-view__paper')).toContainText(reference);
   expect(oldRouteReads).toBe(2); // ambiguous 404 + version-safe probe
+});
+
+test('a source amount mismatch never returns a receipt from the saved snapshot', async ({ page }) => {
+  await stubSessionRecord(page, 1250100);
+  await page.goto('/?action=verify');
+  await page.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill(reference);
+  await page.getByRole('textbox', { name: 'Receipt mobile number' }).fill(mobile);
+  await page.getByRole('dialog', { name: 'Payment status & receipt' })
+    .getByRole('button', { name: 'Search records' }).click();
+  await expect(page.getByRole('alert')).toContainText('Saved session records are temporarily unavailable');
+  await expect(page.locator('.receipt-view')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'No matching record' })).toHaveCount(0);
 });
