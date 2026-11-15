@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { enterTaxPayService, ensureNewPaymentEntry } from './pay-tax-entry-helper';
+import { recordWs1BrowserOrigin } from './ws1-browser-origin-evidence';
 
 const getFlow = async (page: import('@playwright/test').Page) => {
   await page.goto('/');
@@ -830,8 +831,12 @@ test('compact search/selection stays operable at 320px without horizontal overfl
 test('F-039 signed-in Other Tax combines a saved beneficiary with a confirmed one-time recipient without saving it',async({page})=>{
   const writes:string[]=[];
   const submitted:Record<string,any>[]=[];
+  const exactPostBodies:string[]=[];
   const {dialog}=await mockSignedInOtherTax(page,writes);
   await page.route('**/functions/v1/demo-story1-taxpay/payments',async route=>{
+    const rawBody=route.request().postData();
+    if(typeof rawBody!=='string')throw Error('Browser payment POST body unavailable');
+    exactPostBodies.push(rawBody);
     submitted.push(route.request().postDataJSON() as Record<string,any>);
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
       success:true,id:'00000000-0000-4000-8000-000000000779',status:'SIMULATED_SUCCESS',
@@ -921,6 +926,10 @@ test('F-039 signed-in Other Tax combines a saved beneficiary with a confirmed on
   const allocationIds=details.allocations.map(item=>item.allocationId);
   expect(allocationIds.every(id=>typeof id==='string'&&id.trim().length>0)).toBe(true);
   expect(new Set(allocationIds).size).toBe(2);
+  expect(submitted[0].details.receiptSnapshot.allocationItems.map(
+    (item:{allocationId:string})=>item.allocationId)).toEqual(allocationIds);
+  expect(exactPostBodies).toHaveLength(1);
+  await recordWs1BrowserOrigin('signed-in',exactPostBodies[0],test.info().project.name);
 
   await dialog.getByRole('button',{name:'Receipt details'}).click();
   const receipt=dialog.locator('.receipt-view__paper');
