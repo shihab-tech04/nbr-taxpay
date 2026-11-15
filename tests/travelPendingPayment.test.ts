@@ -14,7 +14,9 @@ const lines = people.map((person, i) => ({headId:155 + i, economicCode,
   headNameEn:'Travel tax — ' + person.name, taxAmount:person.amount,
   penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:person.amount}));
 const receipt = {
-  id:'rcpt-trv-'+nonce, challanNo:'SIM-'+nonce,tokenNumber:'SIM-TOKEN-'+nonce,
+  id:'rcpt-trv-'+nonce, taxEventId:'SIM-EVENT-'+nonce,
+  paymentTransactionId:'SIM-TOKEN-'+nonce,
+  challanNo:'SIM-'+nonce,tokenNumber:'SIM-TOKEN-'+nonce,
   paymentCategory:'TRAVEL_TAX',gatewayTransactionId:'SIM-TXN-'+nonce,
   totalAmount:1500,items:lines,travelDetails:{
     mode:'LAND',departurePort:'Benapole',destination:'India',travelDate:'2026-11-16',economicCode,passengers:people,
@@ -50,6 +52,9 @@ test('M06 corrupted amount/head/passenger/identity retry is rejected without a n
   assert.equal(candidate(payment=>{payment.details.receiptSnapshot.travelDetails.passengers.pop()}),null);
   assert.equal(candidate(payment=>{payment.amountMinor=150001}),null);
   assert.equal(candidate(payment=>{payment.idempotencyKey='wrong'}),null);
+  assert.equal(candidate(payment=>{payment.details.receiptSnapshot.id='rcpt-trv-another'}),null);
+  assert.equal(candidate(payment=>{payment.details.receiptSnapshot.taxEventId='SIM-EVENT-another'}),null);
+  assert.equal(candidate(payment=>{payment.details.receiptSnapshot.paymentTransactionId='SIM-TOKEN-another'}),null);
   assert.equal(candidate(payment=>{payment.details.travelDate='2026-11-17'}),null);
   assert.equal(parseRecoverableTravelPayment('{invalid',session),null);
   assert.equal(parseRecoverableTravelPayment(null,session),null);
