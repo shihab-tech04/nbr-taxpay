@@ -24,8 +24,8 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
   await dialog.getByRole('button',{name:'Hide password'}).click();
   await expect(dialog.getByLabel('Password', {exact:true})).toHaveAttribute('type','password');
   await expect(page.locator('#public-home-title')).toBeVisible();
-  await dialog.getByRole('textbox',{name:'User ID'}).fill('user56');
-  await dialog.getByLabel('Password',{exact:true}).fill('user56');
+  await dialog.getByRole('textbox',{name:'User ID'}).fill('user31');
+  await dialog.getByLabel('Password',{exact:true}).fill('user31');
   await dialog.getByRole('button',{name:'Sign In'}).click();
   await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password');
   await expect(page).toHaveURL(/action=taxpayer_login/);
@@ -42,35 +42,35 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
   await expect(page).toHaveURL(/action=landing/);
 });
 
-test('user1-user55 selector filters, keyboard-selects, fills only QA credentials and dismisses',async({page})=>{
+test('user1-user30 selector filters, keyboard-selects, fills only QA credentials and dismisses',async({page})=>{
   await page.goto('/?action=taxpayer_login');
   const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   const input=dialog.getByRole('textbox',{name:'User ID'});
   await input.focus();
   await expect(input).toHaveAttribute('aria-expanded','true');
   const allAccounts=dialog.getByRole('listbox',{name:'Test accounts'});
-  await expect(allAccounts.getByRole('option')).toHaveCount(55);
+  await expect(allAccounts.getByRole('option')).toHaveCount(30);
   // The first ArrowUp wraps to the final account and must scroll inside the
   // list; a keyboard user should never lose sight of the active option.
   await input.press('ArrowUp');
-  await expect(input).toHaveAttribute('aria-activedescendant','taxpayer-login-account-user55');
+  await expect(input).toHaveAttribute('aria-activedescendant','taxpayer-login-account-user30');
   await expect.poll(()=>allAccounts.evaluate(element=>element.scrollTop)).toBeGreaterThan(0);
   await input.press('ArrowDown');
   await expect(input).toHaveAttribute('aria-activedescendant','taxpayer-login-account-user1');
-  await input.fill('user55');
+  await input.fill('user30');
   const list=dialog.getByRole('listbox',{name:'Test accounts'});
   await expect(list.getByRole('option')).toHaveCount(1);
   await input.press('ArrowDown');
   await input.press('Enter');
-  await expect(input).toHaveValue('user55');
-  await expect(dialog.getByLabel('Password',{exact:true})).toHaveValue('user55');
+  await expect(input).toHaveValue('user30');
+  await expect(dialog.getByLabel('Password',{exact:true})).toHaveValue('user30');
   await expect(input).toHaveAttribute('aria-expanded','false');
   await input.click(); // already focused: explicit user click reopens choices
   await expect(input).toHaveAttribute('aria-expanded','true');
   await input.press('Escape');
   await expect(dialog).toBeVisible();
   await expect(input).toHaveAttribute('aria-expanded','false');
-  await input.fill('user56');
+  await input.fill('user31');
   await expect(dialog.getByRole('listbox',{name:'Test accounts'}).getByText('No test accounts found')).toBeVisible();
   await expect(dialog.getByLabel('Password',{exact:true})).toBeEmpty();
 });
@@ -79,14 +79,14 @@ test('Bangla account search matches a Bengali profile name and only fills synthe
   await page.goto('/?action=taxpayer_login&lang=bn');
   const userId=page.locator('#taxpayer-login-user-id');
   await expect(userId).toBeVisible();
-  await userId.fill('করদাতা অ্যাকাউন্ট 55');
+  await userId.fill('করদাতা অ্যাকাউন্ট 30');
   const options=page.getByRole('listbox',{name:'পরীক্ষামূলক অ্যাকাউন্ট'});
   await expect(options.getByRole('option')).toHaveCount(1);
-  await expect(options.getByRole('option')).toContainText('user55');
+  await expect(options.getByRole('option')).toContainText('user30');
   await userId.press('ArrowDown');
   await userId.press('Enter');
-  await expect(userId).toHaveValue('user55');
-  await expect(page.locator('#taxpayer-login-password')).toHaveValue('user55');
+  await expect(userId).toHaveValue('user30');
+  await expect(page.locator('#taxpayer-login-password')).toHaveValue('user30');
   await expect(userId).toHaveAttribute('aria-expanded','false');
 });
 
