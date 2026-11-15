@@ -1,4 +1,4 @@
-import type { ChallanReceipt, PaymentCategory } from '../types/tax';
+import type { ChallanReceipt, PaymentCategory, PaymentLineItem } from '../types/tax';
 import { MAX_COMBINED_ALLOCATIONS } from './otherTaxCombinedPayment';
 import { PAY_AGAIN_YEAR_OPTIONS } from './payAgain';
 import { TRAVEL_TAX_ECONOMIC_CODE } from '../data/travelTax2026';
@@ -28,6 +28,24 @@ const checkedMinor = (amount: number) => {
       Math.abs(amount * 100 - minor) > 0.000001)
     throw Error('Invalid historical payment amount.');
   return minor;
+};
+/** Validate each saved source component in minor units, including zero fees.
+ * A valid parent total must not conceal a malformed tax or fee breakdown. */
+const checkedComponentMinor = (amount: number) => {
+  const minor = Math.round(amount * 100);
+  if (!Number.isFinite(amount) || !Number.isSafeInteger(minor) || minor < 0 ||
+      Math.abs(amount * 100 - minor) > 0.000001)
+    throw Error('Invalid historical payment amount.');
+  return minor;
+};
+const reconciledHeadMinor = (head: PaymentLineItem) => {
+  const total = checkedMinor(head.totalAmount);
+  const parts = [head.taxAmount, head.penaltyAmount, head.surchargeAmount,
+    head.interestAmount].map(checkedComponentMinor);
+  const sum = parts.reduce((value, part) => value + part, 0);
+  if (!Number.isSafeInteger(sum) || sum !== total)
+    throw Error('Original payment head breakdown does not reconcile.');
+  return total;
 };
 const copiedYear = (year: string) => {
   if (!validYear(year)) throw Error('Historical assessment year is missing or invalid.');
@@ -213,7 +231,7 @@ export function reuseRecordedPayment(
           year: receipt.assessmentYear, amountMinor: checkedMinor(head.totalAmount)});
       }
     }
-    const receiptSum = savedHeads.reduce((sum, h) => sum + checkedMinor(h.totalAmount), 0);
+    const receiptSum = savedHeads.reduce((sum, h) => sum + reconciledHeadMinor(h), 0);
     if (receiptSum !== checkedMinor(receipt.totalAmount))
       throw Error('Original payment amount does not reconcile.');
   }
