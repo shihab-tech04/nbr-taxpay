@@ -43,7 +43,8 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   const [highlighted,setHighlighted]=useState(0);
   const suggestions=DEMO_USER_IDS.filter(id=>{
     const query=userId.trim().toLowerCase();
-    return id.includes(query)||DEMO_USERS[id].nameEn.toLowerCase().includes(query);
+    return id.includes(query) || DEMO_USERS[id].nameEn.toLowerCase().includes(query) ||
+      DEMO_USERS[id].nameBn.includes(query);
   });
   const choosePreview=(id:DemoUserId)=>{
     // Credentials here identify fictional public QA profiles only; never auto-fill real Auth credentials.
