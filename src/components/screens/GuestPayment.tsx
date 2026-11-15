@@ -866,6 +866,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   const handleStep2Next = () => {
+    // Keep Continue actionable so an invalid restored Pay Again draft reveals its
+    // exact field error; never bypass the amount or allocation validation.
+    if (!storyAmountSupported) {
+      setValidationError(language === 'bn'
+        ? 'পেমেন্টের সব খাতের পরিমাণ ও মোট টাকার সীমা যাচাই করুন।'
+        : 'Review all payment amounts and the supported total before continuing.', 'taxAmount');
+      return;
+    }
     if (otherBatch) {
       const invalid = otherTaxLines.find(line =>
         !isOtherTaxHeadEligible(line.headId) || !OTHER_TAX_YEARS.some(year => year === line.assessmentYear) ||
@@ -1934,7 +1942,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             </button>
             {signedInAccount && isPaymentDraftService(category) &&
               <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />}
-            <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'} onClick={handleStep2Next} disabled={otherBatch && (!batchValid || !storyAmountSupported)}>
+            <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'} onClick={handleStep2Next}>
               <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
             </button>
           </>) : step === 3 ? (<>
