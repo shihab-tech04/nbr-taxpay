@@ -245,12 +245,25 @@ test('Office-style record workspaces fill laptop width without hiding transactio
     await page.goto('/?action='+view+'&demoUser=user1&lang=en');
     const workspace=page.locator('[data-taxpay-register-page="true"]').first();
     await expect(workspace).toBeVisible();
-    const dimensions=await workspace.evaluate(element=>({
-      width:element.getBoundingClientRect().width,
-      right:element.getBoundingClientRect().right,
-      screenWidth:window.innerWidth
-    }));
-    expect(dimensions.width,view+' must use available desktop workspace').toBeGreaterThan(940);
+    const dimensions=await workspace.evaluate(element=>{
+      const main=document.querySelector<HTMLElement>('#main-content');
+      if(!main)throw new Error('Approved register workspace main is missing');
+      const style=getComputedStyle(main);
+      const area=main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
+      return {
+        width:element.getBoundingClientRect().width,
+        right:element.getBoundingClientRect().right,
+        area,
+        screenWidth:window.innerWidth
+      };
+    });
+    // A laptop with its approved navigation/side padding can offer 900px of
+    // content space. Do not demand >940px and force document overflow.
+    const expectedWidth=Math.min(dimensions.area,1150);
+    expect(dimensions.width,view+' must use the available desktop workspace')
+      .toBeGreaterThanOrEqual(expectedWidth-2);
+    expect(dimensions.width,view+' must stay within its approved content area')
+      .toBeLessThanOrEqual(dimensions.area+2);
     expect(dimensions.right,view+' stays within viewport').toBeLessThanOrEqual(dimensions.screenWidth+1);
     if(view==='beneficiaries'){
       const actionCell=page.getByTestId('beneficiary-records').locator('tbody tr').first().locator('td:nth-child(2)');
