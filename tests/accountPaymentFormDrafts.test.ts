@@ -59,3 +59,20 @@ test('draft status never confirms a tax payment, receipt or Office notification'
   assert.doesNotMatch(sql, /\bINSERT INTO demo_payment\.story_payments\b/i);
   assert.doesNotMatch(ui, /persistSimulatedPayment|addPaymentReceipt|insertPayment/);
 });
+
+test('switching draft owner invalidates a selected draft and ignores stale refresh callbacks', () => {
+  const ui = read('src/components/ui/AccountPaymentDraftControls.tsx');
+  const dashboard = read('src/components/screens/DashboardPaymentDrafts.tsx');
+  // The parent form can stay mounted across a new Auth or preview capability.
+  // A former owner's selection must not be supplied as a draft UPDATE.
+  assert.match(ui, /const selectedOwnerRef = useRef\(ownerKey\)/);
+  assert.match(ui, /selectedOwnerRef\.current === ownerKey \? selectedDraft : null/);
+  assert.match(ui, /if \(selectedOwnerRef\.current === ownerKey\) return;[\s\S]*?onSelectedDraft\(null\)/);
+  assert.match(ui, /const existing = !asNewDraft && ownedSelectedDraft\?\.service === service/);
+  assert.match(ui, /if \(ownedSelectedDraft\?\.id === draft\.id\) onSelectedDraft\(null\)/);
+  // Both rejection and completion of an older refresh must leave the current
+  // account's loading/error state untouched. SQL already checks its own actor.
+  assert.match(ui, /void refresh\(\)\.catch\(\(\) => \{\s*if \(ownerStillCurrent\(\)\) setError/);
+  assert.match(ui, /\.finally\(\(\) => \{ if \(ownerStillCurrent\(\)\) setLoading\(false\); \}\)/);
+  assert.match(dashboard, /if \(sameOwner\(\)\) setCatalog/);
+});
