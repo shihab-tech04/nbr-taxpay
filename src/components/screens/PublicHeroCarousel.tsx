@@ -250,7 +250,16 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       });
     };
     const refresh = () => {
-      if (!active || fetching || !brandingRequestsAllowed()) return;
+      if (!active || fetching) return;
+      if (!brandingRequestsAllowed()) {
+        // A logo read may already have identified an organization-wide 402.
+        // Do not leave the published banner area in an endless loading state.
+        lastPublishedSignature.current = null;
+        setSlides([]);
+        setBannerStatus('unavailable');
+        disconnect();
+        return;
+      }
       fetching = true;
       void fetchPublishedBanners().then(next => {
         if (!active) return;
