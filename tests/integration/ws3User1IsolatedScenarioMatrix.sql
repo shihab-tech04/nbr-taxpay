@@ -36,7 +36,8 @@ BEGIN
                ELSE 'others' END,
           'relationship',CASE WHEN v_idx<=5 OR v_idx>8 THEN NULL
              WHEN v_idx=6 THEN 'father' WHEN v_idx=7 THEN 'spouse'
-             ELSE 'friends' END))
+             ELSE 'friends' END,
+          'other_label',CASE WHEN v_idx>8 THEN 'User1 contact '||v_idx ELSE NULL END))
     )<>1 THEN RAISE EXCEPTION 'WS3_USER1_BENEFICIARY_ADD_FAILED_%',v_idx; END IF;
   END LOOP;
   SELECT count(*) INTO v_count FROM taxpay_guest_private.beneficiaries b
