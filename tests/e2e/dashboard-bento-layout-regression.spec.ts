@@ -17,10 +17,10 @@ test('approved V3 overview is an asymmetric bento with real task destinations',a
     const tasks=grid.locator('.taxpay-bento-tasks');
     // The three existing task destinations remain; the hero adds history access.
     await expect(summary.locator('.taxpay-summary-metric')).toHaveCount(3);
-    await expect(summary.getByRole('button')).toHaveCount(4);
+    await expect(summary.getByRole('button')).toHaveCount(3);
     const hero=summary.locator('.taxpay-overview-feature');
-    await expect(hero.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
-    await expect(hero.getByRole('button',{name:'View payment history'})).toBeVisible();
+    await expect(hero.getByRole('heading',{name:'Payments at a glance'})).toBeVisible();
+    await expect(hero.getByRole('link',{name:'View payment history'})).toBeVisible();
     await expect(hero).toHaveCSS('background-color','rgb(44, 94, 173)');
     await expect(roles.getByRole('heading',{name:'Payment relationships'})).toBeVisible();
     await expect(beneficiaries.getByRole('heading',{name:'Beneficiary Breakdown'})).toBeVisible();
