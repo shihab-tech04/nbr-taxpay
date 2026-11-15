@@ -727,7 +727,7 @@
   position:absolute;width:1px;height:1px;overflow:hidden;
   clip:rect(0,0,0,0);white-space:nowrap;
 }
-.taxpay-overview-feature__eyebrow{
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature__eyebrow{
   display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap;
   margin:0 0 14px;color:#e9f4ff;font-size:14px;font-weight:600;line-height:1.5;
 }
@@ -738,7 +738,7 @@
   font-size:clamp(30px,3.5vw,48px);line-height:1.19;
   letter-spacing:-.045em;font-weight:650;
 }
-.taxpay-overview-feature__latest{
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature__latest{
   margin-top:13px;color:#fff;font-size:15px;line-height:1.55;
 }
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__source{
