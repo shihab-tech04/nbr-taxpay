@@ -6,6 +6,7 @@ import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { authRedirectUrl, verifiedDraftCategory, draftSeedForCategory, sameAuthenticatedOwner, confirmDraftDeletion, shouldApplyInitialAuthResolution } from '../../services/secureWorkspacePolicy';
 import { formatBdtMinorUnits } from '../../services/minorUnitFormatting';
 import {isCompleteEmailOneTimeCode,normalizeEmailOneTimeCode} from '../../services/verifiedEmailOtp';
+import {safePrivateAuthReturnRoute} from '../../services/routeContract';
 import { confirmPrivateDraftUpdate, confirmPrivateDraftReadBack, privateDraftToInput } from '../../services/privateDraftResume';
 import { SourceChangeProposals } from './SourceChangeProposals';
 import { CorrectionInquiries } from './CorrectionInquiries';
@@ -194,9 +195,11 @@ export const SecureWorkspace: React.FC = () => {
         setEmailCodeMessage(bn?'সাইন-ইন যাচাই করা যায়নি। আবার চেষ্টা করুন।':'Could not confirm your sign-in. Please retry.');
         return;
       }
-      setEmailCode('');setCodeRequestSent(false);setEmailCodeMessage('');
+      setEmailCode('');setCodeRequestSent(false);setEmailCodeMessage('');setMessage(null);
       // Authoritative identity subscriptions handle the protected screen.
       setUser(resolved.user);setAuthLoading(false);
+      const safeReturn=safePrivateAuthReturnRoute(routeParams?.returnTo);
+      if(safeReturn)navigate(safeReturn);
     }catch{
       setEmailCodeMessage(bn?'কোড যাচাই সেবা অনুপলব্ধ। আবার চেষ্টা করুন।':'Code verification is unavailable. Please retry.');
     }finally{setBusy(false);}
