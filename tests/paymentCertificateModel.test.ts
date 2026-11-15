@@ -135,6 +135,52 @@ test('Travel Tax certificate keeps one parent and itemized passenger, route, pas
 });
 
 
+
+test('Travel Tax certificate refuses plaintext passports and unknown nationality without leaking identity',()=>{
+  const src={...baseReceipt,paymentCategory:'TRAVEL_TAX' as const,
+    payerTin:'NON-TIN-PASSENGER',payerName:'Recorded Traveller',totalAmount:1000,
+    travelDetails:{mode:'LAND' as const,departurePort:'Benapole',destination:'India',
+      travelDate:'2026-11-20',economicCode:'1144102',
+      passengers:[{name:'Recorded Traveller',passportMasked:'••••3456',
+        nationality:'BD' as const,country:'Bangladesh',ageBand:'ADULT' as const,age:34,amount:1000}]},
+    items:[{headId:155,economicCode:'1144102',headNameEn:'Travel tax — Recorded Traveller',
+      taxAmount:1000,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:1000}],
+  };
+  assert.equal(buildPaymentCertificateModel(src)?.lines[0].passportMasked,'••••3456');
+  const altered=(change:(traveller:typeof src.travelDetails.passengers[0])=>void)=>{
+    const copy=structuredClone(src);change(copy.travelDetails.passengers[0]);
+    return buildPaymentCertificateModel(copy);
+  };
+  assert.equal(altered(p=>{p.passportMasked='TEST123456'}),null);
+  assert.equal(altered(p=>{p.passportMasked='••••'}),null);
+  assert.equal(altered(p=>{p.passportMasked='••••XXXX1234'}),null);
+  assert.equal(altered(p=>{p.nationality='UNKNOWN' as 'BD'}),null);
+  assert.equal(buildPaymentCertificateModel({...src,travelDetails:{...src.travelDetails,
+    passengers:[{...src.travelDetails.passengers[0],nationality:'FOREIGN' as const,country:''}]}}),null);
+  assert.equal(src.travelDetails.passengers[0].passportMasked,'••••3456');
+});
+
+test('Travel Tax certificate permits itemized zero-rated UNDER5 traveller without exposing passport',()=>{
+  const src={...baseReceipt,paymentCategory:'TRAVEL_TAX' as const,
+    payerTin:'NON-TIN-PASSENGER',payerName:'Recorded Traveller',totalAmount:1000,
+    travelDetails:{mode:'LAND' as const,departurePort:'Benapole',destination:'India',
+      travelDate:'2026-11-20',economicCode:'1144102',
+      passengers:[{name:'Recorded Traveller',passportMasked:'••••3456',nationality:'BD' as const,
+        country:'Bangladesh',ageBand:'ADULT' as const,age:34,amount:1000},
+        {name:'Exempt Traveller',passportMasked:'••••1234',nationality:'FOREIGN' as const,
+          country:'India',ageBand:'UNDER5' as const,age:4,amount:0}]},
+    items:[{headId:155,economicCode:'1144102',headNameEn:'Travel tax — Recorded Traveller',
+      taxAmount:1000,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:1000},
+      {headId:156,economicCode:'1144102',headNameEn:'Travel tax — Exempt Traveller',
+      taxAmount:0,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:0}],
+  };
+  const model=buildPaymentCertificateModel(src);
+  assert.equal(model?.lines.length,2);
+  assert.deepEqual(model?.lines.map(x=>x.amountMinor),[100000,0]);
+  assert.deepEqual(model?.lines.map(x=>x.passportMasked),['••••3456','••••1234']);
+});
+
+
 test('saved payment certificate action is offered only for a completed, reconciled parent', () => {
   assert.equal(canViewPaymentCertificate(baseReceipt), true);
   assert.equal(canViewPaymentCertificate({ ...baseReceipt, treasuryStatus: 'TREASURY_SCROLLED' }), true);
