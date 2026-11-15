@@ -28,6 +28,16 @@ export type ExternalCreditPosting = {
   credited_at:string; verification_evidence_ref:string;
 };
 
+
+/** Prefix potentially executable spreadsheet formulas without modifying numeric amounts. */
+export function escapeLedgerCsvCell(value:string|number|null|undefined):string {
+  const raw=String(value??'');
+  const first=raw.trimStart().charAt(0);
+  const unsafe=typeof value==='string' && (['=','+','-','@'].includes(first)||[9,10,13].includes(raw.charCodeAt(0)));
+  const safe=unsafe?"'"+raw:raw;
+  return '"'+safe.replaceAll('"','""')+'"';
+}
+
 function minor(value:number|string):number {
   if ((typeof value!=='number' && (typeof value!=='string'||! /^[1-9][0-9]*$/.test(value))) ||
       (typeof value==='number' && (!Number.isInteger(value)||value<=0))) {
