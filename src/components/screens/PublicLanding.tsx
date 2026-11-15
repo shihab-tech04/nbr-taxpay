@@ -32,8 +32,11 @@ export const PublicLanding: React.FC = () => {
   const matchedOptions = cleanReference
     ? sampleSearchOptions.filter(option => option.value.toLowerCase().includes(cleanReference)).slice(0, 5)
     : [];
-  // Only public synthetic references; matches and example numbers remain separate groups.
-  const exampleOptions = sampleSearchOptions.slice(0, 3);
+  // Do not repeat a matching reference under Example reference numbers.
+  // Keep three alternative examples available and never query account/private data.
+  const matchedKeys = new Set(matchedOptions.map(option => option.kind + ':' + option.value));
+  const exampleOptions = sampleSearchOptions
+    .filter(option => !matchedKeys.has(option.kind + ':' + option.value)).slice(0, 3);
   const suggestions = [...matchedOptions, ...exampleOptions];
   const chooseReference = (reference: string) => {
     setSearchOpen(false);

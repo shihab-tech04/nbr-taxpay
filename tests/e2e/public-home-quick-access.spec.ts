@@ -938,6 +938,23 @@ test('homepage lookup labels example-only matches and preserves focus in EN/BN a
       await expect(search).toHaveAttribute('aria-expanded', 'false');
       await search.focus();
       await expect(search).toHaveAttribute('aria-expanded', 'true');
+      if (width === 1280 && lang === 'en') {
+        const firstExample = (await section.locator('.public-record-suggestions__examples')
+          .locator('.public-record-suggestions__value').first().innerText()).trim();
+        await search.fill(firstExample);
+        const matched = section.locator('.public-record-suggestions__group').first();
+        await expect(matched.locator('.public-record-suggestions__value')
+          .filter({ hasText: firstExample })).toHaveCount(1);
+        await expect(section.locator('.public-record-suggestions__examples')
+          .locator('.public-record-suggestions__value').filter({ hasText: firstExample })).toHaveCount(0);
+        await matched.locator('.public-record-suggestions__option').first().click();
+        const verification = page.getByRole('dialog', { name: 'Payment status & receipt' });
+        await expect(verification).toBeVisible();
+        await expect(verification.getByRole('textbox',
+          { name: 'Challan, token or transaction reference' })).toHaveValue(firstExample);
+        await page.goto('/?action=landing&lang=en');
+        await section.getByRole('searchbox').focus();
+      }
       await expect(search).toHaveAttribute('aria-autocomplete', 'list');
       await expect(search).toHaveAttribute('aria-describedby', 'public-record-discovery-help');
       await search.fill('NOT-A-KNOWN-EXAMPLE');
