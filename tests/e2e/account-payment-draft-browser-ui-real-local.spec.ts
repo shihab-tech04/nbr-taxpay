@@ -244,6 +244,7 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
 
     await page.goto('/?action=taxpayer_home');
     const workspace = page.getByTestId('user1-synthetic-workspace');
+    await workspace.locator('.taxpay-bento-tasks__tabs').getByRole('button',{name:/Drafts/}).click();
     const cards = workspace.getByTestId('dashboard-payment-drafts');
     await expect(cards.getByRole('heading', { name: 'Saved payment drafts' })).toBeVisible();
     const savedCard = cards.locator('[data-draft-id]').first();
@@ -318,6 +319,7 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     await expect(matching).toHaveCount(0);
     // Other user1 saved drafts must not be deleted or changed by this action.
     await page.reload();
+    await workspace.locator('.taxpay-bento-tasks__tabs').getByRole('button',{name:/Drafts/}).click();
     await expect(workspace.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="' + id + '"]')).toHaveCount(0);
     // Zero records must remain a navigable, recoverable dashboard feature.
     const empty = workspace.getByTestId('dashboard-payment-drafts');

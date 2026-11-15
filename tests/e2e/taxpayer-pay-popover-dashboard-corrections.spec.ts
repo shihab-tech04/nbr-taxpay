@@ -35,7 +35,7 @@ test('desktop Travel Tax is a different payment selection and outside click dism
  await page.goto(demo);
  const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
  await rail.getByRole('button',{name:'Pay Tax menu'}).click();
- await page.getByRole('heading',{name:'Overview'}).click();
+ await page.getByRole('heading',{name:'Your tax overview'}).click();
  await expect(rail.locator('#taxpayer-pay-menu')).toHaveCount(0);
  await rail.getByRole('button',{name:'Pay Tax menu'}).click();
  await rail.getByRole('menuitem',{name:'Travel Tax',exact:true}).click();

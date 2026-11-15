@@ -28,6 +28,7 @@ test('service filter is keyboard accessible and updates selected beneficiary tot
   const sources=page.getByTestId('dashboard-chart-source');
   await sources.getByRole('button',{name:'Examples'}).click();
   const services=page.getByTestId('dashboard-service-breakdown');
+  await page.getByTestId('dashboard-payment-extra').locator('summary').click();
   const advance=services.locator('[data-service="ait"]');
   await advance.focus();
   await page.keyboard.press('Space');
@@ -54,6 +55,7 @@ test('year filtering cannot promote example liabilities to official credit',asyn
 test('interactive bento cards fit a 320px mobile viewport',async({page})=>{
   await page.setViewportSize({width:320,height:800});
   await page.goto(dashboard);
+  await page.getByTestId('dashboard-payment-extra').locator('summary').click();
   await expect(page.getByTestId('dashboard-service-breakdown')).toBeVisible();
   await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
   await expect(page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'})).toBeVisible();
@@ -87,8 +89,10 @@ test('Overview summary and charts use the same year/source, and unknown benefici
   await expect(summary.locator('.taxpay-summary-metric--completed strong')).toHaveText('5');
 
   // A source-aware drilldown must match the selected service, not all tax events.
+  await chart.getByTestId('dashboard-payment-extra').locator('summary').click();
   const advance=chart.getByTestId('dashboard-service-breakdown').locator('[data-service="ait"]');
   await advance.click();
+  await chart.locator('.taxpay-recipient-extra > summary').click();
   await chart.getByRole('button',{name:'View payment records'}).click();
   await expect(page).toHaveURL(/action=history/);
   const desktopRecords=page.getByTestId('taxpayer-transaction-table');
@@ -104,6 +108,7 @@ test('Top five ranked beneficiaries show actual recipients and link to filtered 
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const chart=page.getByTestId('dashboard-payment-analytics');
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
+  await chart.locator('.taxpay-recipient-extra > summary').click();
   const tabs=chart.getByTestId('dashboard-beneficiary-view');
   await tabs.getByRole('button',{name:'Top 5'}).click();
   await expect(tabs.getByRole('button',{name:'Top 5'})).toHaveAttribute('aria-pressed','true');
@@ -127,8 +132,10 @@ test('Top five honors service and relationship filters without inventing benefic
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   const chart=page.getByTestId('dashboard-payment-analytics');
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
+  await chart.locator('.taxpay-recipient-extra > summary').click();
   await chart.getByTestId('dashboard-beneficiary-view').getByRole('button',{name:'Top 5'}).click();
   await expect(chart.getByTestId('dashboard-top-beneficiaries').locator('[data-rank]')).toHaveCount(3);
+  await chart.getByTestId('dashboard-payment-extra').locator('summary').click();
   await chart.getByTestId('dashboard-service-breakdown').locator('[data-service="ait"]').click();
   await expect(chart.getByText('No identified beneficiaries match this selection.')).toBeVisible();
   await expect(chart.getByTestId('dashboard-unranked-amount')).toContainText('32,000');
@@ -149,6 +156,7 @@ test('Top five chart stays accessible at 320px with Bengali labels',async({page}
   await page.goto(dashboard+'&lang=bn');
   const chart=page.getByTestId('dashboard-payment-analytics');
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'নমুনা'}).click();
+  await chart.locator('.taxpay-recipient-extra > summary').click();
   const tabs=chart.getByTestId('dashboard-beneficiary-view');
   await tabs.getByRole('button',{name:'শীর্ষ ৫'}).click();
   await expect(chart.getByRole('heading',{name:'শীর্ষ উপকারভোগী'})).toBeVisible();
@@ -157,7 +165,7 @@ test('Top five chart stays accessible at 320px with Bengali labels',async({page}
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth))
     .toBeLessThanOrEqual(2);
   await tabs.getByRole('button',{name:'সম্পর্ক'}).click();
-  await expect(chart.getByRole('heading',{name:'উপকারভোগীর বিস্তারিত'})).toBeVisible();
+  await expect(chart.getByRole('heading',{name:'পেমেন্টের সম্পর্ক'})).toBeVisible();
 });
 
 test('returning from Top 5 clears the hidden relationship filter and restores the total',async({page})=>{
@@ -166,6 +174,7 @@ test('returning from Top 5 clears the hidden relationship filter and restores th
   const chart=page.getByTestId('dashboard-payment-analytics');
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
   const beneficiary=chart.getByTestId('dashboard-beneficiary-breakdown');
+  await chart.locator('.taxpay-recipient-extra > summary').click();
   const toggle=chart.getByTestId('dashboard-beneficiary-view');
   await toggle.getByRole('button',{name:'Top 5'}).click();
   await beneficiary.getByRole('combobox',{name:'Filter top beneficiaries by relationship'}).selectOption('family');
@@ -195,7 +204,7 @@ test('authorized user1 preview reconciles Overview with Activity without a sourc
     status:401,contentType:'application/json',body:'{"message":"No application Auth session"}'
   }));
   await page.goto('/?action=taxpayer_home');
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2025-2026');
   const overview=page.getByTestId('taxpayer-overview-bento');
   await expect(overview.getByTestId('dashboard-source-indicator')).toContainText('simulated');
@@ -269,12 +278,14 @@ test('populated Overview uses full-width balanced KPIs and readable charts acros
   await expect(grid.locator('.taxpay-summary-metric--requests strong')).toHaveText('2');
   await expect(analytics.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
   const beneficiary=analytics.getByTestId('dashboard-beneficiary-breakdown');
+  await beneficiary.locator('.taxpay-recipient-extra > summary').click();
   await expect(beneficiary.locator('.taxpay-bento-analytics__unclassified-intro')).toBeVisible();
   await expect(beneficiary.locator('.taxpay-bento-analytics__segments')).toHaveCount(0);
   await expect(beneficiary.getByTestId('dashboard-unclassified-recovery')).toContainText('81,500');
   await expect(beneficiary.getByTestId('dashboard-unclassified-recovery')).toContainText('32,000');
   await expect(grid.locator('.taxpay-bento-recent li')).toHaveCount(5);
   const service=analytics.getByTestId('dashboard-service-breakdown');
+  await analytics.getByTestId('dashboard-payment-extra').locator('summary').click();
   const serviceBox=await service.boundingBox();
   const lastBarBox=await service.locator('.taxpay-bento-analytics__bar-item').last().boundingBox();
   expect(serviceBox&&lastBarBox).toBeTruthy();
@@ -308,7 +319,7 @@ test('Overview KPIs retain values and actions with proper metric-card hierarchy'
         valueBelowLabel: value.y >= label.bottom - 1,
       };
     }));
-    expect(geometry.every(card => card.radius === 14), 'consistent, not pill-shaped KPI corners').toBe(true);
+    expect(geometry.every(card => card.radius === 16), 'consistent, not pill-shaped KPI corners').toBe(true);
     expect(geometry.every(card => card.borders.every(border => border === 1)), 'no thick status strips').toBe(true);
     expect(geometry.every(card => card.direction === 'column'), 'number is a distinct hierarchy level').toBe(true);
     expect(geometry.every(card => card.valueBelowLabel), 'values are below their labels').toBe(true);

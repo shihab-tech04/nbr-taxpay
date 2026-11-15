@@ -206,6 +206,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [caseStatus,setCaseStatus]=useState<State|'all'>('all');
   const [savedDraftCount,setSavedDraftCount]=useState<number|null>(null);
   const [draftHelpVisible,setDraftHelpVisible]=useState(false);
+  const [followupTab,setFollowupTab]=useState<'drafts'|'requests'>('requests');
   const [kind,setKind]=useState<Kind|'all'>('all');
   const [status,setStatus]=useState<State|'all'>('all');
   const [monthFilter,setMonthFilter]=useState('all');
@@ -543,7 +544,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Overview','সংক্ষিপ্ত বিবরণ');
-  const header=<TaxpayerPageHeading title={pageTitle} className={'taxpayer-dashboard-header'+(overviewRoute?' taxpayer-dashboard-header--overview':'')}
+  const header=<TaxpayerPageHeading title={overviewRoute?tr('Your tax overview','আপনার করের সারসংক্ষেপ'):pageTitle} description={overviewRoute?tr('Payments, recipients and follow-ups for your assessment year.','আপনার করবর্ষের পেমেন্ট, প্রাপক ও পরবর্তী করণীয়।'):undefined} className={'taxpayer-dashboard-header'+(overviewRoute?' taxpayer-dashboard-header--overview':'')}
     actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   // Keep the existing external-data UI gated until a verified, nonempty source is linked.
   const verifiedExternalTaxPositionReady=false;
@@ -578,6 +579,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     dashboardSource:overviewSource,dashboardOnlyCompleted:true
   });
   const openSavedDrafts=()=>{
+    setFollowupTab('drafts');
     const list=document.getElementById('taxpayer-dashboard-draft-section');
     if(list && previewAccount?.id==='user1' && activePreviewSession()?.profileId==='user1'){
       list.scrollIntoView({behavior:'smooth',block:'start'});
@@ -585,6 +587,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     }else setDraftHelpVisible(visible=>!visible);
   };
   const focusCorrectionRequests=()=>{
+    setFollowupTab('requests');
     const target=document.getElementById('dashboard-correction-requests');
     target?.scrollIntoView({behavior:'smooth',block:'start'});
     target?.focus({preventScroll:true});
@@ -649,20 +652,39 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
                 {overviewHasAmount?formatDashboardChartMoney(overviewProjection.totalMinor,language):'—'}
               </strong>
               <p>{overviewHasAmount
-                ?tr('Payer-initiated allocations for this assessment year','এই করবর্ষে আপনার শুরু করা পেমেন্ট বরাদ্দ')
+                ?([ ...overviewCompletedRows ].length
+                  ?tr('Latest payment activity','সর্বশেষ পেমেন্ট কার্যক্রম')+': '+money([...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date))[0].amount)+' · '+formatDate([...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date))[0].date)
+                  :tr('Payer-initiated allocations for this assessment year','এই করবর্ষে আপনার শুরু করা পেমেন্ট বরাদ্দ'))
                 :overviewSource==='recorded'&&sqlLoadError
                   ?tr('Payment records could not be loaded','পেমেন্ট রেকর্ড লোড করা যায়নি')
                   :tr('No itemized payments for this year','এই করবর্ষে কোনো বিস্তারিত পেমেন্ট নেই')}</p>
             </div>
-            {overviewHasAmount&&<div className="taxpay-overview-feature__services"
-              aria-label={tr('Payment service shares','পেমেন্টের ধরনের অংশ')}>
-              {overviewServices.map(item=>{
-                const share=dashboardChartPercentage(item.amountMinor,overviewProjection.totalMinor);
-                return <div key={item.key} className="taxpay-overview-feature__service">
-                  <div><span>{overviewServiceNames[item.key]}</span><strong className="tabular-nums">{share}%</strong></div>
-                  <span className="taxpay-overview-feature__track" aria-hidden="true"><span style={{width:share+'%'}}/></span>
-                </div>;
-              })}
+            {overviewHasAmount&&<div className="taxpay-overview-feature__chart">
+              <svg viewBox="0 0 120 120" className="taxpay-overview-feature__donut" role="img"
+                aria-label={tr('Distribution of payer-initiated payment activity','আপনার শুরু করা পেমেন্টের বিভাজন')}>
+                <circle cx="60" cy="60" r="43" pathLength="100" strokeWidth="18" fill="none" stroke="rgba(255,255,255,.23)"/>
+                {overviewServices.map((item,index)=>{
+                  const share=Number(item.amountMinor*10000n/overviewProjection.totalMinor)/100;
+                  const previous=overviewServices.slice(0,index).reduce((sum,row)=>sum+Number(row.amountMinor*10000n/overviewProjection.totalMinor)/100,0);
+                  return <circle key={item.key} cx="60" cy="60" r="43" pathLength="100"
+                    className={'taxpay-overview-feature__slice taxpay-overview-feature__slice--'+index}
+                    strokeWidth="18" fill="none" strokeDasharray={share+' '+(100-share)}
+                    strokeDashoffset={-previous} transform="rotate(-90 60 60)"/>;
+                })}
+                <text x="60" y="59" fill="#fff" textAnchor="middle" fontSize="19" fontWeight="700">
+                  {dashboardChartPercentage(overviewServices[0]?.amountMinor??0n,overviewProjection.totalMinor)}%
+                </text>
+                <text x="60" y="73" fill="#e4efff" textAnchor="middle" fontSize="8">
+                  {tr('Largest share','সর্বোচ্চ অংশ')}
+                </text>
+              </svg>
+              <div className="taxpay-overview-feature__services" aria-label={tr('Payment service amounts','পেমেন্টের ধরন অনুযায়ী পরিমাণ')}>
+                {overviewServices.map((item,index)=><div key={item.key} className="taxpay-overview-feature__service">
+                  <span className={'taxpay-overview-feature__legend-dot taxpay-overview-feature__legend-dot--'+index} aria-hidden="true"/>
+                  <span>{overviewServiceNames[item.key]}</span>
+                  <strong className="tabular-nums">{formatDashboardChartMoney(item.amountMinor,language)}</strong>
+                </div>)}
+              </div>
             </div>}
           </div>
           <a href="?action=history" className="taxpay-overview-feature__action" onClick={event=>{event.preventDefault();openOverviewPayments();}}>
@@ -689,12 +711,23 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             ?tr('Draft count unavailable. Sign in or refresh to check again.','খসড়ার সংখ্যা পাওয়া যায়নি। সাইন ইন করুন অথবা রিফ্রেশ করে আবার দেখুন।')
             :tr('No saved drafts yet. Use Save Draft during a payment to continue it later.','এখনও সংরক্ষিত খসড়া নেই। পরে চালু করতে পেমেন্টের সময় খসড়া সংরক্ষণ করুন।')}</p>}
       </section>
-    <div className="taxpay-bento-tasks" aria-label={tr('Continue and track','চালিয়ে যান ও অনুসরণ করুন')}>
-    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1}>
+    <div className="taxpay-bento-tasks" aria-label={tr('Follow-ups','পরবর্তী করণীয়')}>
+      <div className="taxpay-bento-tasks__heading">
+        <h2>{tr('Follow-ups','পরবর্তী করণীয়')}</h2>
+        <div className="taxpay-bento-tasks__tabs" role="group" aria-label={tr('Follow-up type','পরবর্তী করণীয়ের ধরন')}>
+          <button type="button" aria-pressed={followupTab==='drafts'} onClick={()=>setFollowupTab('drafts')}>
+            {tr('Drafts','খসড়া')} <span>{savedDraftCount===null?'—':savedDraftCount}</span>
+          </button>
+          <button type="button" aria-pressed={followupTab==='requests'} onClick={()=>setFollowupTab('requests')}>
+            {tr('Requests','আবেদন')} <span>{correctionRequestCount===null?'—':correctionRequestCount}</span>
+          </button>
+        </div>
+      </div>
+    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1} hidden={followupTab!=='drafts'}>
       <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
         onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
     </div>}
-    <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} aria-labelledby="dashboard-correction-requests-title">
+    <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} hidden={followupTab!=='requests'} aria-labelledby="dashboard-correction-requests-title">
       <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
       <p className="mt-2 text-sm text-taxpay-muted">{overviewSource==='example'
         ?tr('Example requests and their displayed status.','উদাহরণভিত্তিক আবেদন ও প্রদর্শিত অবস্থা।')
