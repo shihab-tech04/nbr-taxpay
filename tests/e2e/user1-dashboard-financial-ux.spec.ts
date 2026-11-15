@@ -96,8 +96,8 @@ test('interactive bento charts and existing payment actions remain responsive fr
     await expect(bento).toBeVisible();
     await expect(bento.getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
     await expect(bento.getByRole('heading',{name:'By payment service'})).toBeVisible();
-    await expect(bento.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
-    await expect(bento.getByRole('heading',{name:'Recent activity'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'Beneficiary Breakdown'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
     await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'Horizontal overflow at '+width).toBeLessThanOrEqual(2);
@@ -117,10 +117,11 @@ test('bento sections remain readable, and saved work remains ahead of analytics'
     const bounds=await Promise.all([summary.boundingBox(),correction.boundingBox(),activity.boundingBox(),analytics.boundingBox()]);
     expect(bounds.every(Boolean),'Every requested dashboard section renders at '+width).toBeTruthy();
     expect(bounds[0]!.y,'Summary before analytics').toBeLessThan(bounds[3]!.y);
-    expect(bounds[2]!.y,'Recent activity before charts').toBeLessThan(bounds[3]!.y);
+    expect(bounds[2]!.y,'Tax Journey follows analytic bento charts').toBeGreaterThan(bounds[3]!.y);
+    expect(bounds[1]!.y,'Corrections follow analytic bento charts').toBeGreaterThan(bounds[3]!.y);
     if(width>=1200){
-      expect(Math.abs(bounds[0]!.y-bounds[1]!.y)).toBeLessThan(4);
-    }else expect(bounds[1]!.y).toBeGreaterThan(bounds[0]!.y);
+      expect(Math.abs(bounds[2]!.y-bounds[1]!.y)).toBeLessThan(4);
+    }else expect(bounds[1]!.y).toBeGreaterThan(bounds[2]!.y);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'No horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }
