@@ -14,7 +14,11 @@ test('production keeps a bundled logo and five local slides without branding Sup
     }
   });
   await page.goto(site + '?action=landing');
-  await expect(page.locator('.public-home-wordmark')).toHaveAttribute('src', /assets/);
+  const src = await page.locator('.public-home-wordmark').getAttribute('src');
+  // Vite can inline the small approved bundled SVG as a data: URL rather
+  // than producing a separate /assets file. Both are fully local.
+  expect(src?.startsWith('data:image/svg+xml,') || src?.includes('/assets/')).toBe(true);
+  expect(src).not.toContain('supabase.co');
   await expect(page.locator('.public-hero-carousel__slide')).toHaveCount(5);
   await expect(page.getByRole('button', { name: 'Pay Tax', exact: true }).first()).toBeVisible();
   await page.evaluate(() => {
