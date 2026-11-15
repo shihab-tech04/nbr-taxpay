@@ -107,6 +107,23 @@ export function buildPaymentCertificateModel(receipt: ChallanReceipt): PaymentCe
       };
     }).filter((line): line is PaymentCertificateLine => line !== null);
     if (lines.length !== details.passengers.length) return null;
+    // A displayed passenger certificate may be supported by a saved itemized
+    // receipt. Check the *same passenger* against the *same* accounting row:
+    // matching totals alone can conceal swapped names, wrong heads or fees.
+    // Older snapshots without saved item rows retain their prior fallback.
+    if (receipt.items.length > 0 && (
+      receipt.items.length !== details.passengers.length ||
+      receipt.items.some((item, index) => {
+        const person = details.passengers[index];
+        const value = toMinor(person.amount);
+        return value === null || item.headId !== 155 + index ||
+          item.headNameEn.trim() !== 'Travel tax — ' + person.name.trim() ||
+          item.economicCode.trim() !== details.economicCode.trim() ||
+          toMinor(item.totalAmount) !== value || toMinor(item.taxAmount) !== value ||
+          toMinor(item.penaltyAmount) !== 0 || toMinor(item.surchargeAmount) !== 0 ||
+          toMinor(item.interestAmount) !== 0;
+      })
+    )) return null;
     const lineTotal = lines.reduce((sum, line) => sum + line.amountMinor, 0);
     if (!Number.isSafeInteger(lineTotal) || lineTotal !== totalMinor) return null;
     travel = details;
