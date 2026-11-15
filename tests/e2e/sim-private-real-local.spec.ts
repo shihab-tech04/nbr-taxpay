@@ -298,6 +298,52 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(prior?.allocations.map(a=>a.amountMinor)).toEqual([15025,2350]);
  expect(prior?.allocations.map(a=>a.assessmentYear)).toEqual(['2026-27','2025-26']);
 
+ // F-071/F-072: complete Pay Again through the real disposable browser→Auth
+ // SQL journey, not merely a copied form. Capture the *actual* UI RPC body
+ // without mocking its response or creating any hosted payment.
+ const repeatRequests:Record<string,unknown>[]=[];
+ one.page.on('request',requestEvent=>{
+  if(requestEvent.method()==='POST' &&
+     requestEvent.url().includes('/rest/v1/rpc/sim_submit_my_payment')){
+    repeatRequests.push(requestEvent.postDataJSON() as Record<string,unknown>);
+  }
+ });
+ await one.page.getByRole('button',{name:'Save payment record'}).click();
+ await expect(one.page.getByRole('status').filter({
+  hasText:'Payment record saved. Office copy pending; Treasury settlement unverified:'
+ })).toBeVisible({timeout:15000});
+ expect(repeatRequests).toHaveLength(1);
+ const afterRepeat=await request('/rest/v1/rpc/sim_my_payment_history',
+  {p_view:'payer'},payer.session.access_token);
+ expect(afterRepeat.status).toBe(200);
+ type RepeatRow={id:string;transactionId:string;totalMinor:number;
+  allocations:Array<{beneficiary:string;assessmentYear:string;amountMinor:number}>};
+ const readbackRows=afterRepeat.data as RepeatRow[];
+ const repeated=readbackRows.find(row=>row.transactionId!==tx!.transactionId &&
+  row.totalMinor===17380 &&
+  row.allocations.some(a=>a.beneficiary==='user7'&&a.amountMinor===2350));
+ expect(repeated).toBeTruthy();
+ expect(repeated!.allocations.map(a=>[a.beneficiary,a.assessmentYear,a.amountMinor]))
+  .toEqual([['user6','2026-27',15030],['user7','2026-27',2350]]);
+ expect(readbackRows.find(row=>row.transactionId===tx!.transactionId)?.allocations
+  .map(a=>a.amountMinor)).toEqual([15025,2350]);
+ expect(psql("select count(*) from demo_payment.mirror_outbox o join demo_payment.story_payments p on p.id=o.entity_id where o.entity_type='PAYMENT' and p.data->'details'->>'sourceTransactionId'='"+repeated!.transactionId+"' and o.status='PENDING'")).toBe('1');
+ // Exactly the same key and unchanged allocations replay the same source row.
+ const replay=await request('/rest/v1/rpc/sim_submit_my_payment',
+  repeatRequests[0],payer.session.access_token);
+ expect(replay.status,JSON.stringify(replay.data)).toBe(200);
+ expect((replay.data as {transactionId:string}).transactionId).toBe(repeated!.transactionId);
+ const replayHistory=await request('/rest/v1/rpc/sim_my_payment_history',
+  {p_view:'payer'},payer.session.access_token);
+ expect(replayHistory.status).toBe(200);
+ expect((replayHistory.data as RepeatRow[]).filter(row=>
+  row.transactionId===repeated!.transactionId)).toHaveLength(1);
+ await one.page.goto('/?action=history');
+ await one.page.reload({waitUntil:'domcontentloaded'});
+ const repeatedCard=one.page.getByTestId('signed-in-payment-activity-cards')
+  .locator(':scope > li').filter({hasText:repeated!.id}).first();
+ await expect(repeatedCard.getByText(repeated!.id)).toBeVisible({timeout:15000});
+
  // Removing a private address-book list cascades only its contact row. The
  // payer's immutable payment and beneficiary allocation must remain readable.
  await one.page.goto('/?action=beneficiaries');
