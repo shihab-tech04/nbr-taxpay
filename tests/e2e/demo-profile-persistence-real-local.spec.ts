@@ -358,6 +358,15 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
     await expect(first.getByTestId('beneficiary-records')).toContainText(expected[0].display_name);
     await expect(first.getByTestId('beneficiary-records')).not.toContainText(expected[1].display_name);
     await search.fill('');
+    // Selection is stored through an asynchronous, capability-scoped SQL
+    // settings write. Wait for its actual server confirmation before reload;
+    // otherwise mobile browsers can abort the write mid-flight and create a
+    // false persistence failure (or hide a real server error).
+    await expect.poll(async()=>{
+      const setting=await apiRequest(first,user1.capability,'demo-settings');
+      expect(setting.status,JSON.stringify(setting.body)).toBe(200);
+      return setting.body.data?.selectedListId;
+    },{timeout:15000}).toBe(lists.find(list=>list.name===names.clients)!.id);
     await first.reload();
     if(await first.locator('#beneficiary-list').count()===0)
       await first.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
