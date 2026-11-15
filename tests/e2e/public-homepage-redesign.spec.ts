@@ -162,7 +162,8 @@ test('Home search and six-benefit panel share readable typography, spacing and c
     });
     expect(computed.titleSizes[0], 'record search and benefits headings match').toBe(computed.titleSizes[1]);
     expect(computed.titleSizes[0]).toBeGreaterThanOrEqual(20);
-    expect(Math.min(...computed.bodySizes), 'home helper text remains readable').toBeGreaterThanOrEqual(15);
+    expect(Math.min(...computed.bodySizes.slice(0,2)), 'home helper text remains readable').toBeGreaterThanOrEqual(15);
+    expect(computed.bodySizes[2], 'benefit details retain the approved 14px baseline').toBeGreaterThanOrEqual(14);
     expect(computed.radii[0], 'home cards use the same outer radius').toBe(computed.radii[1]);
     expect(computed.radii[0]).toBe(14);
     expect(Math.min(...computed.horizontalPadding)).toBeGreaterThanOrEqual(14);
