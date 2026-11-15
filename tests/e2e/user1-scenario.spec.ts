@@ -240,8 +240,12 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(content).toContainText('3/4 Purana Paltan');
   await expect(content).toContainText('em***@****.***');
   await expect(content).not.toContainText('email@test.com');
-  await expect(content).toContainText('+**********765');
-  await expect(content).toContainText('**-****253');
+  await expect(content).toContainText('+880**********');
+  await expect(content).toContainText('02-9******');
+  // The approved mask reveals only leading digits; do not leak trailing digits
+  // before the independent Show action is deliberately activated.
+  await expect(content).not.toContainText('+**********765');
+  await expect(content).not.toContainText('**-****253');
   await expect(profile.getByText(/Fictional sample profile|Sample TIN|Not an NBR-issued TIN/i)).toHaveCount(0);
   await expect(profile.getByText('Not available',{exact:true})).toHaveCount(0);
   // Full values never appear on screen until an individual, accessible Show action.
