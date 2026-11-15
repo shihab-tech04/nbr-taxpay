@@ -757,7 +757,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         </li>)}
       </ul> : overviewSource==='example'
         ?<p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No example requests for this assessment year.','এই করবর্ষে কোনো উদাহরণভিত্তিক আবেদন নেই।')}</p>
-        :null}
+        :<p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No correction requests are recorded for this session.','এই সেশনের জন্য কোনো সংশোধন আবেদন সংরক্ষিত নেই।')}</p>}
     </section>
     </div>
     </div>

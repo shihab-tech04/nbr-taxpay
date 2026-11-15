@@ -1249,7 +1249,7 @@
 @media (min-width: 1400px) {
   .taxpay-citizen-shell.taxpay-taxpayer-reference.taxpay-authenticated-content:not(.taxpay-taxpayer-flow) > main#main-content > * {
     width: 100%;
-    max-width: 70%;
+    max-width: none;
     min-width: 0;
     margin-inline: auto;
   }
