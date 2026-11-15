@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -20,6 +20,8 @@ export function AuthenticatedReceivedPaymentPopup() {
   const {user}=useAccountIdentity();
   const {language,navigate,currentRoute}=useTaxState();
   const uid=user?.id??null;
+  const activeUid=useRef<string|null>(uid);
+  activeUid.current=uid;
   const bn=language==='bn';
   const [owner,setOwner]=useState<string|null>(null);
   const [welcomeOwner,setWelcomeOwner]=useState<string|null>(null);
@@ -67,7 +69,7 @@ export function AuthenticatedReceivedPaymentPopup() {
       </p>
     </TaxPayModal>;
   }
-  if(!next||currentRoute==='corrections'||busy)return null;
+  if(!next||currentRoute==='corrections')return null;
   const dismiss=()=>{setDismissed(old=>[...old,next.eventId]);setError('');};
   const openCase=(kind:CorrectionCaseKind)=>{
     try {
@@ -85,7 +87,7 @@ export function AuthenticatedReceivedPaymentPopup() {
       const updated=await loadAccountUnreadReceivedPayments(uid);
       if(updated.some(item=>item.eventId===next.eventId))
         throw Error('Acknowledgment was not verified.');
-      if(owner===uid)setItems(updated);
+      if(activeUid.current===uid)setItems(updated);
     }catch{
       setError(bn?'বিজ্ঞপ্তির পঠন নিশ্চিত করা যায়নি। আবার চেষ্টা করুন।':'Could not confirm the notice read state. Please retry.');
     }finally{setBusy(false);}
