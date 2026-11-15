@@ -60,39 +60,3 @@ REVOKE ALL ON FUNCTION demo_payment.assert_new_head_exclusivity(jsonb) FROM PUBL
 COMMENT ON FUNCTION demo_payment.assert_new_head_exclusivity(jsonb) IS
  'M04: only one 125 Return head, beneficiary and valid AY per new RPC parent; receipt source and total must match. Existing rows unchanged.';
 COMMIT;
-
-       OR coalesce(v_snapshot->'items'->0->>'totalAmount','') !~ '^[0-9]+(\.[0-9]{1,2})?
-    THEN RAISE EXCEPTION 'RETURN_EXCLUSIVE_RECEIPT_MISMATCH'; END IF;
-    IF (v_snapshot->>'totalAmount')::numeric*100 <> v_value::numeric
-       OR (v_lines->0->>'totalAmount')::numeric*100 <> v_value::numeric
-    THEN RAISE EXCEPTION 'RETURN_EXCLUSIVE_TOTAL_MISMATCH'; END IF;
-  ELSIF jsonb_typeof(v_lines) = 'array' AND EXISTS (
-    SELECT 1 FROM jsonb_array_elements(v_lines) AS a(value)
-    WHERE a.value->>'category' = 'TAX_WITH_RETURN' OR a.value->>'headId' = '125'
-  ) THEN
-    RAISE EXCEPTION 'RETURN_HEAD_EXCLUSIVE';
-  END IF;
-END;
-$taxpay_return$;
-REVOKE ALL ON FUNCTION demo_payment.assert_new_head_exclusivity(jsonb) FROM PUBLIC,anon,authenticated;
-COMMENT ON FUNCTION demo_payment.assert_new_head_exclusivity(jsonb) IS
- 'M04: only one 125 Return head, beneficiary and valid AY per new RPC parent; receipt source and total must match. Existing rows unchanged.';
-COMMIT;
-
-       OR v_snapshot->>'payerTin' IS DISTINCT FROM v_details->>'payerTin'
-    THEN RAISE EXCEPTION 'RETURN_EXCLUSIVE_RECEIPT_MISMATCH'; END IF;
-    IF (v_snapshot->>'totalAmount')::numeric*100 <> v_value::numeric
-       OR (v_lines->0->>'totalAmount')::numeric*100 <> v_value::numeric
-    THEN RAISE EXCEPTION 'RETURN_EXCLUSIVE_TOTAL_MISMATCH'; END IF;
-  ELSIF jsonb_typeof(v_lines) = 'array' AND EXISTS (
-    SELECT 1 FROM jsonb_array_elements(v_lines) AS a(value)
-    WHERE a.value->>'category' = 'TAX_WITH_RETURN' OR a.value->>'headId' = '125'
-  ) THEN
-    RAISE EXCEPTION 'RETURN_HEAD_EXCLUSIVE';
-  END IF;
-END;
-$taxpay_return$;
-REVOKE ALL ON FUNCTION demo_payment.assert_new_head_exclusivity(jsonb) FROM PUBLIC,anon,authenticated;
-COMMENT ON FUNCTION demo_payment.assert_new_head_exclusivity(jsonb) IS
- 'M04: only one 125 Return head, beneficiary and valid AY per new RPC parent; receipt source and total must match. Existing rows unchanged.';
-COMMIT;
