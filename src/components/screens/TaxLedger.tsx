@@ -132,7 +132,14 @@ export const TaxLedger:React.FC=()=>{
   const exportLedger=()=>{
     if(state.state!=='ready'||!events.length)return;
     const headers=['Date','Source','Dhara','Assessment year','Tax head','Event','Source status','Recorded amount (paisa)','Confirmed credit effect (paisa)','Challan','Reference','Credit evidence'];
-    const csvCell=(value:string|number|null|undefined)=>'"'+String(value??'').replaceAll('"','""')+'"';
+    const csvCell=(value:string|number|null|undefined)=>{
+      // External provider references are untrusted. Quoting alone does not stop
+      // spreadsheet programs from interpreting formula-like CSV cells.
+      const raw=String(value??'');
+      const safe=/^[\\s\\uFEFF]*[=+@-]/u.test(raw)||/^[\\t\\r\
+]/u.test(raw) ? '\''+raw : raw;
+      return '\"'+safe.replaceAll('\"','\"\"')+'\"';
+    };
     const lines=events.map(e=>[e.occurredAt,e.source,e.dhara,e.assessmentYear,e.component,e.code,e.status,
       e.amountMinor,e.effectMinor,e.challanNo,e.reference,e.creditEvidenceStatus].map(csvCell).join(','));
     const blob=new Blob(['\uFEFF',headers.map(csvCell).join(','),'\r\n',lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
