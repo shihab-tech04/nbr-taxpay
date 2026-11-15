@@ -826,7 +826,6 @@ test('six benefit cards stay non-interactive in English and Bangla on mobile and
       const cards = page.locator('.public-benefits__item');
       await expect(cards).toHaveCount(6);
       for (const [id, en, bn] of cases) {
-        const card = cards.filter({ has: page.locator('[data-benefit="' + id + '"]') });
         const item = page.locator('.public-benefits__item[data-benefit="' + id + '"]');
         await expect(item.getByRole('heading', { name: language === 'bn' ? bn : en })).toBeVisible();
         await expect(item.getByRole('link')).toHaveCount(0);
