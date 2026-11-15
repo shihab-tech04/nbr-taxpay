@@ -781,13 +781,13 @@
 /* Give one benefit cell subtle depth without changing its dimensions, shared
    dividers or click area. A raised stacking context makes the soft shadow
    visible over adjacent cells inside the connected grid. */
-.public-benefits__item:focus-within {
+.public-home-sections .public-benefits__item:focus-within {
   z-index: 1;
   background: #fbfdff;
   box-shadow: 0 2px 12px rgb(21 61 103 / 11%);
 }
 @media (hover: hover) and (pointer: fine) {
-  .public-benefits__item:hover {
+  .public-home-sections .public-benefits__item:hover {
     z-index: 1;
     background: #fbfdff;
     box-shadow: 0 2px 12px rgb(21 61 103 / 11%);
