@@ -680,7 +680,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         ?tr('Example payer-initiated activity','উদাহরণভিত্তিক পরিশোধকারীর কার্যক্রম')
         :tr('Saved session payment activity','সংরক্ষিত সেশন পেমেন্ট কার্যক্রম')} · {tr('Assessment year','করবর্ষ')}: {year}</p>
       <ul className="mt-3 divide-y divide-taxpay-border" aria-label={tr('Latest transactions in selected year','নির্বাচিত করবর্ষের সাম্প্রতিক লেনদেন')}>
-        {[...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+        {[...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-taxpay-text">{item.title}</p>
             <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])}</p>
