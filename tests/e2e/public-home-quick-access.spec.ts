@@ -819,6 +819,9 @@ for (const { width, height, lang } of [
 
 test('six benefit destinations work by pointer and keyboard in English and Bangla on mobile and desktop', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'The test covers its own explicit mobile and desktop viewports.');
+  // Multiple mobile/desktop routes in both languages need their own
+  // realistic budget on heavily parallel GitHub runners; assertions unchanged.
+  test.setTimeout(90_000);
   const cases = [
     { id: 'payments', en: 'All Tax Payments', bn: 'সব ধরনের কর পরিশোধ', destination: 'pay-choice' },
     { id: 'certificates', en: 'Tax Certificates', bn: 'কর সনদ', destination: 'certificates' },
