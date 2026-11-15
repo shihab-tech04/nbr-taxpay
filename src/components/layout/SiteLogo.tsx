@@ -7,7 +7,7 @@ import { supabase } from '../../services/supabaseClient';
 let logoUrl = defaultWordmark;
 let latestVersion = -1;
 let refreshSerial = 0;
-const FOREGROUND_REFRESH_MS = 60_000;
+const FOREGROUND_REFRESH_MS = 5 * 60_000;
 const OFFLINE_POLL_MS = 5 * 60_000;
 let lastRefreshAttempt = 0;
 let activeRefresh: Promise<void> | null = null;
