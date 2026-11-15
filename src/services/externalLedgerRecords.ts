@@ -6,7 +6,7 @@ import type {TaxAccountEvent} from '../components/screens/EventBasedTaxLedger';
 export const EXTERNAL_LEDGER_SOURCES = {
   BRTA:'BRTA',
   E_TDS:'e-TDS',
-  IBAS_PP:'iBAS++',
+  IBAS_PLUS_PLUS:'iBAS++',
   NSD:'NSD',
   SUB_REGISTRAR_OFFICE:'Sub-Registrar Office',
   BANK:'Bank',
