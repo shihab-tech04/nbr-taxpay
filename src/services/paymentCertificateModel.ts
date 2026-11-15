@@ -87,7 +87,13 @@ export function buildPaymentCertificateModel(receipt: ChallanReceipt): PaymentCe
         !Array.isArray(details.passengers) || details.passengers.length < 1) return null;
     lines = details.passengers.map((passenger): PaymentCertificateLine | null => {
       const amountMinor = toMinor(passenger.amount);
-      if (amountMinor === null || !passenger.name.trim() || !passenger.passportMasked.trim()) return null;
+      // Never print a plaintext passport or mislabel an invalid nationality in
+      // an official-looking internal payment certificate. The source preview
+      // stores only a four-character masked suffix, never a passport identity.
+      if (amountMinor === null || !passenger.name.trim() ||
+          !/^••••[A-Za-z0-9]{4}$/.test(passenger.passportMasked) ||
+          !['BD', 'FOREIGN'].includes(passenger.nationality) ||
+          (passenger.nationality === 'FOREIGN' && !passenger.country?.trim())) return null;
       return {
         recipientName: passenger.name.trim(),
         descriptionEn: 'Travel Tax',
