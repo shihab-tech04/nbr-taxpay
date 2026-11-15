@@ -125,14 +125,32 @@ export function CitizenNavigation() {
       if (!payPopoverRef.current?.contains(event.target as Node) &&
           !payButtonRef.current?.contains(event.target as Node)) setPayPopoverOpen(false);
     };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { setPayPopoverOpen(false); payButtonRef.current?.focus(); }
+    const onMenuKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setPayPopoverOpen(false);
+        payButtonRef.current?.focus();
+        return;
+      }
+      // A role=menu must support arrows and Home/End without moving focus to
+      // unrelated page controls. Only handle keys while a menu item is active.
+      if (!payPopoverRef.current?.contains(event.target as Node)) return;
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+      const items = Array.from(payPopoverRef.current.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'));
+      if (!items.length) return;
+      const current = items.findIndex(item => item === document.activeElement);
+      const target = event.key === 'Home' ? 0
+        : event.key === 'End' ? items.length - 1
+        : event.key === 'ArrowDown' ? (current + 1) % items.length
+        : (current <= 0 ? items.length - 1 : current - 1);
+      event.preventDefault();
+      items[target]?.focus();
     };
     document.addEventListener('pointerdown', closeOutside);
-    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('keydown', onMenuKeyDown);
     return () => {
       document.removeEventListener('pointerdown', closeOutside);
-      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('keydown', onMenuKeyDown);
     };
   }, [payPopoverOpen]);
   const goHome = () => {
