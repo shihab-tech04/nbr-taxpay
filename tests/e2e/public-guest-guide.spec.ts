@@ -358,7 +358,7 @@ test('Bangla homepage reference search keeps keyboard access and modal receipt d
  test.skip(info.project.name!=='mobile-320','Bilingual modal receipt at smallest viewport');
  await page.goto('/?action=landing');
  await setWorkspaceLanguage(page,'bn');
- const search=page.getByRole('searchbox',{name:'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন'});
+ const search=page.getByRole('combobox',{name:'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন'});
  await expect(search).toBeVisible();
  await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
  await expect(page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toHaveCount(0);

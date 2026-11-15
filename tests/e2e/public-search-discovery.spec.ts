@@ -107,7 +107,7 @@ test('suggestions close on Escape or outside click, and translate cleanly into B
   await expect(page.locator('.public-record-suggestions')).toHaveCount(0);
   await setWorkspaceLanguage(page,'bn');
   await expect(page.getByRole('heading', { name: 'পেমেন্ট রেকর্ড খুঁজুন' })).toBeVisible();
-  await page.getByRole('searchbox', { name: 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন' }).fill('DEMO');
+  await page.getByRole('combobox', { name: 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন' }).fill('DEMO');
   await expect(page.getByRole('heading', { name: 'মিলে যাওয়া রেফারেন্স' })).toBeVisible();
 });
 
