@@ -2,10 +2,7 @@ import React, {useEffect,useState} from 'react';
 import {Check, Copy, Download} from 'lucide-react';
 import {MaskedProfileValue, sensitiveProfileKind} from '../ui/MaskedProfileValue';
 import {TAXPAYER_PROFILE_LAYOUT,TAXPAYER_PROFILE_FIELD_ORDER,type ProfileFieldRow} from '../../contracts/taxpayerProfileFieldLayout';
-import {
-  USER1_FICTIONAL_TIN_PROFILE as initialReference,
-  user1FictionalTinValue,
-} from '../../data/user1FictionalTinProfile';
+import {user1FictionalTinValue} from '../../data/user1FictionalTinProfile';
 import type {TaxpayerTinField,TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {loadTaxpayerRegistrationProfile} from '../../services/taxpayerRegistrationProfile';
@@ -32,9 +29,12 @@ export function User1TaxpayerProfile({language}:{language:Language}){
     });
     return()=>{active=false;};
   },[session?.profileId,reload]);
-  const record=session?.profileId==='user1'?recordState.profile:initialReference;
+  // Never render a bundled reference profile under another user's session or
+  // when the SQL-backed preview record is missing. A typed route/ID proves no ownership.
+  const record=session?.profileId==='user1'&&recordState.status==='ready'
+    ?recordState.profile:null;
   const value=(field:TaxpayerTinField,language:Language)=>
-    user1FictionalTinValue(field,language,record??initialReference);
+    record?user1FictionalTinValue(field,language,record):'—';
   const [copied,setCopied]=useState<'idle'|'done'|'failed'>('idle');
   const [downloadError,setDownloadError]=useState(false);
   const tin=record?.tin??'';
@@ -88,7 +88,12 @@ export function User1TaxpayerProfile({language}:{language:Language}){
       setDownloadError(true);
     }
   };
-  if(session?.profileId==='user1'&&recordState.status!=='ready'){
+  if(session?.profileId!=='user1'){
+    return <section className="rounded-xl border border-taxpay-border bg-white p-5" data-testid="user1-taxpayer-profile">
+      <p role="alert">{bn?'এই অ্যাকাউন্টের জন্য করদাতার প্রোফাইল পাওয়া যায়নি।':'Taxpayer profile is not available for this account.'}</p>
+    </section>;
+  }
+  if(recordState.status!=='ready'||!record){
     return <section className="rounded-xl border border-taxpay-border bg-white p-5" data-testid="user1-taxpayer-profile">
       {recordState.status==='loading'?<p role="status">{bn?'করদাতার প্রোফাইল লোড হচ্ছে…':'Loading taxpayer profile…'}</p>:
       <div><p role="alert">{bn?'প্রোফাইলের তথ্য লোড করা যায়নি।':'Could not load taxpayer information.'}</p>
