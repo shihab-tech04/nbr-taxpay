@@ -18,7 +18,7 @@ import {recordAccountActivity} from '../../services/accountActivity';
 import { resolvePaymentServiceAccess } from '../../services/paymentServiceAccessPolicy';
 import type {PaymentReuse} from '../../services/paymentReuse';
 import { PaymentDraftEntryGate } from './PaymentDraftEntryGate';
-import type { PaymentFormDraft, PaymentDraftActor } from '../../services/accountPaymentFormDrafts';
+import { paymentDraftOwnerScope, type PaymentFormDraft, type PaymentDraftActor } from '../../services/accountPaymentFormDrafts';
 import { taxpayerBrandName } from '../../config/brand';
 
 /** The seven income-tax categories and separate travel-tax service in the NBR v11 HTML. */
@@ -74,8 +74,19 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const draftActor: PaymentDraftActor | null = verifiedUser
     ? { kind: 'authenticated', userId: verifiedUser.id }
     : previewAccount ? { kind: 'preview', profileId: previewAccount.id } : null;
-  const draftOwnerKey = draftActor ? draftActor.kind + ':' +
-    (draftActor.kind === 'authenticated' ? draftActor.userId : draftActor.kind === 'preview' ? draftActor.profileId : 'guest-session') : '';
+  // A preview profile ID is not a session. Reuse the same verified
+  // owner/capability scope as the draft service, including renewed sign-ins.
+  const draftOwnerKey = paymentDraftOwnerScope(draftActor);
+  // A signed-in owner can change while the modal remains mounted. Do not keep
+  // displaying a previously restored private draft under a different owner.
+  // Empty -> account is allowed: public walk-in journeys may sign in here.
+  const originalDraftOwnerRef = useRef<string | null>(draftOwnerKey || null);
+  if (!originalDraftOwnerRef.current && draftOwnerKey) originalDraftOwnerRef.current = draftOwnerKey;
+  const paymentOwnerChanged = Boolean(originalDraftOwnerRef.current &&
+    originalDraftOwnerRef.current !== draftOwnerKey);
+  useEffect(() => {
+    if (paymentOwnerChanged) setPaymentServiceChoiceOpen(false);
+  }, [paymentOwnerChanged, setPaymentServiceChoiceOpen]);
   const [loginReady, setLoginReady] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
   const payerHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -160,6 +171,10 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     if (view === 'payer') payerHeadingRef.current?.focus();
     if (view === 'payment') stepHeadingRef.current?.focus();
   }, [stage, view]);
+
+  // Hide the prior owner's restored form synchronously; the effect above
+  // closes the dialog and clears its one-shot draft/resume request.
+  if (paymentOwnerChanged) return null;
 
   return (
     <TaxPayModal

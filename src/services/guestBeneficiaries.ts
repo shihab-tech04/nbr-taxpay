@@ -5,6 +5,28 @@ import type { Beneficiary, BeneficiaryInput, BeneficiaryList } from './beneficia
 const capabilityKey = 'korbritto.guest-beneficiaries.capability.v1';
 const initializedKey = 'korbritto.guest-beneficiaries.initialized.v1';
 const capabilityPattern = /^[A-Za-z0-9_-]{43}$/;
+// Keep only an opaque UI generation, never any part of the private guest
+// capability, in React owner keys. A guest access key can change in another
+// browser tab while a payment form stays mounted. Even A -> B -> A must be
+// treated as three different UI sessions; the Edge API remains authoritative.
+let lastDraftScopeCapability: string | null = null;
+let draftScopeGeneration = 0;
+export function guestPaymentDraftOwnerScope(): string {
+  let capability: string | null = null;
+  try {
+    const stored = window.localStorage.getItem(capabilityKey);
+    if (stored && capabilityPattern.test(stored)) capability = stored;
+  } catch {
+    // No usable browser storage means there is no verified guest owner.
+  }
+  if (capability !== lastDraftScopeCapability) {
+    lastDraftScopeCapability = capability;
+    draftScopeGeneration += 1;
+  }
+  return capability
+    ? 'guest:session:' + draftScopeGeneration
+    : 'guest:unavailable:' + draftScopeGeneration;
+}
 const pageSize = 500;
 
 /** A guest address book can be recovered only from a browser retaining its capability. */

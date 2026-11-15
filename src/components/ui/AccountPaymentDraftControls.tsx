@@ -38,17 +38,46 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     : previewAccount ? { kind: 'preview', profileId: previewAccount.id }
     : allowGuest ? { kind: 'guest' } : null;
   const ownerKey = paymentDraftOwnerScope(actor);
+  // The browser's storage event runs in other tabs, not the tab that made
+  // the change. Refresh this mounted payment form only if its guest capability
+  // owner actually changed; the opaque owner key never contains the token.
+  const [, refreshGuestOwner] = useState(0);
+  useEffect(() => {
+    if (actor?.kind !== 'guest') return;
+    const onGuestStorage = () => {
+      if (paymentDraftOwnerScope({kind:'guest'}) !== ownerKey)
+        refreshGuestOwner(value => value + 1);
+    };
+    window.addEventListener('storage', onGuestStorage);
+    return () => window.removeEventListener('storage', onGuestStorage);
+  }, [actor?.kind, ownerKey]);
+  // A parent payment form can remain mounted while a demo session or Auth
+  // account changes. Its old selected draft must never be updated or deleted
+  // as though it belonged to the new account.
+  const selectionScope = ownerKey + ':' + service;
+  const selectedOwnerRef = useRef(selectionScope);
+  const ownedSelectedDraft = selectedOwnerRef.current === selectionScope ? selectedDraft : null;
+  useEffect(() => {
+    if (selectedOwnerRef.current === selectionScope) return;
+    selectedOwnerRef.current = selectionScope;
+    onSelectedDraft(null);
+  }, [selectionScope, onSelectedDraft]);
   // An old save/resume/delete promise may resolve after this form changes
   // accounts. Check the latest render's owner before applying its result.
-  const requestOwnerKey = ownerKey + ':' + service;
-  const currentOwnerRef = useRef(requestOwnerKey);
+  const requestOwnerKey = selectionScope;
+  const currentOwnerRef = useRef({ key: requestOwnerKey, generation: 0 });
+  // A -> B -> A can otherwise make an obsolete A callback look current again.
+  if (currentOwnerRef.current.key !== requestOwnerKey)
+    currentOwnerRef.current = { key: requestOwnerKey, generation: currentOwnerRef.current.generation + 1 };
+  const requestGeneration = currentOwnerRef.current.generation;
   const mountedRef = useRef(true);
-  currentOwnerRef.current = requestOwnerKey;
   useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
-  const ownerStillCurrent = () => mountedRef.current && currentOwnerRef.current === requestOwnerKey;
+  const ownerStillCurrent = () => mountedRef.current &&
+    currentOwnerRef.current.key === requestOwnerKey &&
+    currentOwnerRef.current.generation === requestGeneration;
   const [rows, setRows] = useState<PaymentFormDraft[]>([]);
   const [rowsOwnerKey, setRowsOwnerKey] = useState('');
   // Render only rows fetched for the current account, even before effects clear
@@ -58,7 +87,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   // Do not display inert guest draft buttons against older SQL/Edge deployments.
-  const [guestContractReady, setGuestContractReady] = useState(false);
+  const [guestReadyOwnerKey, setGuestReadyOwnerKey] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
@@ -70,7 +99,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     setRows([]);
     setRowsOwnerKey('');
     setBusy(false);
-    setGuestContractReady(false);
+    setGuestReadyOwnerKey('');
     setPendingDelete(null);
     setConflictDraftId(null);
     setError(null);
@@ -82,7 +111,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       if (active) {
         setRows(result);
         setRowsOwnerKey(ownerKey);
-        if (actor.kind === 'guest') setGuestContractReady(true);
+        if (actor.kind === 'guest') setGuestReadyOwnerKey(ownerKey);
       }
     }).catch(() => {
       if (active && actor.kind !== 'guest')
@@ -101,7 +130,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     setRowsOwnerKey(ownerKey);
   };
 
-  const existingDraftId = () => selectedDraft?.service === service ? selectedDraft.id : null;
+  const existingDraftId = () => ownedSelectedDraft?.service === service ? ownedSelectedDraft.id : null;
   const save = async (rethrowFailure = false, asNewDraft = false) => {
     if (!actor || busy || loading) {
       if (rethrowFailure) throw new Error(bn ? 'এখন খসড়া সংরক্ষণ করা যাচ্ছে না। আবার চেষ্টা করুন।' : 'Draft saving is unavailable right now. Retry.');
@@ -113,9 +142,16 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       const payload = snapshot();
       // A separate draft preserves both the server's newer original revision
       // and the local unsaved form without silently choosing a winner.
-      const existing = !asNewDraft && selectedDraft?.service === service ? selectedDraft : undefined;
+      const existing = !asNewDraft && ownedSelectedDraft?.service === service ? ownedSelectedDraft : undefined;
       const result = await savePaymentFormDraft(actor, service, payload, existing);
-      if (!ownerStillCurrent()) return;
+      if (!ownerStillCurrent()) {
+        // A modal exit may proceed only when this owner received a verified
+        // save. Switching accounts during readback is not a successful close.
+        if (rethrowFailure) throw new Error(bn
+          ? 'অ্যাকাউন্ট পরিবর্তিত হয়েছে। খসড়া যাচাই করে আবার সংরক্ষণ করুন।'
+          : 'Account changed during save. Review the draft and retry.');
+        return;
+      }
       onSelectedDraft(result);
       setConflictDraftId(null);
       setRows(rows => [result, ...rows.filter(row => row.id !== result.id)].sort(
@@ -125,7 +161,10 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
       // the button; no extra success banner below the payment form.
       setSavedSnapshot(JSON.stringify(payload));
     } catch (cause) {
-      if (!ownerStillCurrent()) return;
+      if (!ownerStillCurrent()) {
+        if (rethrowFailure) throw cause;
+        return;
+      }
       setError(cause instanceof Error ? cause.message : 'Save was not confirmed.');
       if (cause instanceof PaymentDraftConflictError && existingDraftId()) {
         setConflictDraftId(existingDraftId());
@@ -166,8 +205,10 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     try {
       await deletePaymentFormDraft(actor, draft);
       if (!ownerStillCurrent()) return;
-      if (selectedDraft?.id === draft.id) onSelectedDraft(null);
+      if (ownedSelectedDraft?.id === draft.id) onSelectedDraft(null);
       await refresh();
+      // Ignore a completion from a different account after the list readback.
+      if (!ownerStillCurrent()) return;
       setPendingDelete(null);
       setFeedback(bn ? 'খসড়া মুছে ফেলা হয়েছে।' : 'Draft deleted.');
     } catch (cause) {
@@ -181,9 +222,9 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     if (!registerDraftExit || !actor || authLoading) return;
     registerDraftExit(() => save(true));
     return () => registerDraftExit(null);
-  }, [registerDraftExit, ownerKey, service, authLoading, busy, loading, snapshot, selectedDraft]);
+  }, [registerDraftExit, ownerKey, service, authLoading, busy, loading, snapshot, ownedSelectedDraft]);
 
-  if (!actor || authLoading || (actor.kind === 'guest' && !guestContractReady)) return null;
+  if (!actor || authLoading || (actor.kind === 'guest' && guestReadyOwnerKey !== ownerKey)) return null;
   const savedNow = savedSnapshot !== null && savedSnapshot === JSON.stringify(snapshot());
   const actions = <div className="payment-form-draft-controls__actions">
     <button type="button" className="payment-form-draft-controls__save"
@@ -206,7 +247,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     {!guardOnly && (actionTarget ? createPortal(actions, actionTarget) : actionTarget === undefined ? actions : null)}
     {feedback && <p className="mt-2 text-sm text-taxpay-dark" role="status">{feedback}</p>}
     {error && <p className="mt-2 text-sm text-taxpay-error" role="alert">{error}</p>}
-    {conflictDraftId && selectedDraft?.id === conflictDraftId && <div className="mt-2 space-y-2"
+    {conflictDraftId && ownedSelectedDraft?.id === conflictDraftId && <div className="mt-2 space-y-2"
       aria-label={bn ? 'পরিবর্তিত খসড়া পুনরুদ্ধার' : 'Changed draft recovery'}>
       <p className="text-sm text-taxpay-muted">{bn
         ? 'অন্য জায়গায় এই খসড়ার নতুন সংস্করণ আছে। বর্তমান ফর্মের তথ্য আলাদা খসড়ায় রাখুন, অথবা নতুন সংস্করণটি খুলুন।'
@@ -216,7 +257,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
           className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
           {bn ? 'আমার পরিবর্তন নতুন খসড়ায় রাখুন' : 'Save my edits as a new draft'}
         </button>
-        <button type="button" disabled={busy || loading} onClick={() => { if (selectedDraft) void resume(selectedDraft); }}
+        <button type="button" disabled={busy || loading} onClick={() => { if (ownedSelectedDraft) void resume(ownedSelectedDraft); }}
           className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
           {bn ? 'সর্বশেষ সংরক্ষিত খসড়া খুলুন' : 'Open latest saved version'}
         </button>
@@ -250,8 +291,9 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
         </ul>}
       <button type="button" disabled={loading || busy} onClick={() => {
         setLoading(true); setError(null);
-        void refresh().catch(() => setError(bn ? 'আবার লোড করা যায়নি।' : 'Could not reload drafts.'))
-          .finally(() => setLoading(false));
+        void refresh().catch(() => {
+          if (ownerStillCurrent()) setError(bn ? 'আবার লোড করা যায়নি।' : 'Could not reload drafts.');
+        }).finally(() => { if (ownerStillCurrent()) setLoading(false); });
       }} className="mt-3 min-h-11 text-sm font-medium text-taxpay-primary">
         {bn ? 'আবার লোড করুন' : 'Refresh drafts'}
       </button>

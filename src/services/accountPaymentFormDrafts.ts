@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient';
 import { activePreviewSession } from './previewAccountSession';
-import { unsignedGuestPaymentDraftRequest } from './guestBeneficiaries';
+import { guestPaymentDraftOwnerScope, unsignedGuestPaymentDraftRequest } from './guestBeneficiaries';
 import { TAXPAY_PUBLIC_ENDPOINT } from '../config/publicBackend';
 
 const services = [
@@ -21,7 +21,7 @@ export type PaymentDraftActor =
 export function paymentDraftOwnerScope(actor:PaymentDraftActor|null):string {
   if(!actor)return '';
   if(actor.kind==='authenticated')return 'authenticated:'+actor.userId;
-  if(actor.kind==='guest')return 'guest:session';
+  if(actor.kind==='guest')return guestPaymentDraftOwnerScope();
   const session=activePreviewSession();
   return 'preview:'+actor.profileId+':'+
     (session?.profileId===actor.profileId?session.paymentSessionId:'unavailable');
@@ -140,14 +140,35 @@ async function unsignedGuestDraftAction(
 async function authenticatedRows(actor: PaymentDraftActor & {kind: 'authenticated'}, service?: PaymentDraftService) {
   await verifiedActor(actor);
   if (!supabase) throw new Error('Database is unavailable.');
-  let query = supabase.from('taxpay_account_payment_form_drafts')
-    .select('id,service,form_payload,revision,created_at,updated_at')
-    .eq('owner_uid', actor.userId);
-  if (service) query = query.eq('service', service);
-  const { data, error } = await query.order('updated_at', { ascending: false }).limit(100);
-  if (error) throw new Error('Could not load drafts.');
-  await checkActorStillSignedIn(actor);
-  return data ?? [];
+  // A single top-100 query silently omitted older assessment years, while
+  // Overview described its catalog as complete. Read all owner-scoped pages,
+  // with deterministic tie-breaking and bounded failure rather than truncation.
+  const pageSize = 100;
+  const maxPages = 50;
+  const rows: PaymentFormDraft[] = [];
+  const seen = new Set<string>();
+  for (let page = 0; page < maxPages; page++) {
+    let query = supabase.from('taxpay_account_payment_form_drafts')
+      .select('id,service,form_payload,revision,created_at,updated_at')
+      .eq('owner_uid', actor.userId);
+    if (service) query = query.eq('service', service);
+    const { data, error } = await query
+      .order('updated_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+    if (error || !data) throw new Error('Could not load drafts.');
+    await checkActorStillSignedIn(actor);
+    for (const record of data) {
+      const row = validRecord(record);
+      // An overlapping page may mean a concurrent save/delete changed the
+      // offset. Never silently count the same saved draft twice.
+      if (seen.has(row.id)) throw new Error('Saved drafts changed while loading. Refresh and retry.');
+      seen.add(row.id);
+      rows.push(row);
+    }
+    if (data.length < pageSize) return rows;
+  }
+  throw new Error('Saved draft list exceeds the supported retrieval limit.');
 }
 
 export async function listPaymentFormDrafts(actor: PaymentDraftActor, service?: PaymentDraftService): Promise<PaymentFormDraft[]> {

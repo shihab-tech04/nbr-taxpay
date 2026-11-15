@@ -59,3 +59,48 @@ test('draft status never confirms a tax payment, receipt or Office notification'
   assert.doesNotMatch(sql, /\bINSERT INTO demo_payment\.story_payments\b/i);
   assert.doesNotMatch(ui, /persistSimulatedPayment|addPaymentReceipt|insertPayment/);
 });
+
+test('switching draft owner invalidates a selected draft and ignores stale refresh callbacks', () => {
+  const ui = read('src/components/ui/AccountPaymentDraftControls.tsx');
+  const dashboard = read('src/components/screens/DashboardPaymentDrafts.tsx');
+  // The parent form can stay mounted across a new Auth or preview capability.
+  // A former owner's selection must not be supplied as a draft UPDATE.
+  assert.match(ui, /const selectionScope = ownerKey \+ ':' \+ service/);
+  assert.match(ui, /const selectedOwnerRef = useRef\(selectionScope\)/);
+  assert.match(ui, /window\.addEventListener\('storage', onGuestStorage\)/);
+  assert.match(ui, /guestReadyOwnerKey !== ownerKey/);
+  assert.match(ui, /if \(rethrowFailure\) throw new Error\(bn[\s\S]*?Account changed during save/);
+  assert.match(ui, /if \(rethrowFailure\) throw cause;/);
+  assert.match(ui, /setGuestReadyOwnerKey\(ownerKey\)/);
+  assert.match(ui, /window\.removeEventListener\('storage', onGuestStorage\)/);
+  assert.match(ui, /if \(paymentDraftOwnerScope\(\{kind:'guest'\}\) !== ownerKey\)/);
+  assert.match(ui, /selectedOwnerRef\.current === selectionScope \? selectedDraft : null/);
+  assert.match(ui, /if \(selectedOwnerRef\.current === selectionScope\) return;[\s\S]*?onSelectedDraft\(null\)/);
+  assert.match(ui, /const existing = !asNewDraft && ownedSelectedDraft\?\.service === service/);
+  assert.match(ui, /if \(ownedSelectedDraft\?\.id === draft\.id\) onSelectedDraft\(null\)/);
+  assert.match(ui, /await refresh\(\);[\s\S]*?if \(!ownerStillCurrent\(\)\) return;[\s\S]*?setPendingDelete\(null\)/);
+  // Both rejection and completion of an older refresh must leave the current
+  // account's loading/error state untouched. SQL already checks its own actor.
+  assert.match(ui, /void refresh\(\)\.catch\(\(\) => \{\s*if \(ownerStillCurrent\(\)\) setError/);
+  assert.match(ui, /\.finally\(\(\) => \{ if \(ownerStillCurrent\(\)\) setLoading\(false\); \}\)/);
+  assert.match(ui, /currentOwnerRef = useRef\(\{ key: requestOwnerKey, generation: 0 \}\)/);
+  assert.match(ui, /currentOwnerRef\.current\.generation === requestGeneration/);
+  assert.match(dashboard, /latestOwner = useRef\(\{key:ownerKey,generation:0\}\)/);
+  assert.match(dashboard, /latestOwner\.current\.generation===requestGeneration/);
+  assert.match(dashboard, /if \(sameOwner\(\)\) setCatalog/);
+});
+
+test('authenticated draft catalog paginates every owner-scoped assessment-year record without silent truncation', () => {
+  const api = read('src/services/accountPaymentFormDrafts.ts');
+  assert.match(api, /const pageSize = 100/);
+  assert.match(api, /const maxPages = 50/);
+  assert.match(api, /\.eq\('owner_uid', actor\.userId\)/);
+  assert.match(api, /\.order\('updated_at', \{ ascending: false \}\)/);
+  assert.match(api, /\.order\('id', \{ ascending: true \}\)/);
+  assert.match(api, /\.range\(page \* pageSize, \(page \+ 1\) \* pageSize - 1\)/);
+  assert.match(api, /await checkActorStillSignedIn\(actor\)/);
+  assert.match(api, /if \(seen\.has\(row\.id\)\) throw new Error/);
+  assert.match(api, /if \(data\.length < pageSize\) return rows/);
+  assert.match(api, /throw new Error\('Saved draft list exceeds the supported retrieval limit/);
+  assert.doesNotMatch(api, /\.limit\(100\)/);
+});

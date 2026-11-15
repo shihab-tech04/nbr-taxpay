@@ -61,14 +61,14 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     onAvailableTins(null);
     if(checkingIdentity)return()=>{cancelled=true;};
     loadBeneficiaries(user?.id??null).then(result=>{
-      if(cancelled)return;
+      if(cancelled||ownerScopeRef.current!==ownerScope)return;
       setLists(result.lists);setPeople(result.people);
       const containingSelection=result.lists.filter(list=>result.people.some(person=>
         person.list_id===list.id&&selectedTins.includes(person.tin))).map(list=>list.id);
       setExpanded(containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[]);
       onAvailableTins(Array.from(new Set(result.people.map(person=>person.tin))));
     }).catch(e=>{
-      if(cancelled)return;
+      if(cancelled||ownerScopeRef.current!==ownerScope)return;
       const detail=e instanceof Error?e.message:'';
       // User-ID preview accounts use capability-scoped browser storage, not
       // a verified Supabase Auth UID. Distinguish an unusable saved capability
@@ -84,7 +84,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
           : tr('Could not load your beneficiary lists. Please try again.',
             'আপনার উপকারভোগীর তালিকা লোড করা যায়নি। আবার চেষ্টা করুন।'));
       onAvailableTins(null);
-    }).finally(()=>{if(!cancelled)setLoading(false);});
+    }).finally(()=>{if(!cancelled&&ownerScopeRef.current===ownerScope)setLoading(false);});
     return()=>{cancelled=true;};
     // The available TIN set is intentionally refreshed on account changes, not on each checkbox click.
     // eslint-disable-next-line react-hooks/exhaustive-deps
