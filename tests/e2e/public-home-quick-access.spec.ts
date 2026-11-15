@@ -952,8 +952,11 @@ test('homepage lookup labels example-only matches and preserves focus in EN/BN a
         await matched.locator('.public-record-suggestions__option').first().click();
         const verification = page.getByRole('dialog', { name: 'Payment status & receipt' });
         await expect(verification).toBeVisible();
-        await expect(verification.getByRole('textbox',
-          { name: 'Challan, token or transaction reference' })).toHaveValue(firstExample);
+        // Selecting a saved example opens its locally permitted receipt directly.
+        // The input is deliberately hidden while its matching receipt is shown.
+        const matchedReceipt = verification.locator('.receipt-view');
+        await expect(matchedReceipt).toBeVisible();
+        await expect(matchedReceipt).toContainText(firstExample);
         await page.goto('/?action=landing&lang=en');
         await section.getByRole('searchbox').focus();
       }
