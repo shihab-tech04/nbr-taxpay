@@ -2,12 +2,12 @@ import React, {useEffect,useState} from 'react';
 import {supabase} from '../../services/supabaseClient';
 import {getStorySessionId} from '../../services/simulatedPaymentStory';
 import {sameAuthenticatedOwner} from '../../services/secureWorkspacePolicy';
-import {validateCorrectionInquiry, type ProposedAttributionField} from '../../services/correctionInquiryValidation';
+import {validateCorrectionInquiry, type ProposedAttributionField, type CorrectionCaseKind} from '../../services/correctionInquiryValidation';
 import {UiButton,UiInput,UiTextarea,UiSelect} from '../ui/Controls';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
 type Row=Readonly<{
- inquiry_id:string; original_reference:string; evidence_state:string; created_at:string;
+ inquiry_id:string; original_reference:string; case_kind:CorrectionCaseKind; evidence_state:string; created_at:string;
  reason:string; requested_outcome:string; change_kind:ProposedAttributionField|null; old_value:string|null; new_value:string|null;
  office_review_state:string|null; office_review_revision:number|null; office_review_updated_at:string|null;
 }>;
@@ -24,6 +24,7 @@ const t={
  title:'Request a review of an original reference',
  intro:'Private, unverified inquiry only. This does not open a financial correction case or change a payment, challan, withholding credit or ledger.',
  ref:'Original payment reference (must match your linked payment history)',
+  caseType:'Request type',caseCorrection:'Correction review',caseUnsolicited:'Report an unsolicited payment',reportReason:'Why was this payment unsolicited?',
  reason:'Reason for requesting a correction review',
  outcome:'What outcome are you requesting?',
  select:'Proposed attribution field (optional)', none:'No attribution change', old:'Original value (user supplied)', newValue:'Requested value (unverified)',
@@ -47,6 +48,7 @@ const t={
  title:'মূল রেফারেন্স পর্যালোচনার অনুরোধ',
  intro:'শুধু ব্যক্তিগত যাচাইবিহীন অনুসন্ধান। এটি আর্থিক সংশোধনী মামলা নয়; অর্থ পরিশোধ, চালান বা লেজার ক্রেডিট পরিবর্তন করে না।',
  ref:'মূল পরিশোধ রেফারেন্স (আপনার সংযুক্ত পেমেন্ট ইতিহাসের সঙ্গে মিলতে হবে)',
+  caseType:'অনুরোধের ধরন',caseCorrection:'সংশোধন পর্যালোচনা',caseUnsolicited:'অনুরোধ ছাড়াই হওয়া পরিশোধের প্রতিবেদন',reportReason:'কেন এই পরিশোধটি অনাকাঙ্ক্ষিত?',
  reason:'সংশোধন পর্যালোচনার কারণ',
  outcome:'কী ফলাফল চান?',
  select:'পরিবর্তনের ক্ষেত্র (ঐচ্ছিক)', none:'পরিশোধের তথ্য পরিবর্তনের অনুরোধ নেই',old:'পূর্বের তথ্য (নিজের দেওয়া)', newValue:'প্রস্তাবিত তথ্য (যাচাই হয়নি)',
@@ -70,6 +72,7 @@ const t={
 
 export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,dashboard=false})=>{
  const labels=t[language];
+ const [caseKind,setCaseKind]=useState<CorrectionCaseKind>('CORRECTION_REVIEW');
  const [originalReference,setOriginalReference]=useState('');
  const [reason,setReason]=useState('');
  const [desiredOutcome,setDesiredOutcome]=useState('');
@@ -88,19 +91,30 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   if(!supabase) throw new Error(labels.fail);
   const {data:who,error:idError}=await supabase.auth.getUser();
   if(idError||!sameAuthenticatedOwner(who.user?.id,authenticatedUserId))throw new Error(labels.auth);
-  let {data,error}=await supabase.from('taxpay_correction_inquiries')
-    .select('inquiry_id,original_reference,evidence_state,created_at,reason,requested_outcome,change_kind,old_value,new_value,office_review_state,office_review_revision,office_review_updated_at')
-    .eq('requester_uid',authenticatedUserId).order('created_at',{ascending:false}).limit(50);
-  if(error && (error.code==='42703'||error.code==='PGRST204') && /office_review_state/i.test(error.message)){
-   const fallback=await supabase.from('taxpay_correction_inquiries')
-    .select('inquiry_id,original_reference,evidence_state,created_at,reason,requested_outcome,change_kind,old_value,new_value')
-    .eq('requester_uid',authenticatedUserId).order('created_at',{ascending:false}).limit(50);
-   if(fallback.error)throw fallback.error;
-   data=(fallback.data??[]).map(row=>({...row,office_review_state:null,office_review_revision:null,office_review_updated_at:null}));
-   error=null;
+  // Request kinds and Office status are added by separate ordered migrations.
+  // Fall back only for absent columns; never swallow other owner/permission failures.
+  const base='inquiry_id,original_reference,evidence_state,created_at,reason,requested_outcome,change_kind,old_value,new_value';
+  const office=',office_review_state,office_review_revision,office_review_updated_at';
+  const projections=[`${base},case_kind${office}`,`${base}${office}`,`${base},case_kind`,base] as const;
+  let inquiries:Row[]|null=null;
+  let missingFieldError:Error|null=null;
+  for(const projection of projections){
+   const {data,error}=await supabase.from('taxpay_correction_inquiries')
+    .select(projection).eq('requester_uid',authenticatedUserId).order('created_at',{ascending:false}).limit(50);
+   if(!error){
+    inquiries=((data??[]) as unknown as Partial<Row>[]).map(row=>({
+     ...row,case_kind:row.case_kind??'CORRECTION_REVIEW',
+     office_review_state:row.office_review_state??null,
+     office_review_revision:row.office_review_revision??null,
+     office_review_updated_at:row.office_review_updated_at??null
+    })) as Row[];
+    break;
+   }
+   if(!['42703','PGRST204'].includes(error.code??'')||
+      !/case_kind|office_review_state|office_review_revision|office_review_updated_at/i.test(error.message??''))throw error;
+   missingFieldError=error;
   }
-  if(error)throw error;
-  const inquiries=(data??[]) as Row[];
+  if(!inquiries)throw missingFieldError??new Error(labels.fail);
   if(!isActive())return false;
   setRows(inquiries);
   if(inquiries.length===0){
@@ -137,7 +151,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
  const submit=async(e:React.FormEvent)=>{
   e.preventDefault();if(!supabase||busy)return;
   const change=changeKind?{field:changeKind,previousValue,proposedValue}:null;
-  const checked=validateCorrectionInquiry({originalReference,reason,desiredOutcome,change});
+  const checked=validateCorrectionInquiry({caseKind,originalReference,reason,desiredOutcome,change});
   if(checked.error){setMessage(checked.error);return;}
   setBusy(true);setMessage('');
   let persisted=false;
@@ -151,6 +165,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
    const {error}=await supabase.from('taxpay_correction_inquiries').insert({
      requester_uid:authenticatedUserId,
      original_reference:originalReference.trim(),
+     ...(caseKind==='UNSOLICITED_PAYMENT_REPORT'?{case_kind:caseKind}:{}),
      reason:reason.trim(),
      requested_outcome:desiredOutcome.trim(),
      ...(change ? {change_kind:change.field,old_value:change.previousValue.trim(),new_value:change.proposedValue.trim()}: {})
@@ -161,7 +176,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
     return;
    }
    persisted=true;
-   setOriginalReference('');setReason('');setDesiredOutcome('');setChangeKind('');setPreviousValue('');setProposedValue('');
+   setCaseKind('CORRECTION_REVIEW');setOriginalReference('');setReason('');setDesiredOutcome('');setChangeKind('');setPreviousValue('');setProposedValue('');
    try{const historyLoaded=await load(()=>true);setLoadError(false);if(!historyLoaded){setMessage(labels.savedHistoryFail);return;}}
    catch{setLoadError(true);setMessage(labels.savedHistoryFail);return;}
    setMessage(labels.saved);
@@ -171,11 +186,17 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
  const matchingRows=rows.filter(r=>!needle || [r.original_reference,r.reason,r.requested_outcome,r.evidence_state,
   r.office_review_state??''].some(value=>value.toLocaleLowerCase().includes(needle)));
  const form=<form onSubmit={submit} className="space-y-4">
+  <label className="block text-sm font-semibold text-slate-800">{labels.caseType}
+   <UiSelect value={caseKind} onChange={e=>setCaseKind(e.target.value as CorrectionCaseKind)} className="mt-2" data-testid="correction-case-type">
+    <option value="CORRECTION_REVIEW">{labels.caseCorrection}</option>
+    <option value="UNSOLICITED_PAYMENT_REPORT">{labels.caseUnsolicited}</option>
+   </UiSelect>
+  </label>
    <label className="block text-sm font-semibold text-slate-800">{labels.ref}
     <UiInput required minLength={6} maxLength={80} value={originalReference} onChange={e=>setOriginalReference(e.target.value)}
      className="mt-2" placeholder="e.g. TPAY-REF-123456" autoComplete="off"/>
    </label>
-   <label className="block text-sm font-semibold text-slate-800">{labels.reason}
+   <label className="block text-sm font-semibold text-slate-800">{caseKind==='UNSOLICITED_PAYMENT_REPORT'?labels.reportReason:labels.reason}
     <UiTextarea required minLength={10} maxLength={1000} rows={3} value={reason} onChange={e=>setReason(e.target.value)} className="mt-2"/>
    </label>
    <label className="block text-sm font-semibold text-slate-800">{labels.outcome}
@@ -235,7 +256,10 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
               <p className="break-all font-semibold text-taxpay-text">{r.original_reference} — {r.evidence_state==='PENDING_EVIDENCE'?labels.state:labels.statusUnavailable}</p>
               <time dateTime={r.created_at} className="text-sm text-taxpay-muted">{r.created_at}</time>
             </div>},
-            {key:'reason',header:language==='bn'?'অনুরোধের কারণ':'Recorded reason',renderCell:r=><p className="line-clamp-2 break-words text-taxpay-text">{r.reason}</p>},
+            {key:'reason',header:language==='bn'?'অনুরোধের কারণ':'Recorded reason',renderCell:r=><div>
+              <p className="text-sm font-semibold text-taxpay-muted">{r.case_kind==='UNSOLICITED_PAYMENT_REPORT'?labels.caseUnsolicited:labels.caseCorrection}</p>
+              <p className="line-clamp-2 break-words text-taxpay-text">{r.reason}</p>
+            </div>},
             {key:'status',header:labels.officeReview,renderCell:r=><div aria-live="polite" aria-atomic="true">
               <p className="font-semibold text-taxpay-text">{labels.officeReviewStates[r.office_review_state as keyof typeof labels.officeReviewStates]??labels.statusUnavailable}</p>
               {r.office_review_revision!==null&&<p className="text-sm text-taxpay-muted">{labels.officeReviewRevision}: {r.office_review_revision}</p>}
@@ -244,6 +268,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
             {key:'action',header:language==='bn'?'বিস্তারিত':'Details',renderCell:r=><details className="min-w-0 rounded-lg border border-taxpay-border p-3">
               <summary className="min-h-11 cursor-pointer font-semibold text-taxpay-primary">{labels.details}</summary>
               <div className="mt-2 space-y-2 break-words text-sm text-taxpay-text">
+                <p>{labels.caseType}: {r.case_kind==='UNSOLICITED_PAYMENT_REPORT'?labels.caseUnsolicited:labels.caseCorrection}</p>
                 <p>{labels.reasonLabel}: {r.reason}</p>
                 <p>{labels.outcomeLabel}: {r.requested_outcome}</p>
                 {r.change_kind&&<div className="space-y-1 border-t border-taxpay-border pt-2">
