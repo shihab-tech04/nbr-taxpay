@@ -133,8 +133,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   const [noticeSnapshot, setNoticeSnapshot] = useState<{
     ownerUid: string; drafts: DraftNotice[]; reviews: ReviewNotice[];
   } | null>(null);
-  const notices = noticeSnapshot?.ownerUid === user?.id ? noticeSnapshot.drafts : [];
-  const reviewNotices = noticeSnapshot?.ownerUid === user?.id ? noticeSnapshot.reviews : [];
+  const notices = noticeSnapshot && noticeSnapshot.ownerUid === user?.id ? noticeSnapshot.drafts : [];
+  const reviewNotices = noticeSnapshot && noticeSnapshot.ownerUid === user?.id ? noticeSnapshot.reviews : [];
   const currentUidRef = useRef(user?.id ?? null);
   currentUidRef.current = user?.id ?? null;
   const isCurrentUid = (uid: string) => currentUidRef.current === uid;
