@@ -39,26 +39,27 @@ test('User1 bento retains the approved blue surface and keyboard-operable servic
   await expect(page.locator('.taxpay-bento-hero__actions').getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
 });
 
-test('User1 overview preserves narrow screens and expands fluidly at 1400px and wider', async ({page},info) => {
+test('User1 overview uses the available width with a 1300px cap above 1400px', async ({page},info) => {
   test.skip(info.project.name !== 'mobile-375','One worker measures the full breakpoint matrix');
   test.setTimeout(120000);
-  for (const width of [320,360,375,390,600,768,900,1024,1280,1399,1400,1440,1600,1920]) {
+  for (const width of [320,360,375,390,600,768,900,901,1024,1280,1399,1400,1401,1440,1600,1920,2560]) {
     await page.setViewportSize({width,height:850});
     await page.goto(url('taxpayer_home'));
     await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
     await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
     const dims = await page.evaluate(() => {
       const el = document.querySelector('[data-testid="user1-synthetic-workspace"]') as HTMLElement;
+      const main = document.querySelector('#main-content') as HTMLElement;
+      const styles = getComputedStyle(main);
       return {overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        width: el.getBoundingClientRect().width};
+        width: el.getBoundingClientRect().width,
+        available: main.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight)};
     });
     expect(dims.overflow,'horizontal overflow at '+width).toBeLessThanOrEqual(2);
     expect(dims.width,'too wide at '+width).toBeLessThanOrEqual(width);
-    if (width>=1400) {
-      expect(dims.width,'large-desktop content did not expand at '+width).toBeGreaterThan(width * .7);
-      expect(dims.width,'large-desktop content exceeds the viewport at '+width).toBeLessThan(width);
-    } else if (width >= 1280) {
-      expect(dims.width,'pre-1400px layout should retain its approved width').toBeLessThanOrEqual(902);
+    if (width >= 901) {
+      const expected = Math.min(dims.available, width > 1400 ? 1300 : Number.POSITIVE_INFINITY);
+      expect(Math.abs(dims.width - expected),'content did not use the intended width at '+width).toBeLessThanOrEqual(2);
     }
     if (width<=390) {
       await expect(page.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
@@ -70,7 +71,7 @@ test('User1 overview preserves narrow screens and expands fluidly at 1400px and 
 test('All taxpayer inner pages preserve responsive access without a full-width sample warning', async ({page},info) => {
   test.skip(info.project.name !== 'desktop-1280','Representative route and viewport matrix');
   test.setTimeout(120000);
-  for (const width of [375,768,1280,1600]) {
+  for (const width of [375,768,1280,1600,1920]) {
     await page.setViewportSize({width,height:850});
     for (const route of ['taxpayer_home','dashboard','history','ledger','journey','certificates','corrections','account_profile','account_notifications','account_settings']) {
       await page.goto(url(route));
@@ -82,25 +83,24 @@ test('All taxpayer inner pages preserve responsive access without a full-width s
       } else if(['account_profile','account_settings','journey'].includes(route))
         await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveCount(0);
       else await expect(page.getByRole('combobox',{name:'Assessment year'})).toBeVisible();
-      const dims=await page.evaluate(() => ({overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
-        content:(document.querySelector('[data-testid="user1-synthetic-workspace"]') as HTMLElement).getBoundingClientRect().width}));
+      const dims=await page.evaluate(() => {
+        const main = document.querySelector('#main-content') as HTMLElement;
+        const style = getComputedStyle(main);
+        return {overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+          content:(document.querySelector('[data-testid="user1-synthetic-workspace"]') as HTMLElement).getBoundingClientRect().width,
+          available:main.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)};
+      });
       expect(dims.overflow,route+' overflow at '+width).toBeLessThanOrEqual(2);
-      if(width>=1400) {
-        expect(dims.content,route+' content did not expand at '+width).toBeGreaterThan(width * .7);
-      } else if(width===1280) {
-        // Record registers now use the available workspace like Office Management;
-        // non-register pages retain the existing centered reading column.
-        if(['history','ledger','certificates','corrections'].includes(route))
-          expect(dims.content,route+' should use available laptop width').toBeGreaterThan(940);
-        else
-          expect(dims.content,route+' should preserve centered reading width').toBeLessThanOrEqual(902);
+      if (width >= 901) {
+        const expected = Math.min(dims.available, width > 1400 ? 1300 : Number.POSITIVE_INFINITY);
+        expect(Math.abs(dims.content - expected),route+' responsive width at '+width).toBeLessThanOrEqual(2);
       }
       await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
     }
   }
 });
 
-test('both signed-in taxpayer profiles use available main width without horizontal overflow', async ({page},info) => {
+test('both signed-in taxpayer profiles use the available width capped at 1300px', async ({page},info) => {
   test.skip(info.project.name !== 'desktop-1280', 'One worker checks both signed-in profiles and breakpoints');
   test.setTimeout(120000);
   for (const account of ['user1','user2']) {
@@ -109,24 +109,42 @@ test('both signed-in taxpayer profiles use available main width without horizont
     await page.getByLabel('Password',{exact:true}).fill(account);
     await page.getByRole('button',{name:'Sign In',exact:true}).click();
     await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
-    for (const viewport of [1280,1399,1400,1600,1920,2560]) {
+    for (const viewport of [1280,1399,1400,1401,1440,1600,1920,2560]) {
       await page.setViewportSize({width:viewport,height:900});
       const size = await page.evaluate(() => {
         const main = document.querySelector('#main-content') as HTMLElement;
         const content = main.firstElementChild as HTMLElement;
+        const style = getComputedStyle(main);
         return {
-          main: main.getBoundingClientRect().width,
+          available: main.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
           content: content.getBoundingClientRect().width,
           overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         };
       });
       expect(size.overflow,`${account} overflow at ${viewport}px`).toBeLessThanOrEqual(2);
-      if (viewport < 1400) {
-        expect(size.content,`${account} unexpectedly changed at ${viewport}px`).toBeLessThanOrEqual(1152);
-      } else {
-        expect(size.content,`${account} does not fill its flexible workspace at ${viewport}px`).toBeGreaterThan(size.main * .82);
-        expect(size.content,`${account} exceeds main at ${viewport}px`).toBeLessThanOrEqual(size.main);
-      }
+      const expected = Math.min(size.available, viewport > 1400 ? 1300 : Number.POSITIVE_INFINITY);
+      expect(Math.abs(size.content - expected),`${account} responsive width at ${viewport}px`).toBeLessThanOrEqual(2);
+      expect(size.content,`${account} exceeds the 1300px cap at ${viewport}px`).toBeLessThanOrEqual(1300);
+    }
+  }
+});
+
+test('Phase 8 keeps English and Bengali signed-in navigation without overflow', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'One worker checks both languages');
+  test.setTimeout(120000);
+  for (const language of ['en', 'bn']) {
+    for (const width of [375, 1280, 1400, 1920]) {
+      await page.setViewportSize({width, height:900});
+      await page.goto(url('taxpayer_home') + '&lang=' + language);
+      await expect(page.locator('.taxpay-citizen-shell.taxpay-authenticated-content')).toHaveAttribute('lang',language);
+      await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+      const results = await page.evaluate(() => ({
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        mobileDock: getComputedStyle(document.querySelector('.citizen-bottom-nav') as HTMLElement).display
+      }));
+      expect(results.overflow,language+' overflow at '+width).toBeLessThanOrEqual(2);
+      if (width <= 900) expect(results.mobileDock,language+' mobile dock').not.toBe('none');
+      if (width > 1400) await expect(page.locator('.taxpayer-reference-rail')).toBeVisible();
     }
   }
 });
