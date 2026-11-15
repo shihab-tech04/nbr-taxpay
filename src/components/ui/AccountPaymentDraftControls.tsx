@@ -41,16 +41,17 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
   // A parent payment form can remain mounted while a demo session or Auth
   // account changes. Its old selected draft must never be updated or deleted
   // as though it belonged to the new account.
-  const selectedOwnerRef = useRef(ownerKey);
-  const ownedSelectedDraft = selectedOwnerRef.current === ownerKey ? selectedDraft : null;
+  const selectionScope = ownerKey + ':' + service;
+  const selectedOwnerRef = useRef(selectionScope);
+  const ownedSelectedDraft = selectedOwnerRef.current === selectionScope ? selectedDraft : null;
   useEffect(() => {
-    if (selectedOwnerRef.current === ownerKey) return;
-    selectedOwnerRef.current = ownerKey;
+    if (selectedOwnerRef.current === selectionScope) return;
+    selectedOwnerRef.current = selectionScope;
     onSelectedDraft(null);
-  }, [ownerKey, onSelectedDraft]);
+  }, [selectionScope, onSelectedDraft]);
   // An old save/resume/delete promise may resolve after this form changes
   // accounts. Check the latest render's owner before applying its result.
-  const requestOwnerKey = ownerKey + ':' + service;
+  const requestOwnerKey = selectionScope;
   const currentOwnerRef = useRef(requestOwnerKey);
   const mountedRef = useRef(true);
   currentOwnerRef.current = requestOwnerKey;
