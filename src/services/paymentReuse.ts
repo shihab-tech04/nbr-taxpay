@@ -6,6 +6,8 @@ import { PAY_AGAIN_YEAR_OPTIONS } from './payAgain';
 export type PaymentReuse = {
   ownerUid: string;
   sourcePaymentId: string;
+  /** Read-only original SQL allocation IDs; never new allocation IDs or payment authority. */
+  sourceAllocationIds?: readonly string[];
   service: PaymentCategory;
   formPayload: Record<string, unknown>;
 };
@@ -151,8 +153,8 @@ export function reuseRecordedPayment(
   // Explicit allocation data takes precedence over legacy receipt summaries.
   const returnWithAllocations = service === 'TAX_WITH_RETURN' &&
     sorted.some(receipt => (receipt.allocationItems?.length ?? 0) > 0);
-  const hasAllocationSnapshot = service === 'OTHER_TAX_PAYMENT' || returnWithAllocations;
-  const isAllocationPayment = service === 'OTHER_TAX_PAYMENT';
+  const hasAllocationSnapshot = service === 'OTHER_TAX_PAYMENT' || returnWithAllocations ||
+    sorted.some(receipt => (receipt.allocationItems?.length ?? 0) > 0);
   const allocations: SourceAllocation[] = [];
   for (const receipt of sorted) {
     if (hasAllocationSnapshot) {
@@ -186,6 +188,11 @@ export function reuseRecordedPayment(
   }
   if (!allocations.length || allocations.length > MAX_COMBINED_ALLOCATIONS)
     throw Error('The original payment exceeds the supported allocation limit.');
+  // A saved non-Return transaction may contain multiple independently dated,
+  // headed or recipient-owned allocations even if its original category was
+  // a single-head service. Use the existing combined editor; never flatten it.
+  const isAllocationPayment = service === 'OTHER_TAX_PAYMENT' ||
+    (service !== 'TAX_WITH_RETURN' && allocations.length > 1);
   if (service === 'TAX_WITH_RETURN' && allocations.length !== 1)
     throw Error('Tax with Return requires exactly one taxpayer and one assessment year.');
   const exactAllocations = allocations.map(item => item.tin + ':' + item.headId + ':' + item.year);
@@ -227,8 +234,17 @@ export function reuseRecordedPayment(
     throw Error('Mixed assessment years require the allocation payment service.');
   if (!isAllocationPayment && allocations.some(a => a.tin !== allocations[0].tin))
     throw Error('Mixed taxpayers require the allocation payment service.');
-  // A copied source record is retained only as informational context, not a receipt.
-  return {ownerUid,sourcePaymentId,service,formPayload:payload};
+  // Old allocation identities remain historical provenance, not IDs for the
+  // new payment. The new composer generates independent IDs on submission.
+  const historicalIds=sorted.flatMap(receipt => (receipt.allocationItems ?? [])
+    .map(item => item.allocationId).filter((id):id is string=>typeof id==='string'&&!!id.trim()));
+  const sourceAllocationIds=historicalIds.length===allocations.length &&
+    new Set(historicalIds).size===historicalIds.length ? historicalIds : undefined;
+  // The source parent stays immutable. Only a multi-allocation NON-Return copy
+  // changes editor service to the approved general combined-payment composer.
+  return {ownerUid,sourcePaymentId,
+    service:isAllocationPayment?'OTHER_TAX_PAYMENT':service,
+    ...(sourceAllocationIds?{sourceAllocationIds}:{}),formPayload:payload};
 }
 
 
