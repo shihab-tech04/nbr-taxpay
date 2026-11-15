@@ -712,8 +712,12 @@
   font-size:clamp(22px,2.1vw,30px);
   line-height:1.22;font-weight:650;letter-spacing:-.012em;
 }
-.taxpay-overview-feature__source{
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature .taxpay-overview-feature__source{
   margin:0;color:#e3eefb;font-size:14px;line-height:1.5;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature .taxpay-overview-feature__eyebrow,
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature .taxpay-overview-feature__amount>p{
+  color:#e3eefb;
 }
 .taxpay-overview-feature__main{
   display:grid;
