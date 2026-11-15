@@ -1505,7 +1505,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               {ownAccountTax && (initialReuse && otherBatch
                 ? renderOtherTaxTaxpayerList(false)
                 : <SignedInTaxpayerCard profile={ownProfile} language={language} id="signed-in-account-taxpayer-card" />)}
-              {ownAccountTax && otherBatch && <details className="payment-identity__optional-beneficiaries rounded-lg border border-taxpay-border" defaultOpen={additionalTaxpayers.length > 0}>
+              {ownAccountTax && otherBatch && <details className="payment-identity__optional-beneficiaries rounded-lg border border-taxpay-border" defaultOpen={Boolean(initialReuse) || additionalTaxpayers.length > 0}>
                 <summary className="min-h-11 cursor-pointer px-3 py-3 text-sm font-semibold text-taxpay-primary">{language === 'bn' ? 'আরও করদাতা যোগ করুন (ঐচ্ছিক)' : 'Add other taxpayers (optional)'}</summary>
                 <div className="px-3 pb-3"><SavedBeneficiaryPicker key={beneficiaryRefreshKey} language={language} allowMultiple
                 selectedTins={additionalTaxpayers.map(person => person.tin).filter(Boolean)}
