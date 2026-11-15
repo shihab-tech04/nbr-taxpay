@@ -19,7 +19,9 @@ export async function verifyWs3BrowserOrigin({
     'Current Work A source and disposable local Supabase configuration required');
   assert.ok(['localhost','127.0.0.1'].includes(new URL(localUrl).hostname),
     'Never direct browser-origin acceptance to a hosted Taxpayer API');
-  const port='3000',base='http://127.0.0.1:'+port; // Approved local Edge origin
+  // Keep the citizen UI distinct from the Office drawer Vite process on 3000.
+  // 4175 is already in the Taxpayer Edge's approved local Origin allowlist.
+  const port='4175',base='http://127.0.0.1:'+port;
   const child=spawn('npm',['run','dev','--','--host','127.0.0.1','--port',port,'--strictPort'],{
     cwd:workA,
     env:{...process.env,VITE_SUPABASE_URL:localUrl,
