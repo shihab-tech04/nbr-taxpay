@@ -26,7 +26,7 @@ The UI filters by all seven providers and Sohojkor separately, preserves Dhara a
 ## Release / data-boundary acceptance
 
 1. WS3 confirms authenticated owner–taxpayer identity matching, source mapping, immutable/duplicate behavior, SQL RLS, independent Office readback, and real provider/official-credit provenance on a **disposable** environment.
-2. WS5 integrates the migration with the authoritative new-main / original-legacy strategy, without silently switching Auth, app or database identities. Apply only through the approved release process; do not run financial fixture writes on production.
+2. WS5 must keep the original production Taxpayer project (`eyqhoavnitkrajvyqvxn`) authoritative until a **separately authorized and fully recovered** cutover. The V2 clone (`gmuhitmaynfhipcvbvkh`) is not production merely because it is healthy. Office (`ihbtabrvmyiwikqqbhrf`) remains a distinct authorization/database boundary. Apply the migration only to the approved project and only after hosted SQL/Auth/Storage recovery proof, review and the protected release process; do not write financial fixtures to production.
 3. Test both source-only and independently credited records, multi-line/AY, EN/BN, mobile/desktop, owner A/B separation, retry, and off-platform payments.
 4. Provider credentials/API contracts and issuer-approved payment/credit data are **not** supplied by the repository. Until they exist, real external-source ingestion and cross-application official tax-credit verification remain **UNVERIFIED**; no mock entries or fake confirmation may stand in for them.
 
