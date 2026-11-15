@@ -107,8 +107,9 @@ export { user1DemoRoutes } from '../../config/user1DemoRoutes';
 export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;onResumePaymentDraft?: (draft:PaymentFormDraft)=>void}>=({route,activityTabs=false,onResumePaymentDraft})=>{
   const {navigate,language,setLanguage,routeParams,openPaymentServiceChoice,previewAccount,startPaymentReuse}=useTaxState();
   const bn=language==='bn';
-  // These historical fictional scenarios are available only on localhost and
-  // only with an explicit QA flag. Production must never fall back to them.
+  // The legacy localhost QA flag retains the test-only source comparison.
+  // Production preview requires a current fictional profile session and never
+  // substitutes these records for a real authenticated taxpayer account.
   const localQaScenario=['localhost','127.0.0.1'].includes(window.location.hostname)&&
     new URLSearchParams(window.location.search).get('qaScenario')==='1';
   // A server-issued preview session selects fictional user1 Activity records only.
@@ -182,8 +183,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     ?tr('My tax','নিজের কর'):paymentTagGroupLabels[group][language];
   const [year,setYear]=useState<string>(()=>{
     const initial=new URLSearchParams(window.location.search).get('scenarioYear');
-    // Preserve explicit year navigation and the historical localhost QA fixture,
-    // but open the real public overview on the current assessment year.
+    // Preserve explicit year navigation. Preview Activity and Overview both
+    // open the historical fictional year; other views keep their current year.
     return typeof initial==='string'&&/^20\d{2}-20\d{2}$/.test(initial)
       ? initial : ((route==='taxpayer_home'||route==='dashboard')&&!localQaScenario&&!authorizedPreviewScenario?'2026-2027':'2025-2026');
   });
