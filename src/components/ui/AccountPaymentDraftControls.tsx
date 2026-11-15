@@ -6,7 +6,7 @@ import { useAccountIdentity } from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
 import {
   deletePaymentFormDraft, listPaymentFormDrafts, savePaymentFormDraft, PaymentDraftConflictError,
-  type PaymentFormDraft, type PaymentDraftActor, type PaymentDraftService,
+  type PaymentFormDraft, type PaymentDraftActor, type PaymentDraftService, paymentDraftOwnerScope,
 } from '../../services/accountPaymentFormDrafts';
 
 type Props = {
@@ -37,7 +37,7 @@ export const AccountPaymentDraftControls: React.FC<Props> = ({
     ? { kind: 'authenticated', userId: realUser.id }
     : previewAccount ? { kind: 'preview', profileId: previewAccount.id }
     : allowGuest ? { kind: 'guest' } : null;
-  const ownerKey = actor ? actor.kind + ':' + (actor.kind === 'preview' ? actor.profileId : actor.kind === 'authenticated' ? actor.userId : 'session') : '';
+  const ownerKey = paymentDraftOwnerScope(actor);
   // An old save/resume/delete promise may resolve after this form changes
   // accounts. Check the latest render's owner before applying its result.
   const requestOwnerKey = ownerKey + ':' + service;
