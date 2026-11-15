@@ -176,9 +176,9 @@ export function TaxpayerTinLookup({
           style={{position:suggestionLayout.inDialog?'absolute':'fixed',top:suggestionLayout.top,
             left:suggestionLayout.left,width:suggestionLayout.width,right:'auto',bottom:'auto',
             maxHeight:suggestionLayout.maxHeight,zIndex:9999}}
-          aria-label={bn ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'}>
+          aria-label={bn ? 'নমুনা টিআইএন — সরকারি যাচাইকৃত নয়' : 'Sample TIN suggestions — not NBR verified'}>
           <p className="taxpayer-tin-lookup__suggestions-heading" role="presentation">
-            {bn ? 'প্রস্তাবিত টিআইএন নম্বর' : 'Suggested TIN numbers'}
+            {bn ? 'নমুনা টিআইএন নম্বর — NBR যাচাইকৃত নয়' : 'Sample TIN numbers — not verified NBR records'}
           </p>
           {options.map(option => <button key={option} type="button" role="option"
             aria-selected={tin === option} onMouseDown={event => event.preventDefault()}
