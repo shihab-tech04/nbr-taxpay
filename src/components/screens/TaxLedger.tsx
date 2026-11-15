@@ -136,7 +136,7 @@ export const TaxLedger:React.FC=()=>{
       // CSV quoting alone cannot neutralize formulas in external provider references.
       const raw=String(value??'');
       const first=raw.trimStart().charAt(0);
-      const unsafe=['=','+','-','@'].includes(first)||[9,10,13].includes(raw.charCodeAt(0));
+      const unsafe=typeof value==='string' && (['=','+','-','@'].includes(first)||[9,10,13].includes(raw.charCodeAt(0)));
       const safe=unsafe?"'"+raw:raw;
       return '"'+safe.replaceAll('"','""')+'"';
     };
