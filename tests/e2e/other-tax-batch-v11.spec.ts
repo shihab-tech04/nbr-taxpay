@@ -10,10 +10,10 @@ const getFlow = async (page: import('@playwright/test').Page) => {
   return dialog;
 };
 
-async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en') {
+async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en', withoutSaved=false) {
   let sessionLanguage: 'en' | 'bn' = 'en';
   const list={id:'00000000-0000-4000-8000-000000000001',name:'Family',created_at:'2026-01-01T00:00:00Z'};
-  const people=[
+  const people=withoutSaved?[]:[
     {id:'00000000-0000-4000-8000-000000000002',list_id:list.id,tin:'222222222222',display_name:'Saved Taxpayer Two',tag:'friends_family',relationship:'father',created_at:list.created_at,updated_at:list.created_at},
     {id:'00000000-0000-4000-8000-000000000003',list_id:list.id,tin:'333333333333',display_name:'Saved Taxpayer Three',tag:'clients',relationship:null,created_at:list.created_at,updated_at:list.created_at},
   ];
@@ -119,6 +119,27 @@ test('M03: unmatched TIN cannot be confirmed, and an edited confirmation require
   await expect(first.getByTestId('searched-taxpayer-card')).toContainText('User 2');
   await first.getByRole('button',{name:'Add taxpayer'}).click();
   await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('222222222222');
+});
+
+test('M03 signed-in one-time recipient works with empty saved lists and no silent address-book write',async({page})=>{
+  const writes:string[]=[];
+  const {dialog}=await mockSignedInOtherTax(page,writes,'en',true);
+  const picker=dialog.getByTestId('saved-beneficiary-picker');
+  await expect(picker).toContainText('All lists are empty');
+  await picker.getByTestId('one-time-tin-fallback-open').click();
+  const fallback=picker.getByTestId('one-time-tin-fallback');
+  await fallback.locator('#payment-fallback-tin').fill('111111111111');
+  await fallback.getByRole('button',{name:'Search TIN'}).click();
+  await expect(fallback.locator('#payment-fallback-name')).toHaveValue('User 1');
+  await fallback.getByRole('button',{name:'Confirm this taxpayer'}).click();
+  await expect(picker.getByTestId('one-time-tin-selection')).toContainText('111111111111');
+  await expect(dialog.getByTestId('one-time-taxpayer-entry')).toHaveCount(0);
+  const advance=dialog.getByRole('button',{name:'Continue to purpose & amount'});
+  await expect(advance).toBeEnabled();
+  await advance.click();
+  await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
+  await expect(dialog.getByTestId('grouped-taxpayer-calculation')).toContainText('111111111111');
+  expect(writes).toEqual([]);
 });
 
 test('Step 1 primary action enables only after all required payment details are valid', async ({ page }) => {
