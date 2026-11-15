@@ -1,6 +1,7 @@
 /** Read-only Phase 4 payment parity gate; no credentials, DB writes or inferred tax credit. */
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
+import {reconcileThreeWay} from './phase4-threeway.mjs';
 import {pathToFileURL} from 'node:url';
 const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const txt=x=>typeof x==='string'&&x.trim()?x.trim():null;
@@ -94,7 +95,6 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
     // V2 is the prospective primary; original is fallback only for records
     // that were not cloned. Identical cloned parents are deduplicated safely.
     if(v2){
-      const {reconcileThreeWay}=await import('./phase4-threeway.mjs');
       const result=reconcileThreeWay(originalRows,load(v2),officeRows);
       report.v2=result.v2;
       report.combined=result.combined;
