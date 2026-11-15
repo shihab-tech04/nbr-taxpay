@@ -22,7 +22,11 @@ const validYear = (value: string) => /^\d{4}-\d{2}$/.test(value);
 const money = (minor: number) => `${Math.floor(minor / 100)}.${String(minor % 100).padStart(2, '0')}`;
 const checkedMinor = (amount: number) => {
   const minor = Math.round(amount * 100);
-  if (!Number.isSafeInteger(minor) || minor <= 0) throw Error('Invalid historical payment amount.');
+  // SQL allocation and parent amounts are in exact minor units. Refuse
+  // historical fractional cents rather than silently rounding the source.
+  if (!Number.isFinite(amount) || !Number.isSafeInteger(minor) || minor <= 0 ||
+      Math.abs(amount * 100 - minor) > 0.000001)
+    throw Error('Invalid historical payment amount.');
   return minor;
 };
 const copiedYear = (year: string) => {
