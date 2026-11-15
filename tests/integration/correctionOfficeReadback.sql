@@ -451,19 +451,23 @@ BEGIN
     array_agg(h.revision ORDER BY h.occurred_at,h.revision,h.event_id),
     bool_or(h.event_kind='INQUIRY_SUBMITTED' AND h.actor_role='TAXPAYER'
       AND h.source_system='TAXPAY_SQL' AND h.next_state='PENDING_OFFICER'
-      AND h.reason='Synthetic evidence-pending review request'),
+      AND h.reason='Synthetic evidence-pending review request'
+       AND h.actor_uid='80000000-0000-4000-8000-000000000001'::uuid),
     bool_or(h.action_code='MAKER_ACKNOWLEDGE' AND h.actor_role='MAKER'
       AND h.source_system='OFFICE_SQL' AND h.previous_state='PENDING_OFFICER'
       AND h.next_state='MAKER_ACKNOWLEDGED'
-      AND h.reason='Synthetic maker acknowledgment for SQL contract test'),
+      AND h.reason='Synthetic maker acknowledgment for SQL contract test'
+       AND h.actor_uid='80000000-0000-4000-8000-000000000021'::uuid),
     bool_or(h.action_code='REVIEWER_VERIFY' AND h.actor_role='REVIEWER'
       AND h.source_system='OFFICE_SQL' AND h.previous_state='MAKER_ACKNOWLEDGED'
       AND h.next_state='REVIEWER_VERIFIED'
-      AND h.reason='Synthetic reviewer verification for SQL contract test'),
+      AND h.reason='Synthetic reviewer verification for SQL contract test'
+       AND h.actor_uid='80000000-0000-4000-8000-000000000022'::uuid),
     bool_or(h.action_code='APPROVER_CLOSE' AND h.actor_role='APPROVER'
       AND h.source_system='OFFICE_SQL' AND h.previous_state='REVIEWER_VERIFIED'
       AND h.next_state='APPROVER_CLOSED'
-      AND h.reason='Synthetic approver closure for SQL contract test'),
+      AND h.reason='Synthetic approver closure for SQL contract test'
+       AND h.actor_uid='80000000-0000-4000-8000-000000000023'::uuid),
     bool_and(h.occurred_at IS NOT NULL)
   INTO v_count,v_order,v_revisions,v_initial,v_maker,v_reviewer,v_approver,v_timestamps
   FROM public.taxpay_correction_my_history(50) h
@@ -480,7 +484,7 @@ BEGIN
      OR v_initial IS DISTINCT FROM true OR v_maker IS DISTINCT FROM true
      OR v_reviewer IS DISTINCT FROM true OR v_approver IS DISTINCT FROM true
      OR v_timestamps IS DISTINCT FROM true THEN
-    RAISE EXCEPTION 'Owner correction history lost order, actor, source, state, reason or timestamp';
+    RAISE EXCEPTION 'Owner correction history lost order, exact actor UID, source, state, reason or timestamp';
   END IF;
 END;
 $owner_correction_history$;
