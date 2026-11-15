@@ -11,11 +11,10 @@ import { formatCurrency } from '../../services/numberFormat';
 import { useTaxState } from '../../services/taxState';
 import { MASTER_PAYMENT_HEADS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { downloadDisplayedCertificate } from '../../services/receiptDocumentExport';
-import { validCertificateTransactionId } from '../../services/transactionId';
 import { groupReceiptAllocations } from '../../services/receiptAllocationGroups';
 import { TaxPayModal, TaxPayModalFooterTarget } from '../ui/TaxPayModal';
 import { PaymentCertificateDocument } from './PaymentCertificateDocument';
-import { buildPaymentCertificateModel } from '../../services/paymentCertificateModel';
+import { canViewPaymentCertificate } from '../../services/paymentCertificateModel';
 
 interface ReceiptViewProps {
   receipt: ChallanReceipt;
@@ -30,10 +29,7 @@ interface ReceiptViewProps {
 export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment, certificate = false }) => {
   const { language, navigate } = useTaxState();
   const [showCertificate, setShowCertificate] = useState(false);
-  const canViewCertificate = validCertificateTransactionId(receipt.paymentTransactionId) &&
-    Boolean(receipt.completedAt) &&
-    (receipt.treasuryStatus === 'GATEWAY_SUCCESS' || receipt.treasuryStatus === 'TREASURY_SCROLLED') &&
-    buildPaymentCertificateModel(receipt) !== null;
+  const canViewCertificate = canViewPaymentCertificate(receipt);
   const isCertificate = certificate || (canViewCertificate && showCertificate);
   const paperRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
