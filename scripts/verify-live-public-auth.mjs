@@ -77,16 +77,17 @@ try {
         await expect(bento.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
         await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
         await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
-        // Account-only production Overview: no fictional fallback and no
-        // customer-facing test-data source toggle.
-        await expect(chart).toHaveAttribute('data-chart-source','recorded');
+        // This is a capability-backed *fictional user1 preview*, not a
+        // Supabase Auth account. The exact Activity records must also appear
+        // in Overview, without a customer-facing data-source selector.
+        await expect(chart).toHaveAttribute('data-chart-source','example');
         await expect(chart.getByTestId('dashboard-chart-source')).toHaveCount(0);
-        await expect(bento.getByTestId('dashboard-source-indicator'))
-          .not.toContainText('Example activity');
-        await expect(chart).not.toContainText('Example payer spending');
-        // Itemized charts are displayed only when actual account allocations
-        // are available. Otherwise, the compact empty/error state must retain
-        // the real payment-history journey without suggesting sample totals.
+        await expect(bento.getByTestId('dashboard-source-indicator')).toContainText('simulated');
+        await expect(chart).toContainText('Simulated Activity preview');
+        await expect(bento.locator('.taxpay-summary-metric--completed strong')).toHaveText('5');
+        await expect(bento.locator('.taxpay-summary-metric--requests strong')).toHaveText('2');
+        await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
+        await expect(bento.getByTestId('dashboard-correction-request-list').getByRole('listitem')).toHaveCount(2);
         const services=chart.getByTestId('dashboard-service-breakdown');
         if(await services.count()){
           const selection=services.locator('[data-service]').first();
@@ -100,9 +101,7 @@ try {
             await expect(spending.getByTestId('dashboard-selected-tag')).toBeVisible();
           }
         }else{
-          await expect(chart).toContainText(
-            /No itemized account payments|Payment records could not be loaded/);
-          await expect(chart.getByRole('button',{name:'View payment history'})).toBeVisible();
+          throw new Error('Fictional preview breakdown unexpectedly contains no service rows');
         }
         await page.screenshot({path:'test-results/live-dashboard-category-breakdown-'+name+'.png',fullPage:true});
       }
