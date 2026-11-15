@@ -919,10 +919,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(firstInvalid ? `${copy.positiveAmount} ${firstInvalid.economicCode} — ${language === 'bn' ? firstInvalid.nameBn : firstInvalid.nameEn}` : (language === 'bn' ? 'মোট পরিমাণ অনেক বেশি।' : 'The combined payment amount is too large.'), 'taxAmount', firstInvalid?.id);
       return;
     }
-    if (!storyAmountSupported) {
+    // A positive over-limit amount can be inspected in Review but cannot be paid.
+    // The review panel announces the maximum; checkout remains disabled.
+    // Zero, malformed and missing amounts never advance.
+    if (!storyAmountSupported && !(storyAmountMinor !== null && storyAmountMinor > MAX_STORY_AMOUNT_MINOR)) {
       setValidationError(language === 'bn'
-        ? 'পেমেন্টের সব খাতের পরিমাণ ও মোট টাকার সীমা যাচাই করুন।'
-        : (storyAmountMinor !== null && storyAmountMinor > MAX_STORY_AMOUNT_MINOR ? 'The maximum supported total has been exceeded.' : 'Review all payment amounts and the supported total before continuing.'), 'taxAmount');
+        ? 'প্রতিটি নির্বাচিত খাতে শূন্যের বেশি পরিমাণ লিখুন।'
+        : 'Enter an amount greater than zero for each selected payment head.', 'taxAmount');
       return;
     }
     clearValidationError();
