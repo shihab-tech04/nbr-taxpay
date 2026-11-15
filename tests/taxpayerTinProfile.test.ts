@@ -88,3 +88,16 @@ test('profile and e-TIN certificate fields match the canonical UI/export field m
   assert.equal(sample.registeredAddress,sample.currentAddress,
     'identical sample address values still represent two distinct certificate fields');
 });
+
+test('M02 profile refuses foreign preview sessions and missing source records without sample fallback',async()=>{
+  const {readFileSync}=await import('node:fs');
+  const screen=readFileSync('src/components/screens/User1TaxpayerProfile.tsx','utf8');
+  assert.match(screen,/if\(session\?\.profileId!=='user1'\)/);
+  assert.match(screen,/const record=session\?\.profileId==='user1'&&recordState\.status==='ready'/);
+  assert.match(screen,/record\?user1FictionalTinValue\(field,language,record\):'—'/);
+  assert.doesNotMatch(screen,/record\?\?initialReference/);
+  assert.doesNotMatch(screen,/record:initialReference/);
+  assert.match(screen,/recordState\.status!=='ready'\|\|!record/);
+  assert.match(screen,/role="alert".*Taxpayer profile is not available for this account/);
+  assert.match(screen,/if\(!record\)throw Error\('Profile SQL unavailable'\)/);
+});
