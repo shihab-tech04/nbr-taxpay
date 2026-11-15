@@ -28,6 +28,24 @@ test('copies original mixed own/other/head/year allocations without altering pai
  assert.equal(draft.formPayload.noticeReference,'');
  assert.equal(JSON.stringify(receipt),before);
 });
+test('M09 rejects fractional-cent historical heads and parents without rounding SQL allocations',()=>{
+ const sourceSnapshot=JSON.stringify(receipt);
+ const check=(source:ChallanReceipt)=>assert.throws(()=>
+   reuseRecordedPayment([source],'ownerUid','1234567890123','original-payment'),
+   /Invalid historical payment amount/);
+ check({...receipt,items:[{...receipt.items[0],totalAmount:10.0001},receipt.items[1]]});
+ check({...receipt,totalAmount:30.0001});
+ check({...receipt,paymentCategory:'ADVANCE_TAX',allocationItems:undefined,
+   taxpayerTin:'1234567890123',items:[{...receipt.items[0],totalAmount:10.0001}],totalAmount:10});
+ // Genuine two-decimal amounts remain valid with their exact SQL minor units.
+ const valid={...receipt,items:[{...receipt.items[0],totalAmount:10.01},receipt.items[1]],
+   allocationItems:[{...receipt.allocationItems![0],amountMinor:1001},receipt.allocationItems![1]],
+   totalAmount:30.01};
+ const repeated=reuseRecordedPayment([valid],'ownerUid','1234567890123','original-payment');
+ assert.deepEqual((repeated.formPayload.otherTaxLines as Array<{amount:string}>).map(line=>line.amount),
+   ['10.01','20.00']);
+ assert.equal(JSON.stringify(receipt),sourceSnapshot);
+});
 test('Pay Again carries editable long, bilingual challan comments without mutating the source',()=>{
   const remarks='Payment covers multiple years; explanation supplied by taxpayer. বাংলা মন্তব্য: তথ্য যাচাই করুন।';
   assert.ok(remarks.length > 20);
