@@ -23,7 +23,14 @@ assert.notEqual(new URL(source).port,new URL(office).port);
 function db(url,script){
  const p=spawnSync('psql',['-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-d',url],
   {input:script,encoding:'utf8',timeout:120000,maxBuffer:5000000});
- if(p.status!==0)throw Error('Disposable correction SQL: '+p.stderr.slice(-3500));
+ if(p.status!==0){
+  const stderr=p.stderr??'';
+  // PostgreSQL places the primary ERROR/SQLSTATE first; the function CONTEXT
+  // can be much longer than the tail that was previously logged.
+  throw Error('Disposable correction SQL (exit '+p.status+'):\n'+
+    stderr.slice(0,2500)+(stderr.length>6000?'\n... [context truncated] ...\n':'\n')+
+    (stderr.length>2500?stderr.slice(-3500):''));
+ }
  const s=p.stdout.trim().split('\n').filter(Boolean).at(-1);
  if(s==='t')return true;if(s==='f')return false;
  try{return JSON.parse(s);}catch{throw Error('Non-JSON disposable SQL: '+p.stdout.slice(-800));}
