@@ -6,7 +6,7 @@ import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
 import {BentoPaymentAnalytics} from './BentoPaymentAnalytics';
-import {chooseDashboardChartSource,matchesDashboardChartDrilldown,type DashboardChartSource,type DashboardChartService} from './dashboardBentoAnalytics';
+import {matchesDashboardChartDrilldown,type DashboardChartSource,type DashboardChartService} from './dashboardBentoAnalytics';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
@@ -178,7 +178,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     return typeof initial==='string'&&/^20\d{2}-20\d{2}$/.test(initial)
       ? initial : '2025-2026';
   });
-  const [overviewSourceChoice,setOverviewSourceChoice]=useState<{year:string;source:DashboardChartSource}|null>(null);
   const changeYear=(nextYear:string)=>{
     setYear(nextYear);
     setLedgerYear(nextYear);
@@ -323,11 +322,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const historyScoped=useMemo(()=>[...scoped,...sqlRows.filter(row=>row.years?.includes(year))],[scoped,sqlRows,year]);
   // One assessment-year/source selection drives KPIs, recent activity and charts.
   // Do not merge example events with owner-session SQL payments.
-  const dashboardChartRecords=useMemo(()=>[...events,...sqlRows],[sqlRows]);
-  const defaultOverviewSource=chooseDashboardChartSource(
-    dashboardChartRecords,year,savedTagPeople,DEMO_USERS.user1.tin);
-  const overviewSource=overviewSourceChoice?.year===year
-    ?overviewSourceChoice.source:defaultOverviewSource;
+  // Overview is always account-linked. Example events are retained only for
+  // isolated preview fixtures and must never become payment KPIs or charts.
+  const dashboardChartRecords=useMemo(()=>[...sqlRows],[sqlRows]);
+  const overviewSource:DashboardChartSource='recorded';
   const overviewCompletedRows=overviewSource==='recorded'
     ?sqlRows.filter(item=>item.state==='POSTED'&&item.years?.includes(year))
     :scoped.filter(item=>item.state==='POSTED'&&['income','ait','travel'].includes(item.kind));
@@ -675,7 +673,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         </li>)}
       </ul>
       {!overviewCompletedRows.length&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('No completed payment activity for the selected assessment year.','নির্বাচিত করবর্ষে সম্পন্ন পেমেন্ট নেই।')}</p>}
-      {sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-recorded payments could not be loaded. Sample activity remains visible.','অ্যাকাউন্টে সংরক্ষিত পেমেন্ট লোড হয়নি। নমুনা কার্যক্রম দেখা যাচ্ছে।')}</p>}
+      {sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-linked payment records could not be loaded. No example activity is included in this overview.','অ্যাকাউন্টের পেমেন্ট রেকর্ড লোড হয়নি। এই বিবরণে কোনো নমুনা কার্যক্রম যুক্ত করা হয়নি।')}</p>}
     </section>
     </div>
     <BentoPaymentAnalytics
@@ -685,8 +683,6 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       ownerTin={DEMO_USERS.user1.tin}
       language={language}
       sourceLoadError={sqlLoadError}
-      selectedSource={overviewSource}
-      onSourceChange={source=>setOverviewSourceChoice({year,source})}
       onManageBeneficiaries={()=>navigate('beneficiaries')}
       onOpenBeneficiary={tin=>navigate('beneficiaries',{
         openBeneficiaryTin:tin,returnTo:'taxpayer_home'
