@@ -44,7 +44,7 @@ jobs:
           OFFICE_REPO="https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git"
           # Check the existing WS3 Office #270 branch, not a stale historical bridge.
           OFFICE_BRIDGE_REF="ws3/v95-correction-payment-parent-20261112"
-          OFFICE_BRIDGE_SHA="3373c022e63faf86589ad4a0ecf298e755e887e4"
+          OFFICE_BRIDGE_SHA="f2b8485037d917328c6c245dd18b1c7ee7fc49bc"
           OFFICE_BRIDGE_DIR="$RUNNER_TEMP/office-matching-bridge"
           git clone --depth 1 --branch "$OFFICE_BRIDGE_REF" "$OFFICE_REPO" "$OFFICE_BRIDGE_DIR"
           git -C "$OFFICE_BRIDGE_DIR" fetch --depth 1 origin "$OFFICE_BRIDGE_SHA"
@@ -479,7 +479,7 @@ jobs:
           # A historical hardcoded head can fail before any SQL test runs.
           git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
             https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
-          OFFICE_SHA="3373c022e63faf86589ad4a0ecf298e755e887e4"
+          OFFICE_SHA="f2b8485037d917328c6c245dd18b1c7ee7fc49bc"
           git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
