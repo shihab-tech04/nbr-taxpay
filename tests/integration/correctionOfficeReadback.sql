@@ -67,6 +67,11 @@ INSERT INTO demo_payment.story_payments(
     'details',jsonb_build_object(
       'payerMode','OTHER','payerTin','909000000030',
       'payerName','Taxpayer Account 30','receiptReference','SYN-REF-003',
+      'allocations',jsonb_build_array(
+        jsonb_build_object('allocationId','ws3-parent-owner-line',
+          'taxpayerTin','909000000030','amountMinor',50),
+        jsonb_build_object('allocationId','ws3-verified-other-recipient',
+          'taxpayerTin','444444444444','amountMinor',50)),
       'receiptSnapshot',jsonb_build_object(
         'challanNo','SYN-REF-003','payerTin','909000000030',
         'payerName','Taxpayer Account 30'
