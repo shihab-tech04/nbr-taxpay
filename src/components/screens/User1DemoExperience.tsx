@@ -717,7 +717,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
               <span className="taxpay-summary-metric__label">{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span>
               <strong className="tabular-nums">{savedDraftCount===null?'—':savedDraftCount}</strong>
             </span>
-            <span className="taxpay-summary-metric__pill">{savedDraftCount===0?tr('No drafts','খসড়া নেই'):tr('Continue','চালিয়ে যান')}</span>
+            <span className="taxpay-summary-metric__pill">{savedDraftCount===null
+              ?tr('Unavailable','পাওয়া যায়নি')
+              :savedDraftCount===0?tr('No drafts','খসড়া নেই'):tr('Continue','চালিয়ে যান')}</span>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--requests" onClick={focusCorrectionRequests}>
             <span className="taxpay-summary-metric__icon"><ReceiptText size={20} aria-hidden="true"/></span>
