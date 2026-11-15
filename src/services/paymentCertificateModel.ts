@@ -91,7 +91,7 @@ export function buildPaymentCertificateModel(receipt: ChallanReceipt): PaymentCe
       // an official-looking internal payment certificate. The source preview
       // stores only a four-character masked suffix, never a passport identity.
       if (amountMinor === null || !passenger.name.trim() ||
-          !/^••••[A-Za-z0-9]{4}$/.test(passenger.passportMasked) ||
+          !/^••••[^\s\u0000-\u001F\u007F-\u009F]{4}$/.test(passenger.passportMasked) ||
           !['BD', 'FOREIGN'].includes(passenger.nationality) ||
           (passenger.nationality === 'FOREIGN' && !passenger.country?.trim())) return null;
       return {
