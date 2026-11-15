@@ -209,6 +209,117 @@ export async function verifyWs3BrowserOrigin({
     console.log('PASS WS3 browser-origin preview payment: current WS1 source '+sourceSha+
       ' -> original disposable Taxpayer SQL -> existing signed Edge -> separate Office SQL'+
       ' -> authorized Office readback, two original allocation IDs and exact values');
+    // F-039 original current Work A UI: one saved payer-owned recipient
+    // and one confirmed fictional public-lookup TIN, without saving the second.
+    const unsavedTin='444444444444';
+    const savedBefore=Number(psql(sourceDb,
+      "SELECT count(*) FROM taxpay_guest_private.beneficiaries WHERE tin='"+unsavedTin+"';"));
+    await page.goto(base+'/?action=landing');
+    await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+    const oneTimeDialog=page.getByRole('dialog',{name:'Pay Tax'});
+    const oneTimeStart=oneTimeDialog.getByTestId('account-draft-entry')
+      .getByRole('button',{name:/Start new Tax payment/});
+    if(await oneTimeStart.isVisible({timeout:2000}).catch(()=>false))
+      await oneTimeStart.click();
+    await expect(oneTimeDialog.locator('[data-payer-relationship="OTHER"]'))
+      .toBeVisible({timeout:15000});
+    await oneTimeDialog.locator('[data-payer-relationship="OTHER"]').click();
+    await oneTimeDialog.locator('[data-payment-entry="OTHER_TAX"]').click();
+    await oneTimeDialog.locator('.tax-service-choice__actions')
+      .getByRole('button',{name:'Continue',exact:true}).click();
+    const f039Picker=oneTimeDialog.getByTestId('saved-beneficiary-picker');
+    await expect(f039Picker).toBeVisible({timeout:20000});
+    await f039Picker.getByRole('checkbox',{name:/WS3 recipient 2/}).check();
+    const oneTimeEntry=oneTimeDialog.getByTestId('one-time-taxpayer-entry');
+    await expect(oneTimeEntry).toBeVisible();
+    await oneTimeEntry.locator('#other-tax-one-time-tin').fill(unsavedTin);
+    await oneTimeEntry.getByRole('button',{name:'Search one-time taxpayer'}).click();
+    await expect(oneTimeEntry.getByTestId('one-time-taxpayer-preview'))
+      .toContainText('User 4');
+    await oneTimeEntry.getByRole('button',{name:'Add to this payment'}).click();
+    await expect(oneTimeEntry.getByTestId('confirmed-one-time-taxpayer'))
+      .toContainText(unsavedTin);
+    await expect(f039Picker.getByTestId('beneficiary-list-accordion'))
+      .not.toContainText(unsavedTin);
+    await oneTimeDialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
+    const f039Batch=oneTimeDialog.getByTestId('other-tax-batch');
+    await f039Batch.locator('[data-head-group="Advance Tax"] summary').click();
+    await f039Batch.getByRole('checkbox',{name:/Select 68A/}).check();
+    await f039Batch.getByTestId('other-tax-line')
+      .locator('input[id^="other-tax-amount"]').fill('10');
+    await f039Batch.getByTestId('other-tax-taxpayer-tabs')
+      .getByRole('button').nth(1).click();
+    await f039Batch.getByRole('checkbox',{name:/Select 68B/}).check();
+    await f039Batch.getByTestId('other-tax-line')
+      .locator('select[id^="other-tax-year"]').selectOption('2025-26');
+    await f039Batch.getByTestId('other-tax-line')
+      .locator('input[id^="other-tax-amount"]').fill('20');
+    await oneTimeDialog.getByRole('button',{name:'Continue to payment channel'}).click();
+    await oneTimeDialog.getByRole('button',{name:'Pay online'}).click();
+    await oneTimeDialog.getByRole('button',{name:'Mobile banking'}).click();
+    await oneTimeDialog.getByRole('radio',{name:'bKash'}).check();
+    await oneTimeDialog.getByRole('checkbox',{name:/I confirm each taxpayer TIN/}).check();
+    await oneTimeDialog.getByRole('button',{name:/Pay ৳ 30/}).click();
+    await expect(oneTimeDialog.getByRole('heading',{name:'Payment record saved'}))
+      .toBeVisible({timeout:30000});
+    assert.equal(captured.length,2,'F-039 must create exactly one additional original UI POST');
+    const oneTimePost=captured[1];
+    assert.equal(oneTimePost.result.status,200,'One-time recipient must reach real SQL');
+    assert.equal(oneTimePost.result.data.mirrored,true);
+    assert.equal(oneTimePost.input.amountMinor,3000);
+    const oneTimeAllocations=oneTimePost.input.details.allocations;
+    assert.deepEqual(oneTimeAllocations.map(a=>a.taxpayerTin),['222222222222',unsavedTin]);
+    assert.deepEqual(oneTimeAllocations.map(a=>a.amountMinor),[1000,2000]);
+    assert.deepEqual(oneTimeAllocations.map(a=>a.headId),[122,123]);
+    assert.deepEqual(oneTimeAllocations.map(a=>a.assessmentYear),['2026-27','2025-26']);
+    assert.equal(oneTimeAllocations[1].taxpayerName,'User 4');
+    assert.equal(Number(psql(sourceDb,
+      "SELECT count(*) FROM taxpay_guest_private.beneficiaries WHERE tin='"+unsavedTin+"';")),
+      savedBefore,'F-039 must not create any saved beneficiary record');
+    const oneTimeId=oneTimePost.result.data.id;
+    const oneTimeSource=psql(sourceDb,
+      "SELECT jsonb_build_object('id',id,'amountMinor',amount_minor,'status',status,'data',data)"+
+      ' FROM demo_payment.story_payments WHERE id='+sqlText(oneTimeId)+'::uuid;');
+    const oneTimeOffice=psql(officeDb,
+      "SELECT jsonb_build_object('id',id,'amountMinor',amount_minor,'status',status,'data',data)"+
+      ' FROM demo_payment.story_payments WHERE id='+sqlText(oneTimeId)+'::uuid;');
+    assert.deepEqual(oneTimeOffice,oneTimeSource,'F-039 source and Office SQL must match');
+    assert.deepEqual(oneTimeSource.data.details.allocations,oneTimeAllocations);
+    const f039Officer=await request('OFFICE_SQL','/payments?page=1&perPage=100','GET',
+      undefined,{authorization:'Bearer '+officeToken});
+    assert.equal(f039Officer.status,200);
+    const f039Row=f039Officer.data.data.items.find(item=>item.id===oneTimeId);
+    assert.ok(f039Row,'F-039 saved + one-time parent must be officer-readable');
+    assert.deepEqual(f039Row.details.allocations,oneTimeAllocations);
+    assert.equal(f039Row.details.payerId,'user1');
+    assert.equal(f039Row.certificateReference,'SK-PC-'+oneTimeId);
+    assert.equal(f039Row.details.receiptReference,oneTimePost.input.details.receiptReference);
+    const f039Retry=await request('TAXPAY_SQL','/payments','POST',oneTimePost.input,
+      {apikey:anonKey,'x-taxpay-guest-capability':oneTimePost.capability});
+    assert.equal(f039Retry.status,200);
+    assert.equal(f039Retry.data.id,oneTimeId);
+    assert.equal(f039Retry.data.replayed,true);
+    assert.equal(Number(psql(sourceDb,
+      'SELECT count(*) FROM demo_payment.story_payments WHERE idempotency_key='+
+      sqlText(oneTimePost.input.idempotencyKey)+'::uuid;')),1);
+    assert.equal(Number(psql(officeDb,
+      'SELECT count(*) FROM demo_payment.story_payments WHERE id='+sqlText(oneTimeId)+'::uuid;')),1);
+    // Run the existing Office EN/BN drawer readback against F-039's original
+    // one-time browser parent, instead of weakening or duplicating drawer checks.
+    if(fixturePath){
+      const {writeFileSync}=await import('node:fs');
+      writeFileSync(fixturePath,JSON.stringify({
+        payment:f039Row,
+        expected:{id:oneTimeId,status:oneTimeSource.status,payerId:'user1',
+          receiptReference:oneTimePost.input.details.receiptReference,
+          allocationIds:oneTimeAllocations.map(a=>a.allocationId),
+          allocationTins:oneTimeAllocations.map(a=>a.taxpayerTin),
+          headIds:oneTimeAllocations.map(a=>a.headId),
+          assessmentYears:oneTimeAllocations.map(a=>a.assessmentYear),
+          amountsMinor:oneTimeAllocations.map(a=>a.amountMinor),totalMinor:3000},
+      }),{mode:0o600});
+    }
+    console.log('PASS F-039 browser saved + one-time: original preview-auth UI POST -> original disposable Taxpayer SQL -> signed Edge -> distinct Office SQL and authorized officer readback; no one-time beneficiary auto-save, exact allocations and idempotent replay');
     // Distinct unsigned browser journey: actual guest form request, NOT a
     // preview profile, fake JWT, synthetic Auth account, or mocked payment ACK.
     // Uses the existing anonymous demo_story1_submit RPC through the same
