@@ -74,7 +74,8 @@
       12,
       14,
       24
-    ]
+    ],
+    "assignment_method": "Preserve random selection order within role buckets: 5 fictional corporate profiles -> 4 Corporate Clients + 1 Professional; 3 withholding agents -> Professional; 16 fictional individuals -> four remaining groups, four each. Role is from src/data/demoUsers.ts."
   },
   "notes": [
     "Fictional preview identities and lookup aliases, not production Auth users or issued taxpayer TINs.",
@@ -85,13 +86,13 @@
   "groups": [
     {
       "key": "clients",
-      "display": "Clients",
+      "display": "Corporate Clients",
       "category": "clients",
       "recipient_numbers": [
-        16,
-        26,
-        21,
-        17
+        30,
+        2,
+        20,
+        25
       ]
     },
     {
@@ -99,10 +100,10 @@
       "display": "Professional Contacts",
       "category": "clients",
       "recipient_numbers": [
-        11,
-        27,
-        19,
-        13
+        15,
+        21,
+        3,
+        28
       ]
     },
     {
@@ -110,10 +111,10 @@
       "display": "Parents & Siblings",
       "category": "friends_family",
       "recipient_numbers": [
-        3,
-        7,
-        30,
-        18
+        16,
+        26,
+        17,
+        11
       ]
     },
     {
@@ -121,10 +122,10 @@
       "display": "Spouse & Children",
       "category": "friends_family",
       "recipient_numbers": [
-        8,
-        2,
-        5,
-        28
+        27,
+        19,
+        13,
+        7
       ]
     },
     {
@@ -132,10 +133,10 @@
       "display": "Friends",
       "category": "friends_family",
       "recipient_numbers": [
-        23,
-        9,
-        20,
-        29
+        18,
+        8,
+        5,
+        23
       ]
     },
     {
@@ -143,81 +144,63 @@
       "display": "Other Contacts",
       "category": "others",
       "recipient_numbers": [
-        25,
+        9,
+        29,
         4,
-        15,
         22
       ]
     }
   ],
   "beneficiaries": [
     {
-      "recipient_preview_id": "user16",
-      "display_name": "Taxpayer Account 16",
-      "tin_alias": "909000000016",
+      "recipient_preview_id": "user30",
+      "display_name": "Taxpayer Account 30",
+      "tin_alias": "909000000030",
       "tag": "clients",
       "relationship": null,
       "other_label": null,
       "list_key": "clients"
     },
     {
-      "recipient_preview_id": "user26",
-      "display_name": "Taxpayer Account 26",
-      "tin_alias": "909000000026",
+      "recipient_preview_id": "user2",
+      "display_name": "Meghna Trading Ltd.",
+      "tin_alias": "222222222222",
       "tag": "clients",
       "relationship": null,
       "other_label": null,
       "list_key": "clients"
+    },
+    {
+      "recipient_preview_id": "user20",
+      "display_name": "Taxpayer Account 20",
+      "tin_alias": "909000000020",
+      "tag": "clients",
+      "relationship": null,
+      "other_label": null,
+      "list_key": "clients"
+    },
+    {
+      "recipient_preview_id": "user25",
+      "display_name": "Taxpayer Account 25",
+      "tin_alias": "909000000025",
+      "tag": "clients",
+      "relationship": null,
+      "other_label": null,
+      "list_key": "clients"
+    },
+    {
+      "recipient_preview_id": "user15",
+      "display_name": "Taxpayer Account 15",
+      "tin_alias": "909000000015",
+      "tag": "clients",
+      "relationship": null,
+      "other_label": null,
+      "list_key": "professional_contacts"
     },
     {
       "recipient_preview_id": "user21",
       "display_name": "Taxpayer Account 21",
       "tin_alias": "909000000021",
-      "tag": "clients",
-      "relationship": null,
-      "other_label": null,
-      "list_key": "clients"
-    },
-    {
-      "recipient_preview_id": "user17",
-      "display_name": "Taxpayer Account 17",
-      "tin_alias": "909000000017",
-      "tag": "clients",
-      "relationship": null,
-      "other_label": null,
-      "list_key": "clients"
-    },
-    {
-      "recipient_preview_id": "user11",
-      "display_name": "Taxpayer Account 11",
-      "tin_alias": "909000000011",
-      "tag": "clients",
-      "relationship": null,
-      "other_label": null,
-      "list_key": "professional_contacts"
-    },
-    {
-      "recipient_preview_id": "user27",
-      "display_name": "Taxpayer Account 27",
-      "tin_alias": "909000000027",
-      "tag": "clients",
-      "relationship": null,
-      "other_label": null,
-      "list_key": "professional_contacts"
-    },
-    {
-      "recipient_preview_id": "user19",
-      "display_name": "Taxpayer Account 19",
-      "tin_alias": "909000000019",
-      "tag": "clients",
-      "relationship": null,
-      "other_label": null,
-      "list_key": "professional_contacts"
-    },
-    {
-      "recipient_preview_id": "user13",
-      "display_name": "Taxpayer Account 13",
-      "tin_alias": "909000000013",
       "tag": "clients",
       "relationship": null,
       "other_label": null,
@@ -227,73 +210,118 @@
       "recipient_preview_id": "user3",
       "display_name": "Rupali Textiles Ltd.",
       "tin_alias": "333333333333",
+      "tag": "clients",
+      "relationship": null,
+      "other_label": null,
+      "list_key": "professional_contacts"
+    },
+    {
+      "recipient_preview_id": "user28",
+      "display_name": "Taxpayer Account 28",
+      "tin_alias": "909000000028",
+      "tag": "clients",
+      "relationship": null,
+      "other_label": null,
+      "list_key": "professional_contacts"
+    },
+    {
+      "recipient_preview_id": "user16",
+      "display_name": "Taxpayer Account 16",
+      "tin_alias": "909000000016",
       "tag": "friends_family",
       "relationship": "father",
       "other_label": null,
       "list_key": "parents_siblings"
     },
     {
-      "recipient_preview_id": "user7",
-      "display_name": "Sadia Islam",
-      "tin_alias": "777777777777",
+      "recipient_preview_id": "user26",
+      "display_name": "Taxpayer Account 26",
+      "tin_alias": "909000000026",
       "tag": "friends_family",
       "relationship": "mother",
       "other_label": null,
       "list_key": "parents_siblings"
     },
     {
-      "recipient_preview_id": "user30",
-      "display_name": "Taxpayer Account 30",
-      "tin_alias": "909000000030",
+      "recipient_preview_id": "user17",
+      "display_name": "Taxpayer Account 17",
+      "tin_alias": "909000000017",
       "tag": "friends_family",
       "relationship": "siblings",
       "other_label": null,
       "list_key": "parents_siblings"
     },
     {
-      "recipient_preview_id": "user18",
-      "display_name": "Taxpayer Account 18",
-      "tin_alias": "909000000018",
+      "recipient_preview_id": "user11",
+      "display_name": "Taxpayer Account 11",
+      "tin_alias": "909000000011",
       "tag": "friends_family",
       "relationship": "siblings",
       "other_label": null,
       "list_key": "parents_siblings"
     },
     {
-      "recipient_preview_id": "user8",
-      "display_name": "Tanvir Ahmed",
-      "tin_alias": "888888888888",
+      "recipient_preview_id": "user27",
+      "display_name": "Taxpayer Account 27",
+      "tin_alias": "909000000027",
       "tag": "friends_family",
       "relationship": "spouse",
       "other_label": null,
       "list_key": "spouse_children"
     },
     {
-      "recipient_preview_id": "user2",
-      "display_name": "Meghna Trading Ltd.",
-      "tin_alias": "222222222222",
+      "recipient_preview_id": "user19",
+      "display_name": "Taxpayer Account 19",
+      "tin_alias": "909000000019",
       "tag": "friends_family",
       "relationship": "son",
       "other_label": null,
       "list_key": "spouse_children"
     },
     {
-      "recipient_preview_id": "user5",
-      "display_name": "Mahmud Hasan",
-      "tin_alias": "555555555555",
+      "recipient_preview_id": "user13",
+      "display_name": "Taxpayer Account 13",
+      "tin_alias": "909000000013",
       "tag": "friends_family",
       "relationship": "daughter",
       "other_label": null,
       "list_key": "spouse_children"
     },
     {
-      "recipient_preview_id": "user28",
-      "display_name": "Taxpayer Account 28",
-      "tin_alias": "909000000028",
+      "recipient_preview_id": "user7",
+      "display_name": "Sadia Islam",
+      "tin_alias": "777777777777",
       "tag": "friends_family",
       "relationship": "spouse",
       "other_label": null,
       "list_key": "spouse_children"
+    },
+    {
+      "recipient_preview_id": "user18",
+      "display_name": "Taxpayer Account 18",
+      "tin_alias": "909000000018",
+      "tag": "friends_family",
+      "relationship": "friends",
+      "other_label": null,
+      "list_key": "friends"
+    },
+    {
+      "recipient_preview_id": "user8",
+      "display_name": "Tanvir Ahmed",
+      "tin_alias": "888888888888",
+      "tag": "friends_family",
+      "relationship": "friends",
+      "other_label": null,
+      "list_key": "friends"
+    },
+    {
+      "recipient_preview_id": "user5",
+      "display_name": "Mahmud Hasan",
+      "tin_alias": "555555555555",
+      "tag": "friends_family",
+      "relationship": "friends",
+      "other_label": null,
+      "list_key": "friends"
     },
     {
       "recipient_preview_id": "user23",
@@ -308,51 +336,24 @@
       "recipient_preview_id": "user9",
       "display_name": "Imran Hossain",
       "tin_alias": "999999999999",
-      "tag": "friends_family",
-      "relationship": "friends",
-      "other_label": null,
-      "list_key": "friends"
-    },
-    {
-      "recipient_preview_id": "user20",
-      "display_name": "Taxpayer Account 20",
-      "tin_alias": "909000000020",
-      "tag": "friends_family",
-      "relationship": "friends",
-      "other_label": null,
-      "list_key": "friends"
-    },
-    {
-      "recipient_preview_id": "user29",
-      "display_name": "Taxpayer Account 29",
-      "tin_alias": "909000000029",
-      "tag": "friends_family",
-      "relationship": "friends",
-      "other_label": null,
-      "list_key": "friends"
-    },
-    {
-      "recipient_preview_id": "user25",
-      "display_name": "Taxpayer Account 25",
-      "tin_alias": "909000000025",
       "tag": "others",
       "relationship": null,
       "other_label": "Neighbor",
       "list_key": "other_contacts"
     },
     {
-      "recipient_preview_id": "user4",
-      "display_name": "Nusrat Jahan",
-      "tin_alias": "444444444444",
+      "recipient_preview_id": "user29",
+      "display_name": "Taxpayer Account 29",
+      "tin_alias": "909000000029",
       "tag": "others",
       "relationship": null,
       "other_label": "Colleague",
       "list_key": "other_contacts"
     },
     {
-      "recipient_preview_id": "user15",
-      "display_name": "Taxpayer Account 15",
-      "tin_alias": "909000000015",
+      "recipient_preview_id": "user4",
+      "display_name": "Nusrat Jahan",
+      "tin_alias": "444444444444",
       "tag": "others",
       "relationship": null,
       "other_label": "Community contact",
