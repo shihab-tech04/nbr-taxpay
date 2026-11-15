@@ -3,9 +3,9 @@ import '../../styles/taxpay-dashboard-interactive.css';
 import {ArrowRight} from 'lucide-react';
 import {
   DASHBOARD_SERVICE_KEYS,DASHBOARD_TAG_KEYS,
-  projectDashboardChartRecords,formatDashboardChartMoney,dashboardChartPercentage,
+  projectDashboardChartRecords,chooseDashboardChartSource,formatDashboardChartMoney,dashboardChartPercentage,
   type DashboardChartRecord,type DashboardChartService,type DashboardChartTag,
-  type DashboardRecipientProfile
+  type DashboardChartSource,type DashboardRecipientProfile
 } from './dashboardBentoAnalytics';
 
 const SERVICE_LABELS:Record<DashboardChartService,{en:string;bn:string}>={
@@ -31,22 +31,35 @@ export const BentoPaymentAnalytics:React.FC<{
   ownerTin:string;
   language:'en'|'bn';
   sourceLoadError?:boolean;
+  allowExamples?:boolean;
+  selectedSource?:DashboardChartSource;
+  onSourceChange?:(source:DashboardChartSource)=>void;
   onManageBeneficiaries?:()=>void;
   onOpenBeneficiary?:(tin:string)=>void;
   onOpenHistory:(tag?:DashboardChartTag,service?:DashboardChartService|'all',recipientTin?:string)=>void;
-}>=({records,people,year,ownerTin,language,sourceLoadError,onManageBeneficiaries,onOpenBeneficiary,onOpenHistory})=>{
+}>=({records,people,year,ownerTin,language,sourceLoadError,allowExamples=false,selectedSource,onSourceChange,onManageBeneficiaries,onOpenBeneficiary,onOpenHistory})=>{
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   // The signed-in overview has one trustworthy source: the account's recorded
   // allocations. Never replace missing/failed account data with fictional totals.
+  const [sourceChoice,setSourceChoice]=useState<{year:string;source:DashboardChartSource}|null>(null);
   const [service,setService]=useState<DashboardChartService|'all'>('all');
   const [tag,setTag]=useState<DashboardChartTag|null>(null);
   const [beneficiaryView,setBeneficiaryView]=useState<'relationships'|'tags'|'top'>('relationships');
   const recorded=projectDashboardChartRecords(records,year,'recorded',people,ownerTin);
+  const examples=allowExamples?projectDashboardChartRecords(records,year,'example',people,ownerTin):null;
+  const defaultSource=allowExamples?chooseDashboardChartSource(records,year,people,ownerTin):'recorded';
+  const source:DashboardChartSource=allowExamples?(selectedSource??(sourceChoice?.year===year?sourceChoice.source:defaultSource)):'recorded';
+  const selectSource=(next:DashboardChartSource)=>{
+    if(!allowExamples)return;
+    if(onSourceChange)onSourceChange(next);
+    else setSourceChoice({year,source:next});
+    setService('all');setTag(null);
+  };
   // A service/tag selection from a previous year must not silently filter a new year.
   useEffect(()=>{setService('all');setTag(null);},[year]);
-  const all=recorded;
-  const filtered=projectDashboardChartRecords(records,year,'recorded',people,ownerTin,service);
+  const all=source==='example'&&examples?examples:recorded;
+  const filtered=projectDashboardChartRecords(records,year,source,people,ownerTin,service);
   const money=(minor:bigint)=>formatDashboardChartMoney(minor,language);
   const hasData=all.totalMinor>0n;
   const selectedTag=tag===null?null:filtered.byTag.find(item=>item.key===tag);
@@ -65,7 +78,7 @@ export const BentoPaymentAnalytics:React.FC<{
   const maskedTin=(tin:string)=>'••••'+tin.slice(-4);
   // A missing account projection must not turn into a fictional dashboard.
   // Keep its next step visible rather than rendering four empty giant cards.
-  if(!hasData)return <section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
+  if(!hasData&&!allowExamples)return <section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
     data-testid="dashboard-payment-analytics" data-chart-source="recorded">
     <div className="taxpay-bento-analytics__header">
       <div>
@@ -86,13 +99,25 @@ export const BentoPaymentAnalytics:React.FC<{
     </button>
   </section>;
   return <section className="taxpay-bento-analytics" aria-labelledby="dashboard-payment-analytics-title"
-    data-testid="dashboard-payment-analytics" data-chart-source="recorded">
+    data-testid="dashboard-payment-analytics" data-chart-source={source}>
     <div className="taxpay-bento-analytics__header">
       <div>
         <h2 id="dashboard-payment-analytics-title">{tr('Payment breakdown','পেমেন্টের বিস্তারিত')}</h2>
-        <p>{tr('Account-linked allocations for the selected assessment year. Not official tax credits.',
-          'নির্বাচিত করবর্ষে অ্যাকাউন্টের বরাদ্দ তথ্য। সরকারি কর ক্রেডিট নয়।')}</p>
+        <p>{source==='example'
+          ?tr('Local QA scenario only — not saved account payments.',
+            'শুধু স্থানীয় পরীক্ষার নমুনা — অ্যাকাউন্টে সংরক্ষিত পেমেন্ট নয়।')
+          :tr('Account-linked allocations for the selected assessment year. Not official tax credits.',
+            'নির্বাচিত করবর্ষে অ্যাকাউন্টের বরাদ্দ তথ্য। সরকারি কর ক্রেডিট নয়।')}</p>
       </div>
+      {allowExamples&&<div className="taxpay-bento-analytics__sources" role="group"
+        aria-label={tr('Payment data source','পেমেন্ট তথ্যের উৎস')} data-testid="dashboard-chart-source">
+        <button type="button" aria-pressed={source==='recorded'} onClick={()=>selectSource('recorded')}>
+          {tr('Recorded','সংরক্ষিত')}
+        </button>
+        <button type="button" aria-pressed={source==='example'} onClick={()=>selectSource('example')}>
+          {tr('Examples','নমুনা')}
+        </button>
+      </div>}
     </div>
     {sourceLoadError&&<p role="alert" className="taxpay-bento-analytics__warning">
       {tr('Recorded payments could not be loaded. No sample figures are shown.',
@@ -131,8 +156,11 @@ export const BentoPaymentAnalytics:React.FC<{
             onClick={()=>{setService('all');setTag(null);}}>
             {tr('Show all payment services','সব পেমেন্টের ধরন দেখুন')}
           </button>}
-        </div>:<p role="status" className="taxpay-bento-analytics__empty">{tr('No itemized account payments for this year.','এই করবর্ষে অ্যাকাউন্টের পৃথক পেমেন্ট বরাদ্দ নেই।')}</p>}
-        {all.omittedRecords>0&&
+        </div>:<p role="status" className="taxpay-bento-analytics__empty">{source==='recorded'&&allowExamples
+          ?tr('No itemized recorded payments for this year. Select Examples to view the sample scenario.',
+            'এই করবর্ষের সংরক্ষিত পেমেন্টের পৃথক বরাদ্দ নেই। স্থানীয় নমুনা দেখতে নমুনা বাছুন।')
+          :tr('No itemized account payments for this year.','এই করবর্ষে অ্যাকাউন্টের পৃথক পেমেন্ট বরাদ্দ নেই।')}</p>}
+        {source==='recorded'&&all.omittedRecords>0&&
           <p className="taxpay-bento-analytics__footnote" role="status">
             {tr('Some historical records lack itemized allocations and are excluded from these totals.',
               'কিছু পুরনো রেকর্ডে পৃথক বরাদ্দ নেই; এগুলো এই মোট হিসাব থেকে বাদ রাখা হয়েছে।')}
