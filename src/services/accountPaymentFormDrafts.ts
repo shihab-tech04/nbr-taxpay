@@ -14,6 +14,19 @@ export type PaymentDraftActor =
   | { kind: 'preview'; profileId: string }
   | { kind: 'guest' };
 
+/** A preview User ID is not a session. Renewing the same account issues a new
+ * random payment session; draft UI state must not be reused across it.
+ * The private capability itself is never placed in React keys or DOM.
+ */
+export function paymentDraftOwnerScope(actor:PaymentDraftActor|null):string {
+  if(!actor)return '';
+  if(actor.kind==='authenticated')return 'authenticated:'+actor.userId;
+  if(actor.kind==='guest')return 'guest:session';
+  const session=activePreviewSession();
+  return 'preview:'+actor.profileId+':'+
+    (session?.profileId===actor.profileId?session.paymentSessionId:'unavailable');
+}
+
 export type PaymentFormDraft = {
   id: string;
   service: PaymentDraftService;
