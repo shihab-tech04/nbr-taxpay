@@ -105,6 +105,13 @@ test('M03: unmatched searched TIN can be explicitly added without identity verif
   await first.getByRole('button',{name:'Edit',exact:true}).click();
   await expect(continueAction).toBeDisabled();
   await expect(first.getByTestId('confirmed-taxpayer-card')).toHaveCount(0);
+  // F-136: the 30 example TINs are an explicit, non-authoritative suggestion
+  // source; typing alone must not confirm a taxpayer or private ownership.
+  await tin.fill('111');
+  const suggestions=dialog.getByRole('listbox',{name:'Sample TIN suggestions — not NBR verified'});
+  await expect(suggestions).toBeVisible();
+  await expect(suggestions.getByRole('option',{name:'111111111111'})).toBeVisible();
+  await expect(dialog.getByText('Sample TIN numbers — not verified NBR records')).toBeVisible();
   await tin.fill('111111111111');
   await expect(first.getByRole('button',{name:'Add taxpayer'})).toHaveCount(0);
   await first.getByRole('button',{name:'Search',exact:true}).click();
