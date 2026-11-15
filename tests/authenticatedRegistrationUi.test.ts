@@ -38,7 +38,10 @@ test('M02 signed-in registration panel renders exactly 24 sourced fields and no 
 test('M02 registration panel fails closed with no identity source and preserves EN/BN empty states',()=>{
  for(const language of ['en','bn'] as const){
    const html=renderToStaticMarkup(createElement(TaxpayerTinInformation,{language,record:null}));
-   assert.equal((html.match(/<dt\b/g)||[]).length,0);
+   assert.equal((html.match(/<dt\\b/g)||[]).length,24,
+     'Show every approved field with an unavailable placeholder, not an invented value');
+   assert.equal((html.match(/<dd\\b/g)||[]).length,24);
+   assert.equal(html.split(language==='bn'?'পাওয়া যায়নি':'Not available').length-1,24);
    assert.ok(!html.includes('123456789012'));
    assert.ok(html.includes('role="status"'));
    assert.ok(html.includes(language==='bn'?'ই-টিআইএন':'e-TIN'));
