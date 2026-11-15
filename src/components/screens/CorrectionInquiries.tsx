@@ -1,4 +1,5 @@
 import React, {useEffect,useState} from 'react';
+import {useTaxState} from '../../services/taxState';
 import {supabase} from '../../services/supabaseClient';
 import {sameAuthenticatedOwner} from '../../services/secureWorkspacePolicy';
 import {validateCorrectionInquiry, type ProposedAttributionField} from '../../services/correctionInquiryValidation';
@@ -10,7 +11,7 @@ type Row=Readonly<{
  reason:string; requested_outcome:string; change_kind:ProposedAttributionField|null; old_value:string|null; new_value:string|null;
  office_review_state:string|null; office_review_revision:number|null; office_review_updated_at:string|null;
 }>;
-type Props={readonly authenticatedUserId:string;readonly language:'en'|'bn';readonly dashboard?:boolean;readonly initialReference?:string};
+type Props={readonly authenticatedUserId:string;readonly language:'en'|'bn';readonly dashboard?:boolean};
 const t={
  en:{
  title:'Request a review of an original reference',
@@ -60,7 +61,9 @@ const t={
  }
 } as const;
 
-export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,dashboard=false,initialReference})=>{
+export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,dashboard=false})=>{
+ const {routeParams}=useTaxState();
+ const initialReference=typeof routeParams.originalReference==='string'?routeParams.originalReference:undefined;
  const labels=t[language];
  const [originalReference,setOriginalReference]=useState(()=>initialReference?.slice(0,160)??'');
  useEffect(()=>{if(initialReference)setOriginalReference(initialReference.slice(0,160));},[initialReference]);
