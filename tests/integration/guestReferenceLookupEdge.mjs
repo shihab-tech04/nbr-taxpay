@@ -24,16 +24,23 @@ assert.match(other.capability,/^[A-Za-z0-9_-]{43}$/);
 const hash=createHash('sha256').update(owner.capability).digest('hex');
 const keyId=randomUUID();
 const ref='WS3-HTTP-REF-'+keyId;
+// Use the same canonical one-head Return envelope enforced in original SQL.
+// The older fixture's headless line and missing receipt were correctly rejected.
+const taxpayerTin='111111111111';
+const assessmentYear='2026-27';
+const receiptItem={headId:125,totalAmount:123.45};
 const payload={
  origin:'TAXPAY_UI',service:'TAX_WITH_RETURN',amountMinor:12345,
  sessionId:owner.paymentSessionId,idempotencyKey:keyId,
  details:{payerId:'user1',payerName:'WS3 isolated fictional payer',
+  payerMode:'SELF',payerTin:taxpayerTin,taxpayerTin,assessmentYear,
   receiptReference:ref,receiptMobile:'01700000000',
   tokenNumber:'WS3-HTTP-TOKEN-'+keyId,
-  lines:[{beneficiary:'user1',category:'TAX_WITH_RETURN',
-   assessmentYear:'2026-27',amountMinor:12345}]}
-};
-const payment=sqlJson('SELECT public.taxpay_demo_story1_submit('+
+  receiptSnapshot:{challanNo:ref,paymentCategory:'TAX_WITH_RETURN',
+   payerTin:taxpayerTin,taxpayerTin,assessmentYear,totalAmount:123.45,items:[receiptItem]},
+  lines:[{beneficiary:'user1',category:'TAX_WITH_RETURN',headId:125,
+   assessmentYear,amountMinor:12345,totalAmount:123.45}]}
+};const payment=sqlJson('SELECT public.taxpay_demo_story1_submit('+
  lit(hash)+','+lit(JSON.stringify(payload))+'::jsonb);');
 assert.match(payment.id,/^[0-9a-f-]{36}$/i);
 assert.equal(payment.replayed,false);
