@@ -1,4 +1,5 @@
 import {expect,test} from '@playwright/test';
+import {mkdirSync} from 'node:fs';
 
 const demo='/?action=taxpayer_home&demoUser=user1&qaScenario=1';
 
@@ -47,6 +48,13 @@ test('reference-aligned Overview keeps the year, ring, three KPIs, recipients an
     }
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth),
       'no horizontal overflow at '+width).toBeLessThanOrEqual(2);
+    if(width===375||width===1600){
+      mkdirSync('test-results/screenshots',{recursive:true});
+      await page.screenshot({
+        path:'test-results/screenshots/sohojkor-reference-overview-'+width+'.png',
+        fullPage:true
+      });
+    }
   }
 });
 
