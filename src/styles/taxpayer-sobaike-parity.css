@@ -138,15 +138,18 @@
   border: 1px solid var(--color-taxpay-border);
 }
 
-/* Preserve the original centered reading column for public/guest routes.
- * Authenticated content uses its already approved 1150px desktop cap below
- * 1400px, and the explicit 70% main-area contract from 1400px upward. */
-.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow):not(.taxpay-authenticated-content) > main > :not([data-taxpay-register-page="true"]) {
-  max-width: 900px;
-  min-width: 0;
-}
-.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow):not(.taxpay-authenticated-content) .taxpayer-workspace:not([data-taxpay-register-page="true"]) {
-  max-width: 900px;
+/* Preserve the centered reading column below the large-desktop breakpoint.
+ * Record registers use the separate approved full-width rule. At >=1400px,
+ * do not let this more-specific legacy 900px cap override the flexible
+ * workspace and 70%-of-main layout contract. */
+@media (max-width:1399px) {
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow):not(.taxpay-authenticated-content) > main > :not([data-taxpay-register-page="true"]) {
+    max-width: 900px;
+    min-width: 0;
+  }
+  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow):not(.taxpay-authenticated-content) .taxpayer-workspace:not([data-taxpay-register-page="true"]) {
+    max-width: 900px;
+  }
 }
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace {
   font-family: var(--font-text);
