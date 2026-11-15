@@ -20,7 +20,7 @@ BEGIN
     ) f(fn,alias_name)
   LOOP
     v_sql := pg_catalog.pg_get_functiondef(v_func::regprocedure);
-    IF pg_catalog.position('''certificateReference''' IN v_sql) > 0 THEN
+    IF pg_catalog.strpos(v_sql,'''certificateReference''') > 0 THEN
       RAISE EXCEPTION 'F129_REFERENCE_PROJECTION_ALREADY_PRESENT: %',v_func;
     END IF;
     v_old := '''status'','||v_alias||'.status';
@@ -37,8 +37,8 @@ BEGIN
       RAISE EXCEPTION 'F129_REFERENCE_PROJECTION_BASELINE_MISMATCH: %',v_func;
     END IF;
     EXECUTE v_revised;
-    IF pg_catalog.position('''certificateReference''' IN
-       pg_catalog.pg_get_functiondef(v_func::regprocedure))=0
+    IF pg_catalog.strpos(pg_catalog.pg_get_functiondef(v_func::regprocedure),
+       '''certificateReference''')=0
     THEN
       RAISE EXCEPTION 'F129_REFERENCE_PROJECTION_MISSING: %',v_func;
     END IF;
