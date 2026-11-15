@@ -209,7 +209,8 @@ export function reuseRecordedPayment(
   const initial = sorted[0];
   const years = allocations.map(item => copiedYear(item.year));
   const payload: Record<string, unknown> = {
-    schemaVersion: 1, category: service, step: 1, forSelf: ownerIsPayee,
+    schemaVersion: 1, category: isAllocationPayment ? 'OTHER_TAX_PAYMENT' : service,
+    step: 1, forSelf: ownerIsPayee,
     tin: ownerIsPayee ? '' : first.tin,
     payerName: '', otherTaxpayerName: first.name,
     additionalTaxpayers: others,
