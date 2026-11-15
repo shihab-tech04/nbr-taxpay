@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {reuseRecordedPayment,reuseLegacySingleHeadPayment,oneChoicePerRecordedParent} from '../src/services/paymentReuse.ts';
 import type {ChallanReceipt} from '../src/types/tax.ts';
 import {V11_PAYMENT_OPTIONS} from '../src/data/v11PaymentOptions.ts';
+import {makeConfirmedReceipt} from '../src/services/confirmedPaymentCertificate.ts';
 const receipt = {
   id:'r1',challanNo:'SIM-1',tokenNumber:'SIM-token',paymentCategory:'OTHER_TAX_PAYMENT',
   assessmentYear:'2025-26, 2026-27',payerName:'Payer',payerTin:'1234567890123',
@@ -398,4 +399,69 @@ test('Pay Again offers one choice per recorded parent, never one per legacy batc
   // the existing complete-batch reconstruction and idempotency checks.
   assert.equal(source.length,6);
   assert.equal(JSON.stringify(source),original);
+});
+
+
+test('M09 Pay Again restores verified SQL accounting rows hidden from combined receipt display',()=>{
+  const firstHead=V11_PAYMENT_OPTIONS.find(item=>item.category==='ADVANCE_TAX'&&item.status==='ACTIVE');
+  const secondHead=V11_PAYMENT_OPTIONS.find(item=>item.category==='ASSESSED_DEMAND'&&item.status==='ACTIVE');
+  assert.ok(firstHead&&secondHead);
+  const originalId='5b126b38-9604-4e93-a24f-7c93fcf4f281';
+  const source={
+    id:originalId,service:'OTHER_TAX_PAYMENT',status:'SIMULATED_SUCCESS',amountMinor:3750,
+    createdAt:'2026-11-15T07:30:00.000Z',
+    details:{
+      payerName:'Source Payer',payerTin:'1111111111111',
+      paymentRemarks:'Multiple heads and years. বাংলা মন্তব্য।',
+      allocationContractVersion:2,
+      lines:[
+        {beneficiary:'user1',taxpayerTin:'1111111111111',category:'OTHER_TAX_PAYMENT',
+          headId:firstHead.id,assessmentYear:'2025-26',amountMinor:1250},
+        {beneficiary:'user2',taxpayerTin:'2222222222222',category:'OTHER_TAX_PAYMENT',
+          headId:secondHead.id,assessmentYear:'2026-27',amountMinor:2500},
+      ],
+      receiptLines:[
+        {headId:firstHead.id,headNameEn:firstHead.nameEn,economicCode:firstHead.economicCode,
+          taxAmount:12.5,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:12.5},
+        {headId:secondHead.id,headNameEn:secondHead.nameEn,economicCode:secondHead.economicCode,
+          taxAmount:25,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:25},
+      ],
+      allocations:[
+        {taxpayerName:'Source Payer',taxpayerTin:'1111111111111',headId:firstHead.id,
+          assessmentYear:'2025-26',amountMinor:1250},
+        {taxpayerName:'Recipient Two',taxpayerTin:'2222222222222',headId:secondHead.id,
+          assessmentYear:'2026-27',amountMinor:2500},
+      ],
+    },
+  };
+  const before=JSON.stringify(source);
+  const receipt=makeConfirmedReceipt(source);
+  assert.deepEqual(receipt.items,[],'receipt must continue to avoid duplicate accounting rows');
+  assert.deepEqual(receipt.reusableAccountingLines?.map(h=>h.headId),[firstHead.id,secondHead.id]);
+  const repeated=reuseRecordedPayment([receipt],'owner-1','1111111111111',originalId);
+  assert.equal(repeated.service,'OTHER_TAX_PAYMENT');
+  assert.equal(repeated.sourcePaymentId,originalId);
+  assert.equal(repeated.formPayload.paymentRemarks,source.details.paymentRemarks);
+  const allocations=repeated.formPayload.otherTaxLines as Array<{
+    id:string;headId:number;assessmentYear:string;amount:string
+  }>;
+  assert.deepEqual(allocations.map(a=>[a.headId,a.assessmentYear,a.amount]),[
+    [firstHead.id,'2025-26','12.50'],[secondHead.id,'2026-27','25.00'],
+  ]);
+  assert.equal(new Set(allocations.map(a=>a.id)).size,2);
+  allocations[0].amount='18.00';
+  assert.equal(JSON.stringify(source),before,'new Pay Again input never changes original SQL');
+  assert.equal(JSON.stringify(receipt.items),'[]');
+
+  // Missing saved head rows cannot be reverse-engineered from translated labels.
+  const partial=makeConfirmedReceipt({...source,details:{...source.details,receiptLines:undefined}});
+  assert.deepEqual(partial.items,[]);
+  assert.equal(partial.reusableAccountingLines,undefined);
+  assert.throws(()=>reuseRecordedPayment([partial],'owner-1','1111111111111',originalId),
+    /incomplete and cannot be copied/);
+  // A mismatched per-head amount must not be turned into an apparently valid draft.
+  const badAmount={...source,details:{...source.details,
+    receiptLines:[{...source.details.receiptLines[0],totalAmount:13},
+      source.details.receiptLines[1]]}};
+  assert.throws(()=>makeConfirmedReceipt(badAmount),/allocations could not be reconciled/);
 });
