@@ -1,6 +1,7 @@
 import type { ChallanReceipt, PaymentCategory } from '../types/tax';
 import { MAX_COMBINED_ALLOCATIONS } from './otherTaxCombinedPayment';
 import { PAY_AGAIN_YEAR_OPTIONS } from './payAgain';
+import { TRAVEL_TAX_ECONOMIC_CODE } from '../data/travelTax2026';
 
 /** This is an editable INPUT snapshot, not a cloned receipt or authorization. */
 export type PaymentReuse = {
@@ -33,6 +34,11 @@ const copiedYear = (year: string) => {
 type SourceAllocation = {
   tin: string; name: string; headId: number; year: string; amountMinor: number;
 };
+
+/** A receipt may hide duplicate accounting rows while displaying verified SQL
+ * allocation groups. Only use those saved head rows after readback reconciliation. */
+const reusableHeads = (receipt: ChallanReceipt) =>
+  receipt.items?.length ? receipt.items : receipt.reusableAccountingLines ?? [];
 
 /** A grouped historical batch has one Pay Again choice, not one per receipt.
  * Keep the full original row list available to the reconstruction validator.
@@ -83,6 +89,7 @@ export function reuseRecordedPayment(
         typeof trip.departurePort !== 'string' || !trip.departurePort.trim() ||
         typeof trip.destination !== 'string' || !trip.destination.trim() ||
         typeof trip.travelDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(trip.travelDate) ||
+        trip.economicCode !== TRAVEL_TAX_ECONOMIC_CODE ||
         !Array.isArray(trip.passengers) || !trip.passengers.length ||
         trip.passengers.length > 20 || receipt.items.length !== trip.passengers.length ||
         !(receipt.totalAmount > 0) ||
@@ -90,8 +97,19 @@ export function reuseRecordedPayment(
       throw Error('Original travel details are incomplete.');
     const sum = trip.passengers.reduce((total, passenger, index) => {
       const minor = Math.round(passenger.amount * 100);
-      const lineMinor = Math.round(receipt.items[index].totalAmount * 100);
-      if (!Number.isSafeInteger(minor) || minor < 0 || minor !== lineMinor ||
+      const head = receipt.items[index];
+      const lineMinor = Math.round(head.totalAmount * 100);
+      // The old receipt is historical evidence, not a reusable rate authority.
+      // A wrong passenger head, age band or unit amount must never be copied
+      // into another journey under a convincing but unrelated receipt total.
+      if (!Number.isFinite(passenger.amount) || passenger.amount < 0 ||
+          !Number.isSafeInteger(minor) || Math.abs(passenger.amount * 100 - minor) > 0.000001 ||
+          !Number.isFinite(head.totalAmount) || Math.abs(head.totalAmount * 100 - lineMinor) > 0.000001 ||
+          minor !== lineMinor || head.headId !== 155 + index ||
+          head.economicCode !== trip.economicCode ||
+          head.headNameEn !== 'Travel tax — ' + passenger.name ||
+          Math.round(head.taxAmount * 100) !== minor ||
+          !['ADULT','CHILD','UNDER5'].includes(passenger.ageBand) ||
           typeof passenger.name !== 'string' || !passenger.name.trim() ||
           !['BD','FOREIGN'].includes(passenger.nationality) ||
           (passenger.nationality === 'FOREIGN' && !passenger.country?.trim()))
@@ -105,7 +123,9 @@ export function reuseRecordedPayment(
       nationality: passenger.nationality,
       passport: '',
       name: passenger.name,
-      ageBand: 'ADULT' as const,
+      // Preserve the recorded category for the editable copy; the new journey
+      // still requires fresh DOB, date and passport validation before rating.
+      ageBand: passenger.ageBand,
       birthDate: '',
       country: passenger.country || (passenger.nationality === 'BD' ? 'Bangladesh' : ''),
       identitySource: (passenger.nationality === 'BD' ? 'PENDING' : 'MANUAL') as 'PENDING' | 'MANUAL',
@@ -123,12 +143,12 @@ export function reuseRecordedPayment(
     return {ownerUid,sourcePaymentId,service,formPayload:payload};
   }
   if (!supported.has(service)) throw Error('This payment service needs a fresh payment journey.');
-  if (source.some(r => !r.isSimulatedDemo || r.paymentCategory !== service || !r.items?.length))
+  if (source.some(r => !r.isSimulatedDemo || r.paymentCategory !== service || !reusableHeads(r).length))
     throw Error('The original payment is incomplete and cannot be copied.');
   // Historical or newly recorded Return receipts cannot introduce a non-return
   // head through Pay Again, even when an old receipt lacks allocation metadata.
   if (service === 'TAX_WITH_RETURN' && source.some(r =>
-    r.items.some(head => head.headId !== 125)))
+    reusableHeads(r).some(head => head.headId !== 125)))
     throw Error('Tax with Return cannot be combined with another payment head.');
   // A single fetched row may still belong to a larger multi-item batch.
   // Never treat a partial history page or missing item as an entire payment.
@@ -157,11 +177,12 @@ export function reuseRecordedPayment(
     sorted.some(receipt => (receipt.allocationItems?.length ?? 0) > 0);
   const allocations: SourceAllocation[] = [];
   for (const receipt of sorted) {
+    const savedHeads = reusableHeads(receipt);
     if (hasAllocationSnapshot) {
-      if (!receipt.allocationItems?.length || receipt.items.length !== receipt.allocationItems.length)
+      if (!receipt.allocationItems?.length || savedHeads.length !== receipt.allocationItems.length)
         throw Error('Original taxpayer/head/year allocations are incomplete.');
-      for (let index = 0; index < receipt.items.length; index++) {
-        const head = receipt.items[index];
+      for (let index = 0; index < savedHeads.length; index++) {
+        const head = savedHeads[index];
         const allocation = receipt.allocationItems[index];
         const tin = allocation.taxpayerTin ?? '';
         const value = checkedMinor(head.totalAmount);
@@ -175,14 +196,14 @@ export function reuseRecordedPayment(
     } else {
       const tin = receipt.taxpayerTin ?? '';
       if (!validTin(tin)) throw Error('Original taxpayer identity cannot be verified.');
-      for (const head of receipt.items) {
+      for (const head of savedHeads) {
         if (!Number.isSafeInteger(head.headId) || head.headId <= 0)
           throw Error('Original payment head is missing.');
         allocations.push({tin, name: '', headId: head.headId,
           year: receipt.assessmentYear, amountMinor: checkedMinor(head.totalAmount)});
       }
     }
-    const receiptSum = receipt.items.reduce((sum, h) => sum + checkedMinor(h.totalAmount), 0);
+    const receiptSum = savedHeads.reduce((sum, h) => sum + checkedMinor(h.totalAmount), 0);
     if (receiptSum !== checkedMinor(receipt.totalAmount))
       throw Error('Original payment amount does not reconcile.');
   }
@@ -303,7 +324,11 @@ export function reuseLegacySingleHeadPayment(
     tin:ownerIsPayee?'':tin,payerName:'',otherTaxpayerName:'',
     additionalTaxpayers:[],otherTaxLines:[],phone:'',receiptEmail:'',
     assessmentYear:copiedYear(line.assessmentYear),
-    noticeReference:'',incomeTaxType:null,selectedHeadIds:[],
+    noticeReference:'',
+    // Historical SQL parents may predate receipt snapshots; retain their original remarks
+    // as editable input for a NEW Pay Again payment without altering the saved parent.
+    paymentRemarks:typeof details.paymentRemarks==='string'?details.paymentRemarks:'',
+    incomeTaxType:null,selectedHeadIds:[],
     amountInputs:{},legacySourceAmount:money(original.amountMinor),
   }};
 }

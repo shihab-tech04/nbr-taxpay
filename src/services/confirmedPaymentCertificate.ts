@@ -186,6 +186,36 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
  for(const item of items){total+=item.amountMinor;if(!Number.isSafeInteger(total))return undefined;}
  return total===tx.amountMinor?items:undefined;
 }
+/** Restore original head IDs only when the saved Taxpayer SQL accounting rows
+ * reconcile to each independently verified allocation. Receipt display still
+ * uses its existing allocation-only projection; this is Pay Again input data,
+ * not a second receipt or a claim of Treasury settlement. */
+function reusableAccountingLines(
+ tx:StoredPayment, allocations:ReceiptAllocationItem[]|undefined,
+):PaymentLineItem[]|undefined{
+ // Older combined records persist a separate receiptLines array; v2/v3
+ // submissions persist the same immutable accounting facts in details.lines.
+ // Never infer head IDs from display labels or allocations alone.
+ const raw=Array.isArray(tx.details?.receiptLines)
+  ?tx.details.receiptLines:tx.details?.lines;
+ if(!allocations?.length||!Array.isArray(raw)||raw.length!==allocations.length||
+    raw.some(item=>!item||typeof item!=='object'||Array.isArray(item)))return undefined;
+ const heads=toItems(raw);
+ if(heads.length!==allocations.length)return undefined;
+ let sum=0;
+ for(let index=0;index<heads.length;index++){
+  const head=heads[index],allocation=allocations[index];
+  const minor=Math.round(head.totalAmount*100);
+  if(!Number.isSafeInteger(head.headId)||head.headId<=0||
+     !head.headNameEn.trim()||!Number.isSafeInteger(minor)||minor<=0||
+     !validTin(allocation.taxpayerTin)||head.headNameEn!==allocation.paymentServiceEn||
+     head.economicCode!==(allocation.economicCode??'')||
+     minor!==allocation.amountMinor)return undefined;
+  sum+=minor;
+  if(!Number.isSafeInteger(sum))return undefined;
+ }
+ return sum===tx.amountMinor?heads:undefined;
+}
 /** Validate snapshot against immutable database transaction identity and amount. */
 export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
  if(!validCertificateTransactionId(tx.id)||tx.status!=='SIMULATED_SUCCESS'||
@@ -194,6 +224,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
  const d=tx.details??{};
  const method=stringValue(d.paymentMethod);
  const allocationItems=toAllocationItems(tx);
+ const readbackLines=reusableAccountingLines(tx,allocationItems);
  // Do not allow a saved receipt snapshot to bypass beneficiary/amount reconciliation.
  if(Array.isArray(d.allocations)&&d.allocations.length>0&&!allocationItems)
   throw new Error('Payment allocations could not be reconciled');
@@ -232,7 +263,10 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
       createdAt:tx.createdAt,completedAt:tx.createdAt,
       treasuryStatus:'GATEWAY_SUCCESS',
       isSimulatedDemo:true,
-      ...(allocationItems?{allocationItems}:{}),...batchInfo,
+      ...(allocationItems?{allocationItems}:{}),
+      ...(readbackLines?{reusableAccountingLines:readbackLines}:{}),...batchInfo,
+      // Original challan-level remarks come from the saved parent, not a stale display snapshot.
+      ...(typeof d.paymentRemarks==='string'?{paymentRemarks:d.paymentRemarks}:{}),
       taxCreditStatus:tx.service==='SOURCE_TAX_DEPOSIT'?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
     };
   }
@@ -249,10 +283,13 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   taxpayerName:stringValue(d.taxpayerName)||undefined,
   taxpayerTin:stringValue(d.taxpayerTin),receiptMobile:stringValue(d.receiptMobile),
   noticeReference:stringValue(d.noticeReference),
+  // Preserve Unicode, punctuation and line breaks even for pre-snapshot history records.
+  ...(typeof d.paymentRemarks==='string'?{paymentRemarks:d.paymentRemarks}:{}),
   isRepresentativePayment:d.payerMode==='OTHER',
   taxZone:stringValue(d.taxZone)||'—',taxCircle:stringValue(d.taxCircle)||'—',
   isWithholding:category==='SOURCE_TAX_DEPOSIT'||d.isWithholding===true,
-  items:allocationItems?[]:toItems(d.lines),...(allocationItems?{allocationItems}:{}),totalAmount:total,
+  items:allocationItems?[]:toItems(d.lines),...(allocationItems?{allocationItems}:{}),
+  ...(readbackLines?{reusableAccountingLines:readbackLines}:{}),totalAmount:total,
   paymentMethod:methods.has(method as ChallanReceipt['paymentMethod'])?
    method as ChallanReceipt['paymentMethod']:'SIMULATED',
   gatewayTransactionId:tx.id,treasuryStatus:'GATEWAY_SUCCESS',

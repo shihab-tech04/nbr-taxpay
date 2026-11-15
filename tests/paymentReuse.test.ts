@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {reuseRecordedPayment,reuseLegacySingleHeadPayment,oneChoicePerRecordedParent} from '../src/services/paymentReuse.ts';
 import type {ChallanReceipt} from '../src/types/tax.ts';
 import {V11_PAYMENT_OPTIONS} from '../src/data/v11PaymentOptions.ts';
+import {makeConfirmedReceipt} from '../src/services/confirmedPaymentCertificate.ts';
 const receipt = {
   id:'r1',challanNo:'SIM-1',tokenNumber:'SIM-token',paymentCategory:'OTHER_TAX_PAYMENT',
   assessmentYear:'2025-26, 2026-27',payerName:'Payer',payerTin:'1234567890123',
@@ -138,7 +139,8 @@ test('cannot reuse a partial grouped batch or unreconciled line amount',()=>{
 
 test('Travel Tax reuse copies itinerary and people but never treats masked passports as verified',()=>{
  const travel={...receipt,paymentCategory:'TRAVEL_TAX' as const,
-   assessmentYear:'2026-27',items:[{...receipt.items[0],totalAmount:30,taxAmount:30}],
+   assessmentYear:'2026-27',items:[{...receipt.items[0],headId:155,
+     economicCode:'1144102',headNameEn:'Travel tax — Test Passenger',totalAmount:30,taxAmount:30}],
    totalAmount:30,travelDetails:{
      mode:'LAND' as const,departurePort:'Benapole',destination:'India',travelDate:'2026-11-12',
      economicCode:'1144102',
@@ -164,6 +166,54 @@ test('Travel Tax reuse copies itinerary and people but never treats masked passp
  assert.throws(()=>reuseRecordedPayment([{...travel,
    travelDetails:{...travel.travelDetails,passengers:[{...travel.travelDetails.passengers[0],amount:0}]}
  }],'owner','1234567890123','travel-origin'),/cannot be reconciled/);
+});
+
+test('M06 Pay Again preserves child and exempt passenger categories, but requires fresh identity and travel date',()=>{
+ const original={
+   ...receipt,paymentCategory:'TRAVEL_TAX' as const,totalAmount:1500,
+   items:[
+     {...receipt.items[0],headId:155,economicCode:'1144102',headNameEn:'Travel tax — Adult Traveller',
+       totalAmount:1000,taxAmount:1000},
+     {...receipt.items[1],headId:156,economicCode:'1144102',headNameEn:'Travel tax — Child Traveller',
+       totalAmount:500,taxAmount:500},
+     {...receipt.items[0],headId:157,economicCode:'1144102',headNameEn:'Travel tax — Exempt Traveller',
+       totalAmount:0,taxAmount:0},
+   ],
+   travelDetails:{mode:'LAND' as const,departurePort:'Benapole',destination:'India',
+     travelDate:'2026-11-12',economicCode:'1144102',
+     passengers:[
+       {name:'Adult Traveller',passportMasked:'••••3456',nationality:'BD' as const,
+         country:'Bangladesh',ageBand:'ADULT' as const,age:34,amount:1000},
+       {name:'Child Traveller',passportMasked:'••••4321',nationality:'FOREIGN' as const,
+         country:'India',ageBand:'CHILD' as const,age:9,amount:500},
+       {name:'Exempt Traveller',passportMasked:'••••8901',nationality:'FOREIGN' as const,
+         country:'India',ageBand:'UNDER5' as const,age:3,amount:0},
+     ]},
+ };
+ const before=JSON.stringify(original);
+ const copy=reuseRecordedPayment([original],'owner','1234567890123','travel-origin');
+ const people=copy.formPayload.passengers as Array<{
+   name:string;ageBand:string;birthDate:string;passport:string;identitySource:string
+ }>;
+ assert.deepEqual(people.map(x=>x.ageBand),['ADULT','CHILD','UNDER5']);
+ assert.deepEqual(people.map(x=>x.name),['Adult Traveller','Child Traveller','Exempt Traveller']);
+ assert.deepEqual(people.map(x=>x.birthDate),['','','']);
+ assert.deepEqual(people.map(x=>x.passport),['','','']);
+ assert.deepEqual(people.map(x=>x.identitySource),['PENDING','MANUAL','MANUAL']);
+ assert.equal(copy.formPayload.travelDate,'');
+ assert.equal(JSON.stringify(copy).includes('••••3456'),false);
+ assert.equal(JSON.stringify(original),before);
+ assert.throws(()=>reuseRecordedPayment([{...original,items:[
+   {...original.items[0],headId:156},...original.items.slice(1)]}],
+   'owner','1234567890123','travel-origin'),/cannot be reconciled/);
+ assert.throws(()=>reuseRecordedPayment([{...original,items:[
+   {...original.items[0],economicCode:'WRONG'},...original.items.slice(1)]}],
+   'owner','1234567890123','travel-origin'),/cannot be reconciled/);
+ assert.throws(()=>reuseRecordedPayment([{...original,travelDetails:{
+   ...original.travelDetails,passengers:[
+     original.travelDetails.passengers[0],{...original.travelDetails.passengers[1],ageBand:'UNKNOWN' as 'CHILD'},
+     original.travelDetails.passengers[2]]}}],
+   'owner','1234567890123','travel-origin'),/cannot be reconciled/);
 });
 
 test('does not reuse duplicate allocations for the same taxpayer, head and year',()=>{
@@ -199,6 +249,24 @@ test('historical SQL single-head payment opens editable repeat without guessing 
   },'user1','1111111111111');
   assert.equal(newYear.formPayload.assessmentYear,'2026-27');
 });
+test('legacy Pay Again restores long bilingual remarks from original SQL parent',()=>{
+  const remarks='Prior payment reference 190.\nবাংলা বিবরণ: পূর্ববর্তী করবর্ষের সংশোধিত চালান।';
+  const source={
+    id:'572659b2-4f41-496f-b72c-a9189a3ccb61',
+    service:'ADVANCE_TAX',status:'SIMULATED_SUCCESS',amountMinor:2500,
+    details:{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2025-26',
+      paymentRemarks:remarks,
+      lines:[{beneficiary:'user1',category:'ADVANCE_TAX',assessmentYear:'2025-26',amountMinor:2500}]}
+  };
+  assert.ok(remarks.length>20);
+  const original=JSON.stringify(source);
+  const draft=reuseLegacySingleHeadPayment(source,'user1','1111111111111');
+  assert.equal(draft.formPayload.paymentRemarks,remarks);
+  draft.formPayload.paymentRemarks='Changed only for new payment';
+  assert.equal(source.details.paymentRemarks,remarks);
+  assert.equal(JSON.stringify(source),original);
+});
+
 test('historical head IDs never auto-select a current payment head',()=>{
   const source={
     id:'616259b2-4f41-496f-b72c-a9189a3ccb61',
@@ -380,4 +448,112 @@ test('Pay Again offers one choice per recorded parent, never one per legacy batc
   // the existing complete-batch reconstruction and idempotency checks.
   assert.equal(source.length,6);
   assert.equal(JSON.stringify(source),original);
+});
+
+
+test('M09 Pay Again restores verified SQL accounting rows hidden from combined receipt display',()=>{
+  const firstHead=V11_PAYMENT_OPTIONS.find(item=>item.category==='ADVANCE_TAX'&&item.status==='ACTIVE');
+  const secondHead=V11_PAYMENT_OPTIONS.find(item=>item.category==='ASSESSED_DEMAND'&&item.status==='ACTIVE');
+  assert.ok(firstHead&&secondHead);
+  const originalId='5b126b38-9604-4e93-a24f-7c93fcf4f281';
+  const source={
+    id:originalId,service:'OTHER_TAX_PAYMENT',status:'SIMULATED_SUCCESS',amountMinor:3750,
+    createdAt:'2026-11-15T07:30:00.000Z',
+    details:{
+      payerName:'Source Payer',payerTin:'1111111111111',
+      paymentRemarks:'Multiple heads and years. বাংলা মন্তব্য।',
+      allocationContractVersion:2,
+      lines:[
+        {beneficiary:'user1',taxpayerTin:'1111111111111',category:'OTHER_TAX_PAYMENT',
+          headId:firstHead.id,assessmentYear:'2025-26',amountMinor:1250},
+        {beneficiary:'user2',taxpayerTin:'2222222222222',category:'OTHER_TAX_PAYMENT',
+          headId:secondHead.id,assessmentYear:'2026-27',amountMinor:2500},
+      ],
+      receiptLines:[
+        {headId:firstHead.id,headNameEn:firstHead.nameEn,economicCode:firstHead.economicCode,
+          taxAmount:12.5,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:12.5},
+        {headId:secondHead.id,headNameEn:secondHead.nameEn,economicCode:secondHead.economicCode,
+          taxAmount:25,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:25},
+      ],
+      allocations:[
+        {taxpayerName:'Source Payer',taxpayerTin:'1111111111111',headId:firstHead.id,
+          assessmentYear:'2025-26',amountMinor:1250},
+        {taxpayerName:'Recipient Two',taxpayerTin:'2222222222222',headId:secondHead.id,
+          assessmentYear:'2026-27',amountMinor:2500},
+      ],
+    },
+  };
+  const before=JSON.stringify(source);
+  const receipt=makeConfirmedReceipt(source);
+  assert.deepEqual(receipt.items,[],'receipt must continue to avoid duplicate accounting rows');
+  assert.deepEqual(receipt.reusableAccountingLines?.map(h=>h.headId),[firstHead.id,secondHead.id]);
+  const repeated=reuseRecordedPayment([receipt],'owner-1','1111111111111',originalId);
+  assert.equal(repeated.service,'OTHER_TAX_PAYMENT');
+  assert.equal(repeated.sourcePaymentId,originalId);
+  assert.equal(repeated.formPayload.paymentRemarks,source.details.paymentRemarks);
+  const allocations=repeated.formPayload.otherTaxLines as Array<{
+    id:string;headId:number;assessmentYear:string;amount:string
+  }>;
+  assert.deepEqual(allocations.map(a=>[a.headId,a.assessmentYear,a.amount]),[
+    [firstHead.id,'2025-26','12.50'],[secondHead.id,'2026-27','25.00'],
+  ]);
+  assert.equal(new Set(allocations.map(a=>a.id)).size,2);
+  allocations[0].amount='18.00';
+  assert.equal(JSON.stringify(source),before,'new Pay Again input never changes original SQL');
+  assert.equal(JSON.stringify(receipt.items),'[]');
+
+  // Missing saved head rows cannot be reverse-engineered from translated labels.
+  assert.throws(()=>makeConfirmedReceipt({...source,details:{...source.details,receiptLines:undefined}}),
+    /allocations could not be reconciled/);
+  const partial={...receipt,reusableAccountingLines:undefined};
+  assert.throws(()=>reuseRecordedPayment([partial],'owner-1','1111111111111',originalId),
+    /incomplete and cannot be copied/);
+  // A mismatched per-head amount must not be turned into an apparently valid draft.
+  const badAmount={...source,details:{...source.details,
+    receiptLines:[{...source.details.receiptLines[0],totalAmount:13},
+      source.details.receiptLines[1]]}};
+  assert.throws(()=>makeConfirmedReceipt(badAmount),/allocations could not be reconciled/);
+});
+
+
+test('M09 reuses v2 SQL accounting lines when no receiptLines or display snapshot was saved',()=>{
+  const id='a5f1bf08-d3b1-4284-8d20-3356c25f64af';
+  const headOne={headId:121,headNameEn:'Advance Tax',economicCode:'64',
+    taxAmount:10,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:10};
+  const headTwo={headId:145,headNameEn:'Tax on notice of demand',economicCode:'135',
+    taxAmount:15,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:15};
+  const original={
+    id,service:'OTHER_TAX_PAYMENT',status:'SIMULATED_SUCCESS',amountMinor:2500,
+    createdAt:'2026-11-15T08:00:00.000Z',
+    details:{
+      payerName:'Recorded payer',payerTin:'1111111111111',
+      allocationContractVersion:2,
+      lines:[headOne,headTwo],
+      allocations:[
+        {taxpayerName:'Recorded payer',taxpayerTin:'1111111111111',headId:121,
+          assessmentYear:'2025-26',amountMinor:1000},
+        {taxpayerName:'Recipient two',taxpayerTin:'2222222222222',headId:145,
+          assessmentYear:'2026-27',amountMinor:1500},
+      ],
+    },
+  };
+  const before=JSON.stringify(original);
+  const confirmed=makeConfirmedReceipt(original);
+  assert.deepEqual(confirmed.items,[],'existing receipt display stays allocation-only');
+  assert.deepEqual(confirmed.reusableAccountingLines?.map(item=>item.headId),[121,145]);
+  const copy=reuseRecordedPayment([confirmed],'owner-1','1111111111111',id);
+  assert.equal(copy.sourcePaymentId,id);
+  assert.equal(copy.service,'OTHER_TAX_PAYMENT');
+  assert.deepEqual((copy.formPayload.otherTaxLines as Array<{
+    headId:number;assessmentYear:string;amount:string
+  }>).map(item=>[item.headId,item.assessmentYear,item.amount]),[
+    [121,'2025-26','10.00'],[145,'2026-27','15.00'],
+  ]);
+  assert.equal(JSON.stringify(original),before,'a new editable copy cannot rewrite original SQL');
+  const malformed=makeConfirmedReceipt({...original,
+    details:{...original.details,lines:[{...headOne,headNameEn:'Wrong head'},headTwo]}});
+  assert.equal(malformed.reusableAccountingLines?.[0].headNameEn,'Wrong head',
+    'the verified source head remains authoritative, not guessed from labels');
+  assert.throws(()=>reuseRecordedPayment([{...confirmed,reusableAccountingLines:undefined}],
+    'owner-1','1111111111111',id),/incomplete/);
 });
