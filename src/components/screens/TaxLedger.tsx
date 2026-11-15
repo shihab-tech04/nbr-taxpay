@@ -133,7 +133,7 @@ export const TaxLedger:React.FC=()=>{
     if((state.state!=='ready'&&external.state!=='ready')||!events.length)return;
     const headers=['Date','Source','Dhara','Assessment year','Tax head','Event','Source status','Recorded amount (paisa)','Confirmed credit effect (paisa)','Challan','Reference','Credit evidence'];
     const lines=events.map(e=>[e.occurredAt,e.source,e.dhara,e.assessmentYear,e.component,e.code,e.status,
-      e.amountMinor,e.effectMinor,e.challanNo,e.reference,e.creditEvidenceStatus].map(escapeLedgerCsvCell).join(','));
+      e.creditEvidenceStatus==='OFFICIAL_POSTING'?null:e.amountMinor,e.effectMinor,e.challanNo,e.reference,e.creditEvidenceStatus].map(escapeLedgerCsvCell).join(','));
     const blob=new Blob(['\uFEFF',headers.map(escapeLedgerCsvCell).join(','),'\r\n',lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
     const href=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=href;a.download='sohojkor-tax-ledger.csv';a.click();
