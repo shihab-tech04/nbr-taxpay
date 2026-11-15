@@ -206,6 +206,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [caseStatus,setCaseStatus]=useState<State|'all'>('all');
   const [savedDraftCount,setSavedDraftCount]=useState<number|null>(null);
   const [draftHelpVisible,setDraftHelpVisible]=useState(false);
+  const [followupTab,setFollowupTab]=useState<'drafts'|'requests'>('requests');
   const [kind,setKind]=useState<Kind|'all'>('all');
   const [status,setStatus]=useState<State|'all'>('all');
   const [monthFilter,setMonthFilter]=useState('all');
@@ -578,6 +579,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     dashboardSource:overviewSource,dashboardOnlyCompleted:true
   });
   const openSavedDrafts=()=>{
+    setFollowupTab('drafts');
     const list=document.getElementById('taxpayer-dashboard-draft-section');
     if(list && previewAccount?.id==='user1' && activePreviewSession()?.profileId==='user1'){
       list.scrollIntoView({behavior:'smooth',block:'start'});
@@ -585,6 +587,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     }else setDraftHelpVisible(visible=>!visible);
   };
   const focusCorrectionRequests=()=>{
+    setFollowupTab('requests');
     const target=document.getElementById('dashboard-correction-requests');
     target?.scrollIntoView({behavior:'smooth',block:'start'});
     target?.focus({preventScroll:true});
@@ -708,12 +711,23 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             ?tr('Draft count unavailable. Sign in or refresh to check again.','খসড়ার সংখ্যা পাওয়া যায়নি। সাইন ইন করুন অথবা রিফ্রেশ করে আবার দেখুন।')
             :tr('No saved drafts yet. Use Save Draft during a payment to continue it later.','এখনও সংরক্ষিত খসড়া নেই। পরে চালু করতে পেমেন্টের সময় খসড়া সংরক্ষণ করুন।')}</p>}
       </section>
-    <div className="taxpay-bento-tasks" aria-label={tr('Continue and track','চালিয়ে যান ও অনুসরণ করুন')}>
-    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1}>
+    <div className="taxpay-bento-tasks" aria-label={tr('Follow-ups','পরবর্তী করণীয়')}>
+      <div className="taxpay-bento-tasks__heading">
+        <h2>{tr('Follow-ups','পরবর্তী করণীয়')}</h2>
+        <div className="taxpay-bento-tasks__tabs" role="group" aria-label={tr('Follow-up type','পরবর্তী করণীয়ের ধরন')}>
+          <button type="button" aria-pressed={followupTab==='drafts'} onClick={()=>setFollowupTab('drafts')}>
+            {tr('Drafts','খসড়া')} <span>{savedDraftCount===null?'—':savedDraftCount}</span>
+          </button>
+          <button type="button" aria-pressed={followupTab==='requests'} onClick={()=>setFollowupTab('requests')}>
+            {tr('Requests','আবেদন')} <span>{correctionRequestCount===null?'—':correctionRequestCount}</span>
+          </button>
+        </div>
+      </div>
+    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1} hidden={followupTab!=='drafts'}>
       <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
         onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
     </div>}
-    <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} aria-labelledby="dashboard-correction-requests-title">
+    <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} hidden={followupTab!=='requests'} aria-labelledby="dashboard-correction-requests-title">
       <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
       <p className="mt-2 text-sm text-taxpay-muted">{overviewSource==='example'
         ?tr('Example requests and their displayed status.','উদাহরণভিত্তিক আবেদন ও প্রদর্শিত অবস্থা।')
