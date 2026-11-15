@@ -6,7 +6,7 @@ import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
 import {BentoPaymentAnalytics} from './BentoPaymentAnalytics';
-import {matchesDashboardChartDrilldown,type DashboardChartSource,type DashboardChartService} from './dashboardBentoAnalytics';
+import {chooseDashboardChartSource,matchesDashboardChartDrilldown,type DashboardChartSource,type DashboardChartService} from './dashboardBentoAnalytics';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
@@ -107,6 +107,10 @@ export { user1DemoRoutes } from '../../config/user1DemoRoutes';
 export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;onResumePaymentDraft?: (draft:PaymentFormDraft)=>void}>=({route,activityTabs=false,onResumePaymentDraft})=>{
   const {navigate,language,setLanguage,routeParams,openPaymentServiceChoice,previewAccount,startPaymentReuse}=useTaxState();
   const bn=language==='bn';
+  // These historical fictional scenarios are available only on localhost and
+  // only with an explicit QA flag. Production must never fall back to them.
+  const localQaScenario= /^(localhost|127\\.0\\.0\\.1)$/.test(window.location.hostname)&&
+    new URLSearchParams(window.location.search).get('qaScenario')==='1';
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [savedTagPeople,setSavedTagPeople]=useState<Beneficiary[]>([]);
@@ -178,6 +182,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     return typeof initial==='string'&&/^20\d{2}-20\d{2}$/.test(initial)
       ? initial : '2025-2026';
   });
+  const [overviewSourceChoice,setOverviewSourceChoice]=useState<{year:string;source:DashboardChartSource}|null>(null);
   const changeYear=(nextYear:string)=>{
     setYear(nextYear);
     setLedgerYear(nextYear);
@@ -322,10 +327,15 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const historyScoped=useMemo(()=>[...scoped,...sqlRows.filter(row=>row.years?.includes(year))],[scoped,sqlRows,year]);
   // One assessment-year/source selection drives KPIs, recent activity and charts.
   // Do not merge example events with owner-session SQL payments.
-  // Overview is always account-linked. Example events are retained only for
-  // isolated preview fixtures and must never become payment KPIs or charts.
-  const dashboardChartRecords=useMemo(()=>[...sqlRows],[sqlRows]);
-  const overviewSource='recorded' as DashboardChartSource;
+  // Customer Overview is account-only. Local, explicitly opted-in QA scenarios
+  // retain the historical fixture projections for deterministic browser tests.
+  const dashboardChartRecords=useMemo(()=>localQaScenario?[...events,...sqlRows]:[...sqlRows],[sqlRows,localQaScenario]);
+  const defaultOverviewSource=localQaScenario
+    ?chooseDashboardChartSource(dashboardChartRecords,year,savedTagPeople,DEMO_USERS.user1.tin)
+    :'recorded';
+  const overviewSource=(localQaScenario
+    ?(overviewSourceChoice?.year===year?overviewSourceChoice.source:defaultOverviewSource)
+    :'recorded') as DashboardChartSource;
   const overviewCompletedRows=overviewSource==='recorded'
     ?sqlRows.filter(item=>item.state==='POSTED'&&item.years?.includes(year))
     :scoped.filter(item=>item.state==='POSTED'&&['income','ait','travel'].includes(item.kind));
@@ -683,6 +693,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       ownerTin={DEMO_USERS.user1.tin}
       language={language}
       sourceLoadError={sqlLoadError}
+      allowExamples={localQaScenario}
+      selectedSource={overviewSource}
+      onSourceChange={source=>{if(localQaScenario)setOverviewSourceChoice({year,source});}}
       onManageBeneficiaries={()=>navigate('beneficiaries')}
       onOpenBeneficiary={tin=>navigate('beneficiaries',{
         openBeneficiaryTin:tin,returnTo:'taxpayer_home'
