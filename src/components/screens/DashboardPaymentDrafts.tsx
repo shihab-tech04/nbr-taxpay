@@ -32,14 +32,20 @@ export const DashboardPaymentDrafts: React.FC<{
   const ownerKey = paymentDraftOwnerScope(actor);
   // SQL readback can finish after sign-out, account switching or unmount.
   // Bind each action to the owner active at the time it started.
-  const latestOwner = useRef(ownerKey);
+  const latestOwner = useRef({key:ownerKey,generation:0});
+  // Owner strings may cycle A -> B -> A while an earlier fetch is pending.
+  // A generation also protects retry and delete callbacks without an effect guard.
+  if(latestOwner.current.key!==ownerKey)
+    latestOwner.current={key:ownerKey,generation:latestOwner.current.generation+1};
+  const requestGeneration=latestOwner.current.generation;
   const mounted = useRef(true);
-  latestOwner.current = ownerKey;
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
   }, []);
-  const sameOwner = () => mounted.current && latestOwner.current === ownerKey;
+  const sameOwner = () => mounted.current &&
+    latestOwner.current.key===ownerKey &&
+    latestOwner.current.generation===requestGeneration;
   const [catalog, setCatalog] = useState<Catalog>({ ownerKey: '', status: 'loading', rows: [] });
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
