@@ -15,7 +15,13 @@ test('approved V3 overview is an asymmetric bento with real task destinations',a
     const ranking=grid.getByTestId('dashboard-ranked-beneficiaries');
     const journey=grid.locator('.taxpay-bento-recent');
     const tasks=grid.locator('.taxpay-bento-tasks');
-    await expect(summary.getByRole('button')).toHaveCount(3);
+    // The three existing task destinations remain; the hero adds history access.
+    await expect(summary.locator('.taxpay-summary-metric')).toHaveCount(3);
+    await expect(summary.getByRole('button')).toHaveCount(4);
+    const hero=summary.locator('.taxpay-overview-feature');
+    await expect(hero.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
+    await expect(hero.getByRole('button',{name:'View payment history'})).toBeVisible();
+    await expect(hero).toHaveCSS('background-color','rgb(8, 85, 135)');
     await expect(roles.getByRole('heading',{name:'Payment relationships'})).toBeVisible();
     await expect(beneficiaries.getByRole('heading',{name:'Beneficiary Breakdown'})).toBeVisible();
     await expect(ranking.getByRole('heading',{name:'Top beneficiaries'})).toBeVisible();
@@ -78,6 +84,8 @@ test('public account overview never falls back to fictional totals, even when se
   await expect(grid.getByRole('button',{name:/Completed Payments/})).not.toContainText('5');
   await expect(analytics).not.toContainText('113,500');
   await expect(grid.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
+  await expect(grid.getByTestId('dashboard-overview-total')).toHaveText('—');
+  await expect(grid.locator('.taxpay-overview-feature__services')).toHaveCount(0);
   await expect(grid.getByRole('button',{name:/Saved Drafts/})).toBeVisible();
   await analytics.getByRole('button',{name:'View payment history'}).click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
