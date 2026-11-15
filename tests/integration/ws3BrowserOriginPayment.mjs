@@ -258,7 +258,26 @@ export async function verifyWs3BrowserOrigin({
     await oneTimeEntry.getByRole('button',{name:'Search one-time taxpayer'}).click();
     await expect(oneTimeEntry.getByTestId('one-time-taxpayer-preview'))
       .toContainText('User 4');
-    await oneTimeEntry.getByRole('button',{name:'Add to this payment'}).click();
+    const addOneTime=oneTimeEntry.getByRole('button',{name:'Add to this payment'});
+    if(!await addOneTime.isEnabled()){
+      // Diagnostics only; never print the capability, full TIN or private data.
+      const state=await oneTimeDialog.evaluate(dialog=>{
+        const entry=dialog.querySelector('[data-testid="one-time-taxpayer-entry"]');
+        const picker=dialog.querySelector('[data-testid="saved-beneficiary-picker"]');
+        const field=entry?.querySelector('#other-tax-one-time-tin');
+        return {
+          oneTimePreviewPresent:Boolean(entry?.querySelector('[data-testid="one-time-taxpayer-preview"]')),
+          tinLength:field&&'value' in field?String(field.value).length:null,
+          savedRecipientChecked:picker?.querySelectorAll('input[type="checkbox"]:checked,[role="checkbox"][aria-checked="true"]').length??0,
+          pickerLoading:Boolean(picker?.textContent?.includes('Loading beneficiary lists')),
+          alerts:Array.from(dialog.querySelectorAll('[role="alert"]'))
+            .map(el=>el.textContent?.trim().slice(0,120)).filter(Boolean),
+          previewSessionPresent:Boolean(sessionStorage.getItem('taxpay-taxpayer-preview-user')),
+        };
+      });
+      console.error('F039_ONE_TIME_DISABLED_STATE '+JSON.stringify(state));
+    }
+    await addOneTime.click();
     await expect(oneTimeEntry.getByTestId('confirmed-one-time-taxpayer'))
       .toContainText(unsavedTin);
     await expect(f039Picker.getByTestId('beneficiary-list-accordion'))
