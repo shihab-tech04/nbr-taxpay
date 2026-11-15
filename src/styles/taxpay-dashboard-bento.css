@@ -381,7 +381,9 @@
    available), three metrics, two analytic rows, then journey and tasks.
    display:contents retains the existing accessible section and action IDs. */
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-request-row{display:contents}
-.taxpay-bento-request-row > .taxpay-bento-summary{
+/* display:contents promotes this summary to the main grid. Match the old
+   .taxpay-bento-hero specificity for populated AND empty dashboards. */
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] > .taxpay-bento-request-row > .taxpay-bento-summary{
   grid-column:1/-1;order:1;min-width:0;width:100%;max-width:none;
 }
 .taxpay-bento-request-row > .taxpay-bento-tasks{
@@ -415,13 +417,6 @@
 }
 .taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-analytics[data-empty="true"] .taxpay-bento-analytics__link{
   align-self:flex-start;margin-top:auto;
-}
-/* The original V3 .taxpay-bento-hero rule has greater specificity than
-   .taxpay-bento-summary, silently forcing the "full-width" summary to span
-   only five columns. Keep the empty-state summary full-width on every device. */
-.taxpay-bento-grid[data-testid="taxpayer-overview-bento"][data-dashboard-empty="true"]
-  > .taxpay-bento-request-row > .taxpay-bento-summary{
-  grid-column:1/-1;
 }
 @media(min-width:1200px){
   .taxpay-bento-grid[data-dashboard-empty="true"] .taxpay-bento-request-row > .taxpay-bento-tasks{
@@ -488,29 +483,36 @@
 }
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric{
   display:flex;
-  flex-direction:column;
-  align-items:flex-start;
+  flex-direction:row;
+  align-items:center;
   justify-content:space-between;
   min-width:0;
-  gap:7px;
-  min-height:94px;
-  padding:12px;
+  gap:10px;
+  min-height:84px;
+  padding:12px 16px;
   border:1px solid var(--color-taxpay-border,#e0e8f1);
   border-top:3px solid var(--color-taxpay-primary,#085587);
   border-radius:10px;
   background:#fff;
   color:var(--color-taxpay-text,#17243c);
 }
+/* The previous hero selector added an unintended red first-child left border.
+   Preserve approved top accents and all native button/focus behaviors. */
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-bento-hero__status > .taxpay-summary-metric{
+  border-left:1px solid var(--color-taxpay-border,#e0e8f1);
+}
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric--drafts{border-top-color:#b18439}
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric--requests{border-top-color:#5c7fa8}
-.taxpay-summary-metric__label{display:flex;align-items:center;gap:7px;min-width:0;line-height:1.25;overflow-wrap:anywhere}
+.taxpay-summary-metric__label{display:flex;align-items:center;gap:8px;min-width:0;line-height:1.4;overflow-wrap:anywhere;font-size:14px}
 .taxpay-summary-metric__label svg{flex:none;color:var(--color-taxpay-primary,#2c5ead)}
 .taxpay-summary-metric--drafts .taxpay-summary-metric__label svg{color:#a07025}
 .taxpay-summary-metric--requests .taxpay-summary-metric__label svg{color:#5c7fa8}
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric strong{
+  flex:none;
   font-size:24px;
   line-height:1.1;
   font-weight:650;
+  font-variant-numeric:tabular-nums;
 }
 .taxpay-summary-draft-hint{font-size:13px;line-height:1.5;color:var(--color-taxpay-muted,#64748b);margin:0}
 .taxpay-bento-request-row .taxpay-bento-corrections ul{display:grid;gap:8px}
@@ -567,12 +569,20 @@
     margin-top:8px;
   }
 }
-@media(max-width:479px){
+/* Long Bengali labels get two columns on tablets, one on narrow screens. */
+@media(max-width:959px){
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-bento-hero__status{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:599px){
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-bento-hero__status{
     grid-template-columns:minmax(0,1fr);
   }
+}
+@media(max-width:479px){
   .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric{
-    min-height:86px;padding:10px;
+    min-height:76px;padding:10px 12px;
   }
   .taxpay-monthly-card{padding:14px}
   .taxpay-monthly-card__plot{gap:3px}
