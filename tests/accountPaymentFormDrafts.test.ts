@@ -68,6 +68,8 @@ test('switching draft owner invalidates a selected draft and ignores stale refre
   assert.match(ui, /const selectionScope = ownerKey \+ ':' \+ service/);
   assert.match(ui, /const selectedOwnerRef = useRef\(selectionScope\)/);
   assert.match(ui, /window\.addEventListener\('storage', onGuestStorage\)/);
+  assert.match(ui, /guestReadyOwnerKey !== ownerKey/);
+  assert.match(ui, /setGuestReadyOwnerKey\(ownerKey\)/);
   assert.match(ui, /window\.removeEventListener\('storage', onGuestStorage\)/);
   assert.match(ui, /if \(paymentDraftOwnerScope\(\{kind:'guest'\}\) !== ownerKey\)/);
   assert.match(ui, /selectedOwnerRef\.current === selectionScope \? selectedDraft : null/);
