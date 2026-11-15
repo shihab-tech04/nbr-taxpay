@@ -38,12 +38,36 @@ test('M09 rejects fractional-cent historical heads and parents without rounding 
  check({...receipt,paymentCategory:'ADVANCE_TAX',allocationItems:undefined,
    taxpayerTin:'1234567890123',items:[{...receipt.items[0],totalAmount:10.0001}],totalAmount:10});
  // Genuine two-decimal amounts remain valid with their exact SQL minor units.
- const valid={...receipt,items:[{...receipt.items[0],totalAmount:10.01},receipt.items[1]],
+ const valid={...receipt,items:[{...receipt.items[0],taxAmount:10.01,totalAmount:10.01},receipt.items[1]],
    allocationItems:[{...receipt.allocationItems![0],amountMinor:1001},receipt.allocationItems![1]],
    totalAmount:30.01};
  const repeated=reuseRecordedPayment([valid],'ownerUid','1234567890123','original-payment');
  assert.deepEqual((repeated.formPayload.otherTaxLines as Array<{amount:string}>).map(line=>line.amount),
    ['10.01','20.00']);
+ assert.equal(JSON.stringify(receipt),sourceSnapshot);
+});
+test('M09 validates every non-Travel saved tax/fee component before reuse',()=>{
+ const sourceSnapshot=JSON.stringify(receipt);
+ const originalHead=receipt.items[0];
+ const brokenHeads=[
+   {...originalHead,taxAmount:10.0001},
+   {...originalHead,penaltyAmount:0.01},
+   {...originalHead,taxAmount:10.01,penaltyAmount:-0.01},
+   {...originalHead,taxAmount:9.99,penaltyAmount:0.0101}
+ ];
+ for(const head of brokenHeads){
+   assert.throws(()=>reuseRecordedPayment([
+     {...receipt,items:[head,receipt.items[1]]}
+   ],'ownerUid','1234567890123','original-payment'),
+   /Invalid historical payment amount|head breakdown does not reconcile/);
+ }
+ // A legitimate exact-cent fee is not discarded or silently reclassified.
+ const balanced={...receipt,items:[
+   {...originalHead,taxAmount:9.99,penaltyAmount:0.01},receipt.items[1]
+ ]};
+ const repeated=reuseRecordedPayment([balanced],'ownerUid','1234567890123','original-payment');
+ assert.deepEqual((repeated.formPayload.otherTaxLines as Array<{amount:string}>)
+   .map(item=>item.amount),['10.00','20.00']);
  assert.equal(JSON.stringify(receipt),sourceSnapshot);
 });
 test('Pay Again carries editable long, bilingual challan comments without mutating the source',()=>{
