@@ -17,7 +17,9 @@ import {
 export function AuthorizationRequestPopup(){
   const {previewAccount,language,navigate,currentRoute}=useTaxState();
   const {user:authenticatedUser}=useAccountIdentity();
-  const actor=previewAccount?.id;
+  // A real Supabase Auth session must take precedence over any stale preview
+  // session so recipient notices never mix two identities.
+  const actor=authenticatedUser?undefined:previewAccount?.id;
   const bn=language==='bn';
   const [incoming,setIncoming]=useState<HostedAuthorization|null>(null);
   const [dismissed,setDismissed]=useState<string[]>([]);
