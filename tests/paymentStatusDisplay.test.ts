@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { paymentStatusLabel } from '../src/services/paymentStatusDisplay';
+import { paymentStatusLabel, paymentReviewStatusLabel } from '../src/services/paymentStatusDisplay';
 
 test('F-054: known saved statuses remain understandable in EN and BN', () => {
   assert.equal(paymentStatusLabel('INITIATED', 'en'), 'Initiated');
@@ -24,4 +24,22 @@ test('F-054: unknown internal statuses do not leak their raw codes', () => {
       assert.equal(display.includes(status) && status.length > 0, false);
     }
   }
+});
+
+test('F-054: signed-in payment rows show localized recorded and Office-review statuses', () => {
+  assert.equal(paymentStatusLabel('SIMULATED', 'en', true), 'Recorded');
+  assert.equal(paymentStatusLabel('SIMULATED', 'bn', true), 'নথিভুক্ত');
+  assert.equal(paymentStatusLabel('PENDING', 'en', true), 'Pending');
+  assert.equal(paymentStatusLabel('PENDING', 'bn', true), 'অপেক্ষমাণ');
+  assert.equal(paymentStatusLabel('FAILED', 'bn', true), 'ব্যর্থ');
+  assert.equal(paymentStatusLabel('REVERSED', 'en', true), 'Reversed');
+
+  assert.equal(paymentReviewStatusLabel('PENDING_OFFICER', 'en'), 'Office review pending');
+  assert.equal(paymentReviewStatusLabel('PENDING_OFFICER', 'bn'), 'অফিস পর্যালোচনা অপেক্ষমাণ');
+  assert.equal(paymentReviewStatusLabel('MAKER_ACKNOWLEDGED', 'en'), 'Maker acknowledged');
+  assert.equal(paymentReviewStatusLabel('REVIEWER_VERIFIED', 'bn'), 'পর্যালোচক যাচাই করেছেন');
+  assert.equal(paymentReviewStatusLabel('APPROVER_CLOSED', 'en'), 'Office review closed');
+
+  assert.equal(paymentReviewStatusLabel('PRIVATE_REVIEW_CODE', 'en'), 'Review status unavailable');
+  assert.equal(paymentReviewStatusLabel('PRIVATE_REVIEW_CODE', 'bn'), 'পর্যালোচনার অবস্থা যাচাই করা যায়নি');
 });
