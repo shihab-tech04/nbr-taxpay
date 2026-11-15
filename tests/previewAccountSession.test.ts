@@ -18,6 +18,7 @@ Object.defineProperty(globalThis,'window',{configurable:true,value:{
 const originalFetch=globalThis.fetch;
 type Request={action:string;resolve:(response:Response)=>void};
 const waiting:Request[]=[];
+const delayedLoginIds=new Set<string>();
 async function takePending(action:string):Promise<Request>{
   // savePreviewSetting queues a promise chain; one microtask tick is insufficient.
   for(let i=0;i<20 && !waiting.length;i++)await Promise.resolve();
@@ -30,16 +31,20 @@ let loginCount=0;
 const response=(data:unknown)=>new Response(JSON.stringify({success:true,data}),{
   status:200,headers:{'content-type':'application/json'},
 });
+const loginResponse=(id:string,sequence:number)=>response({
+  profileId:id,
+  capability:String.fromCharCode(96+sequence).repeat(43),
+  paymentSessionId:'00000000-0000-4000-8000-0000000000'+String(sequence).padStart(2,'0'),
+  language:'en',selectedListId:null,
+});
 globalThis.fetch=async (_input,init)=>{
   const body=JSON.parse(String(init?.body)) as {action:string;userId?:string};
   if(body.action==='demo-login'){
     loginCount++;
-    return response({
-      profileId:body.userId,
-      capability:String.fromCharCode(96+loginCount).repeat(43),
-      paymentSessionId:'00000000-0000-4000-8000-0000000000'+String(loginCount).padStart(2,'0'),
-      language:'en',selectedListId:null,
-    });
+    if(delayedLoginIds.has(body.userId??'')){
+      return new Promise<Response>(resolve=>waiting.push({action:'demo-login',resolve}));
+    }
+    return loginResponse(body.userId!,loginCount);
   }
   return new Promise<Response>(resolve=>waiting.push({action:body.action,resolve}));
 };
@@ -49,6 +54,7 @@ beforeEach(()=>{
   session.clearPreviewSession();
   storage.clear();
   waiting.length=0;
+  delayedLoginIds.clear();
   loginCount=0;
 });
 after(()=>{globalThis.fetch=originalFetch;});
@@ -104,5 +110,27 @@ test('clearing a preview session cannot be undone by a delayed saved setting',as
     language:'bn',selectedListId:null,paymentSessionId:old.paymentSessionId,
   }));
   await assert.rejects(saving,/Demo account changed/);
+  assert.equal(session.activePreviewSession(),null);
+});
+
+test('slow older sign-in cannot replace a newer authenticated preview session',async()=>{
+  delayedLoginIds.add('user1');
+  const oldAttempt=session.signInPreviewProfile('user1','user1');
+  const deferred=await takePending('demo-login');
+  const newest=await session.signInPreviewProfile('user2','user2');
+  assert.equal(newest?.profileId,'user2');
+  deferred.resolve(loginResponse('user1',1));
+  await assert.rejects(oldAttempt,/Demo account changed/);
+  assert.equal(session.activePreviewSession()?.profileId,'user2');
+  assert.equal(session.activePreviewSession()?.capability,newest?.capability);
+});
+
+test('sign-out invalidates a preview sign-in still waiting on the network',async()=>{
+  delayedLoginIds.add('user1');
+  const oldAttempt=session.signInPreviewProfile('user1','user1');
+  const deferred=await takePending('demo-login');
+  session.clearPreviewSession();
+  deferred.resolve(loginResponse('user1',1));
+  await assert.rejects(oldAttempt,/Demo account changed/);
   assert.equal(session.activePreviewSession(),null);
 });
