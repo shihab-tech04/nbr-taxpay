@@ -728,7 +728,7 @@
     font-weight: 500;
   }
 }
-/* Six benefit cards keep the approved layout and open their established destinations. */
+/* Six informational benefit cards: hover only, without click or keyboard activation. */
 /* Home-only shared card spacing and radii; carousel design remains unchanged. */
 /* Search and benefits share the same outer geometry at each breakpoint. */
 .public-home-sections .public-benefits{min-width:0;padding:1.25rem;border:1px solid var(--citizen-border);border-radius:10px;background:var(--citizen-surface);}
@@ -778,14 +778,7 @@
   box-shadow: none;
   transition: box-shadow 180ms ease, background-color 180ms ease;
 }
-/* Give one benefit cell subtle depth without changing its dimensions, shared
-   dividers or click area. A raised stacking context makes the soft shadow
-   visible over adjacent cells inside the connected grid. */
-.public-home-sections .public-benefits__item:focus-within {
-  z-index: 1;
-  background: #fbfdff;
-  box-shadow: 0 2px 12px rgb(21 61 103 / 11%);
-}
+/* Keep subtle hover elevation without changing card geometry or adding actions. */
 @media (hover: hover) and (pointer: fine) {
   .public-home-sections .public-benefits__item:hover {
     z-index: 1;
@@ -796,8 +789,7 @@
 @media (prefers-reduced-motion: reduce) {
   .public-benefits__item { transition: none; }
 }
-/* Six quiet, flat semantic accents. No gradients, status implications or
-   changed click targets: the Lucide glyphs and destinations stay intact. */
+/* Six quiet, flat semantic accents. No gradients or status implications. */
 .public-benefits__item[data-benefit="payments"]     {--benefit-icon-bg:#e8f1fc;--benefit-icon-fg:#285fa3;}
 .public-benefits__item[data-benefit="certificates"] {--benefit-icon-bg:#e8f5fa;--benefit-icon-fg:#166d8c;}
 .public-benefits__item[data-benefit="corrections"]  {--benefit-icon-bg:#f2edfa;--benefit-icon-fg:#7651a2;}
@@ -822,31 +814,7 @@
   font-weight: 600;
   line-height: 1.35;
 }
-.public-benefits__copy h3 > .public-benefits__action {
-  position: static;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  line-height: inherit;
-  text-align: inherit;
-  text-decoration: none;
-  cursor: pointer;
-}
-.public-benefits__action::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  cursor: pointer;
-}
 .public-benefits__item:hover .public-benefits__copy h3 { color: var(--citizen-primary-dark); }
-.public-benefits__action:focus-visible { outline: none; }
-.public-benefits__action:focus-visible::after {
-  outline: 3px solid var(--citizen-focus, #5CA8D8);
-  outline-offset: 2px;
-}
 .public-benefits__copy p {
   margin: 0;
   color: var(--citizen-muted);
@@ -961,7 +929,7 @@
     grid-template-rows: repeat(2, minmax(0, 1fr));
     gap: 1px;
     padding: 1px;
-    border-radius: 0;
+    border-radius: 16px;
     overflow: hidden;
     background: var(--citizen-border);
   }
@@ -974,6 +942,11 @@
     border-radius: 0;
     background: var(--citizen-surface);
   }
+  /* Only the four outer grid corners are rounded at desktop widths. */
+  .public-home-sections .public-benefits__item:first-child { border-top-left-radius: 16px; }
+  .public-home-sections .public-benefits__item:nth-child(3) { border-top-right-radius: 16px; }
+  .public-home-sections .public-benefits__item:nth-child(4) { border-bottom-left-radius: 16px; }
+  .public-home-sections .public-benefits__item:last-child { border-bottom-right-radius: 16px; }
 }
 @media (min-width: 981px) and (min-height: 960px) {
   .public-home-sections > :not([hidden]) ~ :not([hidden]) { margin-top: 16px; }
