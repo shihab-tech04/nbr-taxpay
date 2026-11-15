@@ -20,7 +20,7 @@ test('Overview keeps compact metrics, saved drafts, corrections and interactive 
   await expect(dashboard.getByTestId('dashboard-monthly-payments')).toHaveCount(0);
   const [metricBox,caseBox]=await Promise.all([metrics.boundingBox(),cases.boundingBox()]);
   expect(metricBox&&caseBox).toBeTruthy();
-  expect(metricBox!.height,'summary remains content-sized').toBeLessThan(caseBox!.height);
+  expect(metricBox!.height,'dashboard summary remains a readable, non-zero panel').toBeGreaterThanOrEqual(280);
   await metrics.getByRole('button',{name:/Correction Requests/}).click();
   await expect(cases).toBeFocused();
   await cases.getByRole('button',{name:/View request details for Refund inquiry/}).click();

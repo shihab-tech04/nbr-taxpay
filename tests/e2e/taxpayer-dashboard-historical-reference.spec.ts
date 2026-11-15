@@ -242,12 +242,12 @@ test('populated Overview uses full-width balanced KPIs and readable charts acros
     await expect(cards).toHaveCount(3);
     const boxes=await Promise.all([0,1,2].map(n=>cards.nth(n).boundingBox()));
     expect(boxes.every(Boolean)).toBeTruthy();
-    if(width>=1200){
-      expect(Math.abs(boxes[0]!.y-boxes[2]!.y),'three evenly aligned desktop metrics').toBeLessThan(3);
-      expect(Math.abs(boxes[0]!.width-boxes[2]!.width),'balanced desktop metrics').toBeLessThan(3);
+    if(width>=900){
+      expect(boxes[1]!.y,'second KPI stacks beneath first beside the summary').toBeGreaterThan(boxes[0]!.y);
+      expect(boxes[2]!.y,'third KPI stacks beneath second beside the summary').toBeGreaterThan(boxes[1]!.y);
+      expect(Math.abs(boxes[0]!.width-boxes[2]!.width),'balanced stacked KPI widths').toBeLessThan(3);
     }else if(width>=600){
-      expect(Math.abs(boxes[0]!.y-boxes[1]!.y),'two-column tablet metrics').toBeLessThan(3);
-      expect(boxes[2]!.y,'third metric wraps without overflow').toBeGreaterThan(boxes[1]!.y);
+      expect(Math.abs(boxes[0]!.y-boxes[2]!.y),'three tablet KPI cards share a row').toBeLessThan(3);
     }else{
       expect(boxes[1]!.y).toBeGreaterThan(boxes[0]!.y);
       expect(boxes[2]!.y).toBeGreaterThan(boxes[1]!.y);
@@ -314,9 +314,15 @@ test('Overview KPIs retain values and actions with proper metric-card hierarchy'
     expect(geometry.every(card => card.valueBelowLabel), 'values are below their labels').toBe(true);
     expect(Math.min(...geometry.map(card => card.labelSize))).toBeGreaterThanOrEqual(14);
     expect(Math.min(...geometry.map(card => card.valueSize))).toBeGreaterThanOrEqual(28);
-    if (width >= 1200) {
-      expect(Math.abs(geometry[0].y - geometry[2].y)).toBeLessThan(3);
+    if (width >= 900) {
+      expect(geometry[1].y).toBeGreaterThan(geometry[0].y);
+      expect(geometry[2].y).toBeGreaterThan(geometry[1].y);
       expect(Math.abs(geometry[0].width - geometry[2].width)).toBeLessThan(3);
+    } else if (width >= 600) {
+      expect(Math.abs(geometry[0].y - geometry[2].y)).toBeLessThan(3);
+    } else {
+      expect(geometry[1].y).toBeGreaterThan(geometry[0].y);
+      expect(geometry[2].y).toBeGreaterThan(geometry[1].y);
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth),
       'no horizontal overflow at ' + width).toBeLessThanOrEqual(2);

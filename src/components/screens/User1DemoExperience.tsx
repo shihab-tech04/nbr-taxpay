@@ -6,7 +6,7 @@ import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
 import {BentoPaymentAnalytics} from './BentoPaymentAnalytics';
-import {chooseDashboardChartSource,projectDashboardChartRecords,matchesDashboardChartDrilldown,type DashboardChartSource,type DashboardChartService} from './dashboardBentoAnalytics';
+import {chooseDashboardChartSource,projectDashboardChartRecords,formatDashboardChartMoney,dashboardChartPercentage,matchesDashboardChartDrilldown,type DashboardChartSource,type DashboardChartService} from './dashboardBentoAnalytics';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
@@ -554,6 +554,21 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   // task-first bento. This never promotes synthetic events into real payments.
   const hasItemizedAccountAllocations=projectDashboardChartRecords(
     dashboardChartRecords,year,'recorded',savedTagPeople,DEMO_USERS.user1.tin).totalMinor>0n;
+  // Use the exact same filtered allocation projection as the interactive charts.
+  // This overview shows activity, never assessed liability or posted tax credit.
+  const overviewProjection=projectDashboardChartRecords(
+    dashboardChartRecords,year,overviewSource,savedTagPeople,DEMO_USERS.user1.tin);
+  const overviewHasAmount=!(overviewSource==='recorded'&&sqlLoadError)&&overviewProjection.totalMinor>0n;
+  const overviewServices=[...overviewProjection.byService]
+    .filter(item=>item.amountMinor>0n)
+    .sort((a,b)=>a.amountMinor>b.amountMinor?-1:a.amountMinor<b.amountMinor?1:0).slice(0,3);
+  const overviewServiceNames:Record<DashboardChartService,string>={
+    income:tr('Tax with return','রিটার্নের সঙ্গে কর'),
+    ait:tr('Advance tax','অগ্রিম কর'),
+    tds:tr('Source tax','উৎসে কর'),
+    other:tr('Other tax','অন্যান্য কর'),
+    travel:tr('Travel tax','ভ্রমণ কর')
+  };
   const compactEmptyOverview=overviewSource==='recorded'&&!localQaScenario&&!hasItemizedAccountAllocations&&Boolean(onResumePaymentDraft);
   const correctionRequests=overviewSource==='example'
     ?scoped.filter(x=>x.state==='REQUESTED'&&(x.kind==='refund'||x.kind==='adjustment')):[];
@@ -618,22 +633,55 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     </>}
     <div className="taxpay-bento-request-row">
       <section className={panel+' taxpay-bento-hero taxpay-bento-summary'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
-        <h2 className="text-base font-semibold">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h2>
-        <p className="mt-1 text-xs text-taxpay-muted" data-testid="dashboard-source-indicator">
-          {overviewSource==='example'
-            ?tr('Example activity (simulated) — not real payments or tax credits','উদাহরণভিত্তিক কার্যক্রম (সিমুলেশন) — প্রকৃত পেমেন্ট বা কর ক্রেডিট নয়')
-            :tr('Payments linked to this session','এই সেশনের সঙ্গে যুক্ত পেমেন্ট')}
-        </p>
-        <div className="taxpay-bento-hero__status">
+        <div className="taxpay-overview-feature">
+          <p className="taxpay-overview-feature__eyebrow"><FileCheck2 size={17} aria-hidden="true"/>
+            {tr('PAYMENT ACTIVITY','পেমেন্ট কার্যক্রম')} · {year}</p>
+          <h2>{tr('Payments at a glance','এক নজরে আপনার পেমেন্ট')}</h2>
+          <h3 className="sr-only">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h3>
+          <p className="taxpay-overview-feature__source" data-testid="dashboard-source-indicator">
+            {overviewSource==='example'
+              ?tr('Example activity (simulated) — not real payments or tax credits','উদাহরণভিত্তিক কার্যক্রম (সিমুলেশন) — প্রকৃত পেমেন্ট বা কর ক্রেডিট নয়')
+              :tr('Payments linked to this session — not verified tax credits','এই সেশনের পেমেন্ট — যাচাইকৃত কর ক্রেডিট নয়')}
+          </p>
+          <div className="taxpay-overview-feature__main">
+            <div className="taxpay-overview-feature__amount">
+              <strong className="tabular-nums" data-testid="dashboard-overview-total">
+                {overviewHasAmount?formatDashboardChartMoney(overviewProjection.totalMinor,language):'—'}
+              </strong>
+              <p>{overviewHasAmount
+                ?tr('Payer-initiated allocations for this assessment year','এই করবর্ষে আপনার শুরু করা পেমেন্ট বরাদ্দ')
+                :overviewSource==='recorded'&&sqlLoadError
+                  ?tr('Payment records could not be loaded','পেমেন্ট রেকর্ড লোড করা যায়নি')
+                  :tr('No itemized payments for this year','এই করবর্ষে কোনো বিস্তারিত পেমেন্ট নেই')}</p>
+            </div>
+            {overviewHasAmount&&<div className="taxpay-overview-feature__services"
+              aria-label={tr('Payment service shares','পেমেন্টের ধরনের অংশ')}>
+              {overviewServices.map(item=>{
+                const share=dashboardChartPercentage(item.amountMinor,overviewProjection.totalMinor);
+                return <div key={item.key} className="taxpay-overview-feature__service">
+                  <div><span>{overviewServiceNames[item.key]}</span><strong className="tabular-nums">{share}%</strong></div>
+                  <span className="taxpay-overview-feature__track" aria-hidden="true"><span style={{width:share+'%'}}/></span>
+                </div>;
+              })}
+            </div>}
+          </div>
+          <a href="?action=history" className="taxpay-overview-feature__action" onClick={event=>{event.preventDefault();openOverviewPayments();}}>
+            {tr('View payment history','পেমেন্ট ইতিহাস দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
+          </a>
+        </div>
+        <div className="taxpay-bento-hero__status" role="group" aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--completed" onClick={openOverviewPayments}>
-            <span className="taxpay-summary-metric__label"><FileCheck2 size={17} aria-hidden="true"/>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong>{overviewSource==='recorded'&&sqlLoadError?'—':completedPayments}</strong>
+            <span className="taxpay-summary-metric__label"><FileCheck2 size={17} aria-hidden="true"/>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span>
+            <strong className="tabular-nums">{overviewSource==='recorded'&&sqlLoadError?'—':completedPayments}</strong>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--drafts" onClick={openSavedDrafts}
             aria-expanded={draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0)}>
-            <span className="taxpay-summary-metric__label"><FilePenLine size={17} aria-hidden="true"/>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span><strong>{savedDraftCount===null?'—':savedDraftCount}</strong>
+            <span className="taxpay-summary-metric__label"><FilePenLine size={17} aria-hidden="true"/>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span>
+            <strong className="tabular-nums">{savedDraftCount===null?'—':savedDraftCount}</strong>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--requests" onClick={focusCorrectionRequests}>
-            <span className="taxpay-summary-metric__label"><ReceiptText size={17} aria-hidden="true"/>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong>{correctionRequestCount===null?'—':correctionRequestCount}</strong>
+            <span className="taxpay-summary-metric__label"><ReceiptText size={17} aria-hidden="true"/>{tr('Correction Requests','সংশোধনের আবেদন')}</span>
+            <strong className="tabular-nums">{correctionRequestCount===null?'—':correctionRequestCount}</strong>
           </button>
         </div>
         {draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0) &&
