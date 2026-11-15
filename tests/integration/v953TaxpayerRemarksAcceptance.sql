@@ -9,9 +9,13 @@ DECLARE v_note text :=
  v_original jsonb;
  v_denied boolean := false;
 BEGIN
- INSERT INTO demo_payment.story_payments(id,data)
+ INSERT INTO demo_payment.story_payments
+  (id,idempotency_key,session_id,service_code,amount_minor,data)
  VALUES(
  '92000000-0000-4000-8000-000000000001',
+ '92000000-0000-4000-8000-000000000011',
+ '92000000-0000-4000-8000-000000000099',
+ 'OTHER_TAX_PAYMENT',1250,
  jsonb_build_object('origin','TAXPAY_UI','details',jsonb_build_object(
    'challanRemarks',v_note,'taxpayerTin','111111111111',
    'amountMinor',1250,'headId',125,'assessmentYear','2026-27'))
@@ -27,14 +31,25 @@ BEGIN
  v_original:=v_data;
  -- Optional no-comment / explicit null and blank are accepted without
  -- changing the parent envelope or imposing a 20-char upper bound.
- INSERT INTO demo_payment.story_payments(id,data) VALUES
+ INSERT INTO demo_payment.story_payments
+  (id,idempotency_key,session_id,service_code,amount_minor,data) VALUES
  ('92000000-0000-4000-8000-000000000002',
+  '92000000-0000-4000-8000-000000000012',
+  '92000000-0000-4000-8000-000000000099','OTHER_TAX_PAYMENT',1250,
   '{"details":{"taxpayerTin":"111111111111"}}'::jsonb),
  ('92000000-0000-4000-8000-000000000003',
+  '92000000-0000-4000-8000-000000000013',
+  '92000000-0000-4000-8000-000000000099','OTHER_TAX_PAYMENT',1250,
   '{"details":{"challanRemarks":null}}'::jsonb),
  ('92000000-0000-4000-8000-000000000004',
+  '92000000-0000-4000-8000-000000000014',
+  '92000000-0000-4000-8000-000000000099','OTHER_TAX_PAYMENT',1250,
   '{"details":{"challanRemarks":""}}'::jsonb);
- IF (SELECT count(*) FROM demo_payment.story_payments)<>4
+ IF (SELECT count(*) FROM demo_payment.story_payments
+     WHERE id IN ('92000000-0000-4000-8000-000000000001',
+       '92000000-0000-4000-8000-000000000002',
+       '92000000-0000-4000-8000-000000000003',
+       '92000000-0000-4000-8000-000000000004'))<>4
  THEN RAISE EXCEPTION 'F178_T01_OPTIONAL_CASES_FAILED'; END IF;
  -- Reject forged non-text remarks; do not let JSON arrays/objects/numbers
  -- become unreviewed state changes in the payment envelope.
@@ -48,8 +63,10 @@ BEGIN
  LOOP
   v_denied:=false;
   BEGIN
-   INSERT INTO demo_payment.story_payments(id,data)
-   VALUES(gen_random_uuid(),v_data);
+   INSERT INTO demo_payment.story_payments
+    (id,idempotency_key,session_id,service_code,amount_minor,data)
+   VALUES(gen_random_uuid(),gen_random_uuid(),
+    '92000000-0000-4000-8000-000000000099','OTHER_TAX_PAYMENT',1250,v_data);
   EXCEPTION WHEN OTHERS THEN
    IF SQLERRM='CHALLAN_REMARKS_MUST_BE_TEXT' THEN v_denied:=true;
    ELSE RAISE; END IF;
