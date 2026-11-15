@@ -186,6 +186,8 @@ export const PublicLanding: React.FC = () => {
           <label className="sr-only" htmlFor="public-payment-reference">
             {t('Search payment records by reference', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন')}
           </label>
+          {/* Native searchbox keeps its role. The status region announces matches;
+              combobox-only ARIA belongs neither here nor on the input. */}
           <input
             id="public-payment-reference"
             type="search"
@@ -196,8 +198,6 @@ export const PublicLanding: React.FC = () => {
             aria-describedby="public-record-discovery-help"
             aria-autocomplete="list"
             aria-controls={searchOpen ? "public-record-suggestions" : undefined}
-            {/* Native searchbox keeps its searchbox role. The live status announces
-                matches; combobox-only ARIA attributes are intentionally omitted. */}
             onFocus={() => setSearchOpen(true)}
             onClick={() => setSearchOpen(true)}
             onChange={event => { setPaymentReference(event.target.value); setSearchOpen(true); setActiveSuggestion(-1); }}
