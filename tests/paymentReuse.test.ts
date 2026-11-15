@@ -454,9 +454,9 @@ test('M09 Pay Again restores verified SQL accounting rows hidden from combined r
   assert.equal(JSON.stringify(receipt.items),'[]');
 
   // Missing saved head rows cannot be reverse-engineered from translated labels.
-  const partial=makeConfirmedReceipt({...source,details:{...source.details,receiptLines:undefined}});
-  assert.deepEqual(partial.items,[]);
-  assert.equal(partial.reusableAccountingLines,undefined);
+  assert.throws(()=>makeConfirmedReceipt({...source,details:{...source.details,receiptLines:undefined}}),
+    /allocations could not be reconciled/);
+  const partial={...receipt,reusableAccountingLines:undefined};
   assert.throws(()=>reuseRecordedPayment([partial],'owner-1','1111111111111',originalId),
     /incomplete and cannot be copied/);
   // A mismatched per-head amount must not be turned into an apparently valid draft.
