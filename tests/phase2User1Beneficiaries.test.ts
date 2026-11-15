@@ -66,7 +66,16 @@ test('Phase 2: six private logical lists contain exactly four unique recipients 
   assert.equal(new Set(fixture.beneficiaries.map(row => row.recipient_preview_id)).size, 24);
   assert.equal(new Set(fixture.beneficiaries.map(row => row.tin_alias)).size, 24);
   const selected = fixture.selection.selected_profile_numbers;
-  assert.deepEqual(fixture.groups.flatMap(group => group.recipient_numbers), selected);
+  const groupNumbers = fixture.groups.flatMap(group => group.recipient_numbers);
+  assert.deepEqual([...groupNumbers].sort((a, b) => a - b),
+    [...selected].sort((a, b) => a - b));
+  // Role-aware group assignment prevents fictional companies being labeled as parents.
+  const getRole = (number: number) => DEMO_USERS[('user' + number) as DemoUserId].role;
+  assert.ok(fixture.groups[0].recipient_numbers.every(number => getRole(number) === 'TAXPAYER_CORPORATE'));
+  assert.ok(fixture.groups[1].recipient_numbers.every(number =>
+    getRole(number) === 'TAXPAYER_CORPORATE' || getRole(number) === 'WITHHOLDING_AGENT'));
+  assert.ok(fixture.groups.slice(2).every(group =>
+    group.recipient_numbers.every(number => getRole(number) === 'TAXPAYER_INDIVIDUAL')));
   for (const group of fixture.groups) {
     assert.equal(group.recipient_numbers.length, 4, group.key);
     const people = fixture.beneficiaries.filter(row => row.list_key === group.key);
