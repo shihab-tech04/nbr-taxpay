@@ -24,8 +24,10 @@ export async function verifyV2PublicReads({ key, fetcher = fetch, url = V2_URL }
     const data = await response.json();
     if (!Array.isArray(data) || data.length !== item.expected)
       throw new Error(item.name + ': expected ' + item.expected + ' public records');
-    if (new Set(data.map(row => row.id ?? row.source_head_id)).size !== data.length)
-      throw new Error(item.name + ': duplicate public record identifiers');
+    const ids = data.map(row => row?.id ?? row?.source_head_id);
+    if (ids.some(id => (typeof id !== 'string' && typeof id !== 'number') || String(id).trim() === '') ||
+        new Set(ids.map(String)).size !== data.length)
+      throw new Error(item.name + ': missing or duplicate public record identifiers');
     results.push({ name: item.name, passed: true, count: data.length });
   }
   return results;
