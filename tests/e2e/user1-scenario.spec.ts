@@ -10,7 +10,7 @@ test('user1 dashboard, payment history and ledger use one coherent synthetic bal
   test.skip(info.project.name!=='desktop-1280','Representative desktop financial reconciliation');
   const protectedRpc:string[]=[];
   page.on('request',r=>{if(r.url().includes('.supabase.co/rest/v1/rpc/'))protectedRpc.push(r.url());});
-  await page.goto('/?action=taxpayer_home&demoUser=user1');
+  await page.goto('/?action=taxpayer_home&demoUser=user1&qaScenario=1');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
