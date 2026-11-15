@@ -199,6 +199,24 @@ test('historical SQL single-head payment opens editable repeat without guessing 
   },'user1','1111111111111');
   assert.equal(newYear.formPayload.assessmentYear,'2026-27');
 });
+test('legacy Pay Again restores long bilingual remarks from original SQL parent',()=>{
+  const remarks='Prior payment reference 190.\\nবাংলা বিবরণ: পূর্ববর্তী করবর্ষের সংশোধিত চালান।';
+  const source={
+    id:'572659b2-4f41-496f-b72c-a9189a3ccb61',
+    service:'ADVANCE_TAX',status:'SIMULATED_SUCCESS',amountMinor:2500,
+    details:{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2025-26',
+      paymentRemarks:remarks,
+      lines:[{beneficiary:'user1',category:'ADVANCE_TAX',assessmentYear:'2025-26',amountMinor:2500}]}
+  };
+  assert.ok(remarks.length>20);
+  const original=JSON.stringify(source);
+  const draft=reuseLegacySingleHeadPayment(source,'user1','1111111111111');
+  assert.equal(draft.formPayload.paymentRemarks,remarks);
+  draft.formPayload.paymentRemarks='Changed only for new payment';
+  assert.equal(source.details.paymentRemarks,remarks);
+  assert.equal(JSON.stringify(source),original);
+});
+
 test('historical head IDs never auto-select a current payment head',()=>{
   const source={
     id:'616259b2-4f41-496f-b72c-a9189a3ccb61',
