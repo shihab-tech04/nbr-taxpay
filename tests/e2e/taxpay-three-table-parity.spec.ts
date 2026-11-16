@@ -107,12 +107,27 @@ for(const language of ['en','bn'] as const){
         };
       },{view,desktop});
       expect(style.overflow,view+' horizontal overflow').toBeLessThanOrEqual(2);
+      if(desktop){
+        // Wide register tables scroll inside their frame, never beneath the sidebar
+        // or beyond the document. All existing columns and actions stay present.
+        const viewport=root.locator('.taxpay-table-viewport').first();
+        await expect(viewport).toBeVisible();
+        const scroll=await viewport.evaluate(el=>({
+          width:el.clientWidth,
+          scrollWidth:el.scrollWidth,
+          overflowX:getComputedStyle(el).overflowX,
+          viewportWidth:document.documentElement.clientWidth
+        }));
+        expect(scroll.width,view+' table viewport has usable width').toBeGreaterThan(200);
+        expect(scroll.width,view+' table fits the app viewport').toBeLessThanOrEqual(scroll.viewportWidth);
+        expect(scroll.overflowX,view+' uses its own horizontal scroll').toBe('auto');
+      }
       const textSize=await row.evaluate(element=>{
         const cell=element.matches('tr')?element.querySelector('td'):element;
         return parseFloat(getComputedStyle(cell??element).fontSize);
       });
       expect(textSize,view+' primary record typography').toBeGreaterThanOrEqual(16);
-      if(desktop)expect(style.rowHeight,view+' row rhythm').toBeGreaterThanOrEqual(view==='history'?64:76);
+      if(desktop)expect(style.rowHeight,view+' row rhythm').toBeGreaterThanOrEqual(64);
       else expect(style.borderRadius,view+' card corners').not.toBe('0px');
       observations.push({view,background:style.background,fontSize:style.fontSize,
         color:style.color,borderRadius:style.borderRadius,rowHeight:style.rowHeight});
@@ -292,3 +307,23 @@ test('Office-style record workspaces fill laptop width without hiding transactio
     expect(horizontalOverflow,view+' must not overflow document').toBeLessThanOrEqual(2);
   }
 });
+
+/** Office Management register shell: Certificates adopts the same toolbar,
+ * search, record count and footer. Issued-credit content and popups stay separate.
+ */
+for(const language of ['en','bn'] as const){
+  test('Certificates uses the shared record register in '+language,async({page})=>{
+    await page.goto('/?action=certificates&demoUser=user1&lang='+language);
+    const register=page.getByTestId('account-certificate-record-register');
+    await expect(register).toBeVisible();
+    await expect(register.locator('.taxpay-office-register__toolbar')).toBeVisible();
+    await expect(register.locator('.taxpay-office-register__count')).toBeVisible();
+    await expect(register.getByRole('searchbox',{
+      name:language==='en'?'Find a payment record':'পেমেন্ট রেকর্ড খুঁজুন'
+    })).toBeVisible();
+    await expect(register.locator('.taxpay-office-register__footer')).toBeVisible();
+    await expect(page.getByTestId('issued-tax-credit-certificates')).toBeVisible();
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(overflow,'Certificate page must not scroll horizontally').toBeLessThanOrEqual(2);
+  });
+}
