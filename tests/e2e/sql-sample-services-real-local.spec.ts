@@ -26,7 +26,8 @@ test('user6 sees stored advance-tax installments and matching SQL profile', asyn
   await expect(panel.getByRole('table').getByText('SAMPLE-SRV-018')).toBeVisible();
   await expect(panel.getByText('SAMPLE-SRV-023')).toHaveCount(0);
   await expect(panel.getByText('Service records unavailable')).toHaveCount(0);
-  await expect(page.getByText('Government challan: Not available')).toBeVisible();
+  // SQL service activity is not evidence of an issued challan or verified tax credit.
+  await expect(panel.getByText('Based on recorded activity. Dues and tax credits are not verified.')).toBeVisible();
   await page.goto('/?action=account_profile');
   // A 13-digit fictional service reference is not an issued TIN. The same
   // approved User1 profile template must still render owner-specific metadata.
