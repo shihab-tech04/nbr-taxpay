@@ -6,7 +6,10 @@ import { BRANDING_CMS_CONNECTION_ENABLED } from '../../config/brandingCmsConnect
 
 // One shared logo source for the public header/footer and taxpayer navigation.
 // A static bundled image keeps every shell usable while the CMS is offline.
-let logoUrl = defaultWordmark;
+// The Office-published primary logo (v18), copied byte-for-byte to the
+// GitHub Pages bundle during the temporary Supabase service restriction.
+const approvedStaticWordmark = `${import.meta.env.BASE_URL}branding/published/sohojkor-logo-v18.jpg`;
+let logoUrl = BRANDING_CMS_CONNECTION_ENABLED ? defaultWordmark : approvedStaticWordmark;
 let latestVersion = -1;
 let refreshSerial = 0;
 const FOREGROUND_REFRESH_MS = 60_000;
