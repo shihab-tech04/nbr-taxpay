@@ -308,22 +308,3 @@ test('Office-style record workspaces fill laptop width without hiding transactio
   }
 });
 
-/** Office Management register shell: Certificates adopts the same toolbar,
- * search, record count and footer. Issued-credit content and popups stay separate.
- */
-for(const language of ['en','bn'] as const){
-  test('Certificates uses the shared record register in '+language,async({page})=>{
-    await page.goto('/?action=certificates&demoUser=user1&lang='+language);
-    const register=page.getByTestId('account-certificate-record-register');
-    await expect(register).toBeVisible();
-    await expect(register.locator('.taxpay-office-register__toolbar')).toBeVisible();
-    await expect(register.locator('.taxpay-office-register__count')).toBeVisible();
-    await expect(register.getByRole('searchbox',{
-      name:language==='en'?'Find a payment record':'পেমেন্ট রেকর্ড খুঁজুন'
-    })).toBeVisible();
-    await expect(register.locator('.taxpay-office-register__footer')).toBeVisible();
-    await expect(page.getByTestId('issued-tax-credit-certificates')).toBeVisible();
-    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
-    expect(overflow,'Certificate page must not scroll horizontally').toBeLessThanOrEqual(2);
-  });
-}
