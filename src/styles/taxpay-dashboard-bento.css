@@ -1233,3 +1233,162 @@
   font-size:clamp(30px,2.2vw,34px);line-height:1.2;font-weight:650;
  }
 }
+
+
+/* 2026-11-16 — Approved dashboard visual repair:
+   The overview's JSX has a single internal .__main row. Earlier grid declarations
+   targeted that row without display:grid, while a 48px font on the amount wrapper
+   leaked into its descriptive paragraph. Keep the existing account-backed data,
+   donut, buttons and three KPI cards; fix their layout and contrast only. */
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature {
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:space-between;
+  gap:9px;
+  min-height:318px;
+  padding:20px 23px;
+  background:var(--color-taxpay-primary,#085587);
+  background-image:none;
+  border:1px solid var(--color-taxpay-primary,#085587);
+  border-radius:16px;
+  box-shadow:none;
+  color:#fff;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature__eyebrow {
+  margin:0;
+  font-size:13px;
+  line-height:1.45;
+  color:#f0f7ff;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature__source {
+  margin:0;
+  max-width:100%;
+  color:#e7f1ff;
+  font-size:12px;
+  line-height:1.45;
+  font-weight:400;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__main {
+  display:grid;
+  grid-template-columns:minmax(0,.95fr) minmax(0,1fr);
+  align-items:center;
+  gap:15px;
+  flex:1 1 auto;
+  width:100%;
+  min-width:0;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__amount {
+  min-width:0;
+  font-family:inherit;
+  font-size:inherit;
+  letter-spacing:normal;
+  line-height:normal;
+  font-weight:400;
+  color:#fff;
+  overflow-wrap:normal;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__amount > strong {
+  display:block;
+  color:#fff;
+  font-family:inherit;
+  font-size:clamp(30px,2.4vw,42px);
+  line-height:1.2;
+  font-weight:650;
+  letter-spacing:-.02em;
+  overflow-wrap:anywhere;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__amount > p {
+  margin-top:8px;
+  max-width:330px;
+  color:#edf5ff;
+  font-family:inherit;
+  font-size:13px;
+  line-height:1.5;
+  font-weight:400;
+  letter-spacing:normal;
+  overflow-wrap:break-word;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__chart {
+  display:grid;
+  grid-template-columns:116px minmax(0,1fr);
+  gap:12px;
+  align-items:center;
+  min-width:0;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__donut {
+  width:116px;
+  height:116px;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__services {
+  gap:7px;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__service {
+  font-size:12px;
+  line-height:1.35;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__service > strong {
+  font-size:13px;
+  line-height:1.25;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__action {
+  margin-top:2px;
+  margin-bottom:0;
+  padding:9px 14px;
+  min-height:42px;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-bento-hero__status {
+  grid-template-rows:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  gap:11px;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric {
+  min-height:0;
+  padding:12px 16px;
+  gap:5px;
+  justify-content:center;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric strong {
+  font-size:26px;
+  line-height:1.2;
+}
+.taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric__label {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  line-height:1.35;
+}
+@media(max-width:799px){
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__main {
+    grid-template-columns:minmax(0,1fr);
+    gap:17px;
+  }
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature {
+    min-height:0;
+  }
+}
+@media(max-width:599px){
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-overview-feature {
+    padding:18px;
+  }
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__amount > strong {
+    font-size:clamp(28px,8vw,38px);
+  }
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-bento-hero__status {
+    grid-template-rows:none;
+  }
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric {
+    min-height:76px;
+  }
+}
+@media(max-width:379px){
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__chart {
+    grid-template-columns:minmax(0,1fr);
+    justify-items:start;
+  }
+  .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature__services {
+    width:100%;
+    grid-template-columns:repeat(auto-fit,minmax(106px,1fr));
+  }
+}
