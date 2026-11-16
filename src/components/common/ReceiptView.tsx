@@ -31,13 +31,14 @@ interface ReceiptViewProps {
   onPayAgain?: () => void;
   onApplyForCorrection?: () => void;
   payAgainUnavailableReason?: string;
+  payAgainTestId?: string;
   /** Secondary receipts in a batch must not create extra modal footer controls. */
   suppressFooterActions?: boolean;
 }
 
 export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment, certificate = false,
   transactionActions = false, onPayAgain, onApplyForCorrection, payAgainUnavailableReason,
-  suppressFooterActions = false }) => {
+  payAgainTestId = 'receipt-pay-again', suppressFooterActions = false }) => {
   const { language, navigate } = useTaxState();
   const [showCertificate, setShowCertificate] = useState(false);
   const canViewCertificate = canViewPaymentCertificate(receipt);
@@ -218,7 +219,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           <Download size={18} aria-hidden="true" /><span>{labels.export}</span>
         </button>
         {showReceiptTransactionActions ? <>
-          <button type="button" data-testid="receipt-pay-again"
+          <button type="button" data-testid={payAgainTestId} data-receipt-action="pay-again"
             className="receipt-view__action receipt-view__action--secondary"
             disabled={!onPayAgain} title={!onPayAgain ? (payAgainUnavailableReason ??
               (bn?'মূল পেমেন্টের সম্পূর্ণ তথ্য পাওয়া যায়নি':'The complete original payment is unavailable')):undefined}
@@ -247,7 +248,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
       <ReceiptView receipt={receipt} embedded certificate={certificate} onBack={onBack} onNewPayment={onNewPayment}
         transactionActions={transactionActions} onPayAgain={onPayAgain}
         onApplyForCorrection={onApplyForCorrection} payAgainUnavailableReason={payAgainUnavailableReason}
-        suppressFooterActions={suppressFooterActions}/>
+        suppressFooterActions={suppressFooterActions} payAgainTestId={payAgainTestId}/>
     </TaxPayModal>
   );
 
