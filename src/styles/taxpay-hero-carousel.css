@@ -1098,13 +1098,8 @@
 }
 
 
-/* Wide public Home: one balanced viewport without changing the public Guide,
-   Report, taxpayer workspace, published artwork or mobile layouts. */
-@media (min-width: 1600px) {
-  .taxpay-citizen-shell:has(.public-home-sections) {
-    --public-content-max: 1300px;
-  }
-}
+/* Home and the other public pages share --public-content-max at every width.
+   Keep a single shell width so navigation, guide and landing stay aligned. */
 
 /* On normal-height wide monitors, use the available height in the banner and
    benefit panel instead of leaving a large empty grey strip above the footer.
