@@ -41,14 +41,14 @@ test('payment picker has no manual restore path and refreshes the account addres
   assert.match(picker,/window\.clearInterval\(interval\)/);
   assert.match(picker,/if\(renderOwnerScope!==ownerScope\)\{setLists\(\[\]\)/);
   assert.match(picker,/previous\.filter\(id=>existing\.has\(id\)\)/);
-  assert.match(picker,/return retained\.length\?retained/);
+  assert.match(picker,/return ownerChanged\s*\?\s*containingSelection/);
 });
 
 
 test('beneficiary profile page refreshes from server without a restore control', () => {
   const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
   assert.match(page,/loadBeneficiaries\(owner,\{forceFresh:true\}\)/);
-  assert.equal((page.match(/loadBeneficiaries\(owner,\{forceFresh:true\}\)/g)||[]).length,2);
+  assert.equal((page.match(/loadBeneficiaries\(owner,\{forceFresh:true\}\)/g)||[]).length,3);
   assert.match(page,/window\.setInterval\(refresh,30000\)/);
   assert.match(page,/window\.addEventListener\('storage',refresh\)/);
   assert.match(page,/window\.clearInterval\(interval\)/);

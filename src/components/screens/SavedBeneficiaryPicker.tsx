@@ -5,6 +5,7 @@ import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
 import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {useAccountIdentity} from '../../services/accountIdentity';
+import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {loadBeneficiaries,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {useTaxState} from '../../services/taxState';
@@ -37,6 +38,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [refresh,setRefresh]=useState(0);
+  const [refreshError,setRefreshError]=useState(false);
   const [fallbackOpen,setFallbackOpen]=useState(false);
   const [fallbackTin,setFallbackTin]=useState('');
   const [searchedFallbackTin,setSearchedFallbackTin]=useState('');
@@ -49,33 +51,47 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
         :'guest';
   const [renderOwnerScope,setRenderOwnerScope]=useState<string|null>(null);
   const ownerScopeRef=useRef(ownerScope);
+  const loadedScopeRef=useRef<string|null>(null);
   ownerScopeRef.current=ownerScope;
   useEffect(()=>{
     let cancelled=false;
-    setRenderOwnerScope(ownerScope);
-    if(renderOwnerScope!==ownerScope){setLists([]);setPeople([]);setExpanded([]);setLoading(true);}
-    setError('');
-    onAvailableTins(null);
+    const ownerChanged=loadedScopeRef.current!==ownerScope;
+    loadedScopeRef.current=ownerScope;
+    // Clear the former account immediately, but retain the current account's
+    // last verified snapshot during a background refresh (no 30s flicker).
+    if(ownerChanged){
+      setRenderOwnerScope(ownerScope);
+      if(renderOwnerScope!==ownerScope){setLists([]);setPeople([]);setExpanded([]);}
+      setLoading(true);setError('');
+      onAvailableTins(null);
+    }
+    setRefreshError(false);
     if(checkingIdentity)return()=>{cancelled=true;};
+    // A second device can edit the same server-backed profile. Do not serve
+    // the 3-second navigation snapshot to a payment beneficiary selector.
     loadBeneficiaries(user?.id??null,{forceFresh:true}).then(result=>{
       if(cancelled||ownerScopeRef.current!==ownerScope)return;
       setLists(result.lists);setPeople(result.people);
+      setError('');setRefreshError(false);
       const containingSelection=result.lists.filter(list=>result.people.some(person=>
         person.list_id===list.id&&selectedTins.includes(person.tin))).map(list=>list.id);
-      // A background refresh must not collapse a list that the person opened.
-      // Drop only groups deleted in another session; default on first load.
       setExpanded(previous=>{
         const existing=new Set(result.lists.map(list=>list.id));
         const retained=previous.filter(id=>existing.has(id));
-        return retained.length?retained:containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[];
+        return ownerChanged
+          ? containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[]
+          : retained.length?retained:containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[];
       });
       onAvailableTins(Array.from(new Set(result.people.map(person=>person.tin))));
     }).catch(e=>{
       if(cancelled||ownerScopeRef.current!==ownerScope)return;
+      if(!ownerChanged){
+        // Keep the last verified list visible; a temporary request failure
+        // must never overwrite account data or present an empty profile.
+        setRefreshError(true);
+        return;
+      }
       const detail=e instanceof Error?e.message:'';
-      // User-ID preview accounts use capability-scoped browser storage, not
-      // a verified Supabase Auth UID. Distinguish an unusable saved capability
-      // from a transient request failure without revealing SQL internals.
       const lostCapability=!user && /session has expired|access key is invalid/.test(detail);
       const noStorage=!user && /storage is unavailable/.test(detail);
       setError(lostCapability
@@ -89,23 +105,31 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       onAvailableTins(null);
     }).finally(()=>{if(!cancelled&&ownerScopeRef.current===ownerScope)setLoading(false);});
     return()=>{cancelled=true;};
-    // The available TIN set is intentionally refreshed on account changes, not on each checkbox click.
+    // Revalidate only on account or refresh triggers, not every checkbox click.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[ownerScope,refresh,onAvailableTins]);
 
-  // A payment step can remain mounted while beneficiaries change in another
-  // tab. Re-read the same identity-scoped source on return to the tab.
+  // SQL-backed signed-in profiles and stable fictional preview profiles share
+  // their saved lists across browsers/devices. Keep the picker current without
+  // asking people to restore local copies or press a manual refresh button.
   useEffect(()=>{
-    // The server-held account book is authoritative. Refresh on tab return,
-    // same-origin storage changes, and while this payment step stays open on
-    // another device. Never reuse a browser-local snapshot as account truth.
-    const refreshVisible=()=>{if(document.visibilityState!=='hidden')setRefresh(value=>value+1);};
+    const gate=createBeneficiaryAutoRefreshGate();
+    const refreshVisible=()=>{
+      if(document.visibilityState==='hidden'||!gate.begin(Date.now()))return;
+      setRefresh(value=>value+1);
+      gate.finish();
+    };
     const refreshStorage=()=>refreshVisible();
     const interval=window.setInterval(refreshVisible,30000);
     window.addEventListener('focus',refreshVisible);
     window.addEventListener('storage',refreshStorage);
     document.addEventListener('visibilitychange',refreshVisible);
-    return()=>{window.clearInterval(interval);window.removeEventListener('focus',refreshVisible);window.removeEventListener('storage',refreshStorage);document.removeEventListener('visibilitychange',refreshVisible);};
+    return()=>{
+      window.clearInterval(interval);
+      window.removeEventListener('focus',refreshVisible);
+      window.removeEventListener('storage',refreshStorage);
+      document.removeEventListener('visibilitychange',refreshVisible);
+    };
   },[]);
 
   if(renderOwnerScope!==ownerScope){
@@ -180,6 +204,10 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       </UiButton>
     </div>
     {(checkingIdentity||loading)&&<p role="status" className="text-sm text-slate-600">{tr('Loading beneficiary lists…','উপকারভোগীর তালিকা লোড হচ্ছে…')}</p>}
+    {refreshError&&!error&&<p role="status" className="text-sm text-amber-800" aria-live="polite">
+      {tr('Could not check for newer beneficiary details. The last saved list remains visible; updates will retry automatically.',
+        'উপকারভোগীর নতুন তথ্য যাচাই করা যায়নি। আগের তালিকা দেখা যাচ্ছে; স্বয়ংক্রিয়ভাবে আবার চেষ্টা করা হবে।')}
+    </p>}
     {error&&<div className="flex flex-wrap items-center gap-3" role="alert">
       <p className="text-sm text-red-700">{error}</p>
       <UiButton type="button" variant="outline" className="text-sm font-semibold" onClick={()=>setRefresh(v=>v+1)}>{tr('Retry','আবার চেষ্টা')}</UiButton>
