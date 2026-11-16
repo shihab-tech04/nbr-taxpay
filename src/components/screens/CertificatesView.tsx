@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Download, FileText, Printer } from 'lucide-react';
 import { TaxpayerActivityTabs, TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import { TaxPayModal } from '../ui/TaxPayModal';
@@ -9,6 +9,8 @@ import { getAccountStoryPayments, getDetailedStorySessionPayments, beneficiaryPa
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { ReceiptView } from '../common/ReceiptView';
 import { canViewPaymentCertificate } from '../../services/paymentCertificateModel';
+import {reuseRecordedPayment} from '../../services/paymentReuse';
+import {activePreviewSession} from '../../services/previewAccountSession';
 import type { ChallanReceipt } from '../../types/tax';
 import {TaxPayDataGrid,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFooter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
@@ -21,7 +23,7 @@ const previewOptions: { id: CertificatePreview; en: string; bn: string }[] = [
 ];
 
 export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activityTabs = false }) => {
-  const { language } = useTaxState();
+  const { language,previewAccount,startPaymentReuse,navigate } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   const [selectedPreview, setSelectedPreview] = useState<CertificatePreview>('ANNUAL_PAYMENT');
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -32,6 +34,21 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
   const [sqlLoading,setSqlLoading]=useState(true);
   const [recordSearch,setRecordSearch]=useState('');
   const [receiptReturnToSummary,setReceiptReturnToSummary]=useState(false);
+  const ownerUid=authenticatedUser?.id ??
+    (previewAccount&&activePreviewSession()?.profileId===previewAccount.id?previewAccount.id:null);
+  const selectedReuse=useMemo(()=>{
+    if(!selectedReceipt||!ownerUid)return null;
+    const originalId=selectedReceipt.batchId??selectedReceipt.paymentTransactionId;
+    if(!originalId)return null;
+    const matching=selectedReceipt.batchId
+      ?sqlPayments.filter(row=>row.batchId===selectedReceipt.batchId)
+      :sqlPayments.filter(row=>row.paymentId===selectedReceipt.paymentTransactionId);
+    const receipts=[...new Map(matching.map(row=>[row.paymentId,row.receipt])).values()];
+    if(!receipts.length)return null;
+    try{
+      return reuseRecordedPayment(receipts,ownerUid,null,originalId);
+    }catch{return null;}
+  },[selectedReceipt,ownerUid,sqlPayments]);
   const bn = language === 'bn';
   const label = (en: string, bengali: string) => bn ? bengali : en;
   const openDocument = (receipt: ChallanReceipt, mode: 'receipt' | 'certificate', fromSummary = false) => {
@@ -349,7 +366,11 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
           : label('Payment receipt','পেমেন্ট রসিদ')} service="status"
         className="receipt-modal" footer={<></>}
         onClose={()=>{setSelectedReceipt(null);if(receiptReturnToSummary)setSummaryOpen(true);}}>
-        <ReceiptView receipt={selectedReceipt} embedded certificate={selectedDocumentMode === 'certificate'}/>
+        <ReceiptView receipt={selectedReceipt} embedded certificate={selectedDocumentMode === 'certificate'}
+          transactionActions={Boolean(ownerUid)}
+          onPayAgain={selectedReuse?()=>{setSelectedReceipt(null);startPaymentReuse(selectedReuse);}:undefined}
+          onApplyForCorrection={ownerUid?()=>{const reference=selectedReceipt.challanNo;setSelectedReceipt(null);
+            navigate('corrections',{originalReference:reference,applyForCorrection:Boolean(previewAccount)});}:undefined}/>
       </TaxPayModal>}
     </div>
   );

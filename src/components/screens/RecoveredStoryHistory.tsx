@@ -18,7 +18,7 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
     id:profileId,status:'loading',rows:[]});
   const [selected,setSelected]=useState<OwnedStoryPayment|null>(null);
   const [reuseError,setReuseError]=useState('');
-  const {startPaymentReuse}=useTaxState();
+  const {startPaymentReuse,navigate}=useTaxState();
   const [revision,setRevision]=useState(0);
   useEffect(()=>{
     const refresh=()=>setRevision(value=>value+1);
@@ -81,6 +81,14 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
     startPaymentReuse(copy);
     setSelected(null);
   };
+  const applyForCorrection=(payment:OwnedStoryPayment)=>{
+    if(activePreviewSession()?.profileId!==profileId)return;
+    let reference:string;
+    try{reference=makeConfirmedReceipt(payment).challanNo;}catch{return;}
+    setSelected(null);
+    onReuse?.();
+    navigate('corrections',{applyForCorrection:true,originalReference:reference});
+  };
   const money=(value:number)=>'৳ '+(value/100).toLocaleString(bn?'bn-BD':'en-BD',
     {minimumFractionDigits:2,maximumFractionDigits:2});
   // No extra UI at all for a verified empty account. Existing table is unchanged.
@@ -118,23 +126,17 @@ export function RecoveredStoryHistory({profileId,language,skipDemoRegister=false
         className="mt-4 border-t border-taxpay-border pt-3">
         <button type="button" className="mb-3 min-h-11 rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary"
           onClick={()=>setSelected(null)}>{tr('Back to records','রেকর্ডে ফিরে যান')}</button>
-        <ReceiptView receipt={makeConfirmedReceipt(selected)} embedded/>
-        <button type="button" data-testid="recovered-pay-again-receipt"
-          disabled={!reusable.has(selected.id)} onClick={()=>payAgain(selected)}
-          className="mt-3 min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-medium text-taxpay-primary disabled:opacity-50">
-          {tr('Pay Again','আবার পরিশোধ')}
-        </button>
+        <ReceiptView receipt={makeConfirmedReceipt(selected)} embedded transactionActions
+          payAgainTestId="recovered-pay-again-receipt"
+          onPayAgain={reusable.has(selected.id)?()=>payAgain(selected):undefined}
+          onApplyForCorrection={()=>applyForCorrection(selected)}/>
       </section>
       :<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')}
         service="status" className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
-        <ReceiptView receipt={makeConfirmedReceipt(selected)} embedded/>
-        <div className="mt-3 flex justify-end">
-          <button type="button" data-testid="recovered-pay-again-receipt"
-            disabled={!reusable.has(selected.id)} onClick={()=>payAgain(selected)}
-            className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-medium text-taxpay-primary disabled:opacity-50">
-            {tr('Pay Again','আবার পরিশোধ')}
-          </button>
-        </div>
+        <ReceiptView receipt={makeConfirmedReceipt(selected)} embedded transactionActions
+          payAgainTestId="recovered-pay-again-receipt"
+          onPayAgain={reusable.has(selected.id)?()=>payAgain(selected):undefined}
+          onApplyForCorrection={()=>applyForCorrection(selected)}/>
       </TaxPayModal>)}
   </section>;
 }

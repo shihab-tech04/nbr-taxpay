@@ -3057,3 +3057,36 @@
     grid-template-columns: minmax(0,40%) minmax(0,1fr);
   }
 }
+
+/* Account-owned transaction receipts use exactly three footer actions.
+   The existing two-button public/print footer and certificate UI stay intact. */
+.taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action-group{
+  display:grid;grid-template-columns:repeat(3,minmax(0,max-content));align-items:stretch;gap:.65rem;
+  width:auto;max-width:100%;margin-left:auto;
+}
+.taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action{
+  min-width:0;box-sizing:border-box;white-space:normal;text-align:center;
+}
+.taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action:disabled{
+  cursor:not-allowed;opacity:.5;
+}
+@media(max-width:650px){
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction,
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action-group{
+    width:100%;min-width:0;flex:1 1 100%;margin:0;
+  }
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action-group{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+  }
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action{
+    width:100%;min-height:44px;padding:8px 4px;white-space:normal;overflow-wrap:anywhere;
+  }
+}
+@media(max-width:390px){
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action-group{
+    grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
+  }
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action:last-child{
+    grid-column:1/-1;
+  }
+}
