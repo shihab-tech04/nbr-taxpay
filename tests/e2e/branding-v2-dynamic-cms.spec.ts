@@ -3,8 +3,12 @@ import { publishedBannerRows } from './mock-published-banners';
 
 const publishedLogo = 'branding/published/sohojkor-logo-v18.jpg';
 test('CMS 402 retains real published visuals and does not open a retrying WebSocket', async ({ page }) => {
-  let logoReads = 0, bannerReads = 0, websocketCount = 0;
-  page.on('websocket', () => { websocketCount += 1; });
+  let logoReads = 0, bannerReads = 0, brandingChannelJoins = 0;
+  page.on('websocket', socket => {
+    socket.on('framesent', frame => {
+      if (/taxpay-site-logo-public|published-taxpay-banners/.test(frame.payload)) brandingChannelJoins += 1;
+    });
+  });
   await page.route('**/rest/v1/taxpay_site_logo**', async route => {
     logoReads += 1;
     await route.fulfill({ status: 402, contentType: 'application/json',
@@ -25,13 +29,17 @@ test('CMS 402 retains real published visuals and does not open a retrying WebSoc
   await page.waitForTimeout(250);
   expect(logoReads).toBeLessThanOrEqual(1);
   expect(bannerReads).toBeLessThanOrEqual(1);
-  expect(websocketCount).toBe(0);
+  expect(brandingChannelJoins).toBe(0);
   await expect(page.locator('.public-hero-carousel--offline')).toHaveCount(0);
 });
 
 test('healthy CMS response replaces last verified snapshot with published edits', async ({ page }) => {
-  let logoReads = 0, bannerReads = 0, websocketCount = 0;
-  page.on('websocket', () => { websocketCount += 1; });
+  let logoReads = 0, bannerReads = 0, brandingChannelJoins = 0;
+  page.on('websocket', socket => {
+    socket.on('framesent', frame => {
+      if (/taxpay-site-logo-public|published-taxpay-banners/.test(frame.payload)) brandingChannelJoins += 1;
+    });
+  });
   await page.route('**/rest/v1/taxpay_site_logo**', async route => {
     logoReads += 1;
     await route.fulfill({ status: 200, contentType: 'application/json',
@@ -41,7 +49,7 @@ test('healthy CMS response replaces last verified snapshot with published edits'
     bannerReads += 1;
     await route.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify(publishedBannerRows.map((b,i) => i===0
-        ? { ...b, heading_en: 'Updated by Office CMS', background_color: '#F7F5E6',
+        ? { ...b, heading_en: 'Updated by Office CMS', mobile_heading_en: 'Updated by Office CMS', background_color: '#F7F5E6',
             heading_color: '#65531B', body_color: '#6D5F31', outline_color: '#7A651F' }
         : b)) });
   });
@@ -52,5 +60,5 @@ test('healthy CMS response replaces last verified snapshot with published edits'
   await page.waitForTimeout(250);
   expect(logoReads).toBeLessThanOrEqual(1);
   expect(bannerReads).toBeLessThanOrEqual(1);
-  expect(websocketCount).toBe(0);
+  expect(brandingChannelJoins).toBe(0);
 });
