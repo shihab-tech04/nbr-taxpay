@@ -1,0 +1,32 @@
+name: Phase 7 Taxpayer original/V2 signed Office source contract
+
+on:
+  pull_request:
+    branches:
+      - ws5/v95-integrated-release-candidate-20261115
+    paths:
+      - 'supabase/functions/demo-story1-taxpay/officeMirrorSource.ts'
+      - 'supabase/functions/demo-story1-taxpay/index.ts'
+      - 'tests/officeMirrorSourceProject.test.ts'
+      - '.github/workflows/phase7-taxpayer-dual-office-source.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  mirror-source:
+    name: Trusted original/V2 Taxpayer source, typecheck and static build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --import tsx --test tests/officeMirrorSourceProject.test.ts
+      - run: npm run lint
+      - run: npm run build
