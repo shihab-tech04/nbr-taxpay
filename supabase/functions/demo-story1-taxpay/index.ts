@@ -32,11 +32,11 @@ function officeMirrorSource(url:string):'original'|'v2'{
 }
 const office="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/mirror";
 const officeAuthorization="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/authorization/mirror";
-async function mirrorAuthorization(id:string){
+async function mirrorAuthorization(id:string,sourceUrl:string){
  const proof=await createOfficeAuthorizationProof(serviceCredential(),id);
  const res=await fetch(officeAuthorization,{method:"POST",headers:{"Content-Type":"application/json",
   "x-taxpay-office-authorization-proof":proof},
-  body:JSON.stringify({id}),signal:AbortSignal.timeout(10000)});
+  body:JSON.stringify({id,sourceProject:officeMirrorSource(sourceUrl)}),signal:AbortSignal.timeout(10000)});
  const receipt=await res.json();
  return res.ok&&receipt.success&&receipt.data?.id===id;
 }
@@ -54,7 +54,7 @@ async function reconcileMirrors(url:string,serviceKey:string){
    let okay=false,reason="DELIVERY_FAILED";
    try{
     if(item.type==="AUTHORIZATION"){
-     okay=await mirrorAuthorization(item.id);
+     okay=await mirrorAuthorization(item.id,url);
     }else if(item.type==="PAYMENT"&&item.sessionId){
      const proof=await createOfficeMirrorProof(serviceKey,item.id,item.sessionId);
      const response=await fetch(office,{method:"POST",headers:{"Content-Type":"application/json",
@@ -157,7 +157,7 @@ Deno.serve(async(req)=>{
     if(error)return respond({success:false,error:error.message},409);
     result=data;
    }
-   try{if(!await mirrorAuthorization(result.id))throw Error("OFFICE_AUTHORIZATION_MIRROR_FAILED");}
+   try{if(!await mirrorAuthorization(result.id,url))throw Error("OFFICE_AUTHORIZATION_MIRROR_FAILED");}
    catch(e){
     console.error("Authorization mirror pending",e);
     return respond({success:false,error:"OFFICE_SYNC_PENDING",requestId:result.id,retryable:true},503);
