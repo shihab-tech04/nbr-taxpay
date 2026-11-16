@@ -89,6 +89,7 @@ function sqlRpc(origin,name,args){
    taxpay_correction_internal_ack:()=> 'public.taxpay_correction_internal_ack('+sqlText(args.p_event_id)+'::uuid,'+
     sqlText(args.p_claim_token)+'::uuid,'+args.p_success+','+(args.p_error===null?'NULL':sqlText(args.p_error))+')',
    taxpay_correction_record_office_decision:()=> 'public.taxpay_correction_record_office_decision('+pgJSON(args.p_command)+')',
+   taxpay_correction_receive_office_initiation:()=> 'public.taxpay_correction_receive_office_initiation('+pgJSON(args.p_command)+')',
   },
   OFFICE_SQL:{
    payment_v1_internal_bridge_config:()=> 'public.payment_v1_internal_bridge_config()',
@@ -97,6 +98,9 @@ function sqlRpc(origin,name,args){
    payment_v1_internal_ack_correction_command:()=> 'public.payment_v1_internal_ack_correction_command('+
     sqlText(args.p_message_id)+'::uuid,'+sqlText(args.p_claim_token)+'::uuid,'+args.p_success+','+
     (args.p_review_state===null?'NULL':sqlText(args.p_review_state))+','+
+    (args.p_error===null?'NULL':sqlText(args.p_error))+')',
+   payment_v1_internal_ack_command:()=> 'public.payment_v1_internal_ack_command('+
+    sqlText(args.p_message_id)+'::uuid,'+sqlText(args.p_claim_token)+'::uuid,'+args.p_success+','+
     (args.p_error===null?'NULL':sqlText(args.p_error))+')',
   },
  };
