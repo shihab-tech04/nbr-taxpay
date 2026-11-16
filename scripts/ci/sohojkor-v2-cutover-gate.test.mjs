@@ -54,3 +54,12 @@ test('integration workflow keeps both release gates and V2-only hosted persisten
   assert.match(persistence, /gmuhitmaynfhipcvbvkh\.supabase\.co/);
   assert.doesNotMatch(persistence, /eyqhoavnitkrajvyqvxn\.supabase\.co/);
 });
+
+test('reviewed PR artifact reuse must check V2 and reject the original-only bundle', () => {
+  const workflow = readFileSync(new URL('../../.github/workflows/pages.yml', import.meta.url),'utf8');
+  const reuse = workflow.split('  reuse-reviewed-build:')[1]?.split('  verification-gate:')[0]??'';
+  assert.ok(reuse.includes("grep -RFq 'https://gmuhitmaynfhipcvbvkh.supabase.co' dist/assets"),
+    'reused immutable bundle must contain the approved V2 frontend endpoint');
+  assert.ok(!reuse.includes("grep -RFq 'https://eyqhoavnitkrajvyqvxn.supabase.co' dist/assets"),
+    'do not require the Original endpoint in a V2-only reviewed bundle');
+});
