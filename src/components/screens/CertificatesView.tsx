@@ -10,7 +10,7 @@ import { useAccountIdentity } from '../../services/accountIdentity';
 import { ReceiptView } from '../common/ReceiptView';
 import { canViewPaymentCertificate } from '../../services/paymentCertificateModel';
 import type { ChallanReceipt } from '../../types/tax';
-import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {TaxPayDataGrid,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFooter,TaxPayTableState} from '../ui/TaxPayDataTable';
 
 type CertificatePreview = 'ANNUAL_PAYMENT' | 'WITHHOLDING_PROOF' | 'TRAVEL_CLEARANCE';
 
@@ -109,7 +109,7 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
   const selectedTitle = bn ? selectedOption.bn : selectedOption.en;
 
   return (
-    <div className={bn ? 'mx-auto max-w-6xl space-y-4 pb-12 font-bengali' : 'mx-auto max-w-6xl space-y-4 pb-12'}>
+    <div data-taxpay-register-page="true" className={bn ? 'mx-auto w-full max-w-7xl space-y-4 pb-12 font-bengali' : 'mx-auto w-full max-w-7xl space-y-4 pb-12'}>
       <TaxpayerPageHeading id="certificate-preview-title"
         title={label('Tax Credit Certificates','কর ক্রেডিট সনদপত্র')}
         description={label('View issued tax credit certificates and your separately recorded payment documents.','ইস্যুকৃত কর ক্রেডিট সনদপত্র ও পৃথকভাবে সংরক্ষিত পেমেন্ট নথি দেখুন।')}
@@ -150,27 +150,22 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
         </div>
       </section>
 
-      <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6 space-y-3"
+      <section className="taxpay-office-register-frame account-certificate-record-register"
         aria-label={label('Recorded payments','সংরক্ষিত পেমেন্ট')} data-testid="account-certificate-record-register">
-        <div className="taxpay-table-toolbar">
-          <div>
-            <h2 className="text-base font-semibold text-taxpay-text">{label('Payment records','পেমেন্ট রেকর্ড')}</h2>
-            <p className="mt-1 text-sm text-taxpay-muted">{label('Saved payment records are not government-issued certificates or verified tax credits.',
-              'সংরক্ষিত পেমেন্ট রেকর্ড সরকারি সনদ বা যাচাইকৃত কর ক্রেডিট নয়।')}</p>
-          </div>
-          <TaxPayTableCounter label={label('Records','রেকর্ড')} shown={matchingPayments.length} total={scopedPayments.length}/>
-        </div>
-        <TaxPayTableControls className="taxpay-record-page-filters">
-          <label className="taxpayer-transaction-filter">
-            <span>{label('Find a payment record','পেমেন্ট রেকর্ড খুঁজুন')}</span>
-            <input type="search" className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3 text-base"
-              aria-label={label('Find a payment record','পেমেন্ট রেকর্ড খুঁজুন')}
-              placeholder={label('Search reference, name, TIN or tax head','রেফারেন্স, নাম, টিআইএন বা কর খাত')}
-              value={recordSearch} onChange={event=>setRecordSearch(event.target.value)}/>
-          </label>
-          {recordSearch&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
-            onClick={()=>setRecordSearch('')}>{label('Clear search','অনুসন্ধান মুছুন')}</button>}
-        </TaxPayTableControls>
+        <TaxPayOfficeRegisterToolbar
+          title={label('Payment records','পেমেন্ট রেকর্ড')}
+          description={label('Saved payment records are not government-issued certificates or verified tax credits.',
+            'সংরক্ষিত পেমেন্ট রেকর্ড সরকারি সনদ বা যাচাইকৃত কর ক্রেডিট নয়।')}
+          count={matchingPayments.length} total={scopedPayments.length}
+          countLabel={label('records','রেকর্ড')}
+          searchValue={recordSearch} onSearchChange={setRecordSearch}
+          searchLabel={label('Find a payment record','পেমেন্ট রেকর্ড খুঁজুন')}
+          searchPlaceholder={label('Search reference, name, TIN or tax head','রেফারেন্স, নাম, টিআইএন বা কর খাত')}
+          actions={recordSearch?<button type="button"
+            className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
+            onClick={()=>setRecordSearch('')}>{label('Clear search','অনুসন্ধান মুছুন')}</button>:undefined}
+        />
+
         {sqlLoading?<TaxPayTableState>{label('Loading payment records…','পেমেন্ট রেকর্ড লোড হচ্ছে…')}</TaxPayTableState>:
          sqlError?<div role="alert" className="taxpay-table-state">{label('Payment records are temporarily unavailable.','পেমেন্ট রেকর্ড সাময়িকভাবে পাওয়া যাচ্ছে না।')}</div>:
          matchingPayments.length===0?<TaxPayTableState>{scopedPayments.length
@@ -214,6 +209,8 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
                  onClick={()=>openDocument(row.receipt,'certificate')}>{label('View payment certificate','পেমেন্ট সনদ দেখুন')}</button>}
              </div>
            </>}/>}
+        <TaxPayOfficeRegisterFooter shown={matchingPayments.length} total={scopedPayments.length}
+          labels={{showing:label('Showing','দেখানো হচ্ছে'),of:label('of','মোট'),records:label('records','রেকর্ড')}}/>
       </section>
 
       {summaryOpen && (
