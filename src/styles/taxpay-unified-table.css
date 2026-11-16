@@ -1628,3 +1628,39 @@ table.taxpay-unified-table {
     justify-content: flex-start;
   }
 }
+
+/* Activity register regression: the intrinsic max-content table width could
+ * expand its first Payment column across the entire desktop viewport, pushing
+ * the other eight semantic columns out of sight. Keep the nine-column table
+ * inside its existing horizontal scroll panel; do not change its data/actions
+ * or affect the mobile cards, ledger, beneficiaries or certificate tables. */
+@media (min-width: 768px) {
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpay-table-viewport > table.taxpayer-transaction-table {
+    width: 100%;
+    min-width: 1400px;
+    table-layout: fixed;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(1) { width: 195px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(2) { width: 155px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(3) { width: 190px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(4) { width: 155px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(5) { width: 150px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(6) { width: 125px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(7) { width: 130px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(8) { width: 135px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(9) { width: 165px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table tbody td {
+    overflow-wrap: anywhere;
+  }
+}
