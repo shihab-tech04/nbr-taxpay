@@ -1108,8 +1108,10 @@
   .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
     display: flex;
     flex-direction: column;
-    padding-top: clamp(12px, 1.6dvh, 20px);
-    padding-bottom: clamp(12px, 1.6dvh, 20px);
+    /* Allow only the outer breathing room to contract on shorter wide desktops.
+       Keep the 210px hero, 88px benefit cards and section gaps unchanged. */
+    padding-top: clamp(1px, calc(8dvh - 74px), 20px);
+    padding-bottom: clamp(1px, calc(8dvh - 74px), 20px);
   }
   .public-home-sections {
     display: grid;
