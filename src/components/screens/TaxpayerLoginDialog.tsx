@@ -192,7 +192,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
           <label htmlFor="taxpayer-login-user-id">{bn ? 'ইউজার আইডি' : 'User ID'}</label>
           <div className="taxpayer-login-input-wrap">
             <UserRound size={18} aria-hidden="true" />
-            <input ref={inputRef} id="taxpayer-login-user-id" type="text" autoComplete="username"
+            <input ref={inputRef} id="taxpayer-login-user-id" type="text" autoComplete="off"
               aria-autocomplete="list" aria-haspopup="listbox"
               aria-expanded={suggestionsOpen} aria-controls="taxpayer-login-account-options"
               aria-activedescendant={suggestionsOpen&&suggestions.length ? `taxpayer-login-account-${suggestions[Math.min(highlighted,suggestions.length-1)]}`:undefined}
@@ -234,7 +234,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
           <label htmlFor="taxpayer-login-password">{bn ? 'পাসওয়ার্ড' : 'Password'}</label>
           <div className="taxpayer-login-input-wrap taxpayer-login-password-wrap">
             <LockKeyhole size={18} aria-hidden="true" />
-            <input id="taxpayer-login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password"
+            <input id="taxpayer-login-password" type={showPassword ? 'text' : 'password'} autoComplete="off"
               placeholder={bn ? 'আপনার পাসওয়ার্ড লিখুন' : 'Enter your password'}
               aria-invalid={Boolean(error)} aria-describedby={error?'taxpayer-login-error':undefined}
               value={password} onChange={event => { setPassword(event.target.value); setError(null); }} />
