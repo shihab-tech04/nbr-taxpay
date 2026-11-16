@@ -427,7 +427,7 @@ db(office,
  'VALUES ('+sqlText(started.sourcePaymentId)+'::uuid,'+
  sqlText('80000000-0000-4000-8000-000000000043')+'::uuid,'+
  sqlText('OTHER_TAX_PAYMENT')+',100,'+pgJSON(started.originalPayment)+','+
- sqlText('SIMULATED_SUCCESS')+',now()) ON CONFLICT(id) DO NOTHING;SELECT true::jsonb;');
+ sqlText('SIMULATED_SUCCESS')+',now()) ON CONFLICT(id) DO NOTHING;SELECT pg_catalog.to_jsonb(true);');
 const officeInitiationKey='80000000-0000-4000-8000-000000000091';
 const officeInitSql="SELECT public.payment_v1_office_initiate_correction("+
  sqlText(started.sourcePaymentId)+"::uuid,'444444444444','SYN-REF-003',"+
