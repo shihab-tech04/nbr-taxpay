@@ -39,7 +39,7 @@ import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
 import { deletePaymentFormDraft, isPaymentDraftService, type PaymentFormDraft, type PaymentDraftActor } from '../../services/accountPaymentFormDrafts';
 import { isOptionalReceiptEmailValid, normaliseReceiptEmail } from '../../services/receiptEmail';
 import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
-import type {PaymentReuse} from '../../services/paymentReuse';
+import {reuseRecordedPayment,type PaymentReuse} from '../../services/paymentReuse';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
 import { prepareCombinedOtherTaxPayment, saveCombinedOtherTaxRequest, loadCombinedOtherTaxRequest, clearCombinedOtherTaxRequest, fitsCombinedAllocationCapacity, MAX_COMBINED_ALLOCATIONS } from '../../services/otherTaxCombinedPayment';
@@ -199,7 +199,7 @@ interface GuestPaymentProps {
 }
 
 export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialReuse, initialForSelf, initialBeneficiary, onBackToService, onStageChange }) => {
-  const { language, navigate, addPaymentReceipt, routeParams, previewAccount, setPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, addPaymentReceipt, routeParams, previewAccount, setPaymentServiceChoiceOpen, startPaymentReuse } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // The standalone guest route can also be visited from a signed-in session.
   const signedInAccount = withAccount || Boolean(authenticatedUser || previewAccount);
@@ -1430,9 +1430,29 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const referenceReady = lifecycleStages.includes('ACS_REFERENCE_CREATED');
     const confirmedReceipts = batchAttempt ? confirmedBatchReceipts(batchAttempt) : [];
     const shownTotal = batchAttempt ? batchAttempt.amountMinor / 100 : totalAmount;
+    const currentOwner=authenticatedUser?.id ??
+      (previewAccount&&activePreviewSession()?.profileId===previewAccount.id?previewAccount.id:null);
+    let repeatCopy:PaymentReuse|null=null;
+    // The successful SQL acknowledgement precedes this receipt. Never offer a
+    // repeated payment from a pending bank slip or an unverified guest fixture.
+    if(completed&&currentOwner&&createdReceipt?.paymentTransactionId){
+      const originals=batchAttempt?confirmedReceipts:[createdReceipt];
+      try{
+        repeatCopy=reuseRecordedPayment(originals,currentOwner,signedInProfile?.tin??null,
+          createdReceipt.batchId??createdReceipt.paymentTransactionId);
+      }catch{/* Incomplete or mixed original stays read-only. */}
+    }
     if (showReceiptDetails && createdReceipt) return (
       <div lang={language} className={`payment-receipt-details ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''}`}>
-        <ReceiptView receipt={createdReceipt} embedded={embedded} onBack={() => setShowReceiptDetails(false)} />
+        <ReceiptView receipt={createdReceipt} embedded={embedded} onBack={() => setShowReceiptDetails(false)}
+          transactionActions={Boolean(completed&&currentOwner&&createdReceipt.paymentTransactionId)}
+          onPayAgain={repeatCopy?()=>{setShowReceiptDetails(false);
+            startPaymentReuse(repeatCopy!);}:undefined}
+          onApplyForCorrection={completed&&currentOwner?()=>{
+            setShowReceiptDetails(false);
+            navigate('corrections',{originalReference:createdReceipt.challanNo,
+              applyForCorrection:Boolean(previewAccount)});
+          }:undefined}/>
       </div>
     );
     return (
