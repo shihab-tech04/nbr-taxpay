@@ -113,3 +113,9 @@ test('one official credit reference can cover distinct allocation lines, never d
   assert.match(sql,/unique \(payment_record_id,official_credit_source,official_credit_reference\)/);
   assert.doesNotMatch(sql,/unique \(official_credit_source,official_credit_reference\)/);
 });
+
+test('provider allocation identity is globally unique across taxpayers while multiple lines remain distinct',()=>{
+  const sql=readFileSync('supabase/migrations/20261116040500_taxpay_external_ledger_sources.sql','utf8');
+  assert.match(sql,/unique \(source_system,source_transaction_id,source_allocation_id\)/);
+  assert.doesNotMatch(sql,/unique \(owner_uid,source_system,source_transaction_id,source_allocation_id\)/);
+});
