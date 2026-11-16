@@ -840,6 +840,10 @@ jobs:
           SOHOJKOR_RELEASE_SCOPE: 'fictional-user1-user30-only'
           SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
         run: node scripts/ci/sohojkor-v2-cutover-gate.mjs
+      - name: Verify V2 published banners, approved logo and source catalogue before release
+        env:
+          V2_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
+        run: node scripts/ci/v2-public-read-preflight.mjs
       - name: Deploy compiled application
         id: deployment
         uses: actions/deploy-pages@v5.0.1
