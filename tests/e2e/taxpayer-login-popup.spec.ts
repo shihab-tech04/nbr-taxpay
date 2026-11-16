@@ -204,6 +204,8 @@ test('account options float without resizing the login form or footer (desktop a
     const userId=dialog.locator('#taxpayer-login-user-id');
     const password=dialog.locator('#taxpayer-login-password');
     const footer=dialog.locator('.taxpay-modal__footer');
+    // Wait for the approved webfonts to settle before comparing layout geometry.
+    await page.evaluate(async()=>{await document.fonts.ready;});
     if (await userId.getAttribute('aria-expanded') === 'true') await userId.press('Escape');
     const beforePassword=await password.boundingBox();
     const beforeFooter=await footer.boundingBox();
@@ -217,9 +219,11 @@ test('account options float without resizing the login form or footer (desktop a
     const afterPassword=await password.boundingBox();
     const afterFooter=await footer.boundingBox();
     const afterDialog=await dialog.boundingBox();
-    // The modal may move ~1px as webfonts settle; it must not reflow by an option row.
-    expect(Math.abs(afterPassword!.y-beforePassword!.y)).toBeLessThan(3);
-    expect(Math.abs(afterFooter!.y-beforeFooter!.y)).toBeLessThan(3);
+    // Verify internal layout, not a harmless movement of the entire centered
+    // modal as fonts/scrollbars settle. Opening an absolute dropdown must not
+    // reflow password, footer or dialog height.
+    expect(Math.abs((afterPassword!.y-afterDialog!.y)-(beforePassword!.y-beforeDialog!.y))).toBeLessThan(3);
+    expect(Math.abs((afterFooter!.y-afterDialog!.y)-(beforeFooter!.y-beforeDialog!.y))).toBeLessThan(3);
     expect(Math.abs(afterDialog!.height-beforeDialog!.height)).toBeLessThan(3);
     const inputBounds=await userId.boundingBox();
     const optionsBounds=await options.boundingBox();
