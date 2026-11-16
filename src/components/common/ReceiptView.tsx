@@ -256,8 +256,13 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     <div className={`receipt-view receipt-view--embedded${bn ? ' font-bengali' : ''}`} lang={language}>
       {!suppressFooterActions && (!isCertificate || canViewCertificate) && (footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions)}
 
-      {showReceiptTransactionActions && <button type="button" className="receipt-view__action receipt-view__action--secondary no-print"
-        onClick={() => window.print()}><Printer size={16} aria-hidden="true"/><span>{labels.print}</span></button>}
+      {showReceiptTransactionActions && <div className="no-print flex flex-wrap items-center gap-2">
+        {onBack && <button type="button"
+          className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
+          onClick={onBack}>{bn ? 'পেমেন্ট নিশ্চিতকরণে ফিরুন' : 'Back to confirmation'}</button>}
+        <button type="button" className="receipt-view__action receipt-view__action--secondary"
+          onClick={() => window.print()}><Printer size={16} aria-hidden="true"/><span>{labels.print}</span></button>
+      </div>}
       {canViewCertificate && !certificate && <button type="button"
         className="receipt-view__action receipt-view__action--secondary no-print"
         onClick={() => { setDownloadError(false); setShowCertificate(value => !value); }}>
