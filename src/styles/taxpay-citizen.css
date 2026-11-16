@@ -2503,7 +2503,8 @@
   justify-content: center;
   min-width: 0;
   max-width: 100%;
-  min-height: 44px;
+  /* A little extra avoids fractional viewport/font rounding below 44px. */
+  min-height: 46px;
   margin-inline-start: auto;
   padding: .65rem 1.25rem;
   border: 1px solid var(--citizen-primary);
