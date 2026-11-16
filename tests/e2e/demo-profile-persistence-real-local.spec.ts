@@ -57,6 +57,24 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
       await dialog.locator('.citizen-dialog-language').click();
     }
     await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang',target);
+    // The visual language toggle is optimistic; do not navigate/reload before
+    // the capability-scoped SQL preference confirms the exact saved language.
+    // This catches actual failed persistence instead of racing an in-flight
+    // Edge write and incorrectly attributing another browser's old language.
+    await expect.poll(async()=>{
+      return page.evaluate(async({url,key})=>{
+        const session=JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null');
+        if(!session?.capability)return null;
+        const res=await fetch(url+'/functions/v1/taxpay-guest-beneficiaries',{
+          method:'POST',cache:'no-store',
+          headers:{apikey:key,'content-type':'application/json','x-taxpay-guest-capability':session.capability},
+          body:JSON.stringify({action:'demo-settings'}),
+        });
+        if(!res.ok)return null;
+        const body=await res.json();
+        return body.success===true?body.data?.language??null:null;
+      },{url:api.origin,key});
+    },{timeout:15000}).toBe(target);
   };
   const signOut=async(page:Page)=>{
     const rail=page.locator('.taxpayer-reference-rail-bottom');
