@@ -32,8 +32,8 @@ test('a User ID popup session never creates a Supabase authenticated user',async
   await page.getByLabel('Password',{exact:true}).fill('user2');
   await page.getByRole('button',{name:'Sign In'}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
-  await expect(page.getByText('User ID: user2')).toBeVisible();
+  await expect(page.getByTestId('dashboard-unified-preview')).toHaveAttribute('data-account-id','user2');
+  await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   expect(calls).toEqual([]);
   expect(await page.evaluate(()=>Object.keys(localStorage).filter(key=>key.startsWith('sb-')))).toEqual([]);
 });
