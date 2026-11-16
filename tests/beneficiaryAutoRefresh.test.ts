@@ -29,3 +29,15 @@ test('saved picker ignores list and TIN callbacks from a previous owner session'
   assert.match(picker,/finally\(\(\)=>\{if\(!cancelled&&ownerScopeRef\.current===ownerScope\)setLoading\(false\);\}\)/);
   assert.match(picker,/onAvailableTins\(Array\.from\(new Set\(result\.people/);
 });
+
+test('saved payment picker has no manual restore and always revalidates shared account lists', () => {
+  const picker=readFileSync('src/components/screens/SavedBeneficiaryPicker.tsx','utf8');
+  const manage=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
+  assert.doesNotMatch(picker,/Restore saved lists|restoreSavedLists|restoreAvailable/);
+  assert.match(picker,/loadBeneficiaries\(user\?\.id\?\?null,\{forceFresh:true\}\)/);
+  assert.match(picker,/window\.setInterval\(refreshVisible,30_000\)/);
+  assert.match(picker,/window\.clearInterval\(poll\)/);
+  assert.match(manage,/loadBeneficiaries\(owner,\{forceFresh:true\}\)/);
+  assert.match(manage,/window\.setInterval\(refresh,30_000\)/);
+  assert.match(manage,/window\.clearInterval\(poll\)/);
+});
