@@ -1813,10 +1813,11 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   error={fieldError('tin')} status={taxpayerLookupResult} />}
 
               </>}
-              {otherBatch && forSelf === false && !signedInAccount && <h3 className="payment-identity__receipt-heading">{language === 'bn' ? 'রসিদের তথ্য' : 'Receipt details'}</h3>}
+              {otherBatch && forSelf === false && !signedInAccount && <p className="text-sm text-taxpay-muted">{language === 'bn' ? 'নিচের নাম রসিদে পরিশোধকারী হিসেবে থাকবে। করদাতার তথ্য পরে আলাদাভাবে খুঁজুন।' : 'The payer named here appears on the receipt; the taxpayer receiving the payment is selected separately.'}</p>}
+                {otherBatch && forSelf === false && !signedInAccount && <h3 className="text-sm font-semibold text-taxpay-text">{language === 'bn' ? 'রসিদের তথ্য' : 'Receipt details'}</h3>}
               {(!ownAccountTax || !isWithholdingMode) && <div className={`payment-identity__receipt-row${ownAccountTax ? " payment-identity__receipt-row--account" : ""}`}>
               {forSelf === false && !signedInAccount && <div>
-                <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{otherBatch ? (language === 'bn' ? 'আপনার নাম' : 'Your name') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} *</label>
+                <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{otherBatch ? (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} *</label>
                 <input
                   id="guest-payer-name"
                   type="text"
