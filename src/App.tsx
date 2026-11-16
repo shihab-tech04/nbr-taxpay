@@ -71,6 +71,12 @@ class HistoryRouteBoundary extends React.Component<
 > {
   state={failed:false};
   static getDerivedStateFromError():{failed:boolean}{return {failed:true};}
+  componentDidCatch(error:Error,info:React.ErrorInfo):void{
+    // Production diagnostics are limited to exception type and React component
+    // names. Never print account IDs, records, API tokens or component props.
+    console.error('[taxpay-history-render]',error.name,error.message,
+      info.componentStack?.slice(0,1200)??'');
+  }
   render(){
     if(!this.state.failed)return this.props.children;
     const bn=this.props.language==='bn';
