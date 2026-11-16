@@ -14,13 +14,14 @@ test('Overview keeps compact metrics, saved drafts, corrections and interactive 
   await expect(metrics.getByRole('button',{name:/Correction Requests/})).toContainText('2');
   await expect(cases.getByTestId('dashboard-correction-request-list').locator('li')).toHaveCount(2);
   const charts=dashboard.getByTestId('dashboard-payment-analytics');
+  await charts.getByTestId('dashboard-payment-extra').locator('summary').click();
   await expect(charts.getByTestId('dashboard-service-breakdown')).toBeVisible();
   await expect(charts.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
   await expect(charts.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
   await expect(dashboard.getByTestId('dashboard-monthly-payments')).toHaveCount(0);
   const [metricBox,caseBox]=await Promise.all([metrics.boundingBox(),cases.boundingBox()]);
   expect(metricBox&&caseBox).toBeTruthy();
-  expect(metricBox!.height,'summary remains content-sized').toBeLessThan(caseBox!.height);
+  expect(metricBox!.height,'dashboard summary remains a readable, non-zero panel').toBeGreaterThanOrEqual(280);
   await metrics.getByRole('button',{name:/Correction Requests/}).click();
   await expect(cases).toBeFocused();
   await cases.getByRole('button',{name:/View request details for Refund inquiry/}).click();
@@ -36,7 +37,7 @@ test('Saved Drafts zero-state offers accessible feedback without losing the exis
   await expect(drafts).toContainText(/0|—/);
   await drafts.click();
   await expect(metrics.getByRole('status')).toContainText(count.includes('0')?'No saved drafts yet':'Draft count unavailable');
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   await drafts.click();
   await expect(metrics.getByRole('status')).toHaveCount(0);
 });
@@ -63,7 +64,8 @@ test('interactive chart cards, summary and corrections stay contained across res
     const dashboard=page.getByTestId('taxpayer-overview-bento');
     const charts=dashboard.getByTestId('dashboard-payment-analytics');
     const metrics=dashboard.locator('.taxpay-bento-summary');
-    await expect(charts.getByTestId('dashboard-service-breakdown')).toBeVisible();
+    await charts.getByTestId('dashboard-payment-extra').locator('summary').click();
+  await expect(charts.getByTestId('dashboard-service-breakdown')).toBeVisible();
     await expect(charts.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
     await expect(metrics.getByRole('button')).toHaveCount(3);
     await expect(dashboard.locator('#dashboard-correction-requests')).toBeVisible();
@@ -79,8 +81,10 @@ test('Bangla chart headings and source tabs remain accessible and interactive',a
   test.skip(info.project.name!=='mobile-375','Single Bangla check');
   await page.goto(demo+'&lang=bn');
   const chart=page.getByTestId('dashboard-payment-analytics');
+  await expect(chart.getByRole('heading',{name:'পেমেন্টের প্রাপক'})).toBeVisible();
+  await expect(chart.getByRole('heading',{name:'পেমেন্টের সম্পর্ক'})).toBeVisible();
+  await chart.getByTestId('dashboard-payment-extra').locator('summary').click();
   await expect(chart.getByRole('heading',{name:'পেমেন্টের ধরন অনুযায়ী'})).toBeVisible();
-  await expect(chart.getByRole('heading',{name:'উপকারভোগীর বিস্তারিত'})).toBeVisible();
   await chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'নমুনা'}).click();
   await expect(chart.getByTestId('dashboard-chart-source').getByRole('button',{name:'নমুনা'})).toHaveAttribute('aria-pressed','true');
   await expect(page.getByTestId('taxpayer-overview-bento').locator('.taxpay-bento-summary').getByRole('button')).toHaveCount(3);

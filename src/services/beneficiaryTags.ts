@@ -23,6 +23,10 @@ export function validBeneficiaryClassification(tag:unknown,relationship:unknown,
   if(tag==='friends_family')return BENEFICIARY_RELATIONS.some(value=>value===relationship);
   return relationship===null || relationship===undefined || relationship==='';
 }
+/** New beneficiary records must declare a valid final tag. Legacy rows are handled only by explicit recovery paths. */
+export function validNewBeneficiaryClassification(tag:unknown,relationship:unknown,otherLabel:unknown=null):boolean {
+  return tag!==null&&tag!==undefined&&validBeneficiaryClassification(tag,relationship,otherLabel);
+}
 const tagLabels:{[K in BeneficiaryTag]:[string,string]}={
   clients:['Clients','ক্লায়েন্ট'],
   friends_family:['Friends & family members','বন্ধু ও পরিবারের সদস্য'],

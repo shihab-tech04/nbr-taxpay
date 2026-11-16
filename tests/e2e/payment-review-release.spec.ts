@@ -10,7 +10,7 @@ const pageWidth = async (page: import('@playwright/test').Page) =>
 const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string, language: 'bn' | 'en' = 'bn', embedded = false) => {
   const receiptTitle = embedded
     ? language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'
-    : language === 'bn' ? 'করবৃত্ত — রসিদের বিবরণ' : 'Korbritto — Receipt details';
+    : language === 'bn' ? 'সহজকর — রসিদের বিবরণ' : 'Sohojkor — Receipt details';
   await expect(page.getByRole('heading', { name: receiptTitle, exact: true })).toBeInViewport();
   if (projectName === 'desktop-1280' && !embedded) {
     await expect(page.getByTestId('receipt-breakdown-table')).toBeVisible();
@@ -245,10 +245,10 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   }
 
   // A receipt modal blocks the page-level language control until it is closed.
-  await page.getByRole('dialog', { name: 'করবৃত্ত — রসিদের বিবরণ' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
+  await page.getByRole('dialog', { name: 'সহজকর — রসিদের বিবরণ' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
   await page.getByRole('button', { name: 'EN' }).click();
   await page.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(page.getByRole('dialog', { name: 'Korbritto — Receipt details' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Sohojkor — Receipt details' })).toBeVisible();
   await expect(page.getByText('Treasury scroll reference:')).toBeVisible();
 });
 
@@ -283,9 +283,15 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(progress).toHaveAttribute('aria-valuemax', '4');
   const progressHeight = await progress.evaluate(element => element.getBoundingClientRect().height);
   expect(progressHeight).toBe(10);
-  const fillWidth = await progress.locator('.taxpay-modal__progress-fill').evaluate(element => element.getBoundingClientRect().width);
-  const trackWidth = await progress.evaluate(element => element.getBoundingClientRect().width);
-  expect(Math.abs(fillWidth / trackWidth - 0.25)).toBeLessThan(0.02);
+  // The fill uses a 180ms CSS transition. Assert its settled width, not a
+  // transient animation frame immediately after the progress value changes.
+  await expect.poll(async () => {
+    const fillWidth = await progress.locator('.taxpay-modal__progress-fill')
+      .evaluate(element => element.getBoundingClientRect().width);
+    const trackWidth = await progress.evaluate(element => element.getBoundingClientRect().width);
+    return Math.abs(fillWidth / trackWidth - 0.25);
+  }, { message: 'payment progress fill settles at one quarter of the track' })
+    .toBeLessThan(0.02);
   await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   const stepTextSize = await services.locator('.taxpay-modal__step-count')
     .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));

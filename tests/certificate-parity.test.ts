@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {makeConfirmedReceipt,validCertificateTransactionId} from '../src/services/confirmedPaymentCertificate';
+import {buildPaymentCertificateModel} from '../src/services/paymentCertificateModel';
 
 const id='fd718297-1e32-421c-a951-987f4e92a991';
 const record={
@@ -21,6 +22,21 @@ test('existing SQL payment without snapshot renders actual persisted data, not i
  assert.equal(result.tokenNumber,'—');
  assert.equal(result.items[0].penaltyAmount,2600);
  assert.equal(result.taxCreditStatus,'PENDING_RECONCILIATION');
+});
+test('confirmed certificate preserves persisted payer and separate recipient identity',()=>{
+ const payment={...record,details:{...record.details,payerMode:'OTHER',payerName:'Payer One',
+  payerTin:'1234567890123',taxpayerName:'Recipient One',taxpayerTin:'9876543210987'}};
+ const receipt=makeConfirmedReceipt(payment);
+ const certificate=buildPaymentCertificateModel(receipt);
+ assert.equal(receipt.payerName,'Payer One');
+ assert.equal(receipt.payerTin,'1234567890123');
+ assert.equal(receipt.taxpayerName,'Recipient One');
+ assert.equal(receipt.taxpayerTin,'9876543210987');
+ assert.equal(certificate?.payerName,'Payer One');
+ assert.equal(certificate?.payerTin,'1234567890123');
+ assert.deepEqual(certificate?.lines.map(line=>[line.recipientName,line.recipientTin]),[
+  ['Recipient One','9876543210987'],
+ ]);
 });
 test('new TaxPay receipt snapshot retains same head/item/reference from both SQL stores',()=>{
  const snapshot=makeConfirmedReceipt(record);

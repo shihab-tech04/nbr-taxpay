@@ -28,7 +28,8 @@ test('user6 sees stored advance-tax installments and matching SQL profile', asyn
   await expect(panel.getByText('Service records unavailable')).toHaveCount(0);
   await expect(page.getByText('Government challan: Not available')).toBeVisible();
   await page.goto('/?action=account_profile');
-  await expect(page.getByText('6666666666666', { exact: true })).toBeVisible();
+  await expect(page.getByText('666**********', { exact: true })).toBeVisible();
+  await expect(page.getByText('6666666666666', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Advance tax and instalment review')).toBeVisible();
 });
 
@@ -44,7 +45,8 @@ test('user8 begins with no saved activity or personal tax profile; user6 data st
   }
   await expect(panel.getByText('Service records unavailable')).toHaveCount(0);
   await page.goto('/?action=account_profile');
-  await expect(page.getByText('8888888888888', { exact: true })).toBeVisible();
+  await expect(page.getByText('888**********', { exact: true })).toBeVisible();
+  await expect(page.getByText('8888888888888', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Payment Exception 08')).toHaveCount(0);
   await expect(page.getByText('Account type')).toBeVisible();
 });
