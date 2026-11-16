@@ -138,6 +138,9 @@ test('broken published desktop and mobile images recover to approved category ar
 
 
 test('a newly published image replaces an earlier broken CMS image without a page reload', async ({ page }) => {
+  // Keep the inspected intro slide active while virtual time advances for the
+  // CMS refresh; carousel autoplay is independently covered by UX tests.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.clock.install();
   let currentImage = 'banners/intro/old-broken.jpg';
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9U33LwAAAABJRU5ErkJggg==', 'base64');
@@ -173,7 +176,7 @@ test('a temporary Storage outage retries the unchanged published image after con
       : route.fulfill({ status: 503, body: 'temporarily unavailable' }));
   await page.goto('/?action=landing');
   const image = page.locator('.public-hero-carousel__image-layer').first().locator('img');
-  await expect(image).toHaveAttribute('src', /taxpay-hero-intro-v9/);
+  await expect(image).toHaveAttribute('src', /branding\/published\/banner-intro\.jpg/);
   storageAvailable = true;
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(image).toHaveAttribute('src', /taxpay-banners\/banners\/intro\/temporary-outage\.png/);
