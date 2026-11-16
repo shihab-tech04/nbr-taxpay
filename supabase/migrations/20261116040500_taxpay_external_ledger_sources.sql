@@ -41,7 +41,9 @@ create table public.taxpay_external_credit_postings (
   credited_at timestamptz not null,
   verification_evidence_ref text not null check (length(btrim(verification_evidence_ref)) between 1 and 240),
   ingested_at timestamptz not null default now(),
-  unique (official_credit_source,official_credit_reference)
+  -- One official posting reference may allocate credit across multiple source lines.
+  -- A duplicate for the *same* allocation remains forbidden.
+  unique (payment_record_id,official_credit_source,official_credit_reference)
 );
 comment on table public.taxpay_external_credit_postings is
   'Separate official tax-credit postings, requiring independent source and evidence. A payment status, challan or receipt cannot create a posting.';
