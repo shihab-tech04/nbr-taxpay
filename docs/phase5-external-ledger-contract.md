@@ -26,8 +26,16 @@ The UI filters by all seven providers and Sohojkor separately, preserves Dhara a
 ## Release / data-boundary acceptance
 
 1. WS3 confirms authenticated owner–taxpayer identity matching, source mapping, immutable/duplicate behavior, SQL RLS, independent Office readback, and real provider/official-credit provenance on a **disposable** environment.
-2. WS5 must keep the original production Taxpayer project (`eyqhoavnitkrajvyqvxn`) authoritative until a **separately authorized and fully recovered** cutover. The V2 clone (`gmuhitmaynfhipcvbvkh`) is not production merely because it is healthy. Office (`ihbtabrvmyiwikqqbhrf`) remains a distinct authorization/database boundary. Apply the migration only to the approved project and only after hosted SQL/Auth/Storage recovery proof, review and the protected release process; do not write financial fixtures to production.
+2. **16 Nov V2 simulation-primary cutover:** Taxpayer Main `34c8ef56` now serves the approved fictional `user1`–`user30` preview experience from V2 (`gmuhitmaynfhipcvbvkh`), confirmed by a live sign-in and V2 asset URL readback. Original Taxpayer (`eyqhoavnitkrajvyqvxn`) remains intact as the historical read-only fallback; Office (`ihbtabrvmyiwikqqbhrf`) remains a distinct Auth/database boundary. This **does not** authorize managed Auth UUID migration, copying original financial rows, turning on the V2→Office outbound bridge, or claiming official credits. Both Taxpayer projects currently lack the Phase 5 tables. Apply the migration only after project-specific hosted SQL/Auth/Storage recovery proof, approved integration and protected release verification; never write invented financial fixtures to production.
 3. Test both source-only and independently credited records, multi-line/AY, EN/BN, mobile/desktop, owner A/B separation, retry, and off-platform payments.
 4. Provider credentials/API contracts and issuer-approved payment/credit data are **not** supplied by the repository. Until they exist, real external-source ingestion and cross-application official tax-credit verification remain **UNVERIFIED**; no mock entries or fake confirmation may stand in for them.
 
 **Phase 5 is not LIVE or complete merely because a migration or UI builds.**
+
+## Verified non-API state at V2 cutover (16 November 2026)
+
+- Main commit `34c8ef56d39009d8b9f40f51abf33bf3c8167428` is merged; live public fictional preview login, Ledger and EN/BN navigation readback passed. Deployed SHA was not visible on the site, so exact Pages SHA remains unverified.
+- V2: six `demo_payment.story_payments` rows (all simulated); six mirror-outbox rows marked `ACKED`; outbound `payment_sync.bridge_config.enabled=false`. The `ACKED` flag is not proof of Office receipt.
+- Original: 23 simulated story-payment rows. Office: 23 matching IDs and core payment fields from Original; **none** of V2's six payment IDs are in Office. Do not replay these records or enable the outbound bridge until idempotent, owner-verified, authorized Office readback is accepted.
+- V2 contains 24 preview guest beneficiaries in six lists; Original contains 27 in nine lists. Preserve both sets and original-only entries. The independently managed Auth identities must not be equated by matching email or display name.
+- The Main source/Git archive `Sohojkor-34c8ef56-pre-release-Git-source-20261116.zip` is independently stored in Drive; its inner SHA256SUMS passed and the Git bundle was restored to identical HEAD with strict fsck. **Full hosted PostgreSQL/Auth/Storage restore is not yet verified.**
