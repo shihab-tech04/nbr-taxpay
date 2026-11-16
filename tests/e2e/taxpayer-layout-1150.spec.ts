@@ -100,7 +100,7 @@ test('All taxpayer inner pages preserve responsive access without a full-width s
   }
 });
 
-test('both signed-in taxpayer profiles preserve the approved wide-screen reading width without overflow', async ({page},info) => {
+test('both signed-in taxpayer profiles use the available width capped at 1300px', async ({page},info) => {
   test.skip(info.project.name !== 'desktop-1280', 'One worker checks both signed-in profiles and breakpoints');
   test.setTimeout(120000);
   for (const account of ['user1','user2']) {
@@ -109,31 +109,53 @@ test('both signed-in taxpayer profiles preserve the approved wide-screen reading
     await page.getByLabel('Password',{exact:true}).fill(account);
     await page.getByRole('button',{name:'Sign In',exact:true}).click();
     await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
-    for (const viewport of [1280,1399,1400,1600,1920,2560]) {
+    for (const viewport of [1280,1399,1400,1401,1440,1600,1920,2560]) {
       await page.setViewportSize({width:viewport,height:900});
       const size = await page.evaluate(() => {
         const main = document.querySelector('#main-content') as HTMLElement;
         const content = main.firstElementChild as HTMLElement;
         const style = getComputedStyle(main);
-        const rect = main.getBoundingClientRect();
-        const inner = content.getBoundingClientRect();
-        const area = main.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
         return {
-          area,
-          content: inner.width,
-          leftInset: inner.left - rect.left - parseFloat(style.paddingLeft),
-          rightInset: rect.right - parseFloat(style.paddingRight) - inner.right,
+          available: main.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+          content: content.getBoundingClientRect().width,
           overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         };
       });
       expect(size.overflow,`${account} overflow at ${viewport}px`).toBeLessThanOrEqual(2);
-      if (viewport < 1400) {
-        expect(size.content,`${account} unexpectedly changed at ${viewport}px`).toBeLessThanOrEqual(1152);
-      } else {
-        expect(Math.abs(size.content - size.area * .7),`${account} does not retain the approved 70% content width at ${viewport}px`).toBeLessThanOrEqual(2);
-        expect(Math.abs(size.leftInset - size.rightInset),`${account} reading column is not centered at ${viewport}px`).toBeLessThanOrEqual(2);
-        expect(size.content,`${account} exceeds available main area at ${viewport}px`).toBeLessThanOrEqual(size.area);
+      const expected = Math.min(size.available, viewport > 1400 ? 1300 : Number.POSITIVE_INFINITY);
+      expect(Math.abs(size.content - expected),`${account} responsive width at ${viewport}px`).toBeLessThanOrEqual(2);
+      expect(size.content,`${account} exceeds the 1300px cap at ${viewport}px`).toBeLessThanOrEqual(1300);
+    }
+  }
+});
+
+test('Phase 8 keeps English and Bengali signed-in navigation without overflow', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'One worker checks both languages');
+  test.setTimeout(120000);
+  // Authenticate through the existing browser-local sample-account journey;
+  // an unsigned ?demoUser URL is intentionally not an authenticated account.
+  await page.goto('/?action=taxpayer_login');
+  await page.locator('#taxpayer-login-user-id').fill('user1');
+  await page.locator('#taxpayer-login-password').fill('user1');
+  await page.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect(page.locator('.taxpay-citizen-shell.taxpay-authenticated-content')).toBeVisible();
+  for (const language of ['en', 'bn']) {
+    for (const width of [375, 1280, 1400, 1920]) {
+      await page.setViewportSize({width, height:900});
+      if (await page.locator('.taxpay-citizen-shell').getAttribute('lang') !== language) {
+        await page.setViewportSize({width:1280,height:900});
+        await page.locator('.taxpayer-reference-rail-bottom button').filter({hasText:language==='bn'?'বাংলা':'English'}).click();
+        await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang',language);
       }
+      await page.setViewportSize({width,height:900});
+      await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+      const results = await page.evaluate(() => ({
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        mobileDock: getComputedStyle(document.querySelector('.citizen-bottom-nav') as HTMLElement).display
+      }));
+      expect(results.overflow,language+' overflow at '+width).toBeLessThanOrEqual(2);
+      if (width <= 900) expect(results.mobileDock,language+' mobile dock').not.toBe('none');
+      if (width > 1400) await expect(page.locator('.taxpayer-reference-rail')).toBeVisible();
     }
   }
 });

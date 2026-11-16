@@ -1243,6 +1243,32 @@
 }
 .taxpayer-reference-pay-option:focus-visible { outline-color:var(--color-taxpay-primary); }
 
+/* Phase 8: the logged-in taxpayer workspace uses the full available area.
+   Only the main page's content is constrained; the sidebar, bottom dock,
+   guest routes, transaction wizards and overlays retain their own layouts. */
+@media (min-width: 901px) {
+  .taxpay-citizen-shell.taxpay-taxpayer-reference.taxpay-authenticated-content:not(.taxpay-taxpayer-flow) > main#main-content > * {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-inline: auto;
+  }
+}
+
+/* Cap the centered content at 1300px only above 1400px viewport width. */
+@media (min-width: 1401px) {
+  .taxpay-citizen-shell.taxpay-taxpayer-reference.taxpay-authenticated-content:not(.taxpay-taxpayer-flow) > main#main-content > * {
+    max-width: 1300px;
+  }
+
+  /* Existing 1150px account wrappers should not reintroduce dead space. */
+  .taxpay-citizen-shell.taxpay-taxpayer-reference.taxpay-authenticated-content:not(.taxpay-taxpayer-flow) :is(.taxpayer-reference-secure, .taxpayer-account-center) {
+    width: 100%;
+    max-width: 1300px;
+    min-width: 0;
+  }
+}
+
 /* Approved logged-in-only reading width. The desktop rail already gives main its
    own content area, so percentages here exclude the sidebar automatically.
    Do not resize main, navigation, public pages or overlay/modal siblings. */
