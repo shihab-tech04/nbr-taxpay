@@ -31,10 +31,13 @@ interface ReceiptViewProps {
   onPayAgain?: () => void;
   onApplyForCorrection?: () => void;
   payAgainUnavailableReason?: string;
+  /** Secondary receipts in a batch must not create extra modal footer controls. */
+  suppressFooterActions?: boolean;
 }
 
 export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment, certificate = false,
-  transactionActions = false, onPayAgain, onApplyForCorrection, payAgainUnavailableReason }) => {
+  transactionActions = false, onPayAgain, onApplyForCorrection, payAgainUnavailableReason,
+  suppressFooterActions = false }) => {
   const { language, navigate } = useTaxState();
   const [showCertificate, setShowCertificate] = useState(false);
   const canViewCertificate = canViewPaymentCertificate(receipt);
@@ -243,13 +246,14 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
       onClose={onBack ?? (() => navigate('history'))}>
       <ReceiptView receipt={receipt} embedded certificate={certificate} onBack={onBack} onNewPayment={onNewPayment}
         transactionActions={transactionActions} onPayAgain={onPayAgain}
-        onApplyForCorrection={onApplyForCorrection} payAgainUnavailableReason={payAgainUnavailableReason}/>
+        onApplyForCorrection={onApplyForCorrection} payAgainUnavailableReason={payAgainUnavailableReason}
+        suppressFooterActions={suppressFooterActions}/>
     </TaxPayModal>
   );
 
   return (
     <div className={`receipt-view receipt-view--embedded${bn ? ' font-bengali' : ''}`} lang={language}>
-      {(!isCertificate || canViewCertificate) && (footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions)}
+      {!suppressFooterActions && (!isCertificate || canViewCertificate) && (footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions)}
 
       {showReceiptTransactionActions && <button type="button" className="receipt-view__action receipt-view__action--secondary no-print"
         onClick={() => window.print()}><Printer size={16} aria-hidden="true"/><span>{labels.print}</span></button>}
