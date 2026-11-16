@@ -26,7 +26,9 @@ test('user6 sees stored advance-tax installments and matching SQL profile', asyn
   await expect(panel.getByRole('table').getByText('SAMPLE-SRV-018')).toBeVisible();
   await expect(panel.getByText('SAMPLE-SRV-023')).toHaveCount(0);
   await expect(panel.getByText('Service records unavailable')).toHaveCount(0);
-  await expect(page.getByText('Government challan: Not available')).toBeVisible();
+  // The recorded-service panel deliberately does not imply an issued government challan.
+  // Verify the current explicit no-credit/no-dues-claim warning instead of an obsolete label.
+  await expect(panel.getByText('Based on recorded activity. Dues and tax credits are not verified.')).toBeVisible();
   await page.goto('/?action=account_profile');
   await expect(page.getByText('666**********', { exact: true })).toBeVisible();
   await expect(page.getByText('6666666666666', { exact: true })).toHaveCount(0);
