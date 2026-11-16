@@ -99,3 +99,28 @@ test('ledger CSV exports neutralize untrusted provider formulas but preserve exa
   assert.equal(escapeLedgerCsvCell(12501),'"12501"');
   assert.equal(escapeLedgerCsvCell(null),'""');
 });
+
+
+test('provider line cannot be replayed through a second source-row ID',()=>{
+  assert.throws(()=>projectExternalLedgerEvents(owner,[base,{...base,id:'second-source-id'}],[],'en'),/Duplicate external source allocation/);
+  const second={...base,id:'distinct-line',source_allocation_id:'line-2'};
+  assert.equal(projectExternalLedgerEvents(owner,[base,second],[],'en').length,2);
+});
+
+test('official posting references are unique per allocation, but may split across distinct lines',()=>{
+  const second={...base,id:'payment-2',source_allocation_id:'line-2'};
+  const split={...credit,id:'credit-2',payment_record_id:'payment-2'};
+  const events=projectExternalLedgerEvents(owner,[base,second],[credit,split],'en');
+  assert.equal(events.filter(e=>e.code==='EXTERNAL_OFFICIAL_TAX_CREDIT').length,2);
+  assert.throws(()=>projectExternalLedgerEvents(owner,[base],[credit,{...credit,id:'new-credit-id',credited_amount_minor:1000}],'en'),/Duplicate official credit posting/);
+});
+
+
+test('database strengthens global provider allocation identity while supporting shared credit references across distinct rows',()=>{
+  const sql=readFileSync('supabase/migrations/20261116054000_external_ledger_source_credit_idempotency.sql','utf8');
+  assert.match(sql,/unique index if not exists taxpay_external_source_allocation_unique/);
+  assert.match(sql,/\(source_system,source_transaction_id,source_allocation_id\)/);
+  assert.match(sql,/unique index if not exists taxpay_external_credit_allocation_ref_unique/);
+  assert.match(sql,/\(payment_record_id,official_credit_source,official_credit_reference\)/);
+  assert.doesNotMatch(sql,/drop table|truncate|delete from|drop policy|disable row level security/i);
+});
