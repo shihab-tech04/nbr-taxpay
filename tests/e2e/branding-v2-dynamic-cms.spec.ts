@@ -6,7 +6,7 @@ test('CMS 402 retains real published visuals and does not open a retrying WebSoc
   let logoReads = 0, bannerReads = 0, brandingChannelJoins = 0;
   page.on('websocket', socket => {
     socket.on('framesent', frame => {
-      if (/taxpay-site-logo-public|published-taxpay-banners/.test(frame.payload)) brandingChannelJoins += 1;
+      if (/taxpay-site-logo-public|published-taxpay-banners/.test(String(frame.payload))) brandingChannelJoins += 1;
     });
   });
   await page.route('**/rest/v1/taxpay_site_logo**', async route => {
@@ -37,7 +37,7 @@ test('healthy CMS response replaces last verified snapshot with published edits'
   let logoReads = 0, bannerReads = 0, brandingChannelJoins = 0;
   page.on('websocket', socket => {
     socket.on('framesent', frame => {
-      if (/taxpay-site-logo-public|published-taxpay-banners/.test(frame.payload)) brandingChannelJoins += 1;
+      if (/taxpay-site-logo-public|published-taxpay-banners/.test(String(frame.payload))) brandingChannelJoins += 1;
     });
   });
   await page.route('**/rest/v1/taxpay_site_logo**', async route => {
