@@ -22,6 +22,14 @@ function serviceCredential():string {
 function serviceClient(url:string){
  return createClient(url,serviceCredential(),{auth:{persistSession:false,autoRefreshToken:false}});
 }
+// The source selector is derived only from the server's configured Supabase URL.
+// Office verifies a separate payment+session-bound proof at that exact source.
+function officeMirrorSource(url:string):'original'|'v2'{
+ const origin=url.replace(/\\/$/,'');
+ if(origin==='https://gmuhitmaynfhipcvbvkh.supabase.co')return 'v2';
+ if(origin==='https://eyqhoavnitkrajvyqvxn.supabase.co')return 'original';
+ throw Error('UNRECOGNIZED_TAXPAY_SOURCE');
+}
 const office="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/mirror";
 const officeAuthorization="https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/demo-story1-office/authorization/mirror";
 async function mirrorAuthorization(id:string){
@@ -51,7 +59,7 @@ async function reconcileMirrors(url:string,serviceKey:string){
      const proof=await createOfficeMirrorProof(serviceKey,item.id,item.sessionId);
      const response=await fetch(office,{method:"POST",headers:{"Content-Type":"application/json",
        "x-taxpay-office-mirror-proof":proof},
-      body:JSON.stringify({id:item.id,sessionId:item.sessionId}),signal:AbortSignal.timeout(10000)});
+      body:JSON.stringify({id:item.id,sessionId:item.sessionId,sourceProject:officeMirrorSource(url)}),signal:AbortSignal.timeout(10000)});
      const result=await response.json();
      okay=response.ok&&result.success===true&&result.data?.id===item.id;
     }
@@ -186,7 +194,7 @@ Deno.serve(async(req)=>{
       // No client profile capability or service credential crosses to Office.
       const proof=await createOfficeMirrorProof(serviceCredential(),data.id,body.sessionId);
       const res=await fetch(office,{method:"POST",headers:{"Content-Type":"application/json",
-        "x-taxpay-office-mirror-proof":proof},body:JSON.stringify(out),signal:AbortSignal.timeout(10000)});
+        "x-taxpay-office-mirror-proof":proof},body:JSON.stringify({...out,sourceProject:officeMirrorSource(url)}),signal:AbortSignal.timeout(10000)});
       const receipt=await res.json();
       if(!res.ok||!receipt.success||receipt.data?.id!==data.id)throw Error("OFFICE_MIRROR_NOT_ACKNOWLEDGED");
       return respond({success:true,id:data.id,status:"SIMULATED_SUCCESS",mirrored:true,replayed:data.replayed,simulationOnly:true});
