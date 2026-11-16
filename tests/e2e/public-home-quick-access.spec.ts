@@ -621,7 +621,7 @@ test('approved desktop proposal is one white rounded panel with a connected 3x2 
       expect(c[3].top).toBeGreaterThan(c[0].top);
       expect(Math.abs(c[1].left-c[0].right-1)).toBeLessThanOrEqual(1);
       expect(Math.abs(c[3].top-c[0].bottom-1)).toBeLessThanOrEqual(1);
-      expect(c.every(x => x.radius === '0px' && x.border === '0px' &&
+      expect(c.every((x, index) => x.radius === (index === 0 ? '16px' : '0px') && x.border === '0px' &&
         x.background === measurement.sectionBackground && x.scrollHeight<=x.clientHeight+2)).toBe(true);
       expect(measurement.horizontalOverflow).toBeLessThanOrEqual(2);
       if (lang==='en' && viewport.height===1264) {
