@@ -25,10 +25,10 @@ const allocationRecord = {
 };
 
 test.beforeEach(async ({ page }) => {
-  await page.route('**/functions/v1/demo-story1-office/payments*', route => route.fulfill({
+  await page.route('**/functions/v1/demo-story1-taxpay/payments/*', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ success: true, data: { items: [allocationRecord], total: 1, page: 1, perPage: 100 } })
+    body: JSON.stringify({success:true,simulationOnly:true,data:{id:allocationRecord.id,status:allocationRecord.status,createdAt:allocationRecord.createdAt,data:{origin:'TAXPAY_UI',service:allocationRecord.service,amountMinor:allocationRecord.amountMinor,details:allocationRecord.details}}})
   }));
 });
 
@@ -84,9 +84,9 @@ test('same taxpayer heads group into one receipt section with correct subtotal',
       { beneficiary: 'user8', taxpayerTin: '1111111111111', category: 'ADVANCE_TAX', assessmentYear: '2025-26', amountMinor: 3000 }
     ]
   }};
-  await page.route('**/functions/v1/demo-story1-office/payments*', route => route.fulfill({
+  await page.route('**/functions/v1/demo-story1-taxpay/payments/*', route => route.fulfill({
     status: 200, contentType: 'application/json',
-    body: JSON.stringify({ success: true, data: { items: [record], total: 1, page: 1, perPage: 100 } })
+    body: JSON.stringify({success:true,simulationOnly:true,data:{id:record.id,status:record.status,createdAt:record.createdAt,data:{origin:'TAXPAY_UI',service:record.service,amountMinor:record.amountMinor,details:record.details}}})
   }));
   await page.goto('/?action=payment_details&transactionId=' + transactionId);
   const paper = page.locator('.receipt-view__paper');

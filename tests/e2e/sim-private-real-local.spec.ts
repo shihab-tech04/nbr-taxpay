@@ -105,7 +105,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByRole('button',{name:'Payments I initiated'}))
    .toHaveAttribute('aria-pressed','true',{timeout:15000});
  // The recorded payer, not a beneficiary, can reuse the complete historical
- // transaction. The previous-year allocation must be reset individually.
+ // transaction. The original eligible assessment year stays prefilled and editable.
  await expect(one.page.getByTestId('pay-again-mobile').first()).toBeVisible({timeout:15000});
  await one.page.getByTestId('pay-again-mobile').first().click();
  await expect(one.page.getByTestId('pay-again-copy-status')).toContainText(tx!.id);
@@ -114,7 +114,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByLabel('Amount (৳)').nth(0)).toHaveValue('150.25');
  await expect(one.page.getByLabel('Amount (৳)').nth(1)).toHaveValue('23.50');
  await expect(one.page.getByLabel('Assessment year').nth(0)).toHaveValue('2026-27');
- await expect(one.page.getByLabel('Assessment year').nth(1)).toHaveValue('');
+ await expect(one.page.getByLabel('Assessment year').nth(1)).toHaveValue('2025-26');
  // Reuse remains editable. Simply opening/changing a copy cannot mutate the
  // immutable SQL payment or produce a second receipt.
  await one.page.getByLabel('Assessment year').nth(1).selectOption('2026-27');
@@ -125,6 +125,29 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(prior?.totalMinor).toBe(17375);
  expect(prior?.allocations.map(a=>a.amountMinor)).toEqual([15025,2350]);
  expect(prior?.allocations.map(a=>a.assessmentYear)).toEqual(['2026-27','2025-26']);
+ // A Pay Again draft only becomes a new transaction after explicit submission.
+ // Verify a different SQL parent and edited allocations, then re-read the untouched original.
+ await one.page.getByRole('button',{name:'Save payment record'}).click();
+ await expect(one.page.getByRole('heading',{name:'Payment record saved'}))
+   .toBeVisible({timeout:15000});
+ const afterRepeat=await request('/rest/v1/rpc/sim_my_payment_history',
+   {p_view:'payer'},payer.session.access_token);
+ expect(afterRepeat.status).toBe(200);
+ const paymentRows=afterRepeat.data as Array<{
+   transactionId:string;totalMinor:number;
+   allocations:Array<{assessmentYear:string;amountMinor:number;beneficiary:string}>
+ }>;
+ const newParent=paymentRows.find(row=>row.transactionId!==tx!.transactionId &&
+   row.totalMinor===17380 && row.allocations.length===2);
+ expect(newParent,'Pay Again must persist a new independent SQL transaction').toBeTruthy();
+ expect(newParent!.transactionId).not.toBe(tx!.transactionId);
+ expect(newParent!.allocations.map(a=>a.amountMinor)).toEqual([15030,2350]);
+ expect(newParent!.allocations.map(a=>a.assessmentYear)).toEqual(['2026-27','2026-27']);
+ expect(newParent!.allocations.map(a=>a.beneficiary)).toEqual(['user6','user7']);
+ const originalAfterRepeat=paymentRows.find(row=>row.transactionId===tx!.transactionId);
+ expect(originalAfterRepeat?.totalMinor).toBe(17375);
+ expect(originalAfterRepeat?.allocations.map(a=>a.amountMinor)).toEqual([15025,2350]);
+ expect(originalAfterRepeat?.allocations.map(a=>a.assessmentYear)).toEqual(['2026-27','2025-26']);
  await expect(two.page.getByTestId('pay-again-mobile')).toHaveCount(0);
  await one.context.close();await two.context.close();
 });
