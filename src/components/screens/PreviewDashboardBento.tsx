@@ -141,6 +141,7 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
       <p className="text-lg font-semibold text-taxpay-text">{greeting.welcome}</p>
       <p className="text-xs text-taxpay-muted">{tr('User ID: ','ইউজার আইডি: ')}{profileId}</p>
     </section>
+    <h2 className="sr-only">{tr('Overview','সংক্ষিপ্ত বিবরণ')}</h2>
     <TaxpayerPageHeading title={tr('Your tax overview','আপনার করের সারসংক্ষেপ')}
       description={tr('Payments, recipients and follow-ups for your assessment year.','আপনার করবর্ষের পেমেন্ট, প্রাপক ও পরবর্তী করণীয়।')}
       className="taxpayer-dashboard-header taxpayer-dashboard-header--overview"
