@@ -51,7 +51,9 @@ export async function runV2DemoSmoke(key) {
     throw new Error('Distinct fictional accounts share a payment session or capability.');
   for (const payload of [
     { action: 'demo-login', userId: 'user1', password: 'incorrect' },
-    // V2 has 55 fictional profiles; user56 is genuinely outside its accepted range.
+    // The hosted synthetic backend owns 55 fictional IDs, while the selectable
+    // Taxpayer UI remains limited to the approved first 30. Test the actual
+    // backend boundary (56), and keep the separate wrong-password 401 case.
     { action: 'demo-login', userId: 'user56', password: 'user56' },
   ]) {
     const denial = await request(key, payload);

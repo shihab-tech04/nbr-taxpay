@@ -160,6 +160,9 @@ test('desktop Pay Tax steps size to content and align AY with amount without an 
   test.skip(info.project.name !== 'desktop-1280', 'Desktop 1280px geometry acceptance');
   await page.setViewportSize({ width: 1280, height: 900 });
   const dialog = await beginGuestPayment(page, 'Tax with Return');
+  // Measure actual payment Step 1 after it mounts, not the taller preceding chooser.
+  // Retain the same strict height, overflow, and field-alignment checks.
+  await expect(dialog.locator('#guest-tin')).toBeVisible();
   const outer = dialog.locator('.taxpay-modal__body');
   const stepOneBox = await dialog.boundingBox();
   expect(stepOneBox).not.toBeNull();
