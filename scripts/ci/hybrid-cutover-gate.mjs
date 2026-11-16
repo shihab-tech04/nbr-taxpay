@@ -6,10 +6,12 @@
  */
 import { createPublicKey, verify as verifySignature } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { runV2DemoSmoke } from './sohojkor-v2-demo-smoke.mjs';
 
 export const ORIGINAL = 'https://eyqhoavnitkrajvyqvxn.supabase.co';
 export const TARGET = 'https://gmuhitmaynfhipcvbvkh.supabase.co';
 export const OFFICE = 'ihbtabrvmyiwikqqbhrf';
+export const SIMULATION_SCOPE = 'fictional-user1-user30-only';
 const SHA256 = /^[a-f0-9]{64}$/;
 const TREE = /^[a-f0-9]{40}$/;
 const requiredProofs = Object.freeze([
@@ -38,10 +40,18 @@ function verifyProofItem(item, timestamp) {
   return Number.isFinite(checked) && checked <= timestamp && checked >= timestamp - 7 * 86400_000;
 }
 /** Returns approved mode or throws; never fall back across identity boundaries. */
-export function validateCutover({ url, disabled = false, proofJson, verifierKey, treeSha, now = Date.now() }) {
+export function validateCutover({ url, disabled = false, proofJson, verifierKey, treeSha, releaseScope, originalUrl, officeUrl, now = Date.now() }) {
   if (disabled) return { mode: 'disabled' };
   if (url === ORIGINAL) return { mode: 'original' };
   if (url !== TARGET) throw new Error('Unknown production Taxpayer backend refused');
+  // For the existing fictional user1–user30 simulator, Supabase Auth UUID migration,
+  // real financial settlement and Office dispatch are out of scope. This exception
+  // still requires independent hosted V2 login/ownership verification by the release job.
+  if (releaseScope === SIMULATION_SCOPE) {
+    if (originalUrl !== ORIGINAL || officeUrl !== `https://${OFFICE}.supabase.co`)
+      throw new Error('V2 simulator cutover refused: original or Office project identity changed');
+    return { mode: 'v2-simulation-hosted-smoke-required' };
+  }
   if (!proofJson || !verifierKey || !TREE.test(treeSha || ''))
     throw new Error('Taxpayer-v2 cutover blocked: signed recovery evidence is missing');
   let envelope;
@@ -98,7 +108,18 @@ if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).
       proofJson: process.env.SOHOJKOR_CUTOVER_SIGNED_PROOF,
       verifierKey: process.env.SOHOJKOR_CUTOVER_APPROVER_PUBLIC_KEY,
       treeSha: productionTree(),
+      releaseScope: process.env.SOHOJKOR_RELEASE_SCOPE,
+      originalUrl: process.env.SOHOJKOR_ORIGINAL_SUPABASE_URL,
+      officeUrl: process.env.SOHOJKOR_OFFICE_SUPABASE_URL,
     });
+    if (result.mode === 'v2-simulation-hosted-smoke-required') {
+      // Never permit local/unreviewed execution to certify a production release.
+      if (process.env.GITHUB_ACTIONS !== 'true' ||
+          !['pull_request','push','workflow_dispatch'].includes(process.env.GITHUB_EVENT_NAME) ||
+          (process.env.GITHUB_EVENT_NAME !== 'pull_request' && process.env.GITHUB_REF !== 'refs/heads/main'))
+        throw new Error('V2 simulator cutover requires approved GitHub Actions exact-head verification');
+      await runV2DemoSmoke(process.env.SOHOJKOR_V2_PUBLISHABLE_KEY);
+    }
     console.log('SOHOJKOR_RELEASE_BACKEND=' + result.mode);
   } catch (error) {
     console.error(error.message);
