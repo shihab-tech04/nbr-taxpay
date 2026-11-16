@@ -18,6 +18,7 @@ import {AuthenticatedDashboardPosition} from './AuthenticatedDashboardPosition';
 import {CorrectionInquiries} from './CorrectionInquiries';
 import { DashboardPaymentDrafts } from './DashboardPaymentDrafts';
 import type { PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
+import {PreviewDashboardBento} from './PreviewDashboardBento';
 import {getIllustrativeDashboardYear,illustrativeDashboardYears,formatIllustrativeTaka} from '../../data/dashboardIllustrativeExample';
 
 type Category = 'all'|'income'|'source'|'travel';
@@ -105,6 +106,19 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
     </div>
     <button type="button" className={button} onClick={()=>navigate('services')}>{tr('View payment services','পরিশোধ সেবাসমূহ দেখুন')}<ArrowRight size={16} aria-hidden="true" className="ml-2 inline"/></button>
   </section>;
+  // Authenticated preview accounts all use the same recipient-first dashboard
+  // layout as user1. Payment history remains server-capability scoped per owner.
+  if (previewAccount && demoUser && !user) {
+    return <PreviewDashboardBento
+      key={previewAccount.id}
+      profileId={previewAccount.id}
+      name={visibleName}
+      language={language}
+      onNavigate={route=>navigate(route)}
+      onPay={()=>openPaymentServiceChoice()}
+      onResumePaymentDraft={onResumePaymentDraft}
+    />;
+  }
   return <div className={`mx-auto max-w-[1510px] space-y-4 pb-14 ${bn?'font-bengali':''}`}>
     <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
       <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
