@@ -115,7 +115,12 @@ test('all ten matching ID/password pairs open their own taxpayer dashboard and p
     await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
     await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Profile',exact:true}).click();
     await expect(page).toHaveURL(/action=account_profile/);
-    if (id!==1) await expect(page.getByText('user'+id,{exact:true}).first()).toBeVisible();
+    const profile=page.getByTestId('user1-taxpayer-profile');
+    await expect(page.getByRole('heading',{name:'Taxpayer profile',exact:true})).toBeVisible();
+    await expect(profile).toContainText('Account: user'+id);
+    await expect(profile.locator('[data-profile-field]')).toHaveCount(24);
+    // The same template, not an obsolete generic badge, belongs to all users.
+    if(id!==1) await expect(profile.getByRole('button',{name:'Copy TIN'})).toBeDisabled();
     await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Sign out'}).click();
     await expect(page.locator('#public-home-title')).toBeVisible();
     expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
@@ -195,16 +200,14 @@ test('account options float without resizing the login form or footer (desktop a
   for (const {width, height} of [{width:1280,height:600},{width:375,height:800}]) {
     await page.setViewportSize({width,height});
     await page.goto('/?action=taxpayer_login');
-    // Establish stable baseline after font loading and two paints. An
-    // intermediate font swap is not the dropdown causing layout reflow.
+    // Stabilize the unchanged UI before comparing geometry.
     await page.evaluate(async ()=>{
       await document.fonts.ready;
       await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
     });
     const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
-    // The shared modal enters with a 280ms translation/scale animation.
-    // Compare settled coordinates before/after the dropdown opens; retain
-    // the strict <3px no-reflow acceptance limit.
+    // The approved modal's 280ms entrance animation must finish before
+    // checking the existing <3px dropdown no-reflow threshold.
     await dialog.evaluate(async element=>{
       await Promise.all(element.getAnimations().map(animation=>animation.finished.catch(()=>{})));
     });
