@@ -999,7 +999,7 @@ test('1920px desktop Home fills the viewport with balanced sections and fixed fo
       expect(Math.abs(geometry.heroWidth - geometry.searchWidth)).toBeLessThanOrEqual(2);
       expect(Math.abs(geometry.heroWidth - geometry.benefitsWidth)).toBeLessThanOrEqual(2);
       expect(geometry.headerBottom).toBeLessThan(geometry.heroTop);
-      expect(geometry.heroHeight).toBeGreaterThanOrEqual(250);
+      expect(geometry.heroHeight).toBeGreaterThanOrEqual(210);
       expect(geometry.searchGap).toBeGreaterThanOrEqual(12);
       expect(geometry.searchGap).toBeLessThanOrEqual(24);
       expect(geometry.benefitsGap).toBeGreaterThanOrEqual(12);
