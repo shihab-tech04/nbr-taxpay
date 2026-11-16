@@ -188,3 +188,49 @@ for (const language of ['en','bn'] as const) {
     expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
   });
 }
+
+
+test('account options float without resizing the login form or footer (desktop and mobile)', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Explicit desktop/mobile viewport matrix');
+  for (const {width, height} of [{width:1280,height:600},{width:375,height:800}]) {
+    await page.setViewportSize({width,height});
+    await page.goto('/?action=taxpayer_login');
+    const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+    const userId=dialog.locator('#taxpayer-login-user-id');
+    const password=dialog.locator('#taxpayer-login-password');
+    const footer=dialog.locator('.taxpay-modal__footer');
+    if (await userId.getAttribute('aria-expanded') === 'true') await userId.press('Escape');
+    const beforePassword=await password.boundingBox();
+    const beforeFooter=await footer.boundingBox();
+    const beforeDialog=await dialog.boundingBox();
+    await userId.click();
+    const options=dialog.getByRole('listbox',{name:'Test accounts'});
+    await expect(options).toBeVisible();
+    await expect(options).toHaveCSS('position','absolute');
+    await expect(userId).toHaveAttribute('autocomplete','off');
+    await expect(password).toHaveAttribute('autocomplete','off');
+    const afterPassword=await password.boundingBox();
+    const afterFooter=await footer.boundingBox();
+    const afterDialog=await dialog.boundingBox();
+    // The modal may move ~1px as webfonts settle; it must not reflow by an option row.
+    expect(Math.abs(afterPassword!.y-beforePassword!.y)).toBeLessThan(3);
+    expect(Math.abs(afterFooter!.y-beforeFooter!.y)).toBeLessThan(3);
+    expect(Math.abs(afterDialog!.height-beforeDialog!.height)).toBeLessThan(3);
+    const inputBounds=await userId.boundingBox();
+    const optionsBounds=await options.boundingBox();
+    expect(optionsBounds!.y).toBeGreaterThanOrEqual(inputBounds!.y+inputBounds!.height);
+    expect(optionsBounds!.x).toBeGreaterThanOrEqual(inputBounds!.x-2);
+    expect(optionsBounds!.width).toBeGreaterThanOrEqual(inputBounds!.width-4);
+    // Existing recovery must remain a clickable target below the dropdown.
+    await dialog.getByRole('button',{name:'Recover Account'}).click();
+    await expect(dialog.getByRole('status')).toContainText('password is the same as the User ID');
+    await expect(userId).toHaveAttribute('aria-expanded','false');
+    await userId.click();
+    await userId.fill('user20');
+    await expect(options.getByRole('option')).toHaveCount(1);
+    await options.getByRole('option').click();
+    await expect(userId).toHaveValue('user20');
+    await expect(password).toHaveValue('user20');
+    await expect(userId).toHaveAttribute('aria-expanded','false');
+  }
+});

@@ -1785,22 +1785,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               {ownAccountTax && (initialReuse && otherBatch
                 ? renderOtherTaxTaxpayerList(false)
                 : <SignedInTaxpayerCard profile={ownProfile} language={language} id="signed-in-account-taxpayer-card" />)}
-              {ownAccountTax && otherBatch && <SavedBeneficiaryPicker key={beneficiaryRefreshKey} language={language} allowMultiple
-                selectedTins={additionalTaxpayers.map(person => person.tin).filter(Boolean)}
-                onAvailableTins={setAvailableSavedTins}
-                onChoose={selected => {
-                  const unique = selected.filter((person, index) => person.tin !== taxpayerTin &&
-                    selected.findIndex(candidate => candidate.tin === person.tin) === index);
-                  const additions = unique.map(person => {
-                    const previous = additionalTaxpayers.find(candidate => candidate.tin === person.tin);
-                    return { ...person, id: previous?.id ?? crypto.randomUUID() };
-                  });
-                  setAdditionalTaxpayers(additions);
-                  setOtherTaxLines(lines => lines.filter(line => line.taxpayerId === 'primary' ||
-                    additions.some(person => person.id === line.taxpayerId)));
-                  setAuthorizedTaxpayerIds({});
-                  clearValidationError();
-                }} />}
+              {/* Self-liability uses the signed-in taxpayer only. Saved beneficiary controls belong to the OTHER payer route. */}
               {!ownAccountTax && <>
               {!signedInAccount && (!otherBatch || ownAccountTax) &&
                 <TaxpayerTinLookup language={language} className="payment-identity__tin" card
@@ -1828,10 +1813,11 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   error={fieldError('tin')} status={taxpayerLookupResult} />}
 
               </>}
-              {otherBatch && forSelf === false && !signedInAccount && <h3 className="payment-identity__receipt-heading">{language === 'bn' ? 'রসিদের তথ্য' : 'Receipt details'}</h3>}
+              {otherBatch && forSelf === false && !signedInAccount && <p className="text-sm text-taxpay-muted">{language === 'bn' ? 'নিচের নাম রসিদে পরিশোধকারী হিসেবে থাকবে। করদাতার তথ্য পরে আলাদাভাবে খুঁজুন।' : 'The payer named here appears on the receipt; the taxpayer receiving the payment is selected separately.'}</p>}
+                {otherBatch && forSelf === false && !signedInAccount && <h3 className="text-sm font-semibold text-taxpay-text">{language === 'bn' ? 'রসিদের তথ্য' : 'Receipt details'}</h3>}
               {(!ownAccountTax || !isWithholdingMode) && <div className={`payment-identity__receipt-row${ownAccountTax ? " payment-identity__receipt-row--account" : ""}`}>
               {forSelf === false && !signedInAccount && <div>
-                <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{otherBatch ? (language === 'bn' ? 'আপনার নাম' : 'Your name') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} *</label>
+                <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{otherBatch ? (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} *</label>
                 <input
                   id="guest-payer-name"
                   type="text"

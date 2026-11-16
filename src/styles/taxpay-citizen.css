@@ -2494,6 +2494,39 @@
 .taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal {
   width: min(100%, 640px);
 }
+/* First-login notice action uses the shared modal footer, not payment-step
+   button geometry. Keep the text contained in both languages and viewports. */
+.taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal .taxpayer-welcome__action {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  max-width: 100%;
+  /* A little extra avoids fractional viewport/font rounding below 44px. */
+  min-height: 46px;
+  margin-inline-start: auto;
+  padding: .65rem 1.25rem;
+  border: 1px solid var(--citizen-primary);
+  border-radius: .65rem;
+  background: var(--citizen-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  white-space: normal;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal .taxpayer-welcome__action:hover {
+  background: var(--citizen-primary-dark);
+}
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal .taxpayer-welcome__action {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+}
 .taxpay-citizen-shell .taxpay-modal.taxpay-parity-dialog {
   width: min(100%, 1024px);
 }
@@ -2976,6 +3009,30 @@
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .citizen-pay-popover { display:none; }
 }
 @media print { .citizen-pay-popover { display:none!important; } }
+
+/* UX report #9: keep confirmed receipt fields scannable in an embedded modal.
+   No receipt fields, financial labels, references, or actions are removed. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__parties {
+  row-gap: 20px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail {
+  column-gap: 16px;
+  row-gap: 6px;
+  line-height: 1.6;
+  padding-block: 9px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail + .receipt-view__detail {
+  border-top: 1px solid var(--citizen-border);
+}
+@media (max-width: 700px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__parties {
+    grid-template-columns: minmax(0,1fr);
+    padding-block: 18px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail {
+    grid-template-columns: minmax(0,40%) minmax(0,1fr);
+  }
+}
 
 /* UX report #9: keep confirmed receipt fields scannable in an embedded modal.
    No receipt fields, financial labels, references, or actions are removed. */

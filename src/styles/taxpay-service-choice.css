@@ -2402,3 +2402,24 @@
   .payment-flow-embedded .payment-review { grid-template-columns: minmax(0, 1fr); }
   .payment-flow-embedded .payment-review__aside { min-width: 0; }
 }
+/* UX report #8: the payment wizard is a modal, so adapt to its own available
+   width rather than the entire viewport (desktop windows may show a narrow modal).
+   Preserve the approved wide two-column layout whenever there is room. */
+.payment-flow-embedded { container: taxpay-payment / inline-size; }
+@container taxpay-payment (max-width: 860px) {
+  .payment-flow-embedded__content,
+  .payment-flow-embedded__receipt-layout { display: block; min-width: 0; }
+  .payment-flow-embedded__content > .payment-form-layout { display: block; min-width: 0; }
+  .payment-flow-embedded__content > .payment-form-layout + .payment-form-layout { margin-top: 14px; }
+  .payment-flow-embedded__identity > .payment-form-layout__sections,
+  .payment-flow-embedded__payment > .payment-form-layout__sections { width: 100%; min-width: 0; }
+  .payment-flow-embedded__payment > .payment-form-summary,
+  .payment-flow-embedded__identity > .payment-form-summary,
+  .payment-flow-embedded__receipt-layout > .payment-form-summary {
+    position: static;
+    margin-top: 14px;
+    max-width: 100%;
+  }
+  .payment-flow-embedded .payment-review { grid-template-columns: minmax(0, 1fr); }
+  .payment-flow-embedded .payment-review__aside { min-width: 0; }
+}
