@@ -239,7 +239,7 @@ test('Selecting a topic takes mobile readers directly to its instructions', asyn
   await expect(topic).toHaveAttribute('aria-current','true');
 });
 
-test('Home expands on wide desktops while Guide and Report retain their approved alignment', async ({ page }) => {
+test('Home, Guide and Report share the same public width on wide desktops', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   const views = [
     { path: '/?action=landing', selector: '.public-information-hub' },
@@ -252,8 +252,8 @@ test('Home expands on wide desktops while Guide and Report retain their approved
     const box = await page.locator(view.selector).boundingBox();
     expect(box, `${view.path} should have a content container`).not.toBeNull();
     bounds.push({ x: box!.x, width: box!.width });
-    // The Home alone uses the wider 1300px rail on 1600px+ screens.
-    const expectedWidth = view.path.includes('landing') ? 1300 : 1100;
+    // All public pages share one 1100px rail at wide viewports.
+    const expectedWidth = 1100;
     expect(box!.width).toBeGreaterThanOrEqual(expectedWidth - 1);
     expect(box!.width).toBeLessThanOrEqual(expectedWidth + 1);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

@@ -27,7 +27,7 @@ test('sample beneficiaries stay browser-scoped without an unsolicited sign-in ba
   const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
   assert.match(state,/if \(route === 'secure_workspace' && previewAccount\)/);
   assert.match(page,/const owner=user\?\.id\?\?null/);
-  assert.match(page,/loadBeneficiaries\(owner\)/);
+  assert.match(page,/loadBeneficiaries\(owner,\{forceFresh:true\}\)/);
   assert.doesNotMatch(page,/owner=previewAccount|owner=demoUser|owner="user1"/);
   assert.doesNotMatch(page,/beneficiaries-account-sync|For lists across devices|Sign in with email/);
 });
