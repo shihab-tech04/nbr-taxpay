@@ -111,8 +111,18 @@ Deno.serve(async(req)=>{
     if(dispatch){
      const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
      const {data:config,error:configError}=await admin.rpc("payment_v1_internal_bridge_config");
-     authorized=!configError&&config?.enabled===true&&
-      typeof config.dispatchToken==="string"&&dispatch===config.dispatchToken;
+     // V2's payment_v1/Office command bridge remains disabled. The dedicated
+     // simulation-only Story 1 mirror may still use its private dispatch token
+     // when BOTH fixed project identities match the approved pair. This does
+     // not enable financial bridge events, user-auth bypass or arbitrary hosts.
+     const simulationOnlyDispatch=!configError&&
+       officeMirrorSource(url)==='v2'&&config?.enabled===false&&
+       config.origin==='TAXPAY_SQL'&&
+       config.selfUrl==='https://gmuhitmaynfhipcvbvkh.supabase.co/functions/v1/payment-sync-bridge'&&
+       config.peerUrl==='https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/payment-sync-bridge';
+     authorized=!configError&&typeof config?.dispatchToken==="string"&&
+       dispatch===config.dispatchToken&&
+       (config.enabled===true||simulationOnlyDispatch);
     }
    }
    if(!authorized)return respond({success:false,error:"SERVICE_ROLE_REQUIRED"},401);
