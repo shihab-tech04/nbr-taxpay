@@ -112,10 +112,15 @@ test('all ten matching ID/password pairs open their own taxpayer dashboard and p
     await dialog.getByLabel('Password',{exact:true}).fill('user'+id);
     await dialog.getByRole('button',{name:'Sign In'}).click();
     await expect(page).toHaveURL(/action=taxpayer_home/);
-    await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Your tax overview',exact:true})).toBeVisible();
     await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Profile',exact:true}).click();
     await expect(page).toHaveURL(/action=account_profile/);
-    if (id!==1) await expect(page.getByText('user'+id,{exact:true}).first()).toBeVisible();
+    const profile=page.getByTestId('user1-taxpayer-profile');
+    await expect(page.getByRole('heading',{name:'Taxpayer profile',exact:true})).toBeVisible();
+    await expect(profile).toContainText('Account: user'+id);
+    await expect(profile.locator('[data-profile-field]')).toHaveCount(24);
+    // The same template, not an obsolete generic badge, belongs to all users.
+    if(id!==1) await expect(profile.getByRole('button',{name:'Copy TIN'})).toBeDisabled();
     await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Sign out'}).click();
     await expect(page.locator('#public-home-title')).toBeVisible();
     expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
@@ -132,9 +137,9 @@ test('refresh keeps selected preview identity without turning URL into authentic
   await page.getByLabel('Password',{exact:true}).fill('user8');
   await page.getByRole('button',{name:'Sign In'}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview',exact:true})).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview',exact:true})).toBeVisible();
   await expect(page).not.toHaveURL(/demoUser=/);
   await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Sign out'}).click();
   await page.goto('/?action=account_profile');
@@ -195,11 +200,23 @@ test('account options float without resizing the login form or footer (desktop a
   for (const {width, height} of [{width:1280,height:600},{width:375,height:800}]) {
     await page.setViewportSize({width,height});
     await page.goto('/?action=taxpayer_login');
+    // Stabilize the unchanged UI before comparing geometry.
+    await page.evaluate(async ()=>{
+      await document.fonts.ready;
+      await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+    });
     const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+    // The approved modal's 280ms entrance animation must finish before
+    // checking the existing <3px dropdown no-reflow threshold.
+    await dialog.evaluate(async element=>{
+      await Promise.all(element.getAnimations().map(animation=>animation.finished.catch(()=>{})));
+    });
     const userId=dialog.locator('#taxpayer-login-user-id');
     const password=dialog.locator('#taxpayer-login-password');
     const footer=dialog.locator('.taxpay-modal__footer');
     if (await userId.getAttribute('aria-expanded') === 'true') await userId.press('Escape');
+    // Measure after webfont readiness: font replacement is not dropdown reflow.
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
     const beforePassword=await password.boundingBox();
     const beforeFooter=await footer.boundingBox();
     const beforeDialog=await dialog.boundingBox();
