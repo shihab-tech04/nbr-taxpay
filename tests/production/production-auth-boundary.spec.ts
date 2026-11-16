@@ -49,10 +49,12 @@ test('User ID login continues into the taxpayer workspace and survives refresh',
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
   await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
-  // The approved fictional user1 dashboard titles its workspace 'Your tax overview',
-  // while the generic signed-in dashboard uses 'Overview'. Both remain private.
+  // V2 restores the account's persisted EN/BN language at sign-in. The user's
+  // saved language is authoritative, not the login screen's initial language.
+  // Verify the actual owner-scoped user1 dashboard, never a public/gated shell.
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await expect(page.locator('.taxpayer-dashboard-header').getByRole('heading',
-    { name: /^(?:Overview|Your tax overview)$/ })).toBeVisible();
+    { name: /^(?:Overview|Your tax overview|সংক্ষিপ্ত বিবরণ|আপনার করের সারসংক্ষেপ)$/ })).toBeVisible();
   await page.goto(site+'?action=beneficiaries');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
