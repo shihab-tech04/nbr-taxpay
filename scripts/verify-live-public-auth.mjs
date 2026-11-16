@@ -50,6 +50,21 @@ try {
       await dialog.getByRole('textbox',{name:'User ID'}).fill('user1');
       await dialog.getByLabel('Password',{exact:true}).fill('user1');
       await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+      // A fresh fictional account now requires the approved first-login demo
+      // OTP. Verify that actual step rather than mistaking it for failed login.
+      // The code is explicitly published inside the simulation dialog; never
+      // use this branch for Supabase Auth or any real taxpayer credential.
+      const otp=dialog.getByTestId('demo-otp-input');
+      await expect.poll(async()=>{
+        if(await otp.isVisible().catch(()=>false))return 'demo-otp';
+        if(/action=taxpayer_home/.test(page.url()))return 'dashboard';
+        return 'pending';
+      },{timeout:15_000}).not.toBe('pending');
+      if(await otp.isVisible().catch(()=>false)){
+        await expect(dialog).toContainText('Demo code: 111111');
+        await otp.fill('111111');
+        await dialog.getByRole('button',{name:'Verify code',exact:true}).click();
+      }
       // A real edge-backed preview login may take longer than Playwright's
       // default five seconds on a cold mobile session. Do not skip login:
       // require successful navigation, and preserve visible failure evidence.
