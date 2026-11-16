@@ -33,6 +33,22 @@ test('query strings cannot sign in a taxpayer or reveal private Beneficiaries',a
 });
 
 test('User ID login continues into the taxpayer workspace and survives refresh',async({page})=>{
+  // Browser acceptance runs against the production bundle, not a real hosted
+  // account or mutable live backend. The server must issue the capability;
+  // a browser-only User ID string is never enough to grant access.
+  const guestCapability='A'.repeat(43);
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
+    const body=route.request().postDataJSON() as Record<string,unknown>;
+    if(body.action!=='demo-login'||body.userId!=='user1'||body.password!=='user1'){
+      await route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({success:false,code:'DENIED'})});
+      return;
+    }
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      success:true,data:{profileId:'user1',capability:guestCapability,
+        paymentSessionId:'90000000-0000-4000-8000-000000000001',
+        language:'en',selectedListId:null}
+    })});
+  });
   await page.goto(site+'?action=taxpayer_login');
   const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
