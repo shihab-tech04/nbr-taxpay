@@ -1,13 +1,15 @@
 import { useEffect, useSyncExternalStore, useState, type ImgHTMLAttributes } from 'react';
 import defaultWordmark from '../../assets/korbritto-brand-locked.svg';
 import { supabase } from '../../services/supabaseClient';
+import { brandingReadsAllowed, noteBrandingResponse } from '../../services/brandingCmsHealth';
 
 // One shared logo source for the public header/footer and taxpayer navigation.
 // A static bundled image keeps every shell usable while the CMS is offline.
-let logoUrl = defaultWordmark;
+const lastPublishedLogo = `${import.meta.env.BASE_URL}branding/published/sohojkor-logo-v18.jpg`;
+let logoUrl = lastPublishedLogo;
 let latestVersion = -1;
 let refreshSerial = 0;
-const FOREGROUND_REFRESH_MS = 5 * 60_000;
+const FOREGROUND_REFRESH_MS = 60_000;
 const OFFLINE_POLL_MS = 5 * 60_000;
 let lastRefreshAttempt = 0;
 let activeRefresh: Promise<void> | null = null;
@@ -20,7 +22,7 @@ function snapshot() { return logoUrl; }
 // Share a single metadata read between all logo slots. Realtime publications
 // always get an authoritative refresh, even if they land during an in-flight read.
 async function refreshLogo(force = false): Promise<void> {
-  if (!supabase) return;
+  if (!supabase || !brandingReadsAllowed()) return;
   if (activeRefresh) {
     if (force) refreshAfterCurrent = true;
     return activeRefresh;
@@ -30,8 +32,9 @@ async function refreshLogo(force = false): Promise<void> {
   const serial = ++refreshSerial;
   const request = (async () => {
     try {
-      const { data, error } = await supabase.from('taxpay_site_logo')
+      const { data, error, status } = await supabase.from('taxpay_site_logo')
         .select('image_path,version').eq('id', 'primary').maybeSingle();
+      noteBrandingResponse(status, Boolean(error));
       if (error || !data || serial < refreshSerial) return;
       const version = Number(data.version);
       if (!Number.isFinite(version) || version < latestVersion) return;
@@ -39,7 +42,9 @@ async function refreshLogo(force = false): Promise<void> {
       // A version bump must replace an image even when an Office upload reuses
       // the same object path. Existing versioned asset paths still work.
       const url = data.image_path
-        ? supabase.storage.from('taxpay-branding').getPublicUrl(data.image_path).data.publicUrl
+        ? data.image_path === 'logos/04d6e79e-ab94-4303-97b7-0faa0d945362.jpg'
+          ? lastPublishedLogo
+          : supabase.storage.from('taxpay-branding').getPublicUrl(data.image_path).data.publicUrl
         : defaultWordmark;
       const next = data.image_path
         ? url + (url.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(String(version))
@@ -49,6 +54,7 @@ async function refreshLogo(force = false): Promise<void> {
         subscribers.forEach(subscriber => subscriber());
       }
     } catch {
+      noteBrandingResponse(undefined, true);
       // Keep the last approved image on a transient CMS/network failure.
     }
   })();
@@ -66,46 +72,25 @@ async function refreshLogo(force = false): Promise<void> {
 
 function subscribe(subscriber: () => void) {
   subscribers.add(subscriber);
-  const client = supabase;
-  if (subscribers.size === 1 && client) {
+  // Poll the authoritative CMS instead of starting a WebSocket. The former
+  // Realtime channel retried rapidly when the gateway returned HTTP 402.
+  // The five-minute refresh and focus throttle keep Office edits dynamic.
+  if (subscribers.size === 1 && supabase) {
     void refreshLogo();
-    let realtimeConnected = false;
-    let previouslyConnected = false;
-    const channel = client.channel('taxpay-site-logo-public')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'taxpay_site_logo' },
-        () => { void refreshLogo(true); })
-      .subscribe(status => {
-        if (status === 'SUBSCRIBED') {
-          // Reconcile events missed during a disconnected subscription; the
-          // first subscription already has its initial metadata read above.
-          if (previouslyConnected && !realtimeConnected) void refreshLogo(true);
-          previouslyConnected = true;
-          realtimeConnected = true;
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          realtimeConnected = false;
-        }
-      });
     const onForeground = () => {
       if (document.visibilityState === 'visible') void refreshLogo();
     };
-    const onOnline = () => { if (document.visibilityState === 'visible') void refreshLogo(true); };
     document.addEventListener('visibilitychange', onForeground);
     window.addEventListener('focus', onForeground);
-    window.addEventListener('online', onOnline);
-    // Fallback only when Realtime is absent; avoid 2,880 redundant logo reads
-    // per always-open tab/day while CMS changes still arrive immediately.
-    const interval = window.setInterval(() => {
-      if (!realtimeConnected && document.visibilityState === 'visible') void refreshLogo();
-    }, OFFLINE_POLL_MS);
+    window.addEventListener('online', onForeground);
+    const interval = window.setInterval(onForeground, OFFLINE_POLL_MS);
     stopListening = () => {
       window.clearInterval(interval);
       document.removeEventListener('visibilitychange', onForeground);
       window.removeEventListener('focus', onForeground);
-      window.removeEventListener('online', onOnline);
-      void client.removeChannel(channel);
+      window.removeEventListener('online', onForeground);
     };
   }
-
   return () => {
     subscribers.delete(subscriber);
     if (subscribers.size === 0) {
@@ -131,7 +116,9 @@ export function SiteLogo(props: ImgHTMLAttributes<HTMLImageElement>) {
       window.removeEventListener('focus', retry);
     };
   }, [failedUrl]);
-  const src = failedUrl === selectedUrl ? defaultWordmark : selectedUrl;
+  const src = failedUrl === selectedUrl
+    ? (selectedUrl === lastPublishedLogo ? defaultWordmark : lastPublishedLogo)
+    : selectedUrl;
   return <img {...props} src={src} onError={event => {
     if (src !== defaultWordmark) setFailedUrl(selectedUrl);
     props.onError?.(event);
