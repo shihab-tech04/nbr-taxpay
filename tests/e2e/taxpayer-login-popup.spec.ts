@@ -112,7 +112,7 @@ test('all ten matching ID/password pairs open their own taxpayer dashboard and p
     await dialog.getByLabel('Password',{exact:true}).fill('user'+id);
     await dialog.getByRole('button',{name:'Sign In'}).click();
     await expect(page).toHaveURL(/action=taxpayer_home/);
-    await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Your tax overview',exact:true})).toBeVisible();
     await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Profile',exact:true}).click();
     await expect(page).toHaveURL(/action=account_profile/);
     const profile=page.getByTestId('user1-taxpayer-profile');
@@ -137,9 +137,9 @@ test('refresh keeps selected preview identity without turning URL into authentic
   await page.getByLabel('Password',{exact:true}).fill('user8');
   await page.getByRole('button',{name:'Sign In'}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview',exact:true})).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview',exact:true})).toBeVisible();
   await expect(page).not.toHaveURL(/demoUser=/);
   await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Sign out'}).click();
   await page.goto('/?action=account_profile');
@@ -205,6 +205,8 @@ test('account options float without resizing the login form or footer (desktop a
     const password=dialog.locator('#taxpayer-login-password');
     const footer=dialog.locator('.taxpay-modal__footer');
     if (await userId.getAttribute('aria-expanded') === 'true') await userId.press('Escape');
+    // Measure after webfont readiness: font replacement is not dropdown reflow.
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
     const beforePassword=await password.boundingBox();
     const beforeFooter=await footer.boundingBox();
     const beforeDialog=await dialog.boundingBox();
