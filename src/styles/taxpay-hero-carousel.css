@@ -1157,14 +1157,11 @@
    six benefit cells, so the footer remains in the viewport. */
 @media (min-width: 1600px) and (min-height: 840px) and (max-height: 959px) {
   .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
-    padding-top: 7px;
-    padding-bottom: 7px;
-  }
-  .public-home-sections > .public-benefits {
-    padding: 18px;
+    padding-top: 4px;
+    padding-bottom: 4px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
-    padding-top: .55rem;
-    padding-bottom: .55rem;
+    padding-top: .45rem;
+    padding-bottom: .45rem;
   }
 }
