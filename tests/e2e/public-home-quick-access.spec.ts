@@ -599,9 +599,9 @@ test('approved desktop proposal is one white rounded panel with a connected 3x2 
           cells, horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
         };
       });
-      // The agreed maximum is 1100px; a narrower viewport retains 32px
+      // The shared desktop maximum is 1280px; a narrower viewport retains 32px
       // horizontal gutters rather than overflowing to satisfy the max width.
-      const expectedPanelWidth=Math.min(1100,viewport.width-64);
+      const expectedPanelWidth=Math.min(1280,viewport.width-64);
       expect(Math.abs(measurement.panelWidth-expectedPanelWidth),
         JSON.stringify({viewport,lang,measurement})).toBeLessThanOrEqual(2);
       expect(measurement.panelRadius).toBe(10);
