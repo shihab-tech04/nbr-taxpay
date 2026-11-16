@@ -130,11 +130,17 @@ export function Beneficiaries(){
       if(!rect)return;
       const margin=12;
       const width=Math.min(Math.max(rect.width,220),Math.max(160,window.innerWidth-margin*2));
-      const below=window.innerHeight-rect.bottom-margin-4;
+      // Keep list options outside the fixed bottom navigation on narrow screens.
+      // The menu must remain mouse/touch/keyboard accessible after scrolling.
+      const dock=document.querySelector<HTMLElement>('.citizen-bottom-nav');
+      const dockTop=dock&&window.getComputedStyle(dock).display!=='none'
+        ?dock.getBoundingClientRect().top:window.innerHeight;
+      const availableBottom=Math.max(margin+80,Math.min(window.innerHeight-margin,dockTop-8));
+      const below=availableBottom-rect.bottom-4;
       const above=rect.top-margin-4;
       const openAbove=below<180&&above>below;
       const maxHeight=Math.max(80,Math.min(300,openAbove?above:below));
-      const top=openAbove?Math.max(margin,rect.top-maxHeight-4):Math.min(rect.bottom+4,Math.max(margin,window.innerHeight-maxHeight-margin));
+      const top=openAbove?Math.max(margin,rect.top-maxHeight-4):Math.min(rect.bottom+4,Math.max(margin,availableBottom-maxHeight));
       const left=Math.max(margin,Math.min(rect.right-width,window.innerWidth-width-margin));
       setListMenuPosition({top,left,width,maxHeight});
     };
