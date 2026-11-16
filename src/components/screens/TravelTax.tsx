@@ -404,13 +404,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   };
   const continueStep = () => {
     if (step === 0) {
+      const issue = firstIdentityIssue();
+      if (issue) { reportIdentityIssue(issue); return; }
       if (!allPassengersComplete) {
         showError(tr('Confirm each checked passenger with Add passenger first.', 'প্রতিটি যাচাইকৃত যাত্রী যোগ করুন বোতামে নিশ্চিত করুন।'));
         return;
       }
-      const issue = firstIdentityIssue();
-      if (issue) { reportIdentityIssue(issue); return; }
-      if (!/^01\d{9}$/.test(phone)) {
+      if (!receiptMobileComplete) {
         showError(tr('Enter a valid 11-digit receipt mobile number.', 'রসিদের জন্য ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।'));
         requestAnimationFrame(() => document.getElementById('travel-mobile')?.focus());
         return;
@@ -790,9 +790,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             : tr('Government passport verification is unavailable. Choose from ten fictional passports and press Check Passport.',
                  'সরকারি পাসপোর্ট যাচাই সংযুক্ত নয়। ১০টি কাল্পনিক পাসপোর্টের একটি বেছে পাসপোর্ট যাচাই করুন।')}
         </p>}
-        {item.medicalPortReferral && <p role="status" className="travel-flow__medical-note">
-          {tr('Medical exemption is not approved online. Bring supporting documents to the port.',
-              'অনলাইনে চিকিৎসাজনিত অব্যাহতি অনুমোদিত নয়। কাগজপত্র বন্দরে আনুন।')}
+        {item.medicalPortReferral && <p role="status" data-testid="travel-manual-assessment-blocker" className="travel-flow__medical-note">
+          {tr('Manual medical assessment is required at the departure port. Online Continue is unavailable. Bring supporting documents, or untick this option if you selected it by mistake.',
+              'চিকিৎসাজনিত যাচাই বন্দরে সরাসরি করতে হবে। অনলাইনে এগোনো যাবে না। প্রয়োজনীয় কাগজপত্র আনুন অথবা ভুল করে নির্বাচন করলে টিক তুলে দিন।')}
         </p>}
         {assessment && <p className="travel-flow__age-reason">{ageExplanation(assessment.age)}</p>}
       </div>
