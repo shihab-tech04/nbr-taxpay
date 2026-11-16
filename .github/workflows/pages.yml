@@ -90,6 +90,14 @@ jobs:
           # Publishable key only. NEVER use service_role, secret or JWT signing keys in a web bundle.
           VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
         run: npm run build
+      - name: Verify V2 fictional account boundaries against the hosted Edge API
+        if: github.event_name == 'pull_request'
+        env:
+          # Publishable public key only, same reviewed value as the V2 web build.
+          SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
+        run: |
+          node --test scripts/ci/sohojkor-v2-demo-smoke.test.mjs
+          node scripts/ci/sohojkor-v2-demo-smoke.mjs
       - name: Enforce approved public startup transfer budget
         run: |
           node scripts/ci/check-public-startup-budget.mjs
