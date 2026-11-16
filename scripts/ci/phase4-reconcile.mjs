@@ -51,14 +51,17 @@ function diff(a,b,path,record,issues){
 /** Compare immutable payment IDs across distinct DB exports. Do not join by TIN. */
 export function reconcile(taxpayerRows,officeRows){
   const issues=[],src=mapRows(taxpayerRows,'taxpayer',issues),dst=mapRows(officeRows,'office',issues);
-  let matched=0,simulated=0,missingDhara=0,missingChallan=0,missingAllocationIds=0,missingSource=0;
+  let matched=0,simulated=0,missingDhara=0,missingChallan=0,missingAllocationIds=0,missingSource=0,missingPayer=0,missingRecipient=0;
   for(const [id,p] of src){
     const record=ref(id),before=issues.length;
     if(/SIMULATED|DEMO/i.test(p.status))simulated++;
     if(!p.challan)missingChallan++;
     if(!p.source)missingSource++;
+    if(!p.payer.id&&!p.payer.tin)missingPayer++;
+    // Travel Tax is a passenger journey, not a taxpayer-TIN allocation.
+    if(p.service!=='TRAVEL_TAX'&&!p.recipient&&!p.allocations.some(a=>a.recipient))missingRecipient++;
     if(p.allocations.some(a=>!a.id))missingAllocationIds++;
-    if(p.allocations.length?p.allocations.some(a=>!a.dhara):!p.dhara)missingDhara++;
+    if(p.service!=='TRAVEL_TAX' && (p.allocations.length?p.allocations.some(a=>!a.dhara):!p.dhara))missingDhara++;
     if(p.allocations.length){
       const ids=p.allocations.map(a=>a.id).filter(Boolean);
       const total=p.allocations.reduce((s,a)=>s+BigInt(a.amount??0),0n);
@@ -77,9 +80,9 @@ export function reconcile(taxpayerRows,officeRows){
   // Equality is not field completeness. Historical rows may agree despite
   // missing verified Dhara, challans or immutable allocation identifiers.
   const fieldComplete=parityPassed&&missingDhara===0&&missingChallan===0&&
-    missingAllocationIds===0&&missingSource===0;
+    missingAllocationIds===0&&missingSource===0&&missingPayer===0&&missingRecipient===0;
   return {taxpayerCount:src.size,officeCount:dst.size,matched,simulated,missingDhara,missingChallan,
-    missingAllocationIds,missingSource,issues,parityPassed,fieldComplete,
+    missingAllocationIds,missingSource,missingPayer,missingRecipient,issues,parityPassed,fieldComplete,
     // SQL equality never proves settlement, taxpayer identity, authorization or deployment.
     releaseVerified:false};
 }
