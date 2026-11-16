@@ -1,0 +1,42 @@
+name: Phase 7 WS3 production login boundary (disposable cross-origin fixture)
+
+on:
+  pull_request:
+    branches:
+      - release/taxpay-correction-notifications-20261101
+    paths:
+      - 'tests/production/production-auth-boundary.spec.ts'
+      - 'playwright.production.config.ts'
+      - '.github/workflows/phase7-ws3-login-cors.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  production-login:
+    name: Production bundle Auth boundary in Chromium desktop and mobile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact feature branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked project dependencies
+        run: npm ci
+      - name: Install only Chromium shell
+        run: npx playwright install chromium --only-shell
+      - name: Compile production-like static bundle with nonprivileged test endpoint
+        env:
+          GITHUB_PAGES: 'true'
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://example.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_isolated_phase7_qa'
+        run: npm run build
+      - name: Verify production routes and cross-origin response with disposable fixtures
+        run: npx playwright test --config playwright.production.config.ts
