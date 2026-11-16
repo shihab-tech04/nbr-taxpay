@@ -51,7 +51,8 @@ export async function runV2DemoSmoke(key) {
     throw new Error('Distinct fictional accounts share a payment session or capability.');
   for (const payload of [
     { action: 'demo-login', userId: 'user1', password: 'incorrect' },
-    { action: 'demo-login', userId: 'user31', password: 'user31' },
+    // V2 has 55 fictional profiles; user56 is genuinely outside its accepted range.
+    { action: 'demo-login', userId: 'user56', password: 'user56' },
   ]) {
     const denial = await request(key, payload);
     if (denial.status !== 401 || denial.success !== false ||
