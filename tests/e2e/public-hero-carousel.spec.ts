@@ -50,7 +50,7 @@ test('initial banner request does not download hidden images before the visible 
   // The first paint uses the checksum-verified published CMS snapshot. A
   // subsequent SQL refresh may replace it with a newly published intro image.
   // Both are visible artwork; neither may trigger hidden-banner downloads.
-  await page.route(/(?:taxpay-hero-(intro|return|advance|withholding|travel)-v9[.]webp|branding\\/published\\/banner-(intro|return|advance|withholding|travel)[.](?:jpg|png))/, async route => {
+  await page.route(/(?:taxpay-hero-(intro|return|advance|withholding|travel)-v9[.]webp|branding[/]published[/]banner-(intro|return|advance|withholding|travel)[.](?:jpg|png))/, async route => {
     // Vite also imports asset URLs as JavaScript modules; intercept only the
     // image bytes so a deliberately held image never deadlocks navigation.
     if (route.request().resourceType() !== 'image') { await route.continue(); return; }
@@ -66,7 +66,7 @@ test('initial banner request does not download hidden images before the visible 
   // Wait for the mocked CMS response to settle, then assert the network still
   // contains ONLY the currently visible intro (snapshot or refreshed image).
   await expect(carousel.locator('.public-hero-carousel__slide').first().locator('img'))
-    .toHaveAttribute('src', /taxpay-hero-intro-v9|branding\\/published\\/banner-intro/);
+    .toHaveAttribute('src', /taxpay-hero-intro-v9|branding[/]published[/]banner-intro/);
   expect(requests.every(url => /banner-intro[.]jpg|taxpay-hero-intro-v9[.]webp/.test(url))).toBe(true);
   for (const index of [1, 2, 3, 4]) {
     await expect(carousel.locator('.public-hero-carousel__slide').nth(index).locator('img'))
