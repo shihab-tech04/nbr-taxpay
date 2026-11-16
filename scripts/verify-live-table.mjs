@@ -17,10 +17,23 @@ try{
   await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**', route => route.abort('blockedbyclient'));
   await page.goto(url('taxpayer_login'),{waitUntil:'domcontentloaded',timeout:45000});
   await expect(page.locator('#taxpayer-login-user-id')).toBeVisible({timeout:30000});
-  await page.locator('#taxpayer-login-user-id').fill('user1');
-  await page.locator('#taxpayer-login-password').fill('user1');
-  await page.locator('button[form="taxpay-standalone-login-form"]').click();
-  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible({timeout:30000});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+  await dialog.getByRole('textbox',{name:'User ID'}).fill('user1');
+  await dialog.getByLabel('Password',{exact:true}).fill('user1');
+  await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+  // Exercise the same user-visible OTP checkpoint as the verified live auth
+  // smoke. Do not bypass OTP or assert a private table before login completes.
+  const demoOtp=dialog.getByTestId('demo-otp-input');
+  await expect.poll(async () =>
+    await demoOtp.isVisible().catch(() => false) || /action=taxpayer_home/.test(page.url()),
+    {timeout:15_000}
+  ).toBe(true);
+  if(await demoOtp.isVisible().catch(() => false)){
+    await demoOtp.fill('111111');
+    await dialog.getByRole('button',{name:'Verify code'}).click();
+  }
+  await expect(page).toHaveURL(/action=taxpayer_home/,{timeout:30_000});
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible({timeout:30_000});
   // Same tab keeps the existing account session. Direct anonymous history links
   // must continue to show the approved sign-in boundary.
   await page.goto(url('history'),{waitUntil:'domcontentloaded',timeout:45000});
@@ -62,6 +75,38 @@ try{
   if(overflow>2)throw new Error('Published mobile page overflows by '+overflow+' pixels');
   await page.screenshot({path:'test-results/live-table-mobile.png',fullPage:true});
   console.log('PASS: published TaxPay user1 login, integrated toolbar, nine-column Transactions, paging, 375px mobile cards');
+  // User2 must use the very same approved Activity route and display either
+  // verified account-scoped rows or the legitimate empty state. This catches
+  // the previously observed live blank page (a hidden render error is FAIL).
+  const user2=await browser.newPage({viewport:{width:1280,height:900}});
+  await user2.goto(url('taxpayer_login'),{waitUntil:'domcontentloaded',timeout:45000});
+  const signIn2=user2.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+  await expect(signIn2.getByRole('textbox',{name:'User ID'})).toBeVisible({timeout:30000});
+  await signIn2.getByRole('textbox',{name:'User ID'}).fill('user2');
+  await signIn2.getByLabel('Password',{exact:true}).fill('user2');
+  await signIn2.getByRole('button',{name:'Sign In',exact:true}).click();
+  const otp2=signIn2.getByTestId('demo-otp-input');
+  await expect.poll(async () =>
+    await otp2.isVisible().catch(()=>false)||/action=taxpayer_home/.test(user2.url()),
+    {timeout:15000}
+  ).toBe(true);
+  if(await otp2.isVisible().catch(()=>false)){
+    await otp2.fill('111111');
+    await signIn2.getByRole('button',{name:'Verify code'}).click();
+  }
+  await expect(user2).toHaveURL(/action=taxpayer_home/,{timeout:30000});
+  await user2.goto(url('history'),{waitUntil:'domcontentloaded',timeout:45000});
+  await expect(user2.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:30000});
+  const activity2=user2.getByTestId('signed-in-payment-activity');
+  await expect(activity2.getByRole('searchbox',{name:'Search transactions'})).toBeVisible();
+  await expect.poll(async () => {
+    if(await activity2.getByTestId('signed-in-payment-activity-table').isVisible().catch(()=>false))return true;
+    if(await activity2.getByText('No transactions yet.').isVisible().catch(()=>false))return true;
+    return false;
+  },{timeout:30000}).toBe(true);
+  await user2.reload({waitUntil:'domcontentloaded'});
+  await expect(user2.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:30000});
+  console.log('PASS: published user2 Activity renders persistent account-scoped History after reload');
 }finally{
   await browser.close();
 }
