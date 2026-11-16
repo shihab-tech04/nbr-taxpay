@@ -101,23 +101,6 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
   const [copied,setCopied]=useState<'idle'|'done'|'failed'>('idle');
   const [downloadError,setDownloadError]=useState(false);
   const tin=record?.tin??'';
-  const details=(rows:readonly Row[])=><dl className="divide-y divide-taxpay-border">
-    {rows.map(([field,label])=>{
-      const raw=record?.[field];
-      const kind=typeof raw==='string'?sensitiveProfileKind(field,raw):null;
-      return <div key={field} data-profile-field={field} className="grid min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(135px,43%)_minmax(0,1fr)] sm:gap-4">
-        <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
-        <dd className="min-w-0 break-words text-sm font-medium leading-relaxed text-taxpay-text">
-          {kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
-            label={tr(label)} language={language}/>:value(field,language)}
-        </dd>
-      </div>;
-    })}
-  </dl>;
-  const panel=(title:Label,children:React.ReactNode)=><section className="flex h-full min-w-0 flex-col rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
-    <h3 className="mb-4 border-b border-taxpay-border pb-3 text-base font-semibold text-taxpay-text">{tr(title)}</h3>
-    {children}
-  </section>;
   const copyTin=async()=>{
     setCopied('idle');
     try {
