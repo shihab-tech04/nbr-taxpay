@@ -728,7 +728,7 @@
     font-weight: 500;
   }
 }
-/* Six benefit cards keep the approved layout and open their established destinations. */
+/* Six informational benefit cards: hover only, without click or keyboard activation. */
 /* Home-only shared card spacing and radii; carousel design remains unchanged. */
 /* Search and benefits share the same outer geometry at each breakpoint. */
 .public-home-sections .public-benefits{min-width:0;padding:1.25rem;border:1px solid var(--citizen-border);border-radius:10px;background:var(--citizen-surface);}
