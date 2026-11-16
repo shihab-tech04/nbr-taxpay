@@ -171,7 +171,7 @@ export function Beneficiaries(){
   };
   const initialRequestRef=useRef<symbol|null>(null);
   const reload=async(preferredList?:string)=>{
-    const data=await loadBeneficiaries(owner);
+    const data=await loadBeneficiaries(owner,{forceFresh:true});
     setLists(data.lists);setPeople(data.people);
     const validPreferredList=preferredList&&(preferredList==='all'||data.lists.some(list=>list.id===preferredList))?preferredList:null;
     setActiveList(current=>validPreferredList
@@ -189,7 +189,7 @@ export function Beneficiaries(){
     const requestToken=Symbol('beneficiary-initial-load');
     initialRequestRef.current=requestToken;
     setLists([]);setPeople([]);setActiveList('');setSelectedIds([]);setLoading(true);setError('');
-    loadBeneficiaries(owner).then(data=>{
+    loadBeneficiaries(owner,{forceFresh:true}).then(data=>{
       if(cancelled)return;
       setLists(data.lists);setPeople(data.people);
       setActiveList(reviewTins.length?'all':rememberedBeneficiaryListId([{id:'all'},...data.lists],savedListId||'all'));
@@ -214,7 +214,7 @@ export function Beneficiaries(){
       // mount load already has the fresh data; do not issue a second read.
       if(document.visibilityState==='hidden' || initialRequestRef.current || !gate.begin(Date.now()))return;
       const current=++revision;
-      void loadBeneficiaries(owner).then(data=>{
+      void loadBeneficiaries(owner,{forceFresh:true}).then(data=>{
         if(cancelled || current!==revision)return;
         setLists(data.lists);setPeople(data.people);setError('');
         setActiveList(selected=>selected==='all'||data.lists.some(list=>list.id===selected)?selected:'all');
@@ -226,7 +226,15 @@ export function Beneficiaries(){
     };
     window.addEventListener('focus',refresh);
     document.addEventListener('visibilitychange',refresh);
-    return()=>{cancelled=true;window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
+    // A different browser/device does not emit local storage events. Poll the
+    // same owner-scoped SQL/preview profile while this view stays visible.
+    const poll=window.setInterval(refresh,30_000);
+    return()=>{
+      cancelled=true;
+      window.removeEventListener('focus',refresh);
+      document.removeEventListener('visibilitychange',refresh);
+      window.clearInterval(poll);
+    };
   },[owner,checkingIdentity,busy]);
 
   const listPeople=activeList==='all'?people:people.filter(person=>person.list_id===activeList);
