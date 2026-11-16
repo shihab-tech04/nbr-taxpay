@@ -3,6 +3,7 @@ import '../../styles/taxpay-unified-table.css';
 import '../../styles/taxpay-payment-form.css';
 import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
 import {recordAccountActivity} from '../../services/accountActivity';
@@ -189,7 +190,7 @@ export function Beneficiaries(){
     const requestToken=Symbol('beneficiary-initial-load');
     initialRequestRef.current=requestToken;
     setLists([]);setPeople([]);setActiveList('');setSelectedIds([]);setLoading(true);setError('');
-    loadBeneficiaries(owner).then(data=>{
+    loadBeneficiaries(owner,{forceFresh:true}).then(data=>{
       if(cancelled)return;
       setLists(data.lists);setPeople(data.people);
       setActiveList(reviewTins.length?'all':rememberedBeneficiaryListId([{id:'all'},...data.lists],savedListId||'all'));
@@ -201,7 +202,7 @@ export function Beneficiaries(){
     return()=>{cancelled=true;};
   },[owner,checkingIdentity,previewAccount?.id]);
 
-  // Refresh across tabs and after returning from payments. Keep the current
+  // Refresh across tabs and devices, including while this page remains open. Keep the current
   // list visible while reading; never replace a valid snapshot with an empty
   // state just because a transient request failed.
   useEffect(()=>{
@@ -214,7 +215,7 @@ export function Beneficiaries(){
       // mount load already has the fresh data; do not issue a second read.
       if(document.visibilityState==='hidden' || initialRequestRef.current || !gate.begin(Date.now()))return;
       const current=++revision;
-      void loadBeneficiaries(owner).then(data=>{
+      void loadBeneficiaries(owner,{forceFresh:true}).then(data=>{
         if(cancelled || current!==revision)return;
         setLists(data.lists);setPeople(data.people);setError('');
         setActiveList(selected=>selected==='all'||data.lists.some(list=>list.id===selected)?selected:'all');
@@ -224,9 +225,11 @@ export function Beneficiaries(){
         // feedback if the transport or session remains unavailable.
       }).finally(()=>gate.finish());
     };
+    const interval=window.setInterval(refresh,30000);
     window.addEventListener('focus',refresh);
+    window.addEventListener('storage',refresh);
     document.addEventListener('visibilitychange',refresh);
-    return()=>{cancelled=true;window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
+    return()=>{cancelled=true;window.clearInterval(interval);window.removeEventListener('focus',refresh);window.removeEventListener('storage',refresh);document.removeEventListener('visibilitychange',refresh);};
   },[owner,checkingIdentity,busy]);
 
   const listPeople=activeList==='all'?people:people.filter(person=>person.list_id===activeList);
@@ -551,16 +554,20 @@ export function Beneficiaries(){
     }} onMakePayment={()=>payWith([profilePerson])}/>;
 
   return <section className="mx-auto w-full max-w-7xl space-y-5" lang={language} data-taxpay-register-page="true" data-testid="beneficiaries-page" aria-labelledby="beneficiaries-title">
-    <header className="flex flex-col gap-4 rounded-xl border border-taxpay-border bg-taxpay-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-      <div className="min-w-0">
-        <h1 id="beneficiaries-title" className="text-2xl font-bold tracking-tight text-taxpay-text sm:text-3xl">{tr('Beneficiaries','উপকারভোগী')}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">{tr('Organize saved taxpayers and continue to payment when you are ready.','সংরক্ষিত করদাতাদের সাজান এবং প্রস্তুত হলে পেমেন্টে এগিয়ে যান।')}</p>
-      </div>
-      <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:w-auto sm:flex sm:flex-wrap sm:justify-end">
-        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading} onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}><Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}</UiButton>
-        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="primary" disabled={checkingIdentity||loading} onClick={()=>open('single')}><Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}</UiButton>
-      </div>
-    </header>
+    <TaxpayerPageHeading id="beneficiaries-title"
+      title={tr('Beneficiaries','উপকারভোগী')}
+      description={tr('Organize saved taxpayers and continue to payment when you are ready.','সংরক্ষিত করদাতাদের সাজান এবং প্রস্তুত হলে পেমেন্টে এগিয়ে যান।')}
+      actions={<div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:w-auto sm:flex sm:flex-wrap sm:justify-end">
+        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading}
+          onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}>
+          <Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}
+        </UiButton>
+        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="primary" disabled={checkingIdentity||loading}
+          onClick={()=>open('single')}>
+          <Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}
+        </UiButton>
+      </div>}/>
+
     {(owner||previewAccount)&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
       <p className="text-sm text-taxpay-text">{tr("Earlier saved beneficiaries can be restored only if this browser's original guest session is still valid. Your current profile records will be kept.",'এই ব্রাউজারের আগের অতিথি সেশন এখনও বৈধ থাকলেই সংরক্ষিত উপকারভোগী ফিরিয়ে আনা যাবে। প্রোফাইলের বর্তমান তথ্য অক্ষত থাকবে।')}</p>
       <UiButton type="button" variant="outline" disabled={restoring||checkingIdentity} onClick={()=>void restoreFromThisBrowser()}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore to my profile','আমার প্রোফাইলে ফিরিয়ে আনুন')}</UiButton>

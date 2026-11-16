@@ -123,7 +123,10 @@ export function AuthorizationRequestPopup(){
   };
 
   if(!actor)return <AuthenticatedReceivedPaymentPopup/>;
-  if(welcomeOwner===actor&&currentRoute!=='taxpayer_login'){
+  // A first-login flag alone must not open a modal: check verified unread
+  // payment notices or pending authorization requests for this account.
+  if(welcomeOwner===actor&&currentRoute!=='taxpayer_login'&&
+    (visibleReceived!==null||visibleIncoming!==null)){
     const continueAfterWelcome=()=>{
       try{window.sessionStorage.removeItem('sohojkor.preview-first-login-welcome.v1');}
       catch{/* Preview welcome is cosmetic, not a security control. */}
@@ -132,10 +135,10 @@ export function AuthorizationRequestPopup(){
     return <TaxPayModal title={bn?'সহজকরে স্বাগতম':'Welcome to Sohojkor'}
       onClose={continueAfterWelcome} closeIconLabel={bn?'বন্ধ করুন':'Close modal'}
       className="taxpayer-authorization-modal"
-      footer={<button type="button" className="tax-service-choice__continue"
+      footer={<button type="button" className="tax-service-choice__continue taxpayer-welcome__action"
         onClick={continueAfterWelcome}>{bn?'বিজ্ঞপ্তি দেখুন':'Continue to notifications'}</button>}>
       <p className="mt-4 text-sm leading-6 text-taxpay-text" role="status" data-testid="first-login-welcome">
-        {bn?'আপনার নমুনা অ্যাকাউন্টের সাইন ইন নিশ্চিত হয়েছে। এখন প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি থাকলে সেগুলো একে একে দেখতে পারবেন।':'Your sample-account sign-in is confirmed. Any received-payment notices will appear one at a time.'}
+        {bn?'আপনার অ্যাকাউন্টে নতুন বিজ্ঞপ্তি আছে। সেগুলো একে একে দেখুন।':'You have unread account notifications. Review them one at a time.'}
       </p>
     </TaxPayModal>;
   }
