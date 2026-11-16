@@ -368,7 +368,7 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
     }
     await first.goto('/?action=beneficiaries');
     await expect(first.getByTestId('beneficiaries-page')).toBeVisible();
-    if(await first.locator('#beneficiary-list').count()===0)
+    if(!await first.locator('#beneficiary-list').isVisible())
       await first.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     await first.locator('#beneficiary-list').click();
     await first.locator('#beneficiary-list-menu').getByRole('button',{name:names.clients,exact:true}).click();
@@ -388,7 +388,7 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
       return setting.body.data?.selectedListId;
     },{timeout:15000}).toBe(lists.find(list=>list.name===names.clients)!.id);
     await first.reload();
-    if(await first.locator('#beneficiary-list').count()===0)
+    if(!await first.locator('#beneficiary-list').isVisible())
       await first.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     await expect(first.locator('#beneficiary-list')).toContainText(names.clients);
 
@@ -406,7 +406,7 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
     }
     await again.goto('/?action=beneficiaries');
     await expect(again.getByTestId('beneficiaries-page')).toBeVisible();
-    if(await again.locator('#beneficiary-list').count()===0)
+    if(!await again.locator('#beneficiary-list').isVisible())
       await again.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     await again.locator('#beneficiary-list').click();
     await again.locator('#beneficiary-list-menu').getByRole('button',{name:names.others,exact:true}).click();
