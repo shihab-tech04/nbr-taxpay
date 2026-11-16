@@ -4,6 +4,8 @@ import {formatCurrency} from '../../services/numberFormat';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {queueReceivedPaymentCaseIntent} from '../../services/receivedPaymentCaseIntent';
+import {listAccountReceivedPayments,acknowledgeAccountReceivedPayment} from '../../services/accountReceivedPaymentNotices';
+import {resolveReceivedNoticeRegisterScope} from '../../services/receivedNoticeRegisterScope';
 import type {CorrectionCaseKind} from '../../services/correctionInquiryValidation';
 import {
   acknowledgeReceivedPaymentNotice,listReceivedPaymentNotices,filterStoredReceivedPaymentNotices,
@@ -16,12 +18,19 @@ type Snapshot={owner:string|null;status:'loading'|'ready'|'error';rows:StoredRec
  * appears here. Never include payer's private head/lines or a payment-success claim.
  * Read receipts stay accessible after the first-login popup is acknowledged.
  */
-export function ReceivedPaymentNoticeRegister({profileId,language}:{
-  profileId:string;language:'en'|'bn';
+export function ReceivedPaymentNoticeRegister({profileId,authOwnerUid,language}:{
+  profileId?:string;authOwnerUid?:string;language:'en'|'bn';
 }){
-  const enabled=import.meta.env.VITE_RECIPIENT_NOTICE_FEED_ENABLED==='true';
   const {navigate}=useTaxState();
   const {user:authenticatedUser}=useAccountIdentity();
+  const scope=resolveReceivedNoticeRegisterScope({
+    profileId,authOwnerUid,authenticatedUid:authenticatedUser?.id??null,
+    realFeedEnabled:import.meta.env.VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED==='true',
+    previewFeedEnabled:import.meta.env.VITE_RECIPIENT_NOTICE_FEED_ENABLED==='true',
+  });
+  const enabled=scope!==null;
+  const owner=scope?.ownerKey??'';
+  const mode=scope?.mode??null;
   const [state,setState]=useState<Snapshot>({owner:null,status:'loading',rows:[]});
   const [revision,setRevision]=useState(0);
   const [busy,setBusy]=useState<string|null>(null);
@@ -38,20 +47,22 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
   useEffect(()=>{
     if(!enabled)return;
     let active=true;
-    setState({owner:profileId,status:'loading',rows:[]});
+    setState({owner,status:'loading',rows:[]});
     setAckError('');setBusy(null);busyRef.current=null;
     setSearch('');setReadFilter('all');setDateFrom('');setDateTo('');
     const load=async()=>{
       if(busyRef.current)return;
       const requestRevision=++loadRevisionRef.current;
       try{
-        const rows=await listReceivedPaymentNotices(profileId);
+        const rows=mode==='auth'&&authOwnerUid
+          ?await listAccountReceivedPayments(authOwnerUid)
+          :await listReceivedPaymentNotices(profileId!);
         if(active&&requestRevision===loadRevisionRef.current&&busyRef.current===null)
-          setState({owner:profileId,status:'ready',rows});
+          setState({owner,status:'ready',rows});
       }catch{
         if(active&&requestRevision===loadRevisionRef.current&&busyRef.current===null)
-          setState(previous=>previous.owner===profileId&&previous.status==='ready'
-            ?previous:{owner:profileId,status:'error',rows:[]});
+          setState(previous=>previous.owner===owner&&previous.status==='ready'
+            ?previous:{owner,status:'error',rows:[]});
       }
     };
     void load();
@@ -64,10 +75,10 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
       window.removeEventListener('online',refresh);
       window.removeEventListener('focus',refresh);
     };
-  },[profileId,revision,enabled]);
+  },[profileId,authOwnerUid,owner,mode,revision,enabled]);
 
   const openCase=(notice:StoredReceivedPaymentNotice,caseKind:CorrectionCaseKind)=>{
-    if(state.owner!==profileId)return;
+    if(state.owner!==owner||!enabled)return;
     try{
       queueReceivedPaymentCaseIntent(notice,caseKind);
       if(authenticatedUser)navigate('corrections');
@@ -79,18 +90,22 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
   };
 
   const acknowledge=async(notice:StoredReceivedPaymentNotice)=>{
-    if(busyRef.current||notice.isRead||state.owner!==profileId)return;
+    if(busyRef.current||notice.isRead||state.owner!==owner||!enabled)return;
     busyRef.current=notice.eventId;setBusy(notice.eventId);setAckError('');
     // Invalidate every poll begun before the acknowledgement was requested.
     const requestRevision=++loadRevisionRef.current;
     try{
-      await acknowledgeReceivedPaymentNotice(profileId,notice.eventId);
-      const rows=await listReceivedPaymentNotices(profileId);
+      if(mode==='auth'&&authOwnerUid)
+        await acknowledgeAccountReceivedPayment(authOwnerUid,notice.eventId);
+      else await acknowledgeReceivedPaymentNotice(profileId!,notice.eventId);
+      const rows=mode==='auth'&&authOwnerUid
+        ?await listAccountReceivedPayments(authOwnerUid)
+        :await listReceivedPaymentNotices(profileId!);
       const confirmed=rows.find(row=>row.eventId===notice.eventId);
       if(!confirmed?.isRead||!confirmed.acknowledgedAt)
         throw Error('Read acknowledgement has not been verified');
       if(requestRevision===loadRevisionRef.current)
-        setState(previous=>previous.owner===profileId?{owner:profileId,status:'ready',rows}:previous);
+        setState(previous=>previous.owner===owner?{owner,status:'ready',rows}:previous);
     }catch{
       if(requestRevision===loadRevisionRef.current)
         setAckError(tr('Read acknowledgement could not be verified. Retry.',
@@ -100,7 +115,7 @@ export function ReceivedPaymentNoticeRegister({profileId,language}:{
     }
   };
   if(!enabled)return null;
-  const current=state.owner===profileId?state:{owner:profileId,status:'loading' as const,rows:[]};
+  const current=state.owner===owner?state:{owner,status:'loading' as const,rows:[]};
   const rows=current.rows;
   const filtered=filterStoredReceivedPaymentNotices(rows,{
     query:search,readStatus:readFilter,dateFrom,dateTo

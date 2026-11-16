@@ -329,11 +329,19 @@ export const NotificationsView:React.FC=()=>{
   // authenticated owner-only SQL query, so never block that private inbox.
   if(privateMode&&!id){
     if(!bindingReady)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-semibold">Protected notifications</h1><p role="status">{label('Checking account…','অ্যাকাউন্ট যাচাই হচ্ছে…')}</p></main>;
-    return <AccountCenter page="notifications"/>;
+    return <React.Fragment>
+      <AccountCenter page="notifications"/>
+      {authenticatedUser&&import.meta.env.VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED==='true'&&
+        <div className="mx-auto max-w-4xl pb-12" lang={language}>
+          <ReceivedPaymentNoticeRegister authOwnerUid={authenticatedUser.id} language={language}/>
+        </div>}
+    </React.Fragment>;
   }
   if(!id)return <AccountCenter page="notifications"/>;
   return <main className="mx-auto max-w-4xl space-y-4 pb-12" lang={language}>
     <TaxpayerPageHeading title={label('Payment notifications','পেমেন্ট বিজ্ঞপ্তি')}/>
+    {authenticatedUser&&import.meta.env.VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED==='true'&&
+      <ReceivedPaymentNoticeRegister authOwnerUid={authenticatedUser.id} language={language}/>}
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
       {loading||noticeOwner!==id?<p role="status">{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:
         !privateNotices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
