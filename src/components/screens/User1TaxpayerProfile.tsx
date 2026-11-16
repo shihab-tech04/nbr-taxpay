@@ -1,11 +1,8 @@
 import React, {useEffect,useState} from 'react';
-import {Check, Copy, Download} from 'lucide-react';
+import {Check, Copy, Download, UserRound} from 'lucide-react';
 import {MaskedProfileValue, sensitiveProfileKind} from '../ui/MaskedProfileValue';
 import {TAXPAYER_PROFILE_LAYOUT,TAXPAYER_PROFILE_FIELD_ORDER,type ProfileFieldRow} from '../../contracts/taxpayerProfileFieldLayout';
-import {
-  USER1_FICTIONAL_TIN_PROFILE as initialReference,
-  user1FictionalTinValue,
-} from '../../data/user1FictionalTinProfile';
+import {USER1_FICTIONAL_TIN_PROFILE as initialReference,user1FictionalTinValue} from '../../data/user1FictionalTinProfile';
 import type {TaxpayerTinField,TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
 import {getDemoUser,type DemoUser,type DemoUserId} from '../../data/demoUsers';
 import {useDemoSqlProfileAndServiceRecords} from '../../services/demoSqlProfiles';
@@ -92,7 +89,7 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
         <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
         <dd className="min-w-0 break-words text-sm font-medium leading-relaxed text-taxpay-text">
           {kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
-            label={tr(label)} language={language}/>:value(field,language)}
+            label={tr(label)} language={language} allowCopy/>:value(field,language)}
         </dd>
       </div>;
     })}
@@ -137,12 +134,25 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
       setDownloadError(true);
     }
   };
-
+  if(!verified&&!offlineReference){
+    return <section className="rounded-xl border border-taxpay-border bg-white p-5" data-testid="user1-taxpayer-profile">
+      <p role="alert">{bn?'এই অ্যাকাউন্টের জন্য করদাতার প্রোফাইল পাওয়া যায়নি।':'Taxpayer profile is not available for this account.'}</p>
+    </section>;
+  }
+  if(accountId==='user1'&&(recordState.status!=='ready'||!record)){
+    return <section className="rounded-xl border border-taxpay-border bg-white p-5" data-testid="user1-taxpayer-profile">
+      {status==='loading'?<p role="status">{bn?'করদাতার প্রোফাইল লোড হচ্ছে…':'Loading taxpayer profile…'}</p>:
+      <div><p role="alert">{bn?'প্রোফাইলের তথ্য লোড করা যায়নি।':'Could not load taxpayer information.'}</p>
+      <button type="button" onClick={()=>setReload(v=>v+1)}
+        className="mt-3 min-h-11 rounded-lg border border-taxpay-border px-4 text-sm text-taxpay-primary">
+        {bn?'আবার চেষ্টা করুন':'Retry'}</button></div>}
+    </section>;
+  }
   return <div data-testid="user1-taxpayer-profile" className="space-y-4" aria-label={tr(['Taxpayer profile','করদাতার প্রোফাইল'])}>
     <section className="overflow-hidden rounded-2xl border border-taxpay-border bg-white">
       <div className="flex flex-col items-start gap-4 p-5 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:p-6">
         <div className="flex w-full min-w-0 items-start gap-4 sm:w-auto sm:flex-1">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-taxpay-light text-lg font-semibold text-taxpay-primary" aria-hidden="true">{initials}</div>
+          <div data-testid="user1-profile-identity-badge" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-taxpay-light text-lg font-semibold text-taxpay-primary" aria-hidden="true">{initials==='—'?<UserRound size={20}/>:initials}</div>
           <div className="min-w-0 space-y-1.5">
             <p className="text-xs text-taxpay-muted">{tr(['Account','অ্যাকাউন্ট'])}: {accountId??'—'}</p>
             <h2 data-profile-field="taxpayerName" className="break-words text-xl font-semibold leading-snug text-taxpay-text sm:text-2xl">

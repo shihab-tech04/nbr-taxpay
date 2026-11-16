@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {readFileSync} from 'node:fs';
 import {createBeneficiaryAutoRefreshGate} from '../src/services/beneficiaryAutoRefresh';
 
 test('focus plus visibility resume shares one beneficiary read', () => {
@@ -19,4 +20,12 @@ test('failed reads release the guard without treating stale data as current', ()
   assert.equal(gate.begin(100), true);
   gate.finish();
   assert.equal(gate.begin(Number.NaN), false);
+});
+
+test('saved picker ignores list and TIN callbacks from a previous owner session', () => {
+  const picker=readFileSync('src/components/screens/SavedBeneficiaryPicker.tsx','utf8');
+  assert.match(picker,/ownerScopeRef\.current=ownerScope/);
+  assert.equal((picker.match(/if\(cancelled\|\|ownerScopeRef\.current!==ownerScope\)return;/g)||[]).length,2);
+  assert.match(picker,/finally\(\(\)=>\{if\(!cancelled&&ownerScopeRef\.current===ownerScope\)setLoading\(false\);\}\)/);
+  assert.match(picker,/onAvailableTins\(Array\.from\(new Set\(result\.people/);
 });

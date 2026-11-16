@@ -134,6 +134,7 @@ Deno.serve(async (request: Request) => {
     if (!config?.enabled) return json({ error: 'Bridge disabled' }, 503);
     if (message.mode === 'dispatch') {
       if (message.token !== config.dispatchToken) return json({ error: 'Unauthorized' }, 401);
+      if (config.origin !== 'OFFICE_SQL') return json({ error: 'Forbidden' }, 403);
       return json(await dispatch(client, config, await signingKey(config.signingKey)));
     }
     if (message.mode === 'ingest') {

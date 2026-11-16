@@ -24,13 +24,35 @@ begin
   first_hash:=encode(extensions.digest(convert_to(first_login->>'capability','UTF8'),'sha256'),'hex');
   other_hash:=encode(extensions.digest(convert_to(other_login->>'capability','UTF8'),'sha256'),'hex');
   profile_session:=(first_login->>'paymentSessionId')::uuid;
+  -- Preserve capability-scoping, source/outbox/notice and replay tests, but
+  -- supply one canonical exclusive Return receipt (disposable fixture only).
   input_data:=jsonb_build_object(
     'origin','TAXPAY_UI','service','TAX_WITH_RETURN','amountMinor',12345,
     'sessionId',profile_session,'idempotencyKey',key_id,
-    'details',jsonb_build_object('payerId','user10','payerName','Synthetic acceptance user',
-      'lines',jsonb_build_array(jsonb_build_object('beneficiary','user10',
-        'category','TAX_WITH_RETURN','assessmentYear','2026-27','amountMinor',12345))));
+    'details',jsonb_build_object(
+      'payerId','user10','payerName','Synthetic acceptance user',
+      'payerTin','1010101010101','payerMode','SELF',
+      'taxpayerTin','1010101010101','assessmentYear','2026-27',
+      'receiptReference','SIM-'||key_id::text,
+      'lines',jsonb_build_array(jsonb_build_object(
+        'beneficiary','user10','category','TAX_WITH_RETURN','headId',125,
+        'assessmentYear','2026-27','amountMinor',12345,'totalAmount',123.45)),
+      'receiptSnapshot',jsonb_build_object(
+        'paymentCategory','TAX_WITH_RETURN','taxpayerTin','1010101010101',
+        'payerTin','1010101010101','assessmentYear','2026-27',
+        'challanNo','SIM-'||key_id::text,'totalAmount',123.45,
+        'items',jsonb_build_array(jsonb_build_object(
+          'headId',125,'totalAmount',123.45)))));
 
+  -- Disposable fixture diagnostic: schema flags only, never personal identifiers.
+  RAISE NOTICE 'M04 diagnostic: linesType=%,linesCount=%,head125=%,categoryReturn=%,combinedField=%,allocationsField=%,otherTaxField=%',
+    jsonb_typeof(input_data#>'{details,lines}'),
+    jsonb_array_length(input_data#>'{details,lines}'),
+    input_data#>>'{details,lines,0,headId}'='125',
+    input_data#>>'{details,lines,0,category}'='TAX_WITH_RETURN',
+    (input_data->'details') ? 'combinedPayment',
+    (input_data->'details') ? 'allocations',
+    (input_data->'details') ? 'otherTaxLines';
   inserted:=public.taxpay_demo_story1_submit(first_hash,input_data);
   v_payment_id:=(inserted->>'id')::uuid;
   if inserted->>'replayed'<>'false' then raise exception 'First capability-backed payment did not insert'; end if;

@@ -5,6 +5,7 @@
 const uuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 const encoder = new TextEncoder();
 const purpose = 'taxpay:office:simulated-payment:v1';
+const authorizationPurpose = 'taxpay:office:synthetic-authorization:v1';
 const lifetimeSeconds = 120;
 
 async function signingKey(secret: string): Promise<CryptoKey> {
@@ -42,4 +43,28 @@ export async function verifyOfficeMirrorProof(secret: string,id: string,sessionI
     if (!Number.isSafeInteger(issuedAt) || issuedAt>current+10 || current-issuedAt>lifetimeSeconds) return false;
     return await crypto.subtle.verify('HMAC',await signingKey(secret),decodeBase64Url(match[2]),encoder.encode(subject(id,sessionId,issuedAt)));
   } catch { return false; }
+}
+
+/** Domain-separated authorization mirror proof. Payment proof cannot authorize
+ * authorization RPCs, and authorization proof cannot authorize payment reads.
+ */
+function authorizationSubject(id:string,issuedAt:number):string {
+  if (!uuid.test(id)) throw new Error('INVALID_AUTHORIZATION_ID');
+  return `${authorizationPurpose}:${id.toLowerCase()}:${issuedAt}`;
+}
+export async function createOfficeAuthorizationProof(secret:string,id:string,nowMs=Date.now()):Promise<string> {
+  const issuedAt=Math.floor(nowMs/1000);
+  const signature=await crypto.subtle.sign('HMAC',await signingKey(secret),
+    encoder.encode(authorizationSubject(id,issuedAt)));
+  return `v1.${issuedAt}.${base64Url(new Uint8Array(signature))}`;
+}
+export async function verifyOfficeAuthorizationProof(secret:string,id:string,proof:string,nowMs=Date.now()):Promise<boolean> {
+  try{
+    const match=/^v1\.(\d{10})\.([A-Za-z0-9_-]{43})$/.exec(proof);
+    if(!match)return false;
+    const issuedAt=Number(match[1]),current=Math.floor(nowMs/1000);
+    if(!Number.isSafeInteger(issuedAt)||issuedAt>current+10||current-issuedAt>lifetimeSeconds)return false;
+    return await crypto.subtle.verify('HMAC',await signingKey(secret),
+      decodeBase64Url(match[2]),encoder.encode(authorizationSubject(id,issuedAt)));
+  }catch{return false;}
 }

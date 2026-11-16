@@ -1,4 +1,5 @@
 import React from 'react';
+import {MaskedProfileValue,sensitiveProfileKind} from '../ui/MaskedProfileValue';
 import {isWellFormedTinProfile,type TaxpayerTinProfile,type TaxpayerTinField} from '../../contracts/taxpayerTinProfile';
 
 type Bilingual = readonly [string, string];
@@ -71,16 +72,21 @@ export function TaxpayerTinInformation({language,record}:Props){
         : (bn?'উৎস: পর্যালোচিত সনদ; সরাসরি টিআইএন সিঙ্ক নয়':'Source: reviewed certificate; not a live TIN sync')}
       {' · '}{tr(['Record updated','তথ্য হালনাগাদ'])}: {record.sourceUpdatedAt}
     </p>}
-    {sourced && <div className="mt-4 space-y-5">
+    <div className="mt-4 space-y-5">
       {groups.map(group=><section key={group.title[0]}>
         <h3 className="text-sm font-semibold text-taxpay-text">{tr(group.title)}</h3>
         <dl className="mt-2 grid gap-3 sm:grid-cols-2">
           {group.fields.map(([field,label])=><div key={field} className="min-w-0 rounded-lg border border-taxpay-border p-3">
             <dt className="text-xs font-normal text-taxpay-muted">{tr(label)}</dt>
-            <dd className="mt-1 break-words text-sm font-medium text-taxpay-text">{value(field)}</dd>
+            <dd className="mt-1 break-words text-sm font-medium text-taxpay-text">{(()=>{
+              const raw=record?.[field];
+              const kind=sourced&&typeof raw==='string'?sensitiveProfileKind(field,raw):null;
+              return kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
+                label={tr(label)} language={language} allowCopy/>:value(field);
+            })()}</dd>
           </div>)}
         </dl>
       </section>)}
-    </div>}
+    </div>
   </section>;
 }

@@ -83,17 +83,24 @@ test('Citizen route matrix never adds static text and containers to the Tab sequ
   }
 });
 
-test('Scrolled-away mobile header is inert rather than an invisible Tab trap', async ({ page }) => {
+test('Signed-in mobile navigation keeps the header and bottom dock available after scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/?action=taxpayer_home');
   await page.getByRole('button', { name: 'Explore taxpayer workspace' }).click();
   await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
   const header = page.locator('.citizen-header');
   await page.evaluate(() => window.scrollTo(0, 650));
-  await expect(header).toHaveAttribute('inert', '');
-  await expect(header).toHaveCSS('visibility', 'hidden');
-  await header.locator('button').first().evaluate((button) => (button as HTMLButtonElement).focus());
-  expect(await page.evaluate(() => Boolean(document.activeElement?.closest('.citizen-header')))).toBe(false);
+  await expect(header).not.toHaveAttribute('inert', '');
+  await expect(header).toBeVisible();
+  const bottomNav = page.locator('.citizen-bottom-nav');
+  await expect(bottomNav).toBeVisible();
+  for (const label of ['Overview', 'Activity', 'Tax Ledger']) {
+    await expect(bottomNav.getByRole('button', { name: label })).toBeVisible();
+  }
+  const menuButton = header.getByRole('button', { name: 'Open menu' });
+  await menuButton.focus();
+  await expect(menuButton).toBeFocused();
+  expect(await page.evaluate(() => Boolean(document.activeElement?.closest('.citizen-header')))).toBe(true);
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(header).not.toHaveAttribute('inert', '');
 });

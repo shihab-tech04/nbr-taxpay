@@ -168,9 +168,9 @@ test('wide desktop uses the available canvas without crushing the footer or look
       horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
     };
   });
-  // The Home canvas keeps the same original 1100px width as Guide and Report.
-  expect(visual.hero.width).toBeGreaterThanOrEqual(1099);
-  expect(visual.hero.width).toBeLessThanOrEqual(1101);
+  // Home expands to 1300px on wide monitors; Guide and Report retain 1100px.
+  expect(visual.hero.width).toBeGreaterThanOrEqual(1299);
+  expect(visual.hero.width).toBeLessThanOrEqual(1301);
   expect(Math.abs(visual.hero.width-visual.record.width)).toBeLessThanOrEqual(2);
   expect(visual.searchHeading.bottom).toBeLessThan(visual.searchField.top);
   expect(visual.searchField.width).toBeGreaterThanOrEqual(visual.record.width*.9);
@@ -225,8 +225,8 @@ test('reported tall desktop: homepage footer follows content with no blank space
           horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
         };
       });
-      expect(layout.homeWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(1099);
-      expect(layout.homeWidth).toBeLessThanOrEqual(1101);
+      expect(layout.homeWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(viewport.width >= 1600 ? 1299 : 1099);
+      expect(layout.homeWidth).toBeLessThanOrEqual(viewport.width >= 1600 ? 1301 : 1101);
       expect(layout.footerTop-layout.benefitsBottom,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(0);
       // A full-height shell is insufficient: the page must not leave the
       // 300px+ blank chasm shown between the benefits and footer.
@@ -337,8 +337,8 @@ test('professionally balanced Home padding and vertical rhythm at normal and zoo
           horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
         };
       });
-      expect(layout.contentWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(1099);
-      expect(layout.contentWidth).toBeLessThanOrEqual(1101);
+      expect(layout.contentWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(viewport.width >= 1600 ? 1299 : 1099);
+      expect(layout.contentWidth).toBeLessThanOrEqual(viewport.width >= 1600 ? 1301 : 1101);
       expect(layout.cardsCount).toBe(6);
       expect(layout.equalRowHeights).toBeLessThanOrEqual(2);
       expect(layout.cardPadding).toBeGreaterThanOrEqual(14);
@@ -822,7 +822,8 @@ test('six benefit cards stay non-interactive in English and Bangla on mobile and
     await page.setViewportSize({ width, height: 900 });
     for (const language of ['en', 'bn'] as const) {
       await page.goto('/?action=landing&lang=' + language);
-      const startingUrl = page.url();
+      // Language query is allowed to normalize after mount; the public route must not change.
+      const startingAction = 'landing';
       const cards = page.locator('.public-benefits__item');
       await expect(cards).toHaveCount(6);
       for (const [id, en, bn] of cases) {
@@ -834,9 +835,9 @@ test('six benefit cards stay non-interactive in English and Bangla on mobile and
         const bounds = await item.boundingBox();
         if (!bounds) throw new Error('Missing benefit card ' + id);
         await item.click({ position: { x: bounds.width - 6, y: bounds.height - 6 } });
-        await expect(page).toHaveURL(startingUrl);
+        await expect.poll(() => new URL(page.url()).searchParams.get('action')).toBe(startingAction);
         await item.getByRole('heading').click();
-        await expect(page).toHaveURL(startingUrl);
+        await expect.poll(() => new URL(page.url()).searchParams.get('action')).toBe(startingAction);
         await expect(page.locator('.tax-service-choice__card')).toHaveCount(0);
       }
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -951,3 +952,71 @@ test('public reference no-match distinguishes browser session lookup from offici
     }
   }
 });
+
+test('1920px desktop Home fills the viewport with balanced sections and fixed footer', async ({ page }) => {
+  for (const viewport of [
+    { width: 1775, height: 864 },
+    { width: 1920, height: 900 },
+    { width: 1920, height: 1080 },
+  ]) {
+    for (const lang of ['en', 'bn']) {
+      await page.setViewportSize(viewport);
+      await page.goto('/?action=landing&lang=' + lang);
+      await page.evaluate(async () => { await document.fonts.ready; });
+      const geometry = await page.evaluate(() => {
+        const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+        const cells = [...document.querySelectorAll('.public-benefits__item')].map(el => ({
+          top: el.getBoundingClientRect().top,
+          height: el.getBoundingClientRect().height,
+          scrollHeight: el.scrollHeight,
+          clientHeight: el.clientHeight,
+        }));
+        const header = rect('.public-home-header');
+        const hero = rect('.public-hero-carousel');
+        const search = rect('.public-record-discovery');
+        const benefits = rect('.public-benefits');
+        const footer = rect('.public-footer');
+        return {
+          headerBottom: header.bottom,
+          heroTop: hero.top,
+          heroHeight: hero.height,
+          heroWidth: hero.width,
+          searchWidth: search.width,
+          benefitsWidth: benefits.width,
+          footerTop: footer.top,
+          footerBottom: footer.bottom,
+          gapBelowBenefits: footer.top - benefits.bottom,
+          searchGap: search.top - hero.bottom,
+          benefitsGap: benefits.top - search.bottom,
+          documentHeight: document.documentElement.scrollHeight,
+          viewportHeight: window.innerHeight,
+          overflowX: document.documentElement.scrollWidth - window.innerWidth,
+          cells,
+        };
+      });
+      expect(geometry.heroWidth, JSON.stringify({viewport, lang, geometry})).toBeGreaterThanOrEqual(1299);
+      expect(geometry.heroWidth).toBeLessThanOrEqual(1301);
+      expect(Math.abs(geometry.heroWidth - geometry.searchWidth)).toBeLessThanOrEqual(2);
+      expect(Math.abs(geometry.heroWidth - geometry.benefitsWidth)).toBeLessThanOrEqual(2);
+      expect(geometry.headerBottom).toBeLessThan(geometry.heroTop);
+      expect(geometry.heroHeight).toBeGreaterThanOrEqual(210);
+      expect(geometry.searchGap).toBeGreaterThanOrEqual(12);
+      expect(geometry.searchGap).toBeLessThanOrEqual(24);
+      expect(geometry.benefitsGap).toBeGreaterThanOrEqual(12);
+      expect(geometry.benefitsGap).toBeLessThanOrEqual(24);
+      expect(geometry.gapBelowBenefits).toBeGreaterThanOrEqual(0);
+      expect(geometry.gapBelowBenefits).toBeLessThanOrEqual(32);
+      expect(geometry.footerTop).toBeGreaterThan(geometry.headerBottom);
+      expect(Math.abs(geometry.footerBottom - viewport.height)).toBeLessThanOrEqual(2);
+      expect(geometry.documentHeight - geometry.viewportHeight).toBeLessThanOrEqual(2);
+      expect(geometry.overflowX).toBeLessThanOrEqual(2);
+      expect(geometry.cells).toHaveLength(6);
+      expect(Math.max(...geometry.cells.map(c=>c.height)) - Math.min(...geometry.cells.map(c=>c.height))).toBeLessThanOrEqual(2);
+      expect(geometry.cells.every(c=>c.scrollHeight <= c.clientHeight + 2)).toBe(true);
+      await expect(page.getByRole('searchbox', {name: lang==='bn'
+        ? 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন' : 'Search payment records by reference'})).toBeVisible();
+      await expect(page.locator('.public-hero-carousel__slide')).toHaveCount(5);
+    }
+  }
+});
+
