@@ -219,9 +219,11 @@ jobs:
         run: npx playwright test tests/e2e/payment-suggestions-prefill.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
       - name: Verify unified recipient-first empty and populated preview dashboards
         env:
-          VITE_SUPABASE_DISABLED: 'true'
-          VITE_SUPABASE_URL: ''
-          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+          # The dashboard requires an owner-scoped capability and history API.
+          # Requests are intercepted by Playwright; .invalid never targets production.
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://dashboard-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
         run: npx playwright test tests/e2e/dashboard-unified-preview.spec.ts --project=desktop-1280 --project=mobile-375
       - name: Verify shared public and signed-in mobile navigation parity
         env:
