@@ -159,7 +159,7 @@ export const BentoPaymentAnalytics:React.FC<{
         {filtered.unclassified.recipientKnownMinor>0n&&
           <p className="taxpay-recipient-snapshot__notice">{tr('Some recipients have no saved relationship yet. Add a relationship for clearer reporting.','কিছু প্রাপকের সংরক্ষিত সম্পর্ক নেই। আরও স্পষ্ট তথ্যের জন্য সম্পর্ক যোগ করুন।')}</p>}
       </div>
-        <details className="taxpay-recipient-extra">
+        <details className="taxpay-recipient-extra" data-testid="dashboard-recipient-advanced">
           <summary>{tr('Relationship filters and details','সম্পর্কের ফিল্টার ও বিস্তারিত')}</summary>
         <div className="taxpay-bento-analytics__view-switch" role="group"
           aria-label={tr('Beneficiary chart view','উপকারভোগীর চার্টের ধরন')} data-testid="dashboard-beneficiary-view">

@@ -64,7 +64,16 @@ function readHistoryFilters(ownerUid:string):StoredHistoryFilters {
  * Each beneficiary allocation keeps its own TIN, assessment year, head and
  * amount; never present the combined batch total as an individual's payment.
  */
-export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: string; language: 'en'|'bn' }) {
+type AccountBeneficiaryHistoryProps = { ownerUid: string; language: 'en'|'bn' };
+
+/** Remount the private history when the owner changes. State and session-scoped
+ * filters from account A must never render, even briefly, under account B.
+ */
+export function AccountBeneficiaryHistory(props: AccountBeneficiaryHistoryProps) {
+  return <AccountBeneficiaryHistoryForOwner key={props.ownerUid} {...props} />;
+}
+
+function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBeneficiaryHistoryProps) {
   const [rows,setRows]=useState<BeneficiaryPaymentEntry[]>([]);
   const {startPaymentReuse,startBeneficiarySave,navigate}=useTaxState();
   const profile=usePaymentAccountProfile(ownerUid,null);
@@ -173,7 +182,7 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
       const csv=buildAccountBeneficiaryHistoryCsv(filtered,language);
       const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
       const link=document.createElement('a');
-      link.href=url;link.download='Korbritto_payment_history.csv';
+      link.href=url;link.download='Sohojkor_payment_history.csv';
       document.body.appendChild(link);link.click();link.remove();
       window.setTimeout(()=>URL.revokeObjectURL(url),0);
     }catch{

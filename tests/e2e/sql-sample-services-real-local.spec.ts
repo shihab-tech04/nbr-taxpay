@@ -26,10 +26,19 @@ test('user6 sees stored advance-tax installments and matching SQL profile', asyn
   await expect(panel.getByRole('table').getByText('SAMPLE-SRV-018')).toBeVisible();
   await expect(panel.getByText('SAMPLE-SRV-023')).toHaveCount(0);
   await expect(panel.getByText('Service records unavailable')).toHaveCount(0);
-  await expect(page.getByText('Government challan: Not available')).toBeVisible();
+  // SQL service activity is not evidence of an issued challan or verified tax credit.
+  await expect(panel.getByText('Based on recorded activity. Dues and tax credits are not verified.')).toBeVisible();
   await page.goto('/?action=account_profile');
-  await expect(page.getByText('6666666666666', { exact: true })).toBeVisible();
-  await expect(page.getByText('Advance tax and instalment review')).toBeVisible();
+  // A 13-digit fictional service reference is not an issued TIN. The same
+  // approved User1 profile template must still render owner-specific metadata.
+  const profile=page.getByTestId('user1-taxpayer-profile');
+  await expect(page.getByRole('heading',{name:'Taxpayer profile'})).toBeVisible();
+  await expect(profile).toContainText('Account: user6');
+  await expect(profile.locator('[data-profile-field="tin"]')).toContainText('Not available');
+  await expect(profile.getByRole('button',{name:'Copy TIN'})).toBeDisabled();
+  await expect(profile.locator('[data-profile-field]')).toHaveCount(24);
+  await expect(profile.getByTestId('profile-jurisdiction-card')).toBeVisible();
+  await expect(profile).not.toContainText('6666666666666');
 });
 
 test('user8 begins with no saved activity or personal tax profile; user6 data stays isolated', async ({ page }) => {
@@ -44,9 +53,14 @@ test('user8 begins with no saved activity or personal tax profile; user6 data st
   }
   await expect(panel.getByText('Service records unavailable')).toHaveCount(0);
   await page.goto('/?action=account_profile');
-  await expect(page.getByText('8888888888888', { exact: true })).toBeVisible();
-  await expect(page.getByText('Payment Exception 08')).toHaveCount(0);
-  await expect(page.getByText('Account type')).toBeVisible();
+  const profile=page.getByTestId('user1-taxpayer-profile');
+  await expect(profile).toContainText('Account: user8');
+  await expect(profile.locator('[data-profile-field="tin"]')).toContainText('Not available');
+  await expect(profile.getByRole('button',{name:'Copy TIN'})).toBeDisabled();
+  await expect(profile.locator('[data-profile-field]')).toHaveCount(24);
+  await expect(profile.getByTestId('profile-personal-card')).toBeVisible();
+  await expect(profile.getByText('Payment Exception 08')).toHaveCount(0);
+  await expect(profile).not.toContainText('6666666666666');
 });
 
 test('user1 Activity keeps its approved transaction register without appended SQL sample panels', async ({ page }) => {

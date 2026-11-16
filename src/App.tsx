@@ -46,6 +46,7 @@ const CorrectionRequests = React.lazy(() => import('./components/screens/Correct
 const CorrectionInquiries = React.lazy(() => import('./components/screens/CorrectionInquiries').then(module => ({ default: module.CorrectionInquiries })));
 const NotificationsView = React.lazy(() => import('./components/screens/NotificationsView').then(module => ({ default: module.NotificationsView })));
 const AccountCenter = React.lazy(() => import('./components/screens/AccountCenter').then(module => ({ default: module.AccountCenter })));
+const UnifiedTaxpayerProfilePage = React.lazy(() => import('./components/screens/UnifiedTaxpayerProfilePage').then(module => ({ default: module.UnifiedTaxpayerProfilePage })));
 const ManageAuthorization = React.lazy(() => import('./components/screens/ManageAuthorization').then(module => ({ default: module.ManageAuthorization })));
 const PaymentServicesPage = React.lazy(() => import('./components/screens/PaymentServicesPage').then(module => ({ default: module.PaymentServicesPage })));
 const OntologyView = React.lazy(() => import('./components/screens/OntologyView').then(module => ({ default: module.OntologyView })));
@@ -137,7 +138,7 @@ const MainRouter: React.FC = () => {
     }
     // Fictional user1 has a unified read-only story across all taxpayer views.
     // Only public demoUser=user1, never a signed-in account or financial backend.
-    if ((sampleJourneysEnabled || previewAccount) && demoUser?.id === 'user1' && !verifiedApplicationUser && user1DemoRoutes.includes(currentRoute)) {
+    if ((sampleJourneysEnabled || previewAccount) && demoUser?.id === 'user1' && !verifiedApplicationUser && (currentRoute !== 'account_profile' || !previewAccount) && user1DemoRoutes.includes(currentRoute)) {
       return <User1DemoExperience route={currentRoute} activityTabs={showActivitySections} onResumePaymentDraft={resumeDashboardPayment} />;
     }
     switch (currentRoute) {
@@ -199,7 +200,7 @@ const MainRouter: React.FC = () => {
       case 'account_notifications':
         return <AccountCenter page="notifications" />;
       case 'account_profile':
-        return <AccountCenter page="profile" />;
+        return previewAccount && !verifiedApplicationUser ? <UnifiedTaxpayerProfilePage /> : <AccountCenter page="profile" />;
       case 'account_settings':
         return <AccountCenter page="settings" />;
       case 'manage_authorization':
@@ -221,7 +222,7 @@ const MainRouter: React.FC = () => {
   };
 
   return (
-    <div lang={language} className={`taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}${!taxpayerReference ? " taxpay-public-mobile-shell" : ""}`}>
+    <div lang={language} className={`taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${taxpayerReference && !privateSampleGate && (verifiedApplicationUser || previewAccount) ? " taxpay-authenticated-content" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}${!taxpayerReference ? " taxpay-public-mobile-shell" : ""}`}>
       {publicInformationRoute ? <>
         <div className="taxpay-public-desktop-navigation"><PublicHomeHeader /></div>
         <div className="taxpay-public-mobile-navigation"><CitizenNavigation /></div>

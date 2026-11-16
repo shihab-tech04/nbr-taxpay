@@ -36,7 +36,7 @@ test('published payment picker uses the approved signed-in lists without email g
   const picker=readFileSync('src/components/screens/SavedBeneficiaryPicker.tsx','utf8');
   const app=readFileSync('src/App.tsx','utf8');
   const login=readFileSync('src/components/screens/TaxpayerLoginDialog.tsx','utf8');
-  assert.match(picker,/loadBeneficiaries\(user\?\.id\?\?null\)/);
+  assert.match(picker,/loadBeneficiaries\(user\?\.id\?\?null,\{forceFresh:true\}\)/);
   assert.doesNotMatch(picker,/accountRequired|Sign in with your email/);
   assert.match(app,/previewReadOnlyRoutes\.has\(currentRoute\) \|\| currentRoute === 'beneficiaries'/);
   assert.doesNotMatch(app,/verifiedOnly/);

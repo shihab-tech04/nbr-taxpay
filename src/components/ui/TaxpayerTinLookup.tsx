@@ -156,7 +156,10 @@ export function TaxpayerTinLookup({
             onChange={event => {
               const next = event.target.value.replace(/\D/g, '').slice(0, maxTinLength);
               change(next);
-              setShowSuggestions(Boolean(next && suggestedTins?.length));
+              // A full-length 12- or 13-digit TIN is ready for the separate Search action.
+              // Close the optional popup so it cannot cover that action in a
+              // narrow dialog; partial TINs still offer suggestions/keyboard use.
+              setShowSuggestions(Boolean(next && suggestedTins?.length && next.length < 12));
             }} />
           {Boolean(tin) && !locked && <button type="button"
             className="taxpayer-tin-lookup__clear taxpay-taxpayer-row__tin-clear"
@@ -176,9 +179,9 @@ export function TaxpayerTinLookup({
           style={{position:suggestionLayout.inDialog?'absolute':'fixed',top:suggestionLayout.top,
             left:suggestionLayout.left,width:suggestionLayout.width,right:'auto',bottom:'auto',
             maxHeight:suggestionLayout.maxHeight,zIndex:9999}}
-          aria-label={bn ? 'প্রস্তাবিত টিআইএন' : 'Suggested TIN numbers'}>
+          aria-label={bn ? 'নমুনা টিআইএন — সরকারি যাচাইকৃত নয়' : 'Sample TIN suggestions — not NBR verified'}>
           <p className="taxpayer-tin-lookup__suggestions-heading" role="presentation">
-            {bn ? 'প্রস্তাবিত টিআইএন নম্বর' : 'Suggested TIN numbers'}
+            {bn ? 'নমুনা টিআইএন নম্বর — NBR যাচাইকৃত নয়' : 'Sample TIN numbers — not verified NBR records'}
           </p>
           {options.map(option => <button key={option} type="button" role="option"
             aria-selected={tin === option} onMouseDown={event => event.preventDefault()}

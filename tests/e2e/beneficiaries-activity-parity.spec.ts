@@ -60,6 +60,18 @@ for(const language of ['en','bn'] as const){
     await expect(screen.locator('.taxpay-office-register__count')).toContainText('2');
     const directory=screen.getByTestId('beneficiary-records');
     await expect(directory).toBeVisible();
+    // Same compact heading + Search + Filter layout as Transaction History.
+    // The selected list belongs in the filter panel, not the toolbar.
+    if(page.viewportSize()!.width>=1180){
+      const toolbar=screen.locator('.beneficiary-register-frame > .taxpay-office-register__toolbar');
+      const bounds=await toolbar.boundingBox();
+      expect(bounds?.height,'Beneficiaries toolbar must match compact Transaction History height').toBeLessThanOrEqual(90);
+      await expect(toolbar.getByRole('button',{name:t('Selected list','নির্বাচিত তালিকা')})).toHaveCount(0);
+      await expect(filters.getByRole('button',{name:t('Selected list','নির্বাচিত তালিকা')})).toBeVisible();
+      await expect(screen.locator('.beneficiary-register-frame > .beneficiary-directory__count')).toBeHidden();
+      await expect(directory.locator('thead').getByRole('checkbox',{
+        name:t('Select all visible beneficiaries','দেখানো সব উপকারভোগী নির্বাচন')})).toBeVisible();
+    }
     const rows=directory.locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
     await expect(rows).toHaveCount(2);
     await expect(rows.first()).toContainText('Shihab');
@@ -79,7 +91,12 @@ for(const language of ['en','bn'] as const){
     if(page.viewportSize()!.width>=768)expect(theme.headerMinHeight).toBeGreaterThanOrEqual(44);
     else await expect(rows.first().getByRole('button',{name:t('Make payment','পেমেন্ট করুন')})).toHaveCSS('min-height','44px');
     expect(theme.rowBackground).not.toBe('transparent');
-    await expect(rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true})).toBeVisible();
+    const editAction=rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true});
+    await expect(editAction).toBeVisible();
+    if(page.viewportSize()!.width>=768){
+      await expect(editAction,'Edit must be an outlined secondary action, not a text link')
+        .toHaveCSS('border-top-width','1px');
+    }
     await expect(rows.first().getByRole('button',{name:t('Make payment','পেমেন্ট করুন')})).toBeVisible();
     await expect(rows.first().getByRole('button',{name:t('Remove Shihab','Shihab সরান')})).toHaveCount(0);
     await expect(rows.first().locator('button')).toHaveCount(2);

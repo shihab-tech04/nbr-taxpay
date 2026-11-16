@@ -17,6 +17,7 @@ import {TaxpayerFinancialKpi} from './TaxpayerFinancialKpi';
 import {AuthenticatedDashboardPosition} from './AuthenticatedDashboardPosition';
 import {CorrectionInquiries} from './CorrectionInquiries';
 import { DashboardPaymentDrafts } from './DashboardPaymentDrafts';
+import {PreviewDashboardBento} from './PreviewDashboardBento';
 import type { PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
 import {getIllustrativeDashboardYear,illustrativeDashboardYears,formatIllustrativeTaka} from '../../data/dashboardIllustrativeExample';
 
@@ -91,10 +92,11 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
   </div>;
   const csv=()=>{
     const esc=(x:string|number)=>'"'+String(x).replace(/"/g,'""')+'"';
-    const body=[['Reference','Category','Assessment year','Amount ৳','Treasury status'],...records.map(r=>[r.challanNo,r.paymentCategory,r.assessmentYear,r.totalAmount,r.isSimulatedDemo && (r.treasuryStatus==='TREASURY_SCROLLED'||r.treasuryStatus==='GATEWAY_SUCCESS')?'Treasury status not verified':r.treasuryStatus])]
+    const headings=bn?['রেফারেন্স','কর পরিশোধের ধরন','করবর্ষ','পরিমাণ ৳','ট্রেজারি অবস্থা']:['Reference','Category','Assessment year','Amount ৳','Treasury status'];
+    const body=[headings,...records.map(r=>[r.challanNo,r.paymentCategory,r.assessmentYear,r.totalAmount,r.isSimulatedDemo && (r.treasuryStatus==='TREASURY_SCROLLED'||r.treasuryStatus==='GATEWAY_SUCCESS')?(bn?'ট্রেজারি অবস্থা যাচাই করা হয়নি':'Treasury status not verified'):r.treasuryStatus])]
       .map(r=>r.map(esc).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF'+body],{type:'text/csv;charset=utf-8'}));
-    const a=document.createElement('a');a.href=url;a.download='Korbritto_transactions.csv';a.click();URL.revokeObjectURL(url);
+    const a=document.createElement('a');a.href=url;a.download='Sohojkor_transactions.csv';a.click();URL.revokeObjectURL(url);
   };
   // Fail closed: there is no verified owner/year-scoped external assessment response.
   const verifiedExternalTaxPositionReady = false;
@@ -105,6 +107,20 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
     </div>
     <button type="button" className={button} onClick={()=>navigate('services')}>{tr('View payment services','পরিশোধ সেবাসমূহ দেখুন')}<ArrowRight size={16} aria-hidden="true" className="ml-2 inline"/></button>
   </section>;
+  // Keep the approved recipient-first layout identical for fictional preview accounts.
+  // Account capability controls all payments/recipient data; empty means no owner records.
+  if (previewAccount && demoUser && !user) {
+    return <PreviewDashboardBento
+      key={previewAccount.id}
+      profileId={previewAccount.id}
+      demoUserId={demoUser.id}
+      name={visibleName}
+      language={language}
+      onNavigate={route=>navigate(route)}
+      onPay={()=>openPaymentServiceChoice()}
+      onResumePaymentDraft={onResumePaymentDraft}
+    />;
+  }
   return <div className={`mx-auto max-w-[1510px] space-y-4 pb-14 ${bn?'font-bengali':''}`}>
     <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
       <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>

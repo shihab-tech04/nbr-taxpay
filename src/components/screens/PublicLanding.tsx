@@ -244,6 +244,8 @@ export const PublicLanding: React.FC = () => {
         </p>
         {searchOpen && (
           <div className="public-record-suggestions" id="public-record-suggestions">
+            {/* The persistent live region above is the only announcement source;
+                duplicating it here causes two screen-reader announcements. */}
             {cleanReference && (
               <div className="public-record-suggestions__group">
                 <h3>{t('Matching references', 'মিলে যাওয়া রেফারেন্স')}</h3>

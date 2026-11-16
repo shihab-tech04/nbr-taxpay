@@ -3,6 +3,7 @@ import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {getStorySessionId,persistSimulatedPayment} from '../../services/simulatedPaymentStory';
 import {parsePaymentPrefill} from '../../services/paymentPrefill';
+import {paymentStatusLabel,paymentReviewStatusLabel} from '../../services/paymentStatusDisplay';
 import {copyPreviousPayment,canPayAgain,CURRENT_PAY_AGAIN_YEAR,PAY_AGAIN_YEAR_OPTIONS} from '../../services/payAgain';
 import {DEMO_USERS,type DemoUserId} from '../../data/demoUsers';
 import {sampleTinForUserNumber} from '../../data/sampleTinSuggestions';
@@ -187,7 +188,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     setLines(before=>before.map((l,i)=>i===index?{...l,[field]:value}:l));
     setNonce(crypto.randomUUID());setSubmitMessage('');
   };
-  const addLine=()=>{if(id&&lines.length<20){setLines(old=>[...old,freshLine(id)]);setNonce(crypto.randomUUID());setSubmitMessage('');}};
+  const addLine=()=>{if(id&&lines.length<20&&!lines.some(line=>line.category==='TAX_WITH_RETURN')){setLines(old=>[...old,{...freshLine(id),category:old[0]?.category??'OTHER_TAX_PAYMENT'}]);setNonce(crypto.randomUUID());setSubmitMessage('');}};
   const removeLine=(index:number)=>{if(lines.length>1){setLines(old=>old.filter((_,i)=>i!==index));setNonce(crypto.randomUUID());setSubmitMessage('');}};
   const submit=useCallback(async(e:React.FormEvent)=>{
     e.preventDefault();if(!id||saving)return;
@@ -198,6 +199,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       if(lines.some(line=>line.category==='TAX_WITH_RETURN') &&
          lines.some(line=>line.category!=='TAX_WITH_RETURN'))
         throw new Error(txt('Tax with Return cannot be combined with another tax head.','রিটার্নসহ কর অন্য করের খাতের সঙ্গে একত্রে পরিশোধ করা যাবে না।'));
+      if(lines.some(line=>line.category==='TAX_WITH_RETURN') && lines.length!==1)
+        throw new Error(txt('Tax with Return must have exactly one taxpayer and one assessment year.','রিটার্নসহ করের জন্য একজন করদাতা ও একটি করবর্ষ নির্বাচন করুন।'));
       const checked:SimulationLine[]=lines.map(l=>({
         beneficiary:l.beneficiary,category:l.category,assessmentYear:l.assessmentYear,
         amountMinor:parseSimulatedAmount(l.amount)
@@ -239,8 +242,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());setPayAgainSource(null);
         setCompletedReference(confirmed.id);setPaymentStage(3);
         setSubmitMessage((synced.mirrored
-          ? txt('Payment synchronized with Office: ','অফিসের সঙ্গে পেমেন্ট সিঙ্ক হয়েছে: ')
-          : txt('Simulation saved; Office synchronization pending: ','সিমুলেশন সংরক্ষিত; অফিস সমন্বয় অপেক্ষমাণ: '))+confirmed.id);
+          ? txt('Payment record saved. Office copy confirmed; Treasury settlement unverified: ','পেমেন্ট রেকর্ড সংরক্ষিত। অফিস কপি নিশ্চিত; ট্রেজারি নিষ্পত্তি যাচাই হয়নি: ')
+          : txt('Payment record saved. Office copy pending; Treasury settlement unverified: ','পেমেন্ট রেকর্ড সংরক্ষিত। অফিস কপি অপেক্ষমাণ; ট্রেজারি নিষ্পত্তি যাচাই হয়নি: '))+confirmed.id);
         return;
       }
       const result=privateMode?await submitPrivateSimulationPayment(checked,nonce):await submitSimulatedPayment(id,checked,nonce);
@@ -281,8 +284,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());setPayAgainSource(null);
       setCompletedReference(result.reference);setPaymentStage(3);
       setSubmitMessage((officeMirrorConfirmed
-        ? txt('Payment record saved: ','পেমেন্ট রেকর্ড সংরক্ষিত: ')
-        : txt('Simulation saved; Office synchronization pending: ','সিমুলেশন সংরক্ষিত; অফিস সমন্বয় অপেক্ষমাণ: '))+
+        ? txt('Payment record saved. Treasury settlement unverified: ','পেমেন্ট রেকর্ড সংরক্ষিত। ট্রেজারি নিষ্পত্তি যাচাই হয়নি: ')
+        : txt('Payment record saved. Office copy pending; Treasury settlement unverified: ','পেমেন্ট রেকর্ড সংরক্ষিত। অফিস কপি অপেক্ষমাণ; ট্রেজারি নিষ্পত্তি যাচাই হয়নি: '))+
         result.reference+(result.replayed?' (previous request)':''));
     }catch(err){setSubmitMessage(err instanceof Error?err.message:'Submission could not be verified');}
     finally{setSaving(false);}
@@ -408,7 +411,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
           </PaymentFormSection>
           <PaymentFormSection number={2} title={txt('Review the calculated amount','হিসাবকৃত পরিমাণ যাচাই করুন')} description={txt('You can add more allocations','আরও বরাদ্দ যোগ করতে পারেন')}>
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" disabled={lines.length>=20||saving} onClick={addLine} className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold disabled:opacity-50">{txt('Add beneficiary / category','বরাদ্দ যোগ করুন')}</button>
+          <button type="button" disabled={lines.length>=20||saving||lines.some(line=>line.category==='TAX_WITH_RETURN')} onClick={addLine} className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold disabled:opacity-50">{txt('Add beneficiary / category','বরাদ্দ যোগ করুন')}</button>
           <button type="submit" disabled={saving} className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white disabled:opacity-50">{saving?txt('Saving…','সংরক্ষণ হচ্ছে…'):txt('Save payment record','পেমেন্ট রেকর্ড সংরক্ষণ করুন')}</button>
         </div>
           </PaymentFormSection>
@@ -495,8 +498,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            {key:'amount',header:txt('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',
              renderCell:tx=><p className="whitespace-nowrap font-semibold">{formatSimulatedAmount(tx.allocations.reduce((sum,a)=>sum+a.amountMinor,0))}</p>},
            {key:'status',header:txt('Status','অবস্থা'),renderCell:tx=><div className="space-y-1">
-             <p className="font-semibold">{tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
-             <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+             <p className="font-semibold">{paymentStatusLabel(tx.state,language,true)}</p>
+             <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {paymentReviewStatusLabel(tx.reviewStatus,language)}</p>
            </div>},
            {key:'actions',header:txt('Actions','কার্যক্রম'),renderCell:tx=><div className="flex flex-wrap gap-2">
              <button type="button" onClick={()=>setSelectedPayment(tx)}
@@ -505,6 +508,9 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 rounded-lg px-3 text-sm font-medium text-taxpay-primary hover:bg-taxpay-light">
                {txt('Timeline','সময়রেখা')}</button>
+             <button type="button" onClick={()=>navigate('corrections',{originalReference:tx.id})}
+               className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
+               {txt('Request correction','সংশোধনের আবেদন')}</button>
              {canPayAgain(tx,id??'',view)&&<button type="button" data-testid="pay-again-desktop"
                onClick={e=>{e.stopPropagation();payAgain(tx);}}
                className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
@@ -519,8 +525,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            <p className="text-sm text-taxpay-muted">
              <time dateTime={tx.createdAt}>{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time> · {txt('Payer','প্রদানকারী')}: {tx.payer}
            </p>
-           <p className="text-sm">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')} · {tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
-           <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+           <p className="text-sm">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')} · {paymentStatusLabel(tx.state,language,true)}</p>
+           <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {paymentReviewStatusLabel(tx.reviewStatus,language)}</p>
            <details className="rounded-lg border border-taxpay-border p-2">
              <summary className="min-h-11 cursor-pointer text-sm font-medium">{txt('View allocations','বরাদ্দ দেখুন')}</summary>
              <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
@@ -534,6 +540,9 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
                className="min-h-11 flex-1 rounded-lg border border-taxpay-border px-3 text-sm">{txt('View details','বিস্তারিত দেখুন')}</button>
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 flex-1 rounded-lg bg-taxpay-light px-3 text-sm">{txt('Timeline','সময়রেখা')}</button>
+             <button type="button" onClick={()=>navigate('corrections',{originalReference:tx.id})}
+               className="min-h-11 w-full rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary">
+               {txt('Request correction','সংশোধনের আবেদন')}</button>
              {canPayAgain(tx,id??'',view)&&<button type="button" data-testid="pay-again-mobile"
                onClick={()=>payAgain(tx)} className="min-h-11 w-full rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary">
                {txt('Pay Again','আবার পরিশোধ')}</button>}

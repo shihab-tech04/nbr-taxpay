@@ -58,6 +58,7 @@ async function setupGuestTransport(page:Page){
 test('local sample taxpayer preserves names when moving beneficiaries across lists and prefilling',async({page})=>{
   const transport=await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
 
   await page.getByRole('button',{name:'Create list',exact:true}).click();
   let dialog=page.getByRole('dialog',{name:'Create list'});
@@ -101,6 +102,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await expect(visibleRecords.getByText('Editable Contact',{exact:true})).toBeVisible();
   expect(transport.saved().find(person=>person.tin==='987654321098')?.display_name).toBe('Editable Contact');
   await page.reload();
+  await page.getByRole('button',{name:'Filter',exact:true}).click();
   await page.getByRole('button',{name:'Selected list'}).click();
   await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Optional names',exact:true}).click();
 
@@ -218,7 +220,7 @@ test('beneficiary suggestions match Other Tax and Search reveals the same taxpay
   const lookup=dialog.getByTestId('shared-taxpayer-tin-lookup');
   await expect(dialog.getByTestId('searched-taxpayer-card')).toHaveCount(0);
   await lookup.locator('#beneficiary-tin').focus();
-  const suggestions=dialog.getByRole('listbox',{name:'Suggested TIN numbers'});
+  const suggestions=dialog.getByRole('listbox',{name:'Sample TIN suggestions — not NBR verified'});
   // Opening Add one beneficiary must not reveal all TINs on focus.
   await expect(suggestions).toHaveCount(0);
   await lookup.locator('#beneficiary-tin').fill('0');
@@ -243,7 +245,7 @@ test('beneficiary suggestions match Other Tax and Search reveals the same taxpay
   dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
   const nextLookup=dialog.getByTestId('shared-taxpayer-tin-lookup');
   await nextLookup.locator('#beneficiary-tin').focus();
-  await expect(dialog.getByRole('listbox',{name:'Suggested TIN numbers'})).toHaveCount(0);
+  await expect(dialog.getByRole('listbox',{name:'Sample TIN suggestions — not NBR verified'})).toHaveCount(0);
   await nextLookup.locator('#beneficiary-tin').fill('111111111111');
   await nextLookup.getByRole('button',{name:'Search',exact:true}).click();
   await expect(dialog.getByTestId('searched-taxpayer-card')).toContainText('User 1');

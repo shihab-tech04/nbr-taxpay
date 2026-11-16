@@ -19,7 +19,14 @@ test('reference dashboard is recipient-first with a responsive hero and accessib
     await expect(hero.getByRole('heading',{name:'Payments at a glance'})).toBeVisible();
     await expect(hero.getByRole('link',{name:'View payment history'})).toBeVisible();
     await expect(hero.locator('.taxpay-overview-feature__donut')).toBeVisible();
-    await expect(hero).toHaveCSS('background-image',/linear-gradient/);
+    await expect(hero).toHaveCSS('background-image','none');
+    await expect(hero.locator('.taxpay-overview-feature__main')).toHaveCSS('display','grid');
+    await expect(hero.locator('.taxpay-overview-feature__amount > p')).toHaveCSS('font-size','13px');
+    await expect(hero.locator('.taxpay-overview-feature__amount > p')).toHaveCSS('color','rgb(237, 245, 255)');
+    if(width>=1200){
+      const rect=await hero.boundingBox();
+      expect(rect?.height,'desktop hero must not expand to a full-page column').toBeLessThan(410);
+    }
     await expect(summary.locator('.taxpay-summary-metric')).toHaveCount(3);
     await expect(recipient.getByRole('heading',{name:'Payment relationships'})).toBeVisible();
     await expect(recipient.getByTestId('dashboard-recipient-snapshot')).toBeVisible();
@@ -42,9 +49,13 @@ test('reference dashboard is recipient-first with a responsive hero and accessib
     await expect(analytics.getByTestId('dashboard-service-breakdown')).toBeVisible();
     await expect(analytics.getByTestId('dashboard-role-breakdown')).toBeVisible();
     await details.locator('summary').click();
-    await followups.getByRole('button',{name:/Drafts/}).click();
+    const draftsTab=followups.getByRole('button',{name:/Drafts/});
+    await draftsTab.click();
+    await expect(draftsTab).toHaveAttribute('aria-pressed','true');
     await expect(followups.locator('.taxpay-bento-drafts')).toBeVisible();
+    await expect(followups.getByTestId('dashboard-payment-drafts')).toBeVisible();
     await followups.getByRole('button',{name:/Requests/}).click();
+    await expect(followups.getByRole('button',{name:/Requests/})).toHaveAttribute('aria-pressed','true');
     await expect(followups.locator('#dashboard-correction-requests')).toBeVisible();
   }
 });
@@ -112,9 +123,13 @@ test('empty recorded dashboard keeps zero values honest and follow-up tabs usabl
       else expect(t.y).toBeGreaterThan(j.y);
       expect(a.y).toBeGreaterThanOrEqual(t.y);
     }
-    await tasks.getByRole('button',{name:/Drafts/}).click();
+    const draftsTab=tasks.getByRole('button',{name:/Drafts/});
+    await draftsTab.click();
+    await expect(draftsTab).toHaveAttribute('aria-pressed','true');
     await expect(tasks.locator('.taxpay-bento-drafts')).toBeVisible();
+    await expect(tasks.getByTestId('dashboard-payment-drafts')).toBeVisible();
     await tasks.getByRole('button',{name:/Requests/}).click();
+    await expect(tasks.getByRole('button',{name:/Requests/})).toHaveAttribute('aria-pressed','true');
     await expect(tasks.locator('#dashboard-correction-requests')).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   }

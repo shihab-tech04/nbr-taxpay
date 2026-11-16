@@ -1,0 +1,46 @@
+name: Phase 7 Auth-bound recipient notices SQL acceptance
+
+on:
+  pull_request:
+    branches:
+      - ws5/v95-integrated-release-candidate-20261115
+    paths:
+      - 'supabase/migrations/20261116070000_taxpay_verified_recipient_notices.sql'
+      - 'tests/integration/phase7VerifiedRecipientNotices.sql'
+      - '.github/workflows/phase7-auth-recipient-sql.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  notice-owner-isolation:
+    name: PostgreSQL 17 verified recipient ownership and ACK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    steps:
+      - name: Checkout exact feature PR candidate
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify Auth owner, identity binding and isolation with disposable SQL
+        env:
+          PGHOST: localhost
+          PGPORT: '5432'
+          PGDATABASE: postgres
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: psql -v ON_ERROR_STOP=1 -f tests/integration/phase7VerifiedRecipientNotices.sql

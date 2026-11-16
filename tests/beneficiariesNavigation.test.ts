@@ -89,7 +89,8 @@ test('Beneficiaries uses shared controls without the retired two-card page struc
   assert.match(page,/classificationOptions/);
   assert.doesNotMatch(page,/id="beneficiary-relationship"/);
   assert.match(page,/<SearchableSelect id="beneficiary-edit-tag"/);
-  assert.doesNotMatch(page,/TaxpayerPageHeading|taxpayer-account-center|taxpayer-account-panel/);
+  assert.match(page,/<TaxpayerPageHeading/);
+  assert.doesNotMatch(page,/taxpayer-account-center|taxpayer-account-panel/);
   // One column definition supplies semantic desktop columns and accessible
   // mobile cards, without duplicating business logic or losing actions.
   assert.match(page,/taxpayer-transaction-list beneficiary-directory/);

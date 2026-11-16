@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, FileText, RefreshCw, Trash2 } from 'lucide-react';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import {
   deletePaymentFormDraft, listPaymentFormDrafts,
-  type PaymentFormDraft, type PaymentDraftActor,
+  type PaymentFormDraft, type PaymentDraftActor, paymentDraftOwnerScope,
 } from '../../services/accountPaymentFormDrafts';
 import { assertResumablePaymentDraft } from './PaymentDraftEntryGate';
 
 type Catalog = {
   ownerKey: string;
+  generation: number;
   status: 'loading' | 'ready' | 'error';
   rows: PaymentFormDraft[];
 };
@@ -29,9 +30,24 @@ export const DashboardPaymentDrafts: React.FC<{
   const actor: PaymentDraftActor | null = user
     ? { kind: 'authenticated', userId: user.id }
     : previewAccount ? { kind: 'preview', profileId: previewAccount.id } : null;
-  const ownerKey = actor ? actor.kind + ':' +
-    (actor.kind === 'authenticated' ? actor.userId : actor.profileId) : '';
-  const [catalog, setCatalog] = useState<Catalog>({ ownerKey: '', status: 'loading', rows: [] });
+  const ownerKey = paymentDraftOwnerScope(actor);
+  // SQL readback can finish after sign-out, account switching or unmount.
+  // Bind each action to the owner active at the time it started.
+  const latestOwner = useRef({key:ownerKey,generation:0});
+  // Owner strings may cycle A -> B -> A while an earlier fetch is pending.
+  // A generation also protects retry and delete callbacks without an effect guard.
+  if(latestOwner.current.key!==ownerKey)
+    latestOwner.current={key:ownerKey,generation:latestOwner.current.generation+1};
+  const requestGeneration=latestOwner.current.generation;
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const sameOwner = () => mounted.current &&
+    latestOwner.current.key===ownerKey &&
+    latestOwner.current.generation===requestGeneration;
+  const [catalog, setCatalog] = useState<Catalog>({ ownerKey: '', generation: -1, status: 'loading', rows: [] });
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,41 +60,61 @@ export const DashboardPaymentDrafts: React.FC<{
     if (isPaymentServiceChoiceOpen) return () => { active = false; };
     // Preserve the rendered cards while the dialog opens and during its close refresh.
     // Clear old rows immediately only when the account owner changes.
-    setCatalog(previous => previous.ownerKey === ownerKey && previous.status === 'ready'
-      ? previous : { ownerKey, status: 'loading', rows: [] });
+    setCatalog(previous => previous.ownerKey === ownerKey &&
+      previous.generation === requestGeneration && previous.status === 'ready'
+      ? previous : { ownerKey, generation: requestGeneration, status: 'loading', rows: [] });
     setPendingDelete(null);
     setBusyId(null);
     setError(null);
     if (!actor || authLoading) return () => { active = false; };
     void listPaymentFormDrafts(actor).then(rows => {
-      if (active) setCatalog({ ownerKey, status: 'ready', rows });
+      if (active && sameOwner()) setCatalog({ ownerKey, generation: requestGeneration, status: 'ready', rows });
     }).catch(() => {
-      if (active) setCatalog({ ownerKey, status: 'error', rows: [] });
+      if (active && sameOwner()) setCatalog({ ownerKey, generation: requestGeneration, status: 'error', rows: [] });
     });
     return () => { active = false; };
     // Recheck only on identity or modal lifecycle changes, not ordinary rerenders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownerKey, authLoading, isPaymentServiceChoiceOpen]);
+  }, [ownerKey, requestGeneration, authLoading, isPaymentServiceChoiceOpen]);
 
   // The Overview quick link is shown only when this account owns saved drafts.
   // Reuse the already loaded catalog: never duplicate SQL reads or share owners.
   useEffect(() => {
-    onCountChange?.(catalog.ownerKey === ownerKey && catalog.status === 'ready' ? catalog.rows.length : null);
-  }, [catalog.ownerKey, catalog.status, catalog.rows.length, ownerKey, onCountChange]);
+    onCountChange?.(catalog.ownerKey === ownerKey && catalog.generation === requestGeneration && catalog.status === 'ready' ? catalog.rows.length : null);
+  }, [catalog.ownerKey, catalog.generation, catalog.status, catalog.rows.length, ownerKey, requestGeneration, onCountChange]);
 
-  if (!actor || authLoading ||
-      (catalog.ownerKey !== ownerKey && catalog.status !== 'loading')) return null;
+  const catalogOwnerChanged = catalog.ownerKey !== ownerKey || catalog.generation !== requestGeneration;
+  const catalogOwnerMatches = !catalogOwnerChanged;
+  const statusPanel = (message: string, busy = false) => <section id="dashboard-payment-drafts" tabIndex={-1}
+    data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
+    aria-busy={busy ? 'true' : undefined}
+    className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5">
+    <div className="flex items-center gap-2">
+      <FileText size={20} className="text-taxpay-primary" aria-hidden="true" />
+      <h2 id="dashboard-payment-drafts-title" className="text-lg font-semibold text-taxpay-text">
+        {tr('Saved payment drafts', 'সংরক্ষিত পেমেন্ট খসড়া')}
+      </h2>
+    </div>
+    <p className="mt-3 text-sm text-taxpay-muted" role="status" aria-live="polite">{message}</p>
+  </section>;
+
+  // Keep the selected Follow-ups panel useful while identity loads or changes.
+  // Never show a previous owner's rows, and never leave an empty tab.
+  if (authLoading) return statusPanel(tr('Loading saved payment drafts…', 'সংরক্ষিত পেমেন্ট খসড়া লোড হচ্ছে…'), true);
+  if (!actor) return statusPanel(tr('Sign in to view this account’s saved drafts.', 'এই অ্যাকাউন্টের সংরক্ষিত খসড়া দেখতে সাইন ইন করুন।'));
+  if (!catalogOwnerMatches && catalog.status !== 'loading')
+    return statusPanel(tr('Loading saved payment drafts…', 'সংরক্ষিত পেমেন্ট খসড়া লোড হচ্ছে…'), true);
 
   const retry = () => {
     if (busyId) return;
-    setCatalog({ ownerKey, status: 'loading', rows: [] });
+    setCatalog({ ownerKey, generation: requestGeneration, status: 'loading', rows: [] });
     setError(null);
     void listPaymentFormDrafts(actor).then(rows => {
-      setCatalog(previous => previous.ownerKey === ownerKey
-        ? { ownerKey, status: 'ready', rows } : previous);
+      if (sameOwner()) setCatalog(previous => previous.ownerKey === ownerKey && previous.generation === requestGeneration
+        ? { ownerKey, generation: requestGeneration, status: 'ready', rows } : previous);
     }).catch(() => {
-      setCatalog(previous => previous.ownerKey === ownerKey
-        ? { ownerKey, status: 'error', rows: [] } : previous);
+      if (sameOwner()) setCatalog(previous => previous.ownerKey === ownerKey && previous.generation === requestGeneration
+        ? { ownerKey, generation: requestGeneration, status: 'error', rows: [] } : previous);
     });
   };
 
@@ -87,12 +123,13 @@ export const DashboardPaymentDrafts: React.FC<{
     setBusyId(draft.id); setError(null); setPendingDelete(null);
     try {
       const current = (await listPaymentFormDrafts(actor)).find(item => item.id === draft.id);
+      if (!sameOwner()) return;
       if (!current) throw new Error(tr('This draft is no longer available. Refresh your drafts.', 'এই খসড়াটি আর পাওয়া যাচ্ছে না। খসড়াগুলো নতুন করে লোড করুন।'));
       assertResumablePaymentDraft(current, language);
-      onResume(current);
+      if (sameOwner()) onResume(current);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : tr('Draft could not be opened.', 'খসড়া খোলা যায়নি।'));
-    } finally { setBusyId(null); }
+      if (sameOwner()) setError(reason instanceof Error ? reason.message : tr('Draft could not be opened.', 'খসড়া খোলা যায়নি।'));
+    } finally { if (sameOwner()) setBusyId(null); }
   };
 
   const remove = async (draft: PaymentFormDraft) => {
@@ -102,17 +139,20 @@ export const DashboardPaymentDrafts: React.FC<{
     try {
       // SQL enforces owner and revision; a changed draft is not silently deleted.
       await deletePaymentFormDraft(actor, draft);
-      setCatalog(previous => previous.ownerKey === ownerKey
+      if (!sameOwner()) return;
+      setCatalog(previous => previous.ownerKey === ownerKey && previous.generation === requestGeneration
         ? { ...previous, rows: previous.rows.filter(item => item.id !== draft.id) }
         : previous);
       setPendingDelete(null);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : tr('Draft could not be deleted.', 'খসড়া মুছে ফেলা যায়নি।'));
-      setPendingDelete(null);
-    } finally { setBusyId(null); }
+      if (sameOwner()) {
+        setError(reason instanceof Error ? reason.message : tr('Draft could not be deleted.', 'খসড়া মুছে ফেলা যায়নি।'));
+        setPendingDelete(null);
+      }
+    } finally { if (sameOwner()) setBusyId(null); }
   };
 
-  const loading = catalog.ownerKey !== ownerKey || catalog.status === 'loading';
+  const loading = !catalogOwnerMatches || catalog.status === 'loading';
 
   return <section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
     className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5">
