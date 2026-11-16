@@ -409,7 +409,12 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
     if(!await again.locator('#beneficiary-list').isVisible())
       await again.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     await again.locator('#beneficiary-list').click();
-    await again.locator('#beneficiary-list-menu').getByRole('button',{name:names.others,exact:true}).click();
+    // The open mobile picker is a fixed-position popover. It must sit above
+    // the sticky header and mobile bottom nav rather than trapping list actions.
+    await expect.poll(async()=>Number(await again.locator('.beneficiary-directory__list-filter .beneficiary-list-picker').evaluate(
+      picker=>getComputedStyle(picker).zIndex
+    ))).toBeGreaterThan(55);
+    await again.locator('#beneficiary-list-menu').getByRole('button',{name:names.others,exact:true}).click({timeout:15000});
     await expect(again.getByTestId('beneficiary-records')).toContainText('Professional contact');
     await expect(again.getByTestId('beneficiary-records')).toContainText('Community representative');
 
