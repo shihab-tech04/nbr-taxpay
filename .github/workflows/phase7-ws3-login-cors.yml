@@ -35,8 +35,18 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
           VITE_SUPABASE_DISABLED: 'false'
-          VITE_SUPABASE_URL: 'https://example.invalid'
-          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_isolated_phase7_qa'
+          VITE_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
         run: npm run build
       - name: Verify production routes and cross-origin response with disposable fixtures
         run: npx playwright test --config playwright.production.config.ts
+      - name: Retain failure diagnostics from disposable browser tests
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase7-ws3-login-failure-evidence
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
