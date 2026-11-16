@@ -1406,6 +1406,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setCreatedReceipt(null); setAttemptReceipt(null); setPaymentPhase('review'); setLifecycleStages([]);
     setAcknowledged(false); setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setOtherTaxLines([]); setAdditionalTaxpayers([]); setConfirmedOtherTaxTins({}); setAuthorizedTaxpayerIds({});
+    // A new checkout is not a repeat payment: discard immutable source provenance.
+    setSourcePaymentId(null); setSourceAllocationIds([]);
     setAuthorizedTaxpayerId(null); setTin(''); setOtherTaxpayerName('');
     setShowReceiptDetails(false); setErrorMessage(''); setStep(1);
   };

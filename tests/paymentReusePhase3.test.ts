@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {V11_PAYMENT_OPTIONS} from '../src/data/v11PaymentOptions.ts';
 import {prepareCombinedOtherTaxPayment} from '../src/services/otherTaxCombinedPayment.ts';
@@ -230,4 +231,12 @@ test('Phase 3: Return head hidden under a non-Return parent is refused without m
       /Tax with Return cannot be combined/);
     assert.equal(JSON.stringify(damaged),untouched);
   }
+});
+
+test('Phase 3: starting another checkout clears immutable Pay Again provenance',()=>{
+  const source=readFileSync(new URL('../src/components/screens/GuestPayment.tsx',import.meta.url),'utf8');
+  const reset=source.split('const startAnotherBatch = () => {')[1]?.split('\n  };')[0];
+  assert.ok(reset,'new checkout reset handler must exist');
+  assert.match(reset,/setSourcePaymentId\(null\)/);
+  assert.match(reset,/setSourceAllocationIds\(\[\]\)/);
 });
