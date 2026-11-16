@@ -189,7 +189,9 @@ test('public mobile footer stays compact and the floating Pay action remains rea
   }).toBeLessThan(812*.8);
 });
 
-test('426px scrolled mobile footer is one compact white row above the floating Pay control',async({page})=>{
+test('426px scrolled mobile footer is one compact white row above the floating Pay control',async({page},testInfo)=>{
+  // This geometry contract requires a mobile browser context; resizing desktop is not equivalent.
+  test.skip(!testInfo.project.name.startsWith('mobile-'),'Mobile footer geometry requires a mobile browser project');
   await page.setViewportSize({width:426,height:882});
   await page.goto('/?action=landing&lang=en');
   await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));

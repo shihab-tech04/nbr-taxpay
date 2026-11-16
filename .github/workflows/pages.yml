@@ -61,7 +61,7 @@ jobs:
           persist-credentials: false
       - name: Check verifier regression cases
         run: |
-          node --test scripts/ci/verified-merge-release.test.mjs scripts/ci/hybrid-cutover-gate.test.mjs
+          node --test scripts/ci/verified-merge-release.test.mjs scripts/ci/hybrid-cutover-gate.test.mjs scripts/ci/sohojkor-v2-cutover-gate.test.mjs
       - name: Confirm exact-source PR acceptance and review artifact
         id: probe
         env:
@@ -119,6 +119,13 @@ jobs:
         run: |
           node scripts/ci/hybrid-cutover-gate.mjs
           npm run build
+      - name: Verify V2 fictional account boundaries against the hosted Edge API
+        if: github.event_name == 'pull_request'
+        env:
+          SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
+        run: |
+          node --test scripts/ci/sohojkor-v2-demo-smoke.test.mjs
+          node scripts/ci/sohojkor-v2-demo-smoke.mjs
       - name: Enforce approved public startup transfer budget
         run: |
           node scripts/ci/check-public-startup-budget.mjs
