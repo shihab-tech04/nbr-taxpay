@@ -32,7 +32,8 @@ test('navigation, language, beneficiary list, payment start and profile save use
  assert.match(state,/recordAccountActivity\(accountUser\.id,'LANGUAGE_CHANGED',lang\)/);
  assert.match(beneficiaries,/recordAccountActivity\(owner,'BENEFICIARY_LIST_SELECTED','beneficiaries'\)/);
  assert.match(payment,/recordAccountActivity\(verifiedUser\.id,'PAYMENT_STARTED','wizard'\)/);
- assert.match(profile,/recordAccountActivity\(user\.id,'PROFILE_SAVED','account_settings'\)/);
+ assert.match(profile,/recordAccountActivity\(requestUid,'PROFILE_SAVED','account_settings'\)/);
+ assert.match(profile,/if \(!isCurrentUid\(requestUid\)\) return;/);
  assert.match(profile,/<AccountRecentActivity ownerUid=\{user\.id\} language=\{language\}/);
 });
 
@@ -42,4 +43,19 @@ test('activity presentation localizes saved route and language values',()=>{
  assert.match(screen,/bn:\{en:'Bangla',bn:'বাংলা'\}/);
  assert.match(screen,/beneficiaries:\{en:'Beneficiaries',bn:'উপকারভোগী'\}/);
  assert.doesNotMatch(screen,/row\.route\.replaceAll/);
+});
+
+test('M02 F-017 sign-out rechecks Auth owner after asynchronous settings flush and prevents stale account navigation',()=>{
+ const identity=readFileSync('src/services/accountIdentity.ts','utf8');
+ const account=readFileSync('src/components/screens/AccountCenter.tsx','utf8');
+ assert.match(identity,/const signingOutUid=current\.user\?\.id\?\?null/);
+ assert.match(identity,/flushAccountViewPreferences\(signingOutUid\)/);
+ assert.match(identity,/const \{data:beforeSignOut,error:sessionError\}=await supabase\.auth\.getUser\(\)/);
+ assert.match(identity,/\(beforeSignOut\.user\?\.id\?\?null\)!==signingOutUid/);
+ assert.match(identity,/supabase\.auth\.signOut\(\{scope:'local'\}\)/);
+ assert.ok(identity.indexOf('beforeSignOut.user') < identity.indexOf("supabase.auth.signOut({scope:'local'})"),
+   'must check the latest Auth owner before local session revocation');
+ assert.match(account,/const requestUid=user\.id;\s*setBusy\(true\); setFeedback\(null\);\s*try \{\s*const result = await signOutApplicationAccount\(\)/);
+ assert.match(account,/if\(currentUidRef\.current && !isCurrentUid\(requestUid\)\)return/);
+ assert.match(account,/if\(!currentUidRef\.current \|\| isCurrentUid\(requestUid\)\)setBusy\(false\)/);
 });

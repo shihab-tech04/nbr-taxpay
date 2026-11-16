@@ -19,6 +19,7 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
   await expect(dialog.getByText('Forgot your details?')).toBeVisible();
   await dialog.getByRole('button',{name:'Recover Account'}).click();
   await expect(dialog.getByRole('status')).toContainText('password is the same as the User ID');
+  await expect(dialog.getByRole('status')).toContainText('user1–user30');
   await dialog.getByRole('button',{name:'Show password'}).click();
   await expect(dialog.getByLabel('Password', {exact:true})).toHaveAttribute('type','text');
   await dialog.getByRole('button',{name:'Hide password'}).click();
@@ -30,9 +31,66 @@ test('public Login opens the eTIN-style TaxPay-only popup; invalid credentials s
   await expect(dialog.getByRole('alert')).toContainText('Incorrect User ID or password');
   await expect(page).toHaveURL(/action=taxpayer_login/);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
+  const userIdInput=dialog.locator('#taxpayer-login-user-id');
+  // An invalid login refocuses User ID and reopens suggestions: first Escape
+  // closes those choices; second Escape dismisses the existing shared modal.
+  await expect(userIdInput).toHaveAttribute('aria-expanded','true');
+  await page.keyboard.press('Escape');
+  await expect(userIdInput).toHaveAttribute('aria-expanded','false');
+  await expect(dialog).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(page).toHaveURL(/action=landing/);
+});
+
+test('user1-user30 selector filters, keyboard-selects, fills only QA credentials and dismisses',async({page})=>{
+  await page.goto('/?action=taxpayer_login');
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+  const input=dialog.getByRole('textbox',{name:'User ID'});
+  await input.focus();
+  await expect(input).toHaveAttribute('aria-expanded','true');
+  const allAccounts=dialog.getByRole('listbox',{name:'Test accounts'});
+  await expect(allAccounts.getByRole('option')).toHaveCount(30);
+  // The first ArrowUp wraps to the final account and must scroll inside the
+  // list; a keyboard user should never lose sight of the active option.
+  await input.press('ArrowUp');
+  await expect(input).toHaveAttribute('aria-activedescendant','taxpayer-login-account-user30');
+  await expect.poll(()=>allAccounts.evaluate(element=>element.scrollTop)).toBeGreaterThan(0);
+  await input.press('ArrowDown');
+  await expect(input).toHaveAttribute('aria-activedescendant','taxpayer-login-account-user1');
+  await input.fill('user30');
+  const list=dialog.getByRole('listbox',{name:'Test accounts'});
+  await expect(list.getByRole('option')).toHaveCount(1);
+  await input.press('ArrowDown');
+  await input.press('Enter');
+  await expect(input).toHaveValue('user30');
+  await expect(dialog.getByLabel('Password',{exact:true})).toHaveValue('user30');
+  await expect(input).toHaveAttribute('aria-expanded','false');
+  await input.click(); // already focused: explicit user click reopens choices
+  await expect(input).toHaveAttribute('aria-expanded','true');
+  await input.press('Escape');
+  await expect(dialog).toBeVisible();
+  await expect(input).toHaveAttribute('aria-expanded','false');
+  await input.fill('user31');
+  await expect(dialog.getByRole('listbox',{name:'Test accounts'}).getByText('No test accounts found')).toBeVisible();
+  await expect(dialog.getByLabel('Password',{exact:true})).toBeEmpty();
+});
+
+test('Bangla account search matches a Bengali profile name and only fills synthetic QA credentials',async({page})=>{
+  await page.goto('/?action=taxpayer_login&lang=bn');
+  const userId=page.locator('#taxpayer-login-user-id');
+  await expect(userId).toBeVisible();
+  await page.getByRole('button',{name:'অ্যাকাউন্ট পুনরুদ্ধার'}).click();
+  await expect(page.locator('#taxpayer-login-recovery')).toContainText('user1–user30');
+  await userId.fill('করদাতা অ্যাকাউন্ট 30');
+  const options=page.getByRole('listbox',{name:'পরীক্ষামূলক অ্যাকাউন্ট'});
+  await expect(options.getByRole('option')).toHaveCount(1);
+  await expect(options.getByRole('option')).toContainText('user30');
+  await userId.press('ArrowDown');
+  await userId.press('Enter');
+  await expect(userId).toHaveValue('user30');
+  await expect(page.locator('#taxpayer-login-password')).toHaveValue('user30');
+  await expect(userId).toHaveAttribute('aria-expanded','false');
 });
 
 test('all ten matching ID/password pairs open their own taxpayer dashboard and profile, then sign out', async ({page}, info) => {
@@ -73,6 +131,8 @@ test('refresh keeps selected preview identity without turning URL into authentic
   await page.getByRole('textbox',{name:'User ID'}).fill('user8');
   await page.getByLabel('Password',{exact:true}).fill('user8');
   await page.getByRole('button',{name:'Sign In'}).click();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect(page).not.toHaveURL(/demoUser=/);
@@ -96,3 +156,35 @@ test('empty and mismatched passwords cannot sign in even with a valid User ID', 
   await expect(page).toHaveURL(/action=taxpayer_login/);
   expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
 });
+for (const language of ['en','bn'] as const) {
+  test(`clicking a demo account fills only its matching masked preview password (${language})`,async({page},info)=>{
+    test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Pointer acceptance at desktop and touch viewport');
+    await page.goto('/?action=taxpayer_login'+(language==='bn'?'&lang=bn':''));
+    const dialog=page.getByRole('dialog');
+    const userId=dialog.locator('#taxpayer-login-user-id');
+    const password=dialog.locator('#taxpayer-login-password');
+    const authRequests:string[]=[];
+    page.on('request',request=>{if(new URL(request.url()).pathname.startsWith('/auth/v1/'))authRequests.push(request.url());});
+    await userId.click();
+    const options=dialog.getByRole('listbox',{name:language==='bn'?'পরীক্ষামূলক অ্যাকাউন্ট':'Test accounts'});
+    await expect(options.getByRole('option')).toHaveCount(30);
+    await options.locator('#taxpayer-login-account-user2').click();
+    await expect(userId).toHaveValue('user2');
+    await expect(password).toHaveValue('user2');
+    await expect(password).toHaveAttribute('type','password');
+    await expect(userId).toHaveAttribute('aria-expanded','false');
+
+    // A second explicit click must reopen, replacing (never appending) the
+    // previous demo password when the selected user changes.
+    await userId.click();
+    await userId.fill('user30');
+    await expect(password).toBeEmpty();
+    await options.locator('#taxpayer-login-account-user30').click();
+    await expect(userId).toHaveValue('user30');
+    await expect(password).toHaveValue('user30');
+    await expect(password).toHaveAttribute('type','password');
+    await expect(userId).toHaveAttribute('aria-expanded','false');
+    expect(authRequests).toEqual([]);
+    expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
+  });
+}

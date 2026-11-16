@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {V11_PAYMENT_OPTIONS} from '../src/data/v11PaymentOptions.ts';
 import {prepareCombinedOtherTaxPayment} from '../src/services/otherTaxCombinedPayment.ts';
@@ -230,4 +231,20 @@ test('Phase 3: Return head hidden under a non-Return parent is refused without m
       /Tax with Return cannot be combined/);
     assert.equal(JSON.stringify(damaged),untouched);
   }
+});
+
+test('Phase 3: starting another checkout clears immutable Pay Again provenance',()=>{
+  const source=readFileSync(new URL('../src/components/screens/GuestPayment.tsx',import.meta.url),'utf8');
+  const reset=source.split('const startAnotherBatch = () => {')[1]?.split('\n  };')[0];
+  assert.ok(reset,'new checkout reset handler must exist');
+  assert.match(reset,/setSourcePaymentId\(null\)/);
+  assert.match(reset,/setSourceAllocationIds\(\[\]\)/);
+});
+
+test('Phase 3: Pay Again invalid resumed draft exposes validation instead of disabling Continue',()=>{
+  const source=readFileSync(new URL('../src/components/screens/GuestPayment.tsx',import.meta.url),'utf8');
+  assert.ok(source.includes('disabled={!initialReuse && otherBatch && (!batchValid || !storyAmountSupported)}'),
+    'Pay Again must allow the review action to report the precise error');
+  assert.ok(source.includes('if (!storyAmountSupported && !(storyAmountMinor !== null && storyAmountMinor > MAX_STORY_AMOUNT_MINOR))'),
+    'Invalid amounts must still be rejected before checkout');
 });

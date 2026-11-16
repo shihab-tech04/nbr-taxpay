@@ -50,6 +50,17 @@ try {
       await dialog.getByRole('textbox',{name:'User ID'}).fill('user1');
       await dialog.getByLabel('Password',{exact:true}).fill('user1');
       await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+      // The approved first-sign-in OTP checkpoint must complete before
+      // verifying the private dashboard route; never bypass the login flow.
+      const demoOtp = dialog.getByTestId('demo-otp-input');
+      await expect.poll(async () =>
+        await demoOtp.isVisible().catch(() => false) || /action=taxpayer_home/.test(page.url()),
+        {timeout:15_000}
+      ).toBe(true);
+      if (await demoOtp.isVisible().catch(() => false)) {
+        await demoOtp.fill('111111');
+        await dialog.getByRole('button',{name:'Verify code'}).click();
+      }
       // A real edge-backed preview login may take longer than Playwright's
       // default five seconds on a cold mobile session. Do not skip login:
       // require successful navigation, and preserve visible failure evidence.

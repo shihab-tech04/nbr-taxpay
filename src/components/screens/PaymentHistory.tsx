@@ -8,6 +8,7 @@ import {recoverableLegacyStorySession,recoverLegacyStoryPayments} from '../../se
 import { AuthenticatedHistorySwitch } from './AuthenticatedHistorySwitch';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import { useTaxState } from '../../services/taxState';
+import { paymentStatusLabel } from '../../services/paymentStatusDisplay';
 import { ASSESSMENT_YEARS } from '../../data/mockData';
 import { CATEGORY_LABELS } from '../../data/paymentHeads';
 import { ServiceCategoryTag } from '../ui/ServiceCategoryTag';
@@ -46,23 +47,12 @@ export function LegacyPaymentRecovery({language}:{language:Language}) {
   </section>;
 }
 
-const statusText: Record<string, {en:string; bn:string}> = {
-  INITIATED:{en:'Initiated',bn:'শুরু হয়েছে'},
-  GATEWAY_PENDING:{en:'Payment pending',bn:'পেমেন্ট অপেক্ষমাণ'},
-  GATEWAY_SUCCESS:{en:'Gateway completed',bn:'গেটওয়ে সম্পন্ন'},
-  TREASURY_SCROLLED:{en:'Treasury recorded',bn:'ট্রেজারিতে নথিভুক্ত'},
-  FAILED:{en:'Failed',bn:'ব্যর্থ'},
-  EXPIRED:{en:'Expired',bn:'মেয়াদ শেষ'},
-  REVERSED:{en:'Reversed',bn:'প্রত্যাবর্তিত'},
-  NOT_APPLICABLE:{en:'Not applicable',bn:'প্রযোজ্য নয়'},
-  PENDING_RECONCILIATION:{en:'Reconciliation pending',bn:'সমন্বয় অপেক্ষমাণ'},
-  CREDITED_TO_LEDGER:{en:'Credit not verified',bn:'ক্রেডিট যাচাই হয়নি'},
-  CLAIMED_IN_RETURN:{en:'Claim not verified',bn:'দাবি যাচাই হয়নি'},
-  DISPUTED:{en:'Disputed',bn:'বিরোধপূর্ণ'}
-};
-
 /** Read-only detail projection: a session receipt alone proves no Treasury settlement or tax credit. */
 function historyLifecycleRecord(receipt:ChallanReceipt,language:Language):PaymentLifecycleRecord {
+  const displayedStatus = paymentStatusLabel(receipt.treasuryStatus, language, Boolean(receipt.isSimulatedDemo));
+  const source = language === 'bn' ? 'সহজকর পেমেন্ট রেকর্ড' : 'Sohojkor payment record';
+  const createdTitle = language === 'bn' ? 'পেমেন্ট রেকর্ড তৈরি হয়েছে' : 'Payment record created';
+  const unverified = language === 'bn' ? 'যাচাই হয়নি' : 'Not verified';
   return {
     reference:receipt.challanNo,
     taxEventId:receipt.taxEventId,
@@ -77,13 +67,13 @@ function historyLifecycleRecord(receipt:ChallanReceipt,language:Language):Paymen
     taxZone:receipt.taxZone,taxCircle:receipt.taxCircle,
     channel:receipt.paymentMethod.replaceAll('_',' '),
     amountMinor:Math.round(receipt.totalAmount*100),
-    createdAt:receipt.createdAt,status:receipt.treasuryStatus.replaceAll('_',' '),
-    financialReceiptStatus:'Not verified',taxCreditStatus:'Not verified',
-    source:'TaxPay payment record',
+    createdAt:receipt.createdAt,status:displayedStatus,
+    financialReceiptStatus:unverified,taxCreditStatus:unverified,
+    source,
     events:[
-      {id:receipt.id+':created',title:'Payment record created',occurredAt:receipt.createdAt,source:'TaxPay payment record'},
-      ...(receipt.completedAt?[{id:receipt.id+':status',title:receipt.treasuryStatus.replaceAll('_',' '),
-        occurredAt:receipt.completedAt,source:'TaxPay payment record'}]:[])
+      {id:receipt.id+':created',title:createdTitle,occurredAt:receipt.createdAt,source},
+      ...(receipt.completedAt?[{id:receipt.id+':status',title:displayedStatus,
+        occurredAt:receipt.completedAt,source}]:[])
     ],
     allocations:receipt.allocationItems?.map((a,index)=>({
       id:String(index),title:a.taxpayerName+' · '+a.paymentServiceEn,
@@ -117,11 +107,9 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
     .filter(r => category === 'ALL' || r.paymentCategory === category);
   const categoryText = (value: PaymentCategory) =>
     bn ? (CATEGORY_LABELS[value]?.bn || value) : (CATEGORY_LABELS[value]?.en || value);
-  const statusLabel = (value:string) => statusText[value] ? (bn ? statusText[value].bn : statusText[value].en) : value;
-  const treasuryLabel = (receipt:ChallanReceipt) => receipt.isSimulatedDemo && receipt.treasuryStatus === 'TREASURY_SCROLLED'
-    ? label('Treasury status not verified','ট্রেজারির অবস্থা যাচাই হয়নি')
-    : receipt.isSimulatedDemo && receipt.treasuryStatus === 'GATEWAY_SUCCESS'
-      ? label('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত') : statusLabel(receipt.treasuryStatus);
+  const statusLabel = (value:string) => paymentStatusLabel(value, language);
+  const treasuryLabel = (receipt:ChallanReceipt) =>
+    paymentStatusLabel(receipt.treasuryStatus, language, Boolean(receipt.isSimulatedDemo));
   const exportDemo = () => {
     const headings=['Reference','Token','Payment category','Assessment year','Payer TIN','Amount ৳','Treasury status','Credit status'];
     const lines = filtered.map((r:ChallanReceipt)=>[
@@ -129,7 +117,7 @@ export const PaymentHistory: React.FC<{activityTabs?:boolean}> = ({activityTabs=
     ].map(escapeCsv).join(','));
     const csv=[headings.map(escapeCsv).join(','),...lines].join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8'}));
-    const a=document.createElement('a');a.href=url;a.download='Korbritto_payment_activity.csv';
+    const a=document.createElement('a');a.href=url;a.download='Sohojkor_payment_activity.csv';
     document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   };
 

@@ -1,0 +1,49 @@
+name: v9.5.3 Taxpayer F178 remarks SQL acceptance
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/integration/v953TaxpayerRemarksFixture.sql'
+      - 'tests/integration/v953TaxpayerRemarksAcceptance.sql'
+      - 'supabase/migrations/20261115140000_taxpay_challan_remarks_contract.sql'
+      - '.github/workflows/taxpayer-v953-f178-remarks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  taxpayer-remarks:
+    name: F178 Taxpayer PG17 long BN EN remarks and malformed JSON denial
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: f178_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d f178_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: f178_test
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+      - name: Create disposable original Taxpayer SQL source
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/integration/v953TaxpayerRemarksFixture.sql
+      - name: Apply original F178 Taxpayer migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261115140000_taxpay_challan_remarks_contract.sql
+      - name: Verify long EN BN text, optional case, malformed denial and parent integrity
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/integration/v953TaxpayerRemarksAcceptance.sql

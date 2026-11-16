@@ -1347,6 +1347,9 @@
     flex-wrap:nowrap;
     gap:.5rem;
     padding:.65rem .85rem;
+    /* Keep the single compact footer row clear of the fixed floating Pay control
+       at the bottom of the scroll. The existing footer safe-area pad remains. */
+    margin-bottom:8px;
   }
   .public-footer__identity { grid-column:1; min-width:0; }
   .public-footer__identity img.public-footer__wordmark { width:88px; height:33px; }
@@ -2681,7 +2684,9 @@
 .beneficiary-entry-choice__arrow {flex:0 0 auto;color:var(--citizen-muted);}
 .beneficiary-entry-choice__icon {flex-basis:44px;width:44px;height:44px;}
 .beneficiary-list-picker {position:relative;z-index:1;isolation:isolate;width:min(100%,560px);}
-.beneficiary-list-picker:has(.beneficiary-list-picker__menu) {z-index:40;}
+/* The open list must stack above the mobile bottom dock (z-index:45),
+   including its child fixed menu; closed lists keep their original stacking. */
+.beneficiary-list-picker:has(.beneficiary-list-picker__menu) {z-index:60;}
 .beneficiary-list-picker__trigger {width:100%;min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;border:1px solid var(--citizen-border);border-radius:var(--taxpay-radius-input,10px);background:var(--color-taxpay-surface,#fff);color:var(--citizen-text);font:inherit;}
 .beneficiary-list-picker__trigger:hover {border-color:var(--citizen-primary);}
 .beneficiary-list-picker__trigger:focus-visible,.beneficiary-list-picker__row button:focus-visible,.beneficiary-entry-choice__card:focus-visible {outline:2px solid var(--citizen-primary);outline-offset:2px;}
@@ -2720,6 +2725,10 @@
 .beneficiary-directory__list-filter {min-width:0;}
 .beneficiary-directory__list-filter > p {margin:0; font:inherit; color:inherit;}
 .beneficiary-directory__list-filter .beneficiary-list-picker {width:100%;max-width:none;z-index:2;}
+/* Open list menu must clear sticky header (55) and mobile bottom navigation (45).
+   The more-specific closed picker rule previously overrode the open-state z-index,
+   trapping the third list action behind the navigation on narrow screens. */
+.beneficiary-directory__list-filter .beneficiary-list-picker:has(.beneficiary-list-picker__menu) {z-index:70;}
 .beneficiary-directory__filters .taxpayer-transaction-filter--search {grid-column:auto;}
 /* Keep the shared Activity search's single focusable outline outside workspace. */
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .beneficiary-directory__filters .taxpayer-transaction-filter__search > input[type="search"],
@@ -2967,6 +2976,30 @@
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .citizen-pay-popover { display:none; }
 }
 @media print { .citizen-pay-popover { display:none!important; } }
+
+/* UX report #9: keep confirmed receipt fields scannable in an embedded modal.
+   No receipt fields, financial labels, references, or actions are removed. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__parties {
+  row-gap: 20px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail {
+  column-gap: 16px;
+  row-gap: 6px;
+  line-height: 1.6;
+  padding-block: 9px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail + .receipt-view__detail {
+  border-top: 1px solid var(--citizen-border);
+}
+@media (max-width: 700px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__parties {
+    grid-template-columns: minmax(0,1fr);
+    padding-block: 18px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail {
+    grid-template-columns: minmax(0,40%) minmax(0,1fr);
+  }
+}
 
 /* UX report #9: keep confirmed receipt fields scannable in an embedded modal.
    No receipt fields, financial labels, references, or actions are removed. */

@@ -78,7 +78,9 @@ test('taxpayer → shared SQL → Maker/Reviewer/Approver Office UI → benefici
  // This browser is connected to disposable TaxPay SQL, while the mirror worker
  // targets hosted Office. Office must reject that local-only source read; the
  // taxpayer transaction and durable outbox row remain available for retry.
- await expect(taxpayer.page.getByRole('status').filter({hasText:'Simulation saved; Office synchronization pending:'})).toBeVisible({timeout:18000});
+ await expect(taxpayer.page.getByRole('status').filter({
+  hasText:'Payment record saved. Office copy pending; Treasury settlement unverified:'
+ })).toBeVisible({timeout:18000});
   await expect(taxpayer.page.getByRole('heading',{name:'Payment record saved'})).toBeVisible();
   await expect(taxpayer.page.getByText('OFFICE_SYNC_PENDING',{exact:true})).toHaveCount(0);
  const own=await rpc('sim_my_payment_history',{p_view:'payer'},payer.access_token);
