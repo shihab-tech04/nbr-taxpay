@@ -6,8 +6,7 @@ import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {activePreviewSession} from '../../services/previewAccountSession';
-import {loadBeneficiaries,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
-import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
+import {loadBeneficiaries,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {useTaxState} from '../../services/taxState';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
 import {beneficiaryTagLabel,beneficiaryFinalTagLabel} from '../../services/beneficiaryTags';
@@ -38,9 +37,6 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [refresh,setRefresh]=useState(0);
-  const [restoring,setRestoring]=useState(false);
-  const [recoveryDone,setRecoveryDone]=useState(false);
-  const [restoreInfo,setRestoreInfo]=useState('');
   const [fallbackOpen,setFallbackOpen]=useState(false);
   const [fallbackTin,setFallbackTin]=useState('');
   const [searchedFallbackTin,setSearchedFallbackTin]=useState('');
@@ -57,10 +53,11 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
   useEffect(()=>{
     let cancelled=false;
     setRenderOwnerScope(ownerScope);
-    setLists([]);setPeople([]);setExpanded([]);setLoading(true);setError('');
+    if(renderOwnerScope!==ownerScope){setLists([]);setPeople([]);setExpanded([]);setLoading(true);}
+    setError('');
     onAvailableTins(null);
     if(checkingIdentity)return()=>{cancelled=true;};
-    loadBeneficiaries(user?.id??null).then(result=>{
+    loadBeneficiaries(user?.id??null,{forceFresh:true}).then(result=>{
       if(cancelled||ownerScopeRef.current!==ownerScope)return;
       setLists(result.lists);setPeople(result.people);
       const containingSelection=result.lists.filter(list=>result.people.some(person=>
@@ -90,17 +87,19 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[ownerScope,refresh,onAvailableTins]);
 
-  useEffect(()=>{
-    setRestoring(false);setRecoveryDone(false);setRestoreInfo('');
-  },[ownerScope]);
-
   // A payment step can remain mounted while beneficiaries change in another
   // tab. Re-read the same identity-scoped source on return to the tab.
   useEffect(()=>{
+    // The server-held account book is authoritative. Refresh on tab return,
+    // same-origin storage changes, and while this payment step stays open on
+    // another device. Never reuse a browser-local snapshot as account truth.
     const refreshVisible=()=>{if(document.visibilityState!=='hidden')setRefresh(value=>value+1);};
+    const refreshStorage=()=>refreshVisible();
+    const interval=window.setInterval(refreshVisible,30000);
     window.addEventListener('focus',refreshVisible);
+    window.addEventListener('storage',refreshStorage);
     document.addEventListener('visibilitychange',refreshVisible);
-    return()=>{window.removeEventListener('focus',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible);};
+    return()=>{window.clearInterval(interval);window.removeEventListener('focus',refreshVisible);window.removeEventListener('storage',refreshStorage);document.removeEventListener('visibilitychange',refreshVisible);};
   },[]);
 
   if(renderOwnerScope!==ownerScope){
@@ -108,27 +107,6 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       aria-label={tr('Choose beneficiaries','উপকারভোগী নির্বাচন')}>
       <p role="status" className="text-sm text-slate-600">{tr('Loading beneficiary lists…','উপকারভোগীর তালিকা লোড হচ্ছে…')}</p>
     </section>;
-  }
-
-  const restoreAvailable=Boolean((user?.id||previewAccount)&&hasStoredGuestBeneficiaries()&&!recoveryDone);
-  async function restoreSavedLists(){
-    if((!user?.id&&!previewAccount)||restoring)return;
-    const expectedScope=ownerScope;
-    setRestoring(true);setRestoreInfo('');
-    try {
-      const recovered=user?.id?await recoverGuestBeneficiariesToProfile(user.id)
-        :await recoverLegacyGuestBeneficiariesToPreview();
-      if(ownerScopeRef.current!==expectedScope)return;
-      setRecoveryDone(true);
-      setRestoreInfo(recovered.people
-        ? tr('Saved beneficiaries restored to your profile.','সংরক্ষিত উপকারভোগীরা আপনার প্রোফাইলে যুক্ত হয়েছে।')
-        : tr('Your profile lists are up to date.','আপনার প্রোফাইলের তালিকা হালনাগাদ রয়েছে।'));
-      setRefresh(previous=>previous+1);
-    } catch {
-      if(ownerScopeRef.current!==expectedScope)return;
-      setRestoreInfo(tr('Could not restore saved lists. You can safely retry; the original lists are preserved.',
-        'সংরক্ষিত তালিকা ফিরিয়ে আনা যায়নি। আবার চেষ্টা করতে পারেন; আগের তালিকা অক্ষত আছে।'));
-    } finally {if(ownerScopeRef.current===expectedScope)setRestoring(false);}
   }
 
   const normalized=search.trim().toLocaleLowerCase();
@@ -196,9 +174,6 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       </UiButton>
     </div>
     {(checkingIdentity||loading)&&<p role="status" className="text-sm text-slate-600">{tr('Loading beneficiary lists…','উপকারভোগীর তালিকা লোড হচ্ছে…')}</p>}
-    {!checkingIdentity&&!loading&&!error&&restoreAvailable&&<UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold"
-      disabled={restoring} onClick={restoreSavedLists}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore saved lists','সংরক্ষিত তালিকা ফিরিয়ে আনুন')}</UiButton>}
-    {restoreInfo&&<p role="status" className="text-sm text-slate-600" aria-live="polite">{restoreInfo}</p>}
     {error&&<div className="flex flex-wrap items-center gap-3" role="alert">
       <p className="text-sm text-red-700">{error}</p>
       <UiButton type="button" variant="outline" className="text-sm font-semibold" onClick={()=>setRefresh(v=>v+1)}>{tr('Retry','আবার চেষ্টা')}</UiButton>
