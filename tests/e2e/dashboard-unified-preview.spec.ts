@@ -61,7 +61,7 @@ for(const user of ['user2','user30'] as const){
     await expect(dashboard.getByText('No beneficiaries to show')).toBeVisible();
     await expect(dashboard.getByText('Your tax journey is empty')).toBeVisible();
     await expect(dashboard.getByTestId('dashboard-overview-total')).toHaveText('৳0');
-    await expect(dashboard.getByRole('heading',{name:'Tax service activity'})).toHaveCount(0);
+    await expect(dashboard.getByTestId('demo-sql-service-panel')).toHaveAttribute('data-scenario-user',user);
     await expect(dashboard.getByRole('heading',{name:'Payment composition'})).toHaveCount(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth))
       .toBeLessThanOrEqual(2);
