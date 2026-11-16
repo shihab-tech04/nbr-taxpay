@@ -195,7 +195,14 @@ test('426px scrolled mobile footer is one compact white row above the floating P
   test.skip(!testInfo.project.name.startsWith('mobile-'),'Mobile footer geometry requires a mobile browser project');
   await page.setViewportSize({width:426,height:882});
   await page.goto('/?action=landing&lang=en');
-  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+  // The footer geometry must be measured at the settled document bottom.
+  // Font/layout completion can change scrollHeight after the first scroll.
+  await page.evaluate(async()=>{
+    await document.fonts.ready;
+    window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'});
+    await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+    window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'});
+  });
   await expect(page.locator('.taxpay-public-mobile-navigation .citizen-corners')).toHaveCount(1);
   const footer=page.locator('.public-footer');
   await expect(footer).toBeVisible();
