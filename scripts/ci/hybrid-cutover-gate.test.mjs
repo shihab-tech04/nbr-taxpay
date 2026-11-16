@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign } from 'node:crypto';
 import test from 'node:test';
-import { ORIGINAL, TARGET, OFFICE, validateCutover } from './hybrid-cutover-gate.mjs';
+import { ORIGINAL, TARGET, OFFICE, SIMULATION_SCOPE, validateCutover } from './hybrid-cutover-gate.mjs';
 
 const treeSha = 'a'.repeat(40);
 const now = Date.parse('2026-11-15T15:00:00Z');
@@ -83,4 +83,28 @@ test('blocks forged or modified approvals', () => {
 });
 test('backend-disabled test builds remain disabled', () => {
   assert.deepEqual(validateCutover({ url: '', disabled: true }), { mode: 'disabled' });
+});
+
+
+test('simulation-only V2 release requires actual hosted login smoke, not matching managed Auth UUIDs', () => {
+  assert.deepEqual(validateCutover({
+    url: TARGET, releaseScope: SIMULATION_SCOPE, originalUrl: ORIGINAL,
+    officeUrl: 'https://' + OFFICE + '.supabase.co',
+  }), { mode: 'v2-simulation-hosted-smoke-required' });
+});
+test('simulated V2 release cannot substitute either original or Office database', () => {
+  assert.throws(() => validateCutover({
+    url: TARGET, releaseScope: SIMULATION_SCOPE, originalUrl: TARGET,
+    officeUrl: 'https://' + OFFICE + '.supabase.co',
+  }), /original or Office project identity changed/);
+  assert.throws(() => validateCutover({
+    url: TARGET, releaseScope: SIMULATION_SCOPE, originalUrl: ORIGINAL,
+    officeUrl: ORIGINAL,
+  }), /original or Office project identity changed/);
+});
+test('invalid scope cannot bypass signed full cutover safeguards', () => {
+  assert.throws(() => validateCutover({
+    url: TARGET, releaseScope: 'real-payments',
+    originalUrl: ORIGINAL, officeUrl: 'https://' + OFFICE + '.supabase.co',
+  }), /signed recovery evidence is missing/);
 });
