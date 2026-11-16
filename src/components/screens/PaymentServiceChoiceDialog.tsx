@@ -4,7 +4,7 @@ import '../../styles/taxpay-unified-table.css';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowRight, CalendarClock, Check, CircleAlert, ClipboardCheck, FileCheck2, FolderOpen,
-  Plane, ReceiptText, Scale, UserRound, UsersRound, WalletCards
+  Plane, ReceiptText, Scale, Trash2, UserRound, UsersRound, WalletCards
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import type { BannerPaymentService } from '../../services/taxState';
@@ -365,12 +365,12 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         ) : null}
       </section>}
       {exitPromptOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/50 px-4 py-6"
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 p-3 sm:p-6"
           data-testid="payment-draft-exit-overlay"
           onMouseDown={event => event.stopPropagation()}>
           <div role="alertdialog" aria-modal="true" aria-labelledby="payment-draft-exit-title"
             aria-describedby="payment-draft-exit-description"
-            className="max-h-[calc(100dvh-2rem)] w-full max-w-[440px] overflow-y-auto rounded-2xl border border-taxpay-border bg-white p-5 shadow-2xl sm:p-6"
+            className="box-border max-h-[calc(100dvh-24px)] w-full max-w-[440px] overflow-y-auto overscroll-contain rounded-2xl border border-taxpay-border bg-white p-5 shadow-xl sm:p-6"
             onKeyDown={event => {
               if (event.key === 'Escape') {
                 event.preventDefault();
@@ -397,14 +397,14 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
                 <h3 id="payment-draft-exit-title" className="text-lg font-semibold leading-6 text-taxpay-dark">
                   {tr('Save your tax payment?', 'কর পরিশোধের খসড়া সংরক্ষণ করবেন?')}
                 </h3>
-                <p id="payment-draft-exit-description" className="mt-2 text-sm leading-6 text-taxpay-muted">
+                <p id="payment-draft-exit-description" className="mt-1.5 text-sm leading-6 text-taxpay-muted">
                   {tr('Save a draft to continue later. Discarding will lose your unsaved changes.',
                     'পরে চালিয়ে যেতে খসড়া সংরক্ষণ করুন। বাদ দিলে অসংরক্ষিত পরিবর্তন হারিয়ে যাবে।')}
                 </p>
               </div>
             </div>
             {exitError && <p role="alert" className="mt-4 rounded-lg border border-taxpay-border px-3 py-2 text-sm text-taxpay-error">{exitError}</p>}
-            <div className="mt-6 grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2"
+            <div className="mt-5 grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2"
               data-testid="payment-draft-exit-cta-row">
               <button ref={exitFirstButtonRef} type="button" disabled={exitSaving}
                 className="min-h-11 w-full rounded-lg bg-taxpay-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-taxpay-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
@@ -417,11 +417,12 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
                 {tr('Keep editing', 'সম্পাদনা চালিয়ে যান')}
               </button>
             </div>
-            <div className="mt-5 border-t border-taxpay-border pt-3"
+            <div className="mt-4 border-t border-taxpay-border pt-3"
               data-testid="payment-draft-exit-discard-row">
               <button type="button" disabled={exitSaving}
-                className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-taxpay-error transition-colors hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface-subtle px-4 py-2.5 text-sm font-medium text-taxpay-error transition-colors hover:border-taxpay-error/30 hover:bg-taxpay-error/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
                 onClick={close}>
+                <Trash2 size={16} strokeWidth={1.8} aria-hidden="true" />
                 {tr('Discard tax payment', 'কর পরিশোধ বাদ দিন')}
               </button>
             </div>
