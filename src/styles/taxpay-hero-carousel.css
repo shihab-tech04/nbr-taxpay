@@ -1162,6 +1162,14 @@
   .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
     padding-block: 8px;
   }
+  /* Keep the approved 210px hero and 88px information cells. Spend outer
+     inset at medium-height desktops instead of overflowing the viewport. */
+  .public-home-sections .public-record-discovery {
+    padding-block: 18px;
+  }
+  .public-home-sections > .public-benefits {
+    padding-block: 16px;
+  }
   .public-home-sections .public-benefits__item {
     padding-block: 10px;
   }
