@@ -143,17 +143,25 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
     body: JSON.stringify({ ...scoped, origin: import.meta.env?.VITE_SUPABASE_DISABLED === 'true' ? 'QA_BROWSER' : 'TAXPAY_UI' }),
   });
   const body = await response.json() as Partial<StoryPaymentAcknowledgement> & {
-    error?: string; requestId?: string; retryable?: boolean;
+    error?: string; requestId?: string; retryable?: boolean; officeSyncStatus?: string;
   };
+  // V2 can persist simulations without dispatching to the separate Office.
+  // Require an exact, capability-scoped SQL readback before acknowledging it.
+  const storedWithoutOffice = response.ok && body.success === true &&
+    body.mirrored === false && body.simulationOnly === true &&
+    body.status === 'SIMULATED_SUCCESS' && body.officeSyncStatus === 'DISABLED' &&
+    typeof body.id === 'string' && /^[0-9a-f-]{36}$/i.test(body.id);
   let acknowledged: StoryPaymentAcknowledgement;
   if (response.ok && body.success === true && body.mirrored === true && body.id && body.status === 'SIMULATED_SUCCESS' && body.simulationOnly === true) {
     acknowledged = body as StoryPaymentAcknowledgement;
-  } else if (response.status === 503 && body.error === 'OFFICE_SYNC_PENDING' && body.retryable === true &&
-             typeof body.requestId === 'string' && /^[0-9a-f-]{36}$/i.test(body.requestId)) {
+  } else if (storedWithoutOffice ||
+             (response.status === 503 && body.error === 'OFFICE_SYNC_PENDING' && body.retryable === true &&
+              typeof body.requestId === 'string' && /^[0-9a-f-]{36}$/i.test(body.requestId))) {
+    const paymentId = storedWithoutOffice ? body.id! : body.requestId!;
     // Office mirror failure is NOT a payment-gateway decline. Before showing a
     // saved simulation, independently read back the exact idempotent source SQL
     // row using this session's existing capability/ownership boundary.
-    const readback = await fetch(API + '/payments/' + encodeURIComponent(body.requestId) +
+    const readback = await fetch(API + '/payments/' + encodeURIComponent(paymentId) +
       '?sessionId=' + encodeURIComponent(input.sessionId), {
         headers: storyApiHeaders(input.sessionId), cache: 'no-store',
       });
@@ -161,13 +169,13 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
     const stored = await readback.json() as {success?:boolean;simulationOnly?:boolean;
       data?:{id?:string;status?:string;data?:Partial<StoryPaymentInput>}};
     if (stored.success !== true || stored.simulationOnly !== true ||
-        stored.data?.id !== body.requestId || stored.data.status !== 'SIMULATED_SUCCESS' ||
+        stored.data?.id !== paymentId || stored.data.status !== 'SIMULATED_SUCCESS' ||
         stored.data.data?.idempotencyKey !== scoped.idempotencyKey ||
         stored.data.data?.sessionId !== scoped.sessionId ||
         stored.data.data?.amountMinor !== scoped.amountMinor ||
         stored.data.data?.service !== scoped.service)
       throw new Error('SIMULATION_READBACK_MISMATCH');
-    acknowledged = {success:true,id:body.requestId,status:'SIMULATED_SUCCESS',
+    acknowledged = {success:true,id:paymentId,status:'SIMULATED_SUCCESS',
       mirrored:false,simulationOnly:true};
   } else {
     throw new Error(body.error || 'SIMULATION_SUBMISSION_PENDING');
