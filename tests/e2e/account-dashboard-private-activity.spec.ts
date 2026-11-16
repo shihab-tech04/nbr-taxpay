@@ -745,7 +745,7 @@ test('F-122 signed-in public desktop wordmark opens private dashboard, preservin
 });
 
 
-test('F-124 logged-in main content uses exactly 70% of its own area from 1400px, leaving rail and public pages unchanged',async({page},info)=>{
+test('Phase 8 logged-in main content uses available width capped at 1300px above 1400px, keeping rail and public pages unchanged',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','One browser checks its own explicit responsive viewports');
   await mockPrivateAccount(page,'user1');
   for(const width of [1399,1400,1440,1920]){
@@ -772,7 +772,7 @@ test('F-124 logged-in main content uses exactly 70% of its own area from 1400px,
       expect(measure.authenticated).toBe(true);
       expect(Math.abs(measure.mainLeft-measure.railRight),JSON.stringify({width,lang,measure})).toBeLessThanOrEqual(2);
       expect(measure.area).toBeGreaterThan(0);
-      const expected=width>=1400 ? measure.area*0.7 : Math.min(1150,measure.area);
+      const expected=width>1400 ? Math.min(1300,measure.area) : measure.area;
       expect(Math.abs(measure.content-expected),JSON.stringify({width,lang,measure})).toBeLessThanOrEqual(2);
       expect(Math.abs(measure.leftInset-measure.rightInset)).toBeLessThanOrEqual(2);
       expect(measure.overflow).toBeLessThanOrEqual(2);
@@ -796,8 +796,7 @@ test('F-124 logged-in main content uses exactly 70% of its own area from 1400px,
             const available=main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
             return child.width/available;
           });
-          expect(ratio,route+' '+lang).toBeGreaterThanOrEqual(.695);
-          expect(ratio,route+' '+lang).toBeLessThanOrEqual(.705);
+          expect(Math.abs(ratio-Math.min(1300,available)/available),route+' '+lang).toBeLessThanOrEqual(.005);
         }
       }
     }
