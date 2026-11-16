@@ -114,3 +114,13 @@ test('official posting references are unique per allocation, but may split acros
   assert.equal(events.filter(e=>e.code==='EXTERNAL_OFFICIAL_TAX_CREDIT').length,2);
   assert.throws(()=>projectExternalLedgerEvents(owner,[base],[credit,{...credit,id:'new-credit-id',credited_amount_minor:1000}],'en'),/Duplicate official credit posting/);
 });
+
+
+test('database strengthens global provider allocation identity while supporting shared credit references across distinct rows',()=>{
+  const sql=readFileSync('supabase/migrations/20261116054000_external_ledger_source_credit_idempotency.sql','utf8');
+  assert.match(sql,/unique index if not exists taxpay_external_source_allocation_unique/);
+  assert.match(sql,/\(source_system,source_transaction_id,source_allocation_id\)/);
+  assert.match(sql,/unique index if not exists taxpay_external_credit_allocation_ref_unique/);
+  assert.match(sql,/\(payment_record_id,official_credit_source,official_credit_reference\)/);
+  assert.doesNotMatch(sql,/drop table|truncate|delete from|drop policy|disable row level security/i);
+});
