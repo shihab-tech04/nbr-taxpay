@@ -5,6 +5,7 @@ import { TaxPayModal } from '../ui/TaxPayModal';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerBrandName } from '../../config/brand';
+import { PreviewServiceRestrictedError } from '../../services/previewAccountSession';
 
 /** TaxPay-only preview account entry. This does not authenticate API calls. */
 /** One footer action for both standalone and in-journey sign-in modals. */
@@ -36,7 +37,7 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showRecovery, setShowRecovery] = useState(false);
-  const [error, setError] = useState<'invalid'|'already_signed_in'|'unavailable'|null>(null);
+  const [error, setError] = useState<'invalid'|'already_signed_in'|'unavailable'|'restricted'|null>(null);
   const [signingIn,setSigningIn]=useState(false);
   const { user: verifiedApplicationUser } = useAccountIdentity();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,8 +62,8 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
       const success=await loginPreviewAccount(userId,password,{preserveRoute:preservePaymentJourney});
       if(!success){setError('invalid');inputRef.current?.focus();}
       else onSuccess?.();
-    }catch{
-      setError('unavailable');
+    }catch(cause){
+      setError(cause instanceof PreviewServiceRestrictedError ? 'restricted' : 'unavailable');
     }finally{setSigningIn(false);}
   };
 
@@ -107,6 +108,8 @@ export function TaxpayerLoginDialog({ onClose, onSuccess, preservePaymentJourney
         {error && <p className="taxpayer-login-error" role="alert">
           {error === 'already_signed_in'
             ? (bn ? 'আগে বর্তমান অ্যাকাউন্ট থেকে সাইন আউট করুন।' : 'Sign out of the current account before switching users.')
+            : error === 'restricted'
+              ? (bn ? 'অ্যাকাউন্ট সেবা সাময়িকভাবে সীমাবদ্ধ। আপনার সংরক্ষিত তথ্য পরিবর্তন করা হয়নি। সেবা চালু হলে আবার চেষ্টা করুন।' : 'The account service is temporarily restricted. Your saved records have not been changed. Please retry when the service is restored.')
             : error === 'unavailable'
               ? (bn ? 'আপনার প্রোফাইল লোড করা যায়নি। আবার চেষ্টা করুন।' : 'Could not load your saved profile. Please retry.')
               : (bn ? 'ইউজার আইডি বা পাসওয়ার্ড সঠিক নয়।' : 'Incorrect User ID or password.')}
