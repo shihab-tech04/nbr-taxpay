@@ -39,6 +39,8 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id'
         run: npm run build
       - name: Verify production routes and cross-origin response with disposable fixtures
+        env:
+          GITHUB_PAGES: 'true'
         run: npx playwright test --config playwright.production.config.ts
       - name: Retain failure diagnostics from disposable browser tests
         if: failure()
