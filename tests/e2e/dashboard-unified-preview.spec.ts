@@ -44,6 +44,11 @@ for(const user of ['user2','user30'] as const){
     await mockAccount(page,user);
     const dashboard=page.getByTestId('dashboard-unified-preview');
     await expect(dashboard).toBeVisible();
+    await expect.poll(async()=>{
+      const phase=await dashboard.getAttribute('data-load-state');
+      const issue=await dashboard.getAttribute('data-load-issue');
+      return phase==='error'?'ERROR: '+issue:phase;
+    },{timeout:10000,message:'Owner-scoped preview record loader must reach a verified ready state'}).toBe('ready');
     await expect(dashboard.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
     await expect(dashboard.getByRole('heading',{name:'Payments at a glance'})).toBeVisible();
     await expect(dashboard.getByRole('heading',{name:'Payment recipients'})).toBeVisible();
@@ -66,6 +71,7 @@ test('new-account completed activity changes data inside the same layout',async(
   test.skip(info.project.name!=='desktop-1280','Targeted populated record gate');
   await mockAccount(page,'user2',true);
   const dashboard=page.getByTestId('dashboard-unified-preview');
+  await expect.poll(async()=>{const phase=await dashboard.getAttribute('data-load-state');return phase==='error'?'ERROR: '+await dashboard.getAttribute('data-load-issue'):phase;}).toBe('ready');
   await expect(dashboard.getByTestId('dashboard-overview-total')).toContainText('25,000');
   await expect(dashboard.getByRole('heading',{name:'Payments at a glance'})).toBeVisible();
   await expect(dashboard.getByRole('heading',{name:'Top beneficiaries'})).toBeVisible();
