@@ -1049,6 +1049,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         {selected.sql.receipts.length
           ?selected.sql.receipts.map((receipt,index)=><ReceiptView receipt={receipt}
             key={receipt.paymentTransactionId} embedded suppressFooterActions={index>0}
+            payAgainTestId="recorded-pay-again-detail"
             transactionActions={index===0}
             onPayAgain={index===0&&selected.sql?.reuse?()=>payAgain(selected):undefined}
             onApplyForCorrection={index===0?()=>applyForCorrection(selected):undefined}/>)
