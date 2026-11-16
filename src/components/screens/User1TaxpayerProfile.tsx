@@ -2,7 +2,7 @@ import React, {useEffect,useState} from 'react';
 import {Check, Copy, Download, UserRound} from 'lucide-react';
 import {MaskedProfileValue, sensitiveProfileKind} from '../ui/MaskedProfileValue';
 import {TAXPAYER_PROFILE_LAYOUT,TAXPAYER_PROFILE_FIELD_ORDER,type ProfileFieldRow} from '../../contracts/taxpayerProfileFieldLayout';
-import {USER1_FICTIONAL_TIN_PROFILE as initialReference,user1FictionalTinValue} from '../../data/user1FictionalTinProfile';
+import {user1FictionalTinValue} from '../../data/user1FictionalTinProfile';
 import type {TaxpayerTinField,TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
 import {getDemoUser,type DemoUser,type DemoUserId} from '../../data/demoUsers';
 import {useDemoSqlProfileAndServiceRecords} from '../../services/demoSqlProfiles';
@@ -23,11 +23,9 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
   const bn=language==='bn';
   const tr=(pair:Label)=>pair[bn?1:0];
   const session=activePreviewSession();
-  const offline=import.meta.env?.VITE_SUPABASE_DISABLED==='true';
-  const accountId=account?.id??session?.profileId??(offline?'user1':null);
+  const accountId=account?.id??session?.profileId??null;
   const verified=Boolean(session&&session.profileId===accountId);
-  const offlineReference=offline&&accountId==='user1'&&!session;
-  const owner=verified&&accountId?getDemoUser(accountId):offlineReference?getDemoUser('user1'):null;
+  const owner=verified&&accountId?getDemoUser(accountId):null;
   const demoSql=useDemoSqlProfileAndServiceRecords(owner?.id??null);
   const sqlAccount=demoSql.status==='ready'&&demoSql.userId===accountId?demoSql.profile:null;
   const [reload,setReload]=useState(0);
@@ -35,12 +33,8 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
     owner:DemoUserId|null;status:'loading'|'ready'|'error';profile:TaxpayerTinProfile|null
   }>({owner:null,status:'loading',profile:null});
   useEffect(()=>{
-    if(!accountId||(!verified&&!offlineReference)){
+    if(!accountId||!verified){
       setRecordState({owner:accountId,status:'error',profile:null});
-      return;
-    }
-    if(offlineReference){
-      setRecordState({owner:accountId,status:'ready',profile:initialReference});
       return;
     }
     let active=true;
@@ -51,10 +45,10 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
       if(active)setRecordState({owner:accountId,status:'error',profile:null});
     });
     return()=>{active=false;};
-  },[accountId,verified,offlineReference,reload]);
+  },[accountId,verified,reload]);
   // Never show a previous account's SQL row while a new account is loading.
   const current=recordState.owner===accountId?recordState:null;
-  const record=verified||offlineReference?current?.profile??null:null;
+  const record=verified?current?.profile??null:null;
   const status=current?.status??'loading';
   const accountStatus=(sqlAccount?.roleCode??owner?.role)==='TAXPAYER_CORPORATE'
     ?tr(['Company','কোম্পানি'])
@@ -134,18 +128,9 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
       setDownloadError(true);
     }
   };
-  if(!verified&&!offlineReference){
+  if(!verified){
     return <section className="rounded-xl border border-taxpay-border bg-white p-5" data-testid="user1-taxpayer-profile">
       <p role="alert">{bn?'এই অ্যাকাউন্টের জন্য করদাতার প্রোফাইল পাওয়া যায়নি।':'Taxpayer profile is not available for this account.'}</p>
-    </section>;
-  }
-  if(accountId==='user1'&&(recordState.status!=='ready'||!record)){
-    return <section className="rounded-xl border border-taxpay-border bg-white p-5" data-testid="user1-taxpayer-profile">
-      {status==='loading'?<p role="status">{bn?'করদাতার প্রোফাইল লোড হচ্ছে…':'Loading taxpayer profile…'}</p>:
-      <div><p role="alert">{bn?'প্রোফাইলের তথ্য লোড করা যায়নি।':'Could not load taxpayer information.'}</p>
-      <button type="button" onClick={()=>setReload(v=>v+1)}
-        className="mt-3 min-h-11 rounded-lg border border-taxpay-border px-4 text-sm text-taxpay-primary">
-        {bn?'আবার চেষ্টা করুন':'Retry'}</button></div>}
     </section>;
   }
   return <div data-testid="user1-taxpayer-profile" className="space-y-4" aria-label={tr(['Taxpayer profile','করদাতার প্রোফাইল'])}>
