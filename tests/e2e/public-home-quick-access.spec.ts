@@ -822,7 +822,8 @@ test('six benefit cards stay non-interactive in English and Bangla on mobile and
     await page.setViewportSize({ width, height: 900 });
     for (const language of ['en', 'bn'] as const) {
       await page.goto('/?action=landing&lang=' + language);
-      const startingUrl = page.url();
+      // The router may normalize explicit &lang=en to its canonical English URL.
+      // Assert the actual route/language instead of a transient query-string spelling.
       const cards = page.locator('.public-benefits__item');
       await expect(cards).toHaveCount(6);
       for (const [id, en, bn] of cases) {
@@ -834,9 +835,11 @@ test('six benefit cards stay non-interactive in English and Bangla on mobile and
         const bounds = await item.boundingBox();
         if (!bounds) throw new Error('Missing benefit card ' + id);
         await item.click({ position: { x: bounds.width - 6, y: bounds.height - 6 } });
-        await expect(page).toHaveURL(startingUrl);
+        await expect(page).toHaveURL(/action=landing/);
+        await expect(page.locator('html')).toHaveAttribute('lang', language);
         await item.getByRole('heading').click();
-        await expect(page).toHaveURL(startingUrl);
+        await expect(page).toHaveURL(/action=landing/);
+        await expect(page.locator('html')).toHaveAttribute('lang', language);
         await expect(page.locator('.tax-service-choice__card')).toHaveCount(0);
       }
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
