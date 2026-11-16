@@ -38,14 +38,15 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
     (previewAccount&&activePreviewSession()?.profileId===previewAccount.id?previewAccount.id:null);
   const selectedReuse=useMemo(()=>{
     if(!selectedReceipt||!ownerUid)return null;
+    const originalId=selectedReceipt.batchId??selectedReceipt.paymentTransactionId;
+    if(!originalId)return null;
     const matching=selectedReceipt.batchId
       ?sqlPayments.filter(row=>row.batchId===selectedReceipt.batchId)
       :sqlPayments.filter(row=>row.paymentId===selectedReceipt.paymentTransactionId);
     const receipts=[...new Map(matching.map(row=>[row.paymentId,row.receipt])).values()];
     if(!receipts.length)return null;
     try{
-      return reuseRecordedPayment(receipts,ownerUid,null,
-        selectedReceipt.batchId??selectedReceipt.paymentTransactionId);
+      return reuseRecordedPayment(receipts,ownerUid,null,originalId);
     }catch{return null;}
   },[selectedReceipt,ownerUid,sqlPayments]);
   const bn = language === 'bn';
