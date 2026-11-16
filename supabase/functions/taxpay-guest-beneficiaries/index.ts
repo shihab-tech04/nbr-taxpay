@@ -123,12 +123,20 @@ Deno.serve(async (request: Request) => {
     // The login returns a stable opaque demo capability, not Supabase Auth,
     // taxpayer ownership, SQL admin access or a payment entitlement.
     if (action === 'demo-login') {
+      // The public fictional login is limited to the currently approved 30
+      // profiles, even if legacy SQL holds additional simulator fixtures.
       if (typeof body.userId !== 'string' || typeof body.password !== 'string' ||
-          !/^user(?:[1-9]|[1-4][0-9]|5[0-5])$/.test(body.userId) || body.password.length > 80)
+          !/^user(?:[1-9]|[12][0-9]|30)$/.test(body.userId) ||
+          body.password !== body.userId || body.password.length > 80)
         throw new Error('INVALID_DEMO_LOGIN');
       const data = await rpc(client, 'taxpay_demo_profile_login', {
         p_demo_id: body.userId, p_password: body.password,
-      });
+      }) as {profileId?:unknown;capability?:unknown;paymentSessionId?:unknown;language?:unknown}|null;
+      if (!data || data.profileId !== body.userId ||
+          typeof data.capability !== 'string' || !capabilityPattern.test(data.capability) ||
+          typeof data.paymentSessionId !== 'string' || !uuidPattern.test(data.paymentSessionId) ||
+          (data.language !== 'en' && data.language !== 'bn'))
+        throw new Error('INVALID_DEMO_LOGIN');
       return response({ success: true, data }, 200, origin);
     }
     const token = request.headers.get('x-taxpay-guest-capability') ?? '';
