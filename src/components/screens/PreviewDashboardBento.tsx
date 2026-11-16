@@ -172,17 +172,23 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
                 </p>
               </div>
               <div className="taxpay-unified-chart" aria-label={tr('Largest payment service share','সর্বোচ্চ সেবার অংশ')}>
-                <div className="taxpay-unified-donut" role="img"
-                  aria-label={valid?(largestShare+'%'):tr('Payment distribution unavailable','পেমেন্টের বিভাজন পাওয়া যায়নি')}>
-                  <strong>{valid?largestShare.toFixed(largestShare%1?2:0)+'%':'—'}</strong>
-                  <span>{total>0n?tr('Largest share','সর্বোচ্চ অংশ'):tr('No data','তথ্য নেই')}</span>
-                </div>
-                <p>{total>0n?tr('Recorded service distribution','নথিভুক্ত সেবার বিভাজন'):tr('No payment activity','পেমেন্ট কার্যক্রম নেই')}</p>
+                {valid&&total>0n?<>
+                  <div className="taxpay-unified-donut" role="img" aria-label={largestShare+'%'}>
+                    <strong>{largestShare.toFixed(largestShare%1?2:0)+'%'}</strong>
+                    <span>{tr('Largest share','সর্বোচ্চ অংশ')}</span>
+                  </div>
+                  <p>{tr('Recorded service distribution','নথিভুক্ত সেবার বিভাজন')}</p>
+                </>:<div className="taxpay-unified-chart-placeholder" role="status">
+                  <CircleHelp size={24} aria-hidden="true"/>
+                  <span>{valid?tr('No payment activity yet','এখনও কোনো পেমেন্ট কার্যক্রম নেই')
+                    :visible.phase==='loading'?tr('Loading payment activity…','পেমেন্ট কার্যক্রম লোড হচ্ছে…')
+                    :tr('Payment distribution unavailable','পেমেন্টের বিভাজন পাওয়া যায়নি')}</span>
+                </div>}
               </div>
             </div>
             <button type="button" className="taxpay-overview-feature__action"
-              onClick={rows.length?()=>onNavigate('history'):onPay}>
-              {rows.length?tr('View payment history','পেমেন্ট ইতিহাস দেখুন'):tr('Make your first payment','প্রথম পেমেন্ট করুন')}
+              onClick={rows.length||!valid?()=>onNavigate('history'):onPay}>
+              {rows.length||!valid?tr('View payment history','পেমেন্ট ইতিহাস দেখুন'):tr('Make your first payment','প্রথম পেমেন্ট করুন')}
               <ArrowRight size={16} aria-hidden="true"/>
             </button>
           </div>
@@ -250,8 +256,11 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
               <button type="button" className="taxpay-unified-text-link" onClick={()=>onNavigate('beneficiaries')}>
                 {tr('Manage beneficiaries','উপকারভোগী পরিচালনা')} <ArrowRight size={15} aria-hidden="true"/>
               </button>
-            </>:<EmptyIllustration icon="people" title={tr('No payment relationships yet','এখনও কোনো পেমেন্ট সম্পর্ক নেই')}
-              detail={tr('Relationships will appear after you make your first payment.','প্রথম পেমেন্টের পর সম্পর্কগুলো এখানে দেখা যাবে।')}/>}
+            </>:<EmptyIllustration icon="people"
+              title={valid?tr('No payment relationships yet','এখনও কোনো পেমেন্ট সম্পর্ক নেই')
+                :visible.phase==='loading'?tr('Loading relationships…','সম্পর্কের তথ্য লোড হচ্ছে…')
+                :tr('Payment relationships unavailable','পেমেন্ট সম্পর্কের তথ্য পাওয়া যায়নি')}
+              detail={valid?tr('Relationships will appear after you make your first payment.','প্রথম পেমেন্টের পর সম্পর্কগুলো এখানে দেখা যাবে।'):readMessage}/>}
           </article>
           <article className={panel} aria-labelledby="taxpay-unified-top-title">
             <h3 id="taxpay-unified-top-title">{tr('Top beneficiaries','শীর্ষ উপকারভোগী')}</h3>
@@ -262,8 +271,11 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
                 <p>{paymentTagGroupLabels[info.tag][language]} · {info.count} {tr('payments','পেমেন্ট')}</p>
                 <div className="taxpay-unified-progress"><span style={{width:recipients[0][1].total>0n?Number(info.total*100n/recipients[0][1].total)+'%':'0%'}}/></div>
               </li>)}
-            </ol>:<EmptyIllustration icon="people" title={tr('No beneficiaries to show','দেখানোর মতো উপকারভোগী নেই')}
-              detail={tr('Your highest-paid beneficiaries will appear here.','যাদের জন্য সবচেয়ে বেশি পরিশোধ করেছেন তাঁরা এখানে দেখানো হবে।')}/>}
+            </ol>:<EmptyIllustration icon="people"
+              title={valid?tr('No beneficiaries to show','দেখানোর মতো উপকারভোগী নেই')
+                :visible.phase==='loading'?tr('Loading recipients…','প্রাপকের তথ্য লোড হচ্ছে…')
+                :tr('Payment recipients unavailable','পেমেন্টের প্রাপকের তথ্য পাওয়া যায়নি')}
+              detail={valid?tr('Your highest-paid beneficiaries will appear here.','যাদের জন্য সবচেয়ে বেশি পরিশোধ করেছেন তাঁরা এখানে দেখানো হবে।'):readMessage}/>}
           </article>
         </div>
       </section>
@@ -285,8 +297,10 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
               </button>
             </li>)}
           </ol>:<EmptyIllustration icon="journey"
-            title={visible.phase==='error'?tr('Payment activity unavailable','পেমেন্ট কার্যক্রম পাওয়া যায়নি'):tr('Your tax journey is empty','আপনার কর যাত্রা ফাঁকা')}
-            detail={visible.phase==='error'?readMessage:tr('Completed payments will appear here in chronological order.','সম্পন্ন পেমেন্টগুলো এখানে তারিখ অনুযায়ী দেখা যাবে।')}/>}
+            title={valid?tr('Your tax journey is empty','আপনার কর যাত্রা ফাঁকা')
+              :visible.phase==='loading'?tr('Loading your tax journey…','আপনার কর যাত্রা লোড হচ্ছে…')
+              :tr('Payment activity unavailable','পেমেন্ট কার্যক্রম পাওয়া যায়নি')}
+            detail={valid?tr('Completed payments will appear here in chronological order.','সম্পন্ন পেমেন্টগুলো এখানে তারিখ অনুযায়ী দেখা যাবে।'):readMessage}/>}
         </section>
       </div>
     </div>
