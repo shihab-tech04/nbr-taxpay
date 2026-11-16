@@ -49,9 +49,16 @@ test('user6 keeps the approved dashboard and its SQL advance-tax records remain 
   expect(ids).not.toContain('SAMPLE-SRV-023');
   expect(records.every(row=>row.user_id==='user6' && row.simulation_only===true)).toBe(true);
   await page.goto('/?action=account_profile');
-  await expect(page.getByText('666**********', { exact: true })).toBeVisible();
-  await expect(page.getByText('6666666666666', { exact: true })).toHaveCount(0);
-  await expect(page.getByText('Advance tax and instalment review')).toBeVisible();
+  // A 13-digit fictional service reference is not an issued TIN. The same
+  // approved User1 profile template must still render owner-specific metadata.
+  const profileView=page.getByTestId('user1-taxpayer-profile');
+  await expect(page.getByRole('heading',{name:'Taxpayer profile'})).toBeVisible();
+  await expect(profileView).toContainText('Account: user6');
+  await expect(profileView.locator('[data-profile-field="tin"]')).toContainText('Not available');
+  await expect(profileView.getByRole('button',{name:'Copy TIN'})).toBeDisabled();
+  await expect(profileView.locator('[data-profile-field]')).toHaveCount(24);
+  await expect(profileView.getByTestId('profile-jurisdiction-card')).toBeVisible();
+  await expect(profileView).not.toContainText('6666666666666');
 });
 
 test('user8 keeps the same dashboard while its empty SQL records are isolated from user6', async ({ page }) => {
@@ -65,10 +72,14 @@ test('user8 keeps the same dashboard while its empty SQL records are isolated fr
     await expect(page.getByText(ref)).toHaveCount(0);
   }
   await page.goto('/?action=account_profile');
-  await expect(page.getByText('888**********', { exact: true })).toBeVisible();
-  await expect(page.getByText('8888888888888', { exact: true })).toHaveCount(0);
-  await expect(page.getByText('Payment Exception 08')).toHaveCount(0);
-  await expect(page.getByText('Account type')).toBeVisible();
+  const profileView=page.getByTestId('user1-taxpayer-profile');
+  await expect(profileView).toContainText('Account: user8');
+  await expect(profileView.locator('[data-profile-field="tin"]')).toContainText('Not available');
+  await expect(profileView.getByRole('button',{name:'Copy TIN'})).toBeDisabled();
+  await expect(profileView.locator('[data-profile-field]')).toHaveCount(24);
+  await expect(profileView.getByTestId('profile-personal-card')).toBeVisible();
+  await expect(profileView.getByText('Payment Exception 08')).toHaveCount(0);
+  await expect(profileView).not.toContainText('6666666666666');
 });
 
 test('user1 Activity keeps its approved transaction register without appended SQL sample panels', async ({ page }) => {

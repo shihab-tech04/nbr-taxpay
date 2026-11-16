@@ -143,10 +143,13 @@ export const TaxLedger:React.FC=()=>{
     const tx=state.rows.find(r=>r.transactionId===id);
     if(tx)setSelected(paymentRecord(tx,language));
   };
-  return <div className="mx-auto max-w-7xl space-y-4 pb-12" lang={language}>
-    <TaxpayerPageHeading title={t('Tax ledger','কর লেজার')} description={t('Ledger information','লেজারের তথ্য')} />
-    <div className="flex justify-end"><button type="button" onClick={exportLedger} disabled={(state.state!=='ready'&&external.state!=='ready')||!events.length}
-      className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-dark disabled:opacity-50">{t('Export ledger data','লেজারের তথ্য রপ্তানি')}</button></div>
+  return <div data-taxpay-register-page="true" className="mx-auto w-full max-w-7xl space-y-4 pb-12" lang={language}>
+    <TaxpayerPageHeading title={t('Tax ledger','কর লেজার')} description={t('Ledger information','লেজারের তথ্য')}
+      actions={<button type="button" onClick={exportLedger}
+        disabled={(state.state!=='ready'&&external.state!=='ready')||!events.length}
+        className="min-h-11 rounded-lg border border-taxpay-border px-4 text-sm font-semibold text-taxpay-dark disabled:opacity-50">
+        {t('Export ledger data','লেজারের তথ্য রপ্তানি')}
+      </button>}/>
     {identityPending||(state.state==='loading'&&external.state!=='ready')?<p role="status" className="rounded-xl border border-taxpay-border bg-white p-5 text-sm text-taxpay-muted">
       {t('Loading recorded events…','নথিভুক্ত ঘটনা লোড হচ্ছে…')}</p>:
     state.state==='error'&&external.state!=='ready'?<section role="alert" className="space-y-3 rounded-xl border border-taxpay-border bg-white p-5">

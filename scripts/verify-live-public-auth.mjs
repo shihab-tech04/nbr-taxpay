@@ -74,7 +74,7 @@ try {
           url:page.url(),messages,buttonDisabled
         }),{cause:error});
       }
-      await expect(page.getByRole('heading',{name:/^(Overview|সংক্ষিপ্ত বিবরণ)$/})).toBeVisible();
+      await expect(page.getByRole('heading',{name:/^(Your tax overview|আপনার করের সারসংক্ষেপ)$/})).toBeVisible();
       // Only a deployed build can certify the NEW dashboard UI. PR preflight
       // runs against the older published version and must not pre-approve it.
       if(process.env.GITHUB_EVENT_NAME!=='pull_request'){

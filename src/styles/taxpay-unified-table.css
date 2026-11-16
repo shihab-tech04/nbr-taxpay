@@ -1,4 +1,4 @@
-/* Korbritto Unified Data Table, v2.
+/* Sohojkor Unified Record Table, v3.
  * Board Meeting Solution reference: toolbar → filters/tabs → compact header →
  * striped selectable rows → mobile cards → states.
  * Visual contract only: never change API/SQL, sorting rules or payment actions.
@@ -1326,6 +1326,7 @@ table.taxpay-unified-table {
   --register-edge:var(--taxpay-table-border,#e1e6ee);
   --register-muted:var(--taxpay-table-muted,#5f6b7a);
   --register-heading:var(--taxpay-table-heading,#f7f9fc);
+  --taxpay-table-row-height:64px;
   width:100%;max-width:100%;min-width:0;
   padding:0!important;margin-inline:0;
   background:var(--taxpay-table-surface,#fff);
@@ -1388,6 +1389,15 @@ table.taxpay-unified-table {
   max-width:100%;min-width:0;margin:0;
   border:0;border-radius:0;box-shadow:none;
 }
+ /* The table owns horizontal scrolling, not the application viewport.
+    The full-width header, filter panel and footer remain stationary. */
+.taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-table-viewport {
+  width:100%;
+  box-sizing:border-box;
+  overflow-x:auto;
+  overscroll-behavior-inline:contain;
+  scrollbar-width:thin;
+}
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-office-register__body {
   margin:0;padding:0;min-width:0;
 }
@@ -1423,7 +1433,10 @@ table.taxpay-unified-table {
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-record-list__row:last-child {border-bottom:0;}
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table {
   border:0;border-collapse:collapse;border-spacing:0;
-  width:100%;background:#fff;
+  width:100%;min-width:100%;background:#fff;
+}
+.taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-table-viewport > table.taxpay-unified-table {
+  min-width:max-content;
 }
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table :is(th,td) {
   padding:10px 12px;
@@ -1439,7 +1452,7 @@ table.taxpay-unified-table {
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table th {
   font-size:14px;font-weight:650;color:var(--register-muted);white-space:normal;
 }
-.taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table tbody tr {height:76px;}
+.taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table tbody tr {height:auto;min-height:64px;}
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table tbody tr:nth-child(even):not([data-selected="true"]),
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-record-list__row:nth-child(even):not([data-selected="true"]) {
   background:#fafbfd;
