@@ -796,7 +796,7 @@ test('Phase 8 logged-in main content uses available width capped at 1300px above
             const available=main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
             return child.width/available;
           });
-          expect(Math.abs(ratio-Math.min(1300,available)/available),route+' '+lang).toBeLessThanOrEqual(.005);
+          expect(Math.abs(ratio-1),route+' '+lang).toBeLessThanOrEqual(.005);
         }
       }
     }
