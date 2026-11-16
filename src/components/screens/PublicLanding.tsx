@@ -305,6 +305,7 @@ export const PublicLanding: React.FC = () => {
           <button key={id} type="button"
             className="public-benefits__item focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary"
             data-benefit={id} style={{ width: '100%', textAlign: 'left', font: 'inherit', cursor: 'pointer' }}
+            aria-label={t('Open parallel taxpayer entry', 'বিকল্প করদাতা তথ্য ফর্ম খুলুন')}
             aria-describedby={`public-benefit-detail-${id}`}
             onClick={() => setShowParallelDraft(true)}>
             <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
