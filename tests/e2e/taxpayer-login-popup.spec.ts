@@ -200,7 +200,17 @@ test('account options float without resizing the login form or footer (desktop a
   for (const {width, height} of [{width:1280,height:600},{width:375,height:800}]) {
     await page.setViewportSize({width,height});
     await page.goto('/?action=taxpayer_login');
+    // Stabilize the unchanged UI before comparing geometry.
+    await page.evaluate(async ()=>{
+      await document.fonts.ready;
+      await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+    });
     const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+    // The approved modal's 280ms entrance animation must finish before
+    // checking the existing <3px dropdown no-reflow threshold.
+    await dialog.evaluate(async element=>{
+      await Promise.all(element.getAnimations().map(animation=>animation.finished.catch(()=>{})));
+    });
     const userId=dialog.locator('#taxpayer-login-user-id');
     const password=dialog.locator('#taxpayer-login-password');
     const footer=dialog.locator('.taxpay-modal__footer');
