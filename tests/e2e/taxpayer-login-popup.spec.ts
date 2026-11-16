@@ -205,6 +205,12 @@ test('account options float without resizing the login form or footer (desktop a
     const password=dialog.locator('#taxpayer-login-password');
     const footer=dialog.locator('.taxpay-modal__footer');
     if (await userId.getAttribute('aria-expanded') === 'true') await userId.press('Escape');
+    // Measure the settled layout, not the webfont swap during initial modal render.
+    // Keep the <3px movement gate intact so a real dropdown reflow still fails.
+    await dialog.evaluate(async node => {
+      await node.ownerDocument.fonts.ready;
+      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    });
     const beforePassword=await password.boundingBox();
     const beforeFooter=await footer.boundingBox();
     const beforeDialog=await dialog.boundingBox();
