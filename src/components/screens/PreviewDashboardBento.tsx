@@ -54,7 +54,7 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,name,language,onN
   const bn=language==='bn';
   const tr=(en:string,local:string)=>bn?local:en;
   const [year,setYear]=useState('2026-2027');
-  const [tab,setTab]=useState<'drafts'|'requests'>('requests');
+  const [tab,setTab]=useState<'drafts'|'requests'>('drafts');
   const [draftCount,setDraftCount]=useState<number|null>(null);
   const [snapshot,setSnapshot]=useState<LoadState>({owner:null,phase:'loading',transactions:[],people:[]});
   const [loadIssue,setLoadIssue]=useState('');
