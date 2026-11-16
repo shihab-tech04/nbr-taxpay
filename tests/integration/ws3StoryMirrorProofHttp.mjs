@@ -86,7 +86,11 @@ function loadHandler(file,origin){
  let handler=null;
  const cache=new Map();
  const deno={env:{get(key){
-  if(key==='SUPABASE_URL')return 'https://isolated-'+origin+'.invalid';
+  // Expose the real allowlisted SOURCE identity to the handler, but never its
+   // network: routedFetch above maps all permitted hosts to local test servers.
+   if(key==='SUPABASE_URL')return origin==='TAXPAY_SQL'
+     ?'https://eyqhoavnitkrajvyqvxn.supabase.co'
+     :'https://ihbtabrvmyiwikqqbhrf.supabase.co';
   if(key==='SUPABASE_ANON_KEY')return 'local-publishable';
   if(key==='SUPABASE_SERVICE_ROLE_KEY')return secret;
   return null;
