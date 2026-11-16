@@ -423,12 +423,11 @@ assert.deepEqual(readAgain,{count:3,read:1});
 // the verified recipient claims it, then the signed event and decision
 // channels carry it back and forth. All records live in disposable DBs.
 db(office,
- 'INSERT INTO demo_payment.story_payments(id,idempotency_key,session_id,service_code,amount_minor,data,status) '+
+ 'INSERT INTO demo_payment.story_payments(id,session_id,service_code,amount_minor,data,status,created_at) '+
  'VALUES ('+sqlText(started.sourcePaymentId)+'::uuid,'+
- sqlText('80000000-0000-4000-8000-000000000042')+'::uuid,'+
  sqlText('80000000-0000-4000-8000-000000000043')+'::uuid,'+
  sqlText('OTHER_TAX_PAYMENT')+',100,'+pgJSON(started.originalPayment)+','+
- sqlText('SIMULATED_SUCCESS')+') ON CONFLICT(id) DO NOTHING;SELECT true::jsonb;');
+ sqlText('SIMULATED_SUCCESS')+',now()) ON CONFLICT(id) DO NOTHING;SELECT true::jsonb;');
 const officeInitiationKey='80000000-0000-4000-8000-000000000091';
 const officeInitSql="SELECT public.payment_v1_office_initiate_correction("+
  sqlText(started.sourcePaymentId)+"::uuid,'444444444444','SYN-REF-003',"+
