@@ -13,7 +13,7 @@ Each independently attested source allocation must preserve:
 - Receiving taxpayer's original TIN; payer's TIN when supplied. These are private database fields, not unmasked public UI values.
 - Owner binding evidence linking the original recipient TIN to the authenticated taxpayer. A logged-in application account, guest payer TIN, or matching name alone is insufficient proof of entitlement.
 
-Records are immutable to clients. Server import must use a verified authorized source and idempotent keys `(owner_uid,source_system,source_transaction_id,source_allocation_id)`; it must not make up missing provider data. **Missing Dhara is shown as “Not supplied,” not inferred.**
+Records are immutable to clients. Server import must use a verified authorized source and globally unique idempotent source-allocation keys `(source_system,source_transaction_id,source_allocation_id)` (not owner-dependent); one source allocation must not be copied across two accounts as a second credit entitlement; it must not make up missing provider data. **Missing Dhara is shown as “Not supplied,” not inferred.**
 
 ## Recorded payment vs official credit
 
