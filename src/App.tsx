@@ -62,6 +62,37 @@ const previewReadOnlyRoutes = new Set([
 
 const activityRoutes = new Set(['history', 'journey', 'verify', 'corrections', 'certificates']);
 
+/** Route-scoped recovery for a failed lazy import/render. Never turn a History
+ * exception into a blank taxpayer page, and never read or alter another account.
+ * Successful History journeys retain their exact existing UI and behavior.
+ */
+class HistoryRouteBoundary extends React.Component<
+  {language:'en'|'bn';onBack:()=>void;children:React.ReactNode},{failed:boolean}
+> {
+  state={failed:false};
+  static getDerivedStateFromError():{failed:boolean}{return {failed:true};}
+  render(){
+    if(!this.state.failed)return this.props.children;
+    const bn=this.props.language==='bn';
+    return <section role="alert" data-testid="history-route-recovery"
+      className="mx-auto max-w-5xl space-y-4 rounded-xl border border-taxpay-border bg-white p-5 sm:p-6">
+      <h1 className="text-xl font-semibold text-taxpay-text">
+        {bn?'লেনদেনের ইতিহাস লোড করা যাচ্ছে না':'Could not load transaction history'}
+      </h1>
+      <p className="text-sm text-taxpay-muted">
+        {bn?'পেমেন্টের তথ্য পরিবর্তন করা হয়নি। পুনরায় চেষ্টা করুন অথবা সংক্ষিপ্ত বিবরণে ফিরে যান।':
+          'Your payment records have not been changed. Retry loading or return to Overview.'}
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-4 font-medium text-white"
+          onClick={()=>window.location.reload()}>{bn?'আবার চেষ্টা করুন':'Retry'}</button>
+        <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-4 font-medium text-taxpay-primary"
+          onClick={this.props.onBack}>{bn?'সংক্ষিপ্ত বিবরণে ফিরুন':'Back to Overview'}</button>
+      </div>
+    </section>;
+  }
+}
+
 const MainRouter: React.FC = () => {
   const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, isParityModalOpen, paymentServiceInitialSelection, paymentReuse } = useTaxState();
   const [dashboardPaymentDraft, setDashboardPaymentDraft] = useState<PaymentFormDraft | null>(null);
@@ -256,7 +287,12 @@ const MainRouter: React.FC = () => {
           </section>
         ) : <>
           <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেজ লোড হচ্ছে…' : 'Loading page…'}</p>}>
-            {renderActiveScreen()}
+            {currentRoute==='history'
+              ? <HistoryRouteBoundary key={previewAccount?.id??verifiedApplicationUser?.id??'guest'}
+                  language={language} onBack={()=>navigate('taxpayer_home')}>
+                  {renderActiveScreen()}
+                </HistoryRouteBoundary>
+              : renderActiveScreen()}
           </React.Suspense>
         </>}
       </main>
