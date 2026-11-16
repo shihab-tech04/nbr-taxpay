@@ -189,7 +189,7 @@ export function Beneficiaries(){
     const requestToken=Symbol('beneficiary-initial-load');
     initialRequestRef.current=requestToken;
     setLists([]);setPeople([]);setActiveList('');setSelectedIds([]);setLoading(true);setError('');
-    loadBeneficiaries(owner).then(data=>{
+    loadBeneficiaries(owner,{forceFresh:true}).then(data=>{
       if(cancelled)return;
       setLists(data.lists);setPeople(data.people);
       setActiveList(reviewTins.length?'all':rememberedBeneficiaryListId([{id:'all'},...data.lists],savedListId||'all'));
@@ -201,7 +201,7 @@ export function Beneficiaries(){
     return()=>{cancelled=true;};
   },[owner,checkingIdentity,previewAccount?.id]);
 
-  // Refresh across tabs and after returning from payments. Keep the current
+  // Refresh across tabs and devices, including while this page remains open. Keep the current
   // list visible while reading; never replace a valid snapshot with an empty
   // state just because a transient request failed.
   useEffect(()=>{
@@ -214,7 +214,7 @@ export function Beneficiaries(){
       // mount load already has the fresh data; do not issue a second read.
       if(document.visibilityState==='hidden' || initialRequestRef.current || !gate.begin(Date.now()))return;
       const current=++revision;
-      void loadBeneficiaries(owner).then(data=>{
+      void loadBeneficiaries(owner,{forceFresh:true}).then(data=>{
         if(cancelled || current!==revision)return;
         setLists(data.lists);setPeople(data.people);setError('');
         setActiveList(selected=>selected==='all'||data.lists.some(list=>list.id===selected)?selected:'all');
@@ -224,9 +224,11 @@ export function Beneficiaries(){
         // feedback if the transport or session remains unavailable.
       }).finally(()=>gate.finish());
     };
+    const interval=window.setInterval(refresh,30000);
     window.addEventListener('focus',refresh);
+    window.addEventListener('storage',refresh);
     document.addEventListener('visibilitychange',refresh);
-    return()=>{cancelled=true;window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
+    return()=>{cancelled=true;window.clearInterval(interval);window.removeEventListener('focus',refresh);window.removeEventListener('storage',refresh);document.removeEventListener('visibilitychange',refresh);};
   },[owner,checkingIdentity,busy]);
 
   const listPeople=activeList==='all'?people:people.filter(person=>person.list_id===activeList);
