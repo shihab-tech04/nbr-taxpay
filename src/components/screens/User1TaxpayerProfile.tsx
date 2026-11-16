@@ -25,7 +25,12 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
   const session=activePreviewSession();
   const accountId=account?.id??session?.profileId??null;
   const verified=Boolean(session&&session.profileId===accountId);
-  const owner=verified&&accountId?getDemoUser(accountId):null;
+  // The compile-time disabled-backend test build can show account-only mock
+  // fields after its local User ID login, but never bundled certificate values.
+  // Production does not permit any unverified preview ownership.
+  const offlinePreview=import.meta.env?.VITE_SUPABASE_DISABLED==='true'&&Boolean(account)&&!session;
+  const allowed=verified||offlinePreview;
+  const owner=allowed&&accountId?getDemoUser(accountId):null;
   const demoSql=useDemoSqlProfileAndServiceRecords(owner?.id??null);
   const sqlAccount=demoSql.status==='ready'&&demoSql.userId===accountId?demoSql.profile:null;
   const [reload,setReload]=useState(0);
@@ -33,8 +38,12 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
     owner:DemoUserId|null;status:'loading'|'ready'|'error';profile:TaxpayerTinProfile|null
   }>({owner:null,status:'loading',profile:null});
   useEffect(()=>{
-    if(!accountId||!verified){
+    if(!accountId||!allowed){
       setRecordState({owner:accountId,status:'error',profile:null});
+      return;
+    }
+    if(offlinePreview){
+      setRecordState({owner:accountId,status:'ready',profile:null});
       return;
     }
     let active=true;
@@ -45,7 +54,7 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
       if(active)setRecordState({owner:accountId,status:'error',profile:null});
     });
     return()=>{active=false;};
-  },[accountId,verified,reload]);
+  },[accountId,allowed,offlinePreview,reload]);
   // Never show a previous account's SQL row while a new account is loading.
   const current=recordState.owner===accountId?recordState:null;
   const record=verified?current?.profile??null:null;
@@ -128,7 +137,7 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
       setDownloadError(true);
     }
   };
-  if(!verified){
+  if(!allowed){
     return <section className="rounded-xl border border-taxpay-border bg-white p-5" data-testid="user1-taxpayer-profile">
       <p role="alert">{bn?'এই অ্যাকাউন্টের জন্য করদাতার প্রোফাইল পাওয়া যায়নি।':'Taxpayer profile is not available for this account.'}</p>
     </section>;
