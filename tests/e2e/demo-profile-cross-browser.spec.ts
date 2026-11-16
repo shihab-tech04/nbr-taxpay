@@ -49,8 +49,11 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
       else if(action==='demo-settings'){
         if(body.key==='language'&&['en','bn'].includes(String(body.value)))
           profile.language=body.value as 'en'|'bn';
-        if(body.key==='selected-list'&&profile.lists.some(list=>list.id===body.value))
-          profile.selectedListId=body.value as string;
+        if(body.key==='selected-list'){
+          if(body.value==='')profile.selectedListId=null;
+          else if(profile.lists.some(list=>list.id===body.value))
+            profile.selectedListId=body.value as string;
+        }
         data={language:profile.language,selectedListId:profile.selectedListId,paymentSessionId:profile.paymentSessionId};
       }else if(action==='lists')data=profile.lists;
       else if(action==='people')data=profile.people.slice(Number(body.offset??0),Number(body.offset??0)+Number(body.limit??500));
@@ -111,6 +114,17 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
     await b.evaluate(()=>window.dispatchEvent(new Event('focus')));
     await b.locator('#beneficiary-list').click();
     await expect(b.locator('#beneficiary-list-menu')).toContainText('Office Clients');
+    // Clearing the selected list is persisted as an empty server setting, not
+    // a non-UUID "all" value. Existing beneficiary rows remain unchanged.
+    await a.locator('#beneficiary-list').click();
+    await a.locator('#beneficiary-list-menu').locator('.beneficiary-list-picker__select').first().click();
+    await expect.poll(()=>records.get('user1')!.selectedListId).toBe(null);
+    await expect(a.getByText('Could not remember your selected list for next login.')).toHaveCount(0);
+    await b.reload();
+    await expect(b.getByTestId('beneficiaries-page')).toBeVisible();
+    await b.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
+    await expect(b.locator('#beneficiary-list')).toContainText(/All beneficiaries|সব উপকারভোগী/);
+    await expect(b.getByTestId('beneficiary-records')).toContainText('Sajid Khan');
   }finally{
     await Promise.all([first.close(),second.close(),third.close()]);
   }
