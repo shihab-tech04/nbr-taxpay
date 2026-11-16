@@ -1785,22 +1785,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               {ownAccountTax && (initialReuse && otherBatch
                 ? renderOtherTaxTaxpayerList(false)
                 : <SignedInTaxpayerCard profile={ownProfile} language={language} id="signed-in-account-taxpayer-card" />)}
-              {ownAccountTax && otherBatch && <SavedBeneficiaryPicker key={beneficiaryRefreshKey} language={language} allowMultiple
-                selectedTins={additionalTaxpayers.map(person => person.tin).filter(Boolean)}
-                onAvailableTins={setAvailableSavedTins}
-                onChoose={selected => {
-                  const unique = selected.filter((person, index) => person.tin !== taxpayerTin &&
-                    selected.findIndex(candidate => candidate.tin === person.tin) === index);
-                  const additions = unique.map(person => {
-                    const previous = additionalTaxpayers.find(candidate => candidate.tin === person.tin);
-                    return { ...person, id: previous?.id ?? crypto.randomUUID() };
-                  });
-                  setAdditionalTaxpayers(additions);
-                  setOtherTaxLines(lines => lines.filter(line => line.taxpayerId === 'primary' ||
-                    additions.some(person => person.id === line.taxpayerId)));
-                  setAuthorizedTaxpayerIds({});
-                  clearValidationError();
-                }} />}
+              {/* Self-liability uses the signed-in taxpayer only. Saved beneficiary controls belong to the OTHER payer route. */}
               {!ownAccountTax && <>
               {!signedInAccount && (!otherBatch || ownAccountTax) &&
                 <TaxpayerTinLookup language={language} className="payment-identity__tin" card
