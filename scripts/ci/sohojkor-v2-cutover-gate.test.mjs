@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {
   assertProductionCutoverSafe, ORIGINAL_TAXPAYER, PRIMARY_V2_CANDIDATE,
@@ -39,4 +40,16 @@ test('unknown backend endpoints fail closed', () => {
   assert.throws(() => assertProductionCutoverSafe({...baseline,
     primaryUrl:'https://unknown.supabase.co', releaseScope: SIMULATION_SCOPE}),
     /Unrecognized/);
+});
+
+test('integration workflow keeps both release gates and V2-only hosted persistence', () => {
+  const workflow = readFileSync(new URL('../../.github/workflows/pages.yml', import.meta.url), 'utf8');
+  const signed = workflow.indexOf('run: node scripts/ci/hybrid-cutover-gate.mjs');
+  const hosted = workflow.indexOf('run: node scripts/ci/sohojkor-v2-cutover-gate.mjs');
+  const publish = workflow.indexOf('uses: actions/deploy-pages@');
+  assert.ok(signed >= 0 && hosted > signed && publish > hosted,
+    'Signed and hosted V2 gates must both run before Pages publication');
+  const persistence = workflow.match(/- name: Verify hosted persistence[^]*?(?=\n\s*- name:|\n\S)/)?.[0] ?? '';
+  assert.match(persistence, /gmuhitmaynfhipcvbvkh\.supabase\.co/);
+  assert.doesNotMatch(persistence, /eyqhoavnitkrajvyqvxn\.supabase\.co/);
 });
