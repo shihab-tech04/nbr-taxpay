@@ -115,7 +115,12 @@ test('all ten matching ID/password pairs open their own taxpayer dashboard and p
     await expect(page.getByRole('heading',{name:'Your tax overview',exact:true})).toBeVisible();
     await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Profile',exact:true}).click();
     await expect(page).toHaveURL(/action=account_profile/);
-    if (id!==1) await expect(page.getByText('user'+id,{exact:true}).first()).toBeVisible();
+    const profile=page.getByTestId('user1-taxpayer-profile');
+    await expect(page.getByRole('heading',{name:'Taxpayer profile',exact:true})).toBeVisible();
+    await expect(profile).toContainText('Account: user'+id);
+    await expect(profile.locator('[data-profile-field]')).toHaveCount(24);
+    // The same template, not an obsolete generic badge, belongs to all users.
+    if(id!==1) await expect(profile.getByRole('button',{name:'Copy TIN'})).toBeDisabled();
     await page.locator('.taxpayer-reference-rail').getByRole('button',{name:'Sign out'}).click();
     await expect(page.locator('#public-home-title')).toBeVisible();
     expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
@@ -200,8 +205,7 @@ test('account options float without resizing the login form or footer (desktop a
     const password=dialog.locator('#taxpayer-login-password');
     const footer=dialog.locator('.taxpay-modal__footer');
     if (await userId.getAttribute('aria-expanded') === 'true') await userId.press('Escape');
-    // Wait for the chosen font before comparing baseline and dropdown positions.
-    // Font substitution is not a dropdown layout shift.
+    // Measure after webfont readiness: font replacement is not dropdown reflow.
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     const beforePassword=await password.boundingBox();
     const beforeFooter=await footer.boundingBox();
