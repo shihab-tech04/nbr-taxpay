@@ -85,3 +85,6 @@
  .taxpay-unified-empty{min-height:200px}
 }
 @media(prefers-reduced-motion:reduce){.taxpay-unified-preview *{scroll-behavior:auto}}
+
+.taxpay-unified-chart-placeholder{display:inline-flex;align-items:center;gap:12px;min-width:0;max-width:100%;color:#f0f7ff;font-size:13px;line-height:1.45}
+.taxpay-unified-chart-placeholder svg{flex:none}
