@@ -259,6 +259,10 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await paid.getByRole('button',{name:'Details for Other Tax Payment'}).click();
   const detail=page.getByRole('dialog',{name:'Other Tax Payment'});
   await expect(detail).toBeVisible();
+  const receiptFooter=detail.locator('.taxpay-modal__footer .receipt-view__action-group');
+  await expect(receiptFooter.getByRole('button')).toHaveCount(3);
+  await expect(receiptFooter.getByRole('button',{name:'Download'})).toBeVisible();
+  await expect(receiptFooter.getByRole('button',{name:'Apply for Correction'})).toBeEnabled();
   await expect(detail.getByTestId('recorded-pay-again-detail')).toBeEnabled();
   await detail.getByTestId('recorded-pay-again-detail').click();
   const cloned=page.getByRole('dialog',{name:'Pay Tax'});
