@@ -1349,14 +1349,14 @@
   justify-content:center;
 }
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric strong {
-  font-size:26px;
+  font-size:28px;
   line-height:1.2;
 }
 .taxpay-bento-grid[data-testid="taxpayer-overview-bento"] .taxpay-bento-summary .taxpay-summary-metric__label {
   display:inline-flex;
   align-items:center;
   gap:8px;
-  font-size:13px;
+  font-size:14px;
   line-height:1.35;
 }
 @media(max-width:799px){
