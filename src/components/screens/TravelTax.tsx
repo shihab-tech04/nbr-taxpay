@@ -8,7 +8,7 @@ import { getStorySessionId, persistSimulatedPayment } from '../../services/simul
 import {parseRecoverableTravelPayment, type PendingTravelPayment} from '../../services/travelPendingPayment';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
-import type { PaymentReuse } from '../../services/paymentReuse';
+import { reuseRecordedPayment, type PaymentReuse } from '../../services/paymentReuse';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {TAXPAY_PUBLIC_ENDPOINT} from '../../config/publicBackend';
 import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
@@ -53,7 +53,7 @@ function readPendingTravelPayment(key: string, sessionId: string): PendingTravel
  * government A-Challan integration. An API owner can replace those boundaries.
  */
 export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, initialReuse, onBackToService, onStageChange }) => {
-  const { language, navigate, addPaymentReceipt, previewAccount } = useTaxState();
+  const { language, navigate, addPaymentReceipt, previewAccount, startPaymentReuse } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // Keep the existing signed-in draft journey untouched. Unsigned guests
   // reuse WS3's current capability/session only when its backend is configured.
@@ -853,12 +853,25 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     </button>
   );
 
+  const receiptOwner=authenticatedUser?.id ??
+    (previewAccount&&activePreviewSession()?.profileId===previewAccount.id?previewAccount.id:null);
+  let receiptReuse:PaymentReuse|null=null;
+  if(receiptOwner&&createdReceipt?.paymentTransactionId&&!bankSlipPending){
+    try{receiptReuse=reuseRecordedPayment([createdReceipt],receiptOwner,null,
+      createdReceipt.batchId??createdReceipt.paymentTransactionId);}catch{/* Unsafe original cannot be repeated. */}
+  }
+  const ownedReceiptActions=Boolean(receiptOwner&&createdReceipt?.paymentTransactionId&&!bankSlipPending);
+  const applyReceiptCorrection=createdReceipt&&ownedReceiptActions?()=>{
+    navigate('corrections',{originalReference:createdReceipt.challanNo,applyForCorrection:Boolean(previewAccount)});
+  }:undefined;
   // Preserve the shared receipt/modal action owner and full-width receipt.
   if (embedded && createdReceipt && !bankSlipPending && !receiptReviewOpen) {
     return <>
       <button data-testid="travel-receipt-back" type="button" className="sr-only"
         onClick={() => stepTo(2)}>{tr('Return to review', 'পর্যালোচনায় ফিরুন')}</button>
-      <ReceiptView receipt={createdReceipt} embedded/>
+      <ReceiptView receipt={createdReceipt} embedded transactionActions={ownedReceiptActions}
+        onPayAgain={receiptReuse?()=>startPaymentReuse(receiptReuse!):undefined}
+        onApplyForCorrection={applyReceiptCorrection}/>
     </>;
   }
 
@@ -1123,7 +1136,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </dl>
           </section>}
 
-          {step === 3 && createdReceipt && !bankSlipPending && !embedded && <ReceiptView receipt={createdReceipt} embedded onBack={() => navigate('landing')}/>}
+          {step === 3 && createdReceipt && !bankSlipPending && !embedded && <ReceiptView receipt={createdReceipt} embedded onBack={() => navigate('landing')}
+            transactionActions={ownedReceiptActions}
+            onPayAgain={receiptReuse?()=>startPaymentReuse(receiptReuse!):undefined}
+            onApplyForCorrection={applyReceiptCorrection}/>}
           {!embedded && !createdReceipt && step > 0 && <button className="travel-flow__back" type="button"
             onClick={() => stepTo((step-1) as 0 | 1 | 2 | 3)}>
             <ArrowLeft size={16} aria-hidden="true"/>{tr('Back','ফিরুন')}
