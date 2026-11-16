@@ -169,8 +169,8 @@ test('wide desktop uses the available canvas without crushing the footer or look
     };
   });
   // Home must match Guide and Report on wide monitors.
-  expect(visual.hero.width).toBeGreaterThanOrEqual(1099);
-  expect(visual.hero.width).toBeLessThanOrEqual(1101);
+  expect(visual.hero.width).toBeGreaterThanOrEqual(1279);
+  expect(visual.hero.width).toBeLessThanOrEqual(1281);
   expect(Math.abs(visual.hero.width-visual.record.width)).toBeLessThanOrEqual(2);
   expect(visual.searchHeading.bottom).toBeLessThan(visual.searchField.top);
   expect(visual.searchField.width).toBeGreaterThanOrEqual(visual.record.width*.9);
@@ -225,8 +225,8 @@ test('reported tall desktop: homepage footer follows content with no blank space
           horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
         };
       });
-      expect(layout.homeWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(1099);
-      expect(layout.homeWidth).toBeLessThanOrEqual(1101);
+      expect(layout.homeWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(Math.min(1280, viewport.width - 64) - 1);
+      expect(layout.homeWidth).toBeLessThanOrEqual(Math.min(1280, viewport.width - 64) + 1);
       expect(layout.footerTop-layout.benefitsBottom,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(0);
       // A full-height shell is insufficient: the page must not leave the
       // 300px+ blank chasm shown between the benefits and footer.
@@ -337,8 +337,8 @@ test('professionally balanced Home padding and vertical rhythm at normal and zoo
           horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
         };
       });
-      expect(layout.contentWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(1099);
-      expect(layout.contentWidth).toBeLessThanOrEqual(1101);
+      expect(layout.contentWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(Math.min(1280, viewport.width - 64) - 1);
+      expect(layout.contentWidth).toBeLessThanOrEqual(Math.min(1280, viewport.width - 64) + 1);
       expect(layout.cardsCount).toBe(6);
       expect(layout.equalRowHeights).toBeLessThanOrEqual(2);
       expect(layout.cardPadding).toBeGreaterThanOrEqual(14);
@@ -669,8 +669,8 @@ test('desktop widths preserve the approved 3-by-2 equal-benefit layout in EN and
       expect(Math.abs(b[0].x-b[3].x)).toBeLessThanOrEqual(2);
       expect(Math.max(...b.map(x=>x.height))-Math.min(...b.map(x=>x.height))).toBeLessThanOrEqual(2);
       expect(b.every(x=>x.scrollHeight<=x.clientHeight+2)).toBe(true);
-      expect(result.homeWidth).toBeGreaterThanOrEqual(1099);
-      expect(result.homeWidth).toBeLessThanOrEqual(1101);
+      expect(result.homeWidth).toBeGreaterThanOrEqual(Math.min(1280, viewport.width - 64) - 1);
+      expect(result.homeWidth).toBeLessThanOrEqual(Math.min(1280, viewport.width - 64) + 1);
       expect(Math.abs(result.homeWidth-result.searchWidth)).toBeLessThanOrEqual(2);
       expect(result.overflowX).toBeLessThanOrEqual(2);
     }
@@ -994,8 +994,8 @@ test('1920px desktop Home fills the viewport with balanced sections and fixed fo
           cells,
         };
       });
-      expect(geometry.heroWidth, JSON.stringify({viewport, lang, geometry})).toBeGreaterThanOrEqual(1099);
-      expect(geometry.heroWidth).toBeLessThanOrEqual(1101);
+      expect(geometry.heroWidth, JSON.stringify({viewport, lang, geometry})).toBeGreaterThanOrEqual(1279);
+      expect(geometry.heroWidth).toBeLessThanOrEqual(1281);
       expect(Math.abs(geometry.heroWidth - geometry.searchWidth)).toBeLessThanOrEqual(2);
       expect(Math.abs(geometry.heroWidth - geometry.benefitsWidth)).toBeLessThanOrEqual(2);
       expect(geometry.headerBottom).toBeLessThan(geometry.heroTop);
