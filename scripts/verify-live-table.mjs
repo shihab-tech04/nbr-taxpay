@@ -79,6 +79,7 @@ try{
   // verified account-scoped rows or the legitimate empty state. This catches
   // the previously observed live blank page (a hidden render error is FAIL).
   const user2=await browser.newPage({viewport:{width:1280,height:900}});
+  user2.on('console',message=>{if(message.text().includes('[taxpay-history-render]'))console.error(message.text().slice(0,1000));});
   await user2.goto(url('taxpayer_login'),{waitUntil:'domcontentloaded',timeout:45000});
   const signIn2=user2.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await expect(signIn2.getByRole('textbox',{name:'User ID'})).toBeVisible({timeout:30000});
