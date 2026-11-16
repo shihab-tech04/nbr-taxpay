@@ -42,7 +42,9 @@ async function refreshLogo(force = false): Promise<void> {
       // A version bump must replace an image even when an Office upload reuses
       // the same object path. Existing versioned asset paths still work.
       const url = data.image_path
-        ? supabase.storage.from('taxpay-branding').getPublicUrl(data.image_path).data.publicUrl
+        ? data.image_path === 'logos/04d6e79e-ab94-4303-97b7-0faa0d945362.jpg'
+          ? lastPublishedLogo
+          : supabase.storage.from('taxpay-branding').getPublicUrl(data.image_path).data.publicUrl
         : defaultWordmark;
       const next = data.image_path
         ? url + (url.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(String(version))
