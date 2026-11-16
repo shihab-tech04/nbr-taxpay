@@ -62,7 +62,13 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       setLists(result.lists);setPeople(result.people);
       const containingSelection=result.lists.filter(list=>result.people.some(person=>
         person.list_id===list.id&&selectedTins.includes(person.tin))).map(list=>list.id);
-      setExpanded(containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[]);
+      // A background refresh must not collapse a list that the person opened.
+      // Drop only groups deleted in another session; default on first load.
+      setExpanded(previous=>{
+        const existing=new Set(result.lists.map(list=>list.id));
+        const retained=previous.filter(id=>existing.has(id));
+        return retained.length?retained:containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[];
+      });
       onAvailableTins(Array.from(new Set(result.people.map(person=>person.tin))));
     }).catch(e=>{
       if(cancelled||ownerScopeRef.current!==ownerScope)return;
