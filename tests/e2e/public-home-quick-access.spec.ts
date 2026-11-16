@@ -822,7 +822,8 @@ test('six benefit cards stay non-interactive in English and Bangla on mobile and
     await page.setViewportSize({ width, height: 900 });
     for (const language of ['en', 'bn'] as const) {
       await page.goto('/?action=landing&lang=' + language);
-      // Language query is allowed to normalize after mount; the public route must not change.\n      const startingAction = 'landing';
+      // Language query is allowed to normalize after mount; the public route must not change.
+      const startingAction = 'landing';
       const cards = page.locator('.public-benefits__item');
       await expect(cards).toHaveCount(6);
       for (const [id, en, bn] of cases) {
