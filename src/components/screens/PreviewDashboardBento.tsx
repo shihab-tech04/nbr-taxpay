@@ -182,8 +182,8 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,name,language,onN
               </div>
             </div>
             <button type="button" className="taxpay-overview-feature__action"
-              onClick={rows.length?()=>onNavigate('history'):onPay}>
-              {rows.length?tr('View payment history','পেমেন্ট ইতিহাস দেখুন'):tr('Make your first payment','প্রথম পেমেন্ট করুন')}
+              onClick={!valid||rows.length?()=>onNavigate('history'):onPay}>
+              {!valid||rows.length?tr('View payment history','পেমেন্ট ইতিহাস দেখুন'):tr('Make your first payment','প্রথম পেমেন্ট করুন')}
               <ArrowRight size={16} aria-hidden="true"/>
             </button>
           </div>
