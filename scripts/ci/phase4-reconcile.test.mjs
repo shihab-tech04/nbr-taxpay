@@ -84,3 +84,34 @@ test('distinct source and application-origin provenance are compared separately'
   assert.equal(complete.fieldComplete,true);
   assert.equal(complete.releaseVerified,false);
 });
+
+test('Travel Tax does not require a taxpayer TIN or Dhara',()=>{
+ const travel=copy(row);
+ travel.service_code='TRAVEL_TAX';
+ delete travel.data.details.taxpayerTin;
+ delete travel.data.details.allocations;
+ delete travel.data.details.dhara;
+ const x=reconcile([travel],[copy(travel)]);
+ assert.equal(x.parityPassed,true);
+ assert.equal(x.missingDhara,0);
+ assert.equal(x.missingRecipient,0);
+ assert.equal(x.fieldComplete,true);
+ assert.equal(x.releaseVerified,false);
+});
+test('non-Travel payment without a payer or recipient cannot claim field completeness',()=>{
+ const missingPayer=copy(row);
+ delete missingPayer.data.details.payerTin;
+ delete missingPayer.data.details.payerId;
+ const payerReport=reconcile([missingPayer],[copy(missingPayer)]);
+ assert.equal(payerReport.parityPassed,true);
+ assert.equal(payerReport.missingPayer,1);
+ assert.equal(payerReport.fieldComplete,false);
+ const missingRecipient=copy(row);
+ delete missingRecipient.data.details.allocations;
+ delete missingRecipient.data.details.taxpayerTin;
+ missingRecipient.data.details.dhara='verified';
+ const recipientReport=reconcile([missingRecipient],[copy(missingRecipient)]);
+ assert.equal(recipientReport.parityPassed,true);
+ assert.equal(recipientReport.missingRecipient,1);
+ assert.equal(recipientReport.fieldComplete,false);
+});
