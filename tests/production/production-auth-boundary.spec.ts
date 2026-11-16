@@ -63,6 +63,22 @@ test('User ID login continues into the taxpayer workspace and survives refresh',
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
 });
 
+test('unavailable preview API never grants account access or private beneficiaries',async({page})=>{
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
+    await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({success:false,code:'BACKEND_UNAVAILABLE'})});
+  });
+  await page.goto(site+'?action=taxpayer_login');
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  await dialog.getByLabel('User ID',{exact:true}).fill('user1');
+  await dialog.getByLabel('Password',{exact:true}).fill('user1');
+  await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect(dialog.getByRole('alert')).toBeVisible();
+  await expect(page).not.toHaveURL(/action=taxpayer_home/);
+  await page.goto(site+'?action=beneficiaries');
+  await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toBeVisible();
+});
+
 test('Bengali login retains its existing fields and language',async({page})=>{
   await page.goto(site+'?action=taxpayer_login&lang=bn');
   const dialog=page.getByRole('dialog');
