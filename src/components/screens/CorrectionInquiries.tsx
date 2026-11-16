@@ -77,6 +77,9 @@ const t={
 export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,dashboard=false})=>{
  const labels=t[language];
  const {routeParams}=useTaxState();
+ // Navigation from a payment row is a form hint, never proof of tax ownership.
+ const routeOriginalReference=typeof routeParams?.originalReference==='string'
+  ?routeParams.originalReference.slice(0,80):null;
  const candidateInquiryId=routeParams?.inquiryId;
  const selectedInquiryId=typeof candidateInquiryId==='string'&&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidateInquiryId)
@@ -85,7 +88,9 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
  // SQL independently matches the signed-in UID to the original allocation.
  const [receivedIntent,setReceivedIntent]=useState(()=>readReceivedPaymentCaseIntent());
  const [caseKind,setCaseKind]=useState<CorrectionCaseKind>(receivedIntent?.caseKind??'CORRECTION_REVIEW');
- const [originalReference,setOriginalReference]=useState(receivedIntent?.originalReference??'');
+ const [originalReference,setOriginalReference]=useState(receivedIntent?.originalReference??routeOriginalReference??'');
+ useEffect(()=>{if(routeOriginalReference&&!receivedIntent)setOriginalReference(routeOriginalReference);},
+   [routeOriginalReference,receivedIntent]);
  const [reason,setReason]=useState('');
  const [desiredOutcome,setDesiredOutcome]=useState('');
  const [changeKind,setChangeKind]=useState<ProposedAttributionField|''>('');
