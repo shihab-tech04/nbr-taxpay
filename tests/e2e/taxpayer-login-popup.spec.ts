@@ -202,6 +202,12 @@ test('account options float without resizing the login form or footer (desktop a
       await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
     });
     const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+    // The shared modal enters with a 280ms translation/scale animation.
+    // Compare settled coordinates before/after the dropdown opens; retain
+    // the strict <3px no-reflow acceptance limit.
+    await dialog.evaluate(async element=>{
+      await Promise.all(element.getAnimations().map(animation=>animation.finished.catch(()=>{})));
+    });
     const userId=dialog.locator('#taxpayer-login-user-id');
     const password=dialog.locator('#taxpayer-login-password');
     const footer=dialog.locator('.taxpay-modal__footer');
