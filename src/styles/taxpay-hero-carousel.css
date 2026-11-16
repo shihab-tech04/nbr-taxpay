@@ -1096,3 +1096,64 @@
   }
   .public-benefits__icon { width: 42px; height: 42px; }
 }
+
+
+/* Wide public Home: one balanced viewport without changing the public Guide,
+   Report, taxpayer workspace, published artwork or mobile layouts. */
+@media (min-width: 1600px) {
+  .taxpay-citizen-shell:has(.public-home-sections) {
+    --public-content-max: 1300px;
+  }
+}
+
+/* On normal-height wide monitors, use the available height in the banner and
+   benefit panel instead of leaving a large empty grey strip above the footer.
+   The search remains naturally sized, and the panels never clip their text. */
+@media (min-width: 1600px) and (min-height: 840px) and (max-height: 1200px) {
+  .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
+    display: flex;
+    flex-direction: column;
+    padding-top: clamp(12px, 1.6dvh, 20px);
+    padding-bottom: clamp(12px, 1.6dvh, 20px);
+  }
+  .public-home-sections {
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(250px, 1fr) auto minmax(250px, 1.1fr);
+    gap: clamp(14px, 1.8dvh, 22px);
+    min-height: 0;
+  }
+  .public-home-sections > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0;
+  }
+  .public-home-sections > .public-hero-carousel-shell {
+    height: 100%;
+    min-height: 250px;
+  }
+  .public-home-sections .public-hero-carousel,
+  .public-home-sections .public-hero-carousel__track {
+    height: 100%;
+  }
+  .public-home-sections .public-hero-carousel__slide.public-information-hero {
+    height: 100%;
+    min-height: 250px;
+  }
+  .public-home-sections .public-record-discovery {
+    padding: clamp(16px, 1.25vw, 22px);
+  }
+  .public-home-sections > .public-benefits {
+    display: flex;
+    flex-direction: column;
+    min-height: 250px;
+    padding: clamp(16px, 1.25vw, 22px);
+  }
+  .public-home-sections .public-benefits__grid {
+    flex: 1 1 auto;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+  .public-home-sections .public-benefits__item {
+    min-height: 0;
+    padding: clamp(12px, 1vw, 20px);
+  }
+}
