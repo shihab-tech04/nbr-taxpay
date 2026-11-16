@@ -234,7 +234,8 @@ test('six connected benefit cells have soft non-moving hover/focus shadows and c
     expect(after?.width).toBeCloseTo(before!.width, 1);
   }
 
-  await pa  const first = cards.first();
+  await page.mouse.move(0,0);
+  const first = cards.first();
   await expect(first.getByRole('link')).toHaveCount(0);
   await expect(first.getByRole('button')).toHaveCount(0);
   await page.emulateMedia({ reducedMotion:'reduce' });
