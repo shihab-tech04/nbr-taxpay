@@ -37,13 +37,31 @@ test('User ID login continues into the taxpayer workspace and survives refresh',
   // account or mutable live backend. The server must issue the capability;
   // a browser-only User ID string is never enough to grant access.
   const guestCapability='A'.repeat(43);
+  // Fetch is cross-origin: the browser may send OPTIONS before POST.
+  // Test only the application contract, with an explicit CORS-safe fixture.
+  const cors={
+    'access-control-allow-origin':'*',
+    'access-control-allow-methods':'POST, OPTIONS',
+    'access-control-allow-headers':'apikey,content-type,x-taxpay-guest-capability,authorization,x-client-info',
+  };
+  let verifiedLoginResponses=0;
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
-    const body=route.request().postDataJSON() as Record<string,unknown>;
-    if(body.action!=='demo-login'||body.userId!=='user1'||body.password!=='user1'){
-      await route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({success:false,code:'DENIED'})});
+    if(route.request().method()==='OPTIONS'){
+      await route.fulfill({status:204,headers:cors,body:''});
       return;
     }
-    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+    if(route.request().method()!=='POST'){
+      await route.fulfill({status:405,headers:cors,body:''});
+      return;
+    }
+    const body=route.request().postDataJSON() as Record<string,unknown>;
+    if(body.action!=='demo-login'||body.userId!=='user1'||body.password!=='user1'){
+      await route.fulfill({status:403,headers:cors,contentType:'application/json',
+        body:JSON.stringify({success:false,code:'DENIED'})});
+      return;
+    }
+    verifiedLoginResponses++;
+    await route.fulfill({status:200,headers:cors,contentType:'application/json',body:JSON.stringify({
       success:true,data:{profileId:'user1',capability:guestCapability,
         paymentSessionId:'90000000-0000-4000-8000-000000000001',
         language:'en',selectedListId:null}
@@ -54,6 +72,7 @@ test('User ID login continues into the taxpayer workspace and survives refresh',
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
   await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect.poll(()=>verifiedLoginResponses,{message:'Browser must receive the scoped preview login response'}).toBe(1);
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.goto(site+'?action=beneficiaries');
