@@ -1638,7 +1638,7 @@ table.taxpay-unified-table {
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
   .taxpay-table-viewport > table.taxpayer-transaction-table {
     width: 100%;
-    min-width: 1400px;
+    min-width: 1440px;
     table-layout: fixed;
   }
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
@@ -1656,7 +1656,7 @@ table.taxpay-unified-table {
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
   .taxpayer-transaction-table thead th:nth-child(7) { width: 130px; }
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
-  .taxpayer-transaction-table thead th:nth-child(8) { width: 135px; }
+  .taxpayer-transaction-table thead th:nth-child(8) { width: 160px; }
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
   .taxpayer-transaction-table thead th:nth-child(9) { width: 165px; }
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
