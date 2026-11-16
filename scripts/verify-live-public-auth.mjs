@@ -50,6 +50,17 @@ try {
       await dialog.getByRole('textbox',{name:'User ID'}).fill('user1');
       await dialog.getByLabel('Password',{exact:true}).fill('user1');
       await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
+      // The approved first-sign-in OTP checkpoint must complete before
+      // verifying the private dashboard route; never bypass the login flow.
+      const demoOtp = dialog.getByTestId('demo-otp-input');
+      await expect.poll(async () =>
+        await demoOtp.isVisible().catch(() => false) || /action=taxpayer_home/.test(page.url()),
+        {timeout:15_000}
+      ).toBe(true);
+      if (await demoOtp.isVisible().catch(() => false)) {
+        await demoOtp.fill('111111');
+        await dialog.getByRole('button',{name:'Verify code'}).click();
+      }
       // A real edge-backed preview login may take longer than Playwright's
       // default five seconds on a cold mobile session. Do not skip login:
       // require successful navigation, and preserve visible failure evidence.
@@ -63,51 +74,23 @@ try {
           url:page.url(),messages,buttonDisabled
         }),{cause:error});
       }
-      await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+      await expect(page.getByRole('heading',{name:/^(Your tax overview|আপনার করের সারসংক্ষেপ)$/})).toBeVisible();
       // Only a deployed build can certify the NEW dashboard UI. PR preflight
       // runs against the older published version and must not pre-approve it.
       if(process.env.GITHUB_EVENT_NAME!=='pull_request'){
-        // The live dashboard uses the new source-separated bento, not the old
-        // static beneficiary chart. Verify a real interactive instance in
-        // Chromium (no production writes and no invented Treasury totals).
-        const bento=page.getByTestId('taxpayer-overview-bento');
-        await expect(bento).toBeVisible({timeout:30_000});
-        const chart=bento.getByTestId('dashboard-payment-analytics');
-        await expect(chart).toBeVisible({timeout:30_000});
-        await expect(bento.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
-        await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
-        await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
-        // This is a capability-backed *fictional user1 preview*, not a
-        // Supabase Auth account. The exact Activity records must also appear
-        // in Overview, without a customer-facing data-source selector.
-        await expect(chart).toHaveAttribute('data-chart-source','example');
-        await expect(chart.getByTestId('dashboard-chart-source')).toHaveCount(0);
-        await expect(bento.getByTestId('dashboard-source-indicator')).toContainText('simulated');
-        await expect(chart).toContainText('Simulated Activity preview');
-        await expect(bento.locator('.taxpay-summary-metric--completed strong')).toHaveText('5');
-        await expect(bento.locator('.taxpay-summary-metric--requests strong')).toHaveText('2');
-        await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
-        await expect(bento.getByTestId('dashboard-correction-request-list').getByRole('listitem')).toHaveCount(2);
-        // Detailed service chart is intentionally disclosed in the approved recipient-first layout.
-        const serviceDetails=chart.getByTestId('dashboard-payment-extra');
-        if(await serviceDetails.count())await serviceDetails.locator('summary').click();
-        const services=chart.getByTestId('dashboard-service-breakdown');
-        if(await services.count()){
-          const selection=services.locator('[data-service]').first();
-          await expect(selection).toBeVisible();
-          await selection.click();
-          await expect(selection).toHaveAttribute('aria-pressed','true');
-          await services.getByRole('button',{name:'Show all payment services'}).click();
-          const spending=chart.getByTestId('dashboard-beneficiary-breakdown');
-          const recipientDetails=spending.locator('.taxpay-recipient-extra');
-          if(await recipientDetails.count())await recipientDetails.locator('summary').click();
-          if(await spending.locator('[data-tag]').count()){
-            await spending.locator('[data-tag]').first().click();
-            await expect(spending.getByTestId('dashboard-selected-tag')).toBeVisible();
-          }
-        }else{
-          throw new Error('Fictional preview breakdown unexpectedly contains no service rows');
-        }
+        // Production-only: assert the CURRENT approved fictional-account overview,
+        // not removed legacy bento metrics or unverified Treasury totals.
+        const workspace=page.getByTestId('user1-synthetic-workspace');
+        await expect(workspace).toBeVisible({timeout:30_000});
+        await expect(workspace).toHaveAttribute('data-dashboard-view','true');
+        await expect(page.getByRole('region',{name:/Payment records summary|পেমেন্ট রেকর্ডের সারসংক্ষেপ/})).toBeVisible();
+        await expect(page.getByTestId('preview-beneficiary-spending')).toBeVisible();
+        await expect(page.getByTestId('demo-sql-service-panel')).toBeVisible();
+        await expect(page.getByRole('heading',{name:/Payment composition|পেমেন্টের বিভাজন/})).toBeVisible();
+        await expect(page.getByRole('heading',{name:/Payment & transaction records|পেমেন্ট ও লেনদেন রেকর্ড/})).toBeVisible();
+        const yearSelect=page.getByRole('combobox',{name:/Assessment year|করবর্ষ/});
+        await yearSelect.selectOption('2025-2026');
+        await expect(yearSelect).toHaveValue('2025-2026');
         await page.screenshot({path:'test-results/live-dashboard-category-breakdown-'+name+'.png',fullPage:true});
       }
       const beneficiaryUrl=new URL(base);

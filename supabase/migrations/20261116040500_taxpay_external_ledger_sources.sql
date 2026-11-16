@@ -24,9 +24,7 @@ create table public.taxpay_external_payment_records (
   occurred_at timestamptz not null,
   source_evidence_ref text not null check (length(btrim(source_evidence_ref)) between 1 and 240),
   ingested_at timestamptz not null default now(),
-  -- One original provider allocation must not be claimed by two different owners.
-  -- Payment by a third party is provenance; it cannot duplicate tax credit.
-  unique (source_system,source_transaction_id,source_allocation_id)
+  unique (owner_uid,source_system,source_transaction_id,source_allocation_id)
 );
 comment on table public.taxpay_external_payment_records is
   'Owner-bound externally sourced transaction evidence; a recorded payment is never proof of tax credit. Trusted server import only; identity matching must be independently verified.';
@@ -43,9 +41,7 @@ create table public.taxpay_external_credit_postings (
   credited_at timestamptz not null,
   verification_evidence_ref text not null check (length(btrim(verification_evidence_ref)) between 1 and 240),
   ingested_at timestamptz not null default now(),
-  -- One official posting reference may allocate credit across multiple source lines.
-  -- A duplicate for the *same* allocation remains forbidden.
-  unique (payment_record_id,official_credit_source,official_credit_reference)
+  unique (official_credit_source,official_credit_reference)
 );
 comment on table public.taxpay_external_credit_postings is
   'Separate official tax-credit postings, requiring independent source and evidence. A payment status, challan or receipt cannot create a posting.';

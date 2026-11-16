@@ -150,7 +150,7 @@ export function PaymentLifecycleDetails({record,language}:{record:PaymentLifecyc
         <h3 className="mb-3 text-sm font-semibold">{t('Payment lifecycle','পেমেন্টের ধাপসমূহ')}</h3>
         <ol className="space-y-3">{record.events.length?record.events.map(e=><li key={e.id} className="border-l-2 border-taxpay-primary py-1 pl-3 text-sm">
           <p className="font-semibold">{e.title}</p><p className="text-xs text-taxpay-muted">{dateTime(e.occurredAt,language)}</p>
-          {e.note&&<p className="mt-1 text-xs text-taxpay-muted">{e.note}</p>}
+          {e.note&&<p className="mt-1 whitespace-pre-wrap break-words text-xs text-taxpay-muted">{e.note}</p>}
         </li>):<li className="text-sm text-taxpay-muted">{t('No lifecycle events recorded.','কোনো পেমেন্ট ধাপ পাওয়া যায়নি।')}</li>}</ol>
       </section>
       <section className="rounded-xl border border-taxpay-border bg-white p-4">
@@ -319,7 +319,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
           <Field title={t('Reference','রেফারেন্স')} value={selected.reference||'—'}/>
           <Field title={t('Status','অবস্থা')} value={selected.status||'—'}/>
         </FactGrid>
-        {selected.reason&&<p className="text-sm text-taxpay-muted">{selected.reason}</p>}
+        {selected.reason&&<p className="whitespace-pre-wrap break-words text-sm text-taxpay-muted">{selected.reason}</p>}
         {selected.linkedReferences?.length?<div className="text-sm"><h3 className="mb-1 font-semibold">{t('Related references','সংযুক্ত রেফারেন্স')}</h3>
           <p className="break-all text-taxpay-muted">{selected.linkedReferences.join(' · ')}</p></div>:null}
         {onOpenPayment&&selected.paymentId&&<button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white"

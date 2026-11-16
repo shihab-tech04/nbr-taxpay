@@ -1,6 +1,6 @@
 # Sohojkor — V2 primary / original-only historical fallback (safe cutover contract)
 
-**Status: HOLD — NOT LIVE.** This file applies only to Sohojkor Taxpayer and the distinct authorized Office integration. The already deployed Taxpayer site remains on the original project until the release gates below are met. No production migration, data write, or Office bridge activation is authorized by this document.
+**Status: V2 SIMULATION SITE LIVE; REAL INTEGRATED RELEASE ON HOLD.** Taxpayer GitHub Pages successfully deployed Main `34c8ef56d39009d8b9f40f51abf33bf3c8167428` on 16 November 2026. That deployed browser bundle uses Taxpayer-v2 for fictional user1–user30 simulation only, following a successful hosted V2 capability check; it does **not** prove managed Auth migration, original-record fallback, actual tax settlement, or Office synchronization. No separate hosted SQL/Auth/Storage migration or Office bridge activation is authorized by this document.
 
 ## Database roles
 
@@ -24,8 +24,17 @@
 - The **23 active original payment rows and 6 active V2 payment rows have zero overlapping immutable payment IDs and zero overlapping idempotency keys** at this read-only checkpoint. The original rows are dated 15 November 2026; V2's active rows date from 11–12 November. All are application `SIMULATED_SUCCESS` test records, not authoritative paid-tax/treasury postings. Do not copy, deduplicate or project them into Office as real tax receipts without authenticated provenance and exact record-by-record reconciliation.
 - **Auth source has 1 user and 1 identity; V2 has 2 users and 2 identities; 0 user UUIDs overlap.** This is a hard release blocker. A matching email hash is not a substitute for owner identity, confirmed login/refresh, and persistence.
 - Source and V2 `demo-story1-taxpay` Edge Function source intentionally differ: V2 contains an outbound Office dispatch disablement guard. Do not replace it blindly with original source or enable duplicate delivery.
-- Current V2-to-Office bridge is deliberately disabled; the deployed Office CMS and Taxpayer frontend still use original Taxpayer project. Current Office PR #270 and Taxpayer integrated PR #794 are draft/unmerged.
+- V2-to-Office bridge is deliberately disabled; the deployed **Taxpayer simulation frontend now uses V2**, while the separate deployed Office app remains on its original Office database and earlier Taxpayer peer route. Office PR #270 remains unmerged; Taxpayer integration PR #794 is not the deployed full release.
 - This document is not evidence of a complete restorable PostgreSQL/managed Auth/Storage backup or a tested hosted migration.
+
+## Database-change recheck (16 November 2026; read-only)
+- Main `34c8ef56` Pages deployment confirmed the **fictional simulation** scope and hosted V2 user1/user30 capability smoke. A later Main SHA requires its own exact-head deployment verification.
+- Original Taxpayer, V2 and Office each expose one managed Auth user and one identity; their **Auth user UUID fingerprints differ**, even where email fingerprints match. Never map authorization or private data by matching email/TIN alone.
+- Original has 23 simulated story-payment records, V2 has 6, Office has 23; signed `payment_sync` events and outbox records remain empty in each project. V2-to-Office financial reconciliation is **NOT VERIFIED**.
+- V2's `payment_sync.bridge_config` remains disabled, and Office has no active `payment_sync.officer_roles` assignments. Do not activate or assign roles from guessed identities.
+- Original and V2 contain 21 and 22 Storage objects respectively; Office has 0. Object counts and equal table shapes are **not** a full byte-level backup or restore proof.
+- Hosted Office still exposes seven anonymous-callable legacy `SECURITY DEFINER` RPCs. The candidate migration `20261115183000_office_private_legacy_rpc.sql` is source-only until backed up, applied and independently retested with approved Edge callers.
+- The current V2 developer/simulation login success does not certify real managed-Auth continuity or original-only fallback. Original projects and financial source provenance must remain intact.
 
 ## Mandatory release gates
 
@@ -38,6 +47,6 @@
 
 ## Protected action taken
 
-The existing dedicated [Taxpayer cutover PR #593](https://github.com/shihab-tech04/nbr-taxpay/pull/593) stages the V2 public build. It now contains a fail-closed production gate; a successful static build alone cannot publish V2. The gate is intentionally not bypassable with a CI variable while hosted identity and backup evidence remain missing. The existing Office and Taxpayer production apps remain unchanged.
+The approved V2 **simulation-only** public switch was published on Main `34c8ef56` after an exact-head Pages deployment and hosted fictional account smoke (GitHub Actions run `43784433095`). All real-account, hosted data restoration and Office integration requirements remain protected by distinct fail-closed gates. The Office production app and real financial integration are not certified as upgraded by that simulation release.
 
 Owner: WS5 release controller, with WS3 exclusive ownership of SQL/Office reconciliation. This contract must be integrated with approved work in PR #794 rather than overwriting its newer features.

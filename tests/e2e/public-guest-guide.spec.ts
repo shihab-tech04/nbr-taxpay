@@ -70,13 +70,17 @@ test('NBR tax and VAT e-Payment help is current and bilingual on the public guid
     const source = page.locator('.public-guide-source').first();
     if (language === 'en') {
       await expect(page.getByRole('heading', { name: 'Sohojkor user guide' })).toBeVisible();
-      await expect(source).toContainText('For Tax and VAT e-Payment problems, call the NBR hotline 16555.');
-      await expect(source.getByRole('link', { name: 'Call NBR Tax and VAT e-Payment support (16555)' }))
+      await expect(source).toContainText('For Tax e-Payment challan problems, call 09611-777111; for VAT e-Payment challan problems, call 16555.');
+      await expect(source.getByRole('link', { name: 'Call NBR Tax e-Payment challan support (09611-777111)' }))
+        .toHaveAttribute('href', 'tel:09611777111');
+      await expect(source.getByRole('link', { name: 'Call NBR VAT e-Payment challan support (16555)' }))
         .toHaveAttribute('href', 'tel:16555');
     } else {
       await expect(page.getByRole('heading', { name: 'সহজকর ব্যবহার নির্দেশিকা' })).toBeVisible();
-      await expect(source).toContainText('আয়কর ও ভ্যাট ই-পেমেন্ট সমস্যায় এনবিআরের ১৬৫৫৫ হটলাইনে কল করুন।');
-      await expect(source.getByRole('link', { name: 'এনবিআর আয়কর ও ভ্যাট ই-পেমেন্ট সহায়তায় কল করুন (১৬৫৫৫)' }))
+      await expect(source).toContainText('আয়কর ই-পেমেন্ট চালান পেতে সমস্যায় ০৯৬১১-৭৭৭১১১ এবং ভ্যাট ই-পেমেন্ট চালান পেতে সমস্যায় ১৬৫৫৫ নম্বরে কল করুন।');
+      await expect(source.getByRole('link', { name: 'এনবিআর আয়কর ই-পেমেন্ট চালান সহায়তায় কল করুন (০৯৬১১-৭৭৭১১১)' }))
+        .toHaveAttribute('href', 'tel:09611777111');
+      await expect(source.getByRole('link', { name: 'এনবিআর ভ্যাট ই-পেমেন্ট চালান সহায়তায় কল করুন (১৬৫৫৫)' }))
         .toHaveAttribute('href', 'tel:16555');
     }
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -164,7 +168,9 @@ test('User guide search and text weights follow the citizen typography contract'
 test('User guide has real platform-specific steps and searches across all topics', async ({ page }) => {
   await page.goto('/?action=user_guide');
   const guide = page.locator('.public-guide-page');
-  await expect(guide.getByText('On Home, choose Pay Tax', { exact: false })).toBeVisible();
+  const mobileDefault=(page.viewportSize()?.width??1280)<=700;
+  await expect(guide.getByText(mobileDefault?'Tap Pay Tax on Home':'On Home, choose Pay Tax',
+    { exact: false })).toBeVisible();
   await guide.getByRole('button', { name: 'Mobile', exact: true }).click();
   await expect(guide.getByText('Tap Pay Tax on Home', { exact: false })).toBeVisible();
   await expect(guide.getByText('On Home, choose Pay Tax', { exact: false })).toHaveCount(0);
@@ -195,7 +201,7 @@ test('Guide search covers steps and answers, while topic FAQs stay contextual', 
   await expect(guide.getByRole('heading',{name:'Search results'})).toBeVisible();
   await expect(guide.getByRole('link',{name:'NBR publications'})).toBeVisible();
   await expect(guide.locator('.public-guide-result-step').first()).toContainText('Find and add passengers');
-  await expect(guide.locator('.public-guide-result-step').first()).toContainText('not government passport verification');
+  await expect(guide.locator('.public-guide-result-step').first()).toContainText(/not government (?:passport )?verification/);
   await expect(guide.locator('.public-guide-layout')).toHaveCount(0);
   await field.fill('tap Pay Tax');
   await expect(guide.locator('.public-guide-result-step').first()).toContainText('Step 1 · Mobile');
@@ -233,7 +239,7 @@ test('Selecting a topic takes mobile readers directly to its instructions', asyn
   await expect(topic).toHaveAttribute('aria-current','true');
 });
 
-test('Home, Guide and Report retain the same approved desktop width and alignment', async ({ page }) => {
+test('Home expands on wide desktops while Guide and Report retain their approved alignment', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   const views = [
     { path: '/?action=landing', selector: '.public-information-hub' },
@@ -246,9 +252,10 @@ test('Home, Guide and Report retain the same approved desktop width and alignmen
     const box = await page.locator(view.selector).boundingBox();
     expect(box, `${view.path} should have a content container`).not.toBeNull();
     bounds.push({ x: box!.x, width: box!.width });
-    // No route-specific widening of the approved public 1100px canvas.
-    expect(box!.width).toBeGreaterThanOrEqual(1099);
-    expect(box!.width).toBeLessThanOrEqual(1101);
+    // The Home alone uses the wider 1300px rail on 1600px+ screens.
+    const expectedWidth = view.path.includes('landing') ? 1300 : 1100;
+    expect(box!.width).toBeGreaterThanOrEqual(expectedWidth - 1);
+    expect(box!.width).toBeLessThanOrEqual(expectedWidth + 1);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `Horizontal overflow on ${view.path}`).toBeLessThanOrEqual(2);
   }
@@ -570,17 +577,106 @@ test('guide search keeps existing Travel Tax action reachable in English and Ban
   }
 });
 
-test('maintained public guide revision is dated in both languages without changing service actions', async ({page})=>{
+test('public guide defaults to correct desktop/mobile instructions and focuses selected topic without losing device choice',async({page})=>{
+ const mobile=(page.viewportSize()?.width??1280)<=700;
+ await page.goto('/?action=user_guide&lang=en');
+ const guide=page.locator('.public-guide-page');
+ const mobileButton=guide.getByRole('button',{name:'Mobile',exact:true});
+ const webButton=guide.getByRole('button',{name:'Web',exact:true});
+ await expect(mobileButton).toHaveAttribute('aria-pressed',mobile?'true':'false');
+ await expect(webButton).toHaveAttribute('aria-pressed',mobile?'false':'true');
+ await expect(guide.getByText(mobile?'Tap Pay Tax on Home':'On Home, choose Pay Tax',{exact:false})).toBeVisible();
+
+ // A visitor can override the detected device; navigation does not discard it.
+ const override=mobile?webButton:mobileButton;
+ await override.click();
+ await expect(override).toHaveAttribute('aria-pressed','true');
+ await guide.getByRole('navigation',{name:'Guide topics'}).getByRole('button',{name:'Travel tax',exact:true}).click();
+ const article=guide.locator('.public-guide-content');
+ await expect(article).toBeFocused();
+ await expect(article.locator('.public-guide-content-head').getByRole('heading',{name:'Travel tax',exact:true})).toBeInViewport();
+ await expect(override).toHaveAttribute('aria-pressed','true');
+ await setWorkspaceLanguage(page,'bn');
+ await expect(guide.getByRole('heading',{name:'সহজকর ব্যবহার নির্দেশিকা'})).toBeVisible();
+ await expect(guide.getByRole('navigation',{name:'বিষয় নির্বাচন'})
+   .getByRole('button',{name:'ভ্রমণ কর',exact:true})).toHaveAttribute('aria-current','true');
+ await expect(guide.getByRole('button',{name:mobile?'ওয়েব':'মোবাইল',exact:true})).toHaveAttribute('aria-pressed','true');
+ expect(await page.evaluate(()=>
+  document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('guide no-results has a directly operable EN/BN recovery button and Bengali search-result count',async({page})=>{
+ await page.goto('/?action=user_guide&lang=bn');
+ const guide=page.locator('.public-guide-page');
+ const input=guide.getByRole('searchbox',{name:'নির্দেশিকা খুঁজুন'});
+ await input.fill('this-topic-does-not-exist-123456789');
+ const noResults=guide.locator('.public-guide-no-results');
+ await expect(noResults).toBeVisible();
+ await noResults.getByRole('button',{name:'অনুসন্ধান মুছুন'}).click();
+ await expect(input).toBeFocused();
+ await expect(input).toHaveValue('');
+ await expect(guide.getByRole('navigation',{name:'বিষয় নির্বাচন'})).toBeVisible();
+ await input.fill('passport');
+ await expect(guide.locator('.public-guide-result-step')).not.toHaveCount(0);
+ await expect(guide.locator('.public-guide-results-head [role="status"]')).toContainText(/[০-৯]/);
+ await setWorkspaceLanguage(page,'en');
+ const englishInput=guide.getByRole('searchbox',{name:'Search the guide'});
+ await englishInput.fill('another-completely-absent-topic-xyz');
+ await guide.locator('.public-guide-no-results').getByRole('button',{name:'Clear search'}).click();
+ await expect(englishInput).toBeFocused();
+ await expect(guide.getByRole('navigation',{name:'Guide topics'})).toBeVisible();
+});
+
+test('glossary filters have bilingual result feedback, clear search, and full empty-result recovery',async({page})=>{
+ await page.goto('/?action=glossary&lang=en');
+ const glossary=page.locator('.public-glossary');
+ const input=glossary.getByRole('searchbox',{name:'Search terms'});
+ const category=glossary.getByRole('combobox',{name:'Topic'});
+ await input.fill('e-TIN');
+ await expect(glossary.getByRole('heading',{name:'Taxpayer Identification Number'})).toBeVisible();
+ await expect(glossary.getByRole('status')).toContainText('term');
+ await category.selectOption('PAYMENT');
+ await expect(glossary.getByRole('status')).toContainText('No terms match');
+ await glossary.getByRole('button',{name:'Clear filters'}).click();
+ await expect(input).toBeFocused();
+ await expect(input).toHaveValue('');
+ await expect(category).toHaveValue('ALL');
+ await expect(glossary.getByRole('heading',{name:'Tax with Return'})).toBeVisible();
+ await input.fill('Advance Tax');
+ await glossary.getByRole('button',{name:'Clear search'}).click();
+ await expect(input).toHaveValue('');
+
+ await setWorkspaceLanguage(page,'bn');
+ const banglaInput=glossary.getByRole('searchbox',{name:'শব্দ খুঁজুন'});
+ await banglaInput.fill('রসিদ');
+ await expect(glossary.getByRole('heading',{name:'Payment Receipt'})).toBeVisible();
+ await expect(glossary.getByRole('status')).toContainText(/[০-৯]টি শব্দ/);
+ await banglaInput.fill('চালান-নয়-অজানা-শব্দ-123xyz');
+ await expect(glossary.getByRole('status')).toContainText('এই অনুসন্ধানে কোনো শব্দ মেলেনি');
+ await glossary.getByRole('button',{name:'সব ফিল্টার মুছুন'}).click();
+ await expect(banglaInput).toBeFocused();
+ await expect(glossary.getByRole('combobox',{name:'বিষয়'})).toHaveValue('ALL');
+ expect(await page.evaluate(()=>
+  document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
+
+test('public guide displays the actual maintained content revision date in EN/BN across all topics',async({page})=>{
   await page.goto('/?action=user_guide&lang=en');
   const guide=page.locator('.public-guide-page');
   const updated=guide.getByTestId('public-guide-last-updated');
   await expect(updated).toContainText('Guide last updated:');
   await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
   await expect(updated.locator('time')).toContainText('14 November 2026');
-  await expect(guide.getByRole('button',{name:'Open payment services'})).toBeVisible();
-  await page.goto('/?action=user_guide&lang=bn');
-  const updatedBn=page.locator('.public-guide-page').getByTestId('public-guide-last-updated');
-  await expect(updatedBn).toContainText('নির্দেশিকা সর্বশেষ হালনাগাদ:');
-  await expect(updatedBn.locator('time')).toHaveAttribute('datetime','2026-11-14');
-  await expect(updatedBn.locator('time')).toContainText('নভেম্বর');
+  const topicNav=guide.getByRole('navigation',{name:'Guide topics'});
+  for(const button of await topicNav.getByRole('button').all()){
+    await button.click();
+    await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  }
+  await setWorkspaceLanguage(page,'bn');
+  await expect(updated).toContainText('নির্দেশিকা সর্বশেষ হালনাগাদ:');
+  await expect(updated.locator('time')).toHaveAttribute('datetime','2026-11-14');
+  await expect(updated.locator('time')).toContainText('২০২৬');
+  await expect(updated.locator('time')).toContainText('নভেম্বর');
+  expect(await page.evaluate(()=>
+    document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });

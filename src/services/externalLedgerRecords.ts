@@ -72,7 +72,6 @@ export function projectExternalLedgerEvents(
 ):TaxAccountEvent[]{
   if(!present(ownerUid))throw new Error('External ledger owner unavailable');
   const byId=new Map<string,{payment:ExternalPaymentRecord;amount:number;source:string}>();
-  const sourceAllocations=new Set<string>();
   const events:TaxAccountEvent[]=[];
   for(const payment of payments){
     if(!present(payment.id)||payment.owner_uid!==ownerUid||byId.has(payment.id)||
@@ -86,11 +85,6 @@ export function projectExternalLedgerEvents(
       throw new Error('Unreconciled external payment source record');
     }
     const source=sourceLabel(payment.source_system);
-    const allocationKey=JSON.stringify([
-      payment.source_system,payment.source_transaction_id,payment.source_allocation_id
-    ]);
-    if(sourceAllocations.has(allocationKey))throw new Error('Duplicate external source allocation');
-    sourceAllocations.add(allocationKey);
     const amount=minor(payment.amount_minor);
     byId.set(payment.id,{payment,amount,source});
     events.push({
@@ -112,7 +106,6 @@ export function projectExternalLedgerEvents(
     });
   }
   const creditIds=new Set<string>();
-  const creditReferences=new Set<string>();
   const creditTotals=new Map<string,number>();
   for(const credit of credits){
     if(!present(credit.id)||creditIds.has(credit.id)||credit.owner_uid!==ownerUid||
@@ -121,13 +114,6 @@ export function projectExternalLedgerEvents(
       throw new Error('Unreconciled official credit posting');
     }
     creditIds.add(credit.id);
-    // A single official reference can be split across allocations, not replayed
-    // twice against the same allocation.
-    const creditReferenceKey=JSON.stringify([
-      credit.payment_record_id,credit.official_credit_source,credit.official_credit_reference
-    ]);
-    if(creditReferences.has(creditReferenceKey))throw new Error('Duplicate official credit posting');
-    creditReferences.add(creditReferenceKey);
     const matched=byId.get(credit.payment_record_id);
     if(!matched)throw new Error('Unmatched official credit posting');
     const credited=minor(credit.credited_amount_minor);

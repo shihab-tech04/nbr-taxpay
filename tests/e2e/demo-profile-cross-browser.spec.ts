@@ -1,4 +1,5 @@
 import {expect,test,type BrowserContext,type Page} from '@playwright/test';
+import {demoLoginOtpCompletedState} from './demo-login-test-state';
 
 /** Cross-browser regression for PUBLIC fictional user1-user10. All network calls
  * are intercepted; never touches a hosted account or external taxpayer records.
@@ -71,10 +72,11 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
     await expect(page).toHaveURL(/action=taxpayer_home/);
     await page.goto('/?action=beneficiaries');
     await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+    await page.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
   }
-  const first=await browser.newContext({baseURL:base});
-  const second=await browser.newContext({baseURL:base});
-  const third=await browser.newContext({baseURL:base});
+  const first=await browser.newContext({baseURL:base,storageState:demoLoginOtpCompletedState});
+  const second=await browser.newContext({baseURL:base,storageState:demoLoginOtpCompletedState});
+  const third=await browser.newContext({baseURL:base,storageState:demoLoginOtpCompletedState});
   try{
     await Promise.all([setup(first),setup(second),setup(third)]);
     const a=await first.newPage();
@@ -105,6 +107,7 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
     await modal.getByRole('button',{name:'তালিকা তৈরি',exact:true}).click();
     await expect(modal).toBeHidden();
     await b.reload();
+    await b.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     await b.locator('#beneficiary-list').click();
     await expect(b.locator('#beneficiary-list-menu')).toContainText('Office Clients');
   }finally{

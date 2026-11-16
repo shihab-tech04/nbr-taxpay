@@ -1,6 +1,7 @@
 // Shared bilingual guide data. This module is UI-free so Help does not load the full User Guide screen.
-
-// Editorial revision of the maintained Sohojkor guide text (not a claim about NBR law).
+// This is the editorial date of the published in-app instructions, not a claim
+// that tax laws, rates or external NBR material were reviewed on that day.
+// Update alongside any future substantive guide-copy revision.
 export const GUIDE_CONTENT_LAST_UPDATED = '2026-11-14' as const;
 export type Category = 'payments'|'status'|'travel'|'withholding'|'records'|'security';
 export type Pair = [string,string];
