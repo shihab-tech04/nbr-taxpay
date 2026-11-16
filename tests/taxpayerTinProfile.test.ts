@@ -94,8 +94,9 @@ test('M02 shared profile refuses URL-only access and never replaces missing SQL 
   const screen=readFileSync('src/components/screens/User1TaxpayerProfile.tsx','utf8');
   const router=readFileSync('src/App.tsx','utf8');
   assert.match(screen,/const verified=Boolean\(session&&session\.profileId===accountId\)/);
-  assert.match(screen,/const owner=verified&&accountId\?getDemoUser\(accountId\):null/);
-  assert.match(screen,/if\(!verified\)\{/);
+  assert.match(screen,/const allowed=verified\|\|offlinePreview/);
+  assert.match(screen,/const owner=allowed&&accountId\?getDemoUser\(accountId\):null/);
+  assert.match(screen,/if\(!allowed\)\{/);
   assert.match(screen,/loadTaxpayerRegistrationProfile\(accountId\)/);
   assert.match(screen,/setRecordState\(\{owner:accountId,status:'error',profile:null\}\)/);
   assert.match(screen,/const record=verified\?current\?\.profile\?\?null:null/);
