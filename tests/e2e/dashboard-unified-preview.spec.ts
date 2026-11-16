@@ -12,7 +12,7 @@ async function mockAccount(page:import('@playwright/test').Page, userId:PreviewU
       if(request.userId!==userId||request.password!==userId)
         return route.fulfill({status:401,contentType:'application/json',body:'{"success":false}'});
       data={profileId:userId,capability,paymentSessionId:sessionId,language:'en',selectedListId:null};
-    }else if(request.action==='lists'||request.action==='people'){data=[];}
+    }else if(request.action==='lists'||request.action==='people'||request.action==='payment-draft-list'){data=[];}
     else if(request.action==='demo-settings'){data={language:'en',selectedListId:null,paymentSessionId:sessionId};}
     else if(request.action==='open'){data={active:true};}
     else return route.fulfill({status:404,contentType:'application/json',body:'{"success":false}'});
@@ -66,6 +66,7 @@ for(const user of ['user2','user30'] as const){
     await expect(dashboard.getByText('No beneficiaries to show')).toBeVisible();
     await expect(dashboard.getByText('Your tax journey is empty')).toBeVisible();
     await expect(dashboard.getByTestId('dashboard-overview-total')).toHaveText('৳0');
+    await expect(dashboard.getByRole('button',{name:/Saved Drafts/})).toContainText('0');
     await expect(dashboard.getByRole('heading',{name:'Tax service activity'})).toHaveCount(0);
     await expect(dashboard.getByRole('heading',{name:'Payment composition'})).toHaveCount(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth))
