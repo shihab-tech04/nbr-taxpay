@@ -195,6 +195,12 @@ test('account options float without resizing the login form or footer (desktop a
   for (const {width, height} of [{width:1280,height:600},{width:375,height:800}]) {
     await page.setViewportSize({width,height});
     await page.goto('/?action=taxpayer_login');
+    // Establish stable baseline after font loading and two paints. An
+    // intermediate font swap is not the dropdown causing layout reflow.
+    await page.evaluate(async ()=>{
+      await document.fonts.ready;
+      await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+    });
     const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
     const userId=dialog.locator('#taxpayer-login-user-id');
     const password=dialog.locator('#taxpayer-login-password');
