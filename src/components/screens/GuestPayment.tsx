@@ -998,6 +998,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         setValidationError(message, 'headId');
         return;
       }
+      // Invalid resumed Pay Again drafts must show a field error, not a disabled
+      // Continue button. Positive over-limit values can be reviewed but never paid.
+      if (!storyAmountSupported && !(storyAmountMinor !== null && storyAmountMinor > MAX_STORY_AMOUNT_MINOR)) {
+        setValidationError(language === 'bn'
+          ? 'প্রতিটি খাতের পরিমাণ ও মোট পরিমাণের সীমা যাচাই করুন।'
+          : 'Review each amount and the supported total before continuing.', 'taxAmount');
+        return;
+      }
       clearValidationError();
       setStep(3);
       return;
@@ -2228,7 +2236,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
             </button>
             {(signedInAccount || unsignedGuestDrafts) && isPaymentDraftService(category) &&
               <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />}
-            <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'} onClick={handleStep2Next} disabled={otherBatch && (!batchValid || !storyAmountSupported)}>
+            <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'} onClick={handleStep2Next} disabled={!initialReuse && otherBatch && (!batchValid || !storyAmountSupported)}>
               <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
             </button>
           </>) : step === 3 ? (<>

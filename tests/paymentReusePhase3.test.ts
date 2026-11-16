@@ -240,3 +240,11 @@ test('Phase 3: starting another checkout clears immutable Pay Again provenance',
   assert.match(reset,/setSourcePaymentId\(null\)/);
   assert.match(reset,/setSourceAllocationIds\(\[\]\)/);
 });
+
+test('Phase 3: Pay Again invalid resumed draft exposes validation instead of disabling Continue',()=>{
+  const source=readFileSync(new URL('../src/components/screens/GuestPayment.tsx',import.meta.url),'utf8');
+  assert.ok(source.includes('disabled={!initialReuse && otherBatch && (!batchValid || !storyAmountSupported)}'),
+    'Pay Again must allow the review action to report the precise error');
+  assert.ok(source.includes('if (!storyAmountSupported && !(storyAmountMinor !== null && storyAmountMinor > MAX_STORY_AMOUNT_MINOR))'),
+    'Invalid amounts must still be rejected before checkout');
+});
