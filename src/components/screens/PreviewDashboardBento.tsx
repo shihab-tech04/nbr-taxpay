@@ -243,7 +243,7 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,name,language,onN
         <div className="taxpay-unified-recipients">
           <article className={panel} aria-labelledby="taxpay-unified-rel-title">
             <h3 id="taxpay-unified-rel-title">{tr('Payment relationships','পেমেন্ট সম্পর্ক')}</h3>
-            {recipients.length?<>
+            {!valid?<EmptyIllustration icon="people" title={tr('Payment relationships unavailable','পেমেন্ট সম্পর্কের তথ্য পাওয়া যাচ্ছে না')} detail={readMessage}/>:total>0n?<>
               <p className="taxpay-unified-subtitle">{tr('Amounts paid for other taxpayers','অন্য করদাতাদের জন্য পরিশোধ')}</p>
               <strong className="taxpay-unified-recipient-total">{money(paidForOthers,language)}</strong>
               <div className="taxpay-unified-progress"><span style={{width:total>0n?Number(paidForOthers*100n/total)+'%':'0%'}}/></div>
@@ -256,7 +256,7 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,name,language,onN
           </article>
           <article className={panel} aria-labelledby="taxpay-unified-top-title">
             <h3 id="taxpay-unified-top-title">{tr('Top beneficiaries','শীর্ষ উপকারভোগী')}</h3>
-            {recipients.length?<ol className="taxpay-unified-ranked">
+            {!valid?<EmptyIllustration icon="people" title={tr('Beneficiary payment data unavailable','উপকারভোগী পেমেন্টের তথ্য পাওয়া যাচ্ছে না')} detail={readMessage}/>:recipients.length?<ol className="taxpay-unified-ranked">
               {recipients.slice(0,5).map(([recipient,info],index)=><li key={recipient}>
                 <div><span>{index+1}. {tr('Taxpayer Account ','করদাতা অ্যাকাউন্ট ')}{recipient.replace(/^user/,'')}</span>
                   <strong>{money(info.total,language)}</strong></div>
@@ -276,7 +276,7 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,name,language,onN
               {tr('View all activity','সব কার্যক্রম দেখুন')} <ArrowRight size={15} aria-hidden="true"/>
             </button>}
           </div>
-          {rows.length?<ol className="taxpay-unified-timeline">
+          {valid&&rows.length?<ol className="taxpay-unified-timeline">
             {rows.slice(0,5).map(row=><li key={row.id}>
               <div><strong>{tr('Recorded payment','নথিভুক্ত পেমেন্ট')}</strong>
                 <p>{formatDate(row.date)}</p></div>
@@ -286,8 +286,8 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,name,language,onN
               </button>
             </li>)}
           </ol>:<EmptyIllustration icon="journey"
-            title={visible.phase==='error'?tr('Payment activity unavailable','পেমেন্ট কার্যক্রম পাওয়া যায়নি'):tr('Your tax journey is empty','আপনার কর যাত্রা ফাঁকা')}
-            detail={visible.phase==='error'?readMessage:tr('Completed payments will appear here in chronological order.','সম্পন্ন পেমেন্টগুলো এখানে তারিখ অনুযায়ী দেখা যাবে।')}/>}
+            title={!valid?tr('Payment activity unavailable','পেমেন্ট কার্যক্রম পাওয়া যায়নি'):tr('Your tax journey is empty','আপনার কর যাত্রা ফাঁকা')}
+            detail={!valid?readMessage:tr('Completed payments will appear here in chronological order.','সম্পন্ন পেমেন্টগুলো এখানে তারিখ অনুযায়ী দেখা যাবে।')}/>}
         </section>
       </div>
     </div>
