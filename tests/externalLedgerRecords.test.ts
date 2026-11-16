@@ -99,3 +99,17 @@ test('ledger CSV exports neutralize untrusted provider formulas but preserve exa
   assert.equal(escapeLedgerCsvCell(12501),'"12501"');
   assert.equal(escapeLedgerCsvCell(null),'""');
 });
+
+test('one official credit reference can cover distinct allocation lines, never duplicate one allocation',()=>{
+  const second={...base,id:'payment-2',source_allocation_id:'line-2',amount_minor:'9000'};
+  const split={...credit,id:'credit-2',payment_record_id:'payment-2',credited_amount_minor:'4000'};
+  const events=projectExternalLedgerEvents(owner,[base,second],[credit,split],'en');
+  assert.equal(events.filter(e=>e.code==='EXTERNAL_OFFICIAL_TAX_CREDIT').length,2);
+  assert.equal(events.filter(e=>e.effectMinor===-4000).length,1);
+  assert.throws(()=>projectExternalLedgerEvents(owner,[base],[credit,{
+    ...credit,id:'credit-3',credited_amount_minor:'1000'
+  }],'en'),/Duplicate official credit/);
+  const sql=readFileSync('supabase/migrations/20261116040500_taxpay_external_ledger_sources.sql','utf8');
+  assert.match(sql,/unique \(payment_record_id,official_credit_source,official_credit_reference\)/);
+  assert.doesNotMatch(sql,/unique \(official_credit_source,official_credit_reference\)/);
+});
