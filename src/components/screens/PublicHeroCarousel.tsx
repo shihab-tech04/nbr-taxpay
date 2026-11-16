@@ -104,6 +104,42 @@ type BannerSlide = {
 
 const fallbackSlides: BannerSlide[] = defaultSlides.map(slide => ({ ...slide }));
 
+/**
+ * Exact public CMS publication snapshot (16 November 2026), backed by the
+ * original/secondary taxpayer SQL readback and checksum-verified Storage copy.
+ * No remote asset, API, Realtime, or Storage connection is necessary for the
+ * temporarily offline production branding experience.
+ *
+ * Preserve publication order, approved image colors, fixed copy and CTA routes.
+ * Restore the dynamic CMS only after a separately verified service recovery.
+ */
+const staticBrandingBase = `${import.meta.env.BASE_URL}branding/published/`;
+const staticPublishedMedia: Record<string, {
+  imageFile: string;
+  backgroundColor: string;
+  headingColor: string;
+  bodyColor: string;
+  outlineColor: string;
+}> = {
+  intro:       { imageFile: 'banner-intro.jpg',       backgroundColor: '#F7F5E6', headingColor: '#65531B', bodyColor: '#6D5F31', outlineColor: '#7A651F' },
+  return:      { imageFile: 'banner-return.png',      backgroundColor: '#ECF8FC', headingColor: '#1B4D65', bodyColor: '#315A6D', outlineColor: '#1F5D7A' },
+  advance:     { imageFile: 'banner-advance.png',     backgroundColor: '#FAF1DD', headingColor: '#65501B', bodyColor: '#6D5C31', outlineColor: '#7A611F' },
+  withholding: { imageFile: 'banner-withholding.png', backgroundColor: '#F8E7F6', headingColor: '#651B63', bodyColor: '#6D316C', outlineColor: '#7A1F78' },
+  travel:      { imageFile: 'banner-travel.png',      backgroundColor: '#ECF8FC', headingColor: '#07516B', bodyColor: '#316078', outlineColor: '#0C6D8D' },
+};
+const staticPublishedSlides: BannerSlide[] = fallbackSlides.map(slide => {
+  const media = staticPublishedMedia[slide.id];
+  return {
+    ...slide,
+    image: staticBrandingBase + media.imageFile,
+    backgroundColor: media.backgroundColor,
+    headingColor: media.headingColor,
+    bodyColor: media.bodyColor,
+    outlineColor: media.outlineColor,
+  };
+});
+
+
 /** Keep the approved v9 media and layout even if a published Storage object is missing. */
 function BannerPicture({ slide, visible, preload, onVisibleReady }: {
   slide: BannerSlide; visible: boolean; preload: boolean; onVisibleReady: () => void;
@@ -197,10 +233,10 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   paused = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [slides, setSlides] = useState<BannerSlide[]>([]);
+  const [slides, setSlides] = useState<BannerSlide[]>(BRANDING_CMS_CONNECTION_ENABLED ? [] : staticPublishedSlides);
   const activeBannerId = useRef<string | null>(null);
   const lastPublishedSignature = useRef<string | null>(null);
-  const [bannerStatus, setBannerStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading');
+  const [bannerStatus, setBannerStatus] = useState<'loading' | 'ready' | 'unavailable'>(BRANDING_CMS_CONNECTION_ENABLED ? 'loading' : 'ready');
   const [retryNonce, setRetryNonce] = useState(0);
   // The next slide may preload only after the visible banner's image finishes.
   // This prevents five simultaneous images from competing for first paint on 4G.
@@ -226,7 +262,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       // Temporarily use approved bundled artwork and copy, retaining all five
       // EN/BN slides, actions, navigation and responsive presentation.
       // No logo/banner REST, Storage URLs or Realtime subscriptions are made.
-      setSlides(fallbackSlides);
+      setSlides(staticPublishedSlides);
       setBannerStatus('ready');
       return;
     }
