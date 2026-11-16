@@ -25,7 +25,7 @@ function serviceClient(url:string){
 // The source selector is derived only from the server's configured Supabase URL.
 // Office verifies a separate payment+session-bound proof at that exact source.
 function officeMirrorSource(url:string):'original'|'v2'{
- const origin=url.replace(/\\/$/,'');
+ const origin=new URL(url).origin;
  if(origin==='https://gmuhitmaynfhipcvbvkh.supabase.co')return 'v2';
  if(origin==='https://eyqhoavnitkrajvyqvxn.supabase.co')return 'original';
  throw Error('UNRECOGNIZED_TAXPAY_SOURCE');
