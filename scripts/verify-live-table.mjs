@@ -20,19 +20,6 @@ try{
   await page.locator('#taxpayer-login-user-id').fill('user1');
   await page.locator('#taxpayer-login-password').fill('user1');
   await page.locator('button[form="taxpay-standalone-login-form"]').click();
-  // The approved first demo sign-in requires its on-screen OTP challenge.
-  // Complete that existing authentication step before asserting the private UI.
-  const otp=page.getByTestId('demo-otp-input');
-  await expect.poll(async()=>
-    await otp.isVisible().catch(()=>false) || /action=taxpayer_home/.test(page.url()),
-    {timeout:15000}
-  ).toBe(true);
-  if(await otp.isVisible().catch(()=>false)){
-    await otp.fill('111111');
-    await page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})
-      .getByRole('button',{name:'Verify code'}).click();
-  }
-  await expect(page).toHaveURL(/action=taxpayer_home/,{timeout:30000});
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible({timeout:30000});
   // Same tab keeps the existing account session. Direct anonymous history links
   // must continue to show the approved sign-in boundary.
