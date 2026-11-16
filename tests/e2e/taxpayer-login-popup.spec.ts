@@ -200,6 +200,9 @@ test('account options float without resizing the login form or footer (desktop a
     const password=dialog.locator('#taxpayer-login-password');
     const footer=dialog.locator('.taxpay-modal__footer');
     if (await userId.getAttribute('aria-expanded') === 'true') await userId.press('Escape');
+    // Wait for the chosen font before comparing baseline and dropdown positions.
+    // Font substitution is not a dropdown layout shift.
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
     const beforePassword=await password.boundingBox();
     const beforeFooter=await footer.boundingBox();
     const beforeDialog=await dialog.boundingBox();
