@@ -123,10 +123,10 @@ Deno.serve(async (request: Request) => {
     // The login returns a stable opaque demo capability, not Supabase Auth,
     // taxpayer ownership, SQL admin access or a payment entitlement.
     if (action === 'demo-login') {
-      // The public fictional login is limited to the currently approved 30
-      // profiles, even if legacy SQL holds additional simulator fixtures.
+      // Public fictional backend supports 55 capability-scoped fixtures; the
+      // selectable Taxpayer UI remains limited to its approved first 30.
       if (typeof body.userId !== 'string' || typeof body.password !== 'string' ||
-          !/^user(?:[1-9]|[12][0-9]|30)$/.test(body.userId) ||
+          !/^user(?:[1-9]|[1-4][0-9]|5[0-5])$/.test(body.userId) ||
           body.password !== body.userId || body.password.length > 80)
         throw new Error('INVALID_DEMO_LOGIN');
       const data = await rpc(client, 'taxpay_demo_profile_login', {
