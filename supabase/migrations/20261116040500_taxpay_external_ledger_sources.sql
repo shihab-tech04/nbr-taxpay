@@ -24,7 +24,9 @@ create table public.taxpay_external_payment_records (
   occurred_at timestamptz not null,
   source_evidence_ref text not null check (length(btrim(source_evidence_ref)) between 1 and 240),
   ingested_at timestamptz not null default now(),
-  unique (owner_uid,source_system,source_transaction_id,source_allocation_id)
+  -- One original provider allocation must not be claimed by two different owners.
+  -- Payment by a third party is provenance; it cannot duplicate tax credit.
+  unique (source_system,source_transaction_id,source_allocation_id)
 );
 comment on table public.taxpay_external_payment_records is
   'Owner-bound externally sourced transaction evidence; a recorded payment is never proof of tax credit. Trusted server import only; identity matching must be independently verified.';
