@@ -168,9 +168,9 @@ test('wide desktop uses the available canvas without crushing the footer or look
       horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
     };
   });
-  // Home expands to 1300px on wide monitors; Guide and Report retain 1100px.
-  expect(visual.hero.width).toBeGreaterThanOrEqual(1299);
-  expect(visual.hero.width).toBeLessThanOrEqual(1301);
+  // Home must match Guide and Report on wide monitors.
+  expect(visual.hero.width).toBeGreaterThanOrEqual(1099);
+  expect(visual.hero.width).toBeLessThanOrEqual(1101);
   expect(Math.abs(visual.hero.width-visual.record.width)).toBeLessThanOrEqual(2);
   expect(visual.searchHeading.bottom).toBeLessThan(visual.searchField.top);
   expect(visual.searchField.width).toBeGreaterThanOrEqual(visual.record.width*.9);
@@ -225,8 +225,8 @@ test('reported tall desktop: homepage footer follows content with no blank space
           horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
         };
       });
-      expect(layout.homeWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(viewport.width >= 1600 ? 1299 : 1099);
-      expect(layout.homeWidth).toBeLessThanOrEqual(viewport.width >= 1600 ? 1301 : 1101);
+      expect(layout.homeWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(1099);
+      expect(layout.homeWidth).toBeLessThanOrEqual(1101);
       expect(layout.footerTop-layout.benefitsBottom,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(0);
       // A full-height shell is insufficient: the page must not leave the
       // 300px+ blank chasm shown between the benefits and footer.
@@ -337,8 +337,8 @@ test('professionally balanced Home padding and vertical rhythm at normal and zoo
           horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
         };
       });
-      expect(layout.contentWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(viewport.width >= 1600 ? 1299 : 1099);
-      expect(layout.contentWidth).toBeLessThanOrEqual(viewport.width >= 1600 ? 1301 : 1101);
+      expect(layout.contentWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(1099);
+      expect(layout.contentWidth).toBeLessThanOrEqual(1101);
       expect(layout.cardsCount).toBe(6);
       expect(layout.equalRowHeights).toBeLessThanOrEqual(2);
       expect(layout.cardPadding).toBeGreaterThanOrEqual(14);
@@ -994,8 +994,8 @@ test('1920px desktop Home fills the viewport with balanced sections and fixed fo
           cells,
         };
       });
-      expect(geometry.heroWidth, JSON.stringify({viewport, lang, geometry})).toBeGreaterThanOrEqual(1299);
-      expect(geometry.heroWidth).toBeLessThanOrEqual(1301);
+      expect(geometry.heroWidth, JSON.stringify({viewport, lang, geometry})).toBeGreaterThanOrEqual(1099);
+      expect(geometry.heroWidth).toBeLessThanOrEqual(1101);
       expect(Math.abs(geometry.heroWidth - geometry.searchWidth)).toBeLessThanOrEqual(2);
       expect(Math.abs(geometry.heroWidth - geometry.benefitsWidth)).toBeLessThanOrEqual(2);
       expect(geometry.headerBottom).toBeLessThan(geometry.heroTop);
