@@ -2,9 +2,6 @@ import type { ChallanReceipt } from '../types/tax';
 import { MAX_COMBINED_ALLOCATIONS } from './otherTaxCombinedPayment';
 import {activePreviewSession} from './previewAccountSession';
 import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
-import type {DemoUserId} from '../data/demoUsers';
-import {sampleUserNumberForTin} from '../data/sampleTinSuggestions';
-import {userIdForHostedTin} from './hostedDemoAuthorizations';
 /** Synthetic-only persistence; browser session ID is not an authenticated account. */
 export type StoryPaymentInput = {
   idempotencyKey: string;
@@ -67,7 +64,6 @@ export function bindPreviewStoryPayer(
     throw new Error('Simulation payment details are incomplete.');
   const thirdParty=details.payerMode==='OTHER';
   const tin=typeof details.taxpayerTin==='string'?details.taxpayerTin.trim():'';
-  const number=sampleUserNumberForTin(tin);
   // The server independently validates this exact TIN against the payer's
   // capability-scoped saved list. A saved beneficiary payment is not an
   // authorization to read the beneficiary's private tax records.
@@ -105,9 +101,10 @@ export function bindPreviewStoryPayer(
       throw new Error('COMBINED_TOTAL_MISMATCH');
     return {...input,details};
   }
+  // Keep the exact saved beneficiary's TIN. Mapping the TIN to an unrelated
+  // fictional profile can violate the original SQL ownership contract.
   const selected=thirdParty
-    ? userIdForHostedTin(tin)||(number?`user${number}` as DemoUserId:null)||
-      (/^\d{12,13}$/.test(tin)?`SAVED_TIN:${tin}`:null)
+    ? (/^\d{12,13}$/.test(tin)?`SAVED_TIN:${tin}`:null)
     : preview.profileId;
   if(!selected)throw new Error('Choose a saved demo beneficiary for this simulation.');
   // M04 is an exclusive one-head Return transaction. The UI holds accounting
