@@ -353,6 +353,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [acknowledged, setAcknowledged] = useState(false);
   const [simulateDecline, setSimulateDecline] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  // Provenance is read-only history metadata, never a payment ID or authorization.
+  const [sourcePaymentId,setSourcePaymentId]=useState<string|null>(
+    initialReuse?.sourcePaymentId ?? null);
+  const [sourceAllocationIds,setSourceAllocationIds]=useState<string[]>(
+    initialReuse?.sourceAllocationIds ? [...initialReuse.sourceAllocationIds] : []);
   const [paymentPhase, setPaymentPhase] = useState<PaymentPhase>('review');
   const [officeMirrorPending, setOfficeMirrorPending] = useState(false);
   const [paymentValidationBlocked, setPaymentValidationBlocked] = useState(false);
@@ -383,12 +388,23 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     schemaVersion: 1, category, step: Math.min(step, 2),
     forSelf, tin, payerName, walkInPayerTin, otherTaxpayerName, additionalTaxpayers,
     otherTaxLines, phone, receiptEmail, assessmentYear, noticeReference,
-    incomeTaxType, selectedHeadIds, amountInputs,
+    incomeTaxType, selectedHeadIds, amountInputs, sourcePaymentId, sourceAllocationIds,
   });
   const restoreAccountDraft = (saved: Record<string, unknown>) => {
     if (saved.schemaVersion !== 1 || saved.category !== category)
       throw new Error('Saved payment category does not match the selected service.');
     const stringField = (key: string) => typeof saved[key] === 'string' ? String(saved[key]) : '';
+    const savedSourcePaymentId=stringField('sourcePaymentId').trim();
+    setSourcePaymentId(initialReuse?.sourcePaymentId ?? (savedSourcePaymentId || null));
+    const savedSourceAllocationIds=Array.isArray(saved.sourceAllocationIds) &&
+      saved.sourceAllocationIds.length <= MAX_COMBINED_ALLOCATIONS &&
+      saved.sourceAllocationIds.every((id:unknown)=>typeof id==='string' && id.length>0 && id.length<=128) &&
+      new Set(saved.sourceAllocationIds).size===saved.sourceAllocationIds.length
+        ? [...saved.sourceAllocationIds] as string[] : [];
+    const retainedSourceAllocationIds=initialReuse?.sourceAllocationIds
+      ? [...initialReuse.sourceAllocationIds]
+      : savedSourcePaymentId ? savedSourceAllocationIds : [];
+    setSourceAllocationIds(retainedSourceAllocationIds);
     if (saved.forSelf !== null && typeof saved.forSelf !== 'boolean')
       throw new Error('Saved payer relationship is invalid.');
     setForSelf(saved.forSelf === null ? null : saved.forSelf as boolean);
@@ -412,10 +428,21 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       ? saved.additionalTaxpayers.filter((person): person is OtherTaxTaxpayer =>
         person && typeof person.id === 'string' && typeof person.tin === 'string' &&
         typeof person.name === 'string').slice(0,100) : []);
-    setOtherTaxLines(Array.isArray(saved.otherTaxLines)
-      ? saved.otherTaxLines.filter((line): line is OtherTaxAllocation =>
-        line && typeof line.taxpayerId === 'string' &&
-        typeof line.headId === 'number' && typeof line.assessmentYear === 'string').slice(0,300) : []);
+    // Recover independently editable new-payment IDs, never reuse source SQL allocation IDs.
+    const savedLines=Array.isArray(saved.otherTaxLines)
+      ? saved.otherTaxLines.filter((line):line is OtherTaxAllocation=>
+        line && typeof line.taxpayerId==='string' && typeof line.headId==='number' &&
+        typeof line.assessmentYear==='string' && typeof line.amount==='string'
+      ).slice(0,MAX_COMBINED_ALLOCATIONS) : [];
+    const reservedIds=new Set(retainedSourceAllocationIds);
+    setOtherTaxLines(savedLines.map(line=>{
+      let id=typeof line.id==='string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(line.id) &&
+        !reservedIds.has(line.id) ? line.id : crypto.randomUUID();
+      while(reservedIds.has(id))id=crypto.randomUUID();
+      reservedIds.add(id);
+      return {...line,id};
+    }));
     setLastSearchedTin(null); setVerifiedReference(null);
     setAuthorizedTaxpayerIds({}); setAuthorizedTaxpayerId(null); setConfirmedOtherTaxTins({});
     setPaymentChannel(null); setMethodGroup(null); setPaymentMethod(null); setAcknowledged(false);
@@ -1125,6 +1152,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           amountMinor: Number(storyAmountMinor),
           details: {
             receiptReference: newReceipt.challanNo,
+            ...(sourcePaymentId ? {sourcePaymentId} : {}),
+            ...(sourcePaymentId && sourceAllocationIds.length ? {sourceAllocationIds} : {}),
             taxpayerTin,
             payerName: newReceipt.payerName,
             payerTin: newReceipt.payerTin,
@@ -1273,6 +1302,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setCreatedReceipt(null); setAttemptReceipt(null); setPaymentPhase('review'); setLifecycleStages([]);
     setAcknowledged(false); setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setOtherTaxLines([]); setAdditionalTaxpayers([]); setConfirmedOtherTaxTins({}); setAuthorizedTaxpayerIds({});
+    setSourcePaymentId(null); setSourceAllocationIds([]);
     setAuthorizedTaxpayerId(null); setTin(''); setOtherTaxpayerName('');
     setShowReceiptDetails(false); setErrorMessage(''); setStep(1);
   };
