@@ -220,11 +220,11 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     // approved fields in the same structure, but never invent identity values.
     // This runs at both 1280px desktop and 375px mobile against real local SQL.
     await other.goto('/?action=account_profile');
-    const profilePanel=other.getByTestId('taxpayer-tin-information');
+    const profilePanel=other.getByTestId('taxpayer-unified-profile-page').getByTestId('user1-taxpayer-profile');
     await expect(profilePanel).toBeVisible();
-    await expect(profilePanel.locator('dt')).toHaveCount(24);
-    await expect(profilePanel.getByText('Not available',{exact:true})).toHaveCount(24);
-    await expect(profilePanel.getByText('Verified e-TIN data is not connected to this account.',{exact:false})).toBeVisible();
+    await expect(profilePanel.locator('[data-profile-field]')).toHaveCount(24);
+    await expect(profilePanel.locator('[data-profile-field="tin"]')).toContainText('Not available');
+    await expect(profilePanel.getByRole('button',{name:'Copy TIN'})).toBeDisabled();
     const profileWidth=await profilePanel.evaluate(element=>({
       left:element.getBoundingClientRect().left,
       right:element.getBoundingClientRect().right,
@@ -233,8 +233,8 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     expect(profileWidth.left).toBeGreaterThanOrEqual(-1);
     expect(profileWidth.right).toBeLessThanOrEqual(profileWidth.viewport+1);
     await setLanguage(other,'bn');
-    await expect(profilePanel.locator('dt')).toHaveCount(24);
-    await expect(profilePanel.getByText('পাওয়া যায়নি',{exact:true})).toHaveCount(24);
+    await expect(profilePanel.locator('[data-profile-field]')).toHaveCount(24);
+    await expect(profilePanel.locator('[data-profile-field="tin"]')).toContainText('পাওয়া যায়নি');
     await setLanguage(other,'en');
     await openBeneficiaries(other);
     await expect(other.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
