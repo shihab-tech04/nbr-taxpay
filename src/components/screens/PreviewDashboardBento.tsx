@@ -57,6 +57,11 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,name,language,onN
   const [tab,setTab]=useState<'drafts'|'requests'>('requests');
   const [draftCount,setDraftCount]=useState<number|null>(null);
   const [snapshot,setSnapshot]=useState<LoadState>({owner:null,phase:'loading',transactions:[],people:[]});
+  // Preserve the existing cross-browser Continue Draft journey: once saved drafts
+  // load, show their cards without requiring a hidden tab to be opened first.
+  useEffect(()=>{
+    if(draftCount!==null&&draftCount>0)setTab('drafts');
+  },[draftCount]);
   useEffect(()=>{
     let active=true;
     setSnapshot({owner:profileId,phase:'loading',transactions:[],people:[]});
