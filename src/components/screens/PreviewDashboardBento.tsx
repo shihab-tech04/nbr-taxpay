@@ -57,6 +57,7 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,name,language,onN
   const [tab,setTab]=useState<'drafts'|'requests'>('requests');
   const [draftCount,setDraftCount]=useState<number|null>(null);
   const [snapshot,setSnapshot]=useState<LoadState>({owner:null,phase:'loading',transactions:[],people:[]});
+  const [loadIssue,setLoadIssue]=useState('');
   // Preserve the existing cross-browser Continue Draft journey: once saved drafts
   // load, show their cards without requiring a hidden tab to be opened first.
   useEffect(()=>{
@@ -65,6 +66,7 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,name,language,onN
   useEffect(()=>{
     let active=true;
     setSnapshot({owner:profileId,phase:'loading',transactions:[],people:[]});
+    setLoadIssue('');
     setDraftCount(null);
     // Only the current signed-in preview capability can read this payer's history.
     void Promise.all([
@@ -75,8 +77,11 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,name,language,onN
       if(transactions.some(t=>t.payer!==profileId||t.simulationOnly!==true))
         throw Error('Dashboard owner mismatch');
       setSnapshot({owner:profileId,phase:'ready',transactions,people:result.people});
-    }).catch(()=>{
-      if(active)setSnapshot({owner:profileId,phase:'error',transactions:[],people:[]});
+    }).catch((cause:unknown)=>{
+      if(active){
+        setLoadIssue(cause instanceof Error ? cause.message : 'Unknown payment read error');
+        setSnapshot({owner:profileId,phase:'error',transactions:[],people:[]});
+      }
     });
     return()=>{active=false;};
   },[profileId]);
@@ -132,7 +137,8 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,name,language,onN
       ?tr('Loading your recorded payment activity…','আপনার পেমেন্ট কার্যক্রম লোড হচ্ছে…')
       :tr('No payments have been recorded for this assessment year.','এই করবর্ষে কোনো পেমেন্ট রেকর্ড নেই।');
   return <div className={'taxpayer-workspace taxpay-unified-preview mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}
-    data-testid="dashboard-unified-preview" data-account-id={profileId}>
+    data-testid="dashboard-unified-preview" data-account-id={profileId} data-load-state={visible.phase}
+    data-load-issue={loadIssue}>
     <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
       <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
       <p className="text-lg font-semibold text-taxpay-text">{greeting.welcome}</p>
