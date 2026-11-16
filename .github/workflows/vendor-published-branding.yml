@@ -1,0 +1,52 @@
+name: Vendor approved published branding (one-time recovery)
+on:
+  push:
+    branches:
+      - fix/branding-402-request-storm-20261116
+    paths:
+      - '.github/workflows/vendor-published-branding.yml'
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Recover public assets from checksum-verified secondary Storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir="public/branding/published"
+          mkdir -p "$dir"
+          base="https://gmuhitmaynfhipcvbvkh.supabase.co/storage/v1/object/public"
+          fetch() {
+            local bucket="$1" object="$2" out="$3" expected="$4"
+            curl --fail --location --silent --show-error --retry 2 --connect-timeout 15 --max-time 120 "$base/$bucket/$object" --output "$dir/$out"
+            printf '%s  %s\n' "$expected" "$dir/$out" | sha256sum --check --status
+            test -s "$dir/$out"
+            echo "verified $out ($(stat -c '%s' "$dir/$out") bytes)"
+          }
+          fetch taxpay-branding logos/04d6e79e-ab94-4303-97b7-0faa0d945362.jpg sohojkor-logo-v18.jpg 079e03e67976ca6d356d7a98f4d344d1c9cc3ee7dc6376ee752cbb9dfb5919c5
+          fetch taxpay-banners banners/intro/c6bd8f1e-611d-4691-932f-9b6812f46085.jpg banner-intro.jpg 3c6bedc6f30ccac8097c680eda984230686dd577c22692dc1b4ab1b0e2d051fb
+          fetch taxpay-banners banners/return/ffa907f6-1ee0-4ebb-86a1-f75392849905.png banner-return.png 7829218a2fcbbe99edfce0bf20b08f6b4d67c3b5cd502ce47352367e77573c92
+          fetch taxpay-banners banners/advance/4ecafe03-442a-4b58-9da8-ca577d34b3a1.png banner-advance.png 26b4628b803cd3a24632cc0bc017966e2284e57a300e5160de8661f44ceea442
+          fetch taxpay-banners banners/withholding/1affb273-1f0e-4cdf-bcb4-e06d5c1e15e8.png banner-withholding.png 2d132a62e812f0a18079b851a955887d8c7d6d1b33b6fee1a3e092a8fed14ee6
+          fetch taxpay-banners banners/travel/5a02e106-bcc0-4aba-8021-6520d289c009.png banner-travel.png 8a3823d3f000b737419399242abfb557789cfe9d581607be2b36fffa929167d6
+          for f in "$dir"/*.jpg; do test "$(file -b --mime-type "$f")" = "image/jpeg"; done
+          for f in "$dir"/*.png; do test "$(file -b --mime-type "$f")" = "image/png"; done
+      - name: Commit verified public media only to this fix branch
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "fix/branding-402-request-storm-20261116"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/branding/published/
+          if git diff --cached --quiet; then
+            echo "No changes required"
+            exit 0
+          fi
+          git commit -m "fix(branding): vendor six checksum-verified published media objects"
+          git push origin HEAD:refs/heads/fix/branding-402-request-storm-20261116
