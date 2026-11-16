@@ -2725,6 +2725,10 @@
 .beneficiary-directory__list-filter {min-width:0;}
 .beneficiary-directory__list-filter > p {margin:0; font:inherit; color:inherit;}
 .beneficiary-directory__list-filter .beneficiary-list-picker {width:100%;max-width:none;z-index:2;}
+/* Open list menu must clear sticky header (55) and mobile bottom navigation (45).
+   The more-specific closed picker rule previously overrode the open-state z-index,
+   trapping the third list action behind the navigation on narrow screens. */
+.beneficiary-directory__list-filter .beneficiary-list-picker:has(.beneficiary-list-picker__menu) {z-index:70;}
 .beneficiary-directory__filters .taxpayer-transaction-filter--search {grid-column:auto;}
 /* Keep the shared Activity search's single focusable outline outside workspace. */
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .beneficiary-directory__filters .taxpayer-transaction-filter__search > input[type="search"],
