@@ -100,14 +100,15 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
     await expect(c.getByTestId('beneficiary-records')).toContainText('Different profile');
     await expect(c.getByTestId('beneficiary-records')).not.toContainText('Sajid Khan');
     await expect(c.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
-    // A write from the first browser must be reloaded by the second.
+    // A write from the first browser must reach the second without a reload.
     await a.getByRole('button',{name:'তালিকা তৈরি',exact:true}).first().click();
     const modal=a.getByRole('dialog',{name:'তালিকা তৈরি'});
     await modal.locator('#beneficiary-create-list-name').fill('Office Clients');
     await modal.getByRole('button',{name:'তালিকা তৈরি',exact:true}).click();
     await expect(modal).toBeHidden();
-    await b.reload();
-    await b.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
+    await b.bringToFront();
+    // The mounted account page revalidates when the browser is focused.
+    await b.evaluate(()=>window.dispatchEvent(new Event('focus')));
     await b.locator('#beneficiary-list').click();
     await expect(b.locator('#beneficiary-list-menu')).toContainText('Office Clients');
   }finally{
