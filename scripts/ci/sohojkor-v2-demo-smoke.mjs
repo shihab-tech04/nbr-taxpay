@@ -52,6 +52,7 @@ export async function runV2DemoSmoke(key) {
   for (const payload of [
     { action: 'demo-login', userId: 'user1', password: 'incorrect' },
     { action: 'demo-login', userId: 'user31', password: 'user31' },
+    { action: 'demo-login', userId: 'user55', password: 'user55' },
   ]) {
     const denial = await request(key, payload);
     if (denial.status !== 401 || denial.success !== false ||
