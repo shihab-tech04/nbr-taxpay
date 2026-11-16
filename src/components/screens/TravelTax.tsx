@@ -9,6 +9,7 @@ import {parseRecoverableTravelPayment, type PendingTravelPayment} from '../../se
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import type { PaymentReuse } from '../../services/paymentReuse';
+import { parseRecoverableTravelPayment, type PendingTravelPayment } from '../../services/travelPendingPayment';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {TAXPAY_PUBLIC_ENDPOINT} from '../../config/publicBackend';
 import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
