@@ -8,7 +8,7 @@ import {bindPreviewStoryPayer, type StoryPaymentInput} from '../src/services/sim
 test('third-party Tax with Return binds the exact saved TIN, not a fictional user alias', () => {
   const sessionId='00000000-0000-4000-8000-000000000001';
   const amountMinor=80000;
-  const receiptLines=[{headId:1,totalAmount:800}];
+  const receiptLines=[{headId:125,totalAmount:800}];
   const input: StoryPaymentInput={
     idempotencyKey:'00000000-0000-4000-8000-000000000002',
     sessionId,service:'TAX_WITH_RETURN',amountMinor,
