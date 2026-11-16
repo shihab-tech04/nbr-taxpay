@@ -72,6 +72,7 @@ export function projectExternalLedgerEvents(
 ):TaxAccountEvent[]{
   if(!present(ownerUid))throw new Error('External ledger owner unavailable');
   const byId=new Map<string,{payment:ExternalPaymentRecord;amount:number;source:string}>();
+  const sourceAllocations=new Set<string>();
   const events:TaxAccountEvent[]=[];
   for(const payment of payments){
     if(!present(payment.id)||payment.owner_uid!==ownerUid||byId.has(payment.id)||
@@ -85,6 +86,11 @@ export function projectExternalLedgerEvents(
       throw new Error('Unreconciled external payment source record');
     }
     const source=sourceLabel(payment.source_system);
+    const allocationKey=JSON.stringify([
+      payment.source_system,payment.source_transaction_id,payment.source_allocation_id
+    ]);
+    if(sourceAllocations.has(allocationKey))throw new Error('Duplicate external source allocation');
+    sourceAllocations.add(allocationKey);
     const amount=minor(payment.amount_minor);
     byId.set(payment.id,{payment,amount,source});
     events.push({
