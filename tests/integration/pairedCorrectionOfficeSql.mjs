@@ -195,9 +195,15 @@ function installOfficeCommandClaim(){
  const start=hosted.indexOf(marker);
  const end=start<0?-1:hosted.indexOf('$function$;',start)+'$function$;'.length;
  assert.ok(start>=0&&end>start,'Existing Office command claim contract is unavailable');
- db(office,'BEGIN;'+hosted.slice(start,end)+
+ const ackMarker='create or replace function public.payment_v1_internal_ack_command(';
+ const ackStart=hosted.indexOf(ackMarker);
+ const ackEnd=ackStart<0?-1:hosted.indexOf('$function$;',ackStart)+'$function$;'.length;
+ assert.ok(ackStart>=0&&ackEnd>ackStart,'Existing Office command acknowledgment contract is unavailable');
+ db(office,'BEGIN;'+hosted.slice(start,end)+hosted.slice(ackStart,ackEnd)+
   'REVOKE ALL ON FUNCTION public.payment_v1_internal_claim_commands(integer) FROM PUBLIC,anon,authenticated;'+
   'GRANT EXECUTE ON FUNCTION public.payment_v1_internal_claim_commands(integer) TO service_role;'+
+  'REVOKE ALL ON FUNCTION public.payment_v1_internal_ack_command(uuid,uuid,boolean,text) FROM PUBLIC,anon,authenticated;'+
+  'GRANT EXECUTE ON FUNCTION public.payment_v1_internal_ack_command(uuid,uuid,boolean,text) TO service_role;'+
   "SELECT 'true'::jsonb;COMMIT;");
 }
 const owner='80000000-0000-4000-8000-000000000001';
