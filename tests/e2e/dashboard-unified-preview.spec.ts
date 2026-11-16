@@ -35,6 +35,12 @@ async function mockAccount(page:import('@playwright/test').Page, userId:PreviewU
   await page.getByRole('textbox',{name:'User ID'}).fill(userId);
   await page.getByLabel('Password',{exact:true}).fill(userId);
   await page.getByRole('button',{name:'Sign In',exact:true}).click();
+  // Current production-style preview login requires its existing first-login OTP.
+  const otp=page.getByTestId('demo-otp-input');
+  if(await otp.isVisible().catch(()=>false)){
+    await otp.fill('111111');
+    await page.getByTestId('taxpayer-login-submit').click();
+  }
   await expect(page).toHaveURL(/action=taxpayer_home/);
 }
 
