@@ -6,7 +6,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
 import {recordAccountActivity} from '../../services/accountActivity';
-import {activePreviewSession,savePreviewSetting} from '../../services/previewAccountSession';
+import {activePreviewSession,getPreviewSettings,savePreviewSetting} from '../../services/previewAccountSession';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
@@ -189,10 +189,18 @@ export function Beneficiaries(){
     const requestToken=Symbol('beneficiary-initial-load');
     initialRequestRef.current=requestToken;
     setLists([]);setPeople([]);setActiveList('');setSelectedIds([]);setLoading(true);setError('');
-    loadBeneficiaries(owner,{forceFresh:true}).then(data=>{
+    Promise.all([
+      loadBeneficiaries(owner,{forceFresh:true}),
+      // A different browser may have changed the selected list. This cached
+      // session preference is only a fallback when server readback fails.
+      !owner&&previewAccount?getPreviewSettings().catch(()=>null):Promise.resolve(null),
+    ]).then(([data,serverSettings])=>{
       if(cancelled)return;
       setLists(data.lists);setPeople(data.people);
-      setActiveList(reviewTins.length?'all':rememberedBeneficiaryListId([{id:'all'},...data.lists],savedListId||'all'));
+      const latestChoice=serverSettings
+        ?(serverSettings.selectedListId??'all')
+        :(savedListId||'all');
+      setActiveList(reviewTins.length?'all':rememberedBeneficiaryListId([{id:'all'},...data.lists],latestChoice));
     }).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:String(e));})
       .finally(()=>{
         if(initialRequestRef.current===requestToken)initialRequestRef.current=null;
