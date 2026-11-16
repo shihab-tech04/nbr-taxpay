@@ -29,6 +29,12 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
     await context.route('**/auth/v1/user',route=>route.fulfill({
       status:401,contentType:'application/json',body:'{"message":"No verified Auth session"}'
     }));
+    await context.route('**/functions/v1/demo-story1-taxpay/profile-history?**',route=>
+      route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({success:true,simulationOnly:true,data:[]})}));
+    await context.route('**/functions/v1/demo-story1-taxpay/authorizations?**',route=>
+      route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({success:true,data:[]})}));
     await context.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
       const body=route.request().postDataJSON() as Record<string,unknown>;
       const action=String(body.action);
@@ -103,6 +109,20 @@ test('same demo user restores its SQL-scoped beneficiaries, selected list, langu
     await expect(c.getByTestId('beneficiary-records')).toContainText('Different profile');
     await expect(c.getByTestId('beneficiary-records')).not.toContainText('Sajid Khan');
     await expect(c.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
+    // Regression for the actual signed-in user2 Activity route. A successful
+    // profile/Beneficiaries login is not sufficient if the History lazy route
+    // subsequently throws and leaves the app blank in production.
+    const activityPageErrors:string[]=[];
+    c.on('pageerror',error=>activityPageErrors.push(error.message));
+    await c.goto('/?action=history');
+    await expect(c.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible();
+    await expect(c.getByTestId('signed-in-payment-activity')).toBeVisible();
+    await expect(c.getByRole('searchbox',{name:'Search transactions'})).toBeVisible();
+    await expect(c.getByText('No transactions yet.')).toBeVisible();
+    expect(activityPageErrors,'user2 History must never crash the renderer').toEqual([]);
+    await c.goto('/?action=beneficiaries');
+    await expect(c.getByTestId('beneficiaries-page')).toBeVisible();
+    await c.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     // A write from the first browser must reach the second without a reload.
     await a.getByRole('button',{name:'তালিকা তৈরি',exact:true}).first().click();
     const modal=a.getByRole('dialog',{name:'তালিকা তৈরি'});
