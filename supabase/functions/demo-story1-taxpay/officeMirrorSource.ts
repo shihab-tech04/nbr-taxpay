@@ -11,8 +11,10 @@ export function officeMirrorSourceForEndpoint(url:string):'original'|'v2' {
       throw Error('UNRECOGNIZED_TAXPAYER_SOURCE');
     hostname=parsed.hostname.toLowerCase();
   }catch{throw Error('UNRECOGNIZED_TAXPAYER_SOURCE');}
-  if(hostname==='eyqhoavnitkrajvyqvxn.supabase.co')return 'original';
-  if(hostname==='gmuhitmaynfhipcvbvkh.supabase.co')return 'v2';
+  if(hostname==='eyqhoavnitkrajvyqvxn.supabase.co'||hostname==='gmuhitmaynfhipcvbvkh.supabase.co'){
+    if(new URL(url).protocol!=='https:')throw Error('UNRECOGNIZED_TAXPAYER_SOURCE');
+    return hostname==='eyqhoavnitkrajvyqvxn.supabase.co'?'original':'v2';
+  }
   if(['localhost','127.0.0.1','[::1]'].includes(hostname))return 'original';
   throw Error('UNRECOGNIZED_TAXPAYER_SOURCE');
 }
