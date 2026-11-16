@@ -10,15 +10,20 @@ import { MASTER_PAYMENT_HEADS } from '../../data/paymentHeads';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
+import type {ChallanReceipt} from '../../types/tax';
 
-export const CorrectionRequests: React.FC<{activityTabs?:boolean}> = ({activityTabs=false}) => {
+export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipts?:readonly ChallanReceipt[];preferredReference?:string}> =
+  ({activityTabs=false,recordedReceipts=[],preferredReference=''}) => {
   const { corrections, receipts, taxpayerProfile, userRole, demoUser, addCorrectionRequest, language } = useTaxState();
   const tr=(en:string,bn:string)=>language==='bn'?bn:en;
   const {user:authenticatedUser}=useAccountIdentity();
-  const visibleReceipts = taxpayerPreviewReceipts(receipts,taxpayerProfile.tin,userRole,demoUser,Boolean(authenticatedUser));
+  // These extra receipts come only from the active preview account's owned SQL
+  // readback. A navigation reference by itself never creates a receipt or ownership.
+  const visibleReceipts = [...taxpayerPreviewReceipts(receipts,taxpayerProfile.tin,userRole,demoUser,Boolean(authenticatedUser)),
+    ...recordedReceipts];
   const visibleCorrections = corrections.filter(c=>visibleReceipts.some(r=>r.challanNo===c.challanNo && r.payerTin===c.taxpayerTin));
 
-  const [challanNo, setChallanNo] = useState('');
+  const [challanNo, setChallanNo] = useState(preferredReference);
   const selectedReceipt = visibleReceipts.find(r=>r.challanNo===challanNo) ?? visibleReceipts[0];
   const selectedChallanNo = selectedReceipt?.challanNo ?? '';
   const currentAY = selectedReceipt?.assessmentYear ?? '';
