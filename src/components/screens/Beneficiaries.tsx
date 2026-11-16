@@ -159,7 +159,7 @@ export function Beneficiaries(){
     :previewAccount?activePreviewSession()?.selectedListId:null;
   const rememberList=(id:string)=>{
     const save=owner?saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id)
-      :previewAccount?savePreviewSetting('selected-list',id):null;
+      :previewAccount?savePreviewSetting('selected-list',id==='all'?'':id):null;
     if(!save)return;
     setPreferenceError(null);
     void save.then(()=>owner
