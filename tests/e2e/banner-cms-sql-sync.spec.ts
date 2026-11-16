@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { setWorkspaceLanguage } from './workspace-language';
 
 // Synthetic HTTP transport: proves each SQL row owns its content and images without
@@ -24,6 +24,14 @@ const banners = serviceRows.map(({ id, service_code }, index) => ({
   action_bn: id === 'intro' ? 'কর পরিশোধ শুরু' : id === 'travel' ? 'ভ্রমণ কর শুরু' : id === 'return' ? 'রিটার্ন কর দিন' : id === 'advance' ? 'অগ্রিম কর দিন' : 'উৎস কর জমা',
   desktop_image_path: null, mobile_image_path: null,
 }));
+
+// The published CMS now refreshes on a bounded foreground probe instead of
+// starting a reconnecting public WebSocket. Advance virtual time rather than
+// weakening publish/unpublish or logo/version assertions.
+async function advanceBrandingRefresh(page: Page) {
+  await page.clock.fastForward(61_000);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+}
 
 test('SQL-backed banners preserve image order while keeping the published intro copy and two journeys fixed', async ({ page }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -70,6 +78,7 @@ test('uploaded SQL image paths override v9 defaults while mobile may use its own
 });
 
 test('CMS outage never resurrects unpublished bundled artwork and payment actions remain accessible', async ({ page }) => {
+  await page.clock.install();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   let cmsAvailable = false;
   await page.route('**/rest/v1/taxpay_site_banners**', route =>
@@ -79,13 +88,17 @@ test('CMS outage never resurrects unpublished bundled artwork and payment action
   );
   await page.goto('/?action=landing');
   const fallback = page.getByRole('region', { name: 'Tax payment service banners' });
-  await expect(fallback.getByText(/Banner information is temporarily unavailable/)).toBeVisible();
-  await expect(page.locator('.public-hero-carousel__image-layer')).toHaveCount(0);
+  // Last independently verified published artwork remains visible while an
+  // API outage is in progress; it is not a newly invented CMS publication.
+  await expect(fallback.locator('.public-hero-carousel__slide')).toHaveCount(5);
+  await expect(page.locator('.public-hero-carousel__image-layer')).toHaveCount(5);
+  await expect(fallback.locator('[data-banner-service="intro"] img'))
+    .toHaveAttribute('src', /branding\/published\/banner-intro\.jpg/);
   await expect(fallback.getByRole('button', { name: 'Pay Tax' })).toBeVisible();
   await expect(fallback.getByRole('button', { name: 'Pay Travel Tax' })).toBeVisible();
 
   cmsAvailable = true;
-  await fallback.getByRole('button', { name: 'Retry banner loading' }).click();
+  await advanceBrandingRefresh(page);
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
   await expect(carousel.locator('.public-hero-carousel__image-layer')).toHaveCount(5);
   const expectedHeading = (page.viewportSize()?.width ?? 1280) <= 640
@@ -116,7 +129,7 @@ test('broken published desktop and mobile images recover to approved category ar
     route.fulfill({ status: 404, body: 'missing' }));
   await page.goto('/?action=landing');
   const media = page.locator('.public-hero-carousel__image-layer').first();
-  await expect(media.locator('img')).toHaveAttribute('src', /taxpay-hero-intro-v9/);
+  await expect(media.locator('img')).toHaveAttribute('src', /branding\/published\/banner-intro\.jpg/);
   await expect(media.locator('source')).toHaveCount(0);
   await expect(media.locator('img')).toBeVisible();
   const healthy = await media.locator('img').evaluate(img => (img as HTMLImageElement).naturalWidth > 0);
@@ -125,6 +138,10 @@ test('broken published desktop and mobile images recover to approved category ar
 
 
 test('a newly published image replaces an earlier broken CMS image without a page reload', async ({ page }) => {
+  // Keep the inspected intro slide active while virtual time advances for the
+  // CMS refresh; carousel autoplay is independently covered by UX tests.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.clock.install();
   let currentImage = 'banners/intro/old-broken.jpg';
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9U33LwAAAABJRU5ErkJggg==', 'base64');
   await page.route('**/rest/v1/taxpay_site_banners**', route =>
@@ -137,9 +154,9 @@ test('a newly published image replaces an earlier broken CMS image without a pag
       : route.fulfill({ status: 200, contentType: 'image/png', body: png }));
   await page.goto('/?action=landing');
   const image = page.locator('.public-hero-carousel__image-layer').first().locator('img');
-  await expect(image).toHaveAttribute('src', /taxpay-hero-intro-v9/);
+  await expect(image).toHaveAttribute('src', /branding\/published\/banner-intro\.jpg/);
   currentImage = 'banners/intro/new-good.jpg';
-  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await advanceBrandingRefresh(page);
   await expect(image).toHaveAttribute('src', /taxpay-banners\/banners\/intro\/new-good\.jpg/);
   await expect.poll(() => image.evaluate(element =>
     (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
@@ -159,7 +176,7 @@ test('a temporary Storage outage retries the unchanged published image after con
       : route.fulfill({ status: 503, body: 'temporarily unavailable' }));
   await page.goto('/?action=landing');
   const image = page.locator('.public-hero-carousel__image-layer').first().locator('img');
-  await expect(image).toHaveAttribute('src', /taxpay-hero-intro-v9/);
+  await expect(image).toHaveAttribute('src', /branding\/published\/banner-intro\.jpg/);
   storageAvailable = true;
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(image).toHaveAttribute('src', /taxpay-banners\/banners\/intro\/temporary-outage\.png/);
@@ -168,6 +185,7 @@ test('a temporary Storage outage retries the unchanged published image after con
 });
 
 test('reordering published CMS banners retains the selected service, fixed copy and image palette (EN/BN)', async ({ page }) => {
+  await page.clock.install();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const palette = {
     background_color: '#EFF7F4', heading_color: '#185A43',
@@ -188,7 +206,7 @@ test('reordering published CMS banners retains the selected service, fixed copy 
   // Office changes order; every published service keeps its identity rather
   // than unexpectedly replacing the slide the taxpayer is currently reading.
   rows = [rows[0], rows[3], rows[4], rows[1], rows[2]];
-  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await advanceBrandingRefresh(page);
   await expect(carousel).toHaveAttribute('data-active-slide', '4');
   await expect(carousel).toHaveAttribute('data-payment-service', 'ADVANCE_TAX');
   const retained = carousel.locator('.public-hero-carousel__slide[data-active="true"]');
@@ -218,6 +236,7 @@ test('reordering published CMS banners retains the selected service, fixed copy 
 });
 
 test('unpublishing the active banner preserves available payment actions and avoids ghost slides', async ({page}) => {
+  await page.clock.install();
   await page.emulateMedia({reducedMotion: 'reduce'});
   let rows = banners;
   await page.route('**/rest/v1/taxpay_site_banners**', route =>
@@ -228,7 +247,7 @@ test('unpublishing the active banner preserves available payment actions and avo
   for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
   await expect(carousel).toHaveAttribute('data-payment-service', 'TRAVEL_TAX');
   rows = banners.filter(row => row.id !== 'travel');
-  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await advanceBrandingRefresh(page);
   await expect(carousel.locator('.public-hero-carousel__slide')).toHaveCount(4);
   await expect(carousel).toHaveAttribute('data-active-slide', '3');
   await expect(carousel.locator('.public-hero-carousel__slide[data-active="true"]')
@@ -271,7 +290,7 @@ test('published Sohojkor logo updates on version change without a 30-second poll
   // A higher CMS version at the SAME asset path must invalidate the old image,
   // without touching approved sizing, the public buttons, or navigation.
   version = 19;
-  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await advanceBrandingRefresh(page);
   await expect(logos.first()).toHaveAttribute('src', /approved-wordmark\.svg\?v=19/);
   expect(logoReads).toBe(initialReads + 1);
   await expect(page.locator('.public-benefits__item')).toHaveCount(6);
@@ -295,7 +314,7 @@ test('temporarily missing published logo retries after connectivity without requ
   const logo=page.locator('.public-home-wordmark');
   // Vite inlines the bundled fallback SVG as a data URI in the actual browser.
   // Validate that a real, usable fallback is rendered, not an outdated filename.
-  await expect(logo).toHaveAttribute('src',/^data:image\/svg\+xml/);
+  await expect(logo).toHaveAttribute('src', /branding\/published\/sohojkor-logo-v18\.jpg/);
   await expect.poll(() => logo.evaluate(el => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
   storageAvailable=true;
   await page.evaluate(()=>window.dispatchEvent(new Event('online')));

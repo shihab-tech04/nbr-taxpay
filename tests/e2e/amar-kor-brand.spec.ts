@@ -25,11 +25,11 @@ test('approved Sohojkor branding stays consistent across public and taxpayer she
   await expect(page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' })).toBeVisible();
 });
 
-test('bundled fallback wordmark retains approved header dimensions across breakpoints', async ({ page }) => {
+test('last published Sohojkor logo remains approved across desktop and mobile', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/?action=landing');
   const logo = page.locator('.public-home-wordmark');
-  await expect(logo).toHaveAttribute('src', /^(data:image\/svg\+xml|.*korbritto-brand-locked-)/);
+  await expect(logo).toHaveAttribute('src', /\/branding\/published\/sohojkor-logo-v18\.jpg/);
   await expect(logo).toHaveCSS('width', '123px');
   await expect(logo).toHaveCSS('height', '42px');
 
