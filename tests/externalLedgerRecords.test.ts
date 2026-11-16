@@ -119,3 +119,9 @@ test('provider allocation identity is globally unique across taxpayers while mul
   assert.match(sql,/unique \(source_system,source_transaction_id,source_allocation_id\)/);
   assert.doesNotMatch(sql,/unique \(owner_uid,source_system,source_transaction_id,source_allocation_id\)/);
 });
+
+test('read projection rejects replayed source allocation with a new row ID',()=>{
+  assert.throws(()=>projectExternalLedgerEvents(owner,[base,{...base,id:'different-row-id'}],[],'en'),
+    /Duplicate external source allocation/);
+  assert.equal(projectExternalLedgerEvents(owner,[base,{...base,id:'new-line',source_allocation_id:'line-2'}],[],'en').length,2);
+});
