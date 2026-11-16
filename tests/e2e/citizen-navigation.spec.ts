@@ -244,9 +244,9 @@ test('public header centers icons within the approved width and routes to User G
  await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
  const bounds=await page.locator('.public-information-hub').boundingBox();
  expect(bounds).not.toBeNull();
- // Home, Guide and Report share the original 1100px public content width.
- expect(bounds!.width).toBeGreaterThanOrEqual(1099);
- expect(bounds!.width).toBeLessThanOrEqual(1101);
+ // Wide Home uses the 1300px rail; Guide and Report retain 1100px.
+ expect(bounds!.width).toBeGreaterThanOrEqual(1299);
+ expect(bounds!.width).toBeLessThanOrEqual(1301);
  await faq.click();
  await expect(page.getByRole('heading',{name:'Sohojkor user guide'})).toBeVisible();
  await expect(faq).toHaveAttribute('aria-current','page');

@@ -52,7 +52,8 @@ export function AuthenticatedReceivedPaymentPopup() {
 
   if(!uid||owner!==uid)return null;
   const next=items.find(x=>!dismissed.includes(x.eventId))??null;
-  if(welcomeOwner===uid && currentRoute!=='taxpayer_login') {
+  // A stored sign-in greeting cannot open without a verified unread notice.
+  if(welcomeOwner===uid && next!==null && currentRoute!=='taxpayer_login' && currentRoute!=='corrections') {
     const close=()=>{
       try{sessionStorage.removeItem(WELCOME_KEY);}catch{/* Greeting is optional. */}
       setWelcomeOwner(null);
@@ -60,12 +61,12 @@ export function AuthenticatedReceivedPaymentPopup() {
     return <TaxPayModal title={bn?'সহজকরে স্বাগতম':'Welcome to Sohojkor'}
       onClose={close} closeIconLabel={bn?'বন্ধ করুন':'Close modal'}
       className="taxpayer-authorization-modal"
-      footer={<button type="button" className="tax-service-choice__continue"
+      footer={<button type="button" className="tax-service-choice__continue taxpayer-welcome__action"
         onClick={close}>{bn?'বিজ্ঞপ্তি দেখুন':'Continue to notifications'}</button>}>
       <p role="status" className="mt-4 text-sm leading-6 text-taxpay-text">
         {bn
-          ?'আপনার অ্যাকাউন্ট সাইন-ইন নিশ্চিত হয়েছে। পরিচয় ও করদাতা তথ্য কর্তৃপক্ষ কর্তৃক সংযুক্ত থাকলে প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি দেখানো হবে।'
-          :'Your account sign-in is confirmed. Received payments appear only after the authorized taxpayer identity is linked.'}
+          ?'আপনার অ্যাকাউন্টে নতুন প্রাপ্ত পেমেন্টের বিজ্ঞপ্তি আছে। সেগুলো একে একে দেখুন।'
+          :'You have unread received-payment notifications. Review them one at a time.'}
       </p>
     </TaxPayModal>;
   }
