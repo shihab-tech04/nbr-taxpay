@@ -808,3 +808,34 @@ test('Phase 8 logged-in main content uses available width capped at 1300px above
   await expect(page.locator('.taxpay-citizen-shell')).not.toHaveClass(/taxpay-authenticated-content/);
   await expect(page.locator('main#main-content')).toHaveClass(/public-information-main/);
 });
+
+
+test('successful null SQL history aggregate shows User2 empty state without crashing Activity',async({page})=>{
+  await mockPrivateAccount(page,'user2');
+  await page.route(supabaseUrl+'/rest/v1/rpc/sim_my_payment_history',async route=>{
+    await route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},body:'null'});
+  });
+  await page.goto('/?action=history');
+  const activity=page.getByTestId('signed-in-payment-activity');
+  await expect(activity).toBeVisible();
+  await expect(activity.getByRole('searchbox',{name:'Search transactions'})).toBeVisible();
+  await expect(activity.getByText('No transactions yet.')).toBeVisible();
+  await expect(page.getByTestId('history-route-recovery')).toHaveCount(0);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.getByTestId('signed-in-payment-activity').getByText('No transactions yet.')).toBeVisible();
+});
+
+test('malformed successful SQL history is an explicit retry error, not an invented empty payment ledger',async({page})=>{
+  await mockPrivateAccount(page,'user2');
+  await page.route(supabaseUrl+'/rest/v1/rpc/sim_my_payment_history',async route=>{
+    await route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},body:'{"unexpected":"data"}'});
+  });
+  await page.goto('/?action=history');
+  const activity=page.getByTestId('signed-in-payment-activity');
+  await expect(activity.getByText('Unable to load transactions.')).toBeVisible();
+  await expect(activity.getByRole('button',{name:'Retry'})).toBeVisible();
+  await expect(activity.getByText('No transactions yet.')).toHaveCount(0);
+  await expect(page.getByTestId('history-route-recovery')).toHaveCount(0);
+});
