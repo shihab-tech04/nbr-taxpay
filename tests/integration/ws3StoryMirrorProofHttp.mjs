@@ -70,7 +70,7 @@ function routedFetch(input,init){
  if(u.hostname==='ihbtabrvmyiwikqqbhrf.supabase.co'&&
    u.pathname.startsWith('/functions/v1/demo-story1-office/')){
   target=urls.OFFICE_SQL+u.pathname.replace('/functions/v1','')+u.search;
- }else if(u.hostname==='eyqhoavnitkrajvyqvxn.supabase.co'&&
+ }else if(['eyqhoavnitkrajvyqvxn.supabase.co','gmuhitmaynfhipcvbvkh.supabase.co'].includes(u.hostname)&&
    u.pathname.startsWith('/functions/v1/demo-story1-taxpay/')){
   target=urls.TAXPAY_SQL+u.pathname.replace('/functions/v1','')+u.search;
  }else throw Error('Blocked external URL in isolated Edge HTTP test');
@@ -86,7 +86,11 @@ function loadHandler(file,origin){
  let handler=null;
  const cache=new Map();
  const deno={env:{get(key){
-  if(key==='SUPABASE_URL')return 'https://isolated-'+origin+'.invalid';
+  if(key==='SUPABASE_URL')return origin==='OFFICE_SQL'
+    ?'https://ihbtabrvmyiwikqqbhrf.supabase.co'
+    :(process.env.WS3_TEST_TAXPAY_SOURCE==='v2'
+      ?'https://gmuhitmaynfhipcvbvkh.supabase.co'
+      :'https://eyqhoavnitkrajvyqvxn.supabase.co');
   if(key==='SUPABASE_ANON_KEY')return 'local-publishable';
   if(key==='SUPABASE_SERVICE_ROLE_KEY')return secret;
   return null;
