@@ -40,6 +40,8 @@ test('payment picker has no manual restore path and refreshes the account addres
   assert.match(picker,/window\.setInterval\(refreshVisible,30000\)/);
   assert.match(picker,/window\.clearInterval\(interval\)/);
   assert.match(picker,/if\(renderOwnerScope!==ownerScope\)\{setLists\(\[\]\)/);
+  assert.match(picker,/previous\.filter\(id=>existing\.has\(id\)\)/);
+  assert.match(picker,/return retained\.length\?retained/);
 });
 
 
