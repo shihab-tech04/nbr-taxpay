@@ -61,7 +61,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     // last verified snapshot during a background refresh (no 30s flicker).
     if(ownerChanged){
       setRenderOwnerScope(ownerScope);
-      setLists([]);setPeople([]);setExpanded([]);
+      if(renderOwnerScope!==ownerScope){setLists([]);setPeople([]);setExpanded([]);}
       setLoading(true);setError('');
       onAvailableTins(null);
     }
@@ -75,11 +75,13 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       setError('');setRefreshError(false);
       const containingSelection=result.lists.filter(list=>result.people.some(person=>
         person.list_id===list.id&&selectedTins.includes(person.tin))).map(list=>list.id);
-      setExpanded(current=>ownerChanged
-        ? containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[]
-        : current.filter(id=>result.lists.some(list=>list.id===id)).length
-          ? current.filter(id=>result.lists.some(list=>list.id===id))
-          : containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[]);
+      setExpanded(previous=>{
+        const existing=new Set(result.lists.map(list=>list.id));
+        const retained=previous.filter(id=>existing.has(id));
+        return ownerChanged
+          ? containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[]
+          : retained.length?retained:containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[];
+      });
       onAvailableTins(Array.from(new Set(result.people.map(person=>person.tin))));
     }).catch(e=>{
       if(cancelled||ownerScopeRef.current!==ownerScope)return;
@@ -117,13 +119,16 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       setRefresh(value=>value+1);
       gate.finish();
     };
+    const refreshStorage=()=>refreshVisible();
+    const interval=window.setInterval(refreshVisible,30000);
     window.addEventListener('focus',refreshVisible);
+    window.addEventListener('storage',refreshStorage);
     document.addEventListener('visibilitychange',refreshVisible);
-    const poll=window.setInterval(refreshVisible,30_000);
     return()=>{
+      window.clearInterval(interval);
       window.removeEventListener('focus',refreshVisible);
+      window.removeEventListener('storage',refreshStorage);
       document.removeEventListener('visibilitychange',refreshVisible);
-      window.clearInterval(poll);
     };
   },[]);
 

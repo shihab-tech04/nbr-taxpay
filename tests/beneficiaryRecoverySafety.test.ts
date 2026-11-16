@@ -22,12 +22,12 @@ test('browser beneficiary recovery requires current Auth UID and SQL readback',(
 
 // Protect the identity boundary without reintroducing a promotional sign-in
 // panel that is not part of the approved Beneficiaries layout.
-test('sample beneficiary lists remain account-scoped without an unsolicited sign-in banner',()=>{
+test('sample beneficiaries stay browser-scoped without an unsolicited sign-in banner',()=>{
   const state=readFileSync('src/services/taxState.tsx','utf8');
   const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
   assert.match(state,/if \(route === 'secure_workspace' && previewAccount\)/);
   assert.match(page,/const owner=user\?\.id\?\?null/);
-  assert.match(page,/loadBeneficiaries\(owner,\{forceFresh:true\}\)/);
+  assert.match(page,/loadBeneficiaries\(owner\)/);
   assert.doesNotMatch(page,/owner=previewAccount|owner=demoUser|owner="user1"/);
   assert.doesNotMatch(page,/beneficiaries-account-sync|For lists across devices|Sign in with email/);
 });
