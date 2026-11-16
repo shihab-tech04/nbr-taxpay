@@ -11,6 +11,13 @@ const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[
 const demoIdPattern=/^user(?:[1-9]|[12][0-9]|30)$/;
 export type DemoSettings={language:'en'|'bn';selectedListId:string|null;paymentSessionId:string};
 export type PreviewSession=DemoSettings&{profileId:DemoUserId;capability:string};
+/** Service restrictions are outages, not proof of invalid credentials. */
+export class PreviewServiceRestrictedError extends Error {
+  constructor() {
+    super('The profile service is temporarily restricted.');
+    this.name = 'PreviewServiceRestrictedError';
+  }
+}
 const outstanding=new Map<string,Map<'language'|'selected-list',string>>();
 const pending=new Map<string,Promise<void>>();
 
@@ -50,6 +57,7 @@ async function send<T>(action:string,fields:Record<string,unknown>,capability?:s
       ...(capability?{'x-taxpay-guest-capability':capability}:{})
     },body:JSON.stringify({action,...fields})
   });
+  if(result.status===402)throw new PreviewServiceRestrictedError();
   const body=await result.json().catch(()=>null) as {success?:boolean;data?:T;code?:string}|null;
   if(!result.ok||body?.success!==true)throw new Error(body?.code==='INVALID_DEMO_LOGIN'
     ?'Incorrect User ID or password.':'Unable to save or load your demo profile. Please retry.');
