@@ -27,7 +27,11 @@ test('production preserves the approved published branding without Supabase CMS 
   await expect(page.locator('.public-hero-carousel__service-image').first())
     .toHaveAttribute('src', /\/branding\/published\/banner-intro\.jpg$/);
   await expect(page.getByRole('button', { name: 'Pay Tax', exact: true }).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Next banner' })).toBeVisible();
+  if (test.info().project.name === 'production-desktop') {
+    await expect(page.getByRole('button', { name: 'Next banner' })).toBeVisible();
+  }
+  // The approved compact mobile experience navigates primarily by swiping;
+  // hidden desktop arrow controls must not be forced visible.
   await page.evaluate(() => {
     window.dispatchEvent(new Event('focus'));
     window.dispatchEvent(new Event('online'));
