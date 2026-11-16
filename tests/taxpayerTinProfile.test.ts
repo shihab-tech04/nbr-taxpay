@@ -89,15 +89,19 @@ test('profile and e-TIN certificate fields match the canonical UI/export field m
     'identical sample address values still represent two distinct certificate fields');
 });
 
-test('M02 profile refuses foreign preview sessions and missing source records without sample fallback',async()=>{
+test('M02 shared profile refuses URL-only access and never replaces missing SQL with User1 certificate',async()=>{
   const {readFileSync}=await import('node:fs');
   const screen=readFileSync('src/components/screens/User1TaxpayerProfile.tsx','utf8');
-  assert.match(screen,/if\(session\?\.profileId!=='user1'\)/);
-  assert.match(screen,/const record=session\?\.profileId==='user1'&&recordState\.status==='ready'/);
-  assert.match(screen,/record\?user1FictionalTinValue\(field,language,record\):'—'/);
-  assert.doesNotMatch(screen,/record\?\?initialReference/);
-  assert.doesNotMatch(screen,/record:initialReference/);
-  assert.match(screen,/recordState\.status!=='ready'\|\|!record/);
-  assert.match(screen,/role="alert".*Taxpayer profile is not available for this account/);
-  assert.match(screen,/if\(!record\)throw Error\('Profile SQL unavailable'\)/);
+  const router=readFileSync('src/App.tsx','utf8');
+  assert.match(screen,/const verified=Boolean\(session&&session\.profileId===accountId\)/);
+  assert.match(screen,/const owner=verified&&accountId\?getDemoUser\(accountId\):null/);
+  assert.match(screen,/if\(!verified\)\{/);
+  assert.match(screen,/loadTaxpayerRegistrationProfile\(accountId\)/);
+  assert.match(screen,/setRecordState\(\{owner:accountId,status:'error',profile:null\}\)/);
+  assert.match(screen,/const record=verified\?current\?\.profile\?\?null:null/);
+  assert.doesNotMatch(screen,/record\?\?initialReference|record:initialReference|offlineReference/);
+  assert.match(router,/previewAccount && !verifiedApplicationUser \? <UnifiedTaxpayerProfilePage \/>/);
+  assert.match(screen,/status==='error'/);
+  assert.match(screen,/role="alert"/);
+  assert.match(screen,/disabled=\{!tin\}/);
 });
