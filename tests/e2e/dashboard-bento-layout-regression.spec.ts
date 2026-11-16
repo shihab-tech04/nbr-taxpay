@@ -19,7 +19,14 @@ test('reference dashboard is recipient-first with a responsive hero and accessib
     await expect(hero.getByRole('heading',{name:'Payments at a glance'})).toBeVisible();
     await expect(hero.getByRole('link',{name:'View payment history'})).toBeVisible();
     await expect(hero.locator('.taxpay-overview-feature__donut')).toBeVisible();
-    await expect(hero).toHaveCSS('background-image',/linear-gradient/);
+    await expect(hero).toHaveCSS('background-image','none');
+    await expect(hero.locator('.taxpay-overview-feature__main')).toHaveCSS('display','grid');
+    await expect(hero.locator('.taxpay-overview-feature__amount > p')).toHaveCSS('font-size','13px');
+    await expect(hero.locator('.taxpay-overview-feature__amount > p')).toHaveCSS('color','rgb(237, 245, 255)');
+    if(width>=1200){
+      const rect=await hero.boundingBox();
+      expect(rect?.height,'desktop hero must not expand to a full-page column').toBeLessThan(410);
+    }
     await expect(summary.locator('.taxpay-summary-metric')).toHaveCount(3);
     await expect(recipient.getByRole('heading',{name:'Payment relationships'})).toBeVisible();
     await expect(recipient.getByTestId('dashboard-recipient-snapshot')).toBeVisible();

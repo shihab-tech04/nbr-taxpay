@@ -83,11 +83,11 @@ try {
         const workspace=page.getByTestId('user1-synthetic-workspace');
         await expect(workspace).toBeVisible({timeout:30_000});
         await expect(workspace).toHaveAttribute('data-dashboard-view','true');
-        await expect(page.getByRole('region',{name:/Payment records summary|পেমেন্ট রেকর্ডের সারসংক্ষেপ/})).toBeVisible();
-        await expect(page.getByTestId('preview-beneficiary-spending')).toBeVisible();
-        await expect(page.getByTestId('demo-sql-service-panel')).toBeVisible();
-        await expect(page.getByRole('heading',{name:/Payment composition|পেমেন্টের বিভাজন/})).toBeVisible();
-        await expect(page.getByRole('heading',{name:/Payment & transaction records|পেমেন্ট ও লেনদেন রেকর্ড/})).toBeVisible();
+        await expect(page.getByRole('region',{name:/Payment and request summary|পেমেন্ট ও আবেদনের সারসংক্ষেপ/})).toBeVisible();
+        await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
+        await expect(page.getByTestId('dashboard-payment-analytics')).toBeVisible();
+        await expect(page.getByRole('heading',{name:/Payment relationships|পেমেন্টের সম্পর্ক/})).toBeVisible();
+        await expect(page.getByRole('heading',{name:/My Tax Journey|আমার কর যাত্রা/})).toBeVisible();
         const yearSelect=page.getByRole('combobox',{name:/Assessment year|করবর্ষ/});
         await yearSelect.selectOption('2025-2026');
         await expect(yearSelect).toHaveValue('2025-2026');
