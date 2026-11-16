@@ -107,11 +107,15 @@ jobs:
           GITHUB_PAGES: 'true'
           VITE_SUPABASE_DISABLED: 'false'
           # Unapproved V2 switches are rejected by the signed cutover gate below.
-          VITE_SUPABASE_URL: ${{ vars.SOHOJKOR_PRIMARY_SUPABASE_URL || 'https://eyqhoavnitkrajvyqvxn.supabase.co' }}
+          VITE_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
           # Publishable key only. NEVER use service_role, secret or JWT signing keys in a web bundle.
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SOHOJKOR_PRIMARY_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_ZRyWCWCOWBmsg7b9qTseUg_CFlhl3Id' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
           SOHOJKOR_CUTOVER_SIGNED_PROOF: ${{ secrets.SOHOJKOR_CUTOVER_SIGNED_PROOF }}
           SOHOJKOR_CUTOVER_APPROVER_PUBLIC_KEY: ${{ vars.SOHOJKOR_CUTOVER_APPROVER_PUBLIC_KEY }}
+          SOHOJKOR_RELEASE_SCOPE: 'fictional-user1-user30-only'
+          SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
+          SOHOJKOR_ORIGINAL_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          SOHOJKOR_OFFICE_SUPABASE_URL: 'https://ihbtabrvmyiwikqqbhrf.supabase.co'
         run: |
           node scripts/ci/hybrid-cutover-gate.mjs
           npm run build
@@ -121,7 +125,7 @@ jobs:
           node --check scripts/measure-live-performance.mjs
       - name: Verify Pages base, scoped public endpoint and financial safety
         env:
-          VITE_SUPABASE_URL: ${{ vars.SOHOJKOR_PRIMARY_SUPABASE_URL || 'https://eyqhoavnitkrajvyqvxn.supabase.co' }}
+          VITE_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
         shell: bash
         run: |
           test -s dist/index.html
@@ -808,6 +812,19 @@ jobs:
       pages: write
       id-token: write
     steps:
+      - name: Check out exact Main release for hosted V2 verification
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Verify hosted fictional V2 accounts before publishing
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
+          SOHOJKOR_RELEASE_SCOPE: 'fictional-user1-user30-only'
+          SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
+          SOHOJKOR_ORIGINAL_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          SOHOJKOR_OFFICE_SUPABASE_URL: 'https://ihbtabrvmyiwikqqbhrf.supabase.co'
+        run: node scripts/ci/hybrid-cutover-gate.mjs
       - name: Deploy compiled application
         id: deployment
         uses: actions/deploy-pages@v5.0.1
