@@ -8,6 +8,7 @@ import {
 } from '../../data/user1FictionalTinProfile';
 import type {TaxpayerTinField,TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
 import {getDemoUser,type DemoUser,type DemoUserId} from '../../data/demoUsers';
+import {useDemoSqlProfileAndServiceRecords} from '../../services/demoSqlProfiles';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {loadTaxpayerRegistrationProfile} from '../../services/taxpayerRegistrationProfile';
 
@@ -30,6 +31,8 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
   const verified=Boolean(session&&session.profileId===accountId);
   const offlineReference=offline&&accountId==='user1'&&!session;
   const owner=verified&&accountId?getDemoUser(accountId):offlineReference?getDemoUser('user1'):null;
+  const demoSql=useDemoSqlProfileAndServiceRecords(owner?.id??null);
+  const sqlAccount=demoSql.status==='ready'&&demoSql.userId===accountId?demoSql.profile:null;
   const [reload,setReload]=useState(0);
   const [recordState,setRecordState]=useState<{
     owner:DemoUserId|null;status:'loading'|'ready'|'error';profile:TaxpayerTinProfile|null
@@ -56,9 +59,9 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
   const current=recordState.owner===accountId?recordState:null;
   const record=verified||offlineReference?current?.profile??null:null;
   const status=current?.status??'loading';
-  const accountStatus=owner?.role==='TAXPAYER_CORPORATE'
+  const accountStatus=(sqlAccount?.roleCode??owner?.role)==='TAXPAYER_CORPORATE'
     ?tr(['Company','কোম্পানি'])
-    :owner?.role==='WITHHOLDING_AGENT'
+    : (sqlAccount?.roleCode??owner?.role)==='WITHHOLDING_AGENT'
       ?tr(['Withholding agent','উৎসে কর কর্তনকারী'])
       :tr(['Individual','ব্যক্তি']);
   const rawValue=(field:TaxpayerTinField):string|null=>{
@@ -66,9 +69,9 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
     if(typeof fromRegistration==='string'&&fromRegistration.trim())return fromRegistration.trim();
     if(record)return null; // An incomplete registration row is not enriched from unrelated sample data.
     if(!owner)return null;
-    if(field==='taxpayerName')return bn?owner.nameBn:owner.nameEn;
+    if(field==='taxpayerName')return bn?(sqlAccount?.nameBn??owner.nameBn):(sqlAccount?.nameEn??owner.nameEn);
     if(field==='taxpayerStatus'||field==='tinType')return accountStatus;
-    if(field==='taxesCircle')return owner.taxCircle;
+    if(field==='taxesCircle')return sqlAccount?.jurisdictionLabel??owner.taxCircle;
     return null;
   };
   const value=(field:TaxpayerTinField,lang:Language):string=>{
@@ -77,7 +80,7 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
     return record&&accountId==='user1'?user1FictionalTinValue(field,lang,record):raw;
   };
   const initials=(()=>{
-    const name=(owner?.nameEn??record?.taxpayerName??'').replace(/^(md\.?|mr\.?|ms\.?)\s+/i,'');
+    const name=(record?.taxpayerName??sqlAccount?.nameEn??owner?.nameEn??'').replace(/^(md\.?|mr\.?|ms\.?)\s+/i,'');
     const parts=name.split(/\s+/).map(part=>part.replace(/[^A-Za-z]/g,'')).filter(Boolean);
     return (parts.slice(0,2).map(part=>part[0]?.toUpperCase()).join('')||'—');
   })();
