@@ -12,7 +12,7 @@ async function mockAccount(page:import('@playwright/test').Page, userId:PreviewU
       if(request.userId!==userId||request.password!==userId)
         return route.fulfill({status:401,contentType:'application/json',body:'{"success":false}'});
       data={profileId:userId,capability,paymentSessionId:sessionId,language:'en',selectedListId:null};
-    }else if(request.action==='lists'||request.action==='people'){data=[];}
+    }else if(request.action==='lists'||request.action==='people'||request.action==='payment-draft-list'){data=[];}
     else if(request.action==='demo-settings'){data={language:'en',selectedListId:null,paymentSessionId:sessionId};}
     else if(request.action==='open'){data={active:true};}
     else return route.fulfill({status:404,contentType:'application/json',body:'{"success":false}'});
@@ -35,6 +35,11 @@ async function mockAccount(page:import('@playwright/test').Page, userId:PreviewU
   await page.getByRole('textbox',{name:'User ID'}).fill(userId);
   await page.getByLabel('Password',{exact:true}).fill(userId);
   await page.getByRole('button',{name:'Sign In',exact:true}).click();
+  const otp=page.getByTestId('demo-otp-input');
+  if(await otp.isVisible()){
+    await otp.fill('111111');
+    await page.getByTestId('taxpayer-login-submit').click();
+  }
   await expect(page).toHaveURL(/action=taxpayer_home/);
 }
 
