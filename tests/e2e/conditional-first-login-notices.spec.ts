@@ -54,6 +54,11 @@ for(const language of ['en','bn'] as const) {
       const dialog=page.getByRole('dialog');
       const button=dialog.getByRole('button',{name:language==='bn'?'বিজ্ঞপ্তি দেখুন':'Continue to notifications'});
       await expect(button).toBeVisible();
+      // The modal animates scale(.99) -> scale(1). Measure the settled
+      // hit target, not a fractional bounding box mid-transition.
+      await dialog.evaluate(async element=>{
+        await Promise.all(element.getAnimations().map(animation=>animation.finished.catch(()=>undefined)));
+      });
       const dimensions=await button.evaluate(element=>{
         const bounds=element.getBoundingClientRect();
         const style=getComputedStyle(element);
