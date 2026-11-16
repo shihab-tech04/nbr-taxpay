@@ -6,7 +6,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
 import {recordAccountActivity} from '../../services/accountActivity';
-import {activePreviewSession,savePreviewSetting} from '../../services/previewAccountSession';
+import {activePreviewSession,getPreviewSettings,savePreviewSetting} from '../../services/previewAccountSession';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
@@ -159,7 +159,7 @@ export function Beneficiaries(){
     :previewAccount?activePreviewSession()?.selectedListId:null;
   const rememberList=(id:string)=>{
     const save=owner?saveAccountViewPreference(owner,'taxpay_last_beneficiary_list_id',id)
-      :previewAccount?savePreviewSetting('selected-list',id):null;
+      :previewAccount?savePreviewSetting('selected-list',id==='all'?'':id):null;
     if(!save)return;
     setPreferenceError(null);
     void save.then(()=>owner
@@ -171,7 +171,7 @@ export function Beneficiaries(){
   };
   const initialRequestRef=useRef<symbol|null>(null);
   const reload=async(preferredList?:string)=>{
-    const data=await loadBeneficiaries(owner);
+    const data=await loadBeneficiaries(owner,{forceFresh:true});
     setLists(data.lists);setPeople(data.people);
     const validPreferredList=preferredList&&(preferredList==='all'||data.lists.some(list=>list.id===preferredList))?preferredList:null;
     setActiveList(current=>validPreferredList
@@ -189,10 +189,18 @@ export function Beneficiaries(){
     const requestToken=Symbol('beneficiary-initial-load');
     initialRequestRef.current=requestToken;
     setLists([]);setPeople([]);setActiveList('');setSelectedIds([]);setLoading(true);setError('');
-    loadBeneficiaries(owner).then(data=>{
+    Promise.all([
+      loadBeneficiaries(owner,{forceFresh:true}),
+      // A different browser may have changed the selected list. This cached
+      // session preference is only a fallback when server readback fails.
+      !owner&&previewAccount?getPreviewSettings().catch(()=>null):Promise.resolve(null),
+    ]).then(([data,serverSettings])=>{
       if(cancelled)return;
       setLists(data.lists);setPeople(data.people);
-      setActiveList(reviewTins.length?'all':rememberedBeneficiaryListId([{id:'all'},...data.lists],savedListId||'all'));
+      const latestChoice=serverSettings
+        ?(serverSettings.selectedListId??'all')
+        :(savedListId||'all');
+      setActiveList(reviewTins.length?'all':rememberedBeneficiaryListId([{id:'all'},...data.lists],latestChoice));
     }).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:String(e));})
       .finally(()=>{
         if(initialRequestRef.current===requestToken)initialRequestRef.current=null;
@@ -214,7 +222,7 @@ export function Beneficiaries(){
       // mount load already has the fresh data; do not issue a second read.
       if(document.visibilityState==='hidden' || initialRequestRef.current || !gate.begin(Date.now()))return;
       const current=++revision;
-      void loadBeneficiaries(owner).then(data=>{
+      void loadBeneficiaries(owner,{forceFresh:true}).then(data=>{
         if(cancelled || current!==revision)return;
         setLists(data.lists);setPeople(data.people);setError('');
         setActiveList(selected=>selected==='all'||data.lists.some(list=>list.id===selected)?selected:'all');
@@ -226,7 +234,15 @@ export function Beneficiaries(){
     };
     window.addEventListener('focus',refresh);
     document.addEventListener('visibilitychange',refresh);
-    return()=>{cancelled=true;window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
+    // A different browser/device does not emit local storage events. Poll the
+    // same owner-scoped SQL/preview profile while this view stays visible.
+    const poll=window.setInterval(refresh,30_000);
+    return()=>{
+      cancelled=true;
+      window.removeEventListener('focus',refresh);
+      document.removeEventListener('visibilitychange',refresh);
+      window.clearInterval(poll);
+    };
   },[owner,checkingIdentity,busy]);
 
   const listPeople=activeList==='all'?people:people.filter(person=>person.list_id===activeList);

@@ -5,9 +5,9 @@ import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
 import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {useAccountIdentity} from '../../services/accountIdentity';
+import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
 import {activePreviewSession} from '../../services/previewAccountSession';
-import {loadBeneficiaries,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
-import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
+import {loadBeneficiaries,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {useTaxState} from '../../services/taxState';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
 import {beneficiaryTagLabel,beneficiaryFinalTagLabel} from '../../services/beneficiaryTags';
@@ -38,9 +38,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [refresh,setRefresh]=useState(0);
-  const [restoring,setRestoring]=useState(false);
-  const [recoveryDone,setRecoveryDone]=useState(false);
-  const [restoreInfo,setRestoreInfo]=useState('');
+  const [refreshError,setRefreshError]=useState(false);
   const [fallbackOpen,setFallbackOpen]=useState(false);
   const [fallbackTin,setFallbackTin]=useState('');
   const [searchedFallbackTin,setSearchedFallbackTin]=useState('');
@@ -53,26 +51,45 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
         :'guest';
   const [renderOwnerScope,setRenderOwnerScope]=useState<string|null>(null);
   const ownerScopeRef=useRef(ownerScope);
+  const loadedScopeRef=useRef<string|null>(null);
   ownerScopeRef.current=ownerScope;
   useEffect(()=>{
     let cancelled=false;
-    setRenderOwnerScope(ownerScope);
-    setLists([]);setPeople([]);setExpanded([]);setLoading(true);setError('');
-    onAvailableTins(null);
+    const ownerChanged=loadedScopeRef.current!==ownerScope;
+    loadedScopeRef.current=ownerScope;
+    // Clear the former account immediately, but retain the current account's
+    // last verified snapshot during a background refresh (no 30s flicker).
+    if(ownerChanged){
+      setRenderOwnerScope(ownerScope);
+      setLists([]);setPeople([]);setExpanded([]);
+      setLoading(true);setError('');
+      onAvailableTins(null);
+    }
+    setRefreshError(false);
     if(checkingIdentity)return()=>{cancelled=true;};
-    loadBeneficiaries(user?.id??null).then(result=>{
+    // A second device can edit the same server-backed profile. Do not serve
+    // the 3-second navigation snapshot to a payment beneficiary selector.
+    loadBeneficiaries(user?.id??null,{forceFresh:true}).then(result=>{
       if(cancelled||ownerScopeRef.current!==ownerScope)return;
       setLists(result.lists);setPeople(result.people);
+      setError('');setRefreshError(false);
       const containingSelection=result.lists.filter(list=>result.people.some(person=>
         person.list_id===list.id&&selectedTins.includes(person.tin))).map(list=>list.id);
-      setExpanded(containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[]);
+      setExpanded(current=>ownerChanged
+        ? containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[]
+        : current.filter(id=>result.lists.some(list=>list.id===id)).length
+          ? current.filter(id=>result.lists.some(list=>list.id===id))
+          : containingSelection.length?containingSelection:result.lists[0]?[result.lists[0].id]:[]);
       onAvailableTins(Array.from(new Set(result.people.map(person=>person.tin))));
     }).catch(e=>{
       if(cancelled||ownerScopeRef.current!==ownerScope)return;
+      if(!ownerChanged){
+        // Keep the last verified list visible; a temporary request failure
+        // must never overwrite account data or present an empty profile.
+        setRefreshError(true);
+        return;
+      }
       const detail=e instanceof Error?e.message:'';
-      // User-ID preview accounts use capability-scoped browser storage, not
-      // a verified Supabase Auth UID. Distinguish an unusable saved capability
-      // from a transient request failure without revealing SQL internals.
       const lostCapability=!user && /session has expired|access key is invalid/.test(detail);
       const noStorage=!user && /storage is unavailable/.test(detail);
       setError(lostCapability
@@ -86,21 +103,28 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       onAvailableTins(null);
     }).finally(()=>{if(!cancelled&&ownerScopeRef.current===ownerScope)setLoading(false);});
     return()=>{cancelled=true;};
-    // The available TIN set is intentionally refreshed on account changes, not on each checkbox click.
+    // Revalidate only on account or refresh triggers, not every checkbox click.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[ownerScope,refresh,onAvailableTins]);
 
+  // SQL-backed signed-in profiles and stable fictional preview profiles share
+  // their saved lists across browsers/devices. Keep the picker current without
+  // asking people to restore local copies or press a manual refresh button.
   useEffect(()=>{
-    setRestoring(false);setRecoveryDone(false);setRestoreInfo('');
-  },[ownerScope]);
-
-  // A payment step can remain mounted while beneficiaries change in another
-  // tab. Re-read the same identity-scoped source on return to the tab.
-  useEffect(()=>{
-    const refreshVisible=()=>{if(document.visibilityState!=='hidden')setRefresh(value=>value+1);};
+    const gate=createBeneficiaryAutoRefreshGate();
+    const refreshVisible=()=>{
+      if(document.visibilityState==='hidden'||!gate.begin(Date.now()))return;
+      setRefresh(value=>value+1);
+      gate.finish();
+    };
     window.addEventListener('focus',refreshVisible);
     document.addEventListener('visibilitychange',refreshVisible);
-    return()=>{window.removeEventListener('focus',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible);};
+    const poll=window.setInterval(refreshVisible,30_000);
+    return()=>{
+      window.removeEventListener('focus',refreshVisible);
+      document.removeEventListener('visibilitychange',refreshVisible);
+      window.clearInterval(poll);
+    };
   },[]);
 
   if(renderOwnerScope!==ownerScope){
@@ -108,27 +132,6 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       aria-label={tr('Choose beneficiaries','উপকারভোগী নির্বাচন')}>
       <p role="status" className="text-sm text-slate-600">{tr('Loading beneficiary lists…','উপকারভোগীর তালিকা লোড হচ্ছে…')}</p>
     </section>;
-  }
-
-  const restoreAvailable=Boolean((user?.id||previewAccount)&&hasStoredGuestBeneficiaries()&&!recoveryDone);
-  async function restoreSavedLists(){
-    if((!user?.id&&!previewAccount)||restoring)return;
-    const expectedScope=ownerScope;
-    setRestoring(true);setRestoreInfo('');
-    try {
-      const recovered=user?.id?await recoverGuestBeneficiariesToProfile(user.id)
-        :await recoverLegacyGuestBeneficiariesToPreview();
-      if(ownerScopeRef.current!==expectedScope)return;
-      setRecoveryDone(true);
-      setRestoreInfo(recovered.people
-        ? tr('Saved beneficiaries restored to your profile.','সংরক্ষিত উপকারভোগীরা আপনার প্রোফাইলে যুক্ত হয়েছে।')
-        : tr('Your profile lists are up to date.','আপনার প্রোফাইলের তালিকা হালনাগাদ রয়েছে।'));
-      setRefresh(previous=>previous+1);
-    } catch {
-      if(ownerScopeRef.current!==expectedScope)return;
-      setRestoreInfo(tr('Could not restore saved lists. You can safely retry; the original lists are preserved.',
-        'সংরক্ষিত তালিকা ফিরিয়ে আনা যায়নি। আবার চেষ্টা করতে পারেন; আগের তালিকা অক্ষত আছে।'));
-    } finally {if(ownerScopeRef.current===expectedScope)setRestoring(false);}
   }
 
   const normalized=search.trim().toLocaleLowerCase();
@@ -196,9 +199,10 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       </UiButton>
     </div>
     {(checkingIdentity||loading)&&<p role="status" className="text-sm text-slate-600">{tr('Loading beneficiary lists…','উপকারভোগীর তালিকা লোড হচ্ছে…')}</p>}
-    {!checkingIdentity&&!loading&&!error&&restoreAvailable&&<UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold"
-      disabled={restoring} onClick={restoreSavedLists}>{restoring?tr('Restoring…','ফিরিয়ে আনা হচ্ছে…'):tr('Restore saved lists','সংরক্ষিত তালিকা ফিরিয়ে আনুন')}</UiButton>}
-    {restoreInfo&&<p role="status" className="text-sm text-slate-600" aria-live="polite">{restoreInfo}</p>}
+    {refreshError&&!error&&<p role="status" className="text-sm text-amber-800" aria-live="polite">
+      {tr('Could not check for newer beneficiary details. The last saved list remains visible; updates will retry automatically.',
+        'উপকারভোগীর নতুন তথ্য যাচাই করা যায়নি। আগের তালিকা দেখা যাচ্ছে; স্বয়ংক্রিয়ভাবে আবার চেষ্টা করা হবে।')}
+    </p>}
     {error&&<div className="flex flex-wrap items-center gap-3" role="alert">
       <p className="text-sm text-red-700">{error}</p>
       <UiButton type="button" variant="outline" className="text-sm font-semibold" onClick={()=>setRefresh(v=>v+1)}>{tr('Retry','আবার চেষ্টা')}</UiButton>
