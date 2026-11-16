@@ -1,11 +1,8 @@
 import React, {useEffect,useState} from 'react';
-import {Check, Copy, Download} from 'lucide-react';
+import {Check, Copy, Download, UserRound} from 'lucide-react';
 import {MaskedProfileValue, sensitiveProfileKind} from '../ui/MaskedProfileValue';
 import {TAXPAYER_PROFILE_LAYOUT,TAXPAYER_PROFILE_FIELD_ORDER,type ProfileFieldRow} from '../../contracts/taxpayerProfileFieldLayout';
-import {
-  USER1_FICTIONAL_TIN_PROFILE as initialReference,
-  user1FictionalTinValue,
-} from '../../data/user1FictionalTinProfile';
+import {user1FictionalTinValue} from '../../data/user1FictionalTinProfile';
 import type {TaxpayerTinField,TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {loadTaxpayerRegistrationProfile} from '../../services/taxpayerRegistrationProfile';
@@ -32,12 +29,20 @@ export function User1TaxpayerProfile({language}:{language:Language}){
     });
     return()=>{active=false;};
   },[session?.profileId,reload]);
-  const record=session?.profileId==='user1'?recordState.profile:initialReference;
+  // Never render a bundled reference profile under another user's session or
+  // when the SQL-backed preview record is missing. A typed route/ID proves no ownership.
+  const record=session?.profileId==='user1'&&recordState.status==='ready'
+    ?recordState.profile:null;
   const value=(field:TaxpayerTinField,language:Language)=>
-    user1FictionalTinValue(field,language,record??initialReference);
+    record?user1FictionalTinValue(field,language,record):'—';
   const [copied,setCopied]=useState<'idle'|'done'|'failed'>('idle');
   const [downloadError,setDownloadError]=useState(false);
   const tin=record?.tin??'';
+  // The decorative identity badge follows the loaded profile name. Never
+  // display fixed initials when the server-sourced name changes or is missing.
+  const displayName=record?.taxpayerName?.trim()?value('taxpayerName',language):'';
+  const identityParts=displayName.trim().split(/\s+/u).filter(Boolean);
+  const identityInitials=identityParts.slice(-2).map(part=>Array.from(part)[0]??'').join('').toLocaleUpperCase();
   const details=(rows:readonly Row[])=><dl className="divide-y divide-taxpay-border">
     {rows.map(([field,label])=>{
       const raw=record?.[field];
@@ -46,7 +51,7 @@ export function User1TaxpayerProfile({language}:{language:Language}){
         <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
         <dd className="min-w-0 break-words text-sm font-medium leading-relaxed text-taxpay-text">
           {kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
-            label={tr(label)} language={language}/>:value(field,language)}
+            label={tr(label)} language={language} allowCopy/>:value(field,language)}
         </dd>
       </div>;
     })}
@@ -88,7 +93,12 @@ export function User1TaxpayerProfile({language}:{language:Language}){
       setDownloadError(true);
     }
   };
-  if(session?.profileId==='user1'&&recordState.status!=='ready'){
+  if(session?.profileId!=='user1'){
+    return <section className="rounded-xl border border-taxpay-border bg-white p-5" data-testid="user1-taxpayer-profile">
+      <p role="alert">{bn?'এই অ্যাকাউন্টের জন্য করদাতার প্রোফাইল পাওয়া যায়নি।':'Taxpayer profile is not available for this account.'}</p>
+    </section>;
+  }
+  if(recordState.status!=='ready'||!record){
     return <section className="rounded-xl border border-taxpay-border bg-white p-5" data-testid="user1-taxpayer-profile">
       {recordState.status==='loading'?<p role="status">{bn?'করদাতার প্রোফাইল লোড হচ্ছে…':'Loading taxpayer profile…'}</p>:
       <div><p role="alert">{bn?'প্রোফাইলের তথ্য লোড করা যায়নি।':'Could not load taxpayer information.'}</p>
@@ -101,7 +111,7 @@ export function User1TaxpayerProfile({language}:{language:Language}){
     <section className="overflow-hidden rounded-2xl border border-taxpay-border bg-white">
       <div className="flex flex-col items-start gap-4 p-5 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:p-6">
         <div className="flex w-full min-w-0 items-start gap-4 sm:w-auto sm:flex-1">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-taxpay-light text-lg font-semibold text-taxpay-primary" aria-hidden="true">AR</div>
+          <div data-testid="user1-profile-identity-badge" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-taxpay-light text-lg font-semibold text-taxpay-primary" aria-hidden="true">{identityInitials||<UserRound size={20}/>}</div>
           <div className="min-w-0 space-y-1.5">
             <p className="text-xs text-taxpay-muted">{tr(['Account','অ্যাকাউন্ট'])}: user1</p>
             <h2 data-profile-field="taxpayerName" className="break-words text-xl font-semibold leading-snug text-taxpay-text sm:text-2xl">

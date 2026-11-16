@@ -17,6 +17,27 @@ concurrency:
 
 jobs:
 
+  v2-read-preflight:
+    name: Taxpayer-v2 public read-only API acceptance
+    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'ws5/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Verify zero-write preflight regression
+        run: node --test scripts/ci/v2-public-read-preflight.test.mjs
+      - name: Confirm Taxpayer-v2 hosted public CMS and source catalogue
+        env:
+          V2_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
+        run: node scripts/ci/v2-public-read-preflight.mjs
+
   preflight:
     name: Verified PR and immutable build provenance
     runs-on: ubuntu-24.04
@@ -40,8 +61,7 @@ jobs:
           persist-credentials: false
       - name: Check verifier regression cases
         run: |
-          node --test scripts/ci/verified-merge-release.test.mjs
-          node --test scripts/ci/sohojkor-v2-cutover-gate.test.mjs
+          node --test scripts/ci/verified-merge-release.test.mjs scripts/ci/hybrid-cutover-gate.test.mjs scripts/ci/sohojkor-v2-cutover-gate.test.mjs
       - name: Confirm exact-source PR acceptance and review artifact
         id: probe
         env:
@@ -86,14 +106,22 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
           VITE_SUPABASE_DISABLED: 'false'
+          # Unapproved V2 switches are rejected by the signed cutover gate below.
           VITE_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
           # Publishable key only. NEVER use service_role, secret or JWT signing keys in a web bundle.
           VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
-        run: npm run build
+          SOHOJKOR_CUTOVER_SIGNED_PROOF: ${{ secrets.SOHOJKOR_CUTOVER_SIGNED_PROOF }}
+          SOHOJKOR_CUTOVER_APPROVER_PUBLIC_KEY: ${{ vars.SOHOJKOR_CUTOVER_APPROVER_PUBLIC_KEY }}
+          SOHOJKOR_RELEASE_SCOPE: 'fictional-user1-user30-only'
+          SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
+          SOHOJKOR_ORIGINAL_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          SOHOJKOR_OFFICE_SUPABASE_URL: 'https://ihbtabrvmyiwikqqbhrf.supabase.co'
+        run: |
+          node scripts/ci/hybrid-cutover-gate.mjs
+          npm run build
       - name: Verify V2 fictional account boundaries against the hosted Edge API
         if: github.event_name == 'pull_request'
         env:
-          # Publishable public key only, same reviewed value as the V2 web build.
           SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
         run: |
           node --test scripts/ci/sohojkor-v2-demo-smoke.test.mjs
@@ -103,13 +131,15 @@ jobs:
           node scripts/ci/check-public-startup-budget.mjs
           node --check scripts/measure-live-performance.mjs
       - name: Verify Pages base, scoped public endpoint and financial safety
+        env:
+          VITE_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
         shell: bash
         run: |
           test -s dist/index.html
           grep -q '/nbr-taxpay/assets/' dist/index.html
           ! grep -q '/NBR-Tax-Payment/assets/' dist/index.html
           ! grep -q '/src/main.tsx' dist/index.html
-          grep -RFq 'https://gmuhitmaynfhipcvbvkh.supabase.co' dist/assets
+          grep -RFq "$VITE_SUPABASE_URL" dist/assets
           # Ensure no unrelated hosted Supabase projects or privileged key formats leak.
           ! grep -REq 'sb_secret_|service_role' dist/assets
           ! grep -REq '(^|[^0-9])[0-9]{12}([^0-9]|$)' dist/assets
@@ -193,9 +223,8 @@ jobs:
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/mobile-public-shell-parity.spec.ts --project=mobile-320 --project=mobile-375 --project=desktop-1280
-      # A PR changes its candidate bundle, not the already-deployed site.
-      # Prevent redundant live-site browser traffic on every PR; the
-      # post-deployment verifier below retains production release acceptance.
+      # PR candidate changes must not scrape the already-live production CMS artwork.
+      # Keep actual post-deployment verification after authorized merge.
       - name: Verify current live auth and Beneficiaries smoke contract in Chromium
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -457,6 +486,12 @@ jobs:
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/travel-tax-2026-journeys.spec.ts
+      - name: Verify Travel Tax lost-response replay
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://travel-retry-test.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
+        run: npx playwright test tests/e2e/travel-payment-retry.spec.ts --project=desktop-1280
       - name: Upload Travel Tax browser evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -504,6 +539,19 @@ jobs:
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/taxpayer-pay-popover-dashboard-corrections.spec.ts tests/e2e/travel-tax-shared-modal-draft-footer.spec.ts tests/e2e/taxpayer-dashboard-monthly-analytics.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
+      - name: Verify approved dashboard reference geometry and Follow-ups actions
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: npx playwright test tests/e2e/dashboard-bento-layout-regression.spec.ts --project=desktop-1280
+      - name: Preserve dashboard reference screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sohojkor-dashboard-reference-screenshots
+          path: test-results/screenshots/sohojkor-reference-overview-*.png
+          if-no-files-found: warn
       # Later Playwright steps recreate test-results. Preserve these screenshots now.
       - name: Retain side-by-side public and taxpayer Travel Tax visual evidence
         if: always()
@@ -570,7 +618,7 @@ jobs:
           VITE_SUPABASE_URL: 'https://beneficiaries-test.invalid'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-test-key'
         run: npx playwright test tests/e2e/signed-in-authorized-tin-entry.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
-      - name: Verify hosted persistence from live Pages with synthetic smoke data and cleanup
+      - name: Verify hosted persistence from live V2 Pages with synthetic smoke data and cleanup
         if: github.event_name == 'workflow_dispatch'
         env:
           VITE_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
@@ -692,7 +740,7 @@ jobs:
           grep -q '/nbr-taxpay/assets/' dist/index.html
           ! grep -q '/NBR-Tax-Payment/assets/' dist/index.html
           ! grep -q '/src/main.tsx' dist/index.html
-          grep -RFq 'https://gmuhitmaynfhipcvbvkh.supabase.co' dist/assets
+          grep -RFq 'https://eyqhoavnitkrajvyqvxn.supabase.co' dist/assets
           ! grep -REq 'sb_secret_|service_role' dist/assets
           ! grep -REq '(^|[^0-9])[0-9]{12}([^0-9]|$)' dist/assets
           ! grep -REq '(^|[^0-9])[0-9]{17}([^0-9]|$)' dist/assets
@@ -771,20 +819,31 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - name: Check out release guard before any production publication
+      - name: Check out exact Main release for hosted V2 verification
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Block unverified V2 primary and unsafe legacy/Office swaps
+      - name: Verify hosted fictional V2 accounts before publishing
+        env:
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
+          SOHOJKOR_RELEASE_SCOPE: 'fictional-user1-user30-only'
+          SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
+          SOHOJKOR_ORIGINAL_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
+          SOHOJKOR_OFFICE_SUPABASE_URL: 'https://ihbtabrvmyiwikqqbhrf.supabase.co'
+        run: node scripts/ci/hybrid-cutover-gate.mjs
+      - name: Reverify V2 simulation-only production cutover and hosted sessions
         env:
           SOHOJKOR_PRODUCTION_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
           SOHOJKOR_ORIGINAL_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
           SOHOJKOR_OFFICE_SUPABASE_URL: 'https://ihbtabrvmyiwikqqbhrf.supabase.co'
-          # This release may use V2 only for fictional user1-user30 and simulated transactions.
-          # The original project and Office remain separate; no real settlement is implied.
           SOHOJKOR_RELEASE_SCOPE: 'fictional-user1-user30-only'
           SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
         run: node scripts/ci/sohojkor-v2-cutover-gate.mjs
+      - name: Verify V2 published banners, approved logo and source catalogue before release
+        env:
+          V2_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
+        run: node scripts/ci/v2-public-read-preflight.mjs
       - name: Deploy compiled application
         id: deployment
         uses: actions/deploy-pages@v5.0.1

@@ -47,6 +47,8 @@ begin
     'origin','TAXPAY_UI','service','TAX_WITH_RETURN','amountMinor',300,'sessionId',old_session,
     'idempotencyKey',payment_key,
     'details',jsonb_build_object('payerId','user1','payerName','Synthetic payer',
+      'receiptReference','WS3-REC-'||payment::text,'receiptMobile','01700000000',
+      'tokenNumber','WS3-TOKEN-'||payment::text,
       'lines',jsonb_build_array(line_a,line_b)));
   insert into demo_payment.story_payments(id,idempotency_key,session_id,service_code,amount_minor,data,status)
     values(payment,payment_key,old_session,'TAX_WITH_RETURN',300,input_data,'SIMULATED_SUCCESS');
@@ -96,6 +98,14 @@ begin
 
   if (public.taxpay_demo_story1_session_payments(h_a,1,100)->>'total')::bigint<>0 then
     raise exception 'Historical payment was silently added before consent';
+  end if;
+  if public.taxpay_demo_story1_reference_payment(
+      h_a,'WS3-REC-'||payment::text,null) is not null then
+    raise exception 'Unrecovered historical session reference was exposed';
+  end if;
+  if public.taxpay_demo_story1_reference_payment(
+      h_a,'SK-PC-'||payment::text,null) is not null then
+    raise exception 'Unrecovered historical certificate was exposed';
   end if;
   begin
     perform public.taxpay_demo_recover_story1_session(h_a,unowned_session);
@@ -153,6 +163,66 @@ begin
   if (public.taxpay_demo_story1_session_payment(h_a,payment)->>'id')::uuid<>payment then
     raise exception 'Recovered receipt is unreadable';
   end if;
+  -- Read-only recovery across browser/session renewal, after verified existing
+  -- explicit old-session link. The original parent and Office outbox stay intact.
+  result:=public.taxpay_demo_story1_reference_payment(
+    h_a,'WS3-REC-'||payment::text,null);
+  if result->>'id' is distinct from payment::text
+     or result->>'amountMinor' is distinct from '300'
+     or result->>'status' is distinct from 'SIMULATED_SUCCESS'
+     or result->'details'->>'payerId' is distinct from 'user1'
+     or result->'details'->>'tokenNumber' is distinct from 'WS3-TOKEN-'||payment::text
+  then raise exception 'Capability-backed recovered original receipt mismatch'; end if;
+  if public.taxpay_demo_story1_reference_payment(
+      h_a,'SK-PC-'||payment::text,'01700000000')->>'id'
+      is distinct from payment::text then
+    raise exception 'Recovered certificate reference missing'; end if;
+  if public.taxpay_demo_story1_reference_payment(
+      h_a,'WS3-TOKEN-'||payment::text,null)->>'id'
+      is distinct from payment::text then
+    raise exception 'Recovered original token missing'; end if;
+  if public.taxpay_demo_story1_reference_payment(
+      h_a,'WS3-REC-'||payment::text,'01700000001') is not null then
+    raise exception 'Wrong receipt mobile exposed payment'; end if;
+  if public.taxpay_demo_story1_reference_payment(
+      h_a,'WS3-REF-NONEXISTENT',null) is not null then
+    raise exception 'Unknown reference matched payer record'; end if;
+  if public.taxpay_demo_story1_reference_payment(
+      h_b,'WS3-REC-'||payment::text,null) is not null then
+    raise exception 'Unrelated profile retrieved payer record'; end if;
+  if public.taxpay_demo_story1_reference_payment(
+      h_c,payment::text,null) is not null then
+    raise exception 'Other valid profile retrieved parent ID'; end if;
+  if public.taxpay_demo_story1_reference_payment(
+      h_a,'WS3-REC-'||payment::text,null) is distinct from result then
+    raise exception 'Reference refresh/retry was non-idempotent'; end if;
+  begin
+    perform public.taxpay_demo_story1_reference_payment(
+      repeat('0',64),'WS3-REC-'||payment::text,null);
+    raise exception 'Unknown capability retrieved payer';
+  exception when others then
+    if sqlerrm='Unknown capability retrieved payer' then raise; end if;
+    if sqlerrm not like '%GUEST_SESSION_UNAVAILABLE%' then raise; end if;
+  end;
+  begin
+    update taxpay_guest_private.sessions
+       set expires_at=now()-interval '1 second'
+     where capability_hash=h_a;
+    perform public.taxpay_demo_story1_reference_payment(
+      h_a,'WS3-REC-'||payment::text,null);
+    raise exception 'Expired capability retrieved payer';
+  exception when others then
+    if sqlerrm='Expired capability retrieved payer' then raise; end if;
+    if sqlerrm not like '%GUEST_SESSION_UNAVAILABLE%' then raise; end if;
+  end;
+  if has_function_privilege('anon',
+       'public.taxpay_demo_story1_reference_payment(text,text,text)','EXECUTE')
+     or has_function_privilege('authenticated',
+       'public.taxpay_demo_story1_reference_payment(text,text,text)','EXECUTE')
+     or not has_function_privilege('service_role',
+       'public.taxpay_demo_story1_reference_payment(text,text,text)','EXECUTE')
+  then raise exception 'Guest reference SQL direct access not closed'; end if;
+
   if not exists(select 1 from jsonb_array_elements(public.taxpay_demo_story1_session_notices(h_a)) n
     where n.value->>'paymentId'=payment::text and n.value->>'type'='SIMULATED_PAYMENT_SUCCESS') then
     raise exception 'Original payment notification is absent after recovery';

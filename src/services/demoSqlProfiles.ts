@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { DemoUserId } from '../data/demoUsers';
+import { DEMO_USER_IDS, type DemoUserId } from '../data/demoUsers';
 import { supabase } from './supabaseClient';
 
 /** Publicly inspectable, fictional records. These types convey no tax-credit entitlement. */
@@ -47,8 +47,13 @@ export interface DemoSqlProfileData {
   records: DemoSqlServiceRecord[];
 }
 
-const validUserId = (value: unknown): value is DemoUserId =>
-  typeof value === 'string' && /^user(?:10|[1-9])$/.test(value);
+/** Keep SQL-backed UI ownership bounded by the *selectable* preview catalogue.
+ * The separate 55-ID simulation contract is not permission to select an
+ * account that has no corresponding DemoUser or signed-in page.
+ */
+export const isSupportedDemoSqlUserId = (value: unknown): value is DemoUserId =>
+  typeof value === 'string' && (DEMO_USER_IDS as readonly string[]).includes(value);
+const validUserId = isSupportedDemoSqlUserId;
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 const requiredText = (value: unknown, field: string): string => {

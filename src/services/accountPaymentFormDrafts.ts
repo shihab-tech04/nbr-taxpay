@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { activePreviewSession } from './previewAccountSession';
+import { guestPaymentDraftOwnerScope, unsignedGuestPaymentDraftRequest } from './guestBeneficiaries';
 import { TAXPAY_PUBLIC_ENDPOINT } from '../config/publicBackend';
 
 const services = [
@@ -10,7 +11,21 @@ const services = [
 export type PaymentDraftService = typeof services[number];
 export type PaymentDraftActor =
   | { kind: 'authenticated'; userId: string }
-  | { kind: 'preview'; profileId: string };
+  | { kind: 'preview'; profileId: string }
+  | { kind: 'guest' };
+
+/** A preview User ID is not a session. Renewing the same account issues a new
+ * random payment session; draft UI state must not be reused across it.
+ * The private capability itself is never placed in React keys or DOM.
+ */
+export function paymentDraftOwnerScope(actor:PaymentDraftActor|null):string {
+  if(!actor)return '';
+  if(actor.kind==='authenticated')return 'authenticated:'+actor.userId;
+  if(actor.kind==='guest')return guestPaymentDraftOwnerScope();
+  const session=activePreviewSession();
+  return 'preview:'+actor.profileId+':'+
+    (session?.profileId===actor.profileId?session.paymentSessionId:'unavailable');
+}
 
 export type PaymentFormDraft = {
   id: string;
@@ -54,13 +69,21 @@ async function verifiedActor(actor: PaymentDraftActor) {
   if (actor.kind === 'preview') {
     const session = activePreviewSession();
     if (!session || session.profileId !== actor.profileId) throw new Error('Sign in to your account again.');
-    return { capability: session.capability, profileId: session.profileId };
+    return { capability: session.capability, profileId: session.profileId, paymentSessionId: session.paymentSessionId };
+  }
+  if (actor.kind === 'guest') {
+    if (activePreviewSession()) throw new Error('Sign out of the preview account to use guest drafts.');
+    if (supabase) {
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.user?.id) throw new Error('Sign out of the account to use guest drafts.');
+    }
+    return { capability: null, profileId: null, paymentSessionId: null };
   }
   if (!supabase) throw new Error('Database is unavailable.');
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user?.id || data.user.id !== actor.userId)
     throw new Error('Sign in to your account again.');
-  return { capability: null, profileId: null };
+  return { capability: null, profileId: null, paymentSessionId: null };
 }
 
 async function checkActorStillSignedIn(actor: PaymentDraftActor) {
@@ -93,26 +116,67 @@ async function previewDraftAction(
     throw new Error('Draft storage is unavailable. No save was confirmed.');
   }
   await checkActorStillSignedIn(actor);
+  // A new sign-in can issue a different capability for the *same* preview ID.
+  // Comparing profile IDs alone would accept an older session's delayed draft.
+  const current = activePreviewSession();
+  if (!current || current.profileId !== actor.profileId ||
+      current.capability !== identity.capability ||
+      current.paymentSessionId !== identity.paymentSessionId)
+    throw new Error('Sign in to your account again.');
   return result?.data;
+}
+
+async function unsignedGuestDraftAction(
+  actor: PaymentDraftActor & {kind:'guest'},
+  action: 'list'|'get'|'create'|'update'|'delete',
+  fields: Record<string,unknown> = {},
+): Promise<unknown> {
+  await verifiedActor(actor);
+  const result = await unsignedGuestPaymentDraftRequest<unknown>(action,fields);
+  await checkActorStillSignedIn(actor);
+  return result;
 }
 
 async function authenticatedRows(actor: PaymentDraftActor & {kind: 'authenticated'}, service?: PaymentDraftService) {
   await verifiedActor(actor);
   if (!supabase) throw new Error('Database is unavailable.');
-  let query = supabase.from('taxpay_account_payment_form_drafts')
-    .select('id,service,form_payload,revision,created_at,updated_at')
-    .eq('owner_uid', actor.userId);
-  if (service) query = query.eq('service', service);
-  const { data, error } = await query.order('updated_at', { ascending: false }).limit(100);
-  if (error) throw new Error('Could not load drafts.');
-  await checkActorStillSignedIn(actor);
-  return data ?? [];
+  // A single top-100 query silently omitted older assessment years, while
+  // Overview described its catalog as complete. Read all owner-scoped pages,
+  // with deterministic tie-breaking and bounded failure rather than truncation.
+  const pageSize = 100;
+  const maxPages = 50;
+  const rows: PaymentFormDraft[] = [];
+  const seen = new Set<string>();
+  for (let page = 0; page < maxPages; page++) {
+    let query = supabase.from('taxpay_account_payment_form_drafts')
+      .select('id,service,form_payload,revision,created_at,updated_at')
+      .eq('owner_uid', actor.userId);
+    if (service) query = query.eq('service', service);
+    const { data, error } = await query
+      .order('updated_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+    if (error || !data) throw new Error('Could not load drafts.');
+    await checkActorStillSignedIn(actor);
+    for (const record of data) {
+      const row = validRecord(record);
+      // An overlapping page may mean a concurrent save/delete changed the
+      // offset. Never silently count the same saved draft twice.
+      if (seen.has(row.id)) throw new Error('Saved drafts changed while loading. Refresh and retry.');
+      seen.add(row.id);
+      rows.push(row);
+    }
+    if (data.length < pageSize) return rows;
+  }
+  throw new Error('Saved draft list exceeds the supported retrieval limit.');
 }
 
 export async function listPaymentFormDrafts(actor: PaymentDraftActor, service?: PaymentDraftService): Promise<PaymentFormDraft[]> {
   const values = actor.kind === 'preview'
     ? await previewDraftAction(actor, 'list', { service: service ?? null })
-    : await authenticatedRows(actor, service);
+    : actor.kind === 'guest'
+      ? await unsignedGuestDraftAction(actor, 'list', { service: service ?? null })
+      : await authenticatedRows(actor, service);
   if (!Array.isArray(values)) throw new Error('Draft list could not be verified.');
   return values.map(validRecord).filter(item => !service || item.service === service);
 }
@@ -120,6 +184,9 @@ export async function listPaymentFormDrafts(actor: PaymentDraftActor, service?: 
 async function readBackDraft(actor: PaymentDraftActor, id: string): Promise<PaymentFormDraft> {
   if (actor.kind === 'preview') {
     return validRecord(await previewDraftAction(actor, 'get', { id }));
+  }
+  if (actor.kind === 'guest') {
+    return validRecord(await unsignedGuestDraftAction(actor, 'get', { id }));
   }
   await verifiedActor(actor);
   if (!supabase) throw new Error('Database is unavailable.');
@@ -149,7 +216,13 @@ export async function savePaymentFormDraft(
     throw new Error('Draft service changed.');
   await verifiedActor(actor);
   let result: PaymentFormDraft;
-  if (actor.kind === 'preview') {
+  if (actor.kind === 'guest') {
+    const data = await unsignedGuestDraftAction(actor, previous ? 'update' : 'create', {
+      id: previous?.id ?? null, revision: previous?.revision ?? null, service,
+      payload,
+    });
+    result = validRecord(data);
+  } else if (actor.kind === 'preview') {
     const data = await previewDraftAction(actor, previous ? 'update' : 'create', {
       id: previous?.id ?? null, revision: previous?.revision ?? null, service,
       payload,
@@ -185,8 +258,10 @@ export async function savePaymentFormDraft(
 
 export async function deletePaymentFormDraft(actor: PaymentDraftActor, draft: PaymentFormDraft): Promise<void> {
   await verifiedActor(actor);
-  if (actor.kind === 'preview') {
-    const result = await previewDraftAction(actor, 'delete', { id: draft.id, revision: draft.revision });
+  if (actor.kind === 'guest' || actor.kind === 'preview') {
+    const result = actor.kind === 'guest'
+      ? await unsignedGuestDraftAction(actor, 'delete', { id: draft.id, revision: draft.revision })
+      : await previewDraftAction(actor, 'delete', { id: draft.id, revision: draft.revision });
     if (!result || typeof result !== 'object' || (result as Record<string, unknown>).deleted !== draft.id)
       throw new Error('Draft deletion was not confirmed.');
   } else {

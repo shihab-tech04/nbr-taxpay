@@ -68,14 +68,14 @@ for(const language of ['en','bn'] as const){
           .toHaveText('012345678901');
       }
       if(view==='beneficiaries'&&!desktop){
-        const context=page.locator('.taxpay-office-register__actions .beneficiary-directory__list-toolbar .beneficiary-directory__list-filter');
+        await page.getByRole('button',{name:language==='en'?'Filter':'ফিল্টার',exact:true}).click();
+        const context=page.locator('.beneficiary-directory__filters .beneficiary-directory__list-filter');
         const search=page.locator('.taxpay-office-register__actions .taxpay-record-toolbar__search');
         await expect(context.getByRole('button',{name:language==='en'?'Selected list':'নির্বাচিত তালিকা'})).toBeVisible();
         await expect(search.getByRole('searchbox')).toBeVisible();
         const [listBox,searchBox]=await Promise.all([context.boundingBox(),search.boundingBox()]);
         if(!listBox||!searchBox)throw Error('Missing list switch or shared search');
         expect(searchBox.width,'Search is usable at 375px').toBeGreaterThan(120);
-        await page.getByRole('button',{name:language==='en'?'Filter':'ফিল্টার',exact:true}).click();
         const filters=page.locator('.beneficiary-directory__filters');
         const tag=filters.locator('.beneficiary-directory__tag-filter');
         await expect(tag).toBeVisible();
@@ -245,12 +245,25 @@ test('Office-style record workspaces fill laptop width without hiding transactio
     await page.goto('/?action='+view+'&demoUser=user1&lang=en');
     const workspace=page.locator('[data-taxpay-register-page="true"]').first();
     await expect(workspace).toBeVisible();
-    const dimensions=await workspace.evaluate(element=>({
-      width:element.getBoundingClientRect().width,
-      right:element.getBoundingClientRect().right,
-      screenWidth:window.innerWidth
-    }));
-    expect(dimensions.width,view+' must use available desktop workspace').toBeGreaterThan(940);
+    const dimensions=await workspace.evaluate(element=>{
+      const main=document.querySelector<HTMLElement>('#main-content');
+      if(!main)throw new Error('Approved register workspace main is missing');
+      const style=getComputedStyle(main);
+      const area=main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
+      return {
+        width:element.getBoundingClientRect().width,
+        right:element.getBoundingClientRect().right,
+        area,
+        screenWidth:window.innerWidth
+      };
+    });
+    // A laptop with its approved navigation/side padding can offer 900px of
+    // content space. Do not demand >940px and force document overflow.
+    const expectedWidth=Math.min(dimensions.area,1150);
+    expect(dimensions.width,view+' must use the available desktop workspace')
+      .toBeGreaterThanOrEqual(expectedWidth-2);
+    expect(dimensions.width,view+' must stay within its approved content area')
+      .toBeLessThanOrEqual(dimensions.area+2);
     expect(dimensions.right,view+' stays within viewport').toBeLessThanOrEqual(dimensions.screenWidth+1);
     if(view==='beneficiaries'){
       const actionCell=page.getByTestId('beneficiary-records').locator('tbody tr').first().locator('td:nth-child(2)');

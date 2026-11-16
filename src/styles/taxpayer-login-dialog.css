@@ -140,3 +140,55 @@
   .taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal { width: 100%; }
   .taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal .taxpay-modal__body { padding: 1rem; }
 }
+
+/* Keep the bounded list in the modal's scrollable body, not positioned
+ * over the Password / Recover Account fields. The shared fixed footer stays put. */
+.taxpayer-login-suggestions {
+  position: static;
+  width: 100%;
+  max-height: min(220px, 28dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  margin: 4px 0 0;
+  list-style: none;
+  background: #fff;
+  color: var(--color-taxpay-text);
+  border: 1px solid #bdc6d1;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(14, 39, 71, .15);
+}
+.taxpayer-login-suggestions [role="option"] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.taxpayer-login-suggestions [role="option"] span + span {
+  color: #596579;
+  font-size: 13px;
+  text-align: right;
+}
+.taxpayer-login-suggestions [role="option"]:hover,
+.taxpayer-login-suggestion--active {
+  background: #edf4fc;
+}
+.taxpayer-login-suggestions__empty {
+  padding: 12px;
+  color: #596579;
+  font-size: 14px;
+}
+@media (max-width: 375px) {
+  .taxpayer-login-suggestions [role="option"] {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+  .taxpayer-login-suggestions [role="option"] span + span {
+    text-align: left;
+  }
+}
