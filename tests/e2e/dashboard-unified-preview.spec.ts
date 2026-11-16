@@ -3,7 +3,7 @@ import {expect,test} from '@playwright/test';
 const capability='A'.repeat(43);
 const sessionId='00000000-0000-4000-8000-000000004444';
 type PreviewUser = 'user2'|'user30';
-async function mockAccount(page:import('@playwright/test').Page, userId:PreviewUser, populated=false) {
+async function mockAccount(page:import('@playwright/test').Page, userId:PreviewUser, populated=false, failHistory=false) {
   await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
     const request=route.request().postDataJSON() as Record<string,unknown>;
@@ -19,6 +19,7 @@ async function mockAccount(page:import('@playwright/test').Page, userId:PreviewU
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
   await page.route('**/functions/v1/demo-story1-taxpay/profile-history*',route=>{
+    if(failHistory)return route.fulfill({status:503,contentType:'application/json',body:'{"error":"unavailable"}'});
     if(route.request().headers()['x-taxpay-guest-capability']!==capability)
       return route.fulfill({status:403,contentType:'application/json',body:'{}'});
     const items=populated?[{
@@ -79,4 +80,17 @@ test('new-account completed activity changes data inside the same layout',async(
   await expect(dashboard.getByText('No beneficiaries to show')).toBeVisible();
   await dashboard.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await expect(dashboard.getByTestId('dashboard-overview-total')).toHaveText('৳0');
+});
+
+test('unavailable history must not masquerade as an empty account',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Owner-read outage regression');
+  await mockAccount(page,'user2',false,true);
+  const dashboard=page.getByTestId('dashboard-unified-preview');
+  await expect(dashboard.getByTestId('dashboard-overview-total')).toHaveText('—');
+  await expect(dashboard.getByText('Payment relationships unavailable')).toBeVisible();
+  await expect(dashboard.getByText('Payment recipients unavailable')).toBeVisible();
+  await expect(dashboard.getByText('Payment activity unavailable')).toBeVisible();
+  await expect(dashboard.getByText('No payment relationships yet')).toHaveCount(0);
+  await expect(dashboard.getByText('Your tax journey is empty')).toHaveCount(0);
+  await expect(dashboard.locator('.taxpay-unified-donut')).toHaveCount(0);
 });
