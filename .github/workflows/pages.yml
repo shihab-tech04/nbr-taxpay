@@ -780,6 +780,10 @@ jobs:
           SOHOJKOR_PRODUCTION_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
           SOHOJKOR_ORIGINAL_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
           SOHOJKOR_OFFICE_SUPABASE_URL: 'https://ihbtabrvmyiwikqqbhrf.supabase.co'
+          # This release may use V2 only for fictional user1-user30 and simulated transactions.
+          # The original project and Office remain separate; no real settlement is implied.
+          SOHOJKOR_RELEASE_SCOPE: 'fictional-user1-user30-only'
+          SOHOJKOR_V2_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
         run: node scripts/ci/sohojkor-v2-cutover-gate.mjs
       - name: Deploy compiled application
         id: deployment
