@@ -1,6 +1,7 @@
 import {acceptPaymentRequestSize,MAX_COMBINED_PAYMENT_PAYLOAD_CHARS,officeMirrorIdentity} from "./combinedPaymentRequest.ts";
 import {createClient} from "npm:@supabase/supabase-js@2.57.0";
 import {createOfficeMirrorProof,verifyOfficeMirrorProof,createOfficeAuthorizationProof,verifyOfficeAuthorizationProof} from "./mirrorProof.ts";
+import {officeMirrorSourceForEndpoint} from "./officeMirrorSource.ts";
 const headers={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"content-type,authorization,apikey,x-taxpay-guest-capability","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};
 const respond=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
 const uuid=/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -28,13 +29,14 @@ async function mirrorAuthorization(id:string){
  const proof=await createOfficeAuthorizationProof(serviceCredential(),id);
  const res=await fetch(officeAuthorization,{method:"POST",headers:{"Content-Type":"application/json",
   "x-taxpay-office-authorization-proof":proof},
-  body:JSON.stringify({id}),signal:AbortSignal.timeout(10000)});
+  body:JSON.stringify({id,sourceProject:officeMirrorSourceForEndpoint(Deno.env.get("SUPABASE_URL")??"")}),signal:AbortSignal.timeout(10000)});
  const receipt=await res.json();
  return res.ok&&receipt.success&&receipt.data?.id===id;
 }
 type MirrorClaim={type:"PAYMENT"|"AUTHORIZATION";id:string;claimToken:string;sessionId?:string|null};
 async function reconcileMirrors(url:string,serviceKey:string){
  const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
+ const sourceProject=officeMirrorSourceForEndpoint(url);
  const {data,error}=await admin.rpc("demo_story1_mirror_claim",{p_limit:20});
  if(error)throw Error("MIRROR_CLAIM_FAILED: "+error.message);
  const claimed=data as MirrorClaim[];
@@ -51,7 +53,7 @@ async function reconcileMirrors(url:string,serviceKey:string){
      const proof=await createOfficeMirrorProof(serviceKey,item.id,item.sessionId);
      const response=await fetch(office,{method:"POST",headers:{"Content-Type":"application/json",
        "x-taxpay-office-mirror-proof":proof},
-      body:JSON.stringify({id:item.id,sessionId:item.sessionId}),signal:AbortSignal.timeout(10000)});
+      body:JSON.stringify({id:item.id,sessionId:item.sessionId,sourceProject}),signal:AbortSignal.timeout(10000)});
      const result=await response.json();
      okay=response.ok&&result.success===true&&result.data?.id===item.id;
     }
@@ -180,7 +182,7 @@ Deno.serve(async(req)=>{
     }
     // Office independently reads the SQL record using the signed proof. Send only
     // identifiers so a large combined request never trips Office's 16k edge gate.
-    const out=officeMirrorIdentity(data.id,body.sessionId);
+    const out={...officeMirrorIdentity(data.id,body.sessionId),sourceProject:officeMirrorSourceForEndpoint(url)};
     try{
       // Sign only after TaxPay SQL has returned a durable, idempotent payment ID.
       // No client profile capability or service credential crosses to Office.
