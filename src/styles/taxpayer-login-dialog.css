@@ -141,6 +141,8 @@
   .taxpay-citizen-shell .taxpay-modal.taxpayer-login-modal .taxpay-modal__body { padding: 1rem; }
 }
 
+/* Keep Recovery Account usable while the list is open; taller panels
+ * overlap its action target on desktop and mobile sign-in screens. */
 /* The account picker is an anchored dropdown: it must not reflow the
  * Password, Recover Account or fixed footer when User ID receives focus.
  * Constrain the panel within the modal's scrollable body at short heights. */
@@ -152,7 +154,7 @@
   top: calc(100% + 4px);
   z-index: 6;
   width: 100%;
-  max-height: min(160px, 28dvh);
+  max-height: min(112px, 23dvh);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 4px;

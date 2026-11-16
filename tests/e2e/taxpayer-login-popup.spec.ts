@@ -212,14 +212,20 @@ test('account options float without resizing the login form or footer (desktop a
     const afterPassword=await password.boundingBox();
     const afterFooter=await footer.boundingBox();
     const afterDialog=await dialog.boundingBox();
-    expect(afterPassword?.y).toBeCloseTo(beforePassword!.y,0);
-    expect(afterFooter?.y).toBeCloseTo(beforeFooter!.y,0);
-    expect(afterDialog?.height).toBeCloseTo(beforeDialog!.height,0);
+    // The modal may move ~1px as webfonts settle; it must not reflow by an option row.
+    expect(Math.abs(afterPassword!.y-beforePassword!.y)).toBeLessThan(3);
+    expect(Math.abs(afterFooter!.y-beforeFooter!.y)).toBeLessThan(3);
+    expect(Math.abs(afterDialog!.height-beforeDialog!.height)).toBeLessThan(3);
     const inputBounds=await userId.boundingBox();
     const optionsBounds=await options.boundingBox();
     expect(optionsBounds!.y).toBeGreaterThanOrEqual(inputBounds!.y+inputBounds!.height);
     expect(optionsBounds!.x).toBeGreaterThanOrEqual(inputBounds!.x-2);
     expect(optionsBounds!.width).toBeGreaterThanOrEqual(inputBounds!.width-4);
+    // Existing recovery must remain a clickable target below the dropdown.
+    await dialog.getByRole('button',{name:'Recover Account'}).click();
+    await expect(dialog.getByRole('status')).toContainText('password is the same as the User ID');
+    await expect(userId).toHaveAttribute('aria-expanded','false');
+    await userId.click();
     await userId.fill('user20');
     await expect(options.getByRole('option')).toHaveCount(1);
     await options.getByRole('option').click();
