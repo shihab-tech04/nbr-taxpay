@@ -25,7 +25,8 @@ test('compact desktop homepage keeps six balanced benefit cards with one paralle
     await expect(card.getByRole('heading', { name: heading })).toBeVisible();
     await expect(card.locator('p')).toHaveText(description);
     await expect(card.getByRole('link')).toHaveCount(0);
-    await expect(card.getByRole('button')).toHaveCount(id === 'payments' ? 1 : 0);
+    if (id === 'payments') await expect(card).toHaveAttribute('type', 'button');
+    else await expect(card.getByRole('button')).toHaveCount(0);
     await expect(card.locator('svg')).toHaveCount(1);
     await expect(card.locator('p')).toHaveCSS('font-size', '14px');
   }
