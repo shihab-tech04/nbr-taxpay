@@ -47,21 +47,27 @@ test('initial banner request does not download hidden images before the visible 
   const requests: string[] = [];
   let releaseFirst!: () => void;
   const heldFirst = new Promise<void>(resolve => { releaseFirst = resolve; });
-  await page.route(/taxpay-hero-(intro|return|advance|withholding|travel)-v9[.]webp/, async route => {
-    // Vite also imports the asset URL as a JavaScript module. Intercept only
-    // the image bytes; pausing the module would deadlock initial navigation.
+  // The first paint uses the checksum-verified published CMS snapshot. A
+  // subsequent SQL refresh may replace it with a newly published intro image.
+  // Both are visible artwork; neither may trigger hidden-banner downloads.
+  await page.route(/(?:taxpay-hero-(intro|return|advance|withholding|travel)-v9[.]webp|branding[/]published[/]banner-(intro|return|advance|withholding|travel)[.](?:jpg|png))/, async route => {
+    // Vite also imports asset URLs as JavaScript modules; intercept only the
+    // image bytes so a deliberately held image never deadlocks navigation.
     if (route.request().resourceType() !== 'image') { await route.continue(); return; }
     const url = route.request().url();
     requests.push(url);
-    if (url.includes('taxpay-hero-intro-v9.webp')) await heldFirst;
+    if (/banner-intro[.]jpg|taxpay-hero-intro-v9[.]webp/.test(url)) await heldFirst;
     await route.continue();
   });
-  // A deliberately held image must not block the navigation lifecycle under test.
   await page.goto('/?action=landing', { waitUntil: 'domcontentloaded' });
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
   await expect(carousel.locator('.public-hero-carousel__slide')).toHaveCount(5);
-  await expect.poll(() => requests.length).toBe(1);
-  expect(requests[0]).toContain('taxpay-hero-intro-v9.webp');
+  await expect.poll(() => requests.length).toBeGreaterThan(0);
+  // Wait for the mocked CMS response to settle, then assert the network still
+  // contains ONLY the currently visible intro (snapshot or refreshed image).
+  await expect(carousel.locator('.public-hero-carousel__slide').first().locator('img'))
+    .toHaveAttribute('src', /taxpay-hero-intro-v9|branding[/]published[/]banner-intro/);
+  expect(requests.every(url => /banner-intro[.]jpg|taxpay-hero-intro-v9[.]webp/.test(url))).toBe(true);
   for (const index of [1, 2, 3, 4]) {
     await expect(carousel.locator('.public-hero-carousel__slide').nth(index).locator('img'))
       .toHaveAttribute('data-deferred-src', new RegExp(`taxpay-hero-${illustrations[index]}`));
