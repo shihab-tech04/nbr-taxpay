@@ -359,7 +359,8 @@ export function reuseLegacySingleHeadPayment(
     noticeReference:'',
     // Historical SQL parents may predate receipt snapshots; retain their original remarks
     // as editable input for a NEW Pay Again payment without altering the saved parent.
-    paymentRemarks:typeof details.paymentRemarks==='string'?details.paymentRemarks:'',
+    paymentRemarks:typeof details.challanRemarks==='string'?details.challanRemarks:
+      typeof details.paymentRemarks==='string'?details.paymentRemarks:'',
     incomeTaxType:null,selectedHeadIds:[],
     amountInputs:{},legacySourceAmount:money(original.amountMinor),
   }};

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MASTER_PAYMENT_HEADS } from '../src/data/paymentHeads.ts';
-import { makeConfirmedReceipt } from '../src/services/confirmedPaymentCertificate.ts';
+import { makeConfirmedReceipt, isVerifiedSqlOwnerReceipt } from '../src/services/confirmedPaymentCertificate.ts';
+import { reuseRecordedPayment } from '../src/services/paymentReuse.ts';
 import type { ChallanReceipt, PaymentLineItem } from '../src/types/tax.ts';
 import { buildPaymentCertificateModel } from '../src/services/paymentCertificateModel.ts';
 
@@ -47,6 +48,73 @@ function confirm(details:Record<string,unknown>):ChallanReceipt{
     createdAt:'2026-11-13T12:00:00.000Z',details,
   });
 }
+
+test('F-178 / US-181: SQL challan remarks survive receipt readback and override a stale display snapshot',()=>{
+  const remarks='Payment explanation 2026-27.\nবাংলা করদাতার মন্তব্য; বিস্তারিত হিসাব।';
+  const details=validDetails();
+  details.challanRemarks=remarks;
+  details.paymentRemarks='Legacy alias';
+  (details.receiptSnapshot as Record<string,unknown>).paymentRemarks='Old display note';
+  const original=structuredClone(details);
+  const receipt=confirm(details);
+  assert.ok(remarks.length>20);
+  assert.ok(remarks.includes('\n'));
+  assert.equal(receipt.paymentRemarks,remarks);
+  assert.deepEqual(details,original);
+
+  // Older unversioned parents can omit a display snapshot; version 3 requires
+  // one to prove allocation identity and must never bypass that validation.
+  delete details.receiptSnapshot;
+  delete details.allocationContractVersion;
+  assert.equal(confirm(details).paymentRemarks,remarks);
+  delete details.challanRemarks;
+  assert.equal(confirm(details).paymentRemarks,'Legacy alias');
+});
+
+test('F-178 / US-181: canonical SQL remarks flow through receipt into NEW mixed-head Pay Again draft',()=>{
+  const remarks='Invoice 204: explanation for two assessment years.\nবাংলা মন্তব্য: আলাদা করবর্ষের তথ্য।';
+  const details=validDetails();
+  details.challanRemarks=remarks;
+  details.paymentRemarks='Older alias must not win';
+  const sourceBefore=structuredClone(details);
+  const confirmed=confirm(details);
+  const receiptBefore=structuredClone(confirmed);
+  const repeated=reuseRecordedPayment([confirmed],'verified-account','9999999999999',paymentId);
+
+  assert.ok(remarks.includes('\n'));
+  assert.equal(confirmed.paymentRemarks,remarks);
+  assert.equal(repeated.formPayload.paymentRemarks,remarks);
+  assert.equal(repeated.sourcePaymentId,paymentId);
+  assert.equal(repeated.service,'OTHER_TAX_PAYMENT');
+  assert.deepEqual((repeated.formPayload.otherTaxLines as Array<{headId:number;assessmentYear:string;amount:string}>)
+    .map(line=>[line.headId,line.assessmentYear,line.amount]),[
+      [8,'2026-27','12.00'],[145,'2025-26','18.00'],
+    ]);
+  assert.deepEqual(details,sourceBefore);
+  repeated.formPayload.paymentRemarks='Edited only on new payment';
+  assert.deepEqual(confirmed,receiptBefore);
+  assert.equal(details.challanRemarks,remarks);
+});
+
+test('receipt lookup actions require the exact authenticated SQL owner and payment parent',()=>{
+  const receipt=confirm(validDetails());
+  const ownerUid='00000000-0000-4000-8000-000000000111';
+  const proof={ownerUid,paymentTransactionId:paymentId};
+  assert.equal(isVerifiedSqlOwnerReceipt(receipt,proof,ownerUid),true);
+  assert.equal(isVerifiedSqlOwnerReceipt(receipt,null,ownerUid),false,
+    'Guest/mobile/profile-capability lookup grants no account actions');
+  assert.equal(isVerifiedSqlOwnerReceipt(receipt,proof,null),false,
+    'Sign-out revokes account actions');
+  assert.equal(isVerifiedSqlOwnerReceipt(receipt,proof,
+    '00000000-0000-4000-8000-000000000222'),false,
+    'Switching accounts revokes previously verified actions');
+  assert.equal(isVerifiedSqlOwnerReceipt(receipt,
+    {...proof,paymentTransactionId:'00000000-0000-4000-8000-000000000999'},ownerUid),false,
+    'A SQL proof for a different transaction is not transferable');
+  assert.equal(isVerifiedSqlOwnerReceipt({...receipt,isSimulatedDemo:false} as unknown as ChallanReceipt,proof,ownerUid),false);
+  assert.equal(isVerifiedSqlOwnerReceipt({...receipt,paymentTransactionId:'not-a-uuid'},proof,ownerUid),false);
+  assert.equal(isVerifiedSqlOwnerReceipt('NOT_FOUND',proof,ownerUid),false);
+});
 
 test('confirmed v3 certificate reconstruction retains the saved allocation identities and exact amounts',()=>{
   const receipt=confirm(validDetails());

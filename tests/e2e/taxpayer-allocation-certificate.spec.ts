@@ -278,6 +278,13 @@ async function installCertificateAccountFixture(
       });
       return;
     }
+    if (url.pathname === '/rest/v1/taxpay_account_activity') {
+      // The correction-route transition records only fixture account navigation.
+      // No live account activity or financial backend is contacted.
+      expect(request.method()).toBe('POST');
+      await route.fulfill({status:201,headers,body:'[]'});
+      return;
+    }
     throw new Error('Unexpected .invalid payment endpoint request: ' + request.method() + ' ' + url.pathname);
   });
   return { enableLedger: () => { ledgerAvailable = true; }, ledgerRequests };
@@ -501,4 +508,33 @@ test('F-129 US-050 targeted owner RPC refuses ambiguous/malformed source instead
  await expect(modal.getByRole('alert')).toBeVisible();
  await expect(modal.locator('.receipt-view')).toHaveCount(0);
  await expect(modal.getByRole('heading',{name:'No matching record'})).toHaveCount(0);
+});
+
+test('verified SQL owner receipt lookup exposes one shared three-action footer, not guest actions', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Run the owner permission check on desktop; shared receipt UI covers mobile.');
+  await installCertificateAccountFixture(page, accountCertificateOwner);
+  await page.goto('/?action=verify');
+  const modal=page.getByRole('dialog',{name:'Payment status & receipt'});
+  await expect(modal).toBeVisible();
+  await modal.getByRole('textbox',{name:'Challan, token or transaction reference'}).fill('ACS-2026-00130');
+  await modal.getByRole('button',{name:'Search records'}).click();
+  await expect(modal.locator('.receipt-view__paper')).toContainText('ACS-2026-00130');
+  await expect(modal.locator('.receipt-view__actions--transaction')).toHaveCount(1);
+  await expect(modal.getByRole('button',{name:'Download',exact:true})).toBeVisible();
+  await expect(modal.getByTestId('receipt-pay-again')).toBeVisible();
+  await expect(modal.getByTestId('receipt-apply-correction')).toBeEnabled();
+  await modal.getByTestId('receipt-apply-correction').click();
+  await expect(page).toHaveURL(/action=corrections/);
+});
+
+test('another signed-in account cannot unlock payment correction or Pay Again from an unowned reference', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Run the owner-isolation check on desktop.');
+  await installCertificateAccountFixture(page, accountCertificateOther);
+  await page.goto('/?action=verify');
+  const modal=page.getByRole('dialog',{name:'Payment status & receipt'});
+  await modal.getByRole('textbox',{name:'Challan, token or transaction reference'}).fill('ACS-2026-00130');
+  await modal.getByRole('button',{name:'Search records'}).click();
+  await expect(modal.getByRole('button',{name:'Search records'})).toBeVisible();
+  await expect(modal.getByTestId('receipt-pay-again')).toHaveCount(0);
+  await expect(modal.getByTestId('receipt-apply-correction')).toHaveCount(0);
 });

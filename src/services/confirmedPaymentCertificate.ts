@@ -19,6 +19,19 @@ const methods=new Set<ChallanReceipt['paymentMethod']>([
  'BKASH','NAGAD','ROCKET','SONALI_E_SHEBA','A_CHALLAN_CARD',
  'BEFTN_RTGS','INTERNET_BANKING','VISA','MASTERCARD','BANK_BRANCH','SIMULATED'
 ]);
+/** Only an auth.uid()-bound SQL receipt read may unlock account transaction actions.
+ * Public references, mobile recovery and preview capabilities are never permission proof. */
+export type VerifiedSqlReceiptOwner = Readonly<{ownerUid:string;paymentTransactionId:string}>;
+export function isVerifiedSqlOwnerReceipt(
+ receipt:ChallanReceipt|null|'NOT_FOUND',proof:VerifiedSqlReceiptOwner|null,
+ currentOwnerUid:string|null|undefined,
+):receipt is ChallanReceipt {
+ return Boolean(receipt&&receipt!=='NOT_FOUND'&&proof&&currentOwnerUid&&
+  receipt.isSimulatedDemo===true&&proof.ownerUid===currentOwnerUid&&
+  validCertificateTransactionId(receipt.paymentTransactionId)&&
+  receipt.paymentTransactionId===proof.paymentTransactionId);
+}
+
 interface StoredPayment {
  id:string;service:string;amountMinor:number;status:string;createdAt:string;
  details?:Record<string,unknown>;
@@ -222,6 +235,9 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
     !serviceCodes.has(tx.service as PaymentCategory)||!Number.isSafeInteger(tx.amountMinor)||tx.amountMinor<=0)
    throw new Error('Payment record cannot be certified');
  const d=tx.details??{};
+ // Canonical SQL comments override legacy aliases and stale receipt snapshots.
+ const savedRemarks=typeof d.challanRemarks==='string'?d.challanRemarks:
+  typeof d.paymentRemarks==='string'?d.paymentRemarks:undefined;
  const method=stringValue(d.paymentMethod);
  const allocationItems=toAllocationItems(tx);
  const readbackLines=reusableAccountingLines(tx,allocationItems);
@@ -266,7 +282,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
       ...(allocationItems?{allocationItems}:{}),
       ...(readbackLines?{reusableAccountingLines:readbackLines}:{}),...batchInfo,
       // Original challan-level remarks come from the saved parent, not a stale display snapshot.
-      ...(typeof d.paymentRemarks==='string'?{paymentRemarks:d.paymentRemarks}:{}),
+      ...(savedRemarks!==undefined?{paymentRemarks:savedRemarks}:{}),
       taxCreditStatus:tx.service==='SOURCE_TAX_DEPOSIT'?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
     };
   }
@@ -284,7 +300,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   taxpayerTin:stringValue(d.taxpayerTin),receiptMobile:stringValue(d.receiptMobile),
   noticeReference:stringValue(d.noticeReference),
   // Preserve Unicode, punctuation and line breaks even for pre-snapshot history records.
-  ...(typeof d.paymentRemarks==='string'?{paymentRemarks:d.paymentRemarks}:{}),
+  ...(savedRemarks!==undefined?{paymentRemarks:savedRemarks}:{}),
   isRepresentativePayment:d.payerMode==='OTHER',
   taxZone:stringValue(d.taxZone)||'—',taxCircle:stringValue(d.taxCircle)||'—',
   isWithholding:category==='SOURCE_TAX_DEPOSIT'||d.isWithholding===true,
