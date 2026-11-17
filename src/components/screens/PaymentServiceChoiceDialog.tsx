@@ -162,6 +162,10 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     setDraftToResume(null); setDraftEntryCompleted(true); setUseAccount(withAccount); setStage(1); setView('payment');
   };
   const beginUnifiedPayment = (account: boolean) => {
+    // The new entry collects payment type in Step 2, not at the entry modal.
+    // Initialize the existing Other Tax composer so the first step always
+    // mounts and preserves the approved taxpayer and checkout contracts.
+    setTopLevel('OTHER_TAX');
     setPayerForSelf(account);
     setEntryAccess(account ? 'account' : 'guest');
     beginPayment(account);
