@@ -111,7 +111,7 @@ test('receipt lookup actions require the exact authenticated SQL owner and payme
   assert.equal(isVerifiedSqlOwnerReceipt(receipt,
     {...proof,paymentTransactionId:'00000000-0000-4000-8000-000000000999'},ownerUid),false,
     'A SQL proof for a different transaction is not transferable');
-  assert.equal(isVerifiedSqlOwnerReceipt({...receipt,isSimulatedDemo:false},proof,ownerUid),false);
+  assert.equal(isVerifiedSqlOwnerReceipt({...receipt,isSimulatedDemo:false} as unknown as ChallanReceipt,proof,ownerUid),false);
   assert.equal(isVerifiedSqlOwnerReceipt({...receipt,paymentTransactionId:'not-a-uuid'},proof,ownerUid),false);
   assert.equal(isVerifiedSqlOwnerReceipt('NOT_FOUND',proof,ownerUid),false);
 });
