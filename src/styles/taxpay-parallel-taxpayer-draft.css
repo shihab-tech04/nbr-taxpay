@@ -23,21 +23,22 @@
 }
 .parallel-taxpayer-draft__grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 20px;
-  align-items: stretch;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  align-items: start;
 }
 .parallel-taxpayer-draft__panel {
   min-width: 0;
-  border: 1px solid var(--citizen-border);
-  border-radius: 14px;
-  background: var(--citizen-surface);
-  overflow: hidden;
+}
+.parallel-taxpayer-draft__panel:first-child {
+  padding-inline-end: 20px;
+}
+.parallel-taxpayer-draft__panel + .parallel-taxpayer-draft__panel {
+  border-inline-start: 1px solid var(--citizen-border);
+  padding-inline-start: 20px;
 }
 .parallel-taxpayer-draft__panel-heading {
-  padding: 16px 18px;
-  border-bottom: 1px solid var(--citizen-border);
-  background: var(--citizen-surface-subtle, #f8fafc);
+  margin-bottom: 14px;
 }
 .parallel-taxpayer-draft__panel-heading h3 {
   display: flex;
@@ -59,7 +60,7 @@
   display: grid;
   align-content: start;
   gap: 16px;
-  padding: 18px;
+  padding: 0;
 }
 .parallel-taxpayer-draft__hint,
 .parallel-taxpayer-draft__disclaimer {
@@ -74,22 +75,22 @@
   font-size: 14px;
   line-height: 1.5;
 }
-.parallel-taxpayer-draft__search-placeholder,
-.parallel-taxpayer-draft__result {
+.parallel-taxpayer-draft__search-placeholder {
   min-width: 0;
-  border: 1px dashed var(--citizen-border);
-  border-radius: 12px;
-  padding: 18px;
+  padding: 0;
   color: var(--citizen-muted);
   font-size: 14px;
   line-height: 1.6;
 }
-.parallel-taxpayer-draft__search-placeholder { background: #fbfcfe; }
 .parallel-taxpayer-draft__result {
   display: grid;
   gap: 7px;
-  border-style: solid;
-  background: var(--citizen-surface-subtle, #f8fafc);
+  min-width: 0;
+  border-top: 1px solid var(--citizen-border);
+  padding-block-start: 14px;
+  color: var(--citizen-muted);
+  font-size: 14px;
+  line-height: 1.6;
 }
 .parallel-taxpayer-draft__result strong {
   color: var(--citizen-text);
@@ -127,9 +128,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 250px;
-  padding: 28px;
-  gap: 10px;
+  min-height: 150px;
+  padding: 14px;
+  gap: 8px;
   text-align: center;
   color: var(--citizen-muted);
 }
@@ -148,14 +149,14 @@
 .parallel-taxpayer-draft__table {
   border-collapse: collapse;
   width: 100%;
-  min-width: 460px;
+  min-width: 380px;
   text-align: left;
   font-size: 14px;
 }
 .parallel-taxpayer-draft__table th {
   padding: 13px 12px;
+  border-bottom: 1px solid var(--citizen-border);
   font-weight: 600;
-  background: var(--citizen-surface-subtle, #f8fafc);
   color: var(--citizen-muted);
 }
 .parallel-taxpayer-draft__table td {
@@ -192,12 +193,6 @@
   font-size: 14px;
 }
 .parallel-taxpayer-draft__delete:hover { background: #fff2f2; }
-.parallel-taxpayer-draft__copy-status {
-  margin: 0;
-  padding: 8px 14px;
-  font-size: 14px;
-  color: var(--citizen-primary-dark);
-}
 .parallel-taxpayer-draft__footer {
   width: 100%;
   display: flex;
@@ -252,7 +247,14 @@
   font-size: 14px;
 }
 @media (max-width: 800px) {
-  .parallel-taxpayer-draft__grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .parallel-taxpayer-draft__grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .parallel-taxpayer-draft__panel:first-child { padding-inline-end: 0; }
+  .parallel-taxpayer-draft__panel + .parallel-taxpayer-draft__panel {
+    border-inline-start: 0;
+    border-top: 1px solid var(--citizen-border);
+    padding-inline-start: 0;
+    padding-block-start: 18px;
+  }
 }
 @media (max-width: 650px) {
   .taxpay-citizen-shell .taxpay-modal[data-public-service="parallel-taxpayer-draft"] {
@@ -265,8 +267,6 @@
   .taxpay-citizen-shell .taxpay-modal[data-public-service="parallel-taxpayer-draft"] .taxpay-modal__body {
     padding: 16px;
   }
-  .parallel-taxpayer-draft__panel-heading { padding: 14px; }
-  .parallel-taxpayer-draft__panel-body { padding: 14px; }
   .parallel-taxpayer-draft__footer { flex-wrap: nowrap; }
   .parallel-taxpayer-draft__footer > button { flex: 1 1 auto; min-width: 0; }
 }
@@ -329,8 +329,7 @@
   overscroll-behavior-y: contain;
 }
 @media (max-width: 650px) {
-  /* Keep a real semantic table, but reflow each row into a readable card.
-     All TIN tools and Delete remain visible without sideways scrolling. */
+  /* Preserve semantic rows, with the Reveal and Delete actions visible without sideways scrolling. */
   .parallel-taxpayer-draft__table-scroll { overflow-x: visible; }
   .parallel-taxpayer-draft__table { min-width: 0; width: 100%; }
   .parallel-taxpayer-draft__table thead {

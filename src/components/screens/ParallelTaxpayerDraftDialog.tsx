@@ -3,7 +3,7 @@ import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
 import '../../styles/taxpay-parallel-taxpayer-draft.css';
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Copy, Eye, EyeOff, RotateCcw, Trash2, UsersRound } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, RotateCcw, Trash2, UsersRound } from 'lucide-react';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
 import { activePreviewSession } from '../../services/previewAccountSession';
@@ -70,7 +70,6 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
   const [lines, setLines] = useState<OtherTaxAllocation[]>([]);
   const [headError, setHeadError] = useState('');
   const [revealed, setRevealed] = useState<string[]>([]);
-  const [copyStatus, setCopyStatus] = useState('');
   const [lastRemoved, setLastRemoved] = useState<RemovedTaxpayer | null>(null);
   const [restoredScope, setRestoredScope] = useState<string | null>(null);
   const [restoreNotice, setRestoreNotice] = useState('');
@@ -138,7 +137,7 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
       (parseGuestAmount(line.amount) ?? 0) > 0);
 
   const search = () => {
-    setCopyStatus('');
+    setLastRemoved(null);
     setSearchedTin(tin);
     const found = canSearchTin ? lookupSampleTaxpayer(tin) : null;
     setError(found ? '' : t(
@@ -148,7 +147,7 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
   const addTaxpayer = () => {
     if (!result || alreadyAdded || taxpayers.length >= MAX_TAXPAYERS) return;
     setTaxpayers(current => [...current, result]);
-    setTin(''); setSearchedTin(''); setError(''); setLastRemoved(null); setCopyStatus(''); setRestoreNotice('');
+    setTin(''); setSearchedTin(''); setError(''); setLastRemoved(null); setRestoreNotice('');
     document.getElementById('parallel-taxpayer-tin')?.focus();
   };
   const deleteTaxpayer = (selectedTin: string) => {
@@ -179,14 +178,6 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
   const toggleTin = (selectedTin: string) =>
     setRevealed(current => current.includes(selectedTin)
       ? current.filter(value => value !== selectedTin) : [...current, selectedTin]);
-  const copyTin = async (selectedTin: string) => {
-    try {
-      await navigator.clipboard.writeText(selectedTin);
-      setCopyStatus(t('TIN copied', 'টিআইএন কপি হয়েছে'));
-    } catch {
-      setCopyStatus(t('Copy unavailable. Reveal the TIN to read it.', 'কপি করা যাচ্ছে না। টিআইএন দেখুন।'));
-    }
-  };
   const previewTaxpayers: OtherTaxTaxpayer[] = taxpayers.map(person => ({
     id: person.tin, tin: person.tin, name: person.nameEn,
   }));
@@ -257,8 +248,8 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
     <div className="parallel-taxpayer-draft" data-testid="parallel-taxpayer-draft" lang={language}>
       {stage === 1 ? <>
         <p className="parallel-taxpayer-draft__intro">
-          {t('Search by TIN, check the result and add each taxpayer.',
-            'টিআইএন দিয়ে খুঁজে করদাতার তথ্য দেখে তালিকায় যোগ করুন।')}
+          {t('Search by TIN and add taxpayers to this payment.',
+            'টিআইএন দিয়ে খুঁজে এই পেমেন্টে করদাতা যোগ করুন।')}
         </p>
         {restoreNotice && <p className="parallel-taxpayer-draft__notice" role="status">{restoreNotice}</p>}
         <div className="parallel-taxpayer-draft__grid">
@@ -271,8 +262,8 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
                 nameId="parallel-taxpayer-name" tin={tin}
                 name={result ? (bn ? result.nameBn : result.nameEn) : ''}
                 maxTinLength={user || previewAccount ? 13 : 12} hideNameField
-                onTinChange={value => {setTin(value);setSearchedTin('');setError('');}}
-                onClear={() => {setTin('');setSearchedTin('');setError('');}}
+                onTinChange={value => {setTin(value);setSearchedTin('');setError('');setLastRemoved(null);}}
+                onClear={() => {setTin('');setSearchedTin('');setError('');setLastRemoved(null);}}
                 canSearch={canSearchTin}
                 onSearch={search}
                 searchLabel={t('Search taxpayer TIN', 'করদাতার টিআইএন খুঁজুন')}
@@ -291,7 +282,7 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
                     t('+ Add Taxpayer', '+ করদাতা যোগ করুন')}
                 </button>
               </div> : <p className="parallel-taxpayer-draft__search-placeholder" role="status">
-                {t('Search results appear here.', 'অনুসন্ধানের ফলাফল এখানে দেখাবে।')}
+                {t('Taxpayer details appear after search.', 'অনুসন্ধানের পরে করদাতার তথ্য দেখাবে।')}
               </p>}
             </div>
           </section>
@@ -304,8 +295,8 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
             {!selectedCount ? <div className="parallel-taxpayer-draft__empty" data-testid="parallel-taxpayer-empty">
               <UsersRound size={32} strokeWidth={1.5} aria-hidden="true"/>
               <strong>{t('No taxpayers added yet', 'এখনো কোনো করদাতা যোগ করা হয়নি')}</strong>
-              <p>{t('Search a TIN on the left and select Add Taxpayer.',
-                'বাম পাশে টিআইএন খুঁজে করদাতা যোগ করুন।')}</p>
+              <p>{t('Add a taxpayer to see them here.',
+                'করদাতা যোগ করলে এখানে দেখা যাবে।')}</p>
             </div> : <div className="parallel-taxpayer-draft__table-scroll">
               <table className="parallel-taxpayer-draft__table">
                 <thead><tr><th scope="col">{t('Taxpayer', 'করদাতা')}</th>
@@ -322,9 +313,6 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
                       title={revealed.includes(person.tin) ? t('Hide TIN', 'টিআইএন লুকান') : t('Reveal TIN', 'টিআইএন দেখান')}>
                       {revealed.includes(person.tin) ? <EyeOff size={16}/> : <Eye size={16}/>}
                     </button>
-                    <button type="button" className="parallel-taxpayer-draft__icon-button"
-                      onClick={() => void copyTin(person.tin)} aria-label={t('Copy TIN', 'টিআইএন কপি করুন')}
-                      title={t('Copy TIN', 'টিআইএন কপি করুন')}><Copy size={16}/></button>
                   </div></td>
                   <td data-label={t('Action', 'পদক্ষেপ')}><button type="button"
                     className="parallel-taxpayer-draft__delete" onClick={() => deleteTaxpayer(person.tin)}
@@ -341,7 +329,6 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
                 <RotateCcw size={15} aria-hidden="true"/> {t('Undo', 'ফিরিয়ে আনুন')}
               </button>
             </div>}
-            {copyStatus && <p className="parallel-taxpayer-draft__copy-status" role="status">{copyStatus}</p>}
           </section>
         </div>
         <p className="parallel-taxpayer-draft__disclaimer">{t(
