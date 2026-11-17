@@ -42,7 +42,7 @@ export const TAXPAY_ENTRY_CHOICES = [
   { id: 'OTHER_TAX', Icon: WalletCards, en: 'Other Tax', bn: 'অন্যান্য কর', detailEn: 'Other tax payments.', detailBn: 'অন্যান্য কর পরিশোধ।' }
 ] as const;
 
-export function PaymentServiceChoiceDialog({ initialService = null, initialDraft = null, initialReuse = null, onDismiss }: { initialService?: BannerPaymentService | null; initialDraft?: PaymentFormDraft | null; initialReuse?: PaymentReuse | null; onDismiss?: () => void }) {
+export function PaymentServiceChoiceDialog({ initialService = null, initialDraft = null, initialReuse = null, unifiedEntryRequested = false, onDismiss }: { initialService?: BannerPaymentService | null; initialDraft?: PaymentFormDraft | null; initialReuse?: PaymentReuse | null; unifiedEntryRequested?: boolean; onDismiss?: () => void }) {
   const { language, navigate, setPaymentServiceChoiceOpen, previewAccount, paymentBeneficiaryPrefill } = useTaxState();
   const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
   const multiBeneficiaryPrefill = (paymentBeneficiaryPrefill?.additional?.length ?? 0) > 0;
@@ -57,7 +57,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
   // Only the new Home "All Tax Payments" entry uses the consolidated three-step flow.
   // Existing drafts, Pay Again, Travel Tax and legacy payment routes retain their stages.
-  const unifiedEntry = !initialService && !initialDraft && !initialReuse && !parallelEntry;
+  const unifiedEntry = unifiedEntryRequested && !initialService && !initialDraft && !initialReuse && !parallelEntry;
   const [view, setView] = useState<'entry' | 'payer' | 'login' | 'payment'>(
     initialDraft || initialReuse || directTravelEntry || parallelEntry ? 'payment' : unifiedEntry ? 'entry' : 'payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
