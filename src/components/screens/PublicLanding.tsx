@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FileCheck2, FilePenLine, History, Repeat2, Save, Search, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import { useAccountIdentity } from '../../services/accountIdentity';
 import type { PublicService } from './PublicServiceModal';
 import { PublicHeroCarousel } from './PublicHeroCarousel';
 import { INITIAL_RECEIPTS } from '../../data/mockData';
@@ -20,6 +21,7 @@ const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
 
 export const PublicLanding: React.FC = () => {
   const { language, navigate, openPaymentServiceChoice, openAllTaxPayments, isPaymentServiceChoiceOpen } = useTaxState();
+  const { user: authenticatedUser } = useAccountIdentity();
   const [openService, setOpenService] = useState<PublicService | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -98,7 +100,7 @@ export const PublicLanding: React.FC = () => {
   return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
-      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : service ? openPaymentServiceChoice(service) : openAllTaxPayments()}
+      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : service ? openPaymentServiceChoice(service) : authenticatedUser ? openPaymentServiceChoice() : openAllTaxPayments()}
       paused={isPaymentServiceChoiceOpen || openService !== null}
     />
 
