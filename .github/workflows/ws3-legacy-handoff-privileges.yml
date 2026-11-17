@@ -1,5 +1,15 @@
 name: WS3 legacy handoff RPC permission regression
 on:
+  push:
+    branches:
+      - release/taxpay-correction-notifications-20261101
+    paths:
+      - 'supabase/migrations/20261117054000_taxpay_legacy_handoff_rpc_public_privilege_gate.sql'
+      - 'tests/integration/taxpayLegacyHandoffPrivilegeFixture.sql'
+      - 'tests/integration/taxpayLegacyHandoffPrivilegeAcceptance.sql'
+      - '.github/workflows/ws3-legacy-handoff-privileges.yml'
+      - 'supabase/functions/taxpay-handoff-api/index.ts'
+      - 'tests/integration/ws3LegacyHandoffRetirement.test.mjs'
   pull_request:
     branches: [main]
     paths:
