@@ -57,7 +57,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
   // Only the new Home "All Tax Payments" entry uses the consolidated three-step flow.
   // Existing drafts, Pay Again, Travel Tax and legacy payment routes retain their stages.
-  const unifiedEntry = initialService === 'OTHER_TAX_PAYMENT' && !initialDraft && !initialReuse && !parallelEntry;
+  const unifiedEntry = !initialService && !initialDraft && !initialReuse && !parallelEntry;
   const [view, setView] = useState<'entry' | 'payer' | 'login' | 'payment'>(
     initialDraft || initialReuse || directTravelEntry || parallelEntry ? 'payment' : unifiedEntry ? 'entry' : 'payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
