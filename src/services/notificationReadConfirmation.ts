@@ -16,3 +16,16 @@ export function assertAccountNotificationReadRows(expectedIds:readonly string[],
     seen.add(record.id);
   }
 }
+
+/** Ignore out-of-order polling responses and invalidated owner views.
+ * An older network result must never restore an unread notice after a newer
+ * read-state fetch or acknowledgement has completed.
+ */
+export function createAccountNotificationRefreshGate(){
+  let generation=0;
+  return {
+    next:()=>++generation,
+    isLatest:(requestId:number)=>requestId===generation,
+    invalidate:()=>{generation++;},
+  };
+}
