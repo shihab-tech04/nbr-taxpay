@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test';
  */
 test('unified walk-in retains final payer fields, remarks, amounts and three-step progress', async ({ page }) => {
     await page.goto('/?action=landing&lang=en');
-    await page.locator('.public-benefits__item[data-benefit="payments"]').click();
+    await page.locator('.citizen-public-hero__actions').getByRole('button', { name: 'Pay Tax' }).click();
     const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
     await dialog.getByRole('button', { name: 'Walk-in Payment' }).click();
 
@@ -18,6 +18,12 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await dialog.locator('.taxpayer-tin-lookup__search').first().click();
     await dialog.getByRole('button', { name: 'Add taxpayer' }).first().click();
     await expect(dialog.locator('#tax-type-primary')).toHaveValue('NON_COMPANY');
+    await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
+    const companyTaxpayer = dialog.getByTestId('other-tax-taxpayer').first();
+    await companyTaxpayer.locator('input[id^="other-tax-tin-"]').fill('333333333333');
+    await companyTaxpayer.locator('.taxpayer-tin-lookup__search').click();
+    await companyTaxpayer.getByRole('button', { name: 'Add taxpayer' }).click();
+    await expect(dialog.locator('select[id^="tax-type-"]').last()).toHaveValue('COMPANY');
     await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
@@ -29,6 +35,23 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await batch.locator('[data-head-group="Advance Tax"] summary').click();
     await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
     await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('3500');
+    const taxpayerTabs = batch.getByTestId('other-tax-taxpayer-tabs').locator('button[data-taxpayer-id]');
+    await expect(taxpayerTabs).toHaveCount(2);
+    await taxpayerTabs.nth(1).click();
+    await batch.locator('[data-head-group="Advance Tax"] summary').click();
+    await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+    await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('3500');
+
+    const calculation = dialog.getByTestId('grouped-taxpayer-calculation');
+    const taxpayerSummaries = calculation.locator('.payment-form-summary__taxpayer');
+    await expect(taxpayerSummaries).toHaveCount(2);
+    await expect(taxpayerSummaries.nth(0).locator('summary')).toContainText('1 payment line');
+    await expect(taxpayerSummaries.nth(1).locator('summary')).toContainText('1 payment line');
+    await taxpayerSummaries.nth(1).locator('summary').click();
+    const personLine = taxpayerSummaries.nth(0).locator('.payment-form-summary__taxpayer-label').first();
+    const companyLine = taxpayerSummaries.nth(1).locator('.payment-form-summary__taxpayer-label').first();
+    await expect(personLine).not.toContainText(/Code/i);
+    await expect(companyLine).toContainText('Code 1112101');
     await dialog.getByRole('button', { name: 'Continue to final preview' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
