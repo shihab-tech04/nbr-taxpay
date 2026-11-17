@@ -317,7 +317,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       await checkCurrent();
       // Mark the latest owner-owned server snapshot, not only the previous
       // 50-row UI cache, so old notices cannot remain silently unread.
-      const currentNotices=await readReviewNotices(supabase,requestUid);
+      const currentNotices=await readReviewNotices(client,requestUid);
       await checkCurrent();
       const unread=currentNotices
         .filter(item=>!item.is_read&&Date.parse(item.created_at)<=Date.parse(confirmedReadAt))
@@ -325,13 +325,13 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       for(let offset=0;offset<unread.length;offset+=100){
         await checkCurrent();
         const ids=unread.slice(offset,offset+100);
-        const {data:updated,error:reviewError}=await supabase.from('taxpay_in_app_notifications')
+        const {data:updated,error:reviewError}=await client.from('taxpay_in_app_notifications')
           .update({is_read:true}).eq('recipient_uid',requestUid).in('id',ids)
           .select('id,is_read');
         if(reviewError)throw reviewError;
         await checkCurrent();
         assertAccountNotificationReadRows(ids,updated);
-        const {data:persisted,error:readError}=await supabase.from('taxpay_in_app_notifications')
+        const {data:persisted,error:readError}=await client.from('taxpay_in_app_notifications')
           .select('id,is_read').eq('recipient_uid',requestUid).in('id',ids);
         if(readError)throw readError;
         await checkCurrent();
@@ -340,7 +340,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       // Only publish the account-wide viewed timestamp after *all* SQL review
       // read flags have been confirmed. Failure remains retryable.
       await checkCurrent();
-      const {data:updatedAccount,error}=await supabase.auth.updateUser({data:{
+      const {data:updatedAccount,error}=await client.auth.updateUser({data:{
         taxpay_notifications_read_at:confirmedReadAt
       }});
       if(error||updatedAccount.user?.id!==requestUid||
