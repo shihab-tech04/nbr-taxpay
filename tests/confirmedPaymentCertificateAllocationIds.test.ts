@@ -72,7 +72,7 @@ test('F-178 / US-181: SQL challan remarks survive receipt readback and override 
 });
 
 test('F-178 / US-181: canonical SQL remarks flow through receipt into NEW mixed-head Pay Again draft',()=>{
-  const remarks='Invoice 204: explanation for two assessment years.\\nবাংলা মন্তব্য: আলাদা করবর্ষের তথ্য।';
+  const remarks='Invoice 204: explanation for two assessment years.\nবাংলা মন্তব্য: আলাদা করবর্ষের তথ্য।';
   const details=validDetails();
   details.challanRemarks=remarks;
   details.paymentRemarks='Older alias must not win';
@@ -81,6 +81,7 @@ test('F-178 / US-181: canonical SQL remarks flow through receipt into NEW mixed-
   const receiptBefore=structuredClone(confirmed);
   const repeated=reuseRecordedPayment([confirmed],'verified-account','9999999999999',paymentId);
 
+  assert.ok(remarks.includes('\n'));
   assert.equal(confirmed.paymentRemarks,remarks);
   assert.equal(repeated.formPayload.paymentRemarks,remarks);
   assert.equal(repeated.sourcePaymentId,paymentId);
