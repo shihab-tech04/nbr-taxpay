@@ -1,5 +1,5 @@
 import {test,expect,type Locator} from '@playwright/test';
-import {enterTaxPayService} from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 async function paired(dialog:Locator){
   const fields=['#guest-payer-name','#guest-phone','#guest-receipt-email','#guest-notice-ref'];
@@ -15,8 +15,7 @@ async function paired(dialog:Locator){
 test('guest Other Tax pairs payer and receipt contacts; email stays optional',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280');
   await page.goto('/');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
-  const modal=page.getByRole('dialog',{name:'Pay Tax'});
+  const modal = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(modal,'OTHER_TAX_PAYMENT','OTHER');
   const name=modal.locator('#guest-payer-name');
   const phone=modal.locator('#guest-phone');
@@ -40,8 +39,7 @@ test('guest Other Tax pairs payer and receipt contacts; email stays optional',as
 test('guest Tax with Return uses the same four contact fields',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280');
   await page.goto('/');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:'Pay Tax'});
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog,'TAX_WITH_RETURN','OTHER');
   await expect(dialog.locator('#guest-receipt-email')).toBeVisible();
   await paired(dialog);
