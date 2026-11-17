@@ -7,6 +7,8 @@ on:
       - 'tests/integration/taxpayLegacyHandoffPrivilegeFixture.sql'
       - 'tests/integration/taxpayLegacyHandoffPrivilegeAcceptance.sql'
       - '.github/workflows/ws3-legacy-handoff-privileges.yml'
+      - 'supabase/functions/taxpay-handoff-api/index.ts'
+      - 'tests/integration/ws3LegacyHandoffRetirement.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -47,3 +49,5 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261117054000_taxpay_legacy_handoff_rpc_public_privilege_gate.sql
       - name: Verify anon/auth DENY and service_role ALLOW
         run: psql -X -v ON_ERROR_STOP=1 -f tests/integration/taxpayLegacyHandoffPrivilegeAcceptance.sql
+      - name: Exercise retired Edge routes and confirm current Story1 unaffected
+        run: node --test tests/integration/ws3LegacyHandoffRetirement.test.mjs
