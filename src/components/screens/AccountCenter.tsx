@@ -301,14 +301,15 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   };
 
   const markViewed = async () => {
-    if (!user || !supabase || loadState !== 'ready' || noticeSnapshot?.ownerUid !== user.id) return;
+    const client=supabase;
+    if (!user || !client || loadState !== 'ready' || noticeSnapshot?.ownerUid !== user.id) return;
     const requestUid=user.id;
     // This timestamp is the observation boundary, not completion time.
     // Notices created during an unusually slow acknowledgement stay unread.
     const confirmedReadAt=new Date().toISOString();
     setBusy(true);setFeedback(null);
     const checkCurrent=async()=>{
-      const {data,error}=await supabase.auth.getUser();
+      const {data,error}=await client.auth.getUser();
       if(error||data.user?.id!==requestUid||!isCurrentUid(requestUid))
         throw Error('Account session changed');
     };
