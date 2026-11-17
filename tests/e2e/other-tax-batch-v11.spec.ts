@@ -730,7 +730,7 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
 });
 
-test('signed-in SELF explicitly includes saved beneficiaries in one non-return payment while keeping the account card', async ({ page }) => {
+test('F-039 signed-in SELF explicitly includes saved beneficiaries in one non-return payment while keeping the account card', async ({ page }) => {
   const writes:string[]=[];
   const {dialog}=await mockSignedInOtherTax(page,writes,'en','SELF');
   const account=dialog.locator('#signed-in-account-taxpayer-card');
