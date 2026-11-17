@@ -68,7 +68,9 @@ jobs:
             src/components/screens/AccountCenter.tsx \
             src/components/screens/CorrectionInquiries.tsx
           test -z "$(git ls-files -u)"
-          git diff --cached --check
+          # Check only changes introduced beyond protected Main. Do not fail on
+          # pre-existing whitespace in solved Main files unrelated to WS3.
+          git diff --cached --check refs/remotes/origin/main
           echo "Conflict resolution complete; preserving Main versions of shared solved components."
       - name: Install dependencies without modifying lockfile
         run: npm ci
