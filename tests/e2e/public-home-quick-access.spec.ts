@@ -1,5 +1,16 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
+
+/** Start the existing multi-taxpayer draft through Pay Tax, not the informational Home cards. */
+async function openParallelFromPayTax(page: Page) {
+  await page.locator('.public-hero-carousel .citizen-public-primary.public-guest-action').first().click();
+  const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
+  await expect(chooser).toBeVisible();
+  await chooser.locator('[data-payer-relationship="OTHER"]').click();
+  await chooser.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await chooser.getByTestId('open-parallel-taxpayer-draft').click();
+  await expect(chooser).toHaveCount(0);
+}
 
 test('compact desktop homepage keeps six balanced non-interactive benefit cards', async ({ page }) => {
   // This 3x2 parity test intentionally uses the compact desktop breakpoint.
@@ -1049,7 +1060,7 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
     await page.setViewportSize({width,height:900});
     await page.goto('/?action=landing&lang=en');
     await page.evaluate(() => sessionStorage.clear());
-    await page.getByRole('button', {name:'Open parallel taxpayer entry'}).click();
+    await openParallelFromPayTax(page);
     const draft = page.getByRole('dialog', {name:'All Tax Payments — parallel draft'});
     await expect(draft.getByTestId('parallel-taxpayer-empty')).toBeVisible();
     await expect(draft.getByTestId('parallel-taxpayer-empty')).toHaveCSS('border-top-width', '1px');
@@ -1170,14 +1181,14 @@ test('parallel taxpayer session draft restores after close and refresh without c
   test.skip(info.project.name !== 'desktop-1280', 'Focused same-tab recovery check.');
   await page.goto('/?action=landing&lang=en');
   await page.evaluate(()=>sessionStorage.clear());
-  await page.getByRole('button',{name:'Open parallel taxpayer entry'}).click();
+  await openParallelFromPayTax(page);
   let draft=page.getByRole('dialog',{name:'All Tax Payments — parallel draft'});
   await draft.locator('#parallel-taxpayer-tin').fill('333333333333');
   await draft.getByRole('button',{name:'Search taxpayer TIN'}).click();
   await draft.getByTestId('parallel-add-taxpayer').click();
   await draft.getByRole('button',{name:'Close parallel draft'}).click();
   await page.reload();
-  await page.getByRole('button',{name:'Open parallel taxpayer entry'}).click();
+  await openParallelFromPayTax(page);
   draft=page.getByRole('dialog',{name:'All Tax Payments — parallel draft'});
   await expect(draft.locator('.parallel-taxpayer-draft__table tbody tr')).toHaveCount(1);
   await expect(draft).toContainText('Selection restored.');
