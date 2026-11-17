@@ -202,7 +202,11 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     setNoticeSnapshot(null);
     setLoadState('loading');
     const refreshGate=createAccountNotificationRefreshGate();
+    let refreshing=false;
     const refreshNotices = () => {
+      // One owner-scoped fetch at a time; slow responses must not starve retry.
+      if(refreshing)return;
+      refreshing=true;
       const requestId=refreshGate.next();
       return (async () => {
       const { data: auth, error: authError } = await client.auth.getUser();
@@ -225,7 +229,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
         if (active && refreshGate.isLatest(requestId) && isCurrentUid(uid)) {
           setNoticeSnapshot(null); setLoadState('error');
         }
-      });
+      }).finally(()=>{refreshing=false;});
     };
     void refreshNotices();
     // New non-financial officer updates arrive without requiring a page reload.
@@ -275,7 +279,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
         taxpay_notifications_read_at: confirmedReadAt
       }});
       if (error || updatedAccount.user?.id !== requestUid ||
-          updatedAccount.user.user_metadata?.taxpay_notifications_read_at !== confirmedReadAt)
+          updatedAccount.user?.user_metadata?.taxpay_notifications_read_at !== confirmedReadAt)
         throw new Error('Notification viewing state was not confirmed.');
       if (!isCurrentUid(requestUid)) return;
       const {data: session, error: sessionError} = await supabase.auth.getUser();
