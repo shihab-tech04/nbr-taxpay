@@ -101,7 +101,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
     <div className={embedded ? 'w-full min-w-0 space-y-4' : 'max-w-4xl mx-auto space-y-6 pb-12'}>
       {!embedded && <TaxpayerPageHeading title="Tax Payment Challan Correction Requests"
         description="Request a change to the assessment year, tax circle or payment head." />}
-      {!embedded && activityTabs && <TaxpayerActivityTabs />
+      {!embedded && activityTabs && <TaxpayerActivityTabs />}
       <div className={embedded ? 'bg-white border border-taxpay-border rounded-xl p-3 sm:p-5' : 'bg-white border border-slate-200 rounded-xl p-6 shadow-sm'}>
         {submittedTicket && (
           <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-taxpay-dark space-y-1">
