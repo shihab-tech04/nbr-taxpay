@@ -30,6 +30,32 @@ test('saved picker ignores list and TIN callbacks from a previous owner session'
   assert.match(picker,/onAvailableTins\(Array\.from\(new Set\(result\.people/);
 });
 
+
+test('payment picker has no manual restore path and refreshes the account address book across browsers', () => {
+  const picker=readFileSync('src/components/screens/SavedBeneficiaryPicker.tsx','utf8');
+  assert.doesNotMatch(picker,/Restore saved lists|restoreSavedLists|recoverGuestBeneficiariesToProfile|recoverLegacyGuestBeneficiariesToPreview/);
+  assert.match(picker,/loadBeneficiaries\(user\?\.id\?\?null,\{forceFresh:true\}\)/);
+  assert.match(picker,/window\.addEventListener\('focus',refreshVisible\)/);
+  assert.match(picker,/window\.addEventListener\('storage',refreshStorage\)/);
+  assert.match(picker,/window\.setInterval\(refreshVisible,30000\)/);
+  assert.match(picker,/window\.clearInterval\(interval\)/);
+  assert.match(picker,/if\(renderOwnerScope!==ownerScope\)\{setLists\(\[\]\)/);
+  assert.match(picker,/previous\.filter\(id=>existing\.has\(id\)\)/);
+  assert.match(picker,/return ownerChanged\s*\?\s*containingSelection/);
+});
+
+
+test('beneficiary profile page refreshes from server without a restore control', () => {
+  const page=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
+  assert.match(page,/loadBeneficiaries\(owner,\{forceFresh:true\}\)/);
+  assert.equal((page.match(/loadBeneficiaries\(owner,\{forceFresh:true\}\)/g)||[]).length,3);
+  assert.match(page,/window\.setInterval\(refresh,30000\)/);
+  assert.match(page,/window\.addEventListener\('storage',refresh\)/);
+  assert.match(page,/window\.clearInterval\(interval\)/);
+  assert.match(page,/createBeneficiaryAutoRefreshGate\(\)/);
+  assert.doesNotMatch(page,/Restore saved lists|restoreSavedLists/);
+});
+
 test('beneficiary view remounts for every Auth owner and renewed preview session',()=>{
   const scope=beneficiaryWorkspaceOwnerScope;
   const owner=(authUid:string|null,previewId:string|null=null,previewSessionId:string|null=null,
