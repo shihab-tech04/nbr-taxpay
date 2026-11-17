@@ -185,6 +185,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     const storedLanguage = user?.user_metadata?.taxpay_language;
     setPreferredLanguage(storedLanguage === 'bn' || storedLanguage === 'en' ? storedLanguage : language);
     setSettingsOwnerUid(user?.id ?? null);
+    // A previous account's search must not hide the next owner's notices.
+    setNotificationSearch('');
     setBusy(false);
     setFeedback(null);
   }, [user?.id]);
