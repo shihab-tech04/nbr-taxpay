@@ -702,7 +702,7 @@ for (const { width, height, lang } of [
   });
 }
 
-test('Home keeps only the first benefit actionable in English and Bengali', async ({ page }, testInfo) => {
+test('Home keeps all benefit cards informational in English and Bengali', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'Cross-viewport parity is checked within this test.');
   for (const width of [320, 1280]) {
     await page.setViewportSize({width, height:900});
@@ -710,10 +710,9 @@ test('Home keeps only the first benefit actionable in English and Bengali', asyn
       await page.goto('/?action=landing&lang=' + lang);
       const cells = page.locator('.public-benefits__item');
       await expect(cells).toHaveCount(6);
-      await expect(cells.first()).toHaveJSProperty('tagName','BUTTON');
+      for(let i=0;i<6;i++) await expect(cells.nth(i)).toHaveJSProperty('tagName','ARTICLE');
       await expect(page.locator('.public-benefits__heading button')).toHaveCount(0);
-      for(let i=1;i<6;i++) await expect(cells.nth(i)).toHaveJSProperty('tagName','ARTICLE');
-      await cells.first().click();
+      await page.locator('.citizen-public-hero__actions').getByRole('button',{name:lang==='bn'?'কর পরিশোধ':'Pay Tax',exact:true}).click();
       const modal = page.getByRole('dialog',{name:lang==='bn'?'কর পরিশোধ':'Pay Tax'});
       await expect(modal).toBeVisible();
       await modal.getByRole('button',{name:lang==='bn'?'ওয়াক-ইন পেমেন্ট':'Walk-in Payment'}).click();
