@@ -420,11 +420,6 @@
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main { margin-left: 250px; width: calc(100% - 250px); }
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > .citizen-footer { margin-left: 250px; }
 }
-@media (min-width: 1920px) {
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail { width: 260px; }
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > main { margin-left: 260px; width: calc(100% - 260px); }
-  .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) > .citizen-footer { margin-left: 260px; }
-}
 @media (max-width: 767px) {
   /* Report-composer-like full-width mobile form with an independently safe
    * bottom action area. Preserve the existing business steps and validations. */
