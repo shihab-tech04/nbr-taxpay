@@ -61,8 +61,10 @@ test('F-178 / US-181: SQL challan remarks survive receipt readback and override 
   assert.equal(receipt.paymentRemarks,remarks);
   assert.deepEqual(details,original);
 
-  // Older parents without a display snapshot use the same canonical note.
+  // Older unversioned parents can omit a display snapshot; version 3 requires
+  // one to prove allocation identity and must never bypass that validation.
   delete details.receiptSnapshot;
+  delete details.allocationContractVersion;
   assert.equal(confirm(details).paymentRemarks,remarks);
   delete details.challanRemarks;
   assert.equal(confirm(details).paymentRemarks,'Legacy alias');
