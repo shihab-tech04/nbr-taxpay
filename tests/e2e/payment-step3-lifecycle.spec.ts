@@ -1,3 +1,4 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { expect, test, type Page } from '@playwright/test';
 
 async function openReview(page: Page, category = 'Tax with Return') {
@@ -23,7 +24,7 @@ async function openReview(page: Page, category = 'Tax with Return') {
   });
   await page.goto('/');
   const initialUrl = page.url();
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   if (category === 'Tax with Return') {

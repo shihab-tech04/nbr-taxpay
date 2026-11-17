@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 // Layout-only regression: never save data or submit a payment to hosted SQL.
 for (const width of [320, 375, 1280]) {
@@ -14,7 +14,7 @@ for (const width of [320, 375, 1280]) {
     await login.getByRole('button', { name: 'Sign In' }).click();
     await expect(login).toHaveCount(0);
     await page.goto('/?action=landing');
-    await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+    await openLegacyTaxServiceChoice(page);
     const modal = page.getByRole('dialog', { name: 'Pay Tax' });
     await enterTaxPayService(modal, 'TAX_WITH_RETURN', 'SELF');
     const footer = modal.locator('.taxpay-modal__footer');
@@ -129,7 +129,7 @@ test('draft-eligible account payment protects backdrop, Escape and X at every pa
   await login.getByRole('button', { name: 'Sign In' }).click();
   await expect(login).toHaveCount(0);
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
   await expect(payment.locator('.payment-form-draft-controls__save')).toBeVisible();
@@ -207,7 +207,7 @@ test('signed-out guest payment keeps original immediate X-close behavior', async
   // The draft exit confirmation belongs only to eligible signed-in payments.
   // Preserve the existing public guest journey and do not create payment data.
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'SELF');
   await expect(dialog.locator('.payment-form-draft-controls__save')).toHaveCount(0);
