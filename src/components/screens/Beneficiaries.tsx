@@ -39,7 +39,7 @@ export function Beneficiaries(){
     authLoading:loading,
     authUid:user?.id??null,
     previewId:previewAccount?.id??null,
-    previewSessionId:session?.profileId===previewAccount?.id?session.paymentSessionId:null,
+    previewSessionId:session&&session.profileId===previewAccount?.id?session.paymentSessionId:null,
   });
   // Owner changes remount all private rows, filters and editing state before render.
   return <BeneficiariesForOwner key={ownerScope}/>;
