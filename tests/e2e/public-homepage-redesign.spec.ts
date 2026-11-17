@@ -17,7 +17,10 @@ test('public homepage temporarily hides payment steps and FAQ, preserving entry 
   await expect(page.locator('.public-more-link')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Pay Tax' }).locator('.tax-service-choice__card')).toHaveCount(2);
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await expect(dialog.getByText('User ID')).toBeVisible();
+  await expect(dialog.getByText('Password', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
 });
 
 test('hidden homepage FAQ remains available via the existing User Guide page', async ({ page }) => {
