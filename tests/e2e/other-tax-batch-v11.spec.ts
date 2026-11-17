@@ -10,7 +10,7 @@ const getFlow = async (page: import('@playwright/test').Page) => {
   return dialog;
 };
 
-async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en') {
+async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en', relationship: 'SELF' | 'OTHER' = 'OTHER') {
   let sessionLanguage: 'en' | 'bn' = 'en';
   const list={id:'00000000-0000-4000-8000-000000000001',name:'Family',created_at:'2026-01-01T00:00:00Z'};
   const people=[
@@ -62,10 +62,10 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
   }
   await page.getByRole('button',{name:language==='bn'?'কর পরিশোধ':'Pay Tax',exact:true}).first().click();
   const dialog=page.getByRole('dialog',{name:language==='bn'?'কর পরিশোধ':'Pay Tax'});
-  if(language==='en') await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
+  if(language==='en') await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT',relationship);
   else {
     await ensureNewPaymentEntry(dialog);
-    await dialog.locator('[data-payer-relationship="OTHER"]').click();
+    await dialog.locator(`[data-payer-relationship="${relationship}"]`).click();
     await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
     const advance=dialog.locator('.tax-service-choice__actions .tax-service-choice__continue');
     await expect(advance).toBeEnabled();
@@ -728,6 +728,31 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
   const batch = dialog.getByTestId('other-tax-batch');
   await expect(batch.locator('[data-head-group]')).toHaveCount(6);
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
+});
+
+test('signed-in SELF explicitly includes saved beneficiaries in one non-return payment while keeping the account card', async ({ page }) => {
+  const writes:string[]=[];
+  const {dialog}=await mockSignedInOtherTax(page,writes,'en','SELF');
+  const account=dialog.locator('#signed-in-account-taxpayer-card');
+  await expect(account).toBeVisible();
+  await expect(dialog.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
+  // The approved default self-only form remains unchanged until explicit opt-in.
+  await dialog.getByTestId('self-payment-add-beneficiaries').click();
+  const picker=dialog.getByTestId('saved-beneficiary-picker');
+  await expect(picker).toBeVisible();
+  const saved=picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'});
+  await expect(saved).toBeVisible();
+  await saved.check();
+  await expect(saved).toBeChecked();
+  await expect(account).toBeVisible();
+  await expect(dialog.locator('#guest-tin, #guest-taxpayer-name')).toHaveCount(0);
+  await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
+  const batch=dialog.getByTestId('other-tax-batch');
+  await expect(batch).toBeVisible();
+  await expect(batch.getByTestId('other-tax-taxpayer-tabs').locator('.other-tax-taxpayer-chip')).toHaveCount(2);
+  await expect(batch).toContainText('Saved Taxpayer Two');
+  await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
+  expect(writes).toEqual([]);
 });
 
 test('signed-in OTHER Tax uses only saved beneficiaries and never exposes manual taxpayer entry', async ({ page }) => {
