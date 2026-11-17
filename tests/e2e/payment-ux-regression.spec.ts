@@ -259,6 +259,10 @@ test('desktop My Tax Liability calculation rail fills the taxpayer column withou
 
   // Wheel events over the short sticky card continue to scroll the modal body,
   // without moving the fixed action footer or creating horizontal overflow.
+  // Keep the 777px screenshot rail assertion above, then deliberately shorten
+  // the viewport so scrolling is required even for the compact SELF form.
+  await page.setViewportSize({ width: 1225, height: 560 });
+  await expect.poll(() => body.evaluate(element => element.scrollHeight - element.clientHeight)).toBeGreaterThan(20);
   const footer = await dialog.locator('.taxpay-modal__footer').boundingBox();
   const card = await summary.boundingBox();
   expect(footer).not.toBeNull();
