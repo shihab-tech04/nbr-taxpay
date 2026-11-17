@@ -222,6 +222,10 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
     !serviceCodes.has(tx.service as PaymentCategory)||!Number.isSafeInteger(tx.amountMinor)||tx.amountMinor<=0)
    throw new Error('Payment record cannot be certified');
  const d=tx.details??{};
+ // Canonical F-178 SQL remarks override legacy aliases and display snapshots.
+ // Preserve exact Unicode/newlines, including an explicitly empty note.
+ const savedRemarks=typeof d.challanRemarks==='string'?d.challanRemarks:
+   typeof d.paymentRemarks==='string'?d.paymentRemarks:undefined;
  const method=stringValue(d.paymentMethod);
  const allocationItems=toAllocationItems(tx);
  const readbackLines=reusableAccountingLines(tx,allocationItems);
@@ -266,7 +270,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
       ...(allocationItems?{allocationItems}:{}),
       ...(readbackLines?{reusableAccountingLines:readbackLines}:{}),...batchInfo,
       // Original challan-level remarks come from the saved parent, not a stale display snapshot.
-      ...(typeof d.paymentRemarks==='string'?{paymentRemarks:d.paymentRemarks}:{}),
+      ...(savedRemarks!==undefined?{paymentRemarks:savedRemarks}:{}),
       taxCreditStatus:tx.service==='SOURCE_TAX_DEPOSIT'?'NOT_APPLICABLE':'PENDING_RECONCILIATION',
     };
   }
@@ -284,7 +288,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   taxpayerTin:stringValue(d.taxpayerTin),receiptMobile:stringValue(d.receiptMobile),
   noticeReference:stringValue(d.noticeReference),
   // Preserve Unicode, punctuation and line breaks even for pre-snapshot history records.
-  ...(typeof d.paymentRemarks==='string'?{paymentRemarks:d.paymentRemarks}:{}),
+  ...(savedRemarks!==undefined?{paymentRemarks:savedRemarks}:{}),
   isRepresentativePayment:d.payerMode==='OTHER',
   taxZone:stringValue(d.taxZone)||'—',taxCircle:stringValue(d.taxCircle)||'—',
   isWithholding:category==='SOURCE_TAX_DEPOSIT'||d.isWithholding===true,
