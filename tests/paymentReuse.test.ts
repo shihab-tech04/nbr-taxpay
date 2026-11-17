@@ -325,6 +325,28 @@ test('legacy Pay Again restores long bilingual remarks from original SQL parent'
   assert.equal(JSON.stringify(source),original);
 });
 
+test('F-178 / US-181: legacy Pay Again restores canonical challanRemarks without losing multiline Bengali text',()=>{
+  const remarks='Invoice note and payer explanation on a new line.\nবাংলা চালানের মন্তব্য: করদাতার বিস্তারিত বিবরণ।';
+  const source={
+    id:'a8a2c8b5-4d09-4e1b-8e5d-978259be45aa',
+    service:'ADVANCE_TAX',status:'SIMULATED_SUCCESS',amountMinor:2500,
+    details:{payerId:'user1',taxpayerTin:'1111111111111',assessmentYear:'2025-26',
+      challanRemarks:remarks,
+      lines:[{beneficiary:'user1',category:'ADVANCE_TAX',assessmentYear:'2025-26',amountMinor:2500}]}
+  };
+  const pristine=JSON.stringify(source);
+  const draft=reuseLegacySingleHeadPayment(source,'user1','1111111111111');
+  assert.ok(remarks.length>20);
+  assert.ok(remarks.includes('\n'));
+  assert.equal(draft.formPayload.paymentRemarks,remarks);
+  draft.formPayload.paymentRemarks='New payment comment';
+  assert.equal(JSON.stringify(source),pristine);
+  assert.equal(source.details.challanRemarks,remarks);
+  // Prefer the canonical SQL field if a legacy alias is also present.
+  const duplicate={...source,details:{...source.details,paymentRemarks:'Stale alias'}};
+  assert.equal(reuseLegacySingleHeadPayment(duplicate,'user1','1111111111111').formPayload.paymentRemarks,remarks);
+});
+
 test('historical head IDs never auto-select a current payment head',()=>{
   const source={
     id:'616259b2-4f41-496f-b72c-a9189a3ccb61',
