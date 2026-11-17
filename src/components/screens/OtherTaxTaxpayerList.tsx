@@ -140,9 +140,8 @@ export function OtherTaxTaxpayerList({
           tin={primaryTin}
           hideNameField={false}
           suggestedTins={progressive && !lockedPrimary ? suggestedTins.filter(tin => !additional.some(p => p.tin === tin)) : undefined}
-          name={progressive && searchedTins.primary !== primaryTin ? '' :
-            simpleSelf && searchedTins.primary === primaryTin && lookupSampleTaxpayer(primaryTin)
-              ? (bn ? lookupSampleTaxpayer(primaryTin)!.nameBn : lookupSampleTaxpayer(primaryTin)!.nameEn) : primaryName}
+          name={simpleSelf && searchedTins.primary === primaryTin && lookupSampleTaxpayer(primaryTin)
+            ? (bn ? lookupSampleTaxpayer(primaryTin)!.nameBn : lookupSampleTaxpayer(primaryTin)!.nameEn) : primaryName}
           maxTinLength={lockedPrimary || allowSyntheticDemoTin ? 13 : 12}
           tinPlaceholder={allowSyntheticDemoTin ? (bn ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : (bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN')}
           readonlyTin={lockedPrimary || primaryAssigned} canSearch={canSearch(primaryTin)}
@@ -189,9 +188,8 @@ export function OtherTaxTaxpayerList({
             tin={person.tin}
             hideNameField={false}
             suggestedTins={requireConfirmation ? suggestedTins.filter(tin => tin !== primaryTin && !additional.some(p => p.id !== person.id && p.tin === tin)) : undefined}
-            name={requireConfirmation && searchedTins[person.id] !== person.tin ? '' :
-              searchedTins[person.id] === person.tin && lookupSampleTaxpayer(person.tin)
-                ? (bn ? lookupSampleTaxpayer(person.tin)!.nameBn : lookupSampleTaxpayer(person.tin)!.nameEn) : person.name}
+            name={searchedTins[person.id] === person.tin && lookupSampleTaxpayer(person.tin)
+              ? (bn ? lookupSampleTaxpayer(person.tin)!.nameBn : lookupSampleTaxpayer(person.tin)!.nameEn) : person.name}
             maxTinLength={allowSyntheticDemoTin ? 13 : 12}
             tinPlaceholder={allowSyntheticDemoTin ? (bn ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : (bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN')}
             readonlyTin={assigned > 0} canSearch={canSearch(person.tin)}
