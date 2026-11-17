@@ -77,8 +77,10 @@ test('WS2 Account Center reads and acknowledges the full Auth owner SQL register
   assert.match(source,/const currentNotices=await readReviewNotices\(client,requestUid\)/);
   const chunkIndex=source.indexOf('for(let offset=0;offset<unread.length;offset+=100)');
   const readBackIndex=source.indexOf('assertAccountNotificationReadRows(ids,persisted)',chunkIndex);
-  const timestampIndex=source.indexOf('const confirmedReadAt=new Date().toISOString()',chunkIndex);
-  assert.ok(chunkIndex>=0 && readBackIndex>chunkIndex && timestampIndex>readBackIndex);
+  const timestampIndex=source.indexOf('const confirmedReadAt=new Date().toISOString()');
+  const savedIndex=source.indexOf('taxpay_notifications_read_at:confirmedReadAt',readBackIndex);
+  assert.ok(timestampIndex>=0 && chunkIndex>timestampIndex &&
+    readBackIndex>chunkIndex && savedIndex>readBackIndex);
 });
 
 test('WS2 saved drafts use full owner-scoped pages and never a 30-row UI limit',()=>{
