@@ -341,8 +341,9 @@ for(const language of ['en','bn'] as const){
       // The one-shot fixture must not silently seed the old token during this navigation.
       await page.goto('/?action=history&lang='+language);
       await expect.poll(()=>page.evaluate(()=>localStorage.getItem('sb-nbr-taxpay-test-auth-token'))).toBeNull();
-      await expect(page.getByRole('heading',{name:language==='bn'?'করদাতার ব্যক্তিগত তথ্য':'Private taxpayer workspace'})).toBeVisible();
-      await expect(page.getByRole('link',{name:language==='bn'?'সাইন ইন':'Sign In'})).toBeVisible();
+      await expect(page.locator('#public-home-title')).toBeVisible();
+      await expect(page.getByRole('button',{name:language==='bn'?'ইউজার আইডি দিয়ে নমুনা অ্যাকাউন্ট দেখুন':'Use User ID (sample account)'})).toBeVisible();
+      await expect(page.locator('.taxpayer-reference-rail')).toHaveCount(0);
       await expect(page.getByTestId('beneficiary-payment-history')).toHaveCount(0);
       await expect(page.getByTestId('payment-certificate-document')).toHaveCount(0);
       await expect(page.getByText(travelHistoryId,{exact:false})).toHaveCount(0);
