@@ -27,8 +27,8 @@ export function isVerifiedSqlOwnerReceipt(
   receipt:ChallanReceipt|null|'NOT_FOUND',proof:VerifiedSqlReceiptOwner|null,
   currentOwnerUid:string|null|undefined,
 ):receipt is ChallanReceipt {
-  return Boolean(receipt&&receipt!=='NOT_FOUND'&&receipt.isSimulatedDemo===true&&
-    currentOwnerUid&&proof?.ownerUid===currentOwnerUid&&
+  return Boolean(receipt&&receipt!=='NOT_FOUND'&&proof&&currentOwnerUid&&
+    receipt.isSimulatedDemo===true&&proof.ownerUid===currentOwnerUid&&
     validCertificateTransactionId(receipt.paymentTransactionId)&&
     receipt.paymentTransactionId===proof.paymentTransactionId);
 }
