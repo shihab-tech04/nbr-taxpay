@@ -453,3 +453,62 @@
 .taxpay-taxpayer-list__add{background:#fff;border:1px solid var(--color-taxpay-primary,#085587);
   color:var(--color-taxpay-primary,#085587);font-weight:650}
 .taxpay-taxpayer-list__add:hover{background:#edf4ff;border-color:var(--color-taxpay-primary,#085587)}
+/* Shared head composer: Pay Tax and Other Tax use the same editor/allocations.
+   Only Return changes the permitted taxpayer/head cardinality. */
+.payment-unified-mode {
+  padding: 1rem;
+  border: 1px solid var(--citizen-border, #e1e6ee);
+  border-radius: 12px;
+  background: #fff;
+  margin-bottom: 1rem;
+}
+.payment-unified-mode__choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+  margin-top: .75rem;
+}
+.payment-unified-mode__option {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  min-height: 44px;
+  padding: .8rem .9rem;
+  border: 1px solid var(--citizen-border, #e1e6ee);
+  border-radius: 10px;
+  color: var(--citizen-text);
+  font-size: .875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.payment-unified-mode__option:has(input:checked) {
+  border-color: var(--citizen-primary-dark);
+  background: var(--citizen-primary-light);
+}
+.payment-unified-mode__option input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--citizen-primary-dark);
+}
+.payment-unified-mode__option:focus-within {
+  outline: 2px solid var(--citizen-primary-dark);
+  outline-offset: 2px;
+}
+.payment-unified-return, .payment-unified-return-back button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 1rem;
+  padding: .5rem .8rem;
+  border: 1px solid var(--citizen-primary-dark);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--citizen-primary-dark);
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (max-width: 410px) {
+  .payment-unified-mode__choices { grid-template-columns: minmax(0, 1fr); }
+}

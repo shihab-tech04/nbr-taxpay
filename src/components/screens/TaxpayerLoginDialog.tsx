@@ -20,10 +20,12 @@ function rememberDemoOtp(profileId:string):void {
 
 /** TaxPay-only preview account entry. This does not authenticate API calls. */
 /** One footer action for both standalone and in-journey sign-in modals. */
-export function TaxpayerLoginFooter({ formId, disabled, language }: {
+export function TaxpayerLoginFooter({ formId, disabled, language, paymentEntryLabel = false }: {
   formId: string;
   disabled: boolean;
   language: 'en' | 'bn';
+  /** Re-label the existing sign-in submit action only for the unified payment entry. */
+  paymentEntryLabel?: boolean;
 }) {
   const [step,setStep]=useState<DemoLoginStep>('credentials');
   useEffect(()=>{
@@ -42,7 +44,9 @@ export function TaxpayerLoginFooter({ formId, disabled, language }: {
     ?(language==='bn'?'কোড যাচাই করুন':'Verify code')
     :step==='success'
       ?(language==='bn'?'সাইন ইন হচ্ছে…':'Signing in…')
-      :(language==='bn'?'সাইন ইন':'Sign In');
+      :paymentEntryLabel
+        ?(language==='bn'?'কর পরিশোধ করতে সাইন ইন করুন':'Sign In to Pay Tax')
+        :(language==='bn'?'সাইন ইন':'Sign In');
   return <div className="tax-service-choice__actions taxpayer-login-actions">
     <button data-testid="taxpayer-login-submit" className="tax-service-choice__continue" type="submit" form={formId} disabled={disabled}>
       {label} <ArrowRight size={18} aria-hidden="true" />
