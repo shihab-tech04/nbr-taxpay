@@ -245,19 +245,19 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
         {t('Continue to Payment', 'পেমেন্টে এগিয়ে যান')} <ArrowRight size={17} aria-hidden="true"/>
       </button>}
     </div>}>
-    <div className="parallel-taxpayer-draft" data-testid="parallel-taxpayer-draft" lang={language}>
-      {stage === 1 ? <>
-        <p className="parallel-taxpayer-draft__intro">
-          {t('Search by TIN and add taxpayers to this payment.',
-            'টিআইএন দিয়ে খুঁজে এই পেমেন্টে করদাতা যোগ করুন।')}
-        </p>
-        {restoreNotice && <p className="parallel-taxpayer-draft__notice" role="status">{restoreNotice}</p>}
-        <div className="parallel-taxpayer-draft__grid">
-          <section className="parallel-taxpayer-draft__panel" aria-labelledby="parallel-draft-add-title">
-            <header className="parallel-taxpayer-draft__panel-heading">
-              <h3 id="parallel-draft-add-title">{t('Add taxpayer', 'করদাতা যোগ করুন')}</h3>
-            </header>
-            <div className="parallel-taxpayer-draft__panel-body">
+    <div className={`parallel-taxpayer-draft${stage === 1 ? ' parallel-taxpayer-draft--taxpayers' : ''}`}
+      data-testid="parallel-taxpayer-draft" lang={language}>
+      {stage === 1 ? <div className="parallel-taxpayer-draft__grid">
+        <section className="parallel-taxpayer-draft__panel" aria-labelledby="parallel-draft-add-title">
+          <header className="parallel-taxpayer-draft__panel-heading">
+            <h3 id="parallel-draft-add-title">{t('Add taxpayer', 'করদাতা যোগ করুন')}</h3>
+          </header>
+          <p className="parallel-taxpayer-draft__intro">
+            {t('Search by TIN and add taxpayers to this payment.',
+              'টিআইএন দিয়ে খুঁজে এই পেমেন্টে করদাতা যোগ করুন।')}
+          </p>
+          {restoreNotice && <p className="parallel-taxpayer-draft__notice" role="status">{restoreNotice}</p>}
+          <div className="parallel-taxpayer-draft__panel-body">
               <TaxpayerTinLookup language={language} tinId="parallel-taxpayer-tin"
                 nameId="parallel-taxpayer-name" tin={tin}
                 name={result ? (bn ? result.nameBn : result.nameEn) : ''}
@@ -284,9 +284,12 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
               </div> : <p className="parallel-taxpayer-draft__search-placeholder" role="status">
                 {t('Taxpayer details appear after search.', 'অনুসন্ধানের পরে করদাতার তথ্য দেখাবে।')}
               </p>}
-            </div>
-          </section>
-          <section className="parallel-taxpayer-draft__panel" aria-labelledby="parallel-draft-selected-title">
+          </div>
+          <p className="parallel-taxpayer-draft__disclaimer">{t(
+            'Simulation-only TIN catalogue; not official NBR identity verification. This list is saved only in this browser tab, not as account beneficiaries.',
+            'এটি শুধু নমুনা টিআইএন তালিকা, সরকারি এনবিআর পরিচয় যাচাই নয়। তালিকাটি শুধু এই ব্রাউজার ট্যাবে থাকে, অ্যাকাউন্টের উপকারভোগী হিসেবে নয়।')}</p>
+        </section>
+        <section className="parallel-taxpayer-draft__panel" aria-labelledby="parallel-draft-selected-title">
             <header className="parallel-taxpayer-draft__panel-heading">
               <h3 id="parallel-draft-selected-title">{t('Taxpayers in this payment', 'এই পেমেন্টে করদাতারা')}
                 <span className="parallel-taxpayer-draft__count">{selectedCount}</span>
@@ -329,12 +332,8 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
                 <RotateCcw size={15} aria-hidden="true"/> {t('Undo', 'ফিরিয়ে আনুন')}
               </button>
             </div>}
-          </section>
-        </div>
-        <p className="parallel-taxpayer-draft__disclaimer">{t(
-          'Simulation-only TIN catalogue; not official NBR identity verification. This list is saved only in this browser tab, not as account beneficiaries.',
-          'এটি শুধু নমুনা টিআইএন তালিকা, সরকারি এনবিআর পরিচয় যাচাই নয়। তালিকাটি শুধু এই ব্রাউজার ট্যাবে থাকে, অ্যাকাউন্টের উপকারভোগী হিসেবে নয়।')}</p>
-      </> : stage === 2 ? <section data-testid="parallel-tax-head-boundary">
+        </section>
+      </div> : stage === 2 ? <section data-testid="parallel-tax-head-boundary">
         <p id="parallel-heads-intro" tabIndex={-1} className="parallel-taxpayer-draft__intro">{t(
           'Choose payment heads, assessment years and amounts for each selected taxpayer.',
           'প্রতিটি করদাতার জন্য খাত, করবর্ষ ও পরিমাণ নির্বাচন করুন।')}</p>

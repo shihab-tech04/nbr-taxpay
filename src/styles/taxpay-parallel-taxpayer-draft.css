@@ -8,7 +8,17 @@
 .taxpay-citizen-shell .taxpay-modal[data-public-service="parallel-taxpayer-draft"] .taxpay-modal__body {
   padding: 22px 24px;
 }
+/* The taxpayer-entry grid owns its inset, allowing a single unbroken divider
+   from the modal header/body boundary to the footer/body boundary. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="parallel-taxpayer-draft"]
+  .taxpay-modal__body:has(> .parallel-taxpayer-draft--taxpayers) {
+  padding: 0;
+}
 .parallel-taxpayer-draft { min-width: 0; color: var(--citizen-text); }
+.parallel-taxpayer-draft--taxpayers {
+  display: flex;
+  min-height: 100%;
+}
 .parallel-taxpayer-draft__step {
   margin: 0 0 8px;
   font-size: 14px;
@@ -23,19 +33,29 @@
 }
 .parallel-taxpayer-draft__grid {
   display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
-  align-items: start;
+  align-items: stretch;
 }
 .parallel-taxpayer-draft__panel {
   min-width: 0;
+  padding: 22px 24px;
 }
 .parallel-taxpayer-draft__panel:first-child {
-  padding-inline-end: 20px;
+  display: flex;
+  flex-direction: column;
 }
 .parallel-taxpayer-draft__panel + .parallel-taxpayer-draft__panel {
   border-inline-start: 1px solid var(--citizen-border);
-  padding-inline-start: 20px;
+}
+.parallel-taxpayer-draft--taxpayers .parallel-taxpayer-draft__intro {
+  margin: 0 0 12px;
+}
+.parallel-taxpayer-draft--taxpayers .parallel-taxpayer-draft__disclaimer {
+  margin-block-start: auto;
+  padding-block-start: 16px;
 }
 .parallel-taxpayer-draft__panel-heading {
   margin-bottom: 14px;
@@ -247,13 +267,14 @@
   font-size: 14px;
 }
 @media (max-width: 800px) {
-  .parallel-taxpayer-draft__grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-  .parallel-taxpayer-draft__panel:first-child { padding-inline-end: 0; }
+  .parallel-taxpayer-draft__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .parallel-taxpayer-draft__panel { padding: 18px 20px; }
   .parallel-taxpayer-draft__panel + .parallel-taxpayer-draft__panel {
     border-inline-start: 0;
     border-top: 1px solid var(--citizen-border);
-    padding-inline-start: 0;
-    padding-block-start: 18px;
   }
 }
 @media (max-width: 650px) {
@@ -267,6 +288,7 @@
   .taxpay-citizen-shell .taxpay-modal[data-public-service="parallel-taxpayer-draft"] .taxpay-modal__body {
     padding: 16px;
   }
+  .parallel-taxpayer-draft__panel { padding: 16px; }
   .parallel-taxpayer-draft__footer { flex-wrap: nowrap; }
   .parallel-taxpayer-draft__footer > button { flex: 1 1 auto; min-width: 0; }
 }
