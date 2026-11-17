@@ -14,6 +14,7 @@ import type {TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 import {MaskedProfileValue,sensitiveProfileKind} from '../ui/MaskedProfileValue';
+import {assertAccountNotificationReadRows} from '../../services/notificationReadConfirmation';
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
@@ -261,10 +262,13 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     try {
       const { data: current, error: identityError } = await supabase.auth.getUser();
       if (identityError || current.user?.id !== user.id) throw new Error('Session changed');
-      const { error } = await supabase.auth.updateUser({ data: {
-        taxpay_notifications_read_at: new Date().toISOString()
+      const confirmedReadAt = new Date().toISOString();
+      const { data: updatedAccount, error } = await supabase.auth.updateUser({ data: {
+        taxpay_notifications_read_at: confirmedReadAt
       }});
-      if (error) throw error;
+      if (error || updatedAccount.user?.id !== requestUid ||
+          updatedAccount.user.user_metadata?.taxpay_notifications_read_at !== confirmedReadAt)
+        throw new Error('Notification viewing state was not confirmed.');
       if (!isCurrentUid(requestUid)) return;
       const {data: session, error: sessionError} = await supabase.auth.getUser();
       if (sessionError || session.user?.id !== requestUid || !isCurrentUid(requestUid))
@@ -272,9 +276,16 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       const unread = reviewNotices.filter(n=>!n.is_read).map(n=>n.id);
       if (unread.length) {
         const { data: updated, error: reviewError } = await supabase.from('taxpay_in_app_notifications')
-          .update({is_read:true}).eq('recipient_uid', requestUid).in('id',unread).select('id');
+          .update({is_read:true}).eq('recipient_uid', requestUid).in('id',unread).select('id,is_read');
         if (!isCurrentUid(requestUid)) return;
-        if (reviewError || updated?.length !== unread.length) throw new Error('Review notice read-back not confirmed');
+        if (reviewError) throw reviewError;
+        assertAccountNotificationReadRows(unread,updated);
+        // Confirm durable state with a separate account-scoped SQL read.
+        const {data: persisted,error:readError} = await supabase.from('taxpay_in_app_notifications')
+          .select('id,is_read').eq('recipient_uid',requestUid).in('id',unread);
+        if (!isCurrentUid(requestUid)) return;
+        if (readError) throw readError;
+        assertAccountNotificationReadRows(unread,persisted);
         setNoticeSnapshot(prev=>prev?.ownerUid===requestUid
           ?{...prev,reviews:prev.reviews.map(n=>unread.includes(n.id)?{...n,is_read:true}:n)}:prev);
       }
