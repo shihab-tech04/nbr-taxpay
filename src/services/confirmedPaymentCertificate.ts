@@ -19,6 +19,20 @@ const methods=new Set<ChallanReceipt['paymentMethod']>([
  'BKASH','NAGAD','ROCKET','SONALI_E_SHEBA','A_CHALLAN_CARD',
  'BEFTN_RTGS','INTERNET_BANKING','VISA','MASTERCARD','BANK_BRANCH','SIMULATED'
 ]);
+/** A successful auth.uid()-bound SQL read is the only permission source for
+ * Pay Again/correction actions in a reference lookup. Mobile-verified guest,
+ * local-preview and sample receipts must never grant account actions. */
+export type VerifiedSqlReceiptOwner = Readonly<{ownerUid:string;paymentTransactionId:string}>;
+export function isVerifiedSqlOwnerReceipt(
+  receipt:ChallanReceipt|null|'NOT_FOUND',proof:VerifiedSqlReceiptOwner|null,
+  currentOwnerUid:string|null|undefined,
+):receipt is ChallanReceipt {
+  return Boolean(receipt&&receipt!=='NOT_FOUND'&&receipt.isSimulatedDemo===true&&
+    currentOwnerUid&&proof?.ownerUid===currentOwnerUid&&
+    validCertificateTransactionId(receipt.paymentTransactionId)&&
+    receipt.paymentTransactionId===proof.paymentTransactionId);
+}
+
 interface StoredPayment {
  id:string;service:string;amountMinor:number;status:string;createdAt:string;
  details?:Record<string,unknown>;
