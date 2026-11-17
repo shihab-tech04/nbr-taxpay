@@ -80,3 +80,19 @@ test('WS2 Account Center reads and acknowledges the full Auth owner SQL register
   const timestampIndex=source.indexOf('const confirmedReadAt=new Date().toISOString()',chunkIndex);
   assert.ok(chunkIndex>=0 && readBackIndex>chunkIndex && timestampIndex>readBackIndex);
 });
+
+test('WS2 saved drafts use full owner-scoped pages and never a 30-row UI limit',()=>{
+  const source=readFileSync('src/components/screens/AccountCenter.tsx','utf8');
+  const start=source.indexOf('async function readDraftNotices(');
+  const end=source.indexOf('async function readReviewNotices(',start);
+  assert.ok(start>=0&&end>start);
+  const reader=source.slice(start,end);
+  assert.match(reader,/collectAccountNotificationPages<DraftNotice>/);
+  assert.match(reader,/\.eq\('owner_uid',uid\)/);
+  assert.match(reader,/\.order\('created_at',\{ascending:false\}\)/);
+  assert.match(reader,/\.order\('id',\{ascending:false\}\)\.range\(from,to\)/);
+  assert.match(reader,/row\.owner_uid!==uid/);
+  assert.match(source,/readDraftNotices\(client,uid\)/);
+  assert.match(source,/drafts: draftNotices/);
+  assert.doesNotMatch(reader,/\.limit\(30\)/);
+});
