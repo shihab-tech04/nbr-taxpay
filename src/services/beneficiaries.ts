@@ -32,6 +32,13 @@ export async function collectBeneficiaryPages<T>(
 export async function loadBeneficiaries(ownerUid: string | null = null, options:{forceFresh?:boolean}={}): Promise<{lists:BeneficiaryList[]; people:Beneficiary[]}> {
   if (!ownerUid) return loadGuestBeneficiaries(options);
   const db=client();
+  const verifyAuthOwner=async()=>{
+    const {data,error}=await db.auth.getUser();
+    if(error||data.user?.id!==ownerUid)
+      throw new Error('Account changed while loading saved beneficiaries. Sign in again.');
+  };
+  // An owner UID supplied by a previous render is not authorization.
+  await verifyAuthOwner();
   // PostgREST truncates unpaged SELECT results at the project row limit.
   // Read both collections in stable pages; an omitted saved list must never
   // look like an account with no beneficiaries.
@@ -49,6 +56,12 @@ export async function loadBeneficiaries(ownerUid: string | null = null, options:
       return (result.data??[]) as Beneficiary[];
     }),
   ]);
+  await verifyAuthOwner();
+  const ownedLists=new Set(lists.map(list=>list.id));
+  if(ownedLists.size!==lists.length||new Set(people.map(person=>person.id)).size!==people.length||
+     lists.some(list=>list.owner_uid!==ownerUid)||
+     people.some(person=>person.owner_uid!==ownerUid||!ownedLists.has(person.list_id)))
+    throw Error('Saved beneficiary records changed or could not be verified. Refresh and retry.');
   return {lists,people};
 }
 /** Explicit, idempotent recovery from this browser's guest capability into the signed-in profile.
