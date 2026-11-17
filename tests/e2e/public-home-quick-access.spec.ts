@@ -1061,10 +1061,22 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
     await expect(draft.getByRole('button', {name:'Copy TIN'})).toHaveCount(0);
     await expect(draft.getByRole('button', {name:'Reveal TIN'})).toHaveCount(1);
     const sections = draft.locator('.parallel-taxpayer-draft__panel');
-    if (width === 1280) {
+    const bodyBox = await draft.locator('.taxpay-modal__body').boundingBox();
+    const rightBox = await sections.nth(1).boundingBox();
+    expect(bodyBox).not.toBeNull();
+    expect(rightBox).not.toBeNull();
+    if (bodyBox && rightBox && width === 1280) {
       expect(await sections.nth(1).evaluate(node => getComputedStyle(node).borderLeftWidth)).toBe('1px');
-    } else {
+      // Unbroken center divider reaches both the header and footer boundaries;
+      // introductory text and simulation disclosure stay within the left pane.
+      expect(Math.abs(rightBox.y - bodyBox.y)).toBeLessThanOrEqual(2);
+      expect(Math.abs(rightBox.y + rightBox.height - bodyBox.y - bodyBox.height)).toBeLessThanOrEqual(2);
+      await expect(sections.first().locator('.parallel-taxpayer-draft__intro')).toBeVisible();
+      await expect(sections.first().locator('.parallel-taxpayer-draft__disclaimer')).toBeVisible();
+    } else if (bodyBox && rightBox) {
       expect(await sections.nth(1).evaluate(node => getComputedStyle(node).borderTopWidth)).toBe('1px');
+      expect(Math.abs(rightBox.x - bodyBox.x)).toBeLessThanOrEqual(2);
+      expect(Math.abs(rightBox.width - bodyBox.width)).toBeLessThanOrEqual(2);
     }
     await searchFor('111111111111');
     await expect(draft.getByTestId('parallel-add-taxpayer')).toBeDisabled();
