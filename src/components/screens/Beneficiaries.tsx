@@ -1,7 +1,7 @@
 import '../../styles/taxpay-unified-table.css';
 import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
+import {createBeneficiaryAutoRefreshGate,beneficiaryWorkspaceOwnerScope} from '../../services/beneficiaryAutoRefresh';
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
 import {recordAccountActivity} from '../../services/accountActivity';
 import {activePreviewSession,savePreviewSetting} from '../../services/previewAccountSession';
@@ -29,6 +29,21 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
+  const {previewAccount}=useTaxState();
+  const {user,loading}=useAccountIdentity();
+  const session=activePreviewSession();
+  const ownerScope=beneficiaryWorkspaceOwnerScope({
+    authLoading:loading,
+    authUid:user?.id??null,
+    previewId:previewAccount?.id??null,
+    previewSessionId:session?.profileId===previewAccount?.id?session.paymentSessionId:null,
+  });
+  // React replaces the old workspace before its effects can clear private
+  // lists. A->B->A, sign-out and preview re-login cannot reuse stale rows.
+  return <BeneficiariesForOwner key={ownerScope}/>;
+}
+
+function BeneficiariesForOwner(){
   const {language,previewAccount,routeParams,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,
     pendingBeneficiarySave,clearPendingBeneficiarySave}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
