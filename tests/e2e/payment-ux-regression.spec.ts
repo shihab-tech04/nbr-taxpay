@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { enterTaxPayService } from './pay-tax-entry-helper';
 
 async function beginGuestPayment(page: Page, service: string) {
   await page.goto('/');
@@ -187,4 +188,38 @@ test('desktop Pay Tax steps size to content and align AY with amount without an 
   expect(year!.x + year!.width).toBeLessThanOrEqual(amount!.x + 2);
   expect(await outer.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
   await expect(dialog.getByRole('button', { name: 'Continue to payment channel' })).toBeVisible();
+});
+
+test('desktop Other Tax taxpayer details stay scrollable above the fixed footer', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Desktop scrolling regression');
+  // Same 1225 x 777 desktop height as the reported clipped taxpayer modal.
+  await page.setViewportSize({ width: 1225, height: 777 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
+
+  const body = dialog.locator('.taxpay-modal__body');
+  const footer = dialog.locator('.taxpay-modal__footer');
+  await expect(body).toHaveCSS('overflow-y', 'auto');
+  await expect(dialog.locator('#guest-payer-name')).toBeVisible();
+  await expect(dialog.getByTestId('other-tax-primary-taxpayer')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Continue to purpose & amount' })).toBeVisible();
+  expect(await body.evaluate(el => el.scrollHeight - el.clientHeight)).toBeGreaterThan(50);
+
+  const viewport = await body.boundingBox();
+  const footerBefore = await footer.boundingBox();
+  expect(viewport).not.toBeNull();
+  expect(footerBefore).not.toBeNull();
+  await page.mouse.move(viewport!.x + 90, viewport!.y + Math.min(180, viewport!.height / 2));
+  await page.mouse.wheel(0, 500);
+  await expect.poll(() => body.evaluate(el => el.scrollTop)).toBeGreaterThan(40);
+
+  // The whole form moves, but action footer stays pinned and never overlays
+  // the remaining taxpayer controls.
+  const footerAfter = await footer.boundingBox();
+  expect(footerAfter).not.toBeNull();
+  expect(Math.abs(footerAfter!.y - footerBefore!.y)).toBeLessThanOrEqual(2);
+  expect(await body.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
+  await expect(dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: /^Search(?: TIN)?$/ })).toBeVisible();
 });
