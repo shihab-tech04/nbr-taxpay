@@ -20,6 +20,7 @@ export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
 type ReviewNotice = {
   id: string;
+  recipient_uid: string;
   request_id: string | null;
   event_id?: string | null;
   correction_inquiry_id?: string | null;
@@ -30,8 +31,8 @@ type ReviewNotice = {
   created_at: string;
 };
 
-const reviewNoticeSelect = 'id,request_id,event_id,message_code,is_read,created_at,correction_inquiry_id,correction_decision_id';
-const legacyReviewNoticeSelect = 'id,request_id,event_id,message_code,is_read,created_at';
+const reviewNoticeSelect = 'id,recipient_uid,request_id,event_id,message_code,is_read,created_at,correction_inquiry_id,correction_decision_id';
+const legacyReviewNoticeSelect = 'id,recipient_uid,request_id,event_id,message_code,is_read,created_at';
 
 function missingCorrectionNoticeColumns(error: { code?: string; message?: string } | null): boolean {
   return Boolean(error && (
@@ -55,7 +56,7 @@ async function readReviewNotices(client: NonNullable<typeof supabase>, uid: stri
     }
     if(result.error)throw result.error;
     const rows=(result.data??[]) as unknown as ReviewNotice[];
-    if(rows.some(item=>typeof item.message_code!=='string'||typeof item.is_read!=='boolean'||
+    if(rows.some(item=>item.recipient_uid!==uid||typeof item.message_code!=='string'||typeof item.is_read!=='boolean'||
       !Number.isFinite(Date.parse(item.created_at))))
       throw Error('Account notification data could not be verified.');
     return rows;
@@ -286,44 +287,58 @@ export function AccountCenter({ page }: { page: AccountPage }) {
 
   const markViewed = async () => {
     if (!user || !supabase || loadState !== 'ready' || noticeSnapshot?.ownerUid !== user.id) return;
-    const requestUid = user.id;
-    setBusy(true); setFeedback(null);
-    try {
-      const { data: current, error: identityError } = await supabase.auth.getUser();
-      if (identityError || current.user?.id !== user.id) throw new Error('Session changed');
-      const confirmedReadAt = new Date().toISOString();
-      const { data: updatedAccount, error } = await supabase.auth.updateUser({ data: {
-        taxpay_notifications_read_at: confirmedReadAt
+    const requestUid=user.id;
+    setBusy(true);setFeedback(null);
+    const checkCurrent=async()=>{
+      const {data,error}=await supabase.auth.getUser();
+      if(error||data.user?.id!==requestUid||!isCurrentUid(requestUid))
+        throw Error('Account session changed');
+    };
+    try{
+      await checkCurrent();
+      // Mark the latest owner-owned server snapshot, not only the previous
+      // 50-row UI cache, so old notices cannot remain silently unread.
+      const currentNotices=await readReviewNotices(supabase,requestUid);
+      await checkCurrent();
+      const unread=currentNotices.filter(item=>!item.is_read).map(item=>item.id);
+      for(let offset=0;offset<unread.length;offset+=100){
+        await checkCurrent();
+        const ids=unread.slice(offset,offset+100);
+        const {data:updated,error:reviewError}=await supabase.from('taxpay_in_app_notifications')
+          .update({is_read:true}).eq('recipient_uid',requestUid).in('id',ids)
+          .select('id,is_read');
+        if(reviewError)throw reviewError;
+        await checkCurrent();
+        assertAccountNotificationReadRows(ids,updated);
+        const {data:persisted,error:readError}=await supabase.from('taxpay_in_app_notifications')
+          .select('id,is_read').eq('recipient_uid',requestUid).in('id',ids);
+        if(readError)throw readError;
+        await checkCurrent();
+        assertAccountNotificationReadRows(ids,persisted);
+      }
+      // Only publish the account-wide viewed timestamp after *all* SQL review
+      // read flags have been confirmed. Failure remains retryable.
+      await checkCurrent();
+      const confirmedReadAt=new Date().toISOString();
+      const {data:updatedAccount,error}=await supabase.auth.updateUser({data:{
+        taxpay_notifications_read_at:confirmedReadAt
       }});
-      if (error || updatedAccount.user?.id !== requestUid ||
-          updatedAccount.user?.user_metadata?.taxpay_notifications_read_at !== confirmedReadAt)
-        throw new Error('Notification viewing state was not confirmed.');
-      if (!isCurrentUid(requestUid)) return;
-      const {data: session, error: sessionError} = await supabase.auth.getUser();
-      if (sessionError || session.user?.id !== requestUid || !isCurrentUid(requestUid))
-        throw new Error('Account session changed');
-      const unread = reviewNotices.filter(n=>!n.is_read).map(n=>n.id);
-      if (unread.length) {
-        const { data: updated, error: reviewError } = await supabase.from('taxpay_in_app_notifications')
-          .update({is_read:true}).eq('recipient_uid', requestUid).in('id',unread).select('id,is_read');
-        if (!isCurrentUid(requestUid)) return;
-        if (reviewError) throw reviewError;
-        assertAccountNotificationReadRows(unread,updated);
-        // Confirm durable state with a separate account-scoped SQL read.
-        const {data: persisted,error:readError} = await supabase.from('taxpay_in_app_notifications')
-          .select('id,is_read').eq('recipient_uid',requestUid).in('id',unread);
-        if (!isCurrentUid(requestUid)) return;
-        if (readError) throw readError;
-        assertAccountNotificationReadRows(unread,persisted);
-        setNoticeSnapshot(prev=>prev?.ownerUid===requestUid
-          ?{...prev,reviews:prev.reviews.map(n=>unread.includes(n.id)?{...n,is_read:true}:n)}:prev);
+      if(error||updatedAccount.user?.id!==requestUid||
+         updatedAccount.user?.user_metadata?.taxpay_notifications_read_at!==confirmedReadAt)
+        throw Error('Notification viewing state was not confirmed.');
+      if(!isCurrentUid(requestUid))return;
+      setNoticeSnapshot(previous=>previous?.ownerUid===requestUid
+        ?{...previous,reviews:currentNotices.map(item=>({...item,is_read:true}))}:previous);
+      setFeedback({error:false,content:t.readSaved});
+      setRevision(value=>value+1);
+    }catch{
+      if(isCurrentUid(requestUid)){
+        setFeedback({error:true,content:t.saveFailed});
+        // A partial batch can have succeeded before an error; reload server
+        // truth instead of leaving a misleading cached read/unread state.
+        setRevision(value=>value+1);
       }
-      if (isCurrentUid(requestUid)) {
-        setFeedback({error:false,content:t.readSaved});
-        setRevision(value=>value+1); // Reconcile any in-flight poll with the persisted server state.
-      }
-    } catch { if (isCurrentUid(requestUid)) setFeedback({error:true,content:t.saveFailed}); }
-    finally { if (isCurrentUid(requestUid)) setBusy(false); }
+    }finally{if(isCurrentUid(requestUid))setBusy(false);}
   };
 
   const signOut = async () => {
