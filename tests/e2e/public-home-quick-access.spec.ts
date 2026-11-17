@@ -1048,12 +1048,16 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
     const draft = page.getByRole('dialog', {name:'All Tax Payments — parallel draft'});
     await expect(draft.getByTestId('parallel-taxpayer-empty')).toBeVisible();
     await expect(draft.getByTestId('parallel-taxpayer-continue')).toBeDisabled();
+    await expect(draft.locator('.parallel-taxpayer-draft__disclaimer')).toHaveCount(0);
     const searchFor = async (tin:string) => {
       await draft.locator('#parallel-taxpayer-tin').fill(tin);
       await draft.getByRole('button', {name:'Search taxpayer TIN'}).click();
     };
     await searchFor('111111111111');
     await expect(draft.getByTestId('parallel-taxpayer-search-result')).toContainText('User 1');
+    await expect(draft.getByTestId('parallel-taxpayer-search-result')).toHaveCSS('border-top-style', 'solid');
+    await expect(draft.getByTestId('parallel-taxpayer-search-result')).toHaveCSS('border-left-width', '1px');
+    await expect(draft.getByTestId('parallel-taxpayer-search-result')).toHaveCSS('border-bottom-width', '1px');
     await draft.getByTestId('parallel-add-taxpayer').click();
     await expect(draft.locator('#parallel-taxpayer-tin')).toBeFocused();
     await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(1);
@@ -1067,12 +1071,12 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
     expect(rightBox).not.toBeNull();
     if (bodyBox && rightBox && width === 1280) {
       expect(await sections.nth(1).evaluate(node => getComputedStyle(node).borderLeftWidth)).toBe('1px');
-      // Unbroken center divider reaches both the header and footer boundaries;
-      // introductory text and simulation disclosure stay within the left pane.
+      // Unbroken center divider reaches both modal body edges;
+      // search instructions stay within the left pane without any note.
       expect(Math.abs(rightBox.y - bodyBox.y)).toBeLessThanOrEqual(2);
       expect(Math.abs(rightBox.y + rightBox.height - bodyBox.y - bodyBox.height)).toBeLessThanOrEqual(2);
       await expect(sections.first().locator('.parallel-taxpayer-draft__intro')).toBeVisible();
-      await expect(sections.first().locator('.parallel-taxpayer-draft__disclaimer')).toBeVisible();
+      await expect(sections.first().locator('.parallel-taxpayer-draft__disclaimer')).toHaveCount(0);
     } else if (bodyBox && rightBox) {
       expect(await sections.nth(1).evaluate(node => getComputedStyle(node).borderTopWidth)).toBe('1px');
       expect(Math.abs(rightBox.x - bodyBox.x)).toBeLessThanOrEqual(2);
