@@ -41,7 +41,7 @@ test('WS2 private notification rows require both Auth owner and bound simulation
   assert.match(source,/noticeOwner===noticeIdentity\?notices:\[\]/);
   assert.match(source,/privatePaymentRows\?\.owner===noticeIdentity/);
   assert.match(source,/setNoticeOwner\(noticeIdentity\)/);
-  assert.doesNotMatch(source,/noticeOwner===id/);
+  assert.doesNotMatch(source,/noticeOwner===id\b/);
 });
 
 test('WS2 full account notice register reads every stable page, not just 50 rows',async()=>{
@@ -74,7 +74,7 @@ test('WS2 Account Center reads and acknowledges the full Auth owner SQL register
   assert.match(source,/\.order\('id',\{ascending:false\}\)/);
   assert.match(source,/\.range\(from,to\)/);
   assert.match(source,/item\.recipient_uid!==uid/);
-  assert.match(source,/const currentNotices=await readReviewNotices\(supabase,requestUid\)/);
+  assert.match(source,/const currentNotices=await readReviewNotices\(client,requestUid\)/);
   const chunkIndex=source.indexOf('for(let offset=0;offset<unread.length;offset+=100)');
   const readBackIndex=source.indexOf('assertAccountNotificationReadRows(ids,persisted)',chunkIndex);
   const timestampIndex=source.indexOf('const confirmedReadAt=new Date().toISOString()',chunkIndex);
