@@ -278,6 +278,13 @@ async function installCertificateAccountFixture(
       });
       return;
     }
+    if (url.pathname === '/rest/v1/taxpay_account_activity') {
+      // The correction-route transition records only fixture account navigation.
+      // No live account activity or financial backend is contacted.
+      expect(request.method()).toBe('POST');
+      await route.fulfill({status:201,headers,body:'[]'});
+      return;
+    }
     throw new Error('Unexpected .invalid payment endpoint request: ' + request.method() + ' ' + url.pathname);
   });
   return { enableLedger: () => { ledgerAvailable = true; }, ledgerRequests };
