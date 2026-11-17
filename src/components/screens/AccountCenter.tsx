@@ -303,6 +303,9 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   const markViewed = async () => {
     if (!user || !supabase || loadState !== 'ready' || noticeSnapshot?.ownerUid !== user.id) return;
     const requestUid=user.id;
+    // This timestamp is the observation boundary, not completion time.
+    // Notices created during an unusually slow acknowledgement stay unread.
+    const confirmedReadAt=new Date().toISOString();
     setBusy(true);setFeedback(null);
     const checkCurrent=async()=>{
       const {data,error}=await supabase.auth.getUser();
@@ -315,7 +318,9 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       // 50-row UI cache, so old notices cannot remain silently unread.
       const currentNotices=await readReviewNotices(supabase,requestUid);
       await checkCurrent();
-      const unread=currentNotices.filter(item=>!item.is_read).map(item=>item.id);
+      const unread=currentNotices
+        .filter(item=>!item.is_read&&Date.parse(item.created_at)<=Date.parse(confirmedReadAt))
+        .map(item=>item.id);
       for(let offset=0;offset<unread.length;offset+=100){
         await checkCurrent();
         const ids=unread.slice(offset,offset+100);
@@ -334,7 +339,6 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       // Only publish the account-wide viewed timestamp after *all* SQL review
       // read flags have been confirmed. Failure remains retryable.
       await checkCurrent();
-      const confirmedReadAt=new Date().toISOString();
       const {data:updatedAccount,error}=await supabase.auth.updateUser({data:{
         taxpay_notifications_read_at:confirmedReadAt
       }});
@@ -343,7 +347,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
         throw Error('Notification viewing state was not confirmed.');
       if(!isCurrentUid(requestUid))return;
       setNoticeSnapshot(previous=>previous?.ownerUid===requestUid
-        ?{...previous,reviews:currentNotices.map(item=>({...item,is_read:true}))}:previous);
+        ?{...previous,reviews:currentNotices.map(item=>
+          unread.includes(item.id)?{...item,is_read:true}:item)}:previous);
       setFeedback({error:false,content:t.readSaved});
       setRevision(value=>value+1);
     }catch{
