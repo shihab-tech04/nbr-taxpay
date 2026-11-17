@@ -67,7 +67,7 @@ test('Pay Tax header reserves the Back column without overlapping the title in E
     const translated = language === 'bn';
     const label = translated ? 'কর পরিশোধ' : 'Pay Tax';
     await page.goto(translated ? '/?action=landing&lang=bn' : '/?action=landing');
-    await page.getByRole('button', { name: label, exact: true }).first().click();
+    await openLegacyTaxServiceChoice(page);
     const modal = page.getByRole('dialog', { name: label });
     const header = modal.locator('.taxpay-modal__header');
     const title = header.locator('.taxpay-modal__title');

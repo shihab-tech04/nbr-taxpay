@@ -1,3 +1,4 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { demoLoginOtpCompletedState } from './demo-login-test-state';
 import { randomBytes, randomUUID } from 'node:crypto';
@@ -74,7 +75,7 @@ test('payment form drafts survive another browser, protect owner isolation and r
     // selection, never leave the second card clipped behind the footer.
     const entry = await open(accounts.owner);
     await entry.goto('/?action=landing');
-    await entry.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+    await openLegacyTaxServiceChoice(entry);
     const entryModal = entry.getByRole('dialog', { name: 'Pay Tax' });
     const draftGate = entryModal.getByTestId('account-draft-entry');
     await expect(draftGate.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();

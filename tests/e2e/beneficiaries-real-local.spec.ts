@@ -1,3 +1,4 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
@@ -119,7 +120,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await otherContext.close();
 
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   const modal=page.getByRole('dialog',{name:'Pay Tax'});
   // Real Supabase Auth keeps the payer and service choices, but must not
   // ask an already authenticated taxpayer to sign in or pay as a walk-in.

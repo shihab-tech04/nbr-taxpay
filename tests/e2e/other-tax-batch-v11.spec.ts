@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
-import { enterTaxPayService, ensureNewPaymentEntry } from './pay-tax-entry-helper';
+import { enterTaxPayService, ensureNewPaymentEntry, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { recordWs1BrowserOrigin } from './ws1-browser-origin-evidence';
 
 const getFlow = async (page: import('@playwright/test').Page) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   return dialog;
@@ -60,7 +60,7 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
       await expect(page.getByRole('button',{name:'Switch to English'})).toBeVisible();
     }
   }
-  await page.getByRole('button',{name:language==='bn'?'কর পরিশোধ':'Pay Tax',exact:true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog=page.getByRole('dialog',{name:language==='bn'?'কর পরিশোধ':'Pay Tax'});
   if(language==='en') await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT',relationship);
   else {
@@ -597,7 +597,7 @@ test('long ৳ amounts and taxpayer descriptions stay inside the calculation pan
 test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit the legacy income-type UI', async ({ page }) => {
   for (const relationship of ['SELF', 'OTHER'] as const) {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+    await openLegacyTaxServiceChoice(page);
     const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
     await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', relationship);
     await dialog.locator('#guest-tin').fill('111111111111');
@@ -633,7 +633,7 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
     } });
   });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
   await dialog.locator('#guest-tin').fill('111111111111');
@@ -711,7 +711,7 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
   await login.getByRole('button', { name: 'Sign In' }).click();
   await expect(login).toHaveCount(0);
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
   const account = dialog.locator('#signed-in-account-taxpayer-card');
@@ -766,7 +766,7 @@ test('signed-in OTHER Tax uses only saved beneficiaries and never exposes manual
   await login.getByRole('button', { name: 'Sign In' }).click();
   await expect(login).toHaveCount(0);
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   const picker=dialog.getByTestId('saved-beneficiary-picker');
@@ -820,7 +820,7 @@ test('own-tax payment hides redundant taxpayer picker and keeps bulk actions bes
   await login.getByLabel('Password', { exact: true }).fill('user1');
   await login.getByRole('button', { name: 'Sign In' }).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();

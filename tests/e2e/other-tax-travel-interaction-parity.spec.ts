@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 for (const locale of ['en', 'bn'] as const) {
   test(`Other Tax keeps search → inline name review → add → another sequence (${locale})`, async ({page}) => {
     await page.emulateMedia({reducedMotion: 'reduce'});
     await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
-    await page.getByRole('button', {name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true}).first().click();
+    await openLegacyTaxServiceChoice(page);
     const modal = page.getByRole('dialog', {name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax'});
     await modal.locator('[data-payer-relationship="OTHER"]').click();
     await modal.locator('[data-payment-entry="OTHER_TAX"]').click();
@@ -104,7 +104,7 @@ for (const locale of ['en', 'bn'] as const) {
 // beneath the field in a scrollable overlay without growing the modal.
 test('Other Tax TIN suggestions open below and remain reachable near the fixed footer', async ({page}) => {
   await page.goto('/?action=landing');
-  await page.getByRole('button', {name: 'Pay Tax', exact: true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   const modal = page.getByRole('dialog', {name: 'Pay Tax'});
   await enterTaxPayService(modal, 'OTHER_TAX_PAYMENT', 'OTHER');
   const first = modal.getByTestId('other-tax-primary-taxpayer');
