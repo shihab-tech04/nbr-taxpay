@@ -32,14 +32,22 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(dialog.locator('#guest-payment-remarks')).toHaveCount(0);
 
     const batch = dialog.getByTestId('other-tax-batch');
-    await batch.locator('[data-head-group="Advance Tax"] summary').click();
-    await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+    const advanceTaxGroup = batch.locator('[data-head-group="Advance Tax"]');
+    const select68A = batch.getByRole('checkbox', { name: /Select 68A/ });
+    const ensureAdvanceTaxOpen = async () => {
+      if (await advanceTaxGroup.getAttribute('open') === null) {
+        await advanceTaxGroup.locator('summary').click();
+      }
+      await expect(select68A).toBeVisible();
+    };
+    await ensureAdvanceTaxOpen();
+    await select68A.check();
     await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('3500');
     const taxpayerTabs = batch.getByTestId('other-tax-taxpayer-tabs').locator('button[data-taxpayer-id]');
     await expect(taxpayerTabs).toHaveCount(2);
     await taxpayerTabs.nth(1).click();
-    await batch.locator('[data-head-group="Advance Tax"] summary').click();
-    await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+    await ensureAdvanceTaxOpen();
+    await select68A.check();
     await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('3500');
 
     const calculation = dialog.getByTestId('grouped-taxpayer-calculation');
