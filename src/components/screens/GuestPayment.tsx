@@ -1195,7 +1195,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   };
 
   const validateFinalPayerDetails = (): boolean => {
-    if (!/^01\\d{9}$/.test(receiptPhone)) {
+    if (!/^01\d{9}$/.test(receiptPhone)) {
       setValidationError(language === 'bn'
         ? 'রসিদের জন্য ১১ সংখ্যার মোবাইল নম্বর দিন।'
         : 'Enter an 11-digit Bangladeshi mobile number for the receipt.', 'phone');
@@ -1211,14 +1211,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return false;
     }
     if (otherBatch && forSelf === false && !signedInAccount && walkInPayerTin &&
-        (!/^\\d{12}$/.test(walkInPayerTin) || !confirmedWalkInPayer)) {
+        (!/^\d{12}$/.test(walkInPayerTin) || !confirmedWalkInPayer)) {
       setValidationError(language === 'bn'
         ? 'পরিশোধকারীর টিআইএন খুঁজে নিশ্চিত করুন, অথবা খালি রাখুন।'
         : 'Search and confirm the payer TIN, or leave it blank.', 'payerTin');
       return false;
     }
     const ref = noticeReference.trim();
-    if (ref && /^\\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection) {
+    if (ref && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection) {
       const matched = findV11GuestNotice(taxpayerTin, ref);
       if (!matched || matched.category !== category) {
         setValidationError(language === 'bn'
