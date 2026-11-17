@@ -1057,6 +1057,15 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
     await draft.getByTestId('parallel-add-taxpayer').click();
     await expect(draft.locator('#parallel-taxpayer-tin')).toBeFocused();
     await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(1);
+    // Parallel list is intentionally reveal-only; no Copy action exists.
+    await expect(draft.getByRole('button', {name:'Copy TIN'})).toHaveCount(0);
+    await expect(draft.getByRole('button', {name:'Reveal TIN'})).toHaveCount(1);
+    const sections = draft.locator('.parallel-taxpayer-draft__panel');
+    if (width === 1280) {
+      expect(await sections.nth(1).evaluate(node => getComputedStyle(node).borderLeftWidth)).toBe('1px');
+    } else {
+      expect(await sections.nth(1).evaluate(node => getComputedStyle(node).borderTopWidth)).toBe('1px');
+    }
     await searchFor('111111111111');
     await expect(draft.getByTestId('parallel-add-taxpayer')).toBeDisabled();
     await searchFor('222222222222');
