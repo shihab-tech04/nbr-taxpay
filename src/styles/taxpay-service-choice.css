@@ -2485,3 +2485,59 @@
   .payment-flow-embedded .payment-review { grid-template-columns: minmax(0, 1fr); }
   .payment-flow-embedded .payment-review__aside { min-width: 0; }
 }
+
+/* Unified All Tax Payments entry reuses the exact account form and modal shell.
+   The walk-in route remains equally prominent and requires no credentials. */
+.taxpay-unified-entry__actions {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  width: 100%;
+}
+.taxpay-unified-entry__actions .taxpayer-login-actions,
+.taxpay-unified-entry__actions .tax-service-choice__continue {
+  width: 100%;
+}
+.taxpay-unified-entry__actions .tax-service-choice__continue {
+  justify-content: center;
+  min-height: 44px;
+}
+.taxpay-unified-entry__divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--citizen-muted);
+  font-size: .875rem;
+}
+.taxpay-unified-entry__divider span {
+  height: 1px;
+  flex: 1;
+  background: var(--citizen-border, #e1e6ee);
+}
+.taxpay-unified-entry__walkin {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  min-height: 44px;
+  padding: .7rem 1rem;
+  color: var(--citizen-primary-dark);
+  background: #fff;
+  border: 1px solid var(--citizen-primary-dark);
+  border-radius: 10px;
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.taxpay-unified-entry__walkin:hover { background: var(--citizen-primary-light); }
+.taxpay-unified-entry__walkin:focus-visible {
+  outline: 2px solid var(--citizen-primary-dark);
+  outline-offset: 2px;
+}
+.taxpay-unified-entry__signed-in {
+  padding: 1rem;
+  color: var(--citizen-text);
+  font-size: .875rem;
+}
