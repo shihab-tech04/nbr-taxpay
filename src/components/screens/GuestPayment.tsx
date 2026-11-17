@@ -1725,7 +1725,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   {language === 'bn' ? 'বর্তমান নমুনা টিআইএন তালিকায় মিলেছে। অ্যাকাউন্টের মালিকানা যাচাই করা হয়নি।' : 'Matched the current sample TIN lookup. Account ownership is not verified.'}
                 </p>}
               </div>}
-            </div>
             {ownAccountTax && !isWithholdingMode && receiptEmailControl}
   </>);
 
@@ -2037,7 +2036,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
 
               </>}
               {!unifiedFlow && payerReceiptFields}
-
+            </div>
             </PaymentFormSection>}
             {otherBatch && !ownAccountTax && !signedInAccount && !simpleOwnOtherTax && <PaymentFormSection number={3} staticView={embedded}
               title={language === 'bn' ? 'করদাতারা' : 'Taxpayers'}>
