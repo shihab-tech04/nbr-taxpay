@@ -29,3 +29,32 @@ export function createAccountNotificationRefreshGate(){
     invalidate:()=>{generation++;},
   };
 }
+
+/** Fetch the whole owner-filtered notification register, without the silent
+ * PostgREST first-page limit. Concurrent inserts that duplicate an offset
+ * page fail closed; the user can retry rather than trust incomplete history.
+ */
+export async function collectAccountNotificationPages<T extends {id:string}>(
+  readPage:(from:number,to:number)=>Promise<T[]>,
+  pageSize=100,maxPages=50,
+):Promise<T[]>{
+  if(!Number.isSafeInteger(pageSize)||pageSize<1||pageSize>100||
+     !Number.isSafeInteger(maxPages)||maxPages<1||maxPages>50)
+    throw Error('Invalid account notification pagination.');
+  const all:T[]=[];
+  const seen=new Set<string>();
+  for(let page=0;page<maxPages;page++){
+    const offset=page*pageSize;
+    const rows=await readPage(offset,offset+pageSize-1);
+    if(!Array.isArray(rows)||rows.length>pageSize)
+      throw Error('Invalid account notification page.');
+    for(const row of rows){
+      if(!row||typeof row.id!=='string'||!row.id||seen.has(row.id))
+        throw Error('Account notifications changed while loading. Retry.');
+      seen.add(row.id);
+      all.push(row);
+    }
+    if(rows.length<pageSize)return all;
+  }
+  throw Error('Account notifications exceed the safe retrieval limit. Retry.');
+}
