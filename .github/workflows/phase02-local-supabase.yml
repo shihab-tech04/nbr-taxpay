@@ -472,9 +472,9 @@ jobs:
           # B-owned paired SQL step: resolve the current Office #270 branch
           # once, record its immutable SHA and test that exact detached tree.
           # A historical hardcoded head can fail before any SQL test runs.
-          git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
+          git clone --depth 1 --branch main \
             https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
-          OFFICE_SHA="d04de641f0dbca6138e02cb41c2e89d78449b8b3"
+          OFFICE_SHA="$(git -C "$OFFICE_DIR" rev-parse HEAD)"
           git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
