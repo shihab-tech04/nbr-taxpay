@@ -2,9 +2,6 @@ import type { ChallanReceipt } from '../types/tax';
 import { MAX_COMBINED_ALLOCATIONS } from './otherTaxCombinedPayment';
 import {activePreviewSession} from './previewAccountSession';
 import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
-import type {DemoUserId} from '../data/demoUsers';
-import {sampleUserNumberForTin} from '../data/sampleTinSuggestions';
-import {userIdForHostedTin} from './hostedDemoAuthorizations';
 /** Synthetic-only persistence; browser session ID is not an authenticated account. */
 export type StoryPaymentInput = {
   idempotencyKey: string;
@@ -67,7 +64,6 @@ export function bindPreviewStoryPayer(
     throw new Error('Simulation payment details are incomplete.');
   const thirdParty=details.payerMode==='OTHER';
   const tin=typeof details.taxpayerTin==='string'?details.taxpayerTin.trim():'';
-  const number=sampleUserNumberForTin(tin);
   // The server independently validates this exact TIN against the payer's
   // capability-scoped saved list. A saved beneficiary payment is not an
   // authorization to read the beneficiary's private tax records.
@@ -105,17 +101,34 @@ export function bindPreviewStoryPayer(
       throw new Error('COMBINED_TOTAL_MISMATCH');
     return {...input,details};
   }
+  // Keep the exact saved beneficiary's TIN. Mapping the TIN to an unrelated
+  // fictional profile can violate the original SQL ownership contract.
   const selected=thirdParty
-    ? userIdForHostedTin(tin)||(number?`user${number}` as DemoUserId:null)||
-      (/^\d{12,13}$/.test(tin)?`SAVED_TIN:${tin}`:null)
+    ? (/^\d{12,13}$/.test(tin)?`SAVED_TIN:${tin}`:null)
     : preview.profileId;
   if(!selected)throw new Error('Choose a saved demo beneficiary for this simulation.');
+  // M04 is an exclusive one-head Return transaction. The UI holds accounting
+  // items, while the legacy profile transport needs a beneficiary allocation.
+  // Keep BOTH identities and exactly the original head/amount; never turn a
+  // valid Return into an untyped allocation or a combined Other Tax payment.
+  const isExclusiveReturn=input.service==='TAX_WITH_RETURN';
+  if(isExclusiveReturn){
+    const sourceItems=details.lines as Array<Record<string,unknown>>;
+    const receiptItems=(details.receiptSnapshot as {items?:Array<Record<string,unknown>>}).items;
+    if(sourceItems.length!==1 || sourceItems[0]?.headId!==125 ||
+      Math.round(Number(sourceItems[0]?.totalAmount)*100)!==input.amountMinor ||
+      !Array.isArray(receiptItems) || receiptItems.length!==1 ||
+      receiptItems[0]?.headId!==125 ||
+      Math.round(Number(receiptItems[0]?.totalAmount)*100)!==input.amountMinor)
+      throw new Error('RETURN_EXCLUSIVE_SINGLE_HEAD_RECIPIENT');
+  }
   return {...input,details:{
     ...details,
     receiptLines:details.lines,
     lines:[{
       beneficiary:selected,
       category:input.service,
+      ...(isExclusiveReturn?{headId:125,totalAmount:input.amountMinor/100}:{}),
       assessmentYear:typeof details.assessmentYear==='string'?details.assessmentYear:'2026-27',
       amountMinor:input.amountMinor
     }]
@@ -130,17 +143,25 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
     body: JSON.stringify({ ...scoped, origin: import.meta.env?.VITE_SUPABASE_DISABLED === 'true' ? 'QA_BROWSER' : 'TAXPAY_UI' }),
   });
   const body = await response.json() as Partial<StoryPaymentAcknowledgement> & {
-    error?: string; requestId?: string; retryable?: boolean;
+    error?: string; requestId?: string; retryable?: boolean; officeSyncStatus?: string;
   };
+  // V2 can persist simulations without dispatching to the separate Office.
+  // Require an exact, capability-scoped SQL readback before acknowledging it.
+  const storedWithoutOffice = response.ok && body.success === true &&
+    body.mirrored === false && body.simulationOnly === true &&
+    body.status === 'SIMULATED_SUCCESS' && body.officeSyncStatus === 'DISABLED' &&
+    typeof body.id === 'string' && /^[0-9a-f-]{36}$/i.test(body.id);
   let acknowledged: StoryPaymentAcknowledgement;
   if (response.ok && body.success === true && body.mirrored === true && body.id && body.status === 'SIMULATED_SUCCESS' && body.simulationOnly === true) {
     acknowledged = body as StoryPaymentAcknowledgement;
-  } else if (response.status === 503 && body.error === 'OFFICE_SYNC_PENDING' && body.retryable === true &&
-             typeof body.requestId === 'string' && /^[0-9a-f-]{36}$/i.test(body.requestId)) {
+  } else if (storedWithoutOffice ||
+             (response.status === 503 && body.error === 'OFFICE_SYNC_PENDING' && body.retryable === true &&
+              typeof body.requestId === 'string' && /^[0-9a-f-]{36}$/i.test(body.requestId))) {
+    const paymentId = storedWithoutOffice ? body.id! : body.requestId!;
     // Office mirror failure is NOT a payment-gateway decline. Before showing a
     // saved simulation, independently read back the exact idempotent source SQL
     // row using this session's existing capability/ownership boundary.
-    const readback = await fetch(API + '/payments/' + encodeURIComponent(body.requestId) +
+    const readback = await fetch(API + '/payments/' + encodeURIComponent(paymentId) +
       '?sessionId=' + encodeURIComponent(input.sessionId), {
         headers: storyApiHeaders(input.sessionId), cache: 'no-store',
       });
@@ -148,13 +169,13 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
     const stored = await readback.json() as {success?:boolean;simulationOnly?:boolean;
       data?:{id?:string;status?:string;data?:Partial<StoryPaymentInput>}};
     if (stored.success !== true || stored.simulationOnly !== true ||
-        stored.data?.id !== body.requestId || stored.data.status !== 'SIMULATED_SUCCESS' ||
+        stored.data?.id !== paymentId || stored.data.status !== 'SIMULATED_SUCCESS' ||
         stored.data.data?.idempotencyKey !== scoped.idempotencyKey ||
         stored.data.data?.sessionId !== scoped.sessionId ||
         stored.data.data?.amountMinor !== scoped.amountMinor ||
         stored.data.data?.service !== scoped.service)
       throw new Error('SIMULATION_READBACK_MISMATCH');
-    acknowledged = {success:true,id:body.requestId,status:'SIMULATED_SUCCESS',
+    acknowledged = {success:true,id:paymentId,status:'SIMULATED_SUCCESS',
       mirrored:false,simulationOnly:true};
   } else {
     throw new Error(body.error || 'SIMULATION_SUBMISSION_PENDING');
@@ -261,7 +282,109 @@ export async function findSessionReceiptByReference(reference: string, mobile: s
     const knownReferences = [receipt.challanNo, receipt.tokenNumber, receipt.gatewayTransactionId,
       receipt.paymentTransactionId, record.id];
     if (!knownReferences.some(value => typeof value === 'string' && value.toUpperCase() === wanted)) continue;
+    // A display snapshot is not payment evidence. Check the stored SQL parent
+    // amount and payment category before returning any matched reference.
+    // Never create or modify payments, settlements or certificates in lookup.
+    if (!Number.isSafeInteger(record.amountMinor) || record.amountMinor <= 0 ||
+        receipt.paymentCategory !== record.service ||
+        !Number.isFinite(receipt.totalAmount) ||
+        Math.round(receipt.totalAmount * 100) !== record.amountMinor) {
+      throw new Error('SESSION_LOOKUP_INTEGRITY');
+    }
     return { ...receipt, paymentTransactionId: record.id } as ChallanReceipt;
   }
   return null;
+}
+
+
+/** F-129 / US-050: recover an immutable, original Taxpayer SQL simulation
+ * only through an already issued, unexpired profile possession capability.
+ * The B-owned Edge route verifies the capability, existing owner/session link,
+ * source provenance and exact reference. This path does NOT grant public
+ * reference+phone access and does not create an issuer-backed challan.
+ *
+ * If the new Edge route has not yet been deployed, return checked:false and
+ * let the existing same-session/mobile path continue unchanged.
+ */
+export async function findProfileReceiptByReference(
+ reference:string, mobile:string
+):Promise<{checked:boolean;receipt:ChallanReceipt|null}> {
+  const profile=activePreviewSession();
+  if(!profile)return {checked:false,receipt:null};
+  const wanted=reference.trim().toUpperCase();
+  const cleanMobile=mobile.replace(/\D/g,'');
+  if(!wanted||wanted.length>200)return {checked:true,receipt:null};
+  if(cleanMobile && !/^01\d{9}$/.test(cleanMobile))
+    return {checked:true,receipt:null};
+  const params=new URLSearchParams({reference:wanted});
+  if(cleanMobile)params.set('receiptMobile',cleanMobile);
+  const response=await fetch(API+'/payments/reference?'+params.toString(),{
+    headers:storyApiHeaders(profile.paymentSessionId),cache:'no-store'
+  });
+  const body=await response.json().catch(()=>null) as {
+    success?:boolean;simulationOnly?:boolean;error?:string;data?:unknown
+  }|null;
+  if(response.status===404){
+    // Old Edge versions ALSO send 404 NOT_FOUND for unknown routes, so the
+    // error string alone cannot distinguish an absent handler from a proven
+    // owner-scoped no-match. Probe an invalid reference: only the new handler
+    // responds with INVALID_REFERENCE (400) after capability verification.
+    if(body?.error!=='NOT_FOUND')return {checked:false,receipt:null};
+    const probe=await fetch(API+'/payments/reference?reference=',{
+      headers:storyApiHeaders(profile.paymentSessionId),cache:'no-store'
+    });
+    const probeBody=await probe.json().catch(()=>null) as {error?:string}|null;
+    if(activePreviewSession()?.capability!==profile.capability)
+      throw new Error('Preview profile changed during receipt lookup');
+    if(probe.status===404&&probeBody?.error==='NOT_FOUND')
+      return {checked:false,receipt:null}; // Old backend: retain safe legacy path.
+    if(probe.status===400&&probeBody?.error==='INVALID_REFERENCE')
+      return {checked:true,receipt:null}; // New backend: real scoped negative.
+    throw new Error('Authorized receipt lookup is unavailable');
+  }
+  if(!response.ok||body?.success!==true||body.simulationOnly!==true)
+    throw new Error('Authorized receipt lookup is unavailable');
+  const row=body.data;
+  if(!row||typeof row!=='object'||Array.isArray(row))
+    throw new Error('Invalid original receipt response');
+  const source=row as Record<string,unknown>;
+  const details=source.details;
+  if(typeof source.id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(source.id)||
+    source.status!=='SIMULATED_SUCCESS'||typeof source.service!=='string'||
+    !Number.isSafeInteger(source.amountMinor)||Number(source.amountMinor)<=0||
+    !details||typeof details!=='object'||Array.isArray(details))
+    throw new Error('Invalid original receipt response');
+  const stored=details as Record<string,unknown>;
+  // The source must name the exact active preview payer. A matching receipt
+  // reference or mobile alone is not an ownership assertion.
+  if(stored.payerId!==profile.profileId)
+    throw new Error('Original receipt ownership mismatch');
+  const raw=stored.receiptSnapshot;
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))
+    throw new Error('Original source has no saved receipt document');
+  const snapshot=raw as Record<string,unknown>;
+  if(snapshot.isSimulatedDemo!==true||
+    typeof snapshot.challanNo!=='string'||typeof snapshot.tokenNumber!=='string'||
+    typeof snapshot.gatewayTransactionId!=='string'||
+    typeof snapshot.totalAmount!=='number'||!Number.isFinite(snapshot.totalAmount)||
+    !Array.isArray(snapshot.items)||snapshot.items.length<1||
+    Math.round(snapshot.totalAmount*100)!==source.amountMinor||
+    snapshot.paymentCategory!==source.service)
+    throw new Error('Original receipt and payment mismatch');
+  if(cleanMobile && snapshot.receiptMobile!==cleanMobile)
+    throw new Error('Original receipt mobile mismatch');
+  const references=[source.id,'SK-PC-'+source.id,stored.receiptReference,
+    stored.tokenNumber,stored.gatewayTransactionId,snapshot.challanNo,
+    snapshot.tokenNumber,snapshot.gatewayTransactionId,snapshot.paymentTransactionId];
+  if(!references.some(value=>typeof value==='string'&&value.trim().toUpperCase()===wanted))
+    throw new Error('Original receipt reference mismatch');
+  const latest=activePreviewSession();
+  if(!latest||latest.capability!==profile.capability||
+    latest.profileId!==profile.profileId||
+    latest.paymentSessionId!==profile.paymentSessionId)
+    throw new Error('Preview profile changed during receipt lookup');
+  return {checked:true,receipt:{
+    ...(snapshot as unknown as ChallanReceipt),
+    paymentTransactionId:source.id
+  }};
 }

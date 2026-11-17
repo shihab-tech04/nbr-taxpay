@@ -47,15 +47,16 @@ test('mobile transaction details use a contained sheet with a visible close cont
   await expect(dialog).toHaveCount(0);
 });
 
-test('mobile bento source controls remain visible without clipped focus targets',async({page},info)=>{
+test('mobile account-only overview remains contained without fictional source controls',async({page},info)=>{
   test.skip(info.project.name==='desktop-1280','Mobile chart geometry');
   await enterUser1(page);
   const chart=page.getByTestId('dashboard-payment-analytics');
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
-  const source=chart.getByTestId('dashboard-chart-source');
-  await source.getByRole('button',{name:'Examples'}).click();
-  await expect(source.getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
-  const bounds=await source.boundingBox();
+  await expect(chart).toBeVisible();
+  await expect(chart).toHaveAttribute('data-chart-source','recorded');
+  await expect(chart.getByTestId('dashboard-chart-source')).toHaveCount(0);
+  await expect(chart).not.toContainText('113,500');
+  const bounds=await chart.boundingBox();
   expect(bounds).not.toBeNull();
   expect(bounds!.x).toBeGreaterThanOrEqual(0);
   expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);
@@ -161,7 +162,9 @@ test('mobile bento retains separate travel tax and opens its approved payment mo
   test.skip(info.project.name==='desktop-1280','Mobile travel-tax shortcut');
   await enterUser1(page);
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
-  await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toBeVisible();
+  // The account-only overview uses a compact state without inventing a chart.
+  await expect(page.getByTestId('dashboard-payment-analytics')).toBeVisible();
+  await expect(page.getByTestId('dashboard-chart-source')).toHaveCount(0);
   await openTaxpayerTravelTax(page);
   const dialog=page.getByRole('dialog');
   await expect(dialog).toBeVisible();

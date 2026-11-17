@@ -1,4 +1,4 @@
-/* Korbritto Unified Data Table, v2.
+/* Sohojkor Unified Record Table, v3.
  * Board Meeting Solution reference: toolbar → filters/tabs → compact header →
  * striped selectable rows → mobile cards → states.
  * Visual contract only: never change API/SQL, sorting rules or payment actions.
@@ -1274,33 +1274,6 @@ table.taxpay-unified-table {
 }
 
 
-/* Beneficiaries uses the same register header as Transaction history.
-   Its list selection is a compact header control, not another full-width row.
-   Keep the existing list editor popover visible without clipping the grid. */
-.taxpay-office-register-frame:has(.beneficiary-directory__list-toolbar) {overflow:visible;}
-.taxpay-office-register__actions .beneficiary-directory__list-toolbar {
-  display:flex;align-items:center;flex:0 1 282px;min-width:200px;max-width:100%;
-}
-.taxpay-office-register__actions .beneficiary-directory__list-filter {
-  display:flex;flex-direction:row;align-items:center;gap:8px;
-  width:100%;min-width:0;
-}
-.taxpay-office-register__actions .beneficiary-directory__list-filter > p {
-  flex:0 0 auto;margin:0;font-size:14px;color:var(--taxpay-table-muted,#5f6b7a);white-space:nowrap;
-}
-.taxpay-office-register__actions .beneficiary-list-picker {flex:1 1 160px;width:auto;min-width:0;max-width:none;}
-.taxpay-office-register__actions .beneficiary-list-picker__trigger {
-  min-height:38px;padding:7px 10px;font-size:14px;gap:8px;
-}
-.taxpay-office-register__actions .beneficiary-list-picker__menu {min-width:220px;}
-@media(max-width:767px) {
-  .taxpay-office-register__actions .beneficiary-directory__list-toolbar {
-    flex:1 1 100%;width:100%;max-width:none;min-width:0;
-  }
-  .taxpay-office-register__actions .beneficiary-list-picker__menu {min-width:0;}
-}
-
-
 /* PSR search: the outer field owns the focus ring and border, never the input. */
 .taxpay-taxpayer-reference .taxpay-office-register__actions .taxpay-record-toolbar__search input {
   background:transparent!important;
@@ -1353,6 +1326,7 @@ table.taxpay-unified-table {
   --register-edge:var(--taxpay-table-border,#e1e6ee);
   --register-muted:var(--taxpay-table-muted,#5f6b7a);
   --register-heading:var(--taxpay-table-heading,#f7f9fc);
+  --taxpay-table-row-height:64px;
   width:100%;max-width:100%;min-width:0;
   padding:0!important;margin-inline:0;
   background:var(--taxpay-table-surface,#fff);
@@ -1415,6 +1389,15 @@ table.taxpay-unified-table {
   max-width:100%;min-width:0;margin:0;
   border:0;border-radius:0;box-shadow:none;
 }
+ /* The table owns horizontal scrolling, not the application viewport.
+    The full-width header, filter panel and footer remain stationary. */
+.taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-table-viewport {
+  width:100%;
+  box-sizing:border-box;
+  overflow-x:auto;
+  overscroll-behavior-inline:contain;
+  scrollbar-width:thin;
+}
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-office-register__body {
   margin:0;padding:0;min-width:0;
 }
@@ -1450,7 +1433,10 @@ table.taxpay-unified-table {
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-record-list__row:last-child {border-bottom:0;}
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table {
   border:0;border-collapse:collapse;border-spacing:0;
-  width:100%;background:#fff;
+  width:100%;min-width:100%;background:#fff;
+}
+.taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-table-viewport > table.taxpay-unified-table {
+  min-width:max-content;
 }
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table :is(th,td) {
   padding:10px 12px;
@@ -1466,7 +1452,7 @@ table.taxpay-unified-table {
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table th {
   font-size:14px;font-weight:650;color:var(--register-muted);white-space:normal;
 }
-.taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table tbody tr {height:76px;}
+.taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table tbody tr {height:auto;min-height:64px;}
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-unified-table tbody tr:nth-child(even):not([data-selected="true"]),
 .taxpay-taxpayer-reference .taxpay-office-register-frame .taxpay-record-list__row:nth-child(even):not([data-selected="true"]) {
   background:#fafbfd;
@@ -1530,63 +1516,151 @@ table.taxpay-unified-table {
 }
 
 
-/* Beneficiaries follows the Transaction History register: one heading/search/filter
-   toolbar, a compact list picker, shared edge-to-edge table, and two row actions.
-   Scoped to this screen so approved transaction layouts remain unchanged. */
+/* Beneficiaries is a real Transaction History-style register: heading/count,
+   Search and Filter share one toolbar. List/tag controls live in the filter panel.
+   Select-all occupies the desktop table header, not a second full-width strip. */
 .taxpay-taxpayer-reference .beneficiary-register-frame {
-  min-width:0;
+  min-width: 0;
+  overflow: visible;
+  border-radius: 12px;
+  background: var(--taxpay-table-surface,#fff);
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame > .taxpay-office-register__toolbar {
-  gap:12px;
+  border-radius: 12px 12px 0 0;
 }
-.taxpay-taxpayer-reference .beneficiary-register-frame .taxpay-office-register__identity {
-  flex:1 1 220px;
+.taxpay-taxpayer-reference .beneficiary-register-frame > .taxpay-office-register__footer {
+  border-radius: 0 0 12px 12px;
 }
-.taxpay-taxpayer-reference .beneficiary-register-frame .taxpay-office-register__actions {
-  flex:0 1 auto;
-  gap:8px;
-}
-.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-toolbar {
-  flex:0 1 205px;
-  min-width:165px;
-  max-width:205px;
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__filters {
+  overflow: visible;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-filter {
-  gap:6px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  position: relative;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-filter > p {
-  font-size:14px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--taxpay-table-muted,#5f6b7a);
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-list-picker {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-list-picker__trigger {
-  min-width:0;
+  min-height: 44px;
+  width: 100%;
+  padding: 8px 10px;
+  gap: 8px;
+  font-size: 14px;
 }
-.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__table {
-  border-radius:0;
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-list-picker__menu {
+  width: 100%;
+  min-width: 220px;
+  z-index: 30;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__header-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 24px;
+  cursor: pointer;
+  font-weight: 650;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__header-select input {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  cursor: pointer;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__actions {
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  flex-wrap:wrap;
-  gap:8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__actions button {
-  min-height:40px;
-  white-space:nowrap;
+  min-height: 40px;
+  white-space: nowrap;
 }
-@media (max-width:1000px) {
-  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-toolbar {
-    flex:1 1 100%;
-    min-width:0;
-    max-width:280px;
+/* Override the retired text-link styling: Edit must be a real secondary
+   outline action, visually paired with Make payment in desktop rows. */
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__actions .beneficiary-directory__secondary {
+  padding-inline: 12px;
+  border: 1px solid var(--taxpay-table-border,#e1e6ee);
+  background: var(--taxpay-table-surface,#fff);
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__table .taxpay-unified-table th:last-child {
+  width: 270px;
+  text-align: right;
+}
+.taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__table .taxpay-unified-table td:last-child {
+  width: 270px;
+  min-width: 250px;
+}
+@media (min-width: 768px) {
+  .taxpay-taxpayer-reference .beneficiary-register-frame > .beneficiary-directory__count[data-has-selection="false"] {
+    display: none;
+  }
+  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__bulk-actions > .beneficiary-directory__select-all {
+    display: none;
   }
 }
-@media (max-width:767px) {
-  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-toolbar {
-    max-width:none;
-    width:100%;
+@media (max-width: 767px) {
+  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__header-select {
+    display: none;
+  }
+  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__list-filter {
+    min-width: 0;
+  }
+  .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-list-picker__menu {
+    min-width: 0;
   }
   .taxpay-taxpayer-reference .beneficiary-register-frame .beneficiary-directory__actions {
-    justify-content:flex-start;
+    justify-content: flex-start;
+  }
+}
+
+/* Activity register regression: the intrinsic max-content table width could
+ * expand its first Payment column across the entire desktop viewport, pushing
+ * the other eight semantic columns out of sight. Keep the nine-column table
+ * inside its existing horizontal scroll panel; do not change its data/actions
+ * or affect the mobile cards, ledger, beneficiaries or certificate tables. */
+@media (min-width: 768px) {
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpay-table-viewport > table.taxpayer-transaction-table {
+    width: 100%;
+    min-width: 1440px;
+    table-layout: fixed;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(1) { width: 195px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(2) { width: 155px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(3) { width: 190px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(4) { width: 155px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(5) { width: 150px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(6) { width: 125px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(7) { width: 130px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(8) { width: 160px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead th:nth-child(9) { width: 165px; }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table tbody td {
+    overflow-wrap: anywhere;
   }
 }

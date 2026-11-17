@@ -17,6 +17,11 @@ function useResolvedAccountIdentity() {
     let active = true;
     let revision = 0;
     const { data } = client.auth.onAuthStateChange((_event, session) => {
+      if (_event==='SIGNED_IN' && session?.user?.id) {
+        // Session-level welcome only. This never claims the Auth user owns a TIN.
+        try{sessionStorage.setItem('sohojkor.verified-auth-welcome.v1',session.user.id);}
+        catch{/* Never depend on local storage for authentication. */}
+      }
       revision++;
       if (active) { setUser(session?.user ?? null); setLoading(false); }
     });

@@ -7,8 +7,10 @@ import advanceTaxIllustration from '../../assets/taxpay-hero-advance-v9.webp';
 import withholdingTaxIllustration from '../../assets/taxpay-hero-withholding-v9.webp';
 import travelTaxIllustration from '../../assets/taxpay-hero-travel-v9.webp';
 import { supabase } from '../../services/supabaseClient';
+import { brandingReadsAllowed, noteBrandingResponse } from '../../services/brandingCmsHealth';
 
 const AUTOPLAY_INTERVAL_MS = 8_000;
+const CMS_FALLBACK_POLL_MS = 5 * 60_000;
 const SWIPE_THRESHOLD_PX = 45;
 const SWIPE_DOMINANCE_RATIO = 1.2;
 
@@ -101,6 +103,33 @@ type BannerSlide = {
 
 const fallbackSlides: BannerSlide[] = defaultSlides.map(slide => ({ ...slide }));
 
+/**
+ * Last checksum-verified approved publication. Shown while the authoritative
+ * V2 CMS metadata is loading or temporarily restricted; never shipped as
+ * fabricated backend data. SQL remains the publishing authority.
+ */
+const lastVerifiedPublished: Record<string, {
+  file: string; path: string; background: string; heading: string; body: string; outline: string
+}> = {
+  intro: { file: 'banner-intro.jpg', path: 'banners/intro/c6bd8f1e-611d-4691-932f-9b6812f46085.jpg',
+    background: '#F7F5E6', heading: '#65531B', body: '#6D5F31', outline: '#7A651F' },
+  return: { file: 'banner-return.png', path: 'banners/return/ffa907f6-1ee0-4ebb-86a1-f75392849905.png',
+    background: '#ECF8FC', heading: '#1B4D65', body: '#315A6D', outline: '#1F5D7A' },
+  advance: { file: 'banner-advance.png', path: 'banners/advance/4ecafe03-442a-4b58-9da8-ca577d34b3a1.png',
+    background: '#FAF1DD', heading: '#65501B', body: '#6D5C31', outline: '#7A611F' },
+  withholding: { file: 'banner-withholding.png', path: 'banners/withholding/1affb273-1f0e-4cdf-bcb4-e06d5c1e15e8.png',
+    background: '#F8E7F6', heading: '#651B63', body: '#6D316C', outline: '#7A1F78' },
+  travel: { file: 'banner-travel.png', path: 'banners/travel/5a02e106-bcc0-4aba-8021-6520d289c009.png',
+    background: '#ECF8FC', heading: '#07516B', body: '#316078', outline: '#0C6D8D' },
+};
+const publishedBackup: BannerSlide[] = fallbackSlides.map(slide => {
+  const verified = lastVerifiedPublished[slide.id];
+  return { ...slide, image: `${import.meta.env.BASE_URL}branding/published/${verified.file}`,
+    backgroundColor: verified.background, headingColor: verified.heading,
+    bodyColor: verified.body, outlineColor: verified.outline };
+});
+
+
 /** Keep the approved v9 media and layout even if a published Storage object is missing. */
 function BannerPicture({ slide, visible, preload, onVisibleReady }: {
   slide: BannerSlide; visible: boolean; preload: boolean; onVisibleReady: () => void;
@@ -125,7 +154,7 @@ function BannerPicture({ slide, visible, preload, onVisibleReady }: {
       window.removeEventListener('focus', retry);
     };
   }, [imageFailed]);
-  const fallbackImage = fallbackSlides.find(value =>
+  const fallbackImage = publishedBackup.find(value =>
     (value.serviceCode || null) === (slide.serviceCode || null))?.image || heroPaymentIllustration;
   const resolvedImage = imageFailed ? fallbackImage : slide.image;
   return <picture className="public-hero-carousel__image-layer" data-visible={visible}>
@@ -147,6 +176,10 @@ function compactAction(actual: string, original: string, compact: string): strin
 
 function publicBannerImage(path: string | null, fallback: string): string {
   if (!path || !supabase) return fallback;
+  // The known published image is already part of the app's immutable, checked
+  // bundle. Avoid repeated 4MB+ Supabase Storage egress on carousel rotation.
+  const snapshot = Object.values(lastVerifiedPublished).find(item => item.path === path);
+  if (snapshot) return `${import.meta.env.BASE_URL}branding/published/${snapshot.file}`;
   return supabase.storage.from('taxpay-banners').getPublicUrl(path).data.publicUrl;
 }
 
@@ -158,8 +191,9 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
     return fallbackSlides;
   }
   if (!supabase) throw new Error('The public banner service is unavailable.');
-  const { data, error } = await supabase.from('taxpay_site_banners').select('*')
+  const { data, error, status } = await supabase.from('taxpay_site_banners').select('*')
     .eq('published', true).order('sort_order', { ascending: true });
+  noteBrandingResponse(status, Boolean(error));
   if (error) throw error;
   return (data || []).map(row => {
     // Banner IDs identify editable records, while service_code identifies the
@@ -193,8 +227,10 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   paused = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [slides, setSlides] = useState<BannerSlide[]>([]);
-  const [bannerStatus, setBannerStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading');
+  const [slides, setSlides] = useState<BannerSlide[]>(publishedBackup);
+  const activeBannerId = useRef<string | null>(null);
+  const lastPublishedSignature = useRef<string | null>(null);
+  const [bannerStatus, setBannerStatus] = useState<'loading' | 'ready' | 'unavailable'>('ready');
   const [retryNonce, setRetryNonce] = useState(0);
   // The next slide may preload only after the visible banner's image finishes.
   // This prevents five simultaneous images from competing for first paint on 4G.
@@ -211,37 +247,55 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
 
   const goNext = useCallback(() => setActiveIndex(index => (index + 1) % Math.max(slides.length, 1)), [slides.length]);
   const goPrevious = useCallback(() => setActiveIndex(index => (index - 1 + slides.length) % Math.max(slides.length, 1)), [slides.length]);
+  useEffect(() => {
+    activeBannerId.current = slides[activeIndex]?.id ?? null;
+  }, [slides, activeIndex]);
 
   useEffect(() => {
     let active = true;
-    const refresh = () => { void fetchPublishedBanners().then(next => {
-      if (!active) return;
-      setSlides(next);
-      setBannerStatus('ready');
-      setActiveIndex(index => Math.min(index, Math.max(0, next.length - 1)));
-    }).catch(() => {
-      if (!active) return;
-      // Do not revive bundled images for banners an administrator may have
-      // unpublished or deleted. Keep payment entrypoints available separately.
-      setSlides([]);
-      setBannerStatus('unavailable');
-    }); };
+    let inFlight = false;
+    let lastRefreshStart = 0;
+    // CMS remains live through bounded reads; no branding WebSocket is opened.
+    // The former socket could reconnect dozens of times per second after 402.
+    const refresh = () => {
+      if (!active || inFlight || !brandingReadsAllowed()) return;
+      const now = Date.now();
+      if (lastRefreshStart && now - lastRefreshStart < 60_000) return;
+      inFlight = true;
+      lastRefreshStart = now;
+      void fetchPublishedBanners().then(next => {
+        if (!active) return;
+        const signature = JSON.stringify(next);
+        if (signature !== lastPublishedSignature.current) {
+          lastPublishedSignature.current = signature;
+          const keepId = activeBannerId.current;
+          setSlides(next);
+          setActiveIndex(index => {
+            const retained = next.findIndex(slide => slide.id === keepId);
+            return retained >= 0 ? retained : Math.min(index, Math.max(0, next.length - 1));
+          });
+        }
+        setBannerStatus(next.length ? 'ready' : 'unavailable');
+      }).catch(() => {
+        if (!active) return;
+        noteBrandingResponse(undefined, true);
+        // Never replace the latest known published artwork with an empty error
+        // panel due to temporary service failure. Healthy SQL can still unpublish.
+        setBannerStatus('ready');
+      }).finally(() => { inFlight = false; });
+    };
     refresh();
-    const channel = supabase?.channel('published-taxpay-banners')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'taxpay_site_banners' }, refresh).subscribe();
-    // Reconcile missed Realtime messages after inactive tabs or intermittent networks.
     const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
-    window.addEventListener('focus', refresh);
-    window.addEventListener('online', refresh);
+    window.addEventListener('focus', onVisible);
+    window.addEventListener('online', onVisible);
     document.addEventListener('visibilitychange', onVisible);
-    const poll = window.setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 30_000);
+    const poll = window.setInterval(onVisible, CMS_FALLBACK_POLL_MS);
     return () => {
       active = false;
       window.clearInterval(poll);
-      window.removeEventListener('focus', refresh);
-      window.removeEventListener('online', refresh);
+      window.removeEventListener('focus', onVisible);
+      window.removeEventListener('online', onVisible);
       document.removeEventListener('visibilitychange', onVisible);
-      if (channel && supabase) void supabase.removeChannel(channel);
     };
   }, [retryNonce]);
 

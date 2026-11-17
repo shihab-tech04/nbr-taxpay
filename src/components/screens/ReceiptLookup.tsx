@@ -4,12 +4,17 @@ import { useTaxState } from '../../services/taxState';
 import { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
-import { findSessionReceiptByReference } from '../../services/simulatedPaymentStory';
+import { validCertificateTransactionId } from '../../services/transactionId';
+import { findSessionReceiptByReference, findProfileReceiptByReference } from '../../services/simulatedPaymentStory';
+import {activePreviewSession} from '../../services/previewAccountSession';
+import { findOwnedReceiptByReference } from '../../services/confirmedPaymentCertificate';
+import { useAccountIdentity } from '../../services/accountIdentity';
 
 type ReceiptLookupProps = { embedded?: boolean; activityTabs?: boolean; hidePageHeading?: boolean; accountContext?: boolean };
 
 export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, activityTabs = false, hidePageHeading = false, accountContext = false }) => {
-  const { language, lookupReceipt, receipts, navigate, routeParams } = useTaxState();
+  const { language, lookupReceipt, receipts, navigate, routeParams, previewAccount } = useTaxState();
+  const { user: signedInUser } = useAccountIdentity();
   // Homepage reference is kept in in-memory navigation state, never in a public URL.
   const initialReference = typeof routeParams.initialReference === 'string' ? routeParams.initialReference.trim() : '';
   const bn = language === 'bn';
@@ -18,44 +23,76 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   const [receiptMobile, setReceiptMobile] = useState('');
   const [searchedReference, setSearchedReference] = useState('');
   const [searchResult, setSearchResult] = useState<ChallanReceipt | null | 'NOT_FOUND'>(null);
+  const [certificateResult, setCertificateResult] = useState(false);
   const [lookupPending, setLookupPending] = useState(false);
   const [lookupError, setLookupError] = useState(false);
+  // A reference without required session verification is not a confirmed no-match.
+  const [needsReceiptMobile, setNeedsReceiptMobile] = useState(false);
   const lookupSequence = useRef(0);
   useEffect(() => () => { lookupSequence.current += 1; }, []);
   const resetLookup = () => {
     lookupSequence.current += 1;
     setSearchResult(null);
+    setCertificateResult(false);
     setLookupPending(false);
     setLookupError(false);
+    setNeedsReceiptMobile(false);
   };
+  // Discard in-flight results if a different account signs in.
+  useEffect(() => {
+    lookupSequence.current += 1;
+    setSearchResult(null);
+    setCertificateResult(false);
+    setLookupPending(false);
+    setLookupError(false);
+    setNeedsReceiptMobile(false);
+  }, [signedInUser?.id, previewAccount?.id]);
   // Never suggest sample/session receipts in the signed-in account tracking journey.
   // Users must provide the actual reference; public lookup examples remain unchanged.
-  const sampleReceipts = accountContext ? [] : receipts.filter(receipt => !receipt.receiptMobile).slice(0, 3);
+  const sampleReceipts = accountContext ? [] : receipts.filter(receipt =>
+    receipt.isSimulatedDemo === true && !receipt.receiptMobile).slice(0, 3);
 
   const searchReference = (reference: string, mobile: string) => {
     if (!reference) return;
     const sequence = ++lookupSequence.current;
     setSearchedReference(reference);
     setLookupError(false);
-    const local = lookupReceipt(reference, mobile);
+    // Neither a certificate reference nor an unknown receipt is a verified public SQL hit.
+    // Require the same session-bound mobile proof before reporting a true no-match.
+    setNeedsReceiptMobile(false);
+    const parentId = reference.slice(6);
+    const certificateReference = /^SK-PC-/i.test(reference) && validCertificateTransactionId(parentId);
+    setCertificateResult(certificateReference);
+    // A browser-local receipt is not proof of ownership after account or
+    // preview-profile switching. Account holders use their verified source.
+    const local = signedInUser || activePreviewSession() || certificateReference
+      ? undefined : lookupReceipt(reference, mobile);
     if (local) {
       setLookupPending(false);
       setSearchResult(local);
       return;
     }
 
-    // Cross-session lookup requires an approved authorized API. The existing
-    // recovery route only reads simulated records from this browser session.
-    if (!/^01\d{9}$/.test(mobile)) {
-      setLookupPending(false);
-      setSearchResult('NOT_FOUND');
-      return;
-    }
+    // Signed-in records come from the existing auth.uid()-bound Taxpayer SQL.
+    // Without account verification, preserve guest session/mobile recovery.
     setSearchResult(null);
     setLookupPending(true);
-    void findSessionReceiptByReference(reference, mobile)
+    void (async () => {
+      const owned = await findOwnedReceiptByReference(reference, mobile);
+      if (owned.authenticated) return owned.receipt;
+      // Only an existing server-issued profile capability may recover a
+      // receipt from another *verified linked* browser session.
+      const profile = await findProfileReceiptByReference(reference, mobile);
+      if (profile.checked) return profile.receipt;
+      if (!/^01\d{9}$/.test(mobile)) return 'MOBILE_REQUIRED' as const;
+      return findSessionReceiptByReference(certificateReference ? parentId : reference, mobile);
+    })()
       .then(receipt => {
         if (lookupSequence.current !== sequence) return;
+        if (receipt === 'MOBILE_REQUIRED') {
+          setNeedsReceiptMobile(true);
+          return;
+        }
         setSearchResult(receipt ?? 'NOT_FOUND');
       })
       .catch(() => {
@@ -132,7 +169,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
               placeholder="01XXXXXXXXX" value={receiptMobile}
               onChange={event => { setReceiptMobile(event.target.value.replace(/\D/g, '').slice(0, 11)); resetLookup(); }}
               className="receipt-lookup__input font-mono-plex" />
-            <p className="receipt-lookup__hint">{t('Required for receipts generated through the guest payment form.', 'অতিথি পেমেন্ট ফর্মের মাধ্যমে তৈরি রসিদের জন্য আবশ্যক।')}</p>
+            <p className="receipt-lookup__hint">{t('Required for guest receipts; verified account owners can search their own records by reference.', 'অতিথি রসিদের জন্য আবশ্যক; যাচাইকৃত অ্যাকাউন্টের মালিক রেফারেন্স দিয়ে নিজের রেকর্ড খুঁজতে পারবেন।')}</p>
           </div>
           {sampleReceipts.length > 0 && (
             <div className="receipt-lookup__examples">
@@ -148,6 +185,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
                       setQuery(receipt.challanNo);
                       setSearchedReference(receipt.challanNo);
                       resetLookup();
+                      setCertificateResult(false);
                       setSearchResult(receipt);
                     }}
                   >
@@ -158,6 +196,9 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             </div>
           )}
         </form>}
+        {needsReceiptMobile && <p role="status" className="receipt-lookup__hint" data-testid="receipt-mobile-required">
+          {t('Enter the 11-digit receipt mobile number to check this reference in saved session records.', 'সংরক্ষিত সেশন রেকর্ডে এই রেফারেন্স খুঁজতে রসিদের ১১ সংখ্যার মোবাইল নম্বর লিখুন।')}
+        </p>}
         {lookupPending && <p role="status" className="receipt-lookup__hint">
           {t('Checking records from this browser session…', 'এই ব্রাউজার সেশনের রেকর্ড খোঁজা হচ্ছে…')}
         </p>}
@@ -171,6 +212,10 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             <div className="receipt-lookup__result-copy">
               <h2>{t('No matching record', 'কোনো মিল পাওয়া যায়নি')}</h2>
               <p>{t('No record found for:', 'এই রেফারেন্সে কোনো রেকর্ড পাওয়া যায়নি:')} <strong className="font-mono-plex">{searchedReference}</strong></p>
+              <p data-testid="receipt-session-only-notice">{t(
+                'Only saved payments from this browser session were checked. This does not confirm whether an official payment record exists.',
+                'শুধু এই ব্রাউজার সেশনে সংরক্ষিত পেমেন্ট খোঁজা হয়েছে। সরকারি পেমেন্ট রেকর্ড আছে কি না, এই ফল তা নিশ্চিত করে না।'
+              )}</p>
               <button type="button" className="receipt-lookup__issue-link" onClick={() => navigate(accountContext ? 'corrections' : 'incident')}>
                 {t('Report a payment issue', 'পেমেন্টের সমস্যা জানান')}
               </button>
@@ -182,7 +227,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             <p className="sr-only" role="status">
               {t('Receipt details loaded.', 'রসিদের তথ্য দেখানো হয়েছে।')}
             </p>
-            <ReceiptView receipt={searchResult} embedded={embedded} onBack={() => {
+            <ReceiptView receipt={searchResult} embedded={embedded} certificate={certificateResult} onBack={() => {
               setSearchResult(null);
               setSearchedReference('');
             }} />

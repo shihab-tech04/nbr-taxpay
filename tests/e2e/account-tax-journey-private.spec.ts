@@ -15,9 +15,13 @@ function session(){
   return {access_token:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'+encoded+'.synthetic',token_type:'bearer',
     expires_in:3600,expires_at:exp,refresh_token:'journey-refresh',user:owner};
 }
-async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[],correctionColumns=true){
-  await page.addInitScript(({key,value})=>{localStorage.setItem(key,JSON.stringify(value));},
-    {key:'sb-nbr-taxpay-test-auth-token',value:session()});
+async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[],correctionColumns=true,seedAuthOnlyOnce=false){
+  await page.addInitScript(({key,value,seedOnlyOnce})=>{
+    const seeded='taxpay-test-account-auth-seeded';
+    if(seedOnlyOnce&&sessionStorage.getItem(seeded))return;
+    localStorage.setItem(key,JSON.stringify(value));
+    if(seedOnlyOnce)sessionStorage.setItem(seeded,'1');
+  },{key:'sb-nbr-taxpay-test-auth-token',value:session(),seedOnlyOnce:seedAuthOnlyOnce});
   await page.route(backend+'/**',async route=>{
     const req=route.request(),url=new URL(req.url());
     const response=(data:unknown,status=200)=>route.fulfill({status,contentType:'application/json',
@@ -218,6 +222,153 @@ test('unbound signed-in history retains review activity and SQL-owned beneficiar
   await expect(history).toContainText('Beneficiary B');
 });
 
+
+const travelHistoryId='00000000-0000-4000-8000-000000000913';
+const travelHistoryPassengers=[
+  {name:'JOURNEY OWNER',passportMasked:'••••3456',nationality:'BD',ageBand:'ADULT',age:35,amount:1000},
+  {name:'FRIEND SECOND',passportMasked:'••••4321',nationality:'FOREIGN',country:'India',ageBand:'CHILD',age:9,amount:500}
+];
+const travelHistoryLines=[
+  {headId:155,headNameEn:'Travel tax — JOURNEY OWNER',economicCode:'1144102',
+    taxAmount:1000,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:1000,
+    note:'LAND | Benapole | India | 2026-11-20 | Passport ••••3456'},
+  {headId:156,headNameEn:'Travel tax — FRIEND SECOND',economicCode:'1144102',
+    taxAmount:500,penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:500,
+    note:'LAND | Benapole | India | 2026-11-20 | Passport ••••4321'}
+];
+const travelHistoryDetails={
+  mode:'LAND',departurePort:'Benapole',destination:'India',travelDate:'2026-11-20',
+  economicCode:'1144102',passengers:travelHistoryPassengers
+};
+const travelHistorySnapshot={
+  id:'rcpt-trv-history-913',taxEventId:'SIM-EVENT-history-913',
+  paymentTransactionId:'SIM-TOKEN-history-913',challanNo:'SIM-history-913',
+  tokenNumber:'SIM-TOKEN-history-913',paymentCategory:'TRAVEL_TAX',assessmentYear:'2026-27',
+  payerName:'JOURNEY OWNER',payerTin:'NON-TIN-PASSENGER',receiptMobile:'01712345678',
+  isRepresentativePayment:false,taxZone:'',taxCircle:'',isWithholding:false,
+  travelDetails:travelHistoryDetails,items:travelHistoryLines,totalAmount:1500,
+  paymentMethod:'NAGAD',gatewayTransactionId:'SIM-TXN-history-913',
+  treasuryStatus:'GATEWAY_SUCCESS',taxCreditStatus:'NOT_APPLICABLE',
+  createdAt:'2026-11-14T08:00:00.000Z',completedAt:'2026-11-14T08:00:00.000Z',
+  isSimulatedDemo:true
+};
+const signedInTravelTaxPayment={
+  id:travelHistoryId,service:'TRAVEL_TAX',amountMinor:150000,status:'SIMULATED_SUCCESS',
+  createdAt:'2026-11-14T08:00:00.000Z',
+  details:{
+    payerName:'JOURNEY OWNER',assessmentYear:'2026-27',paymentMethod:'NAGAD',
+    paymentChannel:'NOW',receiptReference:travelHistorySnapshot.tokenNumber,
+    receiptMobile:'01712345678',travelMode:'LAND',departurePort:'Benapole',
+    destination:'India',travelDate:'2026-11-20',economicCode:'1144102',
+    passengers:travelHistoryPassengers,lines:travelHistoryLines,receiptSnapshot:travelHistorySnapshot
+  }
+};
+
+for(const language of ['en','bn'] as const){
+  test('F-162 / US-119, US-158, US-159 recover signed-in Travel Tax history after sign-out in '+language,
+    async({page})=>{
+      await mockAccount(page,true,[signedInTravelTaxPayment],true,true);
+      const guestSessionId='ed18e1b3-8abf-4a19-a22d-0b5d6dca7101';
+      const claimedSessionIds:string[]=[];
+      await page.addInitScript(id=>sessionStorage.setItem('taxpay-guest-simulation-session',id),guestSessionId);
+      await page.route(backend+'/rest/v1/rpc/taxpay_claim_story1_session',async route=>{
+        const request=route.request();
+        const headers={'access-control-allow-origin':'*',
+          'access-control-allow-headers':'authorization, apikey, content-type, prefer, x-client-info',
+          'access-control-allow-methods':'GET,POST,OPTIONS'};
+        if(request.method()==='OPTIONS')
+          return route.fulfill({status:200,contentType:'application/json',headers,body:'{}'});
+        const payload=request.postDataJSON() as {p_session_id?:string};
+        claimedSessionIds.push(payload.p_session_id??'');
+        return route.fulfill({status:200,contentType:'application/json',headers,body:'1'});
+      });
+      await page.goto('/?action=history&lang='+language);
+      const history=page.getByTestId('beneficiary-payment-history');
+      await expect(history).toBeVisible();
+      await expect(history).toContainText(travelHistoryId);
+      await expect(claimedSessionIds).toEqual([guestSessionId]);
+      const mobile=(page.viewportSize()?.width??1280)<768;
+      const record=mobile
+        ?history.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem').filter({hasText:travelHistoryId})
+        :history.getByRole('row').filter({hasText:travelHistoryId});
+      await expect(record).toHaveCount(1);
+      await record.getByRole('button',{name:language==='bn'?/দেখুন/:/View/}).click();
+      const dialog=page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
+      const certificateToggle=dialog.getByRole('button',{
+        name:/View payment certificate|পেমেন্ট সনদ দেখুন/
+      });
+      await expect(certificateToggle).toBeVisible();
+      await certificateToggle.click();
+      let certificate=dialog.getByTestId('payment-certificate-document');
+      await expect(certificate).toBeVisible();
+      await expect(certificate.getByTestId('payment-certificate-reference'))
+        .toContainText('SK-PC-'+travelHistoryId);
+      await expect(certificate).toContainText(travelHistoryId);
+      await expect(certificate).toContainText('JOURNEY OWNER');
+      await expect(certificate).toContainText('FRIEND SECOND');
+      await expect(certificate).toContainText('••••4321');
+      await expect(certificate).toContainText('Benapole');
+
+      // Refresh recovers the same owner-scoped SQL row and certificate reference.
+      await page.reload();
+      const recovered=page.getByTestId('beneficiary-payment-history');
+      await expect(recovered).toBeVisible();
+      await expect(recovered).toContainText(travelHistoryId);
+      const recoveredRecord=mobile
+        ?recovered.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem')
+          .filter({hasText:travelHistoryId})
+        :recovered.getByRole('row').filter({hasText:travelHistoryId});
+      await expect(recoveredRecord).toHaveCount(1);
+      await recoveredRecord.getByRole('button',{name:language==='bn'?/দেখুন/:/View/}).click();
+      const recoveredDialog=page.getByRole('dialog');
+      await recoveredDialog.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/}).click();
+      certificate=recoveredDialog.getByTestId('payment-certificate-document');
+      await expect(certificate.getByTestId('payment-certificate-reference'))
+        .toContainText('SK-PC-'+travelHistoryId);
+      await expect(certificate).toContainText('FRIEND SECOND');
+
+      // Sign out through the existing account screen, then re-enter the same owner
+      // session while keeping the opaque guest session that was claimed above.
+      await page.goto('/?action=account_profile&lang='+language);
+      const signOut=page.getByRole('button',{name:language==='bn'?/সাইন আউট/:/Sign out/});
+      await expect(signOut).toBeVisible();
+      await signOut.click();
+      await expect(page).toHaveURL(/(?:[?&]action=landing|\/$)/);
+      await expect.poll(()=>page.evaluate(()=>localStorage.getItem('sb-nbr-taxpay-test-auth-token'))).toBeNull();
+
+      // A signed-out owner must not reopen the private payment register or its certificate.
+      // The one-shot fixture must not silently seed the old token during this navigation.
+      await page.goto('/?action=history&lang='+language);
+      await expect.poll(()=>page.evaluate(()=>localStorage.getItem('sb-nbr-taxpay-test-auth-token'))).toBeNull();
+      await expect(page.getByRole('heading',{name:language==='bn'?'করদাতার ব্যক্তিগত তথ্য':'Private taxpayer workspace'})).toBeVisible();
+      await expect(page.getByRole('link',{name:language==='bn'?'সাইন ইন':'Sign In'})).toBeVisible();
+      await expect(page.getByTestId('beneficiary-payment-history')).toHaveCount(0);
+      await expect(page.getByTestId('payment-certificate-document')).toHaveCount(0);
+      await expect(page.getByText(travelHistoryId,{exact:false})).toHaveCount(0);
+
+      await page.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{
+        key:'sb-nbr-taxpay-test-auth-token',value:session()
+      });
+      await page.goto('/?action=history&lang='+language);
+      const relogged=page.getByTestId('beneficiary-payment-history');
+      await expect(relogged).toBeVisible();
+      await expect(relogged).toContainText(travelHistoryId);
+      await expect(claimedSessionIds).toEqual([guestSessionId,guestSessionId,guestSessionId]);
+      const restoredRecord=mobile
+        ?relogged.getByTestId('beneficiary-payment-mobile-cards').getByRole('listitem')
+          .filter({hasText:travelHistoryId})
+        :relogged.getByRole('row').filter({hasText:travelHistoryId});
+      await expect(restoredRecord).toHaveCount(1);
+      await restoredRecord.getByRole('button',{name:language==='bn'?/দেখুন/:/View/}).click();
+      const restoredDialog=page.getByRole('dialog');
+      await restoredDialog.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/}).click();
+      const restoredCertificate=restoredDialog.getByTestId('payment-certificate-document');
+      await expect(restoredCertificate.getByTestId('payment-certificate-reference'))
+        .toContainText('SK-PC-'+travelHistoryId);
+      await expect(restoredCertificate).toContainText('FRIEND SECOND');
+    });
+}
 
 const repeatableAdvancePayment={
   id:'00000000-0000-4000-8000-000000000912',service:'ADVANCE_TAX',

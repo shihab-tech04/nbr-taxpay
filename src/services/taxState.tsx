@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { 
   Language, 
   UserRole, 
@@ -29,7 +29,15 @@ import {
 } from '../data/mockData';
 
 export type BannerPaymentService = 'TAX_WITH_RETURN' | 'ADVANCE_TAX' | 'SOURCE_TAX_DEPOSIT' | 'TRAVEL_TAX';
-export interface PaymentBeneficiaryPrefill { tin: string; name: string; additional?: { tin: string; name: string }[]; }
+export interface PaymentBeneficiaryPrefill {
+  tin: string;
+  name: string;
+  additional?: { tin: string; name: string }[];
+  /** Optional handoff from the isolated parallel entry; no payment or authorization is implied. */
+  parallelSource?: true;
+  parallelForSelf?: boolean;
+  parallelAllocations?: { taxpayerTin: string; headId: number; assessmentYear: string; amount: string }[];
+}
 export interface BeneficiarySavePrefill { ownerUid: string; tin: string; name: string; }
 
 export interface TaxStateContextType {
@@ -140,6 +148,9 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return routeContextFromUrl(validRoute(search.get('action')), search);
   });
   const [language, setLanguage] = useState<Language>(()=>new URLSearchParams(window.location.search).get('lang')==='bn'?'bn':'en');
+  useLayoutEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
   const [previewAccount, setPreviewAccount] = useState<DemoUser | null>(storedPreviewAccount);
   const [legacyDemoUser, setLegacyDemoUser] = useState<DemoUser | null>(() => permittedDemoUser(new URLSearchParams(window.location.search).get('demoUser')));
   const demoUser = previewAccount ?? legacyDemoUser;

@@ -8,7 +8,7 @@ for (const width of [320, 375, 1280]) {
     test.skip(info.project.name !== expectedProject, 'The targeted viewport belongs to its own device project');
     await page.setViewportSize({ width, height: 850 });
     await page.goto('/?action=taxpayer_login');
-    const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+    const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
     await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
     await login.getByLabel('Password', { exact: true }).fill('user2');
     await login.getByRole('button', { name: 'Sign In' }).click();
@@ -120,10 +120,10 @@ test('Pay Tax header reserves the Back column without overlapping the title in E
 });
 
 
-test('draft-eligible account payment protects backdrop, Escape and X at every payment breakpoint', async ({ page }) => {
+test('draft-eligible account payment protects backdrop, Escape and X at every payment breakpoint', async ({ page }, testInfo) => {
   // No hosted writes: this suite explicitly runs with the backend disabled.
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();
@@ -165,13 +165,30 @@ test('draft-eligible account payment protects backdrop, Escape and X at every pa
     expect(saveBox.x).toBeGreaterThanOrEqual(dialogBox.x);
     expect(editBox.x + editBox.width).toBeLessThanOrEqual(dialogBox.x + dialogBox.width + 1);
     expect(discardBox.x + discardBox.width).toBeLessThanOrEqual(dialogBox.x + dialogBox.width + 1);
+    expect(discardBox.width, 'Discard is a full-width, intentionally grouped tertiary action').toBeGreaterThanOrEqual(dialogBox.width - 56);
+    expect(discardBox.x, 'Discard stays aligned with the primary actions').toBeGreaterThanOrEqual(dialogBox.x + 18);
     if ((page.viewportSize()?.width ?? 1280) < 420) {
       expect(editBox.y).toBeGreaterThan(saveBox.y);
     } else {
       expect(Math.abs(editBox.y - saveBox.y)).toBeLessThanOrEqual(1);
     }
   }
+  await expect(confirm.getByRole('button', { name: 'Discard tax payment' })).toHaveCSS('justify-content', 'center');
+  await expect(confirm.getByRole('button', { name: 'Discard tax payment' })).toHaveCSS('border-top-width', '1px');
   await page.screenshot({ path: 'test-results/payment-draft-exit-dialog-' + (page.viewportSize()?.width ?? 1280) + '.png' });
+  if (testInfo.project.name === 'desktop-1280') {
+    const previousSize = page.viewportSize()!;
+    await page.setViewportSize({ width: 515, height: 354 });
+    const compactBox = await confirm.boundingBox();
+    expect(compactBox, 'the reported 515x354 viewport keeps the confirmation on screen').not.toBeNull();
+    expect(compactBox!.x).toBeGreaterThanOrEqual(12);
+    expect(compactBox!.y).toBeGreaterThanOrEqual(0);
+    expect(compactBox!.x + compactBox!.width).toBeLessThanOrEqual(503);
+    expect(compactBox!.y + compactBox!.height).toBeLessThanOrEqual(354);
+    expect(await confirm.evaluate(node => node.scrollWidth - node.clientWidth), 'no horizontal dialog overflow').toBeLessThanOrEqual(2);
+    await page.screenshot({ path: 'test-results/payment-draft-exit-dialog-515x354.png' });
+    await page.setViewportSize(previousSize);
+  }
   await confirm.getByRole('button', { name: 'Keep editing' }).click();
   await expect(payment).toBeVisible();
 

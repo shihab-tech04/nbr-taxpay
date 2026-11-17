@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { demoLoginOtpCompletedState } from './demo-login-test-state';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { chooseBeneficiaryOption } from './beneficiarySearchableSelect';
@@ -27,7 +28,8 @@ test('payment form drafts survive another browser, protect owner isolation and r
     ? { owner: 'user27', other: 'user28' }
     : { owner: 'user29', other: 'user30' };
   const open = async (id: Account): Promise<Page> => {
-    const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173', viewport });
+    const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173', viewport,
+      storageState: demoLoginOtpCompletedState });
     contexts.push(context);
     const page = await context.newPage();
     page.setDefaultTimeout(9_000);
@@ -232,6 +234,7 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
   const context = await browser.newContext({
     baseURL: 'http://127.0.0.1:4173',
     viewport: info.project.name.startsWith('mobile') ? { width: 375, height: 812 } : { width: 1280, height: 800 },
+    storageState: demoLoginOtpCompletedState,
   });
   try {
     const page = await context.newPage();
@@ -253,7 +256,10 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
 
     await page.goto('/?action=taxpayer_home');
     const workspace = page.getByTestId('user1-synthetic-workspace');
+    await workspace.locator('.taxpay-bento-tasks__tabs').getByRole('button',{name:/Drafts/}).click();
     const cards = workspace.getByTestId('dashboard-payment-drafts');
+    // Follow-ups is tabbed in the approved overview; expose the saved-draft panel before its actions.
+    await workspace.getByRole('button', { name: /^Drafts/ }).click();
     await expect(cards.getByRole('heading', { name: 'Saved payment drafts' })).toBeVisible();
     const savedCard = cards.locator('[data-draft-id]').first();
     await expect(savedCard).toBeVisible();
@@ -327,8 +333,10 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     await expect(matching).toHaveCount(0);
     // Other user1 saved drafts must not be deleted or changed by this action.
     await page.reload();
+    await workspace.locator('.taxpay-bento-tasks__tabs').getByRole('button',{name:/Drafts/}).click();
     await expect(workspace.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="' + id + '"]')).toHaveCount(0);
-    // Zero records must remain a navigable, recoverable dashboard feature.
+    // Reload starts on Requests; open Drafts to verify the empty-state recovery action.
+    await workspace.getByRole('button', { name: /^Drafts/ }).click();
     const empty = workspace.getByTestId('dashboard-payment-drafts');
     await expect(empty).toBeVisible();
     await expect(empty.getByTestId('dashboard-drafts-empty')).toBeVisible();

@@ -56,11 +56,14 @@ test('real receipts page exposes searchable payment-record register outside gove
   assert.match(source,/TaxPayDataGrid variant="tabular"/);
   assert.match(source,/testId="account-certificate-payment-table"/);
   assert.match(source,/mobileTestId="account-certificate-payment-cards"/);
-  assert.match(source,/value=\{recordSearch\}/);
+  assert.match(source,/searchValue=\{recordSearch\}/);
+  assert.match(source,/onSearchChange=\{setRecordSearch\}/);
   assert.match(source,/getRowKey=\{row=>row.key\}/);
   assert.match(source,/getAccountStoryPayments\(authenticatedUser.id\)/);
   assert.match(source,/getDetailedStorySessionPayments\(\)/);
-  assert.match(source,/setReceiptReturnToSummary\(false\)/);
+  assert.match(source,/setReceiptReturnToSummary\(fromSummary\)/);
+  assert.match(source,/openDocument\(row\.receipt,'receipt'\)/);
+  assert.match(source,/mode === 'certificate' && !canViewPaymentCertificate\(receipt\)/);
   assert.match(source,/if\(receiptReturnToSummary\)setSummaryOpen\(true\)/);
   assert.match(source,/receipt-view__financial-table/);
   assert.match(source,/Saved payment records are not government-issued certificates/);

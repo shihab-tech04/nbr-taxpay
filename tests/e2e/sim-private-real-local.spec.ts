@@ -90,7 +90,9 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  // The disposable TaxPay database cannot be treated as source data by hosted
  // Office. The browser must report the unacknowledged mirror and retain the
  // original SQL records/outbox; a separate local Office journey verifies ACK.
- await expect(one.page.getByRole('status').filter({hasText:'Simulation saved; Office synchronization pending:'})).toBeVisible({timeout:15000});
+ await expect(one.page.getByRole('status').filter({
+  hasText:'Payment record saved. Office copy pending; Treasury settlement unverified:'
+ })).toBeVisible({timeout:15000});
  const author=await request('/rest/v1/rpc/sim_my_payment_history',{p_view:'payer'},payer.session.access_token);
  expect(author.status).toBe(200);
  const tx=(author.data as Array<{transactionId:string;id:string;totalMinor:number;allocations:Array<{beneficiary:string;amountMinor:number}>}>)
@@ -214,6 +216,59 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(notices.status).toBe(200);
  const own=(notices.data as Array<{transactionId:string;isRead:boolean}>).find(n=>n.transactionId===tx!.transactionId);
  expect(own?.isRead).toBe(true);
+ // WS2 F-085/F-088: delayed real local SQL ACK from recipient Account A
+ // must not paint that recipient's notice or an error onto payer Account B.
+ // This is a disposable Supabase + actual mobile Chromium journey, not a mock
+ // of auth ownership/RLS or a hosted production transaction.
+ const aNoticeId=(notices.data as Array<{id:number;transactionId:string}>)
+   .find(n=>n.transactionId===tx!.transactionId)?.id;
+ expect(aNoticeId).toBeTruthy();
+ const race=await visit(beneficiary,'notifications',{width:375,height:812});
+ await expect(race.page.getByRole('button',{name:'Mark unread'})).toBeVisible({timeout:15000});
+ let releaseDelayedAck!:()=>void;
+ let acknowledgeStarted!:()=>void;
+ const holdAck=new Promise<void>(resolve=>{releaseDelayedAck=resolve;});
+ const ackStarted=new Promise<void>(resolve=>{acknowledgeStarted=resolve;});
+ await race.page.route('**/rest/v1/rpc/sim_set_my_notice_read',async route=>{
+   const actualSqlResponse=await route.fetch();
+   expect(actualSqlResponse.status()).toBe(200);
+   expect(await actualSqlResponse.json()).toMatchObject({id:aNoticeId,isRead:false,userId:'user7'});
+   acknowledgeStarted();
+   await holdAck;
+   await route.fulfill({response:actualSqlResponse});
+ });
+ await race.page.getByRole('button',{name:'Mark unread'}).click();
+ await ackStarted;
+ // Auth changes while the A request is in flight and its SQL reply withheld.
+ await race.page.locator('.citizen-mobile-menu-trigger').click();
+ const afterSignoutUrl=new URL('/',race.page.url()).href;
+ await race.page.locator('.citizen-dialog-signout').click();
+ await race.page.waitForURL(afterSignoutUrl,{waitUntil:'load',timeout:15000});
+ await race.page.goto('/?action=notifications#access_token='+encodeURIComponent(payer.session.access_token)+
+  '&refresh_token='+encodeURIComponent(payer.session.refresh_token)+
+  '&token_type=bearer&expires_in=3600&expires_at='+
+  (payer.session.expires_at||Math.floor(Date.now()/1000)+3600));
+ await expect(race.page.getByRole('heading',{name:'Payment notifications'})).toBeVisible({timeout:15000});
+ await expect(race.page.getByText('৳173.75').filter({visible:true}).first()).toBeVisible({timeout:15000});
+ await expect(race.page.getByText('৳23.50')).toHaveCount(0);
+ // A same-page request may be cancelled by the full navigation needed to
+ // authenticate B. The server ACK was already verified through route.fetch()
+ // before the switch, so do not wait for a response event from the old page.
+ // The isolated unit test verifies that an *uncancelled* late result is ignored.
+ releaseDelayedAck();
+ await race.page.waitForTimeout(250);
+ await expect(race.page.getByText('৳23.50')).toHaveCount(0);
+ await expect(race.page.getByText('Account changed during payment operation')).toHaveCount(0);
+ await expect(race.page.getByText('Notification update failed')).toHaveCount(0);
+ await expect(race.page.getByText('৳173.75').filter({visible:true}).first()).toBeVisible();
+ // A's immutable notice ID is not writable by B even with a direct RPC.
+ const unauthorizedAck=await request('/rest/v1/rpc/sim_set_my_notice_read',
+   {p_notice_id:aNoticeId,p_is_read:true},payer.session.access_token);
+ expect(unauthorizedAck.status).toBeGreaterThanOrEqual(400);
+ await race.page.reload({waitUntil:'domcontentloaded'});
+ await expect(race.page.getByText('৳173.75').filter({visible:true}).first()).toBeVisible({timeout:15000});
+ await expect(race.page.getByText('৳23.50')).toHaveCount(0);
+ await race.context.close();
  // The profile navigation above leaves Activity. Return to Activity and reload
  // so this proves the initiating payer view remains the default after refresh.
  await one.page.goto('/?action=history');
@@ -222,7 +277,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByRole('button',{name:'Payments I initiated'}))
    .toHaveAttribute('aria-pressed','true',{timeout:15000});
  // The recorded payer, not a beneficiary, can reuse the complete historical
- // transaction. The previous-year allocation must be reset individually.
+ // transaction. A supported historical year remains selected and editable.
  await expect(one.page.getByTestId('pay-again-mobile').first()).toBeVisible({timeout:15000});
  await one.page.getByTestId('pay-again-mobile').first().click();
  await expect(one.page.getByTestId('pay-again-copy-status')).toContainText(tx!.id);
@@ -231,7 +286,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByLabel('Amount (৳)').nth(0)).toHaveValue('150.25');
  await expect(one.page.getByLabel('Amount (৳)').nth(1)).toHaveValue('23.50');
  await expect(one.page.getByLabel('Assessment year').nth(0)).toHaveValue('2026-27');
- await expect(one.page.getByLabel('Assessment year').nth(1)).toHaveValue('');
+ await expect(one.page.getByLabel('Assessment year').nth(1)).toHaveValue('2025-26');
  // Reuse remains editable. Simply opening/changing a copy cannot mutate the
  // immutable SQL payment or produce a second receipt.
  await one.page.getByLabel('Assessment year').nth(1).selectOption('2026-27');
@@ -243,10 +298,59 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  expect(prior?.allocations.map(a=>a.amountMinor)).toEqual([15025,2350]);
  expect(prior?.allocations.map(a=>a.assessmentYear)).toEqual(['2026-27','2025-26']);
 
+ // F-071/F-072: complete Pay Again through the real disposable browser→Auth
+ // SQL journey, not merely a copied form. Capture the *actual* UI RPC body
+ // without mocking its response or creating any hosted payment.
+ const repeatRequests:Record<string,unknown>[]=[];
+ one.page.on('request',requestEvent=>{
+  if(requestEvent.method()==='POST' &&
+     requestEvent.url().includes('/rest/v1/rpc/sim_submit_my_payment')){
+    repeatRequests.push(requestEvent.postDataJSON() as Record<string,unknown>);
+  }
+ });
+ await one.page.getByRole('button',{name:'Save payment record'}).click();
+ await expect(one.page.getByRole('status').filter({
+  hasText:'Payment record saved. Office copy pending; Treasury settlement unverified:'
+ })).toBeVisible({timeout:15000});
+ expect(repeatRequests).toHaveLength(1);
+ const afterRepeat=await request('/rest/v1/rpc/sim_my_payment_history',
+  {p_view:'payer'},payer.session.access_token);
+ expect(afterRepeat.status).toBe(200);
+ type RepeatRow={id:string;transactionId:string;totalMinor:number;
+  allocations:Array<{beneficiary:string;assessmentYear:string;amountMinor:number}>};
+ const readbackRows=afterRepeat.data as RepeatRow[];
+ const repeated=readbackRows.find(row=>row.transactionId!==tx!.transactionId &&
+  row.totalMinor===17380 &&
+  row.allocations.some(a=>a.beneficiary==='user7'&&a.amountMinor===2350));
+ expect(repeated).toBeTruthy();
+ expect(repeated!.allocations.map(a=>[a.beneficiary,a.assessmentYear,a.amountMinor]))
+  .toEqual([['user6','2026-27',15030],['user7','2026-27',2350]]);
+ expect(readbackRows.find(row=>row.transactionId===tx!.transactionId)?.allocations
+  .map(a=>a.amountMinor)).toEqual([15025,2350]);
+ expect(psql("select count(*) from demo_payment.mirror_outbox o join demo_payment.story_payments p on p.id=o.entity_id where o.entity_type='PAYMENT' and p.data->'details'->>'sourceTransactionId'='"+repeated!.transactionId+"' and o.status='PENDING'")).toBe('1');
+ // Exactly the same key and unchanged allocations replay the same source row.
+ const replay=await request('/rest/v1/rpc/sim_submit_my_payment',
+  repeatRequests[0],payer.session.access_token);
+ expect(replay.status,JSON.stringify(replay.data)).toBe(200);
+ expect((replay.data as {transactionId:string}).transactionId).toBe(repeated!.transactionId);
+ const replayHistory=await request('/rest/v1/rpc/sim_my_payment_history',
+  {p_view:'payer'},payer.session.access_token);
+ expect(replayHistory.status).toBe(200);
+ expect((replayHistory.data as RepeatRow[]).filter(row=>
+  row.transactionId===repeated!.transactionId)).toHaveLength(1);
+ await one.page.goto('/?action=history');
+ await one.page.reload({waitUntil:'domcontentloaded'});
+ const repeatedCard=one.page.getByTestId('signed-in-payment-activity-cards')
+  .locator(':scope > li').filter({hasText:repeated!.id}).first();
+ await expect(repeatedCard.getByText(repeated!.id)).toBeVisible({timeout:15000});
+
  // Removing a private address-book list cascades only its contact row. The
  // payer's immutable payment and beneficiary allocation must remain readable.
  await one.page.goto('/?action=beneficiaries');
  await expect(one.page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+ // The approved shared register keeps its advanced list selector behind Filters.
+ await one.page.getByRole('button',{name:'Filter',exact:true}).click();
+ await expect(one.page.getByRole('button',{name:'Selected list'})).toBeVisible();
  await one.page.getByRole('button',{name:'Selected list'}).click();
  await one.page.getByRole('dialog',{name:'Choose beneficiary list'})
    .getByRole('button',{name:'Edit Profile acceptance'}).click();

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { enterTaxPayService } from './pay-tax-entry-helper';
 
 async function beginGuestPayment(page: Page, service: string) {
   await page.goto('/');
@@ -160,6 +161,9 @@ test('desktop Pay Tax steps size to content and align AY with amount without an 
   test.skip(info.project.name !== 'desktop-1280', 'Desktop 1280px geometry acceptance');
   await page.setViewportSize({ width: 1280, height: 900 });
   const dialog = await beginGuestPayment(page, 'Tax with Return');
+  // Measure actual payment Step 1 after it mounts, not the taller preceding chooser.
+  // Retain the same strict height, overflow, and field-alignment checks.
+  await expect(dialog.locator('#guest-tin')).toBeVisible();
   const outer = dialog.locator('.taxpay-modal__body');
   const stepOneBox = await dialog.boundingBox();
   expect(stepOneBox).not.toBeNull();
@@ -184,4 +188,90 @@ test('desktop Pay Tax steps size to content and align AY with amount without an 
   expect(year!.x + year!.width).toBeLessThanOrEqual(amount!.x + 2);
   expect(await outer.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
   await expect(dialog.getByRole('button', { name: 'Continue to payment channel' })).toBeVisible();
+});
+
+test('desktop Other Tax taxpayer details stay scrollable above the fixed footer', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Desktop scrolling regression');
+  // Same 1225 x 777 desktop height as the reported clipped taxpayer modal.
+  await page.setViewportSize({ width: 1225, height: 777 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
+
+  const body = dialog.locator('.taxpay-modal__body');
+  const footer = dialog.locator('.taxpay-modal__footer');
+  await expect(body).toHaveCSS('overflow-y', 'auto');
+  await expect(dialog.locator('#guest-payer-name')).toBeVisible();
+  await expect(dialog.getByTestId('other-tax-primary-taxpayer')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Continue to purpose & amount' })).toBeVisible();
+  expect(await body.evaluate(el => el.scrollHeight - el.clientHeight)).toBeGreaterThan(50);
+
+  const viewport = await body.boundingBox();
+  const footerBefore = await footer.boundingBox();
+  expect(viewport).not.toBeNull();
+  expect(footerBefore).not.toBeNull();
+  await page.mouse.move(viewport!.x + 90, viewport!.y + Math.min(180, viewport!.height / 2));
+  await page.mouse.wheel(0, 500);
+  await expect.poll(() => body.evaluate(el => el.scrollTop)).toBeGreaterThan(40);
+
+  // The whole form moves, but action footer stays pinned and never overlays
+  // the remaining taxpayer controls.
+  const footerAfter = await footer.boundingBox();
+  expect(footerAfter).not.toBeNull();
+  expect(Math.abs(footerAfter!.y - footerBefore!.y)).toBeLessThanOrEqual(2);
+  expect(await body.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
+  await expect(dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: /^Search(?: TIN)?$/ })).toBeVisible();
+});
+
+test('desktop My Tax Liability calculation rail fills the taxpayer column without trapping scroll', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Desktop calculation-rail regression');
+  await page.setViewportSize({ width: 1225, height: 777 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
+
+  const body = dialog.locator('.taxpay-modal__body');
+  const grid = dialog.locator('.payment-flow-embedded__content');
+  const summary = dialog.locator('.payment-flow-embedded__identity > .payment-form-summary');
+  await expect(summary).toBeVisible();
+  await expect(body).toHaveCSS('overflow-y', 'auto');
+  await expect(summary).toHaveCSS('position', 'sticky');
+  await expect(summary).toHaveCSS('overflow-y', 'visible');
+
+  // The two columns have one continuous background surface even though the
+  // calculation card is shorter than the taxpayer form and stays pinned.
+  const rail = await grid.evaluate(element => {
+    const fill = getComputedStyle(element, '::before');
+    const summary = element.querySelector('.payment-flow-embedded__identity > .payment-form-summary');
+    return {
+      content: fill.content,
+      column: fill.gridColumnStart,
+      background: fill.backgroundColor,
+      rowHeight: element.getBoundingClientRect().height,
+      cardHeight: summary?.getBoundingClientRect().height ?? 0,
+    };
+  });
+  expect(rail.content).not.toBe('none');
+  expect(rail.column).toBe('2');
+  expect(rail.background).toBe('rgb(248, 251, 255)');
+  expect(rail.rowHeight).toBeGreaterThan(rail.cardHeight + 40);
+
+  // Wheel events over the short sticky card continue to scroll the modal body,
+  // without moving the fixed action footer or creating horizontal overflow.
+  // Keep the 777px screenshot rail assertion above, then deliberately shorten
+  // the viewport so scrolling is required even for the compact SELF form.
+  await page.setViewportSize({ width: 1225, height: 560 });
+  await expect.poll(() => body.evaluate(element => element.scrollHeight - element.clientHeight)).toBeGreaterThan(20);
+  const footer = await dialog.locator('.taxpay-modal__footer').boundingBox();
+  const card = await summary.boundingBox();
+  expect(footer).not.toBeNull();
+  expect(card).not.toBeNull();
+  await page.mouse.move(card!.x + 40, card!.y + 60);
+  await page.mouse.wheel(0, 420);
+  await expect.poll(() => body.evaluate(element => element.scrollTop)).toBeGreaterThan(10);
+  const after = await dialog.locator('.taxpay-modal__footer').boundingBox();
+  expect(Math.abs(after!.y - footer!.y)).toBeLessThanOrEqual(2);
+  expect(await body.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(2);
 });
