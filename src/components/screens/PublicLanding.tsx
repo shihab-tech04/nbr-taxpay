@@ -20,8 +20,10 @@ const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
 ]);
 
 export const PublicLanding: React.FC = () => {
-  const { language, navigate, openPaymentServiceChoice, openAllTaxPayments, isPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, openPaymentServiceChoice, openAllTaxPayments, isPaymentServiceChoiceOpen, demoUser, previewAccount, userRole } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
+  const hasTaxpayerAccount = Boolean(authenticatedUser || demoUser || previewAccount)
+    || (import.meta.env.DEV && ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole));
   const [openService, setOpenService] = useState<PublicService | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -57,7 +59,7 @@ export const PublicLanding: React.FC = () => {
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
 
-  // All Tax Payments is the one actionable benefit; the other five remain informational.
+  // All six benefit cards are informational; the hero Pay Tax action starts the unified guest flow.
   const citizenBenefits = [
     {
       id: 'payments',
@@ -100,7 +102,7 @@ export const PublicLanding: React.FC = () => {
   return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
-      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : service ? openPaymentServiceChoice(service) : authenticatedUser ? openPaymentServiceChoice() : openAllTaxPayments()}
+      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : service ? openPaymentServiceChoice(service) : hasTaxpayerAccount ? openPaymentServiceChoice() : openAllTaxPayments()}
       paused={isPaymentServiceChoiceOpen || openService !== null}
     />
 

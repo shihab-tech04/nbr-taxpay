@@ -1,6 +1,6 @@
 import { setWorkspaceLanguage } from './workspace-language';
 import {expect, test} from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 
 test('public header, user-guide topics, footer links, language and browser history reach their intended destinations', async ({page}) => {
@@ -80,7 +80,7 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await expect(page.getByRole('dialog',{name:/Payment status & receipt/}).getByLabel('Challan, token or transaction reference')).toHaveValue('NO-SUCH-REFERENCE-98765');
   await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toBeVisible();
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Pay Tax'}).click();
+  await openLegacyTaxServiceChoice(page);
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(services).toBeVisible();
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
