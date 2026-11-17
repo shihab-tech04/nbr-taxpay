@@ -181,36 +181,23 @@ test('verified profile shows owner-scoped activity, linked scenario allocations 
   await expect(phase.getByText('Tax credit details are not available yet')).toBeVisible();
   await expect(phase.getByText('A payment request or receipt alone does not confirm a posted tax credit. Only verified credits linked to this account appear here.')).toBeVisible();
   await expect(phase).not.toContainText('৳ 180,000');
-  // Sample mode is explicit, reversible and never mutates SQL or changes the
-  // meaning of owner-owned activity. It reuses the existing v11 example ledger.
+  // Authenticated pages must not offer fictional liability/credit totals.
+  // Year navigation remains available and cannot turn source requests into posted credits.
   const writes:string[]=[];
   page.on('request',request=>{
     if(/\/rest\/v1\/(taxpay_payment_requests|taxpay_payment_drafts|taxpay_request_events)/.test(request.url())&&
        ['POST','PATCH','PUT','DELETE'].includes(request.method()))writes.push(request.url());
   });
-  const examples=page.getByTestId('dashboard-example-controls');
-  await examples.getByRole('button',{name:'View examples'}).click();
-  await expect(examples).toContainText('not your tax records');
-  await expect(examples.getByRole('button',{name:'Hide examples'})).toHaveAttribute('aria-pressed','true');
-  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2025-2026');
-  await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(0);
-  await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(0);
-  await expect(phase.getByRole('table',{name:'Posted credit components'})).toContainText('৳ 155,000');
-  await expect(phase.getByText('Tax credit details are not available yet')).toHaveCount(0);
-  await expect(phase.getByRole('img',{name:'Illustrative liability coverage'})).toBeVisible();
-  await expect(phase.getByText('Coverage details are not available yet')).toHaveCount(0);
-  await expect(phase.getByRole('region',{name:'Tax summary for this year'})).toContainText('৳ 6,500');
-  await expect(phase.getByRole('region',{name:'Example monthly activity chart'})).toHaveCount(0);
-  await expect(phase.getByRole('heading',{name:'By tax year'})).toBeVisible();
-  await phase.getByRole('button',{name:'2024-2025'}).click();
-  await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(0);
-  await examples.getByRole('button',{name:'Hide examples'}).click();
-  await expect(examples.getByRole('button',{name:'View examples'})).toHaveAttribute('aria-pressed','false');
-  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2026-2027');
-  await expect(page.locator('.taxpayer-dashboard-kpi')).toHaveCount(0);
+  await expect(page.getByTestId('dashboard-example-controls')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'View examples'})).toHaveCount(0);
   await expect(phase.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
-  await expect(phase.getByText('Tax credit details are not available yet')).toBeVisible();
-  await expect(phase.getByText('A payment request or receipt alone does not confirm a posted tax credit. Only verified credits linked to this account appear here.')).toBeVisible();
+  await expect(phase.getByRole('img',{name:'Illustrative liability coverage'})).toHaveCount(0);
+  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2026-2027');
+  await phase.getByRole('button',{name:'2024-2025'}).click();
+  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2024-2025');
+  await expect(phase.getByRole('table',{name:'Posted credit components'})).toHaveCount(0);
+  await phase.getByRole('button',{name:'2026-2027'}).click();
+  await expect(page.getByRole('combobox',{name:'Assessment year'}).first()).toHaveValue('2026-2027');
   expect(writes).toEqual([]);
 
   await expect(dashboard).toContainText('৳ 65.50');

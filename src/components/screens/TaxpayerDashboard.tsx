@@ -39,20 +39,14 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
   // Keep that prior working default when the v11 dashboard becomes visible.
   // Do not change the historical sample-only assessment-year list.
   const [yearChoice,setYearChoice] = useState<string|null>(null);
-  const [exampleMode,setExampleMode]=useState(false);
-  const [yearBeforeExample,setYearBeforeExample]=useState<string|null>(null);
+  // Signed-in financial figures must never switch to fictional examples.
+  // Keep the verified-empty state until account-linked assessments are available.
+  const [exampleMode]=useState(false);
   const accountYears=user ? [...new Set(['2026-2027',...ASSESSMENT_YEARS,...illustrativeDashboardYears])] : ASSESSMENT_YEARS;
   const defaultYear=user ? '2026-2027' : (ASSESSMENT_YEARS[0] || '2026-2027');
   const year=yearChoice&&accountYears.includes(yearChoice) ? yearChoice : defaultYear;
   const setYear=(value:string)=>setYearChoice(value);
   const exampleYear=exampleMode?getIllustrativeDashboardYear(year):null;
-  const toggleExample=()=>{
-    if(!exampleMode){
-      setYearBeforeExample(year);
-      if(!getIllustrativeDashboardYear(year))setYear('2025-2026');
-    } else if(yearBeforeExample) setYear(yearBeforeExample);
-    setExampleMode(!exampleMode);
-  };
   const [category,setCategory] = useState<Category>('all');
   const [query,setQuery] = useState('');
   // Explicit demo activity ONLY. Payer-TIN fixtures do not establish credit ownership.
@@ -143,15 +137,6 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
         <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}/>
       </div></div>}
       {serviceShortcut}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-taxpay-border bg-white px-4 py-3" data-testid="dashboard-example-controls">
-        <p className="min-w-0 text-sm text-taxpay-muted">{exampleMode
-          ? tr('Example figures — not your tax records or confirmed payments.','উদাহরণের পরিমাণ — আপনার কর রেকর্ড বা নিশ্চিত পরিশোধ নয়।')
-          : tr('View the dashboard with optional fictional example figures.','চাইলে কাল্পনিক উদাহরণের পরিমাণ দিয়ে ড্যাশবোর্ড দেখুন।')}</p>
-        <button type="button" aria-pressed={exampleMode} onClick={toggleExample}
-          className="min-h-11 shrink-0 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
-          {exampleMode?tr('Hide examples','উদাহরণ বন্ধ করুন'):tr('View examples','উদাহরণ দেখুন')}
-        </button>
-      </div>
       {verifiedExternalTaxPositionReady && <div className="taxpay-bento-grid" data-testid="authenticated-overview-bento">
         <section className="taxpay-bento-hero" aria-labelledby="account-bento-hero-title">
           <p className="text-xs font-semibold">{tr('NEXT STEPS','পরবর্তী করণীয়')} · {year}</p>
