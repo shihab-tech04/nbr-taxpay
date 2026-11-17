@@ -1176,9 +1176,12 @@
     position: sticky;
     top: 0;
     align-self: start;
-    max-height: min(70dvh, 620px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    /* Step 1 has ONE scroll owner: the shared modal body. A separate
+       overflow:auto/overscroll:contain here swallowed wheel events over the
+       calculation card and produced a tall empty scrollbar. */
+    max-height: none;
+    overflow: visible;
+    overscroll-behavior: auto;
   }
 }
 @media (max-width: 800px) {
@@ -2209,6 +2212,36 @@
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]:has(.payment-flow-embedded__identity) {
     height: min(82dvh, 740px);
     max-height: min(82dvh, 740px);
+  }
+}
+
+/* Desktop identity rail: extend the calculation-column surface down the
+   taxpayer form's grid row. The calculation card itself remains sticky and
+   content-sized, and the MODAL BODY remains the only payment-form scrollbar.
+   Do not give either column 100% height or lock body overflow again. */
+@media (min-width: 801px) {
+  @container taxpay-payment (min-width: 861px) {
+    .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]
+      .payment-flow-embedded__content:has(> .payment-flow-embedded__identity)::before {
+      content: "";
+      grid-column: 2;
+      grid-row: 1;
+      align-self: stretch;
+      min-height: 0;
+      background: #f8fbff;
+      border-left: 1px solid var(--citizen-border);
+      pointer-events: none;
+    }
+    /* Validation messages take the first grid row; the rail follows the
+       taxpayer inputs into the second row without covering the alert. */
+    .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]
+      .payment-flow-embedded__content:has(> #guest-payment-error):has(> .payment-flow-embedded__identity)::before {
+      grid-row: 2;
+    }
+    .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]
+      .payment-flow-embedded__identity > .payment-form-summary {
+      z-index: 1;
+    }
   }
 }
 

@@ -223,3 +223,55 @@ test('desktop Other Tax taxpayer details stay scrollable above the fixed footer'
   expect(await body.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
   await expect(dialog.getByTestId('other-tax-primary-taxpayer').getByRole('button', { name: /^Search(?: TIN)?$/ })).toBeVisible();
 });
+
+test('desktop My Tax Liability calculation rail fills the taxpayer column without trapping scroll', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Desktop calculation-rail regression');
+  await page.setViewportSize({ width: 1225, height: 777 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
+
+  const body = dialog.locator('.taxpay-modal__body');
+  const grid = dialog.locator('.payment-flow-embedded__content');
+  const summary = dialog.locator('.payment-flow-embedded__identity > .payment-form-summary');
+  await expect(summary).toBeVisible();
+  await expect(body).toHaveCSS('overflow-y', 'auto');
+  await expect(summary).toHaveCSS('position', 'sticky');
+  await expect(summary).toHaveCSS('overflow-y', 'visible');
+
+  // The two columns have one continuous background surface even though the
+  // calculation card is shorter than the taxpayer form and stays pinned.
+  const rail = await grid.evaluate(element => {
+    const fill = getComputedStyle(element, '::before');
+    const summary = element.querySelector('.payment-flow-embedded__identity > .payment-form-summary');
+    return {
+      content: fill.content,
+      column: fill.gridColumnStart,
+      background: fill.backgroundColor,
+      rowHeight: element.getBoundingClientRect().height,
+      cardHeight: summary?.getBoundingClientRect().height ?? 0,
+    };
+  });
+  expect(rail.content).not.toBe('none');
+  expect(rail.column).toBe('2');
+  expect(rail.background).toBe('rgb(248, 251, 255)');
+  expect(rail.rowHeight).toBeGreaterThan(rail.cardHeight + 40);
+
+  // Wheel events over the short sticky card continue to scroll the modal body,
+  // without moving the fixed action footer or creating horizontal overflow.
+  // Keep the 777px screenshot rail assertion above, then deliberately shorten
+  // the viewport so scrolling is required even for the compact SELF form.
+  await page.setViewportSize({ width: 1225, height: 560 });
+  await expect.poll(() => body.evaluate(element => element.scrollHeight - element.clientHeight)).toBeGreaterThan(20);
+  const footer = await dialog.locator('.taxpay-modal__footer').boundingBox();
+  const card = await summary.boundingBox();
+  expect(footer).not.toBeNull();
+  expect(card).not.toBeNull();
+  await page.mouse.move(card!.x + 40, card!.y + 60);
+  await page.mouse.wheel(0, 420);
+  await expect.poll(() => body.evaluate(element => element.scrollTop)).toBeGreaterThan(10);
+  const after = await dialog.locator('.taxpay-modal__footer').boundingBox();
+  expect(Math.abs(after!.y - footer!.y)).toBeLessThanOrEqual(2);
+  expect(await body.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(2);
+});
