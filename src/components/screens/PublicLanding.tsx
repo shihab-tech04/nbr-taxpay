@@ -19,7 +19,7 @@ const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
 ]);
 
 export const PublicLanding: React.FC = () => {
-  const { language, navigate, openPaymentServiceChoice, isPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, openPaymentServiceChoice, openAllTaxPayments, isPaymentServiceChoiceOpen } = useTaxState();
   const [openService, setOpenService] = useState<PublicService | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -245,7 +245,7 @@ export const PublicLanding: React.FC = () => {
           id === 'payments' ? (
             <button type="button" key={id} className="public-benefits__item public-benefits__item--action" data-benefit={id}
               aria-describedby={`public-benefit-detail-${id}`}
-              onClick={() => openPaymentServiceChoice()}>
+              onClick={openAllTaxPayments}>
               <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
               <span className="public-benefits__copy">
                 <span className="public-benefits__action-title">{title}</span>
