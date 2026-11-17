@@ -30,6 +30,7 @@ export const NotificationsView:React.FC=()=>{
   const privateMode=Boolean(authenticatedUser);
   // Do not render the previous account's bound profile during an Auth switch.
   const id=(privateMode&&authenticatedUser&&boundOwnerUid===authenticatedUser.id?boundId:undefined) as SimulationUser|undefined;
+  const noticeIdentity=(authenticatedUser?.id??'')+':'+(id??'');
   // A delayed SQL acknowledgment must be scoped to the Auth UID and profile
   // that started it. Refresh this ref during render, before passive effects.
   const currentNoticeIdentity=useRef<NoticeOwnerIdentity>({authUid:authenticatedUser?.id??null,profileId:id??null});
