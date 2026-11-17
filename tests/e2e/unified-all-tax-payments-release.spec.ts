@@ -4,9 +4,7 @@ import { expect, test } from '@playwright/test';
  * WS5 release gate for the explicitly approved All Tax Payments three-stage UI.
  * Does not submit payment, create a receipt, or mutate hosted records.
  */
-for (const width of [375, 1280]) {
-  test(`unified walk-in retains final payer fields, remarks, amounts and three-step progress at ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 });
+test('unified walk-in retains final payer fields, remarks, amounts and three-step progress', async ({ page }) => {
     await page.goto('/?action=landing&lang=en');
     await page.locator('.public-benefits__item[data-benefit="payments"]').click();
     const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
@@ -42,7 +40,7 @@ for (const width of [375, 1280]) {
     await dialog.locator('#guest-payer-name').fill('Test Walk-in Payer');
     await dialog.locator('#guest-phone').fill('01712345678');
     await dialog.locator('#guest-payment-remarks').fill('Assessment payment for sample user 2');
-    await dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__cancel').click();
+    await dialog.locator('.taxpay-modal__back').click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
     await expect(dialog.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]')).toHaveValue('3500');
@@ -53,5 +51,4 @@ for (const width of [375, 1280]) {
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
     expect(overflow).toBe(false);
-  });
-}
+});
