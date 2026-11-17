@@ -1,5 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
-import {enterTaxPayService} from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 type Status='ACTIVE'|'PENDING'|'EXPIRED'|'REVOKED';
 function authorization(taxpayerId:'user2'|'user3',status:Status,activeUntil:number|null=null){
@@ -53,7 +53,7 @@ async function openSignedInPayment(page:Page,service='OTHER_TAX_PAYMENT'){
   await login.getByRole('button',{name:'Sign In'}).click();
   await expect(login).toHaveCount(0);
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(dialog,service,'OTHER');
   return dialog;
@@ -210,7 +210,7 @@ test('unavailable guest capability blocks payment with actionable recovery guida
 
 test('guest input remains editable and limited to twelve digits',async({page})=>{
   await page.goto('/');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
   const tin=dialog.locator('#guest-tin');

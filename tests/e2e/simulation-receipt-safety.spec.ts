@@ -1,3 +1,4 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { fillTravelDetails } from './travel-tax-test-helper';
 import { expect, test, type Page } from '@playwright/test';
 
@@ -37,7 +38,7 @@ async function travelReview(page: Page) {
 test('guest submission and receipt use only synthetic references', async ({ page }) => {
   const submissions = await mockStoryPayments(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   const ownPayer = dialog.locator('[data-payer-relationship="SELF"]');
   await ownPayer.click();

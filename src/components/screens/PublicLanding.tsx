@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FileCheck2, FilePenLine, History, Repeat2, Save, Search, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
+import { useAccountIdentity } from '../../services/accountIdentity';
 import type { PublicService } from './PublicServiceModal';
 import { PublicHeroCarousel } from './PublicHeroCarousel';
 import { INITIAL_RECEIPTS } from '../../data/mockData';
@@ -19,7 +20,10 @@ const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
 ]);
 
 export const PublicLanding: React.FC = () => {
-  const { language, navigate, openPaymentServiceChoice, openAllTaxPayments, isPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, openPaymentServiceChoice, openAllTaxPayments, isPaymentServiceChoiceOpen, demoUser, previewAccount, userRole } = useTaxState();
+  const { user: authenticatedUser } = useAccountIdentity();
+  const hasTaxpayerAccount = Boolean(authenticatedUser || demoUser || previewAccount)
+    || (import.meta.env.DEV && ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole));
   const [openService, setOpenService] = useState<PublicService | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -55,7 +59,7 @@ export const PublicLanding: React.FC = () => {
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
 
-  // All Tax Payments is the one actionable benefit; the other five remain informational.
+  // All six benefit cards are informational; the hero Pay Tax action starts the unified guest flow.
   const citizenBenefits = [
     {
       id: 'payments',
@@ -98,7 +102,7 @@ export const PublicLanding: React.FC = () => {
   return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
-      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
+      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : service ? openPaymentServiceChoice(service) : hasTaxpayerAccount ? openPaymentServiceChoice() : openAllTaxPayments()}
       paused={isPaymentServiceChoiceOpen || openService !== null}
     />
 
@@ -242,26 +246,13 @@ export const PublicLanding: React.FC = () => {
       </div>
       <div className="public-benefits__grid">
         {citizenBenefits.map(({ id, Icon, title, detail }) => (
-          id === 'payments' ? (
-            <button type="button" key={id} className="public-benefits__item public-benefits__item--action" data-benefit={id}
-              aria-label={title}
-              aria-describedby={`public-benefit-detail-${id}`}
-              onClick={openAllTaxPayments}>
-              <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
-              <span className="public-benefits__copy">
-                <span className="public-benefits__action-title" role="heading" aria-level={3}>{title}</span>
-                <span className="public-benefits__action-detail" id={`public-benefit-detail-${id}`}>{detail}</span>
-              </span>
-            </button>
-          ) : (
-            <article key={id} className="public-benefits__item" data-benefit={id}>
-              <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
-              <div className="public-benefits__copy">
-                <h3>{title}</h3>
-                <p id={`public-benefit-detail-${id}`}>{detail}</p>
-              </div>
-            </article>
-          )
+          <article key={id} className="public-benefits__item" data-benefit={id}>
+            <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
+            <div className="public-benefits__copy">
+              <h3>{title}</h3>
+              <p id={`public-benefit-detail-${id}`}>{detail}</p>
+            </div>
+          </article>
         ))}
       </div>
     </section>

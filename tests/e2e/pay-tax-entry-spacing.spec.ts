@@ -1,3 +1,4 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { expect, test } from '@playwright/test';
 
 // Runs in the existing desktop-1280, mobile-375 and mobile-320 projects.
@@ -5,8 +6,7 @@ import { expect, test } from '@playwright/test';
 for (const language of ['en', 'bn'] as const) {
   test(`Pay Tax progressive groups have readable spacing and token dividers (${language})`, async ({ page }) => {
     await page.goto(language === 'bn' ? '/?lang=bn' : '/');
-    await page.getByRole('button', { name: language === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true }).first().click();
-
+    await openLegacyTaxServiceChoice(page);
     const dialog = page.locator('.taxpay-modal[data-public-service="payment-choice"]');
     await expect(dialog).toBeVisible();
     await dialog.locator('[data-payer-relationship="SELF"]').click();

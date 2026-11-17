@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 async function beginGuestPayment(page: Page, service: string) {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
   await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
@@ -195,7 +195,7 @@ test('desktop Other Tax taxpayer details stay scrollable above the fixed footer'
   // Same 1225 x 777 desktop height as the reported clipped taxpayer modal.
   await page.setViewportSize({ width: 1225, height: 777 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
 
@@ -228,7 +228,7 @@ test('desktop My Tax Liability calculation rail fills the taxpayer column withou
   test.skip(info.project.name !== 'desktop-1280', 'Desktop calculation-rail regression');
   await page.setViewportSize({ width: 1225, height: 777 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
 

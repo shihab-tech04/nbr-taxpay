@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('payment amount matches the endpoint limit and preserves the last paisa', async ({ page }) => {
   let sentMinor: number | undefined;
@@ -12,8 +12,7 @@ test('payment amount matches the endpoint limit and preserves the last paisa', a
     }) });
   });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN');
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');

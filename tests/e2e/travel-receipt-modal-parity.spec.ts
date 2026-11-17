@@ -1,7 +1,7 @@
 import { fillTravelDetails } from './travel-tax-test-helper';
 import { expect, test } from '@playwright/test';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('Travel Tax settled record shares modal and has only Download/Print without overlapping buttons', async ({ page }) => {
   await page.goto('/');
@@ -125,7 +125,7 @@ test('Tax with Return and Travel Tax stages keep identical dialog width at match
   ]) {
     await page.setViewportSize(viewport);
     await page.goto('/');
-    await page.getByRole('button', {name: 'Pay Tax', exact: true}).click();
+    await openLegacyTaxServiceChoice(page);
     const payment = page.getByRole('dialog', {name: 'Pay Tax'});
     await enterTaxPayService(payment, 'TAX_WITH_RETURN');
     await expect(payment.locator('.taxpay-modal__title')).toHaveText('Taxpayer details');

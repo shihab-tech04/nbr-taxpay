@@ -1,3 +1,4 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
@@ -80,7 +81,7 @@ for(const language of ['en','bn'] as const){
       // Exercise the approved embedded Pay Tax journey, where footer actions
       // are portaled into the existing modal rather than the legacy guest page.
       await page.goto('/?action=landing&lang='+language);
-      await page.getByRole('button',{name:language==='bn'?'কর পরিশোধ':'Pay Tax',exact:true}).first().click();
+      await openLegacyTaxServiceChoice(page);
       const dialog=page.getByRole('dialog',{name:language==='bn'?'কর পরিশোধ':'Pay Tax'});
       await dialog.locator('[data-payer-relationship="OTHER"]').click();
       await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();

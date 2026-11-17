@@ -1,3 +1,4 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { fillTravelDetails } from './travel-tax-test-helper';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import { expect, test, type Locator } from '@playwright/test';
@@ -9,8 +10,7 @@ async function choosePayer(dialog: Locator, mode: 'SELF' | 'OTHER' = 'SELF') {
 
 test('Service selector preserves geometry and uses icon, text and radio cues for selection', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-
+  await openLegacyTaxServiceChoice(page);
   const chooser = page.getByRole('dialog', { name: 'Pay Tax' });
   const cards = chooser.locator('[data-payer-relationship]');
   await expect(cards).toHaveCount(2);
@@ -110,7 +110,7 @@ test('Service selector preserves geometry and uses icon, text and radio cues for
 test('the approved three decisions progressively appear in one modal and retain choices', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   const next = dialog.getByRole('button', { name: 'Continue', exact: true });
   await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
@@ -143,7 +143,7 @@ test('the approved three decisions progressively appear in one modal and retain 
 
 test('Every selected payment service has readable title, description and icon contrast', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const cards = page.getByRole('dialog', { name: 'Pay Tax' }).locator('[data-payer-relationship]');
 
   for (let index = 0; index < 2; index++) {
@@ -179,7 +179,7 @@ test('Every selected payment service has readable title, description and icon co
 
 test('Other Tax proceeds directly without an additional payment-type selector', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await choosePayer(dialog, 'OTHER');
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
@@ -204,7 +204,7 @@ test('Other Tax proceeds directly without an additional payment-type selector', 
 
 test('Tax with Return still proceeds with its unchanged service ID', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await choosePayer(dialog, 'SELF');
   await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
@@ -217,7 +217,7 @@ test('Tax with Return still proceeds with its unchanged service ID', async ({ pa
 
 test('returning from payment preserves the three choices and the removed subtype stays absent', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await choosePayer(dialog, 'SELF');
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
@@ -232,7 +232,7 @@ test('returning from payment preserves the three choices and the removed subtype
 
 test('account selection preserves payer and tax choices through the shared login and Back', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
@@ -248,7 +248,7 @@ test('account selection preserves payer and tax choices through the shared login
 
 test('Other Tax keeps the v11 guest reference and four payment stages', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await choosePayer(dialog, 'SELF');
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();

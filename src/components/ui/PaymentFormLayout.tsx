@@ -61,7 +61,7 @@ interface PaymentSummaryProps {
   note?: string;
   helpText?: string;
   breakdown?: { id?: string; label: string; detail?: string; value: number | null }[];
-  groupedBreakdown?: { id: string; label: string; tin: string; amount: number | null; entries: { id?: string; label: string; detail?: string; value: number | null }[] }[];
+  groupedBreakdown?: { id: string; label: string; tin: string; amount: number | null; countLabel?: string; entries: { id?: string; label: string; detail?: string; value: number | null }[] }[];
   onSelectEntry?: (id: string) => void;
 }
 
@@ -110,6 +110,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
       {groupedBreakdown && groupedBreakdown.length > 0 && <section className="payment-form-summary__taxpayers" aria-label={bn ? 'করদাতা অনুযায়ী হিসাব' : 'Calculation by taxpayer'} data-testid="grouped-taxpayer-calculation">
         <h3>{bn ? 'করদাতা অনুযায়ী হিসাব' : 'By taxpayer'}</h3>
         {groupedBreakdown.map((group, index) => {
+          const countLabel = group.countLabel ?? (bn ? `${group.entries.length}টি খাত` : `${group.entries.length} ${group.entries.length === 1 ? 'head' : 'heads'}`);
           const previewLimit = 4;
           const canExpand = group.entries.length > previewLimit;
           const expanded = Boolean(expandedTaxpayerSummaries[group.id]);
@@ -118,7 +119,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
           <summary>
             <span className="payment-form-summary__taxpayer-name">
               <strong>{group.label}</strong>
-              <small>{bn ? 'টিআইএন' : 'TIN'}: {group.tin || '—'} · {group.entries.length} {bn ? 'টি খাত' : group.entries.length === 1 ? 'head' : 'heads'}</small>
+              <small>{bn ? 'টিআইএন' : 'TIN'}: {group.tin || '—'} · {countLabel}</small>
             </span>
             <span className="payment-form-summary__taxpayer-total">{group.amount === null ? '—' : formatCurrency(group.amount, language)}</span>
             <ChevronDown size={16} aria-hidden="true" />

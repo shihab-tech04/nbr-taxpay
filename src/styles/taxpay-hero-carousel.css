@@ -1169,35 +1169,4 @@
   }
 }
 
-/* Keep the approved connected six-cell grid; only All Tax Payments is an action. */
-.public-home-sections .public-benefits__item--action {
-  display: grid;
-  width: 100%;
-  appearance: none;
-  font: inherit;
-  color: inherit;
-  background: #fff;
-  text-align: start;
-  cursor: pointer;
-}
-.public-home-sections .public-benefits__item--action:focus-visible {
-  position: relative;
-  z-index: 2;
-  outline: 2px solid var(--citizen-primary-dark);
-  outline-offset: -3px;
-}
-.public-benefits__action-title {
-  display: block;
-  color: var(--citizen-text);
-  font-size: .9375rem;
-  font-weight: 600;
-  line-height: 1.4;
-}
-.public-benefits__action-detail {
-  display: block;
-  margin-top: .2rem;
-  color: var(--citizen-muted);
-  font-size: .875rem;
-  font-weight: 400;
-  line-height: 1.5;
-}
+

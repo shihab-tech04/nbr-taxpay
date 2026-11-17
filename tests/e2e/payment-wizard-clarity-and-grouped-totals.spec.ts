@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('payment stepper has connected numbered states and shows completed progression', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN');
   const progress = dialog.locator('.taxpay-modal__progress');
@@ -21,7 +21,7 @@ test('payment stepper has connected numbered states and shows completed progress
 
 test('guest Other Tax shows one collapsible calculation group per beneficiary and exact subtotal', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   await dialog.locator('#guest-tin').fill('123456789012');
@@ -67,7 +67,7 @@ test('account taxpayer data is flat and recommendations do not claim liabilities
   await page.getByRole('textbox', { name: 'Password' }).fill('user1');
   await page.getByRole('button', { name: 'Sign In' }).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'SELF');
   // Signed-in SELF uses the approved read-only account card rather than
@@ -120,7 +120,7 @@ test('account beneficiary lists keep selection separate from taxpayer consent', 
   await page.getByRole('textbox',{name:'Password'}).fill('user1');
   await page.getByRole('button',{name:'Sign In'}).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   let dialog=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
   let picker=dialog.getByTestId('saved-beneficiary-picker');
@@ -134,7 +134,7 @@ test('account beneficiary lists keep selection separate from taxpayer consent', 
   // Reopen with the same saved list and now-active independent consent for both people.
   currentStatus='ACTIVE';
   await page.reload();
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   dialog=page.getByRole('dialog',{name:'Pay Tax'});
   await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT','OTHER');
   picker=dialog.getByTestId('saved-beneficiary-picker');

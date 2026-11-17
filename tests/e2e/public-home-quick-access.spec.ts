@@ -1,21 +1,18 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
-test('compact homepage preserves six benefit cells and launches unified All Tax Payments', async ({ page }) => {
+test('compact homepage keeps all six benefit cards informational and launches unified All Tax Payments from the hero', async ({ page }) => {
   await page.setViewportSize({ width: 1140, height: 900 });
   await page.goto('/?action=landing&lang=en');
   const benefits = page.locator('.public-benefits');
   await expect(benefits.getByRole('heading', { name: 'Why choose Sohojkor?' })).toBeVisible();
   const cards = benefits.locator('.public-benefits__item');
   await expect(cards).toHaveCount(6);
-  const payCard = cards.filter({ hasText: 'All Tax Payments' });
-  await expect(payCard).toHaveJSProperty('tagName', 'BUTTON');
-  await expect(payCard.getByRole('heading', { name: 'All Tax Payments' })).toBeVisible();
-  for (const id of ['certificates','corrections','history','pay-again','saved-drafts']) {
+  for (const id of ['payments','certificates','corrections','history','pay-again','saved-drafts']) {
     await expect(benefits.locator(`[data-benefit="${id}"]`)).toHaveJSProperty('tagName', 'ARTICLE');
   }
-  await expect(benefits.locator('.public-benefits__heading button')).toHaveCount(0);
-  await payCard.click();
+  await expect(benefits.getByRole('button')).toHaveCount(0);
+  await page.locator('.citizen-public-hero__actions').getByRole('button', { name: 'Pay Tax' }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText('User ID')).toBeVisible();
@@ -705,7 +702,7 @@ for (const { width, height, lang } of [
   });
 }
 
-test('Home keeps only the first benefit actionable in English and Bengali', async ({ page }, testInfo) => {
+test('Home keeps all benefit cards informational in English and Bengali', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'Cross-viewport parity is checked within this test.');
   for (const width of [320, 1280]) {
     await page.setViewportSize({width, height:900});
@@ -713,10 +710,9 @@ test('Home keeps only the first benefit actionable in English and Bengali', asyn
       await page.goto('/?action=landing&lang=' + lang);
       const cells = page.locator('.public-benefits__item');
       await expect(cells).toHaveCount(6);
-      await expect(cells.first()).toHaveJSProperty('tagName','BUTTON');
+      for(let i=0;i<6;i++) await expect(cells.nth(i)).toHaveJSProperty('tagName','ARTICLE');
       await expect(page.locator('.public-benefits__heading button')).toHaveCount(0);
-      for(let i=1;i<6;i++) await expect(cells.nth(i)).toHaveJSProperty('tagName','ARTICLE');
-      await cells.first().click();
+      await page.locator('.citizen-public-hero__actions').getByRole('button',{name:lang==='bn'?'কর পরিশোধ':'Pay Tax',exact:true}).click();
       const modal = page.getByRole('dialog',{name:lang==='bn'?'কর পরিশোধ':'Pay Tax'});
       await expect(modal).toBeVisible();
       await modal.getByRole('button',{name:lang==='bn'?'ওয়াক-ইন পেমেন্ট':'Walk-in Payment'}).click();

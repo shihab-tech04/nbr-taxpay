@@ -1,8 +1,9 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { expect, test } from '@playwright/test';
 
 test('the approved single modal progressively reveals all three choice groups and one Continue', async ({ page }) => {
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   const next = dialog.getByRole('button', { name: 'Continue', exact: true });
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Pay Tax');
@@ -94,7 +95,7 @@ test('both login entry points use the identical reusable login modal variant', a
   await expect(standalone.locator('.taxpay-modal__footer-close')).toHaveCount(0);
   await expect(page.locator('.taxpay-modal__overlay')).toHaveCount(1);
   await standalone.getByRole('button', { name: 'Close modal' }).click();
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
@@ -138,7 +139,7 @@ test('homepage Login and payment journey account login use the same modal chrome
   await expect(standalone.locator('.taxpay-modal__body .taxpayer-login-dialog--embedded')).toBeVisible();
   await expect(standalone.locator('.taxpay-modal__footer').getByRole('button',{name:'Sign In'})).toBeVisible();
   await standalone.getByRole('button',{name:'Close modal'}).click();
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).click();
+  await openLegacyTaxServiceChoice(page);
   const payment=page.getByRole('dialog',{name:'Pay Tax'});
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
@@ -162,7 +163,7 @@ test('homepage Login and payment journey account login use the same modal chrome
 
 test('changing payer without leaving the modal retains tax type and account preference', async ({ page }) => {
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
@@ -177,7 +178,7 @@ test('changing payer without leaving the modal retains tax type and account pref
 test('access cards align side by side on desktop and stack on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 900 });
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
@@ -212,7 +213,7 @@ test('access cards align side by side on desktop and stack on mobile', async ({ 
 test('single modal expands when groups are revealed and respects reduced motion', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 900 });
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog).toHaveAttribute('data-size-motion', 'true');
   await dialog.locator('[data-payer-relationship="SELF"]').click();
@@ -237,7 +238,7 @@ test('standalone sign-in Back returns to the public landing page without a secon
 
 test('Bengali Tax with Return choice displays the legal section number', async ({ page }) => {
   await page.goto('/?lang=bn');
-  await page.getByRole('button', { name: 'কর পরিশোধ', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'কর পরিশোধ' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   await expect(dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toContainText('ধারা ১৭৩');

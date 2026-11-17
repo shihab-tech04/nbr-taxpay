@@ -782,6 +782,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     : selectedHeads.map(head => amountRawForHead(head.id)));
   const storyAmountSupported = storyAmountMinor !== null && storyAmountMinor > 0n && storyAmountMinor <= MAX_STORY_AMOUNT_MINOR;
   const requiresNBRReference = resolvePaymentServiceAccess(category, 'MAKE_PAYMENT').requiresNBRReference;
+  const otherTaxSummaryLineLabel = (line: OtherTaxAllocation, head = otherTaxAllocationHead(line.headId)): string => {
+    const name = language === 'bn' ? head?.nameBn : head?.nameEn;
+    if (!unifiedFlow) return `${head?.economicCode || ''} — ${name}`;
+    const person = batchTaxpayers.find(taxpayer => taxpayer.id === line.taxpayerId);
+    const entityType = person ? entityTypeForTin(person.tin) : null;
+    if (entityType !== 'COMPANY') return name || '';
+    const code = governmentAccountingCode(category, entityType);
+    return `${name || ''}${code ? ` · ${language === 'bn' ? 'কোড' : 'Code'} ${code}` : ''}`;
+  };
   const paymentCalculation = otherBatch ? <PaymentLiveSummary language={language} hideService={embedded}
     onSelectEntry={step === 2 ? lineId => setSummaryJump(current => ({ lineId, requestId: current.requestId + 1 })) : undefined}
     category={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment'}
@@ -797,12 +806,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         id: person.id,
         label: person.name.trim() || (language === 'bn' ? `করদাতা ${index + 1}` : `Taxpayer ${index + 1}`),
         tin: person.tin,
+        countLabel: unifiedFlow
+          ? (language === 'bn' ? `${lines.length}টি পেমেন্ট লাইন` : `${lines.length} payment ${lines.length === 1 ? 'line' : 'lines'}`)
+          : undefined,
         amount: lines.length ? otherTaxAllocationTotal(lines) : null,
         entries: lines.map(line => {
           const head = otherTaxAllocationHead(line.headId);
           return {
             id: line.id,
-            label: `${head?.economicCode || ''} — ${language === 'bn' ? head?.nameBn : head?.nameEn}`,
+            label: otherTaxSummaryLineLabel(line, head),
             detail: line.assessmentYear,
             value: otherTaxAllocationTotal([line]),
           };
@@ -814,7 +826,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       const person = batchTaxpayers.find(t => t.id === line.taxpayerId);
       return {
         id: line.id,
-        label: `${head?.economicCode || ''} — ${language === 'bn' ? head?.nameBn : head?.nameEn}`,
+        label: otherTaxSummaryLineLabel(line, head),
         detail: `${person?.name ? person.name + ' · ' : ''}${person?.tin || ''} · ${line.assessmentYear}`,
         value: otherTaxAllocationTotal([line])
       };
