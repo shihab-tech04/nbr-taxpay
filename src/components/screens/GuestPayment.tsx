@@ -196,9 +196,11 @@ interface GuestPaymentProps {
   initialBeneficiary?: PaymentBeneficiaryPrefill;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
+  /** New Home entry: preserve the existing payment engine but present three input steps. */
+  unifiedFlow?: boolean;
 }
 
-export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialReuse, initialForSelf, initialBeneficiary, onBackToService, onStageChange }) => {
+export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialReuse, initialForSelf, initialBeneficiary, onBackToService, onStageChange, unifiedFlow = false }) => {
   const { language, navigate, addPaymentReceipt, routeParams, previewAccount, setPaymentServiceChoiceOpen, startPaymentReuse } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // The standalone guest route can also be visited from a signed-in session.
@@ -385,6 +387,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       }
     }
     if (embedded && !signedInAccount && lookupSampleTaxpayer(taxpayerTin) && lastSearchedTin !== taxpayerTin) return false;
+    // Payer and receipt details are collected in the final preview for this entry.
+    if (!unifiedFlow) {
     if (!/^01\d{9}$/.test(receiptPhone)) return false;
     if (!isOptionalReceiptEmailValid(receiptEmail)) return false;
     if (forSelf === false && !signedInAccount && effectivePayerName.trim().length < 2) return false;
@@ -394,6 +398,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection) {
       const matched = findV11GuestNotice(taxpayerTin, reference);
       if (!matched || matched.category !== category) return false;
+    }
     }
     return true;
   })();
@@ -904,6 +909,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setValidationError(language === 'bn' ? 'এগোনোর আগে টিআইএন খুঁজুন।' : 'Search this TIN before continuing.', 'tin');
       return false;
     }
+    if (!unifiedFlow) {
     if (!/^01\d{9}$/.test(receiptPhone)) {
       setValidationError(language === 'bn' ? 'রসিদের জন্য ১১ সংখ্যার মোবাইল নম্বর দিন।' :
         'Enter an 11-digit Bangladeshi mobile number for the receipt.', 'phone');
@@ -939,6 +945,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setAssessmentYear(matched.assessmentYear);
       setSelectedHeadIds(matched.defaultHeadId ? [matched.defaultHeadId] : []);
       setAmountInputs({});
+    }
     }
     clearValidationError();
     return true;
@@ -1187,7 +1194,45 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }, (index + 1) * 550));
   };
 
+  const validateFinalPayerDetails = (): boolean => {
+    if (!/^01\\d{9}$/.test(receiptPhone)) {
+      setValidationError(language === 'bn'
+        ? 'রসিদের জন্য ১১ সংখ্যার মোবাইল নম্বর দিন।'
+        : 'Enter an 11-digit Bangladeshi mobile number for the receipt.', 'phone');
+      return false;
+    }
+    if (forSelf === false && !signedInAccount && effectivePayerName.trim().length < 2) {
+      setValidationError(copy.requiredPayer, 'payerName');
+      return false;
+    }
+    if (!isOptionalReceiptEmailValid(receiptEmail)) {
+      setValidationError(language === 'bn' ? 'সঠিক ইমেইল ঠিকানা দিন অথবা খালি রাখুন।'
+        : 'Enter a valid email address or leave it blank.', 'email');
+      return false;
+    }
+    if (otherBatch && forSelf === false && !signedInAccount && walkInPayerTin &&
+        (!/^\\d{12}$/.test(walkInPayerTin) || !confirmedWalkInPayer)) {
+      setValidationError(language === 'bn'
+        ? 'পরিশোধকারীর টিআইএন খুঁজে নিশ্চিত করুন, অথবা খালি রাখুন।'
+        : 'Search and confirm the payer TIN, or leave it blank.', 'payerTin');
+      return false;
+    }
+    const ref = noticeReference.trim();
+    if (ref && /^\\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection) {
+      const matched = findV11GuestNotice(taxpayerTin, ref);
+      if (!matched || matched.category !== category) {
+        setValidationError(language === 'bn'
+          ? 'টিআইএন ও পেমেন্ট রেফারেন্স মিলিয়ে দেখুন।'
+          : 'Check the taxpayer TIN and payment reference.', 'noticeReference');
+        return false;
+      }
+    }
+    clearValidationError();
+    return true;
+  };
+
   const handleExecutePayment = () => {
+    if (unifiedFlow && !validateFinalPayerDetails()) return;
     if (blockInvalidReturn()) { setStep(exclusiveReturnIssue === 'year' ? 2 : 1); return; }
     if (batchRecoveryError || isProcessing || !acknowledged || !paymentChannel || !paymentMethod ||
       !(otherBatch ? batchValid : amountsValid) || (initialReuse && !otherBatch && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) ||
@@ -1588,6 +1633,102 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     </div>
   );
 
+  // The same validated fields render in the original Step 1 or, for the
+  // consolidated Home journey, in Step 3. No duplicate payer implementation.
+  const payerReceiptFields = (<>
+              {otherBatch && !unifiedFlow && forSelf === false && !signedInAccount && <p className="text-sm text-taxpay-muted">{language === 'bn' ? 'নিচের নাম রসিদে পরিশোধকারী হিসেবে থাকবে। করদাতার তথ্য পরে আলাদাভাবে খুঁজুন।' : 'The payer named here appears on the receipt; the taxpayer receiving the payment is selected separately.'}</p>}
+                {otherBatch && !unifiedFlow && forSelf === false && !signedInAccount && <h3 className="text-sm font-semibold text-taxpay-text">{language === 'bn' ? 'রসিদের তথ্য' : 'Receipt details'}</h3>}
+              {(!ownAccountTax || !isWithholdingMode) && <div className={`payment-identity__receipt-row${ownAccountTax ? " payment-identity__receipt-row--account" : ""}`}>
+              {forSelf === false && !signedInAccount && <div>
+                <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{otherBatch ? (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} *</label>
+                <input
+                  id="guest-payer-name"
+                  type="text"
+                  aria-invalid={isFieldInvalid('payerName') || undefined}
+                  aria-describedby={errorDescription('payerName')}
+                  placeholder={copy.payerNamePlaceholder}
+                  value={effectivePayerName}
+                  readOnly={Boolean(signedInPayerName || confirmedWalkInPayer)} aria-readonly={Boolean(signedInPayerName || confirmedWalkInPayer)}
+                  required autoComplete="name"
+                  onChange={(e) => setPayerName(e.target.value)}
+                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
+                />
+                {fieldError('payerName')}
+              </div>}
+
+
+                {(!signedInAccount || !signedInProfile?.receiptMobile) && <div>
+                <label htmlFor="guest-phone" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'রসিদের জন্য মোবাইল নম্বর' : 'Mobile number for receipt'} *</label>
+                <input
+                  id="guest-phone"
+                  type="tel"
+                  placeholder={copy.mobilePlaceholder}
+                  value={receiptPhone}
+                  aria-invalid={isFieldInvalid('phone') || undefined}
+                  aria-describedby={errorDescription('phone')}
+                  inputMode="numeric" maxLength={11} autoComplete="tel-national" required
+                  readOnly={Boolean(signedInProfile?.receiptMobile)} aria-readonly={Boolean(signedInProfile?.receiptMobile) || undefined}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                  className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${signedInProfile?.receiptMobile ? 'bg-slate-100 text-slate-800' : ''}`}
+                />
+                {fieldError('phone')}
+                </div>}
+
+
+
+              {!ownAccountTax && !simpleOwnOtherTax && receiptEmailControl}
+              {!isWithholdingMode && <div>
+                <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স' : 'NBR notice or payment reference'} {requiresNBRReference ? '*' : (language === 'bn' ? '(ঐচ্ছিক)' : '(optional)')}</label>
+                <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => { clearReferenceSelection(); setNoticeReference(event.target.value); }} required={requiresNBRReference}
+                  aria-invalid={isFieldInvalid('noticeReference') || undefined} aria-describedby={errorDescription('noticeReference')}
+                  placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
+                {fieldError('noticeReference')}
+                </div>}
+              {simpleOwnOtherTax && receiptEmailControl}
+              </div>}
+              {otherBatch && forSelf === false && !signedInAccount && <div data-testid="walkin-payer-tin">
+                <TaxpayerTinLookup
+                  language={language} tinId="guest-payer-tin" nameId="guest-payer-tin-name"
+                  tin={walkInPayerTin}
+                  name={walkInPayerLookup?.tin === walkInPayerTin
+                    ? (language === 'bn' ? walkInPayerLookup.nameBn : walkInPayerLookup.nameEn) : ''}
+                  tinLabel={language === 'bn' ? 'পরিশোধকারীর নিজের টিআইএন (ঐচ্ছিক)' : 'Payer TIN (optional)'}
+                  nameLabel={language === 'bn' ? 'মিলে যাওয়া পরিশোধকারীর নাম' : 'Matched payer name'}
+                  searchLabel={language === 'bn' ? 'পরিশোধকারীর টিআইএন খুঁজুন' : 'Search payer TIN'}
+                  requiredTin={false} maxTinLength={12}
+                  canSearch={/^\d{12}$/.test(walkInPayerTin)}
+                  invalidTin={isFieldInvalid('payerTin')} tinDescribedBy={errorDescription('payerTin')}
+                  onTinChange={value => {
+                    setWalkInPayerTin(value); setWalkInPayerLookup(null);
+                    setWalkInPayerConfirmed(false); clearValidationError();
+                  }}
+                  onClear={() => {
+                    setWalkInPayerTin(''); setWalkInPayerLookup(null);
+                    setWalkInPayerConfirmed(false); clearValidationError();
+                  }}
+                  onSearch={() => {
+                    setWalkInPayerLookup(/^\d{12}$/.test(walkInPayerTin)
+                      ? lookupSampleTaxpayer(walkInPayerTin) : null);
+                    setWalkInPayerConfirmed(false);
+                  }}
+                  status={walkInPayerTin && /^\d{12}$/.test(walkInPayerTin) && !walkInPayerLookup
+                    ? <p className="text-xs text-slate-600">{language === 'bn' ? 'করদাতার তথ্য খুঁজুন।' : 'Search taxpayer information.'}</p>
+                    : walkInPayerLookup ? <p className="sr-only">{language === 'bn' ? 'টিআইএন মিলে গেছে।' : 'TIN matched.'}</p> : null}
+                  error={fieldError('payerTin')}
+                />
+                {walkInPayerLookup?.tin === walkInPayerTin && !confirmedWalkInPayer &&
+                  <button type="button" className="min-h-11 rounded-lg border border-taxpay-primary px-4 py-2 text-sm text-taxpay-primary"
+                    onClick={() => { setWalkInPayerConfirmed(true); clearValidationError(); }}>
+                    {language === 'bn' ? 'পরিশোধকারীর তথ্য নিশ্চিত করুন' : 'Confirm payer'}
+                  </button>}
+                {confirmedWalkInPayer && <p className="text-xs text-slate-700" role="status">
+                  {language === 'bn' ? 'বর্তমান নমুনা টিআইএন তালিকায় মিলেছে। অ্যাকাউন্টের মালিকানা যাচাই করা হয়নি।' : 'Matched the current sample TIN lookup. Account ownership is not verified.'}
+                </p>}
+              </div>}
+            </div>
+            {ownAccountTax && !isWithholdingMode && receiptEmailControl}
+  </>);
+
   const paymentRemarksControl = (
     <section className="rounded-lg border border-taxpay-border bg-white p-3 sm:p-4" data-testid="challan-remarks-field">
       <label htmlFor="guest-payment-remarks" className="mb-2 block text-sm font-semibold text-taxpay-dark">
@@ -1895,97 +2036,8 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   error={fieldError('tin')} status={taxpayerLookupResult} />}
 
               </>}
-              {otherBatch && forSelf === false && !signedInAccount && <p className="text-sm text-taxpay-muted">{language === 'bn' ? 'নিচের নাম রসিদে পরিশোধকারী হিসেবে থাকবে। করদাতার তথ্য পরে আলাদাভাবে খুঁজুন।' : 'The payer named here appears on the receipt; the taxpayer receiving the payment is selected separately.'}</p>}
-                {otherBatch && forSelf === false && !signedInAccount && <h3 className="text-sm font-semibold text-taxpay-text">{language === 'bn' ? 'রসিদের তথ্য' : 'Receipt details'}</h3>}
-              {(!ownAccountTax || !isWithholdingMode) && <div className={`payment-identity__receipt-row${ownAccountTax ? " payment-identity__receipt-row--account" : ""}`}>
-              {forSelf === false && !signedInAccount && <div>
-                <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{otherBatch ? (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} *</label>
-                <input
-                  id="guest-payer-name"
-                  type="text"
-                  aria-invalid={isFieldInvalid('payerName') || undefined}
-                  aria-describedby={errorDescription('payerName')}
-                  placeholder={copy.payerNamePlaceholder}
-                  value={effectivePayerName}
-                  readOnly={Boolean(signedInPayerName || confirmedWalkInPayer)} aria-readonly={Boolean(signedInPayerName || confirmedWalkInPayer)}
-                  required autoComplete="name"
-                  onChange={(e) => setPayerName(e.target.value)}
-                  className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary"
-                />
-                {fieldError('payerName')}
-              </div>}
+              {!unifiedFlow && payerReceiptFields}
 
-
-                {(!signedInAccount || !signedInProfile?.receiptMobile) && <div>
-                <label htmlFor="guest-phone" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'রসিদের জন্য মোবাইল নম্বর' : 'Mobile number for receipt'} *</label>
-                <input
-                  id="guest-phone"
-                  type="tel"
-                  placeholder={copy.mobilePlaceholder}
-                  value={receiptPhone}
-                  aria-invalid={isFieldInvalid('phone') || undefined}
-                  aria-describedby={errorDescription('phone')}
-                  inputMode="numeric" maxLength={11} autoComplete="tel-national" required
-                  readOnly={Boolean(signedInProfile?.receiptMobile)} aria-readonly={Boolean(signedInProfile?.receiptMobile) || undefined}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                  className={`min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex ${signedInProfile?.receiptMobile ? 'bg-slate-100 text-slate-800' : ''}`}
-                />
-                {fieldError('phone')}
-                </div>}
-
-
-
-              {!ownAccountTax && !simpleOwnOtherTax && receiptEmailControl}
-              {!isWithholdingMode && <div>
-                <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স' : 'NBR notice or payment reference'} {requiresNBRReference ? '*' : (language === 'bn' ? '(ঐচ্ছিক)' : '(optional)')}</label>
-                <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => { clearReferenceSelection(); setNoticeReference(event.target.value); }} required={requiresNBRReference}
-                  aria-invalid={isFieldInvalid('noticeReference') || undefined} aria-describedby={errorDescription('noticeReference')}
-                  placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
-                {fieldError('noticeReference')}
-                </div>}
-              {simpleOwnOtherTax && receiptEmailControl}
-              </div>}
-              {otherBatch && forSelf === false && !signedInAccount && <div data-testid="walkin-payer-tin">
-                <TaxpayerTinLookup
-                  language={language} tinId="guest-payer-tin" nameId="guest-payer-tin-name"
-                  tin={walkInPayerTin}
-                  name={walkInPayerLookup?.tin === walkInPayerTin
-                    ? (language === 'bn' ? walkInPayerLookup.nameBn : walkInPayerLookup.nameEn) : ''}
-                  tinLabel={language === 'bn' ? 'পরিশোধকারীর নিজের টিআইএন (ঐচ্ছিক)' : 'Payer TIN (optional)'}
-                  nameLabel={language === 'bn' ? 'মিলে যাওয়া পরিশোধকারীর নাম' : 'Matched payer name'}
-                  searchLabel={language === 'bn' ? 'পরিশোধকারীর টিআইএন খুঁজুন' : 'Search payer TIN'}
-                  requiredTin={false} maxTinLength={12}
-                  canSearch={/^\d{12}$/.test(walkInPayerTin)}
-                  invalidTin={isFieldInvalid('payerTin')} tinDescribedBy={errorDescription('payerTin')}
-                  onTinChange={value => {
-                    setWalkInPayerTin(value); setWalkInPayerLookup(null);
-                    setWalkInPayerConfirmed(false); clearValidationError();
-                  }}
-                  onClear={() => {
-                    setWalkInPayerTin(''); setWalkInPayerLookup(null);
-                    setWalkInPayerConfirmed(false); clearValidationError();
-                  }}
-                  onSearch={() => {
-                    setWalkInPayerLookup(/^\d{12}$/.test(walkInPayerTin)
-                      ? lookupSampleTaxpayer(walkInPayerTin) : null);
-                    setWalkInPayerConfirmed(false);
-                  }}
-                  status={walkInPayerTin && /^\d{12}$/.test(walkInPayerTin) && !walkInPayerLookup
-                    ? <p className="text-xs text-slate-600">{language === 'bn' ? 'করদাতার তথ্য খুঁজুন।' : 'Search taxpayer information.'}</p>
-                    : walkInPayerLookup ? <p className="sr-only">{language === 'bn' ? 'টিআইএন মিলে গেছে।' : 'TIN matched.'}</p> : null}
-                  error={fieldError('payerTin')}
-                />
-                {walkInPayerLookup?.tin === walkInPayerTin && !confirmedWalkInPayer &&
-                  <button type="button" className="min-h-11 rounded-lg border border-taxpay-primary px-4 py-2 text-sm text-taxpay-primary"
-                    onClick={() => { setWalkInPayerConfirmed(true); clearValidationError(); }}>
-                    {language === 'bn' ? 'পরিশোধকারীর তথ্য নিশ্চিত করুন' : 'Confirm payer'}
-                  </button>}
-                {confirmedWalkInPayer && <p className="text-xs text-slate-700" role="status">
-                  {language === 'bn' ? 'বর্তমান নমুনা টিআইএন তালিকায় মিলেছে। অ্যাকাউন্টের মালিকানা যাচাই করা হয়নি।' : 'Matched the current sample TIN lookup. Account ownership is not verified.'}
-                </p>}
-              </div>}
-            </div>
-            {ownAccountTax && !isWithholdingMode && receiptEmailControl}
             </PaymentFormSection>}
             {otherBatch && !ownAccountTax && !signedInAccount && !simpleOwnOtherTax && <PaymentFormSection number={3} staticView={embedded}
               title={language === 'bn' ? 'করদাতারা' : 'Taxpayers'}>
@@ -2010,7 +2062,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
         {/* STEP 2: Head Selection & Financial Amounts */}
         {step === 2 && (otherBatch ? (
           <>
-          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} remarks={paymentRemarksControl}
+          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} remarks={unifiedFlow ? undefined : paymentRemarksControl}
             lines={otherTaxLines} suggestionTaxpayerIds={ownAccountTax ? { primary: demoConsentActor } : undefined}
             preserveSourcePaymentAmounts={Boolean(sourcePaymentId)} focusRequest={summaryJump} onChange={next => {
               setOtherTaxLines(next);
@@ -2204,7 +2256,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
             </div>
             {isFieldInvalid('taxAmount') && errorHeadId === null && fieldError('taxAmount')}
             </PaymentFormSection>
-            {paymentRemarksControl}
+            {!unifiedFlow && paymentRemarksControl}
 
             {!embedded && <div className="flex flex-wrap justify-between gap-2 pt-3">
               <button
@@ -2237,6 +2289,13 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
         {step === 3 && (
           <div className="payment-review" data-testid="payment-review">
             <div className="payment-review__main">
+              {unifiedFlow && <section className="payment-review__panel payment-review__payer" aria-labelledby="payment-final-payer-title">
+                <div className="payment-review__section-title">
+                  <div><h2 id="payment-final-payer-title">{language === 'bn' ? 'পরিশোধকারী ও রসিদের তথ্য' : 'Payer and receipt details'}</h2></div>
+                </div>
+                <div className="payment-identity__fields">{payerReceiptFields}</div>
+                {paymentRemarksControl}
+              </section>}
               <section className="payment-review__panel" aria-labelledby="guest-payment-channel-title">
                 <div className="payment-review__section-title"><span className="payment-review__section-number">01</span><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2><p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div></div>
                 {!storyAmountSupported && <p role="alert" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
@@ -2304,8 +2363,8 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
             </button>
             {(signedInAccount || unsignedGuestDrafts) && isPaymentDraftService(category) &&
               <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />}
-            <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'} onClick={handleStep2Next} disabled={!initialReuse && otherBatch && (!batchValid || !storyAmountSupported)}>
-              <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
+            <button type="button" className="tax-service-choice__continue" aria-label={unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to final preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')} onClick={handleStep2Next} disabled={!initialReuse && otherBatch && (!batchValid || !storyAmountSupported)}>
+              <span className="payment-flow-embedded__action-long">{unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to final preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
             </button>
           </>) : step === 3 ? (<>
             <button type="button" className="tax-service-choice__cancel" onClick={() => setStep(2)} disabled={isProcessing}>
