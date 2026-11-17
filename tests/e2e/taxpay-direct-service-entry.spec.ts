@@ -53,15 +53,16 @@ for (const [index, service] of serviceCatalog.entries()) {
     await active.getByRole('button', { name: 'Pay Tax', exact: true }).click();
     const modal = page.getByRole('dialog', { name: 'Pay Tax' });
     await expect(modal).toBeVisible();
-    await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
-    await expect(modal.locator('.tax-service-choice__selected-service')).toHaveCount(0);
+    await expect(modal.getByText('User ID')).toBeVisible();
+    await expect(modal.getByText('Password', { exact: true })).toBeVisible();
+    await expect(modal.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
     await modal.getByRole('button', { name: 'Close payment services' }).click();
     await active.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
   });
 }
 
-test('Source Tax image never bypasses the current generic Pay Tax chooser', async ({ page }) => {
+test('Source Tax image keeps the generic Pay Tax entry', async ({ page }) => {
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
   await carousel.focus();
@@ -70,7 +71,7 @@ test('Source Tax image never bypasses the current generic Pay Tax chooser', asyn
   await expect(active).toHaveAttribute('data-payment-service', 'SOURCE_TAX_DEPOSIT');
   await active.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await expect(dialog.locator('[data-payer-relationship="SELF"]')).toBeVisible();
-  await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toBeVisible();
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toHaveCount(0);
+  await expect(dialog.getByText('User ID')).toBeVisible();
+  await expect(dialog.getByText('Password', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
 });
