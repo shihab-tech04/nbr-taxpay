@@ -14,7 +14,7 @@ import type {TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 import {MaskedProfileValue,sensitiveProfileKind} from '../ui/MaskedProfileValue';
-import {assertAccountNotificationReadRows} from '../../services/notificationReadConfirmation';
+import {assertAccountNotificationReadRows,createAccountNotificationRefreshGate} from '../../services/notificationReadConfirmation';
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
@@ -201,7 +201,10 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     const uid = user.id;
     setNoticeSnapshot(null);
     setLoadState('loading');
-    const refreshNotices = () => (async () => {
+    const refreshGate=createAccountNotificationRefreshGate();
+    const refreshNotices = () => {
+      const requestId=refreshGate.next();
+      return (async () => {
       const { data: auth, error: authError } = await client.auth.getUser();
       if (authError || auth.user?.id !== uid) throw new Error('Account session expired');
       const [draftResult, reviewResult] = await Promise.all([
@@ -212,18 +215,23 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       if (draftResult.error) throw draftResult.error;
       const { data: stillCurrent, error: rereadError } = await client.auth.getUser();
       if (rereadError || stillCurrent.user?.id !== uid) throw new Error('Account session changed');
-      if (!active) return;
+      if (!active || !refreshGate.isLatest(requestId)) return;
       if (!isCurrentUid(uid)) return;
       setNoticeSnapshot({ownerUid: uid,
         drafts: (draftResult.data ?? []).filter((item: DraftNotice) => item.owner_uid === uid),
         reviews: reviewResult});
       setLoadState('ready');
-    })().catch(() => { if (active && isCurrentUid(uid)) { setNoticeSnapshot(null); setLoadState('error'); } });
+      })().catch(() => {
+        if (active && refreshGate.isLatest(requestId) && isCurrentUid(uid)) {
+          setNoticeSnapshot(null); setLoadState('error');
+        }
+      });
+    };
     void refreshNotices();
     // New non-financial officer updates arrive without requiring a page reload.
     // Every poll revalidates the currently authenticated owner before and after SQL reads.
     const poll = window.setInterval(() => { void refreshNotices(); }, 12000);
-    return () => { active = false; window.clearInterval(poll); };
+    return () => { active = false; refreshGate.invalidate(); window.clearInterval(poll); };
   }, [page, user?.id, allowed, revision]);
 
   const savePreferences = async (event: React.FormEvent) => {
@@ -289,7 +297,10 @@ export function AccountCenter({ page }: { page: AccountPage }) {
         setNoticeSnapshot(prev=>prev?.ownerUid===requestUid
           ?{...prev,reviews:prev.reviews.map(n=>unread.includes(n.id)?{...n,is_read:true}:n)}:prev);
       }
-      if (isCurrentUid(requestUid)) setFeedback({error:false,content:t.readSaved});
+      if (isCurrentUid(requestUid)) {
+        setFeedback({error:false,content:t.readSaved});
+        setRevision(value=>value+1); // Reconcile any in-flight poll with the persisted server state.
+      }
     } catch { if (isCurrentUid(requestUid)) setFeedback({error:true,content:t.saveFailed}); }
     finally { if (isCurrentUid(requestUid)) setBusy(false); }
   };
