@@ -1063,7 +1063,7 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
     await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(1);
     // Parallel list is intentionally reveal-only; no Copy action exists.
     await expect(draft.getByRole('button', {name:'Copy TIN'})).toHaveCount(0);
-    await expect(draft.getByRole('button', {name:'Reveal TIN'})).toHaveCount(1);
+    await expect(draft.getByRole('button', {name:'Reveal TIN: User 1'})).toHaveCount(1);
     const sections = draft.locator('.parallel-taxpayer-draft__panel');
     const bodyBox = await draft.locator('.taxpay-modal__body').boundingBox();
     const rightBox = await sections.nth(1).boundingBox();
@@ -1082,7 +1082,8 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
       expect(Math.abs(rightBox.x - bodyBox.x)).toBeLessThanOrEqual(2);
       expect(Math.abs(rightBox.width - bodyBox.width)).toBeLessThanOrEqual(2);
     }
-    await searchFor('111111111111');
+    await draft.locator('#parallel-taxpayer-tin').fill('111111111111');
+    await draft.locator('#parallel-taxpayer-tin').press('Enter');
     await expect(draft.getByTestId('parallel-add-taxpayer')).toBeDisabled();
     await searchFor('222222222222');
     await draft.getByTestId('parallel-add-taxpayer').click();
@@ -1095,6 +1096,10 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
     await draft.getByTestId('parallel-taxpayer-continue').click();
     const heads = draft.getByTestId('parallel-tax-head-boundary');
     await expect(heads.getByTestId('other-tax-batch')).toBeVisible();
+    // This parallel view never reveals the full TIN in the head navigation tooltip.
+    const firstTaxpayerTab = heads.locator('.other-tax-taxpayer-chip').first();
+    await expect(firstTaxpayerTab).toHaveAttribute('title', /222\*\*\*\*/);
+    await expect(firstTaxpayerTab).not.toHaveAttribute('title', /222222222222/);
     // A known eligible v11 head; do not introduce a parallel head catalogue.
     await heads.locator('[data-head-group="Advance Tax"] > summary').click();
     await heads.getByRole('checkbox', {name:/Select 64 —/}).check();
@@ -1134,5 +1139,7 @@ test('parallel taxpayer session draft restores after close and refresh without c
   draft=page.getByRole('dialog',{name:'All Tax Payments — parallel draft'});
   await expect(draft.locator('.parallel-taxpayer-draft__table tbody tr')).toHaveCount(1);
   await expect(draft).toContainText('Selection restored.');
+  await draft.locator('#parallel-taxpayer-tin').fill('12');
+  await expect(draft).not.toContainText('Selection restored.');
   await draft.getByRole('button',{name:'Close parallel draft'}).click();
 });
