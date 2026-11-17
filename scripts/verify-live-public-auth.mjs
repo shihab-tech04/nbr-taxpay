@@ -30,19 +30,19 @@ try {
   ]) {
     const page = await openBudgetSafePage({ viewport, isMobile, hasTouch: isMobile });
     const url = new URL(base);
-    url.searchParams.set('action','account_profile');
+    url.searchParams.set('action','taxpayer_home');
     await page.goto(url.toString(), {waitUntil:'domcontentloaded',timeout:45_000});
-    await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible({timeout:30_000});
+    await expect(page.locator('#public-home-title')).toBeVisible({timeout:30_000});
+    await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
+    const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+    await expect(dialog).toBeVisible({timeout:30_000});
     await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     if(overflow>2)throw new Error('Private entry overflow: '+overflow+'px');
 
     {
-      // Current published baseline and candidate both use the approved User ID/password flow.
-      const userIdEntry=page.getByRole('link',{name:'Sign In'});
-      await expect(userIdEntry).toHaveAttribute('href',/action=taxpayer_login/);
-      await userIdEntry.click();
-      const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
+      // The published private-route entry now opens the existing approved
+      // sign-in dialog directly; there is no duplicate intermediate gate.
       await expect(dialog).toBeVisible();
       await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeVisible();
       await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
