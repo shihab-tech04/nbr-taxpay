@@ -14,7 +14,7 @@ import type {TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 import {MaskedProfileValue,sensitiveProfileKind} from '../ui/MaskedProfileValue';
-import {assertAccountNotificationReadRows,createAccountNotificationRefreshGate} from '../../services/notificationReadConfirmation';
+import {assertAccountNotificationReadRows,createAccountNotificationRefreshGate,collectAccountNotificationPages} from '../../services/notificationReadConfirmation';
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
@@ -41,29 +41,44 @@ function missingCorrectionNoticeColumns(error: { code?: string; message?: string
 }
 
 async function readReviewNotices(client: NonNullable<typeof supabase>, uid: string): Promise<ReviewNotice[]> {
-  const query = (select: string) => client.from('taxpay_in_app_notifications').select(select)
-    .eq('recipient_uid', uid).order('created_at', { ascending: false }).limit(50);
-  let result = await query(reviewNoticeSelect);
-  // Keep existing payment review notices readable before WS3's additive
-  // correction-notification migration reaches the hosted schema.
-  if (result.error && missingCorrectionNoticeColumns(result.error)) result = await query(legacyReviewNoticeSelect);
-  if (result.error) throw result.error;
+  let columns=reviewNoticeSelect;
+  const notices=await collectAccountNotificationPages<ReviewNotice>(async(from,to)=>{
+    const query=(select:string)=>client.from('taxpay_in_app_notifications').select(select)
+      .eq('recipient_uid',uid)
+      .order('created_at',{ascending:false}).order('id',{ascending:false})
+      .range(from,to);
+    let result=await query(columns);
+    // Read older hosted schemas without concealing a failed owner-scoped SQL read.
+    if(result.error&&columns===reviewNoticeSelect&&missingCorrectionNoticeColumns(result.error)){
+      columns=legacyReviewNoticeSelect;
+      result=await query(columns);
+    }
+    if(result.error)throw result.error;
+    const rows=(result.data??[]) as unknown as ReviewNotice[];
+    if(rows.some(item=>typeof item.message_code!=='string'||typeof item.is_read!=='boolean'||
+      !Number.isFinite(Date.parse(item.created_at))))
+      throw Error('Account notification data could not be verified.');
+    return rows;
+  });
+  const inquiryIds=[...new Set(notices
+    .filter(item=>item.message_code.startsWith('CORRECTION_'))
+    .map(item=>item.correction_inquiry_id)
+    .filter((id):id is string=>Boolean(id)))];
+  if(!inquiryIds.length)return notices;
 
-  const notices = (result.data ?? []) as unknown as ReviewNotice[];
-  const inquiryIds = [...new Set(notices
-    .filter(item => item.message_code.startsWith('CORRECTION_'))
-    .map(item => item.correction_inquiry_id)
-    .filter((id): id is string => Boolean(id)))];
-  if (!inquiryIds.length) return notices;
-
-  const references = await client.from('taxpay_correction_inquiries')
-    .select('inquiry_id,original_reference')
-    .eq('requester_uid', uid).in('inquiry_id', inquiryIds);
-  if (references.error) throw references.error;
-  const byInquiry = new Map((references.data ?? []).map(row => [row.inquiry_id, row.original_reference]));
-  return notices.map(item => item.correction_inquiry_id
-    ? { ...item, correction_reference: byInquiry.get(item.correction_inquiry_id) ?? null }
-    : item);
+  const byInquiry=new Map<string,string|null>();
+  // Bounded URL/SQL payloads: never silently omit older correction references.
+  for(let offset=0;offset<inquiryIds.length;offset+=100){
+    const chunk=inquiryIds.slice(offset,offset+100);
+    const references=await client.from('taxpay_correction_inquiries')
+      .select('inquiry_id,original_reference')
+      .eq('requester_uid',uid).in('inquiry_id',chunk);
+    if(references.error)throw references.error;
+    for(const row of references.data??[])byInquiry.set(row.inquiry_id,row.original_reference);
+  }
+  return notices.map(item=>item.correction_inquiry_id
+    ?{...item,correction_reference:byInquiry.get(item.correction_inquiry_id)??null}
+    :item);
 }
 
 const I18N = {
