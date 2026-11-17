@@ -18,16 +18,28 @@ function client() {
   return supabase;
 }
 /** Read every page instead of silently truncating beneficiaries across named lists. */
-export async function collectBeneficiaryPages<T>(
-  fetchPage:(from:number,to:number)=>Promise<T[]>, pageSize=500
+export async function collectBeneficiaryPages<T extends {id:string}>(
+  fetchPage:(from:number,to:number)=>Promise<T[]>, pageSize=500, maxPages=100
 ):Promise<T[]> {
-  if(!Number.isInteger(pageSize)||pageSize<1||pageSize>1000)throw new Error('Invalid beneficiary page size.');
+  if(!Number.isSafeInteger(pageSize)||pageSize<1||pageSize>1000||
+     !Number.isSafeInteger(maxPages)||maxPages<1||maxPages>100)
+    throw new Error('Invalid beneficiary pagination.');
   const all:T[]=[];
-  for(let from=0;;from+=pageSize){
+  const seen=new Set<string>();
+  for(let index=0;index<maxPages;index++){
+    const from=index*pageSize;
     const page=await fetchPage(from,from+pageSize-1);
-    all.push(...page);
+    if(!Array.isArray(page)||page.length>pageSize)
+      throw new Error('Invalid saved beneficiary page. Retry.');
+    for(const row of page){
+      if(!row||typeof row.id!=='string'||!row.id||seen.has(row.id))
+        throw new Error('Saved beneficiaries changed while loading. Retry.');
+      seen.add(row.id);
+      all.push(row);
+    }
     if(page.length<pageSize)return all;
   }
+  throw new Error('Saved beneficiary list exceeds the safe retrieval limit. Retry.');
 }
 export async function loadBeneficiaries(ownerUid: string | null = null, options:{forceFresh?:boolean}={}): Promise<{lists:BeneficiaryList[]; people:Beneficiary[]}> {
   if (!ownerUid) return loadGuestBeneficiaries(options);
