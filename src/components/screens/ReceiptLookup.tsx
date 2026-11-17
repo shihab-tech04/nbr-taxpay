@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, AlertCircle } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import { ChallanReceipt } from '../../types/tax';
@@ -7,13 +7,14 @@ import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageS
 import { validCertificateTransactionId } from '../../services/transactionId';
 import { findSessionReceiptByReference, findProfileReceiptByReference } from '../../services/simulatedPaymentStory';
 import {activePreviewSession} from '../../services/previewAccountSession';
-import { findOwnedReceiptByReference } from '../../services/confirmedPaymentCertificate';
+import { findOwnedReceiptByReference, isVerifiedSqlOwnerReceipt, type VerifiedSqlReceiptOwner } from '../../services/confirmedPaymentCertificate';
 import { useAccountIdentity } from '../../services/accountIdentity';
+import { reuseRecordedPayment } from '../../services/paymentReuse';
 
 type ReceiptLookupProps = { embedded?: boolean; activityTabs?: boolean; hidePageHeading?: boolean; accountContext?: boolean };
 
 export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, activityTabs = false, hidePageHeading = false, accountContext = false }) => {
-  const { language, lookupReceipt, receipts, navigate, routeParams, previewAccount } = useTaxState();
+  const { language, lookupReceipt, receipts, navigate, routeParams, previewAccount, startPaymentReuse } = useTaxState();
   const { user: signedInUser } = useAccountIdentity();
   // Homepage reference is kept in in-memory navigation state, never in a public URL.
   const initialReference = typeof routeParams.initialReference === 'string' ? routeParams.initialReference.trim() : '';
@@ -23,6 +24,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   const [receiptMobile, setReceiptMobile] = useState('');
   const [searchedReference, setSearchedReference] = useState('');
   const [searchResult, setSearchResult] = useState<ChallanReceipt | null | 'NOT_FOUND'>(null);
+  const [sqlOwnerProof, setSqlOwnerProof] = useState<VerifiedSqlReceiptOwner | null>(null);
   const [certificateResult, setCertificateResult] = useState(false);
   const [lookupPending, setLookupPending] = useState(false);
   const [lookupError, setLookupError] = useState(false);
@@ -32,6 +34,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   useEffect(() => () => { lookupSequence.current += 1; }, []);
   const resetLookup = () => {
     lookupSequence.current += 1;
+    setSqlOwnerProof(null);
     setSearchResult(null);
     setCertificateResult(false);
     setLookupPending(false);
@@ -41,6 +44,7 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   // Discard in-flight results if a different account signs in.
   useEffect(() => {
     lookupSequence.current += 1;
+    setSqlOwnerProof(null);
     setSearchResult(null);
     setCertificateResult(false);
     setLookupPending(false);
@@ -49,11 +53,13 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
   }, [signedInUser?.id, previewAccount?.id]);
   // Never suggest sample/session receipts in the signed-in account tracking journey.
   // Users must provide the actual reference; public lookup examples remain unchanged.
-  const sampleReceipts = accountContext ? [] : receipts.filter(receipt => !receipt.receiptMobile).slice(0, 3);
+  const sampleReceipts = accountContext ? [] : receipts.filter(receipt =>
+    receipt.isSimulatedDemo === true && !receipt.receiptMobile).slice(0, 3);
 
   const searchReference = (reference: string, mobile: string) => {
     if (!reference) return;
     const sequence = ++lookupSequence.current;
+    setSqlOwnerProof(null);
     setSearchedReference(reference);
     setLookupError(false);
     // Neither a certificate reference nor an unknown receipt is a verified public SQL hit.
@@ -76,23 +82,29 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
     // Without account verification, preserve guest session/mobile recovery.
     setSearchResult(null);
     setLookupPending(true);
-    void (async () => {
+    void (async (): Promise<{receipt:ChallanReceipt|null;sqlOwned:boolean} | 'MOBILE_REQUIRED'> => {
       const owned = await findOwnedReceiptByReference(reference, mobile);
-      if (owned.authenticated) return owned.receipt;
-      // Only an existing server-issued profile capability may recover a
-      // receipt from another *verified linked* browser session.
+      if (owned.authenticated) return {receipt:owned.receipt,sqlOwned:Boolean(owned.receipt)};
+      // Profile-capability and mobile/session checks can display a record,
+      // but never authorize account-only Pay Again or correction actions.
       const profile = await findProfileReceiptByReference(reference, mobile);
-      if (profile.checked) return profile.receipt;
-      if (!/^01\d{9}$/.test(mobile)) return 'MOBILE_REQUIRED' as const;
-      return findSessionReceiptByReference(certificateReference ? parentId : reference, mobile);
+      if (profile.checked) return {receipt:profile.receipt,sqlOwned:false};
+      if (!/^01\d{9}$/.test(mobile)) return 'MOBILE_REQUIRED';
+      const receipt = await findSessionReceiptByReference(certificateReference ? parentId : reference, mobile);
+      return {receipt:receipt ?? null,sqlOwned:false};
     })()
-      .then(receipt => {
+      .then(result => {
         if (lookupSequence.current !== sequence) return;
-        if (receipt === 'MOBILE_REQUIRED') {
+        if (result === 'MOBILE_REQUIRED') {
           setNeedsReceiptMobile(true);
           return;
         }
-        setSearchResult(receipt ?? 'NOT_FOUND');
+        if (result.sqlOwned && result.receipt && signedInUser?.id &&
+            validCertificateTransactionId(result.receipt.paymentTransactionId)) {
+          setSqlOwnerProof({ownerUid:signedInUser.id,
+            paymentTransactionId:result.receipt.paymentTransactionId!});
+        } else setSqlOwnerProof(null);
+        setSearchResult(result.receipt ?? 'NOT_FOUND');
       })
       .catch(() => {
         if (lookupSequence.current !== sequence) return;
@@ -112,6 +124,15 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
     event.preventDefault();
     searchReference(query.trim(), receiptMobile);
   };
+  const verifiedOwnerReceipt = isVerifiedSqlOwnerReceipt(searchResult,sqlOwnerProof,signedInUser?.id)
+    ? searchResult : null;
+  const repeatCopy = useMemo(() => {
+    if (!verifiedOwnerReceipt || !signedInUser?.id) return null;
+    try {
+      return reuseRecordedPayment([verifiedOwnerReceipt],signedInUser.id,null,
+        verifiedOwnerReceipt.paymentTransactionId!);
+    } catch { return null; /* Incomplete saved batches remain read-only. */ }
+  },[verifiedOwnerReceipt,signedInUser?.id]);
 
   return (
     <section className={embedded ? 'receipt-lookup receipt-lookup--embedded' : 'receipt-lookup receipt-lookup--page'}>
@@ -211,6 +232,10 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             <div className="receipt-lookup__result-copy">
               <h2>{t('No matching record', 'কোনো মিল পাওয়া যায়নি')}</h2>
               <p>{t('No record found for:', 'এই রেফারেন্সে কোনো রেকর্ড পাওয়া যায়নি:')} <strong className="font-mono-plex">{searchedReference}</strong></p>
+              <p data-testid="receipt-session-only-notice">{t(
+                'Only saved payments from this browser session were checked. This does not confirm whether an official payment record exists.',
+                'শুধু এই ব্রাউজার সেশনে সংরক্ষিত পেমেন্ট খোঁজা হয়েছে। সরকারি পেমেন্ট রেকর্ড আছে কি না, এই ফল তা নিশ্চিত করে না।'
+              )}</p>
               <button type="button" className="receipt-lookup__issue-link" onClick={() => navigate(accountContext ? 'corrections' : 'incident')}>
                 {t('Report a payment issue', 'পেমেন্টের সমস্যা জানান')}
               </button>
@@ -222,10 +247,22 @@ export const ReceiptLookup: React.FC<ReceiptLookupProps> = ({ embedded = false, 
             <p className="sr-only" role="status">
               {t('Receipt details loaded.', 'রসিদের তথ্য দেখানো হয়েছে।')}
             </p>
-            <ReceiptView receipt={searchResult} embedded={embedded} certificate={certificateResult} onBack={() => {
-              setSearchResult(null);
-              setSearchedReference('');
-            }} />
+            <ReceiptView receipt={searchResult} embedded={embedded} certificate={certificateResult}
+              transactionActions={Boolean(verifiedOwnerReceipt)}
+              onPayAgain={repeatCopy ? () => {
+                resetLookup();
+                setSearchedReference('');
+                // Close the public status modal before opening the approved Pay Tax flow.
+                if (embedded) navigate('landing');
+                startPaymentReuse(repeatCopy);
+              } : undefined}
+              onApplyForCorrection={verifiedOwnerReceipt ? () => navigate('corrections',{
+                originalReference:verifiedOwnerReceipt.challanNo,
+              }) : undefined}
+              onBack={() => {
+                resetLookup();
+                setSearchedReference('');
+              }} />
           </div>
         )}
       </div>
