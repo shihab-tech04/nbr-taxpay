@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {readFileSync} from 'node:fs';
 import {assertAccountNotificationReadRows,createAccountNotificationRefreshGate} from '../src/services/notificationReadConfirmation';
 
 test('WS2 review notices require exact owner-scoped persisted read confirmation',()=>{
@@ -32,4 +33,13 @@ test('WS2 account notice polling ignores stale responses and invalidated owner v
   assert.equal(gate.isLatest(second),false);
   const third=gate.next();
   assert.equal(gate.isLatest(third),true);
+});
+
+test('WS2 private notification rows require both Auth owner and bound simulation profile',()=>{
+  const source=readFileSync('src/components/screens/NotificationsView.tsx','utf8');
+  assert.match(source,/const noticeIdentity=\(authenticatedUser\?\.id\?\?''\)\+':'\+\(id\?\?''\)/);
+  assert.match(source,/noticeOwner===noticeIdentity\?notices:\[\]/);
+  assert.match(source,/privatePaymentRows\?\.owner===noticeIdentity/);
+  assert.match(source,/setNoticeOwner\(noticeIdentity\)/);
+  assert.doesNotMatch(source,/noticeOwner===id/);
 });
