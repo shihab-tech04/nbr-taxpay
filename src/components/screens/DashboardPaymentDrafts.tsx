@@ -83,8 +83,27 @@ export const DashboardPaymentDrafts: React.FC<{
     onCountChange?.(catalog.ownerKey === ownerKey && catalog.generation === requestGeneration && catalog.status === 'ready' ? catalog.rows.length : null);
   }, [catalog.ownerKey, catalog.generation, catalog.status, catalog.rows.length, ownerKey, requestGeneration, onCountChange]);
 
-  if (!actor || authLoading ||
-      ((catalog.ownerKey !== ownerKey || catalog.generation !== requestGeneration) && catalog.status !== 'loading')) return null;
+  const catalogOwnerChanged = catalog.ownerKey !== ownerKey || catalog.generation !== requestGeneration;
+  const catalogOwnerMatches = !catalogOwnerChanged;
+  const statusPanel = (message: string, busy = false) => <section id="dashboard-payment-drafts" tabIndex={-1}
+    data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
+    aria-busy={busy ? 'true' : undefined}
+    className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5">
+    <div className="flex items-center gap-2">
+      <FileText size={20} className="text-taxpay-primary" aria-hidden="true" />
+      <h2 id="dashboard-payment-drafts-title" className="text-lg font-semibold text-taxpay-text">
+        {tr('Saved payment drafts', 'সংরক্ষিত পেমেন্ট খসড়া')}
+      </h2>
+    </div>
+    <p className="mt-3 text-sm text-taxpay-muted" role="status" aria-live="polite">{message}</p>
+  </section>;
+
+  // Keep the selected Follow-ups panel useful while identity loads or changes.
+  // Never show a previous owner's rows, and never leave an empty tab.
+  if (authLoading) return statusPanel(tr('Loading saved payment drafts…', 'সংরক্ষিত পেমেন্ট খসড়া লোড হচ্ছে…'), true);
+  if (!actor) return statusPanel(tr('Sign in to view this account’s saved drafts.', 'এই অ্যাকাউন্টের সংরক্ষিত খসড়া দেখতে সাইন ইন করুন।'));
+  if (!catalogOwnerMatches && catalog.status !== 'loading')
+    return statusPanel(tr('Loading saved payment drafts…', 'সংরক্ষিত পেমেন্ট খসড়া লোড হচ্ছে…'), true);
 
   const retry = () => {
     if (busyId) return;
@@ -133,7 +152,7 @@ export const DashboardPaymentDrafts: React.FC<{
     } finally { if (sameOwner()) setBusyId(null); }
   };
 
-  const loading = catalog.ownerKey !== ownerKey || catalog.generation !== requestGeneration || catalog.status === 'loading';
+  const loading = !catalogOwnerMatches || catalog.status === 'loading';
 
   return <section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts" aria-labelledby="dashboard-payment-drafts-title"
     className="rounded-2xl border border-taxpay-border bg-white p-4 sm:p-5">
