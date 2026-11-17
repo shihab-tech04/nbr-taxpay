@@ -244,6 +244,7 @@ export const PublicLanding: React.FC = () => {
         {citizenBenefits.map(({ id, Icon, title, detail }) => (
           id === 'payments' ? (
             <button type="button" key={id} className="public-benefits__item public-benefits__item--action" data-benefit={id}
+              aria-label={title}
               aria-describedby={`public-benefit-detail-${id}`}
               onClick={openAllTaxPayments}>
               <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
