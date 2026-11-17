@@ -35,6 +35,7 @@ export interface PaymentBeneficiaryPrefill {
   additional?: { tin: string; name: string }[];
   /** Optional handoff from the isolated parallel entry; no payment or authorization is implied. */
   parallelSource?: true;
+  parallelForSelf?: boolean;
   parallelAllocations?: { taxpayerTin: string; headId: number; assessmentYear: string; amount: string }[];
 }
 export interface BeneficiarySavePrefill { ownerUid: string; tin: string; name: string; }
