@@ -23,7 +23,7 @@ test('authenticated Notifications uses the real account route and unified owner-
   assert.match(account,/\.eq\('owner_uid',\s*uid\)/);
   assert.match(account,/setNoticeSnapshot\((?:prev|previous)=>(?:prev|previous)\?\.ownerUid===requestUid/);
   assert.match(account,/isCurrentUid\(requestUid\)/);
-  assert.match(account,/\.eq\('recipient_uid', requestUid\)/);
+  assert.match(account,/\.eq\('recipient_uid',\s*requestUid\)/);
   assert.match(account,/onClick=\{markViewed\}/);
   assert.match(account,/SessionPaymentNotifications language=\{language\}/);
   assert.doesNotMatch(account,/<ul className="taxpayer-account-notices"/);
