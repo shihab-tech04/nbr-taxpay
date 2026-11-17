@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MASTER_PAYMENT_HEADS } from '../src/data/paymentHeads.ts';
-import { makeConfirmedReceipt } from '../src/services/confirmedPaymentCertificate.ts';
+import { makeConfirmedReceipt, isVerifiedSqlOwnerReceipt } from '../src/services/confirmedPaymentCertificate.ts';
 import { reuseRecordedPayment } from '../src/services/paymentReuse.ts';
 import type { ChallanReceipt, PaymentLineItem } from '../src/types/tax.ts';
 import { buildPaymentCertificateModel } from '../src/services/paymentCertificateModel.ts';
@@ -94,6 +94,26 @@ test('F-178 / US-181: canonical SQL remarks flow through receipt into NEW mixed-
   repeated.formPayload.paymentRemarks='Edited only on new payment';
   assert.deepEqual(confirmed,receiptBefore);
   assert.equal(details.challanRemarks,remarks);
+});
+
+test('receipt lookup actions require the exact authenticated SQL owner and payment parent',()=>{
+  const receipt=confirm(validDetails());
+  const ownerUid='00000000-0000-4000-8000-000000000111';
+  const proof={ownerUid,paymentTransactionId:paymentId};
+  assert.equal(isVerifiedSqlOwnerReceipt(receipt,proof,ownerUid),true);
+  assert.equal(isVerifiedSqlOwnerReceipt(receipt,null,ownerUid),false,
+    'Guest/mobile/profile-capability lookup grants no account actions');
+  assert.equal(isVerifiedSqlOwnerReceipt(receipt,proof,null),false,
+    'Sign-out revokes account actions');
+  assert.equal(isVerifiedSqlOwnerReceipt(receipt,proof,
+    '00000000-0000-4000-8000-000000000222'),false,
+    'Switching accounts revokes previously verified actions');
+  assert.equal(isVerifiedSqlOwnerReceipt(receipt,
+    {...proof,paymentTransactionId:'00000000-0000-4000-8000-000000000999'},ownerUid),false,
+    'A SQL proof for a different transaction is not transferable');
+  assert.equal(isVerifiedSqlOwnerReceipt({...receipt,isSimulatedDemo:false},proof,ownerUid),false);
+  assert.equal(isVerifiedSqlOwnerReceipt({...receipt,paymentTransactionId:'not-a-uuid'},proof,ownerUid),false);
+  assert.equal(isVerifiedSqlOwnerReceipt('NOT_FOUND',proof,ownerUid),false);
 });
 
 test('confirmed v3 certificate reconstruction retains the saved allocation identities and exact amounts',()=>{
