@@ -200,6 +200,17 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   for(const field of ['Taxes zone','Taxes range'])
     await expect(jurisdiction.getByText(field,{exact:true})).toHaveCount(1);
   const profileSummary=profile.getByTestId('user1-profile-summary');
+  // The shared minimum readable copy is 14px even for account identifiers and
+  // the four top-summary labels (all viewports and EN/BN typography).
+  const identityLabel=profile.locator(':scope > section:first-child > div:first-child p').first();
+  const labelSizes=await Promise.all([
+    identityLabel.evaluate(element=>parseFloat(getComputedStyle(element).fontSize)),
+    ...await profileSummary.locator(':scope > div > p:first-child')
+      .evaluateAll(elements=>elements.map(element=>parseFloat(getComputedStyle(element).fontSize)))
+  ]);
+  expect(labelSizes).toHaveLength(5);
+  for(const size of labelSizes)expect(size).toBeGreaterThanOrEqual(14);
+
   await expect(profileSummary.getByText('Previous TIN',{exact:true})).toHaveCount(0);
   await expect(content.getByTestId('profile-certificate-card').getByText('Previous TIN',{exact:true})).toHaveCount(1);
   if(info.project.name==='desktop-1280'){

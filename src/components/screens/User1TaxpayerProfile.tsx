@@ -148,7 +148,7 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
         <div className="flex w-full min-w-0 items-start gap-4 sm:w-auto sm:flex-1">
           <div data-testid="user1-profile-identity-badge" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-taxpay-light text-lg font-semibold text-taxpay-primary" aria-hidden="true">{initials==='—'?<UserRound size={20}/>:initials}</div>
           <div className="min-w-0 space-y-1.5">
-            <p className="text-xs text-taxpay-muted">{tr(['Account','অ্যাকাউন্ট'])}: {accountId??'—'}</p>
+            <p className="text-sm text-taxpay-muted">{tr(['Account','অ্যাকাউন্ট'])}: {accountId??'—'}</p>
             <h2 data-profile-field="taxpayerName" className="break-words text-xl font-semibold leading-snug text-taxpay-text sm:text-2xl">
               {value('taxpayerName',language)}
             </h2>
@@ -178,7 +178,7 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
       {downloadError&&<p className="px-5 pb-3 text-sm text-taxpay-error" role="alert">{tr(['Download failed. Please retry.','ডাউনলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।'])}</p>}
       <div data-testid="user1-profile-summary" className="grid border-t border-taxpay-border sm:grid-cols-4">
         {TAXPAYER_PROFILE_LAYOUT.summary.map(([field,label])=><div key={field} data-profile-field={field} className="min-w-0 border-b border-taxpay-border px-5 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:px-6 sm:last:border-r-0">
-          <p className="text-xs text-taxpay-muted">{tr(label)}</p>
+          <p className="text-sm text-taxpay-muted">{tr(label)}</p>
           <p className="mt-1 break-words text-sm font-semibold text-taxpay-text">{value(field,language)}</p>
         </div>)}
       </div>
