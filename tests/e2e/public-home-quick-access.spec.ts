@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
-test('compact desktop homepage keeps six balanced benefit cards with one parallel entry CTA', async ({ page }) => {
+test('compact desktop homepage keeps six informational benefit cards with separate parallel entry CTA', async ({ page }) => {
   // This 3x2 parity test intentionally uses the compact desktop breakpoint.
   // The same 3x2 layout remains consistent at wider desktop sizes.
   await page.setViewportSize({ width: 1140, height: 900 });
@@ -25,12 +25,13 @@ test('compact desktop homepage keeps six balanced benefit cards with one paralle
     await expect(card.getByRole('heading', { name: heading })).toBeVisible();
     await expect(card.locator('p')).toHaveText(description);
     await expect(card.getByRole('link')).toHaveCount(0);
-    if (id === 'payments') await expect(card).toHaveAttribute('type', 'button');
-    else await expect(card.getByRole('button')).toHaveCount(0);
+    await expect(card).toHaveJSProperty('tagName', 'ARTICLE');
+    await expect(card.getByRole('button')).toHaveCount(0);
     await expect(card.locator('svg')).toHaveCount(1);
     await expect(card.locator('p')).toHaveCSS('font-size', '14px');
   }
-  await expect(benefits.getByRole('button')).toHaveCount(1);
+  await expect(benefits.locator('.public-benefits__grid').getByRole('button')).toHaveCount(0);
+  await expect(benefits.getByRole('button', {name:'Open parallel taxpayer entry'})).toBeVisible();
   await expect(benefits.getByRole('link')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Find a payment record' })).toBeVisible();
   // Retired Home FAQ and tutorial are not hidden DOM or duplicate screen-reader content.
@@ -811,7 +812,7 @@ for (const { width, height, lang } of [
   });
 }
 
-test('only All Tax Payments opens the parallel draft; five other Home benefits stay informational in EN/BN', async ({ page }, testInfo) => {
+test('six Home benefits stay informational while a distinct action opens parallel draft in EN/BN', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'This case covers its own explicit mobile and desktop viewports.');
   const cases = [
     ['payments', 'All Tax Payments', 'সব ধরনের কর পরিশোধ'],
@@ -833,22 +834,8 @@ test('only All Tax Payments opens the parallel draft; five other Home benefits s
       for (const [id, en, bn] of cases) {
         const item = page.locator('.public-benefits__item[data-benefit="' + id + '"]');
         await expect(item.getByRole('heading', { name: language === 'bn' ? bn : en })).toBeVisible();
+        await expect(item).toHaveJSProperty('tagName', 'ARTICLE');
         await expect(item.getByRole('link')).toHaveCount(0);
-        if (id === 'payments') {
-          await expect(item).toHaveAttribute('type', 'button');
-          await expect(item).toHaveAttribute('aria-label', language === 'bn'
-            ? 'বিকল্প করদাতা তথ্য ফর্ম খুলুন' : 'Open parallel taxpayer entry');
-          await item.click();
-          const draft = page.getByRole('dialog', {name: language === 'bn'
-            ? 'সব ধরনের কর পরিশোধ — সমান্তরাল খসড়া' : 'All Tax Payments — parallel draft'});
-          await expect(draft).toBeVisible();
-          await expect(draft.getByTestId('parallel-taxpayer-empty')).toBeVisible();
-          await expect(draft.getByTestId('parallel-taxpayer-continue')).toBeDisabled();
-          await draft.getByRole('button', {name: language === 'bn'
-            ? 'সমান্তরাল খসড়া বন্ধ করুন' : 'Close parallel draft'}).click();
-          await expect(draft).toHaveCount(0);
-          continue;
-        }
         await expect(item.getByRole('button')).toHaveCount(0);
         await expect(item).not.toHaveAttribute('tabindex', /0/);
         const bounds = await item.boundingBox();
@@ -858,7 +845,22 @@ test('only All Tax Payments opens the parallel draft; five other Home benefits s
         await item.getByRole('heading').click();
         await expect.poll(() => new URL(page.url()).searchParams.get('action')).toBe(startingAction);
         await expect(page.locator('.tax-service-choice__card')).toHaveCount(0);
+        await expect(page.getByRole('dialog', {name:/parallel draft|সমান্তরাল খসড়া/})).toHaveCount(0);
       }
+      const parallelAction = page.locator('.public-benefits__heading').getByRole('button', {
+        name: language === 'bn' ? 'বিকল্প করদাতা তথ্য ফর্ম খুলুন' : 'Open parallel taxpayer entry',
+      });
+      await expect(parallelAction).toBeVisible();
+      await expect(parallelAction).toHaveText(language === 'bn' ? 'একাধিক করদাতার কর দিন' : 'Pay for multiple taxpayers');
+      await parallelAction.click();
+      const draft = page.getByRole('dialog', {name: language === 'bn'
+        ? 'সব ধরনের কর পরিশোধ — সমান্তরাল খসড়া' : 'All Tax Payments — parallel draft'});
+      await expect(draft).toBeVisible();
+      await expect(draft.getByTestId('parallel-taxpayer-empty')).toBeVisible();
+      await expect(draft.getByTestId('parallel-taxpayer-continue')).toBeDisabled();
+      await draft.getByRole('button', {name: language === 'bn'
+        ? 'সমান্তরাল খসড়া বন্ধ করুন' : 'Close parallel draft'}).click();
+      await expect(draft).toHaveCount(0);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow).toBeLessThanOrEqual(2);
     }

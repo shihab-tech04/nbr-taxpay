@@ -242,22 +242,14 @@ export const PublicLanding: React.FC = () => {
       <div className="public-benefits__heading">
         <h2 id="public-benefits-title">{t('Why choose Sohojkor?', 'সহজকর কেন ব্যবহার করবেন?')}</h2>
         <p>{t('Pay, organize and track your taxes in one place.', 'কর পরিশোধ, তথ্য গুছিয়ে রাখা ও অগ্রগতি দেখা—সব এক জায়গায়।')}</p>
+        <button type="button" className="public-benefits__action"
+          aria-label={t('Open parallel taxpayer entry', 'বিকল্প করদাতা তথ্য ফর্ম খুলুন')}
+          onClick={() => setShowParallelDraft(true)}>
+          {t('Pay for multiple taxpayers', 'একাধিক করদাতার কর দিন')}
+        </button>
       </div>
       <div className="public-benefits__grid">
-        {citizenBenefits.map(({ id, Icon, title, detail }) => id === 'payments' ? (
-          <button key={id} type="button"
-            className="public-benefits__item focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary"
-            data-benefit={id} style={{ width: '100%', textAlign: 'left', font: 'inherit', cursor: 'pointer' }}
-            aria-label={t('Open parallel taxpayer entry', 'বিকল্প করদাতা তথ্য ফর্ম খুলুন')}
-            aria-describedby={`public-benefit-detail-${id}`}
-            onClick={() => setShowParallelDraft(true)}>
-            <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
-            <div className="public-benefits__copy">
-              <h3>{title}</h3>
-              <p id={`public-benefit-detail-${id}`}>{detail}</p>
-            </div>
-          </button>
-        ) : (
+        {citizenBenefits.map(({ id, Icon, title, detail }) => (
           <article key={id} className="public-benefits__item" data-benefit={id}>
             <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
             <div className="public-benefits__copy">
@@ -265,8 +257,7 @@ export const PublicLanding: React.FC = () => {
               <p id={`public-benefit-detail-${id}`}>{detail}</p>
             </div>
           </article>
-        ))}
-      </div>
+        ))}     </div>
     </section>
 
     {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} /></React.Suspense>}
