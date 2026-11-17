@@ -28,16 +28,16 @@ test('the public TaxPay login restores the approved User ID/password modal', asy
 test('query strings cannot sign in a taxpayer or reveal private Beneficiaries',async({page})=>{
   for(const route of privateRoutes){
     await page.goto(site+'?action='+route+'&demoUser=user1');
-    if(route==='beneficiaries'){
-      await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toBeVisible();
-      await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
-    }else{
-      await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
-    }
+    await expect(page.locator('#public-home-title')).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
+    await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toBeVisible();
+    await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
+    await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
   }
   await page.evaluate(()=>history.replaceState({taxpayRoute:'taxpayer_home',taxpaySampleRole:'TAXPAYER_INDIVIDUAL'},'','?action=taxpayer_home'));
   await page.reload();
-  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toBeVisible();
 });
 
 test('User ID login continues into the taxpayer workspace and survives refresh',async({page})=>{

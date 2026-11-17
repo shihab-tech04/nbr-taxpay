@@ -28,7 +28,8 @@ test('public hero opens payment while standalone receipt search stays accessible
 
 test('guest cannot directly open taxpayer ledger or account activity', async ({page}) => {
   await page.goto('/?action=ledger');
-  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
+  await expect(page.locator('#public-home-title')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:/Illustrative Tax Ledger/})).toHaveCount(0);
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();

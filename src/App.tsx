@@ -118,9 +118,10 @@ const MainRouter: React.FC = () => {
     validCertificateTransactionId(routeParams.transactionId);
   const privateSampleGate = !publicConfirmedReceipt && !previewAccess &&
     requiresTaxpayerSignIn(currentRoute, false, Boolean(verifiedApplicationUser), sampleJourneysEnabled, userRole);
-  // Beneficiaries uses the approved login modal, not a second private-workspace gate.
-  // Keep private lists hidden while the real application session is resolving.
-  const beneficiaryLoginRequired = currentRoute === 'beneficiaries' && privateSampleGate && !checkingIdentity;
+  // Signed-out deep links reuse the approved login dialog. Keep the separate
+  // development preview entry only where browser-fixture tests need it.
+  const signedOutPrivateLogin = privateSampleGate && !checkingIdentity &&
+    (!sampleJourneysEnabled || currentRoute === 'beneficiaries');
   // Receipt routes remain deep-linkable, but their UI lives in the shared modal.
   const receiptOverlayRoute = currentRoute === 'verify' || currentRoute === 'payment_details';
   const transactionRoute = ['guest','guestwh','travel'].includes(currentRoute);
@@ -131,7 +132,7 @@ const MainRouter: React.FC = () => {
   const taxpayerSupportRoute = false; // Receipt status is now a public modal, not a taxpayer-page shell.
   const publicInformationRoute = receiptOverlayRoute || ['landing','incident'].includes(currentRoute) ||
     (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) ||
-    loginOverlay || (currentRoute === 'beneficiaries' && privateSampleGate);
+    loginOverlay || privateSampleGate;
   // A guest draft deep link retains its existing responsive shell and sign-in gate.
   // All account-only routes use the same approved taxpayer shell and sidebar.
   const taxpayerReference = !receiptOverlayRoute && ((privateTaxpayerRoute && !privateSampleGate) || taxpayerSupportRoute ||
@@ -260,31 +261,32 @@ const MainRouter: React.FC = () => {
       </> : <CitizenNavigation />}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
       <main ref={mainContentRef} id="main-content" tabIndex={-1} className={`flex-1 ${publicInformationRoute ? 'public-information-main' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}${currentRoute === 'incident' ? ' public-information-main--report' : ''}`}>
-        {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : beneficiaryLoginRequired ? <PublicLanding /> : (
-          <section className="citizen-account-gate">
-            <h1>{language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace'}</h1>
-            <p>{language === 'bn' ? 'আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন।' : 'Sign in to your Sohojkor account to continue.'}</p>
-            <a className="citizen-account-gate__preview"
-              href={language === 'bn' ? '?action=taxpayer_login&lang=bn' : '?action=taxpayer_login'}>
-              {language === 'bn' ? 'সাইন ইন' : 'Sign In'}
-            </a>
-            {/* Local-only synthetic workspace links retain existing UX regression coverage.
-                The production bundle removes this entire branch; private routes still require
-                verified Supabase Auth. */}
-            {sampleJourneysEnabled && <>
-              <a className="citizen-account-gate__preview" href={language === 'bn'
-                ? '?action=taxpayer_home&demoUser=user1&lang=bn'
-                : '?action=taxpayer_home&demoUser=user1'}>
-                {language === 'bn' ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
-              </a>
-              <button type="button" onClick={() => { setUserRole('TAXPAYER_INDIVIDUAL'); navigate('taxpayer_home'); }}>
-                {language === 'bn' ? 'করদাতা ওয়ার্কস্পেস দেখুন' : 'Explore taxpayer workspace'}
-              </button>
-            </>}
-            {sampleJourneysEnabled && <button type="button" onClick={() => navigate('taxpayer_login')}>
-              {language === 'bn' ? 'ইউজার আইডি দিয়ে নমুনা অ্যাকাউন্ট দেখুন' : 'Use User ID (sample account)'}
-            </button>}
-          </section>
+        {privateSampleGate ? (
+          <>
+            {/* A protected deep link never reveals account data to signed-out visitors.
+                Render only the approved public shell while the shared login dialog
+                handles access, recovery, and close. */}
+            <PublicLanding />
+            {checkingIdentity && <p role="status">
+              {language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}
+            </p>}
+            {sampleJourneysEnabled && !checkingIdentity && currentRoute !== 'beneficiaries' && (
+              <nav aria-label="Local taxpayer UI review" className="mx-auto mt-4 flex max-w-[1100px] flex-wrap gap-2">
+                <button type="button" className="min-h-11 rounded-lg border border-taxpay-primary px-4 py-2 text-sm font-medium text-taxpay-primary"
+                  onClick={() => { setUserRole('TAXPAYER_INDIVIDUAL'); navigate('taxpayer_home'); }}>
+                  {language === 'bn' ? 'করদাতা ওয়ার্কস্পেস দেখুন' : 'Explore taxpayer workspace'}
+                </button>
+                <a className="inline-flex min-h-11 items-center rounded-lg border border-taxpay-border px-4 py-2 text-sm text-taxpay-primary"
+                  href={language === 'bn' ? '?action=taxpayer_home&demoUser=user1&lang=bn' : '?action=taxpayer_home&demoUser=user1'}>
+                  {language === 'bn' ? 'ইন্টারঅ্যাকটিভ ড্যাশবোর্ড দেখুন' : 'Explore interactive dashboard'}
+                </a>
+                <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-4 py-2 text-sm text-taxpay-primary"
+                  onClick={() => navigate('taxpayer_login')}>
+                  {language === 'bn' ? 'ইউজার আইডি দিয়ে নমুনা অ্যাকাউন্ট দেখুন' : 'Use User ID (sample account)'}
+                </button>
+              </nav>
+            )}
+          </>
         ) : <>
           <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেজ লোড হচ্ছে…' : 'Loading page…'}</p>}>
             {currentRoute==='history'
@@ -310,8 +312,8 @@ const MainRouter: React.FC = () => {
         <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} />
       </React.Suspense>}
       {loginOverlay && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog /></React.Suspense>}
-      {beneficiaryLoginRequired && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog
-        preservePaymentJourney
+      {signedOutPrivateLogin && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog
+        onSuccess={() => navigate(signInReturnRoute)}
         onClose={() => navigate('landing')}
       /></React.Suspense>}
       {previewAccount && <React.Suspense fallback={null}><AuthorizationRequestPopup /></React.Suspense>}
