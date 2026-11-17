@@ -42,6 +42,15 @@ test('mobile payment calculation belongs to sticky footer and expands for the fu
 
 test('desktop keeps payment calculation in the original rail, without mobile footer duplicate', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
+  // This layout journey does not verify draft persistence. Keep the signed-in preview's
+  // draft catalog deterministic; real draft read/write/isolation is covered by SQL acceptance.
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries', async route => {
+    const action = (route.request().postDataJSON() as { action?: string } | null)?.action;
+    if (['open', 'payment-draft-list', 'guest-payment-draft-list'].includes(action ?? '')) {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: [] }) });
+    }
+    await route.continue();
+  });
   await page.goto('/');
   await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });

@@ -52,6 +52,10 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
 
     const calculation = dialog.getByTestId('grouped-taxpayer-calculation');
     const taxpayerSummaries = calculation.locator('.payment-form-summary__taxpayer');
+    const mobileCalculation = dialog.getByTestId('mobile-payment-calculation');
+    if (await mobileCalculation.count() && await mobileCalculation.getAttribute('open') === null) {
+      await mobileCalculation.getByTestId('mobile-payment-calculation-toggle').click();
+    }
     await expect(taxpayerSummaries).toHaveCount(2);
     await expect(taxpayerSummaries.nth(0).locator('summary')).toContainText('1 payment line');
     await expect(taxpayerSummaries.nth(1).locator('summary')).toContainText('1 payment line');
