@@ -2358,7 +2358,6 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   <div><h2 id="payment-final-payer-title">{language === 'bn' ? 'পরিশোধকারী ও রসিদের তথ্য' : 'Payer and receipt details'}</h2></div>
                 </div>
                 <div className="payment-identity__fields">{payerReceiptFields}</div>
-                {paymentRemarksControl}
               </section>}
               <section className="payment-review__panel" aria-labelledby="guest-payment-channel-title">
                 <div className="payment-review__section-title"><span className="payment-review__section-number">01</span><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2><p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div></div>
@@ -2374,7 +2373,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   {language === 'bn' ? 'নির্বাচিত সব করদাতা ও খাতের জন্য একটি সম্মিলিত সিমুলেশন পেমেন্ট রেকর্ড ও রসিদ তৈরি হবে।' :
                     'One combined simulated payment record and receipt will cover all selected taxpayers and heads.'}
                 </p>}
-                {paymentRemarks !== '' && (
+                {!unifiedFlow && paymentRemarks !== '' && (
                   <div className="mb-3 rounded-lg border border-taxpay-border p-3 text-sm" data-testid="payment-review-remarks">
                     <strong className="text-taxpay-dark">{copy.remarks}</strong>
                     <p className="mt-1 whitespace-pre-wrap break-words text-slate-700">{paymentRemarks}</p>
@@ -2387,13 +2386,18 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline} />
                 {paymentChannel && paymentMethod && <label className="payment-review__ack"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} /><span>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'এজেন্টের টিআইএন, কর্তনের খাত, করবর্ষ ও পরিমাণ যাচাই করেছি। কর্তিত করদাতারা eTDS-এ বরাদ্দের পর ক্রেডিট পাবেন।' : 'I confirm the agent TIN, deduction head, year and amount. Deductee credit follows eTDS allocation.') : otherBatch ? (language === 'bn' ? 'প্রতিটি করদাতার টিআইএন, সংশ্লিষ্ট খাত, করবর্ষ ও পরিমাণ যাচাই করেছি।' : 'I confirm each taxpayer TIN and the assigned payment heads, assessment years and amounts.') : (language === 'bn' ? 'টিআইএন, খাত, আয়করের ধরন, করবর্ষ ও মোট পরিমাণ যাচাই করেছি। ক্রেডিট করদাতার হিসাবে যাবে।' : 'I confirm the TIN, payment head, income tax type, assessment year and total. Credit goes to the taxpayer.')}</span></label>}
               </section>
+              {unifiedFlow && paymentRemarksControl}
             </div>
             <aside className="payment-review__aside" aria-label={language === 'bn' ? 'পেমেন্টের মোট পরিমাণ' : 'Payment total'}>
               {inlinePaymentCalculation}
             </aside>
             {!embedded && <div className="payment-review__standalone-actions">
               <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{commonCopy.btnBack}</button>
-              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={batchRecoveryError || !paymentChannel || !paymentMethod || !acknowledged || isProcessing || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))}>{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
+              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={batchRecoveryError || !paymentChannel || !paymentMethod || !acknowledged || isProcessing || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))}>{paymentChannel === 'OTC'
+                ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
+                : unifiedFlow
+                  ? (language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment')
+                  : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
             </div>}
           </div>
         )}
@@ -2435,7 +2439,11 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
             </button>
             <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={batchRecoveryError || isProcessing || !paymentChannel || !paymentMethod || !acknowledged || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))} aria-busy={isProcessing}>
-              {paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}{paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip') : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}
+              {paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}{paymentChannel === 'OTC'
+                ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
+                : unifiedFlow
+                  ? (language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment')
+                  : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}
             </button>
           </>) : null}
         </div>, modalFooterTarget
