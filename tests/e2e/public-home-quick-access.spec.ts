@@ -1,21 +1,18 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
-test('compact homepage preserves six benefit cells and launches unified All Tax Payments', async ({ page }) => {
+test('compact homepage keeps all six benefit cards informational and launches unified All Tax Payments from the hero', async ({ page }) => {
   await page.setViewportSize({ width: 1140, height: 900 });
   await page.goto('/?action=landing&lang=en');
   const benefits = page.locator('.public-benefits');
   await expect(benefits.getByRole('heading', { name: 'Why choose Sohojkor?' })).toBeVisible();
   const cards = benefits.locator('.public-benefits__item');
   await expect(cards).toHaveCount(6);
-  const payCard = cards.filter({ hasText: 'All Tax Payments' });
-  await expect(payCard).toHaveJSProperty('tagName', 'BUTTON');
-  await expect(payCard.getByRole('heading', { name: 'All Tax Payments' })).toBeVisible();
-  for (const id of ['certificates','corrections','history','pay-again','saved-drafts']) {
+  for (const id of ['payments','certificates','corrections','history','pay-again','saved-drafts']) {
     await expect(benefits.locator(`[data-benefit="${id}"]`)).toHaveJSProperty('tagName', 'ARTICLE');
   }
-  await expect(benefits.locator('.public-benefits__heading button')).toHaveCount(0);
-  await payCard.click();
+  await expect(benefits.getByRole('button')).toHaveCount(0);
+  await page.locator('.citizen-public-hero__actions').getByRole('button', { name: 'Pay Tax' }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText('User ID')).toBeVisible();
