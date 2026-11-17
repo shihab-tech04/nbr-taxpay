@@ -29,7 +29,8 @@ test('every additional Other Tax taxpayer reveals a details review and keeps cle
   const list = dialog.getByTestId('other-tax-taxpayer-list');
   const primary = list.getByTestId('other-tax-primary-taxpayer');
   await expect(primary.getByTestId('shared-taxpayer-tin-lookup')).toHaveCount(1);
-  await expect(primary.locator('.tin-lookup__name')).toBeHidden();
+  await expect(primary.locator('.tin-lookup__name')).toBeVisible();
+  await expect(primary.locator('#other-tax-primary-name')).toHaveValue('');
   // Focus alone must not reveal suggestions; only deliberate typing opens them.
   const entry = primary.locator('#guest-tin');
   await entry.focus();
@@ -46,10 +47,10 @@ test('every additional Other Tax taxpayer reveals a details review and keeps cle
 
   await primary.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(primary.locator('#other-tax-primary-name')).toHaveValue('User 1');
-  await expect(primary.getByTestId('searched-taxpayer-card')).toContainText('User 1');
+  await expect(primary.getByTestId('searched-taxpayer-card')).toHaveCount(0); // Name stays in the single shared lookup card.
   // Match the Travel Tax sequence: preview details first, separate full-width
   // Add action below the preview, and no Add another before confirmation.
-  await expect(primary.getByTestId('searched-taxpayer-card').getByRole('button', { name: 'Add taxpayer' })).toHaveCount(0);
+  await expect(primary.getByTestId('shared-taxpayer-tin-lookup').getByRole('button', { name: 'Add taxpayer' })).toHaveCount(0);
   await expect(primary.locator('.taxpay-taxpayer-row__fields > .taxpay-taxpayer-row__confirm-add')).toHaveCount(1);
   await expect(primary.getByRole('button', { name: 'Add taxpayer' })).toBeVisible();
   await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
@@ -66,7 +67,7 @@ test('every additional Other Tax taxpayer reveals a details review and keeps cle
   await additional.getByRole('button', { name: 'Clear TIN search' }).click();
   await expect(tin).toHaveValue('');
   await expect(additional.locator('input[id^="other-tax-name-"]')).toHaveValue('');
-  await expect(additional.locator('.tin-lookup__name')).toBeHidden();
+  await expect(additional.locator('.tin-lookup__name')).toBeVisible();
   const overflow = await additional.evaluate(card => card.scrollWidth - card.clientWidth);
   expect(overflow).toBeLessThanOrEqual(2);
 });

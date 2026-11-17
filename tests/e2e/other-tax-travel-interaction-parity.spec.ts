@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { enterTaxPayService } from './pay-tax-entry-helper';
 
 for (const locale of ['en', 'bn'] as const) {
-  test(`Other Tax matches Travel Tax search → details → add → another sequence (${locale})`, async ({page}) => {
+  test(`Other Tax keeps search → inline name review → add → another sequence (${locale})`, async ({page}) => {
     await page.emulateMedia({reducedMotion: 'reduce'});
     await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
     await page.getByRole('button', {name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true}).first().click();
@@ -17,7 +17,8 @@ for (const locale of ['en', 'bn'] as const) {
     const tin = primary.locator('#guest-tin');
     const addName = locale === 'bn' ? 'করদাতা যোগ করুন' : 'Add taxpayer';
     const nextName = locale === 'bn' ? 'আরেকজন করদাতা যোগ করুন' : 'Add another taxpayer';
-    await expect(primary.locator('.tin-lookup__name')).toBeHidden();
+    await expect(primary.locator('.tin-lookup__name')).toBeVisible();
+    await expect(primary.locator('#other-tax-primary-name')).toHaveValue('');
     await expect(primary.getByTestId('searched-taxpayer-card')).toHaveCount(0);
     await expect(primary.getByRole('button', {name: addName})).toHaveCount(0);
     await expect(modal.getByRole('button', {name: nextName})).toHaveCount(0);
@@ -34,11 +35,10 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(suggestions).toHaveCount(0); // Selecting must not reopen the dropdown.
     await expect(primary.getByTestId('searched-taxpayer-card')).toHaveCount(0);
     await primary.getByRole('button', {name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true}).click();
-    const detail = primary.getByTestId('searched-taxpayer-card');
-    await expect(detail).toBeVisible();
-    await expect(detail).toContainText(locale === 'bn' ? 'ইউজার 1' : 'User 1');
-    await expect(detail).toContainText('111111111111');
-    await expect(detail.getByRole('button', {name: addName})).toHaveCount(0);
+    await expect(primary.locator('#other-tax-primary-name')).toHaveValue(locale === 'bn' ? 'ইউজার 1' : 'User 1');
+    await expect(primary.locator('#guest-tin')).toHaveValue('111111111111');
+    await expect(primary.getByTestId('searched-taxpayer-card')).toHaveCount(0);
+    await expect(primary.getByTestId('shared-taxpayer-tin-lookup').getByRole('button', {name: addName})).toHaveCount(0);
     await expect(primary.locator('.taxpay-taxpayer-row__fields > .taxpay-taxpayer-row__confirm-add')).toHaveCount(1);
     await expect(primary.getByRole('button', {name: addName})).toBeVisible();
     await expect(modal.getByRole('button', {name: nextName})).toHaveCount(0);
@@ -55,8 +55,9 @@ for (const locale of ['en', 'bn'] as const) {
       ? 'নমুনা টিআইএন — সরকারি যাচাইকৃত নয়'
       : 'Sample TIN suggestions — not NBR verified'})).toHaveCount(0);
     await second.getByRole('button', {name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true}).click();
-    await expect(second.getByTestId('searched-taxpayer-card')).toContainText(locale === 'bn' ? 'ইউজার 2' : 'User 2');
-    await expect(second.getByTestId('searched-taxpayer-card').getByRole('button', {name: addName})).toHaveCount(0);
+    await expect(second.locator('input[id^="other-tax-name-"]')).toHaveValue(locale === 'bn' ? 'ইউজার 2' : 'User 2');
+    await expect(second.getByTestId('searched-taxpayer-card')).toHaveCount(0);
+    await expect(second.getByTestId('shared-taxpayer-tin-lookup').getByRole('button', {name: addName})).toHaveCount(0);
     await expect(second.locator('.taxpay-taxpayer-row__fields > .taxpay-taxpayer-row__confirm-add')).toHaveCount(1);
     await second.getByRole('button', {name: addName}).click();
     await expect(second.getByTestId('confirmed-taxpayer-card')).toContainText('222222222222');
