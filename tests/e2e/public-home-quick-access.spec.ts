@@ -1047,6 +1047,7 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
     await page.getByRole('button', {name:'Open parallel taxpayer entry'}).click();
     const draft = page.getByRole('dialog', {name:'All Tax Payments — parallel draft'});
     await expect(draft.getByTestId('parallel-taxpayer-empty')).toBeVisible();
+    await expect(draft.getByTestId('parallel-taxpayer-empty')).toHaveCSS('border-top-width', '1px');
     await expect(draft.getByTestId('parallel-taxpayer-continue')).toBeDisabled();
     await expect(draft.locator('.parallel-taxpayer-draft__disclaimer')).toHaveCount(0);
     const searchFor = async (tin:string) => {
@@ -1061,6 +1062,15 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
     await draft.getByTestId('parallel-add-taxpayer').click();
     await expect(draft.locator('#parallel-taxpayer-tin')).toBeFocused();
     await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(1);
+    const selectedTable = draft.locator('.parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table');
+    if (width === 1280) {
+      await expect(selectedTable.locator('thead th').first()).toHaveCSS('border-top-width', '1px');
+      await expect(selectedTable.locator('tbody td').first()).toHaveCSS('border-left-width', '1px');
+      await expect(selectedTable.locator('tbody td').first()).toHaveCSS('border-top-left-radius', '11px');
+    } else {
+      await expect(selectedTable.locator('tbody tr').first()).toHaveCSS('border-top-width', '1px');
+      await expect(selectedTable.locator('tbody tr').first()).toHaveCSS('border-radius', '11px');
+    }
     // Parallel list is intentionally reveal-only; no Copy action exists.
     await expect(draft.getByRole('button', {name:'Copy TIN'})).toHaveCount(0);
     await expect(draft.getByRole('button', {name:'Reveal TIN: User 1'})).toHaveCount(1);
