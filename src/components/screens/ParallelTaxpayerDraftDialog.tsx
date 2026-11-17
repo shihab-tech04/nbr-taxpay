@@ -5,6 +5,7 @@ import '../../styles/taxpay-parallel-taxpayer-draft.css';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Copy, Eye, EyeOff, RotateCcw, Trash2, UsersRound } from 'lucide-react';
 import { useAccountIdentity } from '../../services/accountIdentity';
+import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
 import { activePreviewSession } from '../../services/previewAccountSession';
 import { useTaxState } from '../../services/taxState';
 import { lookupSampleTaxpayer } from '../../services/sampleTaxpayerLookup';
@@ -58,6 +59,7 @@ function restoreSessionDraft(raw: string | null): {taxpayers: DraftTaxpayer[]; l
 export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }) {
   const { language, previewAccount, setPaymentBeneficiaryPrefill, setPaymentServiceChoiceOpen } = useTaxState();
   const {user, loading: checkingAccount} = useAccountIdentity();
+  const paymentAccount = usePaymentAccountProfile(user?.id ?? null, previewAccount);
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
   const [stage, setStage] = useState<1 | 2 | 3>(1);
@@ -119,6 +121,10 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
   const result = searchedTin === tin ? lookupSampleTaxpayer(searchedTin) : null;
   const alreadyAdded = Boolean(result && taxpayers.some(person => person.tin === result.tin));
   const selectedCount = taxpayers.length;
+  // Walk-ins use the approved 12-digit public TIN catalogue. Additional
+  // 13-digit synthetic profile IDs are only available in signed-in scenarios.
+  const canSearchTin = /^\d{12}$/.test(tin) ||
+    (Boolean(user || previewAccount) && /^\d{13}$/.test(tin));
   const allAllocated = selectedCount > 0 &&
     taxpayers.every(person => lines.some(line => line.taxpayerId === person.tin));
   const uniqueLines = new Set(lines.map(line =>
@@ -134,7 +140,7 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
   const search = () => {
     setCopyStatus('');
     setSearchedTin(tin);
-    const found = /^\d{12,13}$/.test(tin) ? lookupSampleTaxpayer(tin) : null;
+    const found = canSearchTin ? lookupSampleTaxpayer(tin) : null;
     setError(found ? '' : t(
       'TIN not found in the simulation catalogue. Check and search again.',
       'নমুনা করদাতার তালিকায় টিআইএন পাওয়া যায়নি। যাচাই করে আবার খুঁজুন।'));
@@ -195,7 +201,12 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
   };
   const continueToPayment = () => {
     if (!allocationsValid || !taxpayers.length || !lines.length) return;
-    const [primary, ...additional] = taxpayers;
+    const ownTin = paymentAccount.status === 'ready' ? paymentAccount.profile?.tin : null;
+    const parallelForSelf = Boolean(ownTin && taxpayers.some(person => person.tin === ownTin));
+    const ordered = parallelForSelf
+      ? [taxpayers.find(person => person.tin === ownTin)!, ...taxpayers.filter(person => person.tin !== ownTin)]
+      : taxpayers;
+    const [primary, ...additional] = ordered;
     // No client-side payment, credit, receipt, SQL writes, or invented authorization.
     // Existing GuestPayment validates taxpayer/payer identity, current saved list
     // ownership and submitted allocations before any simulated payment can persist.
@@ -203,6 +214,7 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
       tin:primary.tin, name:primary.nameEn,
       additional:additional.map(person => ({tin:person.tin,name:person.nameEn})),
       parallelSource:true,
+      parallelForSelf,
       parallelAllocations: lines.map(line => ({
         taxpayerTin:line.taxpayerId, headId:line.headId,
         assessmentYear:line.assessmentYear, amount:line.amount,
@@ -258,10 +270,10 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
               <TaxpayerTinLookup language={language} tinId="parallel-taxpayer-tin"
                 nameId="parallel-taxpayer-name" tin={tin}
                 name={result ? (bn ? result.nameBn : result.nameEn) : ''}
-                maxTinLength={13} hideNameField
+                maxTinLength={user || previewAccount ? 13 : 12} hideNameField
                 onTinChange={value => {setTin(value);setSearchedTin('');setError('');}}
                 onClear={() => {setTin('');setSearchedTin('');setError('');}}
-                canSearch={/^\d{12,13}$/.test(tin)}
+                canSearch={canSearchTin}
                 onSearch={search}
                 searchLabel={t('Search taxpayer TIN', 'করদাতার টিআইএন খুঁজুন')}
                 invalidTin={Boolean(error)} tinDescribedBy={error ? 'parallel-taxpayer-error' : undefined}
