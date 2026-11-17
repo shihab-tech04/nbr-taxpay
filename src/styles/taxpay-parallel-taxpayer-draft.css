@@ -147,9 +147,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 150px;
-  padding: 14px;
-  gap: 8px;
+  min-height: 190px;
+  padding: 20px;
+  gap: 10px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 12px;
+  background: var(--citizen-surface-subtle, #f8fafc);
   text-align: center;
   color: var(--citizen-muted);
 }
@@ -172,17 +175,52 @@
   text-align: left;
   font-size: 14px;
 }
-.parallel-taxpayer-draft__table th {
-  padding: 13px 12px;
-  border-bottom: 1px solid var(--citizen-border);
+/* The selected-taxpayer table uses the existing semantic table structure.
+   Restrict the rounded header and individual bordered rows to this panel:
+   the payment-allocation review table remains unchanged. */
+.parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table {
+  border-collapse: separate;
+  border-spacing: 0 9px;
+}
+.parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table th {
+  padding: 12px 13px;
+  border-block: 1px solid var(--citizen-border);
+  background: var(--citizen-surface-subtle, #f8fafc);
   font-weight: 600;
   color: var(--citizen-muted);
 }
-.parallel-taxpayer-draft__table td {
-  padding: 12px;
-  border-top: 1px solid var(--citizen-border);
+.parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table th:first-child {
+  border-inline-start: 1px solid var(--citizen-border);
+  border-start-start-radius: 11px;
+  border-end-start-radius: 11px;
+}
+.parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table th:last-child {
+  border-inline-end: 1px solid var(--citizen-border);
+  border-start-end-radius: 11px;
+  border-end-end-radius: 11px;
+  text-align: end;
+}
+.parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table td {
+  padding: 13px;
+  border-block: 1px solid var(--citizen-border);
+  background: var(--citizen-surface);
   vertical-align: middle;
   color: var(--citizen-text);
+}
+.parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table td:first-child {
+  border-inline-start: 1px solid var(--citizen-border);
+  border-start-start-radius: 11px;
+  border-end-start-radius: 11px;
+}
+.parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table td:last-child {
+  border-inline-end: 1px solid var(--citizen-border);
+  border-start-end-radius: 11px;
+  border-end-end-radius: 11px;
+  text-align: end;
+}
+.parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table tbody tr:hover td,
+.parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table tbody tr:focus-within td {
+  background: var(--citizen-surface-subtle, #f8fafc);
 }
 .parallel-taxpayer-draft__tin-cell {
   display: flex;
@@ -303,11 +341,14 @@
 .parallel-taxpayer-draft__undo {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  border-top: 1px solid var(--citizen-border);
-  padding: 10px 14px;
+  margin-block-start: 9px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 11px;
+  padding: 8px 12px;
+  background: var(--citizen-surface-subtle, #f8fafc);
   font-size: 14px;
   color: var(--citizen-text);
 }
@@ -366,10 +407,16 @@
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 4px 10px;
-    padding: 12px;
-    border-top: 1px solid var(--citizen-border);
+    margin-block-end: 9px;
+    padding: 12px 14px;
+    border: 1px solid var(--citizen-border);
+    border-radius: 11px;
+    background: var(--citizen-surface);
   }
-  .parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table tbody tr:first-child { border-top: 0; }
+  .parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table tbody tr:hover,
+  .parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table tbody tr:focus-within {
+    background: var(--citizen-surface-subtle, #f8fafc);
+  }
   .parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table td {
     display: block;
     min-width: 0;
@@ -383,7 +430,10 @@
     line-height: 1.5;
   }
   .parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table td:nth-child(2) { grid-column: 1; }
-  .parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table td:last-child { grid-column: 2; }
+  .parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table td:last-child {
+    grid-column: 2;
+    text-align: end;
+  }
   .parallel-taxpayer-draft__tin-cell { flex-wrap: wrap; }
   .parallel-taxpayer-draft__delete { min-height: 44px; }
   .parallel-taxpayer-draft__review-total { text-align: left; }
