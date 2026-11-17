@@ -245,7 +245,7 @@ export const PublicLanding: React.FC = () => {
           id === 'payments' ? (
             <button type="button" key={id} className="public-benefits__item public-benefits__item--action" data-benefit={id}
               aria-describedby={`public-benefit-detail-${id}`}
-              onClick={() => openPaymentServiceChoice('OTHER_TAX_PAYMENT')}>
+              onClick={() => openPaymentServiceChoice()}>
               <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
               <span className="public-benefits__copy">
                 <span className="public-benefits__action-title">{title}</span>
