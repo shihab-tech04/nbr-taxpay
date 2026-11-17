@@ -46,6 +46,8 @@ type Props = {
   taxpayers: OtherTaxTaxpayer[];
   lines: OtherTaxAllocation[];
   suggestionTaxpayerIds?: Readonly<Record<string, DemoUserId | null>>;
+  /** Parallel entry masks taxpayer identifiers in tab metadata; other payment screens preserve their existing labels. */
+  maskTaxpayerTin?: boolean;
   /** Keep original paid amounts when a Pay Again draft reselects a required year. */
   preserveSourcePaymentAmounts?: boolean;
   onChange: (lines: OtherTaxAllocation[]) => void;
@@ -56,7 +58,7 @@ type Props = {
   focusRequest?: { lineId: string; requestId: number } | null;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, preserveSourcePaymentAmounts = false, onChange, error, summary, remarks, focusRequest }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, remarks, focusRequest }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -95,7 +97,9 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     ? activeTaxpayer : taxpayers[0]?.id;
   const activeLines = lines.filter(line => line.taxpayerId === activeId);
   const search = query.trim().toLocaleLowerCase();
-  const count = grouped.reduce((n, group) => n + group.rows.length, 0);
+  const count = grouped.reduce((n, group) => n + (maskTaxpayerTin
+    ? group.rows.filter(head => isOtherTaxHeadEligible(head.id)).length
+    : group.rows.length), 0);
   const usedTotal = otherTaxAllocationTotal(lines);
   const isIncomplete = (line: OtherTaxAllocation) =>
     otherTaxAllocationAmount(line) === null || !isOtherTaxHeadEligible(line.headId) ||
@@ -221,11 +225,12 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                     const issues = invalidLines.filter(line => line.taxpayerId === person.id).length;
                     const noHead = firstMissingTaxpayer?.id === person.id && !firstInvalid;
                     const name = person.name.trim() || tx('Taxpayer', 'করদাতা') + ' ' + (index + 1);
+                    const visibleTin = maskTaxpayerTin ? person.tin.slice(0, 3) + '****' : person.tin;
                     return <button key={person.id} type="button"
                       aria-pressed={active} data-taxpayer-id={person.id}
                       data-invalid={issues > 0 || noHead ? 'true' : undefined}
-                      aria-label={name + ', ' + tx('TIN', 'টিআইএন') + ' ' + person.tin + ', ' + selectedCount + ' ' + tx('selected', 'নির্বাচিত') + (issues || noHead ? ', ' + tx('incomplete', 'অসম্পূর্ণ') : '')}
-                      title={name + ' · ' + person.tin} onClick={() => setActiveTaxpayer(person.id)}
+                      aria-label={name + ', ' + tx('TIN', 'টিআইএন') + ' ' + visibleTin + ', ' + selectedCount + ' ' + tx('selected', 'নির্বাচিত') + (issues || noHead ? ', ' + tx('incomplete', 'অসম্পূর্ণ') : '')}
+                      title={name + ' · ' + visibleTin} onClick={() => setActiveTaxpayer(person.id)}
                       className="other-tax-taxpayer-chip">
                       <span>{name}</span>
                       {selectedCount > 0 && <span className="other-tax-taxpayer-chip__count" aria-hidden="true">{selectedCount}</span>}

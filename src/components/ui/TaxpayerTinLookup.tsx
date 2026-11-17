@@ -44,13 +44,15 @@ export interface TaxpayerTinLookupProps {
   suggestedTins?: readonly string[];
   /** Keep the name in controlled form state, but show a read-only identity card after Search. */
   hideNameField?: boolean;
+  /** Opt-in keyboard shortcut for parallel entry; shared lookup behavior remains unchanged elsewhere. */
+  submitOnEnter?: boolean;
 }
 
 export function TaxpayerTinLookup({
   language, tinId, nameId, tin, name, onTinChange, onSearch, onClear, canSearch,
   heading, tinLabel, nameLabel, searchLabel, tinPlaceholder, namePlaceholder, maxTinLength = 12, maxNameLength = 160,
   readonlyTin = false, editableName = false, onNameChange, disabled = false, requiredTin = true,
-  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false,
+  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false, submitOnEnter = false,
 }: TaxpayerTinLookupProps) {
   const bn = language === 'bn';
   const tinRef = useRef<HTMLInputElement>(null);
@@ -149,6 +151,11 @@ export function TaxpayerTinLookup({
               if (event.key === 'ArrowDown' && showSuggestions) {
                 event.preventDefault();
                 suggestionsRef.current?.querySelector<HTMLButtonElement>('[role="option"]')?.focus();
+              }
+              if (event.key === 'Enter' && submitOnEnter && canSearch && !locked) {
+                event.preventDefault();
+                setShowSuggestions(false);
+                onSearch();
               }
             }}
             aria-invalid={invalidTin || undefined} aria-describedby={tinDescribedBy || undefined}

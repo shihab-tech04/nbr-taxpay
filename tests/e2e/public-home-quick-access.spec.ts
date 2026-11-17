@@ -1047,6 +1047,25 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
     await page.getByRole('button', {name:'Open parallel taxpayer entry'}).click();
     const draft = page.getByRole('dialog', {name:'All Tax Payments — parallel draft'});
     await expect(draft.getByTestId('parallel-taxpayer-empty')).toBeVisible();
+    await expect(draft.getByTestId('parallel-taxpayer-empty')).toHaveCSS('border-top-width', '1px');
+    // The icon and title must be centered as a group on both axes at either viewport.
+    const emptyAlignment = await draft.getByTestId('parallel-taxpayer-empty').evaluate(element => {
+      const icon = element.querySelector('svg');
+      const title = element.querySelector('strong');
+      if (!icon || !title) return null;
+      const box = element.getBoundingClientRect();
+      const iconBox = icon.getBoundingClientRect();
+      const titleBox = title.getBoundingClientRect();
+      return {
+        horizontal: Math.abs((titleBox.left + titleBox.right) / 2 - (box.left + box.right) / 2),
+        vertical: Math.abs((iconBox.top + titleBox.bottom) / 2 - (box.top + box.bottom) / 2),
+        width: box.width,
+      };
+    });
+    expect(emptyAlignment).not.toBeNull();
+    expect(emptyAlignment!.horizontal).toBeLessThanOrEqual(3);
+    expect(emptyAlignment!.vertical).toBeLessThanOrEqual(3);
+    expect(emptyAlignment!.width).toBeGreaterThan(200);
     await expect(draft.getByTestId('parallel-taxpayer-continue')).toBeDisabled();
     await expect(draft.locator('.parallel-taxpayer-draft__disclaimer')).toHaveCount(0);
     const searchFor = async (tin:string) => {
@@ -1061,9 +1080,20 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
     await draft.getByTestId('parallel-add-taxpayer').click();
     await expect(draft.locator('#parallel-taxpayer-tin')).toBeFocused();
     await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(1);
+    const selectedTable = draft.locator('.parallel-taxpayer-draft__panel .parallel-taxpayer-draft__table');
+    if (width === 1280) {
+      await expect(selectedTable.locator('thead th').first()).toHaveCSS('border-top-width', '1px');
+      await expect(selectedTable.locator('tbody td').first()).toHaveCSS('border-left-width', '1px');
+      await expect(selectedTable.locator('tbody td').first()).toHaveCSS('border-top-left-radius', '11px');
+      await expect(selectedTable.locator('tbody td').first()).toHaveCSS('vertical-align', 'middle');
+    } else {
+      await expect(selectedTable.locator('tbody tr').first()).toHaveCSS('border-top-width', '1px');
+      await expect(selectedTable.locator('tbody tr').first()).toHaveCSS('border-radius', '11px');
+      await expect(selectedTable.locator('tbody tr').first()).toHaveCSS('align-items', 'center');
+    }
     // Parallel list is intentionally reveal-only; no Copy action exists.
     await expect(draft.getByRole('button', {name:'Copy TIN'})).toHaveCount(0);
-    await expect(draft.getByRole('button', {name:'Reveal TIN'})).toHaveCount(1);
+    await expect(draft.getByRole('button', {name:'Reveal TIN: User 1'})).toHaveCount(1);
     const sections = draft.locator('.parallel-taxpayer-draft__panel');
     const bodyBox = await draft.locator('.taxpay-modal__body').boundingBox();
     const rightBox = await sections.nth(1).boundingBox();
@@ -1082,7 +1112,8 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
       expect(Math.abs(rightBox.x - bodyBox.x)).toBeLessThanOrEqual(2);
       expect(Math.abs(rightBox.width - bodyBox.width)).toBeLessThanOrEqual(2);
     }
-    await searchFor('111111111111');
+    await draft.locator('#parallel-taxpayer-tin').fill('111111111111');
+    await draft.locator('#parallel-taxpayer-tin').press('Enter');
     await expect(draft.getByTestId('parallel-add-taxpayer')).toBeDisabled();
     await searchFor('222222222222');
     await draft.getByTestId('parallel-add-taxpayer').click();
@@ -1090,11 +1121,22 @@ test('parallel taxpayer entry preserves real tax heads and allocations through a
     await expect(draft.getByRole('button', {name:'Undo remove taxpayer'})).toBeVisible();
     await draft.getByRole('button', {name:'Undo remove taxpayer'}).click();
     await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(2);
+    await draft.getByTestId('parallel-taxpayer-continue').click();
+    let heads = draft.getByTestId('parallel-tax-head-boundary');
+    await expect(heads.getByTestId('other-tax-batch')).toBeVisible();
+    // Taxpayer navigation appears for two taxpayers, and only masked TINs are exposed.
+    const taxpayerTabs = heads.locator('.other-tax-taxpayer-chip');
+    await expect(taxpayerTabs).toHaveCount(2);
+    await expect(taxpayerTabs.nth(1)).toHaveAttribute('title', /222\*\*\*\*/);
+    await expect(taxpayerTabs.nth(1)).not.toHaveAttribute('title', /222222222222/);
+    // Returning to one taxpayer correctly hides multi-taxpayer tabs.
+    await draft.locator('.parallel-taxpayer-draft__secondary').click();
     await draft.getByRole('button', {name:'Remove taxpayer: User 1'}).click();
     await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(1);
     await draft.getByTestId('parallel-taxpayer-continue').click();
-    const heads = draft.getByTestId('parallel-tax-head-boundary');
+    heads = draft.getByTestId('parallel-tax-head-boundary');
     await expect(heads.getByTestId('other-tax-batch')).toBeVisible();
+    await expect(heads.locator('.other-tax-taxpayer-chip')).toHaveCount(0);
     // A known eligible v11 head; do not introduce a parallel head catalogue.
     await heads.locator('[data-head-group="Advance Tax"] > summary').click();
     await heads.getByRole('checkbox', {name:/Select 64 —/}).check();
@@ -1134,5 +1176,7 @@ test('parallel taxpayer session draft restores after close and refresh without c
   draft=page.getByRole('dialog',{name:'All Tax Payments — parallel draft'});
   await expect(draft.locator('.parallel-taxpayer-draft__table tbody tr')).toHaveCount(1);
   await expect(draft).toContainText('Selection restored.');
+  await draft.locator('#parallel-taxpayer-tin').fill('12');
+  await expect(draft).not.toContainText('Selection restored.');
   await draft.getByRole('button',{name:'Close parallel draft'}).click();
 });
