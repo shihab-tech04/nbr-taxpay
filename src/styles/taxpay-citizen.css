@@ -1,6 +1,6 @@
 /* TaxPay citizen-only semantic tokens. Officer theme and routes are untouched. */
 .taxpay-citizen-shell {
-  --public-content-max: 1280px;
+  --public-content-max: 1100px;
   --citizen-primary: var(--color-taxpay-primary);
   --citizen-primary-dark: var(--color-taxpay-dark);
   --citizen-primary-light: var(--color-taxpay-light);
