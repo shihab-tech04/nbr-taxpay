@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('All Tax Payments walk-in uses typed demo taxpayer profiles and one shared head composer', async ({page}) => {
   await page.setViewportSize({width:1280,height:900});
   await page.goto('/?action=landing&lang=en');
-  await page.locator('.public-benefits__item[data-benefit="payments"]').click();
+  await page.locator('.citizen-public-hero__actions').getByRole('button',{name:'Pay Tax'}).click();
   const modal=page.getByRole('dialog',{name:'Pay Tax'});
   await modal.getByRole('button',{name:'Walk-in Payment'}).click();
 
