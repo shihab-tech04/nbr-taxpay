@@ -15,8 +15,8 @@ import {activePreviewSession} from '../../services/previewAccountSession';
 import {getDetailedStorySessionPayments} from '../../services/story1AccountPaymentHistory';
 import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
 
-export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipts?:readonly ChallanReceipt[];preferredReference?:string}> =
-  ({activityTabs=false,recordedReceipts=[],preferredReference=''}) => {
+export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipts?:readonly ChallanReceipt[];preferredReference?:string;embedded?:boolean}> =
+  ({activityTabs=false,recordedReceipts=[],preferredReference='',embedded=false}) => {
   const { corrections, receipts, taxpayerProfile, userRole, demoUser, addCorrectionRequest, language, previewAccount, routeParams } = useTaxState();
   const tr=(en:string,bn:string)=>language==='bn'?bn:en;
   const {user:authenticatedUser}=useAccountIdentity();
@@ -98,11 +98,11 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
-      <TaxpayerPageHeading title="Tax Payment Challan Correction Requests"
-        description="Request a change to the assessment year, tax circle or payment head." />
-      {activityTabs && <TaxpayerActivityTabs />}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+    <div className={embedded ? 'w-full min-w-0 space-y-4' : 'max-w-4xl mx-auto space-y-6 pb-12'}>
+      {!embedded && <TaxpayerPageHeading title="Tax Payment Challan Correction Requests"
+        description="Request a change to the assessment year, tax circle or payment head." />}
+      {!embedded && activityTabs && <TaxpayerActivityTabs />
+      <div className={embedded ? 'bg-white border border-taxpay-border rounded-xl p-3 sm:p-5' : 'bg-white border border-slate-200 rounded-xl p-6 shadow-sm'}>
         {submittedTicket && (
           <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-taxpay-dark space-y-1">
             <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
@@ -131,6 +131,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
               <select
                 id="correction-challan"
                 value={selectedChallanNo}
+                disabled={Boolean(preferredReference)}
                 onChange={(e) => {
                   const receipt = visibleReceipts.find(r => r.challanNo === e.target.value);
                   setChallanNo(e.target.value);
