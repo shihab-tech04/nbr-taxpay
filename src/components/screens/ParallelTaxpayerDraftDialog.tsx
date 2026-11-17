@@ -1,3 +1,6 @@
+// Reuse the already approved payment head form and modal styles.
+import '../../styles/taxpay-service-choice.css';
+import '../../styles/taxpay-payment-form.css';
 import '../../styles/taxpay-parallel-taxpayer-draft.css';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Copy, Eye, EyeOff, RotateCcw, Trash2, UsersRound } from 'lucide-react';
