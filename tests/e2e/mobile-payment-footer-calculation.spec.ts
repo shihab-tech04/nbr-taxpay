@@ -52,8 +52,7 @@ test('desktop keeps payment calculation in the original rail, without mobile foo
     await route.continue();
   });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   await expect(dialog.locator('.taxpay-modal__body .payment-form-summary')).toHaveCount(1);
   await expect(dialog.getByTestId('mobile-payment-calculation')).toHaveCount(0);
