@@ -4,7 +4,9 @@ import {
   Printer,
   Download,
   Copy,
-  Info
+  Info,
+  RotateCcw,
+  FilePenLine
 } from 'lucide-react';
 import { ChallanReceipt } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
@@ -24,13 +26,24 @@ interface ReceiptViewProps {
   backLabel?: string;
   /** Optional receipt-only restart, aligned opposite download and print. */
   onNewPayment?: () => void;
+  /** Transaction actions are offered only by the account-owned receipt reader. */
+  transactionActions?: boolean;
+  onPayAgain?: () => void;
+  onApplyForCorrection?: () => void;
+  payAgainUnavailableReason?: string;
+  payAgainTestId?: string;
+  /** Secondary receipts in a batch must not create extra modal footer controls. */
+  suppressFooterActions?: boolean;
 }
 
-export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment, certificate = false }) => {
+export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment, certificate = false,
+  transactionActions = false, onPayAgain, onApplyForCorrection, payAgainUnavailableReason,
+  payAgainTestId = 'receipt-pay-again', suppressFooterActions = false }) => {
   const { language, navigate } = useTaxState();
   const [showCertificate, setShowCertificate] = useState(false);
   const canViewCertificate = canViewPaymentCertificate(receipt);
   const isCertificate = certificate || (canViewCertificate && showCertificate);
+  const showReceiptTransactionActions = transactionActions && !isCertificate;
   const paperRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(false);
@@ -61,7 +74,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   const bn = language === 'bn';
   useEffect(() => { if (!embedded) window.scrollTo(0, 0); }, [embedded]);
   const labels = bn ? {
-    back: 'রেকর্ডে ফিরুন', print: 'রসিদ প্রিন্ট', export: 'ডাউনলোড',
+    back: 'রেকর্ডে ফিরুন', print: 'রসিদ প্রিন্ট', export: 'ডাউনলোড', payAgain: 'আবার পরিশোধ', applyCorrection: 'সংশোধনের আবেদন',
     title: 'সহজকর — রসিদের বিবরণ',
     challan: 'পেমেন্ট রেফারেন্স', token: 'টোকেন নম্বর', timestamp: 'তারিখ ও সময়', copy: 'রেফারেন্স কপি করুন',
     payerDetails: 'করদাতা ও পরিশোধকারীর তথ্য', payer: 'পরিশোধকারীর নাম', tin: 'ই-টিআইএন', year: 'করবর্ষ', service: 'পেমেন্টের ধরন',
@@ -75,7 +88,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     tax: 'কর (টাকা)', penalty: 'জরিমানা', surcharge: 'সারচার্জ', interest: 'সুদ', total: 'মোট (টাকা)', grandTotal: 'মোট অর্থ:',
     noAgentEntitlement: 'এজেন্টের স্বয়ংক্রিয় ক্রেডিট নয়; কর কর্তনগ্রহীতার অধিকার আলাদাভাবে যাচাই করতে হবে।'
   } : {
-    back: 'Back to records', print: 'Print receipt', export: 'Download',
+    back: 'Back to records', print: 'Print receipt', export: 'Download', payAgain: 'Pay Again', applyCorrection: 'Apply for Correction',
     title: 'Sohojkor — Receipt details',
     challan: 'Payment reference', token: 'Token number', timestamp: 'Date and time', copy: 'Copy reference',
     payerDetails: 'Payer and taxpayer details', payer: 'Payer name', tin: 'e-TIN', year: 'Assessment year', service: 'Payment service',
@@ -194,10 +207,10 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
 
   // The existing shared modal owns the action footer. The receipt supplies its controls.
   const receiptActions = (
-    <div className="receipt-view__actions no-print">
-      {onBack && <button type="button" className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
+    <div className={'receipt-view__actions no-print'+(showReceiptTransactionActions?' receipt-view__actions--transaction':'')}>
+      {!showReceiptTransactionActions && onBack && <button type="button" className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
         onClick={onBack}>{bn ? 'পেমেন্ট নিশ্চিতকরণে ফিরুন' : 'Back to confirmation'}</button>}
-      {onNewPayment && <button type="button"
+      {!showReceiptTransactionActions && onNewPayment && <button type="button"
         className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
         onClick={onNewPayment}>{bn ? 'নতুন পেমেন্ট' : 'New payment'}</button>}
       <div className="receipt-view__action-group">
@@ -205,10 +218,25 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           disabled={downloading} onClick={downloadCertificate}>
           <Download size={18} aria-hidden="true" /><span>{labels.export}</span>
         </button>
-        <button type="button" className="receipt-view__action receipt-view__action--primary"
+        {showReceiptTransactionActions ? <>
+          <button type="button" data-testid={payAgainTestId} data-receipt-action="pay-again"
+            className="receipt-view__action receipt-view__action--secondary"
+            disabled={!onPayAgain} title={!onPayAgain ? (payAgainUnavailableReason ??
+              (bn?'মূল পেমেন্টের সম্পূর্ণ তথ্য পাওয়া যায়নি':'The complete original payment is unavailable')):undefined}
+            onClick={onPayAgain}>
+            <RotateCcw size={18} aria-hidden="true"/><span>{labels.payAgain}</span>
+          </button>
+          <button type="button" data-testid="receipt-apply-correction"
+            className="receipt-view__action receipt-view__action--primary"
+            disabled={!onApplyForCorrection}
+            title={!onApplyForCorrection?(bn?'এই রেকর্ডের মালিকানা যাচাই করা যায়নি':'This receipt is not linked to a verified account'):undefined}
+            onClick={onApplyForCorrection}>
+            <FilePenLine size={18} aria-hidden="true"/><span>{labels.applyCorrection}</span>
+          </button>
+        </> : <button type="button" className="receipt-view__action receipt-view__action--primary"
           onClick={() => window.print()}>
           <Printer size={18} aria-hidden="true" /><span>{isCertificate ? (bn ? 'সনদ প্রিন্ট' : 'Print certificate') : labels.print}</span>
-        </button>
+        </button>}
       </div>
     </div>
   );
@@ -217,14 +245,24 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     <TaxPayModal title={certificate ? (bn ? 'সহজকর পেমেন্ট সনদ' : 'Sohojkor Payment Certificate') : labels.title} service="status" className="receipt-modal" footer={<></>}
       closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
       onClose={onBack ?? (() => navigate('history'))}>
-      <ReceiptView receipt={receipt} embedded certificate={certificate} />
+      <ReceiptView receipt={receipt} embedded certificate={certificate} onBack={onBack} onNewPayment={onNewPayment}
+        transactionActions={transactionActions} onPayAgain={onPayAgain}
+        onApplyForCorrection={onApplyForCorrection} payAgainUnavailableReason={payAgainUnavailableReason}
+        suppressFooterActions={suppressFooterActions} payAgainTestId={payAgainTestId}/>
     </TaxPayModal>
   );
 
   return (
     <div className={`receipt-view receipt-view--embedded${bn ? ' font-bengali' : ''}`} lang={language}>
-      {(!isCertificate || canViewCertificate) && (footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions)}
+      {!suppressFooterActions && (!isCertificate || canViewCertificate) && (footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions)}
 
+      {showReceiptTransactionActions && <div className="no-print flex flex-wrap items-center gap-2">
+        {onBack && <button type="button"
+          className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
+          onClick={onBack}>{bn ? 'পেমেন্ট নিশ্চিতকরণে ফিরুন' : 'Back to confirmation'}</button>}
+        <button type="button" className="receipt-view__action receipt-view__action--secondary"
+          onClick={() => window.print()}><Printer size={16} aria-hidden="true"/><span>{labels.print}</span></button>
+      </div>}
       {canViewCertificate && !certificate && <button type="button"
         className="receipt-view__action receipt-view__action--secondary no-print"
         onClick={() => { setDownloadError(false); setShowCertificate(value => !value); }}>

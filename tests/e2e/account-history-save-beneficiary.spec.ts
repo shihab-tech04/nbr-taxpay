@@ -527,8 +527,12 @@ for(const language of ['en','bn'] as const){
         .getByTestId('beneficiary-payment-mobile-cards').locator('li')
         .filter({hasText:paymentId}).filter({hasText:recipientTin}).first()
         .getByRole('button',{name:language==='bn'?'রসিদ দেখুন':'View receipt',exact:true}).click();
-      await expect(page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'})
-        .getByTestId('account-save-beneficiary-receipt')).toHaveCount(0);
+      const paymentReceipt=page.getByRole('dialog',{name:language==='bn'?'পেমেন্ট রসিদ':'Payment receipt'});
+      const receiptButtons=paymentReceipt.locator('.taxpay-modal__footer .receipt-view__action-group button');
+      await expect(receiptButtons).toHaveCount(3);
+      await expect(paymentReceipt.getByTestId('receipt-apply-correction')).toBeEnabled();
+      await expect(paymentReceipt.getByRole('button',{name:language==='bn'?'ডাউনলোড':'Download'})).toBeVisible();
+      await expect(paymentReceipt.getByTestId('account-save-beneficiary-receipt')).toHaveCount(0);
       // F-071/F-072: real Auth UID → Taxpayer SQL owner RPC → whole combined
       // original parent → Pay Again. No previewAccount/session alias is used.
       // This checks the existing WS1 entry without bypassing the new-payment

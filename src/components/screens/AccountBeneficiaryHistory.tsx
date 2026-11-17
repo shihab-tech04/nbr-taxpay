@@ -130,6 +130,12 @@ function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBenefi
       setSelected(null);
     }catch(reason){setReuseError(reason instanceof Error?reason.message:'The original payment could not be reconstructed.');}
   };
+  const applyForCorrection=(row:BeneficiaryPaymentEntry)=>{
+    // The private correction form verifies ownership against SQL before insert.
+    // This reference is only a prefill hint, never authorization.
+    setSelected(null);
+    navigate('corrections',{originalReference:row.receipt.challanNo});
+  };
   const canReuse=(row:BeneficiaryPaymentEntry)=>Boolean(row.receipt.items.length) &&
     (row.receipt.paymentCategory!=='TRAVEL_TAX' || Boolean(row.receipt.travelDetails?.passengers.length));
   const visibleTags=tags.owner===ownerUid?tags:{owner:ownerUid,status:'loading' as const,people:[]};
@@ -335,14 +341,15 @@ function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBenefi
       labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('records','রেকর্ড')}}/>
     {selected&&<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')} service="status"
       className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
-      <ReceiptView receipt={selected.receipt} embedded/>
+      <ReceiptView receipt={selected.receipt} embedded transactionActions
+        payAgainTestId="account-pay-again-receipt"
+        onPayAgain={canReuse(selected)?()=>payAgain(selected):undefined}
+        onApplyForCorrection={()=>applyForCorrection(selected)}/>
       <div className="mt-3 flex flex-wrap justify-end gap-2">
         {canSaveBeneficiary(selected)&&<button type="button" data-testid="account-save-beneficiary-receipt"
           className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border px-4 font-semibold text-taxpay-primary"
           onClick={()=>saveBeneficiary(selected)}><UserPlus size={16} aria-hidden="true"/>{tr('Save Beneficiary','উপকারভোগী সংরক্ষণ করুন')}</button>}
-        {canReuse(selected)&&<button type="button" data-testid="account-pay-again-receipt"
-          className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold text-taxpay-primary"
-          onClick={()=>payAgain(selected)}>{tr('Pay Again','আবার পরিশোধ')}</button>}
+
       </div>
     </TaxPayModal>}
   </section>;

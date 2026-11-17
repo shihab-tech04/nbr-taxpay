@@ -252,8 +252,8 @@ test('Home, Guide and Report share the same public width on wide desktops', asyn
     const box = await page.locator(view.selector).boundingBox();
     expect(box, `${view.path} should have a content container`).not.toBeNull();
     bounds.push({ x: box!.x, width: box!.width });
-    // All public pages share one 1100px rail at wide viewports.
-    const expectedWidth = 1100;
+    // All public pages share one 1280px rail at wide viewports.
+    const expectedWidth = 1280;
     expect(box!.width).toBeGreaterThanOrEqual(expectedWidth - 1);
     expect(box!.width).toBeLessThanOrEqual(expectedWidth + 1);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

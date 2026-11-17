@@ -17,7 +17,7 @@ import {
   ChevronDown,
   ReceiptText
 } from 'lucide-react';
-import { useTaxState } from '../../services/taxState';
+import { useTaxState, type PaymentBeneficiaryPrefill } from '../../services/taxState';
 import { backendConfigured } from '../../services/supabaseClient';
 import { BLOCKED_HEAD_IDS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
@@ -39,7 +39,7 @@ import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
 import { deletePaymentFormDraft, isPaymentDraftService, type PaymentFormDraft, type PaymentDraftActor } from '../../services/accountPaymentFormDrafts';
 import { isOptionalReceiptEmailValid, normaliseReceiptEmail } from '../../services/receiptEmail';
 import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
-import type {PaymentReuse} from '../../services/paymentReuse';
+import {reuseRecordedPayment,type PaymentReuse} from '../../services/paymentReuse';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
 import { prepareCombinedOtherTaxPayment, saveCombinedOtherTaxRequest, loadCombinedOtherTaxRequest, clearCombinedOtherTaxRequest, fitsCombinedAllocationCapacity, MAX_COMBINED_ALLOCATIONS } from '../../services/otherTaxCombinedPayment';
@@ -193,13 +193,13 @@ interface GuestPaymentProps {
   initialReuse?: PaymentReuse;
   /** Payer relationship is chosen before service selection in the Pay Tax modal. */
   initialForSelf?: boolean;
-  initialBeneficiary?: { tin: string; name: string; additional?: { tin: string; name: string }[] };
+  initialBeneficiary?: PaymentBeneficiaryPrefill;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
 }
 
 export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialReuse, initialForSelf, initialBeneficiary, onBackToService, onStageChange }) => {
-  const { language, navigate, addPaymentReceipt, routeParams, previewAccount, setPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, addPaymentReceipt, routeParams, previewAccount, setPaymentServiceChoiceOpen, startPaymentReuse } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // The standalone guest route can also be visited from a signed-in session.
   const signedInAccount = withAccount || Boolean(authenticatedUser || previewAccount);
@@ -234,7 +234,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     ? walkInPayerLookup : null;
   const [otherTaxpayerName, setOtherTaxpayerName] = useState(initialBeneficiary?.name ?? '');
   const [additionalTaxpayers, setAdditionalTaxpayers] = useState<OtherTaxTaxpayer[]>(() =>
-    (initialBeneficiary?.additional ?? []).map(person => ({ ...person, id: crypto.randomUUID() }))
+    (initialBeneficiary?.additional ?? []).map(person => ({ ...person,
+      id: initialBeneficiary?.parallelSource ? 'parallel-' + person.tin : crypto.randomUUID() }))
   );
   // A one-time recipient belongs to this payment only; it is never written to a saved list.
   const [oneTimeTaxpayer, setOneTimeTaxpayer] = useState<OtherTaxTaxpayer | null>(null);
@@ -242,9 +243,33 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [oneTimeSearchedTin, setOneTimeSearchedTin] = useState<string | null>(null);
   const [oneTimeLookupError, setOneTimeLookupError] = useState('');
   // Keep confirmation across stage navigation, but invalidate it when a TIN changes.
-  const [confirmedOtherTaxTins, setConfirmedOtherTaxTins] = useState<Record<string, string>>({});
+  const [confirmedOtherTaxTins, setConfirmedOtherTaxTins] = useState<Record<string, string>>(() => {
+    if (!initialBeneficiary?.parallelSource) return {};
+    // Only a previously matched public simulation catalogue entry can be
+    // preconfirmed. An account owner's saved-recipient/RLS check still runs.
+    return Object.fromEntries([
+      {id:'primary',tin:initialBeneficiary.tin},
+      ...(initialBeneficiary.additional ?? []).map(person => ({id:'parallel-'+person.tin,tin:person.tin})),
+    ].filter(person => lookupSampleTaxpayer(person.tin)?.tin === person.tin)
+      .map(person => [person.id,person.tin]));
+  });
   const [invalidBatchTaxpayerId, setInvalidBatchTaxpayerId] = useState<string | null>(null);
-  const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>([]);
+  const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>(() => {
+    if (!initialBeneficiary?.parallelSource || !Array.isArray(initialBeneficiary.parallelAllocations) ||
+      !fitsCombinedAllocationCapacity(initialBeneficiary.parallelAllocations.length)) return [];
+    const allowed = new Set([initialBeneficiary.tin,...(initialBeneficiary.additional ?? []).map(p=>p.tin)]);
+    const seen = new Set<string>();
+    return initialBeneficiary.parallelAllocations.filter(line => {
+      const key = line.taxpayerTin + ':' + line.headId + ':' + line.assessmentYear;
+      if (!allowed.has(line.taxpayerTin) || seen.has(key) || !isOtherTaxHeadEligible(line.headId) ||
+        !OTHER_TAX_YEARS.some(year => year === line.assessmentYear) ||
+        (parseGuestAmount(line.amount) ?? 0) <= 0) return false;
+      seen.add(key);
+      return true;
+    }).map(line => ({id:crypto.randomUUID(),
+      taxpayerId:line.taxpayerTin===initialBeneficiary.tin?'primary':'parallel-'+line.taxpayerTin,
+      headId:line.headId,assessmentYear:line.assessmentYear,amount:line.amount}));
+  });
   const [summaryJump, setSummaryJump] = useState<{ lineId: string; requestId: number }>({ lineId: '', requestId: 0 });
   const [authorizedTaxpayerIds,setAuthorizedTaxpayerIds]=useState<Record<string,DemoUserId>>({});
   const [phone, setPhone] = useState('');
@@ -281,7 +306,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [noticeReference, setNoticeReference] = useState('');
   // Optional parent-challan note, separate from structured reference and head metadata.
   const [paymentRemarks, setPaymentRemarks] = useState('');
-  const [lastSearchedTin, setLastSearchedTin] = useState<string | null>(null);
+  const [lastSearchedTin, setLastSearchedTin] = useState<string | null>(
+    initialBeneficiary?.parallelSource && lookupSampleTaxpayer(initialBeneficiary.tin) ? initialBeneficiary.tin : null);
   const sampleTaxpayer = lastSearchedTin === taxpayerTin ? (lookupSampleTaxpayer(taxpayerTin) ?? (ownAccountTax && ownProfile ? { tin: taxpayerTin, nameEn: ownProfile.nameEn, nameBn: ownProfile.nameBn } : null)) : null;
   const tinLookupState = lastSearchedTin !== taxpayerTin ? 'idle' : sampleTaxpayer ? 'found' : 'missing';
   const searchTin = () => {
@@ -1430,9 +1456,29 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const referenceReady = lifecycleStages.includes('ACS_REFERENCE_CREATED');
     const confirmedReceipts = batchAttempt ? confirmedBatchReceipts(batchAttempt) : [];
     const shownTotal = batchAttempt ? batchAttempt.amountMinor / 100 : totalAmount;
+    const currentOwner=authenticatedUser?.id ??
+      (previewAccount&&activePreviewSession()?.profileId===previewAccount.id?previewAccount.id:null);
+    let repeatCopy:PaymentReuse|null=null;
+    // The successful SQL acknowledgement precedes this receipt. Never offer a
+    // repeated payment from a pending bank slip or an unverified guest fixture.
+    if(completed&&currentOwner&&createdReceipt?.paymentTransactionId){
+      const originals=batchAttempt?confirmedReceipts:[createdReceipt];
+      try{
+        repeatCopy=reuseRecordedPayment(originals,currentOwner,signedInProfile?.tin??null,
+          createdReceipt.batchId??createdReceipt.paymentTransactionId);
+      }catch{/* Incomplete or mixed original stays read-only. */}
+    }
     if (showReceiptDetails && createdReceipt) return (
       <div lang={language} className={`payment-receipt-details ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''}`}>
-        <ReceiptView receipt={createdReceipt} embedded={embedded} onBack={() => setShowReceiptDetails(false)} />
+        <ReceiptView receipt={createdReceipt} embedded={embedded} onBack={() => setShowReceiptDetails(false)}
+          transactionActions={Boolean(completed&&currentOwner&&createdReceipt.paymentTransactionId)}
+          onPayAgain={repeatCopy?()=>{setShowReceiptDetails(false);
+            startPaymentReuse(repeatCopy!);}:undefined}
+          onApplyForCorrection={completed&&currentOwner?()=>{
+            setShowReceiptDetails(false);
+            navigate('corrections',{originalReference:createdReceipt.challanNo,
+              applyForCorrection:Boolean(previewAccount)});
+          }:undefined}/>
       </div>
     );
     return (
