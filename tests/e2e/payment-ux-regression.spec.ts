@@ -238,6 +238,7 @@ test('desktop My Tax Liability calculation rail fills the taxpayer column withou
   await expect(summary).toBeVisible();
   await expect(body).toHaveCSS('overflow-y', 'auto');
   await expect(summary).toHaveCSS('position', 'sticky');
+  await expect(summary).toHaveCSS('overflow-y', 'visible');
 
   // The two columns have one continuous background surface even though the
   // calculation card is shorter than the taxpayer form and stays pinned.
