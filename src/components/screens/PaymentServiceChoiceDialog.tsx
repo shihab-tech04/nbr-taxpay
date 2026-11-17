@@ -394,7 +394,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage} />
         ) : effectiveSelected ? (
           <GuestPayment key={draftToResume ? 'payment-draft-' + draftToResume.id : initialReuse ? 'payment-reuse-' + initialReuse.sourcePaymentId : effectiveSelected + '-' + String(payerForSelf)}
-            embedded initialCategory={effectiveSelected} initialForSelf={payerForSelf ?? undefined}
+            embedded unifiedFlow={unifiedEntry} initialCategory={effectiveSelected} initialForSelf={payerForSelf ?? undefined}
             initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
             initialBeneficiary={payerForSelf === false || parallelEntry ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
             isWithholdingMode={effectiveSelected === 'SOURCE_TAX_DEPOSIT'}
