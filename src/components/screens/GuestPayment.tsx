@@ -17,7 +17,7 @@ import {
   ChevronDown,
   ReceiptText
 } from 'lucide-react';
-import { useTaxState } from '../../services/taxState';
+import { useTaxState, type PaymentBeneficiaryPrefill } from '../../services/taxState';
 import { backendConfigured } from '../../services/supabaseClient';
 import { BLOCKED_HEAD_IDS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
@@ -193,7 +193,7 @@ interface GuestPaymentProps {
   initialReuse?: PaymentReuse;
   /** Payer relationship is chosen before service selection in the Pay Tax modal. */
   initialForSelf?: boolean;
-  initialBeneficiary?: { tin: string; name: string; additional?: { tin: string; name: string }[] };
+  initialBeneficiary?: PaymentBeneficiaryPrefill;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
 }
@@ -234,7 +234,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     ? walkInPayerLookup : null;
   const [otherTaxpayerName, setOtherTaxpayerName] = useState(initialBeneficiary?.name ?? '');
   const [additionalTaxpayers, setAdditionalTaxpayers] = useState<OtherTaxTaxpayer[]>(() =>
-    (initialBeneficiary?.additional ?? []).map(person => ({ ...person, id: crypto.randomUUID() }))
+    (initialBeneficiary?.additional ?? []).map(person => ({ ...person,
+      id: initialBeneficiary?.parallelSource ? 'parallel-' + person.tin : crypto.randomUUID() }))
   );
   // A one-time recipient belongs to this payment only; it is never written to a saved list.
   const [oneTimeTaxpayer, setOneTimeTaxpayer] = useState<OtherTaxTaxpayer | null>(null);
@@ -242,9 +243,33 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [oneTimeSearchedTin, setOneTimeSearchedTin] = useState<string | null>(null);
   const [oneTimeLookupError, setOneTimeLookupError] = useState('');
   // Keep confirmation across stage navigation, but invalidate it when a TIN changes.
-  const [confirmedOtherTaxTins, setConfirmedOtherTaxTins] = useState<Record<string, string>>({});
+  const [confirmedOtherTaxTins, setConfirmedOtherTaxTins] = useState<Record<string, string>>(() => {
+    if (!initialBeneficiary?.parallelSource) return {};
+    // Only a previously matched public simulation catalogue entry can be
+    // preconfirmed. An account owner's saved-recipient/RLS check still runs.
+    return Object.fromEntries([
+      {id:'primary',tin:initialBeneficiary.tin},
+      ...(initialBeneficiary.additional ?? []).map(person => ({id:'parallel-'+person.tin,tin:person.tin})),
+    ].filter(person => lookupSampleTaxpayer(person.tin)?.tin === person.tin)
+      .map(person => [person.id,person.tin]));
+  });
   const [invalidBatchTaxpayerId, setInvalidBatchTaxpayerId] = useState<string | null>(null);
-  const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>([]);
+  const [otherTaxLines, setOtherTaxLines] = useState<OtherTaxAllocation[]>(() => {
+    if (!initialBeneficiary?.parallelSource || !Array.isArray(initialBeneficiary.parallelAllocations) ||
+      !fitsCombinedAllocationCapacity(initialBeneficiary.parallelAllocations.length)) return [];
+    const allowed = new Set([initialBeneficiary.tin,...(initialBeneficiary.additional ?? []).map(p=>p.tin)]);
+    const seen = new Set<string>();
+    return initialBeneficiary.parallelAllocations.filter(line => {
+      const key = line.taxpayerTin + ':' + line.headId + ':' + line.assessmentYear;
+      if (!allowed.has(line.taxpayerTin) || seen.has(key) || !isOtherTaxHeadEligible(line.headId) ||
+        !OTHER_TAX_YEARS.some(year => year === line.assessmentYear) ||
+        (parseGuestAmount(line.amount) ?? 0) <= 0) return false;
+      seen.add(key);
+      return true;
+    }).map(line => ({id:crypto.randomUUID(),
+      taxpayerId:line.taxpayerTin===initialBeneficiary.tin?'primary':'parallel-'+line.taxpayerTin,
+      headId:line.headId,assessmentYear:line.assessmentYear,amount:line.amount}));
+  });
   const [summaryJump, setSummaryJump] = useState<{ lineId: string; requestId: number }>({ lineId: '', requestId: 0 });
   const [authorizedTaxpayerIds,setAuthorizedTaxpayerIds]=useState<Record<string,DemoUserId>>({});
   const [phone, setPhone] = useState('');
@@ -281,7 +306,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [noticeReference, setNoticeReference] = useState('');
   // Optional parent-challan note, separate from structured reference and head metadata.
   const [paymentRemarks, setPaymentRemarks] = useState('');
-  const [lastSearchedTin, setLastSearchedTin] = useState<string | null>(null);
+  const [lastSearchedTin, setLastSearchedTin] = useState<string | null>(
+    initialBeneficiary?.parallelSource && lookupSampleTaxpayer(initialBeneficiary.tin) ? initialBeneficiary.tin : null);
   const sampleTaxpayer = lastSearchedTin === taxpayerTin ? (lookupSampleTaxpayer(taxpayerTin) ?? (ownAccountTax && ownProfile ? { tin: taxpayerTin, nameEn: ownProfile.nameEn, nameBn: ownProfile.nameBn } : null)) : null;
   const tinLookupState = lastSearchedTin !== taxpayerTin ? 'idle' : sampleTaxpayer ? 'found' : 'missing';
   const searchTin = () => {

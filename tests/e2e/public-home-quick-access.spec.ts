@@ -1038,16 +1038,16 @@ test('1920px desktop Home fills the viewport with balanced sections and fixed fo
 
 
 
-test('parallel first draft supports TIN lookup, multiple additions, delete and safe tax-head boundary', async ({page}, info) => {
-  test.skip(info.project.name !== 'desktop-1280', 'Focused draft smoke covers responsive states in one browser.');
+test('parallel taxpayer entry preserves real tax heads and allocations through approved payment wizard', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Focused review at mobile and desktop widths.');
   for (const width of [375, 1280]) {
     await page.setViewportSize({width,height:900});
     await page.goto('/?action=landing&lang=en');
+    await page.evaluate(() => sessionStorage.clear());
     await page.getByRole('button', {name:'Open parallel taxpayer entry'}).click();
     const draft = page.getByRole('dialog', {name:'All Tax Payments — parallel draft'});
     await expect(draft.getByTestId('parallel-taxpayer-empty')).toBeVisible();
     await expect(draft.getByTestId('parallel-taxpayer-continue')).toBeDisabled();
-
     const searchFor = async (tin:string) => {
       await draft.locator('#parallel-taxpayer-tin').fill(tin);
       await draft.getByRole('button', {name:'Search taxpayer TIN'}).click();
@@ -1055,27 +1055,59 @@ test('parallel first draft supports TIN lookup, multiple additions, delete and s
     await searchFor('111111111111');
     await expect(draft.getByTestId('parallel-taxpayer-search-result')).toContainText('User 1');
     await draft.getByTestId('parallel-add-taxpayer').click();
-    await expect(draft.getByTestId('parallel-taxpayer-empty')).toHaveCount(0);
+    await expect(draft.locator('#parallel-taxpayer-tin')).toBeFocused();
     await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(1);
-
     await searchFor('111111111111');
     await expect(draft.getByTestId('parallel-add-taxpayer')).toBeDisabled();
     await searchFor('222222222222');
     await draft.getByTestId('parallel-add-taxpayer').click();
+    await draft.getByRole('button', {name:'Remove taxpayer: User 1'}).click();
+    await expect(draft.getByRole('button', {name:'Undo remove taxpayer'})).toBeVisible();
+    await draft.getByRole('button', {name:'Undo remove taxpayer'}).click();
     await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(2);
     await draft.getByRole('button', {name:'Remove taxpayer: User 1'}).click();
     await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(1);
-
     await draft.getByTestId('parallel-taxpayer-continue').click();
-    await expect(draft.getByTestId('parallel-tax-head-boundary')).toBeVisible();
-    await expect(draft).toContainText('No payment is submitted');
-    await draft.getByRole('button', {name:'Close parallel draft'}).click();
+    const heads = draft.getByTestId('parallel-tax-head-boundary');
+    await expect(heads.getByTestId('other-tax-batch')).toBeVisible();
+    // A known eligible v11 head; do not introduce a parallel head catalogue.
+    await heads.locator('[data-head-group="Advance Tax"] > summary').click();
+    await heads.getByRole('checkbox', {name:/Select 64 —/}).check();
+    await heads.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('250.50');
+    await draft.getByTestId('parallel-tax-head-continue').click();
+    await expect(draft.getByTestId('parallel-allocation-review')).toContainText('250.50');
+    await draft.getByTestId('parallel-payment-handoff').click();
     await expect(draft).toHaveCount(0);
-
-    // Existing Pay Tax entry remains a separate, working route.
-    await page.getByRole('button', {name:'Pay Tax', exact:true}).first().click();
-    await expect(page.getByRole('dialog', {name:'Pay Tax'})).toBeVisible();
-    await page.getByRole('button', {name:'Close payment services'}).click();
+    const payment = page.getByRole('dialog', {name:'Pay Tax'});
+    await expect(payment).toBeVisible();
+    // The ordinary payer/receipt verification step has not been bypassed.
+    await expect(payment.locator('#guest-payer-name')).toBeVisible();
+    await payment.locator('#guest-payer-name').fill('Reviewed Payer');
+    await payment.locator('#guest-phone').fill('01712345678');
+    await payment.getByRole('button', {name:'Continue to purpose & amount'}).click();
+    await expect(payment.getByTestId('other-tax-batch')).toBeVisible();
+    await expect(payment.getByTestId('other-tax-line')).toHaveCount(1);
+    await expect(payment.getByTestId('other-tax-line').first()
+      .locator('input[id^="other-tax-amount"]')).toHaveValue('250.50');
+    await payment.getByRole('button', {name:'Close payment services'}).click();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(2);
   }
+});
+
+test('parallel taxpayer session draft restores after close and refresh without creating beneficiaries', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Focused same-tab recovery check.');
+  await page.goto('/?action=landing&lang=en');
+  await page.evaluate(()=>sessionStorage.clear());
+  await page.getByRole('button',{name:'Open parallel taxpayer entry'}).click();
+  let draft=page.getByRole('dialog',{name:'All Tax Payments — parallel draft'});
+  await draft.locator('#parallel-taxpayer-tin').fill('333333333333');
+  await draft.getByRole('button',{name:'Search taxpayer TIN'}).click();
+  await draft.getByTestId('parallel-add-taxpayer').click();
+  await draft.getByRole('button',{name:'Close parallel draft'}).click();
+  await page.reload();
+  await page.getByRole('button',{name:'Open parallel taxpayer entry'}).click();
+  draft=page.getByRole('dialog',{name:'All Tax Payments — parallel draft'});
+  await expect(draft.locator('.parallel-taxpayer-draft__table tbody tr')).toHaveCount(1);
+  await expect(draft).toContainText('Your earlier taxpayer selection was restored');
+  await draft.getByRole('button',{name:'Close parallel draft'}).click();
 });
