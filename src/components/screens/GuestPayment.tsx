@@ -1735,7 +1735,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   {language === 'bn' ? 'বর্তমান নমুনা টিআইএন তালিকায় মিলেছে। অ্যাকাউন্টের মালিকানা যাচাই করা হয়নি।' : 'Matched the current sample TIN lookup. Account ownership is not verified.'}
                 </p>}
               </div>}
-            {ownAccountTax && !isWithholdingMode && receiptEmailControl}
   </>);
 
   const paymentRemarksControl = (
@@ -2047,6 +2046,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               </>}
               {!unifiedFlow && payerReceiptFields}
             </div>
+            {!unifiedFlow && ownAccountTax && !isWithholdingMode && receiptEmailControl}
             </PaymentFormSection>}
             {otherBatch && !ownAccountTax && !signedInAccount && !simpleOwnOtherTax && <PaymentFormSection number={3} staticView={embedded}
               title={language === 'bn' ? 'করদাতারা' : 'Taxpayers'}>
@@ -2358,7 +2358,8 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   <div><h2 id="payment-final-payer-title">{language === 'bn' ? 'পরিশোধকারী ও রসিদের তথ্য' : 'Payer and receipt details'}</h2></div>
                 </div>
                 <div className="payment-identity__fields">{payerReceiptFields}</div>
-              </section>}
+                {ownAccountTax && !isWithholdingMode && receiptEmailControl}
+              </section>
               <section className="payment-review__panel" aria-labelledby="guest-payment-channel-title">
                 <div className="payment-review__section-title"><span className="payment-review__section-number">01</span><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2><p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div></div>
                 {!storyAmountSupported && <p role="alert" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
