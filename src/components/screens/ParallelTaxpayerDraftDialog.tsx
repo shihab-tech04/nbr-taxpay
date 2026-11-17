@@ -138,6 +138,7 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
 
   const search = () => {
     setLastRemoved(null);
+    setRestoreNotice('');
     setSearchedTin(tin);
     const found = canSearchTin ? lookupSampleTaxpayer(tin) : null;
     setError(found ? '' : t(
@@ -153,6 +154,7 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
   const deleteTaxpayer = (selectedTin: string) => {
     const index = taxpayers.findIndex(person => person.tin === selectedTin);
     if (index < 0) return;
+    setRestoreNotice('');
     setLastRemoved({person:taxpayers[index],index,
       allocations: lines.filter(line => line.taxpayerId === selectedTin)});
     setTaxpayers(current => current.filter(person => person.tin !== selectedTin));
@@ -228,7 +230,7 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
       <button type="button" className="parallel-taxpayer-draft__secondary"
         onClick={stage === 1 ? onClose : () => setStage(stage === 3 ? 2 : 1)}>
         {stage > 1 && <ArrowLeft size={17} aria-hidden="true"/>}
-        {stage === 1 ? t('Cancel', 'বাতিল') : t('Back', 'ফিরুন')}
+        {stage === 1 ? t('Close', 'বন্ধ করুন') : t('Back', 'ফিরুন')}
       </button>
       {stage === 1 && <button type="button" className="parallel-taxpayer-draft__primary"
         disabled={!selectedCount || restoredScope !== scope}
@@ -261,9 +263,13 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
               <TaxpayerTinLookup language={language} tinId="parallel-taxpayer-tin"
                 nameId="parallel-taxpayer-name" tin={tin}
                 name={result ? (bn ? result.nameBn : result.nameEn) : ''}
-                maxTinLength={user || previewAccount ? 13 : 12} hideNameField
-                onTinChange={value => {setTin(value);setSearchedTin('');setError('');setLastRemoved(null);}}
-                onClear={() => {setTin('');setSearchedTin('');setError('');setLastRemoved(null);}}
+                maxTinLength={user || previewAccount ? 13 : 12}
+                tinPlaceholder={user || previewAccount
+                  ? t('12- or 13-digit TIN', '১২ বা ১৩ সংখ্যার টিআইএন')
+                  : t('12-digit TIN', '১২ সংখ্যার টিআইএন')}
+                hideNameField submitOnEnter
+                onTinChange={value => {setTin(value);setSearchedTin('');setError('');setLastRemoved(null);setRestoreNotice('');}}
+                onClear={() => {setTin('');setSearchedTin('');setError('');setLastRemoved(null);setRestoreNotice('');}}
                 canSearch={canSearchTin}
                 onSearch={search}
                 searchLabel={t('Search taxpayer TIN', 'করদাতার টিআইএন খুঁজুন')}
@@ -305,8 +311,8 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
                       ? person.tin : maskedTin(person.tin)}</span>
                     <button type="button" className="parallel-taxpayer-draft__icon-button"
                       onClick={() => toggleTin(person.tin)}
-                      aria-label={revealed.includes(person.tin) ? t('Hide TIN', 'টিআইএন লুকান') : t('Reveal TIN', 'টিআইএন দেখান')}
-                      title={revealed.includes(person.tin) ? t('Hide TIN', 'টিআইএন লুকান') : t('Reveal TIN', 'টিআইএন দেখান')}>
+                      aria-label={(revealed.includes(person.tin) ? t('Hide TIN', 'টিআইএন লুকান') : t('Reveal TIN', 'টিআইএন দেখান')) + ': ' + (bn ? person.nameBn : person.nameEn)}
+                      title={(revealed.includes(person.tin) ? t('Hide TIN', 'টিআইএন লুকান') : t('Reveal TIN', 'টিআইএন দেখান')) + ': ' + (bn ? person.nameBn : person.nameEn)}>
                       {revealed.includes(person.tin) ? <EyeOff size={16}/> : <Eye size={16}/>}
                     </button>
                   </div></td>
@@ -330,7 +336,7 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
         <p id="parallel-heads-intro" tabIndex={-1} className="parallel-taxpayer-draft__intro">{t(
           'Choose payment heads, assessment years and amounts for each selected taxpayer.',
           'প্রতিটি করদাতার জন্য খাত, করবর্ষ ও পরিমাণ নির্বাচন করুন।')}</p>
-        <OtherTaxBatchComposer language={language} taxpayers={previewTaxpayers} lines={lines}
+        <OtherTaxBatchComposer language={language} taxpayers={previewTaxpayers} lines={lines} maskTaxpayerTin
           onChange={next => {setLines(next);setHeadError('');}} error={headError || undefined}/>
         <p className="parallel-taxpayer-draft__disclaimer">{t(
           'Tax with Return remains a separate, single-taxpayer service and cannot be combined with these heads.',
