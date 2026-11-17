@@ -13,50 +13,45 @@
 -- do NOT blindly restore public EXECUTE in production.
 BEGIN;
 
-DO $preflight$
+DO $restrict_historical_handoff$
 DECLARE
   v_signature text;
-BEGIN
-  FOREACH v_signature IN ARRAY ARRAY[
+  v_present integer := 0;
+  v_expected constant text[] := ARRAY[
     'public.taxpay_v11_handoff_get(uuid)',
     'public.taxpay_v11_handoff_history(uuid,integer)',
     'public.taxpay_v11_handoff_notice_read(uuid,bigint,boolean)',
     'public.taxpay_v11_handoff_notifications(uuid,integer)',
     'public.taxpay_v11_handoff_submit(jsonb)',
     'public.taxpay_v11_handoff_summary(uuid)'
-  ]
-  LOOP
-    IF to_regprocedure(v_signature) IS NULL THEN
-      RAISE EXCEPTION 'LEGACY_HANDOFF_RPC_CONTRACT_MISSING: %', v_signature;
+  ];
+BEGIN
+  -- A clean disposable Supabase project never installed the historical v11
+  -- synthetic handoff. Do not manufacture obsolete functions or users.
+  -- Existing Original/V2 production projects have all six and must be locked.
+  FOREACH v_signature IN ARRAY v_expected LOOP
+    IF to_regprocedure(v_signature) IS NOT NULL THEN
+      v_present := v_present + 1;
     END IF;
   END LOOP;
+
+  IF v_present = 0 THEN
+    RAISE NOTICE 'LEGACY_HANDOFF_NOT_INSTALLED: no public RPCs to restrict';
+  ELSIF v_present <> array_length(v_expected,1) THEN
+    -- A partial legacy contract means drift. Never grant or revoke against a
+    -- guessed schema; stop the release before touching any existing function.
+    RAISE EXCEPTION 'LEGACY_HANDOFF_PARTIAL_CONTRACT: % of % RPCs installed',
+      v_present, array_length(v_expected,1);
+  ELSE
+    -- All signatures below are fixed internal literals, never user input.
+    FOREACH v_signature IN ARRAY v_expected LOOP
+      EXECUTE format(
+        'REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated', v_signature);
+      EXECUTE format(
+        'GRANT EXECUTE ON FUNCTION %s TO service_role', v_signature);
+    END LOOP;
+  END IF;
 END;
-$preflight$;
-
-REVOKE ALL ON FUNCTION public.taxpay_v11_handoff_get(uuid)
-  FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.taxpay_v11_handoff_history(uuid,integer)
-  FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.taxpay_v11_handoff_notice_read(uuid,bigint,boolean)
-  FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.taxpay_v11_handoff_notifications(uuid,integer)
-  FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.taxpay_v11_handoff_submit(jsonb)
-  FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.taxpay_v11_handoff_summary(uuid)
-  FROM PUBLIC, anon, authenticated;
-
-GRANT EXECUTE ON FUNCTION public.taxpay_v11_handoff_get(uuid)
-  TO service_role;
-GRANT EXECUTE ON FUNCTION public.taxpay_v11_handoff_history(uuid,integer)
-  TO service_role;
-GRANT EXECUTE ON FUNCTION public.taxpay_v11_handoff_notice_read(uuid,bigint,boolean)
-  TO service_role;
-GRANT EXECUTE ON FUNCTION public.taxpay_v11_handoff_notifications(uuid,integer)
-  TO service_role;
-GRANT EXECUTE ON FUNCTION public.taxpay_v11_handoff_submit(jsonb)
-  TO service_role;
-GRANT EXECUTE ON FUNCTION public.taxpay_v11_handoff_summary(uuid)
-  TO service_role;
+$restrict_historical_handoff$;
 
 COMMIT;
