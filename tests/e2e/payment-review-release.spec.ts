@@ -78,7 +78,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   await page.goto('/?action=landing');
   await expect(page.locator('#public-home-title')).toBeVisible();
   await expect(page.locator('#public-how-it-works')).toBeHidden();
-  await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
+  await expect(page.locator('.public-payment-path__steps li')).toHaveCount(0);
   await expect(page.locator('#public-faq')).toBeHidden();
   await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
   if(page.viewportSize()!.width<=900) await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();

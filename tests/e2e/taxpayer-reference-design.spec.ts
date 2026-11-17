@@ -275,12 +275,11 @@ test('Guest numbers retain IBM Plex Mono, signed-in workspace uses Noto Sans',as
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCSS('font-family',/Noto Sans/);
 });
 
-test('Public homepage hides only temporary payment steps and questions',async({page})=>{
+test('Public homepage omits retired steps and FAQ but retains record search',async({page})=>{
   await page.goto('/?action=landing');
   await expect(page.locator('.citizen-hub-eyebrow')).toHaveCount(0);
-  await expect(page.locator('#public-how-it-works')).toBeHidden();
-  await expect(page.locator('#public-faq')).toBeHidden();
-  await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
+  await expect(page.locator('#public-how-it-works, #public-faq')).toHaveCount(0);
+  await expect(page.locator('.public-payment-path__steps li')).toHaveCount(0);
   await expect(page.getByRole('searchbox',{name:'Search payment records by reference'})).toBeVisible();
 });
 test('Public keyboard Tab order and skip link remain operable with hidden FAQ',async({page})=>{

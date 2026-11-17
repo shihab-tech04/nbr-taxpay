@@ -33,6 +33,9 @@ test('compact desktop homepage keeps six balanced benefit cards with one paralle
   await expect(benefits.getByRole('button')).toHaveCount(1);
   await expect(benefits.getByRole('link')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Find a payment record' })).toBeVisible();
+  // Retired Home FAQ and tutorial are not hidden DOM or duplicate screen-reader content.
+  // Their maintained instructions remain in the separate User guide route.
+  await expect(page.locator('#public-how-it-works, #public-faq')).toHaveCount(0);
 
   const positions = await benefits.locator('.public-benefits__item').evaluateAll(items =>
     items.map(item => {

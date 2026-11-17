@@ -163,10 +163,10 @@ test('certificate previews stay non-official, match the selected type and locali
 });
 
 
-test('home explains the payment stages without an inline transaction form',async({page})=>{
+test('home omits retired payment tutorial while keeping the full guest payment entry',async({page})=>{
  await page.goto('/');
- await expect(page.locator('#public-how-it-works')).toBeHidden();
- await expect(page.locator('.public-payment-path__steps > li')).toHaveCount(4);
+ await expect(page.locator('#public-how-it-works, #public-faq')).toHaveCount(0);
+ await expect(page.locator('.public-payment-path__steps > li')).toHaveCount(0);
  await expect(page.locator('.public-info-topic')).toHaveCount(0);
  if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
  else await expect(page.locator('.citizen-pay')).toBeHidden();

@@ -48,8 +48,8 @@ test('Sobaike-level flat elevation is consistent across the public hero, section
 
   const checkElevation = async () => page.evaluate(() => {
     const selectors = [
-      '.public-information-hub .public-payment-path',
-      '.public-information-hub .public-faq-layout',
+      '.public-information-hub .public-record-discovery',
+      '.public-information-hub .public-benefits',
     ];
     const shadows = selectors.map(selector => {
       const surface = document.querySelector<HTMLElement>(selector);
@@ -67,9 +67,8 @@ test('Sobaike-level flat elevation is consistent across the public hero, section
     await page.setViewportSize({ width, height: 844 });
     const elevation = await checkElevation();
     expect(elevation.heroShadow).toBe('none');
-    expect(elevation.shadows[0]).toContain('0px 1px 0px');
-    expect(elevation.shadows[0]).toContain('0.05');
-    expect(new Set(elevation.shadows).size).toBe(1);
+    // Retired hidden sections are gone; the actual visible sections are flat.
+    expect(elevation.shadows).toEqual(['none','none']);
     expect(elevation.headerShadow).toBe('none');
   }
   await expect(page.locator('[data-banner-service="intro"] .public-hero-carousel__image-layer[data-visible="true"] .public-information-hero__image')).toBeVisible();
