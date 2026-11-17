@@ -7,10 +7,10 @@ const old={payer:'user1',state:'SIMULATED',allocations:[
  {beneficiary:'user2',category:'ADVANCE_TAX',assessmentYear:'2027-28',amountMinor:223},
  {beneficiary:'user3',category:'ASSESSED_DEMAND',assessmentYear:'2026-27',amountMinor:101}]};
 const people=['user1','user2','user3'],categories=['OTHER_TAX_PAYMENT','PENALTY','ADVANCE_TAX','ASSESSED_DEMAND'];
-test('copies every payer/head/year combination; resets only non-current years; keeps source immutable',()=>{
+test('copies every payer/head/year combination; preserves configured years; keeps source immutable',()=>{
  const before=JSON.stringify(old);const copy=copyPreviousPayment(old,'user1','payer',people,categories);
- assert.equal(copy.clearedYears,2);assert.equal(copy.lines.length,4);
- assert.deepEqual(copy.lines.map(l=>l.assessmentYear),['2026-27','','','2026-27']);
+ assert.equal(copy.clearedYears,0);assert.equal(copy.lines.length,4);
+ assert.deepEqual(copy.lines.map(l=>l.assessmentYear),['2026-27','2025-26','2027-28','2026-27']);
  assert.deepEqual(copy.lines.map(l=>l.amount),['1234.56','100.05','2.23','1.01']);
  copy.lines[0].amount='9.00';assert.equal(JSON.stringify(old),before);
 });
@@ -25,13 +25,18 @@ test('blocks malformed amounts/categories and more than 20 allocations',()=>{
  assert.throws(()=>copyPreviousPayment(old,'user1','payer',people,['PENALTY']),/category/);
  assert.throws(()=>copyPreviousPayment({...old,allocations:[{...old.allocations[0],amountMinor:0}]},'user1','payer',people,categories));
 });
-test('every configured historical tax year independently follows current-year rule',()=>{
+test('every configured historical tax year remains prefilled and editable',()=>{
  for(const y of PAY_AGAIN_YEAR_OPTIONS){
  const copy=copyPreviousPayment({...old,allocations:[{...old.allocations[0],assessmentYear:y}]},'user1','payer',people,categories);
- assert.equal(copy.lines[0].assessmentYear,y==='2026-27'?y:'');
+ assert.equal(copy.lines[0].assessmentYear,y);
  }
 });
 
+test('unsupported old years are left for explicit re-selection rather than copied blindly',()=>{
+ const copy=copyPreviousPayment({...old,allocations:[{...old.allocations[0],assessmentYear:'2023-24'}]},'user1','payer',people,categories);
+ assert.equal(copy.lines[0].assessmentYear,'');
+ assert.equal(copy.clearedYears,1);
+});
 test('Tax with Return cannot be mixed with any other payment head when repeating a payment',()=>{
  const invalid={...old,allocations:[
    {...old.allocations[0],category:'TAX_WITH_RETURN'},
@@ -40,4 +45,24 @@ test('Tax with Return cannot be mixed with any other payment head when repeating
  assert.throws(()=>copyPreviousPayment(invalid,'user1','payer',people,[...categories,'TAX_WITH_RETURN']),/Only your recorded payments/);
  const returnOnly={...old,allocations:[{...old.allocations[0],category:'TAX_WITH_RETURN'}]};
  assert.equal(canPayAgain(returnOnly,'user1','payer'),true);
+});
+
+test('Tax with Return Pay Again permits exactly one allocation and rejects multiple beneficiaries or years',()=>{
+ const one={...old,allocations:[{...old.allocations[0],category:'TAX_WITH_RETURN'}]};
+ assert.equal(canPayAgain(one,'user1','payer'),true);
+ for(const duplicate of [
+   {...old.allocations[0],category:'TAX_WITH_RETURN',beneficiary:'user2'},
+   {...old.allocations[0],category:'TAX_WITH_RETURN',assessmentYear:'2025-26'}
+ ]){
+   const invalid={...one,allocations:[one.allocations[0],duplicate]};
+   const original=JSON.stringify(invalid);
+   assert.equal(canPayAgain(invalid,'user1','payer'),false);
+   assert.throws(
+     ()=>copyPreviousPayment(invalid,'user1','payer',people,[...categories,'TAX_WITH_RETURN']),
+     /Only your recorded payments/
+   );
+   assert.equal(JSON.stringify(invalid),original);
+ }
+ // Non-Return combinations remain independently repeatable.
+ assert.equal(canPayAgain(old,'user1','payer'),true);
 });

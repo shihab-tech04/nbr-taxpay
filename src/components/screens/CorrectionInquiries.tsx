@@ -3,8 +3,10 @@ import {supabase} from '../../services/supabaseClient';
 import {getStorySessionId} from '../../services/simulatedPaymentStory';
 import {sameAuthenticatedOwner} from '../../services/secureWorkspacePolicy';
 import {validateCorrectionInquiry, type ProposedAttributionField, type CorrectionCaseKind} from '../../services/correctionInquiryValidation';
+import {readReceivedPaymentCaseIntent,clearReceivedPaymentCaseIntent,receivedAllocationForReference} from '../../services/receivedPaymentCaseIntent';
 import {UiButton,UiInput,UiTextarea,UiSelect} from '../ui/Controls';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
+import {useTaxState} from '../../services/taxState';
 
 type Row=Readonly<{
  inquiry_id:string; original_reference:string; case_kind:CorrectionCaseKind; evidence_state:string; created_at:string;
@@ -36,7 +38,8 @@ const t={
  auth:'Your authenticated session does not match the requester.',
  history:'My review inquiries',
  empty:'No correction inquiries for this account.',
- state:'Pending evidence — not an approved correction',
+ state:'Pending evidence — not an approved correction', focusedCase:'Opened the correction case linked from this notification.',
+ focusedCaseUnavailable:'This correction case is not available to the signed-in account.',
  officeReview:'Office review status',
  officeReviewUpdated:'Last updated by Office',officeReviewRevision:'Review revision',
  officeReviewStates:{PENDING_OFFICER:'Waiting for Office review',MAKER_ACKNOWLEDGED:'Maker acknowledged',REVIEWER_VERIFIED:'Reviewer verified',APPROVER_CLOSED:'Review closed — no financial record changed',REJECTED:'Review rejected — no financial record changed'},
@@ -60,7 +63,8 @@ const t={
  auth:'সাইন-ইন করা অ্যাকাউন্ট ও আবেদনকারী মিলতে হবে।',
  history:'আমার পর্যালোচনার অনুসন্ধান',
  empty:'এই অ্যাকাউন্টে কোনো অনুসন্ধান নেই।',
- state:'প্রমাণের অপেক্ষায় — অনুমোদিত সংশোধন নয়',
+ state:'প্রমাণের অপেক্ষায় — অনুমোদিত সংশোধন নয়', focusedCase:'এই বিজ্ঞপ্তির সঙ্গে যুক্ত সংশোধন মামলাটি খোলা হয়েছে।',
+ focusedCaseUnavailable:'এই সংশোধন মামলা সাইন-ইন করা অ্যাকাউন্টে পাওয়া যায়নি।',
  officeReview:'অফিস পর্যালোচনার অবস্থা',
  officeReviewUpdated:'অফিসের সর্বশেষ হালনাগাদ',officeReviewRevision:'পর্যালোচনা সংস্করণ',
  officeReviewStates:{PENDING_OFFICER:'অফিস পর্যালোচনার অপেক্ষায়',MAKER_ACKNOWLEDGED:'মেকার গ্রহণ করেছেন',REVIEWER_VERIFIED:'রিভিউয়ার যাচাই করেছেন',APPROVER_CLOSED:'পর্যালোচনা বন্ধ — আর্থিক রেকর্ড বদলায়নি',REJECTED:'পর্যালোচনা প্রত্যাখ্যাত — আর্থিক রেকর্ড বদলায়নি'},
@@ -73,8 +77,21 @@ const t={
 
 export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,dashboard=false})=>{
  const labels=t[language];
- const [caseKind,setCaseKind]=useState<CorrectionCaseKind>('CORRECTION_REVIEW');
- const [originalReference,setOriginalReference]=useState('');
+ const {routeParams}=useTaxState();
+ // Navigation from a payment row is a form hint, never proof of tax ownership.
+ const routeOriginalReference=typeof routeParams?.originalReference==='string'
+  ?routeParams.originalReference.slice(0,80):null;
+ const candidateInquiryId=routeParams?.inquiryId;
+ const selectedInquiryId=typeof candidateInquiryId==='string'&&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidateInquiryId)
+   ?candidateInquiryId:null;
+ // The notice selection is an untrusted form hint, never taxpayer ownership.
+ // SQL independently matches the signed-in UID to the original allocation.
+ const [receivedIntent,setReceivedIntent]=useState(()=>readReceivedPaymentCaseIntent());
+ const [caseKind,setCaseKind]=useState<CorrectionCaseKind>(receivedIntent?.caseKind??'CORRECTION_REVIEW');
+ const [originalReference,setOriginalReference]=useState(receivedIntent?.originalReference??routeOriginalReference??'');
+ useEffect(()=>{if(routeOriginalReference&&!receivedIntent)setOriginalReference(routeOriginalReference);},
+   [routeOriginalReference,receivedIntent]);
  const [reason,setReason]=useState('');
  const [evidenceNote,setEvidenceNote]=useState('');
  const [desiredOutcome,setDesiredOutcome]=useState('');
@@ -93,39 +110,48 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   if(!supabase) throw new Error(labels.fail);
   const {data:who,error:idError}=await supabase.auth.getUser();
   if(idError||!sameAuthenticatedOwner(who.user?.id,authenticatedUserId))throw new Error(labels.auth);
-  // Only the genuinely signed-in TIN-bound taxpayer may claim an Office initiated
-  // case; no privileged bridge may invent the taxpayer's identity.
+  // Office-initiated cases are claimed only by an authenticated owner
+  // passing the SQL ownership guard. Earlier schemas may lack this RPC.
   const {error:officeClaimError}=await supabase.rpc('taxpay_claim_office_initiated_corrections',{p_limit:20});
   if(officeClaimError && !(officeClaimError.code==='PGRST202' &&
-     /taxpay_claim_office_initiated_corrections/i.test(officeClaimError.message??'')))throw officeClaimError;
-  // Request kinds and Office status are added by separate ordered migrations.
-  // Fall back only for absent columns; never swallow other owner/permission failures.
+    /taxpay_claim_office_initiated_corrections/i.test(officeClaimError.message??'')))throw officeClaimError;
+  // F-094 category and Office review state coexist across ordered migrations.
+  // Missing columns alone may fall back; access/ownership errors must fail.
   const base='inquiry_id,original_reference,evidence_state,created_at,reason,requested_outcome,change_kind,old_value,new_value';
   const office=',office_review_state,office_review_revision,office_review_updated_at';
   const projections=[`${base},evidence_note,case_kind,origin_system${office}`,`${base},evidence_note,case_kind${office}`,`${base},case_kind${office}`,`${base}${office}`,`${base},case_kind`,base] as const;
-  let inquiries:Row[]|null=null;
-  let missingFieldError:Error|null=null;
-  for(const projection of projections){
-   const {data,error}=await supabase.from('taxpay_correction_inquiries')
-    .select(projection).eq('requester_uid',authenticatedUserId).order('created_at',{ascending:false}).limit(50);
-   if(!error){
-    inquiries=((data??[]) as unknown as Partial<Row>[]).map(row=>({
-     ...row,case_kind:row.case_kind??'CORRECTION_REVIEW',evidence_note:row.evidence_note??null,
-      origin_system:row.origin_system??'TAXPAY_SQL',
-     office_review_state:row.office_review_state??null,
-     office_review_revision:row.office_review_revision??null,
-     office_review_updated_at:row.office_review_updated_at??null
-    })) as Row[];
-    break;
+  const readRows=async(focusId?:string):Promise<Row[]>=>{
+   for(const projection of projections){
+    const query=supabase!.from('taxpay_correction_inquiries').select(projection).eq('requester_uid',authenticatedUserId);
+    const result=focusId?await query.eq('inquiry_id',focusId).maybeSingle():
+     await query.order('created_at',{ascending:false}).limit(50);
+    if(!result.error){
+     const raw=focusId?(result.data?[result.data]:[]):result.data??[];
+     return (raw as unknown as Partial<Row>[]).map(row=>({
+      ...row,case_kind:row.case_kind??'CORRECTION_REVIEW',
+      evidence_note:row.evidence_note??null,origin_system:row.origin_system??'TAXPAY_SQL',
+      office_review_state:row.office_review_state??null,
+      office_review_revision:row.office_review_revision??null,
+      office_review_updated_at:row.office_review_updated_at??null,
+     })) as Row[];
+    }
+    if(!['42703','PGRST204'].includes(result.error.code??'')||
+      !/evidence_note|origin_system|case_kind|office_review_state|office_review_revision|office_review_updated_at/i.test(result.error.message??''))throw result.error;
    }
-   if(!['42703','PGRST204'].includes(error.code??'')||
-      !/evidence_note|origin_system|case_kind|office_review_state|office_review_revision|office_review_updated_at/i.test(error.message??''))throw error;
-   missingFieldError=error;
+   throw new Error(labels.fail);
+  };
+  let ownedRows=await readRows();
+
+  if(selectedInquiryId&&!ownedRows.some(row=>row.inquiry_id===selectedInquiryId)){
+   const focusRows=await readRows(selectedInquiryId);
+   if(focusRows.length)ownedRows=[...focusRows,...ownedRows];
   }
-  if(!inquiries)throw missingFieldError??new Error(labels.fail);
+  const {data:stillSignedIn,error:stillSignedInError}=await supabase.auth.getUser();
+  if(stillSignedInError||!sameAuthenticatedOwner(stillSignedIn.user?.id,authenticatedUserId))throw new Error(labels.auth);
+  if(isActive())setRows(ownedRows);
   if(!isActive())return false;
-  setRows(inquiries);
-  if(inquiries.length===0){
+  setRows(ownedRows);
+  if(ownedRows.length===0){
    setReviewHistory([]);
    setReviewHistoryError(false);
    return true;
@@ -148,7 +174,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   void refresh();
   const timer=window.setInterval(()=>void refresh(),15000);
   return ()=>{active=false;window.clearInterval(timer);};
- },[authenticatedUserId]);
+ },[authenticatedUserId,selectedInquiryId]);
  const retryLoad=async()=>{
   if(loading)return;
   setLoading(true);setLoadError(false);setMessage('');
@@ -159,24 +185,34 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
  const submit=async(e:React.FormEvent)=>{
   e.preventDefault();if(!supabase||busy)return;
   const change=changeKind?{field:changeKind,previousValue,proposedValue}:null;
-  const checked=validateCorrectionInquiry({caseKind,originalReference,reason,desiredOutcome,evidenceNote,change});
+  const checked=validateCorrectionInquiry({caseKind,originalReference,reason,desiredOutcome,change});
   if(checked.error){setMessage(checked.error);return;}
   setBusy(true);setMessage('');
   let persisted=false;
   try{
    const {data:who,error:idError}=await supabase.auth.getUser();
    if(idError||!sameAuthenticatedOwner(who.user?.id,authenticatedUserId)){setMessage(labels.auth);return;}
-   const {error:sessionClaimError}=await supabase.rpc('taxpay_claim_story1_session',{p_session_id:getStorySessionId()});
-   if(sessionClaimError){setMessage(labels.fail);return;}
-   const {error:walkinClaimError}=await supabase.rpc('taxpay_claim_walkin_payer_payments');
-   if(walkinClaimError){setMessage(labels.fail);return;}
+   // A beneficiary's received allocation is not the payer's browser session.
+   // Skip payer-only history claims for an exact notice allocation and allow
+   // the existing SQL trigger to verify the recipient's Auth-owned TIN link.
+   // For ordinary correction inquiries, retain the legacy payer claim flow.
+   const recipientAllocation=receivedAllocationForReference(receivedIntent,originalReference);
+   if(!recipientAllocation){
+     const {error:sessionClaimError}=await supabase.rpc('taxpay_claim_story1_session',{p_session_id:getStorySessionId()});
+     if(sessionClaimError){setMessage(labels.fail);return;}
+     const {error:walkinClaimError}=await supabase.rpc('taxpay_claim_walkin_payer_payments');
+     if(walkinClaimError){setMessage(labels.fail);return;}
+   }
    const {error}=await supabase.from('taxpay_correction_inquiries').insert({
      requester_uid:authenticatedUserId,
      original_reference:originalReference.trim(),
-     ...(caseKind==='UNSOLICITED_PAYMENT_REPORT'?{case_kind:caseKind}:{}),
+     // Bind to the exact notified allocation where applicable, but only when
+     // the form still matches the original handoff. The SQL trigger is authoritative.
+     ...(recipientAllocation?{target_allocation_id:recipientAllocation}:{}),
+      ...(caseKind==='UNSOLICITED_PAYMENT_REPORT'?{case_kind:caseKind}:{}),
      reason:reason.trim(),
-      ...(evidenceNote.trim()?{evidence_note:evidenceNote.trim()}:{}),
      requested_outcome:desiredOutcome.trim(),
+     ...(evidenceNote.trim()?{evidence_note:evidenceNote.trim()}:{}),
      ...(change ? {change_kind:change.field,old_value:change.previousValue.trim(),new_value:change.proposedValue.trim()}: {})
    });
    if(error){
@@ -185,6 +221,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
     return;
    }
    persisted=true;
+   clearReceivedPaymentCaseIntent();setReceivedIntent(null);
    setCaseKind('CORRECTION_REVIEW');setOriginalReference('');setReason('');setEvidenceNote('');setDesiredOutcome('');setChangeKind('');setPreviousValue('');setProposedValue('');
    try{const historyLoaded=await load(()=>true);setLoadError(false);if(!historyLoaded){setMessage(labels.savedHistoryFail);return;}}
    catch{setLoadError(true);setMessage(labels.savedHistoryFail);return;}
@@ -192,15 +229,16 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   }catch{if(persisted){setLoadError(true);setMessage(labels.savedHistoryFail)}else setMessage(labels.fail)}finally{setBusy(false);}
  };
  const needle=historySearch.trim().toLocaleLowerCase();
- const matchingRows=rows.filter(r=>!needle || [r.original_reference,r.reason,r.requested_outcome,r.evidence_note??'',r.evidence_state,
-  r.office_review_state??''].some(value=>value.toLocaleLowerCase().includes(needle)));
+ const matchingRows=rows.filter(r=>(!selectedInquiryId||r.inquiry_id===selectedInquiryId)&&(!needle || [r.original_reference,r.reason,r.requested_outcome,r.evidence_note??'',r.evidence_state,
+  r.office_review_state??''].some(value=>value.toLocaleLowerCase().includes(needle))));
+ const focusedCaseExists=selectedInquiryId!==null&&rows.some(row=>row.inquiry_id===selectedInquiryId);
  const form=<form onSubmit={submit} className="space-y-4">
-  <label className="block text-sm font-semibold text-slate-800">{labels.caseType}
-   <UiSelect value={caseKind} onChange={e=>setCaseKind(e.target.value as CorrectionCaseKind)} className="mt-2" data-testid="correction-case-type">
-    <option value="CORRECTION_REVIEW">{labels.caseCorrection}</option>
-    <option value="UNSOLICITED_PAYMENT_REPORT">{labels.caseUnsolicited}</option>
-   </UiSelect>
-  </label>
+   <label className="block text-sm font-semibold text-slate-800">{labels.caseType}
+    <UiSelect value={caseKind} onChange={e=>setCaseKind(e.target.value as CorrectionCaseKind)} className="mt-2" data-testid="correction-case-type">
+     <option value="CORRECTION_REVIEW">{labels.caseCorrection}</option>
+     <option value="UNSOLICITED_PAYMENT_REPORT">{labels.caseUnsolicited}</option>
+    </UiSelect>
+   </label>
    <label className="block text-sm font-semibold text-slate-800">{labels.ref}
     <UiInput required minLength={6} maxLength={80} value={originalReference} onChange={e=>setOriginalReference(e.target.value)}
      className="mt-2" placeholder="e.g. TPAY-REF-123456" autoComplete="off"/>
@@ -241,10 +279,17 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
    <h2 id="inquiry-title" className="text-xl font-semibold text-taxpay-text">{dashboard?(language==='bn'?'সংশোধনের আবেদন':'Correction Requests'):labels.title}</h2>
    <p className="text-sm leading-6 text-taxpay-muted">{dashboard?(language==='bn'?'আপনার নিজের অ্যাকাউন্টের আবেদন, কারণ ও পর্যালোচনার অবস্থা এখানে দেখুন।':'View your account-linked requests, reasons and current review statuses here.'):labels.intro}</p>
   </header>
+  {receivedIntent && !dashboard && <p className="rounded-lg border border-taxpay-border p-3 text-sm text-taxpay-muted" role="status" data-testid="received-payment-case-handoff">
+    {language==='bn'
+      ?'প্রাপ্ত পেমেন্টের রেফারেন্স ও অনুরোধের ধরন পূরণ করা হয়েছে। তথ্য যাচাই করে কারণ লিখে জমা দিন। পেমেন্টের মালিকানা সার্ভার যাচাই করবে।'
+      :'The received-payment reference and request type are prefilled. Check the details, add your reason and submit. The server will verify account ownership.'}
+  </p>}
   {!dashboard && form}
   {message&&<p role="status" aria-live="polite" className="rounded-lg border border-slate-300 p-3 text-sm break-words">{message}</p>}
   <section aria-labelledby="inquiry-history-title" className="space-y-3">
    <h3 id="inquiry-history-title" className="text-lg font-semibold text-taxpay-text">{labels.history}</h3>
+   {selectedInquiryId&&<p role={focusedCaseExists?'status':'alert'} data-testid="notification-focused-correction-case">
+    {focusedCaseExists?labels.focusedCase:!loading?labels.focusedCaseUnavailable:labels.loading}</p>}
    {loading?<p role="status">{labels.loading}</p>:
     loadError?<div className="space-y-2"><p className="text-sm text-amber-900">{labels.fail}</p>
       <UiButton type="button" onClick={retryLoad}>{labels.retry}</UiButton></div>:
@@ -273,7 +318,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
             {key:'reason',header:language==='bn'?'অনুরোধের কারণ':'Recorded reason',renderCell:r=><div>
               <p className="text-sm font-semibold text-taxpay-muted">{r.origin_system==='OFFICE_SQL'?labels.historyActions.OFFICE_INITIATED:(r.case_kind==='UNSOLICITED_PAYMENT_REPORT'?labels.caseUnsolicited:labels.caseCorrection)}</p>
               <p className="line-clamp-2 break-words text-taxpay-text">{r.reason}</p>
-            </div>},
+             </div>},
             {key:'status',header:labels.officeReview,renderCell:r=><div aria-live="polite" aria-atomic="true">
               <p className="font-semibold text-taxpay-text">{labels.officeReviewStates[r.office_review_state as keyof typeof labels.officeReviewStates]??labels.statusUnavailable}</p>
               {r.office_review_revision!==null&&<p className="text-sm text-taxpay-muted">{labels.officeReviewRevision}: {r.office_review_revision}</p>}
@@ -285,7 +330,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
                 <p>{labels.caseType}: {r.case_kind==='UNSOLICITED_PAYMENT_REPORT'?labels.caseUnsolicited:labels.caseCorrection}</p>
                 <p>{labels.reasonLabel}: {r.reason}</p>
                 <p>{labels.outcomeLabel}: {r.requested_outcome}</p>
-                 {r.evidence_note&&<p className="whitespace-pre-wrap break-words">{labels.evidenceNote}: {r.evidence_note}</p>}
+                {r.evidence_note&&<p className="whitespace-pre-wrap break-words">{labels.evidenceNote}: {r.evidence_note}</p>}
                 {r.change_kind&&<div className="space-y-1 border-t border-taxpay-border pt-2">
                   <p className="font-semibold">{labels.changeLabel}: {labels.changeKinds[r.change_kind]}</p>
                   <p>{labels.oldValueLabel}: {r.old_value}</p>

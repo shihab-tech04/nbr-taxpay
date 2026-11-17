@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const dashboard='/?action=taxpayer_home&demoUser=user1';
+const dashboard='/?action=taxpayer_home&demoUser=user1&qaScenario=1';
 
 test('bento analytics never display unverified tax-liability charts and separate recorded payments from examples',async({page})=>{
   await page.goto(dashboard);
@@ -19,6 +19,7 @@ test('bento analytics never display unverified tax-liability charts and separate
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await sources.getByRole('button',{name:'Examples'}).click();
   await expect(sources.getByRole('button',{name:'Examples'})).toHaveAttribute('aria-pressed','true');
+  await analytics.getByTestId('dashboard-payment-extra').locator('summary').click();
   const chart=analytics.getByTestId('dashboard-service-breakdown');
   await expect(chart.locator('[data-service="income"]')).toBeVisible();
   await chart.locator('[data-service="income"]').click();
@@ -39,7 +40,7 @@ test('dashboard shows the three requested counters with working destinations',as
   await page.goto(dashboard);
   await page.getByTestId('taxpayer-overview-bento').locator('.taxpay-bento-hero__status')
     .getByRole('button',{name:/Correction Requests/}).click();
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   await expect(page.getByTestId('dashboard-correction-request-list').getByRole('listitem')).toHaveCount(2);
 });
 
@@ -48,12 +49,14 @@ test('interactive service bars and beneficiary categories support keyboard and s
   const sources=page.getByTestId('dashboard-chart-source');
   await sources.getByRole('button',{name:'Examples'}).click();
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
+  await page.getByTestId('dashboard-payment-extra').locator('summary').click();
   const chart=page.getByTestId('dashboard-service-breakdown');
   const income=chart.locator('[data-service="income"]');
   await income.focus();
   await page.keyboard.press('Enter');
   await expect(income).toHaveAttribute('aria-pressed','true');
   const tags=page.getByTestId('dashboard-beneficiary-breakdown');
+  await tags.locator('.taxpay-recipient-extra > summary').click();
   const unknown=tags.locator('[data-tag="unassigned"]');
   await expect(unknown).toBeVisible();
   await unknown.focus();
@@ -95,32 +98,39 @@ test('interactive bento charts and existing payment actions remain responsive fr
     const bento=page.getByTestId('taxpayer-overview-bento');
     await expect(bento).toBeVisible();
     await expect(bento.getByRole('button',{name:'Travel tax',exact:true})).toHaveCount(0);
-    await expect(bento.getByRole('heading',{name:'By payment service'})).toBeVisible();
-    await expect(bento.getByRole('heading',{name:'By beneficiary relationship'})).toBeVisible();
-    await expect(bento.getByRole('heading',{name:'Recent activity'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'Payment recipients'})).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'Payment relationships'})).toBeVisible();
+    await expect(bento.getByTestId('dashboard-payment-extra').locator('summary')).toBeVisible();
+    await expect(bento.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
     await expect(bento.getByRole('heading',{name:'Tax trend by year'})).toHaveCount(0);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'Horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }
 });
 
-test('bento sections remain readable, and saved work remains ahead of analytics',async({page},info)=>{
+test('bento keeps approved summary, analytics and side-by-side journey/continuation order',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','One representative desktop/mobile matrix');
   for(const width of [375,768,1024,1199,1200,1280,1600]){
     await page.setViewportSize({width,height:900});
     await page.goto(dashboard);
     const grid=page.getByTestId('taxpayer-overview-bento');
     const summary=grid.locator('.taxpay-bento-request-row .taxpay-bento-summary');
-    const correction=grid.locator('.taxpay-bento-request-row .taxpay-bento-corrections');
+    const tasks=grid.locator('.taxpay-bento-request-row .taxpay-bento-tasks');
+    const correction=tasks.locator('.taxpay-bento-corrections');
     const activity=grid.locator('.taxpay-bento-recent');
     const analytics=grid.getByTestId('dashboard-payment-analytics');
-    const bounds=await Promise.all([summary.boundingBox(),correction.boundingBox(),activity.boundingBox(),analytics.boundingBox()]);
+    const bounds=await Promise.all([summary.boundingBox(),tasks.boundingBox(),activity.boundingBox(),analytics.boundingBox(),correction.boundingBox()]);
     expect(bounds.every(Boolean),'Every requested dashboard section renders at '+width).toBeTruthy();
     expect(bounds[0]!.y,'Summary before analytics').toBeLessThan(bounds[3]!.y);
-    expect(bounds[2]!.y,'Recent activity before charts').toBeLessThan(bounds[3]!.y);
+    expect(bounds[2]!.y,'Tax Journey follows analytic bento charts').toBeGreaterThan(bounds[3]!.y);
+    expect(bounds[1]!.y,'Continue & Track follows analytic bento charts').toBeGreaterThan(bounds[3]!.y);
+    // The continuation column contains drafts and the correction register.
+    // Align the columns, not the correction child after its own 12px gap.
+    expect(bounds[4]!.y,'Corrections stay within Continue & Track').toBeGreaterThanOrEqual(bounds[1]!.y);
     if(width>=1200){
-      expect(Math.abs(bounds[0]!.y-bounds[1]!.y)).toBeLessThan(4);
-    }else expect(bounds[1]!.y).toBeGreaterThan(bounds[0]!.y);
+      expect(Math.abs(bounds[2]!.y-bounds[1]!.y)).toBeLessThan(4);
+      expect(bounds[2]!.x+bounds[2]!.width).toBeLessThanOrEqual(bounds[1]!.x+4);
+    }else expect(bounds[1]!.y).toBeGreaterThan(bounds[2]!.y);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(overflow,'No horizontal overflow at '+width).toBeLessThanOrEqual(2);
   }

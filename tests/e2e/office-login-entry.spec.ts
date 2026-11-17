@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-test('the former Office login deep link now opens the Korbritto taxpayer popup', async ({page}) => {
+test('the former Office login deep link now opens the Sohojkor taxpayer popup', async ({page}) => {
   await page.goto('/?action=office_login');
   await expect(page.locator('#public-home-title')).toBeVisible();
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('textbox',{name:'User ID'})).toBeVisible();
   await expect(dialog.getByLabel('Password',{exact:true})).toHaveAttribute('type','password');
@@ -14,12 +14,12 @@ test('the former Office login deep link now opens the Korbritto taxpayer popup',
 
 test('login popup preserves Bengali interface and returns to taxpayer dashboard', async ({page}) => {
   await page.goto('/?action=taxpayer_login&lang=bn');
-  const dialog=page.getByRole('dialog',{name:'আপনার করবৃত্ত অ্যাকাউন্টে সাইন ইন করুন'});
+  const dialog=page.getByRole('dialog',{name:'আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন'});
   await expect(dialog).toBeVisible();
   await dialog.getByRole('textbox',{name:'ইউজার আইডি'}).fill('user4');
   await dialog.getByLabel('পাসওয়ার্ড',{exact:true}).fill('user4');
   await dialog.getByRole('button',{name:'সাইন ইন'}).click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
   await expect(page).toHaveURL(/lang=bn/);
-  await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'আপনার করের সারসংক্ষেপ'})).toBeVisible();
 });

@@ -141,15 +141,39 @@ test('missing transaction searches do not launch private or public lookup', asyn
 });
 
 test('public missing-record reports keep their existing incident destination', async ({page}) => {
-  await page.goto('/?action=verify');
-  const lookup=page.getByRole('dialog',{name:'Payment status & receipt'}).locator('.receipt-lookup');
-  await lookup.getByRole('textbox',{name:'Challan, token or transaction reference'}).fill('NO-SUCH-PUBLIC-REFERENCE');
-  await lookup.getByRole('button',{name:'Search records'}).click();
-  await expect(lookup.getByRole('heading',{name:'No matching record'})).toBeVisible();
-  await lookup.getByRole('button',{name:'Report a payment issue'}).click();
+  // Deterministic, empty browser-session readback: this exercises the genuine
+  // no-match response without claiming an invented/official public SQL record.
+  await page.route(/\/demo-story1-taxpay\/payments\?sessionId=/, async route => {
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({success:true,simulationOnly:true,data:{items:[],total:0}}),
+    });
+  });
+  for (const language of ['en','bn'] as const) {
+    await page.goto('/?action=verify&lang='+language);
+    await expect(page).toHaveURL(/action=verify(?:&|$)/);
+    const bn=language==='bn';
+    const modal=page.getByRole('dialog',{name:bn?'পেমেন্টের অবস্থা ও রসিদ':'Payment status & receipt'});
+    const lookup=modal.locator('.receipt-lookup');
+    await expect(lookup).toBeVisible();
+    await lookup.getByRole('textbox',{name:bn?'চালান, টোকেন বা লেনদেনের রেফারেন্স':'Challan, token or transaction reference'})
+      .fill('NO-SUCH-PUBLIC-REFERENCE');
+    await lookup.getByRole('button',{name:bn?'রেকর্ড খুঁজুন':'Search records'}).click();
+    await expect(lookup.getByTestId('receipt-mobile-required')).toBeVisible();
+    await expect(lookup.getByRole('heading',{name:bn?'কোনো মিল পাওয়া যায়নি':'No matching record'})).toHaveCount(0);
+    await expect(lookup.locator('.receipt-view')).toHaveCount(0);
 
-  await expect(page).toHaveURL(/action=incident(?:&|$)/);
-  await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
+    await lookup.getByRole('textbox',{name:bn?'রসিদের মোবাইল নম্বর':'Receipt mobile number'})
+      .fill('01712345678');
+    await lookup.getByRole('button',{name:bn?'রেকর্ড খুঁজুন':'Search records'}).click();
+    await expect(lookup.getByRole('heading',{name:bn?'কোনো মিল পাওয়া যায়নি':'No matching record'})).toBeVisible();
+    await expect(lookup.getByTestId('receipt-mobile-required')).toHaveCount(0);
+    await expect(lookup.locator('.receipt-view')).toHaveCount(0);
+    await lookup.getByRole('button',{name:bn?'পেমেন্টের সমস্যা জানান':'Report a payment issue'}).click();
+
+    await expect(page).toHaveURL(/action=incident(?:&|$)/);
+    await expect(page.getByTestId('user1-synthetic-workspace')).toHaveCount(0);
+  }
 });
 
 test('guest navigation has no notification bell and keeps contextual payment choices in the modal', async ({page}) => {

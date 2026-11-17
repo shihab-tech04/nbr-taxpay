@@ -6,6 +6,12 @@ BEGIN
 END $roles$;
 CREATE SCHEMA demo_payment;
 CREATE TABLE demo_payment.story_payments(
- id uuid PRIMARY KEY,
- data jsonb NOT NULL
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ idempotency_key uuid NOT NULL UNIQUE,
+ session_id uuid NOT NULL,
+ service_code text NOT NULL,
+ amount_minor bigint NOT NULL CHECK(amount_minor>0),
+ data jsonb NOT NULL CHECK(jsonb_typeof(data)='object'),
+ status text NOT NULL DEFAULT 'SIMULATED_SUCCESS' CHECK(status='SIMULATED_SUCCESS'),
+ created_at timestamptz NOT NULL DEFAULT now()
 );

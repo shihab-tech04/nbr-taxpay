@@ -81,7 +81,7 @@ BEGIN
         'isWithholding',false));
       v_items:=v_items||jsonb_build_array(jsonb_build_object(
         'headId',v_head,'economicCode',v_code,'headNameEn',v_head_name,
-        'totalAmount',v_amount/100,'taxAmount',v_amount/100,
+        'totalAmount',round(v_amount::numeric/100,2),'taxAmount',round(v_amount::numeric/100,2),
         'penaltyAmount',0,'surchargeAmount',0,'interestAmount',0));
       v_receipt_allocs:=v_receipt_allocs||jsonb_build_array(jsonb_build_object(
         'allocationId',v_alloc_id,'taxpayerTin',v_tin,
@@ -103,12 +103,12 @@ BEGIN
           (SELECT count(DISTINCT a.value->>'taxpayerTin')
            FROM jsonb_array_elements(v_allocs) a(value)),
         'receiptReference','SIM-'||v_key::text,'challanRemarks',v_remarks,
-        'totalAmount',v_total/100,'assessmentYear','Multiple years',
+        'totalAmount',round(v_total::numeric/100,2),'assessmentYear','Multiple years',
         'taxpayerTin','','lines',v_items,'receiptLines',v_items,
         'allocations',v_allocs,
         'receiptSnapshot',jsonb_build_object(
           'challanNo','SIM-'||v_key::text,'paymentCategory','OTHER_TAX_PAYMENT',
-          'totalAmount',v_total/100,'items',v_items,
+          'totalAmount',round(v_total::numeric/100,2),'items',v_items,
           'allocationItems',v_receipt_allocs,'isSimulatedDemo',true)));
     v_result:=public.taxpay_demo_story1_submit(v_cap,v_payload);
     v_id:=(v_result->>'id')::uuid;

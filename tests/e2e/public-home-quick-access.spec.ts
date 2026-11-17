@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
-test('compact desktop homepage explains six benefits without duplicate CTAs', async ({ page }) => {
+test('compact desktop homepage keeps six balanced benefit cards with one parallel entry CTA', async ({ page }) => {
   // This 3x2 parity test intentionally uses the compact desktop breakpoint.
   // The same 3x2 layout remains consistent at wider desktop sizes.
   await page.setViewportSize({ width: 1140, height: 900 });
@@ -24,10 +24,14 @@ test('compact desktop homepage explains six benefits without duplicate CTAs', as
     await expect(card).toHaveAttribute('data-benefit', id);
     await expect(card.getByRole('heading', { name: heading })).toBeVisible();
     await expect(card.locator('p')).toHaveText(description);
+    await expect(card.getByRole('link')).toHaveCount(0);
+    if (id === 'payments') await expect(card).toHaveAttribute('type', 'button');
+    else await expect(card.getByRole('button')).toHaveCount(0);
     await expect(card.locator('svg')).toHaveCount(1);
     await expect(card.locator('p')).toHaveCSS('font-size', '14px');
   }
-  await expect(benefits.getByRole('button')).toHaveCount(0);
+  await expect(benefits.getByRole('button')).toHaveCount(1);
+  await expect(benefits.getByRole('link')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Find a payment record' })).toBeVisible();
 
   const positions = await benefits.locator('.public-benefits__item').evaluateAll(items =>
@@ -110,11 +114,11 @@ test('desktop restores full-width lookup and proposed connected six-cell benefit
   expect(layout.input.width).toBeGreaterThanOrEqual(layout.search.width * .9);
   expect(layout.headings.every(weight => weight <= 600)).toBe(true);
   expect(layout.descriptions.every(size => size >= 14)).toBe(true);
-  expect(layout.panelRadius).toBeGreaterThanOrEqual(14);
+  expect(layout.panelRadius).toBe(10);
   // On 821–959px-tall desktops, the approved connected panel retains a compact 16px inset.
   expect(layout.panelToGridInset).toBeGreaterThanOrEqual(16);
   expect(layout.panelBackground).not.toBe('rgba(0, 0, 0, 0)');
-  expect(layout.cardRadius).toBe(0);
+  expect(layout.cardRadius).toBe(16);
   expect(layout.cardBorderWidth).toBe(0);
   expect(layout.gridGap).toBeGreaterThanOrEqual(.9);
   expect(layout.gridGap).toBeLessThanOrEqual(1.1);
@@ -165,14 +169,14 @@ test('wide desktop uses the available canvas without crushing the footer or look
       horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
     };
   });
-  // The Home canvas keeps the same original 1100px width as Guide and Report.
-  expect(visual.hero.width).toBeGreaterThanOrEqual(1099);
-  expect(visual.hero.width).toBeLessThanOrEqual(1101);
+  // Home must match Guide and Report on wide monitors.
+  expect(visual.hero.width).toBeGreaterThanOrEqual(1279);
+  expect(visual.hero.width).toBeLessThanOrEqual(1281);
   expect(Math.abs(visual.hero.width-visual.record.width)).toBeLessThanOrEqual(2);
   expect(visual.searchHeading.bottom).toBeLessThan(visual.searchField.top);
   expect(visual.searchField.width).toBeGreaterThanOrEqual(visual.record.width*.9);
   // Six balanced benefit cards should retain adequate height at wide viewport sizes.
-  // Medium-height desktops use 88px cells to preserve the no-overflow layout.
+  // Medium-height desktops retain balanced readable cells and no-overflow layout.
   expect(visual.firstCard.height).toBeGreaterThanOrEqual(88);
   // Two-line tagline is acceptable; footer links must never touch or overlap.
   expect(visual.footerTagline.height).toBeLessThanOrEqual(44);
@@ -222,8 +226,8 @@ test('reported tall desktop: homepage footer follows content with no blank space
           horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
         };
       });
-      expect(layout.homeWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(1099);
-      expect(layout.homeWidth).toBeLessThanOrEqual(1101);
+      expect(layout.homeWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(Math.min(1280, viewport.width - 64) - 1);
+      expect(layout.homeWidth).toBeLessThanOrEqual(Math.min(1280, viewport.width - 64) + 1);
       expect(layout.footerTop-layout.benefitsBottom,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(0);
       // A full-height shell is insufficient: the page must not leave the
       // 300px+ blank chasm shown between the benefits and footer.
@@ -334,8 +338,8 @@ test('professionally balanced Home padding and vertical rhythm at normal and zoo
           horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
         };
       });
-      expect(layout.contentWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(1099);
-      expect(layout.contentWidth).toBeLessThanOrEqual(1101);
+      expect(layout.contentWidth,JSON.stringify({viewport,lang,layout})).toBeGreaterThanOrEqual(Math.min(1280, viewport.width - 64) - 1);
+      expect(layout.contentWidth).toBeLessThanOrEqual(Math.min(1280, viewport.width - 64) + 1);
       expect(layout.cardsCount).toBe(6);
       expect(layout.equalRowHeights).toBeLessThanOrEqual(2);
       expect(layout.cardPadding).toBeGreaterThanOrEqual(14);
@@ -423,13 +427,13 @@ test('record search and benefits share a restrained, left-aligned desktop headin
     expect(measurements.searchY).toBeGreaterThan(measurements.recordDescriptionBottom);
     expect(measurements.searchWidth).toBeGreaterThanOrEqual(measurements.sectionWidth * .9);
     expect(measurements.weights).toEqual([600, 600, 400]);
-    expect(measurements.fontSizes).toEqual(['16px', '20px', '14px', '14px']);
+    expect(measurements.fontSizes).toEqual(['20px', '20px', '15px', '15px']);
     expect(measurements.documentHeightOverflow).toBeLessThanOrEqual(2);
     expect(measurements.documentWidthOverflow).toBeLessThanOrEqual(2);
   }
 });
 
-test('approved payment-record lookup keeps the compact reference composition', async ({ page }) => {
+test('payment-record lookup keeps the new readable heading and consistent card geometry', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/?action=landing&lang=en');
   await page.evaluate(async () => { await document.fonts.ready; });
@@ -458,9 +462,8 @@ test('approved payment-record lookup keeps the compact reference composition', a
     };
   });
   expect(layout.panelHeight).toBeGreaterThanOrEqual(108);
-  expect(layout.panelHeight).toBeLessThanOrEqual(128);
-  expect(layout.panelRadius).toBeGreaterThanOrEqual(11);
-  expect(layout.panelRadius).toBeLessThanOrEqual(13);
+  expect(layout.panelHeight).toBeLessThanOrEqual(150);
+  expect(layout.panelRadius).toBe(10);
   expect(layout.headingBottom).toBeLessThan(layout.formTop);
   expect(layout.formHeight).toBeGreaterThanOrEqual(46);
   expect(layout.formHeight).toBeLessThanOrEqual(52);
@@ -474,7 +477,7 @@ test('approved payment-record lookup keeps the compact reference composition', a
 
 test('desktop search keeps compact inset below the 960px height breakpoint', async ({page}) => {
   for (const {height,padLeft,padTop,padBottom} of [
-    {height:959,padLeft:16,padTop:10,padBottom:11},
+    {height:959,padLeft:16,padTop:16,padBottom:16},
     {height:960,padLeft:24,padTop:24,padBottom:24},
   ]) {
     for (const lang of ['en','bn']) {
@@ -539,7 +542,7 @@ test('reference screenshot: tall desktop payment search matches approved padding
       expect(metrics.searchPadBottom).toBe(24);
       expect(metrics.headingGap).toBeGreaterThanOrEqual(12);
       expect(metrics.searchHeight,JSON.stringify({lang,viewport,metrics})).toBeGreaterThanOrEqual(148);
-      expect(metrics.searchHeight).toBeLessThanOrEqual(158);
+      expect(metrics.searchHeight).toBeLessThanOrEqual(170);
       expect(metrics.heroHeight).toBeGreaterThanOrEqual(260);
       expect(metrics.heroHeight).toBeLessThanOrEqual(284);
       expect(metrics.heroToSearch).toBeGreaterThanOrEqual(12);
@@ -597,12 +600,12 @@ test('approved desktop proposal is one white rounded panel with a connected 3x2 
           cells, horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
         };
       });
-      // The agreed maximum is 1100px; a narrower viewport retains 32px
+      // The shared desktop maximum is 1280px; a narrower viewport retains 32px
       // horizontal gutters rather than overflowing to satisfy the max width.
-      const expectedPanelWidth=Math.min(1100,viewport.width-64);
+      const expectedPanelWidth=Math.min(1280,viewport.width-64);
       expect(Math.abs(measurement.panelWidth-expectedPanelWidth),
         JSON.stringify({viewport,lang,measurement})).toBeLessThanOrEqual(2);
-      expect(measurement.panelRadius).toBeGreaterThanOrEqual(14);
+      expect(measurement.panelRadius).toBe(10);
       // The reference tall desktop keeps 24px; medium-height layouts fit in 16px.
       const expectedPadding=viewport.height<=959 ? 16 : 24;
       expect(measurement.panelPadding).toBeGreaterThanOrEqual(expectedPadding);
@@ -619,7 +622,7 @@ test('approved desktop proposal is one white rounded panel with a connected 3x2 
       expect(c[3].top).toBeGreaterThan(c[0].top);
       expect(Math.abs(c[1].left-c[0].right-1)).toBeLessThanOrEqual(1);
       expect(Math.abs(c[3].top-c[0].bottom-1)).toBeLessThanOrEqual(1);
-      expect(c.every(x => x.radius === '0px' && x.border === '0px' &&
+      expect(c.every((x, index) => x.radius === (index === 0 ? '16px' : '0px') && x.border === '0px' &&
         x.background === measurement.sectionBackground && x.scrollHeight<=x.clientHeight+2)).toBe(true);
       expect(measurement.horizontalOverflow).toBeLessThanOrEqual(2);
       if (lang==='en' && viewport.height===1264) {
@@ -667,8 +670,8 @@ test('desktop widths preserve the approved 3-by-2 equal-benefit layout in EN and
       expect(Math.abs(b[0].x-b[3].x)).toBeLessThanOrEqual(2);
       expect(Math.max(...b.map(x=>x.height))-Math.min(...b.map(x=>x.height))).toBeLessThanOrEqual(2);
       expect(b.every(x=>x.scrollHeight<=x.clientHeight+2)).toBe(true);
-      expect(result.homeWidth).toBeGreaterThanOrEqual(1099);
-      expect(result.homeWidth).toBeLessThanOrEqual(1101);
+      expect(result.homeWidth).toBeGreaterThanOrEqual(Math.min(1280, viewport.width - 64) - 1);
+      expect(result.homeWidth).toBeLessThanOrEqual(Math.min(1280, viewport.width - 64) + 1);
       expect(Math.abs(result.homeWidth-result.searchWidth)).toBeLessThanOrEqual(2);
       expect(result.overflowX).toBeLessThanOrEqual(2);
     }
@@ -804,3 +807,332 @@ for (const { width, height, lang } of [
     await expect(page.locator('.public-home-header')).toBeVisible();
   });
 }
+
+test('only All Tax Payments opens the parallel draft; five other Home benefits stay informational in EN/BN', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1280', 'This case covers its own explicit mobile and desktop viewports.');
+  const cases = [
+    ['payments', 'All Tax Payments', 'সব ধরনের কর পরিশোধ'],
+    ['certificates', 'Tax Certificates', 'কর সনদ'],
+    ['corrections', 'Corrections & Requests', 'সংশোধন ও আবেদন'],
+    ['history', 'Payment History', 'পেমেন্টের ইতিহাস'],
+    ['pay-again', 'Pay Again', 'আবার পরিশোধ'],
+    ['saved-drafts', 'Saved Drafts', 'সংরক্ষিত খসড়া'],
+  ] as const;
+
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const language of ['en', 'bn'] as const) {
+      await page.goto('/?action=landing&lang=' + language);
+      // Language query is allowed to normalize after mount; the public route must not change.
+      const startingAction = 'landing';
+      const cards = page.locator('.public-benefits__item');
+      await expect(cards).toHaveCount(6);
+      for (const [id, en, bn] of cases) {
+        const item = page.locator('.public-benefits__item[data-benefit="' + id + '"]');
+        await expect(item.getByRole('heading', { name: language === 'bn' ? bn : en })).toBeVisible();
+        await expect(item.getByRole('link')).toHaveCount(0);
+        if (id === 'payments') {
+          await expect(item).toHaveAttribute('type', 'button');
+          await expect(item).toHaveAttribute('aria-label', language === 'bn'
+            ? 'বিকল্প করদাতা তথ্য ফর্ম খুলুন' : 'Open parallel taxpayer entry');
+          await item.click();
+          const draft = page.getByRole('dialog', {name: language === 'bn'
+            ? 'সব ধরনের কর পরিশোধ — সমান্তরাল খসড়া' : 'All Tax Payments — parallel draft'});
+          await expect(draft).toBeVisible();
+          await expect(draft.getByTestId('parallel-taxpayer-empty')).toBeVisible();
+          await expect(draft.getByTestId('parallel-taxpayer-continue')).toBeDisabled();
+          await draft.getByRole('button', {name: language === 'bn'
+            ? 'সমান্তরাল খসড়া বন্ধ করুন' : 'Close parallel draft'}).click();
+          await expect(draft).toHaveCount(0);
+          continue;
+        }
+        await expect(item.getByRole('button')).toHaveCount(0);
+        await expect(item).not.toHaveAttribute('tabindex', /0/);
+        const bounds = await item.boundingBox();
+        if (!bounds) throw new Error('Missing benefit card ' + id);
+        await item.click({ position: { x: bounds.width - 6, y: bounds.height - 6 } });
+        await expect.poll(() => new URL(page.url()).searchParams.get('action')).toBe(startingAction);
+        await item.getByRole('heading').click();
+        await expect.poll(() => new URL(page.url()).searchParams.get('action')).toBe(startingAction);
+        await expect(page.locator('.tax-service-choice__card')).toHaveCount(0);
+      }
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(2);
+    }
+  }
+});
+
+test('homepage reference entry does not claim a missing SQL record before session verification', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1280', 'This case explicitly exercises mobile and desktop states.');
+  for (const width of [320, 375, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const language of ['en', 'bn'] as const) {
+      await page.goto(`/?action=landing&lang=${language}`);
+      const reference = `UNVERIFIED-REFERENCE-${width}`;
+      const landing = page.locator('.public-record-discovery');
+      await landing.getByRole('searchbox').fill(reference);
+      await landing.getByRole('button', { name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
+      const modal = page.getByRole('dialog', { name: language === 'bn' ? 'পেমেন্টের অবস্থা ও রসিদ' : 'Payment status & receipt' });
+      await expect(modal).toBeVisible();
+      await expect(modal.getByRole('textbox', { name: language === 'bn'
+        ? 'চালান, টোকেন বা লেনদেনের রেফারেন্স' : 'Challan, token or transaction reference' }))
+        .toHaveValue(reference);
+      await expect(modal.getByTestId('receipt-mobile-required')).toBeVisible();
+      await expect(modal.getByRole('heading', { name: language === 'bn' ? 'কোনো মিল পাওয়া যায়নি' : 'No matching record' })).toHaveCount(0);
+      await modal.getByRole('button', { name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
+      await expect(modal.getByTestId('receipt-mobile-required')).toBeVisible();
+      await expect(modal.locator('.receipt-view')).toHaveCount(0);
+    }
+  }
+});
+
+test('homepage lookup labels example-only matches and preserves focus in EN/BN at 320px, 375px and 1280px', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1280', 'This case covers both target widths in one browser.');
+  for (const width of [320, 375, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const lang of ['en', 'bn'] as const) {
+      await page.goto(`/?action=landing&lang=${lang}`);
+      const section = page.locator('.public-record-discovery');
+      const search = section.getByRole('searchbox');
+      // Prevent the integration merge from duplicating the one live status region.
+      await expect(section.getByTestId('public-search-match-status')).toHaveCount(1);
+      await expect(section.getByTestId('public-search-match-status')).toBeEmpty();
+      await expect(section.locator('#public-record-suggestions')).toHaveCount(0);
+      await search.focus();
+      await expect(section.locator('#public-record-suggestions')).toHaveCount(1);
+      if (width === 1280 && lang === 'en') {
+        const firstExample = (await section.locator('.public-record-suggestions__examples')
+          .locator('.public-record-suggestions__value').first().innerText()).trim();
+        await search.fill(firstExample);
+        const matched = section.locator('.public-record-suggestions__group').first();
+        await expect(matched.locator('.public-record-suggestions__value')
+          .filter({ hasText: firstExample })).toHaveCount(1);
+        await expect(section.locator('.public-record-suggestions__examples')
+          .locator('.public-record-suggestions__value').filter({ hasText: firstExample })).toHaveCount(0);
+        await matched.locator('.public-record-suggestions__option').first().click();
+        const verification = page.getByRole('dialog', { name: 'Payment status & receipt' });
+        await expect(verification).toBeVisible();
+        // Selecting a saved example opens its locally permitted receipt directly.
+        // The input is deliberately hidden while its matching receipt is shown.
+        const matchedReceipt = verification.locator('.receipt-view');
+        await expect(matchedReceipt).toBeVisible();
+        await expect(matchedReceipt).toContainText(firstExample);
+        await page.goto('/?action=landing&lang=en');
+        await section.getByRole('searchbox').focus();
+      }
+      await expect(search).toHaveAttribute('aria-autocomplete', 'list');
+      await expect(search).toHaveAttribute('aria-describedby', 'public-record-discovery-help');
+      await search.fill('NOT-A-KNOWN-EXAMPLE');
+      await expect(section.getByTestId('public-search-match-status')).toContainText(lang === 'bn'
+        ? 'কোনো নমুনা রেফারেন্স মেলেনি'
+        : 'No example references matched');
+      await expect(section.locator('.public-record-suggestions__empty')).toContainText(lang === 'bn'
+        ? 'নমুনার মধ্যে মিলে যাওয়া রেফারেন্স নেই'
+        : 'No matching references among the examples');
+      await search.press('ArrowDown');
+      await expect(section.locator('#public-search-option-0')).toHaveClass(/is-active/);
+      await search.press('Escape');
+      await expect(search).toBeFocused();
+      await expect(section.locator('#public-search-option-0')).toHaveCount(0);
+      await expect(section.locator('#public-record-suggestions')).toHaveCount(0);
+      await expect(section.getByTestId('public-search-match-status')).toBeEmpty();
+      await search.fill('NOT-A-KNOWN-EXAMPLE');
+      await section.getByRole('button', { name: lang === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records' }).click();
+      await expect(page.getByTestId('receipt-mobile-required')).toBeVisible();
+      await expect(page.locator('.receipt-view')).toHaveCount(0);
+    }
+  }
+});
+
+test('public reference no-match distinguishes browser session lookup from official records in EN/BN', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'One desktop project covers EN/BN at narrow and wide breakpoints.');
+  await page.route(/\/functions\/v1\/demo-story1-taxpay\/payments\?/, async route => {
+    await route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ success: true, simulationOnly: true, data: { items: [], total: 0 } }) });
+  });
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({width,height:860});
+    for (const language of ['en','bn'] as const) {
+      await page.goto('/?action=landing&lang=' + language);
+      const search=page.locator('.public-record-discovery');
+      await search.getByRole('searchbox').fill('UNLINKED-TEST-REFERENCE');
+      await search.getByRole('button', {name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records'}).click();
+      const dialog=page.getByRole('dialog', {name: language === 'bn' ? 'পেমেন্টের অবস্থা ও রসিদ' : 'Payment status & receipt'});
+      await expect(dialog).toBeVisible();
+      await dialog.locator('#receipt-lookup-mobile').fill('01700000000');
+      await dialog.getByRole('button', {name: language === 'bn' ? 'রেকর্ড খুঁজুন' : 'Search records'}).click();
+      await expect(dialog.getByTestId('receipt-session-only-notice')).toContainText(
+        language === 'bn' ? 'সরকারি পেমেন্ট রেকর্ড আছে কি না' : 'does not confirm whether an official payment record exists');
+      await expect(dialog.locator('.receipt-view')).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+    }
+  }
+});
+
+test('1920px desktop Home fills the viewport with balanced sections and fixed footer', async ({ page }) => {
+  for (const viewport of [
+    { width: 1775, height: 864 },
+    { width: 1920, height: 900 },
+    { width: 1920, height: 1080 },
+  ]) {
+    for (const lang of ['en', 'bn']) {
+      await page.setViewportSize(viewport);
+      await page.goto('/?action=landing&lang=' + lang);
+      await page.evaluate(async () => { await document.fonts.ready; });
+      const geometry = await page.evaluate(() => {
+        const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+        const cells = [...document.querySelectorAll('.public-benefits__item')].map(el => ({
+          top: el.getBoundingClientRect().top,
+          height: el.getBoundingClientRect().height,
+          scrollHeight: el.scrollHeight,
+          clientHeight: el.clientHeight,
+        }));
+        const header = rect('.public-home-header');
+        const hero = rect('.public-hero-carousel');
+        const search = rect('.public-record-discovery');
+        const benefits = rect('.public-benefits');
+        const footer = rect('.public-footer');
+        return {
+          headerBottom: header.bottom,
+          heroTop: hero.top,
+          heroHeight: hero.height,
+          heroWidth: hero.width,
+          searchWidth: search.width,
+          benefitsWidth: benefits.width,
+          footerTop: footer.top,
+          footerBottom: footer.bottom,
+          gapBelowBenefits: footer.top - benefits.bottom,
+          searchGap: search.top - hero.bottom,
+          benefitsGap: benefits.top - search.bottom,
+          documentHeight: document.documentElement.scrollHeight,
+          viewportHeight: window.innerHeight,
+          overflowX: document.documentElement.scrollWidth - window.innerWidth,
+          cells,
+        };
+      });
+      expect(geometry.heroWidth, JSON.stringify({viewport, lang, geometry})).toBeGreaterThanOrEqual(1279);
+      expect(geometry.heroWidth).toBeLessThanOrEqual(1281);
+      expect(Math.abs(geometry.heroWidth - geometry.searchWidth)).toBeLessThanOrEqual(2);
+      expect(Math.abs(geometry.heroWidth - geometry.benefitsWidth)).toBeLessThanOrEqual(2);
+      expect(geometry.headerBottom).toBeLessThan(geometry.heroTop);
+      expect(geometry.heroHeight).toBeGreaterThanOrEqual(210);
+      expect(geometry.searchGap).toBeGreaterThanOrEqual(12);
+      expect(geometry.searchGap).toBeLessThanOrEqual(24);
+      expect(geometry.benefitsGap).toBeGreaterThanOrEqual(12);
+      expect(geometry.benefitsGap).toBeLessThanOrEqual(24);
+      expect(geometry.gapBelowBenefits).toBeGreaterThanOrEqual(0);
+      expect(geometry.gapBelowBenefits).toBeLessThanOrEqual(32);
+      expect(geometry.footerTop).toBeGreaterThan(geometry.headerBottom);
+      expect(Math.abs(geometry.footerBottom - viewport.height)).toBeLessThanOrEqual(2);
+      expect(geometry.documentHeight - geometry.viewportHeight).toBeLessThanOrEqual(2);
+      expect(geometry.overflowX).toBeLessThanOrEqual(2);
+      expect(geometry.cells).toHaveLength(6);
+      expect(Math.max(...geometry.cells.map(c=>c.height)) - Math.min(...geometry.cells.map(c=>c.height))).toBeLessThanOrEqual(2);
+      expect(geometry.cells.every(c=>c.scrollHeight <= c.clientHeight + 2)).toBe(true);
+      await expect(page.getByRole('searchbox', {name: lang==='bn'
+        ? 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন' : 'Search payment records by reference'})).toBeVisible();
+      await expect(page.locator('.public-hero-carousel__slide')).toHaveCount(5);
+    }
+  }
+});
+
+
+
+test('parallel taxpayer entry preserves real tax heads and allocations through approved payment wizard', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Focused review at mobile and desktop widths.');
+  for (const width of [375, 1280]) {
+    await page.setViewportSize({width,height:900});
+    await page.goto('/?action=landing&lang=en');
+    await page.evaluate(() => sessionStorage.clear());
+    await page.getByRole('button', {name:'Open parallel taxpayer entry'}).click();
+    const draft = page.getByRole('dialog', {name:'All Tax Payments — parallel draft'});
+    await expect(draft.getByTestId('parallel-taxpayer-empty')).toBeVisible();
+    await expect(draft.getByTestId('parallel-taxpayer-continue')).toBeDisabled();
+    await expect(draft.locator('.parallel-taxpayer-draft__disclaimer')).toHaveCount(0);
+    const searchFor = async (tin:string) => {
+      await draft.locator('#parallel-taxpayer-tin').fill(tin);
+      await draft.getByRole('button', {name:'Search taxpayer TIN'}).click();
+    };
+    await searchFor('111111111111');
+    await expect(draft.getByTestId('parallel-taxpayer-search-result')).toContainText('User 1');
+    await expect(draft.getByTestId('parallel-taxpayer-search-result')).toHaveCSS('border-top-style', 'solid');
+    await expect(draft.getByTestId('parallel-taxpayer-search-result')).toHaveCSS('border-left-width', '1px');
+    await expect(draft.getByTestId('parallel-taxpayer-search-result')).toHaveCSS('border-bottom-width', '1px');
+    await draft.getByTestId('parallel-add-taxpayer').click();
+    await expect(draft.locator('#parallel-taxpayer-tin')).toBeFocused();
+    await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(1);
+    // Parallel list is intentionally reveal-only; no Copy action exists.
+    await expect(draft.getByRole('button', {name:'Copy TIN'})).toHaveCount(0);
+    await expect(draft.getByRole('button', {name:'Reveal TIN'})).toHaveCount(1);
+    const sections = draft.locator('.parallel-taxpayer-draft__panel');
+    const bodyBox = await draft.locator('.taxpay-modal__body').boundingBox();
+    const rightBox = await sections.nth(1).boundingBox();
+    expect(bodyBox).not.toBeNull();
+    expect(rightBox).not.toBeNull();
+    if (bodyBox && rightBox && width === 1280) {
+      expect(await sections.nth(1).evaluate(node => getComputedStyle(node).borderLeftWidth)).toBe('1px');
+      // Unbroken center divider reaches both modal body edges;
+      // search instructions stay within the left pane without any note.
+      expect(Math.abs(rightBox.y - bodyBox.y)).toBeLessThanOrEqual(2);
+      expect(Math.abs(rightBox.y + rightBox.height - bodyBox.y - bodyBox.height)).toBeLessThanOrEqual(2);
+      await expect(sections.first().locator('.parallel-taxpayer-draft__intro')).toBeVisible();
+      await expect(sections.first().locator('.parallel-taxpayer-draft__disclaimer')).toHaveCount(0);
+    } else if (bodyBox && rightBox) {
+      expect(await sections.nth(1).evaluate(node => getComputedStyle(node).borderTopWidth)).toBe('1px');
+      expect(Math.abs(rightBox.x - bodyBox.x)).toBeLessThanOrEqual(2);
+      expect(Math.abs(rightBox.width - bodyBox.width)).toBeLessThanOrEqual(2);
+    }
+    await searchFor('111111111111');
+    await expect(draft.getByTestId('parallel-add-taxpayer')).toBeDisabled();
+    await searchFor('222222222222');
+    await draft.getByTestId('parallel-add-taxpayer').click();
+    await draft.getByRole('button', {name:'Remove taxpayer: User 1'}).click();
+    await expect(draft.getByRole('button', {name:'Undo remove taxpayer'})).toBeVisible();
+    await draft.getByRole('button', {name:'Undo remove taxpayer'}).click();
+    await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(2);
+    await draft.getByRole('button', {name:'Remove taxpayer: User 1'}).click();
+    await expect(draft.getByRole('table').locator('tbody tr')).toHaveCount(1);
+    await draft.getByTestId('parallel-taxpayer-continue').click();
+    const heads = draft.getByTestId('parallel-tax-head-boundary');
+    await expect(heads.getByTestId('other-tax-batch')).toBeVisible();
+    // A known eligible v11 head; do not introduce a parallel head catalogue.
+    await heads.locator('[data-head-group="Advance Tax"] > summary').click();
+    await heads.getByRole('checkbox', {name:/Select 64 —/}).check();
+    await heads.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('250.50');
+    await draft.getByTestId('parallel-tax-head-continue').click();
+    await expect(draft.getByTestId('parallel-allocation-review')).toContainText('250.50');
+    await draft.getByTestId('parallel-payment-handoff').click();
+    await expect(draft).toHaveCount(0);
+    const payment = page.getByRole('dialog', {name:'Pay Tax'});
+    await expect(payment).toBeVisible();
+    // The ordinary payer/receipt verification step has not been bypassed.
+    await expect(payment.locator('#guest-payer-name')).toBeVisible();
+    await payment.locator('#guest-payer-name').fill('Reviewed Payer');
+    await payment.locator('#guest-phone').fill('01712345678');
+    await payment.getByRole('button', {name:'Continue to purpose & amount'}).click();
+    await expect(payment.getByTestId('other-tax-batch')).toBeVisible();
+    await expect(payment.getByTestId('other-tax-line')).toHaveCount(1);
+    await expect(payment.getByTestId('other-tax-line').first()
+      .locator('input[id^="other-tax-amount"]')).toHaveValue('250.50');
+    await payment.getByRole('button', {name:'Close payment services'}).click();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(2);
+  }
+});
+
+test('parallel taxpayer session draft restores after close and refresh without creating beneficiaries', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Focused same-tab recovery check.');
+  await page.goto('/?action=landing&lang=en');
+  await page.evaluate(()=>sessionStorage.clear());
+  await page.getByRole('button',{name:'Open parallel taxpayer entry'}).click();
+  let draft=page.getByRole('dialog',{name:'All Tax Payments — parallel draft'});
+  await draft.locator('#parallel-taxpayer-tin').fill('333333333333');
+  await draft.getByRole('button',{name:'Search taxpayer TIN'}).click();
+  await draft.getByTestId('parallel-add-taxpayer').click();
+  await draft.getByRole('button',{name:'Close parallel draft'}).click();
+  await page.reload();
+  await page.getByRole('button',{name:'Open parallel taxpayer entry'}).click();
+  draft=page.getByRole('dialog',{name:'All Tax Payments — parallel draft'});
+  await expect(draft.locator('.parallel-taxpayer-draft__table tbody tr')).toHaveCount(1);
+  await expect(draft).toContainText('Selection restored.');
+  await draft.getByRole('button',{name:'Close parallel draft'}).click();
+});

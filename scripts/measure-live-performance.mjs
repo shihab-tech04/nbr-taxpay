@@ -60,7 +60,10 @@ try {
     await page.locator('.public-hero-carousel').waitFor({ state: 'visible', timeout: 50_000 });
     // Exercise only public image navigation. Do not initiate payments or auth.
     const next = page.locator('.public-hero-carousel__arrow--next');
-    if (await next.count()) await next.click({ timeout: 10_000 });
+    // The approved narrow-screen hero hides desktop arrow controls. A hidden
+    // arrow is not a broken performance scenario: record mobile LCP/CLS without
+    // forcing an element Playwright cannot physically activate.
+    if (await next.isVisible()) await next.click({ timeout: 10_000 });
     await page.waitForTimeout(1_250);
     const metrics = await page.evaluate(() => {
       const nav = performance.getEntriesByType('navigation')[0];

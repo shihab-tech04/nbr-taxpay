@@ -11,6 +11,7 @@ import { INITIAL_RECEIPTS } from '../../data/mockData';
 // The status/Travel Tax modal pulls in the checkout and receipt modules.
 // Keep the public landing light until the user explicitly opens that service.
 const PublicServiceModal = React.lazy(() => import('./PublicServiceModal').then(module => ({default: module.PublicServiceModal})));
+const ParallelTaxpayerDraftDialog = React.lazy(() => import('./ParallelTaxpayerDraftDialog').then(module => ({default: module.ParallelTaxpayerDraftDialog})));
 
 const sampleReceipts = INITIAL_RECEIPTS.filter(receipt => receipt.isSimulatedDemo && !receipt.receiptMobile).slice(0, 3);
 const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
@@ -24,6 +25,8 @@ export const PublicLanding: React.FC = () => {
   const { user } = useAccountIdentity();
   const signedIn = Boolean(user || previewAccount);
   const [openService, setOpenService] = useState<PublicService | null>(null);
+  // Parallel draft is independent of every approved Pay Tax entry and route.
+  const [showParallelDraft, setShowParallelDraft] = useState(false);
   const [paymentReference, setPaymentReference] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
@@ -32,8 +35,11 @@ export const PublicLanding: React.FC = () => {
   const matchedOptions = cleanReference
     ? sampleSearchOptions.filter(option => option.value.toLowerCase().includes(cleanReference)).slice(0, 5)
     : [];
-  // Only public synthetic references; matches and example numbers remain separate groups.
-  const exampleOptions = sampleSearchOptions.slice(0, 3);
+  // Do not repeat a matching reference under Example reference numbers.
+  // Keep three alternative examples available and never query account/private data.
+  const matchedKeys = new Set(matchedOptions.map(option => option.kind + ':' + option.value));
+  const exampleOptions = sampleSearchOptions
+    .filter(option => !matchedKeys.has(option.kind + ':' + option.value)).slice(0, 3);
   const suggestions = [...matchedOptions, ...exampleOptions];
   const chooseReference = (reference: string) => {
     setSearchOpen(false);
@@ -55,8 +61,7 @@ export const PublicLanding: React.FC = () => {
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
 
-  // Citizen-value cards are informational, not duplicate payment CTAs.
-  // The approved Pay Tax / Pay Travel Tax journeys remain in the hero.
+  // Informational benefit cards only. Payment actions remain in the hero.
   const citizenBenefits = [
     {
       id: 'payments',
@@ -154,14 +159,14 @@ export const PublicLanding: React.FC = () => {
     <PublicHeroCarousel
       language={language}
       onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
-      paused={isPaymentServiceChoiceOpen || openService !== null}
+      paused={isPaymentServiceChoiceOpen || openService !== null || showParallelDraft}
     />
 
 
     <section className="public-record-discovery" aria-labelledby="public-record-discovery-title">
       <div className="public-record-discovery__heading">
         <h2 id="public-record-discovery-title">{t('Find a payment record', 'পেমেন্ট রেকর্ড খুঁজুন')}</h2>
-        <p>{t('Search by challan, token or transaction reference.', 'চালান, টোকেন বা লেনদেনের রেফারেন্স দিয়ে খুঁজুন।')}</p>
+        <p id="public-record-discovery-help">{t('Search by challan, token or transaction reference.', 'চালান, টোকেন বা লেনদেনের রেফারেন্স দিয়ে খুঁজুন।')}</p>
       </div>
       <div className="public-record-discovery__interactive" ref={searchRegionRef}>
         <form
@@ -179,6 +184,8 @@ export const PublicLanding: React.FC = () => {
           <label className="sr-only" htmlFor="public-payment-reference">
             {t('Search payment records by reference', 'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন')}
           </label>
+          {/* Native searchbox keeps its role. The status region announces matches;
+              combobox-only ARIA belongs neither here nor on the input. */}
           <input
             id="public-payment-reference"
             type="search"
@@ -186,6 +193,8 @@ export const PublicLanding: React.FC = () => {
             spellCheck={false}
             maxLength={120}
             value={paymentReference}
+            aria-describedby="public-record-discovery-help"
+            aria-autocomplete="list"
             aria-controls={searchOpen ? "public-record-suggestions" : undefined}
             onFocus={() => setSearchOpen(true)}
             onClick={() => setSearchOpen(true)}
@@ -221,8 +230,25 @@ export const PublicLanding: React.FC = () => {
             <Search size={23} aria-hidden="true" />
           </button>
         </form>
+        {/* Keep the live region mounted while closed so the first update is
+            announced reliably instead of appearing with pre-filled content. */}
+        <p role="status" aria-live="polite" aria-atomic="true" className="sr-only"
+          data-testid="public-search-match-status">
+          {searchOpen
+            ? cleanReference
+              ? matchedOptions.length
+                ? t(`${matchedOptions.length} matching example references. Use arrow keys to choose one, or submit your own reference.`,
+                  `${new Intl.NumberFormat('bn-BD').format(matchedOptions.length)}টি নমুনা রেফারেন্স মিলেছে। বেছে নিতে তীর চিহ্নের বোতাম বা নিজের রেফারেন্স খুঁজতে অনুসন্ধান ব্যবহার করুন।`)
+                : t('No example references matched. You can still check your own reference.',
+                  'কোনো নমুনা রেফারেন্স মেলেনি। নিজের রেফারেন্স দিয়েও যাচাই করতে পারবেন।')
+              : t('Example references available. Use the arrow keys to choose one.',
+                  'নমুনা রেফারেন্স পাওয়া যাচ্ছে। বেছে নিতে তীর চিহ্নের বোতাম ব্যবহার করুন।')
+            : ''}
+        </p>
         {searchOpen && (
           <div className="public-record-suggestions" id="public-record-suggestions">
+            {/* The persistent live region above is the only announcement source;
+                duplicating it here causes two screen-reader announcements. */}
             {cleanReference && (
               <div className="public-record-suggestions__group">
                 <h3>{t('Matching references', 'মিলে যাওয়া রেফারেন্স')}</h3>
@@ -241,7 +267,7 @@ export const PublicLanding: React.FC = () => {
                     ))}
                   </ul>
                 ) : (
-                  <p className="public-record-suggestions__empty">{t('No matching references. You can still search using this reference.', 'মিলে যাওয়া রেফারেন্স নেই। এই রেফারেন্স দিয়েও খুঁজতে পারবেন।')}</p>
+                  <p className="public-record-suggestions__empty">{t('No matching references among the examples. You can still search using this reference.', 'নমুনার মধ্যে মিলে যাওয়া রেফারেন্স নেই। এই রেফারেন্স দিয়েও খুঁজতে পারবেন।')}</p>
                 )}
               </div>
             )}
@@ -275,12 +301,25 @@ export const PublicLanding: React.FC = () => {
         <p>{t('Pay, organize and track your taxes in one place.', 'কর পরিশোধ, তথ্য গুছিয়ে রাখা ও অগ্রগতি দেখা—সব এক জায়গায়।')}</p>
       </div>
       <div className="public-benefits__grid">
-        {citizenBenefits.map(({ id, Icon, title, detail }) => (
+        {citizenBenefits.map(({ id, Icon, title, detail }) => id === 'payments' ? (
+          <button key={id} type="button"
+            className="public-benefits__item focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary"
+            data-benefit={id} style={{ width: '100%', textAlign: 'left', font: 'inherit', cursor: 'pointer' }}
+            aria-label={t('Open parallel taxpayer entry', 'বিকল্প করদাতা তথ্য ফর্ম খুলুন')}
+            aria-describedby={`public-benefit-detail-${id}`}
+            onClick={() => setShowParallelDraft(true)}>
+            <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
+            <div className="public-benefits__copy">
+              <h3>{title}</h3>
+              <p id={`public-benefit-detail-${id}`}>{detail}</p>
+            </div>
+          </button>
+        ) : (
           <article key={id} className="public-benefits__item" data-benefit={id}>
             <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
             <div className="public-benefits__copy">
               <h3>{title}</h3>
-              <p>{detail}</p>
+              <p id={`public-benefit-detail-${id}`}>{detail}</p>
             </div>
           </article>
         ))}
@@ -334,5 +373,6 @@ export const PublicLanding: React.FC = () => {
       </div>
     </section>
     {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} /></React.Suspense>}
+    {showParallelDraft && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'করদাতার খসড়া লোড হচ্ছে…' : 'Loading taxpayer draft…'}</p>}><ParallelTaxpayerDraftDialog onClose={() => setShowParallelDraft(false)} /></React.Suspense>}
   </div>;
 };

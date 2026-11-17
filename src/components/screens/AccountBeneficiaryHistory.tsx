@@ -64,7 +64,16 @@ function readHistoryFilters(ownerUid:string):StoredHistoryFilters {
  * Each beneficiary allocation keeps its own TIN, assessment year, head and
  * amount; never present the combined batch total as an individual's payment.
  */
-export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: string; language: 'en'|'bn' }) {
+type AccountBeneficiaryHistoryProps = { ownerUid: string; language: 'en'|'bn' };
+
+/** Remount the private history when the owner changes. State and session-scoped
+ * filters from account A must never render, even briefly, under account B.
+ */
+export function AccountBeneficiaryHistory(props: AccountBeneficiaryHistoryProps) {
+  return <AccountBeneficiaryHistoryForOwner key={props.ownerUid} {...props} />;
+}
+
+function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBeneficiaryHistoryProps) {
   const [rows,setRows]=useState<BeneficiaryPaymentEntry[]>([]);
   const {startPaymentReuse,startBeneficiarySave,navigate}=useTaxState();
   const profile=usePaymentAccountProfile(ownerUid,null);
@@ -121,6 +130,12 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
       setSelected(null);
     }catch(reason){setReuseError(reason instanceof Error?reason.message:'The original payment could not be reconstructed.');}
   };
+  const applyForCorrection=(row:BeneficiaryPaymentEntry)=>{
+    // The private correction form verifies ownership against SQL before insert.
+    // This reference is only a prefill hint, never authorization.
+    setSelected(null);
+    navigate('corrections',{originalReference:row.receipt.challanNo});
+  };
   const canReuse=(row:BeneficiaryPaymentEntry)=>Boolean(row.receipt.items.length) &&
     (row.receipt.paymentCategory!=='TRAVEL_TAX' || Boolean(row.receipt.travelDetails?.passengers.length));
   const visibleTags=tags.owner===ownerUid?tags:{owner:ownerUid,status:'loading' as const,people:[]};
@@ -173,7 +188,7 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
       const csv=buildAccountBeneficiaryHistoryCsv(filtered,language);
       const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
       const link=document.createElement('a');
-      link.href=url;link.download='Korbritto_payment_history.csv';
+      link.href=url;link.download='Sohojkor_payment_history.csv';
       document.body.appendChild(link);link.click();link.remove();
       window.setTimeout(()=>URL.revokeObjectURL(url),0);
     }catch{
@@ -326,14 +341,15 @@ export function AccountBeneficiaryHistory({ ownerUid, language }: { ownerUid: st
       labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('records','রেকর্ড')}}/>
     {selected&&<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')} service="status"
       className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
-      <ReceiptView receipt={selected.receipt} embedded/>
+      <ReceiptView receipt={selected.receipt} embedded transactionActions
+        payAgainTestId="account-pay-again-receipt"
+        onPayAgain={canReuse(selected)?()=>payAgain(selected):undefined}
+        onApplyForCorrection={()=>applyForCorrection(selected)}/>
       <div className="mt-3 flex flex-wrap justify-end gap-2">
         {canSaveBeneficiary(selected)&&<button type="button" data-testid="account-save-beneficiary-receipt"
           className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-taxpay-border px-4 font-semibold text-taxpay-primary"
           onClick={()=>saveBeneficiary(selected)}><UserPlus size={16} aria-hidden="true"/>{tr('Save Beneficiary','উপকারভোগী সংরক্ষণ করুন')}</button>}
-        {canReuse(selected)&&<button type="button" data-testid="account-pay-again-receipt"
-          className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold text-taxpay-primary"
-          onClick={()=>payAgain(selected)}>{tr('Pay Again','আবার পরিশোধ')}</button>}
+
       </div>
     </TaxPayModal>}
   </section>;

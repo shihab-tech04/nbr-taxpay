@@ -7,16 +7,17 @@ const payment:StoryPaymentInput={
  idempotencyKey:'11111111-2222-4333-8444-555555555555',
  sessionId:preview.paymentSessionId,service:'TAX_WITH_RETURN',amountMinor:1000,
  details:{
-  payerMode:'SELF',taxpayerTin:'111111111111',assessmentYear:'2025-2026',
-  lines:[{headId:1,economicCode:'1111101',totalAmount:10}],
-  receiptSnapshot:{isSimulatedDemo:true,challanNo:'SIM-test'}
+  payerMode:'SELF',taxpayerTin:'111111111111',assessmentYear:'2025-26',
+  lines:[{headId:125,economicCode:'74',totalAmount:10}],
+  receiptSnapshot:{isSimulatedDemo:true,challanNo:'SIM-test',
+    items:[{headId:125,totalAmount:10}]}
  }
 };
 
 test('signed-in wizard simulates own tax with the SQL authorization allocation contract',()=>{
  const scoped=bindPreviewStoryPayer(payment,preview);
  assert.equal(scoped.details.payerId,'user1');
- assert.deepEqual(scoped.details.lines,[{beneficiary:'user1',category:'TAX_WITH_RETURN',assessmentYear:'2025-2026',amountMinor:1000}]);
+ assert.deepEqual(scoped.details.lines,[{beneficiary:'user1',category:'TAX_WITH_RETURN',headId:125,totalAmount:10,assessmentYear:'2025-26',amountMinor:1000}]);
  assert.deepEqual(scoped.details.receiptLines,payment.details.lines);
  assert.deepEqual(scoped.details.receiptSnapshot,payment.details.receiptSnapshot);
  assert.deepEqual(scoped,bindPreviewStoryPayer(payment,preview),'idempotent replay must have identical SQL payload');
@@ -24,7 +25,7 @@ test('signed-in wizard simulates own tax with the SQL authorization allocation c
 test('saved beneficiary payment uses the exact selected TIN without inventing consent',()=>{
  const input={...payment,details:{...payment.details,payerMode:'OTHER',taxpayerTin:'2222222222222'}};
  const bound=bindPreviewStoryPayer(input,preview);
- assert.deepEqual(bound.details.lines,[{beneficiary:'user2',category:'TAX_WITH_RETURN',assessmentYear:'2025-2026',amountMinor:1000}]);
+ assert.deepEqual(bound.details.lines,[{beneficiary:'SAVED_TIN:2222222222222',category:'TAX_WITH_RETURN',headId:125,totalAmount:10,assessmentYear:'2025-26',amountMinor:1000}]);
  assert.deepEqual(bound.details.receiptLines,payment.details.lines);
  assert.throws(()=>bindPreviewStoryPayer({...input,details:{...input.details,taxpayerTin:'not-in-the-demo-directory'}},preview),/saved demo beneficiary/);
 });
@@ -33,7 +34,7 @@ test('an owned external saved TIN keeps its identity in synthetic payments',()=>
  const input={...payment,details:{...payment.details,payerMode:'OTHER',taxpayerTin:tin}};
  const bound=bindPreviewStoryPayer(input,preview);
  assert.deepEqual(bound.details.lines,[{
-  beneficiary:'SAVED_TIN:'+tin,category:'TAX_WITH_RETURN',assessmentYear:'2025-2026',amountMinor:1000
+  beneficiary:'SAVED_TIN:'+tin,category:'TAX_WITH_RETURN',headId:125,totalAmount:10,assessmentYear:'2025-26',amountMinor:1000
  }]);
  assert.deepEqual(bound.details.receiptLines,payment.details.lines);
  assert.equal(bound.idempotencyKey,input.idempotencyKey);

@@ -44,14 +44,18 @@ jobs:
           OFFICE_REPO="https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git"
           # Check the existing WS3 Office #270 branch, not a stale historical bridge.
           OFFICE_BRIDGE_REF="ws3/v95-correction-payment-parent-20261112"
+          OFFICE_BRIDGE_SHA="d04de641f0dbca6138e02cb41c2e89d78449b8b3"
           OFFICE_BRIDGE_DIR="$RUNNER_TEMP/office-matching-bridge"
           git clone --depth 1 --branch "$OFFICE_BRIDGE_REF" "$OFFICE_REPO" "$OFFICE_BRIDGE_DIR"
+          git -C "$OFFICE_BRIDGE_DIR" fetch --depth 1 origin "$OFFICE_BRIDGE_SHA"
+          git -C "$OFFICE_BRIDGE_DIR" checkout --detach "$OFFICE_BRIDGE_SHA"
+          test "$(git -C "$OFFICE_BRIDGE_DIR" rev-parse HEAD)" = "$OFFICE_BRIDGE_SHA"
           cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_BRIDGE_DIR/supabase/functions/payment-sync-bridge/index.ts"
           cmp -s supabase/functions/payment-command-bridge/index.ts "$OFFICE_BRIDGE_DIR/supabase/functions/payment-command-bridge/index.ts"
           npm ci --prefix "$OFFICE_CURRENT_DIR" --no-audit --no-fund
           npm run build --prefix "$OFFICE_CURRENT_DIR"
           echo "Current Office main: $OFFICE_CURRENT_SHA; shared contract and app build PASS"
-          echo "Matching Office bridge source: $OFFICE_BRIDGE_REF"
+          echo "Matching Office bridge source: $OFFICE_BRIDGE_REF @ $OFFICE_BRIDGE_SHA"
           echo "### Current Office integration boundary" >> "$GITHUB_STEP_SUMMARY"
           echo "Current Office main: \`$OFFICE_CURRENT_SHA\` — shared contract and Office production build PASS." >> "$GITHUB_STEP_SUMMARY"
           echo "Matching Office bridge source: \`$OFFICE_BRIDGE_REF\`; the paired correction bridge files are byte-identical." >> "$GITHUB_STEP_SUMMARY"
@@ -203,6 +207,8 @@ jobs:
           export PGHOST=127.0.0.1 PGPORT=54322 PGDATABASE=postgres PGUSER=postgres PGPASSWORD=postgres
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/demoProfilePaymentScope.sql
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/combinedOtherTaxSqlAcceptance.sql
+          # F-178 exact multilingual remarks + non-text rejection, transaction-rolled back.
+          psql -X -v ON_ERROR_STOP=1 -f tests/integration/v953TaxpayerRemarksAcceptance.sql
           # M04 rollback-only Return RPC exclusivity test.
           psql -X -v ON_ERROR_STOP=1 -f tests/integration/m04ReturnExclusiveSqlAcceptance.sql
           # All fictional user1 scenarios are transaction-rolled-back; never seed hosted data.
@@ -293,12 +299,39 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
         run: npx playwright test tests/e2e/secure-workspace-real-local.spec.ts --project=mobile-375
 
+      - name: Recheck mobile account sign-out and Beneficiaries navigation
+        env:
+          TAXPAY_LOCAL_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          TAXPAY_LOCAL_SUPABASE_ANON_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/account-preferences-real-local.spec.ts --project=mobile-375 --workers=1
+
       - name: Verify real saved beneficiaries, account isolation and Pay Tax prefill
         env:
           VITE_SUPABASE_DISABLED: 'false'
           VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
         run: npx playwright test tests/e2e/beneficiaries-real-local.spec.ts tests/e2e/beneficiary-list-management-real-local.spec.ts tests/e2e/beneficiary-move-list-real-local.spec.ts tests/e2e/account-preferences-real-local.spec.ts --project=mobile-375
+
+      - name: Verify history beneficiary save with real Auth, SQL persistence and owner isolation
+        env:
+          TAXPAY_LOCAL_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          TAXPAY_LOCAL_SUPABASE_ANON_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/account-history-save-beneficiary.spec.ts --project=mobile-375 --workers=1 --grep 'real Auth payer saves one history allocation'
+      - name: Verify saved-first one-time TIN fallback with local Auth and SQL
+        env:
+          TAXPAY_LOCAL_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          TAXPAY_LOCAL_SUPABASE_ANON_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+          TAXPAY_LOCAL_PG_DSN: ${{ env.TAXPAY_LOCAL_PG_DSN }}
+          VITE_SUPABASE_DISABLED: 'false'
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/signed-in-tin-fallback-real-local.spec.ts --project=desktop-1280 --project=mobile-375 --workers=1
 
       - name: Verify guest beneficiary persistence, isolation, XLSX and Pay Tax prefill
         env:
@@ -352,6 +385,13 @@ jobs:
           # The Overview case necessarily exercises user1 in both projects.
           # Serializing only this case prevents cross-project writes to one owner.
           npx playwright test tests/e2e/account-payment-draft-browser-ui-real-local.spec.ts --project=desktop-1280 --project=mobile-375 --workers=1 --grep 'user1 Overview shows account-scoped saved drafts'
+
+      - name: Verify signed-in Travel Tax draft save, safe resume and owner isolation
+        env:
+          VITE_SUPABASE_DISABLED: "false"
+          VITE_SUPABASE_URL: ${{ env.TAXPAY_LOCAL_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.TAXPAY_LOCAL_SUPABASE_ANON_KEY }}
+        run: npx playwright test tests/e2e/travel-tax-draft-real-local.spec.ts --project=desktop-1280 --workers=1
 
       - name: Verify SQL profiles and all eight service types render for real preview identities
         env:
@@ -439,16 +479,16 @@ jobs:
           # A historical hardcoded head can fail before any SQL test runs.
           git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
             https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
-          OFFICE_SHA="$(git -C "$OFFICE_DIR" rev-parse HEAD)"
-          test -n "$OFFICE_SHA"
+          OFFICE_SHA="d04de641f0dbca6138e02cb41c2e89d78449b8b3"
+          git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
           echo "Paired Office SQL source SHA: $OFFICE_SHA"
           WS1_DIR="$RUNNER_TEMP/ws1-current"
           git clone --depth 1 --branch ws1/v95-walk-in-self-combinations \
             https://github.com/shihab-tech04/nbr-taxpay.git "$WS1_DIR"
-          WS1_SHA="$(git -C "$WS1_DIR" rev-parse HEAD)"
-          test -n "$WS1_SHA"
+          WS1_SHA="682ff48dc055c8a8ab782f918cf18dccfe0e1080"
+          git -C "$WS1_DIR" fetch --depth 1 origin "$WS1_SHA"
           git -C "$WS1_DIR" checkout --detach "$WS1_SHA"
           test "$(git -C "$WS1_DIR" rev-parse HEAD)" = "$WS1_SHA"
           echo "Current Work A #779 source SHA: $WS1_SHA"
@@ -479,6 +519,8 @@ jobs:
           done < <(find "$OFFICE_DIR/supabase/migrations" -maxdepth 1 -name '*.sql' -type f | sort)
           node tests/integration/pairedTaxpayerOfficeSql.mjs
           node tests/integration/pairedCorrectionOfficeSql.mjs
+          # Preserve WS1 one-time recipient original SQL/Office contract.
+          node tests/integration/pairedF039SavedOneTimeOfficeSql.mjs
           # Current Work A UI is a distinct checkout; install its locked
           # dependencies before the real browser renders its source.
           npm ci --prefix "$WS1_DIR" --no-audit --no-fund

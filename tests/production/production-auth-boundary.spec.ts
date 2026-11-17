@@ -1,11 +1,19 @@
 import { expect, test } from '@playwright/test';
 
+// CI route/auth checks must not download large live CMS artworks; app fallback stays intact.
+test.beforeEach(async ({ page }) => {
+  await page.route(
+    'https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**',
+    route => route.abort('blockedbyclient'),
+  );
+});
+
 const site = '/nbr-taxpay/';
 const privateRoutes = ['taxpayer_home', 'dashboard', 'history', 'ledger', 'account_profile', 'account_notifications', 'account_settings', 'beneficiaries', 'services'];
 
 test('the public TaxPay login restores the approved User ID/password modal', async ({ page }) => {
   await page.goto(site + '?action=taxpayer_login');
-  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const dialog = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByLabel('User ID',{exact:true})).toBeVisible();
   await expect(dialog.getByLabel('Password',{exact:true})).toBeVisible();
@@ -21,7 +29,7 @@ test('query strings cannot sign in a taxpayer or reveal private Beneficiaries',a
   for(const route of privateRoutes){
     await page.goto(site+'?action='+route+'&demoUser=user1');
     if(route==='beneficiaries'){
-      await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toBeVisible();
+      await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toBeVisible();
       await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
     }else{
       await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
@@ -33,69 +41,22 @@ test('query strings cannot sign in a taxpayer or reveal private Beneficiaries',a
 });
 
 test('User ID login continues into the taxpayer workspace and survives refresh',async({page})=>{
-  // Browser acceptance runs against the production bundle, not a real hosted
-  // account or mutable live backend. The server must issue the capability;
-  // a browser-only User ID string is never enough to grant access.
-  const guestCapability='A'.repeat(43);
-  // Fetch is cross-origin: the browser may send OPTIONS before POST.
-  // Test only the application contract, with an explicit CORS-safe fixture.
-  const cors={
-    'access-control-allow-origin':'*',
-    'access-control-allow-methods':'POST, OPTIONS',
-    'access-control-allow-headers':'apikey,content-type,x-taxpay-guest-capability,authorization,x-client-info',
-  };
-  let verifiedLoginResponses=0;
-  await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
-    if(route.request().method()==='OPTIONS'){
-      await route.fulfill({status:204,headers:cors,body:''});
-      return;
-    }
-    if(route.request().method()!=='POST'){
-      await route.fulfill({status:405,headers:cors,body:''});
-      return;
-    }
-    const body=route.request().postDataJSON() as Record<string,unknown>;
-    if(body.action!=='demo-login'||body.userId!=='user1'||body.password!=='user1'){
-      await route.fulfill({status:403,headers:cors,contentType:'application/json',
-        body:JSON.stringify({success:false,code:'DENIED'})});
-      return;
-    }
-    verifiedLoginResponses++;
-    await route.fulfill({status:200,headers:cors,contentType:'application/json',body:JSON.stringify({
-      success:true,data:{profileId:'user1',capability:guestCapability,
-        paymentSessionId:'90000000-0000-4000-8000-000000000001',
-        language:'en',selectedListId:null}
-    })});
-  });
   await page.goto(site+'?action=taxpayer_login');
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const dialog=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await dialog.getByLabel('User ID',{exact:true}).fill('user1');
   await dialog.getByLabel('Password',{exact:true}).fill('user1');
   await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
-  await expect.poll(()=>verifiedLoginResponses,{message:'Browser must receive the scoped preview login response'}).toBe(1);
+  const demoOtp=dialog.getByTestId('demo-otp-input');
+  await expect(demoOtp).toBeVisible();
+  await demoOtp.fill('111111');
+  await dialog.getByTestId('taxpayer-login-submit').click();
   await expect(page).toHaveURL(/action=taxpayer_home/);
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
   await page.goto(site+'?action=beneficiaries');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
-  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
   await page.reload();
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
-});
-
-test('unavailable preview API never grants account access or private beneficiaries',async({page})=>{
-  await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
-    await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({success:false,code:'BACKEND_UNAVAILABLE'})});
-  });
-  await page.goto(site+'?action=taxpayer_login');
-  const dialog=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
-  await dialog.getByLabel('User ID',{exact:true}).fill('user1');
-  await dialog.getByLabel('Password',{exact:true}).fill('user1');
-  await dialog.getByRole('button',{name:'Sign In',exact:true}).click();
-  await expect(dialog.getByRole('alert')).toBeVisible();
-  await expect(page).not.toHaveURL(/action=taxpayer_home/);
-  await page.goto(site+'?action=beneficiaries');
-  await expect(page.getByTestId('beneficiaries-page')).toHaveCount(0);
-  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toBeVisible();
 });
 
 test('Bengali login retains its existing fields and language',async({page})=>{

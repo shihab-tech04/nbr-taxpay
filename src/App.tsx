@@ -46,6 +46,7 @@ const CorrectionRequests = React.lazy(() => import('./components/screens/Correct
 const CorrectionInquiries = React.lazy(() => import('./components/screens/CorrectionInquiries').then(module => ({ default: module.CorrectionInquiries })));
 const NotificationsView = React.lazy(() => import('./components/screens/NotificationsView').then(module => ({ default: module.NotificationsView })));
 const AccountCenter = React.lazy(() => import('./components/screens/AccountCenter').then(module => ({ default: module.AccountCenter })));
+const UnifiedTaxpayerProfilePage = React.lazy(() => import('./components/screens/UnifiedTaxpayerProfilePage').then(module => ({ default: module.UnifiedTaxpayerProfilePage })));
 const ManageAuthorization = React.lazy(() => import('./components/screens/ManageAuthorization').then(module => ({ default: module.ManageAuthorization })));
 const PaymentServicesPage = React.lazy(() => import('./components/screens/PaymentServicesPage').then(module => ({ default: module.PaymentServicesPage })));
 const OntologyView = React.lazy(() => import('./components/screens/OntologyView').then(module => ({ default: module.OntologyView })));
@@ -60,6 +61,37 @@ const previewReadOnlyRoutes = new Set([
 ]);
 
 const activityRoutes = new Set(['history', 'journey', 'verify', 'corrections', 'certificates']);
+
+/** Route-scoped recovery for a failed lazy import/render. Never turn a History
+ * exception into a blank taxpayer page, and never read or alter another account.
+ * Successful History journeys retain their exact existing UI and behavior.
+ */
+class HistoryRouteBoundary extends React.Component<
+  {language:'en'|'bn';onBack:()=>void;children:React.ReactNode},{failed:boolean}
+> {
+  state={failed:false};
+  static getDerivedStateFromError():{failed:boolean}{return {failed:true};}
+  render(){
+    if(!this.state.failed)return this.props.children;
+    const bn=this.props.language==='bn';
+    return <section role="alert" data-testid="history-route-recovery"
+      className="mx-auto max-w-5xl space-y-4 rounded-xl border border-taxpay-border bg-white p-5 sm:p-6">
+      <h1 className="text-xl font-semibold text-taxpay-text">
+        {bn?'লেনদেনের ইতিহাস লোড করা যাচ্ছে না':'Could not load transaction history'}
+      </h1>
+      <p className="text-sm text-taxpay-muted">
+        {bn?'পেমেন্টের তথ্য পরিবর্তন করা হয়নি। পুনরায় চেষ্টা করুন অথবা সংক্ষিপ্ত বিবরণে ফিরে যান।':
+          'Your payment records have not been changed. Retry loading or return to Overview.'}
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <button type="button" className="min-h-11 rounded-lg bg-taxpay-primary px-4 font-medium text-white"
+          onClick={()=>window.location.reload()}>{bn?'আবার চেষ্টা করুন':'Retry'}</button>
+        <button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-4 font-medium text-taxpay-primary"
+          onClick={this.props.onBack}>{bn?'সংক্ষিপ্ত বিবরণে ফিরুন':'Back to Overview'}</button>
+      </div>
+    </section>;
+  }
+}
 
 const MainRouter: React.FC = () => {
   const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, isParityModalOpen, paymentServiceInitialSelection, paymentReuse } = useTaxState();
@@ -137,7 +169,7 @@ const MainRouter: React.FC = () => {
     }
     // Fictional user1 has a unified read-only story across all taxpayer views.
     // Only public demoUser=user1, never a signed-in account or financial backend.
-    if ((sampleJourneysEnabled || previewAccount) && demoUser?.id === 'user1' && !verifiedApplicationUser && user1DemoRoutes.includes(currentRoute)) {
+    if ((sampleJourneysEnabled || previewAccount) && demoUser?.id === 'user1' && !verifiedApplicationUser && (currentRoute !== 'account_profile' || !previewAccount) && user1DemoRoutes.includes(currentRoute)) {
       return <User1DemoExperience route={currentRoute} activityTabs={showActivitySections} onResumePaymentDraft={resumeDashboardPayment} />;
     }
     switch (currentRoute) {
@@ -199,7 +231,7 @@ const MainRouter: React.FC = () => {
       case 'account_notifications':
         return <AccountCenter page="notifications" />;
       case 'account_profile':
-        return <AccountCenter page="profile" />;
+        return previewAccount && !verifiedApplicationUser ? <UnifiedTaxpayerProfilePage /> : <AccountCenter page="profile" />;
       case 'account_settings':
         return <AccountCenter page="settings" />;
       case 'manage_authorization':
@@ -221,7 +253,7 @@ const MainRouter: React.FC = () => {
   };
 
   return (
-    <div lang={language} className={`taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}${!taxpayerReference ? " taxpay-public-mobile-shell" : ""}`}>
+    <div lang={language} className={`taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${taxpayerReference && !privateSampleGate && (verifiedApplicationUser || previewAccount) ? " taxpay-authenticated-content" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}${!taxpayerReference ? " taxpay-public-mobile-shell" : ""}`}>
       {publicInformationRoute ? <>
         <div className="taxpay-public-desktop-navigation"><PublicHomeHeader /></div>
         <div className="taxpay-public-mobile-navigation"><CitizenNavigation /></div>
@@ -231,7 +263,7 @@ const MainRouter: React.FC = () => {
         {privateSampleGate ? checkingIdentity ? <p role="status">{language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}</p> : beneficiaryLoginRequired ? <PublicLanding /> : (
           <section className="citizen-account-gate">
             <h1>{language === 'bn' ? 'করদাতার ব্যক্তিগত তথ্য' : 'Private taxpayer workspace'}</h1>
-            <p>{language === 'bn' ? 'আপনার করবৃত্ত অ্যাকাউন্টে সাইন ইন করুন।' : 'Sign in to your Korbritto account to continue.'}</p>
+            <p>{language === 'bn' ? 'আপনার সহজকর অ্যাকাউন্টে সাইন ইন করুন।' : 'Sign in to your Sohojkor account to continue.'}</p>
             <a className="citizen-account-gate__preview"
               href={language === 'bn' ? '?action=taxpayer_login&lang=bn' : '?action=taxpayer_login'}>
               {language === 'bn' ? 'সাইন ইন' : 'Sign In'}
@@ -255,7 +287,12 @@ const MainRouter: React.FC = () => {
           </section>
         ) : <>
           <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেজ লোড হচ্ছে…' : 'Loading page…'}</p>}>
-            {renderActiveScreen()}
+            {currentRoute==='history'
+              ? <HistoryRouteBoundary key={previewAccount?.id??verifiedApplicationUser?.id??'guest'}
+                  language={language} onBack={()=>navigate('taxpayer_home')}>
+                  {renderActiveScreen()}
+                </HistoryRouteBoundary>
+              : renderActiveScreen()}
           </React.Suspense>
         </>}
       </main>

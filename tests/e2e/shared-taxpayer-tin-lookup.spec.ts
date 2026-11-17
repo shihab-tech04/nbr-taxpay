@@ -34,9 +34,9 @@ test('every additional Other Tax taxpayer reveals a details review and keeps cle
   const entry = primary.locator('#guest-tin');
   await entry.focus();
   await expect(entry).toHaveAttribute('aria-expanded','false');
-  await expect(page.getByRole('listbox',{name:'Suggested TIN numbers'})).toHaveCount(0);
+  await expect(page.getByRole('listbox',{name:'Sample TIN suggestions — not NBR verified'})).toHaveCount(0);
   await entry.fill('1');
-  const suggestionBox=page.getByRole('listbox',{name:'Suggested TIN numbers'});
+  const suggestionBox=page.getByRole('listbox',{name:'Sample TIN suggestions — not NBR verified'});
   await expect(suggestionBox).toBeVisible();
   const relative=await entry.evaluate(element=>({bottom:element.getBoundingClientRect().bottom}));
   const popupRect=await suggestionBox.boundingBox();

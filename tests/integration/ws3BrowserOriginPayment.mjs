@@ -123,8 +123,21 @@ export async function verifyWs3BrowserOrigin({
       .getByRole('button',{name:'Continue',exact:true}).click();
     const picker=dialog.getByTestId('saved-beneficiary-picker');
     await expect(picker).toBeVisible({timeout:30000});
-    await picker.getByRole('checkbox',{name:/WS3 recipient 2/}).check();
-    await picker.getByRole('checkbox',{name:/WS3 recipient 3/}).check();
+    // The disposable SQL fixture adds a new named list, not necessarily the
+    // first expanded list. Exercise the real saved-first search across all
+    // owned lists; never forge selection or bypass the capability-bound reader.
+    const savedSearch=picker.getByRole('searchbox',{name:'Search beneficiaries'});
+    await expect(savedSearch).toBeVisible({timeout:30000});
+    await savedSearch.fill('WS3 recipient');
+    // A saved TIN can appear in multiple owned lists. This payment selects
+    // the first matching saved contact for each distinct recipient TIN;
+    // duplicate list cards are not duplicate payment beneficiaries.
+    const recipient2=picker.getByRole('checkbox',{name:'Select WS3 recipient 2',exact:true}).first();
+    const recipient3=picker.getByRole('checkbox',{name:'Select WS3 recipient 3',exact:true}).first();
+    await expect(recipient2).toBeVisible();
+    await expect(recipient3).toBeVisible();
+    await recipient2.check();
+    await recipient3.check();
     await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
     const batch=dialog.getByTestId('other-tax-batch');
     await batch.locator('[data-head-group="Advance Tax"] summary').click();
@@ -211,9 +224,12 @@ export async function verifyWs3BrowserOrigin({
       ' -> authorized Office readback, two original allocation IDs and exact values');
     // F-039 original current Work A UI: one saved payer-owned recipient
     // and one confirmed fictional public-lookup TIN, without saving the second.
-    const unsavedTin='444444444444';
+    // The shared user1 fixture saves user4. User10 is deliberately absent,
+    // so the test must use a genuinely unsaved fictional lookup identity.
+    const unsavedTin='000000000000';
     const savedBefore=Number(psql(sourceDb,
       "SELECT count(*) FROM taxpay_guest_private.beneficiaries WHERE tin='"+unsavedTin+"';"));
+    assert.equal(savedBefore,0,'F039 one-time fixture must begin with unsaved TIN');
     await page.goto(base+'/?action=landing');
     await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
     const oneTimeDialog=page.getByRole('dialog',{name:'Pay Tax'});
@@ -229,14 +245,42 @@ export async function verifyWs3BrowserOrigin({
       .getByRole('button',{name:'Continue',exact:true}).click();
     const f039Picker=oneTimeDialog.getByTestId('saved-beneficiary-picker');
     await expect(f039Picker).toBeVisible({timeout:20000});
-    await f039Picker.getByRole('checkbox',{name:/WS3 recipient 2/}).check();
+    // This is a fresh payment entry. Saved lists are collapsed until the
+    // payer explicitly searches or expands a list; a previously selected
+    // contact must not be carried across transactions by the browser test.
+    const f039Search=f039Picker.getByRole('searchbox',{name:'Search beneficiaries'});
+    await expect(f039Search).toBeVisible();
+    await f039Search.fill('WS3 recipient 2');
+    const savedRecipient=f039Picker.getByRole('checkbox',
+      {name:'Select WS3 recipient 2',exact:true}).first();
+    await expect(savedRecipient).toBeVisible();
+    await savedRecipient.check();
     const oneTimeEntry=oneTimeDialog.getByTestId('one-time-taxpayer-entry');
     await expect(oneTimeEntry).toBeVisible();
     await oneTimeEntry.locator('#other-tax-one-time-tin').fill(unsavedTin);
     await oneTimeEntry.getByRole('button',{name:'Search one-time taxpayer'}).click();
     await expect(oneTimeEntry.getByTestId('one-time-taxpayer-preview'))
-      .toContainText('User 4');
-    await oneTimeEntry.getByRole('button',{name:'Add to this payment'}).click();
+      .toContainText('User 10');
+    const addOneTime=oneTimeEntry.getByRole('button',{name:'Add to this payment'});
+    if(!await addOneTime.isEnabled()){
+      // Diagnostics only; never print the capability, full TIN or private data.
+      const state=await oneTimeDialog.evaluate(dialog=>{
+        const entry=dialog.querySelector('[data-testid="one-time-taxpayer-entry"]');
+        const picker=dialog.querySelector('[data-testid="saved-beneficiary-picker"]');
+        const field=entry?.querySelector('#other-tax-one-time-tin');
+        return {
+          oneTimePreviewPresent:Boolean(entry?.querySelector('[data-testid="one-time-taxpayer-preview"]')),
+          tinLength:field&&'value' in field?String(field.value).length:null,
+          savedRecipientChecked:picker?.querySelectorAll('input[type="checkbox"]:checked,[role="checkbox"][aria-checked="true"]').length??0,
+          pickerLoading:Boolean(picker?.textContent?.includes('Loading beneficiary lists')),
+          alerts:Array.from(dialog.querySelectorAll('[role="alert"]'))
+            .map(el=>el.textContent?.trim().slice(0,120)).filter(Boolean),
+          previewSessionPresent:Boolean(sessionStorage.getItem('taxpay-taxpayer-preview-user')),
+        };
+      });
+      console.error('F039_ONE_TIME_DISABLED_STATE '+JSON.stringify(state));
+    }
+    await addOneTime.click();
     await expect(oneTimeEntry.getByTestId('confirmed-one-time-taxpayer'))
       .toContainText(unsavedTin);
     await expect(f039Picker.getByTestId('beneficiary-list-accordion'))
@@ -272,7 +316,7 @@ export async function verifyWs3BrowserOrigin({
     assert.deepEqual(oneTimeAllocations.map(a=>a.amountMinor),[1000,2000]);
     assert.deepEqual(oneTimeAllocations.map(a=>a.headId),[122,123]);
     assert.deepEqual(oneTimeAllocations.map(a=>a.assessmentYear),['2026-27','2025-26']);
-    assert.equal(oneTimeAllocations[1].taxpayerName,'User 4');
+    assert.equal(oneTimeAllocations[1].taxpayerName,'User 10');
     assert.equal(Number(psql(sourceDb,
       "SELECT count(*) FROM taxpay_guest_private.beneficiaries WHERE tin='"+unsavedTin+"';")),
       savedBefore,'F-039 must not create any saved beneficiary record');

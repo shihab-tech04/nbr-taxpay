@@ -14,7 +14,7 @@ const exactReference = {
 async function openSampleTaxpayer(page: import('@playwright/test').Page) {
   await page.goto('/?action=taxpayer_home');
   const enter = page.getByRole('button', { name: 'Explore taxpayer workspace' });
-  const dashboard = page.getByRole('heading', { name: 'Overview' });
+  const dashboard = page.getByRole('heading',{name:'Overview'});
   await expect(enter.or(dashboard).first()).toBeVisible();
   if (await enter.isVisible()) await enter.click();
   await expect(page.locator('.taxpay-taxpayer-reference')).toHaveCount(1);
@@ -84,11 +84,11 @@ test('approved desktop rail adapts between 901px and 1439px without changing 144
   await page.setViewportSize({width:1600,height:900});
   await openSampleTaxpayer(page);
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
-  for (const width of [901,1024,1199,1200,1280,1366,1439,1440,1600,2048]) {
+  for (const width of [901,1024,1199,1200,1280,1366,1439,1440,1600,1920,2048]) {
     await page.setViewportSize({width,height:900});
     const expectedRailWidth = width < 1440
       ? Math.min(239, Math.max(180, width * 0.17))
-      : width >= 1920 ? 260 : width >= 1536 ? 250 : 240;
+      : width >= 1536 ? 250 : 240;
     const railBox = await rail.boundingBox();
     expect(railBox,'rail is visible at '+width).not.toBeNull();
     expect(Math.abs(railBox!.width - expectedRailWidth),'rail width at '+width).toBeLessThanOrEqual(1);

@@ -14,12 +14,20 @@ import {transformSync} from 'esbuild';
 const officeRoot=process.env.WS3_OFFICE_SOURCE;
 assert.ok(officeRoot,'Office #270 exact source must be pinned');
 const secret='ws3-isolated-service-key-with-no-hosted-access';
+const isV2=process.env.WS3_TEST_TAXPAY_SOURCE==='v2';
+const testDispatchToken='isolated-demo-mirror-dispatch-token';
 const store=new Map(),keys=new Map(),office=new Map();
 const authorizationSource=new Map(),authorizationOffice=new Map();
 let authorizationSnapshotReads=0;
 const urls={};let failOfficeOnce=false,sourceReads=0;
 function dataAccess(origin,name,args={}){
  if(origin==='TAXPAY_SQL'){
+  if(name==='payment_v1_internal_bridge_config')return {
+   origin:'TAXPAY_SQL',enabled:!isV2,dispatchToken:testDispatchToken,
+   selfUrl:'https://'+(isV2?'gmuhitmaynfhipcvbvkh':'eyqhoavnitkrajvyqvxn')+'.supabase.co/functions/v1/payment-sync-bridge',
+   peerUrl:'https://ihbtabrvmyiwikqqbhrf.supabase.co/functions/v1/payment-sync-bridge'
+  };
+  if(name==='demo_story1_mirror_claim')return [];
   if(name==='demo_auth_public_snapshot'){
    authorizationSnapshotReads++;
    return authorizationSource.get(args.p_request)??null;
@@ -86,11 +94,11 @@ function loadHandler(file,origin){
  let handler=null;
  const cache=new Map();
  const deno={env:{get(key){
-  if(key==='SUPABASE_URL')return origin==='OFFICE_SQL'
-    ?'https://ihbtabrvmyiwikqqbhrf.supabase.co'
-    :(process.env.WS3_TEST_TAXPAY_SOURCE==='v2'
-      ?'https://gmuhitmaynfhipcvbvkh.supabase.co'
-      :'https://eyqhoavnitkrajvyqvxn.supabase.co');
+  // Expose the real allowlisted SOURCE identity to the handler, but never its
+   // network: routedFetch above maps all permitted hosts to local test servers.
+   if(key==='SUPABASE_URL')return origin==='TAXPAY_SQL'
+     ?(isV2?'https://gmuhitmaynfhipcvbvkh.supabase.co':'https://eyqhoavnitkrajvyqvxn.supabase.co')
+     :'https://ihbtabrvmyiwikqqbhrf.supabase.co';
   if(key==='SUPABASE_ANON_KEY')return 'local-publishable';
   if(key==='SUPABASE_SERVICE_ROLE_KEY')return secret;
   return null;
@@ -149,6 +157,17 @@ const servers=await Promise.all([
  start('OFFICE_SQL',officeRoot,'demo-story1-office')
 ]);
 try{
+ // The dedicated sim-only retry route is never an unauthenticated write.
+ const deniedSync=await post('TAXPAY_SQL','/demo-story1-taxpay/sync/reconcile',{});
+ assert.equal(deniedSync.status,401);
+ const allowedSync=await fetch(urls.TAXPAY_SQL+'/demo-story1-taxpay/sync/reconcile',{
+   method:'POST',headers:{'content-type':'application/json','X-Dispatch-Token':testDispatchToken},body:'{}'
+ });
+ assert.equal(allowedSync.status,200);
+ const syncResult=await allowedSync.json();
+ assert.equal(syncResult.data.claimed,0);
+ assert.equal(syncResult.data.simulationOnly,true);
+ // This tests only the dedicated Story 1 mirror and performs no financial bridge dispatch.
  const payerSession=randomUUID(),payerKey=randomUUID();
  const payload={
   idempotencyKey:payerKey,sessionId:payerSession,service:'OTHER_TAX_PAYMENT',
