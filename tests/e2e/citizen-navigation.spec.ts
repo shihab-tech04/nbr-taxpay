@@ -1,6 +1,5 @@
 import { mockPublishedBannerCms } from './mock-published-banners';
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
 import AxeBuilder from '@axe-core/playwright';
 
 test('public hero opens payment while standalone receipt search stays accessible',async({page})=>{
@@ -17,13 +16,13 @@ test('public hero opens payment while standalone receipt search stays accessible
  if(page.viewportSize()!.width>900) await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeHidden();
  await expect(page.locator('#public-how-it-works')).toBeHidden();
  await page.getByRole('button',{name:'Pay Tax'}).click();
- const services=page.getByRole('dialog',{name:'Pay Tax'});
- await expect(services).toBeVisible();
- await expect(services.locator('.tax-service-choice__card')).toHaveCount(2);
- await enterTaxPayService(services, 'TAX_WITH_RETURN');
+ const payment=page.getByRole('dialog',{name:'Pay Tax'});
+ await expect(payment.getByText('User ID')).toBeVisible();
+ await expect(payment.getByRole('button',{name:'Walk-in Payment'})).toBeVisible();
+ await payment.getByRole('button',{name:'Walk-in Payment'}).click();
  await expect(page).toHaveURL(/action=landing/);
- await expect(services.locator('.payment-form-section')).toHaveCount(1);
- await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
+ await expect(payment.locator('.taxpay-modal__title')).toHaveText('Taxpayer Information');
+ await expect(payment.getByRole('progressbar',{name:'Payment progress'})).toHaveAttribute('aria-valuemax','3');
 });
 
 test('guest cannot directly open taxpayer ledger or account activity', async ({page}) => {
