@@ -4,7 +4,7 @@ import '../../styles/taxpay-unified-table.css';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowRight, CalendarClock, Check, CircleAlert, ClipboardCheck, FileCheck2, FolderOpen,
-  Plane, ReceiptText, Scale, UserRound, UsersRound, WalletCards
+  Plane, ReceiptText, Scale, Trash2, UserRound, UsersRound, WalletCards
 } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
 import type { BannerPaymentService } from '../../services/taxState';
@@ -46,15 +46,18 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const { language, navigate, setPaymentServiceChoiceOpen, previewAccount, paymentBeneficiaryPrefill } = useTaxState();
   const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
   const multiBeneficiaryPrefill = (paymentBeneficiaryPrefill?.additional?.length ?? 0) > 0;
+  // A reviewed parallel selection can skip the redundant payer/service chooser,
+  // but GuestPayment still enforces its own contact, consent, and SQL gates.
+  const parallelEntry = Boolean(paymentBeneficiaryPrefill?.parallelSource && paymentBeneficiaryPrefill.parallelAllocations?.length);
   // A Travel Tax shortcut enters the existing passenger journey directly.
   const directTravelEntry = initialService === 'TRAVEL_TAX' && !initialDraft && !initialReuse;
-  const [payerForSelf, setPayerForSelf] = useState<boolean | null>(initialDraft ? (initialDraft.service === 'TRAVEL_TAX' ? true : initialDraft.form_payload.forSelf as boolean) : initialReuse ? initialReuse.formPayload.forSelf as boolean : paymentBeneficiaryPrefill ? false : null);
+  const [payerForSelf, setPayerForSelf] = useState<boolean | null>(initialDraft ? (initialDraft.service === 'TRAVEL_TAX' ? true : initialDraft.form_payload.forSelf as boolean) : initialReuse ? initialReuse.formPayload.forSelf as boolean : paymentBeneficiaryPrefill ? (paymentBeneficiaryPrefill.parallelSource ? Boolean(paymentBeneficiaryPrefill.parallelForSelf) : false) : null);
   const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialDraft ? (initialDraft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : initialReuse ? (initialReuse.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : paymentBeneficiaryPrefill ? 'OTHER_TAX' : initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
   // Other Tax is one entry choice. No follow-up subtype selection is collected here.
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
-  const [view, setView] = useState<'payer' | 'login' | 'payment'>(initialDraft || initialReuse || directTravelEntry ? 'payment' : 'payer');
+  const [view, setView] = useState<'payer' | 'login' | 'payment'>(initialDraft || initialReuse || directTravelEntry || parallelEntry ? 'payment' : 'payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
-  const [useAccount, setUseAccount] = useState(Boolean(initialDraft || initialReuse));
+  const [useAccount, setUseAccount] = useState(Boolean(initialDraft || initialReuse || (parallelEntry && (verifiedUser || previewAccount))));
   const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(null);
   // An existing signed-in session must always use the account journey.
   // Only signed-out users need to choose between account sign-in and walk-in.
@@ -359,18 +362,18 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
           <GuestPayment key={draftToResume ? 'payment-draft-' + draftToResume.id : initialReuse ? 'payment-reuse-' + initialReuse.sourcePaymentId : effectiveSelected + '-' + String(payerForSelf)}
             embedded initialCategory={effectiveSelected} initialForSelf={payerForSelf ?? undefined}
             initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
-            initialBeneficiary={payerForSelf === false ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
+            initialBeneficiary={payerForSelf === false || parallelEntry ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
             isWithholdingMode={effectiveSelected === 'SOURCE_TAX_DEPOSIT'}
             onBackToService={returnToService} onStageChange={reportStage} />
         ) : null}
       </section>}
       {exitPromptOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/50 px-4 py-6"
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 p-3 sm:p-6"
           data-testid="payment-draft-exit-overlay"
           onMouseDown={event => event.stopPropagation()}>
           <div role="alertdialog" aria-modal="true" aria-labelledby="payment-draft-exit-title"
             aria-describedby="payment-draft-exit-description"
-            className="max-h-[calc(100dvh-2rem)] w-full max-w-[440px] overflow-y-auto rounded-2xl border border-taxpay-border bg-white p-5 shadow-2xl sm:p-6"
+            className="box-border max-h-[calc(100dvh-24px)] w-full max-w-[440px] overflow-y-auto overscroll-contain rounded-2xl border border-taxpay-border bg-white p-5 shadow-xl sm:p-6"
             onKeyDown={event => {
               if (event.key === 'Escape') {
                 event.preventDefault();
@@ -397,14 +400,14 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
                 <h3 id="payment-draft-exit-title" className="text-lg font-semibold leading-6 text-taxpay-dark">
                   {tr('Save your tax payment?', 'কর পরিশোধের খসড়া সংরক্ষণ করবেন?')}
                 </h3>
-                <p id="payment-draft-exit-description" className="mt-2 text-sm leading-6 text-taxpay-muted">
+                <p id="payment-draft-exit-description" className="mt-1.5 text-sm leading-6 text-taxpay-muted">
                   {tr('Save a draft to continue later. Discarding will lose your unsaved changes.',
                     'পরে চালিয়ে যেতে খসড়া সংরক্ষণ করুন। বাদ দিলে অসংরক্ষিত পরিবর্তন হারিয়ে যাবে।')}
                 </p>
               </div>
             </div>
             {exitError && <p role="alert" className="mt-4 rounded-lg border border-taxpay-border px-3 py-2 text-sm text-taxpay-error">{exitError}</p>}
-            <div className="mt-6 grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2"
+            <div className="mt-5 grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2"
               data-testid="payment-draft-exit-cta-row">
               <button ref={exitFirstButtonRef} type="button" disabled={exitSaving}
                 className="min-h-11 w-full rounded-lg bg-taxpay-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-taxpay-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
@@ -417,11 +420,12 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
                 {tr('Keep editing', 'সম্পাদনা চালিয়ে যান')}
               </button>
             </div>
-            <div className="mt-5 border-t border-taxpay-border pt-3"
+            <div className="mt-4 border-t border-taxpay-border pt-3"
               data-testid="payment-draft-exit-discard-row">
               <button type="button" disabled={exitSaving}
-                className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-taxpay-error transition-colors hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface-subtle px-4 py-2.5 text-sm font-medium text-taxpay-error transition-colors hover:border-taxpay-error/30 hover:bg-taxpay-error/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
                 onClick={close}>
+                <Trash2 size={16} strokeWidth={1.8} aria-hidden="true" />
                 {tr('Discard tax payment', 'কর পরিশোধ বাদ দিন')}
               </button>
             </div>
