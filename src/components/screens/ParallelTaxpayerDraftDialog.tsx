@@ -285,9 +285,6 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
                 {t('Taxpayer details appear after search.', 'অনুসন্ধানের পরে করদাতার তথ্য দেখাবে।')}
               </p>}
           </div>
-          <p className="parallel-taxpayer-draft__disclaimer">{t(
-            'Simulation-only TIN catalogue; not official NBR identity verification. This list is saved only in this browser tab, not as account beneficiaries.',
-            'এটি শুধু নমুনা টিআইএন তালিকা, সরকারি এনবিআর পরিচয় যাচাই নয়। তালিকাটি শুধু এই ব্রাউজার ট্যাবে থাকে, অ্যাকাউন্টের উপকারভোগী হিসেবে নয়।')}</p>
         </section>
         <section className="parallel-taxpayer-draft__panel" aria-labelledby="parallel-draft-selected-title">
             <header className="parallel-taxpayer-draft__panel-heading">
