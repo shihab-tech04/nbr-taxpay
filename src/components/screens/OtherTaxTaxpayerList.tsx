@@ -140,7 +140,7 @@ export function OtherTaxTaxpayerList({
           tin={primaryTin}
           hideNameField={false}
           suggestedTins={progressive && !lockedPrimary ? suggestedTins.filter(tin => !additional.some(p => p.tin === tin)) : undefined}
-          name={simpleSelf && searchedTins.primary === primaryTin && lookupSampleTaxpayer(primaryTin)
+          name={searchedTins.primary === primaryTin && lookupSampleTaxpayer(primaryTin)
             ? (bn ? lookupSampleTaxpayer(primaryTin)!.nameBn : lookupSampleTaxpayer(primaryTin)!.nameEn) : primaryName}
           maxTinLength={lockedPrimary || allowSyntheticDemoTin ? 13 : 12}
           tinPlaceholder={allowSyntheticDemoTin ? (bn ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : (bn ? '১২ সংখ্যার টিআইএন' : '12-digit TIN')}
