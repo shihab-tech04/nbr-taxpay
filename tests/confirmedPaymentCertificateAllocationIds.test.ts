@@ -49,7 +49,7 @@ function confirm(details:Record<string,unknown>):ChallanReceipt{
 }
 
 test('F-178 / US-181: SQL challan remarks survive receipt readback and override a stale display snapshot',()=>{
-  const remarks='Payment explanation 2026-27.\\nবাংলা করদাতার মন্তব্য; বিস্তারিত হিসাব।';
+  const remarks='Payment explanation 2026-27.\nবাংলা করদাতার মন্তব্য; বিস্তারিত হিসাব।';
   const details=validDetails();
   details.challanRemarks=remarks;
   details.paymentRemarks='Legacy alias';
@@ -57,7 +57,7 @@ test('F-178 / US-181: SQL challan remarks survive receipt readback and override 
   const original=structuredClone(details);
   const receipt=confirm(details);
   assert.ok(remarks.length>20);
-  assert.ok(remarks.includes('\\n'));
+  assert.ok(remarks.includes('\n'));
   assert.equal(receipt.paymentRemarks,remarks);
   assert.deepEqual(details,original);
 
