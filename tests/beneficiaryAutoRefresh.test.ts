@@ -75,5 +75,5 @@ test('beneficiary interface keys all private rows and editing state by active ow
   assert.match(source,/const ownerScope=beneficiaryWorkspaceOwnerScope\(/);
   assert.match(source,/return <BeneficiariesForOwner key=\{ownerScope\}\/>/);
   assert.match(source,/function BeneficiariesForOwner\(\)/);
-  assert.match(source,/previewSessionId:session\?\.profileId===previewAccount\?\.id\?session\.paymentSessionId:null/);
+  assert.match(source,/previewSessionId:session&&session\.profileId===previewAccount\?\.id\?session\.paymentSessionId:null/);
 });
