@@ -96,3 +96,20 @@ test('WS2 saved drafts use full owner-scoped pages and never a 30-row UI limit',
   assert.match(source,/drafts: draftNotices/);
   assert.doesNotMatch(reader,/\.limit\(30\)/);
 });
+
+test('WS2 notice acknowledgement uses the click-time observation boundary',()=>{
+  const source=readFileSync('src/components/screens/AccountCenter.tsx','utf8');
+  const start=source.indexOf('const markViewed = async () => {');
+  const stop=source.indexOf('const signOut = async',start);
+  assert.ok(start>=0&&stop>start);
+  const action=source.slice(start,stop);
+  const boundary=action.indexOf('const confirmedReadAt=new Date().toISOString()');
+  const firstAwait=action.indexOf('await checkCurrent()');
+  const select=action.indexOf('const unread=currentNotices');
+  const persist=action.indexOf('taxpay_notifications_read_at:confirmedReadAt');
+  assert.ok(boundary>=0&&firstAwait>boundary&&select>firstAwait&&persist>select,
+    'The timestamp must be fixed when the user acts, not after SQL writes.');
+  assert.match(action,/Date\.parse\(item\.created_at\)<=Date\.parse\(confirmedReadAt\)/);
+  assert.match(action,/unread\.includes\(item\.id\)\?\{\.\.\.item,is_read:true\}:item/);
+  assert.doesNotMatch(action,/currentNotices\.map\(item=>\(\{\.\.\.item,is_read:true\}\)\)/);
+});
