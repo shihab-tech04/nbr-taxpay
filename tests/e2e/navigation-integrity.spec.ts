@@ -331,14 +331,16 @@ test('unknown destination falls back to Home without leaving an incorrect URL',a
 
 test('a sample taxpayer preview restores only its own browser-history entry',async({page})=>{
   await page.goto('/?action=taxpayer_home');
-  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
+  await expect(page.locator('#public-home-title')).toBeVisible();
   await page.getByRole('button',{name:'Explore taxpayer workspace'}).click();
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   // The preview is not account authentication or a transferable URL credential.
   await page.goto('/?action=ledger');
-  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Private taxpayer workspace'})).toHaveCount(0);
+  await expect(page.locator('#public-home-title')).toBeVisible();
 });
 
 test('TaxPay rejects Office Management destinations at every direct route entry',async({page})=>{
