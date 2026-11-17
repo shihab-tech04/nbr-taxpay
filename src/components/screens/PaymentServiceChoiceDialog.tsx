@@ -42,7 +42,7 @@ export const TAXPAY_ENTRY_CHOICES = [
   { id: 'OTHER_TAX', Icon: WalletCards, en: 'Other Tax', bn: 'অন্যান্য কর', detailEn: 'Other tax payments.', detailBn: 'অন্যান্য কর পরিশোধ।' }
 ] as const;
 
-export function PaymentServiceChoiceDialog({ initialService = null, initialDraft = null, initialReuse = null, onDismiss }: { initialService?: BannerPaymentService | null; initialDraft?: PaymentFormDraft | null; initialReuse?: PaymentReuse | null; onDismiss?: () => void }) {
+export function PaymentServiceChoiceDialog({ initialService = null, initialDraft = null, initialReuse = null, onDismiss, onOpenParallel }: { initialService?: BannerPaymentService | null; initialDraft?: PaymentFormDraft | null; initialReuse?: PaymentReuse | null; onDismiss?: () => void; onOpenParallel?: () => void }) {
   const { language, navigate, setPaymentServiceChoiceOpen, previewAccount, paymentBeneficiaryPrefill } = useTaxState();
   const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
   const multiBeneficiaryPrefill = (paymentBeneficiaryPrefill?.additional?.length ?? 0) > 0;
@@ -327,6 +327,13 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
                  {tr('Multiple saved taxpayers are selected. Their payment heads and amounts will be allocated separately in Other Tax.','একাধিক সংরক্ষিত করদাতা নির্বাচিত। Other Tax-এ প্রত্যেকের খাত ও পরিমাণ আলাদাভাবে নির্ধারণ করা হবে।')}
                </p>}
              </div>
+             {topLevel === 'OTHER_TAX' && !paymentBeneficiaryPrefill && onOpenParallel && (
+               <button type="button" className="tax-service-choice__saved-drafts"
+                 data-testid="open-parallel-taxpayer-draft" onClick={onOpenParallel}>
+                 <UsersRound size={17} aria-hidden="true" />
+                 {tr('Pay for multiple taxpayers', 'একাধিক করদাতার কর পরিশোধ')}
+               </button>
+             )}
            </div>}
            {payerForSelf !== null && topLevel !== null && !alreadySignedIn && !accountLoading && (
                <div className="tax-service-choice__progressive-section" data-entry-section="access">
