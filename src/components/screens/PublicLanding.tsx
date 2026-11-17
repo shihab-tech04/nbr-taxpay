@@ -257,7 +257,8 @@ export const PublicLanding: React.FC = () => {
               <p id={`public-benefit-detail-${id}`}>{detail}</p>
             </div>
           </article>
-        ))}     </div>
+        ))}
+      </div>
     </section>
 
     {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} /></React.Suspense>}
