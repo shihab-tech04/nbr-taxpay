@@ -1,9 +1,10 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { fillTravelDetails } from './travel-tax-test-helper';
 import { expect, test } from '@playwright/test';
 
 test('payer relationship is required at entry and head choice is still validated in Step 2', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog.getByRole('button', { name: 'Continue', exact: true })).toBeDisabled();
   await dialog.locator('[data-payer-relationship="OTHER"]').click();
@@ -89,7 +90,7 @@ for (const locale of ['en', 'bn'] as const) {
   test('Other Tax payer and taxpayer sections use concise grouped copy (' + locale + ')', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(locale === 'bn' ? '/?action=landing&lang=bn' : '/?action=landing');
-    await page.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax', exact: true }).first().click();
+    await openLegacyTaxServiceChoice(page);
     const modal = page.getByRole('dialog', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax' });
     await modal.locator('[data-payer-relationship="OTHER"]').click();
     await modal.locator('[data-payment-entry="OTHER_TAX"]').click();
