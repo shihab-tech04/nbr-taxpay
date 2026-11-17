@@ -53,10 +53,7 @@
 .parallel-taxpayer-draft--taxpayers .parallel-taxpayer-draft__intro {
   margin: 0 0 12px;
 }
-.parallel-taxpayer-draft--taxpayers .parallel-taxpayer-draft__disclaimer {
-  margin-block-start: auto;
-  padding-block-start: 16px;
-}
+
 .parallel-taxpayer-draft__panel-heading {
   margin-bottom: 14px;
 }
@@ -106,8 +103,10 @@
   display: grid;
   gap: 7px;
   min-width: 0;
-  border-top: 1px solid var(--citizen-border);
-  padding-block-start: 14px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: var(--citizen-surface);
   color: var(--citizen-muted);
   font-size: 14px;
   line-height: 1.6;

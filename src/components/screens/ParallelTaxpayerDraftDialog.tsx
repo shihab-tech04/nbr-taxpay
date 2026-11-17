@@ -90,12 +90,12 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
       setTaxpayers(restored.taxpayers);
       setLines(restored.lines);
       setRestoreNotice(restored.taxpayers.length
-        ? t('Your earlier taxpayer selection was restored in this tab.', 'এই ট্যাবে আগের করদাতার তালিকা ফিরিয়ে আনা হয়েছে।') : '');
+        ? t('Selection restored.', 'আগের তালিকা ফিরেছে।') : '');
     } catch {
       try { sessionStorage.removeItem(storageKey); } catch { /* Storage can be unavailable. */ }
       setTaxpayers([]); setLines([]);
-      setRestoreNotice(t('A previous draft could not be recovered; start with a new taxpayer selection.',
-        'আগের খসড়া ফিরিয়ে আনা যায়নি; নতুন করে করদাতা নির্বাচন করুন।'));
+      setRestoreNotice(t('Selection could not be restored. Start again.',
+        'তালিকা ফেরানো যায়নি। আবার শুরু করুন।'));
     }
     setRestoredScope(scope);
   }, [scope, checkingAccount]);
@@ -107,8 +107,8 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
         version: 1, tins: taxpayers.map(person => person.tin), lines,
       }));
     } catch {
-      setRestoreNotice(t('Same-tab recovery is unavailable; keep this page open until continuing.',
-        'এই ট্যাবে খসড়া সংরক্ষণ করা যাচ্ছে না; এগোনো পর্যন্ত পৃষ্ঠাটি খোলা রাখুন।'));
+      setRestoreNotice(t('Draft not saved. Keep this tab open.',
+        'খসড়া সংরক্ষিত হয়নি। ট্যাবটি খোলা রাখুন।'));
     }
   }, [checkingAccount, scope, restoredScope, storageKey, taxpayers, lines]);
   useEffect(() => { if (lastRemoved) undoRef.current?.focus(); }, [lastRemoved]);
@@ -141,8 +141,8 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
     setSearchedTin(tin);
     const found = canSearchTin ? lookupSampleTaxpayer(tin) : null;
     setError(found ? '' : t(
-      'TIN not found in the simulation catalogue. Check and search again.',
-      'নমুনা করদাতার তালিকায় টিআইএন পাওয়া যায়নি। যাচাই করে আবার খুঁজুন।'));
+      'TIN not found. Check and try again.',
+      'টিআইএন পাওয়া যায়নি। যাচাই করে আবার চেষ্টা করুন।'));
   };
   const addTaxpayer = () => {
     if (!result || alreadyAdded || taxpayers.length >= MAX_TAXPAYERS) return;
@@ -253,8 +253,8 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
             <h3 id="parallel-draft-add-title">{t('Add taxpayer', 'করদাতা যোগ করুন')}</h3>
           </header>
           <p className="parallel-taxpayer-draft__intro">
-            {t('Search by TIN and add taxpayers to this payment.',
-              'টিআইএন দিয়ে খুঁজে এই পেমেন্টে করদাতা যোগ করুন।')}
+            {t('Enter a TIN and search.',
+              'টিআইএন লিখে খুঁজুন।')}
           </p>
           {restoreNotice && <p className="parallel-taxpayer-draft__notice" role="status">{restoreNotice}</p>}
           <div className="parallel-taxpayer-draft__panel-body">
@@ -281,13 +281,8 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
                   {alreadyAdded ? t('Already added', 'আগেই যোগ করা হয়েছে') :
                     t('+ Add Taxpayer', '+ করদাতা যোগ করুন')}
                 </button>
-              </div> : <p className="parallel-taxpayer-draft__search-placeholder" role="status">
-                {t('Taxpayer details appear after search.', 'অনুসন্ধানের পরে করদাতার তথ্য দেখাবে।')}
-              </p>}
+              </div> : null}
           </div>
-          <p className="parallel-taxpayer-draft__disclaimer">{t(
-            'Simulation-only TIN catalogue; not official NBR identity verification. This list is saved only in this browser tab, not as account beneficiaries.',
-            'এটি শুধু নমুনা টিআইএন তালিকা, সরকারি এনবিআর পরিচয় যাচাই নয়। তালিকাটি শুধু এই ব্রাউজার ট্যাবে থাকে, অ্যাকাউন্টের উপকারভোগী হিসেবে নয়।')}</p>
         </section>
         <section className="parallel-taxpayer-draft__panel" aria-labelledby="parallel-draft-selected-title">
             <header className="parallel-taxpayer-draft__panel-heading">
@@ -297,9 +292,7 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
             </header>
             {!selectedCount ? <div className="parallel-taxpayer-draft__empty" data-testid="parallel-taxpayer-empty">
               <UsersRound size={32} strokeWidth={1.5} aria-hidden="true"/>
-              <strong>{t('No taxpayers added yet', 'এখনো কোনো করদাতা যোগ করা হয়নি')}</strong>
-              <p>{t('Add a taxpayer to see them here.',
-                'করদাতা যোগ করলে এখানে দেখা যাবে।')}</p>
+              <strong>{t('No taxpayers added', 'কোনো করদাতা যোগ হয়নি')}</strong>
             </div> : <div className="parallel-taxpayer-draft__table-scroll">
               <table className="parallel-taxpayer-draft__table">
                 <thead><tr><th scope="col">{t('Taxpayer', 'করদাতা')}</th>
