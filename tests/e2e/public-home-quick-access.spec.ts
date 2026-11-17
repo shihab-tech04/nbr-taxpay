@@ -1133,6 +1133,6 @@ test('parallel taxpayer session draft restores after close and refresh without c
   await page.getByRole('button',{name:'Open parallel taxpayer entry'}).click();
   draft=page.getByRole('dialog',{name:'All Tax Payments — parallel draft'});
   await expect(draft.locator('.parallel-taxpayer-draft__table tbody tr')).toHaveCount(1);
-  await expect(draft).toContainText('Your earlier taxpayer selection was restored');
+  await expect(draft).toContainText('Selection restored.');
   await draft.getByRole('button',{name:'Close parallel draft'}).click();
 });
