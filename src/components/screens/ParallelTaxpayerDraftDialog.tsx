@@ -16,7 +16,7 @@ import { TaxpayerTinLookup } from '../ui/TaxpayerTinLookup';
 import { TaxPayModal } from '../ui/TaxPayModal';
 
 type DraftTaxpayer = NonNullable<ReturnType<typeof lookupSampleTaxpayer>>;
-type RemovedTaxpayer = { person: DraftTaxpayer; index: number };
+type RemovedTaxpayer = { person: DraftTaxpayer; index: number; allocations: OtherTaxAllocation[] };
 const maskedTin = (tin: string) => tin.slice(0, 3) + '****';
 const MAX_TAXPAYERS = 30;
 
@@ -111,6 +111,10 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
     }
   }, [checkingAccount, scope, restoredScope, storageKey, taxpayers, lines]);
   useEffect(() => { if (lastRemoved) undoRef.current?.focus(); }, [lastRemoved]);
+  useEffect(() => {
+    if (stage === 2) document.getElementById('parallel-heads-intro')?.focus();
+    if (stage === 3) document.getElementById('parallel-review-heading')?.focus();
+  }, [stage]);
 
   const result = searchedTin === tin ? lookupSampleTaxpayer(searchedTin) : null;
   const alreadyAdded = Boolean(result && taxpayers.some(person => person.tin === result.tin));
@@ -144,7 +148,8 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
   const deleteTaxpayer = (selectedTin: string) => {
     const index = taxpayers.findIndex(person => person.tin === selectedTin);
     if (index < 0) return;
-    setLastRemoved({person:taxpayers[index],index});
+    setLastRemoved({person:taxpayers[index],index,
+      allocations: lines.filter(line => line.taxpayerId === selectedTin)});
     setTaxpayers(current => current.filter(person => person.tin !== selectedTin));
     setLines(current => current.filter(line => line.taxpayerId !== selectedTin));
     setRevealed(current => current.filter(value => value !== selectedTin));
@@ -158,8 +163,11 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
       next.splice(Math.min(lastRemoved.index,next.length),0,lastRemoved.person);
       return next;
     });
+    const restored = lastRemoved.allocations;
+    setLines(current => [...current, ...restored.filter(line => !current.some(other =>
+      other.taxpayerId === line.taxpayerId && other.headId === line.headId &&
+      other.assessmentYear === line.assessmentYear))]);
     setLastRemoved(null);
-    // Allocations cannot be restored by a guessed row: the user must review them.
     document.getElementById('parallel-taxpayer-tin')?.focus();
   };
   const toggleTin = (selectedTin: string) =>
@@ -328,7 +336,7 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
           'Simulation-only TIN catalogue; not official NBR identity verification. This list is saved only in this browser tab, not as account beneficiaries.',
           'এটি শুধু নমুনা টিআইএন তালিকা, সরকারি এনবিআর পরিচয় যাচাই নয়। তালিকাটি শুধু এই ব্রাউজার ট্যাবে থাকে, অ্যাকাউন্টের উপকারভোগী হিসেবে নয়।')}</p>
       </> : stage === 2 ? <section data-testid="parallel-tax-head-boundary">
-        <p className="parallel-taxpayer-draft__intro">{t(
+        <p id="parallel-heads-intro" tabIndex={-1} className="parallel-taxpayer-draft__intro">{t(
           'Choose payment heads, assessment years and amounts for each selected taxpayer.',
           'প্রতিটি করদাতার জন্য খাত, করবর্ষ ও পরিমাণ নির্বাচন করুন।')}</p>
         <OtherTaxBatchComposer language={language} taxpayers={previewTaxpayers} lines={lines}
@@ -338,7 +346,7 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
           'রিটার্নসহ কর আলাদা সেবা, শুধু একজন করদাতার জন্য; অন্য খাতের সঙ্গে মেশানো যাবে না।')}</p>
       </section> : <section className="parallel-taxpayer-draft__next"
         data-testid="parallel-allocation-review">
-        <h3>{t('Review selected allocations', 'নির্বাচিত বরাদ্দ পর্যালোচনা করুন')}</h3>
+        <h3 id="parallel-review-heading" tabIndex={-1}>{t('Review selected allocations', 'নির্বাচিত বরাদ্দ পর্যালোচনা করুন')}</h3>
         <p>{t('Each row is kept with its taxpayer, payment head, assessment year and amount.',
           'প্রতিটি সারিতে করদাতা, করের খাত, করবর্ষ ও পরিমাণ সংরক্ষিত আছে।')}</p>
         <div className="parallel-taxpayer-draft__table-scroll">
