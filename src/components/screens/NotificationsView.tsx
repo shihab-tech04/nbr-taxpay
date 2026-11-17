@@ -197,7 +197,7 @@ export const NotificationsView:React.FC=()=>{
   };
   const markRead=async (notice:SimulationNotice)=>{
     const requestOwner:NoticeOwnerIdentity={authUid:authenticatedUser?.id??null,profileId:id??null};
-    if(!privateMode||boundOwnerUid!==requestOwner.authUid||noticeOwner!==id||
+    if(!privateMode||boundOwnerUid!==requestOwner.authUid||noticeOwner!==noticeIdentity||
       !isCurrentNoticeOwner(requestOwner,currentNoticeIdentity.current)||busyNotice!==null)return;
     setBusyNotice(notice.id);setError('');
     try{
@@ -369,7 +369,7 @@ export const NotificationsView:React.FC=()=>{
           ]}/>}
     </section>
     <SessionPaymentNotifications language={language}/>
-    {selectedPayment&&id&&noticeOwner===id&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}
+    {selectedPayment&&id&&noticeOwner===noticeIdentity&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}
       onClose={()=>setSelectedPayment(null)} hideFooter className="taxpayer-transaction-detail">
       <PaymentLifecycleDetails record={selectedPayment} language={language}/>
     </TaxPayModal>}
