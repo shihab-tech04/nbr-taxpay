@@ -46,15 +46,18 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const { language, navigate, setPaymentServiceChoiceOpen, previewAccount, paymentBeneficiaryPrefill } = useTaxState();
   const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
   const multiBeneficiaryPrefill = (paymentBeneficiaryPrefill?.additional?.length ?? 0) > 0;
+  // A reviewed parallel selection can skip the redundant payer/service chooser,
+  // but GuestPayment still enforces its own contact, consent, and SQL gates.
+  const parallelEntry = Boolean(paymentBeneficiaryPrefill?.parallelSource && paymentBeneficiaryPrefill.parallelAllocations?.length);
   // A Travel Tax shortcut enters the existing passenger journey directly.
   const directTravelEntry = initialService === 'TRAVEL_TAX' && !initialDraft && !initialReuse;
-  const [payerForSelf, setPayerForSelf] = useState<boolean | null>(initialDraft ? (initialDraft.service === 'TRAVEL_TAX' ? true : initialDraft.form_payload.forSelf as boolean) : initialReuse ? initialReuse.formPayload.forSelf as boolean : paymentBeneficiaryPrefill ? false : null);
+  const [payerForSelf, setPayerForSelf] = useState<boolean | null>(initialDraft ? (initialDraft.service === 'TRAVEL_TAX' ? true : initialDraft.form_payload.forSelf as boolean) : initialReuse ? initialReuse.formPayload.forSelf as boolean : paymentBeneficiaryPrefill ? (paymentBeneficiaryPrefill.parallelSource ? Boolean(paymentBeneficiaryPrefill.parallelForSelf) : false) : null);
   const [topLevel, setTopLevel] = useState<TopLevelService | null>(initialDraft ? (initialDraft.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : initialReuse ? (initialReuse.service === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : paymentBeneficiaryPrefill ? 'OTHER_TAX' : initialService ? (initialService === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : 'OTHER_TAX') : null);
   // Other Tax is one entry choice. No follow-up subtype selection is collected here.
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
-  const [view, setView] = useState<'payer' | 'login' | 'payment'>(initialDraft || initialReuse || directTravelEntry ? 'payment' : 'payer');
+  const [view, setView] = useState<'payer' | 'login' | 'payment'>(initialDraft || initialReuse || directTravelEntry || parallelEntry ? 'payment' : 'payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
-  const [useAccount, setUseAccount] = useState(Boolean(initialDraft || initialReuse));
+  const [useAccount, setUseAccount] = useState(Boolean(initialDraft || initialReuse || (parallelEntry && (verifiedUser || previewAccount))));
   const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(null);
   // An existing signed-in session must always use the account journey.
   // Only signed-out users need to choose between account sign-in and walk-in.
@@ -359,7 +362,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
           <GuestPayment key={draftToResume ? 'payment-draft-' + draftToResume.id : initialReuse ? 'payment-reuse-' + initialReuse.sourcePaymentId : effectiveSelected + '-' + String(payerForSelf)}
             embedded initialCategory={effectiveSelected} initialForSelf={payerForSelf ?? undefined}
             initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
-            initialBeneficiary={payerForSelf === false ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
+            initialBeneficiary={payerForSelf === false || parallelEntry ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
             isWithholdingMode={effectiveSelected === 'SOURCE_TAX_DEPOSIT'}
             onBackToService={returnToService} onStageChange={reportStage} />
         ) : null}

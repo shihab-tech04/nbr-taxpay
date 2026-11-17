@@ -13,6 +13,7 @@ import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../serv
 import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
 import {reuseRecordedPayment,reuseLegacySingleHeadPayment,type PaymentReuse} from '../../services/paymentReuse';
 import {ReceiptView} from '../common/ReceiptView';
+import {CorrectionRequests} from './CorrectionRequests';
 import type {ChallanReceipt} from '../../types/tax';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {DEMO_USERS} from '../../data/demoUsers';
@@ -257,7 +258,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [sqlPayments,setSqlPayments]=useState<OwnedStoryPayment[]>([]);
   const [sqlLoadError,setSqlLoadError]=useState(false);
   useEffect(()=>{
-    if(!['history','taxpayer_home','dashboard'].includes(route)||previewAccount?.id!=='user1'||activePreviewSession()?.profileId!=='user1'){
+    if(!['history','taxpayer_home','dashboard','corrections'].includes(route)||previewAccount?.id!=='user1'||activePreviewSession()?.profileId!=='user1'){
       setSqlPayments([]);setSqlLoadError(false);return;
     }
     let active=true;
@@ -401,6 +402,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         activePreviewSession()?.profileId!=='user1')return;
     setSelected(null);
     startPaymentReuse(item.sql.reuse);
+  };
+  const applyForCorrection=(item:RecordItem)=>{
+    // A route hint never authorizes a correction. Only a currently owned SQL
+    // receipt can be offered; the existing request form validates its source.
+    if(!item.sql?.receipts.length || !authorizedPreviewScenario)return;
+    setSelected(null);
+    navigate('corrections',{applyForCorrection:true,
+      originalReference:item.sql.receipts[0].challanNo});
   };
   const rowActions=(item:RecordItem)=><div className="flex flex-wrap items-center gap-2">
     <button type="button" onClick={()=>setSelected(item)}
@@ -1013,7 +1022,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <button type="button" className={action+' mt-3'} onClick={()=>navigate('account_profile')}>{tr('View profile','প্রোফাইল দেখুন')}<ArrowRight size={16} aria-hidden="true"/></button>
     </div>
   </section>;
-  const content=route==='ledger'?ledger:route==='history'?transactionList:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
+  const content=route==='ledger'?ledger:route==='history'?transactionList:route==='certificates'?documents:
+    route==='corrections'&&(routeParams?.applyForCorrection===true&&authorizedPreviewScenario)
+      ?<CorrectionRequests recordedReceipts={sqlRows.flatMap(row=>row.sql?.receipts??[])}
+        preferredReference={typeof routeParams.originalReference==='string'?routeParams.originalReference:''}/>
+      :route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-taxpay-register-page={["history","ledger","certificates","corrections"].includes(route)?"true":undefined} data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
     {overviewRoute && <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
       <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
@@ -1028,20 +1041,21 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       onClose={() => setSelected(null)}
       closeIconLabel={tr('Close transaction details','লেনদেনের বিস্তারিত বন্ধ করুন')}
       className="taxpayer-transaction-detail"
-      hideFooter
+      hideFooter={!selected.sql}
+      footer={<></>}
     >
       {selected.sql?<section className="space-y-4">
         <p className="break-all text-sm text-taxpay-muted">{tr('Recorded payment','সংরক্ষিত পেমেন্ট')}: {selected.ref}</p>
         {selected.sql.receipts.length
-          ?selected.sql.receipts.map(receipt=><ReceiptView receipt={receipt}
-            key={receipt.paymentTransactionId} embedded/>)
+          ?selected.sql.receipts.map((receipt,index)=><ReceiptView receipt={receipt}
+            key={receipt.paymentTransactionId} embedded suppressFooterActions={index>0}
+            payAgainTestId="recorded-pay-again-detail"
+            transactionActions={index===0}
+            onPayAgain={index===0&&selected.sql?.reuse?()=>payAgain(selected):undefined}
+            onApplyForCorrection={index===0?()=>applyForCorrection(selected):undefined}/>)
           :<p role="status">{tr('Original allocations unavailable; payment cannot be repeated.',
             'আগের বরাদ্দের তথ্য নেই; পেমেন্ট পুনরায় করা যাবে না।')}</p>}
-        <div className="flex justify-end">
-          <button type="button" data-testid="recorded-pay-again-detail"
-            disabled={!selected.sql.reuse} onClick={()=>payAgain(selected)}
-            className={action+' disabled:opacity-50'}>{tr('Pay Again','আবার পরিশোধ')}</button>
-        </div>
+
       </section>:<PaymentLifecycleDetails language={language} record={{
         reference:selected.ref,taxEventId:selected.id,challanNo:selected.challan,
         payerName:selected.kind==='income'?DEMO_USERS.user1.nameEn:undefined,
