@@ -48,6 +48,26 @@ function confirm(details:Record<string,unknown>):ChallanReceipt{
   });
 }
 
+test('F-178 / US-181: SQL challan remarks survive receipt readback and override a stale display snapshot',()=>{
+  const remarks='Payment explanation 2026-27.\\nবাংলা করদাতার মন্তব্য; বিস্তারিত হিসাব।';
+  const details=validDetails();
+  details.challanRemarks=remarks;
+  details.paymentRemarks='Legacy alias';
+  (details.receiptSnapshot as Record<string,unknown>).paymentRemarks='Old display note';
+  const original=structuredClone(details);
+  const receipt=confirm(details);
+  assert.ok(remarks.length>20);
+  assert.ok(remarks.includes('\\n'));
+  assert.equal(receipt.paymentRemarks,remarks);
+  assert.deepEqual(details,original);
+
+  // Older parents without a display snapshot use the same canonical note.
+  delete details.receiptSnapshot;
+  assert.equal(confirm(details).paymentRemarks,remarks);
+  delete details.challanRemarks;
+  assert.equal(confirm(details).paymentRemarks,'Legacy alias');
+});
+
 test('confirmed v3 certificate reconstruction retains the saved allocation identities and exact amounts',()=>{
   const receipt=confirm(validDetails());
   assert.deepEqual(receipt.allocationItems?.map(item=>item.allocationId),['one','two']);
