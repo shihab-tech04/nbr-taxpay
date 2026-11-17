@@ -20,7 +20,7 @@ test('missing authorized profile retains all 24 fields and a clear English empty
  assert.match(output,/Tax office and jurisdiction/);
  assert.match(output,/Contact and addresses/);
  assert.match(output,/Certificate and account records/);
- assert.doesNotMatch(output,/(?:undefined|null|DEMO-TIN-d{3})/);
+ assert.doesNotMatch(output,/\b(?:undefined|null|DEMO-TIN-\d{3})\b/);
 });
 
 test('missing authorized profile retains identical 24 fields and Bengali empty state',()=>{
