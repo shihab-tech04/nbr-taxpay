@@ -41,6 +41,23 @@ function missingCorrectionNoticeColumns(error: { code?: string; message?: string
   ));
 }
 
+/** The notification register must not hide draft activity after the 30th draft. */
+async function readDraftNotices(client: NonNullable<typeof supabase>, uid: string): Promise<DraftNotice[]> {
+  return collectAccountNotificationPages<DraftNotice>(async(from,to)=>{
+    const result=await client.from('taxpay_payment_drafts')
+      .select('id,owner_uid,created_at,category,assessment_year')
+      .eq('owner_uid',uid).order('created_at',{ascending:false})
+      .order('id',{ascending:false}).range(from,to);
+    if(result.error)throw result.error;
+    const rows=(result.data??[]) as DraftNotice[];
+    if(rows.some(row=>row.owner_uid!==uid||
+      typeof row.category!=='string'||typeof row.assessment_year!=='string'||
+      !Number.isFinite(Date.parse(row.created_at))))
+      throw Error('Saved account draft notices could not be verified.');
+    return rows;
+  });
+}
+
 async function readReviewNotices(client: NonNullable<typeof supabase>, uid: string): Promise<ReviewNotice[]> {
   let columns=reviewNoticeSelect;
   const notices=await collectAccountNotificationPages<ReviewNotice>(async(from,to)=>{
@@ -229,18 +246,16 @@ export function AccountCenter({ page }: { page: AccountPage }) {
       return (async () => {
       const { data: auth, error: authError } = await client.auth.getUser();
       if (authError || auth.user?.id !== uid) throw new Error('Account session expired');
-      const [draftResult, reviewResult] = await Promise.all([
-        client.from('taxpay_payment_drafts').select('id,owner_uid,created_at,category,assessment_year')
-          .eq('owner_uid', uid).order('created_at', { ascending: false }).limit(30),
-        readReviewNotices(client, uid)
+      const [draftNotices, reviewResult] = await Promise.all([
+        readDraftNotices(client,uid),
+        readReviewNotices(client,uid)
       ]);
-      if (draftResult.error) throw draftResult.error;
       const { data: stillCurrent, error: rereadError } = await client.auth.getUser();
       if (rereadError || stillCurrent.user?.id !== uid) throw new Error('Account session changed');
       if (!active || !refreshGate.isLatest(requestId)) return;
       if (!isCurrentUid(uid)) return;
       setNoticeSnapshot({ownerUid: uid,
-        drafts: (draftResult.data ?? []).filter((item: DraftNotice) => item.owner_uid === uid),
+        drafts: draftNotices,
         reviews: reviewResult});
       setLoadState('ready');
       })().catch(() => {
