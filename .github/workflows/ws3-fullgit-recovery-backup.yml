@@ -1,0 +1,52 @@
+name: WS3 independent full Git history release backup
+on:
+  push:
+    branches:
+      - release/taxpay-correction-notifications-20261101
+    paths:
+      - '.github/workflows/ws3-fullgit-recovery-backup.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  full-history-checkpoint:
+    name: Full-history Git bundle, SHA256 and restore proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout full Git history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Archive all refs, verify SHA256 and test Git restoration
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-recovery
+          WS3_BRANCH='release/taxpay-correction-notifications-20261101'
+          test ! -f .git/shallow
+          MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
+          WS3_SHA="$(git rev-parse HEAD)"
+          test "$WS3_SHA" = "$GITHUB_SHA"
+          git branch --force main refs/remotes/origin/main
+          git show-ref --verify "refs/heads/$WS3_BRANCH"
+          git bundle create release-recovery/sohojkor-taxpayer-full-history.bundle --all
+          git bundle verify release-recovery/sohojkor-taxpayer-full-history.bundle
+          (cd release-recovery && sha256sum sohojkor-taxpayer-full-history.bundle > bundle.sha256)
+          (cd release-recovery && sha256sum --check bundle.sha256)
+          git clone --mirror release-recovery/sohojkor-taxpayer-full-history.bundle /tmp/ws3-sohojkor-restore.git
+          test "$(git -C /tmp/ws3-sohojkor-restore.git rev-parse refs/heads/main)" = "$MAIN_SHA"
+          test "$(git -C /tmp/ws3-sohojkor-restore.git rev-parse "refs/heads/$WS3_BRANCH")" = "$WS3_SHA"
+          git -C /tmp/ws3-sohojkor-restore.git fsck --full --no-reflogs
+          printf 'repository=shihab-tech04/nbr-taxpay\nmain_sha=%s\nws3_branch=%s\nws3_sha=%s\nrestore_main=PASS\nrestore_ws3=PASS\ngit_fsck=PASS\n' "$MAIN_SHA" "$WS3_BRANCH" "$WS3_SHA" > release-recovery/manifest.txt
+          cat release-recovery/manifest.txt
+          cat release-recovery/bundle.sha256
+      - name: Upload independently restorable Git history bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: ws3-sohojkor-full-git-history-${{ github.run_id }}
+          path: release-recovery/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 14
