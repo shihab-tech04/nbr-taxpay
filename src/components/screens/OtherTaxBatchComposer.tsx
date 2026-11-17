@@ -97,7 +97,9 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     ? activeTaxpayer : taxpayers[0]?.id;
   const activeLines = lines.filter(line => line.taxpayerId === activeId);
   const search = query.trim().toLocaleLowerCase();
-  const count = grouped.reduce((n, group) => n + group.rows.length, 0);
+  const count = grouped.reduce((n, group) => n + (maskTaxpayerTin
+    ? group.rows.filter(head => isOtherTaxHeadEligible(head.id)).length
+    : group.rows.length), 0);
   const usedTotal = otherTaxAllocationTotal(lines);
   const isIncomplete = (line: OtherTaxAllocation) =>
     otherTaxAllocationAmount(line) === null || !isOtherTaxHeadEligible(line.headId) ||
