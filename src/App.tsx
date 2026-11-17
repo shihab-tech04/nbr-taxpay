@@ -34,6 +34,7 @@ const AuthorizationRequestPopup = React.lazy(() => import('./components/screens/
 const GuestPayment = React.lazy(() => import('./components/screens/GuestPayment').then(module => ({ default: module.GuestPayment })));
 const TravelTax = React.lazy(() => import('./components/screens/TravelTax').then(module => ({ default: module.TravelTax })));
 const PaymentServiceChoiceDialog = React.lazy(() => import('./components/screens/PaymentServiceChoiceDialog').then(module => ({ default: module.PaymentServiceChoiceDialog })));
+const ParallelTaxpayerDraftDialog = React.lazy(() => import('./components/screens/ParallelTaxpayerDraftDialog').then(module => ({ default: module.ParallelTaxpayerDraftDialog })));
 const Beneficiaries = React.lazy(() => import('./components/screens/Beneficiaries').then(module => ({ default: module.Beneficiaries })));
 const ArchitectureView = React.lazy(() => import('./components/screens/ArchitectureView').then(module => ({ default: module.ArchitectureView })));
 const TaxpayerDashboard = React.lazy(() => import('./components/screens/TaxpayerDashboard').then(module => ({ default: module.TaxpayerDashboard })));
@@ -96,6 +97,7 @@ class HistoryRouteBoundary extends React.Component<
 const MainRouter: React.FC = () => {
   const { currentRoute, routeParams, navigate, userRole, setUserRole, language, demoUser, previewAccount, clearPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, isParityModalOpen, paymentServiceInitialSelection, paymentReuse } = useTaxState();
   const [dashboardPaymentDraft, setDashboardPaymentDraft] = useState<PaymentFormDraft | null>(null);
+  const [parallelDraftOpen, setParallelDraftOpen] = useState(false);
   // Close always clears the one-shot resume request. No draft IDs in URLs or storage.
   useEffect(() => {
     if (!isPaymentServiceChoiceOpen) setDashboardPaymentDraft(null);
@@ -307,7 +309,11 @@ const MainRouter: React.FC = () => {
           </TaxPayModal>}</React.Suspense>}
       {isParityModalOpen && <React.Suspense fallback={null}><ParityRegisterModal /></React.Suspense>}
       {isPaymentServiceChoiceOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেমেন্ট সেবা লোড হচ্ছে…' : 'Loading payment service…'}</p>}>
-        <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} />
+        <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse}
+          onOpenParallel={() => { setPaymentServiceChoiceOpen(false); setParallelDraftOpen(true); }} />
+      </React.Suspense>}
+      {parallelDraftOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'করদাতার খসড়া লোড হচ্ছে…' : 'Loading taxpayer draft…'}</p>}>
+        <ParallelTaxpayerDraftDialog onClose={() => setParallelDraftOpen(false)} />
       </React.Suspense>}
       {loginOverlay && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog /></React.Suspense>}
       {beneficiaryLoginRequired && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog
