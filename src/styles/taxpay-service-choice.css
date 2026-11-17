@@ -1176,9 +1176,12 @@
     position: sticky;
     top: 0;
     align-self: start;
-    max-height: min(70dvh, 620px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    /* Step 1 has ONE scroll owner: the shared modal body. A separate
+       overflow:auto/overscroll:contain here swallowed wheel events over the
+       calculation card and produced a tall empty scrollbar. */
+    max-height: none;
+    overflow: visible;
+    overscroll-behavior: auto;
   }
 }
 @media (max-width: 800px) {
