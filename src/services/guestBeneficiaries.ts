@@ -94,11 +94,10 @@ function getCapability(source:GuestSource='active'): { value: string; needsRegis
   } catch {
     throw new Error('Guest beneficiary storage is unavailable in this browser. Allow site storage and try again.');
   }
-  // Storage events are emitted only in *other* tabs. Without a same-tab
-  // signal, the open Save Draft form could keep its original unavailable
-  // owner scope after the first capability is created by a draft/list read.
+  // Storage events are emitted only in other tabs, so a mounted payment draft
+  // must be notified when its first capability is created in this tab.
   try { window.dispatchEvent(new Event(GUEST_DRAFT_OWNER_CHANGED_EVENT)); }
-  catch { /* Registration remains valid even in a non-DOM test context. */ }
+  catch { /* Registration remains valid without a DOM. */ }
   return { value: created, needsRegistration: true };
 }
 
@@ -270,6 +269,11 @@ export function createGuestBeneficiaryList(name: string): Promise<GuestList> {
 
 export function addGuestBeneficiaries(listId: string, rows: BeneficiaryInput[]): Promise<number> {
   return post('add', { listId, rows });
+}
+
+/** Explicitly restore untagged rows from the retained legacy guest book. */
+export function restoreLegacyGuestBeneficiaries(listId:string,rows:BeneficiaryInput[]):Promise<number>{
+  return post('restore-legacy-add',{listId,rows});
 }
 
 export async function updateGuestBeneficiary(id: string, name: string): Promise<void> {
