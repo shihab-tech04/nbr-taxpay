@@ -33,7 +33,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT');
   await expect(progress).toHaveCSS('height', '10px');
   await expect(progress).toHaveAttribute('aria-valuenow', '1');
-  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('My tax liability');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('Other Tax Payment');
   // The same shared form stays borderless on narrow screens and never creates horizontal scroll.
   await expect(dialog.locator('.payment-form-section--static').first()).toHaveCSS('border-top-width', '0px');
@@ -263,7 +263,7 @@ test('mobile return payment uses one fixed head and focuses inline validation er
   await enterTaxPayService(payment, 'TAX_WITH_RETURN');
 
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My tax liability');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   const continueButton = payment.getByRole('button', { name: 'Continue to purpose & amount' });
   await expect(continueButton).toBeDisabled();
   await payment.locator('#guest-tin').fill('123456789012');
