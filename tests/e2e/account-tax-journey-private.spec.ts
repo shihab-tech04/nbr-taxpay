@@ -92,6 +92,10 @@ async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[]
     // The new optional payer-history claim is authenticated and must not
     // prevent the existing owner-scoped payment history fixture from loading.
     if(url.pathname==='/rest/v1/rpc/taxpay_claim_walkin_payer_payments')return response(0);
+    if(url.pathname==='/rest/v1/rpc/taxpay_claim_office_initiated_corrections'){
+      expect(req.postDataJSON()).toEqual({p_limit:20});
+      return response(0); // No signed Office cases in this account-scoped fixture.
+    }
     if(url.pathname==='/rest/v1/rpc/taxpay_my_story1_payments')return response({
       items:storedPayments,total:storedPayments.length,page:1,perPage:100
     });

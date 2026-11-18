@@ -15,7 +15,7 @@ type Command = {
   schemaVersion: '1.0.0'; messageId: string; requestId: string;
   origin: Origin; action: string; officerUid: string;
   officerRole: string; reason: string | null; expectedReviewState: string;
-  occurredAt: string; commandType?: 'CORRECTION_REVIEW';
+  occurredAt: string; commandType?: 'CORRECTION_REVIEW' | 'OFFICE_CORRECTION_INITIATED';
 };
 type Claimed = { claimToken: string; command: Command };
 
@@ -145,13 +145,16 @@ Deno.serve(async (request: Request) => {
       const command = JSON.parse(message.commandText);
       if (!command || typeof command !== 'object' || command.origin !== 'OFFICE_SQL')
         return json({ error: 'Wrong command origin' }, 400);
-      if (command.commandType !== undefined && command.commandType !== 'CORRECTION_REVIEW')
+      if (command.commandType !== undefined && !['CORRECTION_REVIEW','OFFICE_CORRECTION_INITIATED'].includes(command.commandType))
         return json({ error: 'Unsupported command type' }, 400);
       const result = command.commandType === 'CORRECTION_REVIEW'
         ? await rpc<{messageId: string; stored: boolean; reviewState: string}>(
           client, 'taxpay_correction_record_office_decision', { p_command: command })
-        : await rpc<{messageId: string; stored: boolean}>(
-          client, 'payment_v1_internal_ingest_command', { p_command: command });
+        : command.commandType === 'OFFICE_CORRECTION_INITIATED'
+          ? await rpc<{messageId: string; stored: boolean; ownerLinked: boolean}>(
+            client, 'taxpay_correction_receive_office_initiation', { p_command: command })
+          : await rpc<{messageId: string; stored: boolean}>(
+            client, 'payment_v1_internal_ingest_command', { p_command: command });
       return json(result);
     }
     return json({ error: 'Unknown mode' }, 400);

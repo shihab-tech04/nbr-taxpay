@@ -152,10 +152,11 @@ END;
 $walkin_claim$;
 WITH inserted AS (
   INSERT INTO public.taxpay_correction_inquiries
-    (requester_uid,original_reference,reason,requested_outcome,change_kind,old_value,new_value)
+    (requester_uid,original_reference,reason,requested_outcome,evidence_note,change_kind,old_value,new_value)
   VALUES
     ('80000000-0000-4000-8000-000000000001','SYN-REF-003',
      'Synthetic evidence-pending review request','Review this synthetic payment reference',
+     E'বাংলা সহায়ক প্রমাণ\\nOffice intake details longer than twenty characters',
      'CIRCLE','Circle A','Circle B')
   RETURNING inquiry_id
 )
@@ -586,6 +587,7 @@ BEGIN
   IF v_payload->>'originalReference'<>'SYN-REF-003'
      OR v_payload->>'originalPaymentId'<>'80000000-0000-4000-8000-000000000041'
      OR v_payload->>'originalPaymentKind'<>'TAXPAY_STORY_PAYMENT'
+     OR v_payload->>'evidenceNote' IS DISTINCT FROM E'বাংলা সহায়ক প্রমাণ\\nOffice intake details longer than twenty characters'
       OR v_payload->>'caseKind'<>'CORRECTION_REVIEW'
      OR v_payload ? 'requesterUid' OR v_payload ? 'requester_uid'
      OR v_payload ? 'taxpayerTin' OR v_payload ? 'tin' THEN
@@ -706,6 +708,95 @@ BEGIN
   THEN RAISE EXCEPTION 'RECIPIENT_OUTBOX_PROVENANCE_OR_PRIVACY_REGRESSION'; END IF;
 END;
 $recipient_outbox$;
+
+-- P6: an authorized Office initiation is accepted by the signed source
+-- envelope, but only the actual Taxpayer account binding can claim it.
+DO $office_initiated_received$
+DECLARE v_payload jsonb;v_result jsonb;v_replay jsonb;
+BEGIN
+ v_payload:=pg_catalog.jsonb_build_object(
+   'schemaVersion','1.0.0','commandType','OFFICE_CORRECTION_INITIATED',
+   'origin','OFFICE_SQL',
+   'messageId','80000000-0000-4000-8000-000000000081',
+   'requestId','80000000-0000-4000-8000-000000000081',
+   'sourcePaymentId','80000000-0000-4000-8000-000000000041',
+   'originalReference','SYN-REF-003','taxpayerTin','444444444444',
+   'reason','Office-initiated assessment year correction review',
+   'requestedOutcome','Review the distinct recipient allocation without changing money',
+   'evidenceNote',E'বাংলা সহায়ক দলিলের বিবরণ\\nThis is over twenty characters',
+   'officerUid','80000000-0000-4000-8000-000000000083',
+   'officerRole','MAKER','occurredAt','2026-11-15T17:00:00Z'
+ );
+ v_result:=public.taxpay_correction_receive_office_initiation(v_payload);
+ v_replay:=public.taxpay_correction_receive_office_initiation(v_payload);
+ IF v_result->>'stored'<>'true' OR v_replay->>'stored'<>'true'
+    OR v_result->>'ownerLinked'<>'false' THEN
+   RAISE EXCEPTION 'P6_OFFICE_INTAKE_DURABLE_REPLAY_FAILED';
+ END IF;
+ BEGIN
+   PERFORM public.taxpay_correction_receive_office_initiation(
+     pg_catalog.jsonb_set(v_payload,'{reason}',
+       to_jsonb('Forged conflicting Office initiation reason'::text)));
+   RAISE EXCEPTION 'P6_CONFLICTING_SIGNED_REPLAY_ACCEPTED';
+ EXCEPTION WHEN OTHERS THEN
+   IF SQLERRM='P6_CONFLICTING_SIGNED_REPLAY_ACCEPTED' THEN RAISE; END IF;
+   IF SQLERRM IS DISTINCT FROM 'CONFLICTING_OFFICE_CORRECTION_REPLAY' THEN RAISE; END IF;
+ END;
+END;
+$office_initiated_received$;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000001',true);
+DO $office_wrong_owner$
+BEGIN
+ IF public.taxpay_claim_office_initiated_corrections(20)<>0
+ THEN RAISE EXCEPTION 'P6_OTHER_TAXPAYER_CLAIMED_OFFICE_INITIATION'; END IF;
+END;
+$office_wrong_owner$;
+SELECT set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000002',true);
+DO $office_verified_owner$
+DECLARE v_claimed integer;v_history integer;
+BEGIN
+ v_claimed:=public.taxpay_claim_office_initiated_corrections(20);
+ IF v_claimed<>1 OR public.taxpay_claim_office_initiated_corrections(20)<>0
+ THEN RAISE EXCEPTION 'P6_OFFICE_INITIATED_CLAIM_FAILED'; END IF;
+ SELECT count(*) INTO v_history FROM public.taxpay_correction_my_history(50) h
+ WHERE h.inquiry_id='80000000-0000-4000-8000-000000000081'
+   AND h.action_code='OFFICE_INITIATED'
+   AND h.source_system='OFFICE_SQL'
+   AND h.actor_role='MAKER'
+   AND h.actor_uid='80000000-0000-4000-8000-000000000083';
+ IF v_history<>1 THEN RAISE EXCEPTION 'P6_OFFICE_INITIATION_AUDIT_ACTOR_MISMATCH'; END IF;
+END;
+$office_verified_owner$;
+RESET ROLE;
+DO $office_claim_audit$
+DECLARE v_owner uuid;v_origin text;v_parent uuid;v_count int;v_outbox jsonb;
+BEGIN
+ SELECT requester_uid,origin_system,original_payment_id INTO v_owner,v_origin,v_parent
+ FROM public.taxpay_correction_inquiries
+ WHERE inquiry_id='80000000-0000-4000-8000-000000000081';
+ IF v_owner IS DISTINCT FROM '80000000-0000-4000-8000-000000000002'::uuid
+    OR v_origin IS DISTINCT FROM 'OFFICE_SQL'
+    OR v_parent IS DISTINCT FROM '80000000-0000-4000-8000-000000000041'::uuid
+ THEN RAISE EXCEPTION 'P6_OFFICE_SOURCE_PARENT_LINK_INCORRECT'; END IF;
+ SELECT count(*) INTO v_count FROM public.taxpay_in_app_notifications
+ WHERE correction_inquiry_id='80000000-0000-4000-8000-000000000081'
+   AND message_code='CORRECTION_OFFICE_INITIATED'
+   AND recipient_uid='80000000-0000-4000-8000-000000000002';
+ IF v_count<>1 THEN RAISE EXCEPTION 'P6_OWNER_INITIATION_NOTIFICATION_MISSING'; END IF;
+ SELECT event_payload INTO v_outbox FROM payment_sync.correction_outbox
+ WHERE inquiry_id='80000000-0000-4000-8000-000000000081';
+ IF v_outbox->>'originSystem'<>'OFFICE_SQL'
+    OR v_outbox->>'originalPaymentId'<>'80000000-0000-4000-8000-000000000041'
+    OR v_outbox ? 'requesterUid' OR v_outbox ? 'taxpayerTin'
+ THEN RAISE EXCEPTION 'P6_OFFICE_RETURN_OUTBOX_PROVENANCE_INVALID'; END IF;
+ IF has_function_privilege('anon',
+   'public.taxpay_correction_receive_office_initiation(jsonb)','EXECUTE')
+ OR has_function_privilege('authenticated',
+   'public.taxpay_correction_receive_office_initiation(jsonb)','EXECUTE')
+ THEN RAISE EXCEPTION 'P6_PRIVILEGED_RECEIVER_EXPOSED'; END IF;
+END;
+$office_claim_audit$;
 
 DO $financial_unchanged$
 DECLARE v_relation regclass; v_name text; v_count bigint; v_digest text; v_expected record;

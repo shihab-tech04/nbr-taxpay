@@ -3,6 +3,7 @@ name: Phase 7 Auth-bound recipient notices SQL acceptance
 on:
   pull_request:
     branches:
+      - release/taxpay-correction-notifications-20261101
       - ws5/v95-integrated-release-candidate-20261115
     paths:
       - 'supabase/migrations/20261116070000_taxpay_verified_recipient_notices.sql'
