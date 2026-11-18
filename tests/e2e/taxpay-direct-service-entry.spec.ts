@@ -53,9 +53,7 @@ for (const [index, service] of serviceCatalog.entries()) {
     await active.getByRole('button', { name: 'Pay Tax', exact: true }).click();
     const modal = page.getByRole('dialog', { name: 'Pay Tax' });
     await expect(modal).toBeVisible();
-    await expect(modal.getByText('User ID')).toBeVisible();
-    await expect(modal.getByText('Password', { exact: true })).toBeVisible();
-    await expect(modal.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
+    await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
     await modal.getByRole('button', { name: 'Close payment services' }).click();
     await active.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
@@ -71,7 +69,5 @@ test('Source Tax image keeps the generic Pay Tax entry', async ({ page }) => {
   await expect(active).toHaveAttribute('data-payment-service', 'SOURCE_TAX_DEPOSIT');
   await active.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await expect(dialog.getByText('User ID')).toBeVisible();
-  await expect(dialog.getByText('Password', { exact: true })).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
+  await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
 });

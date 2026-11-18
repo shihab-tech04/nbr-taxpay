@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 test('citizen design locks the primary blue and unified public payment entry', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.public-info-topic[data-taxpay-service]')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await page.locator('.public-benefits__item[data-benefit="payments"]').click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog.getByText('User ID')).toBeVisible();
   await expect(dialog.getByText('Password', { exact: true })).toBeVisible();
@@ -23,7 +23,7 @@ test('Bangla text uses Noto Sans Bengali in the new payer-first service flow', a
   await page.goto('/');
   await setWorkspaceLanguage(page,'bn');
   await expect(page.locator('#public-how-it-works')).toBeHidden();
-  await page.getByRole('button', { name: 'কর পরিশোধ', exact: true }).click();
+  await page.locator('.public-benefits__item[data-benefit="payments"]').click();
   const dialog = page.getByRole('dialog', { name: 'কর পরিশোধ' });
   await expect(dialog.getByRole('button', { name: 'ওয়াক-ইন পেমেন্ট' })).toBeVisible();
   await dialog.getByRole('button', { name: 'ওয়াক-ইন পেমেন্ট' }).click();

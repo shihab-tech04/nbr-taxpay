@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FileCheck2, FilePenLine, History, Repeat2, Save, Search, WalletCards } from 'lucide-react';
 import { useTaxState } from '../../services/taxState';
-import { useAccountIdentity } from '../../services/accountIdentity';
 import type { PublicService } from './PublicServiceModal';
 import { PublicHeroCarousel } from './PublicHeroCarousel';
 import { INITIAL_RECEIPTS } from '../../data/mockData';
@@ -20,10 +19,7 @@ const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
 ]);
 
 export const PublicLanding: React.FC = () => {
-  const { language, navigate, openPaymentServiceChoice, openAllTaxPayments, isPaymentServiceChoiceOpen, demoUser, previewAccount, userRole } = useTaxState();
-  const { user: authenticatedUser } = useAccountIdentity();
-  const hasTaxpayerAccount = Boolean(authenticatedUser || demoUser || previewAccount)
-    || (import.meta.env.DEV && ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole));
+  const { language, navigate, openPaymentServiceChoice, openAllTaxPayments, isPaymentServiceChoiceOpen } = useTaxState();
   const [openService, setOpenService] = useState<PublicService | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -59,7 +55,7 @@ export const PublicLanding: React.FC = () => {
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
 
-  // All six benefit cards are informational; the hero Pay Tax action starts the unified guest flow.
+  // Preserve the original hero Pay Tax chooser; the first benefit starts the separate unified flow.
   const citizenBenefits = [
     {
       id: 'payments',
@@ -102,7 +98,7 @@ export const PublicLanding: React.FC = () => {
   return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
-      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : service ? openPaymentServiceChoice(service) : hasTaxpayerAccount ? openPaymentServiceChoice() : openAllTaxPayments()}
+      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
       paused={isPaymentServiceChoiceOpen || openService !== null}
     />
 
@@ -245,15 +241,21 @@ export const PublicLanding: React.FC = () => {
         <p>{t('Pay, organize and track your taxes in one place.', 'কর পরিশোধ, তথ্য গুছিয়ে রাখা ও অগ্রগতি দেখা—সব এক জায়গায়।')}</p>
       </div>
       <div className="public-benefits__grid">
-        {citizenBenefits.map(({ id, Icon, title, detail }) => (
-          <article key={id} className="public-benefits__item" data-benefit={id}>
+        {citizenBenefits.map(({ id, Icon, title, detail }) => {
+          const contents = <>
             <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
             <div className="public-benefits__copy">
               <h3>{title}</h3>
               <p id={`public-benefit-detail-${id}`}>{detail}</p>
             </div>
-          </article>
-        ))}
+          </>;
+          return id === 'payments'
+            ? <button type="button" key={id} className="public-benefits__item public-benefits__item--action"
+                data-benefit={id} onClick={openAllTaxPayments} aria-describedby={`public-benefit-detail-${id}`}>
+                {contents}
+              </button>
+            : <article key={id} className="public-benefits__item" data-benefit={id}>{contents}</article>;
+        })}
       </div>
     </section>
 

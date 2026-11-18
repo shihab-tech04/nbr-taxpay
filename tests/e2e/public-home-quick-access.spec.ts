@@ -1,18 +1,19 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
-test('compact homepage keeps all six benefit cards informational and launches unified All Tax Payments from the hero', async ({ page }) => {
+test('original hero Pay Tax and separate All Tax Payments keep their approved routes', async ({ page }) => {
   await page.setViewportSize({ width: 1140, height: 900 });
   await page.goto('/?action=landing&lang=en');
   const benefits = page.locator('.public-benefits');
   await expect(benefits.getByRole('heading', { name: 'Why choose Sohojkor?' })).toBeVisible();
   const cards = benefits.locator('.public-benefits__item');
   await expect(cards).toHaveCount(6);
-  for (const id of ['payments','certificates','corrections','history','pay-again','saved-drafts']) {
+  await expect(benefits.locator('[data-benefit="payments"]')).toHaveJSProperty('tagName', 'BUTTON');
+  for (const id of ['certificates','corrections','history','pay-again','saved-drafts']) {
     await expect(benefits.locator(`[data-benefit="${id}"]`)).toHaveJSProperty('tagName', 'ARTICLE');
   }
-  await expect(benefits.getByRole('button')).toHaveCount(0);
-  await page.locator('.citizen-public-hero__actions').getByRole('button', { name: 'Pay Tax' }).click();
+  await expect(benefits.getByRole('button')).toHaveCount(1);
+  await benefits.locator('[data-benefit="payments"]').click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText('User ID')).toBeVisible();
@@ -24,6 +25,21 @@ test('compact homepage keeps all six benefit cards informational and launches un
   await expect(dialog.getByRole('progressbar', { name: 'Payment progress' })).toHaveAttribute('aria-valuemax', '3');
   await expect(dialog.locator('#guest-payer-name')).toHaveCount(0);
   await expect(dialog.locator('#guest-phone')).toHaveCount(0);
+});
+
+test('restored original hero Pay Tax presents the payer/service chooser and four-stage payment wizard', async ({ page }) => {
+  await page.goto('/?action=landing&lang=en');
+  await page.locator('.citizen-public-hero__actions').getByRole('button',{name:'Pay Tax',exact:true}).click();
+  const modal = page.getByRole('dialog',{name:'Pay Tax'});
+  await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
+  await expect(modal.locator('[data-payment-entry]')).toHaveCount(0);
+  await modal.locator('[data-payer-relationship="OTHER"]').click();
+  await modal.locator('[data-payment-entry="OTHER_TAX"]').click();
+  await modal.locator('[data-payment-access="GUEST"]').click();
+  await expect(modal.getByRole('button',{name:'Continue',exact:true})).toBeEnabled();
+  await modal.getByRole('button',{name:'Continue',exact:true}).click();
+  await expect(modal.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
+  await expect(modal.locator('.tax-service-choice__selected-service')).toBeVisible();
 });
 
 test('wide desktop uses the available canvas without crushing the footer or lookup', async ({ page }) => {
@@ -702,7 +718,7 @@ for (const { width, height, lang } of [
   });
 }
 
-test('Home keeps all benefit cards informational in English and Bengali', async ({ page }, testInfo) => {
+test('Home keeps only All Tax Payments actionable in English and Bengali', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-1280', 'Cross-viewport parity is checked within this test.');
   for (const width of [320, 1280]) {
     await page.setViewportSize({width, height:900});
@@ -710,9 +726,10 @@ test('Home keeps all benefit cards informational in English and Bengali', async 
       await page.goto('/?action=landing&lang=' + lang);
       const cells = page.locator('.public-benefits__item');
       await expect(cells).toHaveCount(6);
-      for(let i=0;i<6;i++) await expect(cells.nth(i)).toHaveJSProperty('tagName','ARTICLE');
+      await expect(cells.first()).toHaveJSProperty('tagName','BUTTON');
+      for(let i=1;i<6;i++) await expect(cells.nth(i)).toHaveJSProperty('tagName','ARTICLE');
       await expect(page.locator('.public-benefits__heading button')).toHaveCount(0);
-      await page.locator('.citizen-public-hero__actions').getByRole('button',{name:lang==='bn'?'কর পরিশোধ':'Pay Tax',exact:true}).click();
+      await cells.first().click();
       const modal = page.getByRole('dialog',{name:lang==='bn'?'কর পরিশোধ':'Pay Tax'});
       await expect(modal).toBeVisible();
       await modal.getByRole('button',{name:lang==='bn'?'ওয়াক-ইন পেমেন্ট':'Walk-in Payment'}).click();
