@@ -64,6 +64,13 @@ export function OtherTaxTaxpayerList({
   const count = requireConfirmation
     ? (primaryConfirmed ? 1 : 0) + additional.filter(person => confirmed(person.id, person.tin)).length
     : additional.length + 1;
+  const identityDisclosure = (tin: string) => lookupSampleTaxpayer(tin) ? (
+    <p className="mt-2 text-xs text-slate-600" data-testid="taxpayer-sample-source">
+      {bn
+        ? 'নমুনা প্রোফাইল — এটি NBR-এর যাচাইকৃত পরিচয় বা ব্যক্তিগত রেকর্ডে প্রবেশের অনুমতি নয়।'
+        : 'Sample profile — not a verified NBR identity or permission to access private records.'}
+    </p>
+  ) : null;
   const identityCard = (id: string, tin: string, name: string, isConfirmed: boolean) => {
     const match = lookupSampleTaxpayer(tin);
     const displayName = match ? (bn ? match.nameBn : match.nameEn) : name || (bn ? 'দেওয়া হয়নি' : 'Not provided');
@@ -74,15 +81,11 @@ export function OtherTaxTaxpayerList({
         <div><dt>{bn ? 'করদাতার নাম' : 'Taxpayer name'}</dt><dd>{displayName}</dd></div>
         <div><dt>{bn ? 'টিআইএন' : 'TIN'}</dt><dd>{tin}</dd></div>
       </dl>
-      <p className="mt-2 text-xs text-slate-600" data-testid={match ? 'taxpayer-sample-source' : 'taxpayer-unmatched-source'}>
-        {match
-          ? (bn
-            ? 'নমুনা প্রোফাইল — এটি NBR-এর যাচাইকৃত পরিচয় বা ব্যক্তিগত রেকর্ডে প্রবেশের অনুমতি নয়।'
-            : 'Sample profile — not a verified NBR identity or permission to access private records.')
-          : (bn
-            ? 'নমুনা তথ্য পাওয়া যায়নি। এটি শুধু আপনার দেওয়া টিআইএন; পরিচয় বা ব্যক্তিগত রেকর্ড যাচাই করা হয়নি। পেমেন্টের আগে নম্বরটি নিশ্চিত করুন।'
-            : 'No sample profile found. This is your entered TIN, not a verified identity or permission to access private history. Check the number before payment.')}
-      </p>
+      {match ? identityDisclosure(tin) : <p className="mt-2 text-xs text-slate-600" data-testid="taxpayer-unmatched-source">
+        {bn
+          ? 'নমুনা তথ্য পাওয়া যায়নি। এটি শুধু আপনার দেওয়া টিআইএন; পরিচয় বা ব্যক্তিগত রেকর্ড যাচাই করা হয়নি। পেমেন্টের আগে নম্বরটি নিশ্চিত করুন।'
+          : 'No sample profile found. This is your entered TIN, not a verified identity or permission to access private history. Check the number before payment.'}
+      </p>}
     </section>;
   };
   // Match Travel Tax: identity preview first, followed by a distinct confirmation
@@ -119,18 +122,20 @@ export function OtherTaxTaxpayerList({
     {!simpleSelf && <p className="sr-only" role="status" aria-live="polite">
       {bn ? 'মোট ' + count + ' জন করদাতা' : count + ' ' + (count === 1 ? 'taxpayer' : 'taxpayers') + ' added'}
     </p>}
-    <article className={`taxpay-taxpayer-row${simpleSelf ? ' taxpay-taxpayer-row--single' : ''}`} data-testid="other-tax-primary-taxpayer">
-      <div className="taxpay-taxpayer-row__header">
-        <h3>{simpleSelf ? (bn ? 'করদাতার তথ্য' : 'Taxpayer Information') : (bn ? 'করদাতা ১' : 'Taxpayer 1')}</h3>
+    <article className={`taxpay-taxpayer-row${simpleSelf ? ' taxpay-taxpayer-row--single' : ''}`} data-testid="other-tax-primary-taxpayer"
+      aria-label={simpleSelf ? (bn ? 'করদাতার তথ্য' : 'Taxpayer information') : undefined}>
+      {!simpleSelf && <div className="taxpay-taxpayer-row__header">
+        <h3>{bn ? 'করদাতা ১' : 'Taxpayer 1'}</h3>
         {progressive && primaryConfirmed && <button type="button" className="taxpay-taxpayer-row__edit"
           onClick={() => { onConfirmTaxpayer('primary', ''); onPrimaryName(''); setSearchedTins(current => ({...current, primary: ''})); onClearError(); }}>
           <Pencil size={15} aria-hidden="true"/>{bn ? 'সম্পাদনা' : 'Edit'}
         </button>}
-      </div>
+      </div>}
       {progressive && primaryConfirmed ? identityCard('primary', primaryTin, primaryName, true) : <div className="taxpay-taxpayer-row__fields taxpay-taxpayer-row__fields--shared">
         <TaxpayerTinLookup language={language} tinId="guest-tin" nameId="other-tax-primary-name"
           tin={primaryTin}
-          hideNameField={progressive}
+          hideNameField={progressive || (simpleSelf &&
+            (searchedTins.primary !== primaryTin || !lookupSampleTaxpayer(primaryTin)))}
           suggestedTins={progressive && !lockedPrimary ? suggestedTins.filter(tin => !additional.some(p => p.tin === tin)) : undefined}
           name={simpleSelf && searchedTins.primary === primaryTin && lookupSampleTaxpayer(primaryTin)
             ? (bn ? lookupSampleTaxpayer(primaryTin)!.nameBn : lookupSampleTaxpayer(primaryTin)!.nameEn) : primaryName}
