@@ -314,6 +314,11 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByRole('status').filter({
   hasText:'Payment record saved. Office copy pending; Treasury settlement unverified:'
  })).toBeVisible({timeout:15000});
+ const returnToHistory=one.page.getByRole('button',{name:'Back to transaction history'});
+ await expect(returnToHistory).toBeVisible();
+ await returnToHistory.click();
+ await expect(one.page.getByTestId('pay-again-copy-status')).toHaveCount(0);
+ await expect(one.page.getByTestId('pay-again-mobile').first()).toBeVisible();
  expect(repeatRequests).toHaveLength(1);
  const afterRepeat=await request('/rest/v1/rpc/sim_my_payment_history',
   {p_view:'payer'},payer.session.access_token);
