@@ -219,7 +219,8 @@ for(const language of ['en','bn'] as const){
     await page.goto('/?action=history&lang='+language);
     const panel=page.getByTestId('signed-in-payment-activity');
     await expect(panel).toBeVisible();
-    await expect(panel.getByText(language==='bn'?'পাওয়া যায়নি':'Unavailable',{exact:true})).toBeVisible();
+    await expect(panel.getByText(language==='bn'
+      ?'অফিস পর্যালোচনা: পাওয়া যায়নি':'Office review: Unavailable',{exact:true})).toBeVisible();
     const desktop=info.project.name==='desktop-1280';
     const table=panel.getByTestId('signed-in-payment-activity-table');
     const cards=panel.getByTestId('signed-in-payment-activity-cards');
