@@ -300,6 +300,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
             </div>
             
              {allowMixedReturn && <section className="unified-v5-return-row" data-testid="unified-v5-return-section">
+               <div className="unified-v5-return-group" data-testid="unified-v5-return-group">
                <label className="unified-v5-return-card">
                  <span className="unified-v5-return-card__icon" aria-hidden="true">▤</span>
                  <span className="unified-v5-return-card__text"><strong>{tx('Tax with Return','রিটার্নসহ কর')}</strong>
@@ -327,6 +328,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                      }} placeholder="0.00" />
                  </div>
                </div>}
+               </div>
              </section>}
              {allowMixedReturn && <h3 className="unified-v5-row-heading unified-v5-tax-head-heading">{tx('Tax head','করের খাত')}</h3>}
              <p className="other-tax-selection-status" role="status">
