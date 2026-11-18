@@ -78,9 +78,20 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(reviewTable).toBeVisible();
     await expect(reviewTable.getByRole('heading', {name: 'Payment details'})).toBeVisible();
     await expect(reviewTable.locator('tbody tr.unified-v3-review__owner')).toHaveCount(2);
-    await expect(reviewTable.getByRole('button', {name: 'Edit taxpayers'})).toBeVisible();
-    await expect(reviewTable.getByRole('button', {name: 'Edit heads & amounts'})).toBeVisible();
+    const editTaxpayers = reviewTable.getByRole('button', {name: 'Edit taxpayers'});
+    const editHeads = reviewTable.getByRole('button', {name: 'Edit heads & amounts'});
+    await expect(editTaxpayers).toBeVisible();
+    await expect(editHeads).toBeVisible();
+    // Exact locked v5 visible copy (ARIA still exposes explicit edit actions).
+    await expect(editTaxpayers).toHaveText('Taxpayers');
+    await expect(editHeads).toHaveText('Heads & amounts');
+    await expect(reviewTable.locator('.unified-v3-review__owner strong').first()).toContainText('Individual');
+    await expect(reviewTable.locator('.unified-v3-review__owner span').first()).toContainText('222*********');
+    await expect(dialog.locator('.payment-flow-embedded__footer-actions > .tax-service-choice__cancel')).toBeVisible();
+    await expect(dialog.locator('.payment-flow-embedded__footer-actions > .tax-service-choice__continue')).toHaveText(/Make Payment/);
     await expect(dialog.getByRole('heading', { name: 'Payer and receipt details' })).toBeVisible();
+    await expect(dialog.getByText('Payer information will appear on the receipt.')).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Payment Remarks / Invoice Reference' })).toBeVisible();
     await expect(dialog.locator('#guest-phone')).toHaveCount(1);
     await expect(dialog.locator('#guest-payment-remarks')).toBeVisible();
     // Payer TIN is optional: hide the redundant matched-name input until Search.
