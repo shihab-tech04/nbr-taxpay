@@ -433,7 +433,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         count={visibleRows.length} total={rows.length} countLabel={txt('records','রেকর্ড')}
         searchValue={recordQuery} onSearchChange={setRecordQuery}
         searchLabel={txt('Search transactions','লেনদেন খুঁজুন')}
-        searchPlaceholder={txt('Reference, payer or beneficiary','রেফারেন্স, প্রদানকারী বা উপকারভোগী')}
+        searchPlaceholder={txt('Reference or name','রেফারেন্স বা নাম')}
         filtersOpen={recordFiltersExpanded} onToggleFilters={()=>setRecordFiltersExpanded(open=>!open)}
         filterLabel={txt('Filter','ফিল্টার')}/>
       <TaxPayOfficeRegisterFilters open={recordFiltersExpanded} className="taxpay-record-page-filters">

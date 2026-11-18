@@ -204,10 +204,12 @@ for(const language of ['en','bn'] as const){
       status:200,contentType:'application/json',body:JSON.stringify({success:true,simulationOnly:true,data:[{
         id:'EXAMPLE-USER2-1',transactionId:'00000000-0000-4000-8000-000000000121',
         payer:'user2',state:'SIMULATED',createdAt:'2026-10-24T10:00:00Z',
-        simulationOnly:true,totalMinor:5000,reviewStatus:'PENDING_OFFICER',
+        simulationOnly:true,totalMinor:8000,reviewStatus:'UNKNOWN_REVIEW',
         allocations:[
           {id:'a1',lineNo:1,beneficiary:'user2',category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amountMinor:1500},
-          {id:'a2',lineNo:2,beneficiary:'user3',category:'ADVANCE_TAX',assessmentYear:'2025-26',amountMinor:3500}
+          {id:'a2',lineNo:2,beneficiary:'user3',category:'ADVANCE_TAX',assessmentYear:'2025-26',amountMinor:3500},
+          {id:'a3',lineNo:3,beneficiary:'user4',category:'ASSESSED_DEMAND',assessmentYear:'2025-26',amountMinor:1200},
+          {id:'a4',lineNo:4,beneficiary:'user5',category:'OTHER_TAX_PAYMENT',assessmentYear:'2024-25',amountMinor:1800}
         ],events:[{id:1,action:'CREATED',note:'Payment record saved',occurredAt:'2026-10-24T10:00:00Z'}]
       }]})
     }));
@@ -217,9 +219,19 @@ for(const language of ['en','bn'] as const){
     await page.goto('/?action=history&lang='+language);
     const panel=page.getByTestId('signed-in-payment-activity');
     await expect(panel).toBeVisible();
+    await expect(panel.getByText(language==='bn'?'পাওয়া যায়নি':'Unavailable',{exact:true})).toBeVisible();
     const desktop=info.project.name==='desktop-1280';
     const table=panel.getByTestId('signed-in-payment-activity-table');
     const cards=panel.getByTestId('signed-in-payment-activity-cards');
+    const searchLabel=language==='bn'?'লেনদেন খুঁজুন':'Search transactions';
+    const searchPlaceholder=language==='bn'?'রেফারেন্স বা নাম':'Reference or name';
+    const toolbar=panel.locator('.taxpay-office-register__toolbar');
+    const search=toolbar.getByRole('searchbox',{name:searchLabel});
+    const searchField=toolbar.locator('.taxpay-office-register__search > .taxpay-record-toolbar__search');
+    await expect(toolbar.locator('.taxpay-office-register__search-label')).toHaveText(searchLabel);
+    await expect(searchField).toBeVisible();
+    await expect(search).toHaveAttribute('placeholder',searchPlaceholder);
+    await expect(search).toHaveAttribute('title',searchPlaceholder);
     const expand=language==='bn'?'বরাদ্দ দেখুন':'View allocations';
     if(desktop){
       await expect(table).toBeVisible();
@@ -228,6 +240,7 @@ for(const language of ['en','bn'] as const){
         : ['Reference','Date','Payer','Allocations','Amount','Status','Actions']);
       await expect(table.locator('tbody tr')).toHaveCount(1);
       await expect(cards).toBeHidden();
+      await expect(table.locator('tbody tr details > ul')).toBeHidden();
       await table.getByText(expand).click();
       await expect(table.getByText('৳35.00',{exact:true})).toBeVisible();
       await table.locator('tbody td').first().click();
@@ -235,11 +248,16 @@ for(const language of ['en','bn'] as const){
       await expect(table).toBeHidden();
       await expect(cards).toBeVisible();
       await expect(cards.locator(':scope > li')).toHaveCount(1);
-      await expect(cards.getByText(language==='bn'?'মোট: ৳50.00':'Total: ৳50.00',{exact:true})).toBeVisible();
+      await expect(cards.locator(':scope > li details > ul')).toBeHidden();
+      await expect(cards.getByText(language==='bn'?'মোট: ৳80.00':'Total: ৳80.00',{exact:true})).toBeVisible();
       await cards.getByText(expand).click();
       await expect(cards.getByText('৳35.00',{exact:true})).toBeVisible();
       await cards.getByRole('button',{name:language==='bn'?'বিস্তারিত দেখুন':'View details'}).click();
     }
+    const allocationDetails=desktop?table.locator('tbody tr details'):cards.locator(':scope > li details');
+    await expect(allocationDetails.locator('ul > li')).toHaveCount(4);
+    for(const beneficiary of ['user2','user3','user4','user5'])
+      await expect(allocationDetails).toContainText(beneficiary);
     const modal=page.getByRole('dialog',{name:language==='bn'?'পেমেন্টের বিবরণ':'Payment details'});
     await expect(modal).toBeVisible();
     await expect(modal).toContainText('EXAMPLE-USER2-1');
@@ -247,8 +265,22 @@ for(const language of ['en','bn'] as const){
     await expect(modal).toContainText('CREATED');
     await page.keyboard.press('Escape');
     await expect(modal).toHaveCount(0);
-    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
-    expect(overflow).toBeLessThanOrEqual(2);
+    for(const width of [320,375,390,768,1280,1920]){
+      await page.setViewportSize({width,height:900});
+      const expandedPanel=width<768?cards:table;
+      const [searchBox,toolbarBox]=await Promise.all([searchField.boundingBox(),toolbar.boundingBox()]);
+      expect(searchBox&&toolbarBox&&searchBox.width>=(width<768?200:145),language+' history search field width at '+width+'px').toBe(true);
+      expect(searchBox&&toolbarBox&&searchBox.x>=toolbarBox.x-1&&searchBox.x+searchBox.width<=toolbarBox.x+toolbarBox.width+1,
+        language+' history search field containment at '+width+'px').toBe(true);
+      await expect(expandedPanel).toBeVisible();
+      const details=width<768?cards.locator(':scope > li details'):table.locator('tbody tr details');
+      const summary=details.locator('summary');
+      if(await details.getAttribute('open')===null)await summary.click();
+      await expect(details.locator('ul > li')).toHaveCount(4);
+      await expect(details).toContainText('user4');
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow,language+' multi-allocation history overflow at '+width+'px').toBeLessThanOrEqual(2);
+    }
   });
 }
 
