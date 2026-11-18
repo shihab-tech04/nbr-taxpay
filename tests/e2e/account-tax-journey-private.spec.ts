@@ -106,6 +106,7 @@ test('verified account sees only real owner review events and correct chronologi
   await expect(timeline).toBeVisible();
   const items=timeline.getByRole('list',{name:'Chronological account review events'}).locator('li');
   await expect(items).toHaveCount(2);
+  await expect(page.getByRole('heading',{name:'Related services',exact:true})).toHaveCount(0);
   await expect(items.first()).toContainText('Review request submitted');
   await expect(items.nth(1)).toContainText('Review status event');
   await expect(timeline).toContainText(request.id);
