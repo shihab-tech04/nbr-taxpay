@@ -351,19 +351,21 @@
 
 /* Own-liability Other Tax uses the approved one-taxpayer card and stacked name field. */
 .taxpay-taxpayer-list--single{margin-bottom:16px}
-/* Step 1 receipt inputs use the entire editor column, regardless of payer
-   relationship. Preserve their field order and validation, avoid cramped
-   two-column widths and long BN/EN labels wrapping against adjacent inputs. */
-.payment-flow-embedded__identity .payment-identity__receipt-row{
-  grid-template-columns:minmax(0,1fr);
-}
+/* Preserve the approved desktop two-column payer/contact grouping and
+   existing mobile single-column breakpoint. Inputs fill their own grid cell;
+   never shrink because a receipt-reference label wraps in EN/BN. */
+.payment-identity__receipt-row > .payment-identity__email-field--full{grid-column:1/-1;min-width:0;width:100%}
 .payment-flow-embedded__identity .payment-identity__receipt-row > div{
-  width:100%;min-width:0;
+  min-width:0;width:100%;
 }
 .payment-flow-embedded__identity .payment-identity__receipt-row input{
-  display:block;width:100%;min-width:0;max-width:100%;
+  display:block;min-width:0;width:100%;max-width:100%;
 }
-.payment-identity__receipt-row > .payment-identity__email-field--full{grid-column:1/-1;min-width:0;width:100%}
+@media (min-width:651px){
+  .payment-form-layout__sections:has(.taxpay-taxpayer-list--single) .payment-identity__receipt-row > div{
+    display:flex;flex-direction:column;justify-content:flex-end
+  }
+}
 
 .taxpay-taxpayer-list--single .taxpay-taxpayer-row__fields{grid-template-columns:minmax(0,1fr);gap:14px}
 .taxpay-taxpayer-row__tin-entry{position:relative;flex:1 1 auto;min-width:0}
