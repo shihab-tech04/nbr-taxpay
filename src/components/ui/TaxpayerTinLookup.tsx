@@ -44,6 +44,8 @@ export interface TaxpayerTinLookupProps {
   suggestedTins?: readonly string[];
   /** Keep the name in controlled form state, but show a read-only identity card after Search. */
   hideNameField?: boolean;
+  /** Opt-in to removing the duplicate field entirely in v5 payer lookup only. */
+  omitNameField?: boolean;
   /** Opt-in keyboard shortcut for parallel entry; shared lookup behavior remains unchanged elsewhere. */
   submitOnEnter?: boolean;
 }
@@ -52,7 +54,7 @@ export function TaxpayerTinLookup({
   language, tinId, nameId, tin, name, onTinChange, onSearch, onClear, canSearch,
   heading, tinLabel, nameLabel, searchLabel, tinPlaceholder, namePlaceholder, maxTinLength = 12, maxNameLength = 160,
   readonlyTin = false, editableName = false, onNameChange, disabled = false, requiredTin = true,
-  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false, submitOnEnter = false,
+  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false, omitNameField = false, submitOnEnter = false,
 }: TaxpayerTinLookupProps) {
   const bn = language === 'bn';
   const tinRef = useRef<HTMLInputElement>(null);
@@ -217,14 +219,14 @@ export function TaxpayerTinLookup({
       {error}
       {helper}
     </div>
-    <div className="taxpayer-tin-lookup__field tin-lookup__name" hidden={hideNameField}>
+    {!omitNameField && <div className="taxpayer-tin-lookup__field tin-lookup__name" hidden={hideNameField}>
       <label htmlFor={nameId}>{nameLabel ?? (bn ? 'করদাতার নাম' : 'Taxpayer name')}</label>
       <input id={nameId} type="text" autoComplete="off" maxLength={maxNameLength}
         readOnly={!editableName} aria-readonly={!editableName || undefined}
         disabled={disabled} value={name}
         onChange={event => onNameChange?.(event.target.value)}
         placeholder={namePlaceholder ?? (bn ? 'টিআইএন খুঁজলে নাম এখানে দেখাবে' : 'Search TIN to fill name')} />
-    </div>
+    </div>}
     {status}
   </div>;
 }
