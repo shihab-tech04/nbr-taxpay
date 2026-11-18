@@ -14,6 +14,7 @@ import {
   AlertCircle, 
   Lock,
   Search,
+  Pencil,
   ChevronDown,
   ReceiptText
 } from 'lucide-react';
@@ -2505,8 +2506,12 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                 <div className="payment-review__section-title unified-v3-review__heading">
                   <h2 id="unified-v3-review-title">{language === 'bn' ? 'পেমেন্টের বিবরণ' : 'Payment details'}</h2>
                   <div className="unified-v3-review__actions">
-                    <button type="button" onClick={() => setStep(1)}>{language === 'bn' ? 'করদাতা সম্পাদনা' : 'Edit taxpayers'}</button>
-                    <button type="button" onClick={() => setStep(2)}>{language === 'bn' ? 'খাত ও পরিমাণ সম্পাদনা' : 'Edit heads & amounts'}</button>
+                    <button type="button" aria-label={language === 'bn' ? 'করদাতা সম্পাদনা' : 'Edit taxpayers'} onClick={() => setStep(1)}>
+                      <Pencil size={14} aria-hidden="true"/>{language === 'bn' ? 'করদাতা' : 'Taxpayers'}
+                    </button>
+                    <button type="button" aria-label={language === 'bn' ? 'খাত ও পরিমাণ সম্পাদনা' : 'Edit heads & amounts'} onClick={() => setStep(2)}>
+                      <Pencil size={14} aria-hidden="true"/>{language === 'bn' ? 'খাত ও পরিমাণ' : 'Heads & amounts'}
+                    </button>
                   </div>
                 </div>
                 <div className="unified-v3-review__table-wrap">
@@ -2518,8 +2523,11 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                     </tr></thead>
                     <tbody>{batchTaxpayers.filter(person => Boolean(person.tin)).map(person => (
                       <React.Fragment key={person.id}>
-                        <tr className="unified-v3-review__owner"><td colSpan={3}><strong>{person.name || otherTaxpayerName}</strong>
-                          <span>{person.tin.slice(0,3) + '*********'} · {incomeTaxEntityTypeLabel(entityTypeForTin(person.tin) ?? 'NON_COMPANY', language)}</span>
+                        <tr className="unified-v3-review__owner"><td colSpan={3}>
+                          <strong>{person.name || otherTaxpayerName} · {entityTypeForTin(person.tin) === 'COMPANY'
+                            ? (language === 'bn' ? 'কোম্পানি' : 'Company')
+                            : (language === 'bn' ? 'ব্যক্তি' : 'Individual')}</strong>
+                          <span>{person.tin.slice(0,3) + '*'.repeat(Math.max(0, person.tin.length - 3))}</span>
                         </td></tr>
                         {otherBatch ? otherTaxLines.filter(line => line.taxpayerId === person.id).map(line => (
                           <tr key={line.id}><td>{line.headId === RETURN_HEAD_ID
@@ -2540,6 +2548,9 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                 <div className="payment-review__section-title">
                   <div><h2 id="payment-final-payer-title">{language === 'bn' ? 'পরিশোধকারী ও রসিদের তথ্য' : 'Payer and receipt details'}</h2></div>
                 </div>
+                {unifiedFlow && <p className="unified-v5-payer-hint">{language === 'bn'
+                    ? 'পরিশোধকারীর তথ্য রসিদে দেখানো হবে।'
+                    : 'Payer information will appear on the receipt.'}</p>}
                 <div className="payment-identity__fields">{payerReceiptFields}</div>
                 {ownAccountTax && !isWithholdingMode && receiptEmailControl}
               </section>}
