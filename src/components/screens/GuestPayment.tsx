@@ -2228,7 +2228,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
         {/* STEP 2: Head Selection & Financial Amounts */}
         {step === 2 && (otherBatch ? (
           <>
-          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} serviceSelection={unifiedFlow ? unifiedServiceChoice : undefined} maskTaxpayerTin={unifiedFlow} remarks={unifiedFlow ? undefined : paymentRemarksControl}
+          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} serviceSelection={unifiedFlow ? unifiedServiceChoice : undefined} unifiedV3={unifiedFlow} maskTaxpayerTin={unifiedFlow} remarks={unifiedFlow ? undefined : paymentRemarksControl}
             lines={otherTaxLines} suggestionTaxpayerIds={ownAccountTax ? { primary: demoConsentActor } : undefined}
             preserveSourcePaymentAmounts={Boolean(sourcePaymentId)} focusRequest={summaryJump} onChange={next => {
               setOtherTaxLines(next);
