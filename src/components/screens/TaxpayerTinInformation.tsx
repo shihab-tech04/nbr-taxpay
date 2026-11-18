@@ -82,7 +82,7 @@ export function TaxpayerTinInformation({language,record}:Props){
               const raw=record?.[field];
               const kind=sourced&&typeof raw==='string'?sensitiveProfileKind(field,raw):null;
               return kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
-                label={tr(label)} language={language} allowCopy/>:value(field);
+                label={tr(label)} language={language} allowCopy profileContext/>:value(field);
             })()}</dd>
           </div>)}
         </dl>
