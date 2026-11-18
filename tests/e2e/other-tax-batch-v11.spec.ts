@@ -117,7 +117,7 @@ test('M03: unmatched searched TIN can be explicitly added without identity verif
   await first.getByRole('button',{name:'Search',exact:true}).click();
   await expect(first.locator('#other-tax-primary-name')).toHaveValue('User 1');
   await expect(first.getByTestId('searched-taxpayer-card')).toHaveCount(0);
-  await expect(first.getByTestId('taxpayer-sample-source')).toContainText('not a verified NBR identity');
+  await expect(first.getByTestId('taxpayer-sample-source')).toContainText('Sample only — not NBR verified.');
   await first.getByRole('button',{name:'Add taxpayer'}).click();
   await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('111111111111');
 
