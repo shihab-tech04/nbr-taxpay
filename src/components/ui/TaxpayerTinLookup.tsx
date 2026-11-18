@@ -217,14 +217,14 @@ export function TaxpayerTinLookup({
       {error}
       {helper}
     </div>
-    <div className="taxpayer-tin-lookup__field tin-lookup__name" hidden={hideNameField}>
+    {!hideNameField && <div className="taxpayer-tin-lookup__field tin-lookup__name">
       <label htmlFor={nameId}>{nameLabel ?? (bn ? 'করদাতার নাম' : 'Taxpayer name')}</label>
       <input id={nameId} type="text" autoComplete="off" maxLength={maxNameLength}
         readOnly={!editableName} aria-readonly={!editableName || undefined}
         disabled={disabled} value={name}
         onChange={event => onNameChange?.(event.target.value)}
         placeholder={namePlaceholder ?? (bn ? 'টিআইএন খুঁজলে নাম এখানে দেখাবে' : 'Search TIN to fill name')} />
-    </div>
+    </div>}
     {status}
   </div>;
 }
