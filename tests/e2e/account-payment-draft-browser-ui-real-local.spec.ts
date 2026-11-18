@@ -535,7 +535,7 @@ for (const language of ['en', 'bn'] as const) {
     await expect(modalBack).toHaveAttribute('aria-label', bn ? 'ফিরুন' : 'Back');
     await modalBack.click();
     await expect(modal.locator('[data-payer-relationship]')).toHaveCount(0);
-    await expect(modal.locator('.tax-service-choice__selected-service')).toContainText(
+    await expect(modal.locator('.taxpay-modal__subtitle')).toContainText(
       bn ? 'অন্য করদাতার কর পরিশোধে সহায়তা করুন' : 'Facilitate another taxpayer’s payment');
     await expect(modal.locator('#guest-notice-ref')).toHaveValue(marker);
     await expect(modal.locator('#guest-phone')).toHaveValue(receiptPhone);
