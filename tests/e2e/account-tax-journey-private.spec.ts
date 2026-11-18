@@ -115,26 +115,30 @@ async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[]
 
 test('User2 transaction correction opens a locked, contextual modal',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280'&&info.project.name!=='mobile-320',
-    'Representative authenticated desktop and phone correction entry');
+    'Representative authenticated English and Bengali journeys; each exercises all approved CSS widths');
   const language=info.project.name==='mobile-320'?'bn':'en';
   const applyLabel=language==='bn'?'সংশোধনের আবেদন':'Apply for Correction';
   await mockAccount(page,false,[],true,false,'user2');
-  await page.goto('/?action=history&lang='+language);
-  const action=page.getByRole('button',{name:applyLabel,exact:true}).first();
-  await expect(action).toBeVisible();
-  await action.click();
-  const dialog=page.getByRole('dialog',{name:applyLabel,exact:true});
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByTestId('correction-source-reference')).toHaveText(user2Payment.id);
-  const originalReference=dialog.getByTestId('correction-original-reference');
-  await expect(originalReference).toHaveValue(user2Payment.id);
-  await expect(originalReference).toHaveAttribute('readonly','');
-  await expect(dialog).toContainText('2026-27');
-  await expect(dialog.getByLabel('Select A-Challan for Rectification *')).toHaveCount(0);
-  await page.keyboard.press('Escape');
-  await expect(dialog).toHaveCount(0);
-  await expect(action).toBeFocused();
-  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  for(const width of [320,375,390,768,1280]){
+    const height=width===320?720:width===375?812:width===390?844:900;
+    await page.setViewportSize({width,height});
+    await page.goto('/?action=history&lang='+language);
+    const action=page.getByRole('button',{name:applyLabel,exact:true}).first();
+    await expect(action).toBeVisible();
+    await action.click();
+    const dialog=page.getByRole('dialog',{name:applyLabel,exact:true});
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByTestId('correction-source-reference')).toHaveText(user2Payment.id);
+    const originalReference=dialog.getByTestId('correction-original-reference');
+    await expect(originalReference).toHaveValue(user2Payment.id);
+    await expect(originalReference).toHaveAttribute('readonly','');
+    await expect(dialog).toContainText('2026-27');
+    await expect(dialog.getByLabel('Select A-Challan for Rectification *')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(action).toBeFocused();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  }
 });
 
 test('verified account sees only real owner review events and correct chronological details',async({page})=>{
