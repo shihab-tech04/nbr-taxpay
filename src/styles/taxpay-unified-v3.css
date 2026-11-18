@@ -448,13 +448,20 @@
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-row {
   padding:0 0 12px; border-bottom:1px solid #e0e7f1;
 }
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-group {
+  overflow:hidden; border:1px solid #c7d8ed; border-radius:11px;
+  background:#fff;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-group:has(input:checked) {
+  border-color:#70a1ed; background:#eff5ff;
+}
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-card {
   display:flex; align-items:center; gap:12px; min-height:76px;
-  padding:11px 12px; border:1px solid #c7d8ed; border-radius:11px;
-  color:#17345a; background:#fff; cursor:pointer;
+  padding:11px 12px; border:0; border-radius:0;
+  color:#17345a; background:transparent; cursor:pointer;
 }
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-card:has(input:checked) {
-  border-color:#70a1ed; background:#eff5ff;
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-card:focus-within {
+  outline:2px solid #4886cf; outline-offset:-3px;
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-card__icon {
   flex:none; height:36px; width:36px; display:grid; place-items:center;
@@ -474,7 +481,7 @@
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-fields {
   display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;
-  padding:12px 0 3px;
+  padding:2px 12px 14px; background:transparent;
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-fields > div {
   min-width:0; display:grid; gap:5px;
