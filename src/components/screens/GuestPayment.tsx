@@ -2478,7 +2478,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                         </td></tr>
                         {otherBatch ? otherTaxLines.filter(line => line.taxpayerId === person.id).map(line => (
                           <tr key={line.id}><td>{language === 'bn' ? otherTaxAllocationHead(line.headId)?.nameBn : otherTaxAllocationHead(line.headId)?.nameEn}</td><td>{line.assessmentYear}</td><td>{formatCurrency(parseGuestAmount(line.amount) ?? 0, language)}</td></tr>
-                        )) : <tr><td>{language === 'bn' ? 'রিটার্নসহ কর' : 'Tax with Return'}</td><td>{assessmentYear}</td><td>{formatCurrency(summedAmount, language)}</td></tr>}
+                        )) : <tr><td>{language === 'bn' ? 'রিটার্নসহ কর' : 'Tax with Return'}</td><td>{assessmentYear}</td><td>{formatCurrency(summedAmount ?? 0, language)}</td></tr>}
                       </React.Fragment>
                     ))}</tbody>
                   </table>
