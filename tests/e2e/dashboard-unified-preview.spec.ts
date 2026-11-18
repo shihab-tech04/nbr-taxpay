@@ -3,7 +3,7 @@ import {expect,test} from '@playwright/test';
 const capability='A'.repeat(43);
 const sessionId='00000000-0000-4000-8000-000000004444';
 type PreviewUser = 'user2'|'user30';
-async function mockAccount(page:import('@playwright/test').Page, userId:PreviewUser, populated=false, failHistory=false) {
+async function mockAccount(page:import('@playwright/test').Page, userId:PreviewUser, populated=false, failHistory=false, language:'en'|'bn'='en') {
   await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
     const request=route.request().postDataJSON() as Record<string,unknown>;
@@ -11,9 +11,9 @@ async function mockAccount(page:import('@playwright/test').Page, userId:PreviewU
     if(request.action==='demo-login'){
       if(request.userId!==userId||request.password!==userId)
         return route.fulfill({status:401,contentType:'application/json',body:'{"success":false}'});
-      data={profileId:userId,capability,paymentSessionId:sessionId,language:'en',selectedListId:null};
+      data={profileId:userId,capability,paymentSessionId:sessionId,language,selectedListId:null};
     }else if(request.action==='lists'||request.action==='people'||request.action==='payment-draft-list'){data=[];}
-    else if(request.action==='demo-settings'){data={language:'en',selectedListId:null,paymentSessionId:sessionId};}
+    else if(request.action==='demo-settings'){data={language,selectedListId:null,paymentSessionId:sessionId};}
     else if(request.action==='open'){data={active:true};}
     else return route.fulfill({status:404,contentType:'application/json',body:'{"success":false}'});
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
@@ -63,6 +63,15 @@ for(const user of ['user2','user30'] as const){
     const correctionKpi=dashboard.getByRole('button',{name:/Correction Requests/});
     await expect(correctionKpi).toContainText('0');
     await expect(correctionKpi).toContainText('View requests');
+    if(info.project.name==='mobile-375'){
+      for(const width of [320,375,390,768,1280]){
+        await page.setViewportSize({width,height:830});
+        await expect(correctionKpi).toContainText('0');
+        await expect(correctionKpi).toContainText('View requests');
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth),
+          'horizontal overflow at '+width).toBeLessThanOrEqual(2);
+      }
+    }
     await expect(dashboard.getByText('No payment relationships yet')).toBeVisible();
     await expect(dashboard.getByText('No beneficiaries to show')).toBeVisible();
     await expect(dashboard.getByText('Your tax journey is empty')).toBeVisible();
@@ -73,6 +82,22 @@ for(const user of ['user2','user30'] as const){
       .toBeLessThanOrEqual(2);
   });
 }
+
+test('User2 correction KPI localizes zero and action in Bengali',async({page},info)=>{
+  test.skip(info.project.name!=='mobile-375','Single Bengali dashboard check');
+  await mockAccount(page,'user2',false,false,'bn');
+  const dashboard=page.getByTestId('dashboard-unified-preview');
+  const correctionKpi=dashboard.getByRole('button',{name:/সংশোধনের আবেদন/});
+  await expect(correctionKpi).toContainText('০');
+  await expect(correctionKpi).toContainText('আবেদন দেখুন');
+  for(const width of [320,375,390,768,1280]){
+    await page.setViewportSize({width,height:830});
+    await expect(correctionKpi).toContainText('০');
+    await expect(correctionKpi).toContainText('আবেদন দেখুন');
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth),
+      'horizontal overflow at '+width).toBeLessThanOrEqual(2);
+  }
+});
 
 test('new-account completed activity changes data inside the same layout',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Targeted populated record gate');
