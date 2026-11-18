@@ -158,10 +158,16 @@ test('User2 Activity opens on transaction history while Pay Tax stays separate',
     name:language==='bn'?'পেমেন্টের শ্রেণি নির্বাচন করুন':'Choose payment category',exact:true
   })).toHaveCount(0);
 
-  const payLabel=language==='bn'?'কর পরিশোধের ধরন নির্বাচন':'Pay — select payment type';
+  const desktop=info.project.name==='desktop-1280';
+  const payLabel=desktop
+    ?language==='bn'?'কর পরিশোধের মেনু':'Pay Tax menu'
+    :language==='bn'?'কর পরিশোধের ধরন নির্বাচন':'Pay — select payment type';
   await page.getByRole('button',{name:payLabel,exact:true}).click();
   const options=page.getByRole('menu',{
-    name:language==='bn'?'পরিশোধের ধরন':'Payment options',exact:true
+    name:desktop
+      ?language==='bn'?'কর পরিশোধের বিকল্প':'Payment options'
+      :language==='bn'?'পরিশোধের ধরন':'Payment options',
+    exact:true
   });
   const payTaxLabel=language==='bn'?'কর পরিশোধ':'Pay Tax';
   await expect(options.getByRole('menuitem',{name:payTaxLabel,exact:true})).toBeVisible();
