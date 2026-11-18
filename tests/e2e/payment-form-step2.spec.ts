@@ -391,7 +391,7 @@ for (const locale of ['en', 'bn'] as const) {
     const card = modal.getByTestId('other-tax-primary-taxpayer');
     await expect(card).toBeVisible();
     await expect(modal.getByTestId('other-tax-taxpayer-list')).toHaveClass(/taxpay-taxpayer-list--single/);
-    await expect(card.getByRole('heading', { name: locale === 'bn' ? 'করদাতার তথ্য' : 'Taxpayer Information' })).toBeVisible();
+    await expect(card.getByRole('heading', { name: locale === 'bn' ? 'করদাতার তথ্য' : 'Taxpayer Information' })).toHaveCount(0);
     await expect(modal.locator('.taxpay-taxpayer-list__count')).toHaveCount(0);
     await expect(modal.getByRole('heading', { name: locale === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details', exact: true })).toHaveCount(0);
     await expect(modal.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
