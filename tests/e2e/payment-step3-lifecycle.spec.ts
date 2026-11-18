@@ -92,7 +92,14 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
-  await expect(dialog.locator('.receipt-view__paper')).toBeVisible();
+  const receiptPaper = dialog.locator('.receipt-view__paper');
+  await expect(receiptPaper).toBeVisible();
+  const backToConfirmation = dialog.getByRole('button', { name: 'Back to confirmation', exact: true });
+  await expect(backToConfirmation).toBeVisible();
+  await backToConfirmation.click();
+  await expect(receiptPaper).toHaveCount(0);
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Receipt details', exact: true })).toBeVisible();
   await expect(dialog.locator('.payment-form-summary')).toHaveCount(0);
   await expect(dialog.getByText('Not an official challan')).toHaveCount(0);
   await expect(dialog.getByText('Simulation only. No actual money transfer, government challan or tax credit has occurred.')).toHaveCount(0);
