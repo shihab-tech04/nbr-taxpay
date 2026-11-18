@@ -322,3 +322,94 @@
   .payment-flow-embedded--unified .unified-v3-review__table th {font-size:11px}
   .payment-flow-embedded--unified .unified-v3-review__table td {font-size:11px}
 }
+
+
+/* v5 only: accepted latest review, preserving original Pay Tax and Travel Tax. */
+.payment-flow-embedded--unified .unified-v5-tin-blocks {
+  position:relative; display:grid; grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:4px; flex:1 1 auto; width:100%; min-width:0; height:46px;
+}
+.payment-flow-embedded--unified .unified-v5-tin-blocks > span {
+  display:flex; align-items:center; justify-content:center; min-width:0;
+  border:1px solid #c9d8eb; border-radius:7px; background:#fff;
+  color:#17345a; font-size:clamp(12px,1.2vw,15px); font-weight:600;
+}
+.payment-flow-embedded--unified .unified-v5-tin-blocks > span.is-filled {
+  border-color:#9cb9e4; background:#f7faff;
+}
+.payment-flow-embedded--unified .unified-v5-tin-blocks:focus-within > span {
+  border-color:#588bd3;
+}
+.payment-flow-embedded--unified .unified-v5-tin-blocks > input.unified-v5-tin-input,
+.payment-flow-embedded--unified .unified-v5-tin-blocks > input#guest-tin {
+  position:absolute; inset:0; z-index:1; width:100%; height:100%;
+  border:0; outline:none; padding:0; opacity:0; cursor:text;
+}
+.payment-flow-embedded--unified .unified-v5-tin-blocks:focus-within {
+  outline:2px solid #6e9dde; outline-offset:2px; border-radius:8px;
+}
+.payment-flow-embedded--unified .unified-v5-profile-name {
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:2px;
+}
+.payment-flow-embedded--unified .unified-v5-profile-name > span {
+  font-weight:600; color:#315b95;
+}
+.payment-flow-embedded--unified .unified-taxpayer-workspace__person-copy strong span {
+  font-weight:600; color:#305b97;
+}
+.payment-flow-embedded--unified .unified-v5-payer-result {
+  margin-top:10px; padding:12px 14px; border:1px solid #ccdcf0;
+  border-radius:10px; background:#f8fbff; display:flex; flex-direction:column;
+  gap:6px; color:#17345a; font-size:13px;
+}
+.payment-flow-embedded--unified .unified-v5-payer-result > span {
+  font-size:12px; color:#607594; font-weight:600;
+}
+.payment-flow-embedded--unified .unified-v5-payer-result__identity {
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+}
+.payment-flow-embedded--unified .unified-v5-payer-result__identity strong {
+  font-size:14px; color:#152b4b;
+}
+.payment-flow-embedded--unified .unified-v5-payer-result__identity > span {
+  color:#285b9b; font-size:12px;
+}
+.payment-flow-embedded--unified .unified-v5-payer-result small {
+  font-size:12px; color:#657c9a;
+}
+.payment-flow-embedded--unified .payment-review--unified-v5 {
+  display:block; width:100%; max-width:none; min-width:0;
+}
+.payment-flow-embedded--unified .payment-review--unified-v5 .payment-review__main {
+  min-width:0; width:100%; max-width:none;
+}
+.payment-flow-embedded--unified .payment-review--unified-v5 .payment-review__aside {
+  display:none;
+}
+.payment-flow-embedded--unified .payment-flow-embedded__content:has(.payment-review--unified-v5) {
+  display:block;
+}
+.payment-flow-embedded--unified:has(.payment-review--unified-v5) .payment-flow-embedded__mobile-summary {
+  display:none;
+}
+.payment-flow-embedded--unified .unified-v5-review-total {
+  margin:0 12px 12px; padding:14px 12px 11px; border-top:1px solid #d8e3f0;
+  color:#17345a;
+}
+.payment-flow-embedded--unified .unified-v5-review-total__row {
+  display:flex; flex-wrap:wrap; justify-content:space-between;
+  align-items:baseline; gap:9px; font-size:14px;
+}
+.payment-flow-embedded--unified .unified-v5-review-total__row output {
+  font-size:23px; font-weight:750; font-variant-numeric:tabular-nums; color:#225ca8;
+}
+.payment-flow-embedded--unified .unified-v5-review-total > p {
+  font-size:13px; line-height:1.5; color:#46658c; margin:4px 0 0;
+}
+@media(max-width:520px) {
+  .payment-flow-embedded--unified .unified-v5-tin-blocks {gap:2px;height:42px}
+  .payment-flow-embedded--unified .unified-v5-tin-blocks > span {border-radius:4px;font-size:12px}
+  .payment-flow-embedded--unified .unified-taxpayer-workspace__search {gap:5px}
+  .payment-flow-embedded--unified .unified-taxpayer-workspace__search button {padding-inline:9px}
+  .payment-flow-embedded--unified .unified-v5-review-total {margin:0 8px 10px;padding:12px 8px}
+}
