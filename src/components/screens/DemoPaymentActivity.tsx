@@ -32,7 +32,7 @@ const isDefinedDemoUser=(user:SimulationUser):user is DemoUserId=>
 type EditableLine={beneficiary:SimulationUser;category:SimulationCategory;assessmentYear:string;amount:string};
 const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:CURRENT_PAY_AGAIN_YEAR,amount:'100.00'});
 /** Public, persistent synthetic transaction workspace. NEVER official payment evidence. */
-export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTabs=false})=>{
+export const DemoPaymentActivity:React.FC<{activityTabs?:boolean;showPaymentComposer?:boolean}>=({activityTabs=false,showPaymentComposer=false})=>{
   const {demoUser,previewAccount,language,navigate,routeParams}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
@@ -329,7 +329,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       description={`${txt('User ID','ইউজার আইডি')}: ${id}`} />
     {activityTabs && <TaxpayerActivityTabs />}
 
-    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New payment','নতুন পেমেন্ট')}>
+    {/* New payments stay in the shared Pay Tax flow; Activity opens on history. */}
+    {showPaymentComposer && <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New payment','নতুন পেমেন্ট')}>
       <ol aria-label={txt('Payment steps','পেমেন্টের ধাপ')} className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[txt('Category','শ্রেণি'),txt('Information','তথ্য'),txt('Payment and review','পেমেন্ট ও পর্যালোচনা'),txt('Result','ফলাফল')].map((name,index)=>{
           const status=paymentStage>index?'complete':paymentStage===index?'current':'upcoming';
@@ -420,9 +421,9 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         </div>
         {submitMessage&&<p role="status" aria-live="polite" className="text-sm font-semibold text-taxpay-text">{submitMessage}</p>}
       </form></>}
-    </section>
+    </section>}
 
-    <nav className="flex flex-wrap gap-2" aria-label={txt('History perspective','ইতিহাসের ধরন')}>
+    <nav className="flex flex-wrap gap-2" aria-label={txt('History perspective','ইતિહાસের ধরন')}>
       {(['beneficiary','payer'] as const).map(mode=><button key={mode} type="button" aria-pressed={view===mode} onClick={()=>{setHistoryViewChosen(true);setView(mode);}}
         className="min-h-11 rounded-lg border border-taxpay-border bg-white px-4 font-semibold text-taxpay-dark">
         {mode==='beneficiary'?txt('Payments allocated to me','আমার হিসাবে বরাদ্দ'):txt('Payments I initiated','আমার শুরু করা পেমেন্ট')}
