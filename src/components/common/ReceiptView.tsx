@@ -262,6 +262,12 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
           onClick={onBack}>{bn ? 'পেমেন্ট নিশ্চিতকরণে ফিরুন' : 'Back to confirmation'}</button>
       </div>}
+      {showReceiptTransactionActions && !onBack && <div className="no-print flex flex-wrap items-center gap-2">
+        <button type="button" className="receipt-view__action receipt-view__action--secondary"
+          onClick={() => window.print()}>
+          <Printer size={18} aria-hidden="true" /><span>{labels.print}</span>
+        </button>
+      </div>}
       {canViewCertificate && !certificate && <button type="button"
         className="receipt-view__action receipt-view__action--secondary no-print"
         onClick={() => { setDownloadError(false); setShowCertificate(value => !value); }}>
