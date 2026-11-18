@@ -802,9 +802,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     return `${name || ''}${code ? ` · ${language === 'bn' ? 'কোড' : 'Code'} ${code}` : ''}`;
   };
   const paymentCalculation = otherBatch ? <PaymentLiveSummary language={language} hideService={embedded}
-    activeEntryId={step === 2 && !unifiedFlow ? activeCalculationLineId : undefined}
+    activeEntryId={step === 2 && !unifiedFlow && forSelf === false ? activeCalculationLineId : undefined}
     onSelectEntry={step === 2 ? lineId => {
-      if (!unifiedFlow) setActiveCalculationLineId(lineId);
+      if (!unifiedFlow && forSelf === false) setActiveCalculationLineId(lineId);
       setSummaryJump(current => ({ lineId, requestId: current.requestId + 1 }));
     } : undefined}
     category={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment'}
@@ -2236,7 +2236,8 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
           <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} serviceSelection={unifiedFlow ? unifiedServiceChoice : undefined} unifiedV3={unifiedFlow} maskTaxpayerTin={unifiedFlow} remarks={unifiedFlow ? undefined : paymentRemarksControl}
             lines={otherTaxLines} suggestionTaxpayerIds={ownAccountTax ? { primary: demoConsentActor } : undefined}
             preserveSourcePaymentAmounts={Boolean(sourcePaymentId)} focusRequest={summaryJump}
-            onFocusLine={unifiedFlow ? undefined : setActiveCalculationLineId} onChange={next => {
+            originalFacilitation={!unifiedFlow && forSelf === false}
+            onFocusLine={!unifiedFlow && forSelf === false ? setActiveCalculationLineId : undefined} onChange={next => {
               setOtherTaxLines(next);
               // Keep the invalid-row indicators visible until every selected
               // head is corrected, instead of hiding them after the first edit.
