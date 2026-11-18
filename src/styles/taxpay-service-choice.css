@@ -2702,3 +2702,7 @@
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has(.payment-flow-embedded:not(.payment-flow-embedded--unified) .other-tax-batch-panel) .other-tax-head-tools__row:has(> .other-tax-clear-selection){grid-template-columns:minmax(0,1fr) auto;}
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has(.payment-flow-embedded:not(.payment-flow-embedded--unified) .other-tax-batch-panel) .other-tax-head-tools__row:has(> .other-tax-clear-selection) .other-tax-head-tools__search{grid-column:1/-1;}
 }
+
+/* A collapsed group still signals a focused editor line without opening itself. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has(.payment-flow-embedded:not(.payment-flow-embedded--unified) .other-tax-batch-panel) .payment-form-summary__taxpayer:not([open]):has(.payment-form-summary__entry--link[data-active="true"]){border-color:var(--other-tax-lock-open-border);}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]:has(.payment-flow-embedded:not(.payment-flow-embedded--unified) .other-tax-batch-panel) .payment-form-summary__taxpayer:not([open]):has(.payment-form-summary__entry--link[data-active="true"]) > summary{background:var(--other-tax-lock-chip-selected);}
