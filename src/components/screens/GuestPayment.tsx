@@ -199,11 +199,12 @@ interface GuestPaymentProps {
   initialBeneficiary?: PaymentBeneficiaryPrefill;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
+  onCheckoutChange?: (checkout: boolean) => void;
   /** New Home entry: preserve the existing payment engine but present three input steps. */
   unifiedFlow?: boolean;
 }
 
-export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialReuse, initialForSelf, initialBeneficiary, onBackToService, onStageChange, unifiedFlow = false }) => {
+export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialReuse, initialForSelf, initialBeneficiary, onBackToService, onStageChange, onCheckoutChange, unifiedFlow = false }) => {
   const { language, navigate, addPaymentReceipt, routeParams, previewAccount, setPaymentServiceChoiceOpen, startPaymentReuse } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // The standalone guest route can also be visited from a signed-in session.
@@ -217,6 +218,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
   // Wizard state steps: 1: Taxpayer & Identification, 2: Head & Amount, 3: Review & Gateway, 4: Receipt
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [unifiedCheckout, setUnifiedCheckout] = useState(false);
   // Match the modal's mobile breakpoint; desktop/tablet retain the approved rail.
   const [mobilePaymentFooter, setMobilePaymentFooter] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 650px)').matches);
@@ -1281,8 +1283,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setStep(1);
       return;
     }
-    if (unifiedFlow && !validateFinalPayerDetails()) return;
-    if (blockInvalidReturn()) { setStep(exclusiveReturnIssue === 'year' ? 2 : 1); return; }
+    if (unifiedFlow && !validateFinalPayerDetails()) { setUnifiedCheckout(false); onCheckoutChange?.(false); return; }
+    if (blockInvalidReturn()) { setUnifiedCheckout(false); onCheckoutChange?.(false); setStep(exclusiveReturnIssue === 'year' ? 2 : 1); return; }
     if (batchRecoveryError || isProcessing || !acknowledged || !paymentChannel || !paymentMethod ||
       !(otherBatch ? batchValid : amountsValid) || (initialReuse && !otherBatch && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) ||
       !storyAmountSupported || storyAmountMinor === null) return;
@@ -1481,6 +1483,20 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     runLifecycle(BANK_SETTLEMENT, attemptReceipt);
   };
 
+  const openUnifiedCheckout = () => {
+    if (!unifiedFlow || batchRecoveryError || isProcessing || !storyAmountSupported ||
+      (otherBatch && !batchValid) ||
+      (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))) return;
+    if (!validateFinalPayerDetails() || blockInvalidReturn()) return;
+    clearValidationError();
+    setUnifiedCheckout(true);
+    onCheckoutChange?.(true);
+  };
+  const backToUnifiedPreview = () => {
+    setUnifiedCheckout(false);
+    onCheckoutChange?.(false);
+  };
+
   const retryPayment = () => {
     if (paymentPhase === 'failed' && batchAttemptRef.current?.phase === 'READY') {
       setIsProcessing(true);
@@ -1510,6 +1526,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setPaymentMethod(null);
     setMethodGroup(null);
     setShowReceiptDetails(false);
+    backToUnifiedPreview();
     setStep(3);
   };
 
@@ -1544,7 +1561,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     // A new checkout is not a repeat payment: discard immutable source provenance.
     setSourcePaymentId(null); setSourceAllocationIds([]);
     setAuthorizedTaxpayerId(null); setTin(''); setOtherTaxpayerName('');
-    setShowReceiptDetails(false); setErrorMessage(''); setStep(1);
+    setShowReceiptDetails(false); setErrorMessage(''); backToUnifiedPreview(); setStep(1);
   };
 
   if (step === 4) {
@@ -2481,7 +2498,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
         ))}
 
         {/* STEP 3: Review Challan & Execute Simulated Gateway */}
-        {step === 3 && (
+        {step === 3 && (!unifiedFlow || !unifiedCheckout) && (
           <div className={unifiedFlow ? "payment-review payment-review--unified-v5" : "payment-review"} data-testid="payment-review">
             <div className="payment-review__main">
               {unifiedFlow && <section className="payment-review__panel unified-v3-review" aria-labelledby="unified-v3-review-title" data-testid="unified-v3-payment-details">
@@ -2526,7 +2543,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                 <div className="payment-identity__fields">{payerReceiptFields}</div>
                 {ownAccountTax && !isWithholdingMode && receiptEmailControl}
               </section>}
-              <section className="payment-review__panel" aria-labelledby="guest-payment-channel-title">
+              {!unifiedFlow && <section className="payment-review__panel" aria-labelledby="guest-payment-channel-title">
                 <div className="payment-review__section-title"><span className="payment-review__section-number">01</span><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2><p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div></div>
                 {!storyAmountSupported && <p role="alert" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
                   {language === 'bn' ? `মোট পরিমাণের সর্বোচ্চ সীমা ${formatCurrency(Number(MAX_STORY_AMOUNT_MINOR) / 100, language)}।`
@@ -2552,21 +2569,57 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
                   simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline} />
                 {paymentChannel && paymentMethod && <label className="payment-review__ack"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} /><span>{category === 'SOURCE_TAX_DEPOSIT' ? (language === 'bn' ? 'এজেন্টের টিআইএন, কর্তনের খাত, করবর্ষ ও পরিমাণ যাচাই করেছি। কর্তিত করদাতারা eTDS-এ বরাদ্দের পর ক্রেডিট পাবেন।' : 'I confirm the agent TIN, deduction head, year and amount. Deductee credit follows eTDS allocation.') : otherBatch ? (language === 'bn' ? 'প্রতিটি করদাতার টিআইএন, সংশ্লিষ্ট খাত, করবর্ষ ও পরিমাণ যাচাই করেছি।' : 'I confirm each taxpayer TIN and the assigned payment heads, assessment years and amounts.') : (language === 'bn' ? 'টিআইএন, খাত, আয়করের ধরন, করবর্ষ ও মোট পরিমাণ যাচাই করেছি। ক্রেডিট করদাতার হিসাবে যাবে।' : 'I confirm the TIN, payment head, income tax type, assessment year and total. Credit goes to the taxpayer.')}</span></label>}
-              </section>
+              </section>}
               {unifiedFlow && paymentRemarksControl}
             </div>
-            <aside className="payment-review__aside" aria-label={language === 'bn' ? 'পেমেন্টের মোট পরিমাণ' : 'Payment total'}>
+            {!unifiedFlow && <aside className="payment-review__aside" aria-label={language === 'bn' ? 'পেমেন্টের মোট পরিমাণ' : 'Payment total'}>
               {inlinePaymentCalculation}
-            </aside>
+            </aside>}
             {!embedded && <div className="payment-review__standalone-actions">
               <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{commonCopy.btnBack}</button>
-              <button type="button" className="payment-review__pay" onClick={handleExecutePayment} disabled={batchRecoveryError || !paymentChannel || !paymentMethod || !acknowledged || isProcessing || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))}>{paymentChannel === 'OTC'
+              <button type="button" className="payment-review__pay" onClick={unifiedFlow ? openUnifiedCheckout : handleExecutePayment} disabled={batchRecoveryError || isProcessing || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) || (!unifiedFlow && (!paymentChannel || !paymentMethod || !acknowledged))}>{paymentChannel === 'OTC'
                 ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
                 : unifiedFlow
                   ? (language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment')
                   : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}<ArrowRight size={17} /></button>
             </div>}
           </div>
+        )}
+        {step === 3 && unifiedFlow && unifiedCheckout && (
+          <section className="payment-review payment-review--unified-v5 unified-v5-payment-channel"
+            data-testid="unified-v5-payment-channel-screen" aria-labelledby="unified-v5-payment-channel-heading">
+            <div className="payment-review__main">
+              <section className="payment-review__panel">
+                <div className="payment-review__section-title">
+                  <div><h2 id="unified-v5-payment-channel-heading">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2>
+                    <p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div>
+                </div>
+                {batchRecoveryError && <p role="alert" className="mb-3 text-sm text-taxpay-error">
+                  {language === 'bn' ? 'সংরক্ষিত পেমেন্ট অনুরোধ পাওয়া যায়নি। আবার চেষ্টা করুন।' : 'Saved payment request is unavailable. Please retry.'}
+                </p>}
+                {!batchRecoveryError && errorMessage && <p role="alert" className="mb-3 text-sm text-taxpay-error">{errorMessage}</p>}
+                <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
+                  onChannelChange={(channel, method) => { setPaymentChannel(channel); setPaymentMethod(method); setMethodGroup(null); setAcknowledged(false); }}
+                  onGroupChange={group => { setMethodGroup(group); setPaymentMethod(null); setAcknowledged(false); }}
+                  onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
+                  simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline} />
+                {paymentChannel && paymentMethod && <label className="payment-review__ack">
+                  <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} />
+                  <span>{language === 'bn' ? 'করদাতা, খাত, করবর্ষ ও মোট পরিমাণ যাচাই করেছি।' : 'I have checked the taxpayers, payment heads, assessment years and total amount.'}</span>
+                </label>}
+              </section>
+              {!embedded && <div className="payment-review__standalone-actions">
+                <button type="button" className="payment-review__back" onClick={backToUnifiedPreview}>
+                  <ArrowLeft size={17}/>{language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় ফিরুন' : 'Back to Final Preview'}
+                </button>
+                <button type="button" className="payment-review__pay" onClick={handleExecutePayment}
+                  disabled={batchRecoveryError || isProcessing || !paymentChannel || !paymentMethod || !acknowledged || !storyAmountSupported || (otherBatch && !batchValid)}>
+                  {paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
+                    : (language === 'bn' ? 'পরিশোধ নিশ্চিত করুন' : 'Confirm payment')}<ArrowRight size={17}/>
+                </button>
+              </div>}
+            </div>
+          </section>
         )}
       </div>
       {embedded && modalFooterTarget && createPortal(
@@ -2602,15 +2655,27 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               <span className="payment-flow-embedded__action-long">{unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to final preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
             </button>
           </>) : step === 3 ? (<>
-            <button type="button" className="tax-service-choice__cancel" onClick={() => setStep(2)} disabled={isProcessing}>
-              <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
+            <button type="button" className="tax-service-choice__cancel"
+              onClick={unifiedFlow && unifiedCheckout ? backToUnifiedPreview : () => setStep(2)}
+              disabled={isProcessing}>
+              <ArrowLeft size={17} aria-hidden="true" />
+              {unifiedFlow && unifiedCheckout
+                ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় ফিরুন' : 'Back to Final Preview')
+                : commonCopy.btnBack}
             </button>
-            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={batchRecoveryError || isProcessing || !paymentChannel || !paymentMethod || !acknowledged || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))} aria-busy={isProcessing}>
-              {paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}{paymentChannel === 'OTC'
-                ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
-                : unifiedFlow
-                  ? (language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment')
-                  : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}
+            <button type="button" className="tax-service-choice__continue"
+              onClick={unifiedFlow && !unifiedCheckout ? openUnifiedCheckout : handleExecutePayment}
+              disabled={batchRecoveryError || isProcessing || !storyAmountSupported || (otherBatch && !batchValid) ||
+                (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) ||
+                ((!unifiedFlow || unifiedCheckout) && (!paymentChannel || !paymentMethod || !acknowledged))}
+              aria-busy={isProcessing}>
+              {unifiedFlow && !unifiedCheckout
+                ? <><CreditCard size={18} aria-hidden="true"/>{language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment'}</>
+                : <>{paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}
+                  {paymentChannel === 'OTC'
+                    ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
+                    : unifiedFlow ? (language === 'bn' ? 'পরিশোধ নিশ্চিত করুন' : 'Confirm payment')
+                    : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}</>}
             </button>
           </>) : null}
         </div>, modalFooterTarget
