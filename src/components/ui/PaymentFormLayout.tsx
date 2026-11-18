@@ -144,6 +144,9 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
                 {group.amount === null ? '—' : formatCurrency(group.amount, language)}
               </strong>
             </div>
+            {group.entries.length === 0 && <p role="status" className="payment-form-summary__compact-owner-warning">
+              {bn ? 'এই করদাতার জন্য একটি খাত নির্বাচন করুন।' : 'Select a payment head for this taxpayer.'}
+            </p>}
             {incomplete > 0 && <p role="status" className="payment-form-summary__compact-owner-warning">
               {bn ? `${incomplete}টি নির্বাচিত খাতের পরিমাণ পূরণ করুন।`
                   : `Enter amounts for ${incomplete} selected ${incomplete === 1 ? 'head' : 'heads'}.`}
