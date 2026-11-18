@@ -39,8 +39,8 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
   await expect(grouped.locator('details')).toHaveCount(2);
-  await expect(grouped).toContainText('123456789012');
-  await expect(grouped).toContainText('234567890123');
+  await expect(grouped).toContainText('123****');
+  await expect(grouped).toContainText('234****');
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2100');
