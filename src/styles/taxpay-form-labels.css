@@ -178,7 +178,9 @@
   font-size: 14px;
   font-weight: 500;
 }
-@media (max-width: 560px) {
+/* Keep the passport input and lookup action full-width on tablets and phones.
+   Desktop retains the approved inline input + Check Passport pairing. */
+@media (max-width: 800px) {
   .taxpay-citizen-shell .travel-flow__passport-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
