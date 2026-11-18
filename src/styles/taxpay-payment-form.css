@@ -521,3 +521,58 @@
 @media (max-width: 410px) {
   .payment-unified-mode__choices { grid-template-columns: minmax(0, 1fr); }
 }
+
+
+/* Payment identity: one field per row at its actual container width.
+   The approved modal, 60:40 desktop rail, footer and Step 2/3 layouts stay
+   unchanged. Avoid half-empty receipt rows on both payer relationships. */
+.payment-flow-embedded__identity .payment-identity__receipt-row {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.payment-flow-embedded__identity .payment-identity__receipt-row > div,
+.payment-flow-embedded__identity .payment-identity__receipt-row > div > :is(input, select, textarea) {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+.payment-flow-embedded__identity .taxpay-taxpayer-list,
+.payment-flow-embedded__identity .taxpay-taxpayer-row,
+.payment-flow-embedded__identity .taxpay-taxpayer-row__fields,
+.payment-flow-embedded__identity .taxpay-taxpayer-row__fields--shared,
+.payment-flow-embedded__identity .taxpay-taxpayer-row__fields--shared > .taxpayer-tin-lookup,
+.payment-flow-embedded__identity .taxpayer-tin-lookup__field,
+.payment-flow-embedded__identity .taxpayer-tin-lookup__field > input {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+/* The search control keeps its approved place but never caps the TIN field. */
+.payment-flow-embedded__identity .taxpayer-tin-lookup__search-row {
+  grid-template-columns: minmax(0, 1fr) max-content;
+  width: 100%;
+  min-width: 0;
+}
+.payment-flow-embedded__identity .taxpayer-tin-lookup__tin-entry,
+.payment-flow-embedded__identity .taxpayer-tin-lookup__tin-entry > input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+/* Before any allocation exists, the calculation remains a compact summary
+   rather than painting a misleading full-height empty panel. */
+.payment-flow-embedded__identity .payment-form-summary {
+  align-self: start;
+  height: fit-content;
+}
+@media (max-width: 420px) {
+  /* On narrow phones a side-by-side Search button needlessly halves the TIN. */
+  .payment-flow-embedded__identity .taxpayer-tin-lookup__search-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .payment-flow-embedded__identity .taxpayer-tin-lookup__search {
+    width: 100%;
+  }
+}
