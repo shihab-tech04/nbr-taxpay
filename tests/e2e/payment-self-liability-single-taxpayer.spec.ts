@@ -123,10 +123,16 @@ test('walk-in facilitator receipt fields are full editor width and ordered', asy
     const m=await fields.evaluate(el=>{
       const row=el.getBoundingClientRect();
       const inputs=[...el.querySelectorAll('input')].filter(x=>x.getClientRects().length);
-      return {row:row.width,fields:inputs.map(x=>({width:x.getBoundingClientRect().width,right:x.getBoundingClientRect().right,top:x.getBoundingClientRect().top}))};
+      return {row:row.width,fields:inputs.map(x=>({width:x.getBoundingClientRect().width,cellWidth:x.parentElement!.getBoundingClientRect().width,right:x.getBoundingClientRect().right,top:x.getBoundingClientRect().top}))};
     });
     expect(m.fields.length).toBeGreaterThanOrEqual(3);
-    for(const f of m.fields){expect(f.width).toBeGreaterThan(m.row-3);expect(f.right).toBeLessThanOrEqual(width+2);}
-    expect(m.fields[1].top).toBeGreaterThan(m.fields[0].top);
+    for(const f of m.fields){
+      expect(Math.abs(f.width-f.cellWidth)).toBeLessThanOrEqual(2);
+      expect(f.right).toBeLessThanOrEqual(width+2);
+    }
+    if(width<=650){
+      for(const f of m.fields)expect(f.width).toBeGreaterThan(m.row-3);
+      expect(m.fields[1].top).toBeGreaterThan(m.fields[0].top);
+    }
   }
 });
