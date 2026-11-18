@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, Copy, Eye, EyeOff, ReceiptText } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff, ReceiptText } from 'lucide-react';
 import { formatCurrency } from '../../services/numberFormat';
 import { amountInTakaWords } from '../../services/amountInWords';
 import type { ServiceCategoryCode } from './ServiceCategoryTag';
@@ -65,46 +65,28 @@ interface PaymentSummaryProps {
   onSelectEntry?: (id: string) => void;
   /** Optional active editor line; no behavior change to other payment services. */
   activeEntryId?: string | null;
+  /** Approved v5: keep full selections in the editor, show only taxpayer subtotals here. */
+  compactTaxpayerView?: boolean;
 }
 
-/** Mask payment-form identity by default. Full TIN is still available by an
- * explicit reveal/copy gesture; transaction serialization is unchanged. */
+/** Payment calculations permit TIN reveal, never TIN copying. Only Profile has a TIN copy action. */
 function MaskedSummaryTin({ tin, language }: { tin: string; language: Language }) {
   const [revealed, setRevealed] = React.useState(false);
-  const [copyState, setCopyState] = React.useState<'idle' | 'copied' | 'failed'>('idle');
   const bn = language === 'bn';
   const visible = revealed ? tin : tin.slice(0, 3) + '****';
-
-  const copyTin = async () => {
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
-      await navigator.clipboard.writeText(tin);
-      setCopyState('copied');
-    } catch {
-      setCopyState('failed');
-    }
-  };
-
   return <span className="payment-form-summary__tin">
     <span className="payment-form-summary__mono" data-testid="payment-summary-tin">{visible}</span>
     <button type="button" className="payment-form-summary__tin-action"
       aria-label={revealed ? (bn ? 'টিআইএন লুকান' : 'Hide TIN') : (bn ? 'টিআইএন দেখুন' : 'Reveal TIN')}
-      aria-pressed={revealed} onClick={event => { event.preventDefault(); event.stopPropagation(); setRevealed(value => !value); }}
+      aria-pressed={revealed}
+      onClick={event => { event.preventDefault(); event.stopPropagation(); setRevealed(value => !value); }}
       onKeyDown={event => event.stopPropagation()}>
       {revealed ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
     </button>
-    <button type="button" className="payment-form-summary__tin-action"
-      aria-label={bn ? 'টিআইএন কপি করুন' : 'Copy TIN'}
-      onClick={event => { event.preventDefault(); event.stopPropagation(); void copyTin(); }}
-      onKeyDown={event => event.stopPropagation()}><Copy size={16} aria-hidden="true" /></button>
-    <span className="sr-only" role="status">
-      {copyState === 'copied' ? (bn ? 'টিআইএন কপি হয়েছে' : 'TIN copied')
-        : copyState === 'failed' ? (bn ? 'টিআইএন কপি করা যায়নি' : 'Could not copy TIN') : ''}
-    </span>
   </span>;
 }
 
-export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown, onSelectEntry, activeEntryId }: PaymentSummaryProps) {
+export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown, onSelectEntry, activeEntryId, compactTaxpayerView = false }: PaymentSummaryProps) {
   const bn = language === 'bn';
   const amountWords = amountInTakaWords(amount, language);
   // A bulk selection can contain dozens of entries. Keep a clear, accessible
@@ -143,11 +125,33 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
         {head && <div><dt>{bn ? 'খাত' : 'Payment head'}</dt><dd>{head}</dd></div>}
       </dl>}
       {Boolean(breakdown?.length || groupedBreakdown?.length) && <div className="payment-form-summary__scroll-content" data-testid="payment-calculation-scroll-area">
-      {breakdown && breakdown.length > 0 && <div className="payment-form-summary__breakdown">
+      {!compactTaxpayerView && breakdown && breakdown.length > 0 && <div className="payment-form-summary__breakdown">
         <h3>{bn ? 'হিসাবের বিবরণ' : 'Amount breakdown'}</h3>
         {breakdown.map(renderBreakdownEntry)}
       </div>}
-      {groupedBreakdown && groupedBreakdown.length > 0 && <section className="payment-form-summary__taxpayers" aria-label={bn ? 'করদাতা অনুযায়ী হিসাব' : 'Calculation by taxpayer'} data-testid="grouped-taxpayer-calculation">
+      {compactTaxpayerView && groupedBreakdown && groupedBreakdown.length > 0 && <section className="payment-form-summary__compact-owners"
+        aria-label={bn ? 'করদাতা অনুযায়ী হিসাব' : 'Calculation by taxpayer'} data-testid="v5-compact-taxpayer-summary">
+        {groupedBreakdown.map(group => {
+          const incomplete = group.entries.filter(entry =>
+            entry.value === null || !Number.isFinite(entry.value) || entry.value <= 0).length;
+          return <div className="payment-form-summary__compact-owner" key={group.id}>
+            <div className="payment-form-summary__compact-owner-top">
+              <div className="payment-form-summary__compact-owner-identity">
+                <strong>{group.label}</strong>
+                <small>{group.tin ? group.tin.slice(0, 3) + '****' : '—'}</small>
+              </div>
+              <strong className="payment-form-summary__compact-owner-total">
+                {group.amount === null ? '—' : formatCurrency(group.amount, language)}
+              </strong>
+            </div>
+            {incomplete > 0 && <p role="status" className="payment-form-summary__compact-owner-warning">
+              {bn ? `${incomplete}টি নির্বাচিত খাতের পরিমাণ পূরণ করুন।`
+                  : `Enter amounts for ${incomplete} selected ${incomplete === 1 ? 'head' : 'heads'}.`}
+            </p>}
+          </div>;
+        })}
+      </section>}
+      {!compactTaxpayerView && groupedBreakdown && groupedBreakdown.length > 0 && <section className="payment-form-summary__taxpayers" aria-label={bn ? 'করদাতা অনুযায়ী হিসাব' : 'Calculation by taxpayer'} data-testid="grouped-taxpayer-calculation">
         <h3>{bn ? 'করদাতা অনুযায়ী হিসাব' : 'By taxpayer'}</h3>
         {groupedBreakdown.map((group, index) => {
           const countLabel = group.countLabel ?? (bn ? `${group.entries.length}টি খাত` : `${group.entries.length} ${group.entries.length === 1 ? 'head' : 'heads'}`);
