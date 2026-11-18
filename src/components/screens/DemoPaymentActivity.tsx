@@ -68,6 +68,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean;showPaymentComp
   const [parentCategory,setParentCategory]=useState<SimulationCategory>('TAX_WITH_RETURN');
   const [completedReference,setCompletedReference]=useState('');
   const [payAgainSource,setPayAgainSource]=useState<string|null>(null);
+  const [activityComposerActive,setActivityComposerActive]=useState(false);
   const chooseCategory=(category:SimulationCategory)=>{setPayAgainSource(null);setParentCategory(category);setLines(old=>old.map(line=>({...line,category})));setPaymentStage(1);};
   const requestCorrection=(tx:SimulationTransaction)=>{
     if(privateMode&&authenticatedUser){setCorrectionTarget(tx);return;}
@@ -183,6 +184,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean;showPaymentComp
       setLines(copy.lines as EditableLine[]);
       setParentCategory(copy.lines[0].category as SimulationCategory);
       setPayAgainSource(record.id);
+      setActivityComposerActive(true);
       setNonce(crypto.randomUUID());
       setSubmitMessage('');
       setSelectedPayment(null);
@@ -336,7 +338,13 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean;showPaymentComp
     {activityTabs && <TaxpayerActivityTabs />}
 
     {/* New payments stay in the shared Pay Tax flow; Activity opens on history. */}
-    {(showPaymentComposer || currentRoute==='wizard' || payAgainSource!==null) && <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New payment','নতুন পেমেন্ট')}>
+    {(showPaymentComposer || currentRoute==='wizard' || activityComposerActive) && <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New payment','নতুন পেমেন্ট')}>
+      {activityComposerActive&&<div className="mb-4 flex justify-end">
+        <button type="button" onClick={()=>{setActivityComposerActive(false);setPaymentStage(0);setPayAgainSource(null);setSubmitMessage('');}}
+          className="min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary">
+          {txt('Back to transaction history','লেনদেনের ইতিহাসে ফিরুন')}
+        </button>
+      </div>}
       <ol aria-label={txt('Payment steps','পেমেন্টের ধাপ')} className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[txt('Category','শ্রেণি'),txt('Information','তথ্য'),txt('Payment and review','পেমেন্ট ও পর্যালোচনা'),txt('Result','ফলাফল')].map((name,index)=>{
           const status=paymentStage>index?'complete':paymentStage===index?'current':'upcoming';
