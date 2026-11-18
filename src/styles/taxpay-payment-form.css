@@ -73,6 +73,7 @@
 }
 
 .payment-form-summary__taxpayer-identity {display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0;overflow-wrap:anywhere}
+.payment-form-summary__taxpayer-tin-tools {display:flex;justify-content:flex-end;min-width:0;padding:5px 12px;border-top:1px solid var(--citizen-border)}
 
 .payment-form-summary__breakdown{padding:16px 18px;border-top:1px solid #e0e9f4;display:grid;gap:11px}
 .payment-form-summary__breakdown h3{font-size:14px;font-weight:700;margin:0 0 2px}
