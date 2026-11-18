@@ -73,6 +73,11 @@ export function prepareCombinedOtherTaxPayment(
     Math.round(receipt.totalAmount * 100) !== sum)
     throw new Error('COMBINED_TOTAL_MISMATCH');
   const tins = [...new Set(lines.map(item => item.taxpayerTin))];
+  // New SELF payments are for exactly the selected taxpayer. The OTHER
+  // relationship retains approved multi-taxpayer allocations.
+  if (original.details.payerMode === 'SELF' &&
+    (tins.length !== 1 || tins[0] !== original.details.taxpayerTin))
+    throw new Error('SELF_PAYMENT_SINGLE_TAXPAYER_REQUIRED');
   const years = [...new Set(lines.map(item => item.assessmentYear))];
   const allocationItems: ReceiptAllocationItem[] = lines.map(item => ({
     allocationId: item.sourceId,
