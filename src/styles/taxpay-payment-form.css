@@ -527,8 +527,8 @@
    The approved modal, 60:40 desktop rail, footer and Step 2/3 layouts stay
    unchanged. Avoid half-empty receipt rows on both payer relationships. */
 .payment-flow-embedded__identity .payment-identity__receipt-row {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 .payment-flow-embedded__identity .payment-identity__receipt-row > div,
 .payment-flow-embedded__identity .payment-identity__receipt-row > div > :is(input, select, textarea) {
@@ -566,6 +566,12 @@
 .payment-flow-embedded__identity .payment-form-summary {
   align-self: start;
   height: fit-content;
+}
+@media (max-width: 650px) {
+  .payment-flow-embedded__identity .payment-identity__receipt-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
 }
 @media (max-width: 420px) {
   /* On narrow phones a side-by-side Search button needlessly halves the TIN. */
