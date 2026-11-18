@@ -11,9 +11,9 @@ DECLARE
   v_old text := $source$ELSIF jsonb_typeof(v_lines) = 'array' AND EXISTS ($source$;
   v_new text := $source$ELSIF NOT (
     v_service = 'OTHER_TAX_PAYMENT'
-    AND v_details->>'combinedPayment' = 'true'
-    AND v_details->>'allocationContractVersion' = '5'
-    AND p_input->>'origin' = 'TAXPAY_UI'
+    AND coalesce(v_details->>'combinedPayment','') = 'true'
+    AND coalesce(v_details->>'allocationContractVersion','') = '5'
+    AND coalesce(p_input->>'origin','') = 'TAXPAY_UI'
   ) AND jsonb_typeof(v_lines) = 'array' AND EXISTS ($source$;
 BEGIN
   v_sql := pg_catalog.pg_get_functiondef('demo_payment.assert_new_head_exclusivity(jsonb)'::pg_catalog.regprocedure);
@@ -52,9 +52,9 @@ DECLARE
       IF NOT FOUND THEN RAISE EXCEPTION 'INVALID_COMBINED_HEAD'; END IF;$source$;
   v_old_exclusive text := $source$(new.service_code = 'OTHER_TAX_PAYMENT' AND v_head.head_id = 125)$source$;
   v_new_exclusive text := $source$(new.service_code = 'OTHER_TAX_PAYMENT' AND v_head.head_id = 125
-            AND NOT (new.data->>'origin' = 'TAXPAY_UI'
-                     AND new.data#>>'{details,allocationContractVersion}' = '5'
-                     AND new.data#>>'{details,combinedPayment}' = 'true'))$source$;
+            AND NOT (coalesce(new.data->>'origin','') = 'TAXPAY_UI'
+                     AND coalesce(new.data#>>'{details,allocationContractVersion}','') = '5'
+                     AND coalesce(new.data#>>'{details,combinedPayment}','') = 'true'))$source$;
   v_old_one_time text := $source$new.data->'details'->>'allocationContractVersion' IS DISTINCT FROM '3'$source$;
   v_new_one_time text := $source$coalesce(new.data->'details'->>'allocationContractVersion','') NOT IN ('3','5')$source$;
 BEGIN

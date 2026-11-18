@@ -392,7 +392,7 @@ test('parallel v5 mixed Return and Other Tax keeps one reconciled parent and unc
  assert.equal(v5.receipt.allocationItems?.[0].paymentServiceBn,ret.nameBn);
  const storage=store();
  assert.equal(saveCombinedOtherTaxRequest(v5,'READY',storage),true);
- assert.deepEqual(loadCombinedOtherTaxRequest(session,storage)?.request.payload,v5.payload);
+ assert.equal(JSON.stringify(loadCombinedOtherTaxRequest(session,storage)?.request.payload),JSON.stringify(v5.payload));
  const confirmed=makeConfirmedReceipt({id,service:'OTHER_TAX_PAYMENT',
    amountMinor:5000,status:'SIMULATED_SUCCESS',createdAt:'2026-11-18T12:00:00Z',details:v5.payload.details});
  assert.deepEqual(confirmed.allocationItems?.map(a=>a.allocationId),['one','two']);

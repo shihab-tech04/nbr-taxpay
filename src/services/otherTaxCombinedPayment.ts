@@ -91,7 +91,9 @@ export function prepareCombinedOtherTaxPayment(
     taxpayerName: item.taxpayerName.trim() || 'TIN ' + item.taxpayerTin,
     taxpayerTin: item.taxpayerTin,
     paymentServiceEn: item.line.headNameEn,
-    paymentServiceBn: paymentOptions.get(item.line.headId)?.nameBn || MASTER_PAYMENT_HEADS.find(head => head.id===item.line.headId && head.nameEn===item.line.headNameEn)?.nameBn || item.line.headNameEn,
+    paymentServiceBn: item.line.headId === 125 && options.unifiedV5 === true
+      ? paymentOptions.get(125)?.nameBn || item.line.headNameEn
+      : MASTER_PAYMENT_HEADS.find(head => head.id===item.line.headId && head.nameEn===item.line.headNameEn)?.nameBn || item.line.headNameEn,
     assessmentYear: item.assessmentYear,
     amountMinor: item.amountMinor,
     economicCode: item.line.economicCode,
