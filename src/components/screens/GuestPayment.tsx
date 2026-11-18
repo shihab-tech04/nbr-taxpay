@@ -267,7 +267,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const seen = new Set<string>();
     return initialBeneficiary.parallelAllocations.filter(line => {
       const key = line.taxpayerTin + ':' + line.headId + ':' + line.assessmentYear;
-      if (!allowed.has(line.taxpayerTin) || seen.has(key) || !isOtherTaxHeadEligible(line.headId) ||
+      if (!allowed.has(line.taxpayerTin) || seen.has(key) || !(isOtherTaxHeadEligible(line.headId) || (unifiedFlow && line.headId === RETURN_HEAD_ID)) ||
         !OTHER_TAX_YEARS.some(year => year === line.assessmentYear) ||
         (parseGuestAmount(line.amount) ?? 0) <= 0) return false;
       seen.add(key);
@@ -375,7 +375,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     `${line.taxpayerId}:${line.headId}:${line.assessmentYear}`)).size === otherTaxLines.length;
   const batchValid = !selfLiabilityHasAdditionalRecipients && uniqueBatchAllocations && otherTaxLines.length > 0 && fitsCombinedAllocationCapacity(otherTaxLines.length) && batchAmount !== null && batchAmount > 0
     && !missingBatchTaxpayer
-    && otherTaxLines.every(line => isOtherTaxHeadEligible(line.headId)
+    && otherTaxLines.every(line => (isOtherTaxHeadEligible(line.headId) || (unifiedFlow && line.headId === RETURN_HEAD_ID))
       && batchTaxpayers.some(person => person.id === line.taxpayerId)
       && OTHER_TAX_YEARS.some(year => year === line.assessmentYear));
 
@@ -1054,7 +1054,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (blockInvalidReturn()) return;
     if (otherBatch) {
       const invalid = otherTaxLines.find(line =>
-        !isOtherTaxHeadEligible(line.headId) || !OTHER_TAX_YEARS.some(year => year === line.assessmentYear) ||
+        !(isOtherTaxHeadEligible(line.headId) || (unifiedFlow && line.headId === RETURN_HEAD_ID)) || !OTHER_TAX_YEARS.some(year => year === line.assessmentYear) ||
         !batchTaxpayers.some(taxpayer => taxpayer.id === line.taxpayerId) ||
         otherTaxAllocationTotal([line]) === null);
       if (!batchValid || invalid) {
@@ -2244,7 +2244,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
         {/* STEP 2: Head Selection & Financial Amounts */}
         {step === 2 && (otherBatch ? (
           <>
-          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} serviceSelection={unifiedFlow ? unifiedServiceChoice : undefined} unifiedV3={unifiedFlow} maskTaxpayerTin={unifiedFlow} remarks={unifiedFlow ? undefined : paymentRemarksControl}
+          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} serviceSelection={undefined} unifiedV3={unifiedFlow} allowMixedReturn={unifiedFlow} maskTaxpayerTin={unifiedFlow} remarks={unifiedFlow ? undefined : paymentRemarksControl}
             lines={otherTaxLines} suggestionTaxpayerIds={ownAccountTax ? { primary: demoConsentActor } : undefined}
             preserveSourcePaymentAmounts={Boolean(sourcePaymentId)} focusRequest={summaryJump} onChange={next => {
               setOtherTaxLines(next);
@@ -2254,7 +2254,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                 const sum = otherTaxAllocationTotal(next);
                 const unique = new Set(next.map(line => `${line.taxpayerId}:${line.headId}:${line.assessmentYear}`)).size === next.length;
                 const allValid = unique && next.length > 0 && sum !== null && sum > 0 &&
-                  next.every(line => isOtherTaxHeadEligible(line.headId) &&
+                  next.every(line => (isOtherTaxHeadEligible(line.headId) || (unifiedFlow && line.headId === RETURN_HEAD_ID)) &&
                     OTHER_TAX_YEARS.some(year => year === line.assessmentYear) &&
                     batchTaxpayers.some(person => person.id === line.taxpayerId));
                 if (allValid) clearValidationError();
