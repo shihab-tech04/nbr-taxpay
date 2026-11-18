@@ -39,8 +39,8 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
   await expect(grouped.locator('details')).toHaveCount(2);
-  await expect(grouped).toContainText('123456789012');
-  await expect(grouped).toContainText('234567890123');
+  await expect(grouped).toContainText('123****');
+  await expect(grouped).toContainText('234****');
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2100');
@@ -57,8 +57,21 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
     await mobileCalculation.getByTestId('mobile-payment-calculation-toggle').click();
     await expect(mobileCalculation).toHaveAttribute('open', '');
   }
-  await grouped.locator('details').nth(1).locator('summary').click();
-  await expect(grouped.locator('details').nth(1)).toHaveAttribute('open', '');
+  const secondGroup = grouped.locator('details').nth(1);
+  const groupHeading = secondGroup.locator('summary .payment-form-summary__taxpayer-name strong');
+  await expect(secondGroup).not.toHaveAttribute('open', '');
+  await groupHeading.click();
+  await expect(secondGroup).toHaveAttribute('open', '');
+  await secondGroup.getByRole('button', { name: 'Reveal TIN' }).click();
+  await expect(secondGroup).toHaveAttribute('open', '');
+  await expect(secondGroup.locator('[data-testid="payment-summary-tin"]')).toHaveText('234567890123');
+  await secondGroup.getByRole('button', { name: 'Hide TIN' }).click();
+  await expect(secondGroup.locator('[data-testid="payment-summary-tin"]')).toHaveText('234****');
+  await expect(secondGroup.getByRole('button', { name: 'Copy TIN' })).toHaveCount(1);
+  await groupHeading.click();
+  await expect(secondGroup).not.toHaveAttribute('open', '');
+  await groupHeading.click();
+  await expect(secondGroup).toHaveAttribute('open', '');
   await expect(grouped.locator('details').nth(1)).toContainText('68B');
   expect(await dialog.locator('.taxpay-modal__body').evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(2);
 });

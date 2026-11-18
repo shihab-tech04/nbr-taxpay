@@ -60,9 +60,13 @@ type Props = {
   /** Optional challan comments stay inside the editor scroll column. */
   remarks?: React.ReactNode;
   focusRequest?: { lineId: string; requestId: number } | null;
+  /** Optional editor focus sync for the original payment calculation. */
+  onFocusLine?: (lineId: string) => void;
+  /** Approved calculation treatment applies only to Facilitate another taxpayer. */
+  originalFacilitation?: boolean;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, serviceSelection, unifiedV3 = false, remarks, focusRequest }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, serviceSelection, unifiedV3 = false, remarks, focusRequest, onFocusLine, originalFacilitation = false }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -205,7 +209,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   };
 
   return (
-    <div ref={rootRef} className="payment-form-layout payment-flow-embedded__payment other-tax-batch-panel" data-testid="other-tax-batch">
+    <div ref={rootRef} className="payment-form-layout payment-flow-embedded__payment other-tax-batch-panel" data-testid="other-tax-batch"
+      data-original-facilitation={originalFacilitation ? "true" : undefined}>
       <div className="payment-form-layout__sections">
         {serviceSelection}
         <section className={error ? "payment-form-section payment-form-section--static other-tax-section--invalid" : "payment-form-section payment-form-section--static"}>
@@ -281,12 +286,16 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                       disabled={!visibleEligible.some(head => !activeLines.some(line => line.headId === head.id))}>
                       {search ? tx('Select all matching', 'মিল থাকা সব নির্বাচন করুন') : tx('Select all', 'সব নির্বাচন করুন')}
                     </button>
-                    <button type="button" onClick={() => { unselectAll(); selectionMenuRef.current?.removeAttribute('open'); }}
+                    {(!originalFacilitation || unifiedV3) && <button type="button" onClick={() => { unselectAll(); selectionMenuRef.current?.removeAttribute('open'); }}
                       disabled={!activeLines.length}>
                       {tx('Clear selection', 'নির্বাচন বাতিল করুন')}
-                    </button>
+                    </button>}
                   </div>
                 </details>
+                {originalFacilitation && !unifiedV3 && <button type="button" className="other-tax-clear-selection"
+                  disabled={!activeLines.length} onClick={unselectAll}>
+                  {tx('Clear selected', 'নির্বাচন মুছুন')}
+                </button>}
               </div>
             </div>
             <p className="other-tax-selection-status" role="status">
@@ -369,6 +378,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                                 {tx('Assessment year', 'করবর্ষ')} *
                               </label>
                               <select id={`other-tax-year-${line.id}`} value={line.assessmentYear}
+                                onFocus={() => onFocusLine?.(line.id)}
                                 onChange={event => edit(line.id, { assessmentYear: event.target.value })}
                                 className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm">
                                 <option value="" disabled>{tx('Select assessment year','করবর্ষ নির্বাচন করুন')}</option>
@@ -385,6 +395,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                                   <SuggestedAmountInfo suggestion={suggestedAmount} language={language} controlId={amountId} />}
                               </div>
                               <input id={amountId} type="text" inputMode="decimal"
+                                onFocus={() => onFocusLine?.(line.id)}
                                 pattern="[0-9]+([.][0-9]{1,2})?" required
                                 aria-invalid={lineInvalid || undefined}
                                 aria-describedby={lineInvalid ? amountId + '-error' : undefined}
