@@ -133,8 +133,8 @@ test('the approved three decisions progressively appear in one modal and retain 
   await expect(dialog.locator('[data-payment-access="GUEST"]')).toHaveAttribute('aria-pressed', 'true');
   await next.click();
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
-  await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText("Facilitate another taxpayer’s payment");
+  await expect(dialog.getByRole('progressbar', { name: 'Payment progress' })).toHaveAttribute('aria-valuenow', '1');
   await dialog.locator('.taxpay-modal__back').click();
   await expect(dialog.locator('[data-payer-relationship="OTHER"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
@@ -188,15 +188,16 @@ test('Other Tax proceeds directly without an additional payment-type selector', 
   const originalUrl = page.url();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
-  await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveAttribute('data-payment-service', 'OTHER_TAX_PAYMENT');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('Other Tax Payment');
+  await expect(dialog.locator('.tax-service-choice')).toHaveAttribute('data-payment-service', 'OTHER_TAX_PAYMENT');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('Other Tax Payment');
   // Walk-in taxpayers never see the signed-in Saved beneficiaries control.
   await expect(dialog.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
-  await expect(dialog.getByText('Step 1 of 4')).toBeVisible();
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
-  await expect(dialog.locator('.tax-service-choice__selected-service')).not.toContainText('Other Tax Payment & Travel Tax');
+  await expect(dialog.getByRole('progressbar', { name: 'Payment progress' })).toHaveAttribute('aria-valuenow', '1');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText("Facilitate another taxpayer’s payment");
+  await expect(dialog.locator('.taxpay-modal__subtitle')).not.toContainText('Other Tax Payment & Travel Tax');
   await expect(dialog.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
-  const visiblePayerText = await dialog.locator('.tax-service-choice__selected-service')
+  const visiblePayerText = await dialog.locator('.taxpay-modal__subtitle')
     .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
   expect(visiblePayerText).toBeGreaterThanOrEqual(14);
   expect(page.url()).toBe(originalUrl);
@@ -210,7 +211,8 @@ test('Tax with Return still proceeds with its unchanged service ID', async ({ pa
   await dialog.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
   await dialog.locator('[data-payment-access="GUEST"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(dialog.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveAttribute('data-payment-service', 'TAX_WITH_RETURN');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('Tax with Return');
+  await expect(dialog.locator('.tax-service-choice')).toHaveAttribute('data-payment-service', 'TAX_WITH_RETURN');
   await expect(dialog.locator('#guest-tin')).toBeVisible();
   await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
 });
@@ -254,7 +256,7 @@ test('Other Tax keeps the v11 guest reference and four payment stages', async ({
   await dialog.locator('[data-payment-entry="OTHER_TAX"]').click();
   await dialog.locator('[data-payment-access="GUEST"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();

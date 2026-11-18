@@ -39,7 +39,7 @@ test('restored original hero Pay Tax presents the payer/service chooser and four
   await expect(modal.getByRole('button',{name:'Continue',exact:true})).toBeEnabled();
   await modal.getByRole('button',{name:'Continue',exact:true}).click();
   await expect(modal.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
-  await expect(modal.locator('.tax-service-choice__selected-service')).toBeVisible();
+  await expect(modal.locator('.taxpay-modal__subtitle')).toContainText('Other Tax Payment');
 });
 
 test('wide desktop uses the available canvas without crushing the footer or lookup', async ({ page }) => {

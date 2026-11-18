@@ -187,7 +187,7 @@ test('guest navigation has no notification bell and keeps contextual payment cho
   await enterTaxPayService(services, 'OTHER_TAX_PAYMENT');
   await expect(page).toHaveURL(/action=head_catalogue/);
   await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
-  await expect(services.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
+  await expect(services.locator('.taxpay-modal__subtitle')).toContainText('Other Tax Payment');
   await page.reload();
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
   await expect(page.locator('.citizen-header__notification')).toHaveCount(0);

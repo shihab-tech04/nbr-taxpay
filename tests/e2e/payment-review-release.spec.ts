@@ -276,7 +276,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
   // The service and relationship appear once in the compact workflow summary.
   await expect(services.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(services.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(services.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   // The approved compact payment shell exposes a 10px progressbar, not the obsolete numbered track.
   const progress = services.getByRole('progressbar', { name: 'Payment progress' });
   await expect(progress).toHaveAttribute('aria-valuenow', '1');
@@ -296,7 +296,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   const stepTextSize = await services.locator('.taxpay-modal__step-count')
     .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
   expect(stepTextSize).toBeGreaterThanOrEqual(14);
-  const visibleContextTextSize = await services.locator('.tax-service-choice__selected-service')
+  const visibleContextTextSize = await services.locator('.taxpay-modal__subtitle')
     .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
   expect(visibleContextTextSize).toBeGreaterThanOrEqual(14);
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
@@ -321,7 +321,8 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
   await expect(services.locator('.payment-form-summary__rows--return-context')).toBeVisible();
   await expect(services.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
-  await expect(services.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveCount(1);
+  await expect(services.locator('.taxpay-modal__subtitle')).toContainText('Tax with Return');
+  await expect(services.locator('.tax-service-choice')).toHaveAttribute('data-payment-service', 'TAX_WITH_RETURN');
   const smallDetails = await services.locator('.payment-form-summary__rows dt, .payment-form-summary__rows dd, .payment-form-summary__eyebrow')
     .evaluateAll(nodes => nodes.filter(el => el.getClientRects().length > 0)
       .map(el => Number.parseFloat(getComputedStyle(el).fontSize)));

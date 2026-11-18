@@ -199,6 +199,40 @@ test('owner SQL payment events show beneficiary allocations with the same refere
   await expect(page.getByTestId('account-tax-journey')).toContainText(request.id);
 });
 
+for(const language of ['en','bn'] as const){
+  test('recorded payment timeline keeps the date rail compact in '+language,async({page},info)=>{
+    test.skip(info.project.name!=='desktop-1280','Run the complete viewport matrix once per language');
+    await mockAccount(page,true,[sharedPayment]);
+    await page.goto('/?action=journey&lang='+language);
+    const timeline=page.getByTestId('account-sql-tax-journey');
+    await expect(timeline).toBeVisible();
+    const events=timeline.locator('ol > li');
+    await expect(events).toHaveCount(2);
+    for(const width of [320,375,390,768,1280,1920]){
+      await page.setViewportSize({width,height:900});
+      const event=events.first();
+      const date=event.locator('time');
+      const card=event.locator('article');
+      const button=event.getByRole('button',{name:language==='en'?'View payment details':'পেমেন্টের বিবরণ দেখুন'});
+      const [dateBox,eventBox,cardBox,buttonBox,tracks]=await Promise.all([
+        date.boundingBox(),event.boundingBox(),card.boundingBox(),button.boundingBox(),
+        event.evaluate(element=>getComputedStyle(element).gridTemplateColumns)
+      ]);
+      expect(dateBox&&eventBox&&cardBox&&buttonBox,'Timeline geometry must render fully at '+width+'px').toBeTruthy();
+      const expectedDateRail=width<640?56:135;
+      expect(parseFloat(tracks.split(' ')[0]),language+' date rail width at '+width+'px').toBe(expectedDateRail);
+      expect(dateBox!.width,'Date never takes half the timeline row at '+width+'px')
+        .toBeLessThan(eventBox!.width/2);
+      expect(cardBox!.x+cardBox!.width,'Timeline card stays inside its event row at '+width+'px')
+        .toBeLessThanOrEqual(eventBox!.x+eventBox!.width+1);
+      expect(buttonBox!.height,'Payment details remains a usable tap target at '+width+'px')
+        .toBeGreaterThanOrEqual(44);
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow,language+' timeline document overflow at '+width+'px').toBeLessThanOrEqual(2);
+    }
+  });
+}
+
 test('unbound signed-in history retains review activity and SQL-owned beneficiary receipts',async({page})=>{
   await mockAccount(page,true,[sharedPayment]);
   await page.goto('/?action=history');

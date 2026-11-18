@@ -24,6 +24,20 @@ test('walk-in self is single taxpayer while facilitator can add another', async 
   await expect(payment.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
 });
 
+test('walk-in self shows NBR disclaimer only after sample TIN search', async ({ page }) => {
+  await page.goto('/?action=landing');
+  const payment=await openLegacyTaxServiceChoice(page);
+  await enterTaxPayService(payment,'OTHER_TAX','SELF');
+  const card=payment.getByTestId('other-tax-primary-taxpayer');
+  await expect(card.getByTestId('taxpayer-sample-source')).toHaveCount(0);
+  await card.locator('#guest-tin').fill('111111111111');
+  await card.getByRole('button',{name:'Search',exact:true}).click();
+  await expect(card.locator('#other-tax-primary-name')).toHaveValue('User 1');
+  await expect(card.getByTestId('taxpayer-sample-source')).toContainText('Sample only — not NBR verified.');
+  await card.getByRole('button',{name:'Clear TIN search'}).click();
+  await expect(card.getByTestId('taxpayer-sample-source')).toHaveCount(0);
+});
+
 test('signed-in self has no saved beneficiary or additional taxpayer controls', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
   const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
@@ -77,4 +91,62 @@ test('taxpayer TIN and name fields use the full card width in SELF and OTHER pat
   await payment.getByRole('button', { name: 'Add another taxpayer' }).click();
   const additional = payment.getByTestId('other-tax-taxpayer');
   await assertFullWidth(additional);
+});
+
+// CSS regression gate: TIN / search / name share the full editor width,
+// while contact fields stack at desktop and mobile for both payer contexts.
+test('walk-in self identity inputs fill editor column without horizontal overflow', async ({ page }) => {
+  await page.setViewportSize({width:1280,height:850});
+  await page.goto('/?action=landing');
+  const payment=await openLegacyTaxServiceChoice(page);
+  await enterTaxPayService(payment,'OTHER_TAX','SELF');
+  const row=payment.getByTestId('other-tax-primary-taxpayer');
+  const lookup=row.getByTestId('shared-taxpayer-tin-lookup');
+  const field=lookup.locator('.taxpayer-tin-lookup__field').first();
+  const input=row.locator('#guest-tin');
+  const search=lookup.locator('.taxpayer-tin-lookup__search');
+  const form=payment.locator('.payment-flow-embedded__identity .payment-form-layout__sections');
+  for (const width of [1280,375,320]) {
+    await page.setViewportSize({width,height:850});
+    await expect(input).toBeVisible();
+    const metrics=await page.evaluate(({formSelector,inputSelector,searchSelector,fieldSelector})=>{
+      const f=document.querySelector(formSelector),i=document.querySelector(inputSelector),s=document.querySelector(searchSelector),fld=document.querySelector(fieldSelector);
+      if(!f||!i||!s||!fld)return null;
+      const fr=f.getBoundingClientRect(),ir=i.getBoundingClientRect(),sr=s.getBoundingClientRect(),fl=fld.getBoundingClientRect();
+      return {formWidth:fr.width,fieldWidth:fl.width,occupied:ir.width+sr.width,buttonWidth:sr.width,fieldOverflow:Math.max(0,sr.right-fl.right),editorOverflow:Math.max(0,fl.right-fr.right)};
+    },{formSelector:'.payment-flow-embedded__identity .payment-form-layout__sections',inputSelector:'#guest-tin',searchSelector:'.taxpayer-tin-lookup__search',fieldSelector:'.taxpay-taxpayer-row--single .taxpayer-tin-lookup__field'});
+    expect(metrics).not.toBeNull();
+    expect(metrics!.fieldWidth).toBeGreaterThan(width===1280?300:150);
+    expect(metrics!.buttonWidth).toBeGreaterThanOrEqual(80);
+    expect(metrics!.fieldOverflow).toBeLessThanOrEqual(2);
+    expect(metrics!.editorOverflow).toBeLessThanOrEqual(2);
+  }
+  await expect(field).toBeVisible();
+  await expect(search).toBeVisible();
+  await expect(form).toBeVisible();
+});
+
+test('walk-in facilitator receipt fields are full editor width and ordered', async ({page}) => {
+  await page.goto('/?action=landing');
+  const payment=await openLegacyTaxServiceChoice(page);
+  await enterTaxPayService(payment,'OTHER_TAX','OTHER');
+  for(const width of [1280,375,320]){
+    await page.setViewportSize({width,height:850});
+    const fields=payment.locator('.payment-flow-embedded__identity .payment-identity__receipt-row');
+    await expect(fields).toBeVisible();
+    const m=await fields.evaluate(el=>{
+      const row=el.getBoundingClientRect();
+      const inputs=[...el.querySelectorAll('input')].filter(x=>x.getClientRects().length);
+      return {row:row.width,fields:inputs.map(x=>({width:x.getBoundingClientRect().width,cellWidth:x.parentElement!.getBoundingClientRect().width,right:x.getBoundingClientRect().right,top:x.getBoundingClientRect().top}))};
+    });
+    expect(m.fields.length).toBeGreaterThanOrEqual(3);
+    for(const f of m.fields){
+      expect(Math.abs(f.width-f.cellWidth)).toBeLessThanOrEqual(2);
+      expect(f.right).toBeLessThanOrEqual(width+2);
+    }
+    if(width<=650){
+      for(const f of m.fields)expect(f.width).toBeGreaterThan(m.row-3);
+      expect(m.fields[1].top).toBeGreaterThan(m.fields[0].top);
+    }
+  }
 });

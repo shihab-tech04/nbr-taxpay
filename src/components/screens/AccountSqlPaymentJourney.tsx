@@ -102,11 +102,11 @@ export function AccountSqlPaymentJourney({ownerUid,language}:{
         <h3 className="mb-3 text-base font-semibold text-taxpay-text">{calendarYear}</h3>
         <ol aria-label={tr('Recorded payment events','নথিভুক্ত পেমেন্টের ঘটনা')} className="space-y-0">
           {entries.map(entry=><li key={entry.key}
-            className="grid grid-cols-[80px_minmax(0,1fr)] gap-3 sm:grid-cols-[135px_minmax(0,1fr)]">
-            <time dateTime={entry.occurredAt} className="pt-1 text-right text-xs text-taxpay-muted">
+            className="grid grid-cols-[56px_minmax(0,1fr)] gap-2 sm:grid-cols-[135px_minmax(0,1fr)] sm:gap-3">
+            <time dateTime={entry.occurredAt} className="break-words pt-1 text-right text-xs text-taxpay-muted">
               {formatDate(entry.occurredAt)}
             </time>
-            <div className="relative border-l-2 border-taxpay-border pb-5 pl-5">
+            <div className="relative min-w-0 border-l-2 border-taxpay-border pb-5 pl-3 sm:pl-5">
               <span aria-hidden="true" className="absolute -left-[6px] top-1.5 h-2.5 w-2.5 rounded-full bg-taxpay-primary"/>
               <article className="min-w-0 rounded-lg border border-taxpay-border bg-slate-50 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">

@@ -72,11 +72,11 @@ export function OtherTaxTaxpayerList({
       <p className="mt-2 text-xs text-slate-600" data-testid={match ? 'taxpayer-sample-source' : 'taxpayer-unmatched-source'}>
         {match
           ? (bn
-            ? 'নমুনা প্রোফাইল — NBR যাচাইকৃত পরিচয় নয়।'
-            : 'Sample profile — not a verified NBR identity.')
+            ? 'নমুনা তথ্য — NBR যাচাইকৃত নয়।'
+            : 'Sample only — not NBR verified.')
           : (bn
-            ? 'নমুনা তথ্য মেলেনি। এটি যাচাইকৃত পরিচয় নয়; পরিশোধের আগে টিআইএন নিশ্চিত করুন।'
-            : 'No sample match. This is not a verified identity; check the TIN before payment.')}
+            ? 'নমুনা তথ্য মেলেনি। পরিশোধের আগে টিআইএন নিশ্চিত করুন।'
+            : 'No sample match. Check the TIN before payment.')}
       </p>
     </>;
   };
@@ -150,8 +150,11 @@ export function OtherTaxTaxpayerList({
           onClear={() => { if (!lockedPrimary && !primaryAssigned) { onConfirmTaxpayer('primary', ''); onPrimaryTin(''); onPrimaryName(''); setSearchedTins(current => ({...current, primary: ''})); onClearError(); } }}
           onSearch={() => { onPrimarySearch(); const match=lookupSampleTaxpayer(primaryTin); if(!lockedPrimary)onPrimaryName(match?.nameEn ?? ''); setSearchedTins(current=>({...current, primary:primaryTin})); onClearError(); revealAddAction('primary'); }}
           helper={primaryAssigned && !lockedPrimary ? <p id="other-tax-primary-tin-help" className="text-xs text-slate-600">{lockedTinHelp}</p> : undefined}
-          status={Boolean(primaryTin) && searchedTins.primary === primaryTin && !lookupSampleTaxpayer(primaryTin)
-            ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined}/>
+          status={Boolean(primaryTin) && searchedTins.primary === primaryTin
+            ? lookupSampleTaxpayer(primaryTin)
+              ? (simpleSelf ? identityDisclosure(primaryTin) : undefined)
+              : <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p>
+            : undefined}/>
         {progressive && !primaryConfirmed && searchedTins.primary === primaryTin &&
           canSearch(primaryTin) &&
           !duplicate('primary', primaryTin) &&
