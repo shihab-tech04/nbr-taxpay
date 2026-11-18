@@ -1712,7 +1712,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
 
 
 
-              {!ownAccountTax && !simpleOwnOtherTax && receiptEmailControl}
               {!isWithholdingMode && <div>
                 <label htmlFor="guest-notice-ref" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'NBR নোটিশ বা পেমেন্ট রেফারেন্স' : 'NBR notice or payment reference'} {requiresNBRReference ? '*' : (language === 'bn' ? '(ঐচ্ছিক)' : '(optional)')}</label>
                 <input id="guest-notice-ref" type="text" value={noticeReference} onChange={event => { clearReferenceSelection(); setNoticeReference(event.target.value); }} required={requiresNBRReference}
@@ -1720,7 +1719,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   placeholder="PN-2026-000392" className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300" />
                 {fieldError('noticeReference')}
                 </div>}
-              {simpleOwnOtherTax && receiptEmailControl}
+              {!ownAccountTax && receiptEmailControl}
               </div>}
               {otherBatch && forSelf === false && !signedInAccount && <div data-testid="walkin-payer-tin">
                 <TaxpayerTinLookup
