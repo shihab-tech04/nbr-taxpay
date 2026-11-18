@@ -784,8 +784,7 @@ test('Step 1 shows a pending calculation rather than a misleading zero', async (
   const dialog = await getFlow(page);
   await expect(dialog.getByTestId('other-tax-taxpayer-list')).toContainText('0 taxpayers added');
   await expect(dialog.locator('.payment-form-summary__total')).toHaveText('—');
-  await expect(dialog.locator('.payment-form-summary__help'))
-    .toContainText('Add payment heads and amounts to see the total.');
+  await expect(dialog.locator('.payment-form-summary__help')).toHaveCount(0);
 });
 
 test('additional taxpayers are not blocked by an unapproved 20-person limit', async ({ page }) => {
