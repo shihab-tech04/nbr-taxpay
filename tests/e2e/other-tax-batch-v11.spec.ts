@@ -95,7 +95,7 @@ test('M03: unmatched searched TIN can be explicitly added without identity verif
   await expect(first.getByRole('button',{name:'Add taxpayer'})).toHaveCount(0);
   await first.getByRole('button',{name:'Search',exact:true}).click();
   await expect(first.getByText('TIN information not found.')).toBeVisible();
-  await expect(first.getByTestId('taxpayer-unmatched-source')).toContainText('not a verified identity');
+  await expect(first.getByTestId('taxpayer-unmatched-source')).toContainText('Check the TIN before payment.');
   await expect(first.getByRole('button',{name:'Add taxpayer'})).toBeVisible();
   await expect(continueAction).toBeDisabled();
   await first.getByRole('button',{name:'Add taxpayer'}).click();
