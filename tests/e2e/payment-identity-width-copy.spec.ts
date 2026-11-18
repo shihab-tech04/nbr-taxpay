@@ -41,8 +41,8 @@ test('facilitator payer and taxpayer rows fill their grid cell without changing 
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'OTHER_TAX', 'OTHER');
 
-  await expect(payment.getByRole('heading', { name: 'Payer details' })).toBeVisible();
-  await expect(payment.getByRole('heading', { name: 'Taxpayers' })).toBeVisible();
+  await expect(payment.getByRole('heading', { name: 'Payer details', exact: true })).toBeVisible();
+  await expect(payment.getByRole('heading', { name: 'Taxpayers', exact: true })).toBeVisible();
   const fields = payment.locator('.payment-flow-embedded__identity .payment-identity__receipt-row');
   await expect(fields).toHaveCount(1);
   for (const id of ['guest-payer-name', 'guest-phone', 'guest-notice-ref', 'guest-receipt-email']) {
