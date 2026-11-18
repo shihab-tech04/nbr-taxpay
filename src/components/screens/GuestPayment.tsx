@@ -802,10 +802,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     categoryCode={category} tin={batchTaxpayers.length > 1 ? undefined : taxpayerTin}
     year={otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
     amount={step === 1 ? null : batchAmount}
-    helpText={step === 1
-      ? language === 'bn' ? 'খাত ও পরিমাণ যোগ করলে মোট হিসাব দেখা যাবে।' : 'Add payment heads and amounts to see the total.'
-      : undefined}
-    groupedBreakdown={batchTaxpayers.length > 1 ? batchTaxpayers.map((person, index) => {
+    groupedBreakdown={step > 1 && batchTaxpayers.length > 1 ? batchTaxpayers.map((person, index) => {
       const lines = otherTaxLines.filter(line => line.taxpayerId === person.id);
       return {
         id: person.id,
@@ -1662,7 +1659,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   }
 
   const receiptEmailControl = (
-    <div>
+    <div className={forSelf === true ? 'payment-identity__email-field--full' : undefined}>
       <label htmlFor="guest-receipt-email" className="block text-xs font-semibold text-slate-700 mb-1">{language === 'bn' ? 'ইমেইল ঠিকানা (ঐচ্ছিক)' : 'Email address (optional)'}</label>
       <input id="guest-receipt-email" type="email" inputMode="email" autoComplete="email"
         placeholder="name@example.com" maxLength={254} value={receiptEmail}
@@ -1677,8 +1674,6 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // The same validated fields render in the original Step 1 or, for the
   // consolidated Home journey, in Step 3. No duplicate payer implementation.
   const payerReceiptFields = (<>
-              {otherBatch && !unifiedFlow && forSelf === false && !signedInAccount && <p className="text-sm text-taxpay-muted">{language === 'bn' ? 'নিচের নাম রসিদে পরিশোধকারী হিসেবে থাকবে। করদাতার তথ্য পরে আলাদাভাবে খুঁজুন।' : 'The payer named here appears on the receipt; the taxpayer receiving the payment is selected separately.'}</p>}
-                {otherBatch && !unifiedFlow && forSelf === false && !signedInAccount && <h3 className="text-sm font-semibold text-taxpay-text">{language === 'bn' ? 'রসিদের তথ্য' : 'Receipt details'}</h3>}
               {(!ownAccountTax || !isWithholdingMode) && <div className={`payment-identity__receipt-row${ownAccountTax ? " payment-identity__receipt-row--account" : ""}`}>
               {forSelf === false && !signedInAccount && <div>
                 <label htmlFor="guest-payer-name" className="block text-xs font-semibold text-slate-700 mb-1">{otherBatch ? (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)') : (language === 'bn' ? 'আপনার নাম (পরিশোধকারী)' : 'Your name (payer)')} *</label>
@@ -1703,7 +1698,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <input
                   id="guest-phone"
                   type="tel"
-                  placeholder={copy.mobilePlaceholder}
+                  placeholder={language === 'bn' ? '০১XXXXXXXXX' : '01XXXXXXXXX'}
                   value={receiptPhone}
                   aria-invalid={isFieldInvalid('phone') || undefined}
                   aria-describedby={errorDescription('phone')}
@@ -1922,7 +1917,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 {fieldError('payerChoice')}
               </fieldset>
             </PaymentFormSection> : null}
-            {forSelf !== null && !(unifiedFlow && otherBatch && !signedInAccount && forSelf === false) && <PaymentFormSection number={2} staticView={embedded} hideHeading={ownAccountTax} title={simpleOwnOtherTax ? (language === 'bn' ? 'এই পেমেন্টের করদাতারা' : 'Taxpayers in this payment') : signedInAccount && forSelf === false ? (language === 'bn' ? 'উপকারভোগী নির্বাচন' : 'Choose beneficiaries') : ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details') : otherBatch ? (language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={simpleOwnOtherTax ? (language === 'bn' ? 'টিআইএন লিখে খুঁজুন। করদাতার নাম স্বয়ংক্রিয়ভাবে দেখানো হবে।' : 'Enter a TIN and search to automatically display the taxpayer name.') : signedInAccount && forSelf === false ? (language === 'bn' ? 'সংরক্ষিত তালিকা থেকে উপকারভোগী নির্বাচন করুন' : 'Select beneficiaries from your saved lists') : ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্ট থেকে আপনার করদাতার তথ্য দেখানো হচ্ছে' : 'Your taxpayer information is filled from your signed-in account') : otherBatch ? '' : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
+            {forSelf !== null && !(unifiedFlow && otherBatch && !signedInAccount && forSelf === false) && <PaymentFormSection number={2} staticView={embedded} hideHeading={ownAccountTax} title={simpleOwnOtherTax ? (language === 'bn' ? 'এই পেমেন্টের করদাতারা' : 'Taxpayers in this payment') : signedInAccount && forSelf === false ? (language === 'bn' ? 'উপকারভোগী নির্বাচন' : 'Choose beneficiaries') : ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details') : otherBatch ? (language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details') : (language === 'bn' ? 'করদাতার পরিচয়' : 'Taxpayer identification')} description={simpleOwnOtherTax ? '' : signedInAccount && forSelf === false ? (language === 'bn' ? 'সংরক্ষিত তালিকা থেকে উপকারভোগী নির্বাচন করুন' : 'Select beneficiaries from your saved lists') : ownAccountTax ? (language === 'bn' ? 'অ্যাকাউন্ট থেকে আপনার করদাতার তথ্য দেখানো হচ্ছে' : 'Your taxpayer information is filled from your signed-in account') : otherBatch ? '' : (language === 'bn' ? 'করদাতার টিআইএন ও ঐচ্ছিক রেফারেন্স' : 'Taxpayer TIN and optional NBR reference')}>
             
             {signedInBeneficiarySelection && <SavedBeneficiaryPicker key={beneficiaryRefreshKey} language={language} allowMultiple={otherBatch}
               selectedTins={(otherBatch ? batchTaxpayers : batchTaxpayers.slice(0,1)).map(person=>person.tin).filter(Boolean)}
