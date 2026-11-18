@@ -217,7 +217,7 @@
 .taxpay-taxpayer-row__header h3{font-size:14px;font-weight:700;color:#172b4d;margin:0;display:flex;align-items:center;gap:8px}
 .taxpay-taxpayer-row__header h3 span{font-size:14px;font-weight:600;color:#466282;background:#eef3fa;border-radius:12px;padding:3px 9px}
 .taxpay-taxpayer-row__fields{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0;width:100%}
-.taxpay-taxpayer-row__fields>div{min-width:0;display:grid;align-content:start;gap:6px}
+.taxpay-taxpayer-row__fields>div{min-width:0;width:100%;display:grid;align-content:start;gap:6px}
 .taxpay-taxpayer-row__fields label{font-size:14px;font-weight:600;color:#334b6c}
 .taxpay-taxpayer-row__fields input{width:100%;min-width:0;min-height:44px;border:1px solid #c7d4e7;border-radius:9px;padding:9px 12px;color:#172b4d;font-size:14px;background:#fff}
 .taxpay-taxpayer-row__fields input:focus-visible{outline:2px solid #2c5ead;outline-offset:2px}
@@ -351,8 +351,16 @@
 
 /* Own-liability Other Tax uses the approved one-taxpayer card and stacked name field. */
 .taxpay-taxpayer-list--single{margin-bottom:16px}
+/* Preserve the approved desktop two-column payer/contact grouping and
+   existing mobile single-column breakpoint. Inputs fill their own grid cell;
+   never shrink because a receipt-reference label wraps in EN/BN. */
 .payment-identity__receipt-row > .payment-identity__email-field--full{grid-column:1/-1;min-width:0;width:100%}
-/* Keep receipt inputs on the same baseline if the longer EN reference label wraps. */
+.payment-flow-embedded__identity .payment-identity__receipt-row > div{
+  min-width:0;width:100%;
+}
+.payment-flow-embedded__identity .payment-identity__receipt-row input{
+  display:block;min-width:0;width:100%;max-width:100%;
+}
 @media (min-width:651px){
   .payment-form-layout__sections:has(.taxpay-taxpayer-list--single) .payment-identity__receipt-row > div{
     display:flex;flex-direction:column;justify-content:flex-end
@@ -371,9 +379,9 @@
 .taxpay-taxpayer-row__tin-clear:focus-visible{outline:2px solid var(--color-taxpay-primary);outline-offset:1px}
 
 /* Lookup stays attached to its own taxpayer TIN in every modal service. */
-.taxpay-taxpayer-row__tin-search{display:flex;align-items:stretch;gap:8px;min-width:0;width:100%}
-.taxpay-taxpayer-row__tin-search>input{flex:1 1 auto;min-width:0;width:1px}
-.taxpay-taxpayer-row__tin-search>.tin-lookup__search{flex:none;min-height:44px;padding-inline:14px;white-space:nowrap}
+/* Shared search layout has one owner in taxpayer-tin-lookup.css. */
+.taxpay-taxpayer-row__tin-search{min-width:0;width:100%}
+.taxpay-taxpayer-row__tin-search>.tin-lookup__search{min-height:44px;padding-inline:14px;white-space:nowrap}
 .taxpay-taxpayer-row__fields input[readonly]{background:var(--color-taxpay-surface-subtle);cursor:default}
 .taxpay-taxpayer-row__lookup-status{margin:0;font-size:14px;color:var(--color-taxpay-error)}
 /* Keep Add taxpayer attached to the searched taxpayer card, as for Travel Tax passengers. */

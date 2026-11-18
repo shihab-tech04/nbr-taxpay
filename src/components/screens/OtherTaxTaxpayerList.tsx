@@ -72,11 +72,11 @@ export function OtherTaxTaxpayerList({
       <p className="mt-2 text-xs text-slate-600" data-testid={match ? 'taxpayer-sample-source' : 'taxpayer-unmatched-source'}>
         {match
           ? (bn
-            ? 'নমুনা প্রোফাইল — NBR যাচাইকৃত পরিচয় নয়।'
-            : 'Sample profile — not a verified NBR identity.')
+            ? 'নমুনা তথ্য — NBR যাচাইকৃত নয়।'
+            : 'Sample only — not NBR verified.')
           : (bn
-            ? 'নমুনা তথ্য মেলেনি। এটি যাচাইকৃত পরিচয় নয়; পরিশোধের আগে টিআইএন নিশ্চিত করুন।'
-            : 'No sample match. This is not a verified identity; check the TIN before payment.')}
+            ? 'নমুনা তথ্য মেলেনি। পরিশোধের আগে টিআইএন নিশ্চিত করুন।'
+            : 'No sample match. Check the TIN before payment.')}
       </p>
     </>;
   };
