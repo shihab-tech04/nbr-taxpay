@@ -343,7 +343,7 @@ test('Other Tax allows different years for the same head, bulk actions and ancho
   await expect(selectionMenu).not.toHaveAttribute('open', '');
   await selectionMenu.locator('summary').click();
   await expect(selectionMenu.getByRole('button', { name: 'Select all', exact: true })).toBeEnabled();
-  await expect(selectionMenu.getByRole('button', { name: 'Clear selection', exact: true })).toBeDisabled();
+  await expect(batch.getByRole('button', { name: 'Clear selected', exact: true })).toBeDisabled();
   await selectionMenu.locator('summary').click();
   await catalogue.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
@@ -371,7 +371,7 @@ test('Other Tax allows different years for the same head, bulk actions and ancho
   await expect(selectionMenu).not.toHaveAttribute('open', '');
   await selectionMenu.locator('summary').click();
   await expect(selectionMenu.getByRole('button', { name: 'Select all', exact: true })).toBeDisabled();
-  await selectionMenu.getByRole('button', { name: 'Clear selection', exact: true }).click();
+  await batch.getByRole('button', { name: 'Clear selected', exact: true }).click();
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
   await expect(calc.locator('.payment-form-summary__breakdown button')).toHaveCount(0);
 });
