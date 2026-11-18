@@ -423,6 +423,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (saved.schemaVersion !== 1 || saved.category !== category)
       throw new Error('Saved payment category does not match the selected service.');
     assertReturnDraftExclusive(saved);
+    if (saved.forSelf === true && (
+      (Array.isArray(saved.additionalTaxpayers) && saved.additionalTaxpayers.length > 0) ||
+      (Array.isArray(saved.otherTaxLines) && saved.otherTaxLines.some(line =>
+        line && typeof line === 'object' && (line as Record<string, unknown>).taxpayerId !== 'primary'))
+    )) {
+      throw new Error(language === 'bn'
+        ? 'আমার করদায়ের এই খসড়ায় অন্য করদাতা আছে। নিজের করের জন্য একটি টিআইএন ব্যবহার করুন; অন্য করদাতার জন্য আলাদা পেমেন্ট শুরু করুন।'
+        : 'This My Tax Liability draft includes another taxpayer. Use one TIN for your own tax, or start a separate payment for another taxpayer.');
+    }
     const stringField = (key: string) => typeof saved[key] === 'string' ? String(saved[key]) : '';
     const restoredSourcePaymentId = stringField('sourcePaymentId').trim();
     setSourcePaymentId(initialReuse?.sourcePaymentId ?? (restoredSourcePaymentId || null));
@@ -809,7 +818,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   );
 
   const renderOtherTaxTaxpayerList = (singleSelf: boolean) => (
-    <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax} singleTaxpayerLayout={singleSelf} allowAdditional={singleSelf ? Boolean(taxpayerTin && lastSearchedTin === taxpayerTin) : forSelf === false || Boolean(initialReuse && ownAccountTax)}
+    <OtherTaxTaxpayerList language={language} primaryTin={taxpayerTin} primaryName={ownAccountTax ? accountName : otherTaxpayerName} lockedPrimary={ownAccountTax} singleTaxpayerLayout={singleSelf} allowAdditional={singleSelf ? false : forSelf === false || Boolean(initialReuse && ownAccountTax)}
                 requireConfirmation={otherBatch && !signedInAccount}
                 confirmPrimary={!singleSelf}
                 confirmedTins={confirmedOtherTaxTins} onConfirmTaxpayer={(id, tin) => {
@@ -843,6 +852,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return false;
     }
     if (otherBatch) {
+      if (forSelf === true && (additionalTaxpayers.length > 0 ||
+        otherTaxLines.some(line => line.taxpayerId !== 'primary'))) {
+        setValidationError(language === 'bn'
+          ? 'আমার করদায়ের জন্য শুধু নিজের টিআইএন ব্যবহার করুন। অন্য করদাতার জন্য আলাদা পেমেন্ট পথ বেছে নিন।'
+          : 'My Tax Liability is for one taxpayer only. Choose the other payment path to pay for someone else.', 'tin');
+        return false;
+      }
       const seenTins = new Set<string>();
       const invalidPerson = batchTaxpayers.find(person => {
         const tinValid = person.id === 'primary' && ownAccountTax
