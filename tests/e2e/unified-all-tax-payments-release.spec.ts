@@ -24,7 +24,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     };
     await add('222222222222');
     await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('1');
-    await expect(dialog.getByText('Person other than company').first()).toBeVisible();
+    await expect(dialog.getByTestId('unified-taxpayer-workspace')).toContainText('User 2');
     await add('333333333333');
     await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('2');
     await expect(dialog.getByTestId('unified-taxpayer-workspace')).toBeVisible();
