@@ -72,11 +72,11 @@ export function OtherTaxTaxpayerList({
       <p className="mt-2 text-xs text-slate-600" data-testid={match ? 'taxpayer-sample-source' : 'taxpayer-unmatched-source'}>
         {match
           ? (bn
-            ? 'নমুনা প্রোফাইল — এটি NBR-এর যাচাইকৃত পরিচয় বা ব্যক্তিগত রেকর্ডে প্রবেশের অনুমতি নয়।'
-            : 'Sample profile — not a verified NBR identity or permission to access private records.')
+            ? 'নমুনা তথ্য — NBR যাচাইকৃত নয়।'
+            : 'Sample only — not NBR verified.')
           : (bn
-            ? 'নমুনা তথ্য পাওয়া যায়নি। এটি শুধু আপনার দেওয়া টিআইএন; পরিচয় বা ব্যক্তিগত রেকর্ড যাচাই করা হয়নি। পেমেন্টের আগে নম্বরটি নিশ্চিত করুন।'
-            : 'No sample profile found. This is your entered TIN, not a verified identity or permission to access private history. Check the number before payment.')}
+            ? 'নমুনা তথ্য মেলেনি। পরিশোধের আগে টিআইএন নিশ্চিত করুন।'
+            : 'No sample match. Check the TIN before payment.')}
       </p>
     </>;
   };
@@ -85,7 +85,6 @@ export function OtherTaxTaxpayerList({
     const displayName = match ? (bn ? match.nameBn : match.nameEn) : name || (bn ? 'দেওয়া হয়নি' : 'Not provided');
     return <section className="taxpay-taxpayer-row__identity-card"
       aria-label={bn ? 'করদাতার তথ্য' : 'Taxpayer details'} data-testid={isConfirmed ? 'confirmed-taxpayer-card' : 'searched-taxpayer-card'}>
-      <h4>{bn ? 'করদাতার তথ্য' : 'Taxpayer details'}</h4>
       <dl className="taxpay-taxpayer-row__summary" data-testid={isConfirmed ? 'confirmed-taxpayer-summary' : 'searched-taxpayer-summary'}>
         <div><dt>{bn ? 'করদাতার নাম' : 'Taxpayer name'}</dt><dd>{displayName}</dd></div>
         <div><dt>{bn ? 'টিআইএন' : 'TIN'}</dt><dd>{tin}</dd></div>
@@ -127,14 +126,14 @@ export function OtherTaxTaxpayerList({
     {!simpleSelf && <p className="sr-only" role="status" aria-live="polite">
       {bn ? 'মোট ' + count + ' জন করদাতা' : count + ' ' + (count === 1 ? 'taxpayer' : 'taxpayers') + ' added'}
     </p>}
-    <article className={`taxpay-taxpayer-row${simpleSelf ? ' taxpay-taxpayer-row--single' : ''}`} data-testid="other-tax-primary-taxpayer">
-      <div className="taxpay-taxpayer-row__header">
-        <h3>{simpleSelf ? (bn ? 'করদাতার তথ্য' : 'Taxpayer Information') : (bn ? 'করদাতা ১' : 'Taxpayer 1')}</h3>
+    <article className={`taxpay-taxpayer-row${simpleSelf ? ' taxpay-taxpayer-row--single' : ''}`} data-testid="other-tax-primary-taxpayer" aria-label={simpleSelf ? (bn ? 'করদাতার তথ্য' : 'Taxpayer information') : undefined}>
+      {!simpleSelf && <div className="taxpay-taxpayer-row__header">
+        <h3>{bn ? 'করদাতা ১' : 'Taxpayer 1'}</h3>
         {progressive && primaryConfirmed && <button type="button" className="taxpay-taxpayer-row__edit"
           onClick={() => { onConfirmTaxpayer('primary', ''); onPrimaryName(''); setSearchedTins(current => ({...current, primary: ''})); onClearError(); }}>
           <Pencil size={15} aria-hidden="true"/>{bn ? 'সম্পাদনা' : 'Edit'}
         </button>}
-      </div>
+      </div>}
       {progressive && primaryConfirmed ? identityCard('primary', primaryTin, primaryName, true) : <div className="taxpay-taxpayer-row__fields taxpay-taxpayer-row__fields--shared">
         <TaxpayerTinLookup language={language} tinId="guest-tin" nameId="other-tax-primary-name"
           tin={primaryTin}
@@ -151,8 +150,11 @@ export function OtherTaxTaxpayerList({
           onClear={() => { if (!lockedPrimary && !primaryAssigned) { onConfirmTaxpayer('primary', ''); onPrimaryTin(''); onPrimaryName(''); setSearchedTins(current => ({...current, primary: ''})); onClearError(); } }}
           onSearch={() => { onPrimarySearch(); const match=lookupSampleTaxpayer(primaryTin); if(!lockedPrimary)onPrimaryName(match?.nameEn ?? ''); setSearchedTins(current=>({...current, primary:primaryTin})); onClearError(); revealAddAction('primary'); }}
           helper={primaryAssigned && !lockedPrimary ? <p id="other-tax-primary-tin-help" className="text-xs text-slate-600">{lockedTinHelp}</p> : undefined}
-          status={Boolean(primaryTin) && searchedTins.primary === primaryTin && !lookupSampleTaxpayer(primaryTin)
-            ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined}/>
+          status={Boolean(primaryTin) && searchedTins.primary === primaryTin
+            ? lookupSampleTaxpayer(primaryTin)
+              ? (simpleSelf ? identityDisclosure(primaryTin) : undefined)
+              : <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p>
+            : undefined}/>
         {progressive && !primaryConfirmed && searchedTins.primary === primaryTin &&
           canSearch(primaryTin) &&
           !duplicate('primary', primaryTin) &&

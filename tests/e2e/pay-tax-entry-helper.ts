@@ -1,4 +1,26 @@
-import { expect, type Locator } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
+/** Open the preserved service chooser from the persistent Pay action, not the unified guest hero. */
+export async function openLegacyTaxServiceChoice(page: Page): Promise<Locator> {
+  const payAction = page.getByRole('button', { name: /^(Pay — select payment type|কর পরিশোধের ধরন নির্বাচন)$/ });
+  const originalViewport = page.viewportSize();
+  const restoreDesktopViewport = originalViewport !== null && originalViewport.width > 900;
+  // The persistent guest Pay action is a mobile control. Open it at its real
+  // breakpoint, then restore desktop geometry before measuring the modal.
+  if (restoreDesktopViewport && !(await payAction.isVisible().catch(() => false))) {
+    await page.setViewportSize({ width: 900, height: originalViewport.height });
+  }
+  await expect(payAction).toBeVisible();
+  await payAction.click();
+  const menu = page.getByRole('menu', { name: /Payment options|পরিশোধের ধরন/ });
+  if (await menu.isVisible().catch(() => false)) {
+    await menu.getByRole('menuitem').first().click();
+  }
+  const dialog = page.getByRole('dialog', { name: /Pay Tax|কর পরিশোধ/ });
+  await expect(dialog).toBeVisible();
+  if (restoreDesktopViewport) await page.setViewportSize(originalViewport);
+  return dialog;
+}
+
 /** Start a fresh journey when account-specific saved drafts are offered first. */
 export async function ensureNewPaymentEntry(dialog: Locator) {
   // Account-owned drafts introduce a first decision. Tests for the existing

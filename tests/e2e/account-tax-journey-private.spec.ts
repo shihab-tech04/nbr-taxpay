@@ -106,6 +106,7 @@ test('verified account sees only real owner review events and correct chronologi
   await expect(timeline).toBeVisible();
   const items=timeline.getByRole('list',{name:'Chronological account review events'}).locator('li');
   await expect(items).toHaveCount(2);
+  await expect(page.getByRole('heading',{name:'Related services',exact:true})).toHaveCount(0);
   await expect(items.first()).toContainText('Review request submitted');
   await expect(items.nth(1)).toContainText('Review status event');
   await expect(timeline).toContainText(request.id);
@@ -126,7 +127,8 @@ test('signed-in account with no records never invents financial events',async({p
   await expect(timeline).toBeVisible();
   await expect(timeline.getByRole('list',{name:'অ্যাকাউন্টের পর্যালোচনা ঘটনাক্রম'})).toHaveCount(0);
   await expect(timeline.getByRole('status')).toContainText('কোনো নথিভুক্ত');
-  await expect(page.getByRole('navigation',{name:'করসেবা'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'সংশ্লিষ্ট সেবা',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('navigation',{name:'করসেবা'})).toHaveCount(0);
 });
 
 test('shared review workspace scopes notification reads and acknowledgements to the signed-in recipient',async({page})=>{
@@ -198,6 +200,40 @@ test('owner SQL payment events show beneficiary allocations with the same refere
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByTestId('account-tax-journey')).toContainText(request.id);
 });
+
+for(const language of ['en','bn'] as const){
+  test('recorded payment timeline keeps the date rail compact in '+language,async({page},info)=>{
+    test.skip(info.project.name!=='desktop-1280','Run the complete viewport matrix once per language');
+    await mockAccount(page,true,[sharedPayment]);
+    await page.goto('/?action=journey&lang='+language);
+    const timeline=page.getByTestId('account-sql-tax-journey');
+    await expect(timeline).toBeVisible();
+    const events=timeline.locator('ol > li');
+    await expect(events).toHaveCount(2);
+    for(const width of [320,375,390,768,1280,1920]){
+      await page.setViewportSize({width,height:900});
+      const event=events.first();
+      const date=event.locator('time');
+      const card=event.locator('article');
+      const button=event.getByRole('button',{name:language==='en'?'View payment details':'পেমেন্টের বিবরণ দেখুন'});
+      const [dateBox,eventBox,cardBox,buttonBox,tracks]=await Promise.all([
+        date.boundingBox(),event.boundingBox(),card.boundingBox(),button.boundingBox(),
+        event.evaluate(element=>getComputedStyle(element).gridTemplateColumns)
+      ]);
+      expect(dateBox&&eventBox&&cardBox&&buttonBox,'Timeline geometry must render fully at '+width+'px').toBeTruthy();
+      const expectedDateRail=width<640?56:135;
+      expect(parseFloat(tracks.split(' ')[0]),language+' date rail width at '+width+'px').toBe(expectedDateRail);
+      expect(dateBox!.width,'Date never takes half the timeline row at '+width+'px')
+        .toBeLessThan(eventBox!.width/2);
+      expect(cardBox!.x+cardBox!.width,'Timeline card stays inside its event row at '+width+'px')
+        .toBeLessThanOrEqual(eventBox!.x+eventBox!.width+1);
+      expect(buttonBox!.height,'Payment details remains a usable tap target at '+width+'px')
+        .toBeGreaterThanOrEqual(44);
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow,language+' timeline document overflow at '+width+'px').toBeLessThanOrEqual(2);
+    }
+  });
+}
 
 test('unbound signed-in history retains review activity and SQL-owned beneficiary receipts',async({page})=>{
   await mockAccount(page,true,[sharedPayment]);

@@ -1,3 +1,4 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { demoLoginOtpCompletedState } from './demo-login-test-state';
 import { randomBytes, randomUUID } from 'node:crypto';
@@ -74,7 +75,7 @@ test('payment form drafts survive another browser, protect owner isolation and r
     // selection, never leave the second card clipped behind the footer.
     const entry = await open(accounts.owner);
     await entry.goto('/?action=landing');
-    await entry.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+    await openLegacyTaxServiceChoice(entry);
     const entryModal = entry.getByRole('dialog', { name: 'Pay Tax' });
     const draftGate = entryModal.getByTestId('account-draft-entry');
     await expect(draftGate.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
@@ -534,7 +535,7 @@ for (const language of ['en', 'bn'] as const) {
     await expect(modalBack).toHaveAttribute('aria-label', bn ? 'ফিরুন' : 'Back');
     await modalBack.click();
     await expect(modal.locator('[data-payer-relationship]')).toHaveCount(0);
-    await expect(modal.locator('.tax-service-choice__selected-service')).toContainText(
+    await expect(modal.locator('.taxpay-modal__subtitle')).toContainText(
       bn ? 'অন্য করদাতার কর পরিশোধে সহায়তা করুন' : 'Facilitate another taxpayer’s payment');
     await expect(modal.locator('#guest-notice-ref')).toHaveValue(marker);
     await expect(modal.locator('#guest-phone')).toHaveValue(receiptPhone);

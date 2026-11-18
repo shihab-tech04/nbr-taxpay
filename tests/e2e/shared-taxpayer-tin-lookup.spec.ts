@@ -1,11 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 // Shared UI checks exercise existing guest payment entry; no hosted financial writes.
 test('shared TIN/name card is used by normal guest payment, with lookup and clear', async ({ page }) => {
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN');
   const card = dialog.getByTestId('shared-taxpayer-tin-lookup');
   await expect(card).toHaveCount(1);
@@ -23,8 +22,7 @@ test('shared TIN/name card is used by normal guest payment, with lookup and clea
 
 test('every additional Other Tax taxpayer reveals a details review and keeps clear-input behavior', async ({ page }) => {
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   const list = dialog.getByTestId('other-tax-taxpayer-list');
   const primary = list.getByTestId('other-tax-primary-taxpayer');
@@ -74,8 +72,7 @@ test('every additional Other Tax taxpayer reveals a details review and keeps cle
 
 test('a valid Other Tax TIN remains addable when the optional name lookup has no match', async ({ page }) => {
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   const list = dialog.getByTestId('other-tax-taxpayer-list');
   const primary = list.getByTestId('other-tax-primary-taxpayer');
@@ -92,8 +89,7 @@ test('a valid Other Tax TIN remains addable when the optional name lookup has no
 
 test('Other Tax follows search, review, add taxpayer, then add another; duplicates cannot be added', async ({ page }) => {
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   const list = dialog.getByTestId('other-tax-taxpayer-list');
   const primary = list.getByTestId('other-tax-primary-taxpayer');

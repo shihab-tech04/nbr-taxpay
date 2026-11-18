@@ -46,6 +46,8 @@ export interface TaxStateContextType {
   setPaymentServiceChoiceOpen: (open: boolean) => void;
   paymentServiceInitialSelection: BannerPaymentService | null;
   openPaymentServiceChoice: (service?: BannerPaymentService) => void;
+  openAllTaxPayments: () => void;
+  unifiedPaymentEntryRequested: boolean;
   paymentBeneficiaryPrefill: PaymentBeneficiaryPrefill | null;
   pendingBeneficiarySave: BeneficiarySavePrefill | null;
   startBeneficiarySave: (request: BeneficiarySavePrefill) => void;
@@ -109,6 +111,7 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [languagePreferenceError,setLanguagePreferenceError]=useState(false);
   const [isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpenState] = useState(false);
   const [paymentServiceInitialSelection, setPaymentServiceInitialSelection] = useState<BannerPaymentService | null>(null);
+  const [unifiedPaymentEntryRequested, setUnifiedPaymentEntryRequested] = useState(false);
   const [paymentBeneficiaryPrefill, setPaymentBeneficiaryPrefill] = useState<PaymentBeneficiaryPrefill | null>(null);
   const [pendingBeneficiarySave, setPendingBeneficiarySave] = useState<BeneficiarySavePrefill | null>(null);
   const [paymentReuse, setPaymentReuse] = useState<PaymentReuse | null>(null);
@@ -121,11 +124,13 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!signedInOwner && !previewOwner) return;
     setPaymentBeneficiaryPrefill(null);
     setPaymentServiceInitialSelection(null);
+    setUnifiedPaymentEntryRequested(false);
     setPaymentReuse(copy);
     setPaymentServiceChoiceOpenState(true);
   };
   const setPaymentServiceChoiceOpen = (open: boolean) => {
     if (!open) {
+      setUnifiedPaymentEntryRequested(false);
       setPaymentServiceInitialSelection(null);
       setPaymentBeneficiaryPrefill(null);
       setPaymentReuse(null);
@@ -133,9 +138,19 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setPaymentServiceChoiceOpenState(open);
   };
   const openPaymentServiceChoice = (service?: BannerPaymentService) => {
+    setUnifiedPaymentEntryRequested(false);
     setPaymentBeneficiaryPrefill(null);
     setPaymentReuse(null);
     setPaymentServiceInitialSelection(service ?? null);
+    setPaymentServiceChoiceOpenState(true);
+  };
+  // Only the explicitly approved Home action replaces the legacy payer/service
+  // chooser. Keep drafts, receipts, header Pay Tax and Travel Tax untouched.
+  const openAllTaxPayments = () => {
+    setPaymentBeneficiaryPrefill(null);
+    setPaymentReuse(null);
+    setPaymentServiceInitialSelection(null);
+    setUnifiedPaymentEntryRequested(true);
     setPaymentServiceChoiceOpenState(true);
   };
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
@@ -462,6 +477,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setPaymentServiceChoiceOpen,
         paymentServiceInitialSelection,
         openPaymentServiceChoice,
+        openAllTaxPayments,
+        unifiedPaymentEntryRequested,
         paymentBeneficiaryPrefill,
         setPaymentBeneficiaryPrefill,
         pendingBeneficiarySave,

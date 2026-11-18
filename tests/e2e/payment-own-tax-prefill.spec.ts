@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('already signed-in user2 pays own tax with prefilled locked account identity', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
@@ -10,7 +10,7 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
   await expect(login).toHaveCount(0);
 
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'ADVANCE_TAX', 'SELF');
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
@@ -19,7 +19,7 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
   await expect(payment.locator('.payment-form-section--static').first().locator('.payment-form-section__body')).toHaveCSS('padding-left', '0px');
   await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toHaveCount(0);
 
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   await expect(payment.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
   await expect(payment.getByRole('button', { name: 'Manage beneficiaries' })).toHaveCount(0);
   await expect(payment.getByRole('button', { name: 'Restore saved lists' })).toHaveCount(0);
@@ -55,7 +55,7 @@ test('changing from own tax to another taxpayer shows saved beneficiary lists wi
   await page.getByLabel('Password', { exact: true }).fill('user1');
   await page.getByRole('button', { name: 'Sign In' }).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
   await expect(payment.locator('#signed-in-account-taxpayer-card')).toContainText('1111111111111');
@@ -64,7 +64,7 @@ test('changing from own tax to another taxpayer shows saved beneficiary lists wi
   await payment.locator('[data-payer-relationship="OTHER"]').click();
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText("Facilitate another taxpayer’s payment");
   await expect(payment.getByTestId('saved-beneficiary-picker')).toBeVisible();
   await expect(payment.getByTestId('saved-beneficiary-picker').getByRole('button', {name:'Manage beneficiaries'})).toBeVisible();
   await expect(payment.locator('#guest-tin, #guest-taxpayer-name, #guest-payer-name')).toHaveCount(0);
@@ -84,11 +84,11 @@ test('own Other Tax keeps the account taxpayer without saved beneficiary control
   await page.getByLabel('Password', { exact: true }).fill('user1');
   await page.getByRole('button', { name: 'Sign In' }).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'OTHER_TAX', 'SELF');
 
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   await expect(payment.locator('#signed-in-account-taxpayer-card')).toBeVisible();
   await expect(payment.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
   await expect(payment.getByRole('button', { name: 'Manage beneficiaries' })).toHaveCount(0);

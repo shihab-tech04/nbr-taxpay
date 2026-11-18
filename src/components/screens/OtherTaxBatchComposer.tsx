@@ -53,12 +53,16 @@ type Props = {
   onChange: (lines: OtherTaxAllocation[]) => void;
   error?: string;
   summary?: React.ReactNode;
+  /** Use the fixed TaxPay service selection without duplicating the head editor. */
+  serviceSelection?: React.ReactNode;
+  /** Frozen All Tax Payments v3 labels without changing the shared composer. */
+  unifiedV3?: boolean;
   /** Optional challan comments stay inside the editor scroll column. */
   remarks?: React.ReactNode;
   focusRequest?: { lineId: string; requestId: number } | null;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, remarks, focusRequest }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, serviceSelection, unifiedV3 = false, remarks, focusRequest }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -203,6 +207,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   return (
     <div ref={rootRef} className="payment-form-layout payment-flow-embedded__payment other-tax-batch-panel" data-testid="other-tax-batch">
       <div className="payment-form-layout__sections">
+        {serviceSelection}
         <section className={error ? "payment-form-section payment-form-section--static other-tax-section--invalid" : "payment-form-section payment-form-section--static"}>
           <div className="payment-form-section__heading">
             <div className="payment-form-section__heading-copy">
@@ -268,7 +273,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                   onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); selectionMenuRef.current?.removeAttribute('open'); } }}>
                   <summary aria-label={tx('Selection actions', 'খাত নির্বাচনের ব্যবস্থা')}>
                     <ListChecks size={17} aria-hidden="true" />
-                    <span>{tx('Select', 'নির্বাচন')}</span>
+                    <span>{unifiedV3 ? tx('Select', 'নির্বাচন') : tx('Bulk actions', 'একসাথে নির্বাচন')}</span>
                     <ChevronDown size={16} aria-hidden="true" className="other-tax-selection-menu__chevron" />
                   </summary>
                   <div className="other-tax-selection-menu__panel" role="group" aria-label={tx('Payment head selection actions', 'পরিশোধের খাত নির্বাচনের ব্যবস্থা')}>
@@ -285,8 +290,13 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
               </div>
             </div>
             <p className="other-tax-selection-status" role="status">
-              {tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' years · ' + count + ' available non-return payment heads',
-                 new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + 'টি রিটার্ন-বহির্ভূত করের খাত')}
+              {unifiedV3
+                ? tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' years · ' + count + ' available non-return payment heads',
+                     new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + 'টি অন্যান্য খাত')
+                : activeLines.length
+                ? tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' assessment years selected',
+                  new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ নির্বাচিত')
+                : tx(count + ' payment heads available', count + 'টি করের খাত উপলব্ধ')}
             </p>
             {allocationLimitError && <p className="payment-form-field-error" role="alert" data-testid="combined-allocation-capacity-error">
               {tx('This payment supports up to ' + MAX_COMBINED_ALLOCATIONS + ' beneficiary/head/year allocations. Remove some selections before adding more.',

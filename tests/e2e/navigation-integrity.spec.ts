@@ -1,6 +1,6 @@
 import { setWorkspaceLanguage } from './workspace-language';
 import {expect, test} from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 
 test('public header, user-guide topics, footer links, language and browser history reach their intended destinations', async ({page}) => {
@@ -80,7 +80,7 @@ test('public payment and receipt actions reach their dedicated flows', async ({p
   await expect(page.getByRole('dialog',{name:/Payment status & receipt/}).getByLabel('Challan, token or transaction reference')).toHaveValue('NO-SUCH-REFERENCE-98765');
   await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toBeVisible();
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Pay Tax'}).click();
+  await openLegacyTaxServiceChoice(page);
   const services=page.getByRole('dialog',{name:'Pay Tax'});
   await expect(services).toBeVisible();
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
@@ -187,7 +187,7 @@ test('guest navigation has no notification bell and keeps contextual payment cho
   await enterTaxPayService(services, 'OTHER_TAX_PAYMENT');
   await expect(page).toHaveURL(/action=head_catalogue/);
   await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
-  await expect(services.locator('.tax-service-choice__selected-service')).toContainText('Other Tax Payment');
+  await expect(services.locator('.taxpay-modal__subtitle')).toContainText('Other Tax Payment');
   await page.reload();
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
   await expect(page.locator('.citizen-header__notification')).toHaveCount(0);

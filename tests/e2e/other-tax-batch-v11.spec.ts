@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
-import { enterTaxPayService, ensureNewPaymentEntry } from './pay-tax-entry-helper';
+import { enterTaxPayService, ensureNewPaymentEntry, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { recordWs1BrowserOrigin } from './ws1-browser-origin-evidence';
 
 const getFlow = async (page: import('@playwright/test').Page) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   return dialog;
@@ -60,7 +60,7 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
       await expect(page.getByRole('button',{name:'Switch to English'})).toBeVisible();
     }
   }
-  await page.getByRole('button',{name:language==='bn'?'কর পরিশোধ':'Pay Tax',exact:true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog=page.getByRole('dialog',{name:language==='bn'?'কর পরিশোধ':'Pay Tax'});
   if(language==='en') await enterTaxPayService(dialog,'OTHER_TAX_PAYMENT',relationship);
   else {
@@ -95,7 +95,7 @@ test('M03: unmatched searched TIN can be explicitly added without identity verif
   await expect(first.getByRole('button',{name:'Add taxpayer'})).toHaveCount(0);
   await first.getByRole('button',{name:'Search',exact:true}).click();
   await expect(first.getByText('TIN information not found.')).toBeVisible();
-  await expect(first.getByTestId('taxpayer-unmatched-source')).toContainText('not a verified identity');
+  await expect(first.getByTestId('taxpayer-unmatched-source')).toContainText('Check the TIN before payment.');
   await expect(first.getByRole('button',{name:'Add taxpayer'})).toBeVisible();
   await expect(continueAction).toBeDisabled();
   await first.getByRole('button',{name:'Add taxpayer'}).click();
@@ -117,7 +117,7 @@ test('M03: unmatched searched TIN can be explicitly added without identity verif
   await first.getByRole('button',{name:'Search',exact:true}).click();
   await expect(first.locator('#other-tax-primary-name')).toHaveValue('User 1');
   await expect(first.getByTestId('searched-taxpayer-card')).toHaveCount(0);
-  await expect(first.getByTestId('taxpayer-sample-source')).toContainText('not a verified NBR identity');
+  await expect(first.getByTestId('taxpayer-sample-source')).toContainText('Sample only — not NBR verified.');
   await first.getByRole('button',{name:'Add taxpayer'}).click();
   await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('111111111111');
 
@@ -176,7 +176,7 @@ test('Other Tax has five v11 groups, never Return, and uses in-place clickable c
 
   const batch = dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
-  await expect(batch).toContainText('169 available non-return payment heads');
+  await expect(batch).toContainText('169 payment heads available');
   await expect(batch.locator('[data-head-group]')).toHaveCount(6);
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
   await expect(batch.locator('#other-tax-target')).toHaveCount(0);
@@ -597,7 +597,7 @@ test('long ৳ amounts and taxpayer descriptions stay inside the calculation pan
 test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit the legacy income-type UI', async ({ page }) => {
   for (const relationship of ['SELF', 'OTHER'] as const) {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+    await openLegacyTaxServiceChoice(page);
     const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
     await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', relationship);
     await dialog.locator('#guest-tin').fill('111111111111');
@@ -606,16 +606,20 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     if (relationship === 'OTHER') await dialog.locator('#guest-payer-name').fill('Sample Payer');
     await dialog.locator('#guest-phone').fill('01712345678');
     await expect(dialog.getByTestId('other-tax-taxpayer-list')).toBeVisible();
-    // Both relationships allow a confirmed additional taxpayer in the same
-    // non-Return combined payment; the dedicated SELF+OTHER payment test below
-    // checks the saved allocations and certificate under the same parent.
-    await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
+    // Both relationships share the non-Return head composer. Only OTHER
+    // may add a second taxpayer; SELF is strictly one taxpayer.
+    if (relationship === 'SELF') {
+      await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
+      await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(0);
+    } else {
+      await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
+    }
     await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
     await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
     await expect(dialog.locator('[data-head-group]')).toHaveCount(6);
     await expect(dialog.locator('#guest-income-type-NON_COMPANY')).toHaveCount(0);
     await expect(dialog.locator('#guest-head-search')).toHaveCount(0);
-    await expect(dialog.getByTestId('other-tax-batch')).toContainText('169 available non-return payment heads');
+    await expect(dialog.getByTestId('other-tax-batch')).toContainText('169 payment heads available');
     await dialog.locator('[data-head-group="Advance Tax"] summary').click();
     await dialog.getByRole('checkbox', { name: /Select 68A/ }).check();
     await dialog.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('250');
@@ -623,7 +627,7 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
   }
 });
 
-test('walk-in self payer can include a confirmed second taxpayer', async ({ page }) => {
+test('walk-in self payer keeps multiple heads and years without adding a second taxpayer', async ({ page }) => {
   const submitted: Array<Record<string, unknown>> = [];
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     submitted.push(route.request().postDataJSON());
@@ -633,31 +637,25 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
     } });
   });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-phone').fill('01712345678');
-  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
-  const second = dialog.getByTestId('other-tax-taxpayer');
-  await second.locator('input[id^="other-tax-tin-"]').fill('222222222222');
-  await second.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
-  const next = dialog.getByRole('button', { name: 'Continue to purpose & amount' });
-  await expect(next).toBeDisabled();
-  await second.getByRole('button', { name: 'Add taxpayer', exact: true }).click();
-  await next.click();
+  await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
+  await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
-  const tabs = batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button');
-  await tabs.first().click();
+  // One taxpayer needs no switcher; the existing composer intentionally hides it.
+  await expect(batch.getByTestId('other-tax-taxpayer-tabs')).toHaveCount(0);
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
-  const line = batch.getByTestId('other-tax-line');
-  await line.locator('input[id^="other-tax-amount"]').fill('15');
-  await tabs.nth(1).click();
   await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
-  await line.locator('select[id^="other-tax-year"]').selectOption('2025-26');
-  await line.locator('input[id^="other-tax-amount"]').fill('35');
+  const lines = batch.getByTestId('other-tax-line');
+  await lines.nth(0).locator('input[id^="other-tax-amount"]').fill('15');
+  await lines.nth(1).locator('select[id^="other-tax-year"]').selectOption('2025-26');
+  await lines.nth(1).locator('input[id^="other-tax-amount"]').fill('35');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
@@ -670,11 +668,12 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
     amountMinor: 5000,
     details: {
       payerTin: '111111111111',
-      payerMode: 'OTHER',
+      payerMode: 'SELF',
+      taxpayerCount: 1,
       combinedPayment: true,
       allocations: [
         { taxpayerTin: '111111111111', assessmentYear: '2026-27', amountMinor: 1500 },
-        { taxpayerTin: '222222222222', assessmentYear: '2025-26', amountMinor: 3500 },
+        { taxpayerTin: '111111111111', assessmentYear: '2025-26', amountMinor: 3500 },
       ],
     },
   });
@@ -683,7 +682,6 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   const document = dialog.locator('.receipt-view__paper');
   await expect(document).toContainText('111111111111');
-  await expect(document).toContainText('222222222222');
   await expect(document).toContainText('৳ 50');
   await dialog.getByRole('button', { name: 'View payment certificate' }).click();
   const certificate = dialog.getByTestId('payment-certificate-document');
@@ -691,7 +689,6 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
   await expect(document.getByTestId('payment-certificate-reference'))
     .toContainText('SK-PC-00000000-0000-4000-8000-000000000102');
   await expect(certificate).toContainText('111111111111');
-  await expect(certificate).toContainText('222222222222');
   await expect(certificate).toContainText('2026-27');
   await expect(certificate).toContainText('2025-26');
   await expect(certificate).toContainText('৳ 15');
@@ -711,7 +708,7 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
   await login.getByRole('button', { name: 'Sign In' }).click();
   await expect(login).toHaveCount(0);
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
   const account = dialog.locator('#signed-in-account-taxpayer-card');
@@ -730,27 +727,28 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
 });
 
-test('F-039 signed-in SELF explicitly includes saved beneficiaries in one non-return payment while keeping the account card', async ({ page }) => {
+test('F-039 signed-in OTHER selects multiple saved beneficiaries without writing the saved lists', async ({ page }) => {
   const writes:string[]=[];
-  const {dialog}=await mockSignedInOtherTax(page,writes,'en','SELF');
-  const account=dialog.locator('#signed-in-account-taxpayer-card');
-  await expect(account).toBeVisible();
-  await expect(dialog.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
-  // The approved default self-only form remains unchanged until explicit opt-in.
-  await dialog.getByTestId('self-payment-add-beneficiaries').click();
+  const {dialog}=await mockSignedInOtherTax(page,writes,'en','OTHER');
   const picker=dialog.getByTestId('saved-beneficiary-picker');
   await expect(picker).toBeVisible();
-  const saved=picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'});
-  await expect(saved).toBeVisible();
-  await saved.check();
-  await expect(saved).toBeChecked();
-  await expect(account).toBeVisible();
+  await expect(dialog.getByTestId('self-payment-add-beneficiaries')).toHaveCount(0);
+  await expect(dialog.locator('#signed-in-account-taxpayer-card')).toHaveCount(0);
+  const savedTwo=picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'});
+  const savedThree=picker.getByRole('checkbox',{name:'Select Saved Taxpayer Three'});
+  await expect(savedTwo).toBeVisible();
+  await expect(savedThree).toBeVisible();
+  await savedTwo.check();
+  await savedThree.check();
+  await expect(savedTwo).toBeChecked();
+  await expect(savedThree).toBeChecked();
   await expect(dialog.locator('#guest-tin, #guest-taxpayer-name')).toHaveCount(0);
   await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
   const batch=dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
   await expect(batch.getByTestId('other-tax-taxpayer-tabs').locator('.other-tax-taxpayer-chip')).toHaveCount(2);
   await expect(batch).toContainText('Saved Taxpayer Two');
+  await expect(batch).toContainText('Saved Taxpayer Three');
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
   expect(writes).toEqual([]);
 });
@@ -766,7 +764,7 @@ test('signed-in OTHER Tax uses only saved beneficiaries and never exposes manual
   await login.getByRole('button', { name: 'Sign In' }).click();
   await expect(login).toHaveCount(0);
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   const picker=dialog.getByTestId('saved-beneficiary-picker');
@@ -786,8 +784,7 @@ test('Step 1 shows a pending calculation rather than a misleading zero', async (
   const dialog = await getFlow(page);
   await expect(dialog.getByTestId('other-tax-taxpayer-list')).toContainText('0 taxpayers added');
   await expect(dialog.locator('.payment-form-summary__total')).toHaveText('—');
-  await expect(dialog.locator('.payment-form-summary__help'))
-    .toContainText('Add payment heads and amounts to see the total.');
+  await expect(dialog.locator('.payment-form-summary__help')).toHaveCount(0);
 });
 
 test('additional taxpayers are not blocked by an unapproved 20-person limit', async ({ page }) => {
@@ -820,7 +817,7 @@ test('own-tax payment hides redundant taxpayer picker and keeps bulk actions bes
   await login.getByLabel('Password', { exact: true }).fill('user1');
   await login.getByRole('button', { name: 'Sign In' }).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'SELF');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();

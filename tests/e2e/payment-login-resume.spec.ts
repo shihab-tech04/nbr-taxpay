@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('account sign-in preserves tax and payer selections and resumes payment Step 1', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('[data-payment-entry="OTHER_TAX"]').click();
@@ -27,11 +27,11 @@ test('account sign-in preserves tax and payer selections and resumes payment Ste
   await expect(payment).toBeVisible();
   await expect(payment.locator('.taxpay-modal__title')).toHaveText('Taxpayer details');
   await expect(payment.locator('[data-payment-entry]')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
-  await expect(payment.locator('.tax-service-choice__selected-service strong').first()).toHaveText('Other Tax Payment');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('Other Tax Payment');
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   await expect(payment.locator('#signed-in-account-taxpayer-card')).toContainText('2222222222222');
   await expect(payment.locator('#guest-tin, #guest-phone')).toHaveCount(0);
   await expect(payment.locator('#guest-notice-ref')).toBeEditable();
@@ -41,13 +41,13 @@ test('account sign-in preserves tax and payer selections and resumes payment Ste
 
 test('guest payment bypasses login and continues to the standard four steps', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'OTHER_TAX_PAYMENT', 'OTHER');
   await expect(payment).toBeVisible();
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('Facilitate another taxpayer’s payment');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('Facilitate another taxpayer’s payment');
   await expect(payment.getByRole('radio', { name: 'Facilitate another taxpayer’s payment' })).toHaveCount(0);
   await expect(payment.locator('#guest-tin')).toBeVisible();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
@@ -55,7 +55,7 @@ test('guest payment bypasses login and continues to the standard four steps', as
 
 test('payment account login preserves payer and access on Back, errors and close', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await payment.locator('[data-payer-relationship="OTHER"]').click();
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
@@ -92,7 +92,7 @@ test('payment account login preserves payer and access on Back, errors and close
 test('progressive tax and access decisions stay on the same modal and require all choices', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   const next = payment.getByRole('button', { name: 'Continue', exact: true });
   await expect(next).toBeDisabled();

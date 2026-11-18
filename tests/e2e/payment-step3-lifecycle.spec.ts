@@ -1,3 +1,4 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { expect, test, type Page } from '@playwright/test';
 
 async function openReview(page: Page, category = 'Tax with Return') {
@@ -23,7 +24,7 @@ async function openReview(page: Page, category = 'Tax with Return') {
   });
   await page.goto('/');
   const initialUrl = page.url();
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.locator('[data-payer-relationship="SELF"]').click();
   if (category === 'Tax with Return') {
@@ -35,7 +36,7 @@ async function openReview(page: Page, category = 'Tax with Return') {
   await dialog.locator('[data-payment-access="GUEST"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(dialog.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();

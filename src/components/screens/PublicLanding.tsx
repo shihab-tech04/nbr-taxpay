@@ -10,7 +10,6 @@ import { INITIAL_RECEIPTS } from '../../data/mockData';
 // The status/Travel Tax modal pulls in the checkout and receipt modules.
 // Keep the public landing light until the user explicitly opens that service.
 const PublicServiceModal = React.lazy(() => import('./PublicServiceModal').then(module => ({default: module.PublicServiceModal})));
-const ParallelTaxpayerDraftDialog = React.lazy(() => import('./ParallelTaxpayerDraftDialog').then(module => ({default: module.ParallelTaxpayerDraftDialog})));
 
 const sampleReceipts = INITIAL_RECEIPTS.filter(receipt => receipt.isSimulatedDemo && !receipt.receiptMobile).slice(0, 3);
 const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
@@ -20,10 +19,8 @@ const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
 ]);
 
 export const PublicLanding: React.FC = () => {
-  const { language, navigate, openPaymentServiceChoice, isPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, openPaymentServiceChoice, openAllTaxPayments, isPaymentServiceChoiceOpen } = useTaxState();
   const [openService, setOpenService] = useState<PublicService | null>(null);
-  // Parallel draft is independent of every approved Pay Tax entry and route.
-  const [showParallelDraft, setShowParallelDraft] = useState(false);
   const [paymentReference, setPaymentReference] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
@@ -58,7 +55,7 @@ export const PublicLanding: React.FC = () => {
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
 
-  // Informational benefit cards only. Payment actions remain in the hero.
+  // Preserve the original hero Pay Tax chooser; the first benefit starts the separate unified flow.
   const citizenBenefits = [
     {
       id: 'payments',
@@ -102,7 +99,7 @@ export const PublicLanding: React.FC = () => {
     <PublicHeroCarousel
       language={language}
       onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
-      paused={isPaymentServiceChoiceOpen || openService !== null || showParallelDraft}
+      paused={isPaymentServiceChoiceOpen || openService !== null}
     />
 
 
@@ -242,26 +239,26 @@ export const PublicLanding: React.FC = () => {
       <div className="public-benefits__heading">
         <h2 id="public-benefits-title">{t('Why choose Sohojkor?', 'সহজকর কেন ব্যবহার করবেন?')}</h2>
         <p>{t('Pay, organize and track your taxes in one place.', 'কর পরিশোধ, তথ্য গুছিয়ে রাখা ও অগ্রগতি দেখা—সব এক জায়গায়।')}</p>
-        <button type="button" className="public-benefits__action"
-          aria-label={t('Open parallel taxpayer entry', 'বিকল্প করদাতা তথ্য ফর্ম খুলুন')}
-          onClick={() => setShowParallelDraft(true)}>
-          {t('Pay for multiple taxpayers', 'একাধিক করদাতার কর দিন')}
-        </button>
       </div>
       <div className="public-benefits__grid">
-        {citizenBenefits.map(({ id, Icon, title, detail }) => (
-          <article key={id} className="public-benefits__item" data-benefit={id}>
+        {citizenBenefits.map(({ id, Icon, title, detail }) => {
+          const contents = <>
             <span className="public-benefits__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.9} /></span>
             <div className="public-benefits__copy">
               <h3>{title}</h3>
               <p id={`public-benefit-detail-${id}`}>{detail}</p>
             </div>
-          </article>
-        ))}
+          </>;
+          return id === 'payments'
+            ? <button type="button" key={id} className="public-benefits__item public-benefits__item--action"
+                data-benefit={id} onClick={openAllTaxPayments} aria-describedby={`public-benefit-detail-${id}`}>
+                {contents}
+              </button>
+            : <article key={id} className="public-benefits__item" data-benefit={id}>{contents}</article>;
+        })}
       </div>
     </section>
 
     {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} /></React.Suspense>}
-    {showParallelDraft && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'করদাতার খসড়া লোড হচ্ছে…' : 'Loading taxpayer draft…'}</p>}><ParallelTaxpayerDraftDialog onClose={() => setShowParallelDraft(false)} /></React.Suspense>}
   </div>;
 };

@@ -1,3 +1,4 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { expect, test } from '@playwright/test';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import { fillTravelDetails, fillForeignPassenger, futureTravelDate } from './travel-tax-test-helper';
@@ -6,7 +7,7 @@ test('Pay Tax and Travel Tax keep the same modal width across passenger and trav
   await page.goto('/');
   // Start an ordinary Tax with Return payment and measure its shared modal
   // after selecting the payer, service and walk-in access.
-  await page.getByRole('button', {name:'Pay Tax',exact:true}).click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog',{name:'Pay Tax'});
   await payment.locator('[data-payer-relationship="SELF"]').click();
   await payment.locator('[data-payment-entry="TAX_WITH_RETURN"]').click();
