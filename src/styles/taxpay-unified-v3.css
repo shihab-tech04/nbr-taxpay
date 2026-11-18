@@ -664,3 +664,32 @@
     margin-left:0;
   }
 }
+
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked .payment-flow-embedded--unified .unified-v5-remarks-section {
+  border:1px solid #dbe3ef;
+  border-radius:11px;
+  overflow:hidden;
+  background:#fff;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked .payment-flow-embedded--unified .unified-v5-remarks-heading {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:8px;
+  min-height:48px;
+  margin:0;
+  padding:12px 13px;
+  border-bottom:1px solid #e2e7ec;
+  background:#fafbfc;
+  color:#17243c;
+  font-size:14px;
+  font-weight:700;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked .payment-flow-embedded--unified .unified-v5-remarks-heading small {
+  font-size:12px;
+  font-weight:400;
+  color:#68788e;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked .payment-flow-embedded--unified .unified-v5-remarks-body {
+  padding:13px 15px;
+}
