@@ -58,6 +58,23 @@
 .payment-form-summary__rows dt{font-size:14px;color:#526880;font-weight:400}
 .payment-form-summary__rows dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere;line-height:1.45}
 .payment-form-summary__mono{font-family:ui-monospace,monospace}
+.payment-form-summary__tin {display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0;max-width:100%}
+.payment-form-summary__tin .payment-form-summary__mono {overflow-wrap:anywhere}
+.payment-form-summary__tin-action {display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:8px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--citizen-primary-dark);cursor:pointer}
+.payment-form-summary__tin-action:hover {border-color:var(--citizen-border);background:var(--citizen-primary-light)}
+.payment-form-summary__tin-action:focus-visible {outline:2px solid var(--citizen-primary);outline-offset:2px}
+/* Read-only legal/review blockers must remain legible in EN and BN.
+   This corrects only the presentational 12px Tailwind helper size; do not
+   change source catalogue text or eligibility/disabled-head rules. */
+.payment-flow-embedded [data-head-row] label span.text-rose-700 {
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.payment-form-summary__taxpayer-identity {display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0;overflow-wrap:anywhere}
+.payment-form-summary__taxpayer-tin-tools {display:flex;justify-content:flex-end;min-width:0;padding:5px 12px;border-top:1px solid var(--citizen-border)}
+
 .payment-form-summary__breakdown{padding:16px 18px;border-top:1px solid #e0e9f4;display:grid;gap:11px}
 .payment-form-summary__breakdown h3{font-size:14px;font-weight:700;margin:0 0 2px}
 .payment-form-summary__breakdown>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(75px,auto);align-items:start;gap:9px;font-size:14px;line-height:1.5;color:#516681}
