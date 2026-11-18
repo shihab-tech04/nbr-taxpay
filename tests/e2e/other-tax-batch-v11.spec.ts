@@ -727,27 +727,28 @@ test('signed-in SELF Other Tax preserves the locked account identity and canonic
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
 });
 
-test('F-039 signed-in SELF explicitly includes saved beneficiaries in one non-return payment while keeping the account card', async ({ page }) => {
+test('F-039 signed-in OTHER selects multiple saved beneficiaries without writing the saved lists', async ({ page }) => {
   const writes:string[]=[];
-  const {dialog}=await mockSignedInOtherTax(page,writes,'en','SELF');
-  const account=dialog.locator('#signed-in-account-taxpayer-card');
-  await expect(account).toBeVisible();
-  await expect(dialog.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
-  // The approved default self-only form remains unchanged until explicit opt-in.
-  await dialog.getByTestId('self-payment-add-beneficiaries').click();
+  const {dialog}=await mockSignedInOtherTax(page,writes,'en','OTHER');
   const picker=dialog.getByTestId('saved-beneficiary-picker');
   await expect(picker).toBeVisible();
-  const saved=picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'});
-  await expect(saved).toBeVisible();
-  await saved.check();
-  await expect(saved).toBeChecked();
-  await expect(account).toBeVisible();
+  await expect(dialog.getByTestId('self-payment-add-beneficiaries')).toHaveCount(0);
+  await expect(dialog.locator('#signed-in-account-taxpayer-card')).toHaveCount(0);
+  const savedTwo=picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'});
+  const savedThree=picker.getByRole('checkbox',{name:'Select Saved Taxpayer Three'});
+  await expect(savedTwo).toBeVisible();
+  await expect(savedThree).toBeVisible();
+  await savedTwo.check();
+  await savedThree.check();
+  await expect(savedTwo).toBeChecked();
+  await expect(savedThree).toBeChecked();
   await expect(dialog.locator('#guest-tin, #guest-taxpayer-name')).toHaveCount(0);
   await dialog.getByRole('button',{name:'Continue to purpose & amount'}).click();
   const batch=dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
   await expect(batch.getByTestId('other-tax-taxpayer-tabs').locator('.other-tax-taxpayer-chip')).toHaveCount(2);
   await expect(batch).toContainText('Saved Taxpayer Two');
+  await expect(batch).toContainText('Saved Taxpayer Three');
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
   expect(writes).toEqual([]);
 });
