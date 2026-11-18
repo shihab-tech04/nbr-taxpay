@@ -48,5 +48,5 @@ const reviewLabels: Record<string, { en: string; bn: string }> = {
 export function paymentReviewStatusLabel(status: string, language: Language): string {
   const label = Object.hasOwn(reviewLabels, status) ? reviewLabels[status] : undefined;
   return label?.[language] ??
-    (language === 'bn' ? 'পর্যালোচনার অবস্থা যাচাই করা যায়নি' : 'Review status unavailable');
+    (language === 'bn' ? 'পাওয়া যায়নি' : 'Unavailable');
 }

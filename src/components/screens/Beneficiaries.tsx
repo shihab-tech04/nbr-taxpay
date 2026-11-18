@@ -607,7 +607,7 @@ export function Beneficiaries(){
           count={filteredPeople.length} total={listPeople.length} countLabel={tr('records','রেকর্ড')}
           searchValue={search} onSearchChange={setSearch}
           searchLabel={tr('Search this list','এই তালিকায় খুঁজুন')}
-          searchPlaceholder={tr('Search name or TIN','নাম বা টিআইএন দিয়ে খুঁজুন')}
+          searchPlaceholder={tr('Name or TIN','নাম বা টিআইএন')}
           filterLabel={tr('Filter','ফিল্টার')}
           filtersOpen={filtersExpanded} onToggleFilters={()=>{setFiltersExpanded(open=>!open);setListMenuOpen(false);}}/>
 
