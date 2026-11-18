@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test';
  */
 test('unified walk-in retains final payer fields, remarks, amounts and three-step progress', async ({ page }) => {
     await page.goto('/?action=landing&lang=en');
-    await page.locator('.citizen-public-hero__actions').getByRole('button', { name: 'Pay Tax' }).click();
+    await page.locator('.public-benefits__item[data-benefit="payments"]').click();
     const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
     await dialog.getByRole('button', { name: 'Walk-in Payment' }).click();
 
