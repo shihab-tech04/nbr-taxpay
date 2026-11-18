@@ -1893,6 +1893,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   searchLabel={language === 'bn' ? 'পরিশোধকারীর টিআইএন খুঁজুন' : 'Search payer TIN'}
                   requiredTin={false} maxTinLength={12}
                   canSearch={/^\d{12}$/.test(walkInPayerTin)}
+                  hideNameField={!walkInPayerLookup || walkInPayerLookup.tin !== walkInPayerTin}
                   invalidTin={isFieldInvalid('payerTin')} tinDescribedBy={errorDescription('payerTin')}
                   onTinChange={value => {
                     setWalkInPayerTin(value); setWalkInPayerLookup(null);
