@@ -221,7 +221,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         close();
       }}
       registerDraftExit={registerDraftExit}
-      className={view === 'login' || view === 'entry' ? 'taxpayer-login-modal' : ''}
+      className={view === 'login' || view === 'entry' ? 'taxpayer-login-modal' : unifiedEntry && view === 'payment' ? 'taxpay-v5-locked' : ''}
       animateSize={view === 'payer' || view === 'entry'}
       // Draft choice/list/new swap content inside the same payer view.
       // Re-measure the approved modal height on every such transition so the
