@@ -139,7 +139,14 @@ test('User2 Activity opens on transaction history while Pay Tax stays separate',
   test.skip(info.project.name!=='desktop-1280'&&info.project.name!=='mobile-320',
     'Representative English desktop and Bengali phone account journeys');
   const language=info.project.name==='mobile-320'?'bn':'en';
-  await page.goto('/?action=history&demoUser=user2&lang='+language);
+  await page.goto('/?action=taxpayer_login'+(language==='bn'?'&lang=bn':''));
+  const login=page.getByRole('dialog');
+  await login.getByLabel(language==='bn'?'ইউজার আইডি':'User ID',{exact:true}).fill('user2');
+  await login.getByLabel(language==='bn'?'পাসওয়ার্ড':'Password',{exact:true}).fill('user2');
+  await login.getByTestId('taxpayer-login-submit').click();
+  await expect(login).toHaveCount(0);
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await page.goto('/?action=history&lang='+language);
 
   const activityHeading=language==='bn'?'পেমেন্ট ও লেনদেনের ইতিহাস':'Payments and transaction history';
   await expect(page.getByRole('heading',{name:activityHeading,exact:true})).toBeVisible();
