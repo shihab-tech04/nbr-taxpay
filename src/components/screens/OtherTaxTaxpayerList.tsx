@@ -134,8 +134,9 @@ export function OtherTaxTaxpayerList({
       {progressive && primaryConfirmed ? identityCard('primary', primaryTin, primaryName, true) : <div className="taxpay-taxpayer-row__fields taxpay-taxpayer-row__fields--shared">
         <TaxpayerTinLookup language={language} tinId="guest-tin" nameId="other-tax-primary-name"
           tin={primaryTin}
-          hideNameField={progressive || (simpleSelf &&
-            (searchedTins.primary !== primaryTin || !lookupSampleTaxpayer(primaryTin)))}
+          hideNameField={simpleSelf
+            ? (searchedTins.primary !== primaryTin || !lookupSampleTaxpayer(primaryTin))
+            : progressive}
           suggestedTins={progressive && !lockedPrimary ? suggestedTins.filter(tin => !additional.some(p => p.tin === tin)) : undefined}
           name={simpleSelf && searchedTins.primary === primaryTin && lookupSampleTaxpayer(primaryTin)
             ? (bn ? lookupSampleTaxpayer(primaryTin)!.nameBn : lookupSampleTaxpayer(primaryTin)!.nameEn) : primaryName}
