@@ -256,8 +256,12 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     <div className={`receipt-view receipt-view--embedded${bn ? ' font-bengali' : ''}`} lang={language}>
       {!suppressFooterActions && (!isCertificate || canViewCertificate) && (footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions)}
 
-      {/* Transaction receipts use only the three approved actions in the shared
-          modal footer. Do not duplicate Back/Print above the receipt on mobile. */}
+      {/* Keep required flow navigation outside the recorded receipt's three-action footer. */}
+      {showReceiptTransactionActions && onBack && <div className="no-print flex flex-wrap items-center gap-2">
+        <button type="button"
+          className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
+          onClick={onBack}>{bn ? 'পেমেন্ট নিশ্চিতকরণে ফিরুন' : 'Back to confirmation'}</button>
+      </div>}
       {canViewCertificate && !certificate && <button type="button"
         className="receipt-view__action receipt-view__action--secondary no-print"
         onClick={() => { setDownloadError(false); setShowCertificate(value => !value); }}>
