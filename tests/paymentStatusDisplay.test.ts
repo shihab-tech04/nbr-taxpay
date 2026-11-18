@@ -40,6 +40,6 @@ test('F-054: signed-in payment rows show localized recorded and Office-review st
   assert.equal(paymentReviewStatusLabel('REVIEWER_VERIFIED', 'bn'), 'পর্যালোচক যাচাই করেছেন');
   assert.equal(paymentReviewStatusLabel('APPROVER_CLOSED', 'en'), 'Office review closed');
 
-  assert.equal(paymentReviewStatusLabel('PRIVATE_REVIEW_CODE', 'en'), 'Review status unavailable');
-  assert.equal(paymentReviewStatusLabel('PRIVATE_REVIEW_CODE', 'bn'), 'পর্যালোচনার অবস্থা যাচাই করা যায়নি');
+  assert.equal(paymentReviewStatusLabel('PRIVATE_REVIEW_CODE', 'en'), 'Unavailable');
+  assert.equal(paymentReviewStatusLabel('PRIVATE_REVIEW_CODE', 'bn'), 'পাওয়া যায়নি');
 });

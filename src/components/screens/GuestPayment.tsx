@@ -278,6 +278,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   });
   // Self liability is one taxpayer. Beneficiaries belong to the facilitator route.
   const [summaryJump, setSummaryJump] = useState<{ lineId: string; requestId: number }>({ lineId: '', requestId: 0 });
+  const [activeCalculationLineId, setActiveCalculationLineId] = useState<string | null>(null);
   const [authorizedTaxpayerIds,setAuthorizedTaxpayerIds]=useState<Record<string,DemoUserId>>({});
   const [phone, setPhone] = useState('');
   const [receiptEmail, setReceiptEmail] = useState('');
@@ -803,7 +804,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     return `${name || ''}${code ? ` · ${language === 'bn' ? 'কোড' : 'Code'} ${code}` : ''}`;
   };
   const paymentCalculation = otherBatch ? <PaymentLiveSummary language={language} hideService={embedded}
-    onSelectEntry={step === 2 ? lineId => setSummaryJump(current => ({ lineId, requestId: current.requestId + 1 })) : undefined}
+    activeEntryId={step === 2 && !unifiedFlow && forSelf === false ? activeCalculationLineId : undefined}
+    onSelectEntry={step === 2 ? lineId => {
+      if (!unifiedFlow && forSelf === false) setActiveCalculationLineId(lineId);
+      setSummaryJump(current => ({ lineId, requestId: current.requestId + 1 }));
+    } : undefined}
     category={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment'}
     categoryCode={category} tin={batchTaxpayers.length > 1 ? undefined : taxpayerTin}
     year={otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
@@ -2247,7 +2252,9 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
           <>
           <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} serviceSelection={undefined} unifiedV3={unifiedFlow} allowMixedReturn={unifiedFlow} maskTaxpayerTin={unifiedFlow} remarks={unifiedFlow ? undefined : paymentRemarksControl}
             lines={otherTaxLines} suggestionTaxpayerIds={ownAccountTax ? { primary: demoConsentActor } : undefined}
-            preserveSourcePaymentAmounts={Boolean(sourcePaymentId)} focusRequest={summaryJump} onChange={next => {
+            preserveSourcePaymentAmounts={Boolean(sourcePaymentId)} focusRequest={summaryJump}
+            originalFacilitation={!unifiedFlow && forSelf === false}
+            onFocusLine={!unifiedFlow && forSelf === false ? setActiveCalculationLineId : undefined} onChange={next => {
               setOtherTaxLines(next);
               // Keep the invalid-row indicators visible until every selected
               // head is corrected, instead of hiding them after the first edit.

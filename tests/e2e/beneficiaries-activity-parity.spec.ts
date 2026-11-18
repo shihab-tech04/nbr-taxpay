@@ -89,7 +89,15 @@ for(const language of ['en','bn'] as const){
     // Hidden desktop <thead> has zero layout height at mobile widths.
     // Assert the shared header on desktop, and the record-card touch targets on mobile.
     if(page.viewportSize()!.width>=768)expect(theme.headerMinHeight).toBeGreaterThanOrEqual(44);
-    else await expect(rows.first().getByRole('button',{name:t('Make payment','পেমেন্ট করুন')})).toHaveCSS('min-height','44px');
+    else {
+      const paymentButton=rows.first().getByRole('button',{name:t('Make payment','পেমেন্ট করুন')});
+      const actionGroup=rows.first().locator('.taxpay-mobile-table-card__actions');
+      const [buttonBox,groupBox]=await Promise.all([paymentButton.boundingBox(),actionGroup.boundingBox()]);
+      expect(buttonBox?.height,'Mobile beneficiary actions keep a comfortable tap target').toBeGreaterThanOrEqual(48);
+      expect(buttonBox&&groupBox&&buttonBox.x>=groupBox.x-1&&buttonBox.x+buttonBox.width<=groupBox.x+groupBox.width+1,
+        'Mobile payment action remains inside its card').toBe(true);
+      await expect(paymentButton.locator('svg')).toHaveCSS('width','20px');
+    }
     expect(theme.rowBackground).not.toBe('transparent');
     const editAction=rows.first().getByRole('button',{name:t('Edit','সম্পাদনা'),exact:true});
     await expect(editAction).toBeVisible();
@@ -209,6 +217,53 @@ for(const language of ['en','bn'] as const){
     await expect(otherInput).toHaveCount(0);
     await chooseBeneficiaryOption(page,'beneficiary-tag','others');
     await expect(otherInput).toHaveValue('');
+  });
+}
+
+for(const language of ['en','bn'] as const){
+  test('beneficiary actions stay readable across the approved responsive widths in '+language,async({page},info)=>{
+    test.skip(info.project.name!=='desktop-1280','Run the full responsive matrix once per language');
+    await mountBeneficiaryLists(page);
+    await page.goto('/?action=beneficiaries&demoUser=user1&lang='+language);
+    const screen=page.getByTestId('beneficiaries-page');
+    await expect(screen).toBeVisible();
+    const searchLabel=language==='en'?'Search this list':'এই তালিকায় খুঁজুন';
+    const searchPlaceholder=language==='en'?'Name or TIN':'নাম বা টিআইএন';
+    for(const width of [320,375,390,768,1280,1920]){
+      await page.setViewportSize({width,height:900});
+      const directory=screen.getByTestId('beneficiary-records');
+      const toolbar=screen.locator('.taxpay-office-register__toolbar');
+      const search=toolbar.getByRole('searchbox',{name:searchLabel});
+      const searchField=toolbar.locator('.taxpay-office-register__search > .taxpay-record-toolbar__search');
+      await expect(toolbar.locator('.taxpay-office-register__search-label')).toHaveText(searchLabel);
+      await expect(searchField).toBeVisible();
+      await expect(search).toHaveAttribute('placeholder',searchPlaceholder);
+      await expect(search).toHaveAttribute('title',searchPlaceholder);
+      const [searchBox,toolbarBox]=await Promise.all([searchField.boundingBox(),toolbar.boundingBox()]);
+      expect(searchBox&&toolbarBox&&searchBox.width>=(width<768?200:145),language+' search field width at '+width+'px').toBe(true);
+      expect(searchBox&&toolbarBox&&searchBox.x>=toolbarBox.x-1&&searchBox.x+searchBox.width<=toolbarBox.x+toolbarBox.width+1,
+        language+' search field stays inside the register toolbar at '+width+'px').toBe(true);
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow,language+' beneficiary page must not overflow at '+width+'px').toBeLessThanOrEqual(2);
+      if(width<768){
+        const card=directory.locator('ul.taxpay-mobile-table-cards:visible > li').first();
+        const actions=card.locator('.taxpay-mobile-table-card__actions');
+        const buttons=actions.getByRole('button');
+        await expect(buttons).toHaveCount(2);
+        for(const button of await buttons.all()){
+          const box=await button.boundingBox();
+          expect(box?.height,language+' action target at '+width+'px').toBeGreaterThanOrEqual(48);
+          const groupBox=await actions.boundingBox();
+          expect(box&&groupBox&&box.x>=groupBox.x-1&&box.x+box.width<=groupBox.x+groupBox.width+1,
+            language+' action clipping at '+width+'px').toBe(true);
+        }
+        await expect(actions.locator('button').nth(1).locator('svg')).toHaveCSS('width','20px');
+      }else{
+        const row=directory.locator('table.taxpay-unified-table tbody tr:visible').first();
+        await expect(row.getByRole('button',{name:language==='en'?'Make payment':'পেমেন্ট করুন'})).toBeVisible();
+        await expect(row.getByRole('button',{name:language==='en'?'Edit':'সম্পাদনা',exact:true})).toBeVisible();
+      }
+    }
   });
 }
 

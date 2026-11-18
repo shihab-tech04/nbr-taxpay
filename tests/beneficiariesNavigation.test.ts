@@ -33,7 +33,7 @@ test('Beneficiaries stays in the signed-in taxpayer shell and is absent from gue
   assert.match(page,/saved\.people\.some\(person=>person\.list_id===id&&person\.tin===tin\)/, 'single add verifies SQL readback');
   assert.match(page,/chosen\.some\(row=>!savedTins\.has\(row\.tin\)\)/, 'bulk import verifies every requested TIN');
   assert.doesNotMatch(page,/beneficiaries-account-sync|For lists across devices|Sign in with email/, 'Beneficiaries must not show an unrequested email sign-in banner');
-  assert.ok(page.includes('Search name or TIN'));
+  assert.ok(page.includes("searchPlaceholder={tr('Name or TIN','নাম বা টিআইএন')}"));
   assert.ok(page.includes('Pay Tax for Others'));
   const firstListStart=page.indexOf('!lists.length?');
   const firstListEnd=page.indexOf(':<>',firstListStart);

@@ -80,10 +80,14 @@ export function TaxPayOfficeRegisterToolbar({
       </span>
     </div>
     <div className="taxpay-office-register__actions">
-      {onSearchChange&&<label className="taxpay-record-toolbar__search">
-        <Search size={16} aria-hidden="true"/>
-        <input type="search" value={searchValue??''} onChange={event=>onSearchChange(event.target.value)}
-          aria-label={searchLabel??'Search'} placeholder={searchPlaceholder??'Search…'}/>
+      {onSearchChange&&<label className="taxpay-office-register__search" title={searchLabel??'Search'}>
+        <span className="taxpay-office-register__search-label">{searchLabel??'Search'}</span>
+        <span className="taxpay-record-toolbar__search" title={searchPlaceholder??searchLabel??'Search'}>
+          <Search size={16} aria-hidden="true"/>
+          <input type="search" value={searchValue??''} onChange={event=>onSearchChange(event.target.value)}
+            aria-label={searchLabel??'Search'} title={searchPlaceholder??searchLabel??'Search'}
+            placeholder={searchPlaceholder??'Search…'}/>
+        </span>
       </label>}
       {onToggleFilters&&<TaxPayTableFilterToggle expanded={Boolean(filtersOpen)}
         onToggle={onToggleFilters} label={filterLabel??'Filter'}/>}

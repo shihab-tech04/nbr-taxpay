@@ -106,6 +106,7 @@ test('verified account sees only real owner review events and correct chronologi
   await expect(timeline).toBeVisible();
   const items=timeline.getByRole('list',{name:'Chronological account review events'}).locator('li');
   await expect(items).toHaveCount(2);
+  await expect(page.getByRole('heading',{name:'Related services',exact:true})).toHaveCount(0);
   await expect(items.first()).toContainText('Review request submitted');
   await expect(items.nth(1)).toContainText('Review status event');
   await expect(timeline).toContainText(request.id);
@@ -126,7 +127,8 @@ test('signed-in account with no records never invents financial events',async({p
   await expect(timeline).toBeVisible();
   await expect(timeline.getByRole('list',{name:'অ্যাকাউন্টের পর্যালোচনা ঘটনাক্রম'})).toHaveCount(0);
   await expect(timeline.getByRole('status')).toContainText('কোনো নথিভুক্ত');
-  await expect(page.getByRole('navigation',{name:'করসেবা'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'সংশ্লিষ্ট সেবা',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('navigation',{name:'করসেবা'})).toHaveCount(0);
 });
 
 test('shared review workspace scopes notification reads and acknowledgements to the signed-in recipient',async({page})=>{
