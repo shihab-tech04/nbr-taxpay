@@ -177,7 +177,7 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
           countLabel={label('records','রেকর্ড')}
           searchValue={recordSearch} onSearchChange={setRecordSearch}
           searchLabel={label('Find a payment record','পেমেন্ট রেকর্ড খুঁজুন')}
-          searchPlaceholder={label('Search reference, name, TIN or tax head','রেফারেন্স, নাম, টিআইএন বা কর খাত')}
+          searchPlaceholder={label('Reference or TIN','রেফারেন্স বা টিআইএন')}
           actions={recordSearch?<button type="button"
             className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-semibold text-taxpay-primary"
             onClick={()=>setRecordSearch('')}>{label('Clear search','অনুসন্ধান মুছুন')}</button>:undefined}

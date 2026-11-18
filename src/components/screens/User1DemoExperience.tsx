@@ -255,6 +255,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [query,setQuery]=useState('');
   const [historyPage,setHistoryPage]=useState(1);
   const [selected,setSelected]=useState<RecordItem|null>(null);
+  const [correctionTarget,setCorrectionTarget]=useState<RecordItem|null>(null);
   const [sqlPayments,setSqlPayments]=useState<OwnedStoryPayment[]>([]);
   const [sqlLoadError,setSqlLoadError]=useState(false);
   useEffect(()=>{
@@ -408,8 +409,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     // receipt can be offered; the existing request form validates its source.
     if(!item.sql?.receipts.length || !authorizedPreviewScenario)return;
     setSelected(null);
-    navigate('corrections',{applyForCorrection:true,
-      originalReference:item.sql.receipts[0].challanNo});
+    setCorrectionTarget(item);
   };
   const rowActions=(item:RecordItem)=><div className="flex flex-wrap items-center gap-2">
     <button type="button" onClick={()=>setSelected(item)}
@@ -1072,5 +1072,20 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           source:selected.channel,note:selected.detail}],
       }}/>}
     </TaxPayModal>}
+    {correctionTarget && authorizedPreviewScenario && correctionTarget.sql?.receipts.length ? (
+      <TaxPayModal
+        title={tr('Apply for Correction','সংশোধনের আবেদন')}
+        onClose={() => setCorrectionTarget(null)}
+        closeIconLabel={tr('Close correction form','সংশোধনের ফরম বন্ধ করুন')}
+        hideFooter
+        className="taxpayer-correction-modal"
+      >
+        <CorrectionRequests
+          embedded
+          recordedReceipts={correctionTarget.sql.receipts}
+          preferredReference={correctionTarget.sql.receipts[0].challanNo}
+        />
+      </TaxPayModal>
+    ) : null}
   </div>;
 };

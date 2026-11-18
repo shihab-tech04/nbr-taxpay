@@ -320,6 +320,20 @@ for (const [language, project] of [['en', 'desktop-1280'], ['bn', 'mobile-320']]
     await expect(paper).toContainText('1111111111111');
     await expect(paper).toContainText('ACS-2026-00130');
 
+    const receiptActions = page.locator('.receipt-view__actions--transaction');
+    await expect(receiptActions).toBeVisible();
+    await expect(receiptActions.getByRole('button')).toHaveCount(3);
+    await expect(receiptActions.getByRole('button', { name: downloadAction, exact: true })).toBeVisible();
+    await expect(receiptActions.getByRole('button', {
+      name: language === 'bn' ? 'আবার পরিশোধ' : 'Pay Again', exact: true
+    })).toBeVisible();
+    await expect(receiptActions.getByRole('button', {
+      name: language === 'bn' ? 'সংশোধনের আবেদন' : 'Apply for Correction', exact: true
+    })).toBeVisible();
+    const printReceiptName = language === 'bn' ? 'রসিদ প্রিন্ট' : 'Print receipt';
+    await expect(page.getByRole('button', { name: printReceiptName, exact: true })).toBeVisible();
+    await expect(receiptActions.getByRole('button', { name: printReceiptName, exact: true })).toHaveCount(0);
+
     if (language === 'en') {
       const receiptDownload = page.waitForEvent('download', { timeout: 20000 });
       await page.getByRole('button', { name: downloadAction, exact: true }).click();
@@ -327,7 +341,7 @@ for (const [language, project] of [['en', 'desktop-1280'], ['bn', 'mobile-320']]
       const receiptPath = await receiptFile.path();
       expect(receiptPath).toBeTruthy();
       expect((await readFile(receiptPath!)).subarray(0, 5).toString()).toBe('%PDF-');
-      await page.getByRole('button', { name: 'Print receipt', exact: true }).click();
+      await page.getByRole('button', { name: printReceiptName, exact: true }).click();
       expect(await page.evaluate(() => (window as unknown as { __taxpayFixturePrintCalls: number }).__taxpayFixturePrintCalls)).toBe(1);
     }
 

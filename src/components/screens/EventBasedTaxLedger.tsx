@@ -216,7 +216,7 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
       count={visible.length} total={events.length} countLabel={t('records','রেকর্ড')}
       searchValue={ledgerSearch} onSearchChange={setLedgerSearch}
       searchLabel={t('Search ledger events','লেজারের ঘটনা খুঁজুন')}
-      searchPlaceholder={t('Search event or reference','ঘটনা বা রেফারেন্স খুঁজুন')}
+      searchPlaceholder={t('Event or reference','ঘটনা বা রেফারেন্স')}
       filterLabel={t('Filter','ফিল্টার')} filtersOpen={ledgerFiltersExpanded}
       onToggleFilters={()=>setLedgerFiltersExpanded(open=>!open)}/>
     <TaxPayTableControls className="taxpay-table-toolbar taxpay-table-filters">
