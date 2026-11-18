@@ -46,6 +46,9 @@ test('all selected payment heads are discoverable for each taxpayer', async ({ p
   await headList.evaluate(element => { element.scrollTop = element.scrollHeight; });
   await expect.poll(() => headList.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
   const last = first.locator('.payment-form-summary__taxpayer-item').last();
+  // The outer calculation rail and the expanded head list scroll independently.
+  // The final head must remain reachable after both scroll containers are brought into view.
+  await last.scrollIntoViewIfNeeded();
   await expect(last).toBeInViewport();
   await expect(second.locator('summary')).toBeVisible();
   await first.getByRole('button', { name: 'Show first 4 heads' }).click();
