@@ -27,11 +27,11 @@ test('account sign-in preserves tax and payer selections and resumes payment Ste
   await expect(payment).toBeVisible();
   await expect(payment.locator('.taxpay-modal__title')).toHaveText('Taxpayer details');
   await expect(payment.locator('[data-payment-entry]')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
-  await expect(payment.locator('.tax-service-choice__selected-service strong').first()).toHaveText('Other Tax Payment');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
+  await expect(payment.locator('.taxpay-modal__subtitle').first()).toHaveText('Other Tax Payment');
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   await expect(payment.locator('#signed-in-account-taxpayer-card')).toContainText('2222222222222');
   await expect(payment.locator('#guest-tin, #guest-phone')).toHaveCount(0);
   await expect(payment.locator('#guest-notice-ref')).toBeEditable();
@@ -47,7 +47,7 @@ test('guest payment bypasses login and continues to the standard four steps', as
   await expect(payment).toBeVisible();
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('Facilitate another taxpayer’s payment');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('Facilitate another taxpayer’s payment');
   await expect(payment.getByRole('radio', { name: 'Facilitate another taxpayer’s payment' })).toHaveCount(0);
   await expect(payment.locator('#guest-tin')).toBeVisible();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
