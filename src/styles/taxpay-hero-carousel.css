@@ -778,6 +778,17 @@
   box-shadow: none;
   transition: box-shadow 180ms ease, background-color 180ms ease;
 }
+/* The approved first benefit is the only interactive card. Keep all card geometry unchanged. */
+.public-benefits__item--action {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.public-benefits__item--action:focus-visible {
+  outline: 2px solid var(--citizen-primary-dark);
+  outline-offset: 3px;
+}
 /* Keep subtle hover elevation without changing card geometry or adding actions. */
 @media (hover: hover) and (pointer: fine) {
   .public-home-sections .public-benefits__item:hover {
