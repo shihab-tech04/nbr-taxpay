@@ -24,8 +24,8 @@
   width:100%;
   min-height:100%;
   align-self:stretch;
-  border-left:1px solid #dfe7f1;
-  background:#f7faff;
+  border-left:1px solid #e2e6eb;
+  background:#fafbfc;
   color:#17243c;
 }
 .payment-flow-embedded--unified .unified-taxpayer-workspace__heading {
@@ -80,21 +80,35 @@
   padding:0 17px;
   border:0;
   border-radius:9px;
-  background:#799bce;
-  color:#fff;
+  background:#e9eef3;
+  color:#667386;
   font-size:13px;
   font-weight:650;
   cursor:pointer;
 }
-.payment-flow-embedded--unified .unified-taxpayer-workspace__search button:hover:not(:disabled){background:#2d5eac}
-.payment-flow-embedded--unified .unified-taxpayer-workspace__search button:disabled {opacity:.56;cursor:not-allowed}
+.payment-flow-embedded--unified .unified-taxpayer-workspace__search .unified-v5-search-button {
+  background:#f5f6f8; color:#758294; border:1px solid #e1e5eb;
+  opacity:1; transition:background-color .15s ease,border-color .15s ease,color .15s ease;
+}
+.payment-flow-embedded--unified .unified-taxpayer-workspace__search .unified-v5-search-button:disabled {
+  opacity:1;cursor:not-allowed;
+}
+.payment-flow-embedded--unified .unified-taxpayer-workspace__search .unified-v5-search-button--ready:not(:disabled) {
+  background:#fff; border-color:#b8c8d7; color:#264761; cursor:pointer;
+}
+.payment-flow-embedded--unified .unified-taxpayer-workspace__search .unified-v5-search-button--ready:hover:not(:disabled) {
+  background:#f3f7fa;border-color:#8ca4b9;
+}
+.payment-flow-embedded--unified .unified-taxpayer-workspace__search .unified-v5-search-button:focus-visible {
+  outline:2px solid #085587;outline-offset:2px;
+}
 .payment-flow-embedded--unified .unified-taxpayer-workspace__empty {
   min-height:104px;
   margin-top:14px;
   padding:16px;
-  border:1px dashed #cfdbec;
+  border:1px dashed #d7dfe8;
   border-radius:10px;
-  background:#f8fafd;
+  background:#fafbfc;
   display:flex;
   flex-direction:column;
   gap:9px;
@@ -144,15 +158,23 @@
   align-items:center;
   justify-content:center;
   gap:7px;
-  border:1px solid #2d5eac;
+  border:1px solid #b8c8d7;
   border-radius:9px;
-  background:#2d5eac;
-  color:white;
+  background:#fff;
+  color:#264761;
   font-size:13px;
-  font-weight:700;
+  font-weight:650;
+  cursor:pointer;
 }
-.payment-flow-embedded--unified .unified-taxpayer-workspace__add:hover:not(:disabled) {background:#194780}
-.payment-flow-embedded--unified .unified-taxpayer-workspace__add:disabled {opacity:.5;cursor:not-allowed}
+.payment-flow-embedded--unified .unified-taxpayer-workspace__add:hover:not(:disabled) {
+  background:#f3f7fa;border-color:#8ca4b9;
+}
+.payment-flow-embedded--unified .unified-taxpayer-workspace__add:focus-visible {
+  outline:2px solid #085587;outline-offset:2px;
+}
+.payment-flow-embedded--unified .unified-taxpayer-workspace__add:disabled {
+  opacity:.55;cursor:not-allowed;background:#f5f6f8;
+}
 .payment-flow-embedded--unified .unified-taxpayer-workspace__error {margin:10px 0;color:#ad4539;font-size:12px}
 .payment-flow-embedded--unified .unified-taxpayer-workspace__rail-title {
   margin:0;
@@ -162,8 +184,8 @@
   align-items:center;
   gap:10px;
   border-bottom:1px solid #dbe3ef;
-  background:#f6faff;
-  color:#225daa;
+  background:#fafbfc;
+  color:#22354d;
   font-weight:750;
   font-size:14px;
 }
@@ -171,8 +193,8 @@
   margin-left:8px;
   padding:3px 9px;
   border-radius:20px;
-  background:#eaf2ff;
-  color:#2a5aa6;
+  background:#eef1f4;
+  color:#4b596b;
   font-size:11px;
 }
 .payment-flow-embedded--unified .unified-taxpayer-workspace__list {padding:14px;min-width:0}
@@ -183,7 +205,7 @@
   border-radius:12px;
   display:flex;flex-direction:column;
   gap:7px;align-items:center;justify-content:center;
-  background:#f2f6fb;
+  background:#fafbfc;
   color:#6c7c93;
 }
 .payment-flow-embedded--unified .unified-taxpayer-workspace__selected-empty strong {font-size:13px;color:#1c304d}
@@ -197,7 +219,7 @@
 .payment-flow-embedded--unified .unified-taxpayer-workspace__person-main {display:flex;align-items:center;gap:11px;min-width:0}
 .payment-flow-embedded--unified .unified-taxpayer-workspace__avatar {
   width:34px;height:34px;display:grid;place-items:center;flex:none;
-  border-radius:8px;background:#e9f1ff;color:#2c5fa9;font-weight:700;
+  border-radius:8px;background:#eef1f4;color:#304057;font-weight:700;
 }
 .payment-flow-embedded--unified .unified-taxpayer-workspace__person-copy {min-width:0;flex:1}
 .payment-flow-embedded--unified .unified-taxpayer-workspace__person-copy strong {display:block;color:#17243c;font-size:13px}
@@ -274,10 +296,10 @@
 }
 
 /* Pre-lock v3 review: one editable detail table; calculation remains right. */
-.payment-flow-embedded--unified .unified-v3-review {overflow:hidden}
+.payment-flow-embedded--unified .unified-v3-review {padding:0;overflow:hidden}
 .payment-flow-embedded--unified .unified-v3-review__heading {
   display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
-  padding:10px 13px;min-height:48px;background:#f6f8fb;border-bottom:1px solid #d8e3ef;
+  padding:10px 13px;min-height:48px;background:#fafbfc;border-bottom:1px solid #e2e7ec;
 }
 .payment-flow-embedded--unified .unified-v3-review__heading h2 {
   margin:0;color:#17243c;font-size:14px;font-weight:700;
@@ -287,20 +309,23 @@
   padding:5px 0;border:0;background:transparent;color:#2059ab;
   font:inherit;font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px;
 }
-.payment-flow-embedded--unified .unified-v3-review__table-wrap {padding:0 12px 11px;max-width:100%;overflow-x:auto}
+.payment-flow-embedded--unified .unified-v3-review__table-wrap {padding:0 12px;max-width:100%;overflow-x:auto}
 .payment-flow-embedded--unified .unified-v3-review__table {width:100%;border-collapse:collapse;table-layout:auto}
 .payment-flow-embedded--unified .unified-v3-review__table th {
-  padding:12px 8px;text-align:left;border-bottom:1px solid #dbe3ef;
-  color:#456287;font-size:11.5px;font-weight:650;background:#f9fbfe;
+  padding:12px 8px;text-align:left;border-bottom:1px solid #e2e7ec;
+  color:#45566d;font-size:11.5px;font-weight:650;background:#fafbfc;
 }
 .payment-flow-embedded--unified .unified-v3-review__table th:last-child,
 .payment-flow-embedded--unified .unified-v3-review__table td:last-child {text-align:right}
 .payment-flow-embedded--unified .unified-v3-review__table td {
-  padding:9px 8px;border-bottom:1px solid #e6edf6;font-size:12px;color:#31517a;
+  padding:9px 8px;border-bottom:0;font-size:12px;color:#33465f;
 }
 .payment-flow-embedded--unified .unified-v3-review__table tr:last-child td {border-bottom:0}
 .payment-flow-embedded--unified .unified-v3-review__table .unified-v3-review__owner td {
   padding:12px 8px 6px;border-bottom:0;text-align:left;
+}
+.payment-flow-embedded--unified .unified-v3-review__table tbody tr.unified-v3-review__owner:not(:first-child) td {
+  border-top:1px solid #e5e9ee;
 }
 .payment-flow-embedded--unified .unified-v3-review__owner strong {font-size:12.5px;color:#1c3454}
 .payment-flow-embedded--unified .unified-v3-review__owner span {
@@ -321,4 +346,236 @@
   .payment-flow-embedded--unified .unified-v3-review__owner span {display:block;margin:4px 0 0}
   .payment-flow-embedded--unified .unified-v3-review__table th {font-size:11px}
   .payment-flow-embedded--unified .unified-v3-review__table td {font-size:11px}
+}
+
+
+/* v5 only: accepted latest review, preserving original Pay Tax and Travel Tax. */
+.payment-flow-embedded--unified .unified-v5-tin-blocks {
+  position:relative; display:grid; grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:4px; flex:1 1 auto; width:100%; min-width:0; height:46px;
+}
+.payment-flow-embedded--unified .unified-v5-tin-blocks > span {
+  display:flex; align-items:center; justify-content:center; min-width:0;
+  border:1px solid #d0d9e3; border-radius:7px; background:#fff;
+  color:#17345a; font-size:clamp(12px,1.2vw,15px); font-weight:600;
+}
+.payment-flow-embedded--unified .unified-v5-tin-blocks > span.is-filled {
+  border-color:#bfcbd8; background:#fff;
+}
+.payment-flow-embedded--unified .unified-v5-tin-blocks:focus-within > span {
+  border-color:#bfcbd8;
+}
+.payment-flow-embedded--unified .unified-v5-tin-blocks > input.unified-v5-tin-input,
+.payment-flow-embedded--unified .unified-v5-tin-blocks > input#guest-tin {
+  position:absolute; inset:0; z-index:1; width:100%; height:100%;
+  border:0; outline:none; padding:0; opacity:0; cursor:text;
+}
+.payment-flow-embedded--unified .unified-v5-tin-blocks:focus-within {
+  outline:2px solid #085587; outline-offset:2px; border-radius:8px;
+}
+.payment-flow-embedded--unified .unified-v5-profile-name {
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:2px;
+}
+.payment-flow-embedded--unified .unified-v5-profile-name > span {
+  font-weight:600; color:#4d5d70;
+}
+.payment-flow-embedded--unified .unified-taxpayer-workspace__person-copy strong span {
+  font-weight:600; color:#4d5d70;
+}
+.payment-flow-embedded--unified .unified-v5-payer-result {
+  margin-top:10px; padding:12px 14px; border:1px solid #dce3eb;
+  border-radius:10px; background:#fff; display:flex; flex-direction:column;
+  gap:6px; color:#17345a; font-size:13px;
+}
+.payment-flow-embedded--unified .unified-v5-payer-result > span {
+  font-size:12px; color:#607594; font-weight:600;
+}
+.payment-flow-embedded--unified .unified-v5-payer-result__identity {
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+}
+.payment-flow-embedded--unified .unified-v5-payer-result__identity strong {
+  font-size:14px; color:#152b4b;
+}
+.payment-flow-embedded--unified .unified-v5-payer-result__identity > span {
+  color:#536477; font-size:12px;
+}
+.payment-flow-embedded--unified .unified-v5-payer-result small {
+  font-size:12px; color:#657c9a;
+}
+.payment-flow-embedded--unified .payment-review--unified-v5 {
+  display:block; width:100%; max-width:none; min-width:0;
+}
+.payment-flow-embedded--unified .payment-review--unified-v5 .payment-review__main {
+  min-width:0; width:100%; max-width:none;
+}
+.payment-flow-embedded--unified .payment-review--unified-v5 .payment-review__aside {
+  display:none;
+}
+.payment-flow-embedded--unified .payment-flow-embedded__content:has(.payment-review--unified-v5) {
+  display:block;
+}
+.payment-flow-embedded--unified:has(.payment-review--unified-v5) .payment-flow-embedded__mobile-summary {
+  display:none;
+}
+.payment-flow-embedded--unified .unified-v5-review-total {
+  margin:0; padding:14px 20px 16px; border-top:1px solid #e2e7ec;
+  color:#23374d; background:#fff;
+}
+.payment-flow-embedded--unified .unified-v5-review-total__row {
+  display:flex; flex-wrap:wrap; justify-content:space-between;
+  align-items:baseline; gap:9px; font-size:14px;
+}
+.payment-flow-embedded--unified .unified-v5-review-total__row output {
+  font-size:23px; font-weight:750; font-variant-numeric:tabular-nums; color:#1b3550;
+}
+.payment-flow-embedded--unified .unified-v5-review-total > p {
+  font-size:13px; line-height:1.5; color:#5f6f82; margin:4px 0 0;
+}
+@media(max-width:520px) {
+  .payment-flow-embedded--unified .unified-v5-tin-blocks {gap:2px;height:42px}
+  .payment-flow-embedded--unified .unified-v5-tin-blocks > span {border-radius:4px;font-size:12px}
+  .payment-flow-embedded--unified .unified-taxpayer-workspace__search {gap:5px}
+  .payment-flow-embedded--unified .unified-taxpayer-workspace__search button {padding-inline:9px}
+  .payment-flow-embedded--unified .unified-v5-review-total {margin:0;padding:12px 14px 14px}
+}
+
+
+/* v5 four-row payment-head layout: local to the new home-entry workspace. */
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 > .payment-form-layout__sections {
+  padding:19px 23px 18px;
+  gap:0;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .payment-form-section {
+  border:0; box-shadow:none; border-radius:0; background:transparent;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .payment-form-section__heading {
+  border:0; padding:0 0 10px; min-height:0;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .payment-form-section__heading h2,
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-row-heading {
+  font-size:13px; color:#17345a; font-weight:700; line-height:1.4; margin:0;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .payment-form-section__body {
+  padding:0; display:block; min-width:0;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-taxpayer-section {
+  margin:0; padding:0 0 15px; border:0; border-bottom:1px solid #e0e7f1;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-taxpayer-tabs {
+  padding:0; margin:0; border:0;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-row-heading {
+  padding:13px 0 8px; border:0;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-head-tools {
+  margin:0 0 12px; padding:0 0 12px; border-bottom:1px solid #e8ebef;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-row {
+  padding:0 0 12px; border-bottom:1px solid #e8ebef;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-group {
+  overflow:hidden; border:1px solid #d7dee7; border-radius:10px;
+  background:#fff;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-group:has(input:checked) {
+  border-color:#9baebf; background:#fff;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-card {
+  display:flex; align-items:center; gap:12px; min-height:66px;
+  padding:11px 12px; border:0; border-radius:0;
+  color:#17345a; background:transparent; cursor:pointer;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-card:focus-within {
+  outline:2px solid #4886cf; outline-offset:-3px;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-card__icon {
+  flex:none; height:32px; width:32px; display:grid; place-items:center;
+  background:#f1f3f6; color:#506278; font-size:18px; border-radius:8px;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-card__text {
+  display:grid; gap:3px; min-width:0; flex:1;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-card__text strong {
+  font-size:13px; font-weight:700;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-card__text small {
+  font-size:11.5px; color:#667d9e;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-card input {
+  width:16px; height:16px; flex:none; margin:2px 0 0;
+  accent-color:#085587; cursor:pointer;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-fields {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;
+  padding:2px 12px 14px 40px; background:transparent;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-fields > div {
+  min-width:0; display:grid; gap:5px;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-fields label {
+  color:#304968; font-size:12px; font-weight:650;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-fields select,
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-fields input {
+  width:100%; min-width:0; min-height:45px; border:1px solid #d2dae4;
+  padding:10px 12px; border-radius:8px; background:#fff; color:#172b4b; font-size:14px;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-tax-head-heading {
+  padding-top:15px;
+}
+/* V5 catalogue: one neutral surface and one quiet divider per group.
+   Only the checkbox and actionable controls use the approved primary blue. */
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-testid="other-tax-head-catalogue"] {
+  border-color:#e1e6ec; background:#fff;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-group] {
+  border-color:#e8ebef;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-group] > summary {
+  background:#fafbfc; color:#273b50;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-group] > summary span.text-taxpay-primary {
+  color:#506176;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-row] {
+  background:#fff;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-row] > label:hover {
+  background:#f8fafb;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-row] input[type="checkbox"] {
+  accent-color:#085587;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-year-allocation {
+  background:#fff;box-shadow:none;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-row--focused,
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-year-allocation[data-focused="true"] {
+  background:#f7f9fb;box-shadow:inset 2px 0 #9aabbc;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-year-allocation + .other-tax-year-allocation {
+  border-top-color:#e8ebef;
+}
+/* Keep selected taxpayer obvious without adding a second large blue panel. */
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-taxpayer-chip[aria-pressed="true"] {
+  background:#085587;border-color:#085587;color:#fff;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-taxpayer-chip:hover:not([aria-pressed="true"]) {
+  background:#f7f9fb;
+}
+@media(min-width:801px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]
+    .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 > .payment-form-summary {
+    align-self:stretch; height:100%; min-height:100%; max-height:none;
+    position:static; margin:0; border-radius:0; border-top:0; background:#fafbfc;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]
+    .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 > .payment-form-summary .payment-form-summary__scroll-content {
+    min-height:0; max-height:calc(85dvh - 130px); overflow-y:auto;
+  }
+}
+@media(max-width:520px) {
+  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 > .payment-form-layout__sections {padding:14px 13px}
+  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-fields {grid-template-columns:1fr;padding-left:12px}
+  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-return-card {padding:10px;gap:8px}
 }

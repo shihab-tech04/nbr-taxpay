@@ -23,6 +23,7 @@ import { BLOCKED_HEAD_IDS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
 import { PaymentCategory, ChallanReceipt, PaymentLineItem } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
+import { amountInTakaWords } from '../../services/amountInWords';
 import { UI_STRINGS } from '../../services/localization';
 import { ReceiptView } from '../common/ReceiptView';
 import { PaymentFormSection, PaymentLiveSummary } from '../ui/PaymentFormLayout';
@@ -234,6 +235,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [walkInPayerTin, setWalkInPayerTin] = useState('');
   const [walkInPayerLookup, setWalkInPayerLookup] = useState<ReturnType<typeof lookupSampleTaxpayer>>(null);
   const [walkInPayerConfirmed, setWalkInPayerConfirmed] = useState(false);
+  const [walkInPayerSearchedTin, setWalkInPayerSearchedTin] = useState('');
   const confirmedWalkInPayer = walkInPayerConfirmed && walkInPayerLookup?.tin === walkInPayerTin
     ? walkInPayerLookup : null;
   const [otherTaxpayerName, setOtherTaxpayerName] = useState(initialBeneficiary?.name ?? '');
@@ -265,7 +267,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const seen = new Set<string>();
     return initialBeneficiary.parallelAllocations.filter(line => {
       const key = line.taxpayerTin + ':' + line.headId + ':' + line.assessmentYear;
-      if (!allowed.has(line.taxpayerTin) || seen.has(key) || !isOtherTaxHeadEligible(line.headId) ||
+      if (!allowed.has(line.taxpayerTin) || seen.has(key) || !(isOtherTaxHeadEligible(line.headId) || (unifiedFlow && line.headId === RETURN_HEAD_ID)) ||
         !OTHER_TAX_YEARS.some(year => year === line.assessmentYear) ||
         (parseGuestAmount(line.amount) ?? 0) <= 0) return false;
       seen.add(key);
@@ -374,7 +376,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     `${line.taxpayerId}:${line.headId}:${line.assessmentYear}`)).size === otherTaxLines.length;
   const batchValid = !selfLiabilityHasAdditionalRecipients && uniqueBatchAllocations && otherTaxLines.length > 0 && fitsCombinedAllocationCapacity(otherTaxLines.length) && batchAmount !== null && batchAmount > 0
     && !missingBatchTaxpayer
-    && otherTaxLines.every(line => isOtherTaxHeadEligible(line.headId)
+    && otherTaxLines.every(line => (isOtherTaxHeadEligible(line.headId) || (unifiedFlow && line.headId === RETURN_HEAD_ID))
       && batchTaxpayers.some(person => person.id === line.taxpayerId)
       && OTHER_TAX_YEARS.some(year => year === line.assessmentYear));
 
@@ -409,7 +411,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!isOptionalReceiptEmailValid(receiptEmail)) return false;
     if (forSelf === false && !signedInAccount && effectivePayerName.trim().length < 2) return false;
     if (otherBatch && forSelf === false && !signedInAccount && walkInPayerTin &&
-      (!/^\d{12}$/.test(walkInPayerTin) || !confirmedWalkInPayer)) return false;
+      (!(unifiedFlow ? /^\d{12,13}$/ : /^\d{12}$/).test(walkInPayerTin) || !confirmedWalkInPayer)) return false;
     const reference = noticeReference.trim();
     if (reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection) {
       const matched = findV11GuestNotice(taxpayerTin, reference);
@@ -488,7 +490,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setForSelf(saved.forSelf === null ? null : saved.forSelf as boolean);
     setTin(stringField('tin')); setPayerName(stringField('payerName'));
     setWalkInPayerTin(stringField('walkInPayerTin').replace(/\D/g, '').slice(0,12));
-    setWalkInPayerLookup(null); setWalkInPayerConfirmed(false);
+    setWalkInPayerLookup(null); setWalkInPayerConfirmed(false); setWalkInPayerSearchedTin('');
     setOtherTaxpayerName(stringField('otherTaxpayerName')); setPhone(stringField('phone'));
     setReceiptEmail(stringField('receiptEmail')); setAssessmentYear(stringField('assessmentYear') || (initialReuse ? '' : '2026-27'));
     setNoticeReference(stringField('noticeReference'));
@@ -1057,7 +1059,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (blockInvalidReturn()) return;
     if (otherBatch) {
       const invalid = otherTaxLines.find(line =>
-        !isOtherTaxHeadEligible(line.headId) || !OTHER_TAX_YEARS.some(year => year === line.assessmentYear) ||
+        !(isOtherTaxHeadEligible(line.headId) || (unifiedFlow && line.headId === RETURN_HEAD_ID)) || !OTHER_TAX_YEARS.some(year => year === line.assessmentYear) ||
         !batchTaxpayers.some(taxpayer => taxpayer.id === line.taxpayerId) ||
         otherTaxAllocationTotal([line]) === null);
       if (!batchValid || invalid) {
@@ -1251,7 +1253,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return false;
     }
     if (otherBatch && forSelf === false && !signedInAccount && walkInPayerTin &&
-        (!/^\d{12}$/.test(walkInPayerTin) || !confirmedWalkInPayer)) {
+        (!(unifiedFlow ? /^\d{12,13}$/ : /^\d{12}$/).test(walkInPayerTin) || !confirmedWalkInPayer)) {
       setValidationError(language === 'bn'
         ? 'পরিশোধকারীর টিআইএন খুঁজে নিশ্চিত করুন, অথবা খালি রাখুন।'
         : 'Search and confirm the payer TIN, or leave it blank.', 'payerTin');
@@ -1299,7 +1301,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
       const lineItems: PaymentLineItem[] = otherBatch ? otherTaxLines.map(line => {
-        const head = otherTaxAllocationHead(line.headId)!;
+        const head = line.headId === RETURN_HEAD_ID && unifiedFlow
+          ? V11_PAYMENT_OPTIONS.find(option => option.id === RETURN_HEAD_ID)
+          : otherTaxAllocationHead(line.headId);
+        if (!head) throw new Error('INVALID_COMBINED_HEAD');
         const amount = otherTaxAllocationTotal([line]) || 0;
         const taxpayer = batchTaxpayers.find(person => person.id === line.taxpayerId)!;
         return {
@@ -1423,6 +1428,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               assessmentYear:line.assessmentYear,amountMinor:Number(parseGuestMinorUnits(line.amount)),
               line:lineItems[index]};
           }),
+          { unifiedV5: unifiedFlow },
         );
         // Storage quota/private-browsing failures must not prevent the same
         // idempotent SQL request from being submitted in the current tab.
@@ -1739,28 +1745,43 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                     ? (language === 'bn' ? walkInPayerLookup.nameBn : walkInPayerLookup.nameEn) : ''}
                   tinLabel={language === 'bn' ? 'পরিশোধকারীর নিজের টিআইএন (ঐচ্ছিক)' : 'Payer TIN (optional)'}
                   nameLabel={language === 'bn' ? 'মিলে যাওয়া পরিশোধকারীর নাম' : 'Matched payer name'}
+                  hideNameField={unifiedFlow}
+                  omitNameField={unifiedFlow}
                   searchLabel={language === 'bn' ? 'পরিশোধকারীর টিআইএন খুঁজুন' : 'Search payer TIN'}
-                  requiredTin={false} maxTinLength={12}
-                  canSearch={/^\d{12}$/.test(walkInPayerTin)}
+                  requiredTin={false} maxTinLength={unifiedFlow ? 13 : 12}
+                  tinPlaceholder={unifiedFlow ? (language === 'bn' ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : undefined}
+                  canSearch={(unifiedFlow ? /^\d{12,13}$/ : /^\d{12}$/).test(walkInPayerTin)}
                   invalidTin={isFieldInvalid('payerTin')} tinDescribedBy={errorDescription('payerTin')}
                   onTinChange={value => {
                     setWalkInPayerTin(value); setWalkInPayerLookup(null);
-                    setWalkInPayerConfirmed(false); clearValidationError();
+                    setWalkInPayerSearchedTin(''); setWalkInPayerConfirmed(false); clearValidationError();
                   }}
                   onClear={() => {
                     setWalkInPayerTin(''); setWalkInPayerLookup(null);
-                    setWalkInPayerConfirmed(false); clearValidationError();
+                    setWalkInPayerSearchedTin(''); setWalkInPayerConfirmed(false); clearValidationError();
                   }}
                   onSearch={() => {
-                    setWalkInPayerLookup(/^\d{12}$/.test(walkInPayerTin)
+                    setWalkInPayerSearchedTin(walkInPayerTin);
+                    setWalkInPayerLookup((unifiedFlow ? /^\d{12,13}$/ : /^\d{12}$/).test(walkInPayerTin)
                       ? lookupSampleTaxpayer(walkInPayerTin) : null);
                     setWalkInPayerConfirmed(false);
                   }}
-                  status={walkInPayerTin && /^\d{12}$/.test(walkInPayerTin) && !walkInPayerLookup
+                  status={unifiedFlow ? (
+                    walkInPayerSearchedTin === walkInPayerTin && walkInPayerTin && !walkInPayerLookup
+                      ? <p role="alert" className="text-xs text-rose-700">{language === 'bn' ? 'মিলে যাওয়া পরিশোধকারীর তথ্য পাওয়া যায়নি।' : 'No matching payer information found.'}</p>
+                      : null
+                  ) : walkInPayerTin && /^\d{12}$/.test(walkInPayerTin) && !walkInPayerLookup
                     ? <p className="text-xs text-slate-600">{language === 'bn' ? 'করদাতার তথ্য খুঁজুন।' : 'Search taxpayer information.'}</p>
                     : walkInPayerLookup ? <p className="sr-only">{language === 'bn' ? 'টিআইএন মিলে গেছে।' : 'TIN matched.'}</p> : null}
                   error={fieldError('payerTin')}
                 />
+                {unifiedFlow && walkInPayerLookup?.tin === walkInPayerTin && <div className="unified-v5-payer-result" role="status" aria-live="polite" data-testid="unified-v5-payer-result">
+                  <span>{language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer information'}</span>
+                  <div className="unified-v5-payer-result__identity"><strong>{language === 'bn' ? walkInPayerLookup.nameBn : walkInPayerLookup.nameEn}</strong>
+                    {entityTypeForTin(walkInPayerTin) && <span>{entityTypeForTin(walkInPayerTin) === 'COMPANY'
+                      ? (language === 'bn' ? 'কোম্পানি' : 'Company') : (language === 'bn' ? 'ব্যক্তি' : 'Individual')}</span>}</div>
+                  <small>{walkInPayerTin.slice(0, 3) + '*'.repeat(Math.max(0, walkInPayerTin.length - 3))}</small>
+                </div>}
                 {walkInPayerLookup?.tin === walkInPayerTin && !confirmedWalkInPayer &&
                   <button type="button" className="min-h-11 rounded-lg border border-taxpay-primary px-4 py-2 text-sm text-taxpay-primary"
                     onClick={() => { setWalkInPayerConfirmed(true); clearValidationError(); }}>
@@ -2233,7 +2254,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
         {/* STEP 2: Head Selection & Financial Amounts */}
         {step === 2 && (otherBatch ? (
           <>
-          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} serviceSelection={unifiedFlow ? unifiedServiceChoice : undefined} unifiedV3={unifiedFlow} maskTaxpayerTin={unifiedFlow} remarks={unifiedFlow ? undefined : paymentRemarksControl}
+          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} serviceSelection={undefined} unifiedV3={unifiedFlow} allowMixedReturn={unifiedFlow} maskTaxpayerTin={unifiedFlow} remarks={unifiedFlow ? undefined : paymentRemarksControl}
             lines={otherTaxLines} suggestionTaxpayerIds={ownAccountTax ? { primary: demoConsentActor } : undefined}
             preserveSourcePaymentAmounts={Boolean(sourcePaymentId)} focusRequest={summaryJump}
             originalFacilitation={!unifiedFlow && forSelf === false}
@@ -2245,7 +2266,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                 const sum = otherTaxAllocationTotal(next);
                 const unique = new Set(next.map(line => `${line.taxpayerId}:${line.headId}:${line.assessmentYear}`)).size === next.length;
                 const allValid = unique && next.length > 0 && sum !== null && sum > 0 &&
-                  next.every(line => isOtherTaxHeadEligible(line.headId) &&
+                  next.every(line => (isOtherTaxHeadEligible(line.headId) || (unifiedFlow && line.headId === RETURN_HEAD_ID)) &&
                     OTHER_TAX_YEARS.some(year => year === line.assessmentYear) &&
                     batchTaxpayers.some(person => person.id === line.taxpayerId));
                 if (allValid) clearValidationError();
@@ -2461,7 +2482,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
 
         {/* STEP 3: Review Challan & Execute Simulated Gateway */}
         {step === 3 && (
-          <div className="payment-review" data-testid="payment-review">
+          <div className={unifiedFlow ? "payment-review payment-review--unified-v5" : "payment-review"} data-testid="payment-review">
             <div className="payment-review__main">
               {unifiedFlow && <section className="payment-review__panel unified-v3-review" aria-labelledby="unified-v3-review-title" data-testid="unified-v3-payment-details">
                 <div className="payment-review__section-title unified-v3-review__heading">
@@ -2484,11 +2505,18 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                           <span>{person.tin.slice(0,3) + '*********'} · {incomeTaxEntityTypeLabel(entityTypeForTin(person.tin) ?? 'NON_COMPANY', language)}</span>
                         </td></tr>
                         {otherBatch ? otherTaxLines.filter(line => line.taxpayerId === person.id).map(line => (
-                          <tr key={line.id}><td>{language === 'bn' ? otherTaxAllocationHead(line.headId)?.nameBn : otherTaxAllocationHead(line.headId)?.nameEn}</td><td>{line.assessmentYear}</td><td>{formatCurrency(parseGuestAmount(line.amount) ?? 0, language)}</td></tr>
+                          <tr key={line.id}><td>{line.headId === RETURN_HEAD_ID
+                              ? (language === 'bn' ? 'রিটার্নসহ কর' : 'Tax with Return')
+                              : language === 'bn' ? otherTaxAllocationHead(line.headId)?.nameBn : otherTaxAllocationHead(line.headId)?.nameEn}</td><td>{line.assessmentYear}</td><td>{formatCurrency(parseGuestAmount(line.amount) ?? 0, language)}</td></tr>
                         )) : <tr><td>{language === 'bn' ? 'রিটার্নসহ কর' : 'Tax with Return'}</td><td>{assessmentYear}</td><td>{formatCurrency(summedAmount ?? 0, language)}</td></tr>}
                       </React.Fragment>
                     ))}</tbody>
                   </table>
+                </div>
+                <div className="unified-v5-review-total" data-testid="unified-v5-payment-total">
+                  <div className="unified-v5-review-total__row"><strong>{language === 'bn' ? 'মোট পেমেন্ট' : 'Payment total'}</strong>
+                    <output aria-live="polite">{formatCurrency(totalAmount, language)}</output></div>
+                  <p data-testid="unified-v5-total-in-words">{amountInTakaWords(totalAmount, language) ?? '—'}</p>
                 </div>
               </section>}
               {unifiedFlow && <section className="payment-review__panel payment-review__payer" aria-labelledby="payment-final-payer-title">
