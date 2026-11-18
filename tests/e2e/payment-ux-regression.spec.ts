@@ -23,7 +23,7 @@ test('payer is required before choosing a payment service and is not asked twice
   const dialog = await beginGuestPayment(page, 'Tax with Return');
   await expect(dialog.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
   await expect(dialog.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('My tax liability');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   await expect(dialog.locator('#guest-tin')).toBeVisible();
   await dialog.locator('#guest-tin').fill('123456789012');
   await dialog.locator('#guest-phone').fill('01712345678');
