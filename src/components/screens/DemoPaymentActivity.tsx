@@ -336,7 +336,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean;showPaymentComp
     {activityTabs && <TaxpayerActivityTabs />}
 
     {/* New payments stay in the shared Pay Tax flow; Activity opens on history. */}
-    {(showPaymentComposer || currentRoute==='wizard') && <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New payment','নতুন পেমেন্ট')}>
+    {(showPaymentComposer || currentRoute==='wizard' || payAgainSource!==null) && <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New payment','নতুন পেমেন্ট')}>
       <ol aria-label={txt('Payment steps','পেমেন্টের ধাপ')} className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[txt('Category','শ্রেণি'),txt('Information','তথ্য'),txt('Payment and review','পেমেন্ট ও পর্যালোচনা'),txt('Result','ফলাফল')].map((name,index)=>{
           const status=paymentStage>index?'complete':paymentStage===index?'current':'upcoming';
