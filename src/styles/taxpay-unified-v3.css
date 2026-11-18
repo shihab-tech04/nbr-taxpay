@@ -288,7 +288,7 @@
 }
 
 /* Pre-lock v3 review: one editable detail table; calculation remains right. */
-.payment-flow-embedded--unified .unified-v3-review {overflow:hidden}
+.payment-flow-embedded--unified .unified-v3-review {padding:0;overflow:hidden}
 .payment-flow-embedded--unified .unified-v3-review__heading {
   display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
   padding:10px 13px;min-height:48px;background:#fafbfc;border-bottom:1px solid #e2e7ec;
@@ -514,6 +514,46 @@
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-tax-head-heading {
   padding-top:15px;
+}
+/* V5 catalogue: one neutral surface and one quiet divider per group.
+   Only the checkbox and actionable controls use the approved primary blue. */
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-testid="other-tax-head-catalogue"] {
+  border-color:#e1e6ec; background:#fff;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-group] {
+  border-color:#e8ebef;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-group] > summary {
+  background:#fafbfc; color:#273b50;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-group] > summary span.text-taxpay-primary {
+  color:#506176;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-row] {
+  background:#fff;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-row] > label:hover {
+  background:#f8fafb;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-row] input[type="checkbox"] {
+  accent-color:#085587;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-year-allocation {
+  background:#fff;box-shadow:none;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-row--focused,
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-year-allocation[data-focused="true"] {
+  background:#f7f9fb;box-shadow:inset 2px 0 #9aabbc;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-year-allocation + .other-tax-year-allocation {
+  border-top-color:#e8ebef;
+}
+/* Keep selected taxpayer obvious without adding a second large blue panel. */
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-taxpayer-chip[aria-pressed="true"] {
+  background:#085587;border-color:#085587;color:#fff;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-taxpayer-chip:hover:not([aria-pressed="true"]) {
+  background:#f7f9fb;
 }
 @media(min-width:801px) {
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"]
