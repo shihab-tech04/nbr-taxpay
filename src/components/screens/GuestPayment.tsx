@@ -1301,7 +1301,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
       const lineItems: PaymentLineItem[] = otherBatch ? otherTaxLines.map(line => {
-        const head = otherTaxAllocationHead(line.headId)!;
+        const head = line.headId === RETURN_HEAD_ID && unifiedFlow
+          ? V11_PAYMENT_OPTIONS.find(option => option.id === RETURN_HEAD_ID)
+          : otherTaxAllocationHead(line.headId);
+        if (!head) throw new Error('INVALID_COMBINED_HEAD');
         const amount = otherTaxAllocationTotal([line]) || 0;
         const taxpayer = batchTaxpayers.find(person => person.id === line.taxpayerId)!;
         return {
@@ -1425,6 +1428,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               assessmentYear:line.assessmentYear,amountMinor:Number(parseGuestMinorUnits(line.amount)),
               line:lineItems[index]};
           }),
+          { unifiedV5: unifiedFlow },
         );
         // Storage quota/private-browsing failures must not prevent the same
         // idempotent SQL request from being submitted in the current tab.

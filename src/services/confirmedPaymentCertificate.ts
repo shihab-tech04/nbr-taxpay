@@ -73,8 +73,8 @@ function legacySyntheticTin(beneficiary:string):string|undefined {
 function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
  const d=tx.details??{};
  const contractVersion=d.allocationContractVersion;
- if(contractVersion!==undefined&&contractVersion!==2&&contractVersion!==3)return undefined;
- const version3=contractVersion===3;
+ if(contractVersion!==undefined&&contractVersion!==2&&contractVersion!==3&&contractVersion!==5)return undefined;
+ const version3=contractVersion===3||contractVersion===5;
  const lines=Array.isArray(d.lines)
   ?d.lines.filter(line=>line&&typeof line==='object'&&!Array.isArray(line)) as Array<Record<string,unknown>>
   :[];

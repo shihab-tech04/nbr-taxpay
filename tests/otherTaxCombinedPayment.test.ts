@@ -369,3 +369,36 @@ test('Tax with Return never mixes into the non-return combined-payment service',
    {...allocations[0],line:returnLine},allocations[1],
  ]),/INVALID_COMBINED_HEAD/);
 });
+
+
+test('parallel v5 mixed Return and Other Tax keeps one reconciled parent and unchanged original v3',()=>{
+ const ret=V11_PAYMENT_OPTIONS.find(head=>head.id===125)!;
+ assert.ok(ret);
+ const returnLine:PaymentLineItem={headId:125,serviceCode:'TAX_WITH_RETURN',isWithholding:false,
+   economicCode:ret.economicCode,headNameEn:ret.nameEn,taxAmount:15,
+   penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:15};
+ const mixedItems=[returnLine,items[1]];
+ const mixedReceipt:ChallanReceipt={...receipt,items:mixedItems,totalAmount:50};
+ const mixedAllocations=[{...allocations[0],line:returnLine},{...allocations[1]}];
+ const mixedInput:StoryPaymentInput={...input,details:{...input.details,lines:mixedItems}};
+ assert.throws(()=>prepareCombinedOtherTaxPayment(mixedInput,mixedReceipt,mixedAllocations),
+   /INVALID_COMBINED_HEAD/);
+ const v5=prepareCombinedOtherTaxPayment(mixedInput,mixedReceipt,mixedAllocations,{unifiedV5:true});
+ assert.equal(v5.payload.service,'OTHER_TAX_PAYMENT');
+ assert.equal(v5.payload.details.allocationContractVersion,5);
+ assert.equal(v5.payload.idempotencyKey,id);
+ assert.equal(v5.receipt.challanNo,'SIM-'+id);
+ assert.deepEqual((v5.payload.details.allocations as Array<{headId:number}>).map(a=>a.headId),[125,145]);
+ assert.equal(v5.receipt.allocationItems?.[0].paymentServiceBn,ret.nameBn);
+ const storage=store();
+ assert.equal(saveCombinedOtherTaxRequest(v5,'READY',storage),true);
+ assert.deepEqual(loadCombinedOtherTaxRequest(session,storage)?.request.payload,v5.payload);
+ const confirmed=makeConfirmedReceipt({id,service:'OTHER_TAX_PAYMENT',
+   amountMinor:5000,status:'SIMULATED_SUCCESS',createdAt:'2026-11-18T12:00:00Z',details:v5.payload.details});
+ assert.deepEqual(confirmed.allocationItems?.map(a=>a.allocationId),['one','two']);
+ assert.equal(confirmed.totalAmount,50);
+ const tampered=structuredClone(v5);
+ (tampered.payload.details.allocations as Array<Record<string,unknown>>)[0].headId=145;
+ assert.throws(()=>saveCombinedOtherTaxRequest(tampered,'READY',store()),/INVALID_COMBINED_RECOVERY/);
+ clearCombinedOtherTaxRequest(session,storage);
+});
