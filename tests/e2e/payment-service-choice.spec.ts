@@ -189,6 +189,7 @@ test('Other Tax proceeds directly without an additional payment-type selector', 
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('Other Tax Payment');
+  await expect(dialog.locator('.tax-service-choice')).toHaveAttribute('data-payment-service', 'OTHER_TAX_PAYMENT');
   await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('Other Tax Payment');
   // Walk-in taxpayers never see the signed-in Saved beneficiaries control.
   await expect(dialog.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
@@ -211,6 +212,7 @@ test('Tax with Return still proceeds with its unchanged service ID', async ({ pa
   await dialog.locator('[data-payment-access="GUEST"]').click();
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(dialog.locator('.taxpay-modal__subtitle')).toContainText('Tax with Return');
+  await expect(dialog.locator('.tax-service-choice')).toHaveAttribute('data-payment-service', 'TAX_WITH_RETURN');
   await expect(dialog.locator('#guest-tin')).toBeVisible();
   await expect(dialog.locator('#tax-service-other-type')).toHaveCount(0);
 });
