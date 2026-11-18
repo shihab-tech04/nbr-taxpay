@@ -11,7 +11,7 @@ test('walk-in self is single taxpayer while facilitator can add another', async 
   await expect(self).toBeVisible();
   await self.locator('#guest-tin').fill('111111111111');
   await self.locator('.taxpayer-tin-lookup__search').click();
-  await expect(self.getByRole('heading', { name: 'Taxpayer Information' })).toBeVisible();
+  await expect(self.getByRole('heading', { name: 'Taxpayer Information' })).toHaveCount(0);
   await expect(payment.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
   await expect(payment.getByTestId('other-tax-taxpayer')).toHaveCount(0);
   await payment.locator('.taxpay-modal__back').click();
