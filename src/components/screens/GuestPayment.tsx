@@ -234,6 +234,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [walkInPayerTin, setWalkInPayerTin] = useState('');
   const [walkInPayerLookup, setWalkInPayerLookup] = useState<ReturnType<typeof lookupSampleTaxpayer>>(null);
   const [walkInPayerConfirmed, setWalkInPayerConfirmed] = useState(false);
+  const [walkInPayerSearchedTin, setWalkInPayerSearchedTin] = useState('');
   const confirmedWalkInPayer = walkInPayerConfirmed && walkInPayerLookup?.tin === walkInPayerTin
     ? walkInPayerLookup : null;
   const [otherTaxpayerName, setOtherTaxpayerName] = useState(initialBeneficiary?.name ?? '');
@@ -408,7 +409,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (!isOptionalReceiptEmailValid(receiptEmail)) return false;
     if (forSelf === false && !signedInAccount && effectivePayerName.trim().length < 2) return false;
     if (otherBatch && forSelf === false && !signedInAccount && walkInPayerTin &&
-      (!/^\d{12}$/.test(walkInPayerTin) || !confirmedWalkInPayer)) return false;
+      (!(unifiedFlow ? /^\d{12,13}$/ : /^\d{12}$/).test(walkInPayerTin) || !confirmedWalkInPayer)) return false;
     const reference = noticeReference.trim();
     if (reference && /^\d{12}$/.test(taxpayerTin) && !isWithholdingMode && !ownAccountTax && !signedInBeneficiarySelection) {
       const matched = findV11GuestNotice(taxpayerTin, reference);
@@ -487,7 +488,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setForSelf(saved.forSelf === null ? null : saved.forSelf as boolean);
     setTin(stringField('tin')); setPayerName(stringField('payerName'));
     setWalkInPayerTin(stringField('walkInPayerTin').replace(/\D/g, '').slice(0,12));
-    setWalkInPayerLookup(null); setWalkInPayerConfirmed(false);
+    setWalkInPayerLookup(null); setWalkInPayerConfirmed(false); setWalkInPayerSearchedTin('');
     setOtherTaxpayerName(stringField('otherTaxpayerName')); setPhone(stringField('phone'));
     setReceiptEmail(stringField('receiptEmail')); setAssessmentYear(stringField('assessmentYear') || (initialReuse ? '' : '2026-27'));
     setNoticeReference(stringField('noticeReference'));
@@ -1246,7 +1247,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       return false;
     }
     if (otherBatch && forSelf === false && !signedInAccount && walkInPayerTin &&
-        (!/^\d{12}$/.test(walkInPayerTin) || !confirmedWalkInPayer)) {
+        (!(unifiedFlow ? /^\d{12,13}$/ : /^\d{12}$/).test(walkInPayerTin) || !confirmedWalkInPayer)) {
       setValidationError(language === 'bn'
         ? 'পরিশোধকারীর টিআইএন খুঁজে নিশ্চিত করুন, অথবা খালি রাখুন।'
         : 'Search and confirm the payer TIN, or leave it blank.', 'payerTin');
@@ -1734,28 +1735,42 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                     ? (language === 'bn' ? walkInPayerLookup.nameBn : walkInPayerLookup.nameEn) : ''}
                   tinLabel={language === 'bn' ? 'পরিশোধকারীর নিজের টিআইএন (ঐচ্ছিক)' : 'Payer TIN (optional)'}
                   nameLabel={language === 'bn' ? 'মিলে যাওয়া পরিশোধকারীর নাম' : 'Matched payer name'}
+                  hideNameField={unifiedFlow}
                   searchLabel={language === 'bn' ? 'পরিশোধকারীর টিআইএন খুঁজুন' : 'Search payer TIN'}
-                  requiredTin={false} maxTinLength={12}
-                  canSearch={/^\d{12}$/.test(walkInPayerTin)}
+                  requiredTin={false} maxTinLength={unifiedFlow ? 13 : 12}
+                  tinPlaceholder={unifiedFlow ? (language === 'bn' ? '১২ বা ১৩ সংখ্যার টিআইএন' : '12- or 13-digit TIN') : undefined}
+                  canSearch={(unifiedFlow ? /^\d{12,13}$/ : /^\d{12}$/).test(walkInPayerTin)}
                   invalidTin={isFieldInvalid('payerTin')} tinDescribedBy={errorDescription('payerTin')}
                   onTinChange={value => {
                     setWalkInPayerTin(value); setWalkInPayerLookup(null);
-                    setWalkInPayerConfirmed(false); clearValidationError();
+                    setWalkInPayerSearchedTin(''); setWalkInPayerConfirmed(false); clearValidationError();
                   }}
                   onClear={() => {
                     setWalkInPayerTin(''); setWalkInPayerLookup(null);
-                    setWalkInPayerConfirmed(false); clearValidationError();
+                    setWalkInPayerSearchedTin(''); setWalkInPayerConfirmed(false); clearValidationError();
                   }}
                   onSearch={() => {
-                    setWalkInPayerLookup(/^\d{12}$/.test(walkInPayerTin)
+                    setWalkInPayerSearchedTin(walkInPayerTin);
+                    setWalkInPayerLookup((unifiedFlow ? /^\d{12,13}$/ : /^\d{12}$/).test(walkInPayerTin)
                       ? lookupSampleTaxpayer(walkInPayerTin) : null);
                     setWalkInPayerConfirmed(false);
                   }}
-                  status={walkInPayerTin && /^\d{12}$/.test(walkInPayerTin) && !walkInPayerLookup
+                  status={unifiedFlow ? (
+                    walkInPayerSearchedTin === walkInPayerTin && walkInPayerTin && !walkInPayerLookup
+                      ? <p role="alert" className="text-xs text-rose-700">{language === 'bn' ? 'মিলে যাওয়া পরিশোধকারীর তথ্য পাওয়া যায়নি।' : 'No matching payer information found.'}</p>
+                      : null
+                  ) : walkInPayerTin && /^\d{12}$/.test(walkInPayerTin) && !walkInPayerLookup
                     ? <p className="text-xs text-slate-600">{language === 'bn' ? 'করদাতার তথ্য খুঁজুন।' : 'Search taxpayer information.'}</p>
                     : walkInPayerLookup ? <p className="sr-only">{language === 'bn' ? 'টিআইএন মিলে গেছে।' : 'TIN matched.'}</p> : null}
                   error={fieldError('payerTin')}
                 />
+                {unifiedFlow && walkInPayerLookup?.tin === walkInPayerTin && <div className="unified-v5-payer-result" role="status" aria-live="polite" data-testid="unified-v5-payer-result">
+                  <span>{language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer information'}</span>
+                  <div className="unified-v5-payer-result__identity"><strong>{language === 'bn' ? walkInPayerLookup.nameBn : walkInPayerLookup.nameEn}</strong>
+                    {entityTypeForTin(walkInPayerTin) && <span>{entityTypeForTin(walkInPayerTin) === 'COMPANY'
+                      ? (language === 'bn' ? 'কোম্পানি' : 'Company') : (language === 'bn' ? 'ব্যক্তি' : 'Individual')}</span>}</div>
+                  <small>{walkInPayerTin.slice(0, 3) + '*'.repeat(Math.max(0, walkInPayerTin.length - 3))}</small>
+                </div>}
                 {walkInPayerLookup?.tin === walkInPayerTin && !confirmedWalkInPayer &&
                   <button type="button" className="min-h-11 rounded-lg border border-taxpay-primary px-4 py-2 text-sm text-taxpay-primary"
                     onClick={() => { setWalkInPayerConfirmed(true); clearValidationError(); }}>
