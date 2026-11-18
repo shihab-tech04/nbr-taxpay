@@ -54,20 +54,24 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await select68A.check();
     await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('3500');
 
-    const calculation = dialog.getByTestId('grouped-taxpayer-calculation');
-    const taxpayerSummaries = calculation.locator('.payment-form-summary__taxpayer');
+    // Approved v5 calculation is a compact subtotal by taxpayer. Keep the
+    // complete editable allocations in the Payment Head composer instead.
     const mobileCalculation = dialog.getByTestId('mobile-payment-calculation');
     if (await mobileCalculation.count() && await mobileCalculation.getAttribute('open') === null) {
       await mobileCalculation.getByTestId('mobile-payment-calculation-toggle').click();
     }
+    const calculation = dialog.getByTestId('v5-compact-taxpayer-summary');
+    const taxpayerSummaries = calculation.locator('.payment-form-summary__compact-owner');
     await expect(taxpayerSummaries).toHaveCount(2);
-    await expect(taxpayerSummaries.nth(0).locator('summary')).toContainText('1 payment line');
-    await expect(taxpayerSummaries.nth(1).locator('summary')).toContainText('1 payment line');
-    await taxpayerSummaries.nth(1).locator('summary').click();
-    const personLine = taxpayerSummaries.nth(0).locator('.payment-form-summary__taxpayer-label').first();
-    const companyLine = taxpayerSummaries.nth(1).locator('.payment-form-summary__taxpayer-label').first();
-    await expect(personLine).not.toContainText(/Code/i);
-    await expect(companyLine).toContainText('Code 1112101');
+    await expect(taxpayerSummaries.nth(0)).toContainText('User 2');
+    await expect(taxpayerSummaries.nth(1)).toContainText('User 3');
+    await expect(taxpayerSummaries.nth(0)).toContainText('3,500');
+    await expect(taxpayerSummaries.nth(1)).toContainText('3,500');
+    await expect(calculation).not.toContainText('Show all');
+    await expect(dialog.getByRole('button', { name: 'Copy TIN' })).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'টিআইএন কপি করুন' })).toHaveCount(0);
+    // The selected head data remains in the composer despite not duplicating it in the sidebar.
+    await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
     await dialog.getByRole('button', { name: 'Continue to final preview' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
