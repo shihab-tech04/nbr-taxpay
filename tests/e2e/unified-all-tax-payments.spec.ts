@@ -35,7 +35,11 @@ test('v5 frozen Step 1: exactly twelve blocks, entity alongside name and selecte
   await expect(result.locator('.unified-v5-profile-name')).toContainText('Individual');
   await expect(result.getByText('Income tax type')).toHaveCount(0);
   await expect(result.getByText('Taxpayer type')).toHaveCount(0);
-  await modal.getByRole('button',{name:'Add taxpayer'}).click();
+  const add = modal.getByRole('button',{name:'Add taxpayer'});
+  await expect(add).toHaveCSS('background-color','rgb(255, 255, 255)');
+  await expect(add).toHaveCSS('color','rgb(38, 71, 97)');
+  await add.click();
+  await expect(modal.getByRole('button',{name:'Continue to purpose & amount'})).toBeEnabled();
   await expect(modal.getByTestId('unified-taxpayer-count')).toHaveText('1');
   await expect(modal.getByTestId('unified-taxpayer-workspace')).toContainText('User 2');
 });
