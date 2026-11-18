@@ -42,13 +42,11 @@ export function UnifiedTaxpayerWorkspace({
     ...additional.filter(p => p.tin && confirmedTins[p.id] === p.tin),
   ];
   const duplicate = selected.some(p => p.tin === draftTin);
-  const validTin = /^\d{12,13}$/.test(draftTin);
+  const validTin = /^\d{12}$/.test(draftTin);
   const supportedProfile = Boolean(searched && classification && /^\d{12}$/.test(draftTin));
   const canAdd = supportedProfile && !duplicate;
   const identityType = (kind: string | null) =>
     kind === 'COMPANY' ? tx('Company', 'কোম্পানি') : tx('Individual', 'ব্যক্তি');
-  const incomeType = (kind: string | null) =>
-    kind === 'COMPANY' ? tx('Company', 'কোম্পানি') : tx('Person other than company', 'কোম্পানি ব্যতীত ব্যক্তি');
   const toggleReveal = (id: string) => setRevealedTins(current => current.includes(id)
     ? current.filter(item => item !== id) : [...current, id]);
   const add = () => {
@@ -65,11 +63,15 @@ export function UnifiedTaxpayerWorkspace({
       <p className="unified-taxpayer-workspace__subheading">{tx('Enter a TIN and search.', 'টিআইএন লিখে অনুসন্ধান করুন।')}</p>
       <label className="unified-taxpayer-workspace__label" htmlFor="guest-tin">{tx('Taxpayer TIN', 'করদাতার টিআইএন')} <span aria-hidden="true">*</span></label>
       <div className="unified-taxpayer-workspace__search">
-        <input id="guest-tin" data-testid="unified-tin-input" type="text" inputMode="numeric" autoComplete="off"
-          maxLength={13} value={draftTin}
-          placeholder={tx('12- or 13-digit TIN', '১২ বা ১৩ সংখ্যার টিআইএন')}
-          onChange={e=>{setDraftTin(e.target.value.replace(/\D/g,'').slice(0,13));setSearchedTin(null);}}
-          onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(validTin)setSearchedTin(draftTin);}}}/>
+        <div className="unified-v5-tin-blocks" data-testid="unified-v5-tin-blocks">
+          {Array.from({length:12},(_,i)=><span key={i} className={i < draftTin.length ? 'is-filled' : ''} aria-hidden="true">{draftTin[i] ?? ''}</span>)}
+          <input id="guest-tin" data-testid="unified-tin-input" type="text" inputMode="numeric"
+            autoComplete="off" maxLength={12} value={draftTin}
+            aria-label={tx('Taxpayer TIN, exactly 12 digits', 'করদাতার টিআইএন, ঠিক ১২ সংখ্যা')}
+            placeholder={tx('12-digit TIN', '১২ সংখ্যার টিআইএন')}
+            onChange={e=>{setDraftTin(e.target.value.replace(/\D/g,'').slice(0,12));setSearchedTin(null);}}
+            onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(validTin)setSearchedTin(draftTin);}}}/>
+        </div>
         <button type="button" onClick={()=>setSearchedTin(draftTin)} disabled={!validTin}
           aria-label={tx('Search taxpayer TIN', 'করদাতার টিআইএন অনুসন্ধান')}><Search size={17} aria-hidden="true"/>{tx('Search', 'অনুসন্ধান')}</button>
       </div>
@@ -81,18 +83,17 @@ export function UnifiedTaxpayerWorkspace({
         {searchedTin && !searched && <p role="alert" className="unified-taxpayer-workspace__error">{tx('TIN information not found.', 'টিআইএন তথ্য পাওয়া যায়নি।')}</p>}
         {searched && <div className="unified-taxpayer-workspace__profile" data-testid="unified-taxpayer-search-result">
           <dl>
-            <div><dt>{tx('Taxpayer name', 'করদাতার নাম')}</dt><dd>{bn ? searched.nameBn : searched.nameEn}</dd></div>
+            <div><dt>{tx('Taxpayer name', 'করদাতার নাম')}</dt><dd className="unified-v5-profile-name"><strong>{bn ? searched.nameBn : searched.nameEn}</strong>{classification && <span> · {identityType(classification)}</span>}</dd></div>
             <div><dt>{tx('TIN', 'টিআইএন')}</dt><dd className="unified-taxpayer-workspace__masked">
               {revealedTins.includes('search') ? searched.tin : mask(searched.tin)}
               <button type="button" aria-label={revealedTins.includes('search') ? tx('Hide TIN', 'টিআইএন আড়াল করুন') : tx('Reveal TIN', 'টিআইএন দেখুন')}
                 onClick={()=>toggleReveal('search')}>{revealedTins.includes('search') ? <EyeOff size={15}/> : <Eye size={15}/>}</button>
             </dd></div>
-            <div><dt>{tx('Taxpayer type', 'করদাতার ধরন')}</dt><dd>{classification ? identityType(classification) : tx('Not available', 'পাওয়া যায়নি')}</dd></div>
-            <div><dt>{tx('Income tax type', 'আয়করের ধরন')}</dt><dd>{classification ? incomeType(classification) : tx('Not available', 'পাওয়া যায়নি')}</dd></div>
+
           </dl>
           {duplicate && <p className="unified-taxpayer-workspace__error" role="status">{tx('Taxpayer already added.', 'করদাতা ইতিমধ্যে যোগ করা হয়েছে।')}</p>}
           {!classification && <p className="unified-taxpayer-workspace__error" role="status">{tx('Income tax type is not confirmed for this sample profile.', 'এই নমুনা প্রোফাইলে আয়করের ধরন নিশ্চিত নয়।')}</p>}
-          {classification && draftTin.length === 13 && <p className="unified-taxpayer-workspace__error" role="status">{tx('This entry requires a supported 12-digit TIN.', 'এখানে সমর্থিত ১২ সংখ্যার টিআইএন প্রয়োজন।')}</p>}
+
           <button type="button" className="unified-taxpayer-workspace__add" onClick={add} disabled={!canAdd}>
             <Plus size={18} aria-hidden="true"/>{tx('Add taxpayer', 'করদাতা যোগ করুন')}</button>
         </div>}
@@ -112,7 +113,7 @@ export function UnifiedTaxpayerWorkspace({
           return <div key={person.id} className="unified-taxpayer-workspace__person">
             <div className="unified-taxpayer-workspace__person-main">
               <span className="unified-taxpayer-workspace__avatar" aria-hidden="true">{index+1}</span>
-              <div className="unified-taxpayer-workspace__person-copy"><strong>{person.name}</strong><small>{mask(person.tin)}</small></div>
+              <div className="unified-taxpayer-workspace__person-copy"><strong>{person.name}{demoIncomeTaxTypeForTin(person.tin) && <span> · {identityType(demoIncomeTaxTypeForTin(person.tin))}</span>}</strong><small>{mask(person.tin)}</small></div>
               <button className="unified-taxpayer-workspace__remove" aria-label={tx('Remove ', 'সরান ') + person.name}
                 title={tx('Remove taxpayer', 'করদাতা সরান')} type="button"
                 onClick={()=>count ? setPendingRemoval(person.id):onRemove(person.id)}><Trash2 size={17}/></button>
