@@ -58,11 +58,22 @@ test('locked legacy Other Tax uses original functionality and refined two-column
   await batch.getByRole('checkbox',{name:/Select 68A/}).check();
   await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('45');
   await expect(summary.locator('.payment-form-summary__total')).toContainText('68');
+  await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').focus();
+  await expect(summary.locator('.payment-form-summary__entry--link[data-active="true"]')).toHaveCount(1);
+  await expect(summary.locator('.payment-form-summary__entry--link[data-active="true"]')).toContainText('68A');
+  await expect(second).toHaveAttribute('open','');
+  // Focusing an editor never forces a closed card to open; its header still signals the matching line.
+  await second.locator('summary').click();
+  await expect(second).not.toHaveAttribute('open','');
+  await expect(second).toHaveCSS('border-top-color','rgb(180, 198, 214)');
+  await second.locator('summary').click();
   await expect(grouped.locator('details').first().locator('summary')).toContainText('23');
   await expect(grouped.locator('details').nth(1).locator('summary')).toContainText('45');
   await first.locator('.payment-form-summary__taxpayer-item').first().click();
   await expect(batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button').first()).toHaveAttribute('aria-pressed','true');
-  await expect(batch.locator('[data-head-row="64"] input[id^="other-tax-amount"]')).toBeFocused();
+  // Head code "64" differs from the internal row ID.
+  await expect(batch.getByRole('checkbox',{name:/Select 64 —/}).locator('xpath=ancestor::li[@data-head-row]').locator('input[id^="other-tax-amount"]')).toBeFocused();
+  await expect(summary.locator('.payment-form-summary__entry--link[data-active="true"]')).toContainText('64');
   const geometry=await batch.evaluate(el=>{
     const rail=el.querySelector<HTMLElement>(':scope > .payment-form-summary');
     const editor=el.querySelector<HTMLElement>(':scope > .payment-form-layout__sections');
@@ -72,6 +83,11 @@ test('locked legacy Other Tax uses original functionality and refined two-column
   });
   expect(geometry.split).toBe(true);
   expect(geometry.overflow).toBe(false);
+  const clear = batch.getByRole('button',{name:'Clear selected'});
+  await expect(clear).toBeEnabled();
+  await clear.click();
+  await expect(summary.locator('.payment-form-summary__total')).toContainText('45');
+  await expect(batch.getByRole('checkbox',{name:/Select 64 —/})).not.toBeChecked();
 });
 
 for(const width of [390,320]){

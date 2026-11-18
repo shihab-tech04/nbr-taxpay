@@ -63,6 +63,8 @@ interface PaymentSummaryProps {
   breakdown?: { id?: string; label: string; detail?: string; value: number | null }[];
   groupedBreakdown?: { id: string; label: string; tin: string; amount: number | null; countLabel?: string; entries: { id?: string; label: string; detail?: string; value: number | null }[] }[];
   onSelectEntry?: (id: string) => void;
+  /** Optional active editor line; no behavior change to other payment services. */
+  activeEntryId?: string | null;
 }
 
 /** Mask payment-form identity by default. Full TIN is still available by an
@@ -102,7 +104,7 @@ function MaskedSummaryTin({ tin, language }: { tin: string; language: Language }
   </span>;
 }
 
-export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown, onSelectEntry }: PaymentSummaryProps) {
+export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown, onSelectEntry, activeEntryId }: PaymentSummaryProps) {
   const bn = language === 'bn';
   const amountWords = amountInTakaWords(amount, language);
   // A bulk selection can contain dozens of entries. Keep a clear, accessible
@@ -118,6 +120,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
     </>;
     return item.id && onSelectEntry
       ? <button type="button" key={item.id} className="payment-form-summary__entry payment-form-summary__entry--link"
+           data-active={item.id === activeEntryId ? "true" : undefined}
           aria-label={bn ? `সম্পাদনা করুন: ${item.label}, ${item.detail || ''}` : `Edit ${item.label}, ${item.detail || ''}`}
           onClick={() => onSelectEntry(item.id!)}>{contents}</button>
       : <div key={item.id ?? index} className="payment-form-summary__entry">{contents}</div>;
@@ -183,6 +186,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
               </>;
               return entry.id && onSelectEntry
                 ? <button type="button" key={entry.id} className="payment-form-summary__taxpayer-item payment-form-summary__entry--link"
+                     data-active={entry.id === activeEntryId ? "true" : undefined}
                     aria-label={bn ? `সম্পাদনা করুন: ${entry.label}, ${entry.detail || ''}` : `Edit ${entry.label}, ${entry.detail || ''}`}
                     onClick={() => onSelectEntry(entry.id!)}>{contents}</button>
                 : <div key={entryIndex} className="payment-form-summary__taxpayer-item">{contents}</div>;
