@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, ReceiptText } from 'lucide-react';
+import { ChevronDown, Copy, Eye, EyeOff, ReceiptText } from 'lucide-react';
 import { formatCurrency } from '../../services/numberFormat';
 import { amountInTakaWords } from '../../services/amountInWords';
 import type { ServiceCategoryCode } from './ServiceCategoryTag';
@@ -65,6 +65,43 @@ interface PaymentSummaryProps {
   onSelectEntry?: (id: string) => void;
 }
 
+/** Mask payment-form identity by default. Full TIN is still available by an
+ * explicit reveal/copy gesture; transaction serialization is unchanged. */
+function MaskedSummaryTin({ tin, language }: { tin: string; language: Language }) {
+  const [revealed, setRevealed] = React.useState(false);
+  const [copyState, setCopyState] = React.useState<'idle' | 'copied' | 'failed'>('idle');
+  const bn = language === 'bn';
+  const visible = revealed ? tin : tin.slice(0, 3) + '****';
+
+  const copyTin = async () => {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(tin);
+      setCopyState('copied');
+    } catch {
+      setCopyState('failed');
+    }
+  };
+
+  return <span className="payment-form-summary__tin">
+    <span className="payment-form-summary__mono" data-testid="payment-summary-tin">{visible}</span>
+    <button type="button" className="payment-form-summary__tin-action"
+      aria-label={revealed ? (bn ? 'টিআইএন লুকান' : 'Hide TIN') : (bn ? 'টিআইএন দেখুন' : 'Reveal TIN')}
+      aria-pressed={revealed} onClick={event => { event.preventDefault(); event.stopPropagation(); setRevealed(value => !value); }}
+      onKeyDown={event => event.stopPropagation()}>
+      {revealed ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+    </button>
+    <button type="button" className="payment-form-summary__tin-action"
+      aria-label={bn ? 'টিআইএন কপি করুন' : 'Copy TIN'}
+      onClick={event => { event.preventDefault(); event.stopPropagation(); void copyTin(); }}
+      onKeyDown={event => event.stopPropagation()}><Copy size={16} aria-hidden="true" /></button>
+    <span className="sr-only" role="status">
+      {copyState === 'copied' ? (bn ? 'টিআইএন কপি হয়েছে' : 'TIN copied')
+        : copyState === 'failed' ? (bn ? 'টিআইএন কপি করা যায়নি' : 'Could not copy TIN') : ''}
+    </span>
+  </span>;
+}
+
 export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown, onSelectEntry }: PaymentSummaryProps) {
   const bn = language === 'bn';
   const amountWords = amountInTakaWords(amount, language);
@@ -98,7 +135,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
         ? 'payment-form-summary__rows payment-form-summary__rows--return-context'
         : 'payment-form-summary__rows'}>
         {!hideService && <div><dt>{bn ? 'সেবা' : 'Service'}</dt><dd className={categoryCode ? 'taxpay-service-value' : undefined} data-payment-service={categoryCode}>{category}</dd></div>}
-        {tin && <div><dt>{bn ? 'টিআইএন' : 'TIN'}</dt><dd className="payment-form-summary__mono">{tin}</dd></div>}
+        {tin && <div><dt>{bn ? 'টিআইএন' : 'TIN'}</dt><dd><MaskedSummaryTin tin={tin} language={language} /></dd></div>}
         {year && <div><dt>{bn ? 'করবর্ষ' : 'Assessment year'}</dt><dd>{year}</dd></div>}
         {head && <div><dt>{bn ? 'খাত' : 'Payment head'}</dt><dd>{head}</dd></div>}
       </dl>}
@@ -119,7 +156,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
           <summary>
             <span className="payment-form-summary__taxpayer-name">
               <strong>{group.label}</strong>
-              <small>{bn ? 'টিআইএন' : 'TIN'}: {group.tin || '—'} · {countLabel}</small>
+              <small className="payment-form-summary__taxpayer-identity">{bn ? 'টিআইএন' : 'TIN'}: {group.tin ? group.tin.slice(0, 3) + '****' : '—'} · {countLabel}</small>
             </span>
             <span className="payment-form-summary__taxpayer-total">{group.amount === null ? '—' : formatCurrency(group.amount, language)}</span>
             <ChevronDown size={16} aria-hidden="true" />
@@ -151,6 +188,9 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
                 : <div key={entryIndex} className="payment-form-summary__taxpayer-item">{contents}</div>;
               }) : <p className="payment-form-summary__taxpayer-empty">{bn ? 'পরের ধাপে খাত ও পরিমাণ নির্বাচন করুন।' : 'Select payment heads and amounts in Step 2.'}</p>}
             </div>
+            {group.tin && <div className="payment-form-summary__taxpayer-tin-tools" aria-label={bn ? 'করদাতার টিআইএন নিয়ন্ত্রণ' : 'Taxpayer TIN controls'}>
+              <MaskedSummaryTin tin={group.tin} language={language} />
+            </div>}
           </div>
         </details>;
         })}
