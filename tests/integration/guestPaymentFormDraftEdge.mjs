@@ -32,10 +32,13 @@ async function command(capability, action, body = {}, expectedStatus = 200) {
 // The existing open action creates/resumes an opaque guest session. No login.
 await command(first, 'open');
 await command(second, 'open');
+const draftRemarks = 'বাংলা খসড়া মন্তব্য, একাধিক লাইনে।\nEnglish draft explanation survives edit and reload.';
+const editedRemarks = 'বাংলা সম্পাদিত মন্তব্য, নতুন লাইনসহ।\nEdited English explanation survives reload.';
 const draftPayload = {
   assessmentYear: '2025-26',
   beneficiaries: [{tin: '111111111111', headId: 8, amountMinor: 1500}],
   step: 'details',
+  paymentRemarks: draftRemarks,
 };
 const created = (await command(first, 'guest-payment-draft-create', {
   service: 'OTHER_TAX_PAYMENT', payload: draftPayload,
@@ -43,15 +46,18 @@ const created = (await command(first, 'guest-payment-draft-create', {
 assert.match(created.id, /^[0-9a-f-]{36}$/i);
 assert.equal(created.revision, 1);
 assert.deepEqual(created.form_payload, draftPayload);
+assert.equal(created.form_payload.paymentRemarks, draftRemarks);
 assert.equal((await command(second, 'guest-payment-draft-list')).data.length, 0);
 await command(second, 'guest-payment-draft-get', {id: created.id}, 404);
 
-const updatedPayload = {...draftPayload, step: 'review', draftAmountMinor: 2000};
+const updatedPayload = {...draftPayload, step: 'review', draftAmountMinor: 2000,
+  paymentRemarks: editedRemarks};
 const updated = (await command(first, 'guest-payment-draft-update', {
   id: created.id, revision: 1, service: 'OTHER_TAX_PAYMENT', payload: updatedPayload,
 })).data;
 assert.equal(updated.revision, 2);
 assert.deepEqual(updated.form_payload, updatedPayload);
+assert.equal(updated.form_payload.paymentRemarks, editedRemarks);
 await command(first, 'guest-payment-draft-update', {
   id: created.id, revision: 1, service: 'OTHER_TAX_PAYMENT', payload: {step: 'stale'},
 }, 409);
@@ -61,6 +67,7 @@ await command(second, 'guest-payment-draft-delete', {id: created.id, revision: 2
 const reloaded = (await command(first, 'guest-payment-draft-get', {id: created.id})).data;
 assert.equal(reloaded.revision, 2);
 assert.deepEqual(reloaded.form_payload, updatedPayload);
+assert.equal(reloaded.form_payload.paymentRemarks, editedRemarks);
 const ownList = (await command(first, 'guest-payment-draft-list')).data;
 assert.equal(ownList.length, 1);
 assert.equal(ownList[0].id, created.id);
