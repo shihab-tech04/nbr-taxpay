@@ -108,7 +108,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
       : <div key={item.id ?? index} className="payment-form-summary__entry">{contents}</div>;
   };
   return (
-    <aside className="payment-form-summary" aria-label={bn ? 'হালনাগাদ পেমেন্ট হিসাব' : 'Live payment calculation'}>
+    <aside className={compactTaxpayerView ? "payment-form-summary payment-form-summary--v5-compact" : "payment-form-summary"} aria-label={bn ? 'হালনাগাদ পেমেন্ট হিসাব' : 'Live payment calculation'}>
       <div className="payment-form-summary__heading"><ReceiptText size={19} aria-hidden="true" />
         <h2>{bn ? 'পেমেন্টের হিসাব' : 'Payment calculation'}</h2>
       </div>
