@@ -65,7 +65,7 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
   await secondGroup.getByRole('button', { name: 'Hide TIN' }).click();
   await expect(secondGroup.locator('[data-testid="payment-summary-tin"]')).toHaveText('234****');
   await expect(secondGroup.getByRole('button', { name: 'Copy TIN' })).toHaveCount(1);
-  await grouped.locator('details').nth(1).locator('summary').click();
+  await grouped.locator('details').nth(1).locator('summary .payment-form-summary__taxpayer-name strong').click();
   await expect(grouped.locator('details').nth(1)).toHaveAttribute('open', '');
   await expect(grouped.locator('details').nth(1)).toContainText('68B');
   expect(await dialog.locator('.taxpay-modal__body').evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(2);
