@@ -3,6 +3,7 @@ import {getStorySessionId,storyApiHeaders} from './simulatedPaymentStory';
 import {activePreviewSession} from './previewAccountSession';
 import {supabase} from './supabaseClient';
 import { CATEGORY_LABELS, MASTER_PAYMENT_HEADS } from '../data/paymentHeads';
+import { V11_PAYMENT_OPTIONS } from '../data/v11PaymentOptions';
 import { validCertificateTransactionId } from './transactionId';
 export { validCertificateTransactionId } from './transactionId';
 import type { ChallanReceipt, PaymentCategory, PaymentLineItem, ReceiptAllocationItem } from '../types/tax';
@@ -123,7 +124,9 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
       taxpayerName:name||'TIN '+stringValue(allocation.taxpayerTin),
       taxpayerTin:stringValue(allocation.taxpayerTin),
       paymentServiceEn:serviceEn,
-      paymentServiceBn:stringValue(head.headNameBn).trim()||MASTER_PAYMENT_HEADS.find(item=>item.id===head.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn,
+      paymentServiceBn:stringValue(head.headNameBn).trim()||
+       (contractVersion===5 && head.headId===125 ? V11_PAYMENT_OPTIONS.find(item=>item.id===125)?.nameBn : undefined)||
+       MASTER_PAYMENT_HEADS.find(item=>item.id===head.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn,
       assessmentYear:stringValue(allocation.assessmentYear),
       amountMinor:allocation.amountMinor as number,
       ...(stringValue(head.economicCode)?{economicCode:stringValue(head.economicCode)}:{})};
@@ -160,7 +163,9 @@ function toAllocationItems(tx:StoredPayment):ReceiptAllocationItem[]|undefined{
    const head=lines.find(line=>line.headId===item.headId);
    const name=stringValue(item.taxpayerName);
    const serviceEn=stringValue(head?.headNameEn).trim()||CATEGORY_LABELS[tx.service]?.en||tx.service;
-   const serviceBn=stringValue(head?.headNameBn).trim()||MASTER_PAYMENT_HEADS.find(item=>item.id===head?.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn;
+   const serviceBn=stringValue(head?.headNameBn).trim()||
+     (contractVersion===5 && head?.headId===125 ? V11_PAYMENT_OPTIONS.find(item=>item.id===125)?.nameBn : undefined)||
+     MASTER_PAYMENT_HEADS.find(item=>item.id===head?.headId&&item.nameEn===serviceEn)?.nameBn||serviceEn;
    return {...(version3?{allocationId:stringValue(item.allocationId)}:{}),
     taxpayerName:name||'TIN '+stringValue(item.taxpayerTin),
     taxpayerTin:stringValue(item.taxpayerTin),paymentServiceEn:serviceEn,paymentServiceBn:serviceBn,
