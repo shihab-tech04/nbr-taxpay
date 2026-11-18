@@ -299,7 +299,7 @@ test('switching taxpayer preserves each person’s head, year and amount without
   await expect(groupedTotals.locator('details')).toHaveCount(2);
   await expect(groupedTotals.locator('details').first().locator('summary')).toContainText('1,000');
   await expect(groupedTotals.locator('details').nth(1).locator('summary')).toContainText('2,000');
-  await expect(groupedTotals).toContainText('111111111111');
+  await expect(groupedTotals).toContainText('111****');
   await expect(groupedTotals).toContainText('User 2');
   await groupedTotals.locator('details').nth(1).locator('summary').click();
   await expect(groupedTotals.locator('details').nth(1)).toContainText('2025-26');
@@ -372,7 +372,7 @@ test('three taxpayers keep separate heads, years and amounts through combined re
   await revealMobileCalculation(dialog);
   const calculation = dialog.getByTestId('grouped-taxpayer-calculation');
   await expect(calculation.locator('details')).toHaveCount(3);
-  await expect(calculation).toContainText('111111111111');
+  await expect(calculation).toContainText('111****');
   await expect(calculation).toContainText('User 2');
   await expect(calculation).toContainText('User 3');
   await expect(dialog.locator('.payment-form-summary__total')).toHaveText('৳ 75');
