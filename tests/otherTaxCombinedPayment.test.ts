@@ -56,6 +56,18 @@ test('multi-taxpayer combined payment uses ONE idempotency key and ONE challan',
  assert.equal((result.payload.details.allocations as unknown[]).length,2);
  assert.equal(result.payload.details.batchItemCount,undefined,'no split-payment record');
 });
+test('self liability rejects cross-taxpayer allocations but accepts several heads and years for self',()=>{
+  const self:StoryPaymentInput={...input,details:{...input.details,payerMode:'SELF',taxpayerTin:allocations[0].taxpayerTin}};
+  assert.throws(()=>prepareCombinedOtherTaxPayment(self,receipt,allocations),
+    /SELF_PAYMENT_SINGLE_TAXPAYER_REQUIRED/);
+  const own=allocations.map(item=>({...item,taxpayerTin:allocations[0].taxpayerTin,taxpayerName:allocations[0].taxpayerName}));
+  const result=prepareCombinedOtherTaxPayment(self,receipt,own);
+  assert.equal(result.payload.details.payerMode,'SELF');
+  assert.equal(result.payload.details.taxpayerCount,1);
+  assert.deepEqual((result.payload.details.allocations as Array<{assessmentYear:string}>)
+    .map(row=>row.assessmentYear),['2026-27','2025-26']);
+});
+
 test('the signed-in payer keeps both saved beneficiaries inside one scoped SQL submission',()=>{
  const grouped=mk();
  const bound=bindPreviewStoryPayer(grouped.payload,{profileId:'user1',paymentSessionId:session});
