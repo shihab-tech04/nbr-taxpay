@@ -71,7 +71,8 @@ test('locked legacy Other Tax uses original functionality and refined two-column
   await expect(grouped.locator('details').nth(1).locator('summary')).toContainText('45');
   await first.locator('.payment-form-summary__taxpayer-item').first().click();
   await expect(batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button').first()).toHaveAttribute('aria-pressed','true');
-  await expect(batch.locator('[data-head-row="64"] input[id^="other-tax-amount"]')).toBeFocused();
+  // Head code "64" differs from the internal row ID.
+  await expect(batch.getByRole('checkbox',{name:/Select 64 —/}).locator('xpath=ancestor::li[@data-head-row]').locator('input[id^="other-tax-amount"]')).toBeFocused();
   await expect(summary.locator('.payment-form-summary__entry--link[data-active="true"]')).toContainText('64');
   const geometry=await batch.evaluate(el=>{
     const rail=el.querySelector<HTMLElement>(':scope > .payment-form-summary');
