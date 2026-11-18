@@ -134,3 +134,30 @@ test('signed-in Activity has no separate Track payment tab and legacy tracking l
     await expect(page.getByRole('button',{name:language==='bn'?'লেনদেনসমূহ':'Transactions'})).toHaveAttribute('aria-current','page');
   }
 });
+
+test('User2 Activity opens on transaction history while Pay Tax stays separate',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280'&&info.project.name!=='mobile-320',
+    'Representative English desktop and Bengali phone account journeys');
+  const language=info.project.name==='mobile-320'?'bn':'en';
+  await page.goto('/?action=history&demoUser=user2&lang='+language);
+
+  const activityHeading=language==='bn'?'পেমেন্ট ও লেনদেনের ইতিহাস':'Payments and transaction history';
+  await expect(page.getByRole('heading',{name:activityHeading,exact:true})).toBeVisible();
+  const historyName=language==='bn'?'লেনদেনের ইতিহাস':'Transaction history';
+  await expect(page.getByRole('region',{name:historyName,exact:true})).toBeVisible();
+  const composerName=language==='bn'?'নতুন পেমেন্ট':'New payment';
+  await expect(page.locator('main section[aria-label="'+composerName+'"]')).toHaveCount(0);
+  await expect(page.getByRole('heading',{
+    name:language==='bn'?'পেমেন্টের শ্রেণি নির্বাচন করুন':'Choose payment category',exact:true
+  })).toHaveCount(0);
+
+  const payLabel=language==='bn'?'কর পরিশোধের ধরন নির্বাচন':'Pay — select payment type';
+  await page.getByRole('button',{name:payLabel,exact:true}).click();
+  const options=page.getByRole('menu',{
+    name:language==='bn'?'পরিশোধের ধরন':'Payment options',exact:true
+  });
+  const payTaxLabel=language==='bn'?'কর পরিশোধ':'Pay Tax';
+  await expect(options.getByRole('menuitem',{name:payTaxLabel,exact:true})).toBeVisible();
+  await options.getByRole('menuitem',{name:payTaxLabel,exact:true}).click();
+  await expect(page.getByRole('dialog',{name:payTaxLabel,exact:true})).toBeVisible();
+});
