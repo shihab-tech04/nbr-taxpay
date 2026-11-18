@@ -14,6 +14,12 @@ test('self payment uses full-width name, receipt fields and accurate singular he
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'OTHER_TAX', 'SELF');
 
+  // The shared header supplies the service and payer context once.
+  // Keep the single progress indicator accessible without repeated visual copy.
+  await expect(payment.locator('.tax-service-choice__selected-service')).toHaveCount(0);
+  await expect(payment.locator('.tax-service-choice__eyebrow')).toHaveCount(0);
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
+  await expect(payment.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '1');
   await expect(payment.getByRole('heading', { name: 'Taxpayer information' })).toBeVisible();
   await expect(payment.getByText('Taxpayers in this payment')).toHaveCount(0);
   await expect(payment.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
