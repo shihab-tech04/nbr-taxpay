@@ -150,8 +150,11 @@ export function OtherTaxTaxpayerList({
           onClear={() => { if (!lockedPrimary && !primaryAssigned) { onConfirmTaxpayer('primary', ''); onPrimaryTin(''); onPrimaryName(''); setSearchedTins(current => ({...current, primary: ''})); onClearError(); } }}
           onSearch={() => { onPrimarySearch(); const match=lookupSampleTaxpayer(primaryTin); if(!lockedPrimary)onPrimaryName(match?.nameEn ?? ''); setSearchedTins(current=>({...current, primary:primaryTin})); onClearError(); revealAddAction('primary'); }}
           helper={primaryAssigned && !lockedPrimary ? <p id="other-tax-primary-tin-help" className="text-xs text-slate-600">{lockedTinHelp}</p> : undefined}
-          status={Boolean(primaryTin) && searchedTins.primary === primaryTin && !lookupSampleTaxpayer(primaryTin)
-            ? <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p> : undefined}/>
+          status={Boolean(primaryTin) && searchedTins.primary === primaryTin
+            ? lookupSampleTaxpayer(primaryTin)
+              ? (simpleSelf ? identityDisclosure(primaryTin) : undefined)
+              : <p className="taxpay-taxpayer-row__lookup-status" role="status">{notFoundLabel}</p>
+            : undefined}/>
         {progressive && !primaryConfirmed && searchedTins.primary === primaryTin &&
           canSearch(primaryTin) &&
           !duplicate('primary', primaryTin) &&
