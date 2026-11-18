@@ -87,12 +87,14 @@ function MaskedSummaryTin({ tin, language }: { tin: string; language: Language }
     <span className="payment-form-summary__mono" data-testid="payment-summary-tin">{visible}</span>
     <button type="button" className="payment-form-summary__tin-action"
       aria-label={revealed ? (bn ? 'টিআইএন লুকান' : 'Hide TIN') : (bn ? 'টিআইএন দেখুন' : 'Reveal TIN')}
-      aria-pressed={revealed} onClick={() => setRevealed(value => !value)}>
+      aria-pressed={revealed} onClick={event => { event.stopPropagation(); setRevealed(value => !value); }}
+      onKeyDown={event => event.stopPropagation()}>
       {revealed ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
     </button>
     <button type="button" className="payment-form-summary__tin-action"
       aria-label={bn ? 'টিআইএন কপি করুন' : 'Copy TIN'}
-      onClick={() => { void copyTin(); }}><Copy size={16} aria-hidden="true" /></button>
+      onClick={event => { event.stopPropagation(); void copyTin(); }}
+      onKeyDown={event => event.stopPropagation()}><Copy size={16} aria-hidden="true" /></button>
     <span className="sr-only" role="status">
       {copyState === 'copied' ? (bn ? 'টিআইএন কপি হয়েছে' : 'TIN copied')
         : copyState === 'failed' ? (bn ? 'টিআইএন কপি করা যায়নি' : 'Could not copy TIN') : ''}
