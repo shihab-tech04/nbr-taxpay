@@ -693,3 +693,65 @@
 .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked .payment-flow-embedded--unified .unified-v5-remarks-body {
   padding:13px 15px;
 }
+
+/* v5 compact calculation mirrors approved right sidebar: per-taxpayer subtotals,
+   not a second 167-line editor. The detailed legacy Pay Tax summary is frozen. */
+.payment-flow-embedded--unified .payment-form-summary--v5-compact {
+  border:0; border-radius:0; background:#f7faff; min-width:0;
+}
+.payment-flow-embedded--unified .payment-form-summary--v5-compact .payment-form-summary__heading {
+  padding:15px 17px; background:#fafbfc; color:#23364c;
+  border-bottom:1px solid #dfe7f1;
+}
+.payment-flow-embedded--unified .payment-form-summary--v5-compact .payment-form-summary__heading h2 {
+  font-size:15px; font-weight:750;
+}
+.payment-flow-embedded--unified .payment-form-summary--v5-compact .payment-form-summary__eyebrow {
+  padding:17px 17px 0; font-size:12px; color:#586b84;
+}
+.payment-flow-embedded--unified .payment-form-summary--v5-compact .payment-form-summary__total {
+  padding:4px 17px 0; font-size:26px; color:#2358a5; font-weight:750;
+}
+.payment-flow-embedded--unified .payment-form-summary--v5-compact .payment-form-summary__amount-words {
+  padding:5px 17px 0; font-size:12px; color:#466487; line-height:1.5;
+}
+.payment-flow-embedded--unified .payment-form-summary--v5-compact .payment-form-summary__scroll-content {
+  overflow:visible; max-height:none; min-height:0;
+}
+.payment-flow-embedded--unified .payment-form-summary__compact-owners {
+  display:grid; gap:9px; min-width:0;
+  margin:14px 17px 17px; padding:13px 0 0;
+  border-top:1px solid #dfe7f1;
+}
+.payment-flow-embedded--unified .payment-form-summary__compact-owner {
+  min-width:0; padding:12px 13px; border:1px solid #d9e5f4;
+  border-radius:10px; background:#fff;
+}
+.payment-flow-embedded--unified .payment-form-summary__compact-owner-top {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px; min-width:0;
+}
+.payment-flow-embedded--unified .payment-form-summary__compact-owner-identity {
+  display:grid; gap:4px; min-width:0;
+}
+.payment-flow-embedded--unified .payment-form-summary__compact-owner-identity strong {
+  overflow-wrap:anywhere; font-size:13px; color:#18355a;
+}
+.payment-flow-embedded--unified .payment-form-summary__compact-owner-identity small {
+  font-size:11.5px; color:#667c9b;
+}
+.payment-flow-embedded--unified .payment-form-summary__compact-owner-total {
+  flex:0 0 auto; color:#285a9f; font-size:13px;
+  font-weight:750; font-variant-numeric:tabular-nums;
+}
+.payment-flow-embedded--unified .payment-form-summary__compact-owner-warning {
+  margin:8px 0 0; font-size:12px; line-height:1.45; color:#8a4a26;
+}
+@media(max-width:650px) {
+  .payment-flow-embedded--unified .payment-form-summary__compact-owners {
+    margin:12px 14px 14px;
+  }
+  .payment-flow-embedded--unified .payment-form-summary__compact-owner-top {
+    flex-wrap:wrap; align-items:baseline;
+  }
+}
