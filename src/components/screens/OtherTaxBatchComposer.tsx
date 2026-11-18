@@ -302,9 +302,6 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
              {allowMixedReturn && <section className="unified-v5-return-row" data-testid="unified-v5-return-section">
                <div className="unified-v5-return-group" data-testid="unified-v5-return-group">
                <label className="unified-v5-return-card">
-                 <span className="unified-v5-return-card__icon" aria-hidden="true">▤</span>
-                 <span className="unified-v5-return-card__text"><strong>{tx('Tax with Return','রিটার্নসহ কর')}</strong>
-                   <small>{tx('Section 173 · Combined with other heads','ধারা ১৭৩ · অন্যান্য খাতের সঙ্গে')}</small></span>
                  <input type="checkbox" aria-label={tx('Select Tax with Return','রিটার্নসহ কর নির্বাচন করুন')}
                    data-testid="unified-v5-return-checkbox" checked={Boolean(returnLine)}
                    onChange={event => {
@@ -312,6 +309,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                      if (event.target.checked && !returnLine) applyLines([...lines, {...newLine(RETURN_HEAD_ID), amount:''}]);
                      if (!event.target.checked) applyLines(lines.filter(line => !(line.taxpayerId === activeId && line.headId === RETURN_HEAD_ID)));
                    }} />
+                 <span className="unified-v5-return-card__text"><strong>{tx('Tax with Return','রিটার্নসহ কর')}</strong>
+                   <small>{tx('Section 173 · Combined with other heads','ধারা ১৭৩ · অন্যান্য খাতের সঙ্গে')}</small></span>
                </label>
                {returnLine && <div className="unified-v5-return-fields" data-testid="unified-v5-return-allocation">
                  <div><label htmlFor={'unified-v5-return-year-' + returnLine.id}>{tx('Assessment year','করবর্ষ')} *</label>
@@ -378,8 +377,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                       const availableYears = OTHER_TAX_YEARS.filter(year => !headLines.some(line => line.assessmentYear === year));
                       return <li key={head.id} data-head-row={head.id} data-invalid={invalid ? 'true' : undefined}
                         data-highlighted={focused ? 'true' : undefined}
-                        className={invalid ? 'other-tax-row--invalid' : focused ? 'other-tax-row--focused' : headLines.length ? 'bg-blue-50/40' : 'bg-white'}>
-                        <label className={`flex gap-3 items-start px-3 py-3 ${blocked ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-blue-50/60'}`}>
+                        className={invalid ? 'other-tax-row--invalid' : focused ? 'other-tax-row--focused' : 'bg-white'}>
+                        <label className={`flex gap-3 items-start px-3 py-3 ${blocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                           <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-[#2c5ead]"
                             checked={headLines.length > 0} disabled={blocked}
                             onChange={event => toggleHead(head.id, event.target.checked)}
