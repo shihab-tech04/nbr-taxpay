@@ -15,14 +15,15 @@ test('public hero opens payment while standalone receipt search stays accessible
  if(page.viewportSize()!.width<=900) await expect(page.locator('.citizen-pay')).toBeVisible();
  if(page.viewportSize()!.width>900) await expect(page.locator('.taxpay-public-mobile-navigation .citizen-header')).toBeHidden();
  await expect(page.locator('#public-how-it-works')).toBeHidden();
- await page.getByRole('button',{name:'Pay Tax'}).click();
+ await page.locator('.citizen-public-hero__actions').getByRole('button',{name:'Pay Tax',exact:true}).click();
  const payment=page.getByRole('dialog',{name:'Pay Tax'});
- await expect(payment.getByText('User ID')).toBeVisible();
- await expect(payment.getByRole('button',{name:'Walk-in Payment'})).toBeVisible();
- await payment.getByRole('button',{name:'Walk-in Payment'}).click();
+ await expect(payment.locator('[data-payer-relationship]')).toHaveCount(2);
+ await payment.locator('[data-payer-relationship="SELF"]').click();
+ await payment.locator('[data-payment-entry="OTHER_TAX"]').click();
+ await payment.locator('[data-payment-access="GUEST"]').click();
+ await payment.getByRole('button',{name:'Continue',exact:true}).click();
  await expect(page).toHaveURL(/action=landing/);
- await expect(payment.locator('.taxpay-modal__title')).toHaveText('Taxpayer Information');
- await expect(payment.getByRole('progressbar',{name:'Payment progress'})).toHaveAttribute('aria-valuemax','3');
+ await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
 });
 
 test('guest cannot directly open taxpayer ledger or account activity', async ({page}) => {
