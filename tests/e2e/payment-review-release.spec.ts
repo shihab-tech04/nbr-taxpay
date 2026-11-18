@@ -322,6 +322,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.locator('.payment-form-summary__rows--return-context')).toBeVisible();
   await expect(services.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
   await expect(services.locator('.taxpay-modal__subtitle')).toContainText('Tax with Return');
+  await expect(services.locator('.tax-service-choice')).toHaveAttribute('data-payment-service', 'TAX_WITH_RETURN');
   const smallDetails = await services.locator('.payment-form-summary__rows dt, .payment-form-summary__rows dd, .payment-form-summary__eyebrow')
     .evaluateAll(nodes => nodes.filter(el => el.getClientRects().length > 0)
       .map(el => Number.parseFloat(getComputedStyle(el).fontSize)));
