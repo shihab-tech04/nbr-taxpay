@@ -316,7 +316,8 @@ const MainRouter: React.FC = () => {
         onSuccess={() => navigate(signInReturnRoute)}
         onClose={() => navigate('landing')}
       /></React.Suspense>}
-      {previewAccount && <React.Suspense fallback={null}><AuthorizationRequestPopup /></React.Suspense>}
+      {(previewAccount || (verifiedApplicationUser && import.meta.env.VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED === 'true')) &&
+        <React.Suspense fallback={null}><AuthorizationRequestPopup /></React.Suspense>}
     </div>
   );
 };
