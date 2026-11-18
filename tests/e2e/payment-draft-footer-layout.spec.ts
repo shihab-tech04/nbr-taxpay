@@ -25,6 +25,15 @@ for (const width of [320, 375, 1280]) {
     await expect(save).toBeVisible();
     await expect(resume).toHaveCount(0);
     await expect(next).toBeVisible();
+    if (width <= 375) {
+      // Payment actions must stay readable, even at the 320px breakpoint.
+      for (const action of [save, next]) {
+        const size = await action.evaluate(node => parseFloat(getComputedStyle(node).fontSize));
+        expect(size, 'Payment footer action font must be at least 14px').toBeGreaterThanOrEqual(14);
+      }
+      expect(await footer.evaluate(node => node.scrollWidth - node.clientWidth),
+        'The larger type must not create horizontal scrolling').toBeLessThanOrEqual(2);
+    }
     await expect(modal.locator('.taxpay-modal__body .payment-form-draft-controls__actions')).toHaveCount(0);
     const geometry = async () => {
       const [left, right, bar] = await Promise.all([

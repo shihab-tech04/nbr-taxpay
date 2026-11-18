@@ -178,17 +178,20 @@
   font-size: 14px;
   font-weight: 500;
 }
-@media (max-width: 560px) {
+/* Keep the passport input and lookup action full-width on tablets and phones.
+   Desktop retains the approved inline input + Check Passport pairing. */
+@media (max-width: 800px) {
   .taxpay-citizen-shell .travel-flow__passport-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
-  /* On narrow screens the popup anchors under the stacked Check button,
-     never over the button, without expanding the passenger form. */
+  .taxpay-citizen-shell .travel-flow__passport-action button { width: 100%; }
+}
+@media (max-width: 560px) {
+  /* Preserve the approved phone-only suggestion and identity-card breakpoints. */
   .taxpay-citizen-shell .travel-flow__passport-suggestions {
     max-height: min(190px, 28vh);
   }
-  .taxpay-citizen-shell .travel-flow__passport-action button { width: 100%; }
   .taxpay-citizen-shell .travel-flow__identity-card dl {
     grid-template-columns: minmax(0, 1fr);
   }
