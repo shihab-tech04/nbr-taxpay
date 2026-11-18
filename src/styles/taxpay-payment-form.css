@@ -567,6 +567,11 @@
   align-self: start;
   height: fit-content;
 }
+/* Do not instruct the user to choose payment heads while they are still
+   entering identity. The same help remains visible in the amount step. */
+.payment-flow-embedded__identity .payment-form-summary__help {
+  display: none;
+}
 @media (max-width: 650px) {
   .payment-flow-embedded__identity .payment-identity__receipt-row {
     grid-template-columns: minmax(0, 1fr);
