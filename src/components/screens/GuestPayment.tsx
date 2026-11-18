@@ -2534,7 +2534,9 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                         <tr className="unified-v3-review__owner"><td colSpan={3}>
                           <strong>{person.name || otherTaxpayerName} · {entityTypeForTin(person.tin) === 'COMPANY'
                             ? (language === 'bn' ? 'কোম্পানি' : 'Company')
-                            : (language === 'bn' ? 'ব্যক্তি' : 'Individual')}</strong>
+                            : entityTypeForTin(person.tin) === 'NON_COMPANY'
+                              ? (language === 'bn' ? 'ব্যক্তি' : 'Individual')
+                              : (language === 'bn' ? 'যাচাই হয়নি' : 'Unverified')}</strong>
                           <span>{person.tin.slice(0,3) + '*'.repeat(Math.max(0, person.tin.length - 3))}</span>
                         </td></tr>
                         {otherBatch ? otherTaxLines.filter(line => line.taxpayerId === person.id).map(line => (
