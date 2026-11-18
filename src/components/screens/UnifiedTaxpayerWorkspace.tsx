@@ -72,7 +72,7 @@ export function UnifiedTaxpayerWorkspace({
             onChange={e=>{setDraftTin(e.target.value.replace(/\D/g,'').slice(0,12));setSearchedTin(null);}}
             onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(validTin)setSearchedTin(draftTin);}}}/>
         </div>
-        <button type="button" onClick={()=>setSearchedTin(draftTin)} disabled={!validTin}
+        <button type="button" className={validTin ? 'unified-v5-search-button unified-v5-search-button--ready' : 'unified-v5-search-button'} onClick={()=>setSearchedTin(draftTin)} disabled={!validTin}
           aria-label={tx('Search taxpayer TIN', 'করদাতার টিআইএন অনুসন্ধান')}><Search size={17} aria-hidden="true"/>{tx('Search', 'অনুসন্ধান')}</button>
       </div>
       <div className="unified-taxpayer-workspace__result" aria-live="polite">
