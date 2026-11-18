@@ -58,7 +58,10 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
     await expect(mobileCalculation).toHaveAttribute('open', '');
   }
   const secondGroup = grouped.locator('details').nth(1);
+  const groupHeading = secondGroup.locator('summary .payment-form-summary__taxpayer-name strong');
   await expect(secondGroup).not.toHaveAttribute('open', '');
+  await groupHeading.click();
+  await expect(secondGroup).toHaveAttribute('open', '');
   await secondGroup.getByRole('button', { name: 'Reveal TIN' }).click();
   await expect(secondGroup).not.toHaveAttribute('open', '');
   await expect(secondGroup.locator('[data-testid="payment-summary-tin"]')).toHaveText('234567890123');
