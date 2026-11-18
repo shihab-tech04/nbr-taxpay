@@ -271,7 +271,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                   onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); selectionMenuRef.current?.removeAttribute('open'); } }}>
                   <summary aria-label={tx('Selection actions', 'খাত নির্বাচনের ব্যবস্থা')}>
                     <ListChecks size={17} aria-hidden="true" />
-                    <span>{tx('Select', 'নির্বাচন')}</span>
+                    <span>{tx('Bulk actions', 'একসাথে নির্বাচন')}</span>
                     <ChevronDown size={16} aria-hidden="true" className="other-tax-selection-menu__chevron" />
                   </summary>
                   <div className="other-tax-selection-menu__panel" role="group" aria-label={tx('Payment head selection actions', 'পরিশোধের খাত নির্বাচনের ব্যবস্থা')}>
@@ -288,8 +288,10 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
               </div>
             </div>
             <p className="other-tax-selection-status" role="status">
-              {tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' years · ' + count + ' available non-return payment heads',
-                 new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + 'টি রিটার্ন-বহির্ভূত করের খাত')}
+              {activeLines.length
+                ? tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' assessment years selected',
+                  new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ নির্বাচিত')
+                : tx(count + ' payment heads available', count + 'টি করের খাত উপলব্ধ')}
             </p>
             {allocationLimitError && <p className="payment-form-field-error" role="alert" data-testid="combined-allocation-capacity-error">
               {tx('This payment supports up to ' + MAX_COMBINED_ALLOCATIONS + ' beneficiary/head/year allocations. Remove some selections before adding more.',
