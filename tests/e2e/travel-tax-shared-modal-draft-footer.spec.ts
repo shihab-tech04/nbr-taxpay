@@ -83,3 +83,33 @@ test('Bengali Travel Tax retains identical stage heading and single primary foot
  await expect(modal.locator('.tax-service-choice__selected-service')).toHaveCount(0);
  await expect(modal.locator('.taxpay-modal__footer .travel-flow__primary')).toHaveCount(1);
 });
+
+
+test('Travel Tax passport lookup is full-width on tablet and phone without changing desktop pairing', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Cross-breakpoint regression executes once');
+  await page.goto('/?action=landing');
+  await openTravelTaxFromBanner(page);
+  const dialog = page.getByRole('dialog', {name: 'Travel tax'});
+  const passport = dialog.locator('.travel-flow__passport-row').first();
+  const field = passport.locator('.travel-flow__passport-input');
+  const action = passport.locator('.travel-flow__passport-action');
+  for (const width of [375, 650, 768]) {
+    await page.setViewportSize({width, height: 830});
+    const [row, input, button] = await Promise.all([
+      passport.boundingBox(), field.boundingBox(), action.boundingBox()
+    ]);
+    expect(row && input && button, 'Passport controls are visible at '+width).toBeTruthy();
+    if (!row || !input || !button) continue;
+    expect(input.width, 'Passport input fills the tablet/phone row').toBeGreaterThanOrEqual(row.width - 2);
+    expect(button.width, 'Check Passport fills the tablet/phone row').toBeGreaterThanOrEqual(row.width - 2);
+    expect(button.y, 'Check Passport is below the passport field').toBeGreaterThanOrEqual(input.y + input.height);
+    expect(await dialog.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(2);
+  }
+  await page.setViewportSize({width:1280,height:830});
+  const [input,button] = await Promise.all([field.boundingBox(),action.boundingBox()]);
+  expect(input && button).toBeTruthy();
+  if (input && button) {
+    expect(button.x).toBeGreaterThanOrEqual(input.x + input.width);
+    expect(Math.abs(button.y + button.height - input.y - input.height)).toBeLessThanOrEqual(3);
+  }
+});
