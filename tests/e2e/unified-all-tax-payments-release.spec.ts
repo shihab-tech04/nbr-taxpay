@@ -83,6 +83,18 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(dialog.getByRole('heading', { name: 'Payer and receipt details' })).toBeVisible();
     await expect(dialog.locator('#guest-phone')).toHaveCount(1);
     await expect(dialog.locator('#guest-payment-remarks')).toBeVisible();
+    // Payer TIN is optional: hide the redundant matched-name input until Search.
+    const payerLookup = dialog.getByTestId('walkin-payer-tin');
+    await expect(payerLookup.locator('#guest-payer-tin-name')).toHaveCount(0);
+    await expect(dialog.getByTestId('unified-v5-payer-result')).toHaveCount(0);
+    await payerLookup.locator('#guest-payer-tin').fill('111111111111');
+    await payerLookup.getByRole('button', {name: 'Search payer TIN'}).click();
+    await expect(dialog.getByTestId('unified-v5-payer-result')).toContainText('User 1');
+    await expect(dialog.getByTestId('unified-v5-payer-result')).toContainText('Individual');
+    await payerLookup.locator('#guest-payer-tin').fill('222222222222');
+    await expect(dialog.getByTestId('unified-v5-payer-result')).toHaveCount(0);
+    await payerLookup.locator('#guest-payer-tin').clear();
+
 
     await dialog.locator('#guest-payer-name').fill('Test Walk-in Payer');
     await dialog.locator('#guest-phone').fill('01712345678');
