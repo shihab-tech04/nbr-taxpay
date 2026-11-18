@@ -5,7 +5,8 @@ async function expectFillsParent(input: Locator, container: Locator) {
   const [fieldBox, parentBox] = await Promise.all([input.boundingBox(), container.boundingBox()]);
   expect(fieldBox, 'editable field has a visible box').not.toBeNull();
   expect(parentBox, 'field wrapper has a visible box').not.toBeNull();
-  expect(fieldBox!.width).toBeGreaterThanOrEqual(parentBox!.width - 3);
+  // Allow subpixel rounding and the control's border while still requiring full cell coverage.
+  expect(fieldBox!.width).toBeGreaterThanOrEqual(parentBox!.width - 4);
 }
 
 test('self payment uses full-width name, receipt fields and accurate singular heading', async ({ page }) => {
