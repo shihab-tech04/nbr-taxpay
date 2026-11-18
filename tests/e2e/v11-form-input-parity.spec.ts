@@ -30,7 +30,7 @@ test('payer relationship is required at entry and head choice is still validated
   await continueToPurpose.click();
   const batch = dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
-  await expect(batch).toContainText('169 available non-return payment heads');
+  await expect(batch).toContainText('169 payment heads available');
   await expect(batch.locator('[data-head-group]')).toHaveCount(6);
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
   await expect(batch.locator('#other-tax-target')).toHaveCount(0);
@@ -102,7 +102,7 @@ for (const locale of ['en', 'bn'] as const) {
     const payer = modal.locator('.payment-form-section:has(#guest-payer-name)');
     const taxpayers = modal.locator('.payment-form-section:has([data-testid="other-tax-taxpayer-list"])');
     await expect(payer.locator('.payment-form-section__heading-copy')).toContainText(locale === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer details');
-    await expect(payer.getByRole('heading', { name: locale === 'bn' ? 'রসিদের তথ্য' : 'Receipt details' })).toBeVisible();
+    await expect(payer.getByRole('heading', { name: locale === 'bn' ? 'রসিদের তথ্য' : 'Receipt details' })).toHaveCount(0);
     await expect(taxpayers.locator('.payment-form-section__heading-copy')).toContainText(locale === 'bn' ? 'করদাতারা' : 'Taxpayers');
     await expect(payer.locator('.payment-form-section__heading-copy p, .payment-form-section__heading-copy small')).toHaveCount(0);
     await expect(taxpayers.locator('.payment-form-section__heading-copy p, .payment-form-section__heading-copy small')).toHaveCount(0);

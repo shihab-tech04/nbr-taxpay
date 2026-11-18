@@ -176,7 +176,7 @@ test('Other Tax has five v11 groups, never Return, and uses in-place clickable c
 
   const batch = dialog.getByTestId('other-tax-batch');
   await expect(batch).toBeVisible();
-  await expect(batch).toContainText('169 available non-return payment heads');
+  await expect(batch).toContainText('169 payment heads available');
   await expect(batch.locator('[data-head-group]')).toHaveCount(6);
   await expect(batch.locator('[data-head-group="Tax with Return"]')).toHaveCount(0);
   await expect(batch.locator('#other-tax-target')).toHaveCount(0);
@@ -619,7 +619,7 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     await expect(dialog.locator('[data-head-group]')).toHaveCount(6);
     await expect(dialog.locator('#guest-income-type-NON_COMPANY')).toHaveCount(0);
     await expect(dialog.locator('#guest-head-search')).toHaveCount(0);
-    await expect(dialog.getByTestId('other-tax-batch')).toContainText('169 available non-return payment heads');
+    await expect(dialog.getByTestId('other-tax-batch')).toContainText('169 payment heads available');
     await dialog.locator('[data-head-group="Advance Tax"] summary').click();
     await dialog.getByRole('checkbox', { name: /Select 68A/ }).check();
     await dialog.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('250');
@@ -784,8 +784,7 @@ test('Step 1 shows a pending calculation rather than a misleading zero', async (
   const dialog = await getFlow(page);
   await expect(dialog.getByTestId('other-tax-taxpayer-list')).toContainText('0 taxpayers added');
   await expect(dialog.locator('.payment-form-summary__total')).toHaveText('—');
-  await expect(dialog.locator('.payment-form-summary__help'))
-    .toContainText('Add payment heads and amounts to see the total.');
+  await expect(dialog.locator('.payment-form-summary__help')).toHaveCount(0);
 });
 
 test('additional taxpayers are not blocked by an unapproved 20-person limit', async ({ page }) => {
