@@ -52,6 +52,11 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await taxpayerTabs.nth(1).click();
     await ensureAdvanceTaxOpen();
     await select68A.check();
+    // The editable total is the sum of ENTERED amounts, not a false payable
+    // grand total: the second selected head still has no required amount.
+    await expect(dialog.locator('.payment-form-summary__total')).toContainText('3,500');
+    await expect(dialog.getByTestId('v5-compact-taxpayer-summary')).toContainText('Enter amounts for 1 selected head');
+    await expect(dialog.getByRole('button', { name: 'Continue to final preview' })).toBeDisabled();
     await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('3500');
 
     // Approved v5 calculation is a compact subtotal by taxpayer. Keep the
