@@ -606,10 +606,14 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
     if (relationship === 'OTHER') await dialog.locator('#guest-payer-name').fill('Sample Payer');
     await dialog.locator('#guest-phone').fill('01712345678');
     await expect(dialog.getByTestId('other-tax-taxpayer-list')).toBeVisible();
-    // Both relationships allow a confirmed additional taxpayer in the same
-    // non-Return combined payment; the dedicated SELF+OTHER payment test below
-    // checks the saved allocations and certificate under the same parent.
-    await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
+    // Both relationships share the non-Return head composer. Only OTHER
+    // may add a second taxpayer; SELF is strictly one taxpayer.
+    if (relationship === 'SELF') {
+      await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
+      await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(0);
+    } else {
+      await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
+    }
     await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
     await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
     await expect(dialog.locator('[data-head-group]')).toHaveCount(6);
@@ -623,7 +627,7 @@ test('SELF and OTHER guest Other Tax choices use the same grouped heads and omit
   }
 });
 
-test('walk-in self payer can include a confirmed second taxpayer', async ({ page }) => {
+test('walk-in self payer keeps multiple heads and years without adding a second taxpayer', async ({ page }) => {
   const submitted: Array<Record<string, unknown>> = [];
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
     submitted.push(route.request().postDataJSON());
@@ -639,25 +643,18 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
   await dialog.locator('#guest-phone').fill('01712345678');
-  await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
-  const second = dialog.getByTestId('other-tax-taxpayer');
-  await second.locator('input[id^="other-tax-tin-"]').fill('222222222222');
-  await second.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
-  const next = dialog.getByRole('button', { name: 'Continue to purpose & amount' });
-  await expect(next).toBeDisabled();
-  await second.getByRole('button', { name: 'Add taxpayer', exact: true }).click();
-  await next.click();
+  await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
+  await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
-  const tabs = batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button');
-  await tabs.first().click();
+  await expect(batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button')).toHaveCount(1);
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
-  const line = batch.getByTestId('other-tax-line');
-  await line.locator('input[id^="other-tax-amount"]').fill('15');
-  await tabs.nth(1).click();
   await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
-  await line.locator('select[id^="other-tax-year"]').selectOption('2025-26');
-  await line.locator('input[id^="other-tax-amount"]').fill('35');
+  const lines = batch.getByTestId('other-tax-line');
+  await lines.nth(0).locator('input[id^="other-tax-amount"]').fill('15');
+  await lines.nth(1).locator('select[id^="other-tax-year"]').selectOption('2025-26');
+  await lines.nth(1).locator('input[id^="other-tax-amount"]').fill('35');
   await dialog.getByRole('button', { name: 'Continue to payment channel' }).click();
   await dialog.getByRole('button', { name: 'Pay online' }).click();
   await dialog.getByRole('button', { name: 'Mobile banking' }).click();
@@ -670,11 +667,12 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
     amountMinor: 5000,
     details: {
       payerTin: '111111111111',
-      payerMode: 'OTHER',
+      payerMode: 'SELF',
+      taxpayerCount: 1,
       combinedPayment: true,
       allocations: [
         { taxpayerTin: '111111111111', assessmentYear: '2026-27', amountMinor: 1500 },
-        { taxpayerTin: '222222222222', assessmentYear: '2025-26', amountMinor: 3500 },
+        { taxpayerTin: '111111111111', assessmentYear: '2025-26', amountMinor: 3500 },
       ],
     },
   });
@@ -683,7 +681,6 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   const document = dialog.locator('.receipt-view__paper');
   await expect(document).toContainText('111111111111');
-  await expect(document).toContainText('222222222222');
   await expect(document).toContainText('৳ 50');
   await dialog.getByRole('button', { name: 'View payment certificate' }).click();
   const certificate = dialog.getByTestId('payment-certificate-document');
@@ -691,7 +688,6 @@ test('walk-in self payer can include a confirmed second taxpayer', async ({ page
   await expect(document.getByTestId('payment-certificate-reference'))
     .toContainText('SK-PC-00000000-0000-4000-8000-000000000102');
   await expect(certificate).toContainText('111111111111');
-  await expect(certificate).toContainText('222222222222');
   await expect(certificate).toContainText('2026-27');
   await expect(certificate).toContainText('2025-26');
   await expect(certificate).toContainText('৳ 15');
