@@ -63,6 +63,8 @@ interface PaymentSummaryProps {
   breakdown?: { id?: string; label: string; detail?: string; value: number | null }[];
   groupedBreakdown?: { id: string; label: string; tin: string; amount: number | null; countLabel?: string; entries: { id?: string; label: string; detail?: string; value: number | null }[] }[];
   onSelectEntry?: (id: string) => void;
+  /** Optional active editor line; no behavior change to other payment services. */
+  activeEntryId?: string | null;
 }
 
 /** Mask payment-form identity by default. Full TIN is still available by an
@@ -102,12 +104,24 @@ function MaskedSummaryTin({ tin, language }: { tin: string; language: Language }
   </span>;
 }
 
-export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown, onSelectEntry }: PaymentSummaryProps) {
+export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown, onSelectEntry, activeEntryId }: PaymentSummaryProps) {
   const bn = language === 'bn';
   const amountWords = amountInTakaWords(amount, language);
   // A bulk selection can contain dozens of entries. Keep a clear, accessible
   // way to reveal every selected head without burying the next taxpayer.
   const [expandedTaxpayerSummaries, setExpandedTaxpayerSummaries] = React.useState<Record<string, boolean>>({});
+  const summaryRef = React.useRef<HTMLElement>(null);
+  React.useEffect(() => {
+    if (!activeEntryId) return;
+    const group = groupedBreakdown?.find(item => item.entries.some(entry => entry.id === activeEntryId));
+    if (!group) return;
+    if (group.entries.findIndex(entry => entry.id === activeEntryId) >= 4) {
+      setExpandedTaxpayerSummaries(previous => previous[group.id] ? previous : { ...previous, [group.id]: true });
+    }
+    // Never collapse a taxpayer card another editor action has left open.
+    summaryRef.current?.querySelectorAll<HTMLDetailsElement>('.payment-form-summary__taxpayer')
+      .forEach(element => { if (element.dataset.groupId === group.id) element.open = true; });
+  }, [activeEntryId, groupedBreakdown]);
   const renderBreakdownEntry = (item: NonNullable<PaymentSummaryProps['breakdown']>[number], index: number) => {
     const contents = <>
       <span className="payment-form-summary__entry-description">
@@ -118,12 +132,13 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
     </>;
     return item.id && onSelectEntry
       ? <button type="button" key={item.id} className="payment-form-summary__entry payment-form-summary__entry--link"
+           data-active={item.id === activeEntryId ? "true" : undefined}
           aria-label={bn ? `সম্পাদনা করুন: ${item.label}, ${item.detail || ''}` : `Edit ${item.label}, ${item.detail || ''}`}
           onClick={() => onSelectEntry(item.id!)}>{contents}</button>
       : <div key={item.id ?? index} className="payment-form-summary__entry">{contents}</div>;
   };
   return (
-    <aside className="payment-form-summary" aria-label={bn ? 'হালনাগাদ পেমেন্ট হিসাব' : 'Live payment calculation'}>
+    <aside ref={summaryRef} className="payment-form-summary" aria-label={bn ? 'হালনাগাদ পেমেন্ট হিসাব' : 'Live payment calculation'}>
       <div className="payment-form-summary__heading"><ReceiptText size={19} aria-hidden="true" />
         <h2>{bn ? 'পেমেন্টের হিসাব' : 'Payment calculation'}</h2>
       </div>
@@ -152,7 +167,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
           const canExpand = group.entries.length > previewLimit;
           const expanded = Boolean(expandedTaxpayerSummaries[group.id]);
           const visibleEntries = canExpand && !expanded ? group.entries.slice(0, previewLimit) : group.entries;
-          return <details key={group.id} className="payment-form-summary__taxpayer" open={index === 0}>
+          return <details key={group.id} data-group-id={group.id} className="payment-form-summary__taxpayer" open={index === 0}>
           <summary>
             <span className="payment-form-summary__taxpayer-name">
               <strong>{group.label}</strong>
@@ -183,6 +198,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
               </>;
               return entry.id && onSelectEntry
                 ? <button type="button" key={entry.id} className="payment-form-summary__taxpayer-item payment-form-summary__entry--link"
+                     data-active={entry.id === activeEntryId ? "true" : undefined}
                     aria-label={bn ? `সম্পাদনা করুন: ${entry.label}, ${entry.detail || ''}` : `Edit ${entry.label}, ${entry.detail || ''}`}
                     onClick={() => onSelectEntry(entry.id!)}>{contents}</button>
                 : <div key={entryIndex} className="payment-form-summary__taxpayer-item">{contents}</div>;
