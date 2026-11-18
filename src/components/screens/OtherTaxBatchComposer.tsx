@@ -55,12 +55,14 @@ type Props = {
   summary?: React.ReactNode;
   /** Use the fixed TaxPay service selection without duplicating the head editor. */
   serviceSelection?: React.ReactNode;
+  /** Frozen All Tax Payments v3 labels without changing the shared composer. */
+  unifiedV3?: boolean;
   /** Optional challan comments stay inside the editor scroll column. */
   remarks?: React.ReactNode;
   focusRequest?: { lineId: string; requestId: number } | null;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, serviceSelection, remarks, focusRequest }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, serviceSelection, unifiedV3 = false, remarks, focusRequest }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -271,7 +273,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                   onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); selectionMenuRef.current?.removeAttribute('open'); } }}>
                   <summary aria-label={tx('Selection actions', 'খাত নির্বাচনের ব্যবস্থা')}>
                     <ListChecks size={17} aria-hidden="true" />
-                    <span>{tx('Bulk actions', 'একসাথে নির্বাচন')}</span>
+                    <span>{unifiedV3 ? tx('Select', 'নির্বাচন') : tx('Bulk actions', 'একসাথে নির্বাচন')}</span>
                     <ChevronDown size={16} aria-hidden="true" className="other-tax-selection-menu__chevron" />
                   </summary>
                   <div className="other-tax-selection-menu__panel" role="group" aria-label={tx('Payment head selection actions', 'পরিশোধের খাত নির্বাচনের ব্যবস্থা')}>
@@ -288,7 +290,10 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
               </div>
             </div>
             <p className="other-tax-selection-status" role="status">
-              {activeLines.length
+              {unifiedV3
+                ? tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' years · ' + count + ' available non-return payment heads',
+                     new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + 'টি অন্যান্য খাত')
+                : activeLines.length
                 ? tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' assessment years selected',
                   new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ নির্বাচিত')
                 : tx(count + ' payment heads available', count + 'টি করের খাত উপলব্ধ')}
