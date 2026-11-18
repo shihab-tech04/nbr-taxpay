@@ -38,3 +38,43 @@ test('signed-in self has no saved beneficiary or additional taxpayer controls', 
   await expect(payment.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
   await expect(payment.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
 });
+
+
+test('taxpayer TIN and name fields use the full card width in SELF and OTHER paths', async ({ page }) => {
+  await page.goto('/?action=landing&lang=en');
+  const payment = await openLegacyTaxServiceChoice(page);
+  await enterTaxPayService(payment, 'OTHER_TAX', 'SELF');
+  const assertFullWidth = async (card: ReturnType<typeof payment.getByTestId>) => {
+    const sizes = await card.evaluate(node => {
+      const row = node.querySelector<HTMLElement>('.taxpay-taxpayer-row__fields');
+      const lookup = node.querySelector<HTMLElement>('.taxpayer-tin-lookup');
+      const search = node.querySelector<HTMLElement>('.taxpayer-tin-lookup__search-row');
+      const name = node.querySelector<HTMLElement>('.taxpayer-tin-lookup__field input[id*="name"]');
+      if (!row || !lookup || !search || !name) return null;
+      return { row: row.getBoundingClientRect().width, lookup: lookup.getBoundingClientRect().width,
+        search: search.getBoundingClientRect().width, name: name.getBoundingClientRect().width };
+    });
+    expect(sizes).not.toBeNull();
+    expect(sizes!.lookup).toBeGreaterThan(sizes!.row * .94);
+    expect(sizes!.search).toBeGreaterThan(sizes!.lookup * .94);
+    expect(sizes!.name).toBeGreaterThan(sizes!.lookup * .94);
+  };
+  await assertFullWidth(payment.getByTestId('other-tax-primary-taxpayer'));
+  const emailWidths = await payment.locator('.payment-identity__receipt-row').first().evaluate(node => {
+    const email = node.querySelector<HTMLElement>('#guest-receipt-email');
+    return email ? { row: node.getBoundingClientRect().width, email: email.getBoundingClientRect().width } : null;
+  });
+  expect(emailWidths).not.toBeNull();
+  expect(emailWidths!.email).toBeGreaterThan(emailWidths!.row * .94);
+  await payment.locator('.taxpay-modal__back').click();
+  await payment.locator('[data-payer-relationship="OTHER"]').click();
+  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
+  const primary = payment.getByTestId('other-tax-primary-taxpayer');
+  await assertFullWidth(primary);
+  await primary.locator('#guest-tin').fill('111111111111');
+  await primary.locator('.taxpayer-tin-lookup__search').click();
+  await primary.getByRole('button', { name: 'Add taxpayer' }).click();
+  await payment.getByRole('button', { name: 'Add another taxpayer' }).click();
+  const additional = payment.getByTestId('other-tax-taxpayer');
+  await assertFullWidth(additional);
+});
