@@ -33,12 +33,14 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
   await dialog.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin-"]').fill('234567890123');
   await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Search', exact: true }).click();
   await dialog.getByTestId('other-tax-taxpayer').getByRole('button', { name: 'Add taxpayer' }).click();
+  // Identity step contains no premature empty-head taxpayer breakdown.
   const grouped = dialog.getByTestId('grouped-taxpayer-calculation');
+  await expect(grouped).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const batch = dialog.getByTestId('other-tax-batch');
   await expect(grouped.locator('details')).toHaveCount(2);
   await expect(grouped).toContainText('123456789012');
   await expect(grouped).toContainText('234567890123');
-  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
-  const batch = dialog.getByTestId('other-tax-batch');
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
   await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('2100');
