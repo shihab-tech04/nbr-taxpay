@@ -62,9 +62,11 @@ type Props = {
   focusRequest?: { lineId: string; requestId: number } | null;
   /** Optional editor focus sync for the original payment calculation. */
   onFocusLine?: (lineId: string) => void;
+  /** Approved calculation treatment applies only to Facilitate another taxpayer. */
+  originalFacilitation?: boolean;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, serviceSelection, unifiedV3 = false, remarks, focusRequest, onFocusLine }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, serviceSelection, unifiedV3 = false, remarks, focusRequest, onFocusLine, originalFacilitation = false }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -207,7 +209,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   };
 
   return (
-    <div ref={rootRef} className="payment-form-layout payment-flow-embedded__payment other-tax-batch-panel" data-testid="other-tax-batch">
+    <div ref={rootRef} className="payment-form-layout payment-flow-embedded__payment other-tax-batch-panel" data-testid="other-tax-batch"
+      data-original-facilitation={originalFacilitation ? "true" : undefined}>
       <div className="payment-form-layout__sections">
         {serviceSelection}
         <section className={error ? "payment-form-section payment-form-section--static other-tax-section--invalid" : "payment-form-section payment-form-section--static"}>
@@ -283,13 +286,13 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                       disabled={!visibleEligible.some(head => !activeLines.some(line => line.headId === head.id))}>
                       {search ? tx('Select all matching', 'মিল থাকা সব নির্বাচন করুন') : tx('Select all', 'সব নির্বাচন করুন')}
                     </button>
-                    {unifiedV3 && <button type="button" onClick={() => { unselectAll(); selectionMenuRef.current?.removeAttribute('open'); }}
+                    {(!originalFacilitation || unifiedV3) && <button type="button" onClick={() => { unselectAll(); selectionMenuRef.current?.removeAttribute('open'); }}
                       disabled={!activeLines.length}>
                       {tx('Clear selection', 'নির্বাচন বাতিল করুন')}
                     </button>}
                   </div>
                 </details>
-                {!unifiedV3 && <button type="button" className="other-tax-clear-selection"
+                {originalFacilitation && !unifiedV3 && <button type="button" className="other-tax-clear-selection"
                   disabled={!activeLines.length} onClick={unselectAll}>
                   {tx('Clear selected', 'নির্বাচন মুছুন')}
                 </button>}
