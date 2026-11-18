@@ -46,6 +46,7 @@ import { prepareCombinedOtherTaxPayment, saveCombinedOtherTaxRequest, loadCombin
 import { clearOtherTaxBatch, confirmedBatchReceipts, loadOtherTaxBatch,
   saveOtherTaxBatch, syncOtherTaxBatch, type OtherTaxBatch } from '../../services/otherTaxBatchSubmission';
 import { OtherTaxTaxpayerList } from './OtherTaxTaxpayerList';
+import { UnifiedTaxpayerWorkspace } from './UnifiedTaxpayerWorkspace';
 import { SavedBeneficiaryPicker } from './SavedBeneficiaryPicker';
 import { SignedInTaxpayerCard } from './SignedInPaymentEnhancements';
 import { SuggestedAmountInfo } from '../ui/SuggestedAmountInfo';
@@ -324,6 +325,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [incomeTaxType, setIncomeTaxType] = useState<'NON_COMPANY' | 'COMPANY' | null>(null);
   const [taxpayerEntityOverrides, setTaxpayerEntityOverrides] = useState<Record<string, IncomeTaxEntityType>>({});
   const [unifiedReturnSelectionNotice, setUnifiedReturnSelectionNotice] = useState('');
+  // Park the alternative Other Tax allocations while Return is active. They are
+  // not part of the exclusive Return payload and can be restored on switching back.
+  const [unifiedOtherTaxParkedLines, setUnifiedOtherTaxParkedLines] = useState<OtherTaxAllocation[]>([]);
   
 
   // Category and Head selection
@@ -1792,11 +1796,11 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           : 'Tax with Return is for one taxpayer. Go Back to Taxpayer Information and remove the additional taxpayer.');
         return;
       }
+      // The two service choices are separate. Retain Other Tax edits without
+      // mixing those lines into the exclusive Return submission or draft.
       if (otherTaxLines.length > 0) {
-        setUnifiedReturnSelectionNotice(language === 'bn'
-          ? 'রিটার্নসহ করের আগে Other Tax-এর নির্বাচিত খাতগুলো সরান।'
-          : 'Remove the selected Other Tax heads before switching to Tax with Return.');
-        return;
+        setUnifiedOtherTaxParkedLines(otherTaxLines);
+        setOtherTaxLines([]);
       }
       const type = entityTypeForTin(taxpayerTin);
       if (!type) {
@@ -1811,6 +1815,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     } else {
       setCategory('OTHER_TAX_PAYMENT');
       setSelectedHeadIds([]);
+      if (unifiedOtherTaxParkedLines.length > 0) {
+        setOtherTaxLines(unifiedOtherTaxParkedLines);
+        setUnifiedOtherTaxParkedLines([]);
+      }
     }
     setVerifiedReference(null);
     clearValidationError();
@@ -1840,6 +1848,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       </div>
       {unifiedReturnSelectionNotice && <p role="alert" className="payment-unified-service-selection__notice" data-testid="unified-return-eligibility">
         {unifiedReturnSelectionNotice}
+        {batchTaxpayers.length !== 1 && <button type="button" className="payment-unified-service-selection__edit" onClick={() => setStep(1)}>
+          {language === 'bn' ? 'করদাতা সম্পাদনা করুন' : 'Edit taxpayers'}
+        </button>}
       </p>}
     </section>
   ) : null;
@@ -1902,7 +1913,63 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             actionTarget={embedded ? draftFooterTarget : undefined} />}
 
         {/* STEP 1: Taxpayer Identification */}
-        {step === 1 && (
+        {step === 1 && (unifiedFlow && !signedInAccount ? (
+          <UnifiedTaxpayerWorkspace
+            language={language}
+            primaryTin={taxpayerTin}
+            primaryName={otherTaxpayerName}
+            additional={additionalTaxpayers}
+            confirmedTins={confirmedOtherTaxTins}
+            allocations={otherTaxLines.length ? otherTaxLines : unifiedOtherTaxParkedLines}
+            error={errorField === 'tin' ? errorMessage : undefined}
+            onAddPrimary={(newTin, newName) => {
+              setTin(newTin); setOtherTaxpayerName(newName);
+              setLastSearchedTin(newTin);
+              setConfirmedOtherTaxTins(current => ({ ...current, primary: newTin }));
+              clearValidationError();
+            }}
+            onAddAdditional={person => {
+              setAdditionalTaxpayers(current => [...current, person]);
+              setConfirmedOtherTaxTins(current => ({ ...current, [person.id]: person.tin }));
+              if (category === 'TAX_WITH_RETURN') {
+                setCategory('OTHER_TAX_PAYMENT');
+                if (unifiedOtherTaxParkedLines.length) {
+                  setOtherTaxLines(unifiedOtherTaxParkedLines);
+                  setUnifiedOtherTaxParkedLines([]);
+                }
+                setUnifiedReturnSelectionNotice(language === 'bn'
+                  ? 'একাধিক করদাতার জন্য অন্যান্য কর নির্বাচন করা হয়েছে। রিটার্নসহ কর কেবল একজনের জন্য।'
+                  : 'Other Tax is selected for multiple taxpayers. Tax with Return is available for one taxpayer only.');
+              }
+              clearValidationError();
+            }}
+            onRemove={id => {
+              if (id === 'primary') {
+                const [promote, ...rest] = additionalTaxpayers;
+                setTin(promote?.tin ?? '');
+                setOtherTaxpayerName(promote?.name ?? '');
+                setLastSearchedTin(promote?.tin ?? null);
+                setAdditionalTaxpayers(rest);
+                setConfirmedOtherTaxTins(current => {
+                  const next = { ...current }; delete next.primary;
+                  if (promote) { delete next[promote.id]; next.primary = promote.tin; }
+                  return next;
+                });
+                setOtherTaxLines(current => current.filter(line => line.taxpayerId !== 'primary')
+                  .map(line => line.taxpayerId === promote?.id ? { ...line, taxpayerId: 'primary' } : line));
+                setUnifiedOtherTaxParkedLines(current => current.filter(line => line.taxpayerId !== 'primary')
+                  .map(line => line.taxpayerId === promote?.id ? { ...line, taxpayerId: 'primary' } : line));
+              } else {
+                setAdditionalTaxpayers(current => current.filter(person => person.id !== id));
+                setConfirmedOtherTaxTins(current => {const next = {...current}; delete next[id]; return next;});
+                setOtherTaxLines(current => current.filter(line => line.taxpayerId !== id));
+                setUnifiedOtherTaxParkedLines(current => current.filter(line => line.taxpayerId !== id));
+              }
+              setUnifiedReturnSelectionNotice('');
+              clearValidationError();
+            }}
+          />
+        ) : (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__identity' : ''}`}>
             <div className="payment-form-layout__sections">
             {(!embedded || initialForSelf === undefined) ? <PaymentFormSection number={1} staticView={embedded} title={language === 'bn' ? 'কার জন্য পরিশোধ করছেন?' : 'Who are you paying for?'} description={language === 'bn' ? 'নিজের বা অন্যের হয়ে পরিশোধ নির্বাচন করুন' : 'Choose your relationship to the taxpayer'}>
@@ -2156,12 +2223,12 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
             </div>
             {inlinePaymentCalculation}
           </div>
-        )}
+        ))}
 
         {/* STEP 2: Head Selection & Financial Amounts */}
         {step === 2 && (otherBatch ? (
           <>
-          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} serviceSelection={unifiedFlow ? unifiedServiceChoice : undefined} maskTaxpayerTin={unifiedFlow} remarks={unifiedFlow ? undefined : paymentRemarksControl}
+          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} serviceSelection={unifiedFlow ? unifiedServiceChoice : undefined} unifiedV3={unifiedFlow} maskTaxpayerTin={unifiedFlow} remarks={unifiedFlow ? undefined : paymentRemarksControl}
             lines={otherTaxLines} suggestionTaxpayerIds={ownAccountTax ? { primary: demoConsentActor } : undefined}
             preserveSourcePaymentAmounts={Boolean(sourcePaymentId)} focusRequest={summaryJump} onChange={next => {
               setOtherTaxLines(next);
@@ -2389,6 +2456,34 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
         {step === 3 && (
           <div className="payment-review" data-testid="payment-review">
             <div className="payment-review__main">
+              {unifiedFlow && <section className="payment-review__panel unified-v3-review" aria-labelledby="unified-v3-review-title" data-testid="unified-v3-payment-details">
+                <div className="payment-review__section-title unified-v3-review__heading">
+                  <h2 id="unified-v3-review-title">{language === 'bn' ? 'পেমেন্টের বিবরণ' : 'Payment details'}</h2>
+                  <div className="unified-v3-review__actions">
+                    <button type="button" onClick={() => setStep(1)}>{language === 'bn' ? 'করদাতা সম্পাদনা' : 'Edit taxpayers'}</button>
+                    <button type="button" onClick={() => setStep(2)}>{language === 'bn' ? 'খাত ও পরিমাণ সম্পাদনা' : 'Edit heads & amounts'}</button>
+                  </div>
+                </div>
+                <div className="unified-v3-review__table-wrap">
+                  <table className="unified-v3-review__table">
+                    <thead><tr>
+                      <th>{language === 'bn' ? 'করদাতা / খাত' : 'Taxpayer / Payment head'}</th>
+                      <th>{language === 'bn' ? 'করবর্ষ' : 'Assessment year'}</th>
+                      <th>{language === 'bn' ? 'পরিমাণ' : 'Amount'}</th>
+                    </tr></thead>
+                    <tbody>{batchTaxpayers.filter(person => Boolean(person.tin)).map(person => (
+                      <React.Fragment key={person.id}>
+                        <tr className="unified-v3-review__owner"><td colSpan={3}><strong>{person.name || otherTaxpayerName}</strong>
+                          <span>{person.tin.slice(0,3) + '*********'} · {incomeTaxEntityTypeLabel(entityTypeForTin(person.tin) ?? 'NON_COMPANY', language)}</span>
+                        </td></tr>
+                        {otherBatch ? otherTaxLines.filter(line => line.taxpayerId === person.id).map(line => (
+                          <tr key={line.id}><td>{language === 'bn' ? otherTaxAllocationHead(line.headId)?.nameBn : otherTaxAllocationHead(line.headId)?.nameEn}</td><td>{line.assessmentYear}</td><td>{formatCurrency(parseGuestAmount(line.amount) ?? 0, language)}</td></tr>
+                        )) : <tr><td>{language === 'bn' ? 'রিটার্নসহ কর' : 'Tax with Return'}</td><td>{assessmentYear}</td><td>{formatCurrency(summedAmount ?? 0, language)}</td></tr>}
+                      </React.Fragment>
+                    ))}</tbody>
+                  </table>
+                </div>
+              </section>}
               {unifiedFlow && <section className="payment-review__panel payment-review__payer" aria-labelledby="payment-final-payer-title">
                 <div className="payment-review__section-title">
                   <div><h2 id="payment-final-payer-title">{language === 'bn' ? 'পরিশোধকারী ও রসিদের তথ্য' : 'Payer and receipt details'}</h2></div>

@@ -14,16 +14,20 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(dialog.locator('#guest-phone')).toHaveCount(0);
     await expect(dialog.locator('#guest-payment-remarks')).toHaveCount(0);
 
-    await dialog.locator('#guest-tin').fill('222222222222');
-    await dialog.locator('.taxpayer-tin-lookup__search').first().click();
-    await dialog.getByRole('button', { name: 'Add taxpayer' }).first().click();
-    await expect(dialog.locator('#tax-type-primary')).toHaveValue('NON_COMPANY');
-    await dialog.getByRole('button', { name: 'Add another taxpayer' }).click();
-    const companyTaxpayer = dialog.getByTestId('other-tax-taxpayer').first();
-    await companyTaxpayer.locator('input[id^="other-tax-tin-"]').fill('333333333333');
-    await companyTaxpayer.locator('.taxpayer-tin-lookup__search').click();
-    await companyTaxpayer.getByRole('button', { name: 'Add taxpayer' }).click();
-    await expect(dialog.locator('select[id^="tax-type-"]').last()).toHaveValue('COMPANY');
+    // Frozen v3 uses a single TIN search and selected-taxpayer rail instead
+    // of the legacy confirmation rows and editable tax-type dropdowns.
+    const add = async (tin: string) => {
+      await dialog.getByTestId('unified-tin-input').fill(tin);
+      await dialog.getByRole('button', { name: 'Search taxpayer TIN' }).click();
+      await expect(dialog.getByTestId('unified-taxpayer-search-result')).toBeVisible();
+      await dialog.getByRole('button', { name: 'Add taxpayer' }).click();
+    };
+    await add('222222222222');
+    await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('1');
+    await expect(dialog.getByTestId('unified-taxpayer-workspace')).toContainText('User 2');
+    await add('333333333333');
+    await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('2');
+    await expect(dialog.getByTestId('unified-taxpayer-workspace')).toBeVisible();
     await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
@@ -68,6 +72,14 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
     await expect(dialog.getByTestId('payment-review')).toBeVisible();
+    // Frozen v3 Step 3 uses one taxpayer-grouped payment table and working
+    // edit actions, with the existing calculation rail kept separately.
+    const reviewTable = dialog.getByTestId('unified-v3-payment-details');
+    await expect(reviewTable).toBeVisible();
+    await expect(reviewTable.getByRole('heading', {name: 'Payment details'})).toBeVisible();
+    await expect(reviewTable.locator('tbody tr.unified-v3-review__owner')).toHaveCount(2);
+    await expect(reviewTable.getByRole('button', {name: 'Edit taxpayers'})).toBeVisible();
+    await expect(reviewTable.getByRole('button', {name: 'Edit heads & amounts'})).toBeVisible();
     await expect(dialog.getByRole('heading', { name: 'Payer and receipt details' })).toBeVisible();
     await expect(dialog.locator('#guest-phone')).toHaveCount(1);
     await expect(dialog.locator('#guest-payment-remarks')).toBeVisible();
