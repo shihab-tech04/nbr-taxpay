@@ -22,8 +22,14 @@ test('v5 frozen Step 1: exactly twelve blocks, entity alongside name and selecte
   await expect(modal.getByTestId('unified-v5-tin-blocks').locator('span')).toHaveCount(12);
   const input=modal.getByTestId('unified-tin-input');
   await expect(input).toHaveAttribute('maxlength','12');
+  const search = modal.getByRole('button',{name:'Search taxpayer TIN'});
+  await input.fill('22222222222');
+  await expect(search).toBeDisabled();
+  await expect(search).toHaveCSS('background-color','rgb(233, 238, 243)');
   await input.fill('222222222222');
-  await modal.getByRole('button',{name:'Search taxpayer TIN'}).click();
+  await expect(search).toBeEnabled();
+  await expect(search).toHaveCSS('background-color','rgb(8, 85, 135)');
+  await search.click();
   const result=modal.getByTestId('unified-taxpayer-search-result');
   await expect(result.locator('.unified-v5-profile-name')).toContainText('User 2');
   await expect(result.locator('.unified-v5-profile-name')).toContainText('Individual');
@@ -71,7 +77,15 @@ test('v5 Return checkbox composes with other taxpayer/head and written final tot
   const batch=modal.getByTestId('other-tax-batch');
   const group=batch.locator('[data-head-group="Advance Tax"]');
   if (await group.getAttribute('open')===null) await group.locator('summary').click();
-  await batch.getByRole('checkbox',{name:/Select 68A/}).check();
+  const catalogCheck = batch.getByRole('checkbox',{name:/Select 68A/});
+  // Both Return and catalogue checkboxes belong on the LEFT of their labels.
+  const leftAlignment = await Promise.all([
+    checkbox.boundingBox(), catalogCheck.boundingBox(),
+  ]);
+  expect(leftAlignment[0]).not.toBeNull();
+  expect(leftAlignment[1]).not.toBeNull();
+  expect(Math.abs(leftAlignment[0]!.x - leftAlignment[1]!.x)).toBeLessThan(13);
+  await catalogCheck.check();
   await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('4000');
   await modal.getByRole('button',{name:'Continue to final preview'}).click();
   await expect(modal.locator('.taxpay-modal__title')).toHaveText('Final Preview');
@@ -83,6 +97,10 @@ test('v5 Return checkbox composes with other taxpayer/head and written final tot
   const total=modal.getByTestId('unified-v5-payment-total');
   await expect(total).toContainText('5,500');
   await expect(total).toContainText('Five Thousand Five Hundred Taka only');
+  // Final preview uses one outer card, one table-header rule, and one total rule.
+  await expect(review).toHaveCSS('padding-top','0px');
+  await expect(review.locator('tbody tr:not(.unified-v3-review__owner) td').first()).toHaveCSS('border-bottom-width','0px');
+  await expect(total).toHaveCSS('border-top-width','1px');
   await expect(modal.locator('.payment-review--unified-v5 .payment-review__aside')).toBeHidden();
   await expect(modal.getByTestId('unified-v5-total-in-words')).toBeVisible();
 });
