@@ -57,7 +57,7 @@ test('a single taxpayer can select Tax with Return and switch back without alter
   await expect(returnChoice).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
   await expect(dialog.locator('#guest-assessment-year')).toBeVisible();
-  await expect(dialog.locator('#guest-amount')).toBeVisible();
+  await expect(dialog.locator('#guest-tax-amount')).toBeVisible();
   await dialog.locator('[data-unified-tax-service="OTHER_TAX_PAYMENT"]').click();
   await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
   await expect(dialog.locator('[data-unified-tax-service="OTHER_TAX_PAYMENT"]')).toHaveAttribute('aria-pressed', 'true');
