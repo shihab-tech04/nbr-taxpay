@@ -23,6 +23,7 @@ import { BLOCKED_HEAD_IDS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
 import { PaymentCategory, ChallanReceipt, PaymentLineItem } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
+import { amountInTakaWords } from '../../services/amountInWords';
 import { UI_STRINGS } from '../../services/localization';
 import { ReceiptView } from '../common/ReceiptView';
 import { PaymentFormSection, PaymentLiveSummary } from '../ui/PaymentFormLayout';
@@ -2469,7 +2470,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
 
         {/* STEP 3: Review Challan & Execute Simulated Gateway */}
         {step === 3 && (
-          <div className="payment-review" data-testid="payment-review">
+          <div className={unifiedFlow ? "payment-review payment-review--unified-v5" : "payment-review"} data-testid="payment-review">
             <div className="payment-review__main">
               {unifiedFlow && <section className="payment-review__panel unified-v3-review" aria-labelledby="unified-v3-review-title" data-testid="unified-v3-payment-details">
                 <div className="payment-review__section-title unified-v3-review__heading">
@@ -2497,6 +2498,11 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                       </React.Fragment>
                     ))}</tbody>
                   </table>
+                </div>
+                <div className="unified-v5-review-total" data-testid="unified-v5-payment-total">
+                  <div className="unified-v5-review-total__row"><strong>{language === 'bn' ? 'মোট পেমেন্ট' : 'Payment total'}</strong>
+                    <output aria-live="polite">{formatCurrency(totalAmount, language)}</output></div>
+                  <p data-testid="unified-v5-total-in-words">{amountInTakaWords(totalAmount, language) ?? '—'}</p>
                 </div>
               </section>}
               {unifiedFlow && <section className="payment-review__panel payment-review__payer" aria-labelledby="payment-final-payer-title">
