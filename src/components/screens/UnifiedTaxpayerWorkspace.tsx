@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Plus, Search, Trash2, UserRound } from 'lucide-react';
+import { Search, Trash2, UserRound } from 'lucide-react';
+import { TaxpayerTinLookup, TaxpayerTinSearchResultCard } from '../ui/TaxpayerTinLookup';
 import { lookupSampleTaxpayer } from '../../services/sampleTaxpayerLookup';
 import { demoIncomeTaxTypeForTin } from '../../services/demoIncomeTaxType';
 import type { OtherTaxAllocation, OtherTaxTaxpayer } from './OtherTaxBatchComposer';
@@ -32,7 +33,6 @@ export function UnifiedTaxpayerWorkspace({
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [draftTin, setDraftTin] = useState('');
   const [searchedTin, setSearchedTin] = useState<string | null>(null);
-  const [revealedTins, setRevealedTins] = useState<string[]>([]);
   const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
   const searched = searchedTin === draftTin ? lookupSampleTaxpayer(draftTin) : null;
   const classification = searched ? demoIncomeTaxTypeForTin(searched.tin) : null;
@@ -47,8 +47,6 @@ export function UnifiedTaxpayerWorkspace({
   const canAdd = supportedProfile && !duplicate;
   const identityType = (kind: string | null) =>
     kind === 'COMPANY' ? tx('Company', 'কোম্পানি') : tx('Individual', 'ব্যক্তি');
-  const toggleReveal = (id: string) => setRevealedTins(current => current.includes(id)
-    ? current.filter(item => item !== id) : [...current, id]);
   const add = () => {
     if (!searched || !canAdd) return;
     const name = bn ? searched.nameBn : searched.nameEn;
@@ -61,42 +59,33 @@ export function UnifiedTaxpayerWorkspace({
     <section className="payment-form-layout__sections unified-taxpayer-workspace__editor">
       <h2 className="unified-taxpayer-workspace__heading">{tx('Add taxpayer', 'করদাতা যোগ করুন')}</h2>
       <p className="unified-taxpayer-workspace__subheading">{tx('Enter a TIN and search.', 'টিআইএন লিখে অনুসন্ধান করুন।')}</p>
-      <label className="unified-taxpayer-workspace__label" htmlFor="guest-tin">{tx('Taxpayer TIN', 'করদাতার টিআইএন')} <span aria-hidden="true">*</span></label>
-      <div className="unified-taxpayer-workspace__search">
-        <div className="unified-v5-tin-blocks" data-testid="unified-v5-tin-blocks">
-          {Array.from({length:12},(_,i)=><span key={i} className={i < draftTin.length ? 'is-filled' : ''} aria-hidden="true">{draftTin[i] ?? ''}</span>)}
-          <input id="guest-tin" data-testid="unified-tin-input" type="text" inputMode="numeric"
-            autoComplete="off" maxLength={12} value={draftTin}
-            aria-label={tx('Taxpayer TIN, exactly 12 digits', 'করদাতার টিআইএন, ঠিক ১২ সংখ্যা')}
-            placeholder={tx('12-digit TIN', '১২ সংখ্যার টিআইএন')}
-            onChange={e=>{setDraftTin(e.target.value.replace(/\D/g,'').slice(0,12));setSearchedTin(null);}}
-            onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(validTin)setSearchedTin(draftTin);}}}/>
-        </div>
-        <button type="button" className={validTin ? 'unified-v5-search-button unified-v5-search-button--ready' : 'unified-v5-search-button'} onClick={()=>setSearchedTin(draftTin)} disabled={!validTin}
-          aria-label={tx('Search taxpayer TIN', 'করদাতার টিআইএন অনুসন্ধান')}><Search size={17} aria-hidden="true"/>{tx('Search', 'অনুসন্ধান')}</button>
-      </div>
+      <TaxpayerTinLookup
+        language={language} tinId="guest-tin" nameId="unified-taxpayer-name"
+        tin={draftTin} name={searched ? (bn ? searched.nameBn : searched.nameEn) : ''}
+        onTinChange={value => {setDraftTin(value);setSearchedTin(null);}}
+        onClear={() => {setDraftTin('');setSearchedTin(null);}}
+        onSearch={() => setSearchedTin(draftTin)} canSearch={validTin}
+        maxTinLength={12} suggestedTins={[]} omitNameField submitOnEnter
+        searchLabel={tx('Search taxpayer TIN','করদাতার টিআইএন অনুসন্ধান')}
+        inputTestId="unified-tin-input" segmentsTestId="unified-v5-tin-blocks"
+        className="unified-taxpayer-workspace__shared-lookup"
+      />
       <div className="unified-taxpayer-workspace__result" aria-live="polite">
         {!searchedTin && <div className="unified-taxpayer-workspace__empty">
           <Search size={24} aria-hidden="true"/>
           <span>{selected.length ? tx('Search another TIN to add a taxpayer.', 'আরেকজন করদাতা যোগ করতে টিআইএন অনুসন্ধান করুন।') : tx('Search a TIN to view taxpayer information.', 'করদাতার তথ্য দেখতে টিআইএন অনুসন্ধান করুন।')}</span>
         </div>}
         {searchedTin && !searched && <p role="alert" className="unified-taxpayer-workspace__error">{tx('TIN information not found.', 'টিআইএন তথ্য পাওয়া যায়নি।')}</p>}
-        {searched && <div className="unified-taxpayer-workspace__profile" data-testid="unified-taxpayer-search-result">
-          <dl>
-            <div><dt>{tx('Taxpayer name', 'করদাতার নাম')}</dt><dd className="unified-v5-profile-name"><strong>{bn ? searched.nameBn : searched.nameEn}</strong>{classification && <span> · {identityType(classification)}</span>}</dd></div>
-            <div><dt>{tx('TIN', 'টিআইএন')}</dt><dd className="unified-taxpayer-workspace__masked">
-              {revealedTins.includes('search') ? searched.tin : mask(searched.tin)}
-              <button type="button" aria-label={revealedTins.includes('search') ? tx('Hide TIN', 'টিআইএন আড়াল করুন') : tx('Reveal TIN', 'টিআইএন দেখুন')}
-                onClick={()=>toggleReveal('search')}>{revealedTins.includes('search') ? <EyeOff size={15}/> : <Eye size={15}/>}</button>
-            </dd></div>
-
-          </dl>
-          {duplicate && <p className="unified-taxpayer-workspace__error" role="status">{tx('Taxpayer already added.', 'করদাতা ইতিমধ্যে যোগ করা হয়েছে।')}</p>}
-          {!classification && <p className="unified-taxpayer-workspace__error" role="status">{tx('Income tax type is not confirmed for this sample profile.', 'এই নমুনা প্রোফাইলে আয়করের ধরন নিশ্চিত নয়।')}</p>}
-
-          <button type="button" className="unified-taxpayer-workspace__add" onClick={add} disabled={!canAdd}>
-            <Plus size={18} aria-hidden="true"/>{tx('Add taxpayer', 'করদাতা যোগ করুন')}</button>
-        </div>}
+        {searched && <TaxpayerTinSearchResultCard
+          key={searched.tin} language={language} tin={searched.tin}
+          name={bn ? searched.nameBn : searched.nameEn}
+          classification={classification ? identityType(classification) : undefined}
+          duplicateMessage={duplicate ? tx('Taxpayer already added.', 'করদাতা ইতিমধ্যে যোগ করা হয়েছে।') : undefined}
+          classificationError={!classification
+            ? tx('Income tax type is not confirmed for this sample profile.', 'এই নমুনা প্রোফাইলে আয়করের ধরন নিশ্চিত নয়।')
+            : undefined}
+          onAdd={add} canAdd={canAdd} testId="unified-taxpayer-search-result"
+        />}
       </div>
       {error && <p role="alert" className="unified-taxpayer-workspace__error">{error}</p>}
     </section>

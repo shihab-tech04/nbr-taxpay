@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { Eye, EyeOff, Plus, Search, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { SAMPLE_TIN_SUGGESTIONS } from '../../data/sampleTinSuggestions';
 
@@ -48,13 +48,19 @@ export interface TaxpayerTinLookupProps {
   omitNameField?: boolean;
   /** Opt-in keyboard shortcut for parallel entry; shared lookup behavior remains unchanged elsewhere. */
   submitOnEnter?: boolean;
+  /** Stable selector for a host's existing TIN input contract. */
+  inputTestId?: string;
+  /** Stable selector for the approved 12/13 digit visual blocks. */
+  segmentsTestId?: string;
+  /** One accessible input drives the approved visible digit blocks. */
+  segmented?: boolean;
 }
 
 export function TaxpayerTinLookup({
   language, tinId, nameId, tin, name, onTinChange, onSearch, onClear, canSearch,
   heading, tinLabel, nameLabel, searchLabel, tinPlaceholder, namePlaceholder, maxTinLength = 12, maxNameLength = 160,
   readonlyTin = false, editableName = false, onNameChange, disabled = false, requiredTin = true,
-  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false, omitNameField = false, submitOnEnter = false,
+  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false, omitNameField = false, submitOnEnter = false, inputTestId, segmentsTestId, segmented = true,
 }: TaxpayerTinLookupProps) {
   const bn = language === 'bn';
   const tinRef = useRef<HTMLInputElement>(null);
@@ -133,8 +139,12 @@ export function TaxpayerTinLookup({
     <div className="taxpayer-tin-lookup__field">
       <label htmlFor={tinId}>{tinLabel ?? (bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN')}{requiredTin ? ' *' : ''}</label>
       <div ref={searchRowRef} className="taxpayer-tin-lookup__search-row taxpay-taxpayer-row__tin-search tin-lookup__row">
-        <div className="taxpayer-tin-lookup__tin-entry taxpay-taxpayer-row__tin-entry">
-          <input ref={tinRef} id={tinId} type="text" inputMode="numeric" autoComplete="off"
+        <div className={['taxpayer-tin-lookup__tin-entry', 'taxpay-taxpayer-row__tin-entry', segmented ? 'taxpayer-tin-lookup__tin-entry--segmented' : ''].filter(Boolean).join(' ')}
+          data-testid={segmented ? segmentsTestId ?? 'taxpayer-tin-digits' : undefined}
+          style={segmented ? ({'--taxpay-tin-digit-count': maxTinLength} as React.CSSProperties) : undefined}>
+          {segmented && Array.from({length: maxTinLength}, (_, index) => <span key={index}
+            className={index < tin.length ? 'is-filled' : ''} aria-hidden="true">{tin[index] ?? ''}</span>)}
+          <input ref={tinRef} id={tinId} data-testid={inputTestId} type="text" inputMode="numeric" autoComplete="off"
             maxLength={maxTinLength} value={tin} required={requiredTin} autoFocus={autofocusTin}
             readOnly={readonlyTin} disabled={disabled} aria-readonly={readonlyTin || undefined}
             role={suggestedTins?.length ? 'combobox' : undefined} aria-autocomplete={suggestedTins?.length ? 'list' : undefined}
@@ -178,7 +188,7 @@ export function TaxpayerTinLookup({
             <X size={17} aria-hidden="true" />
           </button>}
         </div>
-        <button type="button" className="tin-lookup__search taxpayer-tin-lookup__search"
+        <button type="button" className={['tin-lookup__search', 'taxpayer-tin-lookup__search', canSearch && !disabled ? 'is-ready' : ''].filter(Boolean).join(' ')}
           disabled={disabled || !canSearch} aria-label={searchLabel} onClick={() => { setShowSuggestions(false); onSearch(); }}>
           <Search size={17} aria-hidden="true" />{bn ? 'খুঁজুন' : 'Search'}
         </button>
@@ -228,5 +238,47 @@ export function TaxpayerTinLookup({
         placeholder={namePlaceholder ?? (bn ? 'টিআইএন খুঁজলে নাম এখানে দেখাবে' : 'Search TIN to fill name')} />
     </div>}
     {status}
+  </div>;
+}
+
+/** Approved lookup result for flows that explicitly require search → review → add.
+ * Caller controls the verified-match state, identity classification and permission to add.
+ * This card never copies a TIN or authorizes access to private records.
+ */
+export interface TaxpayerTinSearchResultCardProps {
+  language: 'en' | 'bn';
+  tin: string;
+  name: string;
+  classification?: string | null;
+  duplicateMessage?: string;
+  classificationError?: string;
+  onAdd?: () => void;
+  canAdd?: boolean;
+  testId?: string;
+}
+
+export function TaxpayerTinSearchResultCard({
+  language, tin, name, classification, duplicateMessage, classificationError, onAdd, canAdd = false, testId,
+}: TaxpayerTinSearchResultCardProps) {
+  const bn = language === 'bn';
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => { setRevealed(false); }, [tin]);
+  const masked = tin.slice(0, 3) + '*'.repeat(Math.max(0, tin.length - 3));
+  return <div className="taxpayer-tin-lookup__result-card unified-taxpayer-workspace__profile" data-testid={testId}>
+    <dl>
+      <div><dt>{bn ? 'করদাতার নাম' : 'Taxpayer name'}</dt><dd className="unified-v5-profile-name">
+        <strong>{name}</strong>{classification && <span> · {classification}</span>}
+      </dd></div>
+      <div><dt>{bn ? 'টিআইএন' : 'TIN'}</dt><dd className="unified-taxpayer-workspace__masked">
+        {revealed ? tin : masked}
+        <button type="button" aria-label={revealed ? (bn ? 'টিআইএন আড়াল করুন' : 'Hide TIN') : (bn ? 'টিআইএন দেখুন' : 'Reveal TIN')}
+          onClick={() => setRevealed(current => !current)}>{revealed ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}</button>
+      </dd></div>
+    </dl>
+    {duplicateMessage && <p className="unified-taxpayer-workspace__error" role="status">{duplicateMessage}</p>}
+    {classificationError && <p className="unified-taxpayer-workspace__error" role="status">{classificationError}</p>}
+    {onAdd && <button type="button" className="unified-taxpayer-workspace__add" onClick={onAdd} disabled={!canAdd}>
+      <Plus size={18} aria-hidden="true"/>{bn ? 'করদাতা যোগ করুন' : 'Add taxpayer'}
+    </button>}
   </div>;
 }

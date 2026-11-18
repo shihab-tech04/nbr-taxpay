@@ -40,3 +40,53 @@
 .taxpayer-tin-lookup__suggestions [role="option"]:hover,
 .taxpayer-tin-lookup__suggestions [role="option"]:focus-visible{background:#edf4ff;outline-offset:-2px}
 .taxpayer-tin-lookup__no-results{color:#813040}
+
+/* Master TIN search presentation: identical 12 boxes across taxpayer flows.
+   The single real input remains accessible, pasteable, keyboard-operable, and
+   controlled by each host's existing validation and search callback. */
+.taxpayer-tin-lookup__tin-entry--segmented {
+  position:relative;display:grid;grid-template-columns:repeat(var(--taxpay-tin-digit-count,12),minmax(0,1fr));
+  gap:4px;min-width:0;width:100%;height:46px;
+}
+.taxpayer-tin-lookup__tin-entry--segmented > span {
+  display:flex;align-items:center;justify-content:center;min-width:0;
+  border:1px solid #d0d9e3;border-radius:7px;background:#fff;
+  color:#17345a;font-size:clamp(12px,1.2vw,15px);font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.taxpayer-tin-lookup__tin-entry--segmented > span.is-filled,
+.taxpayer-tin-lookup__tin-entry--segmented:focus-within > span {border-color:#bfcbd8}
+.taxpayer-tin-lookup__tin-entry--segmented > input,
+.taxpayer-tin-lookup__tin-entry--segmented > input[readonly] {
+  position:absolute;inset:0;z-index:1;width:100%;height:100%;min-height:0;
+  padding:0;border:0;outline:0;opacity:0;cursor:text;
+}
+.taxpayer-tin-lookup__tin-entry--segmented > input:focus-visible {outline:0}
+.taxpayer-tin-lookup__tin-entry--segmented:focus-within {
+  outline:2px solid #085587;outline-offset:2px;border-radius:8px;
+}
+/* Preserve the tested Clear action without covering the final TIN digits. */
+.taxpayer-tin-lookup__tin-entry--segmented .taxpayer-tin-lookup__clear {
+  z-index:3;right:0;top:-28px;transform:none;
+  width:25px;height:25px;opacity:.72;
+}
+.taxpayer-tin-lookup__tin-entry--segmented .taxpayer-tin-lookup__clear:hover,
+.taxpayer-tin-lookup__tin-entry--segmented .taxpayer-tin-lookup__clear:focus-visible {opacity:1}
+.taxpayer-tin-lookup__search,
+.taxpayer-tin-lookup__search:disabled {
+  min-height:46px;border:1px solid #e1e5eb;background:#f5f6f8;
+  color:#758294;opacity:1;
+}
+.taxpayer-tin-lookup__search.is-ready:not(:disabled) {
+  background:#fff;color:#264761;border-color:#b8c8d7;
+}
+.taxpayer-tin-lookup__search.is-ready:hover:not(:disabled) {
+  background:#f3f7fa;color:#264761;border-color:#8ca4b9;
+}
+.taxpayer-tin-lookup__search:focus-visible {outline:2px solid #085587}
+@media(max-width:480px) {
+  .taxpayer-tin-lookup__search-row {grid-template-columns:minmax(0,1fr)}
+  .taxpayer-tin-lookup__search {width:100%}
+  .taxpayer-tin-lookup__tin-entry--segmented {gap:3px;height:44px}
+  .taxpayer-tin-lookup__tin-entry--segmented > span {font-size:12px;border-radius:5px}
+}
