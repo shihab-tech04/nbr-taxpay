@@ -108,6 +108,25 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(dialog.locator('#guest-phone')).toHaveValue('01712345678');
     await expect(dialog.locator('#guest-payment-remarks')).toHaveValue('Assessment payment for sample user 2');
 
+    // Locked v5 review does not contain payment selection.
+    await expect(dialog.getByRole('heading', { name: 'Choose payment channel' })).toHaveCount(0);
+    await expect(dialog.getByTestId('unified-v5-payment-channel-screen')).toHaveCount(0);
+    await expect(dialog.locator('.payment-review--unified-v5 .payment-review__aside')).toHaveCount(0);
+    const finalPreview = dialog.getByTestId('unified-v3-payment-details');
+    await expect(finalPreview).toBeVisible();
+
+    // Make Payment opens a DISTINCT checkout screen, never another preview panel.
+    await dialog.getByRole('button', { name: 'Make Payment' }).click();
+    await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment channel');
+    await expect(dialog.getByTestId('unified-v5-payment-channel-screen')).toBeVisible();
+    await expect(finalPreview).toHaveCount(0);
+    await expect(dialog.getByRole('progressbar', { name: 'Payment progress' })).toHaveCount(0);
+    await dialog.getByRole('button', { name: 'Back to Final Preview' }).click();
+    await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
+    await expect(finalPreview).toBeVisible();
+    await expect(dialog.locator('#guest-phone')).toHaveValue('01712345678');
+    await expect(dialog.locator('#guest-payment-remarks')).toHaveValue('Assessment payment for sample user 2');
+
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
     expect(overflow).toBe(false);
 });
