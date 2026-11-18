@@ -75,6 +75,8 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  const one=await visit(payer,'history',{width:375,height:812},payerPreview);
  await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
  await expect(one.page.getByText('User ID: user6')).toBeVisible();
+ // Activity is history-first; the separate wizard route owns payment creation.
+ await one.page.goto('/?action=wizard');
  await expect(one.page.getByRole('heading',{name:'Choose payment category'})).toBeVisible();
  // Tax with Return is deliberately exclusive; use an eligible mixed-head pair.
  await one.page.getByRole('button',{name:/ADVANCE TAX/i}).click();

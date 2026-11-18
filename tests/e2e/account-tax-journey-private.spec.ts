@@ -9,13 +9,19 @@ const owner={id:'00000000-0000-4000-8000-000000000202',email:'journey-owner@exam
 const request={id:'00000000-0000-4000-8000-000000000901',owner_uid:owner.id,category:'ADVANCE_TAX',
   assessment_year:'2026-27',amount_minor:'12345',request_status:'INFO_REQUESTED',submitted_at:'2026-10-01T10:00:00Z'};
 const correctionInquiryId='00000000-0000-4000-8000-000000000902';
+const user2Payment={id:'SK-USER2-REF-001',transactionId:'00000000-0000-4000-8000-000000000904',
+  payer:'user2',state:'SIMULATED',createdAt:'2026-11-17T09:30:00Z',simulationOnly:true,
+  totalMinor:12345,reviewStatus:'PENDING_OFFICER',
+  allocations:[{id:'user2-allocation-1',lineNo:1,beneficiary:'user2',category:'TAX_WITH_RETURN',
+    assessmentYear:'2026-27',amountMinor:12345}],events:[]};
 function session(){
   const exp=Math.floor(Date.now()/1000)+3600;
   const encoded=btoa(JSON.stringify({sub:owner.id,aud:'authenticated',role:'authenticated',exp}));
   return {access_token:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'+encoded+'.synthetic',token_type:'bearer',
     expires_in:3600,expires_at:exp,refresh_token:'journey-refresh',user:owner};
 }
-async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[],correctionColumns=true,seedAuthOnlyOnce=false){
+async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[],correctionColumns=true,
+  seedAuthOnlyOnce=false,boundSimulationProfile?:string){
   await page.addInitScript(({key,value,seedOnlyOnce})=>{
     const seeded='taxpay-test-account-auth-seeded';
     if(seedOnlyOnce&&sessionStorage.getItem(seeded))return;
@@ -92,12 +98,44 @@ async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[]
     // The new optional payer-history claim is authenticated and must not
     // prevent the existing owner-scoped payment history fixture from loading.
     if(url.pathname==='/rest/v1/rpc/taxpay_claim_walkin_payer_payments')return response(0);
+    if(url.pathname==='/rest/v1/rpc/sim_my_taxpayer_profile')
+      return boundSimulationProfile?response(boundSimulationProfile):response({message:'No approved simulator binding'},403);
+    if(url.pathname==='/rest/v1/rpc/sim_my_payment_history'){
+      expect(req.postDataJSON()).toEqual({p_view:'payer'});
+      return response(boundSimulationProfile==='user2'?[user2Payment]:[]);
+    }
+    if(url.pathname==='/rest/v1/taxpay_beneficiary_lists'||url.pathname==='/rest/v1/taxpay_beneficiaries')
+      return response([]);
     if(url.pathname==='/rest/v1/rpc/taxpay_my_story1_payments')return response({
       items:storedPayments,total:storedPayments.length,page:1,perPage:100
     });
     return response({message:'Not part of account journey acceptance'},403);
   });
 }
+
+test('User2 transaction correction opens a locked, contextual modal',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280'&&info.project.name!=='mobile-320',
+    'Representative authenticated desktop and phone correction entry');
+  const language=info.project.name==='mobile-320'?'bn':'en';
+  const applyLabel=language==='bn'?'সংশোধনের আবেদন':'Apply for Correction';
+  await mockAccount(page,false,[],true,false,'user2');
+  await page.goto('/?action=history&lang='+language);
+  const action=page.getByRole('button',{name:applyLabel,exact:true}).first();
+  await expect(action).toBeVisible();
+  await action.click();
+  const dialog=page.getByRole('dialog',{name:applyLabel,exact:true});
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId('correction-source-reference')).toHaveText(user2Payment.id);
+  const originalReference=dialog.getByTestId('correction-original-reference');
+  await expect(originalReference).toHaveValue(user2Payment.id);
+  await expect(originalReference).toHaveAttribute('readonly','');
+  await expect(dialog).toContainText('2026-27');
+  await expect(dialog.getByLabel('Select A-Challan for Rectification *')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(action).toBeFocused();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
 
 test('verified account sees only real owner review events and correct chronological details',async({page})=>{
   await mockAccount(page,true);
@@ -198,6 +236,40 @@ test('owner SQL payment events show beneficiary allocations with the same refere
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByTestId('account-tax-journey')).toContainText(request.id);
 });
+
+for(const language of ['en','bn'] as const){
+  test('recorded payment timeline keeps the date rail compact in '+language,async({page},info)=>{
+    test.skip(info.project.name!=='desktop-1280','Run the complete viewport matrix once per language');
+    await mockAccount(page,true,[sharedPayment]);
+    await page.goto('/?action=journey&lang='+language);
+    const timeline=page.getByTestId('account-sql-tax-journey');
+    await expect(timeline).toBeVisible();
+    const events=timeline.locator('ol > li');
+    await expect(events).toHaveCount(2);
+    for(const width of [320,375,390,768,1280,1920]){
+      await page.setViewportSize({width,height:900});
+      const event=events.first();
+      const date=event.locator('time');
+      const card=event.locator('article');
+      const button=event.getByRole('button',{name:language==='en'?'View payment details':'পেমেন্টের বিবরণ দেখুন'});
+      const [dateBox,eventBox,cardBox,buttonBox,tracks]=await Promise.all([
+        date.boundingBox(),event.boundingBox(),card.boundingBox(),button.boundingBox(),
+        event.evaluate(element=>getComputedStyle(element).gridTemplateColumns)
+      ]);
+      expect(dateBox&&eventBox&&cardBox&&buttonBox,'Timeline geometry must render fully at '+width+'px').toBeTruthy();
+      const expectedDateRail=width<640?56:135;
+      expect(parseFloat(tracks.split(' ')[0]),language+' date rail width at '+width+'px').toBe(expectedDateRail);
+      expect(dateBox!.width,'Date never takes half the timeline row at '+width+'px')
+        .toBeLessThan(eventBox!.width/2);
+      expect(cardBox!.x+cardBox!.width,'Timeline card stays inside its event row at '+width+'px')
+        .toBeLessThanOrEqual(eventBox!.x+eventBox!.width+1);
+      expect(buttonBox!.height,'Payment details remains a usable tap target at '+width+'px')
+        .toBeGreaterThanOrEqual(44);
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow,language+' timeline document overflow at '+width+'px').toBeLessThanOrEqual(2);
+    }
+  });
+}
 
 test('unbound signed-in history retains review activity and SQL-owned beneficiary receipts',async({page})=>{
   await mockAccount(page,true,[sharedPayment]);

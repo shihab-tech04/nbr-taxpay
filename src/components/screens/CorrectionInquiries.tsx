@@ -20,7 +20,9 @@ type CorrectionHistoryEvent=Readonly<{
  reason:string;occurred_at:string;
 }>;
 
-type Props={readonly authenticatedUserId:string;readonly language:'en'|'bn';readonly dashboard?:boolean};
+type Props={readonly authenticatedUserId:string;readonly language:'en'|'bn';readonly dashboard?:boolean;
+ readonly embedded?:boolean;readonly prefilledOriginalReference?:string;readonly lockOriginalReference?:boolean;
+ readonly targetAllocationId?:string};
 const t={
  en:{
  title:'Request a review of an original reference',
@@ -74,7 +76,8 @@ const t={
  }
 } as const;
 
-export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,dashboard=false})=>{
+export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,dashboard=false,embedded=false,
+ prefilledOriginalReference,lockOriginalReference=false,targetAllocationId})=>{
  const labels=t[language];
  const {routeParams}=useTaxState();
  // Navigation from a payment row is a form hint, never proof of tax ownership.
@@ -87,10 +90,12 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
  // The notice selection is an untrusted form hint, never taxpayer ownership.
  // SQL independently matches the signed-in UID to the original allocation.
  const [receivedIntent,setReceivedIntent]=useState(()=>readReceivedPaymentCaseIntent());
- const [caseKind,setCaseKind]=useState<CorrectionCaseKind>(receivedIntent?.caseKind??'CORRECTION_REVIEW');
- const [originalReference,setOriginalReference]=useState(receivedIntent?.originalReference??routeOriginalReference??'');
- useEffect(()=>{if(routeOriginalReference&&!receivedIntent)setOriginalReference(routeOriginalReference);},
-   [routeOriginalReference,receivedIntent]);
+ const [caseKind,setCaseKind]=useState<CorrectionCaseKind>(embedded?'CORRECTION_REVIEW':receivedIntent?.caseKind??'CORRECTION_REVIEW');
+ const [originalReference,setOriginalReference]=useState(prefilledOriginalReference?.slice(0,80)??receivedIntent?.originalReference??routeOriginalReference??'');
+ useEffect(()=>{
+  if(prefilledOriginalReference!==undefined){setOriginalReference(prefilledOriginalReference.slice(0,80));return;}
+  if(routeOriginalReference&&!receivedIntent)setOriginalReference(routeOriginalReference);
+ },[prefilledOriginalReference,routeOriginalReference,receivedIntent]);
  const [reason,setReason]=useState('');
  const [desiredOutcome,setDesiredOutcome]=useState('');
  const [changeKind,setChangeKind]=useState<ProposedAttributionField|''>('');
@@ -188,7 +193,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
    // Skip payer-only history claims for an exact notice allocation and allow
    // the existing SQL trigger to verify the recipient's Auth-owned TIN link.
    // For ordinary correction inquiries, retain the legacy payer claim flow.
-   const recipientAllocation=receivedAllocationForReference(receivedIntent,originalReference);
+   const recipientAllocation=targetAllocationId?.trim()||receivedAllocationForReference(receivedIntent,originalReference);
    if(!recipientAllocation){
      const {error:sessionClaimError}=await supabase.rpc('taxpay_claim_story1_session',{p_session_id:getStorySessionId()});
      if(sessionClaimError){setMessage(labels.fail);return;}
@@ -212,8 +217,9 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
     return;
    }
    persisted=true;
-   clearReceivedPaymentCaseIntent();setReceivedIntent(null);
-   setCaseKind('CORRECTION_REVIEW');setOriginalReference('');setReason('');setDesiredOutcome('');setChangeKind('');setPreviousValue('');setProposedValue('');
+   if(!embedded){clearReceivedPaymentCaseIntent();setReceivedIntent(null);}
+   setCaseKind('CORRECTION_REVIEW');setOriginalReference(prefilledOriginalReference?.slice(0,80)??'');
+   setReason('');setDesiredOutcome('');setChangeKind('');setPreviousValue('');setProposedValue('');
    try{const historyLoaded=await load(()=>true);setLoadError(false);if(!historyLoaded){setMessage(labels.savedHistoryFail);return;}}
    catch{setLoadError(true);setMessage(labels.savedHistoryFail);return;}
    setMessage(labels.saved);
@@ -224,14 +230,17 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
   r.office_review_state??''].some(value=>value.toLocaleLowerCase().includes(needle))));
  const focusedCaseExists=selectedInquiryId!==null&&rows.some(row=>row.inquiry_id===selectedInquiryId);
  const form=<form onSubmit={submit} className="space-y-4">
-   <label className="block text-sm font-semibold text-slate-800">{labels.caseType}
+   {!embedded&&<label className="block text-sm font-semibold text-slate-800">{labels.caseType}
     <UiSelect value={caseKind} onChange={e=>setCaseKind(e.target.value as CorrectionCaseKind)} className="mt-2" data-testid="correction-case-type">
      <option value="CORRECTION_REVIEW">{labels.caseCorrection}</option>
      <option value="UNSOLICITED_PAYMENT_REPORT">{labels.caseUnsolicited}</option>
     </UiSelect>
-   </label>
+   </label>}
    <label className="block text-sm font-semibold text-slate-800">{labels.ref}
-    <UiInput required minLength={6} maxLength={80} value={originalReference} onChange={e=>setOriginalReference(e.target.value)}
+    <UiInput required minLength={6} maxLength={80} value={originalReference}
+     onChange={e=>{if(!lockOriginalReference)setOriginalReference(e.target.value);}}
+     readOnly={lockOriginalReference} aria-readonly={lockOriginalReference||undefined}
+     data-testid="correction-original-reference"
      className="mt-2" placeholder="e.g. TPAY-REF-123456" autoComplete="off"/>
    </label>
    <label className="block text-sm font-semibold text-slate-800">{caseKind==='UNSOLICITED_PAYMENT_REPORT'?labels.reportReason:labels.reason}
@@ -260,19 +269,21 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
    <UiButton type="submit" disabled={busy}>{labels.submit}</UiButton>
   </form>;
  return <section id={dashboard?'dashboard-correction-requests':undefined} tabIndex={dashboard?-1:undefined}
-  className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-5" aria-labelledby="inquiry-title">
-  <header className="space-y-2">
+  className={embedded?'space-y-4':'rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-5'}
+  aria-label={embedded?labels.title:undefined} aria-labelledby={embedded?undefined:'inquiry-title'}>
+  {!embedded&&<header className="space-y-2">
    <h2 id="inquiry-title" className="text-xl font-semibold text-taxpay-text">{dashboard?(language==='bn'?'সংশোধনের আবেদন':'Correction Requests'):labels.title}</h2>
    <p className="text-sm leading-6 text-taxpay-muted">{dashboard?(language==='bn'?'আপনার নিজের অ্যাকাউন্টের আবেদন, কারণ ও পর্যালোচনার অবস্থা এখানে দেখুন।':'View your account-linked requests, reasons and current review statuses here.'):labels.intro}</p>
-  </header>
-  {receivedIntent && !dashboard && <p className="rounded-lg border border-taxpay-border p-3 text-sm text-taxpay-muted" role="status" data-testid="received-payment-case-handoff">
+  </header>}
+  {embedded&&<p className="rounded-lg border border-taxpay-border bg-white p-3 text-sm leading-6 text-taxpay-muted">{labels.intro}</p>}
+  {receivedIntent && !dashboard && !embedded && <p className="rounded-lg border border-taxpay-border p-3 text-sm text-taxpay-muted" role="status" data-testid="received-payment-case-handoff">
     {language==='bn'
       ?'প্রাপ্ত পেমেন্টের রেফারেন্স ও অনুরোধের ধরন পূরণ করা হয়েছে। তথ্য যাচাই করে কারণ লিখে জমা দিন। পেমেন্টের মালিকানা সার্ভার যাচাই করবে।'
       :'The received-payment reference and request type are prefilled. Check the details, add your reason and submit. The server will verify account ownership.'}
   </p>}
   {!dashboard && form}
   {message&&<p role="status" aria-live="polite" className="rounded-lg border border-slate-300 p-3 text-sm break-words">{message}</p>}
-  <section aria-labelledby="inquiry-history-title" className="space-y-3">
+  {!embedded&&<section aria-labelledby="inquiry-history-title" className="space-y-3">
    <h3 id="inquiry-history-title" className="text-lg font-semibold text-taxpay-text">{labels.history}</h3>
    {selectedInquiryId&&<p role={focusedCaseExists?'status':'alert'} data-testid="notification-focused-correction-case">
     {focusedCaseExists?labels.focusedCase:!loading?labels.focusedCaseUnavailable:labels.loading}</p>}
@@ -350,7 +361,7 @@ export const CorrectionInquiries:React.FC<Props>=({authenticatedUserId,language,
             </details>}
           ]}/>}
     </div>}
-  </section>
+  </section>}
   {dashboard && <details className="rounded-lg border border-taxpay-border p-3" data-testid="dashboard-new-correction-request">
    <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-taxpay-primary">
      {language==='bn'?'নতুন সংশোধনের আবেদন করুন':'New correction request'}
