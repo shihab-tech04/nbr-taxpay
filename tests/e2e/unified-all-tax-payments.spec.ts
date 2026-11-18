@@ -27,11 +27,56 @@ test('All Tax Payments walk-in uses typed demo taxpayer profiles and one shared 
   await expect(modal.locator('.taxpay-modal__title')).toHaveText('Payment Head');
   await expect(modal.getByRole('progressbar',{name:'Payment progress'})).toHaveAttribute('aria-valuemax','3');
   await expect(modal.getByTestId('other-tax-batch')).toBeVisible();
-  const modes=modal.locator('input[name="unified-payment-mode"]');
-  await expect(modes).toHaveCount(2);
-  await expect(modes.first()).toBeChecked();
-  await modes.last().check();
+  // Reuse the fixed service-choice cards; no duplicate Pay Tax/Other Tax radios.
+  await expect(modal.locator('input[name="unified-payment-mode"]')).toHaveCount(0);
+  const returnChoice = modal.locator('[data-unified-tax-service="TAX_WITH_RETURN"]');
+  const otherChoice = modal.locator('[data-unified-tax-service="OTHER_TAX_PAYMENT"]');
+  await expect(returnChoice).toBeVisible();
+  await expect(returnChoice).toBeEnabled();
+  await expect(otherChoice).toHaveAttribute('aria-pressed', 'true');
+  await returnChoice.click();
+  await expect(modal.getByTestId('unified-return-eligibility')).toContainText('one taxpayer');
+  await expect(otherChoice).toHaveAttribute('aria-pressed', 'true');
   await expect(modal.getByTestId('other-tax-batch')).toBeVisible();
-  await modes.first().check();
-  await expect(modal.getByTestId('other-tax-batch')).toBeVisible();
+});
+
+
+test('a single taxpayer can select Tax with Return and switch back without altering the original Pay Tax journey', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/?action=landing&lang=en');
+  await page.locator('.public-benefits__item[data-benefit="payments"]').click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await dialog.getByRole('button', { name: 'Walk-in Payment' }).click();
+  await dialog.locator('#guest-tin').fill('222222222222');
+  await dialog.locator('.taxpayer-tin-lookup__search').first().click();
+  await dialog.getByRole('button', { name: 'Add taxpayer' }).first().click();
+  await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+  const returnChoice = dialog.locator('[data-unified-tax-service="TAX_WITH_RETURN"]');
+  await expect(returnChoice).toBeVisible();
+  await returnChoice.click();
+  await expect(returnChoice).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.getByTestId('other-tax-batch')).toHaveCount(0);
+  await expect(dialog.locator('#guest-assessment-year')).toBeVisible();
+  await expect(dialog.locator('#guest-tax-amount')).toBeVisible();
+  await dialog.locator('[data-unified-tax-service="OTHER_TAX_PAYMENT"]').click();
+  await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
+  await expect(dialog.locator('[data-unified-tax-service="OTHER_TAX_PAYMENT"]')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('desktop Step 1 unified calculation column fills the taxpayer editor height', async ({ page }) => {
+  await page.setViewportSize({width:1280,height:860});
+  await page.goto('/?action=landing&lang=en');
+  await page.locator('.public-benefits__item[data-benefit="payments"]').click();
+  const dialog=page.getByRole('dialog',{name:'Pay Tax'});
+  await dialog.getByRole('button',{name:'Walk-in Payment'}).click();
+  const geometry = await dialog.evaluate(node => {
+    const left=node.querySelector<HTMLElement>('.payment-flow-embedded__identity > .payment-form-layout__sections');
+    const right=node.querySelector<HTMLElement>('.payment-flow-embedded__identity > .payment-form-summary');
+    if (!left || !right) return null;
+    const l=left.getBoundingClientRect(),r=right.getBoundingClientRect();
+    return {leftBottom:l.bottom,rightBottom:r.bottom,leftX:l.x,rightX:r.x,width:r.width};
+  });
+  expect(geometry).not.toBeNull();
+  expect(geometry!.rightBottom).toBeGreaterThanOrEqual(geometry!.leftBottom-2);
+  expect(geometry!.width).toBeGreaterThan(240);
 });
