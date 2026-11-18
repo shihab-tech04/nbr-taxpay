@@ -647,7 +647,8 @@ test('walk-in self payer keeps multiple heads and years without adding a second 
   await expect(dialog.getByTestId('other-tax-taxpayer')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
   const batch = dialog.getByTestId('other-tax-batch');
-  await expect(batch.getByTestId('other-tax-taxpayer-tabs').getByRole('button')).toHaveCount(1);
+  // One taxpayer needs no switcher; the existing composer intentionally hides it.
+  await expect(batch.getByTestId('other-tax-taxpayer-tabs')).toHaveCount(0);
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
   await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
   await batch.getByRole('checkbox', { name: /Select 68B/ }).check();
