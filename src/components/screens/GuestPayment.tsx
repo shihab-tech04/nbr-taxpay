@@ -807,16 +807,17 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     return `${name || ''}${code ? ` · ${language === 'bn' ? 'কোড' : 'Code'} ${code}` : ''}`;
   };
   const paymentCalculation = otherBatch ? <PaymentLiveSummary language={language} hideService={embedded}
+    compactTaxpayerView={unifiedFlow}
     activeEntryId={step === 2 && !unifiedFlow && forSelf === false ? activeCalculationLineId : undefined}
     onSelectEntry={step === 2 ? lineId => {
       if (!unifiedFlow && forSelf === false) setActiveCalculationLineId(lineId);
       setSummaryJump(current => ({ lineId, requestId: current.requestId + 1 }));
     } : undefined}
     category={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment'}
-    categoryCode={category} tin={batchTaxpayers.length > 1 ? undefined : taxpayerTin}
-    year={otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
-    amount={step === 1 ? null : batchAmount}
-    groupedBreakdown={step > 1 && batchTaxpayers.length > 1 ? batchTaxpayers.map((person, index) => {
+    categoryCode={category} tin={unifiedFlow || batchTaxpayers.length > 1 ? undefined : taxpayerTin}
+    year={unifiedFlow ? undefined : otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
+    amount={step === 1 ? (unifiedFlow ? 0 : null) : batchAmount}
+    groupedBreakdown={(unifiedFlow || (step > 1 && batchTaxpayers.length > 1)) ? batchTaxpayers.map((person, index) => {
       const lines = otherTaxLines.filter(line => line.taxpayerId === person.id);
       return {
         id: person.id,
@@ -825,7 +826,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         countLabel: unifiedFlow
           ? (language === 'bn' ? `${lines.length}টি পেমেন্ট লাইন` : `${lines.length} payment ${lines.length === 1 ? 'line' : 'lines'}`)
           : undefined,
-        amount: lines.length ? otherTaxAllocationTotal(lines) : null,
+        amount: lines.length ? otherTaxAllocationTotal(lines) : unifiedFlow ? 0 : null,
         entries: lines.map(line => {
           const head = otherTaxAllocationHead(line.headId);
           return {
@@ -837,7 +838,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         }),
       };
     }) : undefined}
-    breakdown={batchTaxpayers.length > 1 ? undefined : otherTaxLines.map(line => {
+    breakdown={unifiedFlow || batchTaxpayers.length > 1 ? undefined : otherTaxLines.map(line => {
       const head = otherTaxAllocationHead(line.headId);
       const person = batchTaxpayers.find(t => t.id === line.taxpayerId);
       return {
@@ -846,7 +847,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         detail: `${person?.name ? person.name + ' · ' : ''}${person?.tin || ''} · ${line.assessmentYear}`,
         value: otherTaxAllocationTotal([line])
       };
-    })} /> : <PaymentLiveSummary language={language} hideService={embedded}
+    })} /> : <PaymentLiveSummary language={language} hideService={embedded} compactTaxpayerView={unifiedFlow}
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
     categoryCode={category} tin={taxpayerTin} year={assessmentYear}
     head={category === 'TAX_WITH_RETURN'
