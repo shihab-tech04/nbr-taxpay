@@ -350,7 +350,7 @@ export function AccountCenter({ page }: { page: AccountPage }) {
                          const tin=previewAccount?.tin ?? demoSql.profile?.tinStub ?? null;
                          const kind=typeof tin==='string'?sensitiveProfileKind('tin',tin):null;
                          return tin&&kind?<MaskedProfileValue value={tin} kind={kind}
-                           label={language==='bn'?'করদাতা রেফারেন্স':'Taxpayer reference'} language={language} allowCopy/>:tin??'—';
+                           label={language==='bn'?'করদাতা রেফারেন্স':'Taxpayer reference'} language={language} allowCopy profileContext/>:tin??'—';
                        })()}</dd></div>
                       <div><dt>{language === 'bn' ? 'কর সার্কেল' : 'Tax circle'}</dt><dd>{previewAccount?.taxCircle ?? demoSql.profile?.jurisdictionLabel ?? '—'}</dd></div>
                     </>}

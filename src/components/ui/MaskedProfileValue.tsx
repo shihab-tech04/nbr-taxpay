@@ -33,9 +33,11 @@ export function maskProfileValue(value:string,kind:SensitiveProfileKind):string{
 }
 
 /** Independent, keyboard-accessible reveal state, never persisted to storage. */
-export function MaskedProfileValue({value,kind,label,language,testId,allowCopy=false}:{
-  value:string;kind:SensitiveProfileKind;label:string;language:'en'|'bn';testId?:string;allowCopy?:boolean;
+export function MaskedProfileValue({value,kind,label,language,testId,allowCopy=false,profileContext=false}:{
+  value:string;kind:SensitiveProfileKind;label:string;language:'en'|'bn';testId?:string;allowCopy?:boolean;profileContext?:boolean;
 }){
+  // TIN copy is profile-only. Other fields keep their existing separately authorized copy behavior.
+  const canCopy=allowCopy && (kind!=='tin' || profileContext);
   const [revealed,setRevealed]=useState(false);
   const [copyState,setCopyState]=useState<'idle'|'done'|'failed'>('idle');
   const copyAction=language==='bn'
@@ -60,7 +62,7 @@ export function MaskedProfileValue({value,kind,label,language,testId,allowCopy=f
       className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">
       {revealed?<EyeOff size={18} aria-hidden="true"/>:<Eye size={18} aria-hidden="true"/>}
     </button>
-    {allowCopy&&<button type="button" aria-label={copyAction} title={copyAction}
+    {canCopy&&<button type="button" aria-label={copyAction} title={copyAction}
       onClick={copyValue}
       className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">
       {copyState==='done'?<Check size={18} aria-hidden="true"/>:<Copy size={18} aria-hidden="true"/>}

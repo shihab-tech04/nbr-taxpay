@@ -61,6 +61,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const [view, setView] = useState<'entry' | 'payer' | 'login' | 'payment'>(
     initialDraft || initialReuse || directTravelEntry || parallelEntry ? 'payment' : unifiedEntry ? 'entry' : 'payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [useAccount, setUseAccount] = useState(Boolean(initialDraft || initialReuse || (parallelEntry && (verifiedUser || previewAccount))));
   const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(null);
   // An existing signed-in session must always use the account journey.
@@ -159,7 +160,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const beginPayment = (withAccount: boolean) => {
     if(withAccount&&verifiedUser?.id)
       void recordAccountActivity(verifiedUser.id,'PAYMENT_STARTED','wizard').catch(()=>undefined);
-    setDraftToResume(null); setDraftEntryCompleted(true); setUseAccount(withAccount); setStage(1); setView('payment');
+    setDraftToResume(null); setDraftEntryCompleted(true); setUseAccount(withAccount); setStage(1); setCheckoutOpen(false); setView('payment');
   };
   const beginUnifiedPayment = (account: boolean) => {
     // The new entry collects payment type in Step 2, not at the entry modal.
@@ -201,9 +202,10 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
       title={view === 'login' || view === 'entry'
         ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`)
         : view === 'payment' && unifiedEntry && stage === 4 ? tr('Payment result', 'পেমেন্টের ফলাফল')
+        : view === 'payment' && unifiedEntry && checkoutOpen ? tr('Payment channel', 'পেমেন্ট চ্যানেল')
         : view === 'payment' && travelJourney ? stages[stage - 1]
         : view === 'payment' ? stages[Math.min(stage - 1, stages.length - 1)] : tr('Pay Tax', 'কর পরিশোধ')}
-      progress={view === 'payment' && !(unifiedEntry && stage === 4) ? {
+      progress={view === 'payment' && !(unifiedEntry && (stage === 4 || checkoutOpen)) ? {
         current: stage, total: unifiedEntry ? 3 : 4, label: tr('Steps', 'ধাপ'),
         subtitle: unifiedEntry
           ? `${tr('All Tax Payments', 'সব ধরনের কর পরিশোধ')} › ${useAccount ? tr('Signed-in Payment', 'সাইন-ইন পেমেন্ট') : tr('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট')}`
@@ -285,7 +287,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         data-banner-entry={initialService && view === 'payment' ? 'true' : undefined}
         data-payment-service={view === 'payment' && chosenService ? chosenService.id : undefined}
         className={`tax-service-choice${view === 'payment' && effectiveSelected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
-        {view === 'payment' && <>
+        {view === 'payment' && !checkoutOpen && <>
           <p ref={stepHeadingRef} tabIndex={-1} className={unifiedEntry ? 'tax-service-choice__eyebrow' : 'sr-only'} aria-label={tr(`Step ${stage} of ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`, `ধাপ ${stage} / ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`)}>
             {tr(`Step ${Math.min(stage, stages.length)} of ${stages.length}`, `ধাপ ${Math.min(stage, stages.length)} / ${stages.length}`)}
           </p>
@@ -396,7 +398,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
             initialBeneficiary={payerForSelf === false || parallelEntry ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
             isWithholdingMode={effectiveSelected === 'SOURCE_TAX_DEPOSIT'}
-            onBackToService={returnToService} onStageChange={reportStage} />
+            onBackToService={returnToService} onStageChange={reportStage} onCheckoutChange={setCheckoutOpen} />
         ) : null}
       </section>}
       {exitPromptOpen && (

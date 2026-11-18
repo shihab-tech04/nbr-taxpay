@@ -92,7 +92,7 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
         <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
         <dd className="min-w-0 break-words text-sm font-medium leading-relaxed text-taxpay-text">
           {kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
-            label={tr(label)} language={language} allowCopy/>:value(field,language)}
+            label={tr(label)} language={language} allowCopy profileContext/>:value(field,language)}
         </dd>
       </div>;
     })}
