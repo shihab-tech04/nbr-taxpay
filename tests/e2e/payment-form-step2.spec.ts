@@ -397,10 +397,19 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(modal.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
     const cardGridColumns = await card.locator('.taxpay-taxpayer-row__fields').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length);
     expect(cardGridColumns).toBe(1);
+    const nameField = card.locator('.tin-lookup__name');
+    await expect(nameField).toBeHidden();
     await expect(card.locator('#other-tax-primary-name')).toHaveAttribute('readonly', '');
+    await expect(card.getByRole('heading', { name: locale === 'bn' ? 'করদাতার তথ্য' : 'Taxpayer Information' })).toHaveCount(0);
+
+    await card.locator('#guest-tin').fill('111111111111');
+    await card.getByRole('button', { name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true }).click();
+    await expect(nameField).toBeVisible();
     await expect(card.locator('label[for="other-tax-primary-name"]')).toHaveText(locale === 'bn' ? 'করদাতার নাম' : 'Taxpayer name');
+    await expect(card.locator('#other-tax-primary-name')).toHaveValue(locale === 'bn' ? 'ইউজার 1' : 'User 1');
+    await expect(card.getByTestId('taxpayer-sample-source')).toBeVisible();
+    await expect(modal.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
     const geometry = await modal.locator('.payment-form-section--static').first().evaluate(section => {
-      const card = section.querySelector('[data-testid="other-tax-primary-taxpayer"]')!.getBoundingClientRect();
       const name = section.querySelector('#other-tax-primary-name')!.getBoundingClientRect();
       const tin = section.querySelector('#guest-tin')!.getBoundingClientRect();
       const phone = section.querySelector('#guest-phone')!.getBoundingClientRect();
@@ -410,15 +419,13 @@ for (const locale of ['en', 'bn'] as const) {
     expect(geometry.tinBeforeName).toBe(true);
     expect(geometry.nameBeforeReceipt).toBe(true);
     if (page.viewportSize()!.width > 650) expect(geometry.sameReceiptRow).toBe(true);
-
-    await card.locator('#guest-tin').fill('111111111111');
-    await card.getByRole('button', { name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true }).click();
-    await expect(card.locator('#other-tax-primary-name')).toHaveValue(locale === 'bn' ? 'ইউজার 1' : 'User 1');
     const clear = card.getByRole('button', { name: locale === 'bn' ? 'টিআইএন অনুসন্ধান মুছুন' : 'Clear TIN search' });
     await expect(clear).toBeVisible();
     await clear.click();
     await expect(card.locator('#guest-tin')).toHaveValue('');
+    await expect(nameField).toBeHidden();
     await expect(card.locator('#other-tax-primary-name')).toHaveValue('');
+    await expect(card.getByTestId('taxpayer-sample-source')).toHaveCount(0);
     await expect(clear).toHaveCount(0);
     await expect(card.getByRole('button', { name: locale === 'bn' ? 'খুঁজুন' : 'Search', exact: true })).toBeDisabled();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
