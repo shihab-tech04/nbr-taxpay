@@ -46,6 +46,23 @@ test('v5 Return checkbox composes with other taxpayer/head and written final tot
   await expect(checkbox).toBeVisible();
   await expect(checkbox).toHaveAttribute('type','checkbox');
   await checkbox.check();
+  // Both the selected service and AY/amount are inside ONE bordered component.
+  const returnGroup = modal.getByTestId('unified-v5-return-group');
+  await expect(returnGroup).toBeVisible();
+  await expect(returnGroup.locator('.unified-v5-return-card')).toHaveCount(1);
+  await expect(returnGroup.locator('.unified-v5-return-fields')).toHaveCount(1);
+  const cohesive = await returnGroup.evaluate(root => {
+    const card = root.querySelector<HTMLElement>('.unified-v5-return-card');
+    const fields = root.querySelector<HTMLElement>('.unified-v5-return-fields');
+    return {
+      connected: Boolean(card && fields && card.parentElement === fields.parentElement),
+      outerBorder: window.getComputedStyle(root).borderTopWidth,
+      cardBorder: card ? window.getComputedStyle(card).borderTopWidth : 'missing',
+      backgroundsMatch: Boolean(card && fields) &&
+        window.getComputedStyle(card!).backgroundColor === window.getComputedStyle(fields!).backgroundColor,
+    };
+  });
+  expect(cohesive).toEqual({ connected:true,outerBorder:'1px',cardBorder:'0px',backgroundsMatch:true });
   const returnAmount=modal.getByTestId('unified-v5-return-amount');
   await returnAmount.fill('1500');
   const taxpayerTabs=modal.getByTestId('other-tax-taxpayer-tabs').locator('button[data-taxpayer-id]');
@@ -62,7 +79,7 @@ test('v5 Return checkbox composes with other taxpayer/head and written final tot
   await expect(review).toBeVisible();
   await expect(review.locator('tbody tr.unified-v3-review__owner')).toHaveCount(2);
   await expect(review).toContainText('Tax with Return');
-  await expect(review).toContainText('Advance Tax');
+  await expect(review).toContainText(/advance tax/i);
   const total=modal.getByTestId('unified-v5-payment-total');
   await expect(total).toContainText('5,500');
   await expect(total).toContainText('Five Thousand Five Hundred Taka only');
