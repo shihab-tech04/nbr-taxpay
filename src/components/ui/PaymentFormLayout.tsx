@@ -156,7 +156,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
           <summary>
             <span className="payment-form-summary__taxpayer-name">
               <strong>{group.label}</strong>
-              <small className="payment-form-summary__taxpayer-identity">{bn ? 'টিআইএন' : 'TIN'}: {group.tin ? <MaskedSummaryTin tin={group.tin} language={language} /> : '—'} · {countLabel}</small>
+              <small className="payment-form-summary__taxpayer-identity">{bn ? 'টিআইএন' : 'TIN'}: {group.tin ? group.tin.slice(0, 3) + '****' : '—'} · {countLabel}</small>
             </span>
             <span className="payment-form-summary__taxpayer-total">{group.amount === null ? '—' : formatCurrency(group.amount, language)}</span>
             <ChevronDown size={16} aria-hidden="true" />
@@ -188,6 +188,9 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
                 : <div key={entryIndex} className="payment-form-summary__taxpayer-item">{contents}</div>;
               }) : <p className="payment-form-summary__taxpayer-empty">{bn ? 'পরের ধাপে খাত ও পরিমাণ নির্বাচন করুন।' : 'Select payment heads and amounts in Step 2.'}</p>}
             </div>
+            {group.tin && <div className="payment-form-summary__taxpayer-tin-tools" aria-label={bn ? 'করদাতার টিআইএন নিয়ন্ত্রণ' : 'Taxpayer TIN controls'}>
+              <MaskedSummaryTin tin={group.tin} language={language} />
+            </div>}
           </div>
         </details>;
         })}
