@@ -205,6 +205,7 @@ test('Other Tax has five v11 groups, never Return, and uses in-place clickable c
   await batch.locator('[data-head-group="Others"] summary').click();
   await expect(batch.getByRole('checkbox', { name: /Select 19AAAAA/ })).toBeDisabled();
   await expect(batch.locator('[data-head-row="5"]')).toContainText('Historical section 19AAAAA was omitted in 2022; not available for new payments.');
+  await expect(batch.locator('[data-head-row="5"] span.text-rose-700')).toHaveCSS('font-size', '14px');
 });
 
 test('all five original non-return liability groups keep an editable year and amount through payment review', async ({ page }) => {
