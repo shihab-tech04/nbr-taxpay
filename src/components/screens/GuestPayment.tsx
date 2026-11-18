@@ -806,6 +806,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const code = governmentAccountingCode(category, entityType);
     return `${name || ''}${code ? ` · ${language === 'bn' ? 'কোড' : 'Code'} ${code}` : ''}`;
   };
+  // Display only valid entered amounts during editing; financial validation
+  // still uses batchAmount/storyAmountMinor and rejects ANY unfinished allocation.
+  // Preserve exact-cent arithmetic and never submit the partial display total.
+  const v5EnteredAmountTotal = unifiedFlow && otherBatch
+    ? sumGuestAmounts(otherTaxLines.map(line => line.amount)
+        .filter(raw => parseGuestAmount(raw) !== null))
+    : null;
+  const v5IncompleteAmounts = unifiedFlow && otherBatch &&
+    otherTaxLines.some(line => parseGuestAmount(line.amount) === null);
   const paymentCalculation = otherBatch ? <PaymentLiveSummary language={language} hideService={embedded}
     compactTaxpayerView={unifiedFlow}
     activeEntryId={step === 2 && !unifiedFlow && forSelf === false ? activeCalculationLineId : undefined}
@@ -816,7 +825,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     category={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment'}
     categoryCode={category} tin={unifiedFlow || batchTaxpayers.length > 1 ? undefined : taxpayerTin}
     year={unifiedFlow ? undefined : otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
-    amount={step === 1 ? (unifiedFlow ? 0 : null) : batchAmount}
+    amount={step === 1 ? (unifiedFlow ? 0 : null) : unifiedFlow ? v5EnteredAmountTotal : batchAmount}
+    helpText={v5IncompleteAmounts && step > 1 ? (language === 'bn'
+      ? 'শুধু পূরণ করা পরিমাণ যোগ করা হয়েছে। এগোনোর আগে সব নির্বাচিত খাতের পরিমাণ দিন।'
+      : 'Total includes entered amounts only. Complete every selected head before continuing.') : undefined}
     groupedBreakdown={(unifiedFlow || (step > 1 && batchTaxpayers.length > 1)) ? batchTaxpayers.map((person, index) => {
       const lines = otherTaxLines.filter(line => line.taxpayerId === person.id);
       return {
@@ -826,7 +838,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         countLabel: unifiedFlow
           ? (language === 'bn' ? `${lines.length}টি পেমেন্ট লাইন` : `${lines.length} payment ${lines.length === 1 ? 'line' : 'lines'}`)
           : undefined,
-        amount: lines.length ? otherTaxAllocationTotal(lines) : unifiedFlow ? 0 : null,
+        amount: unifiedFlow
+          ? sumGuestAmounts(lines.map(line => line.amount).filter(raw => parseGuestAmount(raw) !== null))
+          : lines.length ? otherTaxAllocationTotal(lines) : null,
         entries: lines.map(line => {
           const head = otherTaxAllocationHead(line.headId);
           return {
@@ -865,7 +879,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       { label: language === 'bn' ? 'সার্ভিস চার্জ' : 'Service charge', value: 0 }
     ] : selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountRawForHead(head.id)) })) : undefined} />;
   const inlinePaymentCalculation = embedded && mobilePaymentFooter ? null : paymentCalculation;
-  const mobileSummaryTotal = otherBatch ? (step === 1 ? null : batchAmount) : summedAmount;
+  const mobileSummaryTotal = otherBatch
+    ? (step === 1 ? (unifiedFlow ? 0 : null) : unifiedFlow ? v5EnteredAmountTotal : batchAmount)
+    : summedAmount;
 
   const taxpayerLookupResult = (
     <div className="tin-lookup__result" role="status" aria-live="polite" data-lookup-state={tinLookupState}>
