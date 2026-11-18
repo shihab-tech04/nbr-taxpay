@@ -62,6 +62,11 @@ test('locked legacy Other Tax uses original functionality and refined two-column
   await expect(summary.locator('.payment-form-summary__entry--link[data-active="true"]')).toHaveCount(1);
   await expect(summary.locator('.payment-form-summary__entry--link[data-active="true"]')).toContainText('68A');
   await expect(second).toHaveAttribute('open','');
+  // Focusing an editor never forces a closed card to open; its header still signals the matching line.
+  await second.locator('summary').click();
+  await expect(second).not.toHaveAttribute('open','');
+  await expect(second).toHaveCSS('border-top-color','rgb(180, 198, 214)');
+  await second.locator('summary').click();
   await expect(grouped.locator('details').first().locator('summary')).toContainText('23');
   await expect(grouped.locator('details').nth(1).locator('summary')).toContainText('45');
   await first.locator('.payment-form-summary__taxpayer-item').first().click();
