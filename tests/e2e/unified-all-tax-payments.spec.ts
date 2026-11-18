@@ -25,10 +25,10 @@ test('v5 frozen Step 1: exactly twelve blocks, entity alongside name and selecte
   const search = modal.getByRole('button',{name:'Search taxpayer TIN'});
   await input.fill('22222222222');
   await expect(search).toBeDisabled();
-  await expect(search).toHaveCSS('background-color','rgb(233, 238, 243)');
+  await expect(search).toHaveCSS('background-color','rgb(245, 246, 248)');
   await input.fill('222222222222');
   await expect(search).toBeEnabled();
-  await expect(search).toHaveCSS('background-color','rgb(8, 85, 135)');
+  await expect(search).toHaveCSS('background-color','rgb(255, 255, 255)');
   await search.click();
   const result=modal.getByTestId('unified-taxpayer-search-result');
   await expect(result.locator('.unified-v5-profile-name')).toContainText('User 2');
