@@ -32,6 +32,9 @@ async function mockAccount(page:import('@playwright/test').Page, userId:PreviewU
     return route.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify({success:true,simulationOnly:true,data:items})});
   });
+  await page.route('**/functions/v1/demo-story1-taxpay/payments*',route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify({success:true,data:{items:[],total:0}})
+  }));
   await page.goto('/?action=taxpayer_login');
   await page.getByRole('textbox',{name:'User ID'}).fill(userId);
   await page.getByLabel('Password',{exact:true}).fill(userId);
@@ -57,6 +60,9 @@ for(const user of ['user2','user30'] as const){
     await expect(dashboard.getByRole('heading',{name:'Top beneficiaries'})).toBeVisible();
     await expect(dashboard.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
     await expect(dashboard.getByRole('heading',{name:'Follow-ups'})).toBeVisible();
+    const correctionKpi=dashboard.getByRole('button',{name:/Correction Requests/});
+    await expect(correctionKpi).toContainText('0');
+    await expect(correctionKpi).toContainText('View requests');
     await expect(dashboard.getByText('No payment relationships yet')).toBeVisible();
     await expect(dashboard.getByText('No beneficiaries to show')).toBeVisible();
     await expect(dashboard.getByText('Your tax journey is empty')).toBeVisible();
@@ -87,6 +93,9 @@ test('unavailable history must not masquerade as an empty account',async({page},
   await mockAccount(page,'user2',false,true);
   const dashboard=page.getByTestId('dashboard-unified-preview');
   await expect(dashboard.getByTestId('dashboard-overview-total')).toHaveText('—');
+  const correctionKpi=dashboard.getByRole('button',{name:/Correction Requests/});
+  await expect(correctionKpi).toContainText('Count unavailable');
+  await expect(correctionKpi).toContainText('View requests');
   await expect(dashboard.getByText('Payment relationships unavailable')).toBeVisible();
   await expect(dashboard.getByText('Payment recipients unavailable')).toBeVisible();
   await expect(dashboard.getByText('Payment activity unavailable')).toBeVisible();
