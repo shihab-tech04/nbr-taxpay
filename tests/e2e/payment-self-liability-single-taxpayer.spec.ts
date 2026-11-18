@@ -24,6 +24,20 @@ test('walk-in self is single taxpayer while facilitator can add another', async 
   await expect(payment.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
 });
 
+test('walk-in self shows NBR disclaimer only after sample TIN search', async ({ page }) => {
+  await page.goto('/?action=landing');
+  const payment=await openLegacyTaxServiceChoice(page);
+  await enterTaxPayService(payment,'OTHER_TAX','SELF');
+  const card=payment.getByTestId('other-tax-primary-taxpayer');
+  await expect(card.getByTestId('taxpayer-sample-source')).toHaveCount(0);
+  await card.locator('#guest-tin').fill('111111111111');
+  await card.getByRole('button',{name:'Search',exact:true}).click();
+  await expect(card.locator('#other-tax-primary-name')).toHaveValue('User 1');
+  await expect(card.getByTestId('taxpayer-sample-source')).toContainText('Sample only — not NBR verified.');
+  await card.getByRole('button',{name:'Clear TIN search'}).click();
+  await expect(card.getByTestId('taxpayer-sample-source')).toHaveCount(0);
+});
+
 test('signed-in self has no saved beneficiary or additional taxpayer controls', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
   const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
