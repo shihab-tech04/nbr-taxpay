@@ -323,7 +323,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const tinAttempts = useRef<number[]>([]);
   const [incomeTaxType, setIncomeTaxType] = useState<'NON_COMPANY' | 'COMPANY' | null>(null);
   const [taxpayerEntityOverrides, setTaxpayerEntityOverrides] = useState<Record<string, IncomeTaxEntityType>>({});
-  const [unifiedPaymentMode, setUnifiedPaymentMode] = useState<'pay' | 'other'>('pay');
+  const [unifiedReturnSelectionNotice, setUnifiedReturnSelectionNotice] = useState('');
   
 
   // Category and Head selection
@@ -1784,10 +1784,75 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     </section>
   );
 
+
+  // The approved service choice is shared by the existing Other Tax composer and
+  // the exclusive Return form. Never silently delete multi-taxpayer allocations.
+  const selectUnifiedTaxService = (next: 'TAX_WITH_RETURN' | 'OTHER_TAX_PAYMENT') => {
+    setUnifiedReturnSelectionNotice('');
+    if (next === category) return;
+    if (next === 'TAX_WITH_RETURN') {
+      if (batchTaxpayers.length !== 1) {
+        setUnifiedReturnSelectionNotice(language === 'bn'
+          ? 'রিটার্নসহ করের জন্য একজন করদাতা রাখুন। প্রথম ধাপে ফিরে অতিরিক্ত করদাতা সরান।'
+          : 'Tax with Return is for one taxpayer. Go Back to Taxpayer Information and remove the additional taxpayer.');
+        return;
+      }
+      if (otherTaxLines.length > 0) {
+        setUnifiedReturnSelectionNotice(language === 'bn'
+          ? 'রিটার্নসহ করের আগে Other Tax-এর নির্বাচিত খাতগুলো সরান।'
+          : 'Remove the selected Other Tax heads before switching to Tax with Return.');
+        return;
+      }
+      const type = entityTypeForTin(taxpayerTin);
+      if (!type) {
+        setUnifiedReturnSelectionNotice(language === 'bn'
+          ? 'টিআইএন তথ্য থেকে করদাতার আয়করের ধরন যাচাই করুন।'
+          : 'Verify the taxpayer income-tax type from their TIN profile first.');
+        return;
+      }
+      setIncomeTaxType(type);
+      setSelectedHeadIds([]);
+      setCategory('TAX_WITH_RETURN');
+    } else {
+      setCategory('OTHER_TAX_PAYMENT');
+      setSelectedHeadIds([]);
+    }
+    setVerifiedReference(null);
+    clearValidationError();
+  };
+
+  const unifiedServiceChoice = unifiedFlow ? (
+    <section className="payment-unified-service-selection" aria-labelledby="unified-service-heading">
+      <h3 id="unified-service-heading" className="tax-service-choice__entry-heading">
+        {language === 'bn' ? 'কোন ধরনের কর পরিশোধ করতে চান?' : 'Which tax would you like to pay?'}
+      </h3>
+      <div className="tax-service-choice__grid tax-service-choice__tax-grid" role="group" aria-labelledby="unified-service-heading">
+        {([
+          {id:'TAX_WITH_RETURN' as const, Icon:FileText, en:'Tax with Return', bn:'রিটার্নসহ কর', descriptionEn:'Section 173', descriptionBn:'ধারা ১৭৩'},
+          {id:'OTHER_TAX_PAYMENT' as const, Icon:CreditCard, en:'Other Tax', bn:'অন্যান্য কর', descriptionEn:'Other tax payments.', descriptionBn:'অন্যান্য কর পরিশোধ।'},
+        ]).map(({id, Icon, en, bn, descriptionEn, descriptionBn}) => (
+          <button type="button" key={id} data-unified-tax-service={id}
+            className="tax-service-choice__card" aria-pressed={category === id}
+            onClick={() => selectUnifiedTaxService(id)}>
+            <span className="tax-service-choice__icon"><Icon size={22} strokeWidth={1.9} aria-hidden="true"/></span>
+            <span className="tax-service-choice__copy">
+              <strong>{language === 'bn' ? bn : en}</strong>
+              <span className="tax-service-choice__description">{language === 'bn' ? descriptionBn : descriptionEn}</span>
+            </span>
+            <span className="tax-service-choice__radio" aria-hidden="true"><span/></span>
+          </button>
+        ))}
+      </div>
+      {unifiedReturnSelectionNotice && <p role="alert" className="payment-unified-service-selection__notice" data-testid="unified-return-eligibility">
+        {unifiedReturnSelectionNotice}
+      </p>}
+    </section>
+  ) : null;
+
   const legacySourceAmount = initialReuse?.formPayload.legacySourceAmount;
 
   return (
-    <div lang={language === 'bn' ? 'bn' : 'en'} className={`${embedded ? 'payment-flow-embedded' : 'max-w-7xl mx-auto space-y-6 pb-12'} ${language === 'bn' ? 'font-bengali' : ''}`}>
+    <div lang={language === 'bn' ? 'bn' : 'en'} className={`${embedded ? 'payment-flow-embedded' : 'max-w-7xl mx-auto space-y-6 pb-12'} ${unifiedFlow ? 'payment-flow-embedded--unified' : ''} ${language === 'bn' ? 'font-bengali' : ''}`}>
       {sourcePaymentId && <p role="status" data-testid="pay-again-reuse-notice" className="rounded-lg border border-taxpay-border bg-taxpay-light p-3 text-sm text-taxpay-dark">
         {language==='bn'?'আগের পেমেন্ট থেকে তথ্য কপি করা হয়েছে: ':'Copied from previous payment: '}
         <strong className="break-all">{sourcePaymentId}</strong>.
@@ -2101,27 +2166,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
         {/* STEP 2: Head Selection & Financial Amounts */}
         {step === 2 && (otherBatch ? (
           <>
-          {unifiedFlow && <div className="payment-unified-mode" role="group" aria-label={language === 'bn' ? 'পেমেন্টের ধরন' : 'Payment type'}>
-            <p className="text-sm font-semibold text-taxpay-dark">{language === 'bn' ? 'পেমেন্টের ধরন নির্বাচন করুন' : 'Select payment type'}</p>
-            <div className="payment-unified-mode__choices">
-              {(['pay','other'] as const).map(mode => <label key={mode} className="payment-unified-mode__option">
-                <input type="radio" name="unified-payment-mode" checked={unifiedPaymentMode===mode}
-                  onChange={() => setUnifiedPaymentMode(mode)} />
-                <span>{mode==='pay' ? (language === 'bn' ? 'কর পরিশোধ' : 'Pay Tax') : (language === 'bn' ? 'অন্যান্য কর' : 'Other Tax')}</span>
-              </label>)}
-            </div>
-          </div>}
-          {unifiedFlow && unifiedPaymentMode==='pay' && batchTaxpayers.length===1 && !otherTaxLines.length && <button type="button"
-            className="payment-unified-return" onClick={() => {
-              const type = entityTypeForTin(taxpayerTin);
-              if (!type) return;
-              setIncomeTaxType(type);
-              setSelectedHeadIds([]);
-              setCategory('TAX_WITH_RETURN');
-            }}>
-            {language === 'bn' ? 'রিটার্নসহ কর' : 'Tax with Return'}
-          </button>}
-          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} remarks={unifiedFlow ? undefined : paymentRemarksControl}
+          <OtherTaxBatchComposer language={language} taxpayers={batchTaxpayers} summary={inlinePaymentCalculation} serviceSelection={unifiedFlow ? unifiedServiceChoice : undefined} maskTaxpayerTin={unifiedFlow} remarks={unifiedFlow ? undefined : paymentRemarksControl}
             lines={otherTaxLines} suggestionTaxpayerIds={ownAccountTax ? { primary: demoConsentActor } : undefined}
             preserveSourcePaymentAmounts={Boolean(sourcePaymentId)} focusRequest={summaryJump} onChange={next => {
               setOtherTaxLines(next);
@@ -2141,14 +2186,8 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
           </>
         ) : (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__payment' : ''}`}>
-            {unifiedFlow && category==='TAX_WITH_RETURN' && <div className="payment-unified-return-back">
-              <button type="button" onClick={() => {
-                setCategory('OTHER_TAX_PAYMENT');
-                setSelectedHeadIds([]);
-                setVerifiedReference(null);
-              }}>{language === 'bn' ? 'অন্যান্য কর পরিশোধে ফিরুন' : 'Back to payment heads'}</button>
-            </div>}
             <div className="payment-form-layout__sections">
+            {unifiedFlow && unifiedServiceChoice}
             <PaymentFormSection number={3} staticView={embedded} title={language === 'bn' ? 'পরিশোধের উদ্দেশ্য' : 'Payment purpose'} description={embedded && category === 'TAX_WITH_RETURN' ? (language === 'bn' ? 'আয়করের ধরন নির্বাচন করুন' : 'Choose the income tax type') : (language === 'bn' ? 'করদাতার ধরন ও প্রযোজ্য পেমেন্ট খাত নির্বাচন করুন' : 'Choose the taxpayer type and applicable payment head')}>
             {verifiedReference && <p className="text-xs text-slate-600" role="status">{language === 'bn' ? `NBR রেফারেন্স ${verifiedReference.reference} থেকে করবর্ষ ও পরিমাণ পূরণ করা হয়েছে।` : `Assessment year and amount filled from NBR reference ${verifiedReference.reference}.`}</p>}
             {!isWithholdingMode && !unifiedFlow && <fieldset className="payment-form-radio-fieldset">
