@@ -1812,18 +1812,26 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   </>);
 
   const paymentRemarksControl = (
-    <section className="rounded-lg border border-taxpay-border bg-white p-3 sm:p-4" data-testid="challan-remarks-field">
-      <label htmlFor="guest-payment-remarks" className="mb-2 block text-sm font-semibold text-taxpay-dark">
-        {copy.remarks}
-      </label>
-      <textarea id="guest-payment-remarks" rows={3} value={paymentRemarks}
-        maxLength={4000} aria-describedby="guest-payment-remarks-limit"
-        onChange={event => setPaymentRemarks(event.target.value)}
-        placeholder={copy.remarksPlaceholder}
-        className="min-h-24 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary" />
-      <p id="guest-payment-remarks-limit" className="mt-1 text-xs text-slate-600">
-        {language === 'bn' ? 'সর্বোচ্চ ৪,০০০ অক্ষর' : 'Maximum 4,000 characters'}
-      </p>
+    <section className={unifiedFlow ? 'unified-v5-remarks-section' : 'rounded-lg border border-taxpay-border bg-white p-3 sm:p-4'}
+      data-testid="challan-remarks-field">
+      {unifiedFlow && <h3 className="unified-v5-remarks-heading">
+        {language === 'bn' ? 'পেমেন্টের মন্তব্য / ইনভয়েস রেফারেন্স' : 'Payment Remarks / Invoice Reference'}
+        <small>{language === 'bn' ? '(ঐচ্ছিক)' : '(Optional)'}</small>
+      </h3>}
+      <div className={unifiedFlow ? 'unified-v5-remarks-body' : undefined}>
+        <label htmlFor="guest-payment-remarks"
+          className={unifiedFlow ? 'sr-only' : 'mb-2 block text-sm font-semibold text-taxpay-dark'}>
+          {copy.remarks}
+        </label>
+        <textarea id="guest-payment-remarks" rows={unifiedFlow ? 4 : 3} value={paymentRemarks}
+          maxLength={4000} aria-describedby="guest-payment-remarks-limit"
+          onChange={event => setPaymentRemarks(event.target.value)}
+          placeholder={copy.remarksPlaceholder}
+          className="min-h-24 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary" />
+        <p id="guest-payment-remarks-limit" className="mt-1 text-xs text-slate-600">
+          {language === 'bn' ? 'সর্বোচ্চ ৪,০০০ অক্ষর' : 'Maximum 4,000 characters'}
+        </p>
+      </div>
     </section>
   );
 
