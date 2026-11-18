@@ -285,7 +285,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         data-banner-entry={initialService && view === 'payment' ? 'true' : undefined}
         className={`tax-service-choice${view === 'payment' && effectiveSelected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
         {view === 'payment' && <>
-          <p ref={stepHeadingRef} tabIndex={-1} className="tax-service-choice__eyebrow" aria-label={tr(`Step ${stage} of ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`, `ধাপ ${stage} / ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`)}>
+          <p ref={stepHeadingRef} tabIndex={-1} className="sr-only" aria-label={tr(`Step ${stage} of ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`, `ধাপ ${stage} / ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`)}>
             {tr(`Step ${Math.min(stage, stages.length)} of ${stages.length}`, `ধাপ ${Math.min(stage, stages.length)} / ${stages.length}`)}
           </p>
           <ol className="tax-service-choice__progress sr-only" aria-label={tr('Payment stages', 'পেমেন্টের ধাপ')}>
@@ -300,13 +300,6 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
               </li>
             )})}
           </ol>
-        </>}
-        {view === 'payment' && chosenService && !unifiedEntry && <>
-          <p className="tax-service-choice__selected-service">
-            <span>{tr('Selected payment service', 'নির্বাচিত কর পরিশোধ সেবা')}</span>
-            <strong data-payment-service={chosenService.id}>{tr(chosenService.en, chosenService.bn)}</strong>
-            {!travelJourney && <span>{payerForSelf ? tr('My tax liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}</span>}
-          </p>
         </>}
         {view === 'entry' ? (
           alreadySignedIn
