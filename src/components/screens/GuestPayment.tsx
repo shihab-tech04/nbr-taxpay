@@ -2655,15 +2655,27 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               <span className="payment-flow-embedded__action-long">{unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to final preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
             </button>
           </>) : step === 3 ? (<>
-            <button type="button" className="tax-service-choice__cancel" onClick={() => setStep(2)} disabled={isProcessing}>
-              <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
+            <button type="button" className="tax-service-choice__cancel"
+              onClick={unifiedFlow && unifiedCheckout ? backToUnifiedPreview : () => setStep(2)}
+              disabled={isProcessing}>
+              <ArrowLeft size={17} aria-hidden="true" />
+              {unifiedFlow && unifiedCheckout
+                ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় ফিরুন' : 'Back to Final Preview')
+                : commonCopy.btnBack}
             </button>
-            <button type="button" className="tax-service-choice__continue" onClick={handleExecutePayment} disabled={batchRecoveryError || isProcessing || !paymentChannel || !paymentMethod || !acknowledged || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))} aria-busy={isProcessing}>
-              {paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}{paymentChannel === 'OTC'
-                ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
-                : unifiedFlow
-                  ? (language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment')
-                  : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}
+            <button type="button" className="tax-service-choice__continue"
+              onClick={unifiedFlow && !unifiedCheckout ? openUnifiedCheckout : handleExecutePayment}
+              disabled={batchRecoveryError || isProcessing || !storyAmountSupported || (otherBatch && !batchValid) ||
+                (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) ||
+                ((!unifiedFlow || unifiedCheckout) && (!paymentChannel || !paymentMethod || !acknowledged))}
+              aria-busy={isProcessing}>
+              {unifiedFlow && !unifiedCheckout
+                ? <><CreditCard size={18} aria-hidden="true"/>{language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment'}</>
+                : <>{paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}
+                  {paymentChannel === 'OTC'
+                    ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
+                    : unifiedFlow ? (language === 'bn' ? 'পরিশোধ নিশ্চিত করুন' : 'Confirm payment')
+                    : (language === 'bn' ? `${formatCurrency(totalAmount, language)} পরিশোধ করুন` : `Pay ${formatCurrency(totalAmount, language)}`)}</>}
             </button>
           </>) : null}
         </div>, modalFooterTarget
