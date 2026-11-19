@@ -14,21 +14,29 @@ permissions:
   contents: read
 jobs:
   verify-and-export-public-storage:
+    strategy:
+      fail-fast: false
+      matrix:
+        project_id: [eyqhoavnitkrajvyqvxn, gmuhitmaynfhipcvbvkh]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout approved repository source
         uses: actions/checkout@v4
-      - name: Download, checksum and offline-restore actual public Storage bytes in Original and V2
+      - name: Download, checksum and offline-restore actual public Storage bytes in selected project
+        env:
+          PROJECT_ID: ${{ matrix.project_id }}
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import hashlib, json, pathlib, shutil, tarfile, urllib.request, urllib.parse, time
+          import hashlib, json, pathlib, shutil, tarfile, urllib.request, urllib.parse, urllib.error, time, os, sys
           manifest=json.load(open('.github/recovery/taxpay-storage-integrity-manifest.json'))
           assert manifest['sourceProjectId']=='eyqhoavnitkrajvyqvxn'
           assert len(manifest['objects'])==21 and manifest['totalBytes']==24474931
-          projects=('eyqhoavnitkrajvyqvxn','gmuhitmaynfhipcvbvkh')
+          project=os.environ['PROJECT_ID']
+assert project in ('eyqhoavnitkrajvyqvxn','gmuhitmaynfhipcvbvkh')
+projects=(project,)
           root=pathlib.Path('storage-export')
           live=root/'source-storage'
           live.mkdir(parents=True,exist_ok=True)
@@ -50,7 +58,12 @@ jobs:
                               assert response.status==200
                               content=response.read(5242881)
                           break
-                      except (TimeoutError, OSError):
+                      except urllib.error.HTTPError as exc:
+                diagnostic=exc.read(800).decode('utf-8','replace')
+                print(f'SUPABASE_STORAGE_HTTP_ERROR project={project} status={exc.code} detail={diagnostic}',file=sys.stderr)
+                if exc.code not in (408,429,500,502,503,504) or attempt==2: raise
+                time.sleep(attempt+1)
+            except (TimeoutError, OSError):
                           if attempt==2: raise
                           time.sleep(attempt+1)
                   assert content is not None
@@ -62,9 +75,9 @@ jobs:
                   dest.write_bytes(content)
                   verified.append({'projectId':project,'bucket':bucket,'path':path,'bytes':len(content),'sha256':digest})
           expected_total=manifest['totalBytes']*len(projects)
-          assert len(verified)==42 and sum(x['bytes'] for x in verified)==expected_total
+          assert len(verified)==21 and sum(x['bytes'] for x in verified)==expected_total
           shutil.copyfile('.github/recovery/taxpay-storage-integrity-manifest.json',root/'storage-integrity-manifest.json')
-          archive=root/'sohojkor-original-v2-public-storage-binaries.tar.gz'
+          archive=root/'sohojkor-public-storage-binaries.tar.gz'
           with tarfile.open(archive,'w:gz') as tf:
               tf.add(live,arcname='source-storage')
           restored=root/'isolated-restore'
@@ -85,8 +98,8 @@ jobs:
                   'scope':'PUBLIC banner and branding objects only; NOT database/Auth recovery',
                   'result':'PASS'}
           (root/'restore-report.json').write_text(json.dumps(report,indent=2)+'\n')
-          print('Verified public Storage objects (Original+V2): 42/42')
-          print('Verified offline binary restore: 42/42')
+          print('Verified public Storage objects in '+project+': 21/21')
+          print('Verified offline binary restore in '+project+': 21/21')
           print('Archive SHA256: '+report['archiveSHA256'])
           shutil.rmtree(live)
           shutil.rmtree(restored)
@@ -94,9 +107,9 @@ jobs:
       - name: Preserve verified binary archive and recovery evidence
         uses: actions/upload-artifact@v4
         with:
-          name: sohojkor-original-v2-public-storage-binaries
+          name: sohojkor-public-storage-${{ matrix.project_id }}
           path: |
-            storage-export/sohojkor-original-v2-public-storage-binaries.tar.gz
+            storage-export/sohojkor-public-storage-binaries.tar.gz
             storage-export/storage-integrity-manifest.json
             storage-export/restore-report.json
           retention-days: 5
