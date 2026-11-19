@@ -812,6 +812,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setSummaryJump(current => ({ lineId, requestId: current.requestId + 1 }));
     } : undefined}
     category={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment'}
+    progressiveHeads={unifiedFlow}
     categoryCode={category} tin={batchTaxpayers.length > 1 ? undefined : taxpayerTin}
     year={otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
     amount={step === 1 ? null : batchAmount}

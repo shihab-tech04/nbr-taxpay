@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, Copy, Eye, EyeOff, ReceiptText } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff, ReceiptText } from 'lucide-react';
 import { formatCurrency } from '../../services/numberFormat';
 import { amountInTakaWords } from '../../services/amountInWords';
 import type { ServiceCategoryCode } from './ServiceCategoryTag';
@@ -65,25 +65,17 @@ interface PaymentSummaryProps {
   onSelectEntry?: (id: string) => void;
   /** Optional active editor line; no behavior change to other payment services. */
   activeEntryId?: string | null;
+  /** Progressive disclosure only for the new parallel multi-taxpayer workspace. */
+  progressiveHeads?: boolean;
 }
 
-/** Mask payment-form identity by default. Full TIN is still available by an
- * explicit reveal/copy gesture; transaction serialization is unchanged. */
+/** Mask payment-form identity by default. Reveal stays available for verification.
+ * Copying a TIN is permitted only inside Profile, never in payment calculation. */
 function MaskedSummaryTin({ tin, language }: { tin: string; language: Language }) {
   const [revealed, setRevealed] = React.useState(false);
-  const [copyState, setCopyState] = React.useState<'idle' | 'copied' | 'failed'>('idle');
   const bn = language === 'bn';
   const visible = revealed ? tin : tin.slice(0, 3) + '****';
 
-  const copyTin = async () => {
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
-      await navigator.clipboard.writeText(tin);
-      setCopyState('copied');
-    } catch {
-      setCopyState('failed');
-    }
-  };
 
   return <span className="payment-form-summary__tin">
     <span className="payment-form-summary__mono" data-testid="payment-summary-tin">{visible}</span>
@@ -93,23 +85,16 @@ function MaskedSummaryTin({ tin, language }: { tin: string; language: Language }
       onKeyDown={event => event.stopPropagation()}>
       {revealed ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
     </button>
-    <button type="button" className="payment-form-summary__tin-action"
-      aria-label={bn ? 'টিআইএন কপি করুন' : 'Copy TIN'}
-      onClick={event => { event.preventDefault(); event.stopPropagation(); void copyTin(); }}
-      onKeyDown={event => event.stopPropagation()}><Copy size={16} aria-hidden="true" /></button>
-    <span className="sr-only" role="status">
-      {copyState === 'copied' ? (bn ? 'টিআইএন কপি হয়েছে' : 'TIN copied')
-        : copyState === 'failed' ? (bn ? 'টিআইএন কপি করা যায়নি' : 'Could not copy TIN') : ''}
-    </span>
   </span>;
 }
 
-export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown, onSelectEntry, activeEntryId }: PaymentSummaryProps) {
+export function PaymentLiveSummary({ language, category, categoryCode, hideService = false, tin, year, head, amount, note, helpText, breakdown, groupedBreakdown, onSelectEntry, activeEntryId, progressiveHeads = false }: PaymentSummaryProps) {
   const bn = language === 'bn';
   const amountWords = amountInTakaWords(amount, language);
   // A bulk selection can contain dozens of entries. Keep a clear, accessible
   // way to reveal every selected head without burying the next taxpayer.
   const [expandedTaxpayerSummaries, setExpandedTaxpayerSummaries] = React.useState<Record<string, boolean>>({});
+  const [visibleHeadsByTaxpayer, setVisibleHeadsByTaxpayer] = React.useState<Record<string, number>>({});
   const renderBreakdownEntry = (item: NonNullable<PaymentSummaryProps['breakdown']>[number], index: number) => {
     const contents = <>
       <span className="payment-form-summary__entry-description">
@@ -153,8 +138,14 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
           const countLabel = group.countLabel ?? (bn ? `${group.entries.length}টি খাত` : `${group.entries.length} ${group.entries.length === 1 ? 'head' : 'heads'}`);
           const previewLimit = 4;
           const canExpand = group.entries.length > previewLimit;
-          const expanded = Boolean(expandedTaxpayerSummaries[group.id]);
-          const visibleEntries = canExpand && !expanded ? group.entries.slice(0, previewLimit) : group.entries;
+          const progressive = progressiveHeads && group.entries.length > 24;
+          const visibleCount = progressive
+            ? Math.min(group.entries.length, Math.max(previewLimit, visibleHeadsByTaxpayer[group.id] ?? previewLimit))
+            : expandedTaxpayerSummaries[group.id] ? group.entries.length : previewLimit;
+          const expanded = visibleCount > previewLimit;
+          const visibleEntries = group.entries.slice(0, visibleCount);
+          const remaining = Math.max(0, group.entries.length - visibleCount);
+          const nextCount = Math.min(20, remaining);
           return <details key={group.id} className="payment-form-summary__taxpayer" open={index === 0}>
           <summary>
             <span className="payment-form-summary__taxpayer-name">
@@ -167,13 +158,24 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
           <div className="payment-form-summary__taxpayer-items">
             {canExpand && <button type="button" className="payment-form-summary__taxpayer-show-all"
               aria-expanded={expanded}
-              onClick={() => setExpandedTaxpayerSummaries(previous => ({ ...previous, [group.id]: !previous[group.id] }))}>
-              <span>{expanded
+              aria-controls={`payment-heads-${group.id}`}
+              onClick={() => {
+                if (progressive) {
+                  setVisibleHeadsByTaxpayer(previous => ({ ...previous,
+                    [group.id]: remaining === 0 ? previewLimit : Math.min(group.entries.length, visibleCount + 20) }));
+                } else {
+                  setExpandedTaxpayerSummaries(previous => ({ ...previous, [group.id]: !previous[group.id] }));
+                }
+              }}>
+              <span>{remaining === 0 && expanded
                 ? (bn ? 'প্রথম চারটি খাত দেখুন' : 'Show first 4 heads')
-                : (bn ? `নির্বাচিত সব ${group.entries.length}টি খাত দেখুন` : `Show all ${group.entries.length} selected heads`)}</span>
-              {!expanded && <small>{bn ? `আরও ${group.entries.length - previewLimit}টি খাত` : `${group.entries.length - previewLimit} more heads`}</small>}
+                : progressive
+                  ? (bn ? `পরবর্তী ${nextCount}টি খাত দেখুন` : `Show next ${nextCount} selected heads`)
+                  : (bn ? `নির্বাচিত সব ${group.entries.length}টি খাত দেখুন` : `Show all ${group.entries.length} selected heads`)}</span>
+              {remaining > 0 && <small>{bn ? `আরও ${remaining}টি খাত` : `${remaining} more heads`}</small>}
             </button>}
             <div className="payment-form-summary__taxpayer-entries"
+              id={`payment-heads-${group.id}`}
               data-testid="selected-taxpayer-head-list"
               data-expanded={canExpand && expanded ? 'true' : undefined}
               role={canExpand && expanded ? 'region' : undefined}
