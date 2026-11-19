@@ -137,7 +137,15 @@ export function TaxpayerTinLookup({
     }}>
     {heading && <h3 className="taxpayer-tin-lookup__heading">{heading}</h3>}
     <div className="taxpayer-tin-lookup__field">
-      <label htmlFor={tinId}>{tinLabel ?? (bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN')}{requiredTin ? ' *' : ''}</label>
+      <div className="taxpayer-tin-lookup__field-heading">
+        <label htmlFor={tinId}>{tinLabel ?? (bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN')}{requiredTin ? ' *' : ''}</label>
+        {Boolean(tin) && !locked && <button type="button" className="taxpayer-tin-lookup__clear"
+          aria-label={bn ? 'টিআইএন অনুসন্ধান মুছুন' : 'Clear TIN search'}
+          title={bn ? 'টিআইএন মুছুন' : 'Clear TIN'}
+          onClick={() => { onClear(); focusTinWithoutOpeningSuggestions(); }}>
+          <X size={17} aria-hidden="true" />
+        </button>}
+      </div>
       <div ref={searchRowRef} className="taxpayer-tin-lookup__search-row taxpay-taxpayer-row__tin-search tin-lookup__row">
         <div className={['taxpayer-tin-lookup__tin-entry', 'taxpay-taxpayer-row__tin-entry', segmented ? 'taxpayer-tin-lookup__tin-entry--segmented' : ''].filter(Boolean).join(' ')}
           data-testid={segmented ? segmentsTestId ?? 'taxpayer-tin-digits' : undefined}
@@ -180,13 +188,7 @@ export function TaxpayerTinLookup({
               // narrow dialog; partial TINs still offer suggestions/keyboard use.
               setShowSuggestions(Boolean(next && suggestedTins?.length && next.length < 12));
             }} />
-          {Boolean(tin) && !locked && <button type="button"
-            className="taxpayer-tin-lookup__clear taxpay-taxpayer-row__tin-clear"
-            aria-label={bn ? 'টিআইএন অনুসন্ধান মুছুন' : 'Clear TIN search'}
-            title={bn ? 'টিআইএন মুছুন' : 'Clear TIN'}
-            onClick={() => { onClear(); focusTinWithoutOpeningSuggestions(); }}>
-            <X size={17} aria-hidden="true" />
-          </button>}
+          
         </div>
         <button type="button" className={['tin-lookup__search', 'taxpayer-tin-lookup__search', canSearch && !disabled ? 'is-ready' : ''].filter(Boolean).join(' ')}
           disabled={disabled || !canSearch} aria-label={searchLabel} onClick={() => { setShowSuggestions(false); onSearch(); }}>
