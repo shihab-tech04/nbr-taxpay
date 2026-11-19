@@ -180,7 +180,7 @@ export function ManageAuthorization() {
       {adding && tab === 'outgoing' && <form id="new-auth-form" className="taxpay-auth-add" onSubmit={e=>void sendRequest(e)}>
         <TaxpayerTinLookup language={language} card heading={tr('Taxpayer Information','করদাতার তথ্য')}
           tinId="new-auth-tin" nameId="new-auth-name" tin={tin} name={matchingAuthName}
-          hideNameField={Boolean(matchingAuthName)}
+          hideNameField
           tinLabel={tr('Taxpayer account reference','করদাতার অ্যাকাউন্ট রেফারেন্স')}
           tinPlaceholder={tr('Enter 13-digit account reference','১৩ সংখ্যার অ্যাকাউন্ট রেফারেন্স লিখুন')}
           maxTinLength={13} canSearch={/^\d{13}$/.test(tin)} disabled={busy} autofocusTin
