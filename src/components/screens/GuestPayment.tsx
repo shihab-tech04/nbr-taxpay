@@ -2224,7 +2224,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               {!signedInAccount && (!otherBatch || ownAccountTax) &&
                 <TaxpayerTinLookup language={language} className="payment-identity__tin" card
                   tinId="guest-tin" nameId="guest-taxpayer-name"
-                  tin={taxpayerTin} hideNameField={Boolean(sampleTaxpayer)}
+                  tin={taxpayerTin} hideNameField={tinLookupState !== 'missing'}
                   name={sampleTaxpayer ? (language === 'bn' ? sampleTaxpayer.nameBn : sampleTaxpayer.nameEn) : ownAccountTax ? accountName : ''}
                   tinLabel={isWithholdingMode ? (language === 'bn' ? 'উইথহোল্ডিং এজেন্টের টিআইএন' : 'Withholding agent’s TIN') : undefined}
                   maxTinLength={ownAccountTax || allowSyntheticDemoTin ? 13 : 12}
