@@ -1,3 +1,4 @@
+import { maskTinForDisplay } from '../../services/tinDisplay';
 import '../../styles/taxpay-unified-table.css';
 // The shared taxpayer lookup result card must be styled on direct Beneficiaries entry.
 import '../../styles/taxpay-payment-form.css';
@@ -726,7 +727,7 @@ export function Beneficiaries(){
                       aria-label={tr('Open profile for ','প্রোফাইল দেখুন: ')+displayName(person)}
                       onClick={event=>{event.preventDefault();setProfileSelection({id:person.id,account:profileAccount});}}>
                       <p className="taxpayer-transaction-row__title">{displayName(person)}{beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)&&<span className="font-normal text-taxpay-muted"> · {beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)}</span>}</p>
-                      <p className="beneficiary-directory__tin tabular-nums">{person.tin}</p>
+                      <p className="beneficiary-directory__tin tabular-nums">{maskTinForDisplay(person.tin)}</p>
                     </a>
                   </div>},
                   {key:'actions',header:tr('Actions','কার্যক্রম'),renderCell:person=><div className="beneficiary-directory__actions" role="group"
@@ -751,7 +752,7 @@ export function Beneficiaries(){
                         aria-label={tr('Open profile for ','প্রোফাইল দেখুন: ')+displayName(person)}
                         onClick={event=>{event.preventDefault();setProfileSelection({id:person.id,account:profileAccount});}}>
                         <span className="block break-words">{displayName(person)}{finalTag&&<span className="font-normal text-taxpay-muted"> · {finalTag}</span>}</span>
-                        <span className="mt-1 block break-all text-sm font-normal tabular-nums text-taxpay-muted">{person.tin}</span>
+                        <span className="mt-1 block break-all text-sm font-normal tabular-nums text-taxpay-muted">{maskTinForDisplay(person.tin)}</span>
                       </a>
                     </div>
                   </div>
@@ -938,7 +939,7 @@ export function Beneficiaries(){
        </div>}>
       <form id="beneficiary-edit-form" className="space-y-3 py-2" onSubmit={event=>void saveEdit(event)}>
         <p className="text-sm text-taxpay-text">{tr('Beneficiary','উপকারভোগী')}: <strong>{displayName(editPerson)}</strong></p>
-        <p className="text-sm text-slate-600">{tr('TIN','টিআইএন')}: <span className="font-mono">{editPerson.tin}</span></p>
+        <p className="text-sm text-slate-600">{tr('TIN','টিআইএন')}: <span className="font-mono">{maskTinForDisplay(editPerson.tin)}</span></p>
         <div><label htmlFor="beneficiary-edit-tag" className="mb-1 block text-sm font-semibold">{tr('Tag / relationship','ট্যাগ / সম্পর্ক')} {editLegacyMove?tr('(optional for list move)','(তালিকা স্থানান্তরে ঐচ্ছিক)'):'*'}</label>
           <SearchableSelect id="beneficiary-edit-tag" required={!editLegacyMove}
             value={beneficiaryChoiceValue(editTag,editRelationship)}
@@ -979,7 +980,7 @@ export function Beneficiaries(){
     {deletePerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Remove beneficiary?','উপকারভোগী সরাবেন?')} ariaLabel={tr('Confirm beneficiary removal','উপকারভোগী সরানো নিশ্চিত করুন')}
       onClose={()=>{if(!busy)setDeletePerson(null);}}
       footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setDeletePerson(null)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="button" variant="primary" disabled={busy} onClick={()=>void confirmRemove()}>{busy?tr('Removing…','সরানো হচ্ছে…'):tr('Remove','সরান')}</UiButton></div>}>
-      <p className="py-2 text-sm text-slate-700">{tr(`Remove ${displayName(deletePerson)} (${deletePerson.tin}) from this saved list? This will not affect payment or tax records.`,`এই সংরক্ষিত তালিকা থেকে ${displayName(deletePerson)} (${deletePerson.tin})-কে সরাবেন? এতে পেমেন্ট বা করের রেকর্ডে কোনো পরিবর্তন হবে না।`)}</p>
+      <p className="py-2 text-sm text-slate-700">{tr(`Remove ${displayName(deletePerson)} (${maskTinForDisplay(deletePerson.tin)}) from this saved list? This will not affect payment or tax records.`,`এই সংরক্ষিত তালিকা থেকে ${displayName(deletePerson)} (${maskTinForDisplay(deletePerson.tin)})-কে সরাবেন? এতে পেমেন্ট বা করের রেকর্ডে কোনো পরিবর্তন হবে না।`)}</p>
       {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
     </TaxPayModal>}
   </section>;
