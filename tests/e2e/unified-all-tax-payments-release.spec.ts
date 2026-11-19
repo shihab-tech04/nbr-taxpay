@@ -28,6 +28,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await add('333333333333');
     await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('2');
     await expect(dialog.getByTestId('unified-taxpayer-workspace')).toBeVisible();
+    if (page.viewportSize()?.width === 1280) await dialog.screenshot({path:'test-results/sohojkor-v5-candidate-stage1-desktop.png'});
     await dialog.getByRole('button', { name: 'Continue to Payment Head' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
@@ -78,6 +79,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(taxpayerSummaries.nth(1)).toContainText('User 3');
     await expect(taxpayerSummaries.nth(0)).toContainText('3,500');
     await expect(taxpayerSummaries.nth(1)).toContainText('3,500');
+    if (page.viewportSize()?.width === 1280) await dialog.screenshot({path:'test-results/sohojkor-v5-candidate-stage2-desktop.png'});
     await expect(calculation).not.toContainText('Show all');
     await expect(dialog.getByRole('button', { name: 'Copy TIN' })).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: 'টিআইএন কপি করুন' })).toHaveCount(0);
@@ -133,6 +135,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(dialog.locator('#guest-payer-name')).toHaveValue('Test Walk-in Payer');
     await expect(dialog.locator('#guest-phone')).toHaveValue('01712345678');
     await expect(dialog.locator('#guest-payment-remarks')).toHaveValue('Assessment payment for sample user 2');
+    if (page.viewportSize()?.width === 1280) await dialog.screenshot({path:'test-results/sohojkor-v5-candidate-stage3-desktop.png'});
 
     // Locked v5 review does not contain payment selection.
     await expect(dialog.getByRole('heading', { name: 'Choose payment channel' })).toHaveCount(0);
