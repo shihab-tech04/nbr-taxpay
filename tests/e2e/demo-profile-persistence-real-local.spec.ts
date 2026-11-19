@@ -1,3 +1,4 @@
+import {maskTinForDisplay} from '../../src/services/tinDisplay';
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test,type BrowserContext,type Page} from '@playwright/test';
 import {demoLoginOtpCompletedState} from './demo-login-test-state';
@@ -126,7 +127,8 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await chooseBeneficiaryOption(dialog,'beneficiary-tag','clients');
     await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
     await expect(first.getByTestId('beneficiary-records')).toContainText(personName);
-    await expect(first.getByTestId('beneficiary-records')).toContainText(tin);
+    await expect(first.getByTestId('beneficiary-records')).toContainText(maskTinForDisplay(tin));
+    await expect(first.getByTestId('beneficiary-records')).not.toContainText(tin);
 
     const firstProfile=await first.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
     expect(firstProfile?.profileId).toBe(firstUser);
@@ -199,7 +201,8 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await expect(second.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
     await expect(selectedListButton(second)).toContainText(listName);
     await expect(second.getByTestId('beneficiary-records')).toContainText(personName);
-    await expect(second.getByTestId('beneficiary-records')).toContainText(tin);
+    await expect(second.getByTestId('beneficiary-records')).toContainText(maskTinForDisplay(tin));
+    await expect(second.getByTestId('beneficiary-records')).not.toContainText(tin);
     const secondProfile=await second.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
     expect(secondProfile?.paymentSessionId).toBe(firstProfile.paymentSessionId);
     await second.reload();
