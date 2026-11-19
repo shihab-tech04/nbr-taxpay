@@ -315,6 +315,10 @@
     text-align:left;
     border-top:1px solid #e2e9f2;
   }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked .unified-v3-review__owner span {
+    display:block;
+    margin:4px 0 0;
+  }
   .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked .unified-v3-review__table tr.unified-v3-review__owner:first-child td {
     border-top:0;
   }
