@@ -52,3 +52,49 @@ test('approved v5 mobile footer keeps full button labels and original calculatio
   const hasOverflow=await page.evaluate(()=>document.documentElement.scrollWidth > window.innerWidth+2);
   expect(hasOverflow).toBe(false);
 });
+
+test('approved v5 Final Preview stacks payment rows on mobile; AY, amount and dual footer remain visible',async({page},info)=>{
+  test.skip(info.project.name!=='mobile-375' && info.project.name!=='mobile-320','Original v5 mobile preview reference');
+  await page.goto('/?action=landing&lang=en');
+  await page.locator('.public-benefits__item[data-benefit="payments"]').click();
+  const dialog=page.getByRole('dialog',{name:'Pay Tax'});
+  await dialog.getByRole('button',{name:'Walk-in Payment'}).click();
+  await dialog.getByTestId('unified-tin-input').fill('222222222222');
+  await dialog.getByRole('button',{name:'Search taxpayer TIN'}).click();
+  await dialog.getByRole('button',{name:'Add taxpayer'}).click();
+  await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+  const batch=dialog.getByTestId('other-tax-batch');
+  await batch.getByTestId('unified-v5-return-checkbox').check();
+  await batch.getByTestId('unified-v5-return-amount').fill('3500');
+  const next=dialog.getByRole('button',{name:'Continue to Final Preview'});
+  await expect(next).toBeEnabled();
+  await next.click();
+
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
+  const table=dialog.locator('.unified-v3-review__table');
+  const row=table.locator('tbody tr:not(.unified-v3-review__owner)').first();
+  await expect(table.locator('thead')).toBeHidden();
+  await expect(table).toHaveCSS('display','block');
+  await expect(row).toHaveCSS('display','grid');
+  await expect(row.locator('td').nth(1)).toHaveAttribute('data-year-prefix','AY ');
+  await expect(row.locator('td').nth(1)).toHaveText('2026-27');
+  await expect(row.locator('td').last()).toContainText('3,500');
+  const owner=table.locator('tbody tr.unified-v3-review__owner').first();
+  await expect(owner.locator('strong')).toContainText('User 2');
+  await expect(owner.locator('span')).toBeVisible();
+  await expect(dialog.getByRole('heading',{name:'Payer and receipt details'})).toBeVisible();
+  await expect(dialog.getByRole('button',{name:'Copy TIN'})).toHaveCount(0);
+
+  const footer=dialog.locator('.taxpay-modal__footer .payment-flow-embedded__footer-actions');
+  const back=footer.getByRole('button',{name:'Back'});
+  const pay=footer.getByRole('button',{name:'Make Payment'});
+  await expect(back).toBeVisible();
+  await expect(pay).toBeVisible();
+  const [backBox,payBox]=await Promise.all([back.boundingBox(),pay.boundingBox()]);
+  expect(backBox).not.toBeNull();expect(payBox).not.toBeNull();
+  expect(Math.abs(backBox!.width-payBox!.width)).toBeLessThanOrEqual(3);
+  await expect(pay).toHaveCSS('font-size','12px');
+  await dialog.screenshot({path:`test-results/sohojkor-v5-candidate-stage3-mobile-${page.viewportSize()!.width}.png`});
+  const excess=await dialog.locator('.taxpay-modal__body').evaluate(el=>el.scrollWidth-el.clientWidth);
+  expect(excess).toBeLessThanOrEqual(2);
+});
