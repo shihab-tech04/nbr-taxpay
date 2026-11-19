@@ -168,7 +168,7 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(payerSecondPage.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
  const ownerDirectory=payerSecondPage.getByTestId('beneficiary-directory-mobile');
  await expect(ownerDirectory).toContainText('User 7',{timeout:15000});
- await expect(ownerDirectory).toContainText('777777777777');
+ await expect(ownerDirectory).toContainText('777*********');
  await payerSecondPage.reload();
  await expect(payerSecondPage.getByTestId('beneficiary-directory-mobile')).toContainText('User 7',{timeout:15000});
  await payerSecondContext.close();

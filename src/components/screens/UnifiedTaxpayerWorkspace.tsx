@@ -1,3 +1,4 @@
+import { maskTinForDisplay } from '../../services/tinDisplay';
 import React, { useState } from 'react';
 import { Search, Trash2, UserRound } from 'lucide-react';
 import { TaxpayerTinLookup, TaxpayerTinSearchResultCard } from '../ui/TaxpayerTinLookup';
@@ -24,7 +25,7 @@ interface Props {
   error?: string;
 }
 
-const mask = (tin: string) => tin ? tin.slice(0, 3) + '*'.repeat(Math.max(0, tin.length - 3)) : '';
+const mask = maskTinForDisplay;
 export function UnifiedTaxpayerWorkspace({
   language, primaryTin, primaryName, additional, confirmedTins,
   allocations, onAddPrimary, onAddAdditional, onRemove, error

@@ -31,6 +31,11 @@ test('optional payer TIN requires lookup and explicit confirmation without chang
   await expect(next).toBeDisabled();
   await payer.getByRole('button', { name: 'Search payer TIN' }).click();
   await expect(payer.locator('#guest-payer-tin-name')).toHaveValue('User 1');
+  const review=payer.getByTestId('walkin-payer-search-result');
+  await expect(review).toContainText('111*********');
+  await expect(review.getByRole('button',{name:'Reveal TIN'})).toBeVisible();
+  await expect(review.getByRole('button',{name:/copy/i})).toHaveCount(0);
+
   await expect(next).toBeDisabled();
   await payer.getByRole('button', { name:'Confirm payer' }).click();
   await expect(dialog.locator('#guest-payer-name')).toHaveValue('User 1');

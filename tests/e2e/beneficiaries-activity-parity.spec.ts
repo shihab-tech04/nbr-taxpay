@@ -75,7 +75,7 @@ for(const language of ['en','bn'] as const){
     const rows=directory.locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
     await expect(rows).toHaveCount(2);
     await expect(rows.first()).toContainText('Shihab');
-    await expect(rows.first()).toContainText('123456789012');
+    await expect(rows.first()).toContainText('123*********');
     await expect(rows.first()).toContainText('Neighbour');
     await expect(screen.locator('.beneficiary-directory__table.taxpay-data-table')).toBeVisible();
     const theme=await screen.locator('.beneficiary-directory__table').evaluate(el=>{
@@ -133,7 +133,7 @@ for(const language of ['en','bn'] as const){
       // The approved identity is name · final tag on one line, bare TIN underneath.
       const identity=rows.first().locator('.beneficiary-directory__person');
       await expect(identity.locator('.taxpayer-transaction-row__title')).toHaveText('Shihab · Neighbour');
-      await expect(identity.locator('.beneficiary-directory__tin')).toHaveText('123456789012');
+      await expect(identity.locator('.beneficiary-directory__tin')).toHaveText('123*********');
       await expect(identity).not.toContainText(t('TIN','টিআইএন')+': ');
       await expect(identity).not.toContainText(t('Tag / relationship','ট্যাগ / সম্পর্ক')+': ');
       // At 1280px the complete two-action column must fit
@@ -150,7 +150,7 @@ for(const language of ['en','bn'] as const){
       expect(layout.mobileVisible).toBe(true);
       // Compact identity: Name · final tag; bare TIN on next line, without prefixes.
       await expect(rows.first().locator('.taxpay-mobile-table-card__title')).toContainText('Shihab · Neighbour');
-      await expect(rows.first().locator('.taxpay-mobile-table-card__title')).toContainText('123456789012');
+      await expect(rows.first().locator('.taxpay-mobile-table-card__title')).toContainText('123*********');
       await expect(rows.first()).not.toContainText(t('TIN','টিআইএন')+': ');
       await expect(rows.first()).not.toContainText(t('Tag / relationship','ট্যাগ / সম্পর্ক')+': ');
     }

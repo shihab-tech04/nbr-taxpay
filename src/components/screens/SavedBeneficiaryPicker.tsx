@@ -1,3 +1,4 @@
+import { maskTinForDisplay } from '../../services/tinDisplay';
 import React, {useEffect, useRef, useState} from 'react';
 import {ChevronDown, ChevronRight} from 'lucide-react';
 import {UiButton} from '../ui/Controls';
@@ -228,7 +229,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
     {!loading&&!checkingIdentity&&!error&&selectedFallback&&<div className="rounded-lg border border-taxpay-border bg-white p-3" data-testid="one-time-tin-selection">
         <p className="font-semibold text-taxpay-text">{tr('One-time taxpayer','একবারের জন্য নির্বাচিত করদাতা')}</p>
         <p className="mt-1 text-sm font-medium text-taxpay-text">{selectedFallback.name}</p>
-        <p className="text-sm text-slate-600">{selectedFallback.tin}</p>
+        <p className="text-sm text-slate-600">{maskTinForDisplay(selectedFallback.tin)}</p>
         <p className="mt-1 text-xs text-slate-600">{tr('Not saved to your beneficiary lists. This does not grant access to private records.','আপনার উপকারভোগীর তালিকায় সংরক্ষিত নয়। এতে ব্যক্তিগত রেকর্ড দেখার অনুমতি মেলে না।')}</p>
         <div className="mt-2 flex flex-wrap gap-2">
           <UiButton type="button" variant="outline" className="min-h-10 text-sm font-semibold" onClick={changeFallback}>{tr('Change taxpayer','করদাতা পরিবর্তন')}</UiButton>
@@ -319,7 +320,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
                       <span className="block break-words text-sm font-semibold text-taxpay-text">
                         {names(person)}{finalTag&&<span className="font-normal text-taxpay-muted"> · {finalTag}</span>}
                       </span>
-                      <span className="block break-all text-xs text-slate-600">{person.tin}</span>
+                      <span className="block break-all text-xs text-slate-600">{maskTinForDisplay(person.tin)}</span>
                     </span>
                   </label>})}
             </div>}

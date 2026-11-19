@@ -54,12 +54,12 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     await page.getByRole('button',{name:'Selected list'}).click();
     await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Family',exact:true}).click();
     const recordRows=()=>page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
-    const row=recordRows().filter({hasText:'012345678901'});
+    const row=recordRows().filter({hasText:'012*********'});
     await expect(row).toContainText('Immutable Beneficiary');
     await row.getByRole('button',{name:'Edit',exact:true}).click();
     let dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
     await expect(dialog.getByText('Immutable Beneficiary')).toBeVisible();
-    await expect(dialog.getByText('012345678901')).toBeVisible();
+    await expect(dialog.getByText('012*********')).toBeVisible();
     await expect(dialog.locator('#beneficiary-edit-name')).toHaveCount(0);
     await expect(dialog.getByRole('textbox')).toHaveCount(0);
     await dialog.locator('#beneficiary-edit-list').click();
@@ -75,7 +75,7 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Clients');
     await expect(page.getByRole('list',{name:'Saved beneficiaries'}).getByText('Immutable Beneficiary')).toBeVisible();
     // Edit the classification WITHOUT a list move; neither name nor TIN may change.
-    const movedRow=recordRows().filter({hasText:'012345678901'});
+    const movedRow=recordRows().filter({hasText:'012*********'});
     await movedRow.getByRole('button',{name:'Edit',exact:true}).click();
     dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
     await expect(dialog.locator('#beneficiary-edit-tag')).toHaveAttribute('data-value','friends_family:father');
@@ -87,7 +87,7 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     await dialog.getByRole('button',{name:'Save changes'}).click();
     // Mobile shows only the leaf tag; the persisted SQL classification remains 'others'.
     await expect(movedRow).toContainText('Immutable Beneficiary · Neighbour representative');
-    await expect(movedRow).toContainText('012345678901');
+    await expect(movedRow).toContainText('012*********');
     await expect(movedRow).not.toContainText('Others · Neighbour representative');
     await page.reload();
     await page.getByRole('button',{name:'Filter',exact:true}).click();
@@ -108,7 +108,7 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     });
     expect(collision.status).toBe(201);
     await page.setViewportSize({width:1440,height:900});
-    const desktopRow=recordRows().filter({hasText:'012345678901'});
+    const desktopRow=recordRows().filter({hasText:'012*********'});
     await desktopRow.getByRole('button',{name:'Edit',exact:true}).click();
     dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
     await expect(dialog.locator('#beneficiary-edit-other-label')).toHaveValue('Neighbour representative');

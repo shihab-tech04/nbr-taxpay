@@ -73,7 +73,7 @@ for(const language of ['en','bn'] as const){
       await add.locator('#beneficiary-name').fill('Saved Contact');
       await chooseBeneficiaryOption(add,'beneficiary-tag','friends_family:father');
       await add.getByRole('button',{name:language==='bn'?'উপকারভোগী যোগ':'Add beneficiary',exact:true}).click();
-      await expect(page.getByTestId('beneficiaries-page')).toContainText('012345678901',{timeout:15_000});
+      await expect(page.getByTestId('beneficiaries-page')).toContainText('012*********',{timeout:15_000});
       expect(await readBeneficiaries()).toEqual([
         {owner_uid:auth.user.id,tin:'012345678901',display_name:'Saved Contact'}
       ]);
@@ -115,7 +115,7 @@ for(const language of ['en','bn'] as const){
       await fallback.getByRole('button',{name:language==='bn'?'এই করদাতাকে নিশ্চিত করুন':'Confirm this taxpayer',exact:true}).click();
       const selected=picker.getByTestId('one-time-tin-selection');
       await expect(selected).toContainText(language==='bn'?'ইউজার 1':'User 1');
-      await expect(selected).toContainText('111111111111');
+      await expect(selected).toContainText('111*********');
       await expect(selected).toContainText(language==='bn'?'সংরক্ষিত নয়':'Not saved to your beneficiary lists');
       await expect(dialog.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
 
@@ -139,7 +139,7 @@ for(const language of ['en','bn'] as const){
       await expect(modalBack).toHaveAttribute('aria-label',backLabel);
       await modalBack.click();
       await expect(dialog.locator('.taxpay-modal__step-count')).toContainText('1/4');
-      await expect(picker.getByTestId('one-time-tin-selection')).toContainText('111111111111');
+      await expect(picker.getByTestId('one-time-tin-selection')).toContainText('111*********');
     }finally{
       await context.close().catch(()=>undefined);
     }

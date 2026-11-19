@@ -1,3 +1,4 @@
+import { maskTinForDisplay } from '../../services/tinDisplay';
 import React from 'react';
 import { ChevronDown, Eye, EyeOff, ReceiptText } from 'lucide-react';
 import { formatCurrency } from '../../services/numberFormat';
@@ -75,7 +76,7 @@ interface PaymentSummaryProps {
 function MaskedSummaryTin({ tin, language }: { tin: string; language: Language }) {
   const [revealed, setRevealed] = React.useState(false);
   const bn = language === 'bn';
-  const visible = revealed ? tin : tin.slice(0, 3) + '****';
+  const visible = revealed ? tin : maskTinForDisplay(tin);
 
 
   return <span className="payment-form-summary__tin">
@@ -142,7 +143,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
             <div className="payment-form-summary__compact-owner-top">
               <div className="payment-form-summary__compact-owner-identity">
                 <strong>{group.label}</strong>
-                <small>{group.tin ? group.tin.slice(0, 3) + '****' : '—'}</small>
+                <small>{group.tin ? maskTinForDisplay(group.tin) : '—'}</small>
               </div>
               <strong className="payment-form-summary__compact-owner-total">
                 {group.amount === null ? '—' : formatCurrency(group.amount, language)}
@@ -176,7 +177,7 @@ export function PaymentLiveSummary({ language, category, categoryCode, hideServi
           <summary>
             <span className="payment-form-summary__taxpayer-name">
               <strong>{group.label}</strong>
-              <small className="payment-form-summary__taxpayer-identity">{bn ? 'টিআইএন' : 'TIN'}: {group.tin ? group.tin.slice(0, 3) + '****' : '—'} · {countLabel}</small>
+              <small className="payment-form-summary__taxpayer-identity">{bn ? 'টিআইএন' : 'TIN'}: {group.tin ? maskTinForDisplay(group.tin) : '—'} · {countLabel}</small>
             </span>
             <span className="payment-form-summary__taxpayer-total">{group.amount === null ? '—' : formatCurrency(group.amount, language)}</span>
             <ChevronDown size={16} aria-hidden="true" />

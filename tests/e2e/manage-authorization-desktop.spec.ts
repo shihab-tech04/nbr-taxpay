@@ -58,6 +58,12 @@ test('recipient accepts, payer confirms 4 digits, and recipient revokes', async 
   await expect(directions.getByRole('button',{name:'Can pay for me'})).toBeVisible();
   await authorization.getByRole('button',{name:'Add'}).click();
   const lookup=authorization.getByTestId('shared-taxpayer-tin-lookup');
+  await expect(lookup.getByTestId('taxpayer-tin-digits').locator('span')).toHaveCount(13);
+  const authTin=lookup.locator('#new-auth-tin');
+  await authTin.fill('2');
+  await expect(page.getByRole('listbox',{name:/Sample TIN suggestions/})).toHaveCount(0);
+  await authTin.fill('');
+
   await authorization.getByLabel('Taxpayer account reference').fill('2222222222222');
   await lookup.getByRole('button',{name:'Search',exact:true}).click();
   await expect(lookup.locator('#new-auth-name')).toHaveValue('Meghna Trading Ltd.');

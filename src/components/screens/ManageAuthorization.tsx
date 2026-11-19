@@ -1,3 +1,4 @@
+import { maskTinForDisplay } from '../../services/tinDisplay';
 import React, { useEffect, useRef, useState } from 'react';
 import { Clock3, Plus, RefreshCw, ShieldCheck, ShieldX, Trash2, UsersRound } from 'lucide-react';
 import { DEMO_USERS, type DemoUserId } from '../../data/demoUsers';
@@ -221,7 +222,7 @@ export function ManageAuthorization() {
             <div className="taxpay-auth-person">
               <div>
                 <h3>{bn ? person.nameBn : person.nameEn}</h3>
-                <p>{tr('Taxpayer reference', 'করদাতার রেফারেন্স')} <span className="taxpay-auth-tin">{person.tin}</span></p>
+                <p>{tr('Taxpayer reference', 'করদাতার রেফারেন্স')} <span className="taxpay-auth-tin">{maskTinForDisplay(person.tin)}</span></p>
               </div>
               <span className={`taxpay-auth-status taxpay-auth-status--${status.toLowerCase()}`}>{statusLabel(status)}</span>
             </div>

@@ -1012,7 +1012,7 @@ test('F-039 signed-in Other Tax combines a saved beneficiary with a confirmed on
   expect(writes).toEqual([]);
   await page.goto('/?action=beneficiaries');
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
-  await expect(page.getByTestId('beneficiaries-page')).toContainText('222222222222');
+  await expect(page.getByTestId('beneficiaries-page')).toContainText('222*********');
   await expect(page.getByTestId('beneficiaries-page')).not.toContainText('444444444444');
 });
 
