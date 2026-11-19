@@ -14,6 +14,10 @@ permissions:
   contents: read
 jobs:
   verify-and-export-public-storage:
+    # Only primary V2 is modified by WS5. Legacy Original is retained as a separately
+    # reported historical-provider diagnostic; never describe its HTTP 402 as PASS.
+    # A V2 recovery failure still fails this workflow and blocks the primary release.
+    continue-on-error: ${{ matrix.project_id == 'eyqhoavnitkrajvyqvxn' }}
     strategy:
       fail-fast: false
       matrix:
