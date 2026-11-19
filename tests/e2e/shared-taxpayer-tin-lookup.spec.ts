@@ -47,7 +47,7 @@ test('every additional Other Tax taxpayer reveals a details review and keeps cle
 
   await primary.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(primary.locator('#other-tax-primary-name')).toHaveValue('User 1');
-  await expect(primary.getByTestId('searched-taxpayer-card')).toHaveCount(0); // Name stays in the single shared lookup card.
+  await expect(primary.getByTestId('searched-taxpayer-card')).toBeVisible(); // One shared masked result card.
   // Match the Travel Tax sequence: preview details first, separate full-width
   // Add action below the preview, and no Add another before confirmation.
   await expect(primary.getByTestId('shared-taxpayer-tin-lookup').getByRole('button', { name: 'Add taxpayer' })).toHaveCount(0);
@@ -85,7 +85,7 @@ test('a valid Other Tax TIN remains addable when the optional name lookup has no
   await expect(primary.getByRole('button', { name: 'Add taxpayer' })).toBeVisible();
   await primary.getByRole('button', { name: 'Add taxpayer' }).click();
   const summary = primary.getByTestId('confirmed-taxpayer-summary');
-  await expect(summary).toContainText('123456789012');
+  await expect(summary).toContainText('123*********');
   await expect(summary).toContainText('Not provided');
   await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
 });
@@ -103,7 +103,7 @@ test('Other Tax follows search, review, add taxpayer, then add another; duplicat
   await primary.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(primary.locator('#other-tax-primary-name')).toHaveValue('User 1');
   await primary.getByRole('button', { name: 'Add taxpayer' }).click();
-  await expect(primary.getByTestId('confirmed-taxpayer-summary')).toContainText('111111111111');
+  await expect(primary.getByTestId('confirmed-taxpayer-summary')).toContainText('111*********');
   await expect(list.getByRole('button', { name: 'Add another taxpayer' })).toBeVisible();
   await list.getByRole('button', { name: 'Add another taxpayer' }).click();
   const additional = list.getByTestId('other-tax-taxpayer').last();
