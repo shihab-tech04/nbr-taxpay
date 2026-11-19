@@ -13,6 +13,15 @@ test('shared TIN/name card is used by normal guest payment, with lookup and clea
   await expect(card.locator('#guest-taxpayer-name')).toHaveAttribute('readonly', '');
   await expect(card.locator('label[for="guest-taxpayer-name"]')).toHaveText('Taxpayer name');
   await card.locator('#guest-tin').fill('111111111111');
+  const [digitsBox,clearBox]=await Promise.all([
+    card.getByTestId('taxpayer-tin-digits').boundingBox(),
+    card.getByRole('button',{name:'Clear TIN search'}).boundingBox(),
+  ]);
+  expect(digitsBox && clearBox).toBeTruthy();
+  if (digitsBox && clearBox) {
+    expect(clearBox.y + clearBox.height, 'Clear stays in the label row, not over any TIN digit').toBeLessThanOrEqual(digitsBox.y + 1);
+  }
+
   await card.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(card.locator('#guest-taxpayer-name')).toHaveValue('User 1');
   const preview = card.getByTestId('searched-taxpayer-card');
