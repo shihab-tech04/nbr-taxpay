@@ -67,8 +67,9 @@ test('guest Other Tax shows one collapsible calculation group per beneficiary an
   await expect(secondGroup.locator('[data-testid="payment-summary-tin"]')).toHaveText('234567890123');
   await secondGroup.getByRole('button', { name: 'Hide TIN' }).click();
   await expect(secondGroup.locator('[data-testid="payment-summary-tin"]')).toHaveText('234****');
-  // TIN reveal remains for verification, but clipboard is Profile-only.
+  // Only Profile permits TIN copying. Calculations retain explicit Reveal/Hide.
   await expect(secondGroup.getByRole('button', { name: 'Copy TIN' })).toHaveCount(0);
+  await expect(secondGroup.getByRole('button', { name: 'টিআইএন কপি করুন' })).toHaveCount(0);
   await groupHeading.click();
   await expect(secondGroup).not.toHaveAttribute('open', '');
   await groupHeading.click();

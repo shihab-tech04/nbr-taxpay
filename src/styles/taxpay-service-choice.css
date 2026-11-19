@@ -2529,7 +2529,10 @@
 }
 .taxpay-unified-entry__actions .tax-service-choice__continue {
   justify-content: center;
-  min-height: 44px;
+  min-height: 48px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 700;
 }
 .taxpay-unified-entry__divider {
   display: flex;
@@ -2549,15 +2552,15 @@
   align-items: center;
   gap: .5rem;
   width: 100%;
-  min-height: 44px;
+  min-height: 48px;
   padding: .7rem 1rem;
-  color: var(--citizen-primary-dark);
+  color: #265ca6;
   background: #fff;
-  border: 1px solid var(--citizen-primary-dark);
-  border-radius: 10px;
+  border: 1px solid #c7d8ee;
+  border-radius: 9px;
   font: inherit;
-  font-size: .875rem;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
 }
 .taxpay-unified-entry__walkin:hover { background: var(--citizen-primary-light); }
