@@ -731,3 +731,31 @@
   color:#fff;
   cursor:not-allowed;
 }
+
+/* Approved v5 mobile: editor then calculation; no unrequested collapsible
+   payment-calculation control in the modal footer. Original Pay Tax untouched. */
+@media (max-width:650px) {
+  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 {
+    display:flex;
+    flex-direction:column;
+    gap:0;
+    min-width:0;
+  }
+  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 > .payment-form-layout__sections {
+    order:1;
+    flex:0 0 auto;
+    min-width:0;
+  }
+  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 > .payment-form-summary {
+    order:2;
+    flex:0 0 auto;
+    min-width:0;
+    width:100%;
+    height:auto;
+    margin:0;
+    border-top:1px solid #dbe3ef;
+    border-radius:0;
+    position:static;
+    overflow:visible;
+  }
+}
