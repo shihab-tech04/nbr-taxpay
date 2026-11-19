@@ -13,7 +13,8 @@ import { parseGuestAmount } from '../../services/guestAmount';
 import { fitsCombinedAllocationCapacity } from '../../services/otherTaxCombinedPayment';
 import { OtherTaxBatchComposer, otherTaxAllocationHead, otherTaxAllocationTotal,
   isOtherTaxHeadEligible, OTHER_TAX_YEARS, type OtherTaxTaxpayer, type OtherTaxAllocation } from './OtherTaxBatchComposer';
-import { TaxpayerTinLookup } from '../ui/TaxpayerTinLookup';
+import { TaxpayerTinLookup, TaxpayerTinSearchResultCard } from '../ui/TaxpayerTinLookup';
+import { demoIncomeTaxTypeForTin } from '../../services/demoIncomeTaxType';
 import { TaxPayModal } from '../ui/TaxPayModal';
 
 type DraftTaxpayer = NonNullable<ReturnType<typeof lookupSampleTaxpayer>>;
@@ -276,18 +277,18 @@ export function ParallelTaxpayerDraftDialog({ onClose }: { onClose: () => void }
                 invalidTin={Boolean(error)} tinDescribedBy={error ? 'parallel-taxpayer-error' : undefined}
                 error={error ? <p id="parallel-taxpayer-error"
                   className="parallel-taxpayer-draft__error" role="alert">{error}</p> : null} />
-              {result ? <div className="parallel-taxpayer-draft__result"
-                aria-live="polite" data-testid="parallel-taxpayer-search-result">
-                <span className="parallel-taxpayer-draft__result-label">{t('Taxpayer found', 'করদাতা পাওয়া গেছে')}</span>
-                <strong>{bn ? result.nameBn : result.nameEn}</strong>
-                <span className="parallel-taxpayer-draft__result-tin">{maskedTin(result.tin)}</span>
-                <button type="button" className="parallel-taxpayer-draft__primary" disabled={alreadyAdded || selectedCount >= MAX_TAXPAYERS}
-                  onClick={addTaxpayer} data-testid="parallel-add-taxpayer">
-                  {alreadyAdded && <Check size={17} aria-hidden="true"/>}
-                  {alreadyAdded ? t('Already added', 'আগেই যোগ করা হয়েছে') :
-                    t('+ Add Taxpayer', '+ করদাতা যোগ করুন')}
-                </button>
-              </div> : null}
+              {result && <TaxpayerTinSearchResultCard key={result.tin} language={language}
+                testId="parallel-taxpayer-search-result" addButtonTestId="parallel-add-taxpayer"
+                tin={result.tin} name={bn ? result.nameBn : result.nameEn}
+                classification={demoIncomeTaxTypeForTin(result.tin) === 'COMPANY'
+                  ? t('Company','কোম্পানি')
+                  : demoIncomeTaxTypeForTin(result.tin) === 'NON_COMPANY'
+                    ? t('Individual','ব্যক্তি') : undefined}
+                onAdd={addTaxpayer} canAdd={!alreadyAdded && selectedCount < MAX_TAXPAYERS}
+                addLabel={t('Add taxpayer','করদাতা যোগ করুন')}
+                disabledAddLabel={alreadyAdded ? t('Already added','আগেই যোগ করা হয়েছে') : undefined}
+              />}
+
           </div>
         </section>
         <section className="parallel-taxpayer-draft__panel" aria-labelledby="parallel-draft-selected-title">
