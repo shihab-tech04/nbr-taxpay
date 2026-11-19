@@ -933,6 +933,11 @@ jobs:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
         run: node scripts/verify-live-public-search.mjs
 
+      - name: Verify deployed master TIN Search, masks, EN/BN and responsive geometry
+        env:
+          TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/verify-live-master-tin.mjs
+
       - name: Verify deployed Travel Tax progressive passport journey on desktop and mobile
         env:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
@@ -956,6 +961,7 @@ jobs:
           path: |
             test-results/live-auth-*.png
             test-results/live-search-*.png
+            test-results/live-master-tin-*.png
             test-results/live-travel-passport-*.png
             test-results/live-table-*.png
             test-results/sohojkor-live-performance.json
