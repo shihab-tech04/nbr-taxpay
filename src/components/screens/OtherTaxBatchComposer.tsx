@@ -318,10 +318,10 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                      if (!event.target.checked) applyLines(lines.filter(line => !(line.taxpayerId === activeId && line.headId === RETURN_HEAD_ID)));
                    }} />
                  <span className="unified-v5-return-card__text"><strong>{tx('Tax with Return','রিটার্নসহ কর')}</strong>
-                   <small>{tx('Section 173 · Combined with other heads','ধারা ১৭৩ · অন্যান্য খাতের সঙ্গে')}</small></span>
+                   <small>{tx('Section 173 · Can be combined with other tax heads','ধারা ১৭৩ · অন্যান্য কর খাতের সঙ্গে পরিশোধ করা যায়')}</small></span>
                </label>
                {returnLine && <div className="unified-v5-return-fields" data-testid="unified-v5-return-allocation">
-                 <div><label htmlFor={'unified-v5-return-year-' + returnLine.id}>{tx('Assessment year','করবর্ষ')} *</label>
+                 <div><label htmlFor={'unified-v5-return-year-' + returnLine.id}>{tx('Assessment year (AY)','করবর্ষ (AY)')} *</label>
                    <select id={'unified-v5-return-year-' + returnLine.id} value={returnLine.assessmentYear}
                      onChange={event => edit(returnLine.id,{assessmentYear:event.target.value})}>
                      {OTHER_TAX_YEARS.map(year=><option key={year} value={year}>{year}</option>)}
