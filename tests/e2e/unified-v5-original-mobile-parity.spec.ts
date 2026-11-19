@@ -4,7 +4,7 @@ import {test,expect} from '@playwright/test';
  * Scope: parallel All Tax Payments ONLY. This is intentionally not a pixel-certification.
  */
 test('approved v5 mobile footer keeps full button labels and original calculation placement',async({page},info)=>{
-  test.skip(info.project.name!=='mobile-390' && info.project.name!=='mobile-320','Mobile original-v5 reference');
+  test.skip(info.project.name!=='mobile-375' && info.project.name!=='mobile-320','Mobile original-v5 reference');
   await page.goto('/?action=landing&lang=en');
   await page.locator('.public-benefits__item[data-benefit="payments"]').click();
   const dialog=page.getByRole('dialog',{name:'Pay Tax'});
