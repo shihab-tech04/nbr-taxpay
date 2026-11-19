@@ -8,6 +8,8 @@ test('shared TIN/name card is used by normal guest payment, with lookup and clea
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN');
   const card = dialog.getByTestId('shared-taxpayer-tin-lookup');
   await expect(card).toHaveCount(1);
+  await expect(card.getByTestId('taxpayer-tin-digits').locator('span')).toHaveCount(12);
+  await expect(card.locator('#guest-tin')).toHaveAttribute('maxlength', '12');
   await expect(card.locator('#guest-taxpayer-name')).toHaveAttribute('readonly', '');
   await expect(card.locator('label[for="guest-taxpayer-name"]')).toHaveText('Taxpayer name');
   await card.locator('#guest-tin').fill('111111111111');
@@ -58,6 +60,7 @@ test('every additional Other Tax taxpayer reveals a details review and keeps cle
   await list.getByRole('button', { name: 'Add another taxpayer' }).click();
   const additional = list.getByTestId('other-tax-taxpayer').last();
   await expect(additional.getByTestId('shared-taxpayer-tin-lookup')).toHaveCount(1);
+  await expect(additional.getByTestId('taxpayer-tin-digits').locator('span')).toHaveCount(12);
   const tin = additional.locator('input[id^="other-tax-tin-"]');
   await tin.fill('222222222222');
   await additional.getByRole('button', { name: 'Search', exact: true }).click();

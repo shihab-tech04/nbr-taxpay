@@ -816,7 +816,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const v5IncompleteAmounts = unifiedFlow && otherBatch &&
     otherTaxLines.some(line => parseGuestAmount(line.amount) === null);
   const paymentCalculation = otherBatch ? <PaymentLiveSummary language={language} hideService={embedded}
-    compactTaxpayerView={unifiedFlow}
+    compactTaxpayerView={unifiedFlow} progressiveHeads={unifiedFlow}
     activeEntryId={step === 2 && !unifiedFlow && forSelf === false ? activeCalculationLineId : undefined}
     onSelectEntry={step === 2 ? lineId => {
       if (!unifiedFlow && forSelf === false) setActiveCalculationLineId(lineId);
