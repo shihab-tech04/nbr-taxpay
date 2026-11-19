@@ -221,7 +221,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         close();
       }}
       registerDraftExit={registerDraftExit}
-      className={view === 'login' || view === 'entry' ? 'taxpayer-login-modal' : ''}
+      className={view === 'login' || view === 'entry' ? 'taxpayer-login-modal' : unifiedEntry && view === 'payment' ? 'taxpay-v5-locked' : ''}
       animateSize={view === 'payer' || view === 'entry'}
       // Draft choice/list/new swap content inside the same payer view.
       // Re-measure the approved modal height on every such transition so the
@@ -263,7 +263,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             {alreadySignedIn ? <button type="button" className="tax-service-choice__continue"
               onClick={() => beginUnifiedPayment(true)}>{tr('Continue with your account', 'আপনার অ্যাকাউন্ট দিয়ে এগিয়ে যান')} <ArrowRight size={18} /></button>
             : <TaxpayerLoginFooter formId="taxpay-embedded-login-form" disabled={!loginReady} language={language} paymentEntryLabel />}
-            <div className="taxpay-unified-entry__divider" aria-hidden="true"><span />{tr('Or', 'অথবা')}<span /></div>
+            <div className="taxpay-unified-entry__divider" aria-hidden="true"><span />{tr('OR', 'অথবা')}<span /></div>
             <button type="button" className="taxpay-unified-entry__walkin" onClick={() => beginUnifiedPayment(false)}>
               {tr('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট')} <ArrowRight size={18} aria-hidden="true" />
             </button>
@@ -288,7 +288,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         data-payment-service={view === 'payment' && chosenService ? chosenService.id : undefined}
         className={`tax-service-choice${view === 'payment' && effectiveSelected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
         {view === 'payment' && !checkoutOpen && <>
-          <p ref={stepHeadingRef} tabIndex={-1} className={unifiedEntry ? 'tax-service-choice__eyebrow' : 'sr-only'} aria-label={tr(`Step ${stage} of ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`, `ধাপ ${stage} / ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`)}>
+          <p ref={stepHeadingRef} tabIndex={-1} className="sr-only" aria-label={tr(`Step ${stage} of ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`, `ধাপ ${stage} / ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`)}>
             {tr(`Step ${Math.min(stage, stages.length)} of ${stages.length}`, `ধাপ ${Math.min(stage, stages.length)} / ${stages.length}`)}
           </p>
           <ol className="tax-service-choice__progress sr-only" aria-label={tr('Payment stages', 'পেমেন্টের ধাপ')}>

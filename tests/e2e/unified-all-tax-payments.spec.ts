@@ -39,7 +39,7 @@ test('v5 frozen Step 1: exactly twelve blocks, entity alongside name and selecte
   await expect(add).toHaveCSS('background-color','rgb(255, 255, 255)');
   await expect(add).toHaveCSS('color','rgb(38, 71, 97)');
   await add.click();
-  await expect(modal.getByRole('button',{name:'Continue to purpose & amount'})).toBeEnabled();
+  await expect(modal.getByRole('button',{name:'Continue to Payment Head'})).toBeEnabled();
   await expect(modal.getByTestId('unified-taxpayer-count')).toHaveText('1');
   await expect(modal.getByTestId('unified-taxpayer-workspace')).toContainText('User 2');
 });
@@ -49,7 +49,7 @@ test('v5 Return checkbox composes with other taxpayer/head and written final tot
   const modal=await openV5(page);
   await addTaxpayer(modal,'222222222222');
   await addTaxpayer(modal,'333333333333');
-  await modal.getByRole('button',{name:'Continue to purpose & amount'}).click();
+  await modal.getByRole('button',{name:'Continue to Payment Head'}).click();
   await expect(modal.getByText('Paying tax for').first()).toBeVisible();
   await expect(modal.getByText('Search and select').first()).toBeVisible();
   const checkbox=modal.getByTestId('unified-v5-return-checkbox');
@@ -91,7 +91,7 @@ test('v5 Return checkbox composes with other taxpayer/head and written final tot
   expect(Math.abs(leftAlignment[0]!.x - leftAlignment[1]!.x)).toBeLessThan(13);
   await catalogCheck.check();
   await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('4000');
-  await modal.getByRole('button',{name:'Continue to final preview'}).click();
+  await modal.getByRole('button',{name:'Continue to Final Preview'}).click();
   await expect(modal.locator('.taxpay-modal__title')).toHaveText('Final Preview');
   const review=modal.getByTestId('unified-v3-payment-details');
   await expect(review).toBeVisible();

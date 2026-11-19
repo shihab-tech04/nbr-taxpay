@@ -28,9 +28,16 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await add('333333333333');
     await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('2');
     await expect(dialog.getByTestId('unified-taxpayer-workspace')).toBeVisible();
-    await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+    if (page.viewportSize()?.width === 1280) await dialog.screenshot({path:'test-results/sohojkor-v5-candidate-stage1-desktop.png'});
+    await dialog.getByRole('button', { name: 'Continue to Payment Head' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
+    // Keep the original modal header and thin progress; do not render extra visible step text.
+    await expect(dialog.locator('.tax-service-choice__eyebrow')).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Continue to Final Preview' })
+      .locator('.payment-flow-embedded__action-long')).toHaveText('Continue to Final Preview');
+    await expect(dialog.getByRole('button', { name: 'Continue to Final Preview' })
+      .locator('.payment-flow-embedded__action-short')).toHaveText('Preview');
     await expect(dialog.getByRole('progressbar', { name: 'Payment progress' })).toHaveAttribute('aria-valuemax', '3');
     await expect(dialog.locator('#guest-phone')).toHaveCount(0);
     await expect(dialog.locator('#guest-payment-remarks')).toHaveCount(0);
@@ -52,23 +59,33 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await taxpayerTabs.nth(1).click();
     await ensureAdvanceTaxOpen();
     await select68A.check();
+    // The editable total is the sum of ENTERED amounts, not a false payable
+    // grand total: the second selected head still has no required amount.
+    await expect(dialog.locator('.payment-form-summary__total')).toContainText('3,500');
+    await expect(dialog.getByTestId('v5-compact-taxpayer-summary')).toContainText('Enter amounts for 1 selected head');
+    await expect(dialog.getByRole('button', { name: 'Continue to Final Preview' })).toBeDisabled();
     await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('3500');
 
-    const calculation = dialog.getByTestId('grouped-taxpayer-calculation');
-    const taxpayerSummaries = calculation.locator('.payment-form-summary__taxpayer');
+    // Approved v5 calculation is a compact subtotal by taxpayer. Keep the
+    // complete editable allocations in the Payment Head composer instead.
     const mobileCalculation = dialog.getByTestId('mobile-payment-calculation');
     if (await mobileCalculation.count() && await mobileCalculation.getAttribute('open') === null) {
       await mobileCalculation.getByTestId('mobile-payment-calculation-toggle').click();
     }
+    const calculation = dialog.getByTestId('v5-compact-taxpayer-summary');
+    const taxpayerSummaries = calculation.locator('.payment-form-summary__compact-owner');
     await expect(taxpayerSummaries).toHaveCount(2);
-    await expect(taxpayerSummaries.nth(0).locator('summary')).toContainText('1 payment line');
-    await expect(taxpayerSummaries.nth(1).locator('summary')).toContainText('1 payment line');
-    await taxpayerSummaries.nth(1).locator('summary').click();
-    const personLine = taxpayerSummaries.nth(0).locator('.payment-form-summary__taxpayer-label').first();
-    const companyLine = taxpayerSummaries.nth(1).locator('.payment-form-summary__taxpayer-label').first();
-    await expect(personLine).not.toContainText(/Code/i);
-    await expect(companyLine).toContainText('Code 1112101');
-    await dialog.getByRole('button', { name: 'Continue to final preview' }).click();
+    await expect(taxpayerSummaries.nth(0)).toContainText('User 2');
+    await expect(taxpayerSummaries.nth(1)).toContainText('User 3');
+    await expect(taxpayerSummaries.nth(0)).toContainText('3,500');
+    await expect(taxpayerSummaries.nth(1)).toContainText('3,500');
+    if (page.viewportSize()?.width === 1280) await dialog.screenshot({path:'test-results/sohojkor-v5-candidate-stage2-desktop.png'});
+    await expect(calculation).not.toContainText('Show all');
+    await expect(dialog.getByRole('button', { name: 'Copy TIN' })).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'টিআইএন কপি করুন' })).toHaveCount(0);
+    // The selected head data remains in the composer despite not duplicating it in the sidebar.
+    await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
+    await dialog.getByRole('button', { name: 'Continue to Final Preview' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
     await expect(dialog.getByTestId('payment-review')).toBeVisible();
@@ -78,9 +95,20 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(reviewTable).toBeVisible();
     await expect(reviewTable.getByRole('heading', {name: 'Payment details'})).toBeVisible();
     await expect(reviewTable.locator('tbody tr.unified-v3-review__owner')).toHaveCount(2);
-    await expect(reviewTable.getByRole('button', {name: 'Edit taxpayers'})).toBeVisible();
-    await expect(reviewTable.getByRole('button', {name: 'Edit heads & amounts'})).toBeVisible();
+    const editTaxpayers = reviewTable.getByRole('button', {name: 'Edit taxpayers'});
+    const editHeads = reviewTable.getByRole('button', {name: 'Edit heads & amounts'});
+    await expect(editTaxpayers).toBeVisible();
+    await expect(editHeads).toBeVisible();
+    // Exact locked v5 visible copy (ARIA still exposes explicit edit actions).
+    await expect(editTaxpayers).toHaveText('Taxpayers');
+    await expect(editHeads).toHaveText('Heads & amounts');
+    await expect(reviewTable.locator('.unified-v3-review__owner strong').first()).toContainText('Individual');
+    await expect(reviewTable.locator('.unified-v3-review__owner span').first()).toContainText('222*********');
+    await expect(dialog.locator('.payment-flow-embedded__footer-actions > .tax-service-choice__cancel')).toBeVisible();
+    await expect(dialog.locator('.payment-flow-embedded__footer-actions > .tax-service-choice__continue')).toHaveText(/Make Payment/);
     await expect(dialog.getByRole('heading', { name: 'Payer and receipt details' })).toBeVisible();
+    await expect(dialog.getByText('Payer information will appear on the receipt.')).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Payment Remarks / Invoice Reference' })).toBeVisible();
     await expect(dialog.locator('#guest-phone')).toHaveCount(1);
     await expect(dialog.locator('#guest-payment-remarks')).toBeVisible();
     // Payer TIN is optional: hide the redundant matched-name input until Search.
@@ -103,10 +131,11 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
     await expect(dialog.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]')).toHaveValue('3500');
-    await dialog.getByRole('button', { name: 'Continue to final preview' }).click();
+    await dialog.getByRole('button', { name: 'Continue to Final Preview' }).click();
     await expect(dialog.locator('#guest-payer-name')).toHaveValue('Test Walk-in Payer');
     await expect(dialog.locator('#guest-phone')).toHaveValue('01712345678');
     await expect(dialog.locator('#guest-payment-remarks')).toHaveValue('Assessment payment for sample user 2');
+    if (page.viewportSize()?.width === 1280) await dialog.screenshot({path:'test-results/sohojkor-v5-candidate-stage3-desktop.png'});
 
     // Locked v5 review does not contain payment selection.
     await expect(dialog.getByRole('heading', { name: 'Choose payment channel' })).toHaveCount(0);

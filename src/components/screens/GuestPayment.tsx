@@ -14,6 +14,7 @@ import {
   AlertCircle, 
   Lock,
   Search,
+  Pencil,
   ChevronDown,
   ReceiptText
 } from 'lucide-react';
@@ -805,18 +806,30 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     const code = governmentAccountingCode(category, entityType);
     return `${name || ''}${code ? ` · ${language === 'bn' ? 'কোড' : 'Code'} ${code}` : ''}`;
   };
+  // Display only valid entered amounts during editing; financial validation
+  // still uses batchAmount/storyAmountMinor and rejects ANY unfinished allocation.
+  // Preserve exact-cent arithmetic and never submit the partial display total.
+  const v5EnteredAmountTotal = unifiedFlow && otherBatch
+    ? sumGuestAmounts(otherTaxLines.map(line => line.amount)
+        .filter(raw => parseGuestAmount(raw) !== null))
+    : null;
+  const v5IncompleteAmounts = unifiedFlow && otherBatch &&
+    otherTaxLines.some(line => parseGuestAmount(line.amount) === null);
   const paymentCalculation = otherBatch ? <PaymentLiveSummary language={language} hideService={embedded}
+    compactTaxpayerView={unifiedFlow} progressiveHeads={unifiedFlow}
     activeEntryId={step === 2 && !unifiedFlow && forSelf === false ? activeCalculationLineId : undefined}
     onSelectEntry={step === 2 ? lineId => {
       if (!unifiedFlow && forSelf === false) setActiveCalculationLineId(lineId);
       setSummaryJump(current => ({ lineId, requestId: current.requestId + 1 }));
     } : undefined}
     category={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other Tax Payment'}
-    progressiveHeads={unifiedFlow}
-    categoryCode={category} tin={batchTaxpayers.length > 1 ? undefined : taxpayerTin}
-    year={otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
-    amount={step === 1 ? null : batchAmount}
-    groupedBreakdown={step > 1 && batchTaxpayers.length > 1 ? batchTaxpayers.map((person, index) => {
+    categoryCode={category} tin={unifiedFlow || batchTaxpayers.length > 1 ? undefined : taxpayerTin}
+    year={unifiedFlow ? undefined : otherTaxLines.length === 1 ? otherTaxLines[0].assessmentYear : undefined}
+    amount={step === 1 ? (unifiedFlow ? 0 : null) : unifiedFlow ? v5EnteredAmountTotal : batchAmount}
+    helpText={v5IncompleteAmounts && step > 1 ? (language === 'bn'
+      ? 'শুধু পূরণ করা পরিমাণ যোগ করা হয়েছে। এগোনোর আগে সব নির্বাচিত খাতের পরিমাণ দিন।'
+      : 'Total includes entered amounts only. Complete every selected head before continuing.') : undefined}
+    groupedBreakdown={(unifiedFlow || (step > 1 && batchTaxpayers.length > 1)) ? batchTaxpayers.map((person, index) => {
       const lines = otherTaxLines.filter(line => line.taxpayerId === person.id);
       return {
         id: person.id,
@@ -825,7 +838,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         countLabel: unifiedFlow
           ? (language === 'bn' ? `${lines.length}টি পেমেন্ট লাইন` : `${lines.length} payment ${lines.length === 1 ? 'line' : 'lines'}`)
           : undefined,
-        amount: lines.length ? otherTaxAllocationTotal(lines) : null,
+        amount: unifiedFlow
+          ? sumGuestAmounts(lines.map(line => line.amount).filter(raw => parseGuestAmount(raw) !== null))
+          : lines.length ? otherTaxAllocationTotal(lines) : null,
         entries: lines.map(line => {
           const head = otherTaxAllocationHead(line.headId);
           return {
@@ -837,7 +852,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         }),
       };
     }) : undefined}
-    breakdown={batchTaxpayers.length > 1 ? undefined : otherTaxLines.map(line => {
+    breakdown={unifiedFlow || batchTaxpayers.length > 1 ? undefined : otherTaxLines.map(line => {
       const head = otherTaxAllocationHead(line.headId);
       const person = batchTaxpayers.find(t => t.id === line.taxpayerId);
       return {
@@ -846,7 +861,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         detail: `${person?.name ? person.name + ' · ' : ''}${person?.tin || ''} · ${line.assessmentYear}`,
         value: otherTaxAllocationTotal([line])
       };
-    })} /> : <PaymentLiveSummary language={language} hideService={embedded}
+    })} /> : <PaymentLiveSummary language={language} hideService={embedded} compactTaxpayerView={unifiedFlow}
     category={language === 'bn' ? CATEGORY_LABELS[category]?.bn : CATEGORY_LABELS[category]?.en}
     categoryCode={category} tin={taxpayerTin} year={assessmentYear}
     head={category === 'TAX_WITH_RETURN'
@@ -863,8 +878,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       ...(selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountRawForHead(head.id)) })) : [{ label: language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount', value: totalAmount }]),
       { label: language === 'bn' ? 'সার্ভিস চার্জ' : 'Service charge', value: 0 }
     ] : selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountRawForHead(head.id)) })) : undefined} />;
-  const inlinePaymentCalculation = embedded && mobilePaymentFooter ? null : paymentCalculation;
-  const mobileSummaryTotal = otherBatch ? (step === 1 ? null : batchAmount) : summedAmount;
+  const inlinePaymentCalculation = embedded && mobilePaymentFooter && !unifiedFlow ? null : paymentCalculation;
+  const mobileSummaryTotal = otherBatch
+    ? (step === 1 ? (unifiedFlow ? 0 : null) : unifiedFlow ? v5EnteredAmountTotal : batchAmount)
+    : summedAmount;
 
   const taxpayerLookupResult = (
     <div className="tin-lookup__result" role="status" aria-live="polite" data-lookup-state={tinLookupState}>
@@ -1812,18 +1829,26 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   </>);
 
   const paymentRemarksControl = (
-    <section className="rounded-lg border border-taxpay-border bg-white p-3 sm:p-4" data-testid="challan-remarks-field">
-      <label htmlFor="guest-payment-remarks" className="mb-2 block text-sm font-semibold text-taxpay-dark">
-        {copy.remarks}
-      </label>
-      <textarea id="guest-payment-remarks" rows={3} value={paymentRemarks}
-        maxLength={4000} aria-describedby="guest-payment-remarks-limit"
-        onChange={event => setPaymentRemarks(event.target.value)}
-        placeholder={copy.remarksPlaceholder}
-        className="min-h-24 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary" />
-      <p id="guest-payment-remarks-limit" className="mt-1 text-xs text-slate-600">
-        {language === 'bn' ? 'সর্বোচ্চ ৪,০০০ অক্ষর' : 'Maximum 4,000 characters'}
-      </p>
+    <section className={unifiedFlow ? 'unified-v5-remarks-section' : 'rounded-lg border border-taxpay-border bg-white p-3 sm:p-4'}
+      data-testid="challan-remarks-field">
+      {unifiedFlow && <h3 className="unified-v5-remarks-heading">
+        {language === 'bn' ? 'পেমেন্টের মন্তব্য / ইনভয়েস রেফারেন্স' : 'Payment Remarks / Invoice Reference'}
+        <small>{language === 'bn' ? '(ঐচ্ছিক)' : '(Optional)'}</small>
+      </h3>}
+      <div className={unifiedFlow ? 'unified-v5-remarks-body' : undefined}>
+        <label htmlFor="guest-payment-remarks"
+          className={unifiedFlow ? 'sr-only' : 'mb-2 block text-sm font-semibold text-taxpay-dark'}>
+          {copy.remarks}
+        </label>
+        <textarea id="guest-payment-remarks" rows={unifiedFlow ? 4 : 3} value={paymentRemarks}
+          maxLength={4000} aria-describedby="guest-payment-remarks-limit"
+          onChange={event => setPaymentRemarks(event.target.value)}
+          placeholder={copy.remarksPlaceholder}
+          className="min-h-24 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary" />
+        <p id="guest-payment-remarks-limit" className="mt-1 text-xs text-slate-600">
+          {language === 'bn' ? 'সর্বোচ্চ ৪,০০০ অক্ষর' : 'Maximum 4,000 characters'}
+        </p>
+      </div>
     </section>
   );
 
@@ -2506,8 +2531,12 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                 <div className="payment-review__section-title unified-v3-review__heading">
                   <h2 id="unified-v3-review-title">{language === 'bn' ? 'পেমেন্টের বিবরণ' : 'Payment details'}</h2>
                   <div className="unified-v3-review__actions">
-                    <button type="button" onClick={() => setStep(1)}>{language === 'bn' ? 'করদাতা সম্পাদনা' : 'Edit taxpayers'}</button>
-                    <button type="button" onClick={() => setStep(2)}>{language === 'bn' ? 'খাত ও পরিমাণ সম্পাদনা' : 'Edit heads & amounts'}</button>
+                    <button type="button" aria-label={language === 'bn' ? 'করদাতা সম্পাদনা' : 'Edit taxpayers'} onClick={() => setStep(1)}>
+                      <Pencil size={14} aria-hidden="true"/>{language === 'bn' ? 'করদাতা' : 'Taxpayers'}
+                    </button>
+                    <button type="button" aria-label={language === 'bn' ? 'খাত ও পরিমাণ সম্পাদনা' : 'Edit heads & amounts'} onClick={() => setStep(2)}>
+                      <Pencil size={14} aria-hidden="true"/>{language === 'bn' ? 'খাত ও পরিমাণ' : 'Heads & amounts'}
+                    </button>
                   </div>
                 </div>
                 <div className="unified-v3-review__table-wrap">
@@ -2519,14 +2548,19 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                     </tr></thead>
                     <tbody>{batchTaxpayers.filter(person => Boolean(person.tin)).map(person => (
                       <React.Fragment key={person.id}>
-                        <tr className="unified-v3-review__owner"><td colSpan={3}><strong>{person.name || otherTaxpayerName}</strong>
-                          <span>{person.tin.slice(0,3) + '*********'} · {incomeTaxEntityTypeLabel(entityTypeForTin(person.tin) ?? 'NON_COMPANY', language)}</span>
+                        <tr className="unified-v3-review__owner"><td colSpan={3}>
+                          <strong>{person.name || otherTaxpayerName} · {entityTypeForTin(person.tin) === 'COMPANY'
+                            ? (language === 'bn' ? 'কোম্পানি' : 'Company')
+                            : entityTypeForTin(person.tin) === 'NON_COMPANY'
+                              ? (language === 'bn' ? 'ব্যক্তি' : 'Individual')
+                              : (language === 'bn' ? 'যাচাই হয়নি' : 'Unverified')}</strong>
+                          <span>{person.tin.slice(0,3) + '*'.repeat(Math.max(0, person.tin.length - 3))}</span>
                         </td></tr>
                         {otherBatch ? otherTaxLines.filter(line => line.taxpayerId === person.id).map(line => (
                           <tr key={line.id}><td>{line.headId === RETURN_HEAD_ID
                               ? (language === 'bn' ? 'রিটার্নসহ কর' : 'Tax with Return')
-                              : language === 'bn' ? otherTaxAllocationHead(line.headId)?.nameBn : otherTaxAllocationHead(line.headId)?.nameEn}</td><td>{line.assessmentYear}</td><td>{formatCurrency(parseGuestAmount(line.amount) ?? 0, language)}</td></tr>
-                        )) : <tr><td>{language === 'bn' ? 'রিটার্নসহ কর' : 'Tax with Return'}</td><td>{assessmentYear}</td><td>{formatCurrency(summedAmount ?? 0, language)}</td></tr>}
+                              : language === 'bn' ? otherTaxAllocationHead(line.headId)?.nameBn : otherTaxAllocationHead(line.headId)?.nameEn}</td><td data-year-prefix={language === 'bn' ? 'করবর্ষ ' : 'AY '}>{line.assessmentYear}</td><td>{formatCurrency(parseGuestAmount(line.amount) ?? 0, language)}</td></tr>
+                        )) : <tr><td>{language === 'bn' ? 'রিটার্নসহ কর' : 'Tax with Return'}</td><td data-year-prefix={language === 'bn' ? 'করবর্ষ ' : 'AY '}>{assessmentYear}</td><td>{formatCurrency(summedAmount ?? 0, language)}</td></tr>}
                       </React.Fragment>
                     ))}</tbody>
                   </table>
@@ -2541,6 +2575,9 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                 <div className="payment-review__section-title">
                   <div><h2 id="payment-final-payer-title">{language === 'bn' ? 'পরিশোধকারী ও রসিদের তথ্য' : 'Payer and receipt details'}</h2></div>
                 </div>
+                {unifiedFlow && <p className="unified-v5-payer-hint">{language === 'bn'
+                    ? 'পরিশোধকারীর তথ্য রসিদে দেখানো হবে।'
+                    : 'Payer information will appear on the receipt.'}</p>}
                 <div className="payment-identity__fields">{payerReceiptFields}</div>
                 {ownAccountTax && !isWithholdingMode && receiptEmailControl}
               </section>}
@@ -2625,7 +2662,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
       </div>
       {embedded && modalFooterTarget && createPortal(
         <div className="payment-flow-embedded__footer-actions">
-          {mobilePaymentFooter && step <= 3 && (
+          {mobilePaymentFooter && !unifiedFlow && step <= 3 && (
             <details key={step} className="payment-flow-embedded__mobile-summary" data-testid="mobile-payment-calculation">
               <summary className="payment-flow-embedded__mobile-summary-toggle" data-testid="mobile-payment-calculation-toggle">
                 <span className="payment-flow-embedded__mobile-summary-heading"><ReceiptText size={18} aria-hidden="true" />{language === 'bn' ? 'পেমেন্টের হিসাব' : 'Payment calculation'}</span>
@@ -2642,8 +2679,8 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               </button>
               {(signedInAccount || unsignedGuestDrafts) && isPaymentDraftService(category) &&
                 <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />}
-              <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'} onClick={handleStep1Next} disabled={!canContinueStep1}>
-                <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</span><ArrowRight size={18} aria-hidden="true" />
+              <button type="button" className="tax-service-choice__continue" aria-label={unifiedFlow ? (language === 'bn' ? 'পেমেন্ট খাতে এগিয়ে যান' : 'Continue to Payment Head') : (language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount')} onClick={handleStep1Next} disabled={!canContinueStep1}>
+                <span className="payment-flow-embedded__action-long">{unifiedFlow ? (language === 'bn' ? 'পেমেন্ট খাতে এগিয়ে যান' : 'Continue to Payment Head') : (language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount')}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</span><ArrowRight size={18} aria-hidden="true" />
               </button>
             </>
           ) : step === 2 ? (<>
@@ -2652,8 +2689,8 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
             </button>
             {(signedInAccount || unsignedGuestDrafts) && isPaymentDraftService(category) &&
               <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />}
-            <button type="button" className="tax-service-choice__continue" aria-label={unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to final preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')} onClick={handleStep2Next} disabled={!initialReuse && otherBatch && (!batchValid || !storyAmountSupported)}>
-              <span className="payment-flow-embedded__action-long">{unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to final preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
+            <button type="button" className="tax-service-choice__continue" aria-label={unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to Final Preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')} onClick={handleStep2Next} disabled={!initialReuse && otherBatch && (!batchValid || !storyAmountSupported)}>
+              <span className="payment-flow-embedded__action-long">{unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to Final Preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{unifiedFlow ? (language === 'bn' ? 'পর্যালোচনা' : 'Preview') : (language === 'bn' ? 'চ্যানেল' : 'Channel')}</span><ArrowRight size={18} aria-hidden="true" />
             </button>
           </>) : step === 3 ? (<>
             <button type="button" className="tax-service-choice__cancel"
@@ -2671,7 +2708,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                 ((!unifiedFlow || unifiedCheckout) && (!paymentChannel || !paymentMethod || !acknowledged))}
               aria-busy={isProcessing}>
               {unifiedFlow && !unifiedCheckout
-                ? <><CreditCard size={18} aria-hidden="true"/>{language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment'}</>
+                ? <>{language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment'} <ArrowRight size={18} aria-hidden="true"/></>
                 : <>{paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}
                   {paymentChannel === 'OTC'
                     ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
