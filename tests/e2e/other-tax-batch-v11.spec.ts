@@ -99,7 +99,7 @@ test('M03: unmatched searched TIN can be explicitly added without identity verif
   await expect(first.getByRole('button',{name:'Add taxpayer'})).toBeVisible();
   await expect(continueAction).toBeDisabled();
   await first.getByRole('button',{name:'Add taxpayer'}).click();
-  await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('987654321098');
+  await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('987*********');
   await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('Not provided');
 
   await first.getByRole('button',{name:'Edit',exact:true}).click();
@@ -116,10 +116,10 @@ test('M03: unmatched searched TIN can be explicitly added without identity verif
   await expect(first.getByRole('button',{name:'Add taxpayer'})).toHaveCount(0);
   await first.getByRole('button',{name:'Search',exact:true}).click();
   await expect(first.locator('#other-tax-primary-name')).toHaveValue('User 1');
-  await expect(first.getByTestId('searched-taxpayer-card')).toHaveCount(0);
-  await expect(first.getByTestId('taxpayer-sample-source')).toContainText('Sample only — not NBR verified.');
+  await expect(first.getByTestId('searched-taxpayer-card')).toBeVisible();
+  await expect(first.getByTestId('searched-taxpayer-card')).toContainText('User 1');
   await first.getByRole('button',{name:'Add taxpayer'}).click();
-  await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('111111111111');
+  await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('111*********');
 
   await first.getByRole('button',{name:'Edit',exact:true}).click();
   await tin.fill('987654321098');
@@ -131,7 +131,7 @@ test('M03: unmatched searched TIN can be explicitly added without identity verif
   await first.getByRole('button',{name:'Search',exact:true}).click();
   await expect(first.locator('#other-tax-primary-name')).toHaveValue('User 2');
   await first.getByRole('button',{name:'Add taxpayer'}).click();
-  await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('222222222222');
+  await expect(first.getByTestId('confirmed-taxpayer-card')).toContainText('222*********');
 });
 
 test('Step 1 primary action enables only after all required payment details are valid', async ({ page }) => {
@@ -949,7 +949,7 @@ test('F-039 signed-in Other Tax combines a saved beneficiary with a confirmed on
   await oneTime.getByRole('button',{name:'Search one-time taxpayer'}).click();
   await expect(oneTime.getByTestId('one-time-taxpayer-preview')).toContainText('User 4');
   await oneTime.getByRole('button',{name:'Add to this payment'}).click();
-  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
+  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444*********');
   // T03: cancel the one-time addition and retry without changing saved payees
   // or discarding the first recipient's existing head/year/amount line.
   await oneTime.getByRole('button',{name:'Remove from this payment'}).click();
@@ -958,7 +958,7 @@ test('F-039 signed-in Other Tax combines a saved beneficiary with a confirmed on
   await oneTime.locator('#other-tax-one-time-tin').fill('444444444444');
   await oneTime.getByRole('button',{name:'Search one-time taxpayer'}).click();
   await oneTime.getByRole('button',{name:'Add to this payment'}).click();
-  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
+  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444*********');
   await expect(picker.getByTestId('beneficiary-list-accordion')).not.toContainText('444444444444');
   await continueButton.click();
 
@@ -1029,16 +1029,16 @@ test('F-039 Bengali saved-and-one-time recipient selection preserves the saved l
   await expect(oneTime.getByRole('heading',{name:'এই পেমেন্টের জন্য নতুন করদাতা যোগ করুন'})).toBeVisible();
   await oneTime.locator('#other-tax-one-time-tin').fill('444444444444');
   await oneTime.getByRole('button',{name:'করদাতার টিআইএন খুঁজুন'}).click();
-  await expect(oneTime.getByTestId('one-time-taxpayer-preview')).toContainText('444444444444');
-  await expect(oneTime.getByTestId('one-time-sample-origin')).toContainText('NBR-এর সরকারি রেকর্ড নয়');
+  await expect(oneTime.getByTestId('one-time-taxpayer-preview')).toContainText('444*********');
+  await expect(oneTime.getByTestId('one-time-taxpayer-preview').getByRole('button',{name:'টিআইএন দেখুন'})).toBeVisible();
   await oneTime.getByRole('button',{name:'এই পেমেন্টে যোগ করুন'}).click();
-  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
+  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444*********');
   await oneTime.getByRole('button',{name:'পেমেন্ট থেকে সরান'}).click();
   await expect(selected).toBeChecked();
   await oneTime.locator('#other-tax-one-time-tin').fill('444444444444');
   await oneTime.getByRole('button',{name:'করদাতার টিআইএন খুঁজুন'}).click();
   await oneTime.getByRole('button',{name:'এই পেমেন্টে যোগ করুন'}).click();
-  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444444444444');
+  await expect(oneTime.getByTestId('confirmed-one-time-taxpayer')).toContainText('444*********');
   await expect(picker.getByTestId('beneficiary-list-accordion')).not.toContainText('444444444444');
   await expect(selected).toBeChecked();
   expect(writes).toEqual([]);
