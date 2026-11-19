@@ -28,9 +28,15 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await add('333333333333');
     await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('2');
     await expect(dialog.getByTestId('unified-taxpayer-workspace')).toBeVisible();
-    await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+    await dialog.getByRole('button', { name: 'Continue to Payment Head' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
+    // Keep the original modal header and thin progress; do not render extra visible step text.
+    await expect(dialog.locator('.tax-service-choice__eyebrow')).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Continue to Final Preview' })
+      .locator('.payment-flow-embedded__action-long')).toHaveText('Continue to Final Preview');
+    await expect(dialog.getByRole('button', { name: 'Continue to Final Preview' })
+      .locator('.payment-flow-embedded__action-short')).toHaveText('Preview');
     await expect(dialog.getByRole('progressbar', { name: 'Payment progress' })).toHaveAttribute('aria-valuemax', '3');
     await expect(dialog.locator('#guest-phone')).toHaveCount(0);
     await expect(dialog.locator('#guest-payment-remarks')).toHaveCount(0);
@@ -56,7 +62,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     // grand total: the second selected head still has no required amount.
     await expect(dialog.locator('.payment-form-summary__total')).toContainText('3,500');
     await expect(dialog.getByTestId('v5-compact-taxpayer-summary')).toContainText('Enter amounts for 1 selected head');
-    await expect(dialog.getByRole('button', { name: 'Continue to final preview' })).toBeDisabled();
+    await expect(dialog.getByRole('button', { name: 'Continue to Final Preview' })).toBeDisabled();
     await batch.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('3500');
 
     // Approved v5 calculation is a compact subtotal by taxpayer. Keep the
@@ -77,7 +83,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(dialog.getByRole('button', { name: 'টিআইএন কপি করুন' })).toHaveCount(0);
     // The selected head data remains in the composer despite not duplicating it in the sidebar.
     await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
-    await dialog.getByRole('button', { name: 'Continue to final preview' }).click();
+    await dialog.getByRole('button', { name: 'Continue to Final Preview' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
     await expect(dialog.getByTestId('payment-review')).toBeVisible();
@@ -123,7 +129,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
     await expect(dialog.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]')).toHaveValue('3500');
-    await dialog.getByRole('button', { name: 'Continue to final preview' }).click();
+    await dialog.getByRole('button', { name: 'Continue to Final Preview' }).click();
     await expect(dialog.locator('#guest-payer-name')).toHaveValue('Test Walk-in Payer');
     await expect(dialog.locator('#guest-phone')).toHaveValue('01712345678');
     await expect(dialog.locator('#guest-payment-remarks')).toHaveValue('Assessment payment for sample user 2');
