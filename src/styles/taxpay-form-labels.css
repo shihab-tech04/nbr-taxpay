@@ -17,7 +17,8 @@
 .taxpay-citizen-shell .payment-head-amount__label,
 .taxpay-citizen-shell .other-tax-head-tools__label,
 .taxpay-citizen-shell .taxpay-auth-add label,
-.taxpay-citizen-shell .taxpayer-tin-lookup__field > label {
+.taxpay-citizen-shell .taxpayer-tin-lookup__field > label,
+.taxpay-citizen-shell .taxpayer-tin-lookup__field-heading > label {
   font-weight: var(--taxpay-form-label-weight);
 }
 

@@ -1,7 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {ChevronDown, ChevronRight} from 'lucide-react';
 import {UiButton} from '../ui/Controls';
-import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
+import {TaxpayerTinLookup,TaxpayerTinSearchResultCard} from '../ui/TaxpayerTinLookup';
+import {demoIncomeTaxTypeForTin} from '../../services/demoIncomeTaxType';
 import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {useAccountIdentity} from '../../services/accountIdentity';
@@ -244,13 +245,20 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       <h3 className="text-sm font-semibold text-taxpay-text">{tr('One-time TIN lookup','একবারের জন্য টিআইএন অনুসন্ধান')}</h3>
       <TaxpayerTinLookup language={language} tinId="payment-fallback-tin" nameId="payment-fallback-name"
         tin={fallbackTin} name={fallbackResult?.tin===fallbackTin?(bn?fallbackResult.nameBn:fallbackResult.nameEn):''}
+        hideNameField
         onTinChange={value=>{setFallbackTin(value);setSearchedFallbackTin('');setFallbackResult(null);}}
         onSearch={runFallbackSearch} onClear={()=>{setFallbackTin('');setSearchedFallbackTin('');setFallbackResult(null);}}
         canSearch={/^\d{12}$/.test(fallbackTin)} searchLabel={tr('Search TIN','টিআইএন খুঁজুন')}
         suggestedTins={SAMPLE_TIN_SUGGESTIONS} nameLabel={tr('Matching taxpayer name','মিলে যাওয়া করদাতার নাম')}
         tinPlaceholder={tr('Enter a 12-digit TIN','১২ সংখ্যার টিআইএন লিখুন')}
         status={searchedFallbackTin===fallbackTin&&searchedFallbackTin?
-          fallbackResult?<p className="text-xs text-slate-600" role="status">{tr('A sample profile matches. Confirm it before using it for this payment.','একটি নমুনা প্রোফাইল মিলেছে। এই পেমেন্টে ব্যবহারের আগে নিশ্চিত করুন।')}</p>
+          fallbackResult?<TaxpayerTinSearchResultCard key={fallbackTin} language={language}
+            tin={fallbackTin} name={bn ? fallbackResult.nameBn : fallbackResult.nameEn}
+            testId="searched-taxpayer-card"
+            classification={demoIncomeTaxTypeForTin(fallbackTin) === 'COMPANY'
+              ? tr('Company','কোম্পানি') : demoIncomeTaxTypeForTin(fallbackTin) === 'NON_COMPANY'
+                ? tr('Individual','ব্যক্তি') : undefined}
+          />
             :<p className="text-xs text-red-700" role="alert">{tr('No sample profile found. Check the TIN and try again.','কোনো নমুনা প্রোফাইল পাওয়া যায়নি। টিআইএন যাচাই করে আবার চেষ্টা করুন।')}</p>:null}
         helper={<p className="text-xs text-slate-600">{tr('Suggestions and matches are sample profiles, not official NBR records. They do not prove identity or grant access to private history.','প্রস্তাবনা ও মিলগুলো নমুনা প্রোফাইল, NBR-এর সরকারি রেকর্ড নয়। এগুলো পরিচয় প্রমাণ করে না বা ব্যক্তিগত ইতিহাস দেখার অনুমতি দেয় না।')}</p>} />
       {fallbackResult?.tin===fallbackTin&&<UiButton type="button" variant="primary" className="min-h-11 text-sm font-semibold" onClick={confirmFallback}>

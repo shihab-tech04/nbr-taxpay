@@ -1,6 +1,6 @@
 import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
-import { TaxpayerTinLookup } from '../ui/TaxpayerTinLookup';
+import { TaxpayerTinLookup, TaxpayerTinSearchResultCard } from '../ui/TaxpayerTinLookup';
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
@@ -886,9 +886,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const taxpayerLookupResult = (
     <div className="tin-lookup__result" role="status" aria-live="polite" data-lookup-state={tinLookupState}>
       {tinLookupState === 'idle' ? <p>{language === 'bn' ? 'টিআইএন খুঁজে নাম দেখুন।' : 'Search TIN to fill taxpayer name.'}</p>
-        : sampleTaxpayer ? <p className="text-xs text-slate-600" data-testid="tin-sample-origin">{language === 'bn'
-          ? 'নমুনা প্রোফাইলে নাম মিলেছে। এটি সরকারি NBR রেকর্ড বা পরিচয় যাচাই নয়।'
-          : 'Name matched a sample profile; this is not an official NBR record or identity verification.'}</p>
+        : sampleTaxpayer ? <TaxpayerTinSearchResultCard key={taxpayerTin} language={language}
+            tin={taxpayerTin} name={language === 'bn' ? sampleTaxpayer.nameBn : sampleTaxpayer.nameEn}
+            testId="searched-taxpayer-card"
+            classification={entityTypeForTin(taxpayerTin) === 'COMPANY'
+              ? (language === 'bn' ? 'কোম্পানি' : 'Company')
+              : entityTypeForTin(taxpayerTin) === 'NON_COMPANY'
+                ? (language === 'bn' ? 'ব্যক্তি' : 'Individual') : undefined}
+          />
         : <p>{language === 'bn' ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.'}</p>}
     </div>
   );
@@ -2136,12 +2141,14 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                     : 'This taxpayer is used only for this payment and is not added to your saved beneficiary lists.'}
                 </p>
               </div>
-              {oneTimeTaxpayer ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-taxpay-light p-3"
-                data-testid="confirmed-one-time-taxpayer">
-                <p className="min-w-0 text-sm text-taxpay-text">
-                  <span className="font-semibold">{language === 'bn' ? 'একবারের করদাতা' : 'One-time taxpayer'}:</span>{' '}
-                  <span>{oneTimeTaxpayer.name}</span>{' · '}<span className="break-all">{oneTimeTaxpayer.tin}</span>
-                </p>
+              {oneTimeTaxpayer ? <div className="space-y-3" data-testid="confirmed-one-time-taxpayer">
+                <TaxpayerTinSearchResultCard key={oneTimeTaxpayer.tin} language={language}
+                  tin={oneTimeTaxpayer.tin} name={oneTimeTaxpayer.name}
+                  classification={entityTypeForTin(oneTimeTaxpayer.tin) === 'COMPANY'
+                    ? (language === 'bn' ? 'কোম্পানি' : 'Company')
+                    : entityTypeForTin(oneTimeTaxpayer.tin) === 'NON_COMPANY'
+                      ? (language === 'bn' ? 'ব্যক্তি' : 'Individual') : undefined}
+                />
                 <button type="button" className="min-h-10 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-semibold text-taxpay-dark"
                   onClick={() => {
                     setOtherTaxLines(lines => lines.filter(line => line.taxpayerId !== oneTimeTaxpayer.id));
@@ -2170,36 +2177,34 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   hideNameField
                                     className="w-full" />
                 {oneTimeLookupError && <p role="alert" className="text-sm text-red-700">{oneTimeLookupError}</p>}
-                {oneTimeSearchMatch && <div className="rounded-lg border border-taxpay-border bg-white p-3" data-testid="one-time-taxpayer-preview">
-                  <p className="text-xs text-slate-600">{language === 'bn' ? 'করদাতার নাম' : 'Taxpayer name'}</p>
-                  <p className="font-semibold text-taxpay-text">{language === 'bn' ? oneTimeSearchMatch.nameBn : oneTimeSearchMatch.nameEn}</p>
-                  <p className="break-all text-sm text-slate-600">{oneTimeSearchMatch.tin}</p>
-                  <p className="mt-1 text-xs text-slate-600" data-testid="one-time-sample-origin">{language === 'bn'
-                    ? 'নমুনা প্রোফাইল — NBR-এর সরকারি রেকর্ড নয়; ব্যক্তিগত ইতিহাস দেখার অনুমতি দেয় না।'
-                    : 'Sample profile — not an official NBR record or permission to view private history.'}</p>
-                  <button type="button" className="mt-3 min-h-10 rounded-lg bg-taxpay-primary px-4 text-sm font-semibold text-white"
-                    disabled={!availableSavedTins || !paymentOwnerId || !oneTimeSearchMatch ||
-                       oneTimeSearchMatch.tin !== oneTimeTinDraft ||
-                       availableSavedTins.includes(oneTimeTinDraft) ||
-                       savedBatchTaxpayers.some(person => person.tin === oneTimeTinDraft) ||
-                       Boolean(oneTimeLookupError) || beneficiaryChecking}
-                    onClick={() => {
-                      if (!oneTimeSearchMatch || oneTimeSearchMatch.tin !== oneTimeTinDraft) return;
-                      if (!availableSavedTins || availableSavedTins.includes(oneTimeTinDraft) ||
-                        savedBatchTaxpayers.some(person => person.tin === oneTimeTinDraft)) {
-                        setOneTimeLookupError(language === 'bn'
-                          ? 'এই টিআইএনটি ইতিমধ্যে নির্বাচিত বা সংরক্ষিত। পেমেন্টের জন্য সংরক্ষিত উপকারভোগী নির্বাচন করুন।'
-                          : 'This TIN is already selected or saved. Select the saved beneficiary entry for this payment.');
-                        return;
-                      }
-                      setOneTimeTaxpayer({ id: crypto.randomUUID(), tin: oneTimeSearchMatch.tin, name: oneTimeSearchMatch.nameEn });
-                      if(paymentOwnerId)setOneTimeRecipient({ownerId:paymentOwnerId,tin:oneTimeSearchMatch.tin,
-                        nameEn:oneTimeSearchMatch.nameEn,nameBn:oneTimeSearchMatch.nameBn});
-                      setOneTimeTinDraft(''); setOneTimeSearchedTin(null); setOneTimeLookupError('');
-                    }}>
-                    {language === 'bn' ? 'এই পেমেন্টে যোগ করুন' : 'Add to this payment'}
-                  </button>
-                </div>}
+                {oneTimeSearchMatch && <TaxpayerTinSearchResultCard
+                  key={oneTimeTinDraft} testId="one-time-taxpayer-preview"
+                  language={language} tin={oneTimeTinDraft}
+                  name={language === 'bn' ? oneTimeSearchMatch.nameBn : oneTimeSearchMatch.nameEn}
+                  classification={entityTypeForTin(oneTimeTinDraft) === 'COMPANY'
+                    ? (language === 'bn' ? 'কোম্পানি' : 'Company')
+                    : entityTypeForTin(oneTimeTinDraft) === 'NON_COMPANY'
+                      ? (language === 'bn' ? 'ব্যক্তি' : 'Individual') : undefined}
+                  canAdd={Boolean(availableSavedTins && paymentOwnerId && !oneTimeLookupError &&
+                    oneTimeSearchMatch.tin === oneTimeTinDraft && !beneficiaryChecking &&
+                    !availableSavedTins.includes(oneTimeTinDraft) &&
+                    !savedBatchTaxpayers.some(person => person.tin === oneTimeTinDraft))}
+                  addLabel={language === 'bn' ? 'এই পেমেন্টে যোগ করুন' : 'Add to this payment'}
+                  onAdd={() => {
+                    if (!oneTimeSearchMatch || oneTimeSearchMatch.tin !== oneTimeTinDraft) return;
+                    if (!availableSavedTins || availableSavedTins.includes(oneTimeTinDraft) ||
+                      savedBatchTaxpayers.some(person => person.tin === oneTimeTinDraft)) {
+                      setOneTimeLookupError(language === 'bn'
+                        ? 'এই টিআইএনটি ইতিমধ্যে নির্বাচিত বা সংরক্ষিত। পেমেন্টের জন্য সংরক্ষিত উপকারভোগী নির্বাচন করুন।'
+                        : 'This TIN is already selected or saved. Select the saved beneficiary entry for this payment.');
+                      return;
+                    }
+                    setOneTimeTaxpayer({ id: crypto.randomUUID(), tin: oneTimeSearchMatch.tin, name: oneTimeSearchMatch.nameEn });
+                    if(paymentOwnerId)setOneTimeRecipient({ownerId:paymentOwnerId,tin:oneTimeSearchMatch.tin,
+                      nameEn:oneTimeSearchMatch.nameEn,nameBn:oneTimeSearchMatch.nameBn});
+                    setOneTimeTinDraft(''); setOneTimeSearchedTin(null); setOneTimeLookupError('');
+                  }}
+                />}
               </>}
             </section>}
 
@@ -2219,7 +2224,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               {!signedInAccount && (!otherBatch || ownAccountTax) &&
                 <TaxpayerTinLookup language={language} className="payment-identity__tin" card
                   tinId="guest-tin" nameId="guest-taxpayer-name"
-                  tin={taxpayerTin}
+                  tin={taxpayerTin} hideNameField={tinLookupState !== 'missing'}
                   name={sampleTaxpayer ? (language === 'bn' ? sampleTaxpayer.nameBn : sampleTaxpayer.nameEn) : ownAccountTax ? accountName : ''}
                   tinLabel={isWithholdingMode ? (language === 'bn' ? 'উইথহোল্ডিং এজেন্টের টিআইএন' : 'Withholding agent’s TIN') : undefined}
                   maxTinLength={ownAccountTax || allowSyntheticDemoTin ? 13 : 12}

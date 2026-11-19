@@ -4,7 +4,8 @@ import { DEMO_USERS, type DemoUserId } from '../../data/demoUsers';
 import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
-import { TaxpayerTinLookup } from '../ui/TaxpayerTinLookup';
+import { TaxpayerTinLookup, TaxpayerTinSearchResultCard } from '../ui/TaxpayerTinLookup';
+import { demoIncomeTaxTypeForTin } from '../../services/demoIncomeTaxType';
 import {
   AuthorizationSyncError, getHostedAuthorizations, performHostedAuthorization,
   retryHostedAuthorizationSync, userIdForHostedTin, type HostedAuthorization,
@@ -179,13 +180,18 @@ export function ManageAuthorization() {
       {adding && tab === 'outgoing' && <form id="new-auth-form" className="taxpay-auth-add" onSubmit={e=>void sendRequest(e)}>
         <TaxpayerTinLookup language={language} card heading={tr('Taxpayer Information','করদাতার তথ্য')}
           tinId="new-auth-tin" nameId="new-auth-name" tin={tin} name={matchingAuthName}
+          hideNameField
           tinLabel={tr('Taxpayer account reference','করদাতার অ্যাকাউন্ট রেফারেন্স')}
           tinPlaceholder={tr('Enter 13-digit account reference','১৩ সংখ্যার অ্যাকাউন্ট রেফারেন্স লিখুন')}
           maxTinLength={13} canSearch={/^\d{13}$/.test(tin)} disabled={busy} autofocusTin
           onTinChange={value=>{setTin(value);setSearchedAuthTin(null);setFeedback(null);}}
           onClear={()=>{setTin('');setSearchedAuthTin(null);setFeedback(null);}}
           onSearch={()=>setSearchedAuthTin(tin)}
-          status={searchedAuthTin === tin && tin.length===13 && !matchedAuthUser
+          status={matchingAuthName ? <TaxpayerTinSearchResultCard key={tin} language={language}
+              tin={tin} name={matchingAuthName} testId="searched-taxpayer-card"
+              classification={demoIncomeTaxTypeForTin(tin) === 'COMPANY' ? tr('Company','কোম্পানি')
+                : demoIncomeTaxTypeForTin(tin) === 'NON_COMPANY' ? tr('Individual','ব্যক্তি') : undefined}
+            /> : searchedAuthTin === tin && tin.length===13 && !matchedAuthUser
             ? <p className="text-sm text-red-700" role="status">{tr('No eligible taxpayer account matches this reference.','এই রেফারেন্সের সঙ্গে কোনো উপযুক্ত করদাতার অ্যাকাউন্ট মেলেনি।')}</p> : undefined} />
         <div className="taxpay-auth-add__actions">
           <button type="submit" className="taxpay-auth-primary" disabled={busy}>{busy?tr('Sending…','পাঠানো হচ্ছে…'):tr('Request authorization','অনুমোদন চান')}</button>
