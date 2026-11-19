@@ -1,3 +1,4 @@
+import { maskTinForDisplay } from '../../services/tinDisplay';
 // Reuse the already approved payment head form and modal styles.
 import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
@@ -19,7 +20,7 @@ import { TaxPayModal } from '../ui/TaxPayModal';
 
 type DraftTaxpayer = NonNullable<ReturnType<typeof lookupSampleTaxpayer>>;
 type RemovedTaxpayer = { person: DraftTaxpayer; index: number; allocations: OtherTaxAllocation[] };
-const maskedTin = (tin: string) => tin.slice(0, 3) + '****';
+const maskedTin = maskTinForDisplay;
 const MAX_TAXPAYERS = 30;
 
 /** This owner-scoped session draft is not an issued taxpayer record or a payment. */
