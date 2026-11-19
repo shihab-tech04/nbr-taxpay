@@ -1,6 +1,6 @@
 import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
-import { TaxpayerTinLookup } from '../ui/TaxpayerTinLookup';
+import { TaxpayerTinLookup, TaxpayerTinSearchResultCard } from '../ui/TaxpayerTinLookup';
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
@@ -886,9 +886,14 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const taxpayerLookupResult = (
     <div className="tin-lookup__result" role="status" aria-live="polite" data-lookup-state={tinLookupState}>
       {tinLookupState === 'idle' ? <p>{language === 'bn' ? 'টিআইএন খুঁজে নাম দেখুন।' : 'Search TIN to fill taxpayer name.'}</p>
-        : sampleTaxpayer ? <p className="text-xs text-slate-600" data-testid="tin-sample-origin">{language === 'bn'
-          ? 'নমুনা প্রোফাইলে নাম মিলেছে। এটি সরকারি NBR রেকর্ড বা পরিচয় যাচাই নয়।'
-          : 'Name matched a sample profile; this is not an official NBR record or identity verification.'}</p>
+        : sampleTaxpayer ? <TaxpayerTinSearchResultCard key={taxpayerTin} language={language}
+            tin={taxpayerTin} name={language === 'bn' ? sampleTaxpayer.nameBn : sampleTaxpayer.nameEn}
+            testId="searched-taxpayer-card"
+            classification={entityTypeForTin(taxpayerTin) === 'COMPANY'
+              ? (language === 'bn' ? 'কোম্পানি' : 'Company')
+              : entityTypeForTin(taxpayerTin) === 'NON_COMPANY'
+                ? (language === 'bn' ? 'ব্যক্তি' : 'Individual') : undefined}
+          />
         : <p>{language === 'bn' ? 'টিআইএন তথ্য পাওয়া যায়নি।' : 'TIN information not found.'}</p>}
     </div>
   );
@@ -2219,7 +2224,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               {!signedInAccount && (!otherBatch || ownAccountTax) &&
                 <TaxpayerTinLookup language={language} className="payment-identity__tin" card
                   tinId="guest-tin" nameId="guest-taxpayer-name"
-                  tin={taxpayerTin}
+                  tin={taxpayerTin} hideNameField={Boolean(sampleTaxpayer)}
                   name={sampleTaxpayer ? (language === 'bn' ? sampleTaxpayer.nameBn : sampleTaxpayer.nameEn) : ownAccountTax ? accountName : ''}
                   tinLabel={isWithholdingMode ? (language === 'bn' ? 'উইথহোল্ডিং এজেন্টের টিআইএন' : 'Withholding agent’s TIN') : undefined}
                   maxTinLength={ownAccountTax || allowSyntheticDemoTin ? 13 : 12}
