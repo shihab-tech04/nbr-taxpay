@@ -878,7 +878,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       ...(selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountRawForHead(head.id)) })) : [{ label: language === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment amount', value: totalAmount }]),
       { label: language === 'bn' ? 'সার্ভিস চার্জ' : 'Service charge', value: 0 }
     ] : selectedHeads.length > 1 ? selectedHeads.map(head => ({ label: `${head.economicCode} — ${language === 'bn' ? head.nameBn : head.nameEn}`, value: parseGuestAmount(amountRawForHead(head.id)) })) : undefined} />;
-  const inlinePaymentCalculation = embedded && mobilePaymentFooter ? null : paymentCalculation;
+  const inlinePaymentCalculation = embedded && mobilePaymentFooter && !unifiedFlow ? null : paymentCalculation;
   const mobileSummaryTotal = otherBatch
     ? (step === 1 ? (unifiedFlow ? 0 : null) : unifiedFlow ? v5EnteredAmountTotal : batchAmount)
     : summedAmount;
@@ -2662,7 +2662,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
       </div>
       {embedded && modalFooterTarget && createPortal(
         <div className="payment-flow-embedded__footer-actions">
-          {mobilePaymentFooter && step <= 3 && (
+          {mobilePaymentFooter && !unifiedFlow && step <= 3 && (
             <details key={step} className="payment-flow-embedded__mobile-summary" data-testid="mobile-payment-calculation">
               <summary className="payment-flow-embedded__mobile-summary-toggle" data-testid="mobile-payment-calculation-toggle">
                 <span className="payment-flow-embedded__mobile-summary-heading"><ReceiptText size={18} aria-hidden="true" />{language === 'bn' ? 'পেমেন্টের হিসাব' : 'Payment calculation'}</span>
