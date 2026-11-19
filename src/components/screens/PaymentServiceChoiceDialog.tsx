@@ -288,7 +288,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         data-payment-service={view === 'payment' && chosenService ? chosenService.id : undefined}
         className={`tax-service-choice${view === 'payment' && effectiveSelected === 'TRAVEL_TAX' ? ' tax-service-choice--travel' : ''}`} aria-label={tr('Tax payment workflow', 'কর পরিশোধের ধাপ')}>
         {view === 'payment' && !checkoutOpen && <>
-          <p ref={stepHeadingRef} tabIndex={-1} className={unifiedEntry ? 'tax-service-choice__eyebrow' : 'sr-only'} aria-label={tr(`Step ${stage} of ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`, `ধাপ ${stage} / ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`)}>
+          <p ref={stepHeadingRef} tabIndex={-1} className="sr-only" aria-label={tr(`Step ${stage} of ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`, `ধাপ ${stage} / ${stages.length}: ${stages[Math.min(stage - 1, stages.length - 1)]}`)}>
             {tr(`Step ${Math.min(stage, stages.length)} of ${stages.length}`, `ধাপ ${Math.min(stage, stages.length)} / ${stages.length}`)}
           </p>
           <ol className="tax-service-choice__progress sr-only" aria-label={tr('Payment stages', 'পেমেন্টের ধাপ')}>
