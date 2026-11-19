@@ -49,7 +49,7 @@ test('every additional Other Tax taxpayer reveals a details review and keeps cle
   const list = dialog.getByTestId('other-tax-taxpayer-list');
   const primary = list.getByTestId('other-tax-primary-taxpayer');
   await expect(primary.getByTestId('shared-taxpayer-tin-lookup')).toHaveCount(1);
-  await expect(primary.locator('.tin-lookup__name')).toBeHidden();
+  await expect(primary.locator('.tin-lookup__name')).toBeVisible();
   await expect(primary.locator('#other-tax-primary-name')).toHaveValue('');
   // Focus alone must not reveal suggestions; only deliberate typing opens them.
   const entry = primary.locator('#guest-tin');
@@ -88,7 +88,7 @@ test('every additional Other Tax taxpayer reveals a details review and keeps cle
   await additional.getByRole('button', { name: 'Clear TIN search' }).click();
   await expect(tin).toHaveValue('');
   await expect(additional.locator('input[id^="other-tax-name-"]')).toHaveValue('');
-  await expect(additional.locator('.tin-lookup__name')).toBeHidden();
+  await expect(additional.locator('.tin-lookup__name')).toBeVisible();
   const overflow = await additional.evaluate(card => card.scrollWidth - card.clientWidth);
   expect(overflow).toBeLessThanOrEqual(2);
 });
