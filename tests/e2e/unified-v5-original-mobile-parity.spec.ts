@@ -35,6 +35,12 @@ test('approved v5 mobile footer keeps full button labels and original calculatio
   await expect(dialog.getByTestId('mobile-payment-calculation')).toHaveCount(0);
   const batch=dialog.getByTestId('other-tax-batch');
   await expect(batch.locator(':scope > .payment-form-summary')).toBeVisible();
+  // Original v5 active taxpayer tab: #2d5eac, not the legacy product blue.
+  const selectedTab=batch.getByTestId('other-tax-taxpayer-tabs').locator('button[aria-pressed="true"]');
+  await expect(selectedTab).toHaveCount(1);
+  await expect(selectedTab).toHaveCSS('background-color','rgb(45, 94, 172)');
+  const selectMenu=batch.getByTestId('other-tax-selection-menu').locator('summary');
+  await expect(selectMenu).toContainText('Select');
   await expect(batch.getByTestId('v5-compact-taxpayer-summary')).toBeVisible();
   await dialog.screenshot({path:`test-results/sohojkor-v5-candidate-stage2-mobile-${page.viewportSize()!.width}.png`});
   await expect(dialog.getByRole('button',{name:'Copy TIN'})).toHaveCount(0);
