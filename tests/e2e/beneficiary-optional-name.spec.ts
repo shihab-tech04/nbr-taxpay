@@ -230,9 +230,9 @@ test('beneficiary suggestions match Other Tax and Search reveals the same taxpay
   await lookup.getByRole('button',{name:'Search',exact:true}).click();
   const details=dialog.getByTestId('searched-taxpayer-card');
   await expect(details).toBeVisible();
-  await expect(details).toContainText('Taxpayer details');
+  await expect(details).toContainText('Taxpayer name');
   await expect(details).toContainText('User 10');
-  await expect(details).toContainText('000000000000');
+  await expect(details).toContainText('000*********');
   await expect(lookup.locator('#beneficiary-name')).toHaveAttribute('readonly','');
   await expect(lookup.locator('.tin-lookup__name')).toBeHidden();
   await chooseBeneficiaryOption(dialog,'beneficiary-tag','clients');
