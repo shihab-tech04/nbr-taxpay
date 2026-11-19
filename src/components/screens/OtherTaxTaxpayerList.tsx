@@ -139,7 +139,7 @@ export function OtherTaxTaxpayerList({
       {progressive && primaryConfirmed ? identityCard('primary', primaryTin, primaryName, true) : <div className="taxpay-taxpayer-row__fields taxpay-taxpayer-row__fields--shared">
         <TaxpayerTinLookup language={language} tinId="guest-tin" nameId="other-tax-primary-name"
           tin={primaryTin}
-          hideNameField={progressive && (searchedTins.primary !== primaryTin || Boolean(lookupSampleTaxpayer(primaryTin)))}
+          hideNameField={progressive && searchedTins.primary === primaryTin && Boolean(lookupSampleTaxpayer(primaryTin))}
           suggestedTins={progressive && !lockedPrimary ? suggestedTins.filter(tin => !additional.some(p => p.tin === tin)) : undefined}
           name={searchedTins.primary === primaryTin && lookupSampleTaxpayer(primaryTin)
             ? (bn ? lookupSampleTaxpayer(primaryTin)!.nameBn : lookupSampleTaxpayer(primaryTin)!.nameEn) : primaryName}
@@ -190,7 +190,7 @@ export function OtherTaxTaxpayerList({
         {personConfirmed ? identityCard(person.id, person.tin, person.name, true) : <div className="taxpay-taxpayer-row__fields taxpay-taxpayer-row__fields--shared">
           <TaxpayerTinLookup language={language} tinId={'other-tax-tin-' + person.id} nameId={'other-tax-name-' + person.id}
             tin={person.tin}
-            hideNameField={requireConfirmation && (searchedTins[person.id] !== person.tin || Boolean(lookupSampleTaxpayer(person.tin)))}
+            hideNameField={requireConfirmation && searchedTins[person.id] === person.tin && Boolean(lookupSampleTaxpayer(person.tin))}
             suggestedTins={requireConfirmation ? suggestedTins.filter(tin => tin !== primaryTin && !additional.some(p => p.id !== person.id && p.tin === tin)) : undefined}
             name={searchedTins[person.id] === person.tin && lookupSampleTaxpayer(person.tin)
               ? (bn ? lookupSampleTaxpayer(person.tin)!.nameBn : lookupSampleTaxpayer(person.tin)!.nameEn) : person.name}
