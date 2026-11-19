@@ -15,9 +15,20 @@ test('shared TIN/name card is used by normal guest payment, with lookup and clea
   await card.locator('#guest-tin').fill('111111111111');
   await card.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(card.locator('#guest-taxpayer-name')).toHaveValue('User 1');
+  const preview = card.getByTestId('searched-taxpayer-card');
+  await expect(preview).toBeVisible();
+  await expect(preview).toContainText('User 1');
+  await expect(preview).toContainText('111*********');
+  await preview.getByRole('button',{name:'Reveal TIN'}).click();
+  await expect(preview).toContainText('111111111111');
+  await preview.getByRole('button',{name:'Hide TIN'}).click();
+  await expect(preview).not.toContainText('111111111111');
+  await expect(preview.getByRole('button',{name:/copy/i})).toHaveCount(0);
+
   await card.getByRole('button', { name: 'Clear TIN search' }).click();
   await expect(card.locator('#guest-tin')).toHaveValue('');
   await expect(card.locator('#guest-taxpayer-name')).toHaveValue('');
+  await expect(card.getByTestId('searched-taxpayer-card')).toHaveCount(0);
   await expect(card.getByRole('button', { name: 'Search', exact: true })).toBeDisabled();
   expect(await dialog.locator('.taxpay-modal__body').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
 });
