@@ -245,7 +245,7 @@ export function SavedBeneficiaryPicker({language,allowMultiple,selectedTins,onCh
       <h3 className="text-sm font-semibold text-taxpay-text">{tr('One-time TIN lookup','একবারের জন্য টিআইএন অনুসন্ধান')}</h3>
       <TaxpayerTinLookup language={language} tinId="payment-fallback-tin" nameId="payment-fallback-name"
         tin={fallbackTin} name={fallbackResult?.tin===fallbackTin?(bn?fallbackResult.nameBn:fallbackResult.nameEn):''}
-        hideNameField={Boolean(fallbackResult?.tin===fallbackTin)}
+        hideNameField
         onTinChange={value=>{setFallbackTin(value);setSearchedFallbackTin('');setFallbackResult(null);}}
         onSearch={runFallbackSearch} onClear={()=>{setFallbackTin('');setSearchedFallbackTin('');setFallbackResult(null);}}
         canSearch={/^\d{12}$/.test(fallbackTin)} searchLabel={tr('Search TIN','টিআইএন খুঁজুন')}
