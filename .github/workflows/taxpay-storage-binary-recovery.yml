@@ -35,8 +35,8 @@ jobs:
           assert manifest['sourceProjectId']=='eyqhoavnitkrajvyqvxn'
           assert len(manifest['objects'])==21 and manifest['totalBytes']==24474931
           project=os.environ['PROJECT_ID']
-assert project in ('eyqhoavnitkrajvyqvxn','gmuhitmaynfhipcvbvkh')
-projects=(project,)
+          assert project in ('eyqhoavnitkrajvyqvxn','gmuhitmaynfhipcvbvkh')
+          projects=(project,)
           root=pathlib.Path('storage-export')
           live=root/'source-storage'
           live.mkdir(parents=True,exist_ok=True)
@@ -59,11 +59,11 @@ projects=(project,)
                               content=response.read(5242881)
                           break
                       except urllib.error.HTTPError as exc:
-                diagnostic=exc.read(800).decode('utf-8','replace')
-                print(f'SUPABASE_STORAGE_HTTP_ERROR project={project} status={exc.code} detail={diagnostic}',file=sys.stderr)
-                if exc.code not in (408,429,500,502,503,504) or attempt==2: raise
-                time.sleep(attempt+1)
-            except (TimeoutError, OSError):
+                          diagnostic=exc.read(800).decode('utf-8','replace')
+                          print(f'SUPABASE_STORAGE_HTTP_ERROR project={project} status={exc.code} detail={diagnostic}',file=sys.stderr)
+                          if exc.code not in (408,429,500,502,503,504) or attempt==2: raise
+                          time.sleep(attempt+1)
+                      except (TimeoutError, OSError):
                           if attempt==2: raise
                           time.sleep(attempt+1)
                   assert content is not None
