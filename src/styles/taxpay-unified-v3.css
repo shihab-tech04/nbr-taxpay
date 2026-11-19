@@ -545,10 +545,37 @@
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-year-allocation + .other-tax-year-allocation {
   border-top-color:#e8ebef;
 }
-/* Keep selected taxpayer obvious without adding a second large blue panel. */
+/* Original v5 Payment Head control dimensions and colors, scoped to this
+   separate journey. Original Pay Tax selection components stay untouched. */
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-taxpayer-chip {
+  min-height:41px;
+  padding:8px 10px;
+  border-radius:9px;
+  border-color:#dbe3ef;
+  background:#f6f8fc;
+  color:#2d3d57;
+  font-size:14px;
+}
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-taxpayer-chip[aria-pressed="true"] {
-  /* The accepted Payment Head tab has the same #2d5eac blue as the original v5 CTA. */
   background:#2d5eac;border-color:#2d5eac;color:#fff;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-taxpayer-chip__count {
+  display:none; /* The original has no numeric badge in the taxpayer tabs. */
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-head-tools__search {
+  min-height:44px;
+  border-color:#c7d4e6;
+  background:transparent;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-selection-menu > summary {
+  min-height:44px;
+  height:44px;
+  padding:0 12px;
+  border-color:#dbe3ef;
+  border-radius:8px;
+  background:transparent;
+  color:#265a9e;
+  font-size:13px;
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-taxpayer-chip:hover:not([aria-pressed="true"]) {
   background:#f7f9fb;
