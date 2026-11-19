@@ -2679,8 +2679,8 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               </button>
               {(signedInAccount || unsignedGuestDrafts) && isPaymentDraftService(category) &&
                 <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />}
-              <button type="button" className="tax-service-choice__continue" aria-label={language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'} onClick={handleStep1Next} disabled={!canContinueStep1}>
-                <span className="payment-flow-embedded__action-long">{language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount'}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</span><ArrowRight size={18} aria-hidden="true" />
+              <button type="button" className="tax-service-choice__continue" aria-label={unifiedFlow ? (language === 'bn' ? 'পেমেন্ট খাতে এগিয়ে যান' : 'Continue to Payment Head') : (language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount')} onClick={handleStep1Next} disabled={!canContinueStep1}>
+                <span className="payment-flow-embedded__action-long">{unifiedFlow ? (language === 'bn' ? 'পেমেন্ট খাতে এগিয়ে যান' : 'Continue to Payment Head') : (language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount')}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</span><ArrowRight size={18} aria-hidden="true" />
               </button>
             </>
           ) : step === 2 ? (<>
@@ -2689,8 +2689,8 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
             </button>
             {(signedInAccount || unsignedGuestDrafts) && isPaymentDraftService(category) &&
               <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />}
-            <button type="button" className="tax-service-choice__continue" aria-label={unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to final preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')} onClick={handleStep2Next} disabled={!initialReuse && otherBatch && (!batchValid || !storyAmountSupported)}>
-              <span className="payment-flow-embedded__action-long">{unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to final preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{language === 'bn' ? 'চ্যানেল' : 'Channel'}</span><ArrowRight size={18} aria-hidden="true" />
+            <button type="button" className="tax-service-choice__continue" aria-label={unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to Final Preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')} onClick={handleStep2Next} disabled={!initialReuse && otherBatch && (!batchValid || !storyAmountSupported)}>
+              <span className="payment-flow-embedded__action-long">{unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to Final Preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{unifiedFlow ? (language === 'bn' ? 'পর্যালোচনা' : 'Preview') : (language === 'bn' ? 'চ্যানেল' : 'Channel')}</span><ArrowRight size={18} aria-hidden="true" />
             </button>
           </>) : step === 3 ? (<>
             <button type="button" className="tax-service-choice__cancel"
@@ -2708,7 +2708,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                 ((!unifiedFlow || unifiedCheckout) && (!paymentChannel || !paymentMethod || !acknowledged))}
               aria-busy={isProcessing}>
               {unifiedFlow && !unifiedCheckout
-                ? <><CreditCard size={18} aria-hidden="true"/>{language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment'}</>
+                ? <>{language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment'} <ArrowRight size={18} aria-hidden="true"/></>
                 : <>{paymentChannel === 'OTC' ? <FileText size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}
                   {paymentChannel === 'OTC'
                     ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
