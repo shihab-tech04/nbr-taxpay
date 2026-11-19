@@ -17,6 +17,19 @@ test('approved v5 mobile footer keeps full button labels and original calculatio
   const toHeads=dialog.getByRole('button',{name:'Continue to Payment Head'});
   await expect(toHeads.locator('.payment-flow-embedded__action-long')).toBeVisible();
   await expect(toHeads.locator('.payment-flow-embedded__action-long')).toHaveText('Continue to Payment Head');
+  await expect(toHeads.locator('.payment-flow-embedded__action-short')).toBeHidden();
+  // The original approved mobile footer uses two equally wide buttons,
+  // complete text (allowed to wrap), 12px font, and 9px corner radius.
+  const footer=dialog.locator('.taxpay-modal__footer .payment-flow-embedded__footer-actions');
+  const back=footer.getByRole('button',{name:'Back'});
+  const [backBox,nextBox]=await Promise.all([back.boundingBox(),toHeads.boundingBox()]);
+  expect(backBox).not.toBeNull();
+  expect(nextBox).not.toBeNull();
+  expect(Math.abs(backBox!.width-nextBox!.width)).toBeLessThanOrEqual(3);
+  await expect(toHeads).toHaveCSS('font-size','12px');
+  await expect(toHeads).toHaveCSS('border-radius','9px');
+  await expect(toHeads).toHaveCSS('background-color','rgb(45, 94, 172)');
+  await expect(back).toHaveCSS('background-color','rgb(255, 255, 255)');
   await toHeads.click();
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
   await expect(dialog.getByTestId('mobile-payment-calculation')).toHaveCount(0);
@@ -28,6 +41,12 @@ test('approved v5 mobile footer keeps full button labels and original calculatio
   const continueButton=dialog.getByRole('button',{name:'Continue to Final Preview'});
   await expect(continueButton.locator('.payment-flow-embedded__action-long')).toBeVisible();
   await expect(continueButton.locator('.payment-flow-embedded__action-short')).toBeHidden();
+  const [step2Back,step2Next]=await Promise.all([
+    footer.getByRole('button',{name:'Back'}).boundingBox(),continueButton.boundingBox()
+  ]);
+  expect(step2Back).not.toBeNull();expect(step2Next).not.toBeNull();
+  expect(Math.abs(step2Back!.width-step2Next!.width)).toBeLessThanOrEqual(3);
+  await expect(continueButton).toHaveCSS('font-size','12px');
   // Review is deliberately disabled before a valid head and positive amount exist.
   await expect(continueButton).toBeDisabled();
   const hasOverflow=await page.evaluate(()=>document.documentElement.scrollWidth > window.innerWidth+2);
