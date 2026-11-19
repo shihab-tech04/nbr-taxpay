@@ -877,7 +877,7 @@ export function Beneficiaries(){
               ? (bn ? lookupSampleTaxpayer(tin)!.nameBn : lookupSampleTaxpayer(tin)!.nameEn) : name}
             canSearch={/^\d{12}$/.test(tin)}
             suggestedTins={SAMPLE_TIN_SUGGESTIONS.filter(candidate=>!existingTins.has(candidate))}
-            hideNameField={Boolean(reviewedBeneficiaryMatch)}
+            hideNameField={searchedBeneficiaryTin !== tin || Boolean(reviewedBeneficiaryMatch)}
             editableName={!(searchedBeneficiaryTin === tin && lookupSampleTaxpayer(tin))}
             onNameChange={setName}
             tinPlaceholder={tr('12-digit TIN','১২ সংখ্যার টিআইএন')}
