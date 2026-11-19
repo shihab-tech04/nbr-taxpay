@@ -277,7 +277,7 @@ export function TaxpayerTinSearchResultCard({
   useEffect(() => { setRevealed(false); }, [tin]);
   const masked = maskTinForDisplay(tin);
   return <div className="taxpayer-tin-lookup__result-card unified-taxpayer-workspace__profile" data-testid={testId}
-    role="status" aria-live="polite" aria-atomic="true" aria-label={bn ? 'করদাতার অনুসন্ধান ফলাফল' : 'Taxpayer search result'}>
+    role="group" aria-live="polite" aria-atomic="true" aria-label={bn ? 'করদাতার অনুসন্ধান ফলাফল' : 'Taxpayer search result'}>
     <dl data-testid={summaryTestId}>
       <div><dt>{bn ? 'করদাতার নাম' : 'Taxpayer name'}</dt><dd className="unified-v5-profile-name">
         <strong>{name}</strong>{classification && <span> · {classification}</span>}
