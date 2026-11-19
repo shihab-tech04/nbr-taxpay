@@ -17,6 +17,9 @@ for (const width of [320, 375, 390, 420, 480, 650, 768, 1280, 1920]) {
     await expect(cells).toHaveCount(12);
     const action = lookup.getByRole('button',{name:'Search',exact:true});
     await expect(action).toBeVisible();
+    await expect(action).toHaveCSS('border-top-width','1px');
+    await expect(action).toHaveCSS('background-color','rgb(245, 246, 248)');
+
     const geometry = await lookup.evaluate(root => {
       const digitRoot = root.querySelector<HTMLElement>('[data-testid="taxpayer-tin-digits"]');
       const slots = Array.from(digitRoot?.querySelectorAll<HTMLElement>('span')??[]);

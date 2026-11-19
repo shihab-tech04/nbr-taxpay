@@ -30,6 +30,16 @@ try {
       await expect(boxes).toHaveCount(12);
       const search=lookup.getByRole('button',{name:locale==='bn'?'করদাতার টিআইএন অনুসন্ধান':'Search taxpayer TIN'});
       const input=lookup.getByTestId('unified-tin-input');
+      await input.fill('33333333333');
+      await expect(search).toBeDisabled();
+      await expect(search).toHaveCSS('background-color','rgb(245, 246, 248)');
+      await expect(search).toHaveCSS('border-top-width','1px');
+      await input.fill('333333333333');
+      await expect(search).toBeEnabled();
+      await expect(search).toHaveCSS('background-color','rgb(255, 255, 255)');
+      await expect(search).toHaveCSS('border-top-width','1px');
+      await expect(search).toHaveCSS('border-top-color','rgb(184, 200, 215)');
+
       await page.evaluate(async()=>{await document.fonts.ready});
       const geometry=await lookup.evaluate(root=>{
         const d=root.querySelector('[data-testid="unified-v5-tin-blocks"]');

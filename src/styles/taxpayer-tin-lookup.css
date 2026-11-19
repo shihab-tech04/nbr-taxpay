@@ -185,3 +185,20 @@ color:var(--color-taxpay-muted,#5f6b7a);cursor:pointer}
     min-width:0;min-height:40px;font-size:14px;
   }
 }
+
+/* Approved Search is an OUTLINED control, never an unframed text action.
+   Button resets in the embedded legacy payment shell can otherwise erase its
+   one-pixel border; pin both ready and disabled states to the shared master. */
+.taxpayer-tin-lookup.taxpayer-tin-lookup button.tin-lookup__search.taxpayer-tin-lookup__search.is-ready:not(:disabled) {
+  border:1px solid #b8c8d7 !important;
+  background:#fff !important;
+  color:#264761 !important;
+  border-radius:9px;
+}
+.taxpayer-tin-lookup.taxpayer-tin-lookup button.tin-lookup__search.taxpayer-tin-lookup__search:not(.is-ready),
+.taxpayer-tin-lookup.taxpayer-tin-lookup button.tin-lookup__search.taxpayer-tin-lookup__search:disabled {
+  border:1px solid #e1e5eb !important;
+  background:#f5f6f8 !important;
+  color:#758294 !important;
+  border-radius:9px;
+}
