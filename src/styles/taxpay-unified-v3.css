@@ -755,3 +755,19 @@
     flex-wrap:wrap; align-items:baseline;
   }
 }
+
+/* v5 locked footer keeps original full action labels (not "Amount"/"Channel")
+   at all supported mobile widths; legacy payment footer is unaffected. */
+@media (max-width:700px) {
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"]
+  .payment-flow-embedded--unified .payment-flow-embedded__footer-actions .payment-flow-embedded__action-long {
+    display:inline;
+    white-space:normal;
+    text-align:center;
+    overflow-wrap:normal;
+  }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"]
+  .payment-flow-embedded--unified .payment-flow-embedded__footer-actions .payment-flow-embedded__action-short {
+    display:none;
+  }
+}
