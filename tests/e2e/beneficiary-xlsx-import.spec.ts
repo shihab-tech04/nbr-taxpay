@@ -273,7 +273,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, manual ent
     await exitDialog.getByRole('button',{name:'Discard tax payment',exact:true}).click();
   await expect(payment).toHaveCount(0);
 
-  const firstRecord=recordList.filter({hasText:'012345678901'});
+  const firstRecord=recordList.filter({hasText:'012*********'});
   await firstRecord.getByRole('button',{name:'Edit'}).click();
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(dialog.locator('#beneficiary-edit-name')).toHaveCount(0);
@@ -285,7 +285,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, manual ent
   await page.getByRole('button',{name:'Selected list'}).click();
   await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Guest Family',exact:true}).click();
 
-  const secondRecord=recordList.filter({hasText:'987654321098'});
+  const secondRecord=recordList.filter({hasText:'987*********'});
   await secondRecord.getByRole('button',{name:'Edit',exact:true}).click();
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
   await dialog.getByRole('button',{name:'Delete beneficiary'}).click();

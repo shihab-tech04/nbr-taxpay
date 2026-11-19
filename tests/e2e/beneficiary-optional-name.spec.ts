@@ -89,7 +89,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await dialog.locator('#beneficiary-name').fill('Editable Contact');
   await chooseBeneficiaryOption(dialog,'beneficiary-tag','clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  const secondRecord=visibleRecords.filter({hasText:'987654321098'});
+  const secondRecord=visibleRecords.filter({hasText:'987*********'});
   await secondRecord.getByRole('button',{name:'Edit',exact:true}).click();
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(dialog.locator('#beneficiary-edit-name')).toHaveCount(0);
@@ -115,7 +115,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(2);
   expect(transport.saved().find(person=>person.tin==='123456789012')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
-  const intendedRecord=visibleRecords.filter({hasText:'012345678901'});
+  const intendedRecord=visibleRecords.filter({hasText:'012*********'});
   await intendedRecord.getByRole('checkbox',{name:'Select Name not provided',exact:true}).check();
   await intendedRecord.getByRole('button',{name:'Make payment',exact:true}).click();
   const payment=page.getByRole('dialog',{name:'Pay Tax'});
