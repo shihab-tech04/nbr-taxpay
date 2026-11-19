@@ -17,7 +17,7 @@ for (const locale of ['en', 'bn'] as const) {
     const tin = primary.locator('#guest-tin');
     const addName = locale === 'bn' ? 'করদাতা যোগ করুন' : 'Add taxpayer';
     const nextName = locale === 'bn' ? 'আরেকজন করদাতা যোগ করুন' : 'Add another taxpayer';
-    await expect(primary.locator('.tin-lookup__name')).toBeVisible();
+    await expect(primary.locator('.tin-lookup__name')).toBeHidden();
     await expect(primary.locator('#other-tax-primary-name')).toHaveValue('');
     await expect(primary.getByTestId('searched-taxpayer-card')).toHaveCount(0);
     await expect(primary.getByRole('button', {name: addName})).toHaveCount(0);
