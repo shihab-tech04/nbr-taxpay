@@ -65,7 +65,7 @@ for(const language of ['en','bn'] as const){
         await expect(row.locator('.beneficiary-directory__person .taxpayer-transaction-row__title'))
           .toHaveText('Visible Beneficiary · '+(language==='bn'?'ক্লায়েন্ট':'Clients'));
         await expect(row.locator('.beneficiary-directory__person .beneficiary-directory__tin'))
-          .toHaveText('012345678901');
+          .toHaveText('012*********');
       }
       if(view==='beneficiaries'&&!desktop){
         await page.getByRole('button',{name:language==='en'?'Filter':'ফিল্টার',exact:true}).click();

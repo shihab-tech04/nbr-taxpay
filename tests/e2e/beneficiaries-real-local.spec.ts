@@ -51,7 +51,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await chooseBeneficiaryOption(addDialog,'beneficiary-tag','friends_family:father');
   await addDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible({timeout:15000});
-  await expect(records).toContainText('012345678901');
+  await expect(records).toContainText('012*********');
   // Compact owner-approved identity column combines name · final tag and bare TIN
   // while preserving native Actions cells and the mobile payment/list controls.
   await page.setViewportSize({width:1280,height:900});
@@ -62,7 +62,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(table.locator('tbody tr td')).toHaveCount(2);
   const identity=table.locator('tbody tr:first-child .beneficiary-directory__person');
   await expect(identity.locator('.taxpayer-transaction-row__title')).toHaveText('Local Beneficiary One · Father');
-  await expect(identity.locator('.beneficiary-directory__tin')).toHaveText('012345678901');
+  await expect(identity.locator('.beneficiary-directory__tin')).toHaveText('012*********');
   const alignment=await table.evaluate(element=>{
     const headers=Array.from(element.querySelectorAll('thead th'));
     const cells=Array.from(element.querySelectorAll('tbody tr:first-child td'));
@@ -141,7 +141,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(picker).toContainText('Local Beneficiary One',{timeout:15000});
   await picker.getByRole('checkbox',{name:'Select Local Beneficiary One'}).check();
   await expect(picker).toContainText('1 selected for this payment');
-  await expect(picker).toContainText('012345678901');
+  await expect(picker).toContainText('012*********');
   await expect(modal.locator('#guest-tin, #guest-payer-name')).toHaveCount(0);
   await expect(modal.getByRole('button',{name:'Add another taxpayer'})).toHaveCount(0);
 

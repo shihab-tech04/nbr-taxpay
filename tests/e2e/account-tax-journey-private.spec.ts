@@ -474,7 +474,7 @@ for(const language of ['en','bn'] as const){
       await expect(copied).toContainText(language==='bn'?'মূল পেমেন্ট অপরিবর্তিত':'Original payment unchanged');
       await expect(page.locator('[data-payment-service="ADVANCE_TAX"]')).toBeVisible();
       const picker=page.getByTestId('saved-beneficiary-picker');
-      await expect(picker).toContainText('012345678901');
+      await expect(picker).toContainText('012*********');
       await expect(picker.getByRole('radio')).toBeChecked();
       await expect(page.locator('#guest-tin')).toHaveCount(0);
       expect(JSON.stringify(repeatableAdvancePayment)).toBe(original);

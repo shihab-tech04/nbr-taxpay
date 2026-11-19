@@ -67,8 +67,8 @@ test('signed-in facilitation uses saved beneficiary list accordions and never ma
   await expect(dialog.getByRole('heading',{name:'Choose beneficiaries',exact:true})).toHaveCount(1);
   await expect(picker.getByRole('heading',{name:'Choose beneficiaries',exact:true})).toHaveCount(0);
   await expect(picker.getByRole('button',{name:'Family'})).toHaveAttribute('aria-expanded','true');
-  await expect(picker).toContainText('2222222222222');
-  await expect(picker).toContainText('3333333333333');
+  await expect(picker).toContainText('222**********');
+  await expect(picker).toContainText('333**********');
   await expect(dialog.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
   await expect(dialog.getByTestId('other-tax-taxpayer-list')).toHaveCount(0);
   await expect(dialog.locator('#guest-tin')).toHaveCount(0);
