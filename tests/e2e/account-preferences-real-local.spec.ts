@@ -171,7 +171,8 @@ test('real account restores its own language and selected beneficiary list in a 
     await again.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
   await expect(again.locator('#beneficiary-list')).toContainText('Family');
   await expect(again.getByTestId('beneficiary-records')).toContainText('Sajid Khan');
-  await expect(again.getByTestId('beneficiary-records')).toContainText('000000000047');
+  await expect(again.getByTestId('beneficiary-records')).toContainText('000*********');
+  await expect(again.getByTestId('beneficiary-records')).not.toContainText('000000000047');
   await expect(again.getByTestId('beneficiary-records')).toContainText('বন্ধু');
   await expect((await authUser(aSession.access_token)).user_metadata?.taxpay_display_name).toBe('Account A profile');
   await expect((await authUser(aSession.access_token)).user_metadata?.taxpay_in_app_notifications).toBe(false);
