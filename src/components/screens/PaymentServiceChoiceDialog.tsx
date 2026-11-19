@@ -263,7 +263,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             {alreadySignedIn ? <button type="button" className="tax-service-choice__continue"
               onClick={() => beginUnifiedPayment(true)}>{tr('Continue with your account', 'আপনার অ্যাকাউন্ট দিয়ে এগিয়ে যান')} <ArrowRight size={18} /></button>
             : <TaxpayerLoginFooter formId="taxpay-embedded-login-form" disabled={!loginReady} language={language} paymentEntryLabel />}
-            <div className="taxpay-unified-entry__divider" aria-hidden="true"><span />{tr('Or', 'অথবা')}<span /></div>
+            <div className="taxpay-unified-entry__divider" aria-hidden="true"><span />{tr('OR', 'অথবা')}<span /></div>
             <button type="button" className="taxpay-unified-entry__walkin" onClick={() => beginUnifiedPayment(false)}>
               {tr('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট')} <ArrowRight size={18} aria-hidden="true" />
             </button>
