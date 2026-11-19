@@ -771,3 +771,42 @@
     display:none;
   }
 }
+
+/* Approved original v5 footer button colors and geometry, scoped to parallel path. */
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"]
+.payment-flow-embedded--unified .payment-flow-embedded__footer-actions > .tax-service-choice__cancel {
+  min-height:45px;
+  border:1px solid #dbe3ef;
+  border-radius:9px;
+  padding:10px 16px;
+  background:#fff;
+  color:#355377;
+  font-size:14px;
+  font-weight:700;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"]
+.payment-flow-embedded--unified .payment-flow-embedded__footer-actions > .tax-service-choice__continue {
+  min-height:45px;
+  border:1px solid #2d5eac;
+  border-radius:9px;
+  padding:10px 16px;
+  background:#2d5eac;
+  color:#fff;
+  font-size:14px;
+  font-weight:700;
+  white-space:normal;
+  text-align:center;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"]
+.payment-flow-embedded--unified .payment-flow-embedded__footer-actions > .tax-service-choice__continue:hover:not(:disabled) {
+  background:#194780;
+  border-color:#194780;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"]
+.payment-flow-embedded--unified .payment-flow-embedded__footer-actions > .tax-service-choice__continue:disabled {
+  opacity:1;
+  background:#89a6d3;
+  border-color:#89a6d3;
+  color:#fff;
+  cursor:not-allowed;
+}
