@@ -12,7 +12,8 @@ import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet,
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
-import {TaxpayerTinLookup} from '../ui/TaxpayerTinLookup';
+import {TaxpayerTinLookup,TaxpayerTinSearchResultCard} from '../ui/TaxpayerTinLookup';
+import {demoIncomeTaxTypeForTin} from '../../services/demoIncomeTaxType';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
 import {UiButton,UiInput} from '../ui/Controls';
@@ -885,17 +886,18 @@ export function Beneficiaries(){
             onSearch={()=>{const found=lookupSampleTaxpayer(tin);setSearchedBeneficiaryTin(tin);if(found)setName(found.nameEn);}}
             status={searchedBeneficiaryTin === tin && tin.length === 12 && !lookupSampleTaxpayer(tin)
               ? <p className="text-sm text-slate-600" role="status">{tr('No sample name found. You may enter a name or leave it empty.','নমুনা তথ্য থেকে নাম পাওয়া যায়নি। নাম লিখতে পারেন অথবা ফাঁকা রাখতে পারেন।')}</p> : undefined} />
-          {reviewedBeneficiary && <section className="taxpay-taxpayer-row__identity-card"
-            aria-label={tr('Taxpayer details','করদাতার তথ্য')} data-testid="searched-taxpayer-card">
-            <h4>{tr('Taxpayer details','করদাতার তথ্য')}</h4>
-            <dl className="taxpay-taxpayer-row__summary" data-testid="searched-taxpayer-summary">
-              <div><dt>{tr('Taxpayer name','করদাতার নাম')}</dt>
-                <dd>{reviewedBeneficiaryMatch
-                  ? (bn ? reviewedBeneficiaryMatch.nameBn : reviewedBeneficiaryMatch.nameEn)
-                  : name.trim() || tr('Not provided','দেওয়া হয়নি')}</dd></div>
-              <div><dt>{tr('TIN','টিআইএন')}</dt><dd>{tin}</dd></div>
-            </dl>
-          </section>}
+          {reviewedBeneficiary && <TaxpayerTinSearchResultCard
+            key={tin} language={language} tin={tin}
+            name={reviewedBeneficiaryMatch
+              ? (bn ? reviewedBeneficiaryMatch.nameBn : reviewedBeneficiaryMatch.nameEn)
+              : name.trim() || tr('Not provided','দেওয়া হয়নি')}
+            classification={reviewedBeneficiaryMatch
+              ? demoIncomeTaxTypeForTin(tin) === 'COMPANY' ? tr('Company','কোম্পানি')
+                : demoIncomeTaxTypeForTin(tin) === 'NON_COMPANY' ? tr('Individual','ব্যক্তি') : undefined
+              : undefined}
+            testId="searched-taxpayer-card" summaryTestId="searched-taxpayer-summary"
+          />}
+
 
         </form>:phase==='upload'?<div className="space-y-3">
           <label htmlFor="beneficiary-file" className="block text-sm font-semibold">{tr('Upload an Excel workbook (.xlsx)','এক্সেল ফাইল আপলোড করুন (.xlsx)')}</label>
