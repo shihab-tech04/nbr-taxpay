@@ -255,17 +255,23 @@ export interface TaxpayerTinSearchResultCardProps {
   onAdd?: () => void;
   canAdd?: boolean;
   testId?: string;
+  summaryTestId?: string;
+  addButtonTestId?: string;
+  addLabel?: string;
+  /** Match-only preview. Only flows with an Add action supply onAdd. */
+  disabledAddLabel?: string;
 }
 
 export function TaxpayerTinSearchResultCard({
   language, tin, name, classification, duplicateMessage, classificationError, onAdd, canAdd = false, testId,
+  summaryTestId, addButtonTestId, addLabel, disabledAddLabel,
 }: TaxpayerTinSearchResultCardProps) {
   const bn = language === 'bn';
   const [revealed, setRevealed] = useState(false);
   useEffect(() => { setRevealed(false); }, [tin]);
   const masked = tin.slice(0, 3) + '*'.repeat(Math.max(0, tin.length - 3));
   return <div className="taxpayer-tin-lookup__result-card unified-taxpayer-workspace__profile" data-testid={testId}>
-    <dl>
+    <dl data-testid={summaryTestId}>
       <div><dt>{bn ? 'করদাতার নাম' : 'Taxpayer name'}</dt><dd className="unified-v5-profile-name">
         <strong>{name}</strong>{classification && <span> · {classification}</span>}
       </dd></div>
@@ -277,8 +283,9 @@ export function TaxpayerTinSearchResultCard({
     </dl>
     {duplicateMessage && <p className="unified-taxpayer-workspace__error" role="status">{duplicateMessage}</p>}
     {classificationError && <p className="unified-taxpayer-workspace__error" role="status">{classificationError}</p>}
-    {onAdd && <button type="button" className="unified-taxpayer-workspace__add" onClick={onAdd} disabled={!canAdd}>
-      <Plus size={18} aria-hidden="true"/>{bn ? 'করদাতা যোগ করুন' : 'Add taxpayer'}
+    {onAdd && <button type="button" data-testid={addButtonTestId}
+      className="unified-taxpayer-workspace__add" onClick={onAdd} disabled={!canAdd}>
+      <Plus size={18} aria-hidden="true"/>{!canAdd && disabledAddLabel ? disabledAddLabel : addLabel ?? (bn ? 'করদাতা যোগ করুন' : 'Add taxpayer')}
     </button>}
   </div>;
 }
