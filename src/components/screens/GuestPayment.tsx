@@ -1,3 +1,4 @@
+import { maskTinForDisplay } from '../../services/tinDisplay';
 import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
 import { TaxpayerTinLookup, TaxpayerTinSearchResultCard } from '../ui/TaxpayerTinLookup';
@@ -1664,13 +1665,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 const itemReceipt = confirmedReceipts.find(record => record.paymentTransactionId === item.confirmedId);
                 const head = otherTaxAllocationHead(item.receipt.items[0].headId);
                 return <li key={item.sourceId} className="rounded-lg border border-taxpay-border p-3" data-testid="other-tax-batch-result">
-                  <p className="font-semibold break-words">{item.receipt.taxpayerTin} · {item.receipt.assessmentYear}</p>
+                  <p className="font-semibold break-words">{maskTinForDisplay(item.receipt.taxpayerTin)} · {item.receipt.assessmentYear}</p>
                   <p>{language === 'bn' ? head?.nameBn || head?.nameEn : head?.nameEn} · {formatCurrency(item.receipt.totalAmount, language)}</p>
                   <p className="break-all text-sm">{language === 'bn' ? 'রেফারেন্স' : 'Reference'}: {item.receipt.challanNo}</p>
                   <p className="text-sm">{itemReceipt ? (language === 'bn' ? 'রেকর্ড সংরক্ষিত' : 'Record saved') : (language === 'bn' ? 'অপেক্ষমাণ' : 'Pending')}</p>
                   {itemReceipt && <button type="button" className="payment-lifecycle__secondary mt-2 inline-flex min-h-11 items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary"
-                    aria-label={language === 'bn' ? `${item.receipt.taxpayerTin}, ${head?.nameBn || head?.nameEn}, ${item.receipt.assessmentYear}-এর রসিদ দেখুন`
-                      : `View receipt for ${item.receipt.taxpayerTin}, ${head?.nameEn}, ${item.receipt.assessmentYear}`}
+                    aria-label={language === 'bn' ? `${maskTinForDisplay(item.receipt.taxpayerTin)}, ${head?.nameBn || head?.nameEn}, ${item.receipt.assessmentYear}-এর রসিদ দেখুন`
+                      : `View receipt for ${maskTinForDisplay(item.receipt.taxpayerTin)}, ${head?.nameEn}, ${item.receipt.assessmentYear}`}
                     onClick={() => { setCreatedReceipt(itemReceipt); setShowReceiptDetails(true); }}>
                     {language === 'bn' ? 'রসিদ দেখুন' : 'View receipt'}
                   </button>}
@@ -1785,7 +1786,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                     ? (language === 'bn' ? walkInPayerLookup.nameBn : walkInPayerLookup.nameEn) : ''}
                   tinLabel={language === 'bn' ? 'পরিশোধকারীর নিজের টিআইএন (ঐচ্ছিক)' : 'Payer TIN (optional)'}
                   nameLabel={language === 'bn' ? 'মিলে যাওয়া পরিশোধকারীর নাম' : 'Matched payer name'}
-                  hideNameField={unifiedFlow}
+                  hideNameField={unifiedFlow || walkInPayerLookup?.tin === walkInPayerTin}
                   omitNameField={unifiedFlow}
                   searchLabel={language === 'bn' ? 'পরিশোধকারীর টিআইএন খুঁজুন' : 'Search payer TIN'}
                   requiredTin={false} maxTinLength={unifiedFlow ? 13 : 12}
@@ -1815,13 +1816,15 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                     : walkInPayerLookup ? <p className="sr-only">{language === 'bn' ? 'টিআইএন মিলে গেছে।' : 'TIN matched.'}</p> : null}
                   error={fieldError('payerTin')}
                 />
-                {unifiedFlow && walkInPayerLookup?.tin === walkInPayerTin && <div className="unified-v5-payer-result" role="status" aria-live="polite" data-testid="unified-v5-payer-result">
-                  <span>{language === 'bn' ? 'পরিশোধকারীর তথ্য' : 'Payer information'}</span>
-                  <div className="unified-v5-payer-result__identity"><strong>{language === 'bn' ? walkInPayerLookup.nameBn : walkInPayerLookup.nameEn}</strong>
-                    {entityTypeForTin(walkInPayerTin) && <span>{entityTypeForTin(walkInPayerTin) === 'COMPANY'
-                      ? (language === 'bn' ? 'কোম্পানি' : 'Company') : (language === 'bn' ? 'ব্যক্তি' : 'Individual')}</span>}</div>
-                  <small>{walkInPayerTin.slice(0, 3) + '*'.repeat(Math.max(0, walkInPayerTin.length - 3))}</small>
-                </div>}
+                {walkInPayerLookup?.tin === walkInPayerTin && <TaxpayerTinSearchResultCard
+                  key={walkInPayerTin} testId={unifiedFlow ? 'unified-v5-payer-result' : 'walkin-payer-search-result'}
+                  language={language} tin={walkInPayerTin}
+                  name={language === 'bn' ? walkInPayerLookup.nameBn : walkInPayerLookup.nameEn}
+                  classification={entityTypeForTin(walkInPayerTin) === 'COMPANY'
+                    ? (language === 'bn' ? 'কোম্পানি' : 'Company')
+                    : entityTypeForTin(walkInPayerTin) === 'NON_COMPANY'
+                      ? (language === 'bn' ? 'ব্যক্তি' : 'Individual') : undefined}
+                />}
                 {walkInPayerLookup?.tin === walkInPayerTin && !confirmedWalkInPayer &&
                   <button type="button" className="min-h-11 rounded-lg border border-taxpay-primary px-4 py-2 text-sm text-taxpay-primary"
                     onClick={() => { setWalkInPayerConfirmed(true); clearValidationError(); }}>
