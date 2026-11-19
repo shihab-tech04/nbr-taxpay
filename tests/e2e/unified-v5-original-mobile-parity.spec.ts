@@ -23,6 +23,7 @@ test('approved v5 mobile footer keeps full button labels and original calculatio
   const batch=dialog.getByTestId('other-tax-batch');
   await expect(batch.locator(':scope > .payment-form-summary')).toBeVisible();
   await expect(batch.getByTestId('v5-compact-taxpayer-summary')).toBeVisible();
+  await dialog.screenshot({path:`test-results/sohojkor-v5-candidate-stage2-mobile-${page.viewportSize()!.width}.png`});
   await expect(dialog.getByRole('button',{name:'Copy TIN'})).toHaveCount(0);
   const continueButton=dialog.getByRole('button',{name:'Continue to Final Preview'});
   await expect(continueButton.locator('.payment-flow-embedded__action-long')).toBeVisible();
