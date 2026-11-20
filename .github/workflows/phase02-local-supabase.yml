@@ -53,8 +53,8 @@ jobs:
           echo "Current Office main: $OFFICE_CURRENT_SHA; shared bridge contract and app build PASS"
           echo "TaxPay and Office bridge sources match current Office main: $OFFICE_CURRENT_SHA"
           echo "### Current Office integration boundary" >> "$GITHUB_STEP_SUMMARY"
-          echo "Current Office main: `$OFFICE_CURRENT_SHA` — shared bridge contract and Office production build PASS." >> "$GITHUB_STEP_SUMMARY"
-          echo "TaxPay payment-sync and payment-command bridge sources are byte-identical to current Office main `$OFFICE_CURRENT_SHA`." >> "$GITHUB_STEP_SUMMARY"
+          echo "Current Office main SHA $OFFICE_CURRENT_SHA — shared bridge contract and Office production build PASS." >> "$GITHUB_STEP_SUMMARY"
+          echo "TaxPay payment-sync and payment-command bridge sources are byte-identical to current Office main SHA $OFFICE_CURRENT_SHA." >> "$GITHUB_STEP_SUMMARY"
           echo "office_sha=$OFFICE_CURRENT_SHA" >> "$GITHUB_OUTPUT"
       - name: Verify exact WS3 Office D3 provenance candidate
         id: verify-office-candidate
