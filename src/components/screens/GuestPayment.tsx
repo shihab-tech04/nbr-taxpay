@@ -43,6 +43,7 @@ import { deletePaymentFormDraft, isPaymentDraftService, type PaymentFormDraft, t
 import { isOptionalReceiptEmailValid, normaliseReceiptEmail } from '../../services/receiptEmail';
 import { usePaymentAccountProfile } from '../../services/paymentAccountProfile';
 import {reuseRecordedPayment,type PaymentReuse} from '../../services/paymentReuse';
+import { limitChallanRemarks } from '../../services/challanRemarks';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import { getStorySessionId, persistSimulatedPayment, type StoryPaymentInput } from '../../services/simulatedPaymentStory';
 import { prepareCombinedOtherTaxPayment, saveCombinedOtherTaxRequest, loadCombinedOtherTaxRequest, clearCombinedOtherTaxRequest, fitsCombinedAllocationCapacity, MAX_COMBINED_ALLOCATIONS } from '../../services/otherTaxCombinedPayment';
@@ -1849,8 +1850,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           {copy.remarks}
         </label>
         <textarea id="guest-payment-remarks" rows={unifiedFlow ? 4 : 3} value={paymentRemarks}
-          maxLength={4000} aria-describedby="guest-payment-remarks-limit"
-          onChange={event => setPaymentRemarks(event.target.value)}
+          aria-describedby="guest-payment-remarks-limit"
+          onChange={event => setPaymentRemarks(limitChallanRemarks(event.target.value))}
           placeholder={copy.remarksPlaceholder}
           className="min-h-24 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary" />
         <p id="guest-payment-remarks-limit" className="mt-1 text-xs text-slate-600">
