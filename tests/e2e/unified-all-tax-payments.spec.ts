@@ -24,6 +24,12 @@ test('v5 frozen Step 1: exactly twelve blocks, entity alongside name and selecte
   await expect(input).toHaveAttribute('maxlength','12');
   const search = modal.getByRole('button',{name:'Search taxpayer TIN'});
   await input.fill('22222222222');
+  // The matched screenshot has no extra Clear (×) beside the label. Users
+  // still edit or erase the controlled TIN with their keyboard.
+  await expect(modal.getByRole('button',{name:'Clear TIN search'})).toHaveCount(0);
+  await input.fill('');
+  await expect(input).toHaveValue('');
+  await input.fill('22222222222');
   await expect(search).toBeDisabled();
   await expect(search).toHaveCSS('background-color','rgb(245, 246, 248)');
   await input.fill('222222222222');
