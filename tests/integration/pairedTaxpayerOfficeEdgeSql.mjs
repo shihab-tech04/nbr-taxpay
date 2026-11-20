@@ -79,6 +79,7 @@ function sqlRpc(origin,name,args,authenticatedOffice=false){
       // preview-profile submit it must not gain service-role privileges.
       demo_story1_submit:`public.demo_story1_submit(${sqlJson(args.p_input)})`,
       taxpay_demo_story1_submit:`public.taxpay_demo_story1_submit(${sqlText(args.p_capability_hash)},${sqlJson(args.p_input)})`,
+      taxpay_demo_story1_history_page:`public.taxpay_demo_story1_history_page(${sqlText(args.p_capability_hash)},${sqlText(args.p_view)},${args.p_before_created_at==null?'NULL::timestamptz':sqlText(args.p_before_created_at)+'::timestamptz'},${args.p_before_id==null?'NULL::uuid':sqlText(args.p_before_id)+'::uuid'},${args.p_page_size}::integer)`,
       taxpay_demo_story1_session_payment:`public.taxpay_demo_story1_session_payment(${sqlText(args.p_capability_hash)},${sqlText(args.p_payment_id)}::uuid)`,
       taxpay_office_story1_mirror_read:`public.taxpay_office_story1_mirror_read(${sqlText(args.p_id)}::uuid,${sqlText(args.p_session)}::uuid)`,
       taxpay_demo_received_payment_notices:`public.taxpay_demo_received_payment_notices(${sqlText(args.p_capability_hash)},${sqlText(args.p_action)},${args.p_event_id===null?'NULL::text':sqlText(args.p_event_id)},${args.p_offset}::integer,${args.p_limit}::integer)`,
