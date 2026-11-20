@@ -16,7 +16,8 @@ type AccountUser={
 type FixtureState={
   currentUser:AccountUser;profileId:ProfileId;historyRows:Record<string,unknown>[];
   people:Record<string,unknown>[];lists:Record<string,unknown>[];
-  failHistoryResponses:number;historySubjects:string[];peopleRangeStarts:number[];unsafeWrites:string[];
+  failHistoryResponses:number;historySubjects:string[];peopleRangeStarts:number[];
+  syntheticClaims:string[];unsafeWrites:string[];
 };
 
 const ownerA:AccountUser={id:'00000000-0000-4000-8000-000000000201',email:'f125-owner-a@example.invalid',
@@ -90,6 +91,11 @@ async function installPrivateFixture(page:Page,state:FixtureState){
       expect(subject).toBe(state.currentUser.id);
       return json(state.profileId);
     }
+    if(url.pathname==='/rest/v1/rpc/taxpay_claim_story1_session'&&request.method()==='POST'){
+      expect(subject).toBe(state.currentUser.id);
+      state.syntheticClaims.push(subject??'missing-subject');
+      return json(0);
+    }
     if(url.pathname==='/rest/v1/rpc/sim_my_payment_history'&&request.method()==='POST'){
       expect(subject).toBe(state.currentUser.id);
       state.historySubjects.push(subject??'missing-subject');
@@ -159,7 +165,7 @@ test('F-125 T01/T04: history and beneficiary search preserve order and responsiv
     historyRows:Array.from({length:HISTORY_COUNT},(_,index)=>makeHistoryRow(HISTORY_COUNT-index,'user1')),
     people:makePeople(BENEFICIARY_COUNT,ownerA.id),
     lists:[{id:listId,owner_uid:ownerA.id,name:'Volume list',created_at:'2026-01-01T00:00:00.000Z'}],
-    failHistoryResponses:0,historySubjects:[],peopleRangeStarts:[],unsafeWrites:[]};
+    failHistoryResponses:0,historySubjects:[],peopleRangeStarts:[],syntheticClaims:[],unsafeWrites:[]};
   await installPrivateFixture(page,state);
   await page.goto(`/?action=history&lang=${language}`);
   const activity=page.getByTestId('signed-in-payment-activity');
@@ -180,8 +186,7 @@ test('F-125 T01/T04: history and beneficiary search preserve order and responsiv
     historySearchMs.push(await page.evaluate(start=>performance.now()-start,started));
   }
   await search.fill(recordId(1));
-  if(language==='bn')await rows.first().getByRole('button',{name:labels.viewDetails}).click();
-  else await rows.first().click();
+  await rows.first().getByRole('button',{name:labels.viewDetails}).click();
   await expect(page.getByRole('dialog').last()).toContainText(recordId(1));
   await page.reload();
   const refreshedHistory=currentHistoryRows(page);
@@ -215,6 +220,7 @@ test('F-125 T01/T04: history and beneficiary search preserve order and responsiv
   await expect(afterRefresh).toHaveCount(BENEFICIARY_COUNT);
   await expect(afterRefresh.first()).toContainText('Volume contact refreshed after reload');
   expect(state.unsafeWrites).toEqual([]);
+  expect(state.syntheticClaims.every(subject=>subject===ownerA.id)).toBe(true);
 
   const metrics={feature:'F-125',story:'US-109',testIds:['US-109-T01','US-109-T04'],
     sourceCommit:process.env.GITHUB_SHA??'local-worktree',environment:'synthetic read-only Playwright fixture',
@@ -225,7 +231,7 @@ test('F-125 T01/T04: history and beneficiary search preserve order and responsiv
     correctness:{historyCount:HISTORY_COUNT,historyOrder:'descending fixture IDs preserved',
       beneficiaryCount:BENEFICIARY_COUNT,beneficiaryOrder:'descending fixture IDs preserved',
       beneficiaryPageStarts:state.peopleRangeStarts.slice(0,3),refreshReload:'latest synthetic row returned',
-      unscopedReadOrWrite:'none observed'},
+      interceptedSyntheticClaims:state.syntheticClaims.length,unscopedReadOrWrite:'none observed'},
     acceptance:{numericBudget:'UNVERIFIED; current acceptance record supplies no approved numeric cutoff',
       TaxpayerSQLReadback:'UNVERIFIED',OfficeSQLReadback:'UNVERIFIED',fieldINP:'UNVERIFIED'}};
   await attachMetrics(testInfo,metrics);
@@ -237,7 +243,7 @@ test('F-125 T02/T03: account switch hides prior rows and failed history read rec
   const rowA=makeHistoryRow(1,'user1');
   const rowB=makeHistoryRow(2,'user2');
   const state:FixtureState={currentUser:ownerA,profileId:'user1',historyRows:[rowA],people:[],
-    lists:[],failHistoryResponses:0,historySubjects:[],peopleRangeStarts:[],unsafeWrites:[]};
+    lists:[],failHistoryResponses:0,historySubjects:[],peopleRangeStarts:[],syntheticClaims:[],unsafeWrites:[]};
   await installPrivateFixture(page,state);
   await page.goto('/?action=history&lang=en');
   await expect(currentHistoryRows(page)).toHaveCount(1);
@@ -251,9 +257,10 @@ test('F-125 T02/T03: account switch hides prior rows and failed history read rec
     key:`sb-${projectRef}-auth-token`,value:makeSession(ownerB),
   });
   await page.reload();
-  await expect(page.getByRole('alert')).toContainText('Unable to load transactions.');
+  const historyAlert=page.getByRole('alert').filter({hasText:'Unable to load transactions.'});
+  await expect(historyAlert).toBeVisible();
   await expect(page.getByText(String(rowA.id),{exact:true})).toHaveCount(0);
-  await page.getByRole('button',{name:'Retry'}).click();
+  await historyAlert.getByRole('button',{name:'Retry'}).click();
   await expect(currentHistoryRows(page)).toHaveCount(1);
   await expect(currentHistoryRows(page).first()).toContainText(String(rowB.id));
   await expect(page.getByText(String(rowA.id),{exact:true})).toHaveCount(0);
@@ -262,5 +269,6 @@ test('F-125 T02/T03: account switch hides prior rows and failed history read rec
   await expect(currentHistoryRows(page).first()).toContainText(String(rowB.id));
   expect(state.historySubjects.length).toBeGreaterThanOrEqual(3);
   expect(state.historySubjects.every(subject=>subject===ownerA.id||subject===ownerB.id)).toBe(true);
+  expect(state.syntheticClaims.every(subject=>subject===ownerA.id||subject===ownerB.id)).toBe(true);
   expect(state.unsafeWrites).toEqual([]);
 });
