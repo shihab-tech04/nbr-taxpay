@@ -55,13 +55,15 @@ export interface TaxpayerTinLookupProps {
   segmentsTestId?: string;
   /** One accessible input drives the approved visible digit blocks. */
   segmented?: boolean;
+  /** Only the approved All Tax Payments Step 1 hides the optional clear control. All other flows keep it. */
+  showClearButton?: boolean;
 }
 
 export function TaxpayerTinLookup({
   language, tinId, nameId, tin, name, onTinChange, onSearch, onClear, canSearch,
   heading, tinLabel, nameLabel, searchLabel, tinPlaceholder, namePlaceholder, maxTinLength = 12, maxNameLength = 160,
   readonlyTin = false, editableName = false, onNameChange, disabled = false, requiredTin = true,
-  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false, omitNameField = false, submitOnEnter = false, inputTestId, segmentsTestId, segmented = true,
+  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false, omitNameField = false, submitOnEnter = false, inputTestId, segmentsTestId, segmented = true, showClearButton = true,
 }: TaxpayerTinLookupProps) {
   const bn = language === 'bn';
   const tinRef = useRef<HTMLInputElement>(null);
@@ -143,7 +145,7 @@ export function TaxpayerTinLookup({
     <div className="taxpayer-tin-lookup__field">
       <div className="taxpayer-tin-lookup__field-heading">
         <label htmlFor={tinId}>{tinLabel ?? (bn ? 'করদাতার টিআইএন' : 'Taxpayer TIN')}{requiredTin ? ' *' : ''}</label>
-        {Boolean(tin) && !locked && <button type="button" className="taxpayer-tin-lookup__clear"
+        {showClearButton && Boolean(tin) && !locked && <button type="button" className="taxpayer-tin-lookup__clear"
           aria-label={bn ? 'টিআইএন অনুসন্ধান মুছুন' : 'Clear TIN search'}
           title={bn ? 'টিআইএন মুছুন' : 'Clear TIN'}
           onClick={() => { onClear(); focusTinWithoutOpeningSuggestions(); }}>
