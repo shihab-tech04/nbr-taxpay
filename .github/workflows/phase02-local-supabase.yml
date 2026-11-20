@@ -24,6 +24,8 @@ jobs:
     name: Current Office main contract and build
     runs-on: ubuntu-latest
     timeout-minutes: 12
+    outputs:
+      office_sha: ${{ steps.verify-office.outputs.office_sha }}
     permissions:
       contents: read
     steps:
@@ -32,6 +34,7 @@ jobs:
         with:
           node-version-file: .node-version
       - name: Verify current Office main source/build and shared TaxPay contracts
+        id: verify-office
         shell: bash
         run: |
           set -euo pipefail
@@ -51,10 +54,12 @@ jobs:
           echo "### Current Office integration boundary" >> "$GITHUB_STEP_SUMMARY"
           echo "Current Office main: `$OFFICE_CURRENT_SHA` — shared bridge contract and Office production build PASS." >> "$GITHUB_STEP_SUMMARY"
           echo "TaxPay payment-sync and payment-command bridge sources are byte-identical to current Office main `$OFFICE_CURRENT_SHA`." >> "$GITHUB_STEP_SUMMARY"
+          echo "office_sha=$OFFICE_CURRENT_SHA" >> "$GITHUB_OUTPUT"
 
 
   disposable-backend:
     name: Isolated local Supabase acceptance (no hosted credentials)
+    needs: current-office-contract
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -468,12 +473,15 @@ jobs:
           set -euo pipefail
           # Two independent local databases; never link or write hosted SQL.
           OFFICE_DIR="$RUNNER_TEMP/ws3-office-verified"
-          # B-owned paired SQL step: resolve the current Office #270 branch
-          # once, record its immutable SHA and test that exact detached tree.
-          # A historical hardcoded head can fail before any SQL test runs.
-          git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
+          # Pair the SQL acceptance with the exact Office Main revision that
+          # passed this run's required contract/build job.
+          OFFICE_SHA="${{ needs.current-office-contract.outputs.office_sha }}"
+          if [[ ! "$OFFICE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Current Office Main SHA output is missing or invalid." >&2
+            exit 1
+          fi
+          git clone --depth 1 --branch main \
             https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
-          OFFICE_SHA="d04de641f0dbca6138e02cb41c2e89d78449b8b3"
           git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
