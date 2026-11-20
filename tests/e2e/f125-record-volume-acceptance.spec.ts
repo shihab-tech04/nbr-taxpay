@@ -101,6 +101,18 @@ async function installPrivateFixture(page:Page,state:FixtureState){
       state.syntheticClaims.push(subject??'missing-subject');
       return json(0);
     }
+    // This authenticated RPC is a SECURITY DEFINER STABLE read of already
+    // owner-indexed payment rows. Supabase transports RPC reads as POST, so
+    // mock it explicitly instead of counting its HTTP verb as a data write.
+    if(url.pathname==='/rest/v1/rpc/taxpay_my_story1_payments'&&request.method()==='POST'){
+      expect(subject).toBe(state.currentUser.id);
+      const body=request.postDataJSON() as {p_page?:number;p_per_page?:number};
+      const pageNumber=body.p_page??1;
+      const perPage=body.p_per_page??100;
+      expect(Number.isInteger(pageNumber)&&pageNumber>=1).toBe(true);
+      expect(Number.isInteger(perPage)&&perPage>=1&&perPage<=100).toBe(true);
+      return json({items:[],total:0,page:pageNumber,perPage});
+    }
     if(url.pathname==='/rest/v1/rpc/sim_my_payment_history'&&request.method()==='POST'){
       expect(subject).toBe(state.currentUser.id);
       state.historySubjects.push(subject??'missing-subject');
