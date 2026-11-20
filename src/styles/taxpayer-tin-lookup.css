@@ -202,3 +202,16 @@ color:var(--color-taxpay-muted,#5f6b7a);cursor:pointer}
   color:#758294 !important;
   border-radius:9px;
 }
+
+/* The original TaxPay @media(max-width:420px) selector hides the legacy
+   Search icon.  The approved master Search always shows the magnifier,
+   including on 320/375/390/420px devices.  Leave unrelated legacy inputs
+   and their responsiveness unchanged. */
+@media (max-width:420px) {
+  .taxpayer-tin-lookup.taxpayer-tin-lookup button.tin-lookup__search.taxpayer-tin-lookup__search > svg {
+    display:block !important;
+    width:17px;
+    height:17px;
+    flex-shrink:0;
+  }
+}
