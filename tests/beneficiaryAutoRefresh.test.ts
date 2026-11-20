@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {readFileSync} from 'node:fs';
-import {createBeneficiaryAutoRefreshGate} from '../src/services/beneficiaryAutoRefresh';
+import {createBeneficiaryAutoRefreshGate,beneficiaryWorkspaceOwnerScope} from '../src/services/beneficiaryAutoRefresh';
 
 test('focus plus visibility resume shares one beneficiary read', () => {
   const gate = createBeneficiaryAutoRefreshGate(1250);
@@ -54,4 +54,26 @@ test('beneficiary profile page refreshes from server without a restore control',
   assert.match(page,/window\.clearInterval\(interval\)/);
   assert.match(page,/createBeneficiaryAutoRefreshGate\(\)/);
   assert.doesNotMatch(page,/Restore saved lists|restoreSavedLists/);
+});
+
+test('beneficiary view remounts for every Auth owner and renewed preview session',()=>{
+  const scope=beneficiaryWorkspaceOwnerScope;
+  const owner=(authUid:string|null,previewId:string|null=null,previewSessionId:string|null=null,
+    authLoading=false)=>scope({authLoading,authUid,previewId,previewSessionId});
+  assert.equal(owner(null,null,null,true),'auth-pending');
+  assert.equal(owner(null),'guest');
+  assert.notEqual(owner('auth-a'),owner('auth-b'));
+  assert.notEqual(owner('auth-a'),owner(null));
+  assert.notEqual(owner('auth-a'),owner(null,'user1','session-1'));
+  assert.notEqual(owner(null,'user1','session-1'),owner(null,'user1','session-2'));
+  assert.equal(owner('auth-a','user1','session-1'),owner('auth-a','user2','session-2'),
+    'Real Auth identity takes precedence over any synthetic preview state');
+});
+
+test('beneficiary interface keys all private rows and editing state by active owner',()=>{
+  const source=readFileSync('src/components/screens/Beneficiaries.tsx','utf8');
+  assert.match(source,/const ownerScope=beneficiaryWorkspaceOwnerScope\(/);
+  assert.match(source,/return <BeneficiariesForOwner key=\{ownerScope\}\/>/);
+  assert.match(source,/function BeneficiariesForOwner\(\)/);
+  assert.match(source,/previewSessionId:session&&session\.profileId===previewAccount\?\.id\?session\.paymentSessionId:null/);
 });

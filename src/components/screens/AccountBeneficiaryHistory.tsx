@@ -122,8 +122,13 @@ function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBenefi
   const payAgain=(entry:BeneficiaryPaymentEntry)=>{
     try{
       setReuseError('');
-      if (profile.status === 'loading' || profile.status === 'idle')
-        throw Error('Taxpayer profile is still loading. Try again after your account is verified.');
+      // Without a verified bound taxpayer TIN, Pay Again would silently
+      // classify an old self-payment as a payment for someone else.
+      // Travel Tax has no taxpayer TIN and keeps its separate journey.
+      if (entry.receipt.paymentCategory !== 'TRAVEL_TAX' &&
+          (profile.status !== 'ready' || !profile.profile?.tin))
+        throw Error(tr('Your taxpayer identity is not verified for Pay Again. Reconnect your account and retry.',
+          'আবার পেমেন্ট করতে আপনার করদাতার পরিচয় যাচাই করা প্রয়োজন। অ্যাকাউন্ট সংযুক্ত করে আবার চেষ্টা করুন।'));
       const matching = entry.batchId ? rows.filter(r=>r.batchId===entry.batchId) : [entry];
       const unique = [...new Map(matching.map(r=>[r.paymentId,r.receipt])).values()];
       startPaymentReuse(reuseRecordedPayment(unique,ownerUid,profile.profile?.tin??null,entry.batchId??entry.paymentId));

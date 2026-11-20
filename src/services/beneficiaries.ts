@@ -18,20 +18,39 @@ function client() {
   return supabase;
 }
 /** Read every page instead of silently truncating beneficiaries across named lists. */
-export async function collectBeneficiaryPages<T>(
-  fetchPage:(from:number,to:number)=>Promise<T[]>, pageSize=500
+export async function collectBeneficiaryPages<T extends {id:string}>(
+  fetchPage:(from:number,to:number)=>Promise<T[]>, pageSize=500, maxPages=100
 ):Promise<T[]> {
-  if(!Number.isInteger(pageSize)||pageSize<1||pageSize>1000)throw new Error('Invalid beneficiary page size.');
+  if(!Number.isSafeInteger(pageSize)||pageSize<1||pageSize>1000||
+     !Number.isSafeInteger(maxPages)||maxPages<1||maxPages>100)
+    throw new Error('Invalid beneficiary pagination.');
   const all:T[]=[];
-  for(let from=0;;from+=pageSize){
+  const seen=new Set<string>();
+  for(let index=0;index<maxPages;index++){
+    const from=index*pageSize;
     const page=await fetchPage(from,from+pageSize-1);
-    all.push(...page);
+    if(!Array.isArray(page)||page.length>pageSize)
+      throw new Error('Invalid saved beneficiary page. Retry.');
+    for(const row of page){
+      if(!row||typeof row.id!=='string'||!row.id||seen.has(row.id))
+        throw new Error('Saved beneficiaries changed while loading. Retry.');
+      seen.add(row.id);
+      all.push(row);
+    }
     if(page.length<pageSize)return all;
   }
+  throw new Error('Saved beneficiary list exceeds the safe retrieval limit. Retry.');
 }
 export async function loadBeneficiaries(ownerUid: string | null = null, options:{forceFresh?:boolean}={}): Promise<{lists:BeneficiaryList[]; people:Beneficiary[]}> {
   if (!ownerUid) return loadGuestBeneficiaries(options);
   const db=client();
+  const verifyAuthOwner=async()=>{
+    const {data,error}=await db.auth.getUser();
+    if(error||data.user?.id!==ownerUid)
+      throw new Error('Account changed while loading saved beneficiaries. Sign in again.');
+  };
+  // An owner UID supplied by a previous render is not authorization.
+  await verifyAuthOwner();
   // PostgREST truncates unpaged SELECT results at the project row limit.
   // Read both collections in stable pages; an omitted saved list must never
   // look like an account with no beneficiaries.
@@ -49,6 +68,12 @@ export async function loadBeneficiaries(ownerUid: string | null = null, options:
       return (result.data??[]) as Beneficiary[];
     }),
   ]);
+  await verifyAuthOwner();
+  const ownedLists=new Set(lists.map(list=>list.id));
+  if(ownedLists.size!==lists.length||new Set(people.map(person=>person.id)).size!==people.length||
+     lists.some(list=>list.owner_uid!==ownerUid)||
+     people.some(person=>person.owner_uid!==ownerUid||!ownedLists.has(person.list_id)))
+    throw Error('Saved beneficiary records changed or could not be verified. Refresh and retry.');
   return {lists,people};
 }
 /** Explicit, idempotent recovery from this browser's guest capability into the signed-in profile.

@@ -30,14 +30,15 @@ export const NotificationsView:React.FC=()=>{
   const privateMode=Boolean(authenticatedUser);
   // Do not render the previous account's bound profile during an Auth switch.
   const id=(privateMode&&authenticatedUser&&boundOwnerUid===authenticatedUser.id?boundId:undefined) as SimulationUser|undefined;
+  const noticeIdentity=(authenticatedUser?.id??'')+':'+(id??'');
   // A delayed SQL acknowledgment must be scoped to the Auth UID and profile
   // that started it. Refresh this ref during render, before passive effects.
   const currentNoticeIdentity=useRef<NoticeOwnerIdentity>({authUid:authenticatedUser?.id??null,profileId:id??null});
   currentNoticeIdentity.current={authUid:authenticatedUser?.id??null,profileId:id??null};
   const [notices,setNotices]=useState<VerifiedPrivateSimulationNotice[]>([]);
-  const [noticeOwner,setNoticeOwner]=useState<SimulationUser|null>(null);
+  const [noticeOwner,setNoticeOwner]=useState<string|null>(null);
   const [privatePaymentRows,setPrivatePaymentRows]=useState<{
-    owner:SimulationUser; payer:SimulationTransaction[]; beneficiary:SimulationTransaction[];
+    owner:string; payer:SimulationTransaction[]; beneficiary:SimulationTransaction[];
   }|null>(null);
   const [selectedPayment,setSelectedPayment]=useState<PaymentLifecycleRecord|null>(null);
   const [guestNotices,setGuestNotices]=useState<VerifiedStoryPaymentNotice[]>([]);
@@ -150,19 +151,19 @@ export const NotificationsView:React.FC=()=>{
           getPrivateSimulationNotices(),getPrivateSimulationHistory('payer'),getPrivateSimulationHistory('beneficiary'),
         ]);
         const verified=reconcilePrivateSimulationNotices(id,data,payerRows,beneficiaryRows);
-        if(active){setNotices(verified);setNoticeOwner(id);setPrivatePaymentRows({owner:id,payer:payerRows,beneficiary:beneficiaryRows});setLoading(false);setError('');}
-      }catch(e){if(active){setNoticeOwner(id);setPrivatePaymentRows({owner:id,payer:[],beneficiary:[]});setError(e instanceof Error?e.message:'Notification API failed');setLoading(false);}}
+        if(active){setNotices(verified);setNoticeOwner(noticeIdentity);setPrivatePaymentRows({owner:noticeIdentity,payer:payerRows,beneficiary:beneficiaryRows});setLoading(false);setError('');}
+      }catch(e){if(active){setNoticeOwner(noticeIdentity);setPrivatePaymentRows({owner:noticeIdentity,payer:[],beneficiary:[]});setError(e instanceof Error?e.message:'Notification API failed');setLoading(false);}}
     };
     void read();const timer=window.setInterval(()=>void read(),7000);
     return()=>{active=false;window.clearInterval(timer);};
-  },[id,privateMode]);
-  const privateNotices=noticeOwner===id?notices:[];
+  },[id,privateMode,noticeIdentity]);
+  const privateNotices=noticeOwner===noticeIdentity?notices:[];
   const openRelatedPayment=(notice:VerifiedPrivateSimulationNotice)=>{
     setError('');
-    const rows=privatePaymentRows?.owner===id?privatePaymentRows:null;
+    const rows=privatePaymentRows?.owner===noticeIdentity?privatePaymentRows:null;
     const source=notice.perspective==='payer'?rows?.payer:notice.perspective==='beneficiary'?rows?.beneficiary:undefined;
     const transaction=source?.find(row=>row.transactionId===notice.transactionId&&row.simulationOnly===true&&row.state==='SIMULATED');
-    if(!id||noticeOwner!==id||!transaction||notice.amountMinor===null||!notice.perspective){
+    if(!id||noticeOwner!==noticeIdentity||!transaction||notice.amountMinor===null||!notice.perspective){
       setError(label('The related payment details could not be verified.','সংশ্লিষ্ট পেমেন্টের তথ্য যাচাই করা যায়নি।'));return;
     }
     const allocations=notice.perspective==='beneficiary'
@@ -196,7 +197,7 @@ export const NotificationsView:React.FC=()=>{
   };
   const markRead=async (notice:SimulationNotice)=>{
     const requestOwner:NoticeOwnerIdentity={authUid:authenticatedUser?.id??null,profileId:id??null};
-    if(!privateMode||boundOwnerUid!==requestOwner.authUid||noticeOwner!==id||
+    if(!privateMode||boundOwnerUid!==requestOwner.authUid||noticeOwner!==noticeIdentity||
       !isCurrentNoticeOwner(requestOwner,currentNoticeIdentity.current)||busyNotice!==null)return;
     setBusyNotice(notice.id);setError('');
     try{
@@ -343,7 +344,7 @@ export const NotificationsView:React.FC=()=>{
     {authenticatedUser&&import.meta.env.VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED==='true'&&
       <ReceivedPaymentNoticeRegister authOwnerUid={authenticatedUser.id} language={language}/>}
     <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-live="polite">
-      {loading||noticeOwner!==id?<p role="status">{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:
+      {loading||noticeOwner!==noticeIdentity?<p role="status">{label('Loading…','লোড হচ্ছে…')}</p>:error?<p role="alert">{error}</p>:
         !privateNotices.length?<p className="text-taxpay-muted">{label('No notifications yet.','এখনো কোনো বিজ্ঞপ্তি নেই।')}</p>:
         <TaxPayDataGrid variant="tabular" rows={privateNotices} getRowKey={n=>String(n.id)}
           ariaLabel={label('Account payment notifications','অ্যাকাউন্টের পেমেন্ট বিজ্ঞপ্তি')}
@@ -368,7 +369,7 @@ export const NotificationsView:React.FC=()=>{
           ]}/>}
     </section>
     <SessionPaymentNotifications language={language}/>
-    {selectedPayment&&id&&noticeOwner===id&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}
+    {selectedPayment&&id&&noticeOwner===noticeIdentity&&<TaxPayModal title={label('Payment details','পেমেন্টের বিবরণ')}
       onClose={()=>setSelectedPayment(null)} hideFooter className="taxpayer-transaction-detail">
       <PaymentLifecycleDetails record={selectedPayment} language={language}/>
     </TaxPayModal>}

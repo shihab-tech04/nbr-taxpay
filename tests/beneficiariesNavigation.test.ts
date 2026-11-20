@@ -73,7 +73,7 @@ test('all account-private beneficiary rows load beyond the first 1,000 in determ
   assert.match(load,/collectBeneficiaryPages<Beneficiary>/);
   assert.match(load,/\.order\('name'\)\.order\('id'\)\.range\(from,to\)/);
   assert.deepEqual(await collectBeneficiaryPages(async()=>[]),[]);
-  await assert.rejects(collectBeneficiaryPages(async()=>[],0),/page size/);
+  await assert.rejects(collectBeneficiaryPages(async()=>[],0),/Invalid beneficiary pagination|page size/);
 });
 
 test('Beneficiaries uses shared controls without the retired two-card page structure',()=>{

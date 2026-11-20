@@ -44,3 +44,19 @@ test('published payment picker uses the approved signed-in lists without email g
   assert.match(login,/id="taxpayer-login-password"/);
   assert.doesNotMatch(login,/supabase\.auth\.signInWithOtp|Sign in with email/);
 });
+
+test('saved beneficiary readers revalidate Auth and reject cross-owner or inconsistent SQL rows',()=>{
+  const service=readFileSync('src/services/beneficiaries.ts','utf8');
+  const start=service.indexOf('export async function loadBeneficiaries(');
+  const end=service.indexOf('/** Explicit, idempotent recovery',start);
+  assert.ok(start>=0&&end>start);
+  const reader=service.slice(start,end);
+  assert.match(reader,/const verifyAuthOwner=async\(\)=>/);
+  assert.match(reader,/db\.auth\.getUser\(\)/);
+  assert.match(reader,/data\.user\?\.id!==ownerUid/);
+  assert.equal((reader.match(/await verifyAuthOwner\(\)/g)??[]).length,2);
+  assert.match(reader,/\.eq\('owner_uid',ownerUid\)/);
+  assert.match(reader,/lists\.some\(list=>list\.owner_uid!==ownerUid\)/);
+  assert.match(reader,/people\.some\(person=>person\.owner_uid!==ownerUid\|\|!ownedLists\.has\(person\.list_id\)\)/);
+  assert.match(reader,/new Set\(people\.map\(person=>person\.id\)\)\.size!==people\.length/);
+});

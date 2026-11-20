@@ -14,11 +14,13 @@ import type {TaxpayerTinProfile} from '../../contracts/taxpayerTinProfile';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
 import {MaskedProfileValue,sensitiveProfileKind} from '../ui/MaskedProfileValue';
+import {assertAccountNotificationReadRows,createAccountNotificationRefreshGate,collectAccountNotificationPages} from '../../services/notificationReadConfirmation';
 
 export type AccountPage = 'profile' | 'settings' | 'notifications';
 type DraftNotice = { id: string; owner_uid: string; created_at: string; category: string; assessment_year: string };
 type ReviewNotice = {
   id: string;
+  recipient_uid: string;
   request_id: string | null;
   event_id?: string | null;
   correction_inquiry_id?: string | null;
@@ -29,8 +31,8 @@ type ReviewNotice = {
   created_at: string;
 };
 
-const reviewNoticeSelect = 'id,request_id,event_id,message_code,is_read,created_at,correction_inquiry_id,correction_decision_id';
-const legacyReviewNoticeSelect = 'id,request_id,event_id,message_code,is_read,created_at';
+const reviewNoticeSelect = 'id,recipient_uid,request_id,event_id,message_code,is_read,created_at,correction_inquiry_id,correction_decision_id';
+const legacyReviewNoticeSelect = 'id,recipient_uid,request_id,event_id,message_code,is_read,created_at';
 
 function missingCorrectionNoticeColumns(error: { code?: string; message?: string } | null): boolean {
   return Boolean(error && (
@@ -39,30 +41,62 @@ function missingCorrectionNoticeColumns(error: { code?: string; message?: string
   ));
 }
 
+/** The notification register must not hide draft activity after the 30th draft. */
+async function readDraftNotices(client: NonNullable<typeof supabase>, uid: string): Promise<DraftNotice[]> {
+  return collectAccountNotificationPages<DraftNotice>(async(from,to)=>{
+    const result=await client.from('taxpay_payment_drafts')
+      .select('id,owner_uid,created_at,category,assessment_year')
+      .eq('owner_uid',uid).order('created_at',{ascending:false})
+      .order('id',{ascending:false}).range(from,to);
+    if(result.error)throw result.error;
+    const rows=(result.data??[]) as DraftNotice[];
+    if(rows.some(row=>row.owner_uid!==uid||
+      typeof row.category!=='string'||typeof row.assessment_year!=='string'||
+      !Number.isFinite(Date.parse(row.created_at))))
+      throw Error('Saved account draft notices could not be verified.');
+    return rows;
+  });
+}
+
 async function readReviewNotices(client: NonNullable<typeof supabase>, uid: string): Promise<ReviewNotice[]> {
-  const query = (select: string) => client.from('taxpay_in_app_notifications').select(select)
-    .eq('recipient_uid', uid).order('created_at', { ascending: false }).limit(50);
-  let result = await query(reviewNoticeSelect);
-  // Keep existing payment review notices readable before WS3's additive
-  // correction-notification migration reaches the hosted schema.
-  if (result.error && missingCorrectionNoticeColumns(result.error)) result = await query(legacyReviewNoticeSelect);
-  if (result.error) throw result.error;
+  let columns=reviewNoticeSelect;
+  const notices=await collectAccountNotificationPages<ReviewNotice>(async(from,to)=>{
+    const query=(select:string)=>client.from('taxpay_in_app_notifications').select(select)
+      .eq('recipient_uid',uid)
+      .order('created_at',{ascending:false}).order('id',{ascending:false})
+      .range(from,to);
+    let result=await query(columns);
+    // Read older hosted schemas without concealing a failed owner-scoped SQL read.
+    if(result.error&&columns===reviewNoticeSelect&&missingCorrectionNoticeColumns(result.error)){
+      columns=legacyReviewNoticeSelect;
+      result=await query(columns);
+    }
+    if(result.error)throw result.error;
+    const rows=(result.data??[]) as unknown as ReviewNotice[];
+    if(rows.some(item=>item.recipient_uid!==uid||typeof item.message_code!=='string'||typeof item.is_read!=='boolean'||
+      !Number.isFinite(Date.parse(item.created_at))))
+      throw Error('Account notification data could not be verified.');
+    return rows;
+  });
+  const inquiryIds=[...new Set(notices
+    .filter(item=>item.message_code.startsWith('CORRECTION_'))
+    .map(item=>item.correction_inquiry_id)
+    .filter((id):id is string=>Boolean(id)))];
+  if(!inquiryIds.length)return notices;
 
-  const notices = (result.data ?? []) as unknown as ReviewNotice[];
-  const inquiryIds = [...new Set(notices
-    .filter(item => item.message_code.startsWith('CORRECTION_'))
-    .map(item => item.correction_inquiry_id)
-    .filter((id): id is string => Boolean(id)))];
-  if (!inquiryIds.length) return notices;
-
-  const references = await client.from('taxpay_correction_inquiries')
-    .select('inquiry_id,original_reference')
-    .eq('requester_uid', uid).in('inquiry_id', inquiryIds);
-  if (references.error) throw references.error;
-  const byInquiry = new Map((references.data ?? []).map(row => [row.inquiry_id, row.original_reference]));
-  return notices.map(item => item.correction_inquiry_id
-    ? { ...item, correction_reference: byInquiry.get(item.correction_inquiry_id) ?? null }
-    : item);
+  const byInquiry=new Map<string,string|null>();
+  // Bounded URL/SQL payloads: never silently omit older correction references.
+  for(let offset=0;offset<inquiryIds.length;offset+=100){
+    const chunk=inquiryIds.slice(offset,offset+100);
+    const references=await client.from('taxpay_correction_inquiries')
+      .select('inquiry_id,original_reference')
+      .eq('requester_uid',uid).in('inquiry_id',chunk);
+    if(references.error)throw references.error;
+    for(const row of references.data??[])byInquiry.set(row.inquiry_id,row.original_reference);
+  }
+  return notices.map(item=>item.correction_inquiry_id
+    ?{...item,correction_reference:byInquiry.get(item.correction_inquiry_id)??null}
+    :item);
 }
 
 const I18N = {
@@ -184,6 +218,8 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     const storedLanguage = user?.user_metadata?.taxpay_language;
     setPreferredLanguage(storedLanguage === 'bn' || storedLanguage === 'en' ? storedLanguage : language);
     setSettingsOwnerUid(user?.id ?? null);
+    // A previous account's search must not hide the next owner's notices.
+    setNotificationSearch('');
     setBusy(false);
     setFeedback(null);
   }, [user?.id]);
@@ -200,29 +236,39 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     const uid = user.id;
     setNoticeSnapshot(null);
     setLoadState('loading');
-    const refreshNotices = () => (async () => {
+    const refreshGate=createAccountNotificationRefreshGate();
+    let refreshing=false;
+    const refreshNotices = () => {
+      // One owner-scoped fetch at a time; slow responses must not starve retry.
+      if(refreshing)return;
+      refreshing=true;
+      const requestId=refreshGate.next();
+      return (async () => {
       const { data: auth, error: authError } = await client.auth.getUser();
       if (authError || auth.user?.id !== uid) throw new Error('Account session expired');
-      const [draftResult, reviewResult] = await Promise.all([
-        client.from('taxpay_payment_drafts').select('id,owner_uid,created_at,category,assessment_year')
-          .eq('owner_uid', uid).order('created_at', { ascending: false }).limit(30),
-        readReviewNotices(client, uid)
+      const [draftNotices, reviewResult] = await Promise.all([
+        readDraftNotices(client,uid),
+        readReviewNotices(client,uid)
       ]);
-      if (draftResult.error) throw draftResult.error;
       const { data: stillCurrent, error: rereadError } = await client.auth.getUser();
       if (rereadError || stillCurrent.user?.id !== uid) throw new Error('Account session changed');
-      if (!active) return;
+      if (!active || !refreshGate.isLatest(requestId)) return;
       if (!isCurrentUid(uid)) return;
       setNoticeSnapshot({ownerUid: uid,
-        drafts: (draftResult.data ?? []).filter((item: DraftNotice) => item.owner_uid === uid),
+        drafts: draftNotices,
         reviews: reviewResult});
       setLoadState('ready');
-    })().catch(() => { if (active && isCurrentUid(uid)) { setNoticeSnapshot(null); setLoadState('error'); } });
+      })().catch(() => {
+        if (active && refreshGate.isLatest(requestId) && isCurrentUid(uid)) {
+          setNoticeSnapshot(null); setLoadState('error');
+        }
+      }).finally(()=>{refreshing=false;});
+    };
     void refreshNotices();
     // New non-financial officer updates arrive without requiring a page reload.
     // Every poll revalidates the currently authenticated owner before and after SQL reads.
     const poll = window.setInterval(() => { void refreshNotices(); }, 12000);
-    return () => { active = false; window.clearInterval(poll); };
+    return () => { active = false; refreshGate.invalidate(); window.clearInterval(poll); };
   }, [page, user?.id, allowed, revision]);
 
   const savePreferences = async (event: React.FormEvent) => {
@@ -255,32 +301,65 @@ export function AccountCenter({ page }: { page: AccountPage }) {
   };
 
   const markViewed = async () => {
-    if (!user || !supabase || loadState !== 'ready' || noticeSnapshot?.ownerUid !== user.id) return;
-    const requestUid = user.id;
-    setBusy(true); setFeedback(null);
-    try {
-      const { data: current, error: identityError } = await supabase.auth.getUser();
-      if (identityError || current.user?.id !== user.id) throw new Error('Session changed');
-      const { error } = await supabase.auth.updateUser({ data: {
-        taxpay_notifications_read_at: new Date().toISOString()
-      }});
-      if (error) throw error;
-      if (!isCurrentUid(requestUid)) return;
-      const {data: session, error: sessionError} = await supabase.auth.getUser();
-      if (sessionError || session.user?.id !== requestUid || !isCurrentUid(requestUid))
-        throw new Error('Account session changed');
-      const unread = reviewNotices.filter(n=>!n.is_read).map(n=>n.id);
-      if (unread.length) {
-        const { data: updated, error: reviewError } = await supabase.from('taxpay_in_app_notifications')
-          .update({is_read:true}).eq('recipient_uid', requestUid).in('id',unread).select('id');
-        if (!isCurrentUid(requestUid)) return;
-        if (reviewError || updated?.length !== unread.length) throw new Error('Review notice read-back not confirmed');
-        setNoticeSnapshot(prev=>prev?.ownerUid===requestUid
-          ?{...prev,reviews:prev.reviews.map(n=>unread.includes(n.id)?{...n,is_read:true}:n)}:prev);
+    const client=supabase;
+    if (!user || !client || loadState !== 'ready' || noticeSnapshot?.ownerUid !== user.id) return;
+    const requestUid=user.id;
+    // This timestamp is the observation boundary, not completion time.
+    // Notices created during an unusually slow acknowledgement stay unread.
+    const confirmedReadAt=new Date().toISOString();
+    setBusy(true);setFeedback(null);
+    const checkCurrent=async()=>{
+      const {data,error}=await client.auth.getUser();
+      if(error||data.user?.id!==requestUid||!isCurrentUid(requestUid))
+        throw Error('Account session changed');
+    };
+    try{
+      await checkCurrent();
+      // Mark the latest owner-owned server snapshot, not only the previous
+      // 50-row UI cache, so old notices cannot remain silently unread.
+      const currentNotices=await readReviewNotices(client,requestUid);
+      await checkCurrent();
+      const unread=currentNotices
+        .filter(item=>!item.is_read&&Date.parse(item.created_at)<=Date.parse(confirmedReadAt))
+        .map(item=>item.id);
+      for(let offset=0;offset<unread.length;offset+=100){
+        await checkCurrent();
+        const ids=unread.slice(offset,offset+100);
+        const {data:updated,error:reviewError}=await client.from('taxpay_in_app_notifications')
+          .update({is_read:true}).eq('recipient_uid',requestUid).in('id',ids)
+          .select('id,is_read');
+        if(reviewError)throw reviewError;
+        await checkCurrent();
+        assertAccountNotificationReadRows(ids,updated);
+        const {data:persisted,error:readError}=await client.from('taxpay_in_app_notifications')
+          .select('id,is_read').eq('recipient_uid',requestUid).in('id',ids);
+        if(readError)throw readError;
+        await checkCurrent();
+        assertAccountNotificationReadRows(ids,persisted);
       }
-      if (isCurrentUid(requestUid)) setFeedback({error:false,content:t.readSaved});
-    } catch { if (isCurrentUid(requestUid)) setFeedback({error:true,content:t.saveFailed}); }
-    finally { if (isCurrentUid(requestUid)) setBusy(false); }
+      // Only publish the account-wide viewed timestamp after *all* SQL review
+      // read flags have been confirmed. Failure remains retryable.
+      await checkCurrent();
+      const {data:updatedAccount,error}=await client.auth.updateUser({data:{
+        taxpay_notifications_read_at:confirmedReadAt
+      }});
+      if(error||updatedAccount.user?.id!==requestUid||
+         updatedAccount.user?.user_metadata?.taxpay_notifications_read_at!==confirmedReadAt)
+        throw Error('Notification viewing state was not confirmed.');
+      if(!isCurrentUid(requestUid))return;
+      setNoticeSnapshot(previous=>previous?.ownerUid===requestUid
+        ?{...previous,reviews:currentNotices.map(item=>
+          unread.includes(item.id)?{...item,is_read:true}:item)}:previous);
+      setFeedback({error:false,content:t.readSaved});
+      setRevision(value=>value+1);
+    }catch{
+      if(isCurrentUid(requestUid)){
+        setFeedback({error:true,content:t.saveFailed});
+        // A partial batch can have succeeded before an error; reload server
+        // truth instead of leaving a misleading cached read/unread state.
+        setRevision(value=>value+1);
+      }
+    }finally{if(isCurrentUid(requestUid))setBusy(false);}
   };
 
   const signOut = async () => {

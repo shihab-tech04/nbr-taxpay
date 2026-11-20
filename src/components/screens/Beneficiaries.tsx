@@ -5,7 +5,7 @@ import '../../styles/taxpay-payment-form.css';
 import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTablePanel,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
-import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRefresh';
+import {createBeneficiaryAutoRefreshGate,beneficiaryWorkspaceOwnerScope} from '../../services/beneficiaryAutoRefresh';
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
 import {recordAccountActivity} from '../../services/accountActivity';
 import {activePreviewSession,getPreviewSettings,savePreviewSetting} from '../../services/previewAccountSession';
@@ -34,6 +34,20 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
+  const {previewAccount}=useTaxState();
+  const {user,loading}=useAccountIdentity();
+  const session=activePreviewSession();
+  const ownerScope=beneficiaryWorkspaceOwnerScope({
+    authLoading:loading,
+    authUid:user?.id??null,
+    previewId:previewAccount?.id??null,
+    previewSessionId:session&&session.profileId===previewAccount?.id?session.paymentSessionId:null,
+  });
+  // Owner changes remount all private rows, filters and editing state before render.
+  return <BeneficiariesForOwner key={ownerScope}/>;
+}
+
+function BeneficiariesForOwner(){
   const {language,previewAccount,routeParams,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,
     pendingBeneficiarySave,clearPendingBeneficiarySave}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();

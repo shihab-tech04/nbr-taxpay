@@ -22,6 +22,24 @@ async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[]
     localStorage.setItem(key,JSON.stringify(value));
     if(seedOnlyOnce)sessionStorage.setItem(seeded,'1');
   },{key:'sb-nbr-taxpay-test-auth-token',value:session(),seedOnlyOnce:seedAuthOnlyOnce});
+  type NoticeFixture={
+    id:string;recipient_uid:string;request_id:string|null;event_id:string|null;
+    message_code:string;is_read:boolean;created_at:string;
+    correction_inquiry_id?:string|null;correction_decision_id?:string|null;
+  };
+  let notificationRows:NoticeFixture[]=hasData
+    ?correctionColumns?[{
+      id:'notice-a1',recipient_uid:owner.id,request_id:request.id,event_id:'event-a1',
+      message_code:'REQUEST_SUBMITTED',is_read:false,created_at:'2026-10-03T10:00:00Z'
+    },{
+      id:'notice-correction-a1',recipient_uid:owner.id,request_id:null,event_id:null,
+      correction_inquiry_id:correctionInquiryId,correction_decision_id:'decision-a1',
+      message_code:'CORRECTION_MAKER_ACKNOWLEDGED',is_read:false,created_at:'2026-10-04T10:00:00Z'
+    }]:[{
+      id:'notice-a1',recipient_uid:owner.id,request_id:request.id,event_id:'event-a1',
+      message_code:'REQUEST_SUBMITTED',is_read:false,created_at:'2026-10-03T10:00:00Z'
+    }]
+    :[];
   await page.route(backend+'/**',async route=>{
     const req=route.request(),url=new URL(req.url());
     const response=(data:unknown,status=200)=>route.fulfill({status,contentType:'application/json',
@@ -49,21 +67,15 @@ async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[]
     }
     if(url.pathname==='/rest/v1/taxpay_in_app_notifications'){
       expect(url.searchParams.get('recipient_uid')).toBe('eq.'+owner.id);
-      if(req.method()==='PATCH')return response([
-        {id:'notice-a1'},{id:'notice-correction-a1'}
-      ]);
+      if(req.method()==='PATCH'){
+        const update=req.postDataJSON() as {is_read?:unknown};
+        if(update.is_read===true)notificationRows=notificationRows.map(item=>({...item,is_read:true}));
+        return response(notificationRows.map(item=>({id:item.id,is_read:item.is_read})));
+      }
       const correctionSelect=url.searchParams.get('select')?.includes('correction_inquiry_id');
       if(!correctionColumns&&correctionSelect)
         return response({code:'42703',message:'column taxpay_in_app_notifications.correction_inquiry_id does not exist'},400);
-      if(!correctionColumns)return response(hasData?[{id:'notice-a1',request_id:request.id,event_id:'event-a1',
-        message_code:'REQUEST_SUBMITTED',is_read:false,created_at:'2026-10-03T10:00:00Z'}]:[]);
-      return response(hasData?[
-        {id:'notice-a1',request_id:request.id,event_id:'event-a1',message_code:'REQUEST_SUBMITTED',
-          is_read:false,created_at:'2026-10-03T10:00:00Z'},
-        {id:'notice-correction-a1',request_id:null,event_id:null,correction_inquiry_id:correctionInquiryId,
-          correction_decision_id:'decision-a1',message_code:'CORRECTION_MAKER_ACKNOWLEDGED',
-          is_read:false,created_at:'2026-10-04T10:00:00Z'},
-      ]:[]);
+      return response(notificationRows);
     }
     if(url.pathname==='/rest/v1/taxpay_correction_inquiries'){
       expect(url.searchParams.get('requester_uid')).toBe('eq.'+owner.id);

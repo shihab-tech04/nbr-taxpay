@@ -199,3 +199,11 @@ test('isolated User1 ten-recipient allocation fixture preserves payer/recipient 
   assert.equal(sources[1].allocations.length,4,'four lines under another combined parent');
   assert.ok(sources.every(x=>x.allocations.reduce((sum,row)=>sum+row.amountMinor,0)===x.totalMinor));
 });
+
+test('beneficiary history Pay Again does not mistake an unlinked account for another taxpayer',()=>{
+  const ui=readFileSync('src/components/screens/AccountBeneficiaryHistory.tsx','utf8');
+  assert.match(ui,/entry\.receipt\.paymentCategory !== 'TRAVEL_TAX'/);
+  assert.match(ui,/profile\.status !== 'ready' \|\| !profile\.profile\?\.tin/);
+  assert.match(ui,/reuseRecordedPayment\(unique,ownerUid,profile\.profile\?\.tin\?\?null/);
+  assert.match(ui,/Your taxpayer identity is not verified for Pay Again/);
+});
