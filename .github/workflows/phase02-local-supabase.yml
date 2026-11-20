@@ -21,11 +21,12 @@ jobs:
   # the disposable TaxPay database. Run it alongside the complete SQL/RLS/browser
   # job; both remain mandatory within this workflow and the release check.
   current-office-contract:
-    name: Current Office main contract and build
+    name: Office Main and WS3 D3 candidate contract/build
     runs-on: ubuntu-latest
     timeout-minutes: 12
     outputs:
       office_sha: ${{ steps.verify-office.outputs.office_sha }}
+      office_candidate_sha: ${{ steps.verify-office-candidate.outputs.office_candidate_sha }}
     permissions:
       contents: read
     steps:
@@ -55,6 +56,24 @@ jobs:
           echo "Current Office main: `$OFFICE_CURRENT_SHA` — shared bridge contract and Office production build PASS." >> "$GITHUB_STEP_SUMMARY"
           echo "TaxPay payment-sync and payment-command bridge sources are byte-identical to current Office main `$OFFICE_CURRENT_SHA`." >> "$GITHUB_STEP_SUMMARY"
           echo "office_sha=$OFFICE_CURRENT_SHA" >> "$GITHUB_OUTPUT"
+      - name: Verify exact WS3 Office D3 provenance candidate
+        id: verify-office-candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          OFFICE_CURRENT_DIR="$RUNNER_TEMP/office-current-main"
+          OFFICE_CURRENT_SHA="${{ steps.verify-office.outputs.office_sha }}"
+          OFFICE_CANDIDATE_BRANCH="ws3/story1-mirror-provenance-20261120"
+          git -C "$OFFICE_CURRENT_DIR" fetch --depth 1 origin "refs/heads/$OFFICE_CANDIDATE_BRANCH"
+          OFFICE_CANDIDATE_SHA="$(git -C "$OFFICE_CURRENT_DIR" rev-parse FETCH_HEAD)"
+          git -C "$OFFICE_CURRENT_DIR" checkout --detach "$OFFICE_CANDIDATE_SHA"
+          test "$(git -C "$OFFICE_CURRENT_DIR" rev-parse HEAD)" = "$OFFICE_CANDIDATE_SHA"
+          git -C "$OFFICE_CURRENT_DIR" diff --quiet "$OFFICE_CURRENT_SHA" "$OFFICE_CANDIDATE_SHA" -- package.json package-lock.json
+          node "$OFFICE_CURRENT_DIR/tests/integration/officeStoryMirrorProofHttp.mjs"
+          npm run build --prefix "$OFFICE_CURRENT_DIR"
+          echo "Exact WS3 Office D3 candidate $OFFICE_CANDIDATE_SHA: source-proof and build PASS"
+          echo "Exact Office D3 candidate: `$OFFICE_CANDIDATE_SHA` — source-proof and build PASS." >> "$GITHUB_STEP_SUMMARY"
+          echo "office_candidate_sha=$OFFICE_CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
 
 
   disposable-backend:
@@ -473,19 +492,18 @@ jobs:
           set -euo pipefail
           # Two independent local databases; never link or write hosted SQL.
           OFFICE_DIR="$RUNNER_TEMP/ws3-office-verified"
-          # Pair the SQL acceptance with the exact Office Main revision that
-          # passed this run's required contract/build job.
-          OFFICE_SHA="${{ needs.current-office-contract.outputs.office_sha }}"
+          # Pair the SQL/Edge acceptance with the exact Office D3 candidate
+          # revision that passed this run's source-proof/build contract job.
+          OFFICE_SHA="${{ needs.current-office-contract.outputs.office_candidate_sha }}"
           if [[ ! "$OFFICE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Current Office Main SHA output is missing or invalid." >&2
+            echo "Exact Office D3 candidate SHA output is missing or invalid." >&2
             exit 1
           fi
-          git clone --depth 1 --branch main \
+          git clone --depth 1 --branch ws3/story1-mirror-provenance-20261120 \
             https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
-          git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
-          echo "Paired Office SQL source SHA: $OFFICE_SHA"
+          echo "Paired Office D3 candidate SQL source SHA: $OFFICE_SHA"
           WS1_DIR="$RUNNER_TEMP/ws1-current"
           git clone --depth 1 --branch ws1/v95-walk-in-self-combinations \
             https://github.com/shihab-tech04/nbr-taxpay.git "$WS1_DIR"

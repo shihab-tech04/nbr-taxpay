@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-import {randomUUID} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 
 const src=process.env.WS3_TAXPAYER_DB_URL, dst=process.env.WS3_OFFICE_DB_URL;
 assert.ok(src&&dst);
@@ -16,6 +16,11 @@ function psql(url,sql){
  try{return JSON.parse(lines.at(-1));}catch{throw Error('Non-JSON result: '+r.stdout.slice(-1400));}
 }
 function lit(v){return "'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";}
+function canonicalJson(value){
+ if(value===null||typeof value!=='object')return JSON.stringify(value)??'null';
+ if(Array.isArray(value))return '['+value.map(canonicalJson).join(',')+']';
+ return '{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+canonicalJson(value[key])).join(',')+'}';
+}
 const fixture=readFileSync('tests/integration/demoRecipientNotices.sql','utf8');
 assert.match(fixture,/^BEGIN;/m);assert.match(fixture,/WS3 disposable payer/);assert.match(fixture,/ROLLBACK;\s*$/);
 const capture=[
@@ -63,7 +68,11 @@ assert.deepEqual(outage,{status:'PENDING',attempts:1,backoff:true});
 // Advance only the disposable outbox clock, never the source payment.
 psql(src,"UPDATE demo_payment.mirror_outbox SET next_attempt_at=now()-interval '1 second' WHERE entity_type='PAYMENT' AND entity_id='"+payment.id+"'::uuid RETURNING to_jsonb(status);");
 const retryClaim=ownClaim();assert.notEqual(firstClaim.claimToken,retryClaim.claimToken);
-const mirror={id:payment.id,sessionId:payment.sessionId,service:payment.service,amountMinor:payment.amountMinor,status:payment.status,createdAt:payment.createdAt,data:payment.data};
+const sourceSnapshot={id:payment.id,data:payment.data,status:payment.status,createdAt:payment.createdAt};
+const mirror={id:payment.id,sessionId:payment.sessionId,service:payment.service,
+ amountMinor:payment.amountMinor,status:payment.status,createdAt:payment.createdAt,data:payment.data,
+ sourceProject:'original',sourceParentId:details.sourcePaymentId??null,
+ sourceRevision:createHash('sha256').update(canonicalJson(sourceSnapshot)).digest('hex')};
 const invoke='SELECT public.demo_story1_mirror('+lit(mirror)+');';
 const unauth=spawnSync('psql',['-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-d',dst],{input:'BEGIN;SET LOCAL ROLE anon;'+invoke+'COMMIT;',encoding:'utf8'});
 assert.notEqual(unauth.status,0,'Anonymous Office mirror bypass');
@@ -71,6 +80,9 @@ const mirrorOnce=psql(dst,'BEGIN;SET LOCAL ROLE service_role;'+invoke+'COMMIT;')
 const mirrorRetry=psql(dst,'BEGIN;SET LOCAL ROLE service_role;'+invoke+'COMMIT;');
 assert.equal(mirrorOnce.id,payment.id);assert.equal(mirrorOnce.replayed,false);
 assert.equal(mirrorRetry.id,payment.id);assert.equal(mirrorRetry.replayed,true);
+assert.equal(mirrorOnce.sourceProject,'original');
+assert.equal(mirrorOnce.sourceParentId,details.sourcePaymentId??null);
+assert.equal(mirrorOnce.sourceRevision,mirror.sourceRevision);
 finish(retryClaim.claimToken,true);
 // The unguarded projection is internal; a disposable privileged fixture may
 // compare exact rows, but no authenticated/anonymous Data API caller may invoke it.
@@ -81,6 +93,9 @@ assert.notEqual(directClient.status,0,'Authenticated direct Office payment proje
 const admin=psql(dst,'SELECT public.demo_story1_office_payment_page(1,100);');
 const row=admin.items.find(x=>x.id===payment.id);assert.ok(row);
 assert.equal(Number(row.amountMinor),5000);assert.equal(row.certificateReference,'SK-PC-'+payment.id);
+assert.equal(row.sourceProject,'original');
+assert.equal(row.sourceParentId,details.sourcePaymentId??null);
+assert.equal(row.sourceRevision,mirror.sourceRevision);
 assert.deepEqual(row.details.allocations,details.allocations);
 assert.deepEqual(row.details.lines,details.lines);
 assert.deepEqual(row.details.receiptSnapshot,details.receiptSnapshot);
