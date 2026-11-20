@@ -106,7 +106,15 @@ test('Travel Tax passport lookup is full-width on tablet and phone without chang
     expect(await dialog.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(2);
   }
   await page.setViewportSize({width:1280,height:830});
-  const [input,button] = await Promise.all([field.boundingBox(),action.boundingBox()]);
+  // A responsive modal may finish a layout transition after setViewportSize
+  // resolves. Wait for the final geometry; retain the original strict 3px
+  // desktop pairing requirement rather than accepting an intermediate frame.
+  await expect.poll(async () => {
+    const [input, button] = await Promise.all([field.boundingBox(), action.boundingBox()]);
+    if (!input || !button) return Number.POSITIVE_INFINITY;
+    return Math.abs(button.y + button.height - input.y - input.height);
+  }, {message: 'Passport input and lookup action share the desktop bottom baseline'}).toBeLessThanOrEqual(3);
+  const [input, button] = await Promise.all([field.boundingBox(), action.boundingBox()]);
   expect(input && button).toBeTruthy();
   if (input && button) {
     expect(button.x).toBeGreaterThanOrEqual(input.x + input.width);

@@ -41,24 +41,19 @@ jobs:
           git -C "$OFFICE_CURRENT_DIR" checkout --detach "$OFFICE_CURRENT_SHA"
           test "$(git -C "$OFFICE_CURRENT_DIR" rev-parse HEAD)" = "$OFFICE_CURRENT_SHA"
           cmp -s src/contracts/paymentSimulationContract.ts "$OFFICE_CURRENT_DIR/src/app/contracts/paymentSimulationContract.ts"
-          OFFICE_REPO="https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git"
-          # Check the existing WS3 Office #270 branch, not a stale historical bridge.
-          OFFICE_BRIDGE_REF="ws3/v95-correction-payment-parent-20261112"
-          OFFICE_BRIDGE_SHA="d04de641f0dbca6138e02cb41c2e89d78449b8b3"
-          OFFICE_BRIDGE_DIR="$RUNNER_TEMP/office-matching-bridge"
-          git clone --depth 1 --branch "$OFFICE_BRIDGE_REF" "$OFFICE_REPO" "$OFFICE_BRIDGE_DIR"
-          git -C "$OFFICE_BRIDGE_DIR" fetch --depth 1 origin "$OFFICE_BRIDGE_SHA"
-          git -C "$OFFICE_BRIDGE_DIR" checkout --detach "$OFFICE_BRIDGE_SHA"
-          test "$(git -C "$OFFICE_BRIDGE_DIR" rev-parse HEAD)" = "$OFFICE_BRIDGE_SHA"
-          cmp -s supabase/functions/payment-sync-bridge/index.ts "$OFFICE_BRIDGE_DIR/supabase/functions/payment-sync-bridge/index.ts"
-          cmp -s supabase/functions/payment-command-bridge/index.ts "$OFFICE_BRIDGE_DIR/supabase/functions/payment-command-bridge/index.ts"
+          # Match the current authoritative Office Main, not an obsolete
+          # prior branch version with fewer accepted command types.
+          cmp -s supabase/functions/payment-sync-bridge/index.ts \
+            "$OFFICE_CURRENT_DIR/supabase/functions/payment-sync-bridge/index.ts"
+          cmp -s supabase/functions/payment-command-bridge/index.ts \
+            "$OFFICE_CURRENT_DIR/supabase/functions/payment-command-bridge/index.ts"
           npm ci --prefix "$OFFICE_CURRENT_DIR" --no-audit --no-fund
           npm run build --prefix "$OFFICE_CURRENT_DIR"
           echo "Current Office main: $OFFICE_CURRENT_SHA; shared contract and app build PASS"
-          echo "Matching Office bridge source: $OFFICE_BRIDGE_REF @ $OFFICE_BRIDGE_SHA"
+          echo "Matching Office current bridge source: $OFFICE_CURRENT_SHA"
           echo "### Current Office integration boundary" >> "$GITHUB_STEP_SUMMARY"
           echo "Current Office main: \`$OFFICE_CURRENT_SHA\` — shared contract and Office production build PASS." >> "$GITHUB_STEP_SUMMARY"
-          echo "Matching Office bridge source: \`$OFFICE_BRIDGE_REF\`; the paired correction bridge files are byte-identical." >> "$GITHUB_STEP_SUMMARY"
+          echo "Matching Office current bridge source: $OFFICE_CURRENT_SHA"
 
 
   disposable-backend:
@@ -479,9 +474,9 @@ jobs:
           # B-owned paired SQL step: resolve the current Office #270 branch
           # once, record its immutable SHA and test that exact detached tree.
           # A historical hardcoded head can fail before any SQL test runs.
-          git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
+          git clone --depth 1 --branch main \
             https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
-          OFFICE_SHA="d04de641f0dbca6138e02cb41c2e89d78449b8b3"
+          OFFICE_SHA="$(git -C "$OFFICE_DIR" rev-parse HEAD)"
           git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
           git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
           test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"

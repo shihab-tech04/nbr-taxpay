@@ -158,7 +158,7 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     // reject that unverified source read, while the durable local payment and
     // its owner-scoped TaxPay activity remain available for this real-browser
     // persistence journey.
-    expect(payment.status).toBe(503);
+    expect(payment.status,JSON.stringify(payment.body)).toBe(503);
     expect(payment.body.error).toBe('OFFICE_SYNC_PENDING');
     expect(payment.body.retryable).toBe(true);
     expect(typeof payment.body.requestId).toBe('string');

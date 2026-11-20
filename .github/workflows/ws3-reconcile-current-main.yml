@@ -1,0 +1,93 @@
+name: WS3 conflict-safe integration on existing branch
+on:
+  push:
+    branches:
+      - release/taxpay-correction-notifications-20261101
+    paths:
+      - '.github/workflows/ws3-reconcile-current-main.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  reconcile-verified-main:
+    name: Preserve Main and merge existing WS3 work
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout existing WS3 branch, full Git history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Verify pinned backed-up Main and exact branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse refs/remotes/origin/main)" = "1fbf11836bd320da6fff603be83e0d759367ad4e"
+          test "$(git branch --show-current)" = "release/taxpay-correction-notifications-20261101"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+          git config user.name "Sohojkor WS3 integration"
+          git config user.email "ws3-integration@users.noreply.github.com"
+      - name: Merge protected Main, fail on unexpected conflicts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge --no-commit --no-ff refs/remotes/origin/main || true
+          actual="$(git diff --name-only --diff-filter=U | LC_ALL=C sort)"
+          expected="$(printf '%s\n' \
+            '.github/workflows/phase7-auth-recipient-sql.yml' \
+            '.github/workflows/ws3-edge-http-transport.yml' \
+            'src/components/screens/AccountCenter.tsx' \
+            'src/components/screens/CorrectionInquiries.tsx' \
+            'supabase/functions/demo-story1-taxpay/index.ts' \
+            'tests/integration/v953TaxpayerRemarksAcceptance.sql' \
+            'tests/integration/ws3StoryMirrorProofHttp.mjs' \
+            'tests/production/production-auth-boundary.spec.ts' | LC_ALL=C sort)"
+          if [ "$actual" != "$expected" ]; then
+            echo "Unexpected conflict set. Stop without modifying the remote branch."
+            printf 'actual:\n%s\nexpected:\n%s\n' "$actual" "$expected"
+            exit 1
+          fi
+          for file in \
+            .github/workflows/phase7-auth-recipient-sql.yml \
+            .github/workflows/ws3-edge-http-transport.yml \
+            src/components/screens/AccountCenter.tsx \
+            src/components/screens/CorrectionInquiries.tsx \
+            supabase/functions/demo-story1-taxpay/index.ts \
+            tests/integration/v953TaxpayerRemarksAcceptance.sql \
+            tests/integration/ws3StoryMirrorProofHttp.mjs \
+            tests/production/production-auth-boundary.spec.ts
+          do
+            git checkout --theirs -- "$file"
+            git add -- "$file"
+          done
+          python3 scripts/ci/ws3-reconcile-resolutions.py
+          git add -- .github/workflows/phase7-auth-recipient-sql.yml \
+            src/components/screens/AccountCenter.tsx \
+            src/components/screens/CorrectionInquiries.tsx
+          test -z "$(git ls-files -u)"
+          # Check only changes introduced beyond protected Main. Do not fail on
+          # pre-existing whitespace in solved Main files unrelated to WS3.
+          git diff --cached --check refs/remotes/origin/main
+          echo "Conflict resolution complete; preserving Main versions of shared solved components."
+      - name: Install dependencies without modifying lockfile
+        run: npm ci
+      - name: Verify production build and current WS3 Edge contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run build
+          node --test tests/integration/ws3LegacyHandoffRetirement.test.mjs
+      - name: Confirm no new Main commits, then push fast-forward to existing WS3 branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse refs/remotes/origin/main)" = "1fbf11836bd320da6fff603be83e0d759367ad4e"
+          test -z "$(git ls-files -u)"
+          test -z "$(git status --porcelain --untracked-files=no | grep -E '^(UU|AA|DD|AU|UA|DU|UD)')" || exit 1
+          git commit -m "Merge protected Main into existing WS3: retain approved UX and integrate correction backend"
+          test "$(git rev-parse HEAD^2)" = "1fbf11836bd320da6fff603be83e0d759367ad4e"
+          git push origin HEAD:refs/heads/release/taxpay-correction-notifications-20261101

@@ -67,6 +67,7 @@ function sqlRpc(origin,name,args,authenticatedOffice=false){
       demo_story1_submit:`public.demo_story1_submit(${sqlJson(args.p_input)})`,
       taxpay_demo_story1_submit:`public.taxpay_demo_story1_submit(${sqlText(args.p_capability_hash)},${sqlJson(args.p_input)})`,
       taxpay_demo_story1_session_payment:`public.taxpay_demo_story1_session_payment(${sqlText(args.p_capability_hash)},${sqlText(args.p_payment_id)}::uuid)`,
+      taxpay_demo_story1_reference_payment:`public.taxpay_demo_story1_reference_payment(${sqlText(args.p_capability_hash)},${sqlText(args.p_reference)},${args.p_receipt_mobile==null?'NULL::text':sqlText(args.p_receipt_mobile)})`,
       taxpay_office_story1_mirror_read:`public.taxpay_office_story1_mirror_read(${sqlText(args.p_id)}::uuid,${sqlText(args.p_session)}::uuid)`,
       taxpay_demo_received_payment_notices:`public.taxpay_demo_received_payment_notices(${sqlText(args.p_capability_hash)},${sqlText(args.p_action)},${args.p_event_id===null?'NULL::text':sqlText(args.p_event_id)},${args.p_offset}::integer,${args.p_limit}::integer)`,
     },
@@ -213,15 +214,21 @@ const allocations=[
     assessmentYear:'2025-26',amountMinor:3500,serviceCode:'ASSESSED_DEMAND',isWithholding:false},
 ];
 const idempotencyKey=randomUUID();
+const remarksPrefix='বাংলা ও English চালান মন্তব্য, সম্পাদিত খসড়া থেকে বহন করা হয়েছে।\nSecond review line remains exact.\n';
+const challanRemarks=remarksPrefix+'😀'.repeat(4000-Array.from(remarksPrefix).length);
+assert.equal(Array.from(challanRemarks).length,4000,'Mixed Bengali, English and supplementary Unicode must stay at the accepted character limit');
+assert.ok(new TextEncoder().encode(challanRemarks).length<=16000,'Mixed Unicode remarks must stay within the accepted UTF-8 byte limit');
 const receiptSnapshot={paymentCategory:'OTHER_TAX_PAYMENT',totalAmount:50,challanNo:'SIM-'+idempotencyKey,
   items:lines,allocationItems:allocations.map((item,index)=>({allocationId:item.allocationId,
     taxpayerTin:item.taxpayerTin,assessmentYear:item.assessmentYear,amountMinor:item.amountMinor,
-    paymentServiceEn:lines[index].headNameEn,economicCode:lines[index].economicCode})),isSimulatedDemo:true};
+    paymentServiceEn:lines[index].headNameEn,economicCode:lines[index].economicCode})),
+  paymentRemarks:challanRemarks,isSimulatedDemo:true};
 const payload={origin:'TAXPAY_UI',idempotencyKey,sessionId:profile.paymentSessionId,
   service:'OTHER_TAX_PAYMENT',amountMinor:5000,details:{payerId:'user1',payerName:'WS3 Edge SQL payer',
     payerMode:'OTHER',combinedPayment:true,allocationContractVersion:3,allocationCount:2,taxpayerCount:2,
     receiptReference:'SIM-'+idempotencyKey,totalAmount:50,assessmentYear:'2026-27, 2025-26',
-    taxpayerTin:'',lines,receiptLines:lines,allocations,receiptSnapshot}};
+    taxpayerTin:'',paymentRemarks:challanRemarks,challanRemarks,
+    lines,receiptLines:lines,allocations,receiptSnapshot}};
 
 const officeFixture=psql(officeDb,
   `SELECT jsonb_build_object('userExists',EXISTS(SELECT 1 FROM auth.users WHERE id=${sqlText(officerId)}::uuid),`+
@@ -247,6 +254,8 @@ try{
   assert.equal(Number(sourceRow.amountMinor),5000);
   assert.equal(sourceRow.status,'SIMULATED_SUCCESS');
   assert.deepEqual(sourceRow.data.details.allocations,allocations);
+  assert.equal(sourceRow.data.details.challanRemarks,challanRemarks,'Taxpayer SQL must preserve the full edited draft comment');
+  assert.equal(sourceRow.data.details.receiptSnapshot.paymentRemarks,challanRemarks,'Payment receipt snapshot must retain the same comment');
   assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`),0);
 
   const retry=await request('TAXPAY_SQL','/payments','POST',payload,headers);
@@ -258,10 +267,23 @@ try{
   assert.equal(history.data.data.id,sourceId);
   assert.equal(history.data.data.data.idempotencyKey,idempotencyKey);
   assert.deepEqual(history.data.data.data.details.allocations,allocations);
+  assert.equal(history.data.data.data.details.challanRemarks,challanRemarks,'Refresh-safe Taxpayer receipt readback must retain the exact remarks');
+
+  const receiptLookup=await request('TAXPAY_SQL',`/payments/reference?reference=${encodeURIComponent('SIM-'+idempotencyKey)}`,'GET',undefined,headers);
+  assert.equal(receiptLookup.status,200,'Capability-bound receipt reference readback must remain available');
+  assert.equal(receiptLookup.data.data.id,sourceId);
+  assert.equal(receiptLookup.data.data.details.challanRemarks,challanRemarks);
+  assert.equal(receiptLookup.data.data.details.receiptSnapshot.paymentRemarks,challanRemarks);
+  const certificateLookup=await request('TAXPAY_SQL',`/payments/reference?reference=${encodeURIComponent('SK-PC-'+sourceId)}`,'GET',undefined,headers);
+  assert.equal(certificateLookup.status,200,'Payment Certificate reference must resolve the same immutable parent');
+  assert.equal(certificateLookup.data.data.id,sourceId);
+  assert.equal(certificateLookup.data.data.certificateReference,'SK-PC-'+sourceId);
+  assert.equal(certificateLookup.data.data.details.challanRemarks,challanRemarks);
 
   const officeRow=psql(officeDb,`SELECT jsonb_build_object('id',id,'sessionId',session_id,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`);
   assert.equal(officeRow.id,sourceId);
   assert.deepEqual(officeRow.data,sourceRow.data,'Office SQL must store the exact original Taxpayer payload');
+  assert.equal(officeRow.data.details.challanRemarks,challanRemarks,'Office SQL must preserve the maximum-length mixed Unicode comment');
   assert.equal(psql(sourceDb,`SELECT count(*) FROM demo_payment.story_payments WHERE idempotency_key=${sqlText(idempotencyKey)}::uuid;`),1);
   assert.equal(psql(sourceDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(sourceId)}::uuid;`),1);
   assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`),1);
@@ -279,11 +301,21 @@ try{
   assert.equal(row.details.payerId,'user1');
   assert.equal(row.details.receiptReference,'SIM-'+idempotencyKey);
   assert.equal(row.details.receiptSnapshot.challanNo,'SIM-'+idempotencyKey);
+  assert.equal(row.details.challanRemarks,challanRemarks,'Authorized Office readback must preserve the full comment after retry');
+  assert.equal(row.details.receiptSnapshot.paymentRemarks,challanRemarks);
   assert.deepEqual(row.details.allocations.map(item=>item.allocationId),allocationIds);
   assert.deepEqual(row.details.allocations.map(item=>item.taxpayerTin),['222222222222','333333333333']);
   assert.deepEqual(row.details.allocations.map(item=>item.headId),[121,145]);
   assert.deepEqual(row.details.allocations.map(item=>item.assessmentYear),['2026-27','2025-26']);
   assert.deepEqual(row.details.allocations.map(item=>item.amountMinor),[1500,3500]);
+  const officeRemarks=psql(officeDb,[
+    'BEGIN;','SET LOCAL ROLE authenticated;',
+    `SELECT set_config('request.jwt.claim.sub',${sqlText(officerId)},true);`,
+    `SELECT public.payment_v1_office_guarded_challan_remarks(${sqlText(sourceId)}::uuid);`,
+    'COMMIT;'
+  ].join('\n'));
+  assert.equal(officeRemarks.challanRemarks,challanRemarks,'Guarded Office remarks endpoint must return the exact parent text');
+  assert.equal(officeRemarks.receiptReference,'SIM-'+idempotencyKey);
   const officeUiFixtureOut=process.env.WS3_OFFICE_UI_FIXTURE_OUT;
   if(officeUiFixtureOut)writeFileSync(officeUiFixtureOut,JSON.stringify({
     payment:row,

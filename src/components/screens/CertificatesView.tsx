@@ -8,6 +8,7 @@ import { downloadDisplayedCertificateSummary } from '../../services/receiptDocum
 import { getAccountStoryPayments, getDetailedStorySessionPayments, beneficiaryPaymentEntries, type BeneficiaryPaymentEntry } from '../../services/story1AccountPaymentHistory';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { ReceiptView } from '../common/ReceiptView';
+import { maskProfileValue } from '../ui/MaskedProfileValue';
 import { canViewPaymentCertificate } from '../../services/paymentCertificateModel';
 import {reuseRecordedPayment} from '../../services/paymentReuse';
 import {activePreviewSession} from '../../services/previewAccountSession';
@@ -194,7 +195,7 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
            columns={[
              {key:'beneficiary',header:label('Beneficiary / TIN','উপকারভোগী / টিআইএন'),renderCell:row=><div>
                <p className="font-semibold">{row.beneficiaryName}</p>
-               <p className="break-all font-mono-plex text-sm text-taxpay-muted">{row.taxpayerTin||'—'}</p>
+               <p className="break-all font-mono-plex text-sm text-taxpay-muted">{row.taxpayerTin ? maskProfileValue(row.taxpayerTin,'tin') : '—'}</p>
              </div>},
              {key:'head',header:label('Tax head / year','কর খাত / করবর্ষ'),renderCell:row=><div>
                <p>{row.paymentHead}</p><p className="text-sm text-taxpay-muted">{row.assessmentYear}</p>
@@ -215,7 +216,7 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
                <p className="taxpay-mobile-table-card__title">{row.beneficiaryName}</p>
                <p className="shrink-0 font-semibold tabular-nums">{formatCurrency(row.amountMinor/100,language)}</p>
              </div>
-             <p className="taxpay-mobile-table-card__meta">{label('TIN','টিআইএন')}: {row.taxpayerTin||'—'}</p>
+             <p className="taxpay-mobile-table-card__meta">{label('TIN','টিআইএন')}: {row.taxpayerTin ? maskProfileValue(row.taxpayerTin,'tin') : '—'}</p>
              <p className="taxpay-mobile-table-card__meta">{row.paymentHead} · {row.assessmentYear}</p>
              <p className="taxpay-mobile-table-card__meta break-all">{label('Reference','রেফারেন্স')}: {row.paymentId}</p>
              <div className="taxpay-mobile-table-card__actions">
@@ -309,7 +310,7 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
                       {scopedPayments.map(row => (
                         <article key={row.key} className="p-3">
                           <p className="font-semibold">{row.beneficiaryName}</p>
-                          <p className="break-all font-mono-plex text-xs">{row.taxpayerTin || '—'}</p>
+                          <p className="break-all font-mono-plex text-xs">{row.taxpayerTin ? maskProfileValue(row.taxpayerTin,'tin') : '—'}</p>
                           <p className="mt-1 text-sm">{row.paymentHead} · {row.assessmentYear}</p>
                           <p className="mt-1 break-all font-mono-plex text-xs">{row.paymentId}</p>
                           <p className="mt-2 text-sm font-bold">{formatCurrency(row.amountMinor / 100, language)}</p>
@@ -339,7 +340,7 @@ export const CertificatesView: React.FC<{ activityTabs?: boolean }> = ({ activit
                           {scopedPayments.map(row => (
                             <tr key={row.key}>
                               <td className="break-all font-mono-plex">{row.paymentId}</td>
-                              <td><strong>{row.beneficiaryName}</strong><small className="block break-all">{row.taxpayerTin||'—'}</small></td>
+                              <td><strong>{row.beneficiaryName}</strong><small className="block break-all">{row.taxpayerTin ? maskProfileValue(row.taxpayerTin,'tin') : '—'}</small></td>
                               <td>{row.paymentHead}{row.economicCode&&<small className="block">{row.economicCode}</small>}</td>
                               <td>{row.assessmentYear}</td>
                               <td className="text-right font-mono-plex">{formatCurrency(row.amountMinor / 100, language)}</td>

@@ -88,6 +88,10 @@ test('owner can recover a failed private inquiry history load without duplicatin
       expect(request.postDataJSON()).toEqual({});
       return json(0);
     }
+    if (url.pathname === '/rest/v1/rpc/taxpay_claim_office_initiated_corrections' && request.method() === 'POST') {
+      expect(request.postDataJSON()).toEqual({ p_limit: 20 });
+      return json(0); // The isolated account has no Office-initiated cases to claim.
+    }
     if (url.pathname === '/rest/v1/taxpay_correction_inquiries' && request.method() === 'GET') {
       inquiryReads++;
       if (!allowHistorySuccess) return json({ message: 'Synthetic temporary read failure.' }, 503);
