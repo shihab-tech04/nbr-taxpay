@@ -64,8 +64,12 @@ jobs:
           OFFICE_CURRENT_DIR="$RUNNER_TEMP/office-current-main"
           OFFICE_CURRENT_SHA="${{ steps.verify-office.outputs.office_sha }}"
           OFFICE_CANDIDATE_BRANCH="ws3/story1-mirror-provenance-20261120"
-          git -C "$OFFICE_CURRENT_DIR" fetch --depth 1 origin "refs/heads/$OFFICE_CANDIDATE_BRANCH"
+          git -C "$OFFICE_CURRENT_DIR" fetch --deepen=16 origin "refs/heads/$OFFICE_CANDIDATE_BRANCH"
           OFFICE_CANDIDATE_SHA="$(git -C "$OFFICE_CURRENT_DIR" rev-parse FETCH_HEAD)"
+          if ! git -C "$OFFICE_CURRENT_DIR" merge-base --is-ancestor "$OFFICE_CURRENT_SHA" "$OFFICE_CANDIDATE_SHA"; then
+            echo "Office D3 candidate does not contain this run's protected Office Main SHA." >&2
+            exit 1
+          fi
           git -C "$OFFICE_CURRENT_DIR" checkout --detach "$OFFICE_CANDIDATE_SHA"
           test "$(git -C "$OFFICE_CURRENT_DIR" rev-parse HEAD)" = "$OFFICE_CANDIDATE_SHA"
           git -C "$OFFICE_CURRENT_DIR" diff --quiet "$OFFICE_CURRENT_SHA" "$OFFICE_CANDIDATE_SHA" -- package.json package-lock.json
