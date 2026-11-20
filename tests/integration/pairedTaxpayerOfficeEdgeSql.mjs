@@ -774,5 +774,11 @@ try{
   }
   console.log('PASS: separate disposable Taxpayer and Office SQL through existing Edge handlers; combined multi-recipient v3 allocations, distinct Pay Again parent lineage and separate Travel Tax passengers, exact amounts/years/heads, payer, receipt/certificate, authorized readback and passport redaction, recipient notice isolation, Office outage recovery, idempotent replay/conflict immutability, and single source/Office notices');
 }finally{
-  await Promise.all([taxpayerServer,officeServer,recipientServer].map(server=>new Promise(resolve=>server.close(resolve))));
+  await Promise.all([taxpayerServer,officeServer,recipientServer].map(server=>new Promise(resolve=>{
+    server.close(resolve);
+    // Undici can leave keep-alive sockets open after every assertion has
+    // passed. Force-close the disposable Edge listeners so Node exits and
+    // the following Office UI readback step can run within the CI job limit.
+    server.closeAllConnections?.();
+  })));
 }
