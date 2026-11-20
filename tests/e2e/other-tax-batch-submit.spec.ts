@@ -54,8 +54,12 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
   const remarks='  Challan clarification for two taxpayers and two assessment years.\nবাংলা বিবরণ: একাধিক করবর্ষের পরিশোধ। <b>literal text, not markup</b>  \n';
   expect(remarks.length).toBeGreaterThan(20);
   const remarksInput=dialog.getByLabel('Payment Remarks / Invoice Reference (Optional)');
-  await expect(remarksInput).toHaveAttribute('maxlength','4000');
+  await expect(remarksInput).not.toHaveAttribute('maxlength');
   await expect(dialog.getByText('Maximum 4,000 characters')).toBeVisible();
+  const maximumRemarks = '😀'.repeat(4000);
+  await remarksInput.fill(maximumRemarks + '😀');
+  await expect(remarksInput).toHaveValue(maximumRemarks);
+  expect(Array.from(await remarksInput.inputValue())).toHaveLength(4000);
   await remarksInput.fill(remarks);
   await dialog.getByRole('button',{name:'Continue to payment channel'}).click();
   await expect(dialog.getByTestId('payment-review-remarks')).toContainText('Challan clarification for two taxpayers');
