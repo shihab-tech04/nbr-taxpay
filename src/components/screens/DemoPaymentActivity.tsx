@@ -16,6 +16,7 @@ import {formatCurrency} from '../../services/numberFormat';
 import {PaymentFormSection,PaymentLiveSummary} from '../ui/PaymentFormLayout';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {PaymentLifecycleDetails} from './EventBasedTaxLedger';
+import {CorrectionInquiries} from './CorrectionInquiries';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import {
@@ -32,8 +33,8 @@ const isDefinedDemoUser=(user:SimulationUser):user is DemoUserId=>
 type EditableLine={beneficiary:SimulationUser;category:SimulationCategory;assessmentYear:string;amount:string};
 const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:CURRENT_PAY_AGAIN_YEAR,amount:'100.00'});
 /** Public, persistent synthetic transaction workspace. NEVER official payment evidence. */
-export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTabs=false})=>{
-  const {demoUser,previewAccount,language,navigate,routeParams}=useTaxState();
+export const DemoPaymentActivity:React.FC<{activityTabs?:boolean;showPaymentComposer?:boolean}>=({activityTabs=false,showPaymentComposer=false})=>{
+  const {demoUser,previewAccount,language,navigate,routeParams,currentRoute}=useTaxState();
   const {user:authenticatedUser,loading:authLoading}=useAccountIdentity();
   const [boundId,setBoundId]=useState<SimulationUser|null>(null);
   const [bindingError,setBindingError]=useState('');
@@ -48,6 +49,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   const [historyViewChosen,setHistoryViewChosen]=useState(false);
   const [rows,setRows]=useState<SimulationTransaction[]>([]);
   const [selectedPayment,setSelectedPayment]=useState<SimulationTransaction|null>(null);
+  const [correctionTarget,setCorrectionTarget]=useState<SimulationTransaction|null>(null);
   const [loading,setLoading]=useState(true);
   const [loadError,setLoadError]=useState('');
   const [recordQuery,setRecordQuery]=useState('');
@@ -66,7 +68,12 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   const [parentCategory,setParentCategory]=useState<SimulationCategory>('TAX_WITH_RETURN');
   const [completedReference,setCompletedReference]=useState('');
   const [payAgainSource,setPayAgainSource]=useState<string|null>(null);
+  const [activityComposerActive,setActivityComposerActive]=useState(false);
   const chooseCategory=(category:SimulationCategory)=>{setPayAgainSource(null);setParentCategory(category);setLines(old=>old.map(line=>({...line,category})));setPaymentStage(1);};
+  const requestCorrection=(tx:SimulationTransaction)=>{
+    if(privateMode&&authenticatedUser){setCorrectionTarget(tx);return;}
+    navigate('corrections',{originalReference:tx.id});
+  };
 
   useEffect(()=>{
     const context=parsePaymentPrefill(routeParams??{});
@@ -177,6 +184,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       setLines(copy.lines as EditableLine[]);
       setParentCategory(copy.lines[0].category as SimulationCategory);
       setPayAgainSource(record.id);
+      setActivityComposerActive(true);
       setNonce(crypto.randomUUID());
       setSubmitMessage('');
       setSelectedPayment(null);
@@ -329,7 +337,14 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       description={`${txt('User ID','ইউজার আইডি')}: ${id}`} />
     {activityTabs && <TaxpayerActivityTabs />}
 
-    <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New payment','নতুন পেমেন্ট')}>
+    {/* New payments stay in the shared Pay Tax flow; Activity opens on history. */}
+    {(showPaymentComposer || currentRoute==='wizard' || activityComposerActive) && <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6" aria-label={txt('New payment','নতুন পেমেন্ট')}>
+      {activityComposerActive&&<div className="mb-4 flex justify-end">
+        <button type="button" onClick={()=>{setActivityComposerActive(false);setPaymentStage(0);setPayAgainSource(null);setSubmitMessage('');}}
+          className="min-h-11 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary">
+          {txt('Back to transaction history','লেনদেনের ইতিহাসে ফিরুন')}
+        </button>
+      </div>}
       <ol aria-label={txt('Payment steps','পেমেন্টের ধাপ')} className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[txt('Category','শ্রেণি'),txt('Information','তথ্য'),txt('Payment and review','পেমেন্ট ও পর্যালোচনা'),txt('Result','ফলাফল')].map((name,index)=>{
           const status=paymentStage>index?'complete':paymentStage===index?'current':'upcoming';
@@ -420,7 +435,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         </div>
         {submitMessage&&<p role="status" aria-live="polite" className="text-sm font-semibold text-taxpay-text">{submitMessage}</p>}
       </form></>}
-    </section>
+    </section>}
 
     <nav className="flex flex-wrap gap-2" aria-label={txt('History perspective','ইতিহাসের ধরন')}>
       {(['beneficiary','payer'] as const).map(mode=><button key={mode} type="button" aria-pressed={view===mode} onClick={()=>{setHistoryViewChosen(true);setView(mode);}}
@@ -508,9 +523,9 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 rounded-lg px-3 text-sm font-medium text-taxpay-primary hover:bg-taxpay-light">
                {txt('Timeline','সময়রেখা')}</button>
-             <button type="button" onClick={()=>navigate('corrections',{originalReference:tx.id})}
+             <button type="button" onClick={()=>requestCorrection(tx)}
                className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
-               {txt('Request correction','সংশোধনের আবেদন')}</button>
+               {txt('Apply for Correction','সংশোধনের আবেদন')}</button>
              {canPayAgain(tx,id??'',view)&&<button type="button" data-testid="pay-again-desktop"
                onClick={e=>{e.stopPropagation();payAgain(tx);}}
                className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
@@ -540,9 +555,9 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
                className="min-h-11 flex-1 rounded-lg border border-taxpay-border px-3 text-sm">{txt('View details','বিস্তারিত দেখুন')}</button>
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 flex-1 rounded-lg bg-taxpay-light px-3 text-sm">{txt('Timeline','সময়রেখা')}</button>
-             <button type="button" onClick={()=>navigate('corrections',{originalReference:tx.id})}
+             <button type="button" onClick={()=>requestCorrection(tx)}
                className="min-h-11 w-full rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary">
-               {txt('Request correction','সংশোধনের আবেদন')}</button>
+               {txt('Apply for Correction','সংশোধনের আবেদন')}</button>
              {canPayAgain(tx,id??'',view)&&<button type="button" data-testid="pay-again-mobile"
                onClick={()=>payAgain(tx)} className="min-h-11 w-full rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary">
                {txt('Pay Again','আবার পরিশোধ')}</button>}
@@ -572,6 +587,31 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
           {txt('Pay Again','আবার পরিশোধ')}
         </button>
       </div>}
+    </TaxPayModal>}
+    {correctionTarget&&authenticatedUser&&<TaxPayModal
+      title={txt('Apply for Correction','সংশোধনের আবেদন')}
+      onClose={()=>setCorrectionTarget(null)} hideFooter className="taxpayer-correction-modal">
+      <div className="mb-4 rounded-xl border border-taxpay-border bg-white p-3 sm:p-4" data-testid="correction-source-summary">
+        <p className="text-sm font-semibold text-taxpay-text">{txt('Original payment reference','মূল পেমেন্ট রেফারেন্স')}</p>
+        <p className="mt-1 break-all font-mono-plex text-sm text-taxpay-text" data-testid="correction-source-reference">{correctionTarget.id}</p>
+        <time dateTime={correctionTarget.createdAt} className="mt-1 block text-sm text-taxpay-muted">
+          {new Date(correctionTarget.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}
+        </time>
+        <ul className="mt-2 divide-y divide-taxpay-border">
+          {correctionTarget.allocations.map(allocation=><li key={allocation.id} className="py-2 text-sm">
+            <p className="font-medium text-taxpay-text">
+              {allocationLabel(allocation.beneficiary)} · {simulationCategoryLabels[allocation.category][bn?'bn':'en']}
+            </p>
+            <p className="text-taxpay-muted">{allocation.assessmentYear} · {formatSimulatedAmount(allocation.amountMinor)}</p>
+          </li>)}
+        </ul>
+      </div>
+      <CorrectionInquiries
+        key={`${authenticatedUser.id}:${correctionTarget.transactionId}`}
+        authenticatedUserId={authenticatedUser.id} language={language} embedded
+        prefilledOriginalReference={correctionTarget.id} lockOriginalReference
+        targetAllocationId={view==='beneficiary'&&correctionTarget.allocations.length===1
+          ?correctionTarget.allocations[0].id:undefined}/>
     </TaxPayModal>}
   </main>;
 };
