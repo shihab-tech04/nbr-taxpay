@@ -96,6 +96,11 @@ async function installPrivateFixture(page:Page,state:FixtureState){
       state.syntheticClaims.push(subject??'missing-subject');
       return json(0);
     }
+    if(url.pathname==='/rest/v1/rpc/taxpay_claim_walkin_payer_payments'&&request.method()==='POST'){
+      expect(subject).toBe(state.currentUser.id);
+      state.syntheticClaims.push(subject??'missing-subject');
+      return json(0);
+    }
     if(url.pathname==='/rest/v1/rpc/sim_my_payment_history'&&request.method()==='POST'){
       expect(subject).toBe(state.currentUser.id);
       state.historySubjects.push(subject??'missing-subject');
