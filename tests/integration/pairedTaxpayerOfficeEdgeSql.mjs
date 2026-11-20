@@ -88,12 +88,13 @@ function sqlRpc(origin,name,args,authenticatedOffice=false){
       demo_story1_mirror:`public.demo_story1_mirror(${sqlJson(args.p_input)})`,
       payment_v1_office_guarded_story_page:`public.payment_v1_office_guarded_story_page(${args.p_page}::integer,${args.p_per_page}::integer)`,
       payment_v1_office_guarded_pay_again_lineage:`public.payment_v1_office_guarded_pay_again_lineage(${sqlText(args.p_payment_id)}::uuid)`,
+      payment_v1_office_guarded_challan_remarks:`public.payment_v1_office_guarded_challan_remarks(${sqlText(args.p_payment_id)}::uuid)`,
     },
   };
   const expression=definitions[databaseOrigin]?.[name];
   if(!expression)throw Error('Unexpected SQL RPC '+origin+'.'+name);
   const role=name==='demo_story1_submit'?'anon'
-    :databaseOrigin==='OFFICE_SQL'&&['payment_v1_office_guarded_story_page','payment_v1_office_guarded_pay_again_lineage'].includes(name)
+    :databaseOrigin==='OFFICE_SQL'&&['payment_v1_office_guarded_story_page','payment_v1_office_guarded_pay_again_lineage','payment_v1_office_guarded_challan_remarks'].includes(name)
       ?'authenticated':'service_role';
   const claims=role==='authenticated'
     ?`SELECT set_config('request.jwt.claim.sub',${sqlText(authenticatedOffice?officerId:randomUUID())},true);\n`
@@ -239,7 +240,10 @@ const allocations=[
     assessmentYear:'2025-26',amountMinor:3500,serviceCode:'ASSESSED_DEMAND',isWithholding:false},
 ];
 const idempotencyKey=randomUUID();
+// Four-byte Unicode code points fill both approved server boundaries exactly.
+const challanRemarks='😀'.repeat(4000);
 const receiptSnapshot={paymentCategory:'OTHER_TAX_PAYMENT',totalAmount:50,challanNo:'SIM-'+idempotencyKey,
+  paymentRemarks:challanRemarks,
   items:lines,allocationItems:allocations.map((item,index)=>({allocationId:item.allocationId,
     taxpayerTin:item.taxpayerTin,assessmentYear:item.assessmentYear,amountMinor:item.amountMinor,
     paymentServiceEn:lines[index].headNameEn,economicCode:lines[index].economicCode})),isSimulatedDemo:true};
@@ -247,6 +251,7 @@ const payload={origin:'TAXPAY_UI',idempotencyKey,sessionId:profile.paymentSessio
   service:'OTHER_TAX_PAYMENT',amountMinor:5000,details:{payerId:'user1',payerName:'WS3 Edge SQL payer',
     payerMode:'OTHER',combinedPayment:true,allocationContractVersion:3,allocationCount:2,taxpayerCount:2,
     receiptReference:'SIM-'+idempotencyKey,totalAmount:50,assessmentYear:'2026-27, 2025-26',
+    paymentRemarks:challanRemarks,challanRemarks,
     taxpayerTin:'',lines,receiptLines:lines,allocations,receiptSnapshot}};
 
 const officeFixture=psql(officeDb,
@@ -274,6 +279,9 @@ try{
   assert.equal(Number(sourceRow.amountMinor),5000);
   assert.equal(sourceRow.status,'SIMULATED_SUCCESS');
   assert.deepEqual(sourceRow.data.details.allocations,allocations);
+  assert.equal(sourceRow.data.details.challanRemarks,challanRemarks);
+  assert.equal([...sourceRow.data.details.challanRemarks].length,4000);
+  assert.equal(Buffer.byteLength(sourceRow.data.details.challanRemarks,'utf8'),16000);
   assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`),0);
 
   const retry=await request('TAXPAY_SQL','/payments','POST',payload,headers);
@@ -285,6 +293,8 @@ try{
   assert.equal(history.data.data.id,sourceId);
   assert.equal(history.data.data.data.idempotencyKey,idempotencyKey);
   assert.deepEqual(history.data.data.data.details.allocations,allocations);
+  assert.equal(history.data.data.data.details.challanRemarks,challanRemarks,
+    'Owner-scoped Taxpayer readback must preserve the exact 16,000-byte remark');
   const expectedRevision=sourceRevision(sourceSnapshot(history.data.data));
   assert.match(expectedRevision,/^[0-9a-f]{64}$/);
   const payerTimeline=await request('TAXPAY_SQL','/profile-history?view=payer&pageSize=100','GET',undefined,headers);
@@ -303,6 +313,17 @@ try{
 
   const noOfficeAuth=await request('OFFICE_SQL','/payments?page=1&perPage=100');
   assert.equal(noOfficeAuth.status,401,'Office payment readback must retain the existing officer-session gate');
+  const noOfficeRemarksAuth=await request('OFFICE_SQL',`/payments/${sourceId}/remarks`);
+  assert.equal(noOfficeRemarksAuth.status,401,'Office challan remarks must retain the existing officer-session gate');
+  const invalidOfficeRemarksId=await request('OFFICE_SQL','/payments/not-a-uuid/remarks','GET',undefined,
+    {authorization:'Bearer '+officeToken});
+  assert.equal(invalidOfficeRemarksId.status,400,'Invalid payment IDs must be rejected before the remarks RPC');
+  const officeRemarks=await request('OFFICE_SQL',`/payments/${sourceId}/remarks`,'GET',undefined,
+    {authorization:'Bearer '+officeToken});
+  assert.equal(officeRemarks.status,200);
+  assert.equal(officeRemarks.data.data.paymentId,sourceId);
+  assert.equal(officeRemarks.data.data.challanRemarks,challanRemarks);
+  assert.equal(officeRemarks.data.data.receiptReference,'SIM-'+idempotencyKey);
   const readback=await request('OFFICE_SQL','/payments?page=1&perPage=100','GET',undefined,
     {authorization:'Bearer '+officeToken});
   assert.equal(readback.status,200);
@@ -315,6 +336,8 @@ try{
   assert.equal(row.sourceRevision,expectedRevision,
     'Office must store the fingerprint of the exact authoritative Taxpayer readback');
   assert.equal(row.details.payerId,'user1');
+  assert.equal(row.details.challanRemarks,challanRemarks,
+    'Authorized Office payment projection must preserve the exact source remark');
   assert.equal(row.details.receiptReference,'SIM-'+idempotencyKey);
   assert.equal(row.details.receiptSnapshot.challanNo,'SIM-'+idempotencyKey);
   assert.deepEqual(row.details.allocations.map(item=>item.allocationId),allocationIds);
@@ -524,10 +547,14 @@ try{
   const payAgainKey=randomUUID();
   const payAgainAllocationIds=['ws3-pay-again-allocation-2','ws3-pay-again-allocation-3'];
   const payAgainPayload=structuredClone(payload);
+  const payAgainRemarks='🧾'.repeat(3999)+'X';
   payAgainPayload.idempotencyKey=payAgainKey;
   payAgainPayload.details.sourcePaymentId=sourceId;
   payAgainPayload.details.receiptReference='SIM-'+payAgainKey;
+  payAgainPayload.details.paymentRemarks=payAgainRemarks;
+  payAgainPayload.details.challanRemarks=payAgainRemarks;
   payAgainPayload.details.receiptSnapshot.challanNo='SIM-'+payAgainKey;
+  payAgainPayload.details.receiptSnapshot.paymentRemarks=payAgainRemarks;
   payAgainPayload.details.allocations=payAgainPayload.details.allocations.map((allocation,index)=>
     ({...allocation,allocationId:payAgainAllocationIds[index]}));
   payAgainPayload.details.receiptSnapshot.allocationItems=
@@ -542,6 +569,8 @@ try{
   const payAgainSource=psql(sourceDb,`SELECT jsonb_build_object('id',id,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(payAgainId)}::uuid;`);
   assert.equal(payAgainSource.id,payAgainId);
   assert.equal(payAgainSource.data.details.sourcePaymentId,sourceId);
+  assert.equal(payAgainSource.data.details.challanRemarks,payAgainRemarks);
+  assert.equal(Buffer.byteLength(payAgainSource.data.details.challanRemarks,'utf8'),15997);
   assert.deepEqual(payAgainSource.data.details.allocations.map(item=>item.allocationId),payAgainAllocationIds);
   const payAgainHistory=await request('TAXPAY_SQL',`/payments/${payAgainId}?sessionId=${encodeURIComponent(profile.paymentSessionId)}`,'GET',undefined,headers);
   assert.equal(payAgainHistory.status,200);
@@ -565,6 +594,7 @@ try{
   assert.equal(payAgainItem.details.sourcePaymentId,sourceId);
   assert.equal(payAgainItem.details.receiptReference,'SIM-'+payAgainKey);
   assert.equal(payAgainItem.details.receiptSnapshot.challanNo,'SIM-'+payAgainKey);
+  assert.equal(payAgainItem.details.challanRemarks,payAgainRemarks);
   assert.deepEqual(payAgainItem.details.allocations.map(item=>item.allocationId),payAgainAllocationIds);
   const payAgainReplay=await request('TAXPAY_SQL','/payments','POST',payAgainPayload,headers);
   assert.equal(payAgainReplay.status,200);
@@ -616,6 +646,8 @@ try{
   assert.ok(originalOfficeReadback,'Officer must retain the historic original payment');
   assert.deepEqual(originalOfficeReadback.details.allocations.map(x=>x.allocationId),allocationIds);
   assert.equal(originalOfficeReadback.details.receiptReference,'SIM-'+idempotencyKey);
+  assert.equal(originalOfficeReadback.details.challanRemarks,challanRemarks,
+    'Pay Again edits must not mutate the immutable original remark');
   assert.equal(originalOfficeReadback.certificateReference,'SK-PC-'+sourceId);
   assert.notEqual(payAgainItem.certificateReference,originalOfficeReadback.certificateReference);
   assert.notEqual(payAgainItem.details.receiptReference,originalOfficeReadback.details.receiptReference);
@@ -623,6 +655,10 @@ try{
   assert.deepEqual(payAgainItem.details.allocations.map(x=>x.taxpayerTin),['222222222222','333333333333']);
   assert.deepEqual(payAgainItem.details.allocations.map(x=>x.assessmentYear),['2026-27','2025-26']);
   assert.deepEqual(payAgainItem.details.allocations.map(x=>x.amountMinor),[1500,3500]);
+  const payAgainRemarksReadback=await request('OFFICE_SQL',`/payments/${payAgainId}/remarks`,'GET',undefined,
+    {authorization:'Bearer '+officeToken});
+  assert.equal(payAgainRemarksReadback.status,200);
+  assert.equal(payAgainRemarksReadback.data.data.challanRemarks,payAgainRemarks);
 
   // Invalid lineage attempts must fail BEFORE they can create a source
   // payment, notification or Office mirror. The retry key is always unique.
