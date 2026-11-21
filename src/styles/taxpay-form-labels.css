@@ -191,17 +191,23 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
-  .taxpay-citizen-shell .travel-flow__passport-input {
+  .taxpay-citizen-shell .travel-flow__passport-input,
+  .taxpay-citizen-shell .travel-flow__passport-action {
+    justify-self: stretch;
     width: 100%;
+    min-width: 0;
+    max-width: none;
     box-sizing: border-box;
   }
   .taxpay-citizen-shell .travel-flow__passport-action {
     align-self: stretch;
-    width: 100%;
-    box-sizing: border-box;
   }
   .taxpay-citizen-shell .travel-flow__passport-action button {
+    display: block;
+    align-self: stretch;
     width: 100%;
+    min-width: 0;
+    max-width: none;
     box-sizing: border-box;
   }
 }
