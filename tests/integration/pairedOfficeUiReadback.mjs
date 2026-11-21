@@ -171,10 +171,11 @@ try {
   assert.equal(missingBearer, false);
   assert.equal(routeError, null, routeError || undefined);
   await page.getByRole('button', { name: 'View Details' }).first().click();
-  const drawer = page.locator('.dynamic-drawer');
+  const drawer = page.locator('.dynamic-drawer:visible');
   await drawer.waitFor({ state: 'visible', timeout: 10000 });
+  assert.equal(await drawer.count(), 1, 'Office details must have one visible transaction drawer');
   const guardedRemarksControl = drawer.locator('[data-testid="office-guarded-challan-remarks"]');
-  const remarksSelector = '.dynamic-drawer [data-testid="office-guarded-challan-remarks"]';
+  const remarksSelector = '.dynamic-drawer:visible [data-testid="office-guarded-challan-remarks"]';
   try {
     await page.waitForFunction(({ selector }) =>
       Boolean(document.querySelector(selector)?.querySelector('[role="alert"]')),
@@ -206,10 +207,23 @@ try {
   assert.equal(await remarksRetryButton.count(), 1,
     'Office must expose a retry after the authorized SQL read fails');
   await remarksRetryButton.click();
-  await page.waitForFunction(({ selector, expected }) =>
-    document.querySelector(selector)?.querySelector('span')?.textContent === expected,
-  { selector: '.dynamic-drawer [data-testid="office-guarded-challan-remarks"]',
-    expected: fixture.expected.challanRemarks }, { timeout: 10000 });
+  try {
+    const visibleRemarksText = guardedRemarksControl.locator('span');
+    await visibleRemarksText.waitFor({ state: 'visible', timeout: 10000 });
+    assert.equal(await visibleRemarksText.textContent(), fixture.expected.challanRemarks,
+      'Visible Office drawer must render the exact guarded SQL remarks after retry');
+  } catch (error) {
+    const visibleState = await guardedRemarksControl.evaluate(node => ({
+      text: node.textContent?.trim().slice(0, 180) ?? null,
+      alert: node.querySelector('[role="alert"]')?.textContent?.trim().slice(0, 120) ?? null,
+      spans: Array.from(node.querySelectorAll('span')).map(span => span.textContent?.trim().slice(0, 100)),
+    })).catch(() => ({ unavailable: true }));
+    console.error('Office visible remarks retry diagnostic:', JSON.stringify({
+      remarksRequests, missingRemarksBearer, wrongRemarksPaymentId,
+      visibleDrawerCount: await drawer.count(), visibleState,
+    }));
+    throw error;
+  }
   assert.equal(remarksRequests, 2, 'Office retry must issue a fresh officer-guarded SQL read');
   const drawerText = await drawer.innerText();
   // The same drawer must work for both the original fixed SQL fixture and
