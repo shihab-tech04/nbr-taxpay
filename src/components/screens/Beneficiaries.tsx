@@ -35,7 +35,7 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
-  const {language,previewAccount,routeParams,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,
+  const {language,previewAccount,demoUser,routeParams,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,
     pendingBeneficiarySave,clearPendingBeneficiarySave}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
@@ -162,9 +162,14 @@ export function Beneficiaries(){
   // capability. Changing profiles or regenerating a capability invalidates it.
   const formOwnerRef=useRef<string|null>(null);
   const createListOwnerRef=useRef<string|null>(null);
-  const activeFormOwner=()=>beneficiaryFormOwnerKey(owner,previewAccount?.id??null,activePreviewSession(),
+  // The legacy demoUser fixture exists only on the loopback development server.
+  // In public production, a signed preview capability remains mandatory.
+  const localFixture=()=>
     /^(?:localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)&&
-    new URLSearchParams(window.location.search).has('demoUser'));
+    new URLSearchParams(window.location.search).has('demoUser');
+  const activeFormOwner=()=>beneficiaryFormOwnerKey(owner,
+    previewAccount?.id??(localFixture()?demoUser?.id??null:null),
+    activePreviewSession(),localFixture());
   const maySaveFor=(captured:string|null)=>!checkingIdentity&&
     beneficiaryFormOwnerUnchanged(captured,activeFormOwner());
   const accountChangedMessage=()=>tr('Your account changed. Cancel and reopen this form before saving.',
