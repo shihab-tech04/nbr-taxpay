@@ -32,9 +32,11 @@ async function command(capability, action, body = {}, expectedStatus = 200) {
 // The existing open action creates/resumes an opaque guest session. No login.
 await command(first, 'open');
 await command(second, 'open');
+const maxRemarks='😀'.repeat(4000);
 const draftPayload = {
   assessmentYear: '2025-26',
   beneficiaries: [{tin: '111111111111', headId: 8, amountMinor: 1500}],
+  paymentRemarks: maxRemarks,
   step: 'details',
 };
 const created = (await command(first, 'guest-payment-draft-create', {
@@ -43,15 +45,19 @@ const created = (await command(first, 'guest-payment-draft-create', {
 assert.match(created.id, /^[0-9a-f-]{36}$/i);
 assert.equal(created.revision, 1);
 assert.deepEqual(created.form_payload, draftPayload);
+assert.equal([...created.form_payload.paymentRemarks].length,4000);
+assert.equal(Buffer.byteLength(created.form_payload.paymentRemarks,'utf8'),16000);
 assert.equal((await command(second, 'guest-payment-draft-list')).data.length, 0);
 await command(second, 'guest-payment-draft-get', {id: created.id}, 404);
 
-const updatedPayload = {...draftPayload, step: 'review', draftAmountMinor: 2000};
+const editedRemarks='🧾'.repeat(3999)+'X';
+const updatedPayload = {...draftPayload, paymentRemarks:editedRemarks, step: 'review', draftAmountMinor: 2000};
 const updated = (await command(first, 'guest-payment-draft-update', {
   id: created.id, revision: 1, service: 'OTHER_TAX_PAYMENT', payload: updatedPayload,
 })).data;
 assert.equal(updated.revision, 2);
 assert.deepEqual(updated.form_payload, updatedPayload);
+assert.equal(Buffer.byteLength(updated.form_payload.paymentRemarks,'utf8'),15997);
 await command(first, 'guest-payment-draft-update', {
   id: created.id, revision: 1, service: 'OTHER_TAX_PAYMENT', payload: {step: 'stale'},
 }, 409);
@@ -61,6 +67,8 @@ await command(second, 'guest-payment-draft-delete', {id: created.id, revision: 2
 const reloaded = (await command(first, 'guest-payment-draft-get', {id: created.id})).data;
 assert.equal(reloaded.revision, 2);
 assert.deepEqual(reloaded.form_payload, updatedPayload);
+assert.equal(reloaded.form_payload.paymentRemarks,editedRemarks,
+  'Draft refresh must preserve the edited Unicode remark exactly');
 const ownList = (await command(first, 'guest-payment-draft-list')).data;
 assert.equal(ownList.length, 1);
 assert.equal(ownList[0].id, created.id);

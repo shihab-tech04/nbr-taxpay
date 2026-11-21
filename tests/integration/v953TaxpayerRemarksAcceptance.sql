@@ -61,6 +61,13 @@ BEGIN
   jsonb_build_object('details',jsonb_build_object('challanRemarks',repeat('😀',4000))));
  IF (SELECT data#>>'{details,challanRemarks}' FROM demo_payment.story_payments
       WHERE id='92000000-0000-4000-8000-000000000005') IS DISTINCT FROM repeat('😀',4000)
+    OR (SELECT char_length(data#>>'{details,challanRemarks}')
+        FROM demo_payment.story_payments WHERE id='92000000-0000-4000-8000-000000000005')<>4000
+    OR (SELECT octet_length(data#>>'{details,challanRemarks}')
+        FROM demo_payment.story_payments WHERE id='92000000-0000-4000-8000-000000000005')<>16000
+    OR convert_to((SELECT data#>>'{details,challanRemarks}' FROM demo_payment.story_payments
+        WHERE id='92000000-0000-4000-8000-000000000005'),'UTF8') IS DISTINCT FROM
+       convert_to(repeat('😀',4000),'UTF8')
  THEN RAISE EXCEPTION 'F178_T03_BOUNDARY_ROUNDTRIP_FAILED'; END IF;
  v_denied:=false;
  BEGIN
