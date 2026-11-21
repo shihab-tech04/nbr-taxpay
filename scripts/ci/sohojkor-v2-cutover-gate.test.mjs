@@ -37,7 +37,6 @@ test('reject a production/frontend project swap in either direction', () => {
     primaryUrl: PRIMARY_V2_CANDIDATE, releaseScope: SIMULATION_SCOPE}),
   /refusing a project swap/);
 });
-
 test('do not overwrite the separately identified Original database', () => {
   assert.throws(() => assertProductionCutoverSafe({...baseline,
     originalUrl: PRIMARY_V2_CANDIDATE, primaryUrl: PRIMARY_V2_CANDIDATE, frontendUrl: PRIMARY_V2_CANDIDATE,
@@ -62,8 +61,8 @@ test('integration workflow keeps both release gates and V2-only hosted persisten
   const publish = workflow.indexOf('uses: actions/deploy-pages@');
   assert.ok(signed >= 0 && hosted > signed && cms > hosted && publish > cms,
     'Signed and hosted V2 gates and public CMS availability must all pass before Pages publication');
-  const hostedGate = workflow.match(/- name: Reverify V2 simulation-only production cutover and hosted sessions[^]*?(?=\\n\\s*- name:|\\n\\S)/)?.[0] ?? '';
-  assert.match(hostedGate, /VITE_SUPABASE_URL:\\s*'https:\\/\\/gmuhitmaynfhipcvbvkh\\.supabase\\.co'/,
+  const hostedGate = workflow.match(/- name: Reverify V2 simulation-only production cutover and hosted sessions[^]*?(?=\n\s*- name:|\n\S)/)?.[0] ?? '';
+  assert.match(hostedGate, /VITE_SUPABASE_URL:\s*'https:\/\/gmuhitmaynfhipcvbvkh\.supabase\.co'/,
     'production project gate must receive the exact frontend endpoint it is authorizing');
   const persistence = workflow.match(/- name: Verify hosted persistence[^]*?(?=\n\s*- name:|\n\S)/)?.[0] ?? '';
   assert.match(persistence, /gmuhitmaynfhipcvbvkh\.supabase\.co/);
