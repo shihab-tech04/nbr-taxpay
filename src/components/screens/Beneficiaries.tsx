@@ -9,6 +9,7 @@ import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRe
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
 import {recordAccountActivity} from '../../services/accountActivity';
 import {activePreviewSession,getPreviewSettings,savePreviewSetting} from '../../services/previewAccountSession';
+import {beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged} from '../../services/beneficiaryFormOwner';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
@@ -34,7 +35,7 @@ interface ImportRow extends SpreadsheetRecord {selected:boolean}
 interface ReviewedRow extends ImportRow {error:string}
 
 export function Beneficiaries(){
-  const {language,previewAccount,routeParams,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,
+  const {language,previewAccount,demoUser,routeParams,navigate,setPaymentBeneficiaryPrefill,setPaymentServiceChoiceOpen,
     pendingBeneficiarySave,clearPendingBeneficiarySave}=useTaxState();
   const {user,loading:checkingIdentity}=useAccountIdentity();
   const bn=language==='bn';
@@ -157,6 +158,23 @@ export function Beneficiaries(){
     return()=>{window.removeEventListener('resize',reposition);window.removeEventListener('scroll',reposition,true);document.removeEventListener('pointerdown',closeOutside);document.removeEventListener('keydown',closeEscape);};
   },[listMenuOpen]);
   const owner=user?.id??null;
+  // An open write form is bound to the Auth owner or current fictional profile
+  // capability. Changing profiles or regenerating a capability invalidates it.
+  const formOwnerRef=useRef<string|null>(null);
+  const createListOwnerRef=useRef<string|null>(null);
+  // The legacy demoUser fixture exists only on the loopback development server.
+  // In public production, a signed preview capability remains mandatory.
+  const localFixture=()=>
+    /^(?:localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)&&
+    new URLSearchParams(window.location.search).has('demoUser');
+  const activeFormOwner=()=>beneficiaryFormOwnerKey(owner,
+    previewAccount?.id??(localFixture()?demoUser?.id??null:null),
+    activePreviewSession(),localFixture());
+  const maySaveFor=(captured:string|null)=>!checkingIdentity&&
+    beneficiaryFormOwnerUnchanged(captured,activeFormOwner());
+  const accountChangedMessage=()=>tr('Your account changed. Cancel and reopen this form before saving.',
+    'আপনার অ্যাকাউন্ট বদলেছে। সংরক্ষণের আগে বাতিল করে এই ফর্মটি আবার খুলুন।');
+
   const savedListId=owner
     ?user?.user_metadata?.taxpay_last_beneficiary_list_id
     :previewAccount?activePreviewSession()?.selectedListId:null;
@@ -334,6 +352,7 @@ export function Beneficiaries(){
     finally{setBusy(false);}
   }
   function open(next:Flow,prefill?:{tin:string;name:string},saveOwner:string|null=null){
+    formOwnerRef.current=activeFormOwner();
     setEntryChoiceOpen(false);setFlow(next);setCreateListOpen(false);setPhase('upload');setTargetList(activeList==='all'?(lists[0]?.id??'new'):activeList||'new');setListName('');
     setBeneficiarySaveOwner(saveOwner);
     setTin(prefill?.tin??'');setName(prefill?.name??'');setTag('');setRelationship('');setOtherLabel('');setSearchedBeneficiaryTin(null);setRows([]);setFilename('');setModalError('');setNotice(null);
@@ -363,10 +382,12 @@ export function Beneficiaries(){
 
   async function saveList(event:React.FormEvent){
     event.preventDefault();
+    if(!maySaveFor(createListOwnerRef.current)){setModalError(accountChangedMessage());return;}
     if(!listName.trim()||listName.trim().length>80){setModalError(tr('Enter a list name of up to 80 characters.','সর্বোচ্চ ৮০ অক্ষরের একটি তালিকার নাম লিখুন।'));return;}
     setBusy(true);setModalError('');
     try{
       const list=await createBeneficiaryList(owner,listName);
+      if(!maySaveFor(createListOwnerRef.current))throw new Error(accountChangedMessage());
       const saved=await reload(list.id);
       if(!saved.lists.some(value=>value.id===list.id))throw new Error(tr('List was not saved. Please retry.','তালিকাটি সংরক্ষিত হয়নি। আবার চেষ্টা করুন।'));
       setCreateListOpen(false);setListName('');
@@ -376,6 +397,7 @@ export function Beneficiaries(){
   }
 
   async function resolveList(){
+    if(!maySaveFor(formOwnerRef.current))throw new Error(accountChangedMessage());
     if(targetList!=='new'){
       const list=lists.find(value=>value.id===targetList);
       if(!list)throw new Error(tr('Choose a valid list.','সঠিক তালিকা নির্বাচন করুন।'));
@@ -391,6 +413,7 @@ export function Beneficiaries(){
 
   async function saveSingle(event:React.FormEvent){
     event.preventDefault();
+    if(!maySaveFor(formOwnerRef.current)){setModalError(accountChangedMessage());return;}
     if(beneficiarySaveOwner&&(checkingIdentity||owner!==beneficiarySaveOwner)){
       setFlow(null);setBeneficiarySaveOwner(null);setTin('');setName('');setModalError('');
       setNotice({en:'Your account changed. Reopen this payment from the account that made it.',bn:'আপনার অ্যাকাউন্ট বদলেছে। যে অ্যাকাউন্ট থেকে পেমেন্টটি করা হয়েছিল, সেই অ্যাকাউন্টে ফিরে এটি আবার খুলুন।'});
@@ -403,6 +426,7 @@ export function Beneficiaries(){
     setBusy(true);setModalError('');
     try{
       const id=await resolveList();
+      if(!maySaveFor(formOwnerRef.current))throw new Error(accountChangedMessage());
       const count=await addBeneficiaries(owner,id,[{tin,display_name:name.trim(),tag:tag as BeneficiaryTag,relationship:tag==='friends_family'?relationship as BeneficiaryRelation:null,other_label:tag==='others'?otherLabel.trim():null}]);
       const saved=await reload(id);
       if(!saved.people.some(person=>person.list_id===id&&person.tin===tin)){
@@ -427,10 +451,12 @@ export function Beneficiaries(){
 
   async function finishImport(){
     if(!chosen.length)return;
+    if(!maySaveFor(formOwnerRef.current)){setModalError(accountChangedMessage());return;}
     if(!validBeneficiaryClassification(tag,relationship,otherLabel)){setModalError(tr('Select a tag and provide the required relationship or an Others description (maximum 80 characters).','ট্যাগ বাছুন এবং প্রয়োজনীয় সম্পর্ক অথবা অন্যান্য বর্ণনা (সর্বোচ্চ ৮০ অক্ষর) লিখুন।'));return;}
     setBusy(true);setModalError('');
     try{
       const id=await resolveList();
+      if(!maySaveFor(formOwnerRef.current))throw new Error(accountChangedMessage());
       const count=await addBeneficiaries(owner,id,chosen.map(row=>({tin:row.tin,display_name:row.name.trim(),tag:tag as BeneficiaryTag,relationship:tag==='friends_family'?relationship as BeneficiaryRelation:null,other_label:tag==='others'?otherLabel.trim():null})));
       const saved=await reload(id);
       const savedTins=new Set(saved.people.filter(person=>person.list_id===id).map(person=>person.tin));
@@ -569,7 +595,7 @@ export function Beneficiaries(){
       description={tr('Organize saved taxpayers and continue to payment when you are ready.','সংরক্ষিত করদাতাদের সাজান এবং প্রস্তুত হলে পেমেন্টে এগিয়ে যান।')}
       actions={<div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:w-auto sm:flex sm:flex-wrap sm:justify-end">
         <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading}
-          onClick={()=>{setCreateListOpen(true);setModalError('');setListName('');}}>
+          onClick={()=>{createListOwnerRef.current=activeFormOwner();setCreateListOpen(true);setModalError('');setListName('');}}>
           <Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}
         </UiButton>
         <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="primary" disabled={checkingIdentity||loading}

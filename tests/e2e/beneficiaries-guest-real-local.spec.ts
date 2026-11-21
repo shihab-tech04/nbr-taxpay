@@ -31,8 +31,13 @@ test('guest beneficiary API rejects untagged adds and permits only explicit lega
   const endpoint=new URL('/functions/v1/taxpay-guest-beneficiaries',url.origin).href;
   const {randomBytes}=await import('node:crypto');
   const capability=randomBytes(32).toString('base64url');
+  const otherCapability=randomBytes(32).toString('base64url');
   const invoke=(action:string,fields:Record<string,unknown>={})=>request.post(endpoint,{
     headers:{origin:'http://127.0.0.1:4173',apikey:key,'content-type':'application/json','x-taxpay-guest-capability':capability},
+    data:{action,...fields},
+  });
+  const asOther=(action:string,fields:Record<string,unknown>={})=>request.post(endpoint,{
+    headers:{origin:'http://127.0.0.1:4173',apikey:key,'content-type':'application/json','x-taxpay-guest-capability':otherCapability},
     data:{action,...fields},
   });
   let listId='';
@@ -69,6 +74,18 @@ test('guest beneficiary API rejects untagged adds and permits only explicit lega
     expect(restored.status()).toBe(200);
     expect((await restored.json()).success).toBe(true);
 
+    // A second independent capability cannot see or alter the first owner's
+    // tagged records. No production credentials or rows are involved.
+    const openedOther=await asOther('open');
+    expect(openedOther.status()).toBe(200);
+    const otherPeople=await asOther('people',{offset:0,limit:500});
+    expect(otherPeople.status()).toBe(200);
+    expect((await otherPeople.json()).data).toEqual([]);
+    const forbidden=await asOther('add',{listId,rows:[{
+      tin:'012345678905',display_name:'Other owner attempt',tag:'clients',relationship:null,
+    }]});
+    expect([400,403,404]).toContain(forbidden.status());
+
     const readback=await invoke('people',{offset:0,limit:500});
     expect(readback.status()).toBe(200);
     const rows=(await readback.json()).data as Array<{list_id:string;tin:string;tag:string|null;relationship:string|null}>;
@@ -77,6 +94,7 @@ test('guest beneficiary API rejects untagged adds and permits only explicit lega
       expect.objectContaining({tin:'012345678904',tag:null,relationship:null}),
     ]));
     expect(rows.some(row=>row.list_id===listId&&row.tin==='012345678901')).toBe(false);
+    expect(rows.some(row=>row.list_id===listId&&row.tin==='012345678905')).toBe(false);
   }finally{
     if(listId){
       const removed=await invoke('delete-list',{id:listId});
