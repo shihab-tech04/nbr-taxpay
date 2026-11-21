@@ -65,6 +65,10 @@ async function beneficiarySaveDebug(page:Page,people:MockGuestPerson[]){
     selectedList:await page.locator('#beneficiary-list').textContent().catch(()=>null),
     openDialogs:await page.locator('.taxpay-modal[role="dialog"]').count(),
     alerts:await page.locator('[role="alert"]').allTextContents(),
+    beneficiarySection:await page.locator('.beneficiary-register-frame').innerText().catch(()=>null),
+    recordRegionCount:await page.getByTestId('beneficiary-records').count(),
+    desktopRowCount:await page.locator('[data-testid="beneficiary-records"] table tbody tr').count(),
+    mobileCardCount:await page.locator('[data-testid="beneficiary-records"] ul.taxpay-mobile-table-cards > li').count(),
   });
 }
 
