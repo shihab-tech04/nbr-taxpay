@@ -108,7 +108,7 @@ test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery',
     await expect(paper).toContainText('123.45');
 
     await dialog.getByRole('button', { name: 'View payment certificate' }).click();
-    await expect(dialog.locator('.receipt-view__paper h3')).toContainText('Payment Certificate');
+    await expect(dialog.getByRole('heading', { name: 'Payment Certificate', exact: true })).toBeVisible();
     await expect(dialog.getByTestId('payment-certificate-reference'))
       .toContainText('SK-PC-' + fixture!.paymentId);
     await dialog.getByRole('button', { name: 'View receipt' }).click();
