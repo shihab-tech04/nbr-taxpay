@@ -12,8 +12,18 @@ async function openOtherTax(page: Page) {
 test('one combined receipt covers multiple TINs, survives response loss, and retries one SQL record', async ({ page }) => {
   const saved=new Map<string,{id:string;input:Record<string,any>}>();
   const calls:Record<string,any>[]=[];
+  let sourceReadbacks=0;
   let loseFirstResponse=true;
-  await page.route('**/functions/v1/demo-story1-taxpay/payments',async route=>{
+  await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
+    if(route.request().method()==='GET'){
+      const requestedId=new URL(route.request().url()).pathname.split('/').pop();
+      const record=[...saved.values()].find(item=>item.id===requestedId);
+      if(!record)return route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({success:false})});
+      sourceReadbacks++;
+      return route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({success:true,simulationOnly:true,data:{id:record.id,
+          status:'SIMULATED_SUCCESS',data:record.input}})});
+    }
     const input=route.request().postDataJSON() as Record<string,any>;
     calls.push(input);
     let record=saved.get(input.idempotencyKey);
@@ -24,7 +34,8 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
     if(loseFirstResponse){
       loseFirstResponse=false;
       await route.fulfill({status:503,contentType:'application/json',
-        body:JSON.stringify({success:false,error:'OFFICE_SYNC_PENDING'})});
+        body:JSON.stringify({success:false,error:'OFFICE_SYNC_PENDING',retryable:true,
+          requestId:record.id})});
       return;
     }
     await route.fulfill({status:200,contentType:'application/json',
@@ -64,6 +75,10 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
   await dialog.getByRole('button',{name:'Continue to payment channel'}).click();
   await expect(dialog.getByTestId('payment-review-remarks')).toContainText('Challan clarification for two taxpayers');
   expect(await dialog.getByTestId('payment-review-remarks').locator('p').textContent()).toBe(remarks);
+  await dialog.locator('.payment-review__back').click();
+  await expect(remarksInput).toHaveValue(remarks);
+  await dialog.getByRole('button',{name:'Continue to payment channel'}).click();
+  expect(await dialog.getByTestId('payment-review-remarks').locator('p').textContent()).toBe(remarks);
   await dialog.getByRole('button',{name:'Pay online'}).click();
   await dialog.getByRole('button',{name:'Mobile banking'}).click();
   await dialog.getByRole('radio',{name:'bKash'}).check();
@@ -79,6 +94,7 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
   await expect(dialog.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:15000});
   expect(saved.size).toBe(1);
   expect(calls).toHaveLength(2);
+  expect(sourceReadbacks).toBe(2);
   expect(calls[1]).toEqual(calls[0]);
   expect(calls[0].amountMinor).toBe(5000);
   expect(calls[0].details.combinedPayment).toBe(true);

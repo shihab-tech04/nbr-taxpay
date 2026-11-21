@@ -53,7 +53,10 @@ try {
   browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   let paymentRequests = 0;
+  let remarksRequests = 0;
   let missingBearer = false;
+  let missingRemarksBearer = false;
+  let wrongRemarksPaymentId = false;
   let routeError = null;
   await page.route('**/*', (route) => {
     const url = new URL(route.request().url());
@@ -98,6 +101,33 @@ try {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ success: true, data: [] }),
+      });
+    } catch (error) {
+      routeError = error instanceof Error ? error.message : String(error);
+      return route.abort();
+    }
+  });
+  await page.route('https://ihbtabrvmyiwikqqbhrf.supabase.co/rest/v1/rpc/payment_v1_office_guarded_challan_remarks', async (route) => {
+    try {
+      const authorization = route.request().headers().authorization;
+      const body = route.request().postDataJSON();
+      if (!authorization || !authorization.startsWith('Bearer ')) {
+        missingRemarksBearer = true;
+        return route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ message: 'Verified Office officer required' }) });
+      }
+      if (body?.p_payment_id !== payment.id) {
+        wrongRemarksPaymentId = true;
+        return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ message: 'Payment identity mismatch' }) });
+      }
+      remarksRequests++;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          paymentId: fixture.expected.id,
+          challanRemarks: fixture.expected.challanRemarks,
+          receiptReference: fixture.expected.receiptReference,
+        }),
       });
     } catch (error) {
       routeError = error instanceof Error ? error.message : String(error);
@@ -199,6 +229,18 @@ try {
   const verifyVisibleAllocations = async (language) => {
     const visibleDrawer = page.locator('.dynamic-drawer');
     await visibleDrawer.waitFor({ state: 'visible', timeout: 10000 });
+    const guardedRemarks = visibleDrawer.locator('[data-testid="office-guarded-challan-remarks"]');
+    await guardedRemarks.waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForFunction(({ selector, expected }) =>
+      document.querySelector(selector)?.querySelector('span')?.textContent === expected,
+    { selector: '.dynamic-drawer [data-testid="office-guarded-challan-remarks"]',
+      expected: fixture.expected.challanRemarks }, { timeout: 10000 });
+    assert.equal(await guardedRemarks.locator('span').textContent(), fixture.expected.challanRemarks,
+      language + ' Office drawer must render the exact officer-guarded multilingual remarks, including line breaks');
+    const remarksField = visibleDrawer.locator('.drawer-field:has([data-testid="office-guarded-challan-remarks"])');
+    assert.equal(await remarksField.locator('.drawer-field__label').innerText(),
+      language === 'bn' ? 'চালানের মন্তব্য' : 'Challan remarks',
+      language + ' Office remarks label must follow the selected language');
     const rows = visibleDrawer.locator('.office-shared-allocation-list__item');
     assert.equal(await rows.count(), expectedAllocations.length,
       language + ' drawer must render exactly two source-backed allocation lines');
@@ -229,6 +271,7 @@ try {
   };
   await verifyVisibleAllocations('en');
   const priorRequests = paymentRequests;
+  const priorRemarksRequests = remarksRequests;
   await page.evaluate(() => sessionStorage.setItem('ws3_office_test_language', 'bn'));
   const bengaliReadback = page.waitForResponse(response =>
     response.url().includes('/functions/v1/demo-story1-office/payments') && response.status() === 200);
@@ -236,12 +279,16 @@ try {
   await bengaliReadback;
   await screen.waitFor({ state: 'visible', timeout: 30000 });
   assert.ok(paymentRequests > priorRequests, 'Bengali refresh must re-read the authorized Office endpoint');
+  assert.ok(remarksRequests > priorRemarksRequests,
+    'Bengali refresh must re-read remarks through the separate officer-guarded SQL RPC');
   assert.equal(missingBearer, false);
+  assert.equal(missingRemarksBearer, false);
+  assert.equal(wrongRemarksPaymentId, false);
   assert.equal(routeError, null, routeError || undefined);
   await page.locator('.payment-module__table-card .card-table__action-btn').first().click();
   await verifyVisibleAllocations('bn');
   console.log('PASS Office #270 UI readback EN/BN refresh: paired parent ' + payment.id +
-    ', two individually verified immutable allocations, payer, beneficiaries, heads/years/exact amounts, original receipt/certificate references and authorized Office readback');
+    ', exact officer-guarded BN/EN multiline remarks, two individually verified immutable allocations, payer, beneficiaries, heads/years/exact amounts, original receipt/certificate references and authorized Office readback');
 } finally {
   if (browser) await browser.close();
   if (server.exitCode === null) {

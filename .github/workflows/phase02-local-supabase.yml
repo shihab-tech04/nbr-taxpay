@@ -482,16 +482,14 @@ jobs:
           set -euo pipefail
           # Two independent local databases; never link or write hosted SQL.
           OFFICE_DIR="$RUNNER_TEMP/ws3-office-verified"
-          # B-owned paired SQL step: resolve the current Office #270 branch
-          # once, record its immutable SHA and test that exact detached tree.
-          # A historical hardcoded head can fail before any SQL test runs.
-          git clone --depth 1 --branch ws3/v95-correction-payment-parent-20261112 \
+          # Pair Taxpayer acceptance with the currently protected, deployed
+          # Office Main. Record its immutable SHA for this run so its current
+          # SQL guard and UI are tested together, not a stale work branch.
+          git clone --depth 1 --branch main \
             https://github.com/shihab-tech04/NBR-Officemanagment-UI-V2.git "$OFFICE_DIR"
-          OFFICE_SHA="d04de641f0dbca6138e02cb41c2e89d78449b8b3"
-          git -C "$OFFICE_DIR" fetch --depth 1 origin "$OFFICE_SHA"
-          git -C "$OFFICE_DIR" checkout --detach "$OFFICE_SHA"
-          test "$(git -C "$OFFICE_DIR" rev-parse HEAD)" = "$OFFICE_SHA"
-          echo "Paired Office SQL source SHA: $OFFICE_SHA"
+          OFFICE_SHA="$(git -C "$OFFICE_DIR" rev-parse HEAD)"
+          test "$OFFICE_SHA" = "$(git -C "$OFFICE_DIR" rev-parse origin/main)"
+          echo "Paired Office protected Main source SHA: $OFFICE_SHA"
           WS1_DIR="$RUNNER_TEMP/ws1-current"
           git clone --depth 1 --branch ws1/v95-walk-in-self-combinations \
             https://github.com/shihab-tech04/nbr-taxpay.git "$WS1_DIR"

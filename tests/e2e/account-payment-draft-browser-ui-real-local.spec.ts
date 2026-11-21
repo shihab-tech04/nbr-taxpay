@@ -1,11 +1,11 @@
-import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { demoLoginOtpCompletedState } from './demo-login-test-state';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { chooseBeneficiaryOption } from './beneficiarySearchableSelect';
 
-type Account = 'user27' | 'user28' | 'user29' | 'user30';
+type Account = 'user23' | 'user25' | 'user27' | 'user28' | 'user29' | 'user30';
 
 /** Full React Save Draft → another browser → Continue Draft acceptance.
  * Uses the disposable local Supabase/Edge service, not intercepted REST routes.
@@ -218,6 +218,68 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await dashboard.goto('/?action=taxpayer_home');
     await expect(dashboard.getByTestId('dashboard-payment-drafts')
       .locator('[data-draft-id="' + draftId + '"]')).toHaveCount(0);
+  } finally {
+    await Promise.allSettled(contexts.map(context => context.close()));
+  }
+});
+
+test('payment form drafts survive another browser and retain multiline challan remarks', async ({ browser }, info) => {
+  test.setTimeout(90_000);
+  const raw = process.env.TAXPAY_LOCAL_SUPABASE_URL;
+  if (!raw) throw new Error('Disposable local Supabase is required.');
+  const endpoint = new URL(raw);
+  if (endpoint.protocol !== 'http:' || !['127.0.0.1', 'localhost', '[::1]'].includes(endpoint.hostname))
+    throw new Error('Refusing hosted SQL draft browser test.');
+  const owner: Account = info.project.name.startsWith('mobile') ? 'user23' : 'user25';
+  const contextOptions = {
+    baseURL: 'http://127.0.0.1:4173',
+    viewport: info.project.name.startsWith('mobile') ? { width: 375, height: 812 } : { width: 1280, height: 800 },
+    storageState: demoLoginOtpCompletedState,
+  };
+  const contexts: BrowserContext[] = [];
+  const openAccount = async () => {
+    const context = await browser.newContext(contextOptions);
+    contexts.push(context);
+    const page = await context.newPage();
+    page.setDefaultTimeout(10_000);
+    await page.goto('/?action=taxpayer_login');
+    await page.getByRole('textbox', { name: 'User ID' }).fill(owner);
+    await page.getByLabel('Password', { exact: true }).fill(owner);
+    await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+    await expect(page).toHaveURL(/action=taxpayer_home/);
+    return { context, page };
+  };
+  try {
+    const { page: first } = await openAccount();
+    await first.goto('/');
+    const firstDialog = await openLegacyTaxServiceChoice(first);
+    await enterTaxPayService(firstDialog, 'OTHER_TAX_PAYMENT', 'SELF');
+    await firstDialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+    const batch = firstDialog.getByTestId('other-tax-batch');
+    await batch.locator('[data-head-group="Advance Tax"] summary').click();
+    await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+    await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('35');
+    const remarks = 'বাংলা চালান মন্তব্য: অতিরিক্ত করের তথ্য\nEnglish challan note preserved across draft resume.';
+    await firstDialog.locator('#guest-payment-remarks').fill(remarks);
+    await firstDialog.getByRole('button', { name: 'Save Draft', exact: true }).click();
+    await expect(firstDialog.getByRole('button', { name: 'Draft Saved' })).toBeVisible();
+
+    const { page: second } = await openAccount();
+    await second.goto('/');
+    const secondDialog = await openLegacyTaxServiceChoice(second);
+    const draftEntry = secondDialog.getByTestId('account-draft-entry');
+    await expect(draftEntry.getByRole('button', { name: 'Continue from draft' })).toBeVisible();
+    await draftEntry.getByRole('button', { name: 'Continue from draft' }).click();
+    const savedList = draftEntry.getByTestId('saved-payment-draft-list');
+    await expect(savedList.locator('[data-draft-id]').first()).toBeVisible();
+    await savedList.locator('[data-draft-id]').first().click();
+    await expect(secondDialog.locator('#guest-payment-remarks')).toHaveValue(remarks);
+
+    // Remove the isolated synthetic fixture through the same confirmed draft UI.
+    await secondDialog.locator('.payment-form-draft-controls__open').click();
+    await secondDialog.getByRole('button', { name: 'Delete', exact: true }).first().click();
+    await secondDialog.getByRole('button', { name: 'Confirm delete', exact: true }).click();
+    await expect(secondDialog.getByText('Draft deleted.')).toBeVisible();
   } finally {
     await Promise.allSettled(contexts.map(context => context.close()));
   }

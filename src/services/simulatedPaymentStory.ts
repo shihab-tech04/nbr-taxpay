@@ -17,6 +17,46 @@ export type StoryPaymentAcknowledgement = {
   mirrored: boolean;
   simulationOnly: true;
 };
+type StoredStoryPayment = {
+  id?: string;
+  status?: string;
+  data?: Partial<StoryPaymentInput>;
+};
+
+/** Resolve the canonical challan note while still accepting the old alias. */
+function storedChallanRemarks(details: unknown): string | undefined {
+  if (!details || typeof details !== 'object' || Array.isArray(details)) return undefined;
+  const fields = details as Record<string, unknown>;
+  if (Object.prototype.hasOwnProperty.call(fields, 'challanRemarks')) {
+    return typeof fields.challanRemarks === 'string' ? fields.challanRemarks :
+      fields.challanRemarks === null ? '' : undefined;
+  }
+  if (Object.prototype.hasOwnProperty.call(fields, 'paymentRemarks')) {
+    return typeof fields.paymentRemarks === 'string' ? fields.paymentRemarks :
+      fields.paymentRemarks === null ? '' : undefined;
+  }
+  return '';
+}
+
+/** Verify the original Taxpayer SQL row, including exact printable remarks. */
+function sourceReadbackMatches(stored: StoredStoryPayment, paymentId: string,
+  scoped: StoryPaymentInput): boolean {
+  const row = stored.data;
+  if (stored.id !== paymentId || stored.status !== 'SIMULATED_SUCCESS' ||
+      row?.idempotencyKey !== scoped.idempotencyKey || row?.sessionId !== scoped.sessionId ||
+      row?.amountMinor !== scoped.amountMinor || row?.service !== scoped.service ||
+      !row.details || typeof row.details !== 'object') return false;
+
+  const expectedRemarks = storedChallanRemarks(scoped.details);
+  const actualRemarks = storedChallanRemarks(row.details);
+  if (expectedRemarks === undefined || actualRemarks !== expectedRemarks) return false;
+
+  const sourceDetails = row.details as Record<string, unknown>;
+  const receiptSnapshot = sourceDetails.receiptSnapshot;
+  if (receiptSnapshot === undefined || receiptSnapshot === null) return expectedRemarks === '';
+  const snapshotRemarks = storedChallanRemarks(receiptSnapshot);
+  return snapshotRemarks !== undefined && snapshotRemarks === expectedRemarks;
+}
 const API = TAXPAY_PUBLIC_ENDPOINT.url.replace(/\/$/,'')+'/functions/v1/demo-story1-taxpay';
 const headers={apikey:TAXPAY_PUBLIC_ENDPOINT.publishableKey};
 let fallbackSession: string | undefined;
@@ -147,36 +187,40 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
   };
   // V2 can persist simulations without dispatching to the separate Office.
   // Require an exact, capability-scoped SQL readback before acknowledging it.
+  const mirroredAcknowledgement = response.ok && body.success === true &&
+    body.mirrored === true && body.simulationOnly === true &&
+    body.status === 'SIMULATED_SUCCESS' && typeof body.id === 'string' &&
+    /^[0-9a-f-]{36}$/i.test(body.id);
   const storedWithoutOffice = response.ok && body.success === true &&
     body.mirrored === false && body.simulationOnly === true &&
     body.status === 'SIMULATED_SUCCESS' && body.officeSyncStatus === 'DISABLED' &&
     typeof body.id === 'string' && /^[0-9a-f-]{36}$/i.test(body.id);
+  const officeMirrorPending = response.status === 503 && body.error === 'OFFICE_SYNC_PENDING' &&
+    body.retryable === true && typeof body.requestId === 'string' &&
+    /^[0-9a-f-]{36}$/i.test(body.requestId);
+  const hasExplicitChallanRemarks = Object.prototype.hasOwnProperty.call(scoped.details,'challanRemarks') ||
+    Object.prototype.hasOwnProperty.call(scoped.details,'paymentRemarks');
   let acknowledged: StoryPaymentAcknowledgement;
-  if (response.ok && body.success === true && body.mirrored === true && body.id && body.status === 'SIMULATED_SUCCESS' && body.simulationOnly === true) {
+  if (mirroredAcknowledgement && !hasExplicitChallanRemarks) {
     acknowledged = body as StoryPaymentAcknowledgement;
-  } else if (storedWithoutOffice ||
-             (response.status === 503 && body.error === 'OFFICE_SYNC_PENDING' && body.retryable === true &&
-              typeof body.requestId === 'string' && /^[0-9a-f-]{36}$/i.test(body.requestId))) {
-    const paymentId = storedWithoutOffice ? body.id! : body.requestId!;
-    // Office mirror failure is NOT a payment-gateway decline. Before showing a
-    // saved simulation, independently read back the exact idempotent source SQL
-    // row using this session's existing capability/ownership boundary.
+  } else if (mirroredAcknowledgement || storedWithoutOffice || officeMirrorPending) {
+    const paymentId = mirroredAcknowledgement || storedWithoutOffice ? body.id! : body.requestId!;
+    // A successful Office mirror is not a substitute for reading the original
+    // Taxpayer SQL parent. Every acknowledgement uses this session's existing
+    // capability/ownership boundary and verifies exact payment and remarks data.
     const readback = await fetch(API + '/payments/' + encodeURIComponent(paymentId) +
       '?sessionId=' + encodeURIComponent(input.sessionId), {
         headers: storyApiHeaders(input.sessionId), cache: 'no-store',
       });
     if (!readback.ok) throw new Error('SIMULATION_READBACK_PENDING');
     const stored = await readback.json() as {success?:boolean;simulationOnly?:boolean;
-      data?:{id?:string;status?:string;data?:Partial<StoryPaymentInput>}};
-    if (stored.success !== true || stored.simulationOnly !== true ||
-        stored.data?.id !== paymentId || stored.data.status !== 'SIMULATED_SUCCESS' ||
-        stored.data.data?.idempotencyKey !== scoped.idempotencyKey ||
-        stored.data.data?.sessionId !== scoped.sessionId ||
-        stored.data.data?.amountMinor !== scoped.amountMinor ||
-        stored.data.data?.service !== scoped.service)
+      data?:StoredStoryPayment};
+    if (stored.success !== true || stored.simulationOnly !== true || !stored.data ||
+        !sourceReadbackMatches(stored.data, paymentId, scoped))
       throw new Error('SIMULATION_READBACK_MISMATCH');
-    acknowledged = {success:true,id:paymentId,status:'SIMULATED_SUCCESS',
-      mirrored:false,simulationOnly:true};
+    acknowledged = mirroredAcknowledgement
+      ? body as StoryPaymentAcknowledgement
+      : {success:true,id:paymentId,status:'SIMULATED_SUCCESS',mirrored:false,simulationOnly:true};
   } else {
     throw new Error(body.error || 'SIMULATION_SUBMISSION_PENDING');
   }
