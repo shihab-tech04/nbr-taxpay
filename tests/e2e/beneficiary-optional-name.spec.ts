@@ -3,13 +3,14 @@ import {test,expect,type Page} from '@playwright/test';
 import {BENEFICIARY_NAME_NOT_PROVIDED} from '../../src/services/beneficiaryNames';
 import {setWorkspaceLanguage} from './workspace-language';
 
-type MockGuestPerson={id:string;list_id:string;tin:string;display_name:string;created_at:string;updated_at:string};
+type MockGuestPerson={id:string;list_id:string;tin:string;display_name:string;tag:string|null;relationship:string|null;other_label:string|null;created_at:string;updated_at:string};
 type MockGuestList={id:string;name:string;created_at:string};
 type MockGuestSession={lists:MockGuestList[];people:MockGuestPerson[]};
 
 async function setupGuestTransport(page:Page){
   const sessions=new Map<string,MockGuestSession>();
   let nextId=1;
+  let suppressClassificationReadback=false;
   const newId=()=>`00000000-0000-4000-8000-${String(nextId++).padStart(12,'0')}`;
   await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({message:'No session'})}));
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
@@ -25,14 +26,16 @@ async function setupGuestTransport(page:Page){
     const now=new Date().toISOString();
     let data:unknown;
     if(body.action==='lists')data=session.lists;
-    else if(body.action==='people')data=session.people.slice(Number(body.offset)||0,(Number(body.offset)||0)+(Number(body.limit)||500));
+    else if(body.action==='people')data=session.people.slice(Number(body.offset)||0,(Number(body.offset)||0)+(Number(body.limit)||500)).map(person=>
+      suppressClassificationReadback?{...person,tag:null,relationship:null,other_label:null}:person);
     else if(body.action==='create-list'){
       const list={id:newId(),name:String(body.name),created_at:now};session.lists.push(list);data=list;
     }else if(body.action==='add'){
       let inserted=0;
-      for(const row of body.rows as Array<{tin:string;display_name:string}>){
+      for(const row of body.rows as Array<{tin:string;display_name:string;tag?:string|null;relationship?:string|null;other_label?:string|null}>){
         if(session.people.some(person=>person.list_id===body.listId&&person.tin===row.tin))continue;
-        session.people.push({id:newId(),list_id:String(body.listId),tin:row.tin,display_name:row.display_name,created_at:now,updated_at:now});inserted++;
+        session.people.push({id:newId(),list_id:String(body.listId),tin:row.tin,display_name:row.display_name,
+          tag:row.tag??null,relationship:row.relationship??null,other_label:row.other_label??null,created_at:now,updated_at:now});inserted++;
       }
       data=inserted;
     }else if(body.action==='move'){
@@ -43,6 +46,15 @@ async function setupGuestTransport(page:Page){
         await route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({success:false,code:'BENEFICIARY_ALREADY_IN_LIST'})});return;
       }
       person.list_id=destination.id;person.updated_at=now;data=person;
+    }else if(body.action==='edit-classification'){
+      const person=session.people.find(value=>value.id===body.id&&value.list_id===body.sourceListId);
+      const destination=session.lists.find(list=>list.id===body.listId);
+      if(!person||!destination){await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({success:false,code:'NOT_FOUND'})});return;}
+      if(session.people.some(value=>value.id!==person.id&&value.list_id===destination.id&&value.tin===person.tin)){
+        await route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({success:false,code:'BENEFICIARY_ALREADY_IN_LIST'})});return;
+      }
+      person.list_id=destination.id;person.tag=body.tag??null;person.relationship=body.relationship??null;
+      person.other_label=body.other_label??null;person.updated_at=now;data=person;
     }else if(body.action==='update'){
       const person=session.people.find(value=>value.id===body.id);
       if(!person){await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({success:false,code:'NOT_FOUND'})});return;}
@@ -52,7 +64,7 @@ async function setupGuestTransport(page:Page){
     }else data={active:true};
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
-  return {saved:()=>Array.from(sessions.values()).flatMap(session=>session.people)};
+  return {saved:()=>Array.from(sessions.values()).flatMap(session=>session.people),suppressClassificationReadback:(value:boolean)=>{suppressClassificationReadback=value;}};
 }
 
 test('local sample taxpayer preserves names when moving beneficiaries across lists and prefilling',async({page})=>{
@@ -79,7 +91,8 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await chooseBeneficiaryOption(dialog,'beneficiary-tag','clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   const visibleRecords=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
-  await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(1);
+  const row=visibleRecords.filter({hasText:'Name not provided'});
+  await expect(row).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='012345678901')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
   await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
@@ -99,7 +112,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await dialog.getByRole('button',{name:'Save changes'}).click();
   await expect(page.getByText('Beneficiary moved to the selected list.')).toBeVisible();
   await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Clients');
-  await expect(visibleRecords.getByText('Editable Contact',{exact:true})).toBeVisible();
+  await expect(visibleRecords.filter({hasText:'Editable Contact'})).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='987654321098')?.display_name).toBe('Editable Contact');
   await page.reload();
   await page.getByRole('button',{name:'Filter',exact:true}).click();
@@ -112,7 +125,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await chooseBeneficiaryOption(dialog,'beneficiary-tag','others');
   await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(2);
+  await expect(visibleRecords.filter({hasText:'Name not provided'})).toHaveCount(2);
   expect(transport.saved().find(person=>person.tin==='123456789012')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
   const intendedRecord=visibleRecords.filter({hasText:'012*********'});
@@ -140,7 +153,8 @@ test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async(
   await chooseBeneficiaryOption(dialog,'beneficiary-tag','friends_family:mother');
   await dialog.getByRole('button',{name:'উপকারভোগী যোগ',exact:true}).click();
   const visibleRecords=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
-  await expect(visibleRecords.getByText('নাম দেওয়া হয়নি',{exact:true})).toHaveCount(1);
+  const row=visibleRecords.filter({hasText:'নাম দেওয়া হয়নি'});
+  await expect(row).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='123450987654')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 });
 
@@ -204,6 +218,33 @@ test('single beneficiary uses the shared TIN lookup card, clears lookup, and ret
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible();
   expect(transport.saved().find(record=>record.tin==='012345678901')?.display_name).toBe('Local contact');
+});
+
+test('single beneficiary keeps the form recoverable when SQL readback omits its selected classification',async({page})=>{
+  const transport=await setupGuestTransport(page);
+  await page.goto('/?action=beneficiaries&demoUser=user1');
+  await page.getByRole('button',{name:'Create list',exact:true}).click();
+  let dialog=page.getByRole('dialog',{name:'Create list'});
+  await dialog.locator('#beneficiary-create-list-name').fill('Classification readback');
+  await dialog.getByRole('button',{name:'Create list',exact:true}).click();
+
+  await page.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+  await dialog.locator('#beneficiary-tin').fill('012345678901');
+  await dialog.locator('#beneficiary-name').fill('Classification recovery');
+  await chooseBeneficiaryOption(dialog,'beneficiary-tag','friends_family:mother');
+  transport.suppressClassificationReadback(true);
+  await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+
+  await expect(dialog.getByRole('alert')).toContainText('Saved beneficiary tag could not be verified');
+  await expect(dialog.locator('#beneficiary-tin')).toHaveValue('012345678901');
+  await expect(dialog.locator('#beneficiary-name')).toHaveValue('Classification recovery');
+  await expect(page.getByText('Beneficiary saved.',{exact:true})).toHaveCount(0);
+
+  transport.suppressClassificationReadback(false);
+  await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+  await expect(page.getByText('This beneficiary is already in the list.',{exact:true})).toBeVisible();
+  expect(transport.saved().find(record=>record.tin==='012345678901')).toMatchObject({tag:'friends_family',relationship:'mother'});
 });
 
 test('beneficiary suggestions match Other Tax and Search reveals the same taxpayer details card',async({page})=>{

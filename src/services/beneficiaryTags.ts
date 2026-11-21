@@ -8,6 +8,15 @@ export interface BeneficiaryClassification {
   relationship: BeneficiaryRelation | null;
   other_label: string | null;
 }
+/** Readback must match the full user-selected classification, not just the TIN. */
+export function matchesBeneficiaryClassification(
+  actual: {tag:unknown;relationship:unknown;other_label:unknown}|null|undefined,
+  expected: {tag:unknown;relationship:unknown;other_label:unknown}
+):boolean {
+  return (actual?.tag??null)===(expected.tag??null) &&
+    (actual?.relationship??null)===(expected.relationship??null) &&
+    (actual?.other_label??null)===(expected.other_label??null);
+}
 /** User-provided description, never used to infer or authorize identity. */
 export const BENEFICIARY_OTHER_LABEL_MAX = 80;
 export function normalizeOtherLabel(label:unknown):string|null {

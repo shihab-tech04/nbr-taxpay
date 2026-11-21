@@ -2,7 +2,7 @@ import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {test,expect,type Page} from '@playwright/test';
 import {mkdirSync,readFileSync} from 'node:fs';
 
-type MockGuestPerson={id:string;list_id:string;tin:string;display_name:string;created_at:string;updated_at:string};
+type MockGuestPerson={id:string;list_id:string;tin:string;display_name:string;tag:string|null;relationship:string|null;other_label:string|null;created_at:string;updated_at:string};
 type MockGuestList={id:string;name:string;created_at:string};
 type MockGuestSession={lists:MockGuestList[];people:MockGuestPerson[]};
 
@@ -36,9 +36,10 @@ async function setupGuestTransport(page:Page){
         await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({success:false,code:'TEMPORARY_FAILURE'})});return;
       }
       let inserted=0;
-      for(const row of body.rows as Array<{tin:string;display_name:string}>){
+      for(const row of body.rows as Array<{tin:string;display_name:string;tag?:string|null;relationship?:string|null;other_label?:string|null}>){
         if(session.people.some(person=>person.list_id===body.listId&&person.tin===row.tin))continue;
-        session.people.push({id:newId(),list_id:String(body.listId),tin:row.tin,display_name:row.display_name,created_at:now,updated_at:now});inserted++;
+        session.people.push({id:newId(),list_id:String(body.listId),tin:row.tin,display_name:row.display_name,
+          tag:row.tag??null,relationship:row.relationship??null,other_label:row.other_label??null,created_at:now,updated_at:now});inserted++;
       }
       data=inserted;
     }else if(body.action==='move'){
@@ -49,6 +50,15 @@ async function setupGuestTransport(page:Page){
         await route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({success:false,code:'BENEFICIARY_ALREADY_IN_LIST'})});return;
       }
       person.list_id=destination.id;person.updated_at=now;data=person;
+    }else if(body.action==='edit-classification'){
+      const person=session.people.find(value=>value.id===body.id&&value.list_id===body.sourceListId);
+      const destination=session.lists.find(list=>list.id===body.listId);
+      if(!person||!destination){await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({success:false,code:'NOT_FOUND'})});return;}
+      if(session.people.some(value=>value.id!==person.id&&value.list_id===destination.id&&value.tin===person.tin)){
+        await route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({success:false,code:'BENEFICIARY_ALREADY_IN_LIST'})});return;
+      }
+      person.list_id=destination.id;person.tag=body.tag??null;person.relationship=body.relationship??null;
+      person.other_label=body.other_label??null;person.updated_at=now;data=person;
     }else if(body.action==='update'){
       const person=session.people.find(value=>value.id===body.id);
       if(!person){await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({success:false,code:'NOT_FOUND'})});return;}
@@ -179,7 +189,8 @@ test('failed beneficiary save stays recoverable and retries without duplicating 
   expect(transport.createListCount()).toBe(1);
   await page.getByRole('button',{name:'Filter',exact:true}).click();
   const visibleRecords=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
-  await expect(visibleRecords.getByText('Retry Beneficiary',{exact:true})).toBeVisible();
+  const retryRow=visibleRecords.filter({hasText:'Retry Beneficiary'});
+  await expect(retryRow).toBeVisible();
 });
 
 
@@ -188,7 +199,10 @@ test('local sample taxpayer Beneficiaries supports independent lists, manual ent
   await page.goto('/?action=beneficiaries&demoUser=user1');
   await page.getByRole('button',{name:'Filter',exact:true}).click();
   const recordList=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
-  const expectRecord=async(name:string)=>expect(recordList.getByText(name,{exact:true})).toBeVisible();
+  const expectRecord=async(name:string)=>{
+    const row=recordList.filter({hasText:name});
+    await expect(row).toBeVisible();
+  };
   await expect(page.getByRole('heading',{name:'Create your first list'})).toBeVisible();
   await expect(page.getByRole('link',{name:/Sign in/})).toHaveCount(0);
 

@@ -26,7 +26,7 @@ import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} fro
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
 import {BeneficiaryProfile} from './BeneficiaryProfile';
 import {hasStoredGuestBeneficiaries} from '../../services/guestBeneficiaries';
-import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from '../../services/beneficiaryTags';
+import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,matchesBeneficiaryClassification,validBeneficiaryClassification,type BeneficiaryTag,type BeneficiaryRelation} from '../../services/beneficiaryTags';
 
 type Flow='single'|'bulk';
 type Phase='upload'|'preview'|'confirm';
@@ -191,8 +191,12 @@ export function Beneficiaries(){
     });
   };
   const initialRequestRef=useRef<symbol|null>(null);
+  // Keep late background reads from replacing the SQL-confirmed snapshot after a save.
+  const dataRevisionRef=useRef(0);
   const reload=async(preferredList?:string)=>{
+    const revision=++dataRevisionRef.current;
     const data=await loadBeneficiaries(owner,{forceFresh:true});
+    if(revision!==dataRevisionRef.current)return data;
     setLists(data.lists);setPeople(data.people);
     const validPreferredList=preferredList&&(preferredList==='all'||data.lists.some(list=>list.id===preferredList))?preferredList:null;
     setActiveList(current=>validPreferredList
@@ -208,6 +212,7 @@ export function Beneficiaries(){
     let cancelled=false;
     if(checkingIdentity){initialRequestRef.current=null;return()=>{cancelled=true;};}
     const requestToken=Symbol('beneficiary-initial-load');
+    const revision=++dataRevisionRef.current;
     initialRequestRef.current=requestToken;
     setLists([]);setPeople([]);setActiveList('');setSelectedIds([]);setLoading(true);setError('');
     Promise.all([
@@ -216,7 +221,7 @@ export function Beneficiaries(){
       // preference only for the same preview owner; fall back safely.
       !owner&&previewAccount?getPreviewSettings().catch(()=>null):Promise.resolve(null),
     ]).then(([data,serverSettings])=>{
-      if(cancelled)return;
+      if(cancelled||revision!==dataRevisionRef.current)return;
       setLists(data.lists);setPeople(data.people);
       const latestChoice=serverSettings
         ?(serverSettings.selectedListId??'all')
@@ -236,15 +241,14 @@ export function Beneficiaries(){
   useEffect(()=>{
     if(checkingIdentity || busy)return;
     let cancelled=false;
-    let revision=0;
     const gate=createBeneficiaryAutoRefreshGate();
     const refresh=()=>{
       // Browsers commonly fire visibilitychange and focus together. The
       // mount load already has the fresh data; do not issue a second read.
       if(document.visibilityState==='hidden' || initialRequestRef.current || !gate.begin(Date.now()))return;
-      const current=++revision;
+      const current=++dataRevisionRef.current;
       void loadBeneficiaries(owner,{forceFresh:true}).then(data=>{
-        if(cancelled || current!==revision)return;
+        if(cancelled || current!==dataRevisionRef.current)return;
         setLists(data.lists);setPeople(data.people);setError('');
         setActiveList(selected=>selected==='all'||data.lists.some(list=>list.id===selected)?selected:'all');
         setSelectedIds(selected=>selected.filter(id=>data.people.some(person=>person.id===id)));
@@ -427,11 +431,15 @@ export function Beneficiaries(){
     try{
       const id=await resolveList();
       if(!maySaveFor(formOwnerRef.current))throw new Error(accountChangedMessage());
-      const count=await addBeneficiaries(owner,id,[{tin,display_name:name.trim(),tag:tag as BeneficiaryTag,relationship:tag==='friends_family'?relationship as BeneficiaryRelation:null,other_label:tag==='others'?otherLabel.trim():null}]);
+      const classification={tag:tag as BeneficiaryTag,relationship:tag==='friends_family'?relationship as BeneficiaryRelation:null,other_label:tag==='others'?otherLabel.trim():null};
+      const count=await addBeneficiaries(owner,id,[{tin,display_name:name.trim(),...classification}]);
       const saved=await reload(id);
-      if(!saved.people.some(person=>person.list_id===id&&person.tin===tin)){
+      const savedPerson=saved.people.find(person=>person.list_id===id&&person.tin===tin);
+      if(!savedPerson){
         throw new Error(tr('Beneficiary was not saved. Please retry.','উপকারভোগী সংরক্ষিত হয়নি। আবার চেষ্টা করুন।'));
       }
+      if(count>0&&!matchesBeneficiaryClassification(savedPerson,classification))
+        throw new Error(tr('Saved beneficiary tag could not be verified. Refresh the list and try again.','সংরক্ষিত উপকারভোগীর ট্যাগ যাচাই করা যায়নি। তালিকা রিফ্রেশ করে আবার চেষ্টা করুন।'));
       setFlow(null);setBeneficiarySaveOwner(null);
       setNotice(count?{en:'Beneficiary saved.',bn:'উপকারভোগী সংরক্ষিত হয়েছে।'}:{en:'This beneficiary is already in the list.',bn:'এই উপকারভোগী তালিকায় আগে থেকেই আছেন।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
@@ -457,12 +465,15 @@ export function Beneficiaries(){
     try{
       const id=await resolveList();
       if(!maySaveFor(formOwnerRef.current))throw new Error(accountChangedMessage());
-      const count=await addBeneficiaries(owner,id,chosen.map(row=>({tin:row.tin,display_name:row.name.trim(),tag:tag as BeneficiaryTag,relationship:tag==='friends_family'?relationship as BeneficiaryRelation:null,other_label:tag==='others'?otherLabel.trim():null})));
+      const classification={tag:tag as BeneficiaryTag,relationship:tag==='friends_family'?relationship as BeneficiaryRelation:null,other_label:tag==='others'?otherLabel.trim():null};
+      const count=await addBeneficiaries(owner,id,chosen.map(row=>({tin:row.tin,display_name:row.name.trim(),...classification})));
       const saved=await reload(id);
-      const savedTins=new Set(saved.people.filter(person=>person.list_id===id).map(person=>person.tin));
-      if(chosen.some(row=>!savedTins.has(row.tin))){
+      const savedByTin=new Map(saved.people.filter(person=>person.list_id===id).map(person=>[person.tin,person]));
+      if(chosen.some(row=>!savedByTin.has(row.tin))){
         throw new Error(tr('Some beneficiaries were not saved. Retry the import.','কিছু উপকারভোগী সংরক্ষিত হয়নি। আবার আমদানি করুন।'));
       }
+      if(chosen.some(row=>!matchesBeneficiaryClassification(savedByTin.get(row.tin),classification)))
+        throw new Error(tr('Some beneficiary tags could not be verified. Refresh the list and retry.','কিছু উপকারভোগীর ট্যাগ যাচাই করা যায়নি। তালিকা রিফ্রেশ করে আবার চেষ্টা করুন।'));
       setFlow(null);
       setNotice(count?{en:`${count} beneficiaries added to the list.`,bn:`${count} জন উপকারভোগী তালিকায় যুক্ত হয়েছেন।`}:{en:'No new beneficiaries were added.',bn:'নতুন কোনো উপকারভোগী যোগ হয়নি।'});
     }catch(e){setModalError(e instanceof Error?e.message:String(e));}
