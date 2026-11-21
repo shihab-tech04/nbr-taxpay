@@ -124,7 +124,7 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
       id,owner_uid:first.id,list_id:clients,tin:'012345678901',
       display_name:'Immutable Beneficiary',tag:'others',relationship:null,other_label:'Neighbour representative',
     }]);
-    const freshLogin='/\\x3faction=beneficiaries#access_token='+encodeURIComponent(fresh.access_token)+
+    const freshLogin='/\x3faction=beneficiaries#access_token='+encodeURIComponent(fresh.access_token)+
       '&refresh_token='+encodeURIComponent(fresh.refresh_token)+
       '&token_type=bearer&expires_in=3600&expires_at='+(Math.floor(Date.now()/1000)+3600);
     const freshContext=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:375,height:812}});
