@@ -129,9 +129,11 @@ async function assertBulkRemovalStopsAfterAccountSwitch(
   const firstRequestStarted=new Promise<void>(resolve=>{markFirstRequestStarted=resolve;});
   let releaseFirstResponse=()=>{};
   const firstResponseReleased=new Promise<void>(resolve=>{releaseFirstResponse=resolve;});
+  const guestApiRequests:string[]=[];
   await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({message:'No session'})}));
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
     const request=route.request();
+    guestApiRequests.push(request.method()==='OPTIONS'?'OPTIONS':String((request.postDataJSON() as {action?:string}|null)?.action??'POST'));
     const origin=request.headers().origin??'http://127.0.0.1:4173';
     const corsHeaders={
       'access-control-allow-origin':origin,
@@ -167,7 +169,12 @@ async function assertBulkRemovalStopsAfterAccountSwitch(
   await page.goto('/?action=beneficiaries&demoUser=user1'+lang);
   const screen=page.getByTestId('beneficiaries-page');
   const rowChecks=screen.locator('input[type="checkbox"][id^="beneficiary-select-"]:visible,input[type="checkbox"][id^="beneficiary-mobile-select-"]:visible');
-  await expect(rowChecks).toHaveCount(2);
+  try{
+    await expect(rowChecks).toHaveCount(2);
+  }catch(error){
+    const visibleContent=await screen.innerText().catch(()=>'(screen unavailable)');
+    throw new Error(`Beneficiary fixture did not load. API requests: ${guestApiRequests.join(', ')||'(none)'}. Screen: ${visibleContent}`,{cause:error});
+  }
   await rowChecks.nth(0).check();
   await rowChecks.nth(1).check();
   const menu=screen.getByTestId('beneficiary-bulk-more');
