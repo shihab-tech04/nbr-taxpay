@@ -1,4 +1,6 @@
 import {expect,test} from '@playwright/test';
+import {spawn,type ChildProcess} from 'node:child_process';
+import {resolve} from 'node:path';
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 
 test.use({storageState:{cookies:[],origins:[]}});
@@ -10,6 +12,45 @@ const changedMessage={
 const beneficiarySessionId='11111111-1111-4111-8111-111111111111';
 const profileStorageKey='korbritto.demo-profile-session.v1';
 const profileUserKey='taxpay-taxpayer-preview-user';
+const ownerTestBaseUrl='http://127.0.0.1:4174';
+let ownerTestVite:ChildProcess|null=null;
+
+test.beforeAll(async()=>{
+  test.setTimeout(60_000);
+  const supabaseUrl=process.env.TAXPAY_LOCAL_SUPABASE_URL;
+  const publishableKey=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+  if(!supabaseUrl||!publishableKey)
+    throw new Error('The beneficiary owner-session browser gate requires the disposable local Supabase endpoint.');
+  ownerTestVite=spawn(process.execPath,[resolve(process.cwd(),'node_modules/vite/bin/vite.js'),
+    '--host','127.0.0.1','--port','4174','--strictPort'],{
+    env:{...process.env,VITE_SUPABASE_DISABLED:'false',VITE_SUPABASE_URL:supabaseUrl,
+      VITE_SUPABASE_PUBLISHABLE_KEY:publishableKey},
+    stdio:'ignore',
+  });
+  const deadline=Date.now()+30_000;
+  while(Date.now()<deadline){
+    if(ownerTestVite.exitCode!==null)
+      throw new Error(`The isolated beneficiary Vite server exited with ${ownerTestVite.exitCode}.`);
+    try{
+      const response=await fetch(ownerTestBaseUrl);
+      if(response.ok)return;
+    }catch{/* Wait for Vite to finish binding the isolated port. */}
+    await new Promise(resolve=>setTimeout(resolve,250));
+  }
+  throw new Error('The isolated beneficiary Vite server did not become ready on port 4174.');
+});
+
+test.afterAll(async()=>{
+  const server=ownerTestVite;
+  ownerTestVite=null;
+  if(!server||server.exitCode!==null)return;
+  await new Promise<void>(done=>{
+    const timeout=setTimeout(done,3_000);
+    timeout.unref();
+    server.once('exit',()=>{clearTimeout(timeout);done();});
+    server.kill('SIGTERM');
+  });
+});
 
 async function mockBeneficiaryApi(page:import('@playwright/test').Page,actions:string[]){
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
@@ -166,7 +207,7 @@ async function assertBulkRemovalStopsAfterAccountSwitch(
   });
 
   const lang=language==='bn'?'&lang=bn':'';
-  await page.goto('/?action=beneficiaries&demoUser=user1'+lang);
+  await page.goto(ownerTestBaseUrl+'/?action=beneficiaries&demoUser=user1'+lang);
   const screen=page.getByTestId('beneficiaries-page');
   const rowChecks=screen.locator('input[type="checkbox"][id^="beneficiary-select-"]:visible,input[type="checkbox"][id^="beneficiary-mobile-select-"]:visible');
   try{
