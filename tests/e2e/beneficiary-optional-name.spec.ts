@@ -112,7 +112,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await dialog.getByRole('button',{name:'Save changes'}).click();
   await expect(page.getByText('Beneficiary moved to the selected list.')).toBeVisible();
   await expect(page.getByRole('button',{name:'Selected list'})).toContainText('Clients');
-  await expect(visibleRecords.getByText('Editable Contact',{exact:true})).toBeVisible();
+  await expect(visibleRecords.filter({hasText:'Editable Contact'})).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='987654321098')?.display_name).toBe('Editable Contact');
   await page.reload();
   await page.getByRole('button',{name:'Filter',exact:true}).click();
