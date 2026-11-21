@@ -114,6 +114,7 @@ export function Beneficiaries(){
   const [editPerson,setEditPerson]=useState<Beneficiary|null>(null);
   const editOwnerContextRef=useRef<BeneficiaryOwnerContext>({ownerUid:null,ownerKey:null,checkingIdentity:true});
   const deleteOwnerContextRef=useRef<BeneficiaryOwnerContext>({ownerUid:null,ownerKey:null,checkingIdentity:true});
+  const bulkRemoveOwnerContextRef=useRef<BeneficiaryOwnerContext>({ownerUid:null,ownerKey:null,checkingIdentity:true});
   const [editTargetList,setEditTargetList]=useState('');
   const [editTag,setEditTag]=useState<BeneficiaryTag|''>('');
   const [editRelationship,setEditRelationship]=useState<BeneficiaryRelation|''>('');
@@ -177,12 +178,15 @@ export function Beneficiaries(){
   const currentOwnerKey=activeFormOwner();
   currentOwnerContextRef.current={ownerUid:owner,ownerKey:currentOwnerKey,checkingIdentity};
   useEffect(()=>{
-    if(!editPerson||beneficiaryOwnerContextUnchanged(editOwnerContextRef.current,currentOwnerContextRef.current))return;
-    editOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
-    deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
-    setDeletePerson(null);setEditPerson(null);setEditTargetList('');setModalError('');
-    setNotice({en:'Your account changed. Reopen this beneficiary before editing.',bn:'আপনার অ্যাকাউন্ট বদলেছে। সম্পাদনার আগে এই উপকারভোগীটি আবার খুলুন।'});
-  },[owner,checkingIdentity,previewAccount?.id,currentOwnerKey,editPerson]);
+    if(editPerson&&!beneficiaryOwnerContextUnchanged(editOwnerContextRef.current,currentOwnerContextRef.current)){
+      editOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+      deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+      setDeletePerson(null);setEditPerson(null);setEditTargetList('');setModalError('');
+      setNotice({en:'Your account changed. Reopen this beneficiary before editing.',bn:'আপনার অ্যাকাউন্ট বদলেছে। সম্পাদনার আগে এই উপকারভোগীটি আবার খুলুন।'});
+    }
+    if(bulkRemoveIds&&!beneficiaryOwnerContextUnchanged(bulkRemoveOwnerContextRef.current,currentOwnerContextRef.current))
+      closeStaleBulkRemove();
+  },[owner,checkingIdentity,previewAccount?.id,currentOwnerKey,editPerson,bulkRemoveIds]);
   const maySaveFor=(captured:string|null)=>!checkingIdentity&&
     beneficiaryFormOwnerUnchanged(captured,activeFormOwner());
   const accountChangedMessage=()=>tr('Your account changed. Cancel and reopen this form before saving.',
@@ -573,21 +577,67 @@ export function Beneficiaries(){
     finally{setBusy(false);}
   }
 
+  function closeStaleBulkRemove(){
+    bulkRemoveOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+    setBulkRemoveIds(null);setSelectedIds([]);setModalError('');
+    setNotice({
+      en:'Your account changed. Reopen the beneficiary list before removing these records.',
+      bn:'আপনার অ্যাকাউন্ট বদলেছে। রেকর্ডগুলো সরানোর আগে উপকারভোগীর তালিকাটি আবার খুলুন।',
+    });
+  }
+
+  function requestBulkRemove(){
+    const context=currentOwnerContextRef.current;
+    const ids=selectedPeople.map(person=>person.id);
+    if(!ids.length)return;
+    if(!beneficiaryOwnerContextUnchanged(context,currentOwnerContextRef.current)){
+      setNotice({
+        en:'Your account changed. Reopen the beneficiary list before removing these records.',
+        bn:'আপনার অ্যাকাউন্ট বদলেছে। রেকর্ডগুলো সরানোর আগে উপকারভোগীর তালিকাটি আবার খুলুন।',
+      });
+      return;
+    }
+    bulkRemoveOwnerContextRef.current=context;
+    setModalError('');setBulkRemoveIds(ids);
+  }
+
+  function closeBulkRemove(){
+    if(busy)return;
+    bulkRemoveOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+    setBulkRemoveIds(null);setModalError('');
+  }
+
   async function confirmBulkRemove(){
-    if(!bulkRemoveIds?.length||busy)return;
-    const stillSelected=bulkRemoveIds.filter(id=>people.some(person=>person.id===id&&(activeList==='all'||person.list_id===activeList)));
+    const selectedAtConfirmation=bulkRemoveIds;
+    if(!selectedAtConfirmation?.length||busy)return;
+    const context=bulkRemoveOwnerContextRef.current;
+    const ownerIsCurrent=()=>beneficiaryOwnerContextUnchanged(context,currentOwnerContextRef.current);
+    if(!ownerIsCurrent()){closeStaleBulkRemove();return;}
+    const stillSelected=selectedAtConfirmation.filter(id=>people.some(person=>person.id===id&&(activeList==='all'||person.list_id===activeList)));
+    if(!stillSelected.length){
+      setModalError(tr('The selected beneficiaries are no longer available. Refresh and try again.','নির্বাচিত উপকারভোগীরা আর উপলভ্য নেই। রিফ্রেশ করে আবার চেষ্টা করুন।'));
+      return;
+    }
     setBusy(true);setModalError('');
     try{
-      for(const id of stillSelected)await removeBeneficiary(owner,id);
+      for(const id of stillSelected){
+        if(!ownerIsCurrent()){closeStaleBulkRemove();return;}
+        await removeBeneficiary(context.ownerUid,id);
+        if(!ownerIsCurrent()){closeStaleBulkRemove();return;}
+      }
       const saved=await reload();
+      if(!ownerIsCurrent()){closeStaleBulkRemove();return;}
       if(saved.people.some(person=>stillSelected.includes(person.id))){
         throw new Error(tr('Some selected beneficiaries could not be removed. Try again.','নির্বাচিত কয়েকজনকে সরানো যায়নি। আবার চেষ্টা করুন।'));
       }
+      bulkRemoveOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
       setBulkRemoveIds(null);
       setNotice({en:`${stillSelected.length} beneficiaries removed.`,bn:`${stillSelected.length} জন উপকারভোগী সরানো হয়েছে।`});
     }catch(e){
+      if(!ownerIsCurrent()){closeStaleBulkRemove();return;}
       setModalError(e instanceof Error?e.message:String(e));
       await reload().catch(()=>{});
+      if(!ownerIsCurrent())closeStaleBulkRemove();
     }finally{setBusy(false);}
   }
 
@@ -807,7 +857,7 @@ export function Beneficiaries(){
                   </summary>
                   <div className="beneficiary-directory__bulk-more-content">
                     <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-taxpay-error"
-                      onClick={()=>{setBulkRemoveIds(selectedPeople.map(person=>person.id));setModalError('');}}>
+                      onClick={requestBulkRemove}>
                       <Trash2 size={16} aria-hidden="true"/>{tr('Remove selected','নির্বাচিতদের সরান')}
                     </UiButton>
                   </div>
@@ -1089,9 +1139,9 @@ export function Beneficiaries(){
 
     {bulkRemoveIds&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Remove selected beneficiaries?','নির্বাচিত উপকারভোগীদের সরাবেন?')}
       ariaLabel={tr('Confirm bulk beneficiary removal','একাধিক উপকারভোগী সরানো নিশ্চিত করুন')}
-      onClose={()=>{if(!busy){setBulkRemoveIds(null);setModalError('');}}}
+      onClose={closeBulkRemove}
       footer={<div className="flex w-full justify-end gap-2">
-        <UiButton type="button" variant="outline" disabled={busy} onClick={()=>{setBulkRemoveIds(null);setModalError('');}}>{tr('Cancel','বাতিল')}</UiButton>
+        <UiButton type="button" variant="outline" disabled={busy} onClick={closeBulkRemove}>{tr('Cancel','বাতিল')}</UiButton>
         <UiButton type="button" variant="primary" disabled={busy} onClick={()=>void confirmBulkRemove()}>{busy?tr('Removing…','সরানো হচ্ছে…'):tr('Remove selected','নির্বাচিতদের সরান')}</UiButton>
       </div>}>
       <p className="py-2 text-sm text-slate-700">{tr(`Remove ${bulkRemoveIds.length} selected beneficiaries from this list? Payment and tax records will not change.`,`এই তালিকা থেকে নির্বাচিত ${bulkRemoveIds.length} জন উপকারভোগী সরাবেন? পেমেন্ট বা করের রেকর্ড পরিবর্তন হবে না।`)}</p>

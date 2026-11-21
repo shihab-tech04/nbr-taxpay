@@ -112,3 +112,73 @@ test('same-profile capability rotation invalidates an open write form before any
   await screen.getByRole('button',{name:/^(?:Create list|তালিকা তৈরি)$/}).first().click();
   await expect(page.getByRole('dialog',{name:/^(?:Create list|তালিকা তৈরি)$/})).toBeVisible();
 });
+
+async function assertBulkRemovalStopsAfterAccountSwitch(
+  page:import('@playwright/test').Page,
+  language:'en'|'bn',
+){
+  test.setTimeout(90_000);
+  const now='2026-11-21T00:00:00Z';
+  const listId='00000000-0000-4000-8000-000000000301';
+  let records=[
+    {id:'00000000-0000-4000-8000-000000000401',list_id:listId,tin:'012345678901',display_name:'Alpha',created_at:now,updated_at:now},
+    {id:'00000000-0000-4000-8000-000000000402',list_id:listId,tin:'234567890123',display_name:'Beta',created_at:now,updated_at:now},
+  ];
+  const removalRequests:string[]=[];
+  let markFirstRequestStarted=()=>{};
+  const firstRequestStarted=new Promise<void>(resolve=>{markFirstRequestStarted=resolve;});
+  let releaseFirstResponse=()=>{};
+  const firstResponseReleased=new Promise<void>(resolve=>{releaseFirstResponse=resolve;});
+  await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({message:'No session'})}));
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
+    const body=route.request().postDataJSON() as {action?:string;id?:string;offset?:number;limit?:number};
+    let data:unknown=[];
+    if(body.action==='open')data={active:true};
+    if(body.action==='demo-settings')data={language,selectedListId:listId,paymentSessionId:beneficiarySessionId};
+    if(body.action==='lists')data=[{id:listId,name:'Clients',created_at:now}];
+    if(body.action==='people')data=records.slice(body.offset??0,(body.offset??0)+(body.limit??500));
+    if(body.action==='remove'){
+      const id=body.id??'';
+      removalRequests.push(id);
+      if(removalRequests.length===1){
+        markFirstRequestStarted();
+        await firstResponseReleased;
+      }
+      records=records.filter(person=>person.id!==id);
+      data=true;
+    }
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
+  });
+
+  const lang=language==='bn'?'&lang=bn':'';
+  await page.goto('/?action=beneficiaries&demoUser=user1'+lang);
+  const screen=page.getByTestId('beneficiaries-page');
+  const rowChecks=screen.locator('input[type="checkbox"][id^="beneficiary-select-"]:visible,input[type="checkbox"][id^="beneficiary-mobile-select-"]:visible');
+  await expect(rowChecks).toHaveCount(2);
+  await rowChecks.nth(0).check();
+  await rowChecks.nth(1).check();
+  const menu=screen.getByTestId('beneficiary-bulk-more');
+  await menu.locator('summary').click();
+  const bn=language==='bn';
+  await menu.getByRole('button',{name:bn?'নির্বাচিতদের সরান':'Remove selected'}).click();
+  const dialog=page.getByRole('dialog',{name:bn?'একাধিক উপকারভোগী সরানো নিশ্চিত করুন':'Confirm bulk beneficiary removal'});
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button',{name:bn?'নির্বাচিতদের সরান':'Remove selected'}).click();
+  await firstRequestStarted;
+
+  await switchLocalPreview(page,'user2');
+  await expect(dialog).toHaveCount(0);
+  releaseFirstResponse();
+  await page.waitForLoadState('networkidle');
+  expect(removalRequests).toHaveLength(1);
+  await expect(screen.getByText(bn
+    ?'আপনার অ্যাকাউন্ট বদলেছে। রেকর্ডগুলো সরানোর আগে উপকারভোগীর তালিকাটি আবার খুলুন।'
+    :'Your account changed. Reopen the beneficiary list before removing these records.',
+  )).toBeVisible();
+}
+
+for(const language of ['en','bn'] as const){
+  test(`bulk beneficiary removal stops when the owner session changes (${language})`,async({page})=>{
+    await assertBulkRemovalStopsAfterAccountSwitch(page,language);
+  });
+}
