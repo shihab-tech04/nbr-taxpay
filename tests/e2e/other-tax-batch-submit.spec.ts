@@ -75,9 +75,9 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
   await dialog.getByRole('button',{name:'Continue to payment channel'}).click();
   await expect(dialog.getByTestId('payment-review-remarks')).toContainText('Challan clarification for two taxpayers');
   expect(await dialog.getByTestId('payment-review-remarks').locator('p').textContent()).toBe(remarks);
-  // The embedded Back action is portaled into the modal footer, outside the
-  // dialog subtree; target the single rendered footer control.
-  const backButton = page.locator('.tax-service-choice__cancel:visible');
+  // Use the modal's accessible Back control. It delegates to the embedded
+  // payment footer action and keeps the same draft review state.
+  const backButton = dialog.getByRole('button', { name: 'Back', exact: true });
   await expect(backButton).toHaveCount(1);
   await backButton.click();
   await expect(remarksInput).toHaveValue(remarks);
