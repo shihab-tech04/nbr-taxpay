@@ -328,13 +328,28 @@ try{
   assert.ok(!unauthorizedRemarks.stdout.includes(challanRemarks),
     'A denied officer read must not return taxpayer remarks');
   const officeUiFixtureOut=process.env.WS3_OFFICE_UI_FIXTURE_OUT;
-  if(officeUiFixtureOut)writeFileSync(officeUiFixtureOut,JSON.stringify({
+  assert.ok(officeUiFixtureOut,'The paired Office browser fixture path is required');
+  const officeUiFixture={
     payment:row,
     expected:{id:sourceId,status:sourceRow.status,payerId:'user1',
       receiptReference:'SIM-'+idempotencyKey,allocationIds,allocationTins:['222222222222','333333333333'],
       headIds:[121,145],assessmentYears:['2026-27','2025-26'],amountsMinor:[1500,3500],
       totalMinor:5000,challanRemarks:guardedRemarks.challanRemarks},
-  }),{mode:0o600});
+  };
+  assert.equal(typeof officeUiFixture.expected.challanRemarks,'string',
+    'The guarded Office SQL response must be included in the browser fixture');
+  assert.equal(officeUiFixture.expected.challanRemarks,challanRemarks,
+    'The browser fixture must carry the exact guarded SQL remarks');
+  assert.equal(officeUiFixture.payment.details.challanRemarks,challanRemarks,
+    'The browser fixture must retain the original Office SQL parent remarks');
+  writeFileSync(officeUiFixtureOut,JSON.stringify(officeUiFixture),{mode:0o600});
+  const writtenOfficeUiFixture=JSON.parse(readFileSync(officeUiFixtureOut,'utf8'));
+  assert.equal(writtenOfficeUiFixture.expected.challanRemarks,challanRemarks,
+    'The serialized browser fixture must retain the exact guarded SQL remarks');
+  assert.equal(writtenOfficeUiFixture.payment.details.challanRemarks,challanRemarks,
+    'The serialized browser fixture must retain the original SQL parent remarks');
+  console.log('PASS: paired Office browser fixture contains exact officer-guarded multiline remarks ('+
+    Array.from(writtenOfficeUiFixture.expected.challanRemarks).length+' code points)');
 
 
   const notices=async(profile,action='received-notices-list',eventId)=>request(
