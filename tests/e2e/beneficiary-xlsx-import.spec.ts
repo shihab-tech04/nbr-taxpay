@@ -2,7 +2,7 @@ import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {test,expect,type Page} from '@playwright/test';
 import {mkdirSync,readFileSync} from 'node:fs';
 
-type MockGuestPerson={id:string;list_id:string;tin:string;display_name:string;created_at:string;updated_at:string};
+type MockGuestPerson={id:string;list_id:string;tin:string;display_name:string;tag:string|null;relationship:string|null;other_label:string|null;created_at:string;updated_at:string};
 type MockGuestList={id:string;name:string;created_at:string};
 type MockGuestSession={lists:MockGuestList[];people:MockGuestPerson[]};
 
@@ -36,9 +36,10 @@ async function setupGuestTransport(page:Page){
         await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({success:false,code:'TEMPORARY_FAILURE'})});return;
       }
       let inserted=0;
-      for(const row of body.rows as Array<{tin:string;display_name:string}>){
+      for(const row of body.rows as Array<{tin:string;display_name:string;tag?:string|null;relationship?:string|null;other_label?:string|null}>){
         if(session.people.some(person=>person.list_id===body.listId&&person.tin===row.tin))continue;
-        session.people.push({id:newId(),list_id:String(body.listId),tin:row.tin,display_name:row.display_name,created_at:now,updated_at:now});inserted++;
+        session.people.push({id:newId(),list_id:String(body.listId),tin:row.tin,display_name:row.display_name,
+          tag:row.tag??null,relationship:row.relationship??null,other_label:row.other_label??null,created_at:now,updated_at:now});inserted++;
       }
       data=inserted;
     }else if(body.action==='move'){
