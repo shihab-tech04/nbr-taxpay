@@ -191,8 +191,12 @@ export function Beneficiaries(){
     });
   };
   const initialRequestRef=useRef<symbol|null>(null);
+  // Keep late background reads from replacing the SQL-confirmed snapshot after a save.
+  const dataRevisionRef=useRef(0);
   const reload=async(preferredList?:string)=>{
+    const revision=++dataRevisionRef.current;
     const data=await loadBeneficiaries(owner,{forceFresh:true});
+    if(revision!==dataRevisionRef.current)return data;
     setLists(data.lists);setPeople(data.people);
     const validPreferredList=preferredList&&(preferredList==='all'||data.lists.some(list=>list.id===preferredList))?preferredList:null;
     setActiveList(current=>validPreferredList
@@ -208,6 +212,7 @@ export function Beneficiaries(){
     let cancelled=false;
     if(checkingIdentity){initialRequestRef.current=null;return()=>{cancelled=true;};}
     const requestToken=Symbol('beneficiary-initial-load');
+    const revision=++dataRevisionRef.current;
     initialRequestRef.current=requestToken;
     setLists([]);setPeople([]);setActiveList('');setSelectedIds([]);setLoading(true);setError('');
     Promise.all([
@@ -216,7 +221,7 @@ export function Beneficiaries(){
       // preference only for the same preview owner; fall back safely.
       !owner&&previewAccount?getPreviewSettings().catch(()=>null):Promise.resolve(null),
     ]).then(([data,serverSettings])=>{
-      if(cancelled)return;
+      if(cancelled||revision!==dataRevisionRef.current)return;
       setLists(data.lists);setPeople(data.people);
       const latestChoice=serverSettings
         ?(serverSettings.selectedListId??'all')
@@ -236,15 +241,14 @@ export function Beneficiaries(){
   useEffect(()=>{
     if(checkingIdentity || busy)return;
     let cancelled=false;
-    let revision=0;
     const gate=createBeneficiaryAutoRefreshGate();
     const refresh=()=>{
       // Browsers commonly fire visibilitychange and focus together. The
       // mount load already has the fresh data; do not issue a second read.
       if(document.visibilityState==='hidden' || initialRequestRef.current || !gate.begin(Date.now()))return;
-      const current=++revision;
+      const current=++dataRevisionRef.current;
       void loadBeneficiaries(owner,{forceFresh:true}).then(data=>{
-        if(cancelled || current!==revision)return;
+        if(cancelled || current!==dataRevisionRef.current)return;
         setLists(data.lists);setPeople(data.people);setError('');
         setActiveList(selected=>selected==='all'||data.lists.some(list=>list.id===selected)?selected:'all');
         setSelectedIds(selected=>selected.filter(id=>data.people.some(person=>person.id===id)));
