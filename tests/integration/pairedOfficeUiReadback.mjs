@@ -143,8 +143,12 @@ try {
         challanRemarks: fixture.expected.challanRemarks,
         receiptReference: fixture.expected.receiptReference,
       };
+      const remarksType = typeof response.challanRemarks;
       remarksRouteResults.push({ attempt: remarksRequests, status: 200, keys: Object.keys(response),
-        remarksCodePoints: Array.from(response.challanRemarks).length });
+        remarksType,
+        remarksCodePoints: remarksType === 'string' ? Array.from(response.challanRemarks).length : null });
+      if (remarksType !== 'string')
+        throw new TypeError('Paired Office UI fixture must supply exact remarks text as a string');
       return route.fulfill({
         status: 200,
         headers: corsHeaders,
@@ -205,7 +209,7 @@ try {
       missingBearer,
       missingRemarksBearer,
       wrongRemarksPaymentId,
-      routeError: Boolean(routeError),
+      routeError: routeError ? String(routeError).slice(0, 180) : null,
       pageErrorCount: pageErrors.length,
       snapshot,
     }));
@@ -232,6 +236,7 @@ try {
     console.error('Office visible remarks retry diagnostic:', JSON.stringify({
       requestsBeforeRetry, remarksRequests, remarksRouteResults,
       missingRemarksBearer, wrongRemarksPaymentId, routeError: Boolean(routeError),
+      routeErrorMessage: routeError ? String(routeError).slice(0, 180) : null,
       visibleDrawerCount: await drawer.count(), visibleState,
     }));
     throw error;
