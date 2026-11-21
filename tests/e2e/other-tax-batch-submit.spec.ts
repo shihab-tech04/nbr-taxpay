@@ -88,7 +88,9 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
   await dialog.getByRole('radio',{name:'bKash'}).check();
   await dialog.getByRole('checkbox',{name:/I confirm each taxpayer TIN/}).check();
   await dialog.getByRole('button',{name:/Pay ৳ 50/}).click();
-  await expect(dialog.getByRole('heading',{name:'Simulation confirmation pending'})).toBeVisible({timeout:15000});
+  await expect(dialog.getByRole('heading',{name:'Simulation saved — Office sync pending'})).toBeVisible({timeout:15000});
+  await expect(dialog.getByText('Simulation saved in TaxPay SQL. Office synchronization is pending; this is not a real tax payment.')).toBeVisible();
+  expect(sourceReadbacks).toBe(1);
   expect(saved.size).toBe(1);
   expect(calls).toHaveLength(1);
   dialog=await openOtherTax(page);
