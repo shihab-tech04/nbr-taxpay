@@ -30,16 +30,21 @@ const ref='WS3-HTTP-REF-'+keyId;
 // The older fixture's headless line and missing receipt were correctly rejected.
 const taxpayerTin='111111111111';
 const assessmentYear='2026-27';
+const receiptMobile='01700000000';
+const tokenNumber='WS3-HTTP-TOKEN-'+keyId;
+const gatewayTransactionId='WS3-HTTP-GW-'+keyId;
+const payerName='WS3 isolated fictional payer';
 const receiptItem={headId:125,totalAmount:123.45};
 const payload={
  origin:'TAXPAY_UI',service:'TAX_WITH_RETURN',amountMinor:12345,
  sessionId:owner.paymentSessionId,idempotencyKey:keyId,
- details:{payerId:'user1',payerName:'WS3 isolated fictional payer',
+ details:{payerId:'user1',payerName,
   payerMode:'SELF',payerTin:taxpayerTin,taxpayerTin,assessmentYear,
-  receiptReference:ref,receiptMobile:'01700000000',
-  tokenNumber:'WS3-HTTP-TOKEN-'+keyId,
-  receiptSnapshot:{challanNo:ref,paymentCategory:'TAX_WITH_RETURN',
-   payerTin:taxpayerTin,taxpayerTin,assessmentYear,totalAmount:123.45,items:[receiptItem]},
+  receiptReference:ref,receiptMobile,tokenNumber,gatewayTransactionId,
+  receiptSnapshot:{isSimulatedDemo:true,challanNo:ref,tokenNumber,
+   paymentCategory:'TAX_WITH_RETURN',gatewayTransactionId,receiptMobile,
+   payerName,payerTin:taxpayerTin,taxpayerTin,assessmentYear,totalAmount:123.45,
+   paymentMethod:'SIMULATED',items:[receiptItem]},
   lines:[{beneficiary:'user1',category:'TAX_WITH_RETURN',headId:125,
    assessmentYear,amountMinor:12345,totalAmount:123.45}]}
 };const payment=sqlJson('SELECT public.taxpay_demo_story1_submit('+
@@ -61,7 +66,7 @@ if(fixturePath){
  writeFileSync(target,JSON.stringify({
   owner:{profileId:'user1',capability:owner.capability,paymentSessionId:owner.paymentSessionId},
   other:{profileId:'user2',capability:other.capability,paymentSessionId:other.paymentSessionId},
-  reference:ref,mobile:'01700000000',paymentId:payment.id
+  reference:ref,mobile:receiptMobile,paymentId:payment.id
  }),{encoding:'utf8',mode:0o600});
 }
 

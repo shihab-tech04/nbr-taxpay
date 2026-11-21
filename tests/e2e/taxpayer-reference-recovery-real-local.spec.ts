@@ -39,6 +39,25 @@ async function openLookup(page: Page) {
   return page.getByRole('dialog', { name: 'Payment status & receipt' });
 }
 
+async function expectPreviewSession(page: Page, session: OwnerSession) {
+  const observed = await page.evaluate(({ sessionKey, userKey, profileId, paymentSessionId }) => {
+    const value = JSON.parse(sessionStorage.getItem(sessionKey) ?? 'null') as
+      { profileId?: string; capability?: string; paymentSessionId?: string } | null;
+    return {
+      userMatches: sessionStorage.getItem(userKey) === profileId,
+      profileMatches: value?.profileId === profileId,
+      capabilityPresent: typeof value?.capability === 'string' && value.capability.length === 43,
+      paymentSessionMatches: value?.paymentSessionId === paymentSessionId,
+    };
+  }, { sessionKey, userKey, profileId: session.profileId, paymentSessionId: session.paymentSessionId });
+  expect(observed).toEqual({
+    userMatches: true,
+    profileMatches: true,
+    capabilityPresent: true,
+    paymentSessionMatches: true,
+  });
+}
+
 function captureReferenceRequests(page: Page, expectedCapability?: string) {
   const calls: Array<{ method: string; reference: string; scoped: boolean }> = [];
   const paymentMutations: string[] = [];
@@ -70,10 +89,13 @@ async function createIsolatedPage(browser: Browser, session?: OwnerSession, view
 test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery', () => {
   test.skip(!fixture, 'Requires the short-lived fixture created by disposable local Auth/SQL/Edge acceptance.');
 
-  test('owner retrieves the original receipt and certificate again after reload without creating a payment', async ({ page }) => {
-    await installOwnerSession(page, fixture!.owner);
-    const { calls, paymentMutations } = captureReferenceRequests(page, fixture!.owner.capability);
-    const dialog = await openLookup(page);
+  test('owner retrieves the original receipt and certificate again after reload without creating a payment', async ({ browser, page }) => {
+    const owned = await createIsolatedPage(browser, fixture!.owner, page.viewportSize() ?? { width: 1280, height: 800 });
+    const ownerPage = owned.page;
+    const { calls, paymentMutations } = captureReferenceRequests(ownerPage, fixture!.owner.capability);
+    try {
+    const dialog = await openLookup(ownerPage);
+    await expectPreviewSession(ownerPage, fixture!.owner);
 
     await dialog.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill(fixture!.reference);
     await dialog.getByRole('textbox', { name: 'Receipt mobile number' }).fill(fixture!.mobile);
@@ -90,8 +112,9 @@ test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery',
 
     // SessionStorage retains the server-issued profile capability across reload.
     // A second GET must recover the same SQL parent; lookup itself is read-only.
-    await page.reload();
-    const refreshed = page.getByRole('dialog', { name: 'Payment status & receipt' });
+    await ownerPage.reload();
+    const refreshed = ownerPage.getByRole('dialog', { name: 'Payment status & receipt' });
+    await expectPreviewSession(ownerPage, fixture!.owner);
     await refreshed.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill(fixture!.reference);
     await refreshed.getByRole('textbox', { name: 'Receipt mobile number' }).fill(fixture!.mobile);
     await refreshed.getByRole('button', { name: 'Search records' }).click();
@@ -101,13 +124,17 @@ test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery',
     expect(calls.length).toBe(2);
     expect(calls.every(call => call.method === 'GET' && call.reference === fixture!.reference && call.scoped)).toBe(true);
     expect(paymentMutations).toEqual([]);
+    } finally {
+      await owned.context.close();
+    }
   });
 
-  test('transient lookup outage keeps the reference and retries the same owned source', async ({ page }) => {
-    await installOwnerSession(page, fixture!.owner);
-    const { calls, paymentMutations } = captureReferenceRequests(page, fixture!.owner.capability);
+  test('transient lookup outage keeps the reference and retries the same owned source', async ({ browser, page }) => {
+    const owned = await createIsolatedPage(browser, fixture!.owner, page.viewportSize() ?? { width: 1280, height: 800 });
+    const ownerPage = owned.page;
+    const { calls, paymentMutations } = captureReferenceRequests(ownerPage, fixture!.owner.capability);
     let attempts = 0;
-    await page.route(/\/demo-story1-taxpay\/payments\/reference\?/, async route => {
+    await ownerPage.route(/\/demo-story1-taxpay\/payments\/reference\?/, async route => {
       attempts += 1;
       if (attempts === 1) {
         await route.fulfill({ status: 503, contentType: 'application/json',
@@ -116,7 +143,9 @@ test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery',
       }
       await route.continue();
     });
-    const dialog = await openLookup(page);
+    try {
+    const dialog = await openLookup(ownerPage);
+    await expectPreviewSession(ownerPage, fixture!.owner);
     const referenceField = dialog.getByRole('textbox', { name: 'Challan, token or transaction reference' });
     await referenceField.fill(fixture!.reference);
     await dialog.getByRole('textbox', { name: 'Receipt mobile number' }).fill(fixture!.mobile);
@@ -129,8 +158,11 @@ test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery',
     await expect(dialog.locator('.receipt-view__paper')).toContainText(fixture!.reference);
     await expect(dialog.locator('.receipt-view__paper')).toContainText('123.45');
     expect(attempts).toBe(2);
-    expect(calls.filter(call => call.method === 'GET' && call.scoped).length).toBe(1);
+    expect(calls.filter(call => call.method === 'GET' && call.scoped).length).toBe(2);
     expect(paymentMutations).toEqual([]);
+    } finally {
+      await owned.context.close();
+    }
   });
 
   test('another demo owner cannot recover the row, and anonymous lookup reveals no receipt', async ({ browser, page }) => {
@@ -139,6 +171,7 @@ test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery',
     const otherRequests = captureReferenceRequests(other.page, fixture!.other.capability);
     try {
       const dialog = await openLookup(other.page);
+      await expectPreviewSession(other.page, fixture!.other);
       await dialog.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill(fixture!.reference);
       await dialog.getByRole('textbox', { name: 'Receipt mobile number' }).fill(fixture!.mobile);
       await dialog.getByRole('button', { name: 'Search records' }).click();
@@ -159,7 +192,7 @@ test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery',
       await dialog.getByRole('button', { name: 'Search records' }).click();
       await expect(dialog.locator('.receipt-view')).toHaveCount(0);
       await expect(dialog.getByText('WS3 isolated fictional payer')).toHaveCount(0);
-      expect(calls.every(call => !call.scoped)).toBe(true);
+      expect(calls).toEqual([]);
     } finally {
       await anonymous.context.close();
     }
