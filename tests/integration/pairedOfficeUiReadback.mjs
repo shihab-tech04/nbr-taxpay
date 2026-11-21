@@ -59,6 +59,7 @@ try {
   let wrongRemarksPaymentId = false;
   let failFirstRemarksRead = true;
   let routeError = null;
+  const remarksRouteResults = [];
   await page.route('**/*', (route) => {
     const url = new URL(route.request().url());
     if (url.hostname === '127.0.0.1' || url.hostname === 'localhost') return route.continue();
@@ -110,8 +111,18 @@ try {
   });
   await page.route('https://ihbtabrvmyiwikqqbhrf.supabase.co/rest/v1/rpc/payment_v1_office_guarded_challan_remarks', async (route) => {
     try {
-      const authorization = route.request().headers().authorization;
-      const body = route.request().postDataJSON();
+      const request = route.request();
+      const requestHeaders = request.headers();
+      const corsHeaders = {
+        'access-control-allow-origin': '*',
+        'access-control-allow-methods': 'POST, OPTIONS',
+        'access-control-allow-headers': requestHeaders['access-control-request-headers'] ||
+          'authorization, apikey, content-type, x-client-info, prefer',
+      };
+      if (request.method() === 'OPTIONS')
+        return route.fulfill({ status: 204, headers: corsHeaders });
+      const authorization = requestHeaders.authorization;
+      const body = request.postDataJSON();
       if (!authorization || !authorization.startsWith('Bearer ')) {
         missingRemarksBearer = true;
         return route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ message: 'Verified Office officer required' }) });
@@ -123,17 +134,22 @@ try {
       remarksRequests++;
       if (failFirstRemarksRead) {
         failFirstRemarksRead = false;
-        return route.fulfill({ status: 503, contentType: 'application/json',
+        remarksRouteResults.push({ attempt: remarksRequests, status: 503 });
+        return route.fulfill({ status: 503, headers: corsHeaders, contentType: 'application/json',
           body: JSON.stringify({ message: 'Temporary Office SQL read outage' }) });
       }
+      const response = {
+        paymentId: fixture.expected.id,
+        challanRemarks: fixture.expected.challanRemarks,
+        receiptReference: fixture.expected.receiptReference,
+      };
+      remarksRouteResults.push({ attempt: remarksRequests, status: 200, keys: Object.keys(response),
+        remarksCodePoints: Array.from(response.challanRemarks).length });
       return route.fulfill({
         status: 200,
+        headers: corsHeaders,
         contentType: 'application/json',
-        body: JSON.stringify({
-          paymentId: fixture.expected.id,
-          challanRemarks: fixture.expected.challanRemarks,
-          receiptReference: fixture.expected.receiptReference,
-        }),
+        body: JSON.stringify(response),
       });
     } catch (error) {
       routeError = error instanceof Error ? error.message : String(error);
@@ -195,6 +211,9 @@ try {
     }));
     throw error;
   }
+  const requestsBeforeRetry = remarksRequests;
+  assert.deepEqual(remarksRouteResults.map(result => result.status), [503],
+    'The first authorized Office SQL read must fail before retry');
   const remarksRetryButton = guardedRemarksControl.getByRole('button', { name: 'Retry', exact: true });
   assert.equal(await remarksRetryButton.count(), 1,
     'Office must expose a retry after the authorized SQL read fails');
@@ -211,12 +230,16 @@ try {
       spans: Array.from(node.querySelectorAll('span')).map(span => span.textContent?.trim().slice(0, 100)),
     })).catch(() => ({ unavailable: true }));
     console.error('Office visible remarks retry diagnostic:', JSON.stringify({
-      remarksRequests, missingRemarksBearer, wrongRemarksPaymentId,
+      requestsBeforeRetry, remarksRequests, remarksRouteResults,
+      missingRemarksBearer, wrongRemarksPaymentId, routeError: Boolean(routeError),
       visibleDrawerCount: await drawer.count(), visibleState,
     }));
     throw error;
   }
-  assert.equal(remarksRequests, 2, 'Office retry must issue a fresh officer-guarded SQL read');
+  assert.equal(remarksRequests, requestsBeforeRetry + 1,
+    'Office retry must issue exactly one fresh officer-guarded SQL read');
+  assert.deepEqual(remarksRouteResults.map(result => result.status), [503, 200],
+    'Office must recover from the failed guarded SQL read without reusing its error result');
   const drawerText = await drawer.innerText();
   // The same drawer must work for both the original fixed SQL fixture and
   // a current Work A browser-generated payment. Never assert that a real
