@@ -21,6 +21,7 @@ const fixture: ReferenceFixture | null = fixturePath
 const baseURL = 'http://127.0.0.1:4173';
 const sessionKey = 'korbritto.demo-profile-session.v1';
 const userKey = 'taxpay-taxpayer-preview-user';
+test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
 async function installOwnerSession(page: Page, session: OwnerSession) {
   await page.addInitScript(({ value, sessionKey, userKey }) => {
@@ -68,7 +69,6 @@ async function createIsolatedPage(browser: Browser, session?: OwnerSession, view
 
 test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery', () => {
   test.skip(!fixture, 'Requires the short-lived fixture created by disposable local Auth/SQL/Edge acceptance.');
-  test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
   test('owner retrieves the original receipt and certificate again after reload without creating a payment', async ({ page }) => {
     await installOwnerSession(page, fixture!.owner);
