@@ -874,6 +874,7 @@ jobs:
         run: node scripts/ci/hybrid-cutover-gate.mjs
       - name: Reverify V2 simulation-only production cutover and hosted sessions
         env:
+          VITE_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
           SOHOJKOR_PRODUCTION_SUPABASE_URL: 'https://gmuhitmaynfhipcvbvkh.supabase.co'
           SOHOJKOR_ORIGINAL_SUPABASE_URL: 'https://eyqhoavnitkrajvyqvxn.supabase.co'
           SOHOJKOR_OFFICE_SUPABASE_URL: 'https://ihbtabrvmyiwikqqbhrf.supabase.co'

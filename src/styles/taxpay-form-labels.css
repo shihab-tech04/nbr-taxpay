@@ -38,6 +38,11 @@
   grid-column: 1 / -1;
   min-width: 0;
 }
+/* Share the input field's full row box while pinning the action to its bottom edge. */
+.taxpay-citizen-shell .travel-flow__passport-action {
+  align-self: stretch;
+  justify-content: flex-end;
+}
 .taxpay-citizen-shell .travel-flow__passport-input {
   position: relative;
   min-width: 0;
