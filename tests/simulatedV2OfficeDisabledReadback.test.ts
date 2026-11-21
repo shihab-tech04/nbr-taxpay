@@ -74,7 +74,7 @@ test('F-178: mirrored success requires exact capability-scoped SQL remarks and r
   try{
     const result=await persistSimulatedPayment(withRemarks);
     assert.deepEqual(result,{success:true,id:paymentId,status:'SIMULATED_SUCCESS',
-      mirrored:true,simulationOnly:true});
+      mirrored:true,officeSyncStatus:'SYNCED',simulationOnly:true});
     assert.deepEqual(methods,['POST','GET']);
   }finally{globalThis.fetch=original;}
 });
