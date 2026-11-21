@@ -175,22 +175,14 @@ try {
   await drawer.waitFor({ state: 'visible', timeout: 10000 });
   assert.equal(await drawer.count(), 1, 'Office details must have one visible transaction drawer');
   const guardedRemarksControl = drawer.locator('[data-testid="office-guarded-challan-remarks"]');
-  const remarksSelector = '.dynamic-drawer:visible [data-testid="office-guarded-challan-remarks"]';
   try {
-    await page.waitForFunction(({ selector }) =>
-      Boolean(document.querySelector(selector)?.querySelector('[role="alert"]')),
-    { selector: remarksSelector }, { timeout: 10000 });
+    await guardedRemarksControl.getByRole('alert').waitFor({ state: 'visible', timeout: 10000 });
   } catch (error) {
-    const snapshot = await page.evaluate(({ selector }) => {
-      const node = document.querySelector(selector);
-      const drawer = document.querySelector('.dynamic-drawer');
-      return {
-        drawerPresent: Boolean(drawer),
-        remarksControlPresent: Boolean(node),
-        alertCount: node?.querySelectorAll('[role="alert"]').length ?? 0,
-        retryButtonCount: node?.querySelectorAll('button').length ?? 0,
-      };
-    }, { selector: remarksSelector });
+    const snapshot = await guardedRemarksControl.evaluate(node => ({
+      text: node.textContent?.trim().slice(0, 180) ?? null,
+      alertCount: node.querySelectorAll('[role="alert"]').length,
+      retryButtonCount: node.querySelectorAll('button').length,
+    })).catch(() => ({ unavailable: true }));
     console.error('Office remarks retry diagnostic:', JSON.stringify({
       paymentRequests,
       remarksRequests,
