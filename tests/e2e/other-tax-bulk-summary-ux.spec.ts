@@ -1,10 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 async function openPurposeAndAmount(page: import('@playwright/test').Page) {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();

@@ -1,3 +1,4 @@
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
@@ -21,7 +22,19 @@ test('real account saves private beneficiary, reopens it, isolates another owner
     expect(value.user?.id).toBeTruthy();
     const session=value.session??value;
     expect(session.access_token).toBeTruthy();
-    return {id:value.user.id as string,session};
+    return {id:value.user.id as string,session,email,password};
+  };
+  const signIn=async(user:{id:string;email:string;password:string})=>{
+    const response=await fetch(new URL('/auth/v1/token?grant_type=password',api.origin),{
+      method:'POST',headers:{apikey:key,'Content-Type':'application/json'},
+      body:JSON.stringify({email:user.email,password:user.password}),
+    });
+    expect(response.status).toBe(200);
+    const value=await response.json();
+    expect(value.user?.id).toBe(user.id);
+    expect(value.access_token).toBeTruthy();
+    expect(value.refresh_token).toBeTruthy();
+    return value;
   };
   const ownerA=await makeUser(),ownerB=await makeUser();
   const loginUrl=(session:{access_token:string;refresh_token:string;expires_at?:number})=>
@@ -50,7 +63,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await chooseBeneficiaryOption(addDialog,'beneficiary-tag','friends_family:father');
   await addDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   await expect(page.getByText('Beneficiary saved.')).toBeVisible({timeout:15000});
-  await expect(records).toContainText('012345678901');
+  await expect(records).toContainText('012*********');
   // Compact owner-approved identity column combines name · final tag and bare TIN
   // while preserving native Actions cells and the mobile payment/list controls.
   await page.setViewportSize({width:1280,height:900});
@@ -61,7 +74,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(table.locator('tbody tr td')).toHaveCount(2);
   const identity=table.locator('tbody tr:first-child .beneficiary-directory__person');
   await expect(identity.locator('.taxpayer-transaction-row__title')).toHaveText('Local Beneficiary One · Father');
-  await expect(identity.locator('.beneficiary-directory__tin')).toHaveText('012345678901');
+  await expect(identity.locator('.beneficiary-directory__tin')).toHaveText('012*********');
   const alignment=await table.evaluate(element=>{
     const headers=Array.from(element.querySelectorAll('thead th'));
     const cells=Array.from(element.querySelectorAll('tbody tr:first-child td'));
@@ -111,6 +124,28 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   ]));
   expect(await read(ownerB.session.access_token)).toEqual([]);
 
+  // US-010 requires persistence after signing into a new browser session for
+  // the same owner, not just reloading the page with its original token.
+  const freshOwnerSession=await signIn(ownerA);
+  const freshOwnerContext=await browser.newContext({
+    baseURL:'http://127.0.0.1:4173',
+    viewport:{width:375,height:812},
+    storageState:{cookies:[],origins:[]},
+  });
+  try{
+    const freshOwnerPage=await freshOwnerContext.newPage();
+    await freshOwnerPage.goto(loginUrl(freshOwnerSession));
+    await expect(freshOwnerPage.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+    const persistedRow=freshOwnerPage.getByTestId('beneficiary-directory-mobile').locator('li')
+      .filter({hasText:'Local Beneficiary One'});
+    await expect(persistedRow).toContainText('Father');
+    await expect(persistedRow).toContainText('012*********');
+    await expect(freshOwnerPage.getByTestId('beneficiary-directory-mobile'))
+      .toContainText('Local Beneficiary Two');
+  }finally{
+    await freshOwnerContext.close();
+  }
+
   const otherContext=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:320,height:720}});
   const otherPage=await otherContext.newPage();
   await otherPage.goto(loginUrl(ownerB.session));
@@ -119,7 +154,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await otherContext.close();
 
   await page.goto('/?action=landing');
-  await page.getByRole('button',{name:'Pay Tax',exact:true}).first().click();
+  await openLegacyTaxServiceChoice(page);
   const modal=page.getByRole('dialog',{name:'Pay Tax'});
   // Real Supabase Auth keeps the payer and service choices, but must not
   // ask an already authenticated taxpayer to sign in or pay as a walk-in.
@@ -133,14 +168,14 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(modal.getByRole('button',{name:'Continue',exact:true})).toBeEnabled();
   await modal.getByRole('button',{name:'Continue',exact:true}).click();
   await expect(modal.getByText('Continuing with your account')).toHaveCount(0);
-  await expect(page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'})).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'})).toHaveCount(0);
   const picker=modal.getByTestId('saved-beneficiary-picker');
   await expect(picker.getByRole('button',{name:'Manage beneficiaries'})).toBeVisible({timeout:15000});
   await expect(picker.getByRole('button',{name:/Family/})).toHaveAttribute('aria-expanded','true');
   await expect(picker).toContainText('Local Beneficiary One',{timeout:15000});
   await picker.getByRole('checkbox',{name:'Select Local Beneficiary One'}).check();
   await expect(picker).toContainText('1 selected for this payment');
-  await expect(picker).toContainText('012345678901');
+  await expect(picker).toContainText('012*********');
   await expect(modal.locator('#guest-tin, #guest-payer-name')).toHaveCount(0);
   await expect(modal.getByRole('button',{name:'Add another taxpayer'})).toHaveCount(0);
 
@@ -159,6 +194,19 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   expect(second?.id).toBeTruthy();
 
   const deleteUrl=(id:string)=>new URL('/rest/v1/taxpay_beneficiaries?id=eq.'+id,api.origin);
+  const unauthorizedEdit=await fetch(deleteUrl(first!.id),{
+    method:'PATCH',
+    headers:{apikey:key,Authorization:'Bearer '+ownerB.session.access_token,
+      'Content-Type':'application/json',Prefer:'return=representation'},
+    body:JSON.stringify({display_name:'Unauthorized edit',tag:'clients',relationship:null}),
+  });
+  expect(unauthorizedEdit.status).toBe(200);
+  expect(await unauthorizedEdit.json()).toEqual([]);
+  expect((await read(ownerA.session.access_token)).find(
+    (row:{tin:string})=>row.tin==='012345678901')).toMatchObject({
+      owner_uid:ownerA.id,display_name:'Local Beneficiary One',tag:'friends_family',relationship:'father',
+    });
+
   const denied=await fetch(deleteUrl(first!.id),{
     method:'DELETE',
     headers:{apikey:key,Authorization:'Bearer '+ownerB.session.access_token,Prefer:'return=representation'},

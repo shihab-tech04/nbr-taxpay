@@ -189,7 +189,10 @@ test('public mobile footer stays compact and the floating Pay action remains rea
   }).toBeLessThan(812*.8);
 });
 
-test('426px scrolled mobile footer is one compact white row above the floating Pay control',async({page})=>{
+test('426px scrolled mobile footer is one compact white row above the floating Pay control',async({page},testInfo)=>{
+  // This contract relies on a mobile browser context (touch/mobile viewport).
+  // Resizing the desktop context to 426px is not equivalent to a mobile context.
+  test.skip(!testInfo.project.name.startsWith('mobile-'),'Mobile footer geometry requires a mobile browser project');
   await page.setViewportSize({width:426,height:882});
   await page.goto('/?action=landing&lang=en');
   await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
@@ -328,7 +331,7 @@ test('public desktop header is unchanged, with no mobile navigation duplication'
 test('signed-in mobile continues to use its existing private shell after login', async ({page})=>{
   await page.setViewportSize({width:375,height:812});
   await page.goto('/?action=taxpayer_login');
-  const login=page.getByRole('dialog',{name:'Sign In To Your Korbritto Account'});
+  const login=page.getByRole('dialog',{name:'Sign In To Your Sohojkor Account'});
   await login.getByRole('textbox',{name:'User ID'}).fill('user1');
   await login.getByLabel('Password',{exact:true}).fill('user1');
   await login.getByRole('button',{name:'Sign In'}).click();

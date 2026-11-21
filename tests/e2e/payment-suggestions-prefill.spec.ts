@@ -1,14 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 async function startOwnPayment(page: Page, user: 'user1' | 'user2', service: 'TAX_WITH_RETURN' | 'OTHER_TAX_PAYMENT') {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill(user);
   await login.getByLabel('Password', { exact: true }).fill(user);
   await login.getByRole('button', { name: 'Sign In' }).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, service, 'SELF');
   await dialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
@@ -73,7 +73,7 @@ test('Other signed-in users never inherit User1 suggested amounts', async ({ pag
 
 test('Signed-out guest never receives sample amount suggestions', async ({ page }) => {
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   await dialog.locator('#guest-tin').fill('123456789012');

@@ -1,12 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('all selected payment heads are discoverable for each taxpayer', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-1280');
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   await dialog.locator('#guest-tin').fill('111111111111');
   await dialog.getByRole('button', { name: /^Search(?: TIN)?$/ }).click();
@@ -47,6 +46,9 @@ test('all selected payment heads are discoverable for each taxpayer', async ({ p
   await headList.evaluate(element => { element.scrollTop = element.scrollHeight; });
   await expect.poll(() => headList.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
   const last = first.locator('.payment-form-summary__taxpayer-item').last();
+  // The outer calculation rail and the expanded head list scroll independently.
+  // The final head must remain reachable after both scroll containers are brought into view.
+  await last.scrollIntoViewIfNeeded();
   await expect(last).toBeInViewport();
   await expect(second.locator('summary')).toBeVisible();
   await first.getByRole('button', { name: 'Show first 4 heads' }).click();

@@ -1,16 +1,16 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('already signed-in user2 pays own tax with prefilled locked account identity', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();
   await expect(login).toHaveCount(0);
 
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'ADVANCE_TAX', 'SELF');
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
@@ -19,7 +19,10 @@ test('already signed-in user2 pays own tax with prefilled locked account identit
   await expect(payment.locator('.payment-form-section--static').first().locator('.payment-form-section__body')).toHaveCSS('padding-left', '0px');
   await expect(payment.getByRole('heading', { name: 'How would you like to continue?' })).toHaveCount(0);
 
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
+  await expect(payment.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
+  await expect(payment.getByRole('button', { name: 'Manage beneficiaries' })).toHaveCount(0);
+  await expect(payment.getByRole('button', { name: 'Restore saved lists' })).toHaveCount(0);
   await expect(payment.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
   // Account-bound display data is not a second taxpayer lookup form.
   const account = payment.locator('#signed-in-account-taxpayer-card');
@@ -52,7 +55,7 @@ test('changing from own tax to another taxpayer shows saved beneficiary lists wi
   await page.getByLabel('Password', { exact: true }).fill('user1');
   await page.getByRole('button', { name: 'Sign In' }).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
   await expect(payment.locator('#signed-in-account-taxpayer-card')).toContainText('1111111111111');
@@ -61,7 +64,7 @@ test('changing from own tax to another taxpayer shows saved beneficiary lists wi
   await payment.locator('[data-payer-relationship="OTHER"]').click();
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText("Facilitate another taxpayer’s payment");
   await expect(payment.getByTestId('saved-beneficiary-picker')).toBeVisible();
   await expect(payment.getByTestId('saved-beneficiary-picker').getByRole('button', {name:'Manage beneficiaries'})).toBeVisible();
   await expect(payment.locator('#guest-tin, #guest-taxpayer-name, #guest-payer-name')).toHaveCount(0);
@@ -73,6 +76,32 @@ test('changing from own tax to another taxpayer shows saved beneficiary lists wi
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('#signed-in-account-taxpayer-card')).toContainText('1111111111111');
   await expect(payment.locator('#guest-tin')).toHaveCount(0);
+});
+
+test('own Other Tax keeps the account taxpayer without saved beneficiary controls', async ({ page }) => {
+  await page.goto('/?action=taxpayer_login');
+  await page.getByRole('textbox', { name: 'User ID' }).fill('user1');
+  await page.getByLabel('Password', { exact: true }).fill('user1');
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.goto('/?action=landing');
+  await openLegacyTaxServiceChoice(page);
+  const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+  await enterTaxPayService(payment, 'OTHER_TAX', 'SELF');
+
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
+  await expect(payment.locator('#signed-in-account-taxpayer-card')).toBeVisible();
+  await expect(payment.getByTestId('saved-beneficiary-picker')).toHaveCount(0);
+  await expect(payment.getByRole('button', { name: 'Manage beneficiaries' })).toHaveCount(0);
+  await expect(payment.getByRole('button', { name: 'Restore saved lists' })).toHaveCount(0);
+  await expect(payment.getByTestId('one-time-taxpayer-entry')).toHaveCount(0);
+
+  // The existing third-party beneficiary flow remains available, unchanged.
+  await payment.locator('.taxpay-modal__back').click();
+  await payment.locator('[data-payer-relationship="OTHER"]').click();
+  await expect(payment.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
+  await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(payment.getByTestId('saved-beneficiary-picker')).toBeVisible();
+  await expect(payment.getByTestId('saved-beneficiary-picker').getByRole('button', { name: 'Manage beneficiaries' })).toBeVisible();
 });
 
 test('standalone payment form also recognizes an existing account session', async ({ page }) => {

@@ -10,7 +10,7 @@ const pageWidth = async (page: import('@playwright/test').Page) =>
 const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string, language: 'bn' | 'en' = 'bn', embedded = false) => {
   const receiptTitle = embedded
     ? language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'
-    : language === 'bn' ? 'করবৃত্ত — রসিদের বিবরণ' : 'Korbritto — Receipt details';
+    : language === 'bn' ? 'সহজকর — রসিদের বিবরণ' : 'Sohojkor — Receipt details';
   await expect(page.getByRole('heading', { name: receiptTitle, exact: true })).toBeInViewport();
   if (projectName === 'desktop-1280' && !embedded) {
     await expect(page.getByTestId('receipt-breakdown-table')).toBeVisible();
@@ -78,7 +78,7 @@ test('public knowledge hub and sample taxpayer home stay coherent in EN/BN at ap
   await page.goto('/?action=landing');
   await expect(page.locator('#public-home-title')).toBeVisible();
   await expect(page.locator('#public-how-it-works')).toBeHidden();
-  await expect(page.locator('.public-payment-path__steps li')).toHaveCount(4);
+  await expect(page.locator('.public-payment-path__steps li')).toHaveCount(0);
   await expect(page.locator('#public-faq')).toBeHidden();
   await expect(page.locator('.citizen-public-hero__actions').getByRole('link',{name:'Login'})).toHaveCount(0);
   if(page.viewportSize()!.width<=900) await expect(page.getByRole('button',{name:'Pay — select payment type'})).toBeVisible();
@@ -245,10 +245,10 @@ test('guest payment remains a bilingual, accessible simulation at mobile and des
   }
 
   // A receipt modal blocks the page-level language control until it is closed.
-  await page.getByRole('dialog', { name: 'করবৃত্ত — রসিদের বিবরণ' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
+  await page.getByRole('dialog', { name: 'সহজকর — রসিদের বিবরণ' }).getByRole('button', { name: 'বন্ধ করুন' }).click();
   await page.getByRole('button', { name: 'EN' }).click();
   await page.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(page.getByRole('dialog', { name: 'Korbritto — Receipt details' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Sohojkor — Receipt details' })).toBeVisible();
   await expect(page.getByText('Treasury scroll reference:')).toBeVisible();
 });
 
@@ -276,21 +276,27 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await enterTaxPayService(services, 'TAX_WITH_RETURN');
   // The service and relationship appear once in the compact workflow summary.
   await expect(services.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(services.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(services.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   // The approved compact payment shell exposes a 10px progressbar, not the obsolete numbered track.
   const progress = services.getByRole('progressbar', { name: 'Payment progress' });
   await expect(progress).toHaveAttribute('aria-valuenow', '1');
   await expect(progress).toHaveAttribute('aria-valuemax', '4');
   const progressHeight = await progress.evaluate(element => element.getBoundingClientRect().height);
   expect(progressHeight).toBe(10);
-  const fillWidth = await progress.locator('.taxpay-modal__progress-fill').evaluate(element => element.getBoundingClientRect().width);
-  const trackWidth = await progress.evaluate(element => element.getBoundingClientRect().width);
-  expect(Math.abs(fillWidth / trackWidth - 0.25)).toBeLessThan(0.02);
+  // The fill uses a 180ms CSS transition. Assert its settled width, not a
+  // transient animation frame immediately after the progress value changes.
+  await expect.poll(async () => {
+    const fillWidth = await progress.locator('.taxpay-modal__progress-fill')
+      .evaluate(element => element.getBoundingClientRect().width);
+    const trackWidth = await progress.evaluate(element => element.getBoundingClientRect().width);
+    return Math.abs(fillWidth / trackWidth - 0.25);
+  }, { message: 'payment progress fill settles at one quarter of the track' })
+    .toBeLessThan(0.02);
   await expect(services.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   const stepTextSize = await services.locator('.taxpay-modal__step-count')
     .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
   expect(stepTextSize).toBeGreaterThanOrEqual(14);
-  const visibleContextTextSize = await services.locator('.tax-service-choice__selected-service')
+  const visibleContextTextSize = await services.locator('.taxpay-modal__subtitle')
     .evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize));
   expect(visibleContextTextSize).toBeGreaterThanOrEqual(14);
   await expect(services.locator('.payment-form-section')).toHaveCount(1);
@@ -315,7 +321,8 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.locator('.payment-form-summary__rows')).toContainText('Section 173 (on-time) / 174 (late filing)');
   await expect(services.locator('.payment-form-summary__rows--return-context')).toBeVisible();
   await expect(services.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
-  await expect(services.locator('.tax-service-choice__selected-service [data-payment-service]')).toHaveCount(1);
+  await expect(services.locator('.taxpay-modal__subtitle')).toContainText('Tax with Return');
+  await expect(services.locator('.tax-service-choice')).toHaveAttribute('data-payment-service', 'TAX_WITH_RETURN');
   const smallDetails = await services.locator('.payment-form-summary__rows dt, .payment-form-summary__rows dd, .payment-form-summary__eyebrow')
     .evaluateAll(nodes => nodes.filter(el => el.getClientRects().length > 0)
       .map(el => Number.parseFloat(getComputedStyle(el).fontSize)));

@@ -74,6 +74,33 @@ test('event ledger keeps the mobile viewport free from page-level horizontal ove
   expect(overflow).toBeLessThanOrEqual(2);
 });
 
+for(const language of ['en','bn'] as const){
+  test('event ledger search label and field remain readable at approved widths in '+language,async({page},info)=>{
+    test.skip(info.project.name!=='desktop-1280','Run the full responsive matrix once per language');
+    const searchLabel=language==='en'?'Search ledger events':'লেজারের ঘটনা খুঁজুন';
+    const searchPlaceholder=language==='en'?'Event or reference':'ঘটনা বা রেফারেন্স';
+    await page.goto('/?action=ledger&demoUser=user1&lang='+language);
+    const ledger=page.getByTestId('event-tax-ledger');
+    await expect(ledger).toBeVisible();
+    const toolbar=ledger.locator('.taxpay-office-register__toolbar');
+    const search=toolbar.getByRole('searchbox',{name:searchLabel});
+    const searchField=toolbar.locator('.taxpay-office-register__search > .taxpay-record-toolbar__search');
+    await expect(toolbar.locator('.taxpay-office-register__search-label')).toHaveText(searchLabel);
+    await expect(searchField).toBeVisible();
+    await expect(search).toHaveAttribute('placeholder',searchPlaceholder);
+    await expect(search).toHaveAttribute('title',searchPlaceholder);
+    for(const width of [320,375,390,768,1280,1920]){
+      await page.setViewportSize({width,height:900});
+      const [searchBox,toolbarBox]=await Promise.all([searchField.boundingBox(),toolbar.boundingBox()]);
+      expect(searchBox&&toolbarBox&&searchBox.width>=(width<768?200:145),language+' ledger search width at '+width+'px').toBe(true);
+      expect(searchBox&&toolbarBox&&searchBox.x>=toolbarBox.x-1&&searchBox.x+searchBox.width<=toolbarBox.x+toolbarBox.width+1,
+        language+' ledger search containment at '+width+'px').toBe(true);
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow,language+' ledger viewport overflow at '+width+'px').toBeLessThanOrEqual(2);
+    }
+  });
+}
+
 
 test('desktop ledger keeps one year control and the complete table within its own scroll region',async({page})=>{
   await page.setViewportSize({width:1440,height:900});
@@ -190,5 +217,24 @@ test('all six ledger categories retain their own source events and selection sta
     await tab.click();
     await expect(tab).toHaveAttribute('aria-pressed','true');
     await expect(panel.getByRole('button',{name:new RegExp(record)}).first()).toBeVisible();
+  }
+});
+
+test('read-only payment detail notes preserve line breaks without changing the shared modal',async({page})=>{
+  for(const width of [320,1280]){
+    await page.setViewportSize({width,height:800});
+    for(const language of ['en','bn'] as const){
+      await page.goto(history+'&lang='+language);
+      const search=page.getByRole('searchbox');
+      await search.fill('DEMO-ETDS-SAL-01');
+      const label=language==='bn'?'বিস্তারিত: Salary withholding':'Details for Salary withholding';
+      await page.getByRole('button',{name:label}).click();
+      const note=page.getByTestId('payment-lifecycle-details').locator('p.whitespace-pre-wrap').first();
+      await expect(note).toBeVisible();
+      await expect(note).toHaveCSS('white-space','pre-wrap');
+      await expect(note).toHaveCSS('overflow-wrap','break-word');
+      await expect(page.getByRole('dialog')).toBeVisible();
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+    }
   }
 });

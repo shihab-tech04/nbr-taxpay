@@ -10,13 +10,14 @@ test('user1 dashboard, payment history and ledger use one coherent synthetic bal
   test.skip(info.project.name!=='desktop-1280','Representative desktop financial reconciliation');
   const protectedRpc:string[]=[];
   page.on('request',r=>{if(r.url().includes('.supabase.co/rest/v1/rpc/'))protectedRpc.push(r.url());});
-  await page.goto('/?action=taxpayer_home&demoUser=user1');
+  await page.goto('/?action=taxpayer_home&demoUser=user1&qaScenario=1');
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-2026');
   await expect(page.locator('.taxpay-bento-position')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'How your tax is covered'})).toHaveCount(0);
   await page.getByTestId('dashboard-chart-source').getByRole('button',{name:'Examples'}).click();
+  await page.getByTestId('dashboard-recipient-advanced').locator('summary').click();
   await expect(page.getByTestId('dashboard-beneficiary-breakdown')).toContainText('113,500');
   await expect(page.getByText(/SYNTHETIC USER1 DATA/)).toHaveCount(0);
   await expect(page.getByText('Sample',{exact:true})).toHaveCount(0);
@@ -68,7 +69,16 @@ test('user1 exceptions, profile and notifications are correlated but not governm
   await expect(page.getByRole('heading',{name:'Notifications',exact:true})).toBeVisible();
   await expect(page.getByText('DEMO-PAY-PEND-01').first()).toBeVisible();
   await page.goto('/?action=account_profile&demoUser=user1');
-  await expect(page.getByTestId('user1-profile-tin')).toHaveText('*********798');
+  if (process.env.VITE_SUPABASE_DISABLED === 'true') {
+    const profile=page.getByTestId('user1-taxpayer-profile');
+    await expect(profile.getByRole('alert')).toContainText(
+      /Taxpayer profile is not available for this account|Could not load taxpayer information/
+    );
+    await expect(profile.locator('[data-profile-field]')).toHaveCount(0);
+    return;
+  }
+
+  await expect(page.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await expect(page.getByText('Taxpayer status')).toBeVisible();
   await expect(page.getByTestId('user1-taxpayer-profile').getByText('Individual',{exact:true}).first()).toBeVisible();
 });
@@ -76,12 +86,12 @@ test('user1 exceptions, profile and notifications are correlated but not governm
 test('user1 mobile design is bilingual and has no horizontal overflow',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375','Mobile storybook view');
   await page.goto('/?action=taxpayer_home&demoUser=user1');
-  await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await page.locator('.citizen-mobile-menu-trigger').click();
   await page.getByRole('dialog',{name:'Services & menu'}).getByRole('button',{name:'বাংলা'}).click();
   await page.getByRole('dialog',{name:'সেবা ও মেনু'}).getByRole('button',{name:'বন্ধ করুন'}).click();
-  await expect(page.getByRole('heading',{name:'সংক্ষিপ্ত বিবরণ'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'আপনার করের সারসংক্ষেপ'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 
@@ -140,39 +150,69 @@ test('user1 Activity retains the approved transaction table and removes redundan
 
 
 test('user1 unified profile displays all distinct TIN fields with no tabs, duplicates or overflow',async({page},info)=>{
-  test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'Unified taxpayer profile desktop/mobile acceptance');
+  test.skip(!['desktop-1280','mobile-375','mobile-320'].includes(info.project.name),'Unified taxpayer profile desktop/mobile acceptance');
   await page.goto('/?action=account_profile&demoUser=user1');
   const profile=page.getByTestId('user1-taxpayer-profile');
   const content=profile.getByTestId('user1-profile-unified-content');
   await expect(profile).toBeVisible();
+  if (process.env.VITE_SUPABASE_DISABLED === 'true') {
+    // This Pages shard has no authenticated SQL/Edge source. Confirm the
+    // private registration profile is never replaced by bundled reference
+    // values; the complete 24-field journey is exercised only with a real
+    // capability-bound backend.
+    await expect(content).toHaveCount(0);
+    await expect(profile.getByRole('alert')).toContainText(
+      /Taxpayer profile is not available for this account|Could not load taxpayer information/
+    );
+    await expect(profile.locator('[data-profile-field]')).toHaveCount(0);
+    return;
+  }
   await expect(content).toBeVisible();
-  await expect(profile.getByRole('heading',{name:'Md. Arif Rahman'})).toBeVisible();
-  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('*********798');
+  const nameHeading=profile.locator('h2[data-profile-field="taxpayerName"]');
+  await expect(nameHeading).not.toBeEmpty();
+  const displayedName=(await nameHeading.innerText()).trim();
+  const expectedInitials=displayedName.split(/\s+/u).slice(-2)
+    .map(part=>Array.from(part)[0]??'').join('').toLocaleUpperCase();
+  await expect(profile.getByTestId('user1-profile-identity-badge')).toHaveText(expectedInitials);
+
+  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await expect(profile.getByRole('tab')).toHaveCount(0);
-  // All 24 source fields appear exactly once: name/TIN in the identity, four in
-  // summary, and the remaining fields in their appropriate sections.
+  // All 24 source fields appear exactly once: name/TIN in the identity, the
+  // approved four-field summary, and the remaining fields in their sections.
   const rendered=await profile.locator('[data-profile-field]').evaluateAll(nodes=>
     nodes.map(node=>node.getAttribute('data-profile-field')));
   expect(rendered).toHaveLength(24);
   expect(new Set(rendered).size).toBe(24);
   expect(rendered).toEqual([
-    'taxpayerName','tin','tinType','registeredOn','previousTin','lastLoginAt',
+    'taxpayerName','tin','tinType','taxesCircle','registeredOn','lastLoginAt',
     'taxpayerStatus','tinSubtype','userType','localTaxpayer',
     'mobileNumber','emailAddress','registeredAddress','currentAddress',
-    'taxesCircle','taxesZone','taxesRange','district','country',
-    'certificateIssuedOn','certificateLastUpdatedOn','issuingOfficer',
+    'taxesZone','taxesRange','district','country',
+    'previousTin','certificateIssuedOn','certificateLastUpdatedOn','issuingOfficer',
     'taxOfficeAddress','taxOfficePhone'
   ]);
   await expect(profile.getByRole('tablist')).toHaveCount(0);
   await expect(profile.getByRole('button',{name:'View payment activity'})).toHaveCount(0);
   const cards=content.getByTestId('user1-profile-detail-columns');
   await expect(cards.locator(':scope > div')).toHaveCount(4);
-  // Keep tax circle together with zone and range, no repeated field labels.
+  // Keep the approved top summary and jurisdiction grouping, with no repeated labels.
   const jurisdiction=content.getByTestId('profile-jurisdiction-card');
-  for(const field of ['Taxes circle','Taxes zone','Taxes range'])
+  for(const field of ['Taxes zone','Taxes range'])
     await expect(jurisdiction.getByText(field,{exact:true})).toHaveCount(1);
-  await expect(profile.getByTestId('user1-profile-summary').getByText('Previous TIN',{exact:true})).toHaveCount(1);
-  await expect(jurisdiction.getByText('Previous TIN',{exact:true})).toHaveCount(0);
+  const profileSummary=profile.getByTestId('user1-profile-summary');
+  // The shared minimum readable copy is 14px even for account identifiers and
+  // the four top-summary labels (all viewports and EN/BN typography).
+  const identityLabel=profile.locator(':scope > section:first-child > div:first-child p').first();
+  const labelSizes=await Promise.all([
+    identityLabel.evaluate(element=>parseFloat(getComputedStyle(element).fontSize)),
+    ...await profileSummary.locator(':scope > div > p:first-child')
+      .evaluateAll(elements=>elements.map(element=>parseFloat(getComputedStyle(element).fontSize)))
+  ]);
+  expect(labelSizes).toHaveLength(5);
+  for(const size of labelSizes)expect(size).toBeGreaterThanOrEqual(14);
+
+  await expect(profileSummary.getByText('Previous TIN',{exact:true})).toHaveCount(0);
+  await expect(content.getByTestId('profile-certificate-card').getByText('Previous TIN',{exact:true})).toHaveCount(1);
   if(info.project.name==='desktop-1280'){
     const personal=await content.getByTestId('profile-personal-card').boundingBox();
     const tax=await jurisdiction.boundingBox();
@@ -218,12 +258,12 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
     await expect(content.getByRole('heading',{name:section,exact:true})).toHaveCount(1);
   for(const field of ['Taxpayer status','TIN classification','User type','Local taxpayer',
     'Mobile number','Email address','Registered / permanent address','Current address',
-    'Taxes circle','Taxes zone','Taxes range','District','Country',
+    'Taxes zone','Taxes range','District','Country','Previous TIN',
     'Certificate issue date','Certificate last updated','Issuing tax officer','Tax office address',
     'Tax office phone']){
     await expect(content.getByText(field,{exact:true})).toHaveCount(1);
   }
-  await expect(content.getByText('Taxes circle',{exact:true})).toHaveCount(1);
+  await expect(content.getByText('Taxes circle',{exact:true})).toHaveCount(0);
   await expect(content.getByText('Registered name',{exact:true})).toHaveCount(0);
   await expect(content.getByText('TIN type',{exact:true})).toHaveCount(0);
   await expect(profile.getByText('TIN type',{exact:true})).toHaveCount(1);
@@ -233,15 +273,24 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile.getByRole('heading',{name:'Account information'})).toHaveCount(0);
   const summary=profile.getByTestId('user1-profile-summary');
   await expect(summary.locator(':scope > div')).toHaveCount(4);
-  await expect(summary.getByText('Taxes circle',{exact:true})).toHaveCount(0);
+  const summaryFields=await summary.locator(':scope > div').evaluateAll(nodes=>
+    nodes.map(node=>node.getAttribute('data-profile-field')));
+  expect(summaryFields).toEqual(['tinType','taxesCircle','registeredOn','lastLoginAt']);
+  for(const field of ['TIN type','Taxes circle','Registered since','Last account login'])
+    await expect(summary.getByText(field,{exact:true})).toHaveCount(1);
   await expect(summary).toContainText('11 Nov 2026, 11:23:40 AM');
   await expect(content).toContainText('Taxes Zone-12, Dhaka');
   await expect(content).toContainText('04 Jun 2026, 05:06:20 PM');
   await expect(content).toContainText('3/4 Purana Paltan');
   await expect(content).toContainText('em***@****.***');
   await expect(content).not.toContainText('email@test.com');
-  await expect(content).toContainText('+**********765');
-  await expect(content).toContainText('**-****253');
+  await expect(content).toContainText('+880**********');
+  await expect(content).toContainText('02-9******');
+  // The approved mask reveals only leading digits; do not leak trailing digits
+  // before the independent Show action is deliberately activated.
+  await expect(content).not.toContainText('+**********765');
+  await expect(content).not.toContainText('**-****253');
+
   await expect(profile.getByText(/Fictional sample profile|Sample TIN|Not an NBR-issued TIN/i)).toHaveCount(0);
   await expect(profile.getByText('Not available',{exact:true})).toHaveCount(0);
   // Full values never appear on screen until an individual, accessible Show action.
@@ -250,7 +299,7 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577935451798');
   await expect(content).not.toContainText('email@test.com');
   await profile.getByRole('button',{name:'Hide TIN'}).click();
-  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('*********798');
+  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await profile.getByRole('button',{name:'Show Mobile number'}).click();
   await expect(content).toContainText('+8801857648765');
   await expect(content).not.toContainText('email@test.com');
@@ -260,6 +309,25 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await expect(content).toContainText('email@test.com');
   await profile.getByRole('button',{name:'Hide Email address'}).click();
   await expect(content).not.toContainText('email@test.com');
+  // The existing eye controls remain independent from explicit field copying.
+  // Copying phone/email must not unmask those values on screen.
+  await page.evaluate(()=>{
+    Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+      writeText:async(text:string)=>{(window as typeof window & {__lastCopiedProfileValue?:string}).__lastCopiedProfileValue=text;}
+    }});
+  });
+  const phoneRow=content.locator('[data-profile-field="mobileNumber"]');
+  await expect(phoneRow.getByRole('button',{name:'Copy Mobile number'})).toBeVisible();
+  await phoneRow.getByRole('button',{name:'Copy Mobile number'}).click();
+  await expect(phoneRow.getByRole('button',{name:'Mobile number copied'})).toBeVisible();
+  expect(await page.evaluate(()=>(window as typeof window & {__lastCopiedProfileValue?:string}).__lastCopiedProfileValue)).toBe('+8801857648765');
+  await expect(content).not.toContainText('+8801857648765');
+  const emailRow=content.locator('[data-profile-field="emailAddress"]');
+  await emailRow.getByRole('button',{name:'Copy Email address'}).click();
+  await expect(emailRow.getByRole('button',{name:'Email address copied'})).toBeVisible();
+  expect(await page.evaluate(()=>(window as typeof window & {__lastCopiedProfileValue?:string}).__lastCopiedProfileValue)).toBe('email@test.com');
+  await expect(content).not.toContainText('email@test.com');
+  await expect(profile.getByRole('button',{name:'Copy TIN'})).toHaveCount(1);
   await expect(profile.getByRole('button',{name:'Show Tax office phone'})).toBeVisible();
   await expect(profile.getByRole('button',{name:'Show Previous TIN'})).toHaveCount(0);
   const copyButton=profile.getByRole('button',{name:'Copy TIN'});
@@ -285,11 +353,26 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   await copyButton.click();
   await expect(profile.getByRole('button',{name:'Copied TIN'})).toBeVisible();
   expect(await page.evaluate(()=>(window as typeof window & {__lastCopiedTin?:string}).__lastCopiedTin)).toBe('577935451798');
-  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('*********798');
+  await expect(profile.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await expect(profile.getByRole('button',{name:'Download profile'})).toBeVisible();
   const rail=page.getByRole('complementary',{name:'Taxpayer desktop navigation'});
   if(await rail.isVisible())await expect(rail.getByRole('button',{name:'Activity',exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  if(info.project.name==='mobile-375'){
+    // Recheck the approved profile at the minimum supported 320px width while
+    // retaining its existing summary, masking and adjacent copy controls.
+    await page.setViewportSize({width:320,height:720});
+    await expect(profile.getByTestId('user1-profile-summary').locator(':scope > div')).toHaveCount(4);
+    await expect(profile.getByRole('button',{name:'Show TIN'})).toBeVisible();
+    const narrowCopyButton=profile.getByRole('button',{name:/^(?:Copy|Copied) TIN$/});
+    await expect(narrowCopyButton).toBeVisible();
+    const narrowEye=await profile.getByRole('button',{name:'Show TIN'}).boundingBox();
+    const narrowCopy=await narrowCopyButton.boundingBox();
+    expect(narrowEye&&narrowCopy).toBeTruthy();
+    expect(narrowCopy!.x-narrowEye!.x).toBeGreaterThanOrEqual(narrowEye!.width-2);
+    expect(narrowCopy!.x-narrowEye!.x).toBeLessThanOrEqual(narrowEye!.width+16);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  }
   await page.goto('/?action=account_profile&demoUser=user1&lang=bn');
   const bn=page.getByTestId('user1-profile-unified-content');
   await expect(bn).toBeVisible();
@@ -302,7 +385,7 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
   expect(bnKeys).toEqual(rendered);
   await expect(bn.getByText('সনদ ইস্যুর তারিখ')).toHaveCount(1);
   await expect(page.getByTestId('user1-profile-summary').getByText('সর্বশেষ লগইন')).toHaveCount(1);
-  await expect(page.getByTestId('user1-profile-tin')).toHaveText('*********798');
+  await expect(page.getByTestId('user1-profile-tin')).toHaveText('577*********');
   await expect(page.getByRole('button',{name:'টিআইএন দেখান'})).toBeVisible();
   await expect(page.getByRole('button',{name:'টিআইএন কপি করুন'})).toBeVisible();
   await expect(bn.getByRole('button',{name:'মোবাইল নম্বর দেখান'})).toBeVisible();
@@ -312,6 +395,14 @@ test('user1 unified profile displays all distinct TIN fields with no tabs, dupli
 test('user1 profile export contains supplied TIN fields without unnecessary copy',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Download verification');
   await page.goto('/?action=account_profile&demoUser=user1');
+  if (process.env.VITE_SUPABASE_DISABLED === 'true') {
+    const profile=page.getByTestId('user1-taxpayer-profile');
+    await expect(profile.getByRole('alert')).toContainText(
+      /Taxpayer profile is not available for this account|Could not load taxpayer information/
+    );
+    await expect(profile.getByRole('button',{name:'Download profile'})).toHaveCount(0);
+    return;
+  }
   const [download]=await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('button',{name:'Download profile'}).click()
@@ -327,4 +418,45 @@ test('user1 profile export contains supplied TIN fields without unnecessary copy
   expect(text).not.toContain('"Account","user1"');
   expect((text.match(/"TIN","577935451798"/g)??[])).toHaveLength(1);
   expect(text).not.toContain('FICTIONAL SAMPLE');
+});
+
+// F-132 / US-129 negative and recovery: a payment summary is not an
+// issuer-backed tax-credit certificate. No-source states cannot export a
+// zero-value or otherwise unsupported payment document.
+test('Tax Credit Certificates does not export empty or unverified record summaries', async ({ page }) => {
+  // Isolate the session-scoped readback: an explicitly empty response is not
+  // evidence of an officially issued document, and cannot depend on the
+  // availability or seeded data of the hosted demonstration endpoint.
+  await page.route(/\/demo-story1-taxpay\/payments\?sessionId=/, async route => {
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({success:true,simulationOnly:true,data:{items:[],total:0}})
+    });
+  });
+  for (const language of ['en','bn'] as const) {
+    await page.goto('/?action=certificates&demoUser=user2&lang=' + language);
+    const bn = language === 'bn';
+    const issued = page.getByTestId('issued-tax-credit-certificates');
+    await expect(issued).toContainText(bn
+      ? 'ইস্যুকারী কর্তৃপক্ষের যাচাইকৃত কর ক্রেডিট সনদপত্র নেই'
+      : 'No issuer-verified tax credit certificates are available');
+    await expect(issued.getByRole('button', {name: /download|ডাউনলোড/i})).toHaveCount(0);
+
+    // Isolated local-review account has no source-backed payment/session
+    // payment records; it must not be displayed as a verified zero total.
+    const register = page.getByTestId('account-certificate-record-register');
+    await expect(register).toContainText(bn
+      ? 'এই সারসংক্ষেপে কোনো পেমেন্ট রেকর্ড নেই।'
+      : 'No payment records in this summary.');
+
+    await page.getByRole('button', {name: bn ? 'সারসংক্ষেপ দেখুন' : 'View summary', exact: true}).click();
+    const modal = page.getByRole('dialog', {name: bn ? 'সনদের সারসংক্ষেপ' : 'Certificate summary'});
+    await expect(modal).toBeVisible();
+    await expect(modal.getByRole('button', {name: bn ? 'ডাউনলোড' : 'Download'})).toBeDisabled();
+    await expect(modal.getByRole('button', {name: bn ? 'সারসংক্ষেপ প্রিন্ট' : 'Print summary'})).toBeDisabled();
+    await expect(modal.locator('.receipt-view__amount strong')).toHaveText('—');
+    await expect(modal.locator('.receipt-view__reference-strip strong').last()).toHaveText('—');
+    await expect(modal.locator('[data-testid="certificate-summary-document"]')).toContainText(bn
+      ? 'কোনো মিল পাওয়া যায়নি।' : 'No matching records.');
+  }
 });

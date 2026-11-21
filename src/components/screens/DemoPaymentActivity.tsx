@@ -3,8 +3,9 @@ import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {getStorySessionId,persistSimulatedPayment} from '../../services/simulatedPaymentStory';
 import {parsePaymentPrefill} from '../../services/paymentPrefill';
+import {paymentStatusLabel,paymentReviewStatusLabel} from '../../services/paymentStatusDisplay';
 import {copyPreviousPayment,canPayAgain,CURRENT_PAY_AGAIN_YEAR,PAY_AGAIN_YEAR_OPTIONS} from '../../services/payAgain';
-import {DEMO_USERS} from '../../data/demoUsers';
+import {DEMO_USERS,type DemoUserId} from '../../data/demoUsers';
 import {sampleTinForUserNumber} from '../../data/sampleTinSuggestions';
 import {loadBeneficiaries,type Beneficiary} from '../../services/beneficiaries';
 import {beneficiaryFinalTagLabel} from '../../services/beneficiaryTags';
@@ -23,6 +24,11 @@ import {
   type SimulationUser,type SimulationCategory,type SimulationTransaction,type SimulationLine
 } from '../../services/simulatedPaymentsApi';
 
+/** The shared API contract can include user IDs without local fictional profiles.
+ * Preview-only paths must never manufacture TINs or call the 30-profile reader
+ * for those users. Real authenticated SQL journeys retain all contract IDs. */
+const isDefinedDemoUser=(user:SimulationUser):user is DemoUserId=>
+  Object.prototype.hasOwnProperty.call(DEMO_USERS,user);
 type EditableLine={beneficiary:SimulationUser;category:SimulationCategory;assessmentYear:string;amount:string};
 const freshLine=(user:SimulationUser):EditableLine=>({beneficiary:user,category:'TAX_WITH_RETURN',assessmentYear:CURRENT_PAY_AGAIN_YEAR,amount:'100.00'});
 /** Public, persistent synthetic transaction workspace. NEVER official payment evidence. */
@@ -108,11 +114,16 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   },[id,view,revision,privateMode,historyViewChosen]);
   useEffect(()=>{
     if(!id||!previewMode)return;
+    if(!isDefinedDemoUser(id)){
+      setRows([]);setLoading(false);setLoadError('No local preview profile exists for this account ID.');
+      return;
+    }
+    const previewUserId=id;
     let active=true;
     setRows([]);setLoading(true);setLoadError('');
     const run=async()=>{
       try{
-        const [next,authorizationRecords]=await Promise.all([getDemoStoryPaymentHistory(id,view),getHostedAuthorizations(id)]);
+        const [next,authorizationRecords]=await Promise.all([getDemoStoryPaymentHistory(previewUserId,view),getHostedAuthorizations(previewUserId)]);
         if(active){
           setRows(next);setPermittedBeneficiaries(
             authorizationRecords.filter(r=>r.payerId===id&&r.status==='ACTIVE').map(r=>r.taxpayerId));
@@ -177,7 +188,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
     setLines(before=>before.map((l,i)=>i===index?{...l,[field]:value}:l));
     setNonce(crypto.randomUUID());setSubmitMessage('');
   };
-  const addLine=()=>{if(id&&lines.length<20){setLines(old=>[...old,freshLine(id)]);setNonce(crypto.randomUUID());setSubmitMessage('');}};
+  const addLine=()=>{if(id&&lines.length<20&&!lines.some(line=>line.category==='TAX_WITH_RETURN')){setLines(old=>[...old,{...freshLine(id),category:old[0]?.category??'OTHER_TAX_PAYMENT'}]);setNonce(crypto.randomUUID());setSubmitMessage('');}};
   const removeLine=(index:number)=>{if(lines.length>1){setLines(old=>old.filter((_,i)=>i!==index));setNonce(crypto.randomUUID());setSubmitMessage('');}};
   const submit=useCallback(async(e:React.FormEvent)=>{
     e.preventDefault();if(!id||saving)return;
@@ -188,26 +199,35 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       if(lines.some(line=>line.category==='TAX_WITH_RETURN') &&
          lines.some(line=>line.category!=='TAX_WITH_RETURN'))
         throw new Error(txt('Tax with Return cannot be combined with another tax head.','রিটার্নসহ কর অন্য করের খাতের সঙ্গে একত্রে পরিশোধ করা যাবে না।'));
+      if(lines.some(line=>line.category==='TAX_WITH_RETURN') && lines.length!==1)
+        throw new Error(txt('Tax with Return must have exactly one taxpayer and one assessment year.','রিটার্নসহ করের জন্য একজন করদাতা ও একটি করবর্ষ নির্বাচন করুন।'));
       const checked:SimulationLine[]=lines.map(l=>({
         beneficiary:l.beneficiary,category:l.category,assessmentYear:l.assessmentYear,
         amountMinor:parseSimulatedAmount(l.amount)
       }));
       const expected=checked.reduce((sum,l)=>sum+l.amountMinor,0);
       if(previewMode){
+        if(!isDefinedDemoUser(id))throw Error('A local preview profile is required before submitting a preview payment.');
+        const previewUserId=id;
         // Every third-party allocation carries the confirmed consent ID. TaxPay
         // SQL checks it again inside the payment INSERT trigger before Office mirroring.
-        const authorizationRecords=await getHostedAuthorizations(id);
+        const authorizationRecords=await getHostedAuthorizations(previewUserId);
         const auditedLines=checked.map(line=>{
-          if(line.beneficiary===id)return line;
-          const consent=activeAuthorizationFor(authorizationRecords,id,line.beneficiary);
+          if(!isDefinedDemoUser(line.beneficiary))
+            throw Error('This recipient has no local preview identity. Select a verified beneficiary.');
+          if(line.beneficiary===previewUserId)return line;
+          const consent=activeAuthorizationFor(authorizationRecords,previewUserId,line.beneficiary);
           if(!consent)throw Error(`Authorization for ${line.beneficiary} is not active. Go to Manage Authorization first.`);
           return {...line,authorizationId:consent.id};
         });
+        const singleRecipient=auditedLines.length===1?auditedLines[0].beneficiary:null;
+        if(singleRecipient&&!isDefinedDemoUser(singleRecipient))
+          throw Error('No local preview identity exists for this recipient.');
         const synced=await persistSimulatedPayment({
           idempotencyKey:nonce,sessionId:getStorySessionId(),service:checked[0]?.category??parentCategory,
           amountMinor:expected,details:{
-            payerId:id,payerName:id,taxpayerTin:auditedLines.length===1?
-              DEMO_USERS[auditedLines[0].beneficiary].tin:'MULTIPLE_BENEFICIARIES',
+            payerId:previewUserId,payerName:previewUserId,
+            taxpayerTin:singleRecipient?DEMO_USERS[singleRecipient].tin:'MULTIPLE_BENEFICIARIES',
             assessmentYear:checked[0]?.assessmentYear??'2026-27',
             paymentMethod:'SIMULATED',paymentChannel:'NOW',lines:auditedLines,
           }
@@ -215,15 +235,15 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         // The source SQL receipt is authoritative for this *simulation*.
         // Office delivery runs through its durable retry outbox and is reported
         // separately; a delayed mirror must not masquerade as a bank decline.
-        const checkedRows=await getDemoStoryPaymentHistory(id,'payer');
+        const checkedRows=await getDemoStoryPaymentHistory(previewUserId,'payer');
         const confirmed=checkedRows.find(t=>t.transactionId===synced.id);
         if(!confirmed||confirmed.totalMinor!==expected||confirmed.allocations.length!==checked.length)
           throw Error('Payment SQL read-back did not match. Retry the same payment.');
         setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());setPayAgainSource(null);
         setCompletedReference(confirmed.id);setPaymentStage(3);
         setSubmitMessage((synced.mirrored
-          ? txt('Payment synchronized with Office: ','অফিসের সঙ্গে পেমেন্ট সিঙ্ক হয়েছে: ')
-          : txt('Simulation saved; Office synchronization pending: ','সিমুলেশন সংরক্ষিত; অফিস সমন্বয় অপেক্ষমাণ: '))+confirmed.id);
+          ? txt('Payment record saved. Office copy confirmed; Treasury settlement unverified: ','পেমেন্ট রেকর্ড সংরক্ষিত। অফিস কপি নিশ্চিত; ট্রেজারি নিষ্পত্তি যাচাই হয়নি: ')
+          : txt('Payment record saved. Office copy pending; Treasury settlement unverified: ','পেমেন্ট রেকর্ড সংরক্ষিত। অফিস কপি অপেক্ষমাণ; ট্রেজারি নিষ্পত্তি যাচাই হয়নি: '))+confirmed.id);
         return;
       }
       const result=privateMode?await submitPrivateSimulationPayment(checked,nonce):await submitSimulatedPayment(id,checked,nonce);
@@ -264,8 +284,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       setView('payer');setRevision(v=>v+1);setLines([freshLine(id)]);setNonce(crypto.randomUUID());setPayAgainSource(null);
       setCompletedReference(result.reference);setPaymentStage(3);
       setSubmitMessage((officeMirrorConfirmed
-        ? txt('Payment record saved: ','পেমেন্ট রেকর্ড সংরক্ষিত: ')
-        : txt('Simulation saved; Office synchronization pending: ','সিমুলেশন সংরক্ষিত; অফিস সমন্বয় অপেক্ষমাণ: '))+
+        ? txt('Payment record saved. Treasury settlement unverified: ','পেমেন্ট রেকর্ড সংরক্ষিত। ট্রেজারি নিষ্পত্তি যাচাই হয়নি: ')
+        : txt('Payment record saved. Office copy pending; Treasury settlement unverified: ','পেমেন্ট রেকর্ড সংরক্ষিত। অফিস কপি অপেক্ষমাণ; ট্রেজারি নিষ্পত্তি যাচাই হয়নি: '))+
         result.reference+(result.replayed?' (previous request)':''));
     }catch(err){setSubmitMessage(err instanceof Error?err.message:'Submission could not be verified');}
     finally{setSaving(false);}
@@ -365,7 +385,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
             <label className="block text-sm font-semibold text-taxpay-text">{txt('Pay for','যার জন্য পেমেন্ট')}
               <select className="mt-1 min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-3" value={line.beneficiary} onChange={e=>modify(index,'beneficiary',e.target.value)}>
                 {simulationUsers.filter(u=>!previewMode||u===id||permittedBeneficiaries.includes(u)).map(u=>
-                  <option key={u} value={u}>{u}{u===id?txt(' (self)',' (নিজের)'):` · TIN ${DEMO_USERS[u].tin}`}</option>)}
+                  <option key={u} value={u}>{u}{u===id?txt(' (self)',' (নিজের)'):isDefinedDemoUser(u)?` · TIN ${DEMO_USERS[u].tin}`:''}</option>)}
               </select>
             </label>
             {previewMode&&<p className="text-xs text-slate-600 sm:col-span-2">
@@ -391,7 +411,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
           </PaymentFormSection>
           <PaymentFormSection number={2} title={txt('Review the calculated amount','হিসাবকৃত পরিমাণ যাচাই করুন')} description={txt('You can add more allocations','আরও বরাদ্দ যোগ করতে পারেন')}>
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" disabled={lines.length>=20||saving} onClick={addLine} className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold disabled:opacity-50">{txt('Add beneficiary / category','বরাদ্দ যোগ করুন')}</button>
+          <button type="button" disabled={lines.length>=20||saving||lines.some(line=>line.category==='TAX_WITH_RETURN')} onClick={addLine} className="min-h-11 rounded-lg border border-taxpay-border px-4 font-semibold disabled:opacity-50">{txt('Add beneficiary / category','বরাদ্দ যোগ করুন')}</button>
           <button type="submit" disabled={saving} className="min-h-11 rounded-lg bg-taxpay-primary px-5 font-semibold text-white disabled:opacity-50">{saving?txt('Saving…','সংরক্ষণ হচ্ছে…'):txt('Save payment record','পেমেন্ট রেকর্ড সংরক্ষণ করুন')}</button>
         </div>
           </PaymentFormSection>
@@ -413,7 +433,7 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
         count={visibleRows.length} total={rows.length} countLabel={txt('records','রেকর্ড')}
         searchValue={recordQuery} onSearchChange={setRecordQuery}
         searchLabel={txt('Search transactions','লেনদেন খুঁজুন')}
-        searchPlaceholder={txt('Reference, payer or beneficiary','রেফারেন্স, প্রদানকারী বা উপকারভোগী')}
+        searchPlaceholder={txt('Reference or name','রেফারেন্স বা নাম')}
         filtersOpen={recordFiltersExpanded} onToggleFilters={()=>setRecordFiltersExpanded(open=>!open)}
         filterLabel={txt('Filter','ফিল্টার')}/>
       <TaxPayOfficeRegisterFilters open={recordFiltersExpanded} className="taxpay-record-page-filters">
@@ -478,8 +498,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            {key:'amount',header:txt('Amount','পরিমাণ'),headerClassName:'text-right',cellClassName:'text-right tabular-nums',
              renderCell:tx=><p className="whitespace-nowrap font-semibold">{formatSimulatedAmount(tx.allocations.reduce((sum,a)=>sum+a.amountMinor,0))}</p>},
            {key:'status',header:txt('Status','অবস্থা'),renderCell:tx=><div className="space-y-1">
-             <p className="font-semibold">{tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
-             <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+             <p className="font-semibold">{paymentStatusLabel(tx.state,language,true)}</p>
+             <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {paymentReviewStatusLabel(tx.reviewStatus,language)}</p>
            </div>},
            {key:'actions',header:txt('Actions','কার্যক্রম'),renderCell:tx=><div className="flex flex-wrap gap-2">
              <button type="button" onClick={()=>setSelectedPayment(tx)}
@@ -488,6 +508,9 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 rounded-lg px-3 text-sm font-medium text-taxpay-primary hover:bg-taxpay-light">
                {txt('Timeline','সময়রেখা')}</button>
+             <button type="button" onClick={()=>navigate('corrections',{originalReference:tx.id})}
+               className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
+               {txt('Request correction','সংশোধনের আবেদন')}</button>
              {canPayAgain(tx,id??'',view)&&<button type="button" data-testid="pay-again-desktop"
                onClick={e=>{e.stopPropagation();payAgain(tx);}}
                className="min-h-11 rounded-lg border border-taxpay-border px-3 text-sm font-medium text-taxpay-primary">
@@ -502,8 +525,8 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
            <p className="text-sm text-taxpay-muted">
              <time dateTime={tx.createdAt}>{new Date(tx.createdAt).toLocaleString(bn?'bn-BD':'en-GB')}</time> · {txt('Payer','প্রদানকারী')}: {tx.payer}
            </p>
-           <p className="text-sm">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')} · {tx.state==='SIMULATED'?txt('Recorded','নথিভুক্ত'):tx.state}</p>
-           <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {tx.reviewStatus}</p>
+           <p className="text-sm">{tx.allocations.length} {txt('allocations','টি বরাদ্দ')} · {paymentStatusLabel(tx.state,language,true)}</p>
+           <p className="text-sm text-taxpay-muted">{txt('Office review','অফিস পর্যালোচনা')}: {paymentReviewStatusLabel(tx.reviewStatus,language)}</p>
            <details className="rounded-lg border border-taxpay-border p-2">
              <summary className="min-h-11 cursor-pointer text-sm font-medium">{txt('View allocations','বরাদ্দ দেখুন')}</summary>
              <ul className="divide-y divide-taxpay-border">{tx.allocations.map(a=><li key={a.id} className="py-2 text-sm">
@@ -517,6 +540,9 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
                className="min-h-11 flex-1 rounded-lg border border-taxpay-border px-3 text-sm">{txt('View details','বিস্তারিত দেখুন')}</button>
              <button type="button" onClick={()=>setSelectedPayment(tx)}
                className="min-h-11 flex-1 rounded-lg bg-taxpay-light px-3 text-sm">{txt('Timeline','সময়রেখা')}</button>
+             <button type="button" onClick={()=>navigate('corrections',{originalReference:tx.id})}
+               className="min-h-11 w-full rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary">
+               {txt('Request correction','সংশোধনের আবেদন')}</button>
              {canPayAgain(tx,id??'',view)&&<button type="button" data-testid="pay-again-mobile"
                onClick={()=>payAgain(tx)} className="min-h-11 w-full rounded-lg border border-taxpay-border px-3 text-sm text-taxpay-primary">
                {txt('Pay Again','আবার পরিশোধ')}</button>}

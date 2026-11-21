@@ -17,6 +17,11 @@ function useResolvedAccountIdentity() {
     let active = true;
     let revision = 0;
     const { data } = client.auth.onAuthStateChange((_event, session) => {
+      if (_event==='SIGNED_IN' && session?.user?.id) {
+        // Session-level welcome only. This never claims the Auth user owns a TIN.
+        try{sessionStorage.setItem('sohojkor.verified-auth-welcome.v1',session.user.id);}
+        catch{/* Never depend on local storage for authentication. */}
+      }
       revision++;
       if (active) { setUser(session?.user ?? null); setLoading(false); }
     });
@@ -65,10 +70,17 @@ export async function signOutApplicationAccount(): Promise<{ ok: boolean; error?
   try {
     const {data:current,error:identityError}=await supabase.auth.getUser();
     if(identityError)throw identityError;
-    if(current.user)await flushAccountViewPreferences(current.user.id);
+    const signingOutUid=current.user?.id??null;
+    if(signingOutUid)await flushAccountViewPreferences(signingOutUid);
+    // A delayed preference flush must not sign out a different account that
+    // became active in this browser while the first account was exiting.
+    const {data:beforeSignOut,error:sessionError}=await supabase.auth.getUser();
+    if(sessionError)throw sessionError;
+    if((beforeSignOut.user?.id??null)!==signingOutUid)
+      return {ok:false,error:'The signed-in account changed. Please retry sign-out from the current account.'};
+    const {error}=await supabase.auth.signOut({scope:'local'});
+    return error ? {ok:false,error:error.message} : {ok:true};
   } catch {
-    return { ok:false, error:'Your account settings could not be saved. Please retry signing out.' };
+    return {ok:false,error:'Your account settings could not be saved. Please retry signing out.'};
   }
-  const { error } = await supabase.auth.signOut({ scope: 'local' });
-  return error ? { ok: false, error: error.message } : { ok: true };
 }

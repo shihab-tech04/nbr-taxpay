@@ -1,11 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('mobile payment calculation belongs to sticky footer and expands for the full summary', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
 
   const footer = dialog.locator('.taxpay-modal__footer');
@@ -43,9 +42,17 @@ test('mobile payment calculation belongs to sticky footer and expands for the fu
 
 test('desktop keeps payment calculation in the original rail, without mobile footer duplicate', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
+  // This layout journey does not verify draft persistence. Keep the signed-in preview's
+  // draft catalog deterministic; real draft read/write/isolation is covered by SQL acceptance.
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries', async route => {
+    const action = (route.request().postDataJSON() as { action?: string } | null)?.action;
+    if (['open', 'payment-draft-list', 'guest-payment-draft-list'].includes(action ?? '')) {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: [] }) });
+    }
+    await route.continue();
+  });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  const dialog = await openLegacyTaxServiceChoice(page);
   await enterTaxPayService(dialog, 'OTHER_TAX_PAYMENT', 'OTHER');
   await expect(dialog.locator('.taxpay-modal__body .payment-form-summary')).toHaveCount(1);
   await expect(dialog.getByTestId('mobile-payment-calculation')).toHaveCount(0);

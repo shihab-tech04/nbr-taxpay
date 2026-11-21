@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService, ensureNewPaymentEntry } from './pay-tax-entry-helper';
+import { enterTaxPayService, ensureNewPaymentEntry, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('an already signed-in taxpayer starts payment without a second login prompt', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();
@@ -11,7 +11,7 @@ test('an already signed-in taxpayer starts payment without a second login prompt
 
   // Sign-in lands in the taxpayer dashboard; the payment service chooser is on Home.
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await ensureNewPaymentEntry(payment);
   await payment.locator('[data-payer-relationship="SELF"]').click();
@@ -25,22 +25,22 @@ test('an already signed-in taxpayer starts payment without a second login prompt
 
   await expect(payment.locator('.taxpay-modal__step-count')).toHaveText('1/4 Steps');
   await expect(payment.getByText('Continuing with your account')).toHaveCount(0);
-  await expect(page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' })).toHaveCount(0);
 });
 
 test('signed-in own-tax payment uses the account TIN read-only and never carries it into someone else’s tax', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user2');
   await login.getByLabel('Password', { exact: true }).fill('user2');
   await login.getByRole('button', { name: 'Sign In' }).click();
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(payment, 'TAX_WITH_RETURN', 'SELF');
 
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText('My tax liability');
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText('My Tax Liability');
   await expect(payment.getByRole('radio', { name: 'My tax liability' })).toHaveCount(0);
   const card = payment.locator('#signed-in-account-taxpayer-card');
   await expect(card).toContainText('Meghna Trading Ltd.');
@@ -58,7 +58,7 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await expect(payment.locator('[data-payment-entry="TAX_WITH_RETURN"]')).toHaveAttribute('aria-pressed', 'true');
   await payment.locator('.tax-service-choice__actions').getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payment.locator('.payment-form-payer-confirmation')).toHaveCount(0);
-  await expect(payment.locator('.tax-service-choice__selected-service')).toContainText("Facilitate another taxpayer’s payment");
+  await expect(payment.locator('.taxpay-modal__subtitle')).toContainText("Facilitate another taxpayer’s payment");
   // Keep saved-beneficiary selection available after verified account sign-in.
   await expect(payment.getByTestId('saved-beneficiary-picker')).toHaveCount(1);
   await expect(payment.getByRole('heading',{name:'Choose beneficiaries',exact:true})).toHaveCount(1);

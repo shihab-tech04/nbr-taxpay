@@ -1,16 +1,16 @@
 import { expect, test } from '@playwright/test';
-import { enterTaxPayService } from './pay-tax-entry-helper';
+import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 test('signed-in Pay Tax offers saved drafts before original journey and restores the selected form', async ({ page }) => {
   await page.goto('/?action=taxpayer_login');
-  const login = page.getByRole('dialog', { name: 'Sign In To Your Korbritto Account' });
+  const login = page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' });
   await login.getByRole('textbox', { name: 'User ID' }).fill('user28');
   await login.getByLabel('Password', { exact: true }).fill('user28');
   await login.getByRole('button', { name: 'Sign In' }).click();
   await expect(login).toHaveCount(0);
 
   await page.goto('/?action=landing');
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
 
   // This account may or may not have drafts before this test. Starting new
@@ -34,7 +34,7 @@ test('signed-in Pay Tax offers saved drafts before original journey and restores
   await expect(dialog.getByText('Draft saved to your account. You can continue in another browser.')).toHaveCount(0);
 
   await dialog.getByRole('button', { name: 'Close payment services' }).click();
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   const draftEntry = dialog.getByTestId('account-draft-entry');
   await expect(draftEntry.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
   const entryCards = draftEntry.locator('[data-draft-entry-option]');
@@ -124,7 +124,7 @@ test('signed-in Pay Tax offers saved drafts before original journey and restores
 
   // Re-entering a fresh payment remains the original journey even with drafts.
   await dialog.getByRole('button', { name: 'Close payment services' }).click();
-  await page.getByRole('button', { name: 'Pay Tax', exact: true }).first().click();
+  await openLegacyTaxServiceChoice(page);
   await dialog.getByTestId('account-draft-entry')
     .getByRole('button', { name: 'Start new Tax payment' }).click();
   await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);

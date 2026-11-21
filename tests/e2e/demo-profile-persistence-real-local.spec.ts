@@ -1,5 +1,7 @@
+import {maskTinForDisplay} from '../../src/services/tinDisplay';
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test,type BrowserContext,type Page} from '@playwright/test';
+import {demoLoginOtpCompletedState} from './demo-login-test-state';
 import {randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {DEMO_USERS,type DemoUserId} from '../../src/data/demoUsers';
@@ -22,7 +24,8 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
   const otherUser:DemoUserId='user9';
   const contexts:BrowserContext[]=[];
   const makeContext=async()=>{
-    const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport});
+    const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport,
+      storageState:demoLoginOtpCompletedState});
     contexts.push(context);
     return context;
   };
@@ -56,6 +59,24 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
       await dialog.locator('.citizen-dialog-language').click();
     }
     await expect(page.locator('.taxpay-citizen-shell')).toHaveAttribute('lang',target);
+    // The visual language toggle is optimistic; do not navigate/reload before
+    // the capability-scoped SQL preference confirms the exact saved language.
+    // This catches actual failed persistence instead of racing an in-flight
+    // Edge write and incorrectly attributing another browser's old language.
+    await expect.poll(async()=>{
+      return page.evaluate(async({url,key})=>{
+        const session=JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null');
+        if(!session?.capability)return null;
+        const res=await fetch(url+'/functions/v1/taxpay-guest-beneficiaries',{
+          method:'POST',cache:'no-store',
+          headers:{apikey:key,'content-type':'application/json','x-taxpay-guest-capability':session.capability},
+          body:JSON.stringify({action:'demo-settings'}),
+        });
+        if(!res.ok)return null;
+        const body=await res.json();
+        return body.success===true?body.data?.language??null:null;
+      },{url:api.origin,key});
+    },{timeout:15000}).toBe(target);
   };
   const signOut=async(page:Page)=>{
     const rail=page.locator('.taxpayer-reference-rail-bottom');
@@ -107,14 +128,26 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await chooseBeneficiaryOption(dialog,'beneficiary-tag','clients');
     await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
     await expect(first.getByTestId('beneficiary-records')).toContainText(personName);
-    await expect(first.getByTestId('beneficiary-records')).toContainText(tin);
+    await expect(first.getByTestId('beneficiary-records')).toContainText(maskTinForDisplay(tin));
+    await expect(first.getByTestId('beneficiary-records')).not.toContainText(tin);
 
     const firstProfile=await first.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
     expect(firstProfile?.profileId).toBe(firstUser);
     const payment=await first.evaluate(async({apiUrl,key,capability,paymentSessionId,idempotencyKey,payerName,profileId})=>{
+      // One exclusive Return head, independent of the combined Other Tax route.
+      // The valid local source may remain pending Office synchronization, but
+      // it must not be rejected for an incomplete accounting/receipt envelope.
+      const taxpayerTin='1010101010101';
+      const assessmentYear='2026-27';
+      const receiptReference='SIM-'+idempotencyKey;
+      const line={beneficiary:profileId,category:'TAX_WITH_RETURN',headId:125,
+        assessmentYear,amountMinor:12345,totalAmount:123.45};
       const data={origin:'TAXPAY_UI',service:'TAX_WITH_RETURN',amountMinor:12345,sessionId:paymentSessionId,idempotencyKey,
-        details:{payerId:profileId,payerName,lines:[{beneficiary:profileId,category:'TAX_WITH_RETURN',
-          assessmentYear:'2026-27',amountMinor:12345}]}};
+        details:{payerId:profileId,payerName,payerMode:'SELF',payerTin:taxpayerTin,
+          taxpayerTin,assessmentYear,receiptReference,lines:[line],
+          receiptSnapshot:{paymentCategory:'TAX_WITH_RETURN',payerTin:taxpayerTin,
+            taxpayerTin,assessmentYear,challanNo:receiptReference,totalAmount:123.45,
+            items:[{headId:125,totalAmount:123.45}]}}};
       const response=await fetch(apiUrl+'/functions/v1/demo-story1-taxpay/payments',{
         method:'POST',headers:{apikey:key,'x-taxpay-guest-capability':capability,'content-type':'application/json'},
         body:JSON.stringify(data)
@@ -169,7 +202,8 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     await expect(second.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','bn');
     await expect(selectedListButton(second)).toContainText(listName);
     await expect(second.getByTestId('beneficiary-records')).toContainText(personName);
-    await expect(second.getByTestId('beneficiary-records')).toContainText(tin);
+    await expect(second.getByTestId('beneficiary-records')).toContainText(maskTinForDisplay(tin));
+    await expect(second.getByTestId('beneficiary-records')).not.toContainText(tin);
     const secondProfile=await second.evaluate(()=>JSON.parse(sessionStorage.getItem('korbritto.demo-profile-session.v1')??'null'));
     expect(secondProfile?.paymentSessionId).toBe(firstProfile.paymentSessionId);
     await second.reload();
@@ -185,6 +219,26 @@ test('demo User ID retains nonempty lists, tagged beneficiary and language acros
     const otherContext=await makeContext();
     const other=await otherContext.newPage();
     await login(other,otherUser);
+    await setLanguage(other,'en');
+    // Phase 1 / M02: a new preview account has no issued e-TIN. Keep all 24
+    // approved fields in the same structure, but never invent identity values.
+    // This runs at both 1280px desktop and 375px mobile against real local SQL.
+    await other.goto('/?action=account_profile');
+    const profilePanel=other.getByTestId('taxpayer-unified-profile-page').getByTestId('user1-taxpayer-profile');
+    await expect(profilePanel).toBeVisible();
+    await expect(profilePanel.locator('[data-profile-field]')).toHaveCount(24);
+    await expect(profilePanel.locator('[data-profile-field="tin"]')).toContainText('Not available');
+    await expect(profilePanel.getByRole('button',{name:'Copy TIN'})).toBeDisabled();
+    const profileWidth=await profilePanel.evaluate(element=>({
+      left:element.getBoundingClientRect().left,
+      right:element.getBoundingClientRect().right,
+      viewport:window.innerWidth,
+    }));
+    expect(profileWidth.left).toBeGreaterThanOrEqual(-1);
+    expect(profileWidth.right).toBeLessThanOrEqual(profileWidth.viewport+1);
+    await setLanguage(other,'bn');
+    await expect(profilePanel.locator('[data-profile-field]')).toHaveCount(24);
+    await expect(profilePanel.locator('[data-profile-field="tin"]')).toContainText('পাওয়া যায়নি');
     await setLanguage(other,'en');
     await openBeneficiaries(other);
     await expect(other.locator('.taxpay-citizen-shell')).toHaveAttribute('lang','en');
@@ -336,7 +390,7 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
     }
     await first.goto('/?action=beneficiaries');
     await expect(first.getByTestId('beneficiaries-page')).toBeVisible();
-    if(await first.locator('#beneficiary-list').count()===0)
+    if(!await first.locator('#beneficiary-list').isVisible())
       await first.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     await first.locator('#beneficiary-list').click();
     await first.locator('#beneficiary-list-menu').getByRole('button',{name:names.clients,exact:true}).click();
@@ -346,8 +400,17 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
     await expect(first.getByTestId('beneficiary-records')).toContainText(expected[0].display_name);
     await expect(first.getByTestId('beneficiary-records')).not.toContainText(expected[1].display_name);
     await search.fill('');
+    // Selection is stored through an asynchronous, capability-scoped SQL
+    // settings write. Wait for its actual server confirmation before reload;
+    // otherwise mobile browsers can abort the write mid-flight and create a
+    // false persistence failure (or hide a real server error).
+    await expect.poll(async()=>{
+      const setting=await apiRequest(first,user1.capability,'demo-settings');
+      expect(setting.status,JSON.stringify(setting.body)).toBe(200);
+      return setting.body.data?.selectedListId;
+    },{timeout:15000}).toBe(lists.find(list=>list.name===names.clients)!.id);
     await first.reload();
-    if(await first.locator('#beneficiary-list').count()===0)
+    if(!await first.locator('#beneficiary-list').isVisible())
       await first.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     await expect(first.locator('#beneficiary-list')).toContainText(names.clients);
 
@@ -365,10 +428,15 @@ test('User1 fixture has ten beneficiary recipients in three owned lists with cro
     }
     await again.goto('/?action=beneficiaries');
     await expect(again.getByTestId('beneficiaries-page')).toBeVisible();
-    if(await again.locator('#beneficiary-list').count()===0)
+    if(!await again.locator('#beneficiary-list').isVisible())
       await again.getByRole('button',{name:/^(Filter|ফিল্টার)$/}).click();
     await again.locator('#beneficiary-list').click();
-    await again.locator('#beneficiary-list-menu').getByRole('button',{name:names.others,exact:true}).click();
+    // The open mobile picker is a fixed-position popover. It must sit above
+    // the sticky header and mobile bottom nav rather than trapping list actions.
+    await expect.poll(async()=>Number(await again.locator('.beneficiary-directory__list-filter .beneficiary-list-picker').evaluate(
+      picker=>getComputedStyle(picker).zIndex
+    ))).toBeGreaterThan(55);
+    await again.locator('#beneficiary-list-menu').getByRole('button',{name:names.others,exact:true}).click({timeout:15000});
     await expect(again.getByTestId('beneficiary-records')).toContainText('Professional contact');
     await expect(again.getByTestId('beneficiary-records')).toContainText('Community representative');
 

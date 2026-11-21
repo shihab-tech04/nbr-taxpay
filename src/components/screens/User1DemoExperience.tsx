@@ -6,13 +6,14 @@ import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
 import {BentoPaymentAnalytics} from './BentoPaymentAnalytics';
-import {chooseDashboardChartSource,matchesDashboardChartDrilldown,type DashboardChartSource,type DashboardChartService} from './dashboardBentoAnalytics';
+import {chooseDashboardChartSource,projectDashboardChartRecords,formatDashboardChartMoney,dashboardChartPercentage,matchesDashboardChartDrilldown,type DashboardChartSource,type DashboardChartService} from './dashboardBentoAnalytics';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
 import {LegacyPaymentRecovery} from './PaymentHistory';
 import {getDetailedStorySessionPayments,type OwnedStoryPayment} from '../../services/story1AccountPaymentHistory';
 import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
 import {reuseRecordedPayment,reuseLegacySingleHeadPayment,type PaymentReuse} from '../../services/paymentReuse';
 import {ReceiptView} from '../common/ReceiptView';
+import {CorrectionRequests} from './CorrectionRequests';
 import type {ChallanReceipt} from '../../types/tax';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {DEMO_USERS} from '../../data/demoUsers';
@@ -107,6 +108,14 @@ export { user1DemoRoutes } from '../../config/user1DemoRoutes';
 export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;onResumePaymentDraft?: (draft:PaymentFormDraft)=>void}>=({route,activityTabs=false,onResumePaymentDraft})=>{
   const {navigate,language,setLanguage,routeParams,openPaymentServiceChoice,previewAccount,startPaymentReuse}=useTaxState();
   const bn=language==='bn';
+  // The legacy localhost QA flag retains the test-only source comparison.
+  // Production preview requires a current fictional profile session and never
+  // substitutes these records for a real authenticated taxpayer account.
+  const localQaScenario=['localhost','127.0.0.1'].includes(window.location.hostname)&&
+    new URLSearchParams(window.location.search).get('qaScenario')==='1';
+  // A server-issued preview session selects fictional user1 Activity records only.
+  // Real Supabase accounts are routed elsewhere and never inherit these figures.
+  const authorizedPreviewScenario=previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1';
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [savedTagPeople,setSavedTagPeople]=useState<Beneficiary[]>([]);
@@ -175,8 +184,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     ?tr('My tax','নিজের কর'):paymentTagGroupLabels[group][language];
   const [year,setYear]=useState<string>(()=>{
     const initial=new URLSearchParams(window.location.search).get('scenarioYear');
+    // Preserve explicit year navigation. Preview Activity and Overview both
+    // open the historical fictional year; other views keep their current year.
     return typeof initial==='string'&&/^20\d{2}-20\d{2}$/.test(initial)
-      ? initial : '2025-2026';
+      ? initial : ((route==='taxpayer_home'||route==='dashboard')&&!localQaScenario&&!authorizedPreviewScenario?'2026-2027':'2025-2026');
   });
   const [overviewSourceChoice,setOverviewSourceChoice]=useState<{year:string;source:DashboardChartSource}|null>(null);
   const changeYear=(nextYear:string)=>{
@@ -196,6 +207,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [caseStatus,setCaseStatus]=useState<State|'all'>('all');
   const [savedDraftCount,setSavedDraftCount]=useState<number|null>(null);
   const [draftHelpVisible,setDraftHelpVisible]=useState(false);
+  const [followupTab,setFollowupTab]=useState<'drafts'|'requests'>('requests');
   const [kind,setKind]=useState<Kind|'all'>('all');
   const [status,setStatus]=useState<State|'all'>('all');
   const [monthFilter,setMonthFilter]=useState('all');
@@ -243,10 +255,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [query,setQuery]=useState('');
   const [historyPage,setHistoryPage]=useState(1);
   const [selected,setSelected]=useState<RecordItem|null>(null);
+  const [correctionTarget,setCorrectionTarget]=useState<RecordItem|null>(null);
   const [sqlPayments,setSqlPayments]=useState<OwnedStoryPayment[]>([]);
   const [sqlLoadError,setSqlLoadError]=useState(false);
   useEffect(()=>{
-    if(!['history','taxpayer_home','dashboard'].includes(route)||previewAccount?.id!=='user1'||activePreviewSession()?.profileId!=='user1'){
+    if(!['history','taxpayer_home','dashboard','corrections'].includes(route)||previewAccount?.id!=='user1'||activePreviewSession()?.profileId!=='user1'){
       setSqlPayments([]);setSqlLoadError(false);return;
     }
     let active=true;
@@ -321,13 +334,18 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     applied:0,outstanding:0,pending:0,failed:0,disputed:0,posted:0};
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
   const historyScoped=useMemo(()=>[...scoped,...sqlRows.filter(row=>row.years?.includes(year))],[scoped,sqlRows,year]);
-  // One assessment-year/source selection drives KPIs, recent activity and charts.
-  // Do not merge example events with owner-session SQL payments.
-  const dashboardChartRecords=useMemo(()=>[...events,...sqlRows],[sqlRows]);
-  const defaultOverviewSource=chooseDashboardChartSource(
-    dashboardChartRecords,year,savedTagPeople,DEMO_USERS.user1.tin);
-  const overviewSource=overviewSourceChoice?.year===year
-    ?overviewSourceChoice.source:defaultOverviewSource;
+  // Activity and preview Overview use the same fictional, year-scoped events.
+  // The production preview is always explicitly labeled as simulated; it never
+  // falls back to SQL on a missing fixture, or mixes its totals with SQL amounts.
+  // Local QA retains its existing source switch for regression coverage.
+  const dashboardChartRecords=useMemo(()=>authorizedPreviewScenario||localQaScenario?[...events,...sqlRows]:[...sqlRows],
+    [sqlRows,authorizedPreviewScenario,localQaScenario]);
+  const defaultOverviewSource=localQaScenario
+    ?chooseDashboardChartSource(dashboardChartRecords,year,savedTagPeople,DEMO_USERS.user1.tin)
+    :authorizedPreviewScenario?'example':'recorded';
+  const overviewSource=(localQaScenario
+    ?(overviewSourceChoice?.year===year?overviewSourceChoice.source:defaultOverviewSource)
+    :authorizedPreviewScenario?'example':'recorded') as DashboardChartSource;
   const overviewCompletedRows=overviewSource==='recorded'
     ?sqlRows.filter(item=>item.state==='POSTED'&&item.years?.includes(year))
     :scoped.filter(item=>item.state==='POSTED'&&['income','ait','travel'].includes(item.kind));
@@ -385,6 +403,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         activePreviewSession()?.profileId!=='user1')return;
     setSelected(null);
     startPaymentReuse(item.sql.reuse);
+  };
+  const applyForCorrection=(item:RecordItem)=>{
+    // A route hint never authorizes a correction. Only a currently owned SQL
+    // receipt can be offered; the existing request form validates its source.
+    if(!item.sql?.receipts.length || !authorizedPreviewScenario)return;
+    setSelected(null);
+    setCorrectionTarget(item);
   };
   const rowActions=(item:RecordItem)=><div className="flex flex-wrap items-center gap-2">
     <button type="button" onClick={()=>setSelected(item)}
@@ -528,13 +553,33 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Overview','সংক্ষিপ্ত বিবরণ');
-  const header=<TaxpayerPageHeading title={pageTitle} className={'taxpayer-dashboard-header'+(overviewRoute?' taxpayer-dashboard-header--overview':'')}
+  const header=<TaxpayerPageHeading title={overviewRoute?tr('Your tax overview','আপনার করের সারসংক্ষেপ'):pageTitle} description={overviewRoute?tr('Payments, recipients and follow-ups for your assessment year.','আপনার করবর্ষের পেমেন্ট, প্রাপক ও পরবর্তী করণীয়।'):undefined} className={'taxpayer-dashboard-header'+(overviewRoute?' taxpayer-dashboard-header--overview':'')}
     actions={!['account_profile','account_settings','ledger','journey'].includes(route) ? years : undefined} />;
   // Keep the existing external-data UI gated until a verified, nonempty source is linked.
   const verifiedExternalTaxPositionReady=false;
   // Employer/deductor withholding belongs in Activity, not payer-initiated
   // Completed Payments. The lower payer-spending chart uses the same definition.
   const completedPayments=overviewCompletedRows.length;
+  // A preview session with no account-backed allocations should be a compact,
+  // task-first bento. This never promotes synthetic events into real payments.
+  const hasItemizedAccountAllocations=projectDashboardChartRecords(
+    dashboardChartRecords,year,'recorded',savedTagPeople,DEMO_USERS.user1.tin).totalMinor>0n;
+  // Use the exact same filtered allocation projection as the interactive charts.
+  // This overview shows activity, never assessed liability or posted tax credit.
+  const overviewProjection=projectDashboardChartRecords(
+    dashboardChartRecords,year,overviewSource,savedTagPeople,DEMO_USERS.user1.tin);
+  const overviewHasAmount=!(overviewSource==='recorded'&&sqlLoadError)&&overviewProjection.totalMinor>0n;
+  const overviewServices=[...overviewProjection.byService]
+    .filter(item=>item.amountMinor>0n)
+    .sort((a,b)=>a.amountMinor>b.amountMinor?-1:a.amountMinor<b.amountMinor?1:0).slice(0,3);
+  const overviewServiceNames:Record<DashboardChartService,string>={
+    income:tr('Tax with return','রিটার্নের সঙ্গে কর'),
+    ait:tr('Advance tax','অগ্রিম কর'),
+    tds:tr('Source tax','উৎসে কর'),
+    other:tr('Other tax','অন্যান্য কর'),
+    travel:tr('Travel tax','ভ্রমণ কর')
+  };
+  const compactEmptyOverview=overviewSource==='recorded'&&!localQaScenario&&!hasItemizedAccountAllocations&&Boolean(onResumePaymentDraft);
   const correctionRequests=overviewSource==='example'
     ?scoped.filter(x=>x.state==='REQUESTED'&&(x.kind==='refund'||x.kind==='adjustment')):[];
   // There is no owner-verified correction source in this preview SQL projection.
@@ -543,6 +588,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     dashboardSource:overviewSource,dashboardOnlyCompleted:true
   });
   const openSavedDrafts=()=>{
+    setFollowupTab('drafts');
     const list=document.getElementById('taxpayer-dashboard-draft-section');
     if(list && previewAccount?.id==='user1' && activePreviewSession()?.profileId==='user1'){
       list.scrollIntoView({behavior:'smooth',block:'start'});
@@ -550,11 +596,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     }else setDraftHelpVisible(visible=>!visible);
   };
   const focusCorrectionRequests=()=>{
+    setFollowupTab('requests');
     const target=document.getElementById('dashboard-correction-requests');
     target?.scrollIntoView({behavior:'smooth',block:'start'});
     target?.focus({preventScroll:true});
   };
-  const overview=<div className="taxpay-bento-grid" data-testid="taxpayer-overview-bento" data-drafts-empty={savedDraftCount===0?'true':'false'}>
+  const overview=<div className="taxpay-bento-grid" data-testid="taxpayer-overview-bento"
+    data-drafts-empty={savedDraftCount===0?'true':'false'} data-dashboard-empty={compactEmptyOverview?'true':'false'}>
     {verifiedExternalTaxPositionReady && <>
     <section className={panel+' taxpay-bento-position'} aria-labelledby="taxpay-bento-position-title">
       <div className="flex items-center justify-between gap-2">
@@ -596,24 +644,75 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     </section>
     </>}
     <div className="taxpay-bento-request-row">
-    <div className="taxpay-bento-summary-column">
       <section className={panel+' taxpay-bento-hero taxpay-bento-summary'} aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
-        <h2 className="text-base font-semibold">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h2>
-        <p className="mt-1 text-xs text-taxpay-muted" data-testid="dashboard-source-indicator">
-          {overviewSource==='example'
-            ?tr('Example activity — not saved account payments','উদাহরণভিত্তিক কার্যক্রম — সংরক্ষিত অ্যাকাউন্ট পেমেন্ট নয়')
-            :tr('Saved session payment activity','সংরক্ষিত সেশন পেমেন্ট কার্যক্রম')}
-        </p>
-        <div className="taxpay-bento-hero__status">
+        <div className="taxpay-overview-feature">
+          <p className="taxpay-overview-feature__eyebrow"><FileCheck2 size={17} aria-hidden="true"/>
+            {tr('PAYMENT ACTIVITY','পেমেন্ট কার্যক্রম')} · {year}</p>
+          <h2>{tr('Payments at a glance','এক নজরে আপনার পেমেন্ট')}</h2>
+          <h3 className="sr-only">{tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}</h3>
+          <p className="taxpay-overview-feature__source" data-testid="dashboard-source-indicator">
+            {overviewSource==='example'
+              ?tr('Example activity (simulated) — not real payments or tax credits','উদাহরণভিত্তিক কার্যক্রম (সিমুলেশন) — প্রকৃত পেমেন্ট বা কর ক্রেডিট নয়')
+              :tr('Payments linked to this session — not verified tax credits','এই সেশনের পেমেন্ট — যাচাইকৃত কর ক্রেডিট নয়')}
+          </p>
+          <div className="taxpay-overview-feature__main">
+            <div className="taxpay-overview-feature__amount">
+              <strong className="tabular-nums" data-testid="dashboard-overview-total">
+                {overviewHasAmount?formatDashboardChartMoney(overviewProjection.totalMinor,language):'—'}
+              </strong>
+              <p>{overviewHasAmount
+                ?([ ...overviewCompletedRows ].length
+                  ?tr('Latest payment activity','সর্বশেষ পেমেন্ট কার্যক্রম')+': '+money([...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date))[0].amount)+' · '+formatDate([...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date))[0].date)
+                  :tr('Payer-initiated allocations for this assessment year','এই করবর্ষে আপনার শুরু করা পেমেন্ট বরাদ্দ'))
+                :overviewSource==='recorded'&&sqlLoadError
+                  ?tr('Payment records could not be loaded','পেমেন্ট রেকর্ড লোড করা যায়নি')
+                  :tr('No itemized payments for this year','এই করবর্ষে কোনো বিস্তারিত পেমেন্ট নেই')}</p>
+            </div>
+            {overviewHasAmount&&<div className="taxpay-overview-feature__chart">
+              <svg viewBox="0 0 120 120" className="taxpay-overview-feature__donut" role="img"
+                aria-label={tr('Distribution of payer-initiated payment activity','আপনার শুরু করা পেমেন্টের বিভাজন')}>
+                <circle cx="60" cy="60" r="43" pathLength="100" strokeWidth="18" fill="none" stroke="rgba(255,255,255,.23)"/>
+                {overviewServices.map((item,index)=>{
+                  const share=Number(item.amountMinor*10000n/overviewProjection.totalMinor)/100;
+                  const previous=overviewServices.slice(0,index).reduce((sum,row)=>sum+Number(row.amountMinor*10000n/overviewProjection.totalMinor)/100,0);
+                  return <circle key={item.key} cx="60" cy="60" r="43" pathLength="100"
+                    className={'taxpay-overview-feature__slice taxpay-overview-feature__slice--'+index}
+                    strokeWidth="18" fill="none" strokeDasharray={share+' '+(100-share)}
+                    strokeDashoffset={-previous} transform="rotate(-90 60 60)"/>;
+                })}
+                <text x="60" y="59" fill="#fff" textAnchor="middle" fontSize="19" fontWeight="700">
+                  {dashboardChartPercentage(overviewServices[0]?.amountMinor??0n,overviewProjection.totalMinor)}%
+                </text>
+                <text x="60" y="73" fill="#e4efff" textAnchor="middle" fontSize="8">
+                  {tr('Largest share','সর্বোচ্চ অংশ')}
+                </text>
+              </svg>
+              <div className="taxpay-overview-feature__services" aria-label={tr('Payment service amounts','পেমেন্টের ধরন অনুযায়ী পরিমাণ')}>
+                {overviewServices.map((item,index)=><div key={item.key} className="taxpay-overview-feature__service">
+                  <span className={'taxpay-overview-feature__legend-dot taxpay-overview-feature__legend-dot--'+index} aria-hidden="true"/>
+                  <span>{overviewServiceNames[item.key]}</span>
+                  <strong className="tabular-nums">{formatDashboardChartMoney(item.amountMinor,language)}</strong>
+                </div>)}
+              </div>
+            </div>}
+          </div>
+          <a href="?action=history" className="taxpay-overview-feature__action" onClick={event=>{event.preventDefault();openOverviewPayments();}}>
+            {tr('View payment history','পেমেন্ট ইতিহাস দেখুন')}<ArrowRight size={16} aria-hidden="true"/>
+          </a>
+        </div>
+        <div className="taxpay-bento-hero__status" role="group" aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--completed" onClick={openOverviewPayments}>
-            <span className="taxpay-summary-metric__label"><FileCheck2 size={17} aria-hidden="true"/>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span><strong>{completedPayments}</strong>
+            <span className="taxpay-summary-metric__label"><FileCheck2 size={17} aria-hidden="true"/>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span>
+            <strong className="tabular-nums">{overviewSource==='recorded'&&sqlLoadError?'—':completedPayments}</strong>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--drafts" onClick={openSavedDrafts}
             aria-expanded={draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0)}>
-            <span className="taxpay-summary-metric__label"><FilePenLine size={17} aria-hidden="true"/>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span><strong>{savedDraftCount===null?'—':savedDraftCount}</strong>
+            <span className="taxpay-summary-metric__label"><FilePenLine size={17} aria-hidden="true"/>{tr('Saved Drafts','সংরক্ষিত খসড়া')}</span>
+            <strong className="tabular-nums">{savedDraftCount===null?'—':savedDraftCount}</strong>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--requests" onClick={focusCorrectionRequests}>
-            <span className="taxpay-summary-metric__label"><ReceiptText size={17} aria-hidden="true"/>{tr('Correction Requests','সংশোধনের আবেদন')}</span><strong>{correctionRequestCount===null?'—':correctionRequestCount}</strong>
+            <span className="taxpay-summary-metric__label"><ReceiptText size={17} aria-hidden="true"/>{tr('Correction Requests','সংশোধনের আবেদন')}</span>
+            <strong className="tabular-nums">{correctionRequestCount===null?'—':correctionRequestCount}</strong>
           </button>
         </div>
         {draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0) &&
@@ -621,16 +720,37 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             ?tr('Draft count unavailable. Sign in or refresh to check again.','খসড়ার সংখ্যা পাওয়া যায়নি। সাইন ইন করুন অথবা রিফ্রেশ করে আবার দেখুন।')
             :tr('No saved drafts yet. Use Save Draft during a payment to continue it later.','এখনও সংরক্ষিত খসড়া নেই। পরে চালু করতে পেমেন্টের সময় খসড়া সংরক্ষণ করুন।')}</p>}
       </section>
-    {onResumePaymentDraft && <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1}>
-      <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
-        onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
-    </div>}
+    <div className="taxpay-bento-tasks" aria-label={tr('Follow-ups','পরবর্তী করণীয়')}>
+      <div className="taxpay-bento-tasks__heading">
+        <h2>{tr('Follow-ups','পরবর্তী করণীয়')}</h2>
+        <div className="taxpay-bento-tasks__tabs" role="group" aria-label={tr('Follow-up type','পরবর্তী করণীয়ের ধরন')}>
+          <button type="button" aria-controls="taxpayer-dashboard-draft-section" aria-pressed={followupTab==='drafts'} onClick={()=>setFollowupTab('drafts')}>
+            {tr('Drafts','খসড়া')} <span>{savedDraftCount===null?'—':savedDraftCount}</span>
+          </button>
+          <button type="button" aria-controls="dashboard-correction-requests" aria-pressed={followupTab==='requests'} onClick={()=>setFollowupTab('requests')}>
+            {tr('Requests','আবেদন')} <span>{correctionRequestCount===null?'—':correctionRequestCount}</span>
+          </button>
+        </div>
+      </div>
+    <div className="taxpay-bento-drafts" id="taxpayer-dashboard-draft-section" tabIndex={-1} hidden={followupTab!=='drafts'}>
+      {onResumePaymentDraft
+        ? <DashboardPaymentDrafts language={language} onResume={onResumePaymentDraft}
+            onCountChange={setSavedDraftCount} onStartPayment={()=>openPaymentServiceChoice()}/>
+        : <section id="dashboard-payment-drafts" tabIndex={-1} data-testid="dashboard-payment-drafts"
+            aria-labelledby="dashboard-payment-drafts-title" className={panel}>
+            <h2 id="dashboard-payment-drafts-title" className="text-lg font-semibold text-taxpay-text">
+              {tr('Saved payment drafts','সংরক্ষিত পেমেন্ট খসড়া')}
+            </h2>
+            <p className="mt-2 text-sm text-taxpay-muted" role="status">
+              {tr('Draft actions are unavailable in this view.','এই দৃশ্যে খসড়ার কাজ পাওয়া যাচ্ছে না।')}
+            </p>
+          </section>}
     </div>
-    <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} aria-labelledby="dashboard-correction-requests-title">
+    <section id="dashboard-correction-requests" tabIndex={-1} className={panel+' taxpay-bento-corrections'} hidden={followupTab!=='requests'} aria-labelledby="dashboard-correction-requests-title">
       <h2 id="dashboard-correction-requests-title" className="text-base font-semibold">{tr('Correction Requests','সংশোধনের আবেদন')}</h2>
       <p className="mt-2 text-sm text-taxpay-muted">{overviewSource==='example'
         ?tr('Example requests and their displayed status.','উদাহরণভিত্তিক আবেদন ও প্রদর্শিত অবস্থা।')
-        :tr('Verified correction request data is not linked to this preview session.','এই সেশনের সঙ্গে যাচাইকৃত সংশোধনের আবেদন যুক্ত নেই।')}</p>
+        :tr('Correction request status is not available for this session.','এই সেশনে সংশোধনের আবেদনের অবস্থা পাওয়া যাচ্ছে না।')}</p>
       {correctionRequests.length ? <ul data-testid="dashboard-correction-request-list" className="mt-3 space-y-2">
         {correctionRequests.map(request=><li key={request.id} className="min-w-0 rounded-lg border border-taxpay-border bg-white p-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -644,22 +764,23 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             {tr('View details','বিস্তারিত দেখুন')}<ArrowRight size={15} aria-hidden="true"/>
           </button>
         </li>)}
-      </ul> : <p className="mt-3 text-sm text-taxpay-muted" role="status">{overviewSource==='recorded'
-        ?tr('Request status is unavailable from this payment source.','এই পেমেন্ট উৎস থেকে আবেদনের অবস্থা পাওয়া যাচ্ছে না।')
-        :tr('No example requests for this assessment year.','এই করবর্ষে কোনো উদাহরণভিত্তিক আবেদন নেই।')}</p>}
+      </ul> : overviewSource==='example'
+        ?<p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No example requests for this assessment year.','এই করবর্ষে কোনো উদাহরণভিত্তিক আবেদন নেই।')}</p>
+        :<p className="mt-3 text-sm text-taxpay-muted" role="status">{tr('No correction requests are recorded for this session.','এই সেশনের জন্য কোনো সংশোধন আবেদন সংরক্ষিত নেই।')}</p>}
     </section>
+    </div>
     </div>
     <div className="taxpay-bento-recent">
     <section className={panel} aria-labelledby="taxpayer-recent-activity-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="taxpayer-recent-activity-title" className="text-base font-semibold">{tr('Recent activity','সাম্প্রতিক কার্যক্রম')}</h2>
+        <h2 id="taxpayer-recent-activity-title" className="text-base font-semibold">{tr('My Tax Journey','আমার কর যাত্রা')}</h2>
         {view('history','View all activity','সব কার্যক্রম দেখুন')}
       </div>
       <p className="mt-1 text-xs text-taxpay-muted">{overviewSource==='example'
         ?tr('Example payer-initiated activity','উদাহরণভিত্তিক পরিশোধকারীর কার্যক্রম')
         :tr('Saved session payment activity','সংরক্ষিত সেশন পেমেন্ট কার্যক্রম')} · {tr('Assessment year','করবর্ষ')}: {year}</p>
       <ul className="mt-3 divide-y divide-taxpay-border" aria-label={tr('Latest transactions in selected year','নির্বাচিত করবর্ষের সাম্প্রতিক লেনদেন')}>
-        {[...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+        {[...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-taxpay-text">{item.title}</p>
             <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])}</p>
@@ -674,8 +795,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           </div>
         </li>)}
       </ul>
-      {!overviewCompletedRows.length&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('No completed payment activity for the selected assessment year.','নির্বাচিত করবর্ষে সম্পন্ন পেমেন্ট নেই।')}</p>}
-      {sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-recorded payments could not be loaded. Sample activity remains visible.','অ্যাকাউন্টে সংরক্ষিত পেমেন্ট লোড হয়নি। নমুনা কার্যক্রম দেখা যাচ্ছে।')}</p>}
+      {!overviewCompletedRows.length&&!(overviewSource==='recorded'&&sqlLoadError)&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('No completed payment activity for the selected assessment year.','নির্বাচিত করবর্ষে সম্পন্ন পেমেন্ট নেই।')}</p>}
+      {overviewSource==='recorded'&&sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-linked payment records could not be loaded. No example activity is included in this overview.','অ্যাকাউন্টের পেমেন্ট রেকর্ড লোড হয়নি। এই বিবরণে কোনো নমুনা কার্যক্রম যুক্ত করা হয়নি।')}</p>}
     </section>
     </div>
     <BentoPaymentAnalytics
@@ -684,9 +805,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       year={year}
       ownerTin={DEMO_USERS.user1.tin}
       language={language}
-      sourceLoadError={sqlLoadError}
+      sourceLoadError={overviewSource==='recorded'&&sqlLoadError}
+      allowExamples={localQaScenario}
+      previewOnlyExamples={authorizedPreviewScenario&&!localQaScenario}
       selectedSource={overviewSource}
-      onSourceChange={source=>setOverviewSourceChoice({year,source})}
+      onSourceChange={source=>{if(localQaScenario)setOverviewSourceChoice({year,source});}}
       onManageBeneficiaries={()=>navigate('beneficiaries')}
       onOpenBeneficiary={tin=>navigate('beneficiaries',{
         openBeneficiaryTin:tin,returnTo:'taxpayer_home'
@@ -899,7 +1022,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <button type="button" className={action+' mt-3'} onClick={()=>navigate('account_profile')}>{tr('View profile','প্রোফাইল দেখুন')}<ArrowRight size={16} aria-hidden="true"/></button>
     </div>
   </section>;
-  const content=route==='ledger'?ledger:route==='history'?transactionList:route==='certificates'?documents:route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
+  const content=route==='ledger'?ledger:route==='history'?transactionList:route==='certificates'?documents:
+    route==='corrections'&&(routeParams?.applyForCorrection===true&&authorizedPreviewScenario)
+      ?<CorrectionRequests recordedReceipts={sqlRows.flatMap(row=>row.sql?.receipts??[])}
+        preferredReference={typeof routeParams.originalReference==='string'?routeParams.originalReference:''}/>
+      :route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-taxpay-register-page={["history","ledger","certificates","corrections"].includes(route)?"true":undefined} data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
     {overviewRoute && <section aria-label={tr('Welcome','স্বাগতম')} className="space-y-1 px-1">
       <p className="text-sm text-taxpay-muted">{greeting.salutation}</p>
@@ -914,20 +1041,21 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       onClose={() => setSelected(null)}
       closeIconLabel={tr('Close transaction details','লেনদেনের বিস্তারিত বন্ধ করুন')}
       className="taxpayer-transaction-detail"
-      hideFooter
+      hideFooter={!selected.sql}
+      footer={<></>}
     >
       {selected.sql?<section className="space-y-4">
         <p className="break-all text-sm text-taxpay-muted">{tr('Recorded payment','সংরক্ষিত পেমেন্ট')}: {selected.ref}</p>
         {selected.sql.receipts.length
-          ?selected.sql.receipts.map(receipt=><ReceiptView receipt={receipt}
-            key={receipt.paymentTransactionId} embedded/>)
+          ?selected.sql.receipts.map((receipt,index)=><ReceiptView receipt={receipt}
+            key={receipt.paymentTransactionId} embedded suppressFooterActions={index>0}
+            payAgainTestId="recorded-pay-again-detail"
+            transactionActions={index===0}
+            onPayAgain={index===0&&selected.sql?.reuse?()=>payAgain(selected):undefined}
+            onApplyForCorrection={index===0?()=>applyForCorrection(selected):undefined}/>)
           :<p role="status">{tr('Original allocations unavailable; payment cannot be repeated.',
             'আগের বরাদ্দের তথ্য নেই; পেমেন্ট পুনরায় করা যাবে না।')}</p>}
-        <div className="flex justify-end">
-          <button type="button" data-testid="recorded-pay-again-detail"
-            disabled={!selected.sql.reuse} onClick={()=>payAgain(selected)}
-            className={action+' disabled:opacity-50'}>{tr('Pay Again','আবার পরিশোধ')}</button>
-        </div>
+
       </section>:<PaymentLifecycleDetails language={language} record={{
         reference:selected.ref,taxEventId:selected.id,challanNo:selected.challan,
         payerName:selected.kind==='income'?DEMO_USERS.user1.nameEn:undefined,
@@ -944,5 +1072,20 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           source:selected.channel,note:selected.detail}],
       }}/>}
     </TaxPayModal>}
+    {correctionTarget && authorizedPreviewScenario && correctionTarget.sql?.receipts.length ? (
+      <TaxPayModal
+        title={tr('Apply for Correction','সংশোধনের আবেদন')}
+        onClose={() => setCorrectionTarget(null)}
+        closeIconLabel={tr('Close correction form','সংশোধনের ফরম বন্ধ করুন')}
+        hideFooter
+        className="taxpayer-correction-modal"
+      >
+        <CorrectionRequests
+          embedded
+          recordedReceipts={correctionTarget.sql.receipts}
+          preferredReference={correctionTarget.sql.receipts[0].challanNo}
+        />
+      </TaxPayModal>
+    ) : null}
   </div>;
 };

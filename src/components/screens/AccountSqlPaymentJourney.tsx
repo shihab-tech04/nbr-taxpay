@@ -3,6 +3,8 @@ import {FileText} from 'lucide-react';
 import {loadAccountSqlPaymentJourney, type AccountSqlJourneyEvent} from '../../services/accountSqlPaymentJourney';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {ReceiptView} from '../common/ReceiptView';
+import {useTaxState} from '../../services/taxState';
+import {reuseRecordedPayment} from '../../services/paymentReuse';
 
 type LoadState = {uid:string|null;phase:'loading'|'ready'|'error';events:AccountSqlJourneyEvent[]};
 
@@ -13,6 +15,7 @@ type LoadState = {uid:string|null;phase:'loading'|'ready'|'error';events:Account
 export function AccountSqlPaymentJourney({ownerUid,language}:{
   ownerUid:string;language:'en'|'bn';
 }) {
+  const {navigate,startPaymentReuse}=useTaxState();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [revision,setRevision]=useState(0);
@@ -44,6 +47,14 @@ export function AccountSqlPaymentJourney({ownerUid,language}:{
   },[displayed]);
   const formatDate=(date:string)=>new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',
     {day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Dhaka'}).format(new Date(date));
+  const selectedReuse=useMemo(()=>{
+    if(!selected)return null;
+    const receipts=[...new Map(state.events.filter(entry=>selected.batchId
+      ?entry.batchId===selected.batchId:entry.paymentId===selected.paymentId)
+      .map(entry=>[entry.paymentId,entry.receipt])).values()];
+    try{return reuseRecordedPayment(receipts,ownerUid,null,selected.batchId??selected.paymentId);}
+    catch{return null;}
+  },[selected,ownerUid,state.events]);
   const money=(minor:number)=>'৳ '+new Intl.NumberFormat(bn?'bn-BD':'en-BD',
     {minimumFractionDigits:2,maximumFractionDigits:2}).format(minor/100);
   return <section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-6"
@@ -91,11 +102,11 @@ export function AccountSqlPaymentJourney({ownerUid,language}:{
         <h3 className="mb-3 text-base font-semibold text-taxpay-text">{calendarYear}</h3>
         <ol aria-label={tr('Recorded payment events','নথিভুক্ত পেমেন্টের ঘটনা')} className="space-y-0">
           {entries.map(entry=><li key={entry.key}
-            className="grid grid-cols-[80px_minmax(0,1fr)] gap-3 sm:grid-cols-[135px_minmax(0,1fr)]">
-            <time dateTime={entry.occurredAt} className="pt-1 text-right text-xs text-taxpay-muted">
+            className="grid grid-cols-[56px_minmax(0,1fr)] gap-2 sm:grid-cols-[135px_minmax(0,1fr)] sm:gap-3">
+            <time dateTime={entry.occurredAt} className="break-words pt-1 text-right text-xs text-taxpay-muted">
               {formatDate(entry.occurredAt)}
             </time>
-            <div className="relative border-l-2 border-taxpay-border pb-5 pl-5">
+            <div className="relative min-w-0 border-l-2 border-taxpay-border pb-5 pl-3 sm:pl-5">
               <span aria-hidden="true" className="absolute -left-[6px] top-1.5 h-2.5 w-2.5 rounded-full bg-taxpay-primary"/>
               <article className="min-w-0 rounded-lg border border-taxpay-border bg-slate-50 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -130,7 +141,10 @@ export function AccountSqlPaymentJourney({ownerUid,language}:{
     </div>}
     {selected&&<TaxPayModal title={tr('Payment receipt','পেমেন্ট রসিদ')} service="status"
       className="receipt-modal" onClose={()=>setSelected(null)} footer={<></>}>
-      <ReceiptView receipt={selected.receipt} embedded/>
+      <ReceiptView receipt={selected.receipt} embedded transactionActions
+        onPayAgain={selectedReuse?()=>{setSelected(null);startPaymentReuse(selectedReuse);}:undefined}
+        onApplyForCorrection={()=>{const reference=selected.receipt.challanNo;setSelected(null);
+          navigate('corrections',{originalReference:reference});}}/>
     </TaxPayModal>}
   </section>;
 }

@@ -252,14 +252,6 @@
 #citizen-sample-role { width:100%; min-height:44px; border:1px solid var(--citizen-border); border-radius:.6rem; padding:.5rem; background:white; }
 .citizen-dialog__notice { display:flex; align-items:flex-start; gap:.5rem; margin-top:1rem; font-size:.8rem; color:var(--citizen-muted); line-height:1.45; }
 .citizen-dialog__notice svg { flex-shrink:0; }
-.citizen-account-gate { background:white; border:1px solid var(--citizen-border); border-radius:1rem; padding:2rem 1.25rem; max-width:40rem; margin:2rem auto; }
-.citizen-account-gate h1 { font-size:1.35rem; font-weight:750; margin-bottom:.75rem; }
-.citizen-account-gate p { margin-bottom:1rem; color:var(--citizen-muted); }
-.citizen-account-gate__preview { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:.75rem 1rem; margin-right:.5rem; margin-bottom:.5rem; background:var(--citizen-primary); color:white; border-radius:.5rem; font-weight:650; text-decoration:none; }
-.citizen-account-gate__preview:hover { background:var(--citizen-primary-dark); }
-.citizen-account-gate button { min-height:44px; padding:.75rem 1rem; border:1px solid var(--citizen-primary); color:var(--citizen-primary); border-radius:.5rem; font-weight:650; }
-.citizen-account-gate button:hover { background:var(--citizen-primary-light); }
-.citizen-account-gate__preview:focus-visible,.citizen-account-gate button:focus-visible { outline:3px solid var(--citizen-primary); outline-offset:3px; }
 @media(max-width:900px) {
   .citizen-header__inner { min-height:60px; }
   .citizen-header__links { display:none; }
@@ -1347,6 +1339,9 @@
     flex-wrap:nowrap;
     gap:.5rem;
     padding:.65rem .85rem;
+    /* Keep the single compact footer row clear of the fixed floating Pay control
+       at the bottom of the scroll. The existing footer safe-area pad remains. */
+    margin-bottom:8px;
   }
   .public-footer__identity { grid-column:1; min-width:0; }
   .public-footer__identity img.public-footer__wordmark { width:88px; height:33px; }
@@ -2491,6 +2486,39 @@
 .taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal {
   width: min(100%, 640px);
 }
+/* First-login notice action uses the shared modal footer, not payment-step
+   button geometry. Keep the text contained in both languages and viewports. */
+.taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal .taxpayer-welcome__action {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  max-width: 100%;
+  /* A little extra avoids fractional viewport/font rounding below 44px. */
+  min-height: 46px;
+  margin-inline-start: auto;
+  padding: .65rem 1.25rem;
+  border: 1px solid var(--citizen-primary);
+  border-radius: .65rem;
+  background: var(--citizen-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  white-space: normal;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal .taxpayer-welcome__action:hover {
+  background: var(--citizen-primary-dark);
+}
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal.taxpayer-authorization-modal .taxpayer-welcome__action {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+}
 .taxpay-citizen-shell .taxpay-modal.taxpay-parity-dialog {
   width: min(100%, 1024px);
 }
@@ -2681,7 +2709,9 @@
 .beneficiary-entry-choice__arrow {flex:0 0 auto;color:var(--citizen-muted);}
 .beneficiary-entry-choice__icon {flex-basis:44px;width:44px;height:44px;}
 .beneficiary-list-picker {position:relative;z-index:1;isolation:isolate;width:min(100%,560px);}
-.beneficiary-list-picker:has(.beneficiary-list-picker__menu) {z-index:40;}
+/* The open list must stack above the mobile bottom dock (z-index:45),
+   including its child fixed menu; closed lists keep their original stacking. */
+.beneficiary-list-picker:has(.beneficiary-list-picker__menu) {z-index:60;}
 .beneficiary-list-picker__trigger {width:100%;min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;border:1px solid var(--citizen-border);border-radius:var(--taxpay-radius-input,10px);background:var(--color-taxpay-surface,#fff);color:var(--citizen-text);font:inherit;}
 .beneficiary-list-picker__trigger:hover {border-color:var(--citizen-primary);}
 .beneficiary-list-picker__trigger:focus-visible,.beneficiary-list-picker__row button:focus-visible,.beneficiary-entry-choice__card:focus-visible {outline:2px solid var(--citizen-primary);outline-offset:2px;}
@@ -2720,6 +2750,10 @@
 .beneficiary-directory__list-filter {min-width:0;}
 .beneficiary-directory__list-filter > p {margin:0; font:inherit; color:inherit;}
 .beneficiary-directory__list-filter .beneficiary-list-picker {width:100%;max-width:none;z-index:2;}
+/* Open list menu must clear sticky header (55) and mobile bottom navigation (45).
+   The more-specific closed picker rule previously overrode the open-state z-index,
+   trapping the third list action behind the navigation on narrow screens. */
+.beneficiary-directory__list-filter .beneficiary-list-picker:has(.beneficiary-list-picker__menu) {z-index:70;}
 .beneficiary-directory__filters .taxpayer-transaction-filter--search {grid-column:auto;}
 /* Keep the shared Activity search's single focusable outline outside workspace. */
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .beneficiary-directory__filters .taxpayer-transaction-filter__search > input[type="search"],
@@ -2967,3 +3001,84 @@
   .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .citizen-pay-popover { display:none; }
 }
 @media print { .citizen-pay-popover { display:none!important; } }
+
+/* UX report #9: keep confirmed receipt fields scannable in an embedded modal.
+   No receipt fields, financial labels, references, or actions are removed. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__parties {
+  row-gap: 20px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail {
+  column-gap: 16px;
+  row-gap: 6px;
+  line-height: 1.6;
+  padding-block: 9px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail + .receipt-view__detail {
+  border-top: 1px solid var(--citizen-border);
+}
+@media (max-width: 700px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__parties {
+    grid-template-columns: minmax(0,1fr);
+    padding-block: 18px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail {
+    grid-template-columns: minmax(0,40%) minmax(0,1fr);
+  }
+}
+
+/* UX report #9: keep confirmed receipt fields scannable in an embedded modal.
+   No receipt fields, financial labels, references, or actions are removed. */
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__parties {
+  row-gap: 20px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail {
+  column-gap: 16px;
+  row-gap: 6px;
+  line-height: 1.6;
+  padding-block: 9px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail + .receipt-view__detail {
+  border-top: 1px solid var(--citizen-border);
+}
+@media (max-width: 700px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__parties {
+    grid-template-columns: minmax(0,1fr);
+    padding-block: 18px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view__detail {
+    grid-template-columns: minmax(0,40%) minmax(0,1fr);
+  }
+}
+
+/* Account-owned transaction receipts use exactly three footer actions.
+   The existing two-button public/print footer and certificate UI stay intact. */
+.taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action-group{
+  display:grid;grid-template-columns:repeat(3,minmax(0,max-content));align-items:stretch;gap:.65rem;
+  width:auto;max-width:100%;margin-left:auto;
+}
+.taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action{
+  min-width:0;box-sizing:border-box;white-space:normal;text-align:center;
+}
+.taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action:disabled{
+  cursor:not-allowed;opacity:.5;
+}
+@media(max-width:650px){
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction,
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action-group{
+    width:100%;min-width:0;flex:1 1 100%;margin:0;
+  }
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action-group{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+  }
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action{
+    width:100%;min-height:44px;padding:8px 4px;white-space:normal;overflow-wrap:anywhere;
+  }
+}
+@media(max-width:390px){
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action-group{
+    grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
+  }
+  .taxpay-citizen-shell .taxpay-modal .receipt-view__actions--transaction .receipt-view__action:last-child{
+    grid-column:1/-1;
+  }
+}

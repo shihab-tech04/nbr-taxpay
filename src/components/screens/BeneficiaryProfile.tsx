@@ -10,6 +10,9 @@ import {paymentDateInRange} from '../../services/paymentDateFilter';
 import {UiButton} from '../ui/Controls';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {ReceiptView} from '../common/ReceiptView';
+import {useTaxState} from '../../services/taxState';
+import {reuseRecordedPayment} from '../../services/paymentReuse';
+import {activePreviewSession} from '../../services/previewAccountSession';
 
 type Props={
   person:Beneficiary;ownerUid:string|null;previewId:SimulationUser|null;
@@ -22,6 +25,7 @@ const paymentStatus=(status:BeneficiaryProfilePayment['status'],bn:boolean)=>
     :status==='FAILED'?(bn?'ব্যর্থ':'Failed'):(bn?'বাতিল / ফেরত':'Reversed');
 
 export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,language,onBack,onMakePayment,backToActivity=false})=>{
+  const {navigate,startPaymentReuse}=useTaxState();
   const bn=language==='bn';
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [snapshot,setSnapshot]=useState<{identity:string;state:'loading'|'ready'|'error';rows:BeneficiaryProfilePayment[]}>({
@@ -39,6 +43,7 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
   // An open receipt must never outlive the precise owner + saved beneficiary.
   // Check before render, not only when a subsequent effect clears old state.
   const selected=selection?.identity===identity?selection.payment:null;
+  const verifiedOwner=ownerUid??(previewId&&activePreviewSession()?.profileId===previewId?previewId:null);
   useEffect(()=>{
     let active=true;
     setSnapshot({identity,state:'loading',rows:[]});setSelection(null);
@@ -50,6 +55,13 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
     return()=>{active=false;};
   },[identity,ownerUid,previewId,language,revision]);
   const state=snapshot.identity===identity?snapshot:{identity,state:'loading' as const,rows:[]};
+  const selectedReuse=useMemo(()=>{
+    if(!selected?.receipt||!verifiedOwner)return null;
+    const linked=selected.batchId?state.rows.filter(row=>row.batchId===selected.batchId):[selected];
+    const originals=[...new Map(linked.filter(row=>row.receipt).map(row=>[row.paymentId,row.receipt!])).values()];
+    try{return reuseRecordedPayment(originals,verifiedOwner,null,
+      selected.batchId??selected.paymentId);}catch{return null;}
+  },[selected,verifiedOwner,state.rows]);
   const paidRows=useMemo(()=>state.rows.filter(countsTowardBeneficiaryPaidTotal),[state.rows]);
   const years=useMemo(()=>Array.from(new Set(state.rows.map(row=>row.assessmentYear))).sort().reverse(),[state.rows]);
   const heads=useMemo(()=>Array.from(new Set(state.rows.map(row=>row.paymentHead))).sort(),[state.rows]);
@@ -59,7 +71,7 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
     (year==='all'||row.assessmentYear===year)&&
     (head==='all'||row.paymentHead===head)&&
     (status==='all'||(status==='recorded'?countsTowardBeneficiaryPaidTotal(row):row.status===status))&&
-    (!search.trim()||[row.paymentId,row.transactionId,row.assessmentYear,row.paymentHead].some(
+    (!search.trim()||[row.reference,row.paymentId,row.transactionId,row.assessmentYear,row.paymentHead].some(
       value=>value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))
   ),[state.rows,search,year,head,status,dateFrom,dateTo,invalidDateRange]);
   const totalMinor=paidRows.reduce((total,row)=>total+BigInt(row.amountMinor),0n);
@@ -212,7 +224,7 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
                     </p>
                     <p className="mt-1 text-xs text-taxpay-muted">{tr('Assessment year','করবর্ষ')}: {row.assessmentYear}</p>
                     <p className="mt-1 break-all text-xs text-taxpay-muted">
-                      {tr('Reference','রেফারেন্স')}: {row.transactionId}
+                      {tr('Reference','রেফারেন্স')}: {row.reference}
                     </p>
                   </div>
                   <span className="font-semibold tabular-nums text-taxpay-text">{formatCurrency(row.amountMinor/100,language)}</span>
@@ -236,14 +248,18 @@ export const BeneficiaryProfile:React.FC<Props>=({person,ownerUid,previewId,lang
           {tr('This allocation belongs to an original combined transaction. It is not a separate payment.',
           'এই বরাদ্দটি মূল সমন্বিত লেনদেনের অংশ; এটি আলাদা পেমেন্ট নয়।')} {selected.batchId}
         </p>}
-        <ReceiptView receipt={selected.receipt} embedded/>
+        <ReceiptView receipt={selected.receipt} embedded transactionActions={Boolean(verifiedOwner)}
+          onPayAgain={selectedReuse?()=>{setSelection(null);startPaymentReuse(selectedReuse);}:undefined}
+          onApplyForCorrection={verifiedOwner?()=>{const reference=selected.receipt!.challanNo;
+            setSelection(null);navigate('corrections',{originalReference:reference,
+              applyForCorrection:Boolean(previewId)});}:undefined}/>
       </>:<div className="space-y-3 text-sm text-taxpay-text">
         <p>{tr('This is recorded simulator activity, not an official payment receipt.',
           'এটি সিমুলেটরে নথিভুক্ত কার্যক্রম, সরকারি পেমেন্ট রসিদ নয়।')}</p>
         <p>{tr('Head','খাত')}: {selected.paymentHead}</p>
         <p>{tr('Assessment year','করবর্ষ')}: {selected.assessmentYear}</p>
         <p>{tr('Status','অবস্থা')}: {paymentStatus(selected.status,bn)}</p>
-        <p className="break-all">{tr('Transaction','লেনদেন')}: {selected.transactionId}</p>
+        <p className="break-all">{tr('Reference','রেফারেন্স')}: {selected.reference}</p>
         <p>{tr('Amount','পরিমাণ')}: {formatCurrency(selected.amountMinor/100,language)}</p>
       </div>}
     </TaxPayModal>}

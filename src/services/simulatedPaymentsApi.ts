@@ -90,8 +90,18 @@ async function signedRpc<T>(functionName:string,args:Record<string,unknown>={}):
  return data as T;
 }
 export const getBoundSimulationUser=()=>signedRpc<SimulationUser>('sim_my_taxpayer_profile');
-export const getPrivateSimulationHistory=(view:'payer'|'beneficiary')=>
- signedRpc<SimulationTransaction[]>('sim_my_payment_history',{p_view:view});
+/** The private RPC may return JSON null for a zero-row SQL aggregate.
+ * Treat only that *successful* empty aggregate as an empty history. Never
+ * swallow HTTP/RLS errors or manufacture payments; reject malformed rows so
+ * the Activity page can show its existing retry state instead of crashing. */
+export const getPrivateSimulationHistory=async(view:'payer'|'beneficiary'):Promise<SimulationTransaction[]>=>{
+ const response=await signedRpc<SimulationTransaction[]|null>('sim_my_payment_history',{p_view:view});
+ if(response===null)return [];
+ if(!Array.isArray(response)||response.some(row=>!row||typeof row!=='object'||
+   typeof row.transactionId!=='string'||!Array.isArray(row.allocations)||!Array.isArray(row.events)))
+   throw Error('Invalid protected payment-history response');
+ return response;
+};
 export const getPrivateSimulationNotices=()=>
  signedRpc<SimulationNotice[]>('sim_my_payment_notices');
 export const submitPrivateSimulationPayment=(lines:SimulationLine[],key:string)=>

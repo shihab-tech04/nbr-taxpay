@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {Eye,EyeOff} from 'lucide-react';
+import {Check,Copy,Eye,EyeOff} from 'lucide-react';
 import type {TaxpayerTinField} from '../../contracts/taxpayerTinProfile';
 
 export type SensitiveProfileKind='tin'|'phone'|'email';
@@ -21,15 +21,37 @@ export function maskProfileValue(value:string,kind:SensitiveProfileKind):string{
     return local.slice(0,2)+'*'.repeat(Math.max(3,local.length-2))+'@****.***';
   }
   const digitCount=value.match(/[0-9]/g)?.length??0;
-  let toMask=digitCount>3?digitCount-3:digitCount;
-  return [...value].map(char=>/[0-9]/.test(char)&&toMask-->0?'*':char).join('');
+  // Show the first three digits only; do not leak the final digits of a TIN
+  // or phone number. Short identifiers remain fully masked.
+  const visibleDigits=digitCount>3?3:0;
+  let seen=0;
+  return [...value].map(char=>{
+    if(!/[0-9]/.test(char))return char;
+    seen++;
+    return seen<=visibleDigits?char:'*';
+  }).join('');
 }
 
 /** Independent, keyboard-accessible reveal state, never persisted to storage. */
-export function MaskedProfileValue({value,kind,label,language,testId}:{
-  value:string;kind:SensitiveProfileKind;label:string;language:'en'|'bn';testId?:string;
+export function MaskedProfileValue({value,kind,label,language,testId,allowCopy=false,profileContext=false}:{
+  value:string;kind:SensitiveProfileKind;label:string;language:'en'|'bn';testId?:string;allowCopy?:boolean;profileContext?:boolean;
 }){
+  // TIN copy is profile-only. Other fields keep their existing separately authorized copy behavior.
+  const canCopy=allowCopy && (kind!=='tin' || profileContext);
   const [revealed,setRevealed]=useState(false);
+  const [copyState,setCopyState]=useState<'idle'|'done'|'failed'>('idle');
+  const copyAction=language==='bn'
+    ? (copyState==='done'?label+' কপি হয়েছে':'কপি করুন: '+label)
+    : (copyState==='done'?label+' copied':'Copy '+label);
+  const copyValue=async()=>{
+    setCopyState('idle');
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyState('done');
+    } catch {
+      setCopyState('failed');
+    }
+  };
   const action=language==='bn'
     ? label+' '+(revealed?'লুকান':'দেখান')
     : (revealed?'Hide ':'Show ')+label;
@@ -40,5 +62,13 @@ export function MaskedProfileValue({value,kind,label,language,testId}:{
       className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">
       {revealed?<EyeOff size={18} aria-hidden="true"/>:<Eye size={18} aria-hidden="true"/>}
     </button>
+    {canCopy&&<button type="button" aria-label={copyAction} title={copyAction}
+      onClick={copyValue}
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary">
+      {copyState==='done'?<Check size={18} aria-hidden="true"/>:<Copy size={18} aria-hidden="true"/>}
+    </button>}
+    {copyState==='failed'&&<span role="alert" className="text-sm text-taxpay-error">
+      {language==='bn'?'কপি করা যায়নি। আবার চেষ্টা করুন।':'Could not copy. Please retry.'}
+    </span>}
   </span>;
 }

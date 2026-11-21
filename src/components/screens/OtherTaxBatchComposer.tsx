@@ -9,6 +9,7 @@ import { BLOCKED_HEAD_IDS } from '../../data/paymentHeads';
 import { fitsCombinedAllocationCapacity, MAX_COMBINED_ALLOCATIONS } from '../../services/otherTaxCombinedPayment';
 import { parseGuestAmount, sumGuestAmounts, normalizeGuestAmountInput } from '../../services/guestAmount';
 import type { Language } from '../../types/tax';
+import { RETURN_HEAD_ID } from '../../services/taxWithReturnContract';
 
 export type OtherTaxTaxpayer = { id: string; tin: string; name: string };
 export type OtherTaxAllocation = {
@@ -46,13 +47,29 @@ type Props = {
   taxpayers: OtherTaxTaxpayer[];
   lines: OtherTaxAllocation[];
   suggestionTaxpayerIds?: Readonly<Record<string, DemoUserId | null>>;
+  /** Parallel entry masks taxpayer identifiers in tab metadata; other payment screens preserve their existing labels. */
+  maskTaxpayerTin?: boolean;
+  /** Keep original paid amounts when a Pay Again draft reselects a required year. */
+  preserveSourcePaymentAmounts?: boolean;
   onChange: (lines: OtherTaxAllocation[]) => void;
   error?: string;
   summary?: React.ReactNode;
+  /** Use the fixed TaxPay service selection without duplicating the head editor. */
+  serviceSelection?: React.ReactNode;
+  /** Frozen All Tax Payments v3 labels without changing the shared composer. */
+  unifiedV3?: boolean;
+  /** New All Tax Payments v5 combines Return with other supported heads. */
+  allowMixedReturn?: boolean;
+  /** Optional challan comments stay inside the editor scroll column. */
+  remarks?: React.ReactNode;
   focusRequest?: { lineId: string; requestId: number } | null;
+  /** Optional editor focus sync for the original payment calculation. */
+  onFocusLine?: (lineId: string) => void;
+  /** Approved calculation treatment applies only to Facilitate another taxpayer. */
+  originalFacilitation?: boolean;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, onChange, error, summary, focusRequest }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, serviceSelection, unifiedV3 = false, allowMixedReturn = false, remarks, focusRequest, onFocusLine, originalFacilitation = false }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const [query, setQuery] = useState('');
@@ -90,11 +107,17 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const activeId = taxpayers.some(person => person.id === activeTaxpayer)
     ? activeTaxpayer : taxpayers[0]?.id;
   const activeLines = lines.filter(line => line.taxpayerId === activeId);
+  const activeOrdinaryLines = activeLines.filter(line => line.headId !== RETURN_HEAD_ID);
+  const returnLine = allowMixedReturn ? activeLines.find(line => line.headId === RETURN_HEAD_ID) : undefined;
+  const eligibleLine = (line: OtherTaxAllocation) => isOtherTaxHeadEligible(line.headId) ||
+    (allowMixedReturn && line.headId === RETURN_HEAD_ID);
   const search = query.trim().toLocaleLowerCase();
-  const count = grouped.reduce((n, group) => n + group.rows.length, 0);
+  const count = grouped.reduce((n, group) => n + (maskTaxpayerTin
+    ? group.rows.filter(head => isOtherTaxHeadEligible(head.id)).length
+    : group.rows.length), 0);
   const usedTotal = otherTaxAllocationTotal(lines);
   const isIncomplete = (line: OtherTaxAllocation) =>
-    otherTaxAllocationAmount(line) === null || !isOtherTaxHeadEligible(line.headId) ||
+    otherTaxAllocationAmount(line) === null || !eligibleLine(line) ||
     !OTHER_TAX_YEARS.some(year => year === line.assessmentYear);
   const invalidLines = error ? lines.filter(isIncomplete) : [];
   const firstInvalid = invalidLines[0];
@@ -166,7 +189,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     if (additions.length) applyLines([...lines, ...additions]);
   };
   const unselectAll = () => {
-    if (activeId && activeLines.length) applyLines(lines.filter(line => line.taxpayerId !== activeId));
+    if (activeId && activeLines.length) applyLines(lines.filter(line => line.taxpayerId !== activeId ||
+      (allowMixedReturn && line.headId === RETURN_HEAD_ID)));
   };
   // A head may be selected once per assessment year for each taxpayer.
   const toggleHead = (headId: number, checked: boolean) => {
@@ -187,22 +211,24 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     // A User1 example amount is tied to one year; other taxpayers keep manual values.
     const nextSuggestion = update.assessmentYear
       ? suggestedFor(current.taxpayerId, current.headId, update.assessmentYear) : null;
-    const amount = update.amount ?? (update.assessmentYear && suggestionTaxpayerIds?.[current.taxpayerId] === 'user1'
+    const amount = update.amount ?? (update.assessmentYear && !preserveSourcePaymentAmounts && suggestionTaxpayerIds?.[current.taxpayerId] === 'user1'
       ? nextSuggestion?.amount ?? '' : current.amount);
     applyLines(lines.map(line => line.id === id ? { ...line, ...update, amount } : line));
   };
 
   return (
-    <div ref={rootRef} className="payment-form-layout payment-flow-embedded__payment other-tax-batch-panel" data-testid="other-tax-batch">
+    <div ref={rootRef} className={allowMixedReturn ? "payment-form-layout payment-flow-embedded__payment other-tax-batch-panel other-tax-batch-panel--unified-v5" : "payment-form-layout payment-flow-embedded__payment other-tax-batch-panel"} data-testid="other-tax-batch"
+      data-original-facilitation={originalFacilitation ? "true" : undefined}>
       <div className="payment-form-layout__sections">
+        {serviceSelection}
         <section className={error ? "payment-form-section payment-form-section--static other-tax-section--invalid" : "payment-form-section payment-form-section--static"}>
           <div className="payment-form-section__heading">
             <div className="payment-form-section__heading-copy">
-              <h2>{taxpayers.length > 1 ? tx('Paying tax for', 'যার কর পরিশোধ করছেন') : tx('Choose payment heads', 'পরিশোধের খাত নির্বাচন করুন')}</h2>
+              <h2>{taxpayers.length > 1 || allowMixedReturn ? tx('Paying tax for', 'যার কর পরিশোধ করছেন') : tx('Choose payment heads', 'পরিশোধের খাত নির্বাচন করুন')}</h2>
             </div>
           </div>
           <div className="payment-form-section__body space-y-4">
-            {taxpayers.length > 1 && <div className="other-tax-taxpayer-section">
+            {(taxpayers.length > 1 || allowMixedReturn) && <div className="other-tax-taxpayer-section">
               <div className="other-tax-taxpayer-nav">
                 <div ref={taxpayerTabsRef} role="group"
                   aria-label={tx('Choose a taxpayer to assign payment heads', 'করদাতা নির্বাচন করুন')}
@@ -217,11 +243,12 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                     const issues = invalidLines.filter(line => line.taxpayerId === person.id).length;
                     const noHead = firstMissingTaxpayer?.id === person.id && !firstInvalid;
                     const name = person.name.trim() || tx('Taxpayer', 'করদাতা') + ' ' + (index + 1);
+                    const visibleTin = maskTaxpayerTin ? person.tin.slice(0, 3) + '****' : person.tin;
                     return <button key={person.id} type="button"
                       aria-pressed={active} data-taxpayer-id={person.id}
                       data-invalid={issues > 0 || noHead ? 'true' : undefined}
-                      aria-label={name + ', ' + tx('TIN', 'টিআইএন') + ' ' + person.tin + ', ' + selectedCount + ' ' + tx('selected', 'নির্বাচিত') + (issues || noHead ? ', ' + tx('incomplete', 'অসম্পূর্ণ') : '')}
-                      title={name + ' · ' + person.tin} onClick={() => setActiveTaxpayer(person.id)}
+                      aria-label={name + ', ' + tx('TIN', 'টিআইএন') + ' ' + visibleTin + ', ' + selectedCount + ' ' + tx('selected', 'নির্বাচিত') + (issues || noHead ? ', ' + tx('incomplete', 'অসম্পূর্ণ') : '')}
+                      title={name + ' · ' + visibleTin} onClick={() => setActiveTaxpayer(person.id)}
                       className="other-tax-taxpayer-chip">
                       <span>{name}</span>
                       {selectedCount > 0 && <span className="other-tax-taxpayer-chip__count" aria-hidden="true">{selectedCount}</span>}
@@ -239,11 +266,12 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                 </button>}
               </div>
             </div>}
-            {taxpayers.length > 1 && <div className="other-tax-head-section__heading">
+            {!allowMixedReturn && taxpayers.length > 1 && <div className="other-tax-head-section__heading">
               <h2>{tx('Choose payment heads', 'পরিশোধের খাত নির্বাচন করুন')}</h2>
             </div>}
             {error && <p className="other-tax-error-heading">{tx('Review highlighted entries', 'চিহ্নিত তথ্য সংশোধন করুন')}</p>}
-            <div className="other-tax-head-tools">
+            {allowMixedReturn && <h3 className="unified-v5-row-heading">{tx('Search and select','খুঁজুন ও নির্বাচন করুন')}</h3>}
+             <div className="other-tax-head-tools">
               <label htmlFor="other-tax-head-filter" className="other-tax-head-tools__label sr-only">
                 {tx('Find a payment head', 'পরিশোধের খাত খুঁজুন')}
               </label>
@@ -259,7 +287,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                   onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); selectionMenuRef.current?.removeAttribute('open'); } }}>
                   <summary aria-label={tx('Selection actions', 'খাত নির্বাচনের ব্যবস্থা')}>
                     <ListChecks size={17} aria-hidden="true" />
-                    <span>{tx('Select', 'নির্বাচন')}</span>
+                    <span>{unifiedV3 ? tx('Select', 'নির্বাচন') : tx('Bulk actions', 'একসাথে নির্বাচন')}</span>
                     <ChevronDown size={16} aria-hidden="true" className="other-tax-selection-menu__chevron" />
                   </summary>
                   <div className="other-tax-selection-menu__panel" role="group" aria-label={tx('Payment head selection actions', 'পরিশোধের খাত নির্বাচনের ব্যবস্থা')}>
@@ -267,17 +295,57 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                       disabled={!visibleEligible.some(head => !activeLines.some(line => line.headId === head.id))}>
                       {search ? tx('Select all matching', 'মিল থাকা সব নির্বাচন করুন') : tx('Select all', 'সব নির্বাচন করুন')}
                     </button>
-                    <button type="button" onClick={() => { unselectAll(); selectionMenuRef.current?.removeAttribute('open'); }}
+                    {(!originalFacilitation || unifiedV3) && <button type="button" onClick={() => { unselectAll(); selectionMenuRef.current?.removeAttribute('open'); }}
                       disabled={!activeLines.length}>
                       {tx('Clear selection', 'নির্বাচন বাতিল করুন')}
-                    </button>
+                    </button>}
                   </div>
                 </details>
+                {originalFacilitation && !unifiedV3 && <button type="button" className="other-tax-clear-selection"
+                  disabled={!activeLines.length} onClick={unselectAll}>
+                  {tx('Clear selected', 'নির্বাচন মুছুন')}
+                </button>}
               </div>
             </div>
+             {allowMixedReturn && <section className="unified-v5-return-row" data-testid="unified-v5-return-section">
+               <div className="unified-v5-return-group" data-testid="unified-v5-return-group">
+               <label className="unified-v5-return-card">
+                 <input type="checkbox" aria-label={tx('Select Tax with Return','রিটার্নসহ কর নির্বাচন করুন')}
+                   data-testid="unified-v5-return-checkbox" checked={Boolean(returnLine)}
+                   onChange={event => {
+                     if (!activeId) return;
+                     if (event.target.checked && !returnLine) applyLines([...lines, {...newLine(RETURN_HEAD_ID), amount:''}]);
+                     if (!event.target.checked) applyLines(lines.filter(line => !(line.taxpayerId === activeId && line.headId === RETURN_HEAD_ID)));
+                   }} />
+                 <span className="unified-v5-return-card__text"><strong>{tx('Tax with Return','রিটার্নসহ কর')}</strong>
+                   <small>{tx('Section 173 · Can be combined with other tax heads','ধারা ১৭৩ · অন্যান্য কর খাতের সঙ্গে পরিশোধ করা যায়')}</small></span>
+               </label>
+               {returnLine && <div className="unified-v5-return-fields" data-testid="unified-v5-return-allocation">
+                 <div><label htmlFor={'unified-v5-return-year-' + returnLine.id}>{tx('Assessment year (AY)','করবর্ষ (AY)')} *</label>
+                   <select id={'unified-v5-return-year-' + returnLine.id} value={returnLine.assessmentYear}
+                     onChange={event => edit(returnLine.id,{assessmentYear:event.target.value})}>
+                     {OTHER_TAX_YEARS.map(year=><option key={year} value={year}>{year}</option>)}
+                   </select></div>
+                 <div><label htmlFor={'unified-v5-return-amount-' + returnLine.id}>{tx('Payment amount (৳)','পরিশোধের পরিমাণ (৳)')} *</label>
+                   <input id={'unified-v5-return-amount-' + returnLine.id} data-testid="unified-v5-return-amount"
+                     type="text" inputMode="decimal" value={returnLine.amount}
+                     onChange={event => {
+                       const next = normalizeGuestAmountInput(event.target.value);
+                       if (next !== null) edit(returnLine.id,{amount:next});
+                     }} placeholder="0.00" />
+                 </div>
+               </div>}
+               </div>
+             </section>}
+             {allowMixedReturn && <h3 className="unified-v5-row-heading unified-v5-tax-head-heading">{tx('Tax head','করের খাত')}</h3>}
             <p className="other-tax-selection-status" role="status">
-              {tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' years · ' + count + ' available non-return payment heads',
-                 new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + 'টি রিটার্ন-বহির্ভূত করের খাত')}
+              {unifiedV3
+                ? tx(new Set(activeOrdinaryLines.map(line => line.headId)).size + ' heads · ' + activeOrdinaryLines.length + ' years · ' + count + ' available non-return payment heads',
+                     new Set(activeOrdinaryLines.map(line => line.headId)).size + 'টি খাত · ' + activeOrdinaryLines.length + 'টি করবর্ষ · ' + count + 'টি অন্যান্য খাত')
+                : activeLines.length
+                ? tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' assessment years selected',
+                  new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ নির্বাচিত')
+                : tx(count + ' payment heads available', count + 'টি করের খাত উপলব্ধ')}
             </p>
             {allocationLimitError && <p className="payment-form-field-error" role="alert" data-testid="combined-allocation-capacity-error">
               {tx('This payment supports up to ' + MAX_COMBINED_ALLOCATIONS + ' beneficiary/head/year allocations. Remove some selections before adding more.',
@@ -317,8 +385,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                       const availableYears = OTHER_TAX_YEARS.filter(year => !headLines.some(line => line.assessmentYear === year));
                       return <li key={head.id} data-head-row={head.id} data-invalid={invalid ? 'true' : undefined}
                         data-highlighted={focused ? 'true' : undefined}
-                        className={invalid ? 'other-tax-row--invalid' : focused ? 'other-tax-row--focused' : headLines.length ? 'bg-blue-50/40' : 'bg-white'}>
-                        <label className={`flex gap-3 items-start px-3 py-3 ${blocked ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-blue-50/60'}`}>
+                        className={invalid ? 'other-tax-row--invalid' : focused ? 'other-tax-row--focused' : 'bg-white'}>
+                        <label className={`flex gap-3 items-start px-3 py-3 ${blocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                           <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-[#2c5ead]"
                             checked={headLines.length > 0} disabled={blocked}
                             onChange={event => toggleHead(head.id, event.target.checked)}
@@ -350,6 +418,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                                 {tx('Assessment year', 'করবর্ষ')} *
                               </label>
                               <select id={`other-tax-year-${line.id}`} value={line.assessmentYear}
+                                onFocus={() => onFocusLine?.(line.id)}
                                 onChange={event => edit(line.id, { assessmentYear: event.target.value })}
                                 className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm">
                                 <option value="" disabled>{tx('Select assessment year','করবর্ষ নির্বাচন করুন')}</option>
@@ -366,6 +435,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                                   <SuggestedAmountInfo suggestion={suggestedAmount} language={language} controlId={amountId} />}
                               </div>
                               <input id={amountId} type="text" inputMode="decimal"
+                                onFocus={() => onFocusLine?.(line.id)}
                                 pattern="[0-9]+([.][0-9]{1,2})?" required
                                 aria-invalid={lineInvalid || undefined}
                                 aria-describedby={lineInvalid ? amountId + '-error' : undefined}
@@ -408,6 +478,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
 
           </div>
         </section>
+        {remarks}
       </div>
       {summary}
     </div>

@@ -265,8 +265,15 @@ test('local sample taxpayer Beneficiaries supports independent lists, manual ent
   await expect(payment.locator('#other-tax-primary-name')).toHaveValue('Synthetic Guest One');
   await expect(payment.getByTestId('other-tax-taxpayer').locator('input[id^="other-tax-tin-"]')).toHaveValue('987654321098');
   await payment.getByRole('button',{name:'Close payment services'}).click();
+  // A signed-in preview payment can offer the approved Save Draft / Discard
+  // recovery dialog. Complete that exit before returning to contact actions.
+  const exitDialog=page.getByRole('alertdialog',{name:'Save your tax payment?'});
+  await expect.poll(async()=>await exitDialog.count()>0||await payment.count()===0).toBe(true);
+  if(await exitDialog.count()>0)
+    await exitDialog.getByRole('button',{name:'Discard tax payment',exact:true}).click();
+  await expect(payment).toHaveCount(0);
 
-  const firstRecord=recordList.filter({hasText:'012345678901'});
+  const firstRecord=recordList.filter({hasText:'012*********'});
   await firstRecord.getByRole('button',{name:'Edit'}).click();
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
   await expect(dialog.locator('#beneficiary-edit-name')).toHaveCount(0);
@@ -278,7 +285,7 @@ test('local sample taxpayer Beneficiaries supports independent lists, manual ent
   await page.getByRole('button',{name:'Selected list'}).click();
   await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Guest Family',exact:true}).click();
 
-  const secondRecord=recordList.filter({hasText:'987654321098'});
+  const secondRecord=recordList.filter({hasText:'987*********'});
   await secondRecord.getByRole('button',{name:'Edit',exact:true}).click();
   dialog=page.getByRole('dialog',{name:'Edit beneficiary'});
   await dialog.getByRole('button',{name:'Delete beneficiary'}).click();

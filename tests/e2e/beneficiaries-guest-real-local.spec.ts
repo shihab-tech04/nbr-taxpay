@@ -31,8 +31,13 @@ test('guest beneficiary API rejects untagged adds and permits only explicit lega
   const endpoint=new URL('/functions/v1/taxpay-guest-beneficiaries',url.origin).href;
   const {randomBytes}=await import('node:crypto');
   const capability=randomBytes(32).toString('base64url');
+  const otherCapability=randomBytes(32).toString('base64url');
   const invoke=(action:string,fields:Record<string,unknown>={})=>request.post(endpoint,{
     headers:{origin:'http://127.0.0.1:4173',apikey:key,'content-type':'application/json','x-taxpay-guest-capability':capability},
+    data:{action,...fields},
+  });
+  const asOther=(action:string,fields:Record<string,unknown>={})=>request.post(endpoint,{
+    headers:{origin:'http://127.0.0.1:4173',apikey:key,'content-type':'application/json','x-taxpay-guest-capability':otherCapability},
     data:{action,...fields},
   });
   let listId='';
@@ -69,6 +74,18 @@ test('guest beneficiary API rejects untagged adds and permits only explicit lega
     expect(restored.status()).toBe(200);
     expect((await restored.json()).success).toBe(true);
 
+    // A second independent capability cannot see or alter the first owner's
+    // tagged records. No production credentials or rows are involved.
+    const openedOther=await asOther('open');
+    expect(openedOther.status()).toBe(200);
+    const otherPeople=await asOther('people',{offset:0,limit:500});
+    expect(otherPeople.status()).toBe(200);
+    expect((await otherPeople.json()).data).toEqual([]);
+    const forbidden=await asOther('add',{listId,rows:[{
+      tin:'012345678905',display_name:'Other owner attempt',tag:'clients',relationship:null,
+    }]});
+    expect([400,403,404]).toContain(forbidden.status());
+
     const readback=await invoke('people',{offset:0,limit:500});
     expect(readback.status()).toBe(200);
     const rows=(await readback.json()).data as Array<{list_id:string;tin:string;tag:string|null;relationship:string|null}>;
@@ -77,10 +94,94 @@ test('guest beneficiary API rejects untagged adds and permits only explicit lega
       expect.objectContaining({tin:'012345678904',tag:null,relationship:null}),
     ]));
     expect(rows.some(row=>row.list_id===listId&&row.tin==='012345678901')).toBe(false);
+    expect(rows.some(row=>row.list_id===listId&&row.tin==='012345678905')).toBe(false);
   }finally{
     if(listId){
       const removed=await invoke('delete-list',{id:listId});
       expect(removed.status()).toBe(200);
     }
+  }
+});
+
+
+test('F-058 US-010 tagged beneficiary survives a fresh browser context and stays private',async({browser})=>{
+  test.setTimeout(120_000);
+  const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL;
+  const key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+  if(!raw||!key)throw new Error('Disposable local Supabase credentials required');
+  const api=new URL(raw);
+  if(api.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(api.hostname))
+    throw new Error('Refusing hosted beneficiary acceptance');
+  const {randomBytes}=await import('node:crypto');
+  const capA=randomBytes(32).toString('base64url');
+  const capB=randomBytes(32).toString('base64url');
+  const endpoint=new URL('/functions/v1/taxpay-guest-beneficiaries',api.origin).href;
+  const first=await browser.newContext();
+  const fresh=await browser.newContext();
+  const other=await browser.newContext();
+  let listId='';
+  const invoke=(context:typeof first,capability:string,action:string,fields:Record<string,unknown>={})=>
+    context.request.post(endpoint,{
+      headers:{origin:'http://127.0.0.1:4173',apikey:key,'content-type':'application/json',
+        'x-taxpay-guest-capability':capability},
+      data:{action,...fields},
+    });
+  const people=async(context:typeof first,capability:string)=>{
+    const response=await invoke(context,capability,'people',{offset:0,limit:500});
+    expect(response.status()).toBe(200);
+    return (await response.json()).data as Array<{
+      id:string;list_id:string;tin:string;display_name:string;tag:string;relationship:string|null
+    }>;
+  };
+  try{
+    const openA=await invoke(first,capA,'open');
+    const openB=await invoke(other,capB,'open');
+    expect(openA.status()).toBe(200);
+    expect(openB.status()).toBe(200);
+
+    const created=await invoke(first,capA,'create-list',{name:'Isolated fictional client list'});
+    expect(created.status()).toBe(200);
+    listId=(await created.json()).data.id;
+    expect(listId).toMatch(/^[0-9a-f-]{36}$/i);
+
+    const saved=await invoke(first,capA,'add',{listId,rows:[{
+      tin:'012345678905',display_name:'Isolated fictional client',
+      tag:'clients',relationship:null,
+    }]});
+    expect(saved.status()).toBe(200);
+    expect((await saved.json()).success).toBe(true);
+
+    const owned=(await people(first,capA)).filter(row=>row.list_id===listId);
+    expect(owned).toEqual(expect.arrayContaining([
+      expect.objectContaining({tin:'012345678905',tag:'clients',relationship:null}),
+    ]));
+
+    // A second independent browser context with the same authorized private
+    // capability must read the persisted SQL row, not a local browser cache.
+    const persisted=(await people(fresh,capA)).filter(row=>row.list_id===listId);
+    expect(persisted).toEqual(expect.arrayContaining([
+      expect.objectContaining({tin:'012345678905',tag:'clients'}),
+    ]));
+
+    // The other fictional owner cannot enumerate the list or its contents.
+    const foreign=(await people(other,capB));
+    expect(foreign.some(row=>row.list_id===listId||row.tin==='012345678905')).toBe(false);
+    // Empty owner snapshots are not required here: the real private people
+    // endpoint above is the precise row-level read boundary for this test.
+
+    // A failed cross-owner attempt must not alter the first owner's stored row.
+    const attempted=await invoke(other,capB,'add',{listId,rows:[{
+      tin:'012345678906',display_name:'Unauthorized fictional write',
+      tag:'clients',relationship:null,
+    }]});
+    expect(attempted.ok()).toBe(false);
+    const after=(await people(fresh,capA)).filter(row=>row.list_id===listId);
+    expect(after).toEqual(owned);
+  }finally{
+    if(listId){
+      const removed=await invoke(first,capA,'delete-list',{id:listId});
+      expect(removed.status()).toBe(200);
+    }
+    await Promise.all([first.close(),fresh.close(),other.close()]);
   }
 });
