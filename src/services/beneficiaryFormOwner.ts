@@ -8,6 +8,12 @@ export type BeneficiaryPreviewOwner={
   paymentSessionId:string;
 };
 
+export type BeneficiaryOwnerContext={
+  ownerUid:string|null;
+  ownerKey:string|null;
+  checkingIdentity:boolean;
+};
+
 export function beneficiaryFormOwnerKey(
   authUid:string|null,
   previewAccountId:string|null,
@@ -26,4 +32,15 @@ export function beneficiaryFormOwnerKey(
 
 export function beneficiaryFormOwnerUnchanged(openedFor:string|null,current:string|null):boolean{
   return openedFor!==null && openedFor===current;
+}
+
+/** A saved-row editor is valid only for the Auth UID and preview capability
+ * captured when the row was opened, and only after identity resolution ends.
+ */
+export function beneficiaryOwnerContextUnchanged(
+  opened:BeneficiaryOwnerContext,
+  current:BeneficiaryOwnerContext,
+):boolean{
+  return !current.checkingIdentity && opened.ownerUid===current.ownerUid &&
+    beneficiaryFormOwnerUnchanged(opened.ownerKey,current.ownerKey);
 }

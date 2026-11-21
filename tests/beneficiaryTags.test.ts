@@ -76,11 +76,11 @@ test('Edit beneficiary covers fixed tags, family relations, Others and optional 
   assert.match(screen,/value=\{beneficiaryChoiceValue\(editTag,editRelationship\)\}/);
   assert.doesNotMatch(screen,/id="beneficiary-edit-relationship"/);
   assert.match(screen,/id="beneficiary-edit-other-label" required maxLength=\{80\}/);
-  assert.match(screen,/editBeneficiaryClassification\(owner,editPerson,editTargetList,classification\)/);
+  assert.match(screen,/editBeneficiaryClassification\(editOwnerContext\.ownerUid,editPerson,editTargetList,classification\)/);
   assert.match(screen,/Move to list \(optional\)/);
   assert.match(screen,/setEditTargetList\(person\.list_id\)/);
   assert.match(screen,/const editLegacyMove=/);
-  assert.match(screen,/await moveBeneficiary\(owner,editPerson\.id,editPerson\.list_id,editTargetList\)/);
+  assert.match(screen,/await moveBeneficiary\(editOwnerContext\.ownerUid,editPerson\.id,editPerson\.list_id,editTargetList\)/);
   assert.doesNotMatch(screen,/editTargetList===editPerson\.list_id\}\>/);
   assert.match(service,/export async function editBeneficiaryClassification/);
   assert.match(service,/\.eq\('owner_uid',ownerUid\)\.eq\('list_id',person\.list_id\)/);

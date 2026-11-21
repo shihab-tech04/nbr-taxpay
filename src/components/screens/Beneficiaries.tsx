@@ -9,7 +9,7 @@ import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRe
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
 import {recordAccountActivity} from '../../services/accountActivity';
 import {activePreviewSession,getPreviewSettings,savePreviewSetting} from '../../services/previewAccountSession';
-import {beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged} from '../../services/beneficiaryFormOwner';
+import {beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged,beneficiaryOwnerContextUnchanged,type BeneficiaryOwnerContext} from '../../services/beneficiaryFormOwner';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
@@ -112,6 +112,7 @@ export function Beneficiaries(){
   const [selectedIds,setSelectedIds]=useState<string[]>([]);
   const [profileSelection,setProfileSelection]=useState<{id:string;account:string}|null>(null);
   const [editPerson,setEditPerson]=useState<Beneficiary|null>(null);
+  const editOwnerContextRef=useRef<BeneficiaryOwnerContext>({ownerUid:null,ownerKey:null,checkingIdentity:true});
   const [editTargetList,setEditTargetList]=useState('');
   const [editTag,setEditTag]=useState<BeneficiaryTag|''>('');
   const [editRelationship,setEditRelationship]=useState<BeneficiaryRelation|''>('');
@@ -162,6 +163,7 @@ export function Beneficiaries(){
   // capability. Changing profiles or regenerating a capability invalidates it.
   const formOwnerRef=useRef<string|null>(null);
   const createListOwnerRef=useRef<string|null>(null);
+  const currentOwnerContextRef=useRef<BeneficiaryOwnerContext>({ownerUid:owner,ownerKey:null,checkingIdentity:true});
   // The legacy demoUser fixture exists only on the loopback development server.
   // In public production, a signed preview capability remains mandatory.
   const localFixture=()=>
@@ -170,6 +172,15 @@ export function Beneficiaries(){
   const activeFormOwner=()=>beneficiaryFormOwnerKey(owner,
     previewAccount?.id??(localFixture()?demoUser?.id??null:null),
     activePreviewSession(),localFixture());
+  // Keep live owner state available to async edits after this render changes.
+  const currentOwnerKey=activeFormOwner();
+  currentOwnerContextRef.current={ownerUid:owner,ownerKey:currentOwnerKey,checkingIdentity};
+  useEffect(()=>{
+    if(!editPerson||beneficiaryOwnerContextUnchanged(editOwnerContextRef.current,currentOwnerContextRef.current))return;
+    editOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+    setEditPerson(null);setEditTargetList('');setModalError('');
+    setNotice({en:'Your account changed. Reopen this beneficiary before editing.',bn:'আপনার অ্যাকাউন্ট বদলেছে। সম্পাদনার আগে এই উপকারভোগীটি আবার খুলুন।'});
+  },[owner,checkingIdentity,previewAccount?.id,currentOwnerKey,editPerson]);
   const maySaveFor=(captured:string|null)=>!checkingIdentity&&
     beneficiaryFormOwnerUnchanged(captured,activeFormOwner());
   const accountChangedMessage=()=>tr('Your account changed. Cancel and reopen this form before saving.',
@@ -481,13 +492,23 @@ export function Beneficiaries(){
   }
 
   function openPersonEditor(person:Beneficiary){
+    editOwnerContextRef.current={ownerUid:owner,ownerKey:activeFormOwner(),checkingIdentity};
     setEditPerson(person);setEditTargetList(person.list_id);
     setEditTag(person.tag??'');setEditRelationship(person.relationship??'');
     setEditOtherLabel(person.other_label??'');setModalError('');
   }
+  function closePersonEditor(){
+    editOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+    setEditPerson(null);setEditTargetList('');setModalError('');
+  }
   async function saveEdit(event:React.FormEvent){
     event.preventDefault();
     if(!editPerson)return;
+    const editOwnerContext=editOwnerContextRef.current;
+    const editOwnerIsCurrent=()=>beneficiaryOwnerContextUnchanged(editOwnerContext,currentOwnerContextRef.current);
+    if(!editOwnerIsCurrent()){
+      setModalError(accountChangedMessage());return;
+    }
     if(!lists.some(list=>list.id===editTargetList)){
       setModalError(tr('Choose a valid saved list.','সঠিক সংরক্ষিত তালিকা বাছুন।'));return;
     }
@@ -504,11 +525,13 @@ export function Beneficiaries(){
     setBusy(true);setModalError('');
     try{
       if(editLegacyMove){
-        await moveBeneficiary(owner,editPerson.id,editPerson.list_id,editTargetList);
+        await moveBeneficiary(editOwnerContext.ownerUid,editPerson.id,editPerson.list_id,editTargetList);
       }else{
-        await editBeneficiaryClassification(owner,editPerson,editTargetList,classification);
+        await editBeneficiaryClassification(editOwnerContext.ownerUid,editPerson,editTargetList,classification);
       }
-      const saved=await reload(editTargetList);
+      if(!editOwnerIsCurrent())throw new Error(accountChangedMessage());
+      const saved=await loadBeneficiaries(editOwnerContext.ownerUid,{forceFresh:true});
+      if(!editOwnerIsCurrent())throw new Error(accountChangedMessage());
       const matching=saved.people.find(person=>person.id===editPerson.id);
       if(!matching||matching.list_id!==editTargetList||(matching.tag??null)!==classification.tag||
         (matching.relationship??null)!==classification.relationship||
@@ -516,15 +539,22 @@ export function Beneficiaries(){
         throw new Error(tr('Updated beneficiary could not be verified. Refresh and retry.',
           'উপকারভোগীর পরিবর্তন যাচাই করা যায়নি। রিফ্রেশ করে আবার চেষ্টা করুন।'));
       }
+      setLists(saved.lists);setPeople(saved.people);setActiveList(editTargetList);setSelectedIds([]);
+      rememberList(editTargetList);
       const onlyMoved=editTargetList!==editPerson.list_id &&
         classification.tag===(editPerson.tag??null) &&
         classification.relationship===(editPerson.relationship??null) &&
         classification.other_label===(editPerson.other_label??null);
-      setEditPerson(null);setEditTargetList('');
+      closePersonEditor();
       setNotice(onlyMoved
         ?{en:'Beneficiary moved to the selected list.',bn:'উপকারভোগী নির্বাচিত তালিকায় স্থানান্তরিত হয়েছেন।'}
         :{en:'Beneficiary details updated.',bn:'উপকারভোগীর তথ্য হালনাগাদ হয়েছে।'});
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){
+      if(!editOwnerIsCurrent()){
+        closePersonEditor();
+        setNotice({en:'Your account changed. Cancel and reopen this beneficiary before editing.',bn:'আপনার অ্যাকাউন্ট বদলেছে। সম্পাদনার আগে এই উপকারভোগীটি বাতিল করে আবার খুলুন।'});
+      }else setModalError(e instanceof Error?e.message:String(e));
+    }
     finally{setBusy(false);}
   }
 
@@ -968,10 +998,10 @@ export function Beneficiaries(){
     </TaxPayModal>}
 
     {editPerson&&!deletePerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')} ariaLabel={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')}
-      onClose={()=>{if(!busy){setEditPerson(null);setEditTargetList('');setModalError('');}}} initialFocusSelector="#beneficiary-edit-tag"
+      onClose={()=>{if(!busy)closePersonEditor();}} initialFocusSelector="#beneficiary-edit-tag"
       footer={<div className="beneficiary-list-edit__footer">
          <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-red-700 hover:bg-red-50" onClick={()=>{setModalError('');setDeletePerson(editPerson);}}><Trash2 size={17} aria-hidden="true"/>{tr('Delete beneficiary','উপকারভোগী মুছুন')}</UiButton>
-         <div className="flex items-center gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>{setEditPerson(null);setEditTargetList('');setModalError('');}}>{tr('Cancel','বাতিল')}</UiButton>
+         <div className="flex items-center gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={closePersonEditor}>{tr('Cancel','বাতিল')}</UiButton>
            <UiButton type="submit" form="beneficiary-edit-form" variant="primary" disabled={busy||!editHasChanges||!editValid}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>
        </div>}>
       <form id="beneficiary-edit-form" className="space-y-3 py-2" onSubmit={event=>void saveEdit(event)}>

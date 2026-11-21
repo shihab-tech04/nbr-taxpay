@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
-import {beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged} from '../src/services/beneficiaryFormOwner';
+import {beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged,beneficiaryOwnerContextUnchanged} from '../src/services/beneficiaryFormOwner';
 
 const preview={profileId:'user1',capability:'A'.repeat(43),paymentSessionId:'11111111-1111-4111-8111-111111111111'};
 
@@ -31,10 +31,21 @@ test('anonymous or mismatched preview context never permits a beneficiary write'
   assert.equal(beneficiaryFormOwnerUnchanged(null,'auth:auth-user-a'),false);
 });
 
+test('saved-row retag editor rejects an account, preview capability or identity-resolution change',()=>{
+  const auth={ownerUid:'auth-user-a',ownerKey:'auth:auth-user-a',checkingIdentity:false};
+  assert.equal(beneficiaryOwnerContextUnchanged(auth,auth),true);
+  assert.equal(beneficiaryOwnerContextUnchanged(auth,{...auth,ownerUid:'auth-user-b',ownerKey:'auth:auth-user-b'}),false);
+  const guest={ownerUid:null,ownerKey:beneficiaryFormOwnerKey(null,'user1',preview),checkingIdentity:false};
+  assert.equal(beneficiaryOwnerContextUnchanged(guest,guest),true);
+  assert.equal(beneficiaryOwnerContextUnchanged(guest,{...guest,ownerKey:beneficiaryFormOwnerKey(null,'user1',{...preview,capability:'B'.repeat(43)})}),false);
+  assert.equal(beneficiaryOwnerContextUnchanged(guest,{...guest,checkingIdentity:true}),false);
+});
+
 test('every beneficiary write form rechecks its captured owner before its API mutation',()=>{
   const source=readFileSync(new URL('../src/components/screens/Beneficiaries.tsx',import.meta.url),'utf8');
   const body=(name:string)=>{
-    const start=source.indexOf(`async function ${name}(`);
+    const start=[`async function ${name}(`,`function ${name}(`]
+      .map(marker=>source.indexOf(marker)).find(index=>index>=0)??-1;
     assert.notEqual(start,-1,`${name} handler exists`);
     const end=source.indexOf('\n  }',start);
     assert.notEqual(end,-1,`${name} handler has a body`);
@@ -55,4 +66,16 @@ test('every beneficiary write form rechecks its captured owner before its API mu
   const resolve=body('resolveList');
   assert.ok(resolve.indexOf('maySaveFor(')>=0);
   assert.ok(resolve.indexOf('createBeneficiaryList(owner,listName)')>resolve.indexOf('maySaveFor('));
+  const openEdit=body('openPersonEditor');
+  assert.match(openEdit,/editOwnerContextRef\.current=\{ownerUid:owner,ownerKey:activeFormOwner\(\),checkingIdentity\}/);
+  const edit=body('saveEdit');
+  const editOwnerCheck=edit.indexOf('if(!editOwnerIsCurrent())');
+  const editWrites=[edit.indexOf('moveBeneficiary(editOwnerContext.ownerUid,'),edit.indexOf('editBeneficiaryClassification(editOwnerContext.ownerUid,')].filter(i=>i>=0);
+  assert.ok(editOwnerCheck>=0,'saveEdit rejects a stale owner before changing a tagged row');
+  assert.ok(editWrites.length===2,'both retag and legacy-move paths use the captured owner');
+  assert.ok(editWrites.every(i=>i>editOwnerCheck),'the captured owner check precedes both edit paths');
+  assert.ok(edit.indexOf('if(!editOwnerIsCurrent())throw new Error(accountChangedMessage())')>Math.max(...editWrites),
+    'saveEdit checks the captured owner after the write before readback');
+  assert.ok(edit.includes('loadBeneficiaries(editOwnerContext.ownerUid,{forceFresh:true})'),
+    'readback is scoped to the editor owner captured when the row was opened');
 });
