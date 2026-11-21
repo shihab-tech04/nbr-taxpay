@@ -58,20 +58,6 @@ async function setupGuestTransport(page:Page){
   return {saved:()=>Array.from(sessions.values()).flatMap(session=>session.people),suppressClassificationReadback:(value:boolean)=>{suppressClassificationReadback=value;}};
 }
 
-async function beneficiarySaveDebug(page:Page,people:MockGuestPerson[]){
-  return JSON.stringify({
-    stored:people.map(person=>({tinSuffix:person.tin.slice(-4),listId:person.list_id,name:person.display_name,
-      tag:person.tag,relationship:person.relationship,otherLabel:person.other_label})),
-    selectedList:await page.locator('#beneficiary-list').textContent().catch(()=>null),
-    openDialogs:await page.locator('.taxpay-modal[role="dialog"]').count(),
-    alerts:await page.locator('[role="alert"]').allTextContents(),
-    beneficiarySection:await page.locator('.beneficiary-register-frame').innerText().catch(()=>null),
-    recordRegionCount:await page.getByTestId('beneficiary-records').count(),
-    desktopRowCount:await page.locator('[data-testid="beneficiary-records"] table tbody tr').count(),
-    mobileCardCount:await page.locator('[data-testid="beneficiary-records"] ul.taxpay-mobile-table-cards > li').count(),
-  });
-}
-
 test('local sample taxpayer preserves names when moving beneficiaries across lists and prefilling',async({page})=>{
   const transport=await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
@@ -96,8 +82,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await chooseBeneficiaryOption(dialog,'beneficiary-tag','clients');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
   const visibleRecords=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
-  const row=visibleRecords.getByText('Name not provided',{exact:true});
-  if(await row.count()===0)console.info('[F058 beneficiary save diagnostic]',await beneficiarySaveDebug(page,transport.saved()));
+  const row=visibleRecords.filter({hasText:'Name not provided'});
   await expect(row).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='012345678901')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
@@ -131,7 +116,7 @@ test('local sample taxpayer preserves names when moving beneficiaries across lis
   await chooseBeneficiaryOption(dialog,'beneficiary-tag','others');
   await dialog.locator('#beneficiary-other-label').fill('Other contact');
   await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
-  await expect(visibleRecords.getByText('Name not provided',{exact:true})).toHaveCount(2);
+  await expect(visibleRecords.filter({hasText:'Name not provided'})).toHaveCount(2);
   expect(transport.saved().find(person=>person.tin==='123456789012')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 
   const intendedRecord=visibleRecords.filter({hasText:'012*********'});
@@ -159,8 +144,7 @@ test('Bengali Beneficiaries labels the optional-name fallback in Bengali',async(
   await chooseBeneficiaryOption(dialog,'beneficiary-tag','friends_family:mother');
   await dialog.getByRole('button',{name:'উপকারভোগী যোগ',exact:true}).click();
   const visibleRecords=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
-  const row=visibleRecords.getByText('নাম দেওয়া হয়নি',{exact:true});
-  if(await row.count()===0)console.info('[F058 Bengali beneficiary save diagnostic]',await beneficiarySaveDebug(page,transport.saved()));
+  const row=visibleRecords.filter({hasText:'নাম দেওয়া হয়নি'});
   await expect(row).toHaveCount(1);
   expect(transport.saved().find(person=>person.tin==='123450987654')?.display_name).toBe(BENEFICIARY_NAME_NOT_PROVIDED);
 });
