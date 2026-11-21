@@ -41,7 +41,7 @@ test('Each record has exactly Edit and secondary Make payment; deletion is confi
     assert.doesNotMatch(part,/setDeletePerson\(person\)/,label+' row deletion removed');
   }
   assert.match(page,/\{editPerson&&!deletePerson&&<TaxPayModal/);
-  assert.match(page,/setDeletePerson\(editPerson\)/);
+  assert.match(page,/requestDeletePerson\(editPerson\)/);
   assert.match(page,/Delete beneficiary/);
   assert.match(page,/Confirm beneficiary removal/);
   assert.match(page,/setEditPerson\(null\);setModalError\(''\)/);

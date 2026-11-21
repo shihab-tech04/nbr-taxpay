@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
-import {beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged,beneficiaryOwnerContextUnchanged} from '../src/services/beneficiaryFormOwner';
+import {beneficiaryDeleteFailureMayHaveCommitted,beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged,beneficiaryOwnerContextUnchanged} from '../src/services/beneficiaryFormOwner';
 
 const preview={profileId:'user1',capability:'A'.repeat(43),paymentSessionId:'11111111-1111-4111-8111-111111111111'};
 
@@ -39,6 +39,13 @@ test('saved-row retag editor rejects an account, preview capability or identity-
   assert.equal(beneficiaryOwnerContextUnchanged(guest,guest),true);
   assert.equal(beneficiaryOwnerContextUnchanged(guest,{...guest,ownerKey:beneficiaryFormOwnerKey(null,'user1',{...preview,capability:'B'.repeat(43)})}),false);
   assert.equal(beneficiaryOwnerContextUnchanged(guest,{...guest,checkingIdentity:true}),false);
+});
+
+test('delete recovery reconciles ambiguous transport failures but preserves deterministic denials',()=>{
+  assert.equal(beneficiaryDeleteFailureMayHaveCommitted(new TypeError('Failed to fetch')),true);
+  assert.equal(beneficiaryDeleteFailureMayHaveCommitted(new Error('The beneficiary is no longer saved. Refresh and try again.')),false);
+  assert.equal(beneficiaryDeleteFailureMayHaveCommitted({status:403}),false);
+  assert.equal(beneficiaryDeleteFailureMayHaveCommitted({status:502}),true);
 });
 
 test('every beneficiary write form rechecks its captured owner before its API mutation',()=>{
@@ -104,6 +111,9 @@ test('saved-beneficiary deletion is bound to the captured edit owner and verifie
     'the owner context is checked again after the asynchronous readback');
   assert.ok(remove.includes('saved.people.some(item=>item.id===person.id)'),
     'the UI reports success only after the deleted row is absent in owner-scoped readback');
-  assert.ok(remove.indexOf('const recovered=await loadBeneficiaries(deleteOwnerContext.ownerUid,{forceFresh:true})')>postReadback,
+  const recover=remove.indexOf('if(beneficiaryDeleteFailureMayHaveCommitted(e)){');
+  assert.ok(recover>postReadback,
+    'the recovery read is only attempted after a failure that may have committed');
+  assert.ok(remove.indexOf('const recovered=await loadBeneficiaries(deleteOwnerContext.ownerUid,{forceFresh:true})')>recover,
     'a dropped first readback gets a fresh owner-scoped recovery read before retry is offered');
 });

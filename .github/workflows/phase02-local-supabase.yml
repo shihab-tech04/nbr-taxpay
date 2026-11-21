@@ -114,7 +114,10 @@ jobs:
         run: |
           set -euo pipefail
           supabase functions serve --no-verify-jwt > "$RUNNER_TEMP/guest-beneficiaries-edge.log" 2>&1 &
-          for attempt in $(seq 1 30); do
+          # A cold Deno Edge Function compile can outlast the first minute after
+          # disposable Supabase startup. Keep the exact fail-closed probe, with
+          # a bounded three-minute readiness window before the gate fails.
+          for attempt in $(seq 1 90); do
             code=$(curl --silent --show-error --output "$RUNNER_TEMP/guest-beneficiaries-probe.json" --write-out '%{http_code}' --max-time 5 \
               --request POST \
               --header "apikey: $TAXPAY_LOCAL_SUPABASE_ANON_KEY" \

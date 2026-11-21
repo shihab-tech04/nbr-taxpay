@@ -9,7 +9,7 @@ import {createBeneficiaryAutoRefreshGate} from '../../services/beneficiaryAutoRe
 import {rememberedBeneficiaryListId,saveAccountViewPreference} from '../../services/accountViewPreferences';
 import {recordAccountActivity} from '../../services/accountActivity';
 import {activePreviewSession,getPreviewSettings,savePreviewSetting} from '../../services/previewAccountSession';
-import {beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged,beneficiaryOwnerContextUnchanged,type BeneficiaryOwnerContext} from '../../services/beneficiaryFormOwner';
+import {beneficiaryDeleteFailureMayHaveCommitted,beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged,beneficiaryOwnerContextUnchanged,type BeneficiaryOwnerContext} from '../../services/beneficiaryFormOwner';
 import {Check, ChevronDown, ChevronRight, CreditCard, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, UserPlus, UsersRound} from 'lucide-react';
 import {useAccountIdentity} from '../../services/accountIdentity';
 import {useTaxState} from '../../services/taxState';
@@ -618,24 +618,26 @@ export function Beneficiaries(){
       setNotice({en:'Beneficiary removed.',bn:'উপকারভোগী সরানো হয়েছে।'});
     }catch(e){
       if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
-      // A successful DELETE can outlive a dropped readback response. Retry the
-      // owner-scoped read before leaving a stale confirmation that cannot succeed twice.
-      try{
-        const recovered=await loadBeneficiaries(deleteOwnerContext.ownerUid,{forceFresh:true});
-        if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
-        if(!recovered.people.some(item=>item.id===person.id)){
-          setLists(recovered.lists);setPeople(recovered.people);
-          setSelectedIds(ids=>ids.filter(id=>id!==person.id));
-          setActiveList(current=>current==='all'||recovered.lists.some(list=>list.id===current)?current:'all');
-          deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
-          setDeletePerson(null);setEditPerson(null);setModalError('');
-          setNotice({en:'Beneficiary removed.',bn:'উপকারভোগী সরানো হয়েছে।'});
-          return;
-        }
-      }catch{
-        if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
-      }
       const message=e instanceof Error?e.message:String(e);
+      // A lost response may follow a committed DELETE. Reconcile only ambiguous
+      // transport/server failures; zero-row and authorization failures stay visible.
+      if(beneficiaryDeleteFailureMayHaveCommitted(e)){
+        try{
+          const recovered=await loadBeneficiaries(deleteOwnerContext.ownerUid,{forceFresh:true});
+          if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+          if(!recovered.people.some(item=>item.id===person.id)){
+            setLists(recovered.lists);setPeople(recovered.people);
+            setSelectedIds(ids=>ids.filter(id=>id!==person.id));
+            setActiveList(current=>current==='all'||recovered.lists.some(list=>list.id===current)?current:'all');
+            deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+            setDeletePerson(null);setEditPerson(null);setModalError('');
+            setNotice({en:'Beneficiary removed.',bn:'উপকারভোগী সরানো হয়েছে।'});
+            return;
+          }
+        }catch{
+          if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+        }
+      }
       setModalError(message==='The beneficiary is no longer saved. Refresh and try again.'
         ?tr('The beneficiary is no longer saved. Refresh and try again.',
           'উপকারভোগীটি আর সংরক্ষিত নেই। রিফ্রেশ করে আবার চেষ্টা করুন।')
