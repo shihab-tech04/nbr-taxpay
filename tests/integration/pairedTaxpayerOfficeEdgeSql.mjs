@@ -733,6 +733,16 @@ try{
     await verifyWs3BrowserOrigin({request,psql,sqlText,sourceDb,officeDb,officeToken,
       sourceSha:process.env.WS1_SOURCE_SHA});
   }
+  // The Work A and F-039 browser acceptance helpers also write Office UI
+  // fixtures. Restore the F-178 SQL-backed parent after they finish so the
+  // guarded remarks UI test reads this payment ID and the exact SQL value
+  // verified above, rather than an unrelated payment without remarks.
+  writeFileSync(officeUiFixtureOut,JSON.stringify(officeUiFixture),{mode:0o600});
+  const finalOfficeUiFixture=JSON.parse(readFileSync(officeUiFixtureOut,'utf8'));
+  assert.equal(finalOfficeUiFixture.payment.id,sourceId,
+    'The Office UI must receive the same F-178 Taxpayer/Office SQL parent');
+  assert.equal(finalOfficeUiFixture.expected.challanRemarks,challanRemarks,
+    'The final Office UI fixture must retain the exact guarded SQL remarks');
   console.log('PASS: separate disposable Taxpayer and Office SQL through existing Edge handlers; combined multi-recipient v3 allocations, distinct Pay Again parent lineage and separate Travel Tax passengers, exact amounts/years/heads, payer, receipt/certificate, authorized readback and passport redaction, recipient notice isolation, Office outage recovery, idempotent replay/conflict immutability, and single source/Office notices');
 }finally{
   await Promise.all([taxpayerServer,officeServer,recipientServer].map(server=>new Promise(resolve=>server.close(resolve))));
