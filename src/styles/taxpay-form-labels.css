@@ -38,9 +38,9 @@
   grid-column: 1 / -1;
   min-width: 0;
 }
-/* Share the input field's full row box while pinning the action to its bottom edge. */
+/* Keep the desktop lookup action's own box aligned to the input bottom. */
 .taxpay-citizen-shell .travel-flow__passport-action {
-  align-self: stretch;
+  align-self: end;
   justify-content: flex-end;
 }
 .taxpay-citizen-shell .travel-flow__passport-input {
@@ -191,7 +191,15 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
-  .taxpay-citizen-shell .travel-flow__passport-action button { width: 100%; }
+  .taxpay-citizen-shell .travel-flow__passport-action {
+    align-self: stretch;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .taxpay-citizen-shell .travel-flow__passport-action button {
+    width: 100%;
+    box-sizing: border-box;
+  }
 }
 @media (max-width: 560px) {
   /* Preserve the approved phone-only suggestion and identity-card breakpoints. */
