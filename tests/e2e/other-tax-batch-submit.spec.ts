@@ -94,11 +94,14 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
   expect(sourceReadbacks).toBe(1);
   await page.reload();
   dialog=await openOtherTax(page);
-  await expect(dialog.getByRole('heading',{name:'Simulation saved — Office sync pending'})).toBeVisible();
+  // A refresh keeps the exact idempotent request, but the new page must not
+  // claim it is saved until a fresh capability-scoped SQL readback succeeds.
+  await expect(dialog.getByRole('heading',{name:'Simulation confirmation pending'})).toBeVisible();
+  await expect(dialog.locator('.payment-lifecycle__overview').locator('strong').first()).toContainText('50');
   await expect(dialog.getByRole('button',{name:'Back',exact:true})).toHaveCount(0);
-  await dialog.getByRole('button',{name:'Retry Office synchronization'}).click();
+  await dialog.getByRole('button',{name:'Retry payment confirmation'}).click();
   await expect(dialog.getByRole('heading',{name:'Simulation saved — Office sync pending'})).toBeVisible({timeout:15000});
-  await expect(dialog.getByRole('alert')).toContainText('Some payment records are pending. Retry the same request.');
+  await expect(dialog.getByRole('alert')).toContainText('Office synchronization is still pending. Retry the same request.');
   expect(saved.size).toBe(1);
   expect(calls).toHaveLength(2);
   expect(sourceReadbacks).toBe(2);
