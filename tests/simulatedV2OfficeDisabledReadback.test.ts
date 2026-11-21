@@ -34,7 +34,7 @@ test('V2 simulation-only SQL acknowledgement is accepted only after exact source
   try {
     const result=await persistSimulatedPayment(input);
     assert.deepEqual(result,{success:true,id:paymentId,status:'SIMULATED_SUCCESS',
-      mirrored:false,simulationOnly:true});
+      mirrored:false,officeSyncStatus:'DISABLED',simulationOnly:true});
     assert.deepEqual(methods,['POST','GET']);
   }finally{globalThis.fetch=original;}
 });

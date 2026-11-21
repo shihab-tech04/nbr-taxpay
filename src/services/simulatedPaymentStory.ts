@@ -15,6 +15,7 @@ export type StoryPaymentAcknowledgement = {
   id: string;
   status: 'SIMULATED_SUCCESS';
   mirrored: boolean;
+  officeSyncStatus?: 'SYNCED' | 'PENDING' | 'DISABLED';
   simulationOnly: true;
 };
 type StoredStoryPayment = {
@@ -202,7 +203,7 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
     Object.prototype.hasOwnProperty.call(scoped.details,'paymentRemarks');
   let acknowledged: StoryPaymentAcknowledgement;
   if (mirroredAcknowledgement && !hasExplicitChallanRemarks) {
-    acknowledged = body as StoryPaymentAcknowledgement;
+    acknowledged = { ...(body as StoryPaymentAcknowledgement), officeSyncStatus: 'SYNCED' };
   } else if (mirroredAcknowledgement || storedWithoutOffice || officeMirrorPending) {
     const paymentId = mirroredAcknowledgement || storedWithoutOffice ? body.id! : body.requestId!;
     // A successful Office mirror is not a substitute for reading the original
@@ -219,8 +220,9 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
         !sourceReadbackMatches(stored.data, paymentId, scoped))
       throw new Error('SIMULATION_READBACK_MISMATCH');
     acknowledged = mirroredAcknowledgement
-      ? body as StoryPaymentAcknowledgement
-      : {success:true,id:paymentId,status:'SIMULATED_SUCCESS',mirrored:false,simulationOnly:true};
+      ? { ...(body as StoryPaymentAcknowledgement), officeSyncStatus: 'SYNCED' }
+      : {success:true,id:paymentId,status:'SIMULATED_SUCCESS',mirrored:false,
+        officeSyncStatus:officeMirrorPending ? 'PENDING' : 'DISABLED',simulationOnly:true};
   } else {
     throw new Error(body.error || 'SIMULATION_SUBMISSION_PENDING');
   }

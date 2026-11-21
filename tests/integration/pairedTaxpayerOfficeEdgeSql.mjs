@@ -24,7 +24,7 @@ assert.notEqual(new URL(sourceDb).port,new URL(officeDb).port,'Taxpayer and Offi
 const officeSecret='ws3-disposable-shared-mirror-secret';
 // Reuse the active MAKER fixture installed by pairedCorrectionOfficeSql.mjs.
 const officerId='80000000-0000-4000-8000-000000000011';
-// Keep the outsider distinct from the active REVIEWER fixture, which uses the old 012 ID.
+// Use an identity outside the seeded MAKER/REVIEWER/APPROVER identities.
 const unauthorizedOfficerId=randomUUID();
 const officeToken='ws3-disposable-authorized-office-session';
 const servers={};
@@ -318,8 +318,15 @@ try{
       'COMMIT;'
     ].join('\n'),encoding:'utf8'
   });
+  const outsiderRoleCount=psql(officeDb,
+    `SELECT count(*) FROM payment_sync.officer_roles WHERE user_uid=${sqlText(unauthorizedOfficerId)}::uuid AND active AND role IN ('MAKER','REVIEWER','APPROVER');`);
+  assert.equal(outsiderRoleCount,0,'The denial fixture must have no active privileged Office role');
   assert.notEqual(unauthorizedRemarks.status,0,
     'A non-officer must not read Office challan remarks');
+  assert.match(unauthorizedRemarks.stderr,/Active authorized Office payment officer required/,
+    'The guarded Office SQL RPC must fail at its active-role check');
+  assert.ok(!unauthorizedRemarks.stdout.includes(challanRemarks),
+    'A denied officer read must not return taxpayer remarks');
   const officeUiFixtureOut=process.env.WS3_OFFICE_UI_FIXTURE_OUT;
   if(officeUiFixtureOut)writeFileSync(officeUiFixtureOut,JSON.stringify({
     payment:row,
