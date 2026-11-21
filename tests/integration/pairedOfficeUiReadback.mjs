@@ -57,6 +57,7 @@ try {
   let missingBearer = false;
   let missingRemarksBearer = false;
   let wrongRemarksPaymentId = false;
+  let failFirstRemarksRead = true;
   let routeError = null;
   await page.route('**/*', (route) => {
     const url = new URL(route.request().url());
@@ -120,6 +121,11 @@ try {
         return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ message: 'Payment identity mismatch' }) });
       }
       remarksRequests++;
+      if (failFirstRemarksRead) {
+        failFirstRemarksRead = false;
+        return route.fulfill({ status: 503, contentType: 'application/json',
+          body: JSON.stringify({ message: 'Temporary Office SQL read outage' }) });
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -167,6 +173,19 @@ try {
   await page.getByRole('button', { name: 'View Details' }).first().click();
   const drawer = page.locator('.dynamic-drawer');
   await drawer.waitFor({ state: 'visible', timeout: 10000 });
+  const guardedRemarksControl = drawer.locator('[data-testid="office-guarded-challan-remarks"]');
+  await page.waitForFunction(({ selector }) =>
+    Boolean(document.querySelector(selector)?.querySelector('[role="alert"]')),
+  { selector: '.dynamic-drawer [data-testid="office-guarded-challan-remarks"]' }, { timeout: 10000 });
+  const remarksRetryButton = guardedRemarksControl.getByRole('button', { name: 'Retry', exact: true });
+  assert.equal(await remarksRetryButton.count(), 1,
+    'Office must expose a retry after the authorized SQL read fails');
+  await remarksRetryButton.click();
+  await page.waitForFunction(({ selector, expected }) =>
+    document.querySelector(selector)?.querySelector('span')?.textContent === expected,
+  { selector: '.dynamic-drawer [data-testid="office-guarded-challan-remarks"]',
+    expected: fixture.expected.challanRemarks }, { timeout: 10000 });
+  assert.equal(remarksRequests, 2, 'Office retry must issue a fresh officer-guarded SQL read');
   const drawerText = await drawer.innerText();
   // The same drawer must work for both the original fixed SQL fixture and
   // a current Work A browser-generated payment. Never assert that a real
@@ -287,7 +306,7 @@ try {
   assert.equal(routeError, null, routeError || undefined);
   await page.locator('.payment-module__table-card .card-table__action-btn').first().click();
   await verifyVisibleAllocations('bn');
-  console.log('PASS Office #270 UI readback EN/BN refresh: paired parent ' + payment.id +
+  console.log('PASS Office #270 UI readback EN/BN refresh and error/retry: paired parent ' + payment.id +
     ', exact officer-guarded BN/EN multiline remarks, two individually verified immutable allocations, payer, beneficiaries, heads/years/exact amounts, original receipt/certificate references and authorized Office readback');
 } finally {
   if (browser) await browser.close();
