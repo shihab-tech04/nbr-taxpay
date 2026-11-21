@@ -174,9 +174,34 @@ try {
   const drawer = page.locator('.dynamic-drawer');
   await drawer.waitFor({ state: 'visible', timeout: 10000 });
   const guardedRemarksControl = drawer.locator('[data-testid="office-guarded-challan-remarks"]');
-  await page.waitForFunction(({ selector }) =>
-    Boolean(document.querySelector(selector)?.querySelector('[role="alert"]')),
-  { selector: '.dynamic-drawer [data-testid="office-guarded-challan-remarks"]' }, { timeout: 10000 });
+  const remarksSelector = '.dynamic-drawer [data-testid="office-guarded-challan-remarks"]';
+  try {
+    await page.waitForFunction(({ selector }) =>
+      Boolean(document.querySelector(selector)?.querySelector('[role="alert"]')),
+    { selector: remarksSelector }, { timeout: 10000 });
+  } catch (error) {
+    const snapshot = await page.evaluate(({ selector }) => {
+      const node = document.querySelector(selector);
+      const drawer = document.querySelector('.dynamic-drawer');
+      return {
+        drawerPresent: Boolean(drawer),
+        remarksControlPresent: Boolean(node),
+        alertCount: node?.querySelectorAll('[role="alert"]').length ?? 0,
+        retryButtonCount: node?.querySelectorAll('button').length ?? 0,
+      };
+    }, { selector: remarksSelector });
+    console.error('Office remarks retry diagnostic:', JSON.stringify({
+      paymentRequests,
+      remarksRequests,
+      missingBearer,
+      missingRemarksBearer,
+      wrongRemarksPaymentId,
+      routeError: Boolean(routeError),
+      pageErrorCount: pageErrors.length,
+      snapshot,
+    }));
+    throw error;
+  }
   const remarksRetryButton = guardedRemarksControl.getByRole('button', { name: 'Retry', exact: true });
   assert.equal(await remarksRetryButton.count(), 1,
     'Office must expose a retry after the authorized SQL read fails');
