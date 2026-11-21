@@ -14,11 +14,13 @@ export const PRIMARY_V2_CANDIDATE = 'https://gmuhitmaynfhipcvbvkh.supabase.co';
 export const SEPARATE_OFFICE = 'https://ihbtabrvmyiwikqqbhrf.supabase.co';
 export const SIMULATION_SCOPE = 'fictional-user1-user30-only';
 
-export function assertProductionCutoverSafe({primaryUrl, originalUrl, officeUrl, releaseScope}) {
+export function assertProductionCutoverSafe({primaryUrl, frontendUrl, originalUrl, officeUrl, releaseScope}) {
   if (originalUrl !== ORIGINAL_TAXPAYER)
     throw new Error('Legacy source changed: preserve original Taxpayer as a distinct database.');
   if (officeUrl !== SEPARATE_OFFICE)
     throw new Error('Office identity changed: preserve separate Office SQL and Auth.');
+  if (frontendUrl !== primaryUrl)
+    throw new Error('Frontend project does not match the selected production primary: refusing a project swap.');
   if (primaryUrl === ORIGINAL_TAXPAYER)
     return {status:'ORIGINAL_PRIMARY_UNCHANGED'};
   if (primaryUrl !== PRIMARY_V2_CANDIDATE)
@@ -32,6 +34,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   try {
     const result = assertProductionCutoverSafe({
       primaryUrl:process.env.SOHOJKOR_PRODUCTION_SUPABASE_URL,
+      frontendUrl:process.env.VITE_SUPABASE_URL,
       originalUrl:process.env.SOHOJKOR_ORIGINAL_SUPABASE_URL,
       officeUrl:process.env.SOHOJKOR_OFFICE_SUPABASE_URL,
       releaseScope:process.env.SOHOJKOR_RELEASE_SCOPE,
