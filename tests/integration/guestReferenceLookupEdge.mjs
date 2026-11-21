@@ -34,7 +34,8 @@ const receiptMobile='01700000000';
 const tokenNumber='WS3-HTTP-TOKEN-'+keyId;
 const gatewayTransactionId='WS3-HTTP-GW-'+keyId;
 const payerName='WS3 isolated fictional payer';
-const receiptItem={headId:125,totalAmount:123.45};
+const receiptItem={headId:125,headNameEn:'Income Tax',economicCode:'',taxAmount:123.45,
+ penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:123.45};
 const payload={
  origin:'TAXPAY_UI',service:'TAX_WITH_RETURN',amountMinor:12345,
  sessionId:owner.paymentSessionId,idempotencyKey:keyId,

@@ -59,7 +59,7 @@ async function expectPreviewSession(page: Page, session: OwnerSession) {
 }
 
 function captureReferenceRequests(page: Page, expectedCapability?: string) {
-  const calls: Array<{ method: string; reference: string; scoped: boolean }> = [];
+  const calls: Array<{ method: string; reference: string; scoped: boolean; hasCapability: boolean }> = [];
   const paymentMutations: string[] = [];
   page.on('request', request => {
     const url = new URL(request.url());
@@ -67,6 +67,7 @@ function captureReferenceRequests(page: Page, expectedCapability?: string) {
       calls.push({
         method: request.method(),
         reference: url.searchParams.get('reference') ?? '',
+        hasCapability: Boolean(request.headers()['x-taxpay-guest-capability']),
         scoped: expectedCapability
           ? request.headers()['x-taxpay-guest-capability'] === expectedCapability
           : !request.headers()['x-taxpay-guest-capability'],
@@ -125,7 +126,7 @@ test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery',
     expect(calls.every(call => call.method === 'GET' && call.reference === fixture!.reference && call.scoped)).toBe(true);
     expect(paymentMutations).toEqual([]);
     } finally {
-      await owned.context.close();
+      await owned.context.close().catch(() => undefined);
     }
   });
 
@@ -178,7 +179,12 @@ test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery',
       await expect(dialog.getByRole('heading', { name: 'No matching record' })).toBeVisible();
       await expect(dialog.locator('.receipt-view')).toHaveCount(0);
       await expect(dialog.getByText('WS3 isolated fictional payer')).toHaveCount(0);
-      expect(otherRequests.calls.some(call => call.method === 'GET' && call.reference === fixture!.reference && call.scoped)).toBe(true);
+      expect(otherRequests.calls.map(call => ({
+        method: call.method,
+        referenceMatches: call.reference === fixture!.reference,
+        scoped: call.scoped,
+        hasCapability: call.hasCapability,
+      }))).toContainEqual({ method: 'GET', referenceMatches: true, scoped: true, hasCapability: true });
     } finally {
       await other.context.close();
     }
