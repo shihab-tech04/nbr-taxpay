@@ -59,21 +59,7 @@ async function setupGuestTransport(page:Page){
     }else data={active:true};
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
-  return {failNextAdd:()=>{failNextAdd=true;},createListCount:()=>createListCount,saved:()=>Array.from(sessions.values()).flatMap(session=>session.people)};
-}
-
-async function beneficiarySaveDebug(page:Page,people:MockGuestPerson[]){
-  return JSON.stringify({
-    stored:people.map(person=>({tinSuffix:person.tin.slice(-4),listId:person.list_id,name:person.display_name,
-      tag:person.tag,relationship:person.relationship,otherLabel:person.other_label})),
-    selectedList:await page.locator('#beneficiary-list').textContent().catch(()=>null),
-    openDialogs:await page.locator('.taxpay-modal[role="dialog"]').count(),
-    alerts:await page.locator('[role="alert"]').allTextContents(),
-    beneficiarySection:await page.locator('.beneficiary-register-frame').innerText().catch(()=>null),
-    recordRegionCount:await page.getByTestId('beneficiary-records').count(),
-    desktopRowCount:await page.locator('[data-testid="beneficiary-records"] table tbody tr').count(),
-    mobileCardCount:await page.locator('[data-testid="beneficiary-records"] ul.taxpay-mobile-table-cards > li').count(),
-  });
+  return {failNextAdd:()=>{failNextAdd=true;},createListCount:()=>createListCount};
 }
 
 test('Beneficiaries hides Excel import entry but keeps regular Add beneficiary',async({page})=>{
@@ -194,20 +180,18 @@ test('failed beneficiary save stays recoverable and retries without duplicating 
   expect(transport.createListCount()).toBe(1);
   await page.getByRole('button',{name:'Filter',exact:true}).click();
   const visibleRecords=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
-  const retryRow=visibleRecords.getByText('Retry Beneficiary',{exact:true});
-  if(!await retryRow.isVisible().catch(()=>false))console.info('[F058 retry diagnostic]',await beneficiarySaveDebug(page,transport.saved()));
+  const retryRow=visibleRecords.filter({hasText:'Retry Beneficiary'});
   await expect(retryRow).toBeVisible();
 });
 
 
 test('local sample taxpayer Beneficiaries supports independent lists, manual entry, list-only move, removal, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
-  const transport=await setupGuestTransport(page);
+  await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
   await page.getByRole('button',{name:'Filter',exact:true}).click();
   const recordList=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
   const expectRecord=async(name:string)=>{
-    const row=recordList.getByText(name,{exact:true});
-    if(!await row.isVisible().catch(()=>false))console.info('[F058 multi-list diagnostic]',await beneficiarySaveDebug(page,transport.saved()));
+    const row=recordList.filter({hasText:name});
     await expect(row).toBeVisible();
   };
   await expect(page.getByRole('heading',{name:'Create your first list'})).toBeVisible();
