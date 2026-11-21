@@ -82,7 +82,7 @@ test('ledger, Activity and Beneficiaries share one column-driven data renderer w
     assert.ok(source.includes('getRowKey='),screen);
   }
   const beneficiaries=read('src/components/screens/Beneficiaries.tsx');
-  for(const action of ['payWith([person])','openPersonEditor(person)','setDeletePerson(editPerson)'])assert.ok(beneficiaries.includes(action),action);
+  for(const action of ['payWith([person])','openPersonEditor(person)','requestDeletePerson(editPerson)'])assert.ok(beneficiaries.includes(action),action);
   assert.ok(read('src/components/screens/EventBasedTaxLedger.tsx').includes('renderMobileCard='));
 });
 

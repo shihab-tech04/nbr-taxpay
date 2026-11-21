@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
-import {beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged,beneficiaryOwnerContextUnchanged} from '../src/services/beneficiaryFormOwner';
+import {beneficiaryDeleteFailureMayHaveCommitted,beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged,beneficiaryOwnerContextUnchanged} from '../src/services/beneficiaryFormOwner';
 
 const preview={profileId:'user1',capability:'A'.repeat(43),paymentSessionId:'11111111-1111-4111-8111-111111111111'};
 
@@ -41,6 +41,13 @@ test('saved-row retag editor rejects an account, preview capability or identity-
   assert.equal(beneficiaryOwnerContextUnchanged(guest,{...guest,checkingIdentity:true}),false);
 });
 
+test('delete recovery reconciles ambiguous transport failures but preserves deterministic denials',()=>{
+  assert.equal(beneficiaryDeleteFailureMayHaveCommitted(new TypeError('Failed to fetch')),true);
+  assert.equal(beneficiaryDeleteFailureMayHaveCommitted(new Error('The beneficiary is no longer saved. Refresh and try again.')),false);
+  assert.equal(beneficiaryDeleteFailureMayHaveCommitted({status:403}),false);
+  assert.equal(beneficiaryDeleteFailureMayHaveCommitted({status:502}),true);
+});
+
 test('every beneficiary write form rechecks its captured owner before its API mutation',()=>{
   const source=readFileSync(new URL('../src/components/screens/Beneficiaries.tsx',import.meta.url),'utf8');
   const body=(name:string)=>{
@@ -78,4 +85,35 @@ test('every beneficiary write form rechecks its captured owner before its API mu
     'saveEdit checks the captured owner after the write before readback');
   assert.ok(edit.includes('loadBeneficiaries(editOwnerContext.ownerUid,{forceFresh:true})'),
     'readback is scoped to the editor owner captured when the row was opened');
+});
+
+test('saved-beneficiary deletion is bound to the captured edit owner and verified after refresh',()=>{
+  const source=readFileSync(new URL('../src/components/screens/Beneficiaries.tsx',import.meta.url),'utf8');
+  const body=(name:string)=>{
+    const start=[`async function ${name}(`,`function ${name}(`]
+      .map(marker=>source.indexOf(marker)).find(index=>index>=0)??-1;
+    assert.notEqual(start,-1,`${name} handler exists`);
+    const end=source.indexOf('\n  }',start);
+    assert.notEqual(end,-1,`${name} handler has a body`);
+    return source.slice(start,end);
+  };
+  const request=body('requestDeletePerson');
+  assert.ok(request.includes('deleteOwnerContextRef.current=context'));
+  assert.ok(request.includes('beneficiaryOwnerContextUnchanged(context,currentOwnerContextRef.current)'));
+  const remove=body('confirmRemove');
+  const preflight=remove.indexOf('if(!deleteOwnerIsCurrent())');
+  const mutation=remove.indexOf('removeBeneficiary(deleteOwnerContext.ownerUid,person.id)');
+  assert.ok(preflight>=0&&mutation>preflight,'the captured owner is checked before the delete');
+  const readback=remove.indexOf('loadBeneficiaries(deleteOwnerContext.ownerUid,{forceFresh:true})');
+  assert.ok(readback>mutation,'deletion is confirmed with a fresh read scoped to the captured owner');
+  const postReadback=remove.indexOf('if(!deleteOwnerIsCurrent())',readback);
+  assert.ok(postReadback>readback,
+    'the owner context is checked again after the asynchronous readback');
+  assert.ok(remove.includes('saved.people.some(item=>item.id===person.id)'),
+    'the UI reports success only after the deleted row is absent in owner-scoped readback');
+  const recover=remove.indexOf('if(beneficiaryDeleteFailureMayHaveCommitted(e)){');
+  assert.ok(recover>postReadback,
+    'the recovery read is only attempted after a failure that may have committed');
+  assert.ok(remove.indexOf('const recovered=await loadBeneficiaries(deleteOwnerContext.ownerUid,{forceFresh:true})')>recover,
+    'a dropped first readback gets a fresh owner-scoped recovery read before retry is offered');
 });

@@ -44,3 +44,16 @@ export function beneficiaryOwnerContextUnchanged(
   return !current.checkingIdentity && opened.ownerUid===current.ownerUid &&
     beneficiaryFormOwnerUnchanged(opened.ownerKey,current.ownerKey);
 }
+
+/** A failed delete may be reconciled by an owner-scoped read only when the
+ * response could have been lost after the database committed the mutation.
+ * Deterministic RLS/no-row failures must remain visible to the user.
+ */
+export function beneficiaryDeleteFailureMayHaveCommitted(error:unknown):boolean{
+  const message=error instanceof Error?error.message:'';
+  const status=typeof error==='object'&&error!==null&&'status' in error
+    ?Number((error as {status?:unknown}).status)
+    :0;
+  return /failed to fetch|fetch failed|network|timed? ?out|connection reset|connection closed|socket hang up/i.test(message) ||
+    (status>=500&&status<=599);
+}
