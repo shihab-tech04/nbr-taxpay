@@ -255,7 +255,6 @@ test('F-125 T01/T04: history and beneficiary search preserve order and responsiv
 });
 
 test('F-125 T02/T03: account switch hides prior rows and failed history read recovers on retry',async({page},testInfo)=>{
-  test.skip(testInfo.project.name!=='desktop-1280','Run the recovery and account-isolation case once on desktop.');
   test.setTimeout(90_000);
   const rowA=makeHistoryRow(1,'user1');
   const rowB=makeHistoryRow(2,'user2');
