@@ -98,7 +98,10 @@ test('Travel Tax resends the identical payment after a lost response ' +
   // The write acknowledgement still cannot display success. A failed SQL detail
   // read leaves the exact original request available for a same-key retry.
   await expect.poll(() => readbackCount).toBe(1);
-  await expect(modal.getByRole('alert')).toContainText('Payment confirmation is still unavailable. Retry again.');
+  const readbackRetryMessage = refresh
+    ? 'Payment confirmation is still unavailable. Retry again.'
+    : 'Simulated payment could not be recorded. Retry with the same details.';
+  await expect(modal.getByRole('alert')).toContainText(readbackRetryMessage);
   await expect(modal.locator('.receipt-view__paper')).toHaveCount(0);
   if (refresh) {
     await page.goto('/');
