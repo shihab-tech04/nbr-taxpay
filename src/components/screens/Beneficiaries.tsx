@@ -113,6 +113,7 @@ export function Beneficiaries(){
   const [profileSelection,setProfileSelection]=useState<{id:string;account:string}|null>(null);
   const [editPerson,setEditPerson]=useState<Beneficiary|null>(null);
   const editOwnerContextRef=useRef<BeneficiaryOwnerContext>({ownerUid:null,ownerKey:null,checkingIdentity:true});
+  const deleteOwnerContextRef=useRef<BeneficiaryOwnerContext>({ownerUid:null,ownerKey:null,checkingIdentity:true});
   const [editTargetList,setEditTargetList]=useState('');
   const [editTag,setEditTag]=useState<BeneficiaryTag|''>('');
   const [editRelationship,setEditRelationship]=useState<BeneficiaryRelation|''>('');
@@ -178,7 +179,8 @@ export function Beneficiaries(){
   useEffect(()=>{
     if(!editPerson||beneficiaryOwnerContextUnchanged(editOwnerContextRef.current,currentOwnerContextRef.current))return;
     editOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
-    setEditPerson(null);setEditTargetList('');setModalError('');
+    deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+    setDeletePerson(null);setEditPerson(null);setEditTargetList('');setModalError('');
     setNotice({en:'Your account changed. Reopen this beneficiary before editing.',bn:'আপনার অ্যাকাউন্ট বদলেছে। সম্পাদনার আগে এই উপকারভোগীটি আবার খুলুন।'});
   },[owner,checkingIdentity,previewAccount?.id,currentOwnerKey,editPerson]);
   const maySaveFor=(captured:string|null)=>!checkingIdentity&&
@@ -501,6 +503,19 @@ export function Beneficiaries(){
     editOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
     setEditPerson(null);setEditTargetList('');setModalError('');
   }
+  function requestDeletePerson(person:Beneficiary){
+    const context=editOwnerContextRef.current;
+    if(!beneficiaryOwnerContextUnchanged(context,currentOwnerContextRef.current)){
+      setModalError(accountChangedMessage());return;
+    }
+    deleteOwnerContextRef.current=context;
+    setModalError('');setDeletePerson(person);
+  }
+  function closeDeleteConfirmation(){
+    if(busy)return;
+    deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+    setDeletePerson(null);setModalError('');
+  }
   async function saveEdit(event:React.FormEvent){
     event.preventDefault();
     if(!editPerson)return;
@@ -577,12 +592,49 @@ export function Beneficiaries(){
   }
 
   async function confirmRemove(){
-    if(!deletePerson)return;
-    setBusy(true);setError('');
+    const person=deletePerson;
+    if(!person||busy)return;
+    const deleteOwnerContext=deleteOwnerContextRef.current;
+    const deleteOwnerIsCurrent=()=>beneficiaryOwnerContextUnchanged(deleteOwnerContext,currentOwnerContextRef.current);
+    const closeStaleDelete=()=>{
+      deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+      setDeletePerson(null);closePersonEditor();
+      setNotice({en:'Your account changed. Cancel and reopen this beneficiary before deleting.',bn:'আপনার অ্যাকাউন্ট বদলেছে। মুছে ফেলার আগে বাতিল করে এই উপকারভোগীটি আবার খুলুন।'});
+    };
+    if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+    setBusy(true);setModalError('');
     try{
-      await removeBeneficiary(owner,deletePerson.id);await reload();setDeletePerson(null);setEditPerson(null);setModalError('');
+      await removeBeneficiary(deleteOwnerContext.ownerUid,person.id);
+      if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+      const saved=await loadBeneficiaries(deleteOwnerContext.ownerUid,{forceFresh:true});
+      if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+      if(saved.people.some(item=>item.id===person.id))
+        throw new Error(tr('Beneficiary removal could not be verified. Refresh and retry.','উপকারভোগী সরানো যাচাই করা যায়নি। রিফ্রেশ করে আবার চেষ্টা করুন।'));
+      setLists(saved.lists);setPeople(saved.people);
+      setSelectedIds(ids=>ids.filter(id=>id!==person.id));
+      setActiveList(current=>current==='all'||saved.lists.some(list=>list.id===current)?current:'all');
+      deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+      setDeletePerson(null);setEditPerson(null);setModalError('');
       setNotice({en:'Beneficiary removed.',bn:'উপকারভোগী সরানো হয়েছে।'});
     }catch(e){
+      if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+      // A successful DELETE can outlive a dropped readback response. Retry the
+      // owner-scoped read before leaving a stale confirmation that cannot succeed twice.
+      try{
+        const recovered=await loadBeneficiaries(deleteOwnerContext.ownerUid,{forceFresh:true});
+        if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+        if(!recovered.people.some(item=>item.id===person.id)){
+          setLists(recovered.lists);setPeople(recovered.people);
+          setSelectedIds(ids=>ids.filter(id=>id!==person.id));
+          setActiveList(current=>current==='all'||recovered.lists.some(list=>list.id===current)?current:'all');
+          deleteOwnerContextRef.current={ownerUid:null,ownerKey:null,checkingIdentity:true};
+          setDeletePerson(null);setEditPerson(null);setModalError('');
+          setNotice({en:'Beneficiary removed.',bn:'উপকারভোগী সরানো হয়েছে।'});
+          return;
+        }
+      }catch{
+        if(!deleteOwnerIsCurrent()){closeStaleDelete();return;}
+      }
       const message=e instanceof Error?e.message:String(e);
       setModalError(message==='The beneficiary is no longer saved. Refresh and try again.'
         ?tr('The beneficiary is no longer saved. Refresh and try again.',
@@ -1000,7 +1052,7 @@ export function Beneficiaries(){
     {editPerson&&!deletePerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')} ariaLabel={tr('Edit beneficiary','উপকারভোগী সম্পাদনা')}
       onClose={()=>{if(!busy)closePersonEditor();}} initialFocusSelector="#beneficiary-edit-tag"
       footer={<div className="beneficiary-list-edit__footer">
-         <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-red-700 hover:bg-red-50" onClick={()=>{setModalError('');setDeletePerson(editPerson);}}><Trash2 size={17} aria-hidden="true"/>{tr('Delete beneficiary','উপকারভোগী মুছুন')}</UiButton>
+         <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-red-700 hover:bg-red-50" onClick={()=>requestDeletePerson(editPerson)}><Trash2 size={17} aria-hidden="true"/>{tr('Delete beneficiary','উপকারভোগী মুছুন')}</UiButton>
          <div className="flex items-center gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={closePersonEditor}>{tr('Cancel','বাতিল')}</UiButton>
            <UiButton type="submit" form="beneficiary-edit-form" variant="primary" disabled={busy||!editHasChanges||!editValid}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>
        </div>}>
@@ -1045,8 +1097,8 @@ export function Beneficiaries(){
     </TaxPayModal>}
 
     {deletePerson&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Remove beneficiary?','উপকারভোগী সরাবেন?')} ariaLabel={tr('Confirm beneficiary removal','উপকারভোগী সরানো নিশ্চিত করুন')}
-      onClose={()=>{if(!busy)setDeletePerson(null);}}
-      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setDeletePerson(null)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="button" variant="primary" disabled={busy} onClick={()=>void confirmRemove()}>{busy?tr('Removing…','সরানো হচ্ছে…'):tr('Remove','সরান')}</UiButton></div>}>
+      onClose={closeDeleteConfirmation}
+      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={closeDeleteConfirmation}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="button" variant="primary" disabled={busy} onClick={()=>void confirmRemove()}>{busy?tr('Removing…','সরানো হচ্ছে…'):tr('Remove','সরান')}</UiButton></div>}>
       <p className="py-2 text-sm text-slate-700">{tr(`Remove ${displayName(deletePerson)} (${maskTinForDisplay(deletePerson.tin)}) from this saved list? This will not affect payment or tax records.`,`এই সংরক্ষিত তালিকা থেকে ${displayName(deletePerson)} (${maskTinForDisplay(deletePerson.tin)})-কে সরাবেন? এতে পেমেন্ট বা করের রেকর্ডে কোনো পরিবর্তন হবে না।`)}</p>
       {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
     </TaxPayModal>}
