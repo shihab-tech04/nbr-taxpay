@@ -465,7 +465,7 @@ test('F-059 Others description enforces the 1–80 character boundary in UI and 
     await expect(invalidLabel).toHaveValue(label80);
     await invalidLabel.fill('');
     expect(await invalidLabel.evaluate(el=>(el as HTMLInputElement).validity.valueMissing)).toBe(true);
-    await invalidEditor.getByRole('button',{name:'Save changes',exact:true}).click();
+    await expect(invalidEditor.getByRole('button',{name:'Save changes',exact:true})).toBeDisabled();
     await expect(invalidEditor).toBeVisible();
     expect(await read(initialSession.access_token)).toEqual([accepted80]);
 
