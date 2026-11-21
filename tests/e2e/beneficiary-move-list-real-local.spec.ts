@@ -11,14 +11,16 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
   if(api.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(api.hostname))
     throw new Error('Refusing hosted database for beneficiary move acceptance');
   const account=async()=>{
+    const email='move-'+randomUUID()+'@example.invalid';
+    const password=randomBytes(32).toString('base64url');
     const response=await fetch(new URL('/auth/v1/signup',api.origin),{
       method:'POST',headers:{apikey:key,'Content-Type':'application/json'},
-      body:JSON.stringify({email:'move-'+randomUUID()+'@example.invalid',password:randomBytes(32).toString('base64url')}),
+      body:JSON.stringify({email,password}),
     });
     expect(response.status).toBe(200);
     const result=await response.json(),session=result.session??result;
     expect(session.access_token).toBeTruthy();
-    return {id:result.user.id as string,token:session.access_token as string,session};
+    return {id:result.user.id as string,token:session.access_token as string,session,email,password};
   };
   const [first,second]=await Promise.all([account(),account()]);
   const request=async(token:string,route:string,method='GET',body?:unknown)=>{
@@ -102,6 +104,42 @@ test('beneficiary Edit supports tags, relationships, optional list moves, preser
     expect(denied.body).toEqual([]);
     read=await request(first.token,'taxpay_beneficiaries?id=eq.'+id+'&select=list_id');
     expect(read.body).toEqual([{list_id:clients}]);
+
+    // Reauthenticate the same owner into a new session and browser context.
+    // Both the exact SQL row and the approved UI must recover the edited classification.
+    const passwordGrant=await fetch(new URL('/auth/v1/token?grant_type=password',api.origin),{
+      method:'POST',headers:{apikey:key,'Content-Type':'application/json'},
+      body:JSON.stringify({email:first.email,password:first.password}),
+    });
+    expect(passwordGrant.status).toBe(200);
+    const fresh=await passwordGrant.json() as {
+      access_token:string;refresh_token:string;user:{id:string};
+    };
+    expect(fresh.user.id).toBe(first.id);
+    expect(fresh.access_token).toBeTruthy();
+    const freshRead=await request(fresh.access_token,
+      'taxpay_beneficiaries?id=eq.'+id+'&select=id,owner_uid,list_id,tin,display_name,tag,relationship,other_label');
+    expect(freshRead.status).toBe(200);
+    expect(freshRead.body).toEqual([{
+      id,owner_uid:first.id,list_id:clients,tin:'012345678901',
+      display_name:'Immutable Beneficiary',tag:'others',relationship:null,other_label:'Neighbour representative',
+    }]);
+    const freshLogin='/\\x3faction=beneficiaries#access_token='+encodeURIComponent(fresh.access_token)+
+      '&refresh_token='+encodeURIComponent(fresh.refresh_token)+
+      '&token_type=bearer&expires_in=3600&expires_at='+(Math.floor(Date.now()/1000)+3600);
+    const freshContext=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:375,height:812}});
+    try{
+      const freshPage=await freshContext.newPage();
+      await freshPage.goto(freshLogin);
+      await expect(freshPage.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+      await freshPage.getByRole('button',{name:'Filter',exact:true}).click();
+      await freshPage.getByRole('button',{name:'Selected list'}).click();
+      await freshPage.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Clients',exact:true}).click();
+      const freshRows=()=>freshPage.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
+      const freshRow=freshRows().filter({hasText:'012*********'});
+      await expect(freshRow).toContainText('Immutable Beneficiary · Neighbour representative');
+      await expect(freshRow).toContainText('012*********');
+    }finally{await freshContext.close();}
 
     const collision=await request(first.token,'taxpay_beneficiaries?select=id','POST',{
       owner_uid:first.id,list_id:family,tin:'012345678901',display_name:'Separate Saved Copy',
