@@ -191,6 +191,10 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
+  .taxpay-citizen-shell .travel-flow__passport-input {
+    width: 100%;
+    box-sizing: border-box;
+  }
   .taxpay-citizen-shell .travel-flow__passport-action {
     align-self: stretch;
     width: 100%;
