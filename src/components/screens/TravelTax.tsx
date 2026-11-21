@@ -6,6 +6,8 @@ import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
 import {parseRecoverableTravelPayment, type PendingTravelPayment} from '../../services/travelPendingPayment';
+import { getConfirmedReceipt } from '../../services/confirmedPaymentCertificate';
+import { matchesConfirmedTravelTaxReceipt } from '../../services/travelTaxReceiptReadback';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { reuseRecordedPayment, type PaymentReuse } from '../../services/paymentReuse';
@@ -513,9 +515,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
         sessionStorage.setItem(pendingPaymentKey, JSON.stringify(request));
       } catch { /* In-memory retry remains available when storage is unavailable. */ }
       const ack = await persistSimulatedPayment(request);
+      const recorded = await getConfirmedReceipt(ack.id);
+      if (!matchesConfirmedTravelTaxReceipt(request.details.receiptSnapshot, recorded, ack.id)) {
+        throw new Error('Travel Tax receipt does not match the saved Taxpayer payment');
+      }
+      stored = recorded;
       try { sessionStorage.removeItem(pendingPaymentKey); }
       catch { /* The saved key can safely replay the same payment. */ }
-      stored = { ...request.details.receiptSnapshot, paymentTransactionId: ack.id };
     }
     setRecoveringPayment(null);
     addPaymentReceipt(stored);
