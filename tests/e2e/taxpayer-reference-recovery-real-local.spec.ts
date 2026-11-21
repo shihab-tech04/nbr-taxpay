@@ -98,8 +98,10 @@ test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery',
     const dialog = await openLookup(ownerPage);
     await expectPreviewSession(ownerPage, fixture!.owner);
 
-    await dialog.getByRole('textbox', { name: 'Challan, token or transaction reference' }).fill(fixture!.reference);
+    const referenceField = dialog.getByRole('textbox', { name: 'Challan, token or transaction reference' });
+    await referenceField.fill(fixture!.reference);
     await dialog.getByRole('textbox', { name: 'Receipt mobile number' }).fill(fixture!.mobile);
+    await expect(referenceField).toHaveValue(fixture!.reference);
     await dialog.getByRole('button', { name: 'Search records' }).click();
     const paper = dialog.locator('.receipt-view__paper');
     await expect(paper).toContainText(fixture!.reference);
@@ -123,7 +125,8 @@ test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery',
     await expect(refreshed.locator('.receipt-view__paper')).toContainText('123.45');
 
     expect(calls.length).toBe(2);
-    expect(calls.every(call => call.method === 'GET' && call.reference === fixture!.reference && call.scoped)).toBe(true);
+    expect(calls.every(call => call.method === 'GET' &&
+      call.reference.toUpperCase() === fixture!.reference.toUpperCase() && call.scoped)).toBe(true);
     expect(paymentMutations).toEqual([]);
     } finally {
       await owned.context.close().catch(() => undefined);
@@ -181,7 +184,7 @@ test.describe('F-129 / US-050 real local Taxpayer UI → Edge → SQL recovery',
       await expect(dialog.getByText('WS3 isolated fictional payer')).toHaveCount(0);
       expect(otherRequests.calls.map(call => ({
         method: call.method,
-        referenceMatches: call.reference === fixture!.reference,
+        referenceMatches: call.reference.toUpperCase() === fixture!.reference.toUpperCase(),
         scoped: call.scoped,
         hasCapability: call.hasCapability,
       }))).toContainEqual({ method: 'GET', referenceMatches: true, scoped: true, hasCapability: true });

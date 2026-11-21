@@ -45,7 +45,9 @@ const payload={
   receiptSnapshot:{isSimulatedDemo:true,challanNo:ref,tokenNumber,
    paymentCategory:'TAX_WITH_RETURN',gatewayTransactionId,receiptMobile,
    payerName,payerTin:taxpayerTin,taxpayerTin,assessmentYear,totalAmount:123.45,
-   paymentMethod:'SIMULATED',items:[receiptItem]},
+   paymentMethod:'SIMULATED',completedAt:'2026-11-21T00:00:00.000Z',
+   createdAt:'2026-11-21T00:00:00.000Z',treasuryStatus:'GATEWAY_SUCCESS',
+   items:[receiptItem]},
   lines:[{beneficiary:'user1',category:'TAX_WITH_RETURN',headId:125,
    assessmentYear,amountMinor:12345,totalAmount:123.45}]}
 };const payment=sqlJson('SELECT public.taxpay_demo_story1_submit('+
