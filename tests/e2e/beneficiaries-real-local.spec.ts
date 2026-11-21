@@ -217,7 +217,7 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   const paymentId=submittedPayment.id;
   expect(paymentId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
   expect(ownerA.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-  const ownerHistoryFixture=spawnSync('psql',['-X','-At','-v','ON_ERROR_STOP=1','-c',
+  const ownerHistoryFixture=spawnSync('psql',['-X','-Atq','-v','ON_ERROR_STOP=1','-c',
     `insert into public.taxpay_story1_payment_owners(payment_id,owner_uid)
      values ('${paymentId}'::uuid,'${ownerA.id}'::uuid)
      returning payment_id::text;`],{
