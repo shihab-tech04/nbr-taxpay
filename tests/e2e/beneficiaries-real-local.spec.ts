@@ -22,7 +22,19 @@ test('real account saves private beneficiary, reopens it, isolates another owner
     expect(value.user?.id).toBeTruthy();
     const session=value.session??value;
     expect(session.access_token).toBeTruthy();
-    return {id:value.user.id as string,session};
+    return {id:value.user.id as string,session,email,password};
+  };
+  const signIn=async(user:{id:string;email:string;password:string})=>{
+    const response=await fetch(new URL('/auth/v1/token?grant_type=password',api.origin),{
+      method:'POST',headers:{apikey:key,'Content-Type':'application/json'},
+      body:JSON.stringify({email:user.email,password:user.password}),
+    });
+    expect(response.status).toBe(200);
+    const value=await response.json();
+    expect(value.user?.id).toBe(user.id);
+    expect(value.access_token).toBeTruthy();
+    expect(value.refresh_token).toBeTruthy();
+    return value;
   };
   const ownerA=await makeUser(),ownerB=await makeUser();
   const loginUrl=(session:{access_token:string;refresh_token:string;expires_at?:number})=>
@@ -111,6 +123,28 @@ test('real account saves private beneficiary, reopens it, isolates another owner
     {owner_uid:ownerA.id,tin:'987654321098',display_name:'Local Beneficiary Two',tag:'clients',relationship:null},
   ]));
   expect(await read(ownerB.session.access_token)).toEqual([]);
+
+  // US-010 requires persistence after signing into a new browser session for
+  // the same owner, not just reloading the page with its original token.
+  const freshOwnerSession=await signIn(ownerA);
+  const freshOwnerContext=await browser.newContext({
+    baseURL:'http://127.0.0.1:4173',
+    viewport:{width:375,height:812},
+    storageState:{cookies:[],origins:[]},
+  });
+  try{
+    const freshOwnerPage=await freshOwnerContext.newPage();
+    await freshOwnerPage.goto(loginUrl(freshOwnerSession));
+    await expect(freshOwnerPage.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+    const persistedRow=freshOwnerPage.getByTestId('beneficiary-directory-mobile').locator('li')
+      .filter({hasText:'Local Beneficiary One'});
+    await expect(persistedRow).toContainText('Father');
+    await expect(persistedRow).toContainText('012*********');
+    await expect(freshOwnerPage.getByTestId('beneficiary-directory-mobile'))
+      .toContainText('Local Beneficiary Two');
+  }finally{
+    await freshOwnerContext.close();
+  }
 
   const otherContext=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:320,height:720}});
   const otherPage=await otherContext.newPage();
