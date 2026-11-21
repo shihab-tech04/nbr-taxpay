@@ -179,6 +179,59 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(modal.locator('#guest-tin, #guest-payer-name')).toHaveCount(0);
   await expect(modal.getByRole('button',{name:'Add another taxpayer'})).toHaveCount(0);
 
+  // Disposable local SQL only: preserve an immutable payment snapshot independently
+  // of the saved-contact row that may later be removed.
+  const paymentSession=randomUUID();
+  const submittedPaymentResponse=await fetch(new URL('/rest/v1/rpc/demo_story1_submit',api.origin),{
+    method:'POST',
+    headers:{apikey:key,Authorization:'Bearer '+ownerA.session.access_token,'Content-Type':'application/json'},
+    body:JSON.stringify({p_input:{
+      idempotencyKey:randomUUID(),
+      sessionId:paymentSession,
+      service:'ADVANCE_TAX',
+      amountMinor:1500,
+      details:{
+        taxpayerTin:'012345678901',
+        taxpayerName:'Local Beneficiary One',
+        payerName:'Local owner',
+        assessmentYear:'2026-27',
+        paymentHead:'Advance tax',
+      },
+    }}),
+  });
+  expect(submittedPaymentResponse.status).toBe(200);
+  const submittedPayment=await submittedPaymentResponse.json() as {id?:string;status?:string};
+  expect(submittedPayment.id).toBeTruthy();
+  expect(submittedPayment.status).toBe('SIMULATED_SUCCESS');
+
+  const claimPaymentResponse=await fetch(new URL('/rest/v1/rpc/taxpay_claim_story1_session',api.origin),{
+    method:'POST',
+    headers:{apikey:key,Authorization:'Bearer '+ownerA.session.access_token,'Content-Type':'application/json'},
+    body:JSON.stringify({p_session_id:paymentSession}),
+  });
+  expect(claimPaymentResponse.status).toBe(200);
+  expect(await claimPaymentResponse.json()).toBe(1);
+
+  const readPaymentHistory=async()=>{
+    const response=await fetch(new URL('/rest/v1/rpc/taxpay_my_story1_payments',api.origin),{
+      method:'POST',
+      headers:{apikey:key,Authorization:'Bearer '+ownerA.session.access_token,'Content-Type':'application/json'},
+      body:JSON.stringify({p_page:1,p_per_page:100}),
+    });
+    expect(response.status).toBe(200);
+    return response.json() as Promise<{
+      items:Array<{id:string;service:string;amountMinor:number;status:string;details:Record<string,unknown>}>;
+      total:number;page:number;perPage:number;
+    }>;
+  };
+  const historyBeforeDelete=await readPaymentHistory();
+  expect(historyBeforeDelete.total).toBe(1);
+  expect(historyBeforeDelete.items).toHaveLength(1);
+  expect(historyBeforeDelete.items[0]).toMatchObject({
+    id:submittedPayment.id,service:'ADVANCE_TAX',amountMinor:1500,status:'SIMULATED_SUCCESS',
+    details:{taxpayerTin:'012345678901',taxpayerName:'Local Beneficiary One'},
+  });
+
   // Exact accepted deletion must round-trip through real owner-scoped SQL.
   // A zero-row RLS/stale delete must never be reported as successful.
   const savedUrl=new URL('/rest/v1/taxpay_beneficiaries',api.origin);
@@ -270,5 +323,6 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   expect(await read(ownerA.session.access_token)).toEqual([]);
   expect(await read(ownerB.session.access_token)).toEqual([]);
+  expect(await readPaymentHistory()).toEqual(historyBeforeDelete);
   await context.close();
 });
