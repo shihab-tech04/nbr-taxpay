@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 11740)
-Total output lines: 717
-
 import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { demoLoginOtpCompletedState } from './demo-login-test-state';
@@ -318,7 +315,118 @@ test('user1 Overview shows account-scoped saved drafts with Continue and confirm
     await page.getByLabel('Password', { exact: true }).fill('user1');
     await page.getByRole('button', { name: 'Sign In', exact: true }).click();
     await expect(page).toHaveURL(/action=taxpayer_home/);
-    await expect(page.getByTestId('user1-synt…1740 tokens truncated…dsn) throw new Error('Disposable local Supabase is required.');
+    await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+
+    // Create an actual owner-scoped local SQL draft, not a fixture card.
+    await page.goto('/?action=guest');
+    await page.locator('#guest-payer-self').check();
+    const marker = 'USER1-OVERVIEW-DRAFT-' + Date.now();
+    await page.locator('#guest-notice-ref').fill(marker);
+    await page.getByRole('button', { name: 'Save Draft', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Draft Saved' })).toBeVisible();
+
+    await page.goto('/?action=taxpayer_home');
+    const workspace = page.getByTestId('user1-synthetic-workspace');
+    await workspace.locator('.taxpay-bento-tasks__tabs').getByRole('button',{name:/Drafts/}).click();
+    const cards = workspace.getByTestId('dashboard-payment-drafts');
+    // Follow-ups is tabbed in the approved overview; expose the saved-draft panel before its actions.
+    await workspace.getByRole('button', { name: /^Drafts/ }).click();
+    await expect(cards.getByRole('heading', { name: 'Saved payment drafts' })).toBeVisible();
+    const savedCard = cards.locator('[data-draft-id]').first();
+    await expect(savedCard).toBeVisible();
+    const id = await savedCard.getAttribute('data-draft-id');
+    expect(id).toBeTruthy();
+    // The entire approved Overview and its existing Pay action must remain mounted
+    // and keep their geometry when a payment dialog covers the page.
+    const countBefore = await cards.locator('[data-draft-id]').count();
+    const layoutBefore = await cards.boundingBox();
+    expect(layoutBefore).not.toBeNull();
+    const desktopPay = page.locator('.taxpayer-reference-main-action');
+    if (page.viewportSize()!.width > 900) await expect(desktopPay).toBeVisible();
+    // Preserve existing user1 financial dashboard; insert cards after the heading.
+    await expect(workspace.getByRole('heading', { name: 'Payment and request summary' })).toBeVisible();
+    await savedCard.getByRole('button', { name: 'Continue' }).click();
+    const payment = page.getByRole('dialog', { name: 'Pay Tax' });
+    await expect(payment.locator('#guest-notice-ref')).toHaveValue(marker);
+    await expect(cards).toBeVisible();
+    await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
+    if (page.viewportSize()!.width > 900) await expect(desktopPay).toBeVisible();
+    const layoutUnderModal = await cards.boundingBox();
+    expect(layoutUnderModal).not.toBeNull();
+    // Opening a modal intentionally scroll-locks the page and can change viewport Y.
+    // Compare the card's dimensions, not its scroll-relative screen coordinate.
+    expect(Math.abs(layoutUnderModal!.width - layoutBefore!.width)).toBeLessThanOrEqual(2);
+    expect(Math.abs(layoutUnderModal!.height - layoutBefore!.height)).toBeLessThanOrEqual(2);
+    await expect(workspace.getByRole('heading', { name: 'Payment and request summary' })).toBeVisible();
+    await payment.getByRole('button', { name: 'Close payment services' }).click();
+    // A resumed, draft-eligible payment must not be silently dismissed.
+    const exitPrompt = payment.getByRole('alertdialog');
+    await expect(exitPrompt).toBeVisible();
+    await exitPrompt.getByRole('button', { name: 'Save Draft', exact: true }).click();
+    // The modal closes only after the local SQL update and readback succeed.
+    await expect(payment).toHaveCount(0);
+    await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
+
+    // Opening Pay Tax from the sidebar must also keep both the sidebar and
+    // saved draft cards unchanged, including the background mobile Pay action.
+    if (page.viewportSize()!.width > 900) {
+      await desktopPay.click();
+      await page.locator('.taxpayer-reference-rail').getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
+      await expect(page.getByRole('dialog', { name: 'Pay Tax' })
+        .getByRole('button', { name: 'Continue from draft' })).toBeVisible();
+      await expect(desktopPay).toBeVisible();
+      await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
+      await page.setViewportSize({ width: 375, height: 812 });
+      await expect(page.locator('.citizen-pay')).toBeVisible();
+      await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
+      await page.getByRole('dialog', { name: 'Pay Tax' })
+        .getByRole('button', { name: 'Close payment services' }).click();
+    } else {
+      const mobilePay = page.locator('.citizen-pay');
+      await expect(mobilePay).toBeVisible();
+      await mobilePay.click();
+      await page.getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
+      await expect(page.getByRole('dialog', { name: 'Pay Tax' })
+        .getByRole('button', { name: 'Continue from draft' })).toBeVisible();
+      await expect(mobilePay).toBeVisible();
+      await expect(cards.locator('[data-draft-id]')).toHaveCount(countBefore);
+      await page.getByRole('dialog', { name: 'Pay Tax' })
+        .getByRole('button', { name: 'Close payment services' }).click();
+    }
+    const matching = workspace.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="' + id + '"]');
+    await expect(matching).toBeVisible();
+    await matching.getByRole('button', { name: 'Delete' }).click();
+    await expect(matching.getByRole('button', { name: 'Confirm delete' })).toBeVisible();
+    await matching.getByRole('button', { name: 'Cancel' }).click();
+    await expect(matching).toBeVisible();
+    await matching.getByRole('button', { name: 'Delete' }).click();
+    await matching.getByRole('button', { name: 'Confirm delete' }).click();
+    await expect(matching).toHaveCount(0);
+    // Other user1 saved drafts must not be deleted or changed by this action.
+    await page.reload();
+    await workspace.locator('.taxpay-bento-tasks__tabs').getByRole('button',{name:/Drafts/}).click();
+    await expect(workspace.getByTestId('dashboard-payment-drafts').locator('[data-draft-id="' + id + '"]')).toHaveCount(0);
+    // Reload starts on Requests; open Drafts to verify the empty-state recovery action.
+    await workspace.getByRole('button', { name: /^Drafts/ }).click();
+    const empty = workspace.getByTestId('dashboard-payment-drafts');
+    await expect(empty).toBeVisible();
+    await expect(empty.getByTestId('dashboard-drafts-empty')).toBeVisible();
+    await expect(empty.getByRole('button',{name:'Start a payment'})).toBeVisible();
+    await empty.getByRole('button',{name:'Start a payment'}).click();
+    await expect(page.getByRole('dialog',{name:'Pay Tax'})).toBeVisible();
+
+  } finally {
+    await context.close();
+  }
+});
+
+for (const language of ['en', 'bn'] as const) {
+  test(`payment form drafts survive another browser with real Auth ownership, recovery and isolation (${language})`, async ({ browser }, info) => {
+    test.setTimeout(120_000);
+    const raw = process.env.TAXPAY_LOCAL_SUPABASE_URL;
+    const key = process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+    const dsn = process.env.TAXPAY_LOCAL_PG_DSN;
+    if (!raw || !key || !dsn) throw new Error('Disposable local Supabase is required.');
     const endpoint = new URL(raw);
     const database = new URL(dsn);
     if (endpoint.protocol !== 'http:' || !['127.0.0.1', 'localhost', '[::1]'].includes(endpoint.hostname) ||
