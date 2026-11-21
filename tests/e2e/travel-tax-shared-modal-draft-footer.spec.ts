@@ -106,6 +106,11 @@ test('Travel Tax passport lookup is full-width on tablet and phone without chang
     expect(await dialog.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(2);
   }
   await page.setViewportSize({width:1280,height:830});
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise<void>(resolve => requestAnimationFrame(() =>
+      requestAnimationFrame(() => resolve())));
+  });
   const [input,button] = await Promise.all([field.boundingBox(),action.boundingBox()]);
   expect(input && button).toBeTruthy();
   if (input && button) {
