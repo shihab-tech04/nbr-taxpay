@@ -131,7 +131,20 @@ async function assertBulkRemovalStopsAfterAccountSwitch(
   const firstResponseReleased=new Promise<void>(resolve=>{releaseFirstResponse=resolve;});
   await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({message:'No session'})}));
   await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
-    const body=route.request().postDataJSON() as {action?:string;id?:string;offset?:number;limit?:number};
+    const request=route.request();
+    const origin=request.headers().origin??'http://127.0.0.1:4173';
+    const corsHeaders={
+      'access-control-allow-origin':origin,
+      'access-control-allow-methods':'POST, OPTIONS',
+      'access-control-allow-headers':request.headers()['access-control-request-headers']
+        ??'apikey, content-type, x-taxpay-guest-capability',
+      'vary':'Origin',
+    };
+    if(request.method()==='OPTIONS'){
+      await route.fulfill({status:204,headers:corsHeaders});
+      return;
+    }
+    const body=request.postDataJSON() as {action?:string;id?:string;offset?:number;limit?:number};
     let data:unknown=[];
     if(body.action==='open')data={active:true};
     if(body.action==='demo-settings')data={language,selectedListId:listId,paymentSessionId:beneficiarySessionId};
@@ -147,7 +160,7 @@ async function assertBulkRemovalStopsAfterAccountSwitch(
       records=records.filter(person=>person.id!==id);
       data=true;
     }
-    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
+    await route.fulfill({status:200,headers:{...corsHeaders,'content-type':'application/json'},body:JSON.stringify({success:true,data})});
   });
 
   const lang=language==='bn'?'&lang=bn':'';
