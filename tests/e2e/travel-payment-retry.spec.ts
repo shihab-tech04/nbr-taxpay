@@ -28,7 +28,7 @@ test('Travel Tax resends the identical payment after a lost response ' +
         await route.abort('failed');
         return;
       }
-      await route.fulfill({ json: {
+      await route.fulfill({ headers, json: {
         success: true, id: paymentId, status: 'SIMULATED_SUCCESS',
         mirrored: true, simulationOnly: true,
       } });
