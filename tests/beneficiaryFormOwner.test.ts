@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import {beneficiaryFormOwnerKey,beneficiaryFormOwnerUnchanged} from '../src/services/beneficiaryFormOwner';
 
@@ -28,4 +29,30 @@ test('anonymous or mismatched preview context never permits a beneficiary write'
   assert.equal(beneficiaryFormOwnerKey(null,'user1',null),null);
   assert.equal(beneficiaryFormOwnerUnchanged(null,null),false);
   assert.equal(beneficiaryFormOwnerUnchanged(null,'auth:auth-user-a'),false);
+});
+
+test('every beneficiary write form rechecks its captured owner before its API mutation',()=>{
+  const source=readFileSync(new URL('../src/components/screens/Beneficiaries.tsx',import.meta.url),'utf8');
+  const body=(name:string)=>{
+    const start=source.indexOf(`async function ${name}(`);
+    assert.notEqual(start,-1,`${name} handler exists`);
+    const end=source.indexOf('\n  }',start);
+    assert.notEqual(end,-1,`${name} handler has a body`);
+    return source.slice(start,end);
+  };
+  const cases=[
+    ['saveList','createBeneficiaryList(owner,listName)'],
+    ['saveSingle','addBeneficiaries(owner,id,'],
+    ['finishImport','addBeneficiaries(owner,id,chosen.map'],
+  ] as const;
+  for(const [name,mutation] of cases){
+    const fn=body(name);
+    const ownerCheck=fn.indexOf('maySaveFor(');
+    const write=fn.indexOf(mutation);
+    assert.ok(ownerCheck>=0,`${name} checks the captured owner`);
+    assert.ok(write>ownerCheck,`${name} checks ownership before ${mutation}`);
+  }
+  const resolve=body('resolveList');
+  assert.ok(resolve.indexOf('maySaveFor(')>=0);
+  assert.ok(resolve.indexOf('createBeneficiaryList(owner,listName)')>resolve.indexOf('maySaveFor('));
 });
