@@ -53,6 +53,21 @@ test('actual signed-in payment and Travel Tax form state is saved, reloaded and 
   assert.match(api, /eq\('revision', previous\.revision\)/);
 });
 
+test('account payment draft snapshots and restores exact multiline challan remarks', () => {
+  const guest = read('src/components/screens/GuestPayment.tsx');
+  const snapshotStart = guest.indexOf('const snapshotAccountDraft =');
+  const restoreStart = guest.indexOf('const restoreAccountDraft =');
+  const restoreEnd = guest.indexOf('\n  };', restoreStart);
+  assert.ok(snapshotStart >= 0 && restoreStart > snapshotStart && restoreEnd > restoreStart,
+    'account draft snapshot and restore functions exist in the live payment form');
+  const snapshot = guest.slice(snapshotStart, restoreStart);
+  const restore = guest.slice(restoreStart, restoreEnd);
+  assert.match(snapshot, /noticeReference,\s*paymentRemarks/,
+    'the saved payload includes the complete optional remarks string');
+  assert.match(restore, /setPaymentRemarks\(stringField\('paymentRemarks'\)\)/,
+    'resume restores exact remarks without trimming or truncating them');
+});
+
 test('draft status never confirms a tax payment, receipt or Office notification', () => {
   const sql = read('supabase/migrations/20261107143000_taxpay_account_payment_form_drafts.sql');
   const ui = read('src/components/ui/AccountPaymentDraftControls.tsx');

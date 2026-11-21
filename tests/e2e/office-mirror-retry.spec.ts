@@ -24,7 +24,7 @@ async function submitTenTaka(page:Page){
 }
 
 test('durable SQL simulation reconciles a delayed Office mirror without a new payment key',async({page})=>{
-  const attempts: Array<{idempotencyKey:string;sessionId:string}>=[];
+  const attempts: Array<{idempotencyKey:string;sessionId:string;amountMinor:number;service:string;details:Record<string,unknown>}>=[];
   const paymentId='11111111-2222-4333-8444-555555555555';
   await page.route('**/*.supabase.co/**',route=>route.abort());
   await page.route('**/functions/v1/demo-story1-taxpay/payments/*',async route=>{
@@ -33,13 +33,14 @@ test('durable SQL simulation reconciles a delayed Office mirror without a new pa
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
       success:true,simulationOnly:true,data:{id:paymentId,status:'SIMULATED_SUCCESS',
         data:{idempotencyKey:attempts[0].idempotencyKey,sessionId:attempts[0].sessionId,
-          amountMinor:1000,service:'TAX_WITH_RETURN'}}
+          amountMinor:attempts[0].amountMinor,service:attempts[0].service,details:attempts[0].details}}
     })});
   });
   await page.route('**/functions/v1/demo-story1-taxpay/payments',async route=>{
     if(route.request().method()!=='POST')return route.abort();
-    const input=route.request().postDataJSON() as {idempotencyKey:string;sessionId:string};
-    attempts.push({idempotencyKey:input.idempotencyKey,sessionId:input.sessionId});
+    const input=route.request().postDataJSON() as {idempotencyKey:string;sessionId:string;amountMinor:number;service:string;details:Record<string,unknown>};
+    attempts.push({idempotencyKey:input.idempotencyKey,sessionId:input.sessionId,
+      amountMinor:input.amountMinor,service:input.service,details:input.details});
     const body=attempts.length===1
       ?{success:false,error:'OFFICE_SYNC_PENDING',requestId:paymentId,retryable:true,simulationOnly:true}
       :{success:true,id:paymentId,status:'SIMULATED_SUCCESS',mirrored:true,simulationOnly:true};
