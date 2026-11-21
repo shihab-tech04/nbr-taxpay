@@ -9,21 +9,57 @@ test('Travel Tax resends the identical payment after a lost response ' +
     'Run with the isolated Travel Tax fixture endpoint.');
   const requests: string[] = [];
   const paymentId = 'fd718297-1e32-421c-a951-987f4e92a991';
+  let readbackCount = 0;
   await page.route('https://travel-retry-test.invalid/**', async route => {
-    if (route.request().method() !== 'POST' ||
-        !route.request().url().endsWith('/demo-story1-taxpay/payments')) {
-      await route.fulfill({ status: 404, json: {} });
+    const request = route.request();
+    const url = new URL(request.url());
+    const headers = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-methods': 'GET, POST, OPTIONS',
+      'access-control-allow-headers': '*',
+    };
+    if (request.method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers });
       return;
     }
-    requests.push(route.request().postData() ?? '');
-    if (requests.length === 1) {
-      await route.abort('failed');
+    if (request.method() === 'POST' && url.pathname.endsWith('/demo-story1-taxpay/payments')) {
+      requests.push(request.postData() ?? '');
+      if (requests.length === 1) {
+        await route.abort('failed');
+        return;
+      }
+      await route.fulfill({ json: {
+        success: true, id: paymentId, status: 'SIMULATED_SUCCESS',
+        mirrored: true, simulationOnly: true,
+      } });
       return;
     }
-    await route.fulfill({ json: {
-      success: true, id: paymentId, status: 'SIMULATED_SUCCESS',
-      mirrored: true, simulationOnly: true,
-    } });
+    if (request.method() === 'GET') {
+      const detail = url.pathname.endsWith('/demo-story1-taxpay/payments/' + paymentId);
+      if (!detail || requests.length === 0) {
+        await route.fulfill({ status: 200, headers, json: {
+          success: true, simulationOnly: true, data: { items: [], total: 0 },
+        } });
+        return;
+      }
+      const saved = JSON.parse(requests[requests.length - 1]) as {
+        sessionId: string; service: string; amountMinor: number; details: Record<string, unknown>;
+      };
+      expect(url.searchParams.get('sessionId')).toBe(saved.sessionId);
+      readbackCount += 1;
+      if (readbackCount === 1) {
+        await route.fulfill({ status: 503, headers, json: { success: false, error: 'TEMPORARY_READBACK_FAILURE' } });
+        return;
+      }
+      await route.fulfill({ status: 200, headers, json: {
+        success: true, simulationOnly: true,
+        data: { id: paymentId, status: 'SIMULATED_SUCCESS', createdAt: '2026-11-14T08:00:00.000Z',
+          data: { service: saved.service, amountMinor: saved.amountMinor,
+            origin: 'TAXPAY_UI', details: saved.details } },
+      } });
+      return;
+    }
+    await route.fulfill({ status: 405, headers, json: { error: 'METHOD_NOT_ALLOWED' } });
   });
   await page.goto('/');
   await openTravelTaxFromBanner(page);
@@ -58,13 +94,29 @@ test('Travel Tax resends the identical payment after a lost response ' +
   } else {
     await submit.click();
   }
+
+  // The write acknowledgement still cannot display success. A failed SQL detail
+  // read leaves the exact original request available for a same-key retry.
+  await expect.poll(() => readbackCount).toBe(1);
+  await expect(modal.getByRole('alert')).toContainText('Retry with the same details');
+  await expect(modal.locator('.receipt-view__paper')).toHaveCount(0);
+  if (refresh) {
+    await page.goto('/');
+    await openTravelTaxFromBanner(page);
+    await expect(modal.getByRole('heading', { name: 'Payment confirmation pending' })).toBeVisible();
+    await modal.getByRole('button', { name: 'Retry payment confirmation' }).click();
+  } else {
+    await submit.click();
+  }
+  await expect.poll(() => readbackCount).toBe(2);
   await expect(modal.locator('.receipt-view__paper')).toBeVisible();
   const receipt = modal.getByTestId('travel-family-challan');
   await expect(receipt.locator('tbody tr')).toHaveCount(2);
   await expect(receipt).toContainText('SAMPLE BANGLADESHI PASSENGER');
   await expect(receipt).toContainText('FRIEND SECOND');
-  expect(requests).toHaveLength(2);
+  expect(requests).toHaveLength(3);
   expect(requests[1]).toBe(requests[0]);
+  expect(requests[2]).toBe(requests[0]);
   const submitted = JSON.parse(requests[0]) as {
     amountMinor: number;
     details?: {
