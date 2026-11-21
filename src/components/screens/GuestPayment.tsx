@@ -1230,11 +1230,16 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         receipts.forEach(addPaymentReceipt);
         if (receipts[0]) setCreatedReceipt(receipts[0]);
       });
+      const officeMirrorPending = completedBatch.items.some(item => item.officeMirrorPending === true);
       setLifecycleStages(previous => previous.includes('CREDITED') ? previous : [...previous, 'CREDITED']);
-      setOfficeMirrorPending(completedBatch.items.some(item=>item.officeMirrorPending===true));
+      setOfficeMirrorPending(officeMirrorPending);
       setPaymentValidationBlocked(false);
       setPaymentPhase('settled');
-      setErrorMessage('');
+      setErrorMessage(officeMirrorPending
+        ? (language === 'bn'
+          ? 'অফিস সমন্বয় এখনো অপেক্ষমাণ। একই অনুরোধ দিয়ে আবার চেষ্টা করুন।'
+          : 'Office synchronization is still pending. Retry the same request.')
+        : '');
     } catch(error) {
       const message=error instanceof Error?error.message:'';
       const validationBlocked=/^(Choose a saved demo beneficiary|A selected beneficiary|INVALID_BENEFICIARY|AUTHORIZATION_REQUIRED)/.test(message);
