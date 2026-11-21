@@ -3,6 +3,8 @@
 // Local Docker/Supabase only; no production data, credentials or Office writes.
 import assert from 'node:assert/strict';
 import {createHash,randomUUID} from 'node:crypto';
+import {writeFileSync} from 'node:fs';
+import {dirname,resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
 
 const base='http://127.0.0.1:54321/functions/v1/demo-story1-taxpay/payments/reference';
@@ -28,22 +30,48 @@ const ref='WS3-HTTP-REF-'+keyId;
 // The older fixture's headless line and missing receipt were correctly rejected.
 const taxpayerTin='111111111111';
 const assessmentYear='2026-27';
-const receiptItem={headId:125,totalAmount:123.45};
+const receiptMobile='01700000000';
+const tokenNumber='WS3-HTTP-TOKEN-'+keyId;
+const gatewayTransactionId='WS3-HTTP-GW-'+keyId;
+const payerName='WS3 isolated fictional payer';
+const receiptItem={headId:125,headNameEn:'Income Tax',economicCode:'',taxAmount:123.45,
+ penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:123.45};
 const payload={
  origin:'TAXPAY_UI',service:'TAX_WITH_RETURN',amountMinor:12345,
  sessionId:owner.paymentSessionId,idempotencyKey:keyId,
- details:{payerId:'user1',payerName:'WS3 isolated fictional payer',
+ details:{payerId:'user1',payerName,
   payerMode:'SELF',payerTin:taxpayerTin,taxpayerTin,assessmentYear,
-  receiptReference:ref,receiptMobile:'01700000000',
-  tokenNumber:'WS3-HTTP-TOKEN-'+keyId,
-  receiptSnapshot:{challanNo:ref,paymentCategory:'TAX_WITH_RETURN',
-   payerTin:taxpayerTin,taxpayerTin,assessmentYear,totalAmount:123.45,items:[receiptItem]},
+  receiptReference:ref,receiptMobile,tokenNumber,gatewayTransactionId,
+  receiptSnapshot:{isSimulatedDemo:true,challanNo:ref,tokenNumber,
+   paymentCategory:'TAX_WITH_RETURN',gatewayTransactionId,receiptMobile,
+   payerName,payerTin:taxpayerTin,taxpayerTin,assessmentYear,totalAmount:123.45,
+   paymentMethod:'SIMULATED',completedAt:'2026-11-21T00:00:00.000Z',
+   createdAt:'2026-11-21T00:00:00.000Z',treasuryStatus:'GATEWAY_SUCCESS',
+   items:[receiptItem]},
   lines:[{beneficiary:'user1',category:'TAX_WITH_RETURN',headId:125,
    assessmentYear,amountMinor:12345,totalAmount:123.45}]}
 };const payment=sqlJson('SELECT public.taxpay_demo_story1_submit('+
  lit(hash)+','+lit(JSON.stringify(payload))+'::jsonb);');
 assert.match(payment.id,/^[0-9a-f-]{36}$/i);
 assert.equal(payment.replayed,false);
+const replay=sqlJson('SELECT public.taxpay_demo_story1_submit('+lit(hash)+','+lit(JSON.stringify(payload))+'::jsonb);');
+assert.equal(replay.id,payment.id,'Repeated submit must return the same immutable payment');
+assert.equal(replay.replayed,true,'Repeated submit must not create a second payment');
+
+// Hand only disposable owner capabilities to the immediately following local
+// browser test. Never print this file or add it to a workflow artifact.
+const fixturePath=process.env.TAXPAY_LOCAL_GUEST_REFERENCE_FIXTURE_FILE;
+if(fixturePath){
+ const tempRoot=process.env.RUNNER_TEMP;
+ assert.ok(tempRoot,'RUNNER_TEMP is required for the disposable browser fixture');
+ const target=resolve(fixturePath);
+ assert.equal(dirname(target),resolve(tempRoot),'Fixture must stay inside the disposable runner temp directory');
+ writeFileSync(target,JSON.stringify({
+  owner:{profileId:'user1',capability:owner.capability,paymentSessionId:owner.paymentSessionId},
+  other:{profileId:'user2',capability:other.capability,paymentSessionId:other.paymentSessionId},
+  reference:ref,mobile:receiptMobile,paymentId:payment.id
+ }),{encoding:'utf8',mode:0o600});
+}
 
 async function lookup(capability,reference,mobile,expect,extra={}){
  const url=new URL(base);
