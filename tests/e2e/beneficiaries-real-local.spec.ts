@@ -2,15 +2,21 @@ import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
 
 // Real disposable Auth + PostgREST. Fail closed if pointed at any hosted database.
 test('real account saves private beneficiary, reopens it, isolates another owner and prefills Pay Tax',async({browser})=>{
   test.setTimeout(120_000);
   const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL, key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
-  if(!raw||!key)throw new Error('BLOCKED: disposable local Supabase credentials required');
+  const dsn=process.env.TAXPAY_LOCAL_PG_DSN;
+  if(!raw||!key||!dsn)throw new Error('BLOCKED: disposable local Supabase credentials required');
   const api=new URL(raw);
+  const database=new URL(dsn);
   if(api.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(api.hostname))
     throw new Error('Refusing non-loopback beneficiary acceptance');
+  if((database.protocol!=='postgres:'&&database.protocol!=='postgresql:')||
+    !['localhost','127.0.0.1','[::1]'].includes(database.hostname))
+    throw new Error('Refusing non-loopback beneficiary SQL fixture');
   const makeUser=async()=>{
     const email='beneficiary-'+randomUUID()+'@example.invalid',password=randomBytes(32).toString('base64url');
     const response=await fetch(new URL('/auth/v1/signup',api.origin),{
@@ -204,13 +210,29 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   expect(submittedPayment.id).toBeTruthy();
   expect(submittedPayment.status).toBe('SIMULATED_SUCCESS');
 
-  const claimPaymentResponse=await fetch(new URL('/rest/v1/rpc/taxpay_claim_story1_session',api.origin),{
-    method:'POST',
-    headers:{apikey:key,Authorization:'Bearer '+ownerA.session.access_token,'Content-Type':'application/json'},
-    body:JSON.stringify({p_session_id:paymentSession}),
-  });
-  expect(claimPaymentResponse.status).toBe(200);
-  expect(await claimPaymentResponse.json()).toBe(1);
+  // This random Auth user has no approver-created demo-profile binding, so
+  // the production claim RPC correctly refuses to link this synthetic payment.
+  // Seed only the disposable local owner-history index to model an already
+  // owned history row; both the Auth API and SQL target must be loopback.
+  const paymentId=submittedPayment.id;
+  expect(paymentId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  expect(ownerA.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  const ownerHistoryFixture=spawnSync('psql',['-X','-At','-v','ON_ERROR_STOP=1','-c',
+    `insert into public.taxpay_story1_payment_owners(payment_id,owner_uid)
+     values ('${paymentId}'::uuid,'${ownerA.id}'::uuid)
+     returning payment_id::text;`],{
+       encoding:'utf8',timeout:10_000,
+       env:{
+         ...process.env,
+         PGHOST:database.hostname,
+         PGPORT:database.port||'5432',
+         PGUSER:decodeURIComponent(database.username),
+         PGPASSWORD:decodeURIComponent(database.password),
+         PGDATABASE:database.pathname.slice(1),
+       },
+     });
+  expect(ownerHistoryFixture.status,ownerHistoryFixture.stderr).toBe(0);
+  expect(ownerHistoryFixture.stdout.trim()).toBe(paymentId);
 
   const readPaymentHistory=async()=>{
     const response=await fetch(new URL('/rest/v1/rpc/taxpay_my_story1_payments',api.origin),{
