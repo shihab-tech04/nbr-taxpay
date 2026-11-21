@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {BENEFICIARY_RELATIONS, BENEFICIARY_TAGS, beneficiaryTagLabel, beneficiaryFinalTagLabel, normalizeOtherLabel, validBeneficiaryClassification, validNewBeneficiaryClassification} from '../src/services/beneficiaryTags';
+import {BENEFICIARY_RELATIONS, BENEFICIARY_TAGS, beneficiaryTagLabel, beneficiaryFinalTagLabel, matchesBeneficiaryClassification, normalizeOtherLabel, validBeneficiaryClassification, validNewBeneficiaryClassification} from '../src/services/beneficiaryTags';
 
 test('fixed beneficiary category choices and all required family relationships',()=>{
   assert.deepEqual([...BENEFICIARY_TAGS],['clients','friends_family','others']);
@@ -39,6 +39,17 @@ test('classifications display without assigning any fabricated tag to historical
   assert.equal(beneficiaryTagLabel('others',null,'en',null),'Others');
   assert.equal(beneficiaryTagLabel(null,null,'en'),'Uncategorized');
   assert.equal(beneficiaryTagLabel(null,null,'bn'),'শ্রেণিবিহীন');
+});
+
+test('beneficiary save readback requires the exact selected tag, relation and Others text',()=>{
+  const expected={tag:'friends_family',relationship:'father',other_label:null};
+  assert.equal(matchesBeneficiaryClassification({...expected},expected),true);
+  assert.equal(matchesBeneficiaryClassification({...expected,relationship:'mother'},expected),false);
+  assert.equal(matchesBeneficiaryClassification({...expected,tag:'clients',relationship:null},expected),false);
+  assert.equal(matchesBeneficiaryClassification({...expected,other_label:'Neighbour'},expected),false);
+  assert.equal(matchesBeneficiaryClassification(null,expected),false);
+  const others={tag:'others',relationship:null,other_label:'Neighbour'};
+  assert.equal(matchesBeneficiaryClassification({...others,other_label:'Neighbour '},others),false);
 });
 
 test('Other descriptions are required across UI, SQL, guest RPC and Edge validation',()=>{
