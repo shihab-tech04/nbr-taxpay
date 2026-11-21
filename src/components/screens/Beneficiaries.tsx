@@ -163,7 +163,8 @@ export function Beneficiaries(){
   const formOwnerRef=useRef<string|null>(null);
   const createListOwnerRef=useRef<string|null>(null);
   const activeFormOwner=()=>beneficiaryFormOwnerKey(owner,previewAccount?.id??null,activePreviewSession(),
-    import.meta.env.DEV&&new URLSearchParams(window.location.search).has('demoUser'));
+    /^(?:localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)&&
+    new URLSearchParams(window.location.search).has('demoUser'));
   const maySaveFor=(captured:string|null)=>!checkingIdentity&&
     beneficiaryFormOwnerUnchanged(captured,activeFormOwner());
   const accountChangedMessage=()=>tr('Your account changed. Cancel and reopen this form before saving.',
