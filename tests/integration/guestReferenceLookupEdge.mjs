@@ -3,6 +3,8 @@
 // Local Docker/Supabase only; no production data, credentials or Office writes.
 import assert from 'node:assert/strict';
 import {createHash,randomUUID} from 'node:crypto';
+import {writeFileSync} from 'node:fs';
+import {dirname,resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
 
 const base='http://127.0.0.1:54321/functions/v1/demo-story1-taxpay/payments/reference';
@@ -44,6 +46,24 @@ const payload={
  lit(hash)+','+lit(JSON.stringify(payload))+'::jsonb);');
 assert.match(payment.id,/^[0-9a-f-]{36}$/i);
 assert.equal(payment.replayed,false);
+const replay=sqlJson('SELECT public.taxpay_demo_story1_submit('+lit(hash)+','+lit(JSON.stringify(payload))+'::jsonb);');
+assert.equal(replay.id,payment.id,'Repeated submit must return the same immutable payment');
+assert.equal(replay.replayed,true,'Repeated submit must not create a second payment');
+
+// Hand only disposable owner capabilities to the immediately following local
+// browser test. Never print this file or add it to a workflow artifact.
+const fixturePath=process.env.TAXPAY_LOCAL_GUEST_REFERENCE_FIXTURE_FILE;
+if(fixturePath){
+ const tempRoot=process.env.RUNNER_TEMP;
+ assert.ok(tempRoot,'RUNNER_TEMP is required for the disposable browser fixture');
+ const target=resolve(fixturePath);
+ assert.equal(dirname(target),resolve(tempRoot),'Fixture must stay inside the disposable runner temp directory');
+ writeFileSync(target,JSON.stringify({
+  owner:{profileId:'user1',capability:owner.capability,paymentSessionId:owner.paymentSessionId},
+  other:{profileId:'user2',capability:other.capability,paymentSessionId:other.paymentSessionId},
+  reference:ref,mobile:'01700000000',paymentId:payment.id
+ }),{encoding:'utf8',mode:0o600});
+}
 
 async function lookup(capability,reference,mobile,expect,extra={}){
  const url=new URL(base);
