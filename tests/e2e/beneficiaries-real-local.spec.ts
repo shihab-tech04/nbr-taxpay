@@ -160,6 +160,19 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   expect(second?.id).toBeTruthy();
 
   const deleteUrl=(id:string)=>new URL('/rest/v1/taxpay_beneficiaries?id=eq.'+id,api.origin);
+  const unauthorizedEdit=await fetch(deleteUrl(first!.id),{
+    method:'PATCH',
+    headers:{apikey:key,Authorization:'Bearer '+ownerB.session.access_token,
+      'Content-Type':'application/json',Prefer:'return=representation'},
+    body:JSON.stringify({display_name:'Unauthorized edit',tag:'clients',relationship:null}),
+  });
+  expect(unauthorizedEdit.status).toBe(200);
+  expect(await unauthorizedEdit.json()).toEqual([]);
+  expect((await read(ownerA.session.access_token)).find(
+    (row:{tin:string})=>row.tin==='012345678901')).toMatchObject({
+      owner_uid:ownerA.id,display_name:'Local Beneficiary One',tag:'friends_family',relationship:'father',
+    });
+
   const denied=await fetch(deleteUrl(first!.id),{
     method:'DELETE',
     headers:{apikey:key,Authorization:'Bearer '+ownerB.session.access_token,Prefer:'return=representation'},
