@@ -52,7 +52,8 @@ test('F-043 waits for matching Taxpayer SQL readback and retries with the same p
         await route.fulfill({ status: 200, contentType: 'application/json', headers: corsHeaders,
           body: JSON.stringify({ success: true, simulationOnly: true,
             data: { id: paymentId, status: 'SIMULATED_SUCCESS', createdAt,
-              data: { service: stored.service, amountMinor: stored.amountMinor, details: stored.details } } }) });
+              data: { service: stored.service, amountMinor: stored.amountMinor, origin: 'TAXPAY_UI',
+                details: stored.details } } }) });
         return;
       }
       await route.fulfill({ status: 200, contentType: 'application/json', headers: corsHeaders,
