@@ -197,7 +197,7 @@ test('failed beneficiary save stays recoverable and retries without duplicating 
 
 
 test('local sample taxpayer Beneficiaries supports independent lists, manual entry, list-only move, removal, recovery and multi-taxpayer prefill',async({page,browser},info)=>{
-  await setupGuestTransport(page);
+  const transport=await setupGuestTransport(page);
   await page.goto('/?action=beneficiaries&demoUser=user1');
   await page.getByRole('button',{name:'Filter',exact:true}).click();
   const recordList=page.getByTestId('beneficiary-records').locator('table.taxpay-unified-table tbody tr:visible, ul.taxpay-mobile-table-cards:visible > li');
