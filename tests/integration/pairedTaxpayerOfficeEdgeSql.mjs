@@ -24,7 +24,8 @@ assert.notEqual(new URL(sourceDb).port,new URL(officeDb).port,'Taxpayer and Offi
 const officeSecret='ws3-disposable-shared-mirror-secret';
 // Reuse the active MAKER fixture installed by pairedCorrectionOfficeSql.mjs.
 const officerId='80000000-0000-4000-8000-000000000011';
-const unauthorizedOfficerId='80000000-0000-4000-8000-000000000012';
+// Keep the outsider distinct from the active REVIEWER fixture, which uses the old 012 ID.
+const unauthorizedOfficerId=randomUUID();
 const officeToken='ws3-disposable-authorized-office-session';
 const servers={};
 const officeFailure={next:true};
