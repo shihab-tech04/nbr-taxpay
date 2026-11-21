@@ -357,14 +357,16 @@ try {
   await bengaliReadback;
   await screen.waitFor({ state: 'visible', timeout: 30000 });
   assert.ok(paymentRequests > priorRequests, 'Bengali refresh must re-read the authorized Office endpoint');
-  assert.ok(remarksRequests > priorRemarksRequests,
-    'Bengali refresh must re-read remarks through the separate officer-guarded SQL RPC');
   assert.equal(missingBearer, false);
   assert.equal(missingRemarksBearer, false);
   assert.equal(wrongRemarksPaymentId, false);
   assert.equal(routeError, null, routeError || undefined);
+  // Refresh closes the details drawer. Reopen the same payment in BN, then
+  // require a new guarded SQL RPC instead of expecting a closed drawer to poll.
   await page.locator('.payment-module__table-card .card-table__action-btn').first().click();
   await verifyVisibleAllocations('bn');
+  assert.ok(remarksRequests > priorRemarksRequests,
+    'Reopening after Bengali refresh must re-read remarks through the separate officer-guarded SQL RPC');
   console.log('PASS Office #270 UI readback EN/BN refresh and error/retry: paired parent ' + payment.id +
     ', exact officer-guarded BN/EN multiline remarks, two individually verified immutable allocations, payer, beneficiaries, heads/years/exact amounts, original receipt/certificate references and authorized Office readback');
 } finally {
