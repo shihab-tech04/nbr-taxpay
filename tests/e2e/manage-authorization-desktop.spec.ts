@@ -6,6 +6,17 @@ async function signIn(page: Page, userId: 'user1' | 'user2') {
   await login.getByRole('textbox', { name: 'User ID' }).fill(userId);
   await login.getByRole('textbox', { name: 'Password' }).fill(userId);
   await login.getByRole('button', { name: 'Sign In' }).click();
+  // The preview backend is mocked in this browser test. Supply the corresponding
+  // fictional session in storage; the separate local Edge/SQL acceptance test
+  // proves that forged/mismatched capabilities are rejected in the real API.
+  await page.evaluate((actor) => {
+    sessionStorage.setItem('taxpay-taxpayer-preview-user', actor);
+    sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
+      profileId:actor,capability:(actor==='user1'?'A':'B').repeat(43),
+      paymentSessionId:'00000000-0000-4000-8000-000000000001',
+      language:'en',selectedListId:null
+    }));
+  },userId);
   await page.goto('/?action=manage_authorization');
 }
 
