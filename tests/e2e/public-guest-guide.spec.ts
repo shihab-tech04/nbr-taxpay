@@ -31,9 +31,10 @@ test('public hero opens receipt lookup and its Travel Tax banner starts the jour
  await fillTravelDetails(travel);
  await expect(travel.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
  await travel.getByRole('button',{name:'Continue to review'}).click();
- await expect(travel.getByRole('heading',{name:'Payment preview'})).toBeVisible();
+ await expect(travel.getByRole('heading',{name:'Final Preview'})).toBeVisible();
  // Receipt contact is required in the final preview, not the passenger form.
  await travel.locator('#travel-mobile').fill('01712345678');
+  await travel.getByRole('button',{name:'Make Payment'}).click();
   await travel.getByRole('button',{name:'Pay online'}).click();
   await travel.getByRole('button',{name:'Mobile banking'}).click();
  await travel.getByRole('radio',{name:'bKash'}).check();
@@ -455,6 +456,7 @@ test('travel tax desktop summary stays anchored during the wizard, then full-wid
   expect(Math.abs((await side.evaluate(el=>el.getBoundingClientRect().top))-initial)).toBeLessThan(2);
   await modal.getByRole('button',{name:'Continue to review'}).click();
   await modal.locator('#travel-mobile').fill('01712345678');
+  await modal.getByRole('button',{name:'Make Payment'}).click();
   await modal.getByRole('button',{name:'Pay online'}).click();
   await modal.getByRole('button',{name:'Mobile banking'}).click();
   await modal.getByRole('radio',{name:'bKash'}).check();
@@ -504,6 +506,7 @@ test('Travel Tax keeps workflow actions separate from receipt Download and Print
   await actions.getByRole('button',{name:'Continue to review'}).click();
   // Preview collects receipt contact immediately before payment.
   await modal.locator('#travel-mobile').fill('01712345678');
+  await modal.getByRole('button',{name:'Make Payment'}).click();
   await modal.getByRole('button',{name:'Pay online'}).click();
   await modal.getByRole('button',{name:'Mobile banking'}).click();
   await modal.getByRole('radio',{name:'bKash'}).check();
@@ -532,7 +535,7 @@ test('Travel Tax displays only two mode cards without fixed prices and calculate
   await expect(routes).not.toContainText('1,000');
   await expect(summary.locator('.travel-flow__total')).toContainText('1,000');
   await modal.getByRole('button',{name:'Continue to review'}).click();
-  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Payment preview');
+  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Final Preview');
 });
 
 test('Travel Tax Bengali passenger tabs remain accessible at 320px',async({page},info)=>{
