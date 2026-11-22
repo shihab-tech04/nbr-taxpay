@@ -2,7 +2,7 @@ import { maskTinForDisplay } from '../../services/tinDisplay';
 import React, { useEffect, useRef, useState } from 'react';
 import { Clock3, Plus, RefreshCw, ShieldCheck, ShieldX, Trash2, UsersRound } from 'lucide-react';
 import { DEMO_USERS, type DemoUserId } from '../../data/demoUsers';
-import { sampleJourneysEnabled, useTaxState } from '../../services/taxState';
+import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 import { TaxpayerTinLookup, TaxpayerTinSearchResultCard } from '../ui/TaxpayerTinLookup';
@@ -16,11 +16,11 @@ import {
 type Tab = 'outgoing' | 'incoming';
 
 export function ManageAuthorization() {
-  const { language, previewAccount, demoUser, navigate } = useTaxState();
+  const { language, previewAccount, navigate } = useTaxState();
   const { user: applicationUser } = useAccountIdentity();
   const bn = language === 'bn';
   const tr = (en: string, bengali: string) => bn ? bengali : en;
-  const actor = previewAccount?.id ?? (sampleJourneysEnabled ? demoUser?.id : undefined);
+  const actor = previewAccount?.id; // Only the server-capability-backed preview session can authorize demo consent.
   const [tab, setTab] = useState<Tab>('outgoing');
   const [records, setRecords] = useState<HostedAuthorization[]>([]);
   const [loading, setLoading] = useState(false);
@@ -205,7 +205,7 @@ export function ManageAuthorization() {
 
       {feedback && <p className={`taxpay-auth-feedback ${feedback.error ? 'taxpay-auth-feedback--error' : ''}`} role="status">{feedback.message}</p>}
       {syncPending && <button type="button" className="taxpay-auth-outline" disabled={busy}
-        onClick={()=>void runAction(async()=>{await retryHostedAuthorizationSync(syncPending);setSyncPending(null);},tr('Office synchronization confirmed.','অফিস সিঙ্ক নিশ্চিত হয়েছে।'))}>{tr('Retry Office synchronization','অফিস সিঙ্ক আবার চেষ্টা করুন')}</button>}
+        onClick={()=>void runAction(async()=>{await retryHostedAuthorizationSync(syncPending,actor!);setSyncPending(null);},tr('Office synchronization confirmed.','অফিস সিঙ্ক নিশ্চিত হয়েছে।'))}>{tr('Retry Office synchronization','অফিস সিঙ্ক আবার চেষ্টা করুন')}</button>}
       {loading && <p role="status">{tr('Loading shared authorizations…','অনুমোদন লোড হচ্ছে…')}</p>}
       {!shown.length ? <div className="taxpay-auth-empty">
         <UsersRound size={30} strokeWidth={1.6} aria-hidden="true" />

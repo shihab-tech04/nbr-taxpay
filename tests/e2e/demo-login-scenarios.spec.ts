@@ -70,7 +70,7 @@ test('all ten matching User ID and password pairs open their own account views',
    await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
    expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBe('user'+n);
  }
- expect([...authorizationActors].sort()).toEqual(Array.from({length:10},(_,i)=>`user${i+1}`).sort());
+ expect([...authorizationActors], 'Offline fictional login must not contact hosted consent without an issued profile capability').toEqual([]);
  expect(backendCalls.every(url=>new URL(url).pathname==='/functions/v1/demo-story1-taxpay/authorizations')).toBe(true);
 });
 

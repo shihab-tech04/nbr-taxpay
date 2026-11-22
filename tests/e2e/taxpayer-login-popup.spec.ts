@@ -128,7 +128,7 @@ test('all ten matching ID/password pairs open their own taxpayer dashboard and p
     await expect(page.locator('#public-home-title')).toBeVisible();
     expect(await page.evaluate(()=>sessionStorage.getItem('taxpay-taxpayer-preview-user'))).toBeNull();
   }
-  expect([...authorizationActors].sort()).toEqual(Array.from({length:10},(_,i)=>`user${i+1}`).sort());
+  expect([...authorizationActors], 'Offline fictional login must not contact hosted consent without an issued profile capability').toEqual([]);
   expect(hostedCalls.every(url=>new URL(url).pathname==='/functions/v1/demo-story1-taxpay/authorizations')).toBe(true);
 });
 
