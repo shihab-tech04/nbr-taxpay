@@ -1653,8 +1653,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 <div className="walkin-postpayment-login__copy">
                   <strong>{language === 'bn' ? 'আপনার পেমেন্ট রেকর্ড পরে দেখতে চান?' : 'Want easier access to your payment history?'}</strong>
                   <p>{language === 'bn'
-                    ? 'সাইন ইন করলে অ্যাকাউন্টের সংরক্ষিত পেমেন্ট ও চালান দেখতে পারবেন। এই ওয়াক-ইন রসিদ স্বয়ংক্রিয়ভাবে কোনো অ্যাকাউন্টে যুক্ত হবে না।'
-                    : 'Sign in to view payments and challans saved to your account. This walk-in receipt is not automatically linked to an account.'}</p>
+                    ? 'সাইন ইন করে পেমেন্টের ইতিহাস, সংরক্ষিত চালান, উপলব্ধ রসিদ ও আগের রেকর্ড দেখতে পারবেন। এই ওয়াক-ইন রসিদ স্বয়ংক্রিয়ভাবে কোনো অ্যাকাউন্টে যুক্ত হবে না।'
+                    : 'Sign in to access payment history, saved challans, available receipts and previous records. This walk-in receipt is not automatically linked to an account.'}</p>
                 </div>
                 <div className="walkin-postpayment-login__actions">
                   <button type="button" className="walkin-postpayment-login__signin"

@@ -1181,3 +1181,40 @@
 }
 
 
+
+/* Eight-point landing revision: a calm box-style hero without disabling verified CMS slides. */
+.public-hero-carousel-shell--box .public-hero-carousel { border-radius: 18px; }
+.public-hero-carousel-shell--box .public-hero-carousel__slogan {
+  display: block; margin: 0 0 .35rem; color: #244b7b;
+  font-size: clamp(.85rem, 1.35vw, 1.1rem); font-weight: 750; line-height: 1.45;
+  letter-spacing: 0; overflow-wrap: anywhere;
+}
+.public-hero-carousel-shell--box .citizen-public-hero__actions.public-guest-actions {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+  align-items: stretch; width: 100%;
+}
+.public-hero-carousel-shell--box .public-guest-actions .public-guest-action {
+  min-width: 0; min-height: 44px; display: flex; justify-content: center;
+  align-items: center; gap: 6px; padding: 7px 9px;
+  font-size: clamp(.76rem, .95vw, .875rem); line-height: 1.3;
+}
+.public-hero-carousel-shell--box .public-hero-carousel__gift {
+  background: #fff; border: 1px solid #c7d8ee; border-radius: 9px;
+  color: #234d82; font-weight: 700;
+}
+.public-hero-carousel-shell--box .public-hero-carousel__gift:hover { background: #f2f6fc; }
+.public-hero-carousel-shell--box .public-hero-carousel__gift:focus-visible { outline: 3px solid #2c5ead; outline-offset: 2px; }
+@media (min-width: 981px) {
+  .public-hero-carousel-shell--box .public-hero-carousel__slide.public-information-hero .public-information-hero__media {
+    margin: 14px; border-radius: 15px; overflow: hidden; border: 1px solid #d6dfed;
+    min-width: 0; height: calc(100% - 28px);
+  }
+  .public-hero-carousel-shell--box .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy {
+    display: flex; flex-direction: column; justify-content: center;
+  }
+}
+@media (max-width: 650px) {
+  .public-hero-carousel-shell--box .citizen-public-hero__actions.public-guest-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .public-hero-carousel-shell--box .public-hero-carousel__gift { grid-column: 1 / -1; }
+  .public-hero-carousel-shell--box .public-hero-carousel__slogan { font-size: .85rem; }
+}

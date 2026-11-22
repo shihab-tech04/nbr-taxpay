@@ -218,12 +218,14 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
 type PublicHeroCarouselProps = {
   language: 'en' | 'bn';
   onPayTax: (service?: BannerPaymentService) => void;
+  onGiftTax: () => void;
   paused?: boolean;
 };
 
 export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   language,
   onPayTax,
+  onGiftTax,
   paused = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -367,13 +369,14 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   if (!slides.length) {
     // An unverified client fallback must never override SQL publish status.
     // Preserve functional payment entrypoints without showing any banner image.
-    return <div className="public-hero-carousel-shell public-hero-carousel--offline">
+    return <div className="public-hero-carousel-shell public-hero-carousel-shell--box public-hero-carousel--offline">
       <section className="public-hero-carousel" role="region"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
         tabIndex={0}>
         <article className="citizen-public-hero public-information-hero public-hero-carousel__slide public-hero-carousel__fixed"
           data-banner-service="intro" data-banner-kind="intro">
         <div className="citizen-public-hero__copy">
+          <p className="public-hero-carousel__slogan" lang="bn">আমার করের টাকায় গড়বো স্বদেশ</p>
           <h1 id="public-home-title">{bn ? 'কর পরিশোধ' : 'Tax payments'}</h1>
           <p role="status">{bannerStatus === 'loading'
             ? (bn ? 'ব্যানার লোড হচ্ছে…' : 'Loading banner information…')
@@ -382,7 +385,8 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
             <button type="button" className="citizen-public-primary public-guest-action"
               onClick={() => onPayTax()}>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</button>
             <button type="button" className="public-guest-action"
-              onClick={() => onPayTax('TRAVEL_TAX')}>{bn ? 'ভ্রমণ কর পরিশোধ' : 'Pay Travel Tax'}</button>
+              onClick={() => onPayTax('TRAVEL_TAX')}>{bn ? 'ভ্রমণ কর পরিশোধ' : 'Travel Tax'}</button>
+            <button type="button" className="public-guest-action public-hero-carousel__gift" onClick={onGiftTax} aria-label={bn ? 'দান কর' : 'Gift Tax'}>{bn ? 'দান কর' : 'Gift Tax'}</button>
           </div>
           {bannerStatus === 'unavailable' && <button className="public-hero-carousel__retry"
             type="button" onClick={() => {setBannerStatus('loading');setRetryNonce(n => n + 1);}}>
@@ -409,7 +413,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   return (
     <div
       ref={containerRef}
-      className="public-hero-carousel-shell"
+      className="public-hero-carousel-shell public-hero-carousel-shell--box"
       onPointerEnter={onPointerEnter}
       onPointerLeave={event => { if (event.pointerType === 'mouse') setIsHovered(false); }}
       onFocusCapture={() => setHasFocus(true)}
@@ -422,7 +426,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         role="region"
         aria-roledescription="carousel"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
-        aria-description={bn ? 'ছবি ও রং পরিবর্তন করতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন। কর ও ভ্রমণ কর পরিশোধের বোতাম অপরিবর্তিত থাকবে।' : 'Swipe or use the arrow keys to change banner images and colors. Pay Tax and Pay Travel Tax stay available on every slide.'}
+        aria-description={bn ? 'ছবি ও রং পরিবর্তন করতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন। আয়কর, ভ্রমণ কর ও দান করের বোতাম অপরিবর্তিত থাকবে।' : 'Swipe or use the arrow keys to change banner images and colors. Income Tax, Travel Tax and Gift Tax actions stay available on every slide.'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
         data-dragging={isSwiping}
@@ -472,6 +476,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                 inert={!isActive}
               >
                 <div className="citizen-public-hero__copy">
+                  <p className="public-hero-carousel__slogan" lang="bn">আমার করের টাকায় গড়বো স্বদেশ</p>
                   {intro ? (
                     <h1 id="public-home-title">
                       <span className="public-hero-copy--desktop">{heading}</span>
@@ -514,6 +519,10 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                         </span>
                       </button>
                     )}
+                    <button type="button" className="public-guest-action public-hero-carousel__gift" onClick={onGiftTax} aria-label={bn ? 'দান কর' : 'Gift Tax'}>
+                      <WalletCards size={18} aria-hidden="true" />
+                      <span>{bn ? 'দান কর' : 'Gift Tax'}</span>
+                    </button>
                   </div>
                 </div>
                 <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
