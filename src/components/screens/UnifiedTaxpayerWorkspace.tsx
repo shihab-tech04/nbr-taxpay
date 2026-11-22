@@ -1,6 +1,7 @@
 import { maskTinForDisplay } from '../../services/tinDisplay';
 import React, { useState } from 'react';
-import { Search, Trash2, UserRound } from 'lucide-react';
+import { Search, Trash2 } from 'lucide-react';
+import { SelectedIdentityRail } from '../ui/SelectedIdentityRail';
 import { TaxpayerTinLookup, TaxpayerTinSearchResultCard } from '../ui/TaxpayerTinLookup';
 import { lookupSampleTaxpayer } from '../../services/sampleTaxpayerLookup';
 import { demoIncomeTaxTypeForTin } from '../../services/demoIncomeTaxType';
@@ -90,13 +91,11 @@ export function UnifiedTaxpayerWorkspace({
       </div>
       {error && <p role="alert" className="unified-taxpayer-workspace__error">{error}</p>}
     </section>
-    <aside className="unified-taxpayer-workspace__rail" aria-label={tx('Taxpayers in this payment', 'এই পেমেন্টের করদাতারা')}>
-      <h3 className="unified-taxpayer-workspace__rail-title"><UserRound size={17} aria-hidden="true"/>
-        {tx('Taxpayers in this payment', 'এই পেমেন্টের করদাতারা')}
-        <span aria-live="polite" data-testid="unified-taxpayer-count">{selected.length}</span>
-      </h3>
-      <div className="unified-taxpayer-workspace__list">
-        {!selected.length && <div className="unified-taxpayer-workspace__selected-empty"><UserRound size={18} aria-hidden="true"/><strong>{tx('No taxpayers added', 'কোনো করদাতা যোগ করা হয়নি')}</strong></div>}
+    <SelectedIdentityRail prefix="unified-taxpayer-workspace"
+      label={tx('Taxpayers in this payment', 'এই পেমেন্টের করদাতারা')}
+      count={selected.length}
+      countTestId="unified-taxpayer-count" announceCount
+      emptyLabel={tx('No taxpayers added', 'কোনো করদাতা যোগ করা হয়নি')}>
         {selected.map((person,index) => {
           const count = allocations.filter(line=>line.taxpayerId===person.id).length;
           const confirming = pendingRemoval === person.id;
@@ -115,7 +114,6 @@ export function UnifiedTaxpayerWorkspace({
             </div>}
           </div>;
         })}
-      </div>
-    </aside>
+    </SelectedIdentityRail>
   </div>;
 }
