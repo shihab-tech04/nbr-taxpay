@@ -103,7 +103,7 @@
 
 .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
   margin-top: .65rem;
-  font-size: .95rem;
+  font-size: var(--taxpay-type-body);
   line-height: 1.5;
 }
 
@@ -153,7 +153,7 @@
   max-width: 24ch;
   margin: 0;
   color: var(--citizen-text);
-  font-size: clamp(1.8rem, 2.5vw, 2rem);
+  font-size: var(--taxpay-type-h1);
   font-weight: 750;
   line-height: 1.22;
   letter-spacing: -.025em;
@@ -212,7 +212,7 @@
     padding: 1rem 1.15rem;
   }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
-    font-size: 1.65rem;
+    font-size: var(--taxpay-type-h1);
   }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
     font-size: .9rem;
@@ -234,13 +234,13 @@
     text-align: center;
   }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1 {
-    font-size: 1.65rem;
+    font-size: var(--taxpay-type-h1);
     font-weight: 700;
     line-height: 1.28;
   }
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
     max-width: none;
-    font-size: 1.55rem;
+    font-size: var(--taxpay-type-h1);
     font-weight: 700;
     line-height: 1.28;
   }
@@ -1009,12 +1009,12 @@
     padding-bottom: .7rem;
   }
   .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 {
-    font-size: 1.65rem;
+    font-size: var(--taxpay-type-h2);
     line-height: 1.2;
   }
   .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p {
     margin-top: .4rem;
-    font-size: .875rem;
+    font-size: var(--taxpay-type-body);
     line-height: 1.35;
   }
   .public-home-sections .public-hero-carousel__slide.public-information-hero .citizen-public-hero__actions {
