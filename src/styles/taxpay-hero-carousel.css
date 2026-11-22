@@ -1223,7 +1223,7 @@
 .public-hero-carousel-shell--box .public-hero-carousel { border-radius: 18px; }
 .public-hero-carousel-shell--box .public-hero-carousel__slogan {
   display: block; margin: 0 0 .35rem; color: #244b7b;
-  font-size: clamp(.85rem, 1.35vw, 1.1rem); font-weight: 750; line-height: 1.45;
+  font-size: var(--taxpay-type-body); font-weight: 750; line-height: 1.45;
   letter-spacing: 0; overflow-wrap: anywhere;
 }
 .public-hero-carousel-shell--box .citizen-public-hero__actions.public-guest-actions {
@@ -1233,7 +1233,7 @@
 .public-hero-carousel-shell--box .public-guest-actions .public-guest-action {
   min-width: 0; min-height: 44px; display: flex; justify-content: center;
   align-items: center; gap: 6px; padding: 7px 9px;
-  font-size: clamp(.76rem, .95vw, .875rem); line-height: 1.3;
+  font-size: var(--taxpay-type-body); line-height: 1.3;
 }
 .public-hero-carousel-shell--box .public-hero-carousel__gift {
   background: #fff; border: 1px solid #c7d8ee; border-radius: 9px;
@@ -1253,7 +1253,7 @@
 @media (max-width: 650px) {
   .public-hero-carousel-shell--box .citizen-public-hero__actions.public-guest-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .public-hero-carousel-shell--box .public-hero-carousel__gift { grid-column: 1 / -1; }
-  .public-hero-carousel-shell--box .public-hero-carousel__slogan { font-size: .85rem; }
+  .public-hero-carousel-shell--box .public-hero-carousel__slogan { font-size: var(--taxpay-type-body); }
 }
 
 /* Three CTAs + Bengali slogan need a real copy row on 320–600px.
@@ -1269,5 +1269,19 @@
   .public-hero-carousel-shell--box .citizen-public-hero__copy h2,
   .public-hero-carousel-shell--box .citizen-public-hero__copy > p {
     white-space: normal;
+  }
+}
+
+/* The approved three-CTA box must keep readable 16px copy at 320px.
+ * At narrow phone widths let the intact decorative image shrink instead of
+ * clipping the Bengali slogan, important actions, or text. */
+@media (max-width: 390px) {
+  .public-hero-carousel-shell--box .public-hero-carousel__slide.public-information-hero {
+    grid-template-rows: minmax(var(--box-hero-copy-height), auto) clamp(112px, 32vw, 126px);
+    min-height: calc(var(--box-hero-copy-height) + clamp(112px, 32vw, 126px));
+  }
+  .public-hero-carousel-shell--box .public-hero-carousel__slide.public-information-hero .public-information-hero__media {
+    height: clamp(112px, 32vw, 126px);
+    min-height: 0;
   }
 }
