@@ -280,8 +280,9 @@ test('Existing Travel Tax banner still provides journey, passenger and payment v
   await fillTravelDetails(travel);
   await expect(travel.locator('.travel-flow__total')).toContainText('1,000');
   await travel.getByRole('button', { name: 'Continue to review' }).click();
-  await expect(travel.locator('.taxpay-modal__title')).toHaveText('Payment preview');
-  await expect(travel.getByRole('button', { name: 'Confirm preview payment' })).toBeDisabled();
+  await expect(travel.locator('.taxpay-modal__title')).toHaveText('Final Preview');
+  await expect(travel.getByRole('button', { name: 'Make Payment' })).toBeVisible();
+  await expect(travel.getByTestId('travel-payment-channel-screen')).toHaveCount(0);
   await expect(travel.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
 });
 
@@ -291,10 +292,11 @@ test('Declined Travel Tax payment never issues a receipt', async ({ page }) => {
   const travel = page.getByRole('dialog', { name: 'Travel tax' });
   await fillTravelDetails(travel);
   await travel.getByRole('button', { name: 'Continue to review' }).click();
+  await travel.locator('#travel-mobile').fill('01712345678');
+  await travel.getByRole('button', { name: 'Make Payment' }).click();
   await travel.getByRole('button', { name: 'Pay online' }).click();
   await travel.getByRole('button', { name: 'Mobile banking' }).click();
   await travel.getByRole('radio', { name: 'Nagad' }).check();
-  await travel.locator('#travel-mobile').fill('01712345678');
   await travel.getByRole('checkbox', { name: 'Show declined payment outcome' }).check();
   await travel.getByLabel('I confirm the travel information, all passengers and the combined amount.').check();
   await travel.getByRole('button', { name: 'Confirm preview payment' }).click();
