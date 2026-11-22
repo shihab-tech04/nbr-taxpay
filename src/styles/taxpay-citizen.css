@@ -3083,55 +3083,7 @@
   }
 }
 
-/* Walk-in completion: keep navigation in one row, save the receipt's three
-   financial actions in the shared footer, and keep the optional invitation quiet. */
-.taxpay-citizen-shell .receipt-view--walkin .receipt-view__toolbar{
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
-  gap:8px;margin:0 0 16px;padding:0;min-width:0;
-}
-.taxpay-citizen-shell .receipt-view--walkin .receipt-view__toolbar .receipt-view__action{
-  min-height:42px;min-width:0;max-width:100%;white-space:normal;
-  padding:8px 12px;font-weight:600;
-}
-.taxpay-citizen-shell .receipt-view--walkin .receipt-view__toolbar .receipt-view__action:last-child{
-  margin-left:auto;
-}
-.receipt-view--walkin .walkin-postpayment-login{
-  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;
-  gap:14px;margin:16px 0;padding:14px 16px;border:1px solid var(--citizen-border);
-  border-radius:10px;background:#f8fafc;color:var(--citizen-text);
-}
-.receipt-view--walkin .walkin-postpayment-login__copy{flex:1 1 300px;min-width:0}
-.receipt-view--walkin .walkin-postpayment-login__copy strong{font-size:14px;line-height:1.4}
-.receipt-view--walkin .walkin-postpayment-login__copy p{
-  font-size:13px;color:var(--citizen-muted);line-height:1.6;margin:5px 0 0;
-}
-.receipt-view--walkin .walkin-postpayment-login__actions{
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-}
-.receipt-view--walkin .walkin-postpayment-login__actions button{
-  min-height:42px;display:inline-flex;align-items:center;justify-content:center;
-  gap:6px;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:650;
-}
-.receipt-view--walkin .walkin-postpayment-login__signin{
-  color:var(--citizen-primary-dark);border:1px solid var(--citizen-border);
-  background:var(--citizen-surface);
-}
-.receipt-view--walkin .walkin-postpayment-login__skip{
-  color:var(--citizen-muted);background:transparent;border:1px solid transparent;
-}
-.receipt-view--walkin .walkin-postpayment-login__actions button:focus-visible{
-  outline:2px solid var(--citizen-primary);outline-offset:2px;
-}
-@media(max-width:560px){
-  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__toolbar{align-items:stretch}
-  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__toolbar .receipt-view__action{flex:1 1 auto}
-  .receipt-view--walkin .walkin-postpayment-login__actions{width:100%}
-  .receipt-view--walkin .walkin-postpayment-login__actions button{flex:1 1 100%}
-}
-
-
-/* Walk-in receipt reading hierarchy — PR #952 screenshot follow-up.
+/* Walk-in receipt: scoped payment-first hierarchy and calm secondary login.
    Scope to the walk-in reader; do not change signed-in receipts, financial values,
    print layout, modal footer contracts, or other payment journeys. */
 @media screen {
@@ -3311,6 +3263,23 @@
     white-space: normal;
     font-size: 12.5px;
     padding: 8px 10px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__signin {
+    color: var(--citizen-primary-dark);
+    border: 1px solid var(--citizen-border);
+    background: var(--citizen-surface);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__signin:hover {
+    background: var(--citizen-primary-light);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__skip {
+    color: var(--citizen-muted);
+    border: 1px solid transparent;
+    background: transparent;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__actions button:focus-visible {
+    outline: 2px solid var(--citizen-primary);
+    outline-offset: 2px;
   }
   .taxpay-citizen-shell .receipt-view--walkin .receipt-view__breakdown {
     margin: 0;
