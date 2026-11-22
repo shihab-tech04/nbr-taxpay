@@ -9,7 +9,7 @@ const themeTokens = [null, '--service-return-bg', '--service-advance-bg',
 
 test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
 
-test('five published images and palettes retain fixed copy and the same two payment actions', async ({ page }, info) => {
+test('five published images and palettes retain fixed copy and the three tax actions', async ({ page }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?action=landing');
   const carousel = page.getByRole('region', { name: 'Tax payment service banners' });
@@ -39,7 +39,8 @@ test('five published images and palettes retain fixed copy and the same two paym
     })).toBeVisible();
     await expect(slide.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
     await expect(slide.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
-    await expect(slide.locator('.public-guest-action')).toHaveCount(2);
+    await expect(slide.locator('.public-guest-action')).toHaveCount(3);
+    await expect(slide.getByRole('button', {name:'Gift Tax'})).toBeVisible();
   }
 });
 
@@ -198,7 +199,7 @@ test('desktop keeps full-width service artwork, equal intro buttons, and a consi
     return {
       height: rect.height,
       imageWidthRatio: imageRect.width / rect.width,
-      buttonsEqual: buttons.length === 2 && Math.abs(buttons[0].width - buttons[1].width) <= 2,
+      buttonsEqual: buttons.length === 3 && buttons.every(button => Math.abs(button.width - buttons[0].width) <= 2),
       background: getComputedStyle(element).backgroundColor,
     };
   });
