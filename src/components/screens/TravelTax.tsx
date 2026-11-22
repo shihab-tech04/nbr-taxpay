@@ -3,7 +3,7 @@ import '../../styles/taxpay-payment-form.css';
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Search, Trash2, UserRound, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
 import {parseRecoverableTravelPayment, type PendingTravelPayment} from '../../services/travelPendingPayment';
 import { getConfirmedReceipt } from '../../services/confirmedPaymentCertificate';
@@ -22,6 +22,7 @@ import {
   type TravelMode, type TravelPassenger, type TravellerNationality,
 } from '../../data/travelTax2026';
 import { TravelCurrency } from '../ui/TravelCurrency';
+import { SelectedIdentityRail } from '../ui/SelectedIdentityRail';
 import { amountInTakaWords } from '../../services/amountInWords';
 import type { ChallanReceipt } from '../../types/tax';
 import { ReceiptView } from '../common/ReceiptView';
@@ -1041,12 +1042,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 <button type="button" onClick={undoPassengerRemoval}>{tr('Undo removal','বাদ দেওয়া বাতিল করুন')}</button>
               </p>}
             </section>
-            <aside className="travel-passenger-workspace__rail">
-              <h3 className="travel-passenger-workspace__rail-title"><UserRound size={18}/>
-                {tr('Passengers in this payment','এই পেমেন্টে যাত্রীরা')}<span>{confirmedPassengerIds.length}</span></h3>
-              <div className="travel-passenger-workspace__list">
-                {!confirmedPassengerIds.length && <div className="travel-passenger-workspace__selected-empty">
-                  <UserRound size={19}/><strong>{tr('No passengers added','কোনো যাত্রী যোগ করা হয়নি')}</strong></div>}
+            <SelectedIdentityRail prefix="travel-passenger-workspace"
+              label={tr('Passengers in this payment','এই পেমেন্টে যাত্রীরা')}
+              count={confirmedPassengerIds.length} titleIconSize={18} emptyIconSize={19}
+              emptyLabel={tr('No passengers added','কোনো যাত্রী যোগ করা হয়নি')}>
                 {passengers.filter(item=>confirmedPassengerIds.includes(item.id)).map((item,i)=>
                   <div className="travel-passenger-workspace__person" key={item.id} data-passenger-id={item.id} data-complete="true">
                     <span className="travel-passenger-workspace__avatar">{i+1}</span>
@@ -1062,8 +1061,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                       onClick={()=>removeTravelPassenger(item,passengers.findIndex(p=>p.id===item.id))}>
                       <Trash2 size={17}/></button>
                   </div>)}
-              </div>
-            </aside>
+            </SelectedIdentityRail>
           </div>}
 
           {step === 1 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Travel details', 'ভ্রমণের তথ্য')}>
