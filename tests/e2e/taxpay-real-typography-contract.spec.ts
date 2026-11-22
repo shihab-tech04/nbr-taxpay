@@ -33,7 +33,8 @@ test('real homepage typography follows approved 12/16/20/24/28/32 tiers in EN/BN
       await size(page,'.public-home-language',16);
       await size(page,'.public-footer__identity p',16);
       await size(page,'.public-footer__bottom p',12);
-      await size(page,'.public-hero-carousel__gift-link',16);
+      await expect(page.getByRole('button',{name:lang==='bn'?'অন্যান্য কর':'Other Tax',exact:true})).toBeVisible();
+      await size(page,'.public-hero-carousel__travel',16);
       await size(page,'.public-guest-actions .public-guest-action',16);
       await size(page,'.public-benefits__heading h2',width>=768?24:20);
       await size(page,'.public-record-discovery__heading h2',20);
