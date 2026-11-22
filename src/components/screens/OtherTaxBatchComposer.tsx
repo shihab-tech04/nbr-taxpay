@@ -317,7 +317,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
             <p className="other-tax-selection-status" role="status">
               {unifiedV3
                 ? tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' years · ' + count + ' available payment heads',
-                     new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + 'টি করের খাত)
+                     new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ · ' + count + 'টি করের খাত')
                 : activeLines.length
                 ? tx(new Set(activeLines.map(line => line.headId)).size + ' heads · ' + activeLines.length + ' assessment years selected',
                   new Set(activeLines.map(line => line.headId)).size + 'টি খাত · ' + activeLines.length + 'টি করবর্ষ নির্বাচিত')
