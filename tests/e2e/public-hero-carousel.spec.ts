@@ -257,6 +257,8 @@ test('both fixed buttons keep the same two payment entry routes on every slide',
   await carousel.getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const payment = page.getByRole('dialog', { name: 'Pay Tax' });
   await expect(payment).toBeVisible();
+  await expect(payment.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
+  await expect(payment.locator('[data-payer-relationship]')).toHaveCount(0);
   await payment.getByRole('button', { name: 'Close payment services' }).click();
   await carousel.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
