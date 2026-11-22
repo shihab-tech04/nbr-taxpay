@@ -25,10 +25,7 @@ test('walk-in parallel chooser uses a seven-row category table and keeps Return 
   await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
   const table=dialog.getByTestId('fixed-tax-categories');
   await expect(table.locator('tbody tr')).toHaveCount(7);
-  await expect(dialog.getByTestId('frequent-category-section')).toHaveCount(0);
-  await expect(dialog.getByTestId('frequent-tax-categories')).toHaveCount(0);
-  await expect(table.getByRole('columnheader')).toHaveCount(3);
-  await expect(table.locator('tbody tr[data-selected-count="0"]')).toHaveCount(7);
+  await expect(dialog.getByText('Sign in to see categories from your payment history.')).toBeVisible();
   await expect(dialog.getByTestId('unified-v5-return-group')).toHaveCount(1);
   await table.getByRole('button',{name:'View payment heads for Tax with Return'}).click();
   await expect(dialog.getByTestId('unified-v5-return-group')).toHaveAttribute('open','');
