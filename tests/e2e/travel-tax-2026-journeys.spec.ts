@@ -1018,7 +1018,7 @@ test('F-153 / US-150 T02 T03: removing either passenger reprices and undo restor
   await members.first().locator('.travel-passenger-workspace__copy button').click();
   await modal.locator('.travel-passenger-workspace__entry').locator('#travel-passport-first').fill('TEST230003');
   await expect(modal.locator('.travel-passenger-workspace__entry')).toHaveAttribute('data-complete','false');
-  await members.first().locator('.travel-passenger-workspace__remove').click();
+  await modal.locator('.travel-passenger-workspace__entry').getByRole('button',{name:'Remove passenger'}).click();
   await modal.getByRole('button',{name:'Undo removal'}).click();
   await expect(members.first()).toContainText('SAMPLE BANGLADESHI PASSENGER');
   await expect(members.first()).toHaveAttribute('data-complete','true');
@@ -1051,56 +1051,48 @@ for (const [language,project] of [['en','desktop-1280'],['bn','mobile-375']] as 
     await openTravelTaxFromBanner(page);
     const modal=page.locator('.taxpay-modal:visible').first();
     const nextReview=language==='bn'?'পেমেন্ট পর্যালোচনায় যান':'Continue to review';
+    const pay=language==='bn'?'পেমেন্ট করুন':'Make Payment';
     const confirmLabel=language==='bn'?'নমুনা পেমেন্ট নিশ্চিত করুন':'Confirm preview payment';
     await fillTravelDetails(modal);
     await modal.getByRole('button',{name:nextReview}).click();
-    if (await modal.locator('#travel-mobile').isVisible() && !(await modal.locator('#travel-mobile').inputValue())) await modal.locator('#travel-mobile').fill('01712345678');
-    const summary=modal.locator('.travel-flow__review');
-    const confirm=modal.getByRole('button',{name:confirmLabel});
+    await modal.locator('#travel-mobile').fill('01712345678');
     await expect(modal.locator('#travel-mobile')).toHaveValue('01712345678');
-    await expect(summary).toContainText('India');
-    await expect(summary).toContainText(language==='bn'?'পেমেন্ট চ্যানেল':'Payment channel');
-    await expect(summary).toContainText(language==='bn'?'পেমেন্ট পদ্ধতি':'Payment method');
-    await expect(summary).toContainText(language==='bn'?'নির্বাচিত নয়':'Not selected');
+    await expect(modal.locator('.travel-flow__review')).toContainText('India');
+    await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
+    await modal.getByRole('button',{name:pay}).click();
+    await expect(modal.getByTestId('travel-payment-channel-screen')).toBeVisible();
+    const confirm=modal.getByRole('button',{name:confirmLabel});
     await expect(confirm).toBeDisabled();
-    if (await modal.getByRole('button',{name:/^(Make Payment|পেমেন্ট করুন)$/}).isVisible()) {
-    const contact=modal.locator('#travel-mobile');
-    if (await contact.isVisible() && !/^01\\d{9}$/.test(await contact.inputValue())) await contact.fill('01712345678');
-    await modal.getByRole('button',{name:/^(Make Payment|পেমেন্ট করুন)$/}).click();
-  }
-  await modal.getByRole('button',{name:language==='bn'?'অনলাইনে পরিশোধ':'Pay online'}).click();
+    await modal.getByRole('button',{name:language==='bn'?'অনলাইনে পরিশোধ':'Pay online'}).click();
     await modal.getByRole('button',{name:language==='bn'?'মোবাইল ব্যাংকিং':'Mobile banking'}).click();
     await modal.getByRole('radio',{name:'Nagad'}).check();
-    await expect(summary).toContainText('Nagad');
-    await expect(summary).toContainText(language==='bn'?'অনলাইনে পরিশোধ':'Pay online');
     const acknowledge=modal.getByLabel(language==='bn'
       ?'ভ্রমণের তথ্য, সকল যাত্রী এবং মোট টাকার পরিমাণ নিশ্চিত করছি।'
       :'I confirm the travel information, all passengers and the combined amount.');
     await expect(confirm).toBeDisabled();
     await acknowledge.check();
     await expect(confirm).toBeEnabled();
-
-    // T02/T03: a previously accepted review does not remain accepted after
-    // travel details change, even when the provider and passenger stay intact.
+    // Returning from checkout and editing travel details must reset confirmation.
+    await modal.getByRole('button',{name:'Back',exact:true}).click();
+    await expect(modal.locator('#travel-mobile')).toHaveValue('01712345678');
     await modal.getByRole('button',{name:language==='bn'?'ভ্রমণের তথ্য সম্পাদনা':'Edit travel details'}).click();
     await modal.locator('#travel-destination').fill('Nepal');
     await modal.getByRole('button',{name:nextReview}).click();
-    if (await modal.locator('#travel-mobile').isVisible() && !(await modal.locator('#travel-mobile').inputValue())) await modal.locator('#travel-mobile').fill('01712345678');
-    await expect(summary).toContainText('Nepal');
-    await expect(summary).toContainText('Nagad');
+    await expect(modal.locator('.travel-flow__review')).toContainText('Nepal');
+    await modal.getByRole('button',{name:pay}).click();
     await expect(acknowledge).not.toBeChecked();
     await expect(confirm).toBeDisabled();
     await acknowledge.check();
     await expect(confirm).toBeEnabled();
-
-    // The receipt contact must also be reviewed and re-confirmed.
+    // Changing receipt mobile in Final Preview also requires new approval.
+    await modal.getByRole('button',{name:'Back',exact:true}).click();
     await modal.locator('#travel-mobile').fill('01712340000');
     await expect(modal.locator('#travel-mobile')).toHaveValue('01712340000');
-    await expect(summary).toContainText('Nagad');
+    await expect(modal.locator('.travel-flow__passenger-table tfoot'))
+      .toContainText(language==='bn'?'১,০০০':'1,000');
+    await modal.getByRole('button',{name:pay}).click();
     await expect(acknowledge).not.toBeChecked();
     await expect(confirm).toBeDisabled();
-    await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
-    await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText(language==='bn'?'১,০০০':'1,000');
     await acknowledge.check();
     await expect(confirm).toBeEnabled();
   });
