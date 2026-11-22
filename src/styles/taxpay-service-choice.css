@@ -2806,7 +2806,7 @@
   color: var(--citizen-muted);
   font-size: 14px;
 }
-@media (min-width: 801px) {
+@media (min-width: 1100px) {
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow[data-step="0"] .travel-flow__party {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(280px, .9fr);
@@ -2835,7 +2835,7 @@
     margin-top: 0;
   }
 }
-@media (max-width: 800px) {
+@media (max-width: 1099px) {
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow[data-step="0"] .travel-flow__party {
     display: flex;
     flex-direction: column;

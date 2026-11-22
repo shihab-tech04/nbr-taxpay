@@ -12,7 +12,7 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
   // The passport editor may disappear once a passenger is confirmed.
   // Wait for a real passenger/travel stage anchor after lazy mount.
   // Receipt contact now belongs exclusively to the final preview.
-  await root.locator('input[id^="travel-passport-"], #travel-tax-route-1').first().waitFor({ state: 'attached' });
+  await root.locator('input[id^="travel-passport-"], [data-passenger-id][data-complete="true"], #travel-tax-route-1').first().waitFor({ state: 'attached' });
   // Pay Again uses stable copied passenger IDs (e.g. repeat-traveller-1),
   // whereas a new payment starts with first. Confirm whichever is rendered.
   const passport = root.locator('input[id^="travel-passport-"]').first();
