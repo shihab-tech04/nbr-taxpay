@@ -369,14 +369,14 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   if (!slides.length) {
     // An unverified client fallback must never override SQL publish status.
     // Preserve functional payment entrypoints without showing any banner image.
-    return <div className="public-hero-carousel-shell public-hero-carousel-shell--box public-hero-carousel--offline">
+    return <div className="public-hero-carousel-shell  public-hero-carousel--offline">
       <section className="public-hero-carousel" role="region"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
         tabIndex={0}>
         <article className="citizen-public-hero public-information-hero public-hero-carousel__slide public-hero-carousel__fixed"
           data-banner-service="intro" data-banner-kind="intro">
         <div className="citizen-public-hero__copy">
-          <div className="public-hero-carousel__slogan" lang="bn">আমার করের টাকায় গড়বো স্বদেশ</div>
+          
           <h1 id="public-home-title">{bn ? 'কর পরিশোধ' : 'Tax payments'}</h1>
           <p role="status">{bannerStatus === 'loading'
             ? (bn ? 'ব্যানার লোড হচ্ছে…' : 'Loading banner information…')
@@ -386,8 +386,8 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
               onClick={() => onPayTax()}>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</button>
             <button type="button" className="public-guest-action"
               onClick={() => onPayTax('TRAVEL_TAX')}>{bn ? 'ভ্রমণ কর পরিশোধ' : 'Travel Tax'}</button>
-            <button type="button" className="public-guest-action public-hero-carousel__gift" onClick={onGiftTax} aria-label={bn ? 'দান কর' : 'Gift Tax'}>{bn ? 'দান কর' : 'Gift Tax'}</button>
           </div>
+          <button type="button" className="public-hero-carousel__gift-link" onClick={onGiftTax}>{bn ? 'দান কর' : 'Gift Tax'}</button>
           {bannerStatus === 'unavailable' && <button className="public-hero-carousel__retry"
             type="button" onClick={() => {setBannerStatus('loading');setRetryNonce(n => n + 1);}}>
             {bn ? 'আবার চেষ্টা করুন' : 'Retry banner loading'}
@@ -397,7 +397,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
       </section>
     </div>;
   }
-  // Keep the canonical introductory copy and two payment actions stationary.
+  // Keep the approved two primary payment buttons and canonical introductory copy stationary.
   // SQL still controls each published slide's artwork, ordering, and image palette.
   const fixedBanner = slides.find(slide => !slide.serviceCode) ?? fallbackSlides[0];
   const travelBanner = slides.find(slide => slide.serviceCode === 'TRAVEL_TAX') ?? fallbackSlides[4];
@@ -413,7 +413,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   return (
     <div
       ref={containerRef}
-      className="public-hero-carousel-shell public-hero-carousel-shell--box"
+      className="public-hero-carousel-shell "
       onPointerEnter={onPointerEnter}
       onPointerLeave={event => { if (event.pointerType === 'mouse') setIsHovered(false); }}
       onFocusCapture={() => setHasFocus(true)}
@@ -476,7 +476,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                 inert={!isActive}
               >
                 <div className="citizen-public-hero__copy">
-                  <div className="public-hero-carousel__slogan" lang="bn">আমার করের টাকায় গড়বো স্বদেশ</div>
+                  
                   {intro ? (
                     <h1 id="public-home-title">
                       <span className="public-hero-copy--desktop">{heading}</span>
@@ -519,11 +519,8 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                         </span>
                       </button>
                     )}
-                    <button type="button" className="public-guest-action public-hero-carousel__gift" onClick={onGiftTax} aria-label={bn ? 'দান কর' : 'Gift Tax'}>
-                      <WalletCards size={18} aria-hidden="true" />
-                      <span>{bn ? 'দান কর' : 'Gift Tax'}</span>
-                    </button>
                   </div>
+                  <button type="button" className="public-hero-carousel__gift-link" onClick={onGiftTax}>{bn ? 'দান কর' : 'Gift Tax'}</button>
                 </div>
                 <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
                   <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`}
