@@ -1818,6 +1818,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </div>}
               {otherBatch && forSelf === false && !signedInAccount && <div data-testid="walkin-payer-tin">
                 <TaxpayerTinLookup
+                  directDigitEdit
                   language={language} tinId="guest-payer-tin" nameId="guest-payer-tin-name"
                   tin={walkInPayerTin}
                   name={walkInPayerLookup?.tin === walkInPayerTin
@@ -2198,7 +2199,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   {language === 'bn' ? 'পেমেন্ট থেকে সরান' : 'Remove from this payment'}
                 </button>
               </div> : <>
-                <TaxpayerTinLookup language={language} tinId="other-tax-one-time-tin" nameId="other-tax-one-time-name"
+                <TaxpayerTinLookup directDigitEdit language={language} tinId="other-tax-one-time-tin" nameId="other-tax-one-time-name"
                   tin={oneTimeTinDraft} name={oneTimeSearchMatch ? (language === 'bn' ? oneTimeSearchMatch.nameBn : oneTimeSearchMatch.nameEn) : ''}
                   onTinChange={value => { setOneTimeTinDraft(value); setOneTimeSearchedTin(null); setOneTimeLookupError(''); }}
                   onSearch={() => {
@@ -2263,7 +2264,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               {/* Self-liability uses the signed-in taxpayer only. Saved beneficiary controls belong to the OTHER payer route. */}
               {!ownAccountTax && <>
               {!signedInAccount && (!otherBatch || ownAccountTax) &&
-                <TaxpayerTinLookup language={language} className="payment-identity__tin" card
+                <TaxpayerTinLookup directDigitEdit language={language} className="payment-identity__tin" card
                   tinId="guest-tin" nameId="guest-taxpayer-name"
                   tin={taxpayerTin} hideNameField={tinLookupState !== 'missing'}
                   name={sampleTaxpayer ? (language === 'bn' ? sampleTaxpayer.nameBn : sampleTaxpayer.nameEn) : ownAccountTax ? accountName : ''}
@@ -2366,7 +2367,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
         ) : (
           <div className={`payment-form-layout${embedded ? ' payment-flow-embedded__payment' : ''}`}>
             <div className="payment-form-layout__sections">
-            {unifiedFlow && unifiedServiceChoice}
+            {unifiedFlow && !otherBatch && unifiedServiceChoice}
             <PaymentFormSection number={3} staticView={embedded} title={language === 'bn' ? 'পরিশোধের উদ্দেশ্য' : 'Payment purpose'} description={embedded && category === 'TAX_WITH_RETURN' ? (language === 'bn' ? 'আয়করের ধরন নির্বাচন করুন' : 'Choose the income tax type') : (language === 'bn' ? 'করদাতার ধরন ও প্রযোজ্য পেমেন্ট খাত নির্বাচন করুন' : 'Choose the taxpayer type and applicable payment head')}>
             {verifiedReference && <p className="text-xs text-slate-600" role="status">{language === 'bn' ? `NBR রেফারেন্স ${verifiedReference.reference} থেকে করবর্ষ ও পরিমাণ পূরণ করা হয়েছে।` : `Assessment year and amount filled from NBR reference ${verifiedReference.reference}.`}</p>}
             {!isWithholdingMode && !unifiedFlow && <fieldset className="payment-form-radio-fieldset">
