@@ -200,7 +200,7 @@ test('desktop keeps full-width service artwork, equal intro buttons, and a consi
     return {
       height: rect.height,
       imageWidthRatio: imageRect.width / rect.width,
-      buttonsEqual: buttons.length === 3 && buttons.every(button => Math.abs(button.width - buttons[0].width) <= 2),
+      buttonsEqual: buttons.length === 2 && buttons.every(button => Math.abs(button.width - buttons[0].width) <= 2),
       background: getComputedStyle(element).backgroundColor,
     };
   });
