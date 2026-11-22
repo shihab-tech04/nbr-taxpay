@@ -837,7 +837,7 @@ for (const [language, project] of [['en', 'desktop-1280'], ['bn', 'mobile-375']]
     await modal.locator('#travel-destination').fill('India');
     await modal.locator('#travel-departure-date').fill(futureTravelDate);
     await modal.getByRole('button', {name:nextReview}).click();
-    const total = modal.getByTestId('travel-currency').last();
+    const total = modal.locator('.travel-flow__passenger-table tfoot .travel-currency');
     await expect(total).toBeVisible();
     await expect(total.locator('svg.travel-currency__mark')).toBeVisible();
     await expect(total).toContainText('৳');
