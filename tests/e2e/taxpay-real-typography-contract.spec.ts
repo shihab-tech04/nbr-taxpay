@@ -31,6 +31,8 @@ test('real homepage typography follows approved 12/16/20/24/28/32 tiers in EN/BN
       await expect(page.locator('.public-benefits__heading h2')).toBeVisible();
       await size(page,'.public-home-nav a',16);
       await size(page,'.public-home-language',16);
+      await size(page,'.public-hero-carousel__slogan',16);
+      await size(page,'.public-guest-actions .public-guest-action',16);
       await size(page,'.public-benefits__heading h2',width>=768?24:20);
       await size(page,'.public-record-discovery__heading h2',20);
       await size(page,'.public-record-discovery__heading p',16);
