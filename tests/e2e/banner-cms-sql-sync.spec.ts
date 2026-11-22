@@ -55,7 +55,7 @@ test('SQL-backed banners preserve image order while keeping the published intro 
     const active = carousel.locator('.public-hero-carousel__slide').nth(i);
     await expect(active.getByRole('button', { name: 'Start tax payment' })).toBeVisible();
     await expect(active.getByRole('button', { name: 'Start travel tax' })).toBeVisible();
-    await expect(active.locator('.public-guest-action')).toHaveCount(2);
+    await expect(active.locator('.public-guest-action')).toHaveCount(3);
     await expect(carousel.getByRole('heading', { name: mobile ? 'SQL mobile heading' : 'Updated SQL-controlled headline' })).toBeVisible();
   }
 });
