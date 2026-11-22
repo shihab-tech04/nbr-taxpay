@@ -61,6 +61,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const [view, setView] = useState<'entry' | 'payer' | 'login' | 'payment'>(
     initialDraft || initialReuse || directTravelEntry || parallelEntry ? 'payment' : unifiedEntry ? 'entry' : 'payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
+  const [travelCheckoutOpen, setTravelCheckoutOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [useAccount, setUseAccount] = useState(Boolean(initialDraft || initialReuse || (parallelEntry && (verifiedUser || previewAccount))));
   const [entryAccess, setEntryAccess] = useState<'guest' | 'account' | null>(null);
@@ -100,6 +101,10 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   // Unified Walk-in header Back has a stage-owned handler. No hidden footer
   // button is needed to proxy navigation, and non-unified routes stay intact.
   const unifiedHeaderBackRef = useRef<(() => void) | null>(null);
+  const travelHeaderBackRef = useRef<(() => void) | null>(null);
+  const registerTravelHeaderBack = useCallback((action: (() => void) | null) => {
+    travelHeaderBackRef.current = action;
+  }, []);
   const registerUnifiedHeaderBack = useCallback((action: (() => void) | null) => {
     unifiedHeaderBackRef.current = action;
   }, []);
@@ -156,7 +161,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
       ? [tr('Taxpayer Information', 'করদাতার তথ্য'), tr('Payment Head', 'কর পরিশোধের খাত'), tr('Final Preview', 'চূড়ান্ত পর্যালোচনা')]
       : [tr('Taxpayer details', 'করদাতার তথ্য'), tr('Purpose & amount', 'খাত ও পরিমাণ'), tr('Payment channel', 'পেমেন্ট চ্যানেল'), tr('Confirmation', 'নিশ্চিতকরণ')];
   const shortStages = travelJourney
-    ? [tr('Passengers', 'যাত্রী'), tr('Travel', 'ভ্রমণ'), tr('Review', 'পর্যালোচনা'), tr('Receipt', 'রসিদ')]
+    ? [tr('Passenger', 'যাত্রী'), tr('Travel', 'ভ্রমণ'), tr('Preview', 'পর্যালোচনা')]
     : unifiedEntry
       ? [tr('Taxpayer', 'করদাতা'), tr('Heads', 'খাত'), tr('Review', 'পর্যালোচনা')]
       : [tr('Identity', 'পরিচয়'), tr('Amount', 'পরিমাণ'), tr('Channel', 'চ্যানেল'), tr('Done', 'শেষ')];
@@ -209,13 +214,15 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`)
         : view === 'payment' && !travelJourney && stage === 4 ? tr('Payment result', 'পেমেন্টের ফলাফল')
         : view === 'payment' && unifiedEntry && checkoutOpen ? tr('Payment channel', 'পেমেন্ট চ্যানেল')
-        : view === 'payment' && travelJourney ? stages[stage - 1]
+        : view === 'payment' && travelJourney && stage === 4 ? tr('Payment result','পেমেন্টের ফলাফল')
+        : view === 'payment' && travelJourney && travelCheckoutOpen ? tr('Payment channel','পেমেন্ট চ্যানেল')
+        : view === 'payment' && travelJourney ? stages[Math.min(stage - 1, stages.length - 1)]
         : view === 'payment' ? stages[Math.min(stage - 1, stages.length - 1)] : tr('Pay Tax', 'কর পরিশোধ')}
-      progress={view === 'payment' && !(unifiedEntry && (stage === 4 || checkoutOpen)) ? {
-        current: stage, total: unifiedEntry ? 3 : 4, label: tr('Steps', 'ধাপ'),
+      progress={view === 'payment' && !(unifiedEntry && (stage === 4 || checkoutOpen)) && !(travelJourney && (stage === 4 || travelCheckoutOpen)) ? {
+        current: stage, total: unifiedEntry || travelJourney ? 3 : 4, label: tr('Steps', 'ধাপ'),
         subtitle: unifiedEntry
           ? (useAccount ? tr('Signed-in Payment', 'সাইন-ইন পেমেন্ট') : tr('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট'))
-          : travelJourney ? travelTaxModalTitle(language)
+          : travelJourney ? (useAccount ? tr('Signed-in Payment','সাইন-ইন পেমেন্ট') : tr('Walk-in Payment','ওয়াক-ইন পেমেন্ট'))
           : chosenService && payerForSelf !== null
           ? `${tr(chosenService.en, chosenService.bn)} › ${payerForSelf ? tr('My Tax Liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}`
           : undefined } : undefined}
@@ -227,7 +234,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         close();
       }}
       registerDraftExit={registerDraftExit}
-      className={view === 'login' || view === 'entry' ? 'taxpayer-login-modal' : unifiedEntry && view === 'payment' ? 'taxpay-v5-locked' : ''}
+      className={view === 'login' || view === 'entry' ? 'taxpayer-login-modal' : (unifiedEntry || travelJourney) && view === 'payment' ? 'taxpay-v5-locked' : ''}
       animateSize={view === 'payer' || view === 'entry'}
       // Draft choice/list/new swap content inside the same payer view.
       // Re-measure the approved modal height on every such transition so the
@@ -242,13 +249,10 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         }
         : view === 'payer' && draftEntryBlocking && draftEntryMode === 'list'
         ? () => setDraftEntryMode('choice')
-        : view === 'login' ? () => setView('payer') : view === 'payment' && (travelJourney ? stage > 1 : stage !== 4) ? () => {
-        if (travelJourney && stage === 4) {
-          document.querySelector<HTMLButtonElement>('.taxpay-modal[data-public-service="travel"] [data-testid="travel-receipt-back"]')?.click();
-          return;
-        }
-        if (travelJourney && document.querySelector('.taxpay-modal[data-public-service="travel"] .travel-flow[data-receipt-review="true"]')) {
-          document.querySelector<HTMLButtonElement>('.taxpay-modal[data-public-service="travel"] .travel-flow__footer-actions .travel-flow__primary')?.click();
+        : view === 'login' ? () => setView('payer') : view === 'payment' && (travelJourney || stage !== 4) ? () => {
+        if (travelJourney) {
+          if (travelHeaderBackRef.current) travelHeaderBackRef.current();
+          else if (stage === 1) (directTravelEntry ? requestClose() : returnToService());
           return;
         }
         if (unifiedEntry) {
@@ -295,7 +299,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
       {view === 'payment' && travelJourney ? (
         <TravelTax key={draftToResume ? 'travel-draft-' + draftToResume.id : initialReuse ? 'travel-reuse-' + initialReuse.sourcePaymentId : 'travel-tax-modal'}
           embedded fourStepJourney initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
-          onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage} />
+          onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage}
+          registerHeaderBack={registerTravelHeaderBack} onCheckoutChange={setTravelCheckoutOpen} />
       ) : <section key={view} ref={flowRef} data-view={view}
         data-banner-entry={initialService && view === 'payment' ? 'true' : undefined}
         data-payment-service={view === 'payment' && chosenService ? chosenService.id : undefined}
@@ -404,7 +409,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
          ) : effectiveSelected === 'TRAVEL_TAX' ? (
           <TravelTax key={draftToResume ? 'travel-draft-' + draftToResume.id : initialReuse ? 'travel-reuse-' + initialReuse.sourcePaymentId : 'travel-tax-modal'}
             embedded fourStepJourney initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
-            onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage} />
+            onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage}
+          registerHeaderBack={registerTravelHeaderBack} onCheckoutChange={setTravelCheckoutOpen} />
         ) : effectiveSelected ? (
           <GuestPayment key={draftToResume ? 'payment-draft-' + draftToResume.id : initialReuse ? 'payment-reuse-' + initialReuse.sourcePaymentId : effectiveSelected + '-' + String(payerForSelf)}
             embedded unifiedFlow={unifiedEntry} initialCategory={effectiveSelected} initialForSelf={payerForSelf ?? undefined}

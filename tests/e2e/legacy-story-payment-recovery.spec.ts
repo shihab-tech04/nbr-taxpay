@@ -392,6 +392,9 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   expect(submittedTravelPayments).toHaveLength(0);
   await travelDialog.locator('#travel-departure-date').fill(futureTravelDate);
   await travelDialog.getByRole('button',{name:'Continue to review'}).click();
+  await travelDialog.locator('#travel-mobile').fill('01712345678');
+  await travelDialog.getByRole('button',{name:'Make Payment'}).click();
+  await expect(travelDialog.getByTestId('travel-payment-channel-screen')).toBeVisible();
   await travelDialog.getByRole('button',{name:'Pay online'}).click();
   await travelDialog.getByRole('button',{name:'Mobile banking'}).click();
   await travelDialog.getByRole('radio',{name:'Nagad'}).check();

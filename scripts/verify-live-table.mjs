@@ -95,8 +95,20 @@ try{
     await signIn2.getByRole('button',{name:'Verify code'}).click();
   }
   await expect(user2).toHaveURL(/action=taxpayer_home/,{timeout:30000});
+  // A pushState URL change can precede React's committed account dashboard.
+  // Verify User2's rendered, owner-scoped workspace before History deep-linking.
+  await expect(user2.getByTestId('dashboard-unified-preview')).toHaveAttribute('data-account-id','user2',{timeout:30000});
+  await expect(user2.getByText('User ID: user2')).toBeVisible({timeout:30000});
   await user2.goto(url('history'),{waitUntil:'domcontentloaded',timeout:45000});
-  await expect(user2.getByRole('heading',{name:/^(Payments and transaction history|পেমেন্ট ও লেনদেনের ইতিহাস)$/})).toBeVisible({timeout:30000});
+  const historyHeading=user2.getByRole('heading',{name:/^(Payments and transaction history|পেমেন্ট ও লেনদেনের ইতিহাস)$/});
+  try{await expect(historyHeading).toBeVisible({timeout:30000});}
+  catch(error){
+    const details=await user2.evaluate(()=>({url:location.href,
+      headings:[...document.querySelectorAll('h1,h2')].map(node=>node.textContent?.trim()).filter(Boolean).slice(0,14),
+      signedOut:document.body?.textContent?.includes('Sign in to manage payments')??false,
+      historyRecovery:!!document.querySelector('[data-testid="history-route-recovery"]')}));
+    throw new Error('Live User2 History did not render after authenticated dashboard confirmation: '+JSON.stringify(details),{cause:error});
+  }
   const activity2=user2.getByTestId('signed-in-payment-activity');
   await expect(activity2.getByRole('searchbox',{name:/^(Search transactions|লেনদেন খুঁজুন)$/})).toBeVisible();
   await expect.poll(async () => {

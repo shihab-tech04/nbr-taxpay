@@ -92,7 +92,7 @@ test('Bengali Travel Tax menu enters passengers directly, not the income-tax pay
  await expect(travel.getByTestId('travel-passenger-list')).toBeVisible();
  await expect(travel.locator('[data-payer-relationship]')).toHaveCount(0);
  await expect(travel.locator('.tax-service-choice__selected-service')).toHaveCount(0);
- await expect(travel.locator('.taxpay-modal__title')).toHaveText('যাত্রী ও রসিদের তথ্য');
+ await expect(travel.locator('.taxpay-modal__title')).toHaveText('যাত্রীর তথ্য');
  await expect(travel.locator('.travel-flow')).toBeVisible();
  await expect(travel.locator('.tax-service-choice--travel')).toHaveCount(0);
 });
