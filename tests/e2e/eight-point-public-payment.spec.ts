@@ -52,3 +52,52 @@ test('hero Pay Tax and All Tax Payments benefit open the same parallel chooser',
   await expect(chooser.getByRole('button',{name:'Walk-in Payment'})).toBeVisible();
   await expect(chooser.locator('[data-payer-relationship]')).toHaveCount(0);
 });
+
+
+for (const locale of ['en', 'bn'] as const) {
+  test('walk-in cancellation uses only Keep editing and Discard tax payment (' + locale + ')', async ({ page }) => {
+    await page.goto('/?action=landing&lang=' + locale);
+    await page.locator('.public-benefits__item[data-benefit="payments"]').click();
+    const payment = page.getByRole('dialog', { name: locale === 'bn' ? 'কর পরিশোধ' : 'Pay Tax' });
+    await payment.getByRole('button', { name: locale === 'bn' ? 'ওয়াক-ইন পেমেন্ট' : 'Walk-in Payment' }).click();
+    const tin = payment.getByTestId('unified-tin-input');
+    await tin.fill('222222222222');
+    await expect(payment.locator('.payment-form-draft-controls__save')).toHaveCount(0);
+    await payment.locator('.taxpay-modal__close').click();
+    const exit = payment.getByRole('alertdialog', {
+      name: locale === 'bn' ? 'কর পরিশোধ বাদ দেবেন?' : 'Discard tax payment?',
+    });
+    await expect(exit).toBeVisible();
+    await expect(exit.locator('button')).toHaveCount(2);
+    await expect(exit.getByRole('button', { name: locale === 'bn' ? 'সম্পাদনা চালিয়ে যান' : 'Keep editing' })).toBeVisible();
+    await expect(exit.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ বাদ দিন' : 'Discard tax payment' })).toBeVisible();
+    await expect(exit.getByText(/Save Draft|Save your tax payment|saved beneficiary session|খসড়া সংরক্ষণ/)).toHaveCount(0);
+    await expect(exit.locator('[role="alert"]')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(exit).toHaveCount(0);
+    await expect(payment).toBeVisible();
+    await expect(tin).toHaveValue('222222222222');
+    await payment.locator('.taxpay-modal__close').click();
+    await expect(exit).toBeVisible();
+    await exit.getByRole('button', { name: locale === 'bn' ? 'সম্পাদনা চালিয়ে যান' : 'Keep editing' }).click();
+    await expect(exit).toHaveCount(0);
+    await expect(tin).toHaveValue('222222222222');
+    await page.locator('.taxpay-modal__overlay').click({ position: { x: 2, y: 2 } });
+    await expect(payment).toBeVisible();
+    await expect(exit).toHaveCount(0);
+    await expect(tin).toHaveValue('222222222222');
+
+    if (locale === 'en') {
+      await payment.getByRole('button', { name: 'Search taxpayer TIN' }).click();
+      await payment.getByRole('button', { name: 'Add taxpayer' }).click();
+      await payment.getByRole('button', { name: 'Continue to Payment Head' }).click();
+      await expect(payment.getByTestId('fixed-tax-categories')).toBeVisible();
+      await expect(payment.locator('.payment-form-draft-controls__save')).toHaveCount(0);
+    }
+
+    await payment.locator('.taxpay-modal__close').click();
+    await expect(exit).toBeVisible();
+    await exit.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ বাদ দিন' : 'Discard tax payment' }).click();
+    await expect(payment).toHaveCount(0);
+  });
+}

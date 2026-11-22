@@ -214,8 +214,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const { user: authenticatedUser } = useAccountIdentity();
   // The standalone guest route can also be visited from a signed-in session.
   const signedInAccount = withAccount || Boolean(authenticatedUser || previewAccount);
-  // Only show unsigned guest draft actions after their existing WS3 session API responds.
-  const unsignedGuestDrafts = !signedInAccount && backendConfigured;
+  // The new parallel walk-in has no saved drafts or guest draft exit action.
+  // Preserve the previously supported standalone/legacy guest draft capability
+  // and all signed-in account draft controls without changing backend storage.
+  const unsignedGuestDrafts = !signedInAccount && backendConfigured && !unifiedFlow;
   const accountTaxpayer = usePaymentAccountProfile(signedInAccount ? authenticatedUser?.id ?? null : null, signedInAccount ? previewAccount : null);
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const commonCopy = UI_STRINGS[language];
