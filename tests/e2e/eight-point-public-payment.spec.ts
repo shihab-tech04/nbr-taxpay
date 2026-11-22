@@ -30,3 +30,19 @@ test('walk-in parallel chooser uses a seven-row category table and keeps Return 
   await table.getByRole('button',{name:'View payment heads for Tax with Return'}).click();
   await expect(dialog.getByTestId('unified-v5-return-group')).toHaveAttribute('open','');
 });
+
+// The banner and first benefit must share one parallel entry, while legacy
+// relationship-specific payment UI remains available elsewhere untouched.
+test('hero Pay Tax and All Tax Payments benefit open the same parallel chooser',async({page})=>{
+  await page.goto('/?action=landing&lang=en');
+  const hero=page.locator('.public-hero-carousel__slide[data-active="true"]');
+  await hero.getByRole('button',{name:'Pay Tax',exact:true}).click();
+  const chooser=page.getByRole('dialog',{name:'Pay Tax'});
+  await expect(chooser.getByRole('button',{name:'Walk-in Payment'})).toBeVisible();
+  await expect(chooser.locator('[data-payer-relationship]')).toHaveCount(0);
+  await chooser.getByRole('button',{name:'Close payment services'}).click();
+  await expect(chooser).toHaveCount(0);
+  await page.locator('.public-benefits__item[data-benefit="payments"]').click();
+  await expect(chooser.getByRole('button',{name:'Walk-in Payment'})).toBeVisible();
+  await expect(chooser.locator('[data-payer-relationship]')).toHaveCount(0);
+});
