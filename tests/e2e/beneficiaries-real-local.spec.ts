@@ -1040,7 +1040,7 @@ test('F-063 saved beneficiaries persist across owners sessions and resist cross-
     const ownerB = await makeOwner();
     const ownerIds = [ownerA.id, ownerB.id];
     for (const ownerId of ownerIds) expect(ownerId).toMatch(/^[0-9a-f-]{36}$/i);
-    const tin = randomBytes(12).reduce((value, byte) => value + String(byte % 10), '');
+    const tin = Array.from(randomBytes(12), byte => String(byte % 10)).join('');
     const displayName = `F063 owner record ${randomUUID().slice(0, 8)}`;
     const listName = `F063 private list ${randomUUID().slice(0, 8)}`;
 
