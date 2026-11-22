@@ -124,7 +124,7 @@ test('mobile banner preserves all five conceptual illustrations and fixed paymen
   await page.keyboard.press('ArrowRight');
   const active = carousel.locator('.public-hero-carousel__slide').nth(1);
   await expect(active.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
-  await expect(active.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
+  await expect(active.getByRole('button', { name: 'Other Tax', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
 

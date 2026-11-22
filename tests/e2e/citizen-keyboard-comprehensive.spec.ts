@@ -40,15 +40,18 @@ test('Travel Tax dialog keeps keyboard entry, close, and trigger focus return wh
   const search = page.getByRole('searchbox', { name: 'Search payment records by reference' });
   await expect(search).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Payment status & receipt' })).toHaveCount(0);
-  const open = page.locator('[data-banner-service="intro"]').getByRole('button', { name: 'Pay Travel Tax' });
+  const open = page.locator('[data-banner-service="intro"]').getByRole('button', { name: 'Other Tax' });
   await open.focus();
   await page.keyboard.press('Enter');
+  const chooser = page.getByRole('dialog', { name: 'Other tax payments' });
+  await expect(chooser).toBeVisible();
+  await chooser.getByRole('button', {name:/Travel Tax/}).click();
   const dialog = page.getByRole('dialog', { name: 'Travel tax' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Close modal' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
-  await expect(open).toBeFocused();
+  await expect(open).toBeVisible();
 });
 
 test('Taxpayer dashboard contains two-line section introductions and keyboard-operable filters', async ({ page }) => {

@@ -2,32 +2,39 @@ import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
 import '../../styles/taxpay-unified-table.css';
 import React from 'react';
+import {ArrowRight, Gift, Plane} from 'lucide-react';
+import {GiftTaxEntryModal} from './GiftTaxEntryModal';
 import { useTaxState } from '../../services/taxState';
 import { TaxPayModal } from '../ui/TaxPayModal';
 import { ReceiptLookup } from './ReceiptLookup';
 import { PaymentServiceChoiceDialog } from './PaymentServiceChoiceDialog';
 
-export type PublicService = 'status' | 'travel' | 'gift';
+export type PublicService = 'status' | 'travel' | 'gift' | 'other';
 
 /** Both public and taxpayer Travel Tax entries use the same modal, form,
  * stage navigation and draft lifecycle; receipt lookup stays independent. */
-export function PublicServiceModal({ service, onClose }: { service: PublicService; onClose: () => void }) {
-  const { language, navigate } = useTaxState();
+export function PublicServiceModal({ service, onClose, onChooseOther }: { service: PublicService; onClose: () => void; onChooseOther?: (service: PublicService) => void }) {
+  const { language } = useTaxState();
   if (service === 'travel')
     return <PaymentServiceChoiceDialog initialService="TRAVEL_TAX" onDismiss={onClose} />;
 
-  if (service === 'gift') return <TaxPayModal
-    title={language === 'bn' ? 'দান কর' : 'Gift Tax'}
+  if (service === 'gift') return <GiftTaxEntryModal onClose={onClose} />;
+  if (service === 'other') return <TaxPayModal
+    title={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other tax payments'}
     closeIconLabel={language === 'bn' ? 'বন্ধ করুন' : 'Close modal'}
-    service="gift" onClose={onClose} hideFooter>
-      <div className="space-y-4 p-4 sm:p-5" data-testid="gift-tax-service-information">
-        <p className="text-sm leading-6 text-slate-700">{language === 'bn'
-          ? 'দান করের জন্য পৃথক পরিশোধের খাত বর্তমানে যাচাইকৃত আয়কর খাততালিকায় নেই। ভুল খাতে পরিশোধ বা কাল্পনিক চালান তৈরি করা হবে না।'
-          : 'A separately verified Gift Tax payment head is not configured in the current income-tax catalogue. This service will not submit payments under an unrelated tax head or invent a challan.'}</p>
-        <button type="button" className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-          onClick={() => { onClose(); navigate('head_catalogue'); }}>
-          {language === 'bn' ? 'উপলব্ধ করের খাত দেখুন' : 'View available tax heads'}
-        </button>
+    service="other-tax" onClose={onClose}
+    footer={<button type="button" className="min-h-11 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800" onClick={onClose}>{language === 'bn' ? 'বাতিল' : 'Cancel'}</button>}>
+      <div className="space-y-3" data-testid="other-tax-chooser">
+        <p className="mb-3 text-sm text-slate-600">{language === 'bn' ? 'পরবর্তী ধাপে যেতে করের ধরন নির্বাচন করুন।' : 'Select a tax type to continue.'}</p>
+        {([
+          {type: 'travel' as const, Icon: Plane, title: language === 'bn' ? 'ভ্রমণ কর' : 'Travel Tax', detail: language === 'bn' ? 'বিদ্যমান ভ্রমণ কর প্রক্রিয়ায় যান।' : 'Continue through the existing Travel Tax journey.'},
+          {type: 'gift' as const, Icon: Gift, title: language === 'bn' ? 'দান কর' : 'Gift Tax', detail: language === 'bn' ? 'দান কর পরিশোধের তথ্য খুলুন।' : 'Enter Gift Tax payment details.'},
+        ]).map(({type, Icon, title, detail}) => <button key={type} type="button" onClick={() => onChooseOther?.(type)}
+          className="flex min-h-[88px] w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-blue-500 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[#2C5EAD]"><Icon size={22} aria-hidden="true" /></span>
+          <span className="min-w-0 flex-1"><strong className="block text-base text-slate-900">{title}</strong><span className="block text-sm text-slate-600">{detail}</span></span>
+          <ArrowRight size={18} className="shrink-0 text-[#2C5EAD]" aria-hidden="true" />
+        </button>)}
       </div>
     </TaxPayModal>;
 

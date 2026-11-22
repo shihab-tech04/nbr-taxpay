@@ -629,7 +629,8 @@ test('existing hero Pay Tax and Travel Tax actions still open separate journeys'
   await expect(tax).toBeVisible();
   await tax.getByRole('button', { name: 'Close payment services' }).click();
 
-  await page.getByRole('button', { name: 'Pay Travel Tax', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Other Tax', exact: true }).first().click();
+  await page.getByTestId('other-tax-chooser').getByRole('button', {name:/Travel Tax/}).click();
   const travel = page.getByRole('dialog', { name: /Travel tax/i });
   await expect(travel).toBeVisible();
   await travel.getByRole('button', { name: 'Close modal' }).click();

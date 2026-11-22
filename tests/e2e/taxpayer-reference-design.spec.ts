@@ -174,8 +174,9 @@ test('taxpayer mobile header and Services menu keep desktop surface and readable
     await expect(nav.getByText('Services',{exact:true})).toBeHidden();
     await expect(nav.getByText('Support',{exact:true})).toHaveCount(0);
     const items = nav.locator('.citizen-dialog__link:visible');
-    await expect(items).toHaveCount(9);
+    await expect(items).toHaveCount(10);
     await expect(nav.getByRole('button',{name:'Travel Tax',exact:true})).toBeVisible();
+    await expect(nav.getByRole('button',{name:'Gift Tax',exact:true})).toBeVisible();
     await expect(nav.getByRole('button',{name:'Tax Credit Certificates'})).toBeVisible();
     await expect(nav.getByRole('button',{name:'Correction Requests'})).toHaveCount(0);
     const styles = await items.evaluateAll(buttons => buttons.map(button => {

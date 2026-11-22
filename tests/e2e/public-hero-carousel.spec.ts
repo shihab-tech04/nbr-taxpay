@@ -24,7 +24,7 @@ test('five published images and palettes retain approved fixed copy and the thre
     await expect(slide).toHaveAttribute('data-banner-kind', index === 0 ? 'intro' : 'service');
   }
   await expect(carousel.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
-  await expect(carousel.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
+  await expect(carousel.getByRole('button', { name: 'Other Tax', exact: true })).toBeVisible();
   await carousel.focus();
   for (let index = 1; index < 5; index++) {
     await page.keyboard.press('ArrowRight');
@@ -38,10 +38,9 @@ test('five published images and palettes retain approved fixed copy and the thre
       name: info.project.name === 'desktop-1280' ? 'Tax payments, without the confusion' : 'Pay tax with confidence',
     })).toBeVisible();
     await expect(slide.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
-    await expect(slide.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
+    await expect(slide.getByRole('button', { name: 'Other Tax', exact: true })).toBeVisible();
     await expect(slide.locator('.public-guest-action')).toHaveCount(2);
-    await expect(slide.locator('.public-hero-carousel__gift-link')).toBeVisible();
-    await expect(slide.getByRole('button', {name:'Gift Tax'})).toBeVisible();
+    await expect(slide.locator('.public-hero-carousel__gift-link')).toHaveCount(0);
   }
 });
 
@@ -261,7 +260,8 @@ test('both fixed buttons keep the same two payment entry routes on every slide',
   await expect(payment.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
   await expect(payment.locator('[data-payer-relationship]')).toHaveCount(0);
   await payment.getByRole('button', { name: 'Close payment services' }).click();
-  await carousel.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
+  await carousel.getByRole('button', { name: 'Other Tax', exact: true }).click();
+  await page.getByTestId('other-tax-chooser').getByRole('button', {name: /Travel Tax/}).click();
   await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
   await page.getByRole('dialog', { name: 'Travel tax' }).getByRole('button', { name: /close/i }).first().click();
   await carousel.focus();
