@@ -290,7 +290,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setError(''); setAcknowledged(false);
   };
   const removeTravelPassenger = (person: TravelPassenger, index: number) => {
-    if (passengers.length <= 1) return; // Never remove the last payer/passenger.
     // Removing during an unfinished edit must preserve the LAST valid
     // confirmed passenger, not the unsaved and possibly invalid editor state.
     const original = editBackup?.passenger.id === person.id ? editBackup.passenger : person;
@@ -401,7 +400,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     (item.nationality === 'BD'
       ? item.identitySource === 'PASSPORT_SAMPLE'
       : !!(item.passport.trim() || item.name.trim() || item.birthDate.trim() || item.country.trim())));
-  const allPassengersComplete = firstIdentityIssue() === null &&
+  const allPassengersComplete = passengers.length > 0 && firstIdentityIssue() === null &&
     passengers.every(item => confirmedPassengerIds.includes(item.id));
   const canContinueToTravel = allPassengersComplete;
   const reportIdentityIssue = (issue: PassengerIdentityIssue) => {
