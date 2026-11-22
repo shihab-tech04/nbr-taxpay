@@ -160,14 +160,14 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     details.querySelector<HTMLElement>('summary')?.focus();
   };
   useEffect(() => {
-    if (!allowMixedReturn || !activeCategory) return;
+    if (!allowMixedReturn || !activeCategory || query.trim()) return;
     const details = Array.from(rootRef.current?.querySelectorAll<HTMLDetailsElement>('[data-head-group]') ?? [])
       .find(node => node.getAttribute('data-head-group') === activeCategory);
     if (!details) return;
     details.open = true;
     details.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     details.querySelector<HTMLElement>('summary')?.focus({ preventScroll: true });
-  }, [activeCategory, allowMixedReturn]);
+  }, [activeCategory, allowMixedReturn, query]);
   const selectableGroups = allowMixedReturn && returnHead
     ? [{ name: 'Tax with Return', rows: [returnHead] }, ...grouped]
     : grouped;
@@ -236,7 +236,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     rootRef.current?.querySelectorAll<HTMLDetailsElement>('[data-head-group]').forEach(group => {
       if (group.querySelector('[data-invalid="true"]')) group.open = true;
     });
-  }, [error, activeId, firstInvalid?.id, firstInvalid?.headId, firstMissingTaxpayer?.id, query, activeCategory, allowMixedReturn]);
+  }, [error, activeId, firstInvalid?.id, firstInvalid?.headId, firstMissingTaxpayer?.id, query, allowMixedReturn]);
 
   // Summary lines link back to the exact taxpayer, payment head and year.
   useEffect(() => {
