@@ -110,6 +110,9 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     return () => { current = false; };
   }, [allowMixedReturn, showFrequentCategories, ownerKey, previewAccount?.id]);
   const [query, setQuery] = useState('');
+  // The seven-category directory and its detailed head editor are alternative
+  // views of the same data, never two complete lists shown at once.
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [allocationLimitError, setAllocationLimitError] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const taxpayerTabsRef = useRef<HTMLDivElement>(null);
@@ -145,6 +148,10 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     ? activeTaxpayer : taxpayers[0]?.id;
   const activeLines = lines.filter(line => line.taxpayerId === activeId);
   const openCategoryGroup = (name: string) => {
+    if (allowMixedReturn) {
+      setActiveCategory(name);
+      return;
+    }
     const details = Array.from(rootRef.current?.querySelectorAll<HTMLDetailsElement>('[data-head-group]') ?? [])
       .find(node => node.getAttribute('data-head-group') === name);
     if (!details) return;
@@ -152,6 +159,15 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     details.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     details.querySelector<HTMLElement>('summary')?.focus();
   };
+  useEffect(() => {
+    if (!allowMixedReturn || !activeCategory) return;
+    const details = Array.from(rootRef.current?.querySelectorAll<HTMLDetailsElement>('[data-head-group]') ?? [])
+      .find(node => node.getAttribute('data-head-group') === activeCategory);
+    if (!details) return;
+    details.open = true;
+    details.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    details.querySelector<HTMLElement>('summary')?.focus({ preventScroll: true });
+  }, [activeCategory, allowMixedReturn]);
   const selectableGroups = allowMixedReturn && returnHead
     ? [{ name: 'Tax with Return', rows: [returnHead] }, ...grouped]
     : grouped;
@@ -210,10 +226,17 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
       setActiveTaxpayer(target);
       return;
     }
+    if (allowMixedReturn && firstInvalid) {
+      const groupName = selectableGroups.find(group => group.rows.some(head => head.id === firstInvalid.headId))?.name;
+      if (groupName && activeCategory !== groupName) {
+        setActiveCategory(groupName);
+        return;
+      }
+    }
     rootRef.current?.querySelectorAll<HTMLDetailsElement>('[data-head-group]').forEach(group => {
       if (group.querySelector('[data-invalid="true"]')) group.open = true;
     });
-  }, [error, activeId, firstInvalid?.id, firstMissingTaxpayer?.id, query]);
+  }, [error, activeId, firstInvalid?.id, firstInvalid?.headId, firstMissingTaxpayer?.id, query, activeCategory, allowMixedReturn]);
 
   // Summary lines link back to the exact taxpayer, payment head and year.
   useEffect(() => {
@@ -228,6 +251,13 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
       setQuery('');
       return;
     }
+    if (allowMixedReturn) {
+      const groupName = selectableGroups.find(group => group.rows.some(head => head.id === selected.headId))?.name;
+      if (groupName && activeCategory !== groupName) {
+        setActiveCategory(groupName);
+        return;
+      }
+    }
     const row = rootRef.current?.querySelector<HTMLElement>(`[data-head-row="${selected.headId}"]`);
     const group = row?.closest('details');
     if (group) group.open = true;
@@ -235,7 +265,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     const input = rootRef.current?.querySelector<HTMLInputElement>(`#other-tax-amount-${selected.id}`);
     input?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     input?.focus({ preventScroll: true });
-  }, [focusRequest, activeId, query, lines]);
+  }, [focusRequest, activeId, query, lines, allowMixedReturn, activeCategory]);
 
   const defaultYear = '2026-27';
   const suggestedFor = (taxpayerId: string, headId: number, year: string) =>
@@ -408,7 +438,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                 setQuery('');
               }}>{tx('Show first incomplete payment', 'প্রথম অসম্পূর্ণ পরিশোধ দেখুন')}</button>}
             </div>}
-            {allowMixedReturn && <div className="other-tax-category-directory" data-testid="other-tax-category-directory">
+            {allowMixedReturn && !activeCategory && !search && <div className="other-tax-category-directory" data-testid="other-tax-category-directory">
               {showFrequentCategories && categoryHistory.ownerKey === ownerKey &&
                 categoryHistory.status === 'ready' && categoryHistory.names.length > 0 && <section data-testid="frequent-category-section">
                   <h3>{tx('Frequently used categories', 'বেশি ব্যবহৃত করের শ্রেণি')}</h3>
@@ -417,7 +447,14 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
               <h3>{tx('All seven tax categories', 'সাতটি করের শ্রেণি')}</h3>
               {categoryDirectory(visibleCategories.map(group => group.name), 'fixed-tax-categories', tx('Seven fixed tax categories', 'সাতটি নির্দিষ্ট করের শ্রেণি'))}
             </div>}
-            <div className={error ? 'rounded-lg border border-rose-400' : 'rounded-lg border border-slate-200'} data-testid="other-tax-head-catalogue">
+            {allowMixedReturn && (activeCategory || search) && (
+              <button type="button" className="other-tax-category-back" onClick={() => { setActiveCategory(null); setQuery(''); }}>
+                <ChevronLeft size={17} aria-hidden="true" />
+                {tx('Back to categories', 'করের শ্রেণিতে ফিরে যান')}
+              </button>
+            )}
+            <div hidden={allowMixedReturn && !activeCategory && !search}
+              className={error ? 'rounded-lg border border-rose-400' : 'rounded-lg border border-slate-200'} data-testid="other-tax-head-catalogue">
               {selectableGroups.map(group => {
                 const matched = group.rows.filter(head =>
                   !search || [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search));
@@ -425,6 +462,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                 const groupSelectedCount = group.rows.filter(head => activeLines.some(line => line.headId === head.id)).length;
                 const groupErrors = invalidLines.filter(line => line.taxpayerId === activeId && group.rows.some(head => head.id === line.headId)).length;
                 return <details key={group.name} open={search ? true : undefined}
+                  hidden={allowMixedReturn && Boolean(activeCategory) && !search && group.name !== activeCategory}
                   data-testid={group.name === 'Tax with Return' ? 'unified-v5-return-group' : undefined}
                   className={groupErrors ? "group border-b border-rose-300 last:border-b-0 other-tax-group--invalid" : "group border-b border-slate-200 last:border-b-0"} data-head-group={group.name} data-invalid={groupErrors ? "true" : undefined}>
                   <summary className="cursor-pointer px-3 py-3 bg-slate-50 text-sm font-semibold text-taxpay-dark focus-visible:outline-2 focus-visible:outline-taxpay-primary">
