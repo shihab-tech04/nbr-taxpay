@@ -195,9 +195,21 @@ test('426px scrolled mobile footer is one compact white row above the floating P
   test.skip(!testInfo.project.name.startsWith('mobile-'),'Mobile footer geometry requires a mobile browser project');
   await page.setViewportSize({width:426,height:882});
   await page.goto('/?action=landing&lang=en');
-  await expect(page.locator('.taxpay-public-mobile-navigation .citizen-corners')).toHaveCount(1);
+  const corners=page.locator('.taxpay-public-mobile-navigation .citizen-corners');
+  const header=page.locator('.taxpay-public-mobile-navigation .citizen-header');
   const footer=page.locator('.public-footer');
+  await expect(header).toBeVisible();
   await expect(footer).toBeVisible();
+  // Wait for the compact-scroll listener and final font layout before checking
+  // its corner controls. Scroll state is what renders .citizen-corners.
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    window.scrollTo(0,0);
+    await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+    window.scrollTo(0,document.documentElement.scrollHeight);
+  });
+  await expect.poll(()=>page.evaluate(()=>window.scrollY>145)).toBe(true);
+  await expect(corners).toHaveCount(1);
   // The CMS hero and web fonts can extend the document after navigation.
   // Assert at the actual scroll end, not at the now-stale first scroll position.
   // This never changes the overlap/clearance/size acceptance thresholds.
