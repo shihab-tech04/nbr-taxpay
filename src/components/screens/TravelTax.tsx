@@ -38,6 +38,7 @@ interface TravelTaxProps {
   fourStepJourney?: boolean;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
+  registerHeaderBack?: (action: (() => void) | null) => void;
 }
 
 function maskPassport(passport: string) {
@@ -54,7 +55,7 @@ function readPendingTravelPayment(key: string, sessionId: string): PendingTravel
  * This is a UX/reference-data preview, not a real passport verification or
  * government A-Challan integration. An API owner can replace those boundaries.
  */
-export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, initialReuse, onBackToService, onStageChange }) => {
+export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, initialReuse, onBackToService, onStageChange, registerHeaderBack }) => {
   const { language, navigate, addPaymentReceipt, previewAccount, startPaymentReuse } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // Keep the existing signed-in draft journey untouched. Unsigned guests
@@ -236,7 +237,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     validateTravelParty(passengers, travelDate) === null;
   const totalAmount = allCalculated ? travelPartyTotal(passengers, unitRate, travelDate) : provisionalAmount;
   const amountWords = allCalculated ? amountInTakaWords(totalAmount, language) : '';
-  const canSubmit = allCalculated && totalAmount > 0 && !processing && !!paymentMethod && !!paymentChannel && acknowledged;
+  const receiptMobileComplete = /^01\d{9}$/.test(phone);
+  const canSubmit = allCalculated && totalAmount > 0 && receiptMobileComplete && !processing && !!paymentMethod && !!paymentChannel && acknowledged;
   const routeOptions: { value: TravelMode; en: string; bn: string }[] = [
     { value: 'LAND', en: 'By land', bn: 'স্থলপথে' },
     { value: 'WATER', en: 'By water', bn: 'নৌপথে' },
@@ -328,6 +330,21 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setStep(next);
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
+  // The shared modal header owns Back, including receipt/review navigation.
+  // Do not proxy through footer DOM buttons: they can disappear or be disabled.
+  useEffect(() => {
+    if (!registerHeaderBack) return;
+    const back = () => {
+      if (createdReceipt) {
+        stepTo(receiptReviewOpen ? 3 : 2);
+        return;
+      }
+      if (step > 0) stepTo((step - 1) as 0 | 1 | 2 | 3);
+      else onBackToService?.();
+    };
+    registerHeaderBack(back);
+    return () => registerHeaderBack(null);
+  }, [registerHeaderBack, createdReceipt, receiptReviewOpen, step, onBackToService]);
   const validateTravelDetails = () => {
     if (!selectedPort) return tr('Select a departure port.', 'যাত্রা শুরুর বন্দর নির্বাচন করুন।');
     if (!destination.trim()) return tr('Select or enter a destination.', 'গন্তব্য নির্বাচন বা লিখুন।');
@@ -380,8 +397,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       : !!(item.passport.trim() || item.name.trim() || item.birthDate.trim() || item.country.trim())));
   const allPassengersComplete = firstIdentityIssue() === null &&
     passengers.every(item => confirmedPassengerIds.includes(item.id));
-  const receiptMobileComplete = /^01\d{9}$/.test(phone);
-  const canContinueToTravel = allPassengersComplete && receiptMobileComplete;
+  const canContinueToTravel = allPassengersComplete;
   const reportIdentityIssue = (issue: PassengerIdentityIssue) => {
     setEditingPassengerId(issue.id); setPassengerIssue(issue);
     showError(issue.message);
@@ -401,20 +417,16 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
         : tr(problem, 'প্রত্যেক যাত্রীর নাম ও বৈধ পাসপোর্ট তথ্য দিন।');
       return translated;
     }
-    if (!/^01\d{9}$/.test(phone)) return tr('Enter a valid 11-digit receipt mobile number.', 'রসিদের জন্য ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।');
     return null;
   };
+  const validateReceiptContact = () => receiptMobileComplete ? null :
+    tr('Enter a valid 11-digit receipt mobile number.', 'রসিদের জন্য ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।');
   const continueStep = () => {
     if (step === 0) {
       const issue = firstIdentityIssue();
       if (issue) { reportIdentityIssue(issue); return; }
       if (!allPassengersComplete) {
         showError(tr('Confirm each checked passenger with Add passenger first.', 'প্রতিটি যাচাইকৃত যাত্রী যোগ করুন বোতামে নিশ্চিত করুন।'));
-        return;
-      }
-      if (!receiptMobileComplete) {
-        showError(tr('Enter a valid 11-digit receipt mobile number.', 'রসিদের জন্য ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।'));
-        requestAnimationFrame(() => document.getElementById('travel-mobile')?.focus());
         return;
       }
       setEditingPassengerId(null); stepTo(1); return;
@@ -534,7 +546,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (step !== 2 || processing) return;
-    const problem = pendingPayment.current ? null : validateTravelDetails() ?? validatePassengers();
+    const problem = pendingPayment.current ? null : validateTravelDetails() ?? validatePassengers() ?? validateReceiptContact();
     if (problem) { showError(problem); return; }
     if (!pendingPayment.current && (!paymentMethod || !paymentChannel || !acknowledged)) {
       setError(tr('Choose a payment method and confirm the details.', 'পেমেন্ট পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করুন।'));
@@ -914,8 +926,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft}
               guardOnly={step >= 2} actionTarget={embedded ? draftFooterTarget : undefined} />}
 
-          {step === 0 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য')}>
-            <PaymentFormSection number={1} title={tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য')} hideHeading={embedded}>
+          {step === 0 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passenger information', 'যাত্রীর তথ্য')}>
+            <PaymentFormSection number={1} title={tr('Passenger information', 'যাত্রীর তথ্য')} hideHeading={embedded}>
               <div className="travel-flow__party" data-testid="travel-passenger-list">
                 {passengers.map((item, index) => {
                   const editing = editingPassengerId === item.id || (!item.name.trim() && index === 0);
@@ -1013,15 +1025,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 }}>
                 <Plus size={18} aria-hidden="true"/>{tr('Add another passenger', 'আরেকজন যাত্রী যোগ করুন')}
               </button>}
-              <div className="travel-flow__contact">
-                <h3>{tr('Receipt contact', 'রসিদের যোগাযোগ')}</h3>
-                <div className="travel-flow__field">
-                  <label htmlFor="travel-mobile">{tr('Mobile number for receipt', 'রসিদের জন্য মোবাইল নম্বর')} *</label>
-                  <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11}
-                    value={phone} placeholder="01XXXXXXXXX"
-                    onChange={event => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 11)); setError(''); setAcknowledged(false); }}/>
-                </div>
-              </div>
             </PaymentFormSection>
           </section>}
 
@@ -1079,13 +1082,28 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </PaymentFormSection>
           </section>}
 
-          {step === 2 && (!createdReceipt || receiptReviewOpen) && <section className="travel-flow__panel" aria-label={tr('Review and payment','পর্যালোচনা ও পেমেন্ট')}>
-            <p className="travel-flow__field-hint">{tr('Review every passenger and travel details before recording a simulated payment.', 'নমুনা পেমেন্ট রেকর্ডের আগে সব যাত্রীর ও ভ্রমণের তথ্য যাচাই করুন।')}</p>
+          {step === 2 && (!createdReceipt || receiptReviewOpen) && <section className="travel-flow__panel" aria-label={tr('Payment preview','পেমেন্টের পূর্বদর্শন')}>
+            <p className="travel-flow__field-hint">{tr('Review passenger and travel details, add the receipt mobile, then choose how to pay.', 'যাত্রী ও ভ্রমণের তথ্য পর্যালোচনা করুন, রসিদের মোবাইল নম্বর দিন, তারপর পেমেন্টের মাধ্যম নির্বাচন করুন।')}</p>
+            <section className="travel-flow__contact" aria-label={tr('Receipt contact', 'রসিদের যোগাযোগ')} data-testid="travel-preview-receipt-contact">
+              <h3>{tr('Receipt contact', 'রসিদের যোগাযোগ')}</h3>
+              <div className="travel-flow__field">
+                <label htmlFor="travel-mobile">{tr('Mobile number for receipt', 'রসিদের জন্য মোবাইল নম্বর')} *</label>
+                {createdReceipt ? <p className="travel-flow__contact-readonly">{phone}</p> : <>
+                  <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11}
+                    autoComplete="tel-national" value={phone} placeholder="01XXXXXXXXX"
+                    aria-invalid={phone.length > 0 && !receiptMobileComplete}
+                    aria-describedby={phone.length > 0 && !receiptMobileComplete ? 'travel-mobile-error' : undefined}
+                    onChange={event => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 11)); setError(''); setAcknowledged(false); }}/>
+                  {phone.length > 0 && !receiptMobileComplete && <p id="travel-mobile-error" className="travel-flow__inline-error" role="status">
+                    {tr('Enter a valid 11-digit mobile number starting with 01.', '০১ দিয়ে শুরু হওয়া ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।')}
+                  </p>}
+                </>}
+              </div>
+            </section>
             <div className="travel-flow__review">
               <div><dt>{tr('Travel','ভ্রমণ')}</dt><dd>{mode === 'LAND' ? tr('By land','স্থলপথে') : tr('By water','নৌপথে')}</dd></div>
               <div><dt>{tr('Departure port','যাত্রা বন্দর')}</dt><dd>{selectedPort}</dd></div>
               <div><dt>{tr('Destination / date','গন্তব্য / তারিখ')}</dt><dd>{destination} / {travelDate}</dd></div>
-              <div><dt>{tr('Receipt mobile','রসিদের মোবাইল')}</dt><dd>{phone}</dd></div>
               <div><dt>{tr('Payment channel','পেমেন্ট চ্যানেল')}</dt><dd>{
                 paymentChannel === 'NOW' ? tr('Pay online','অনলাইনে পরিশোধ')
                 : paymentChannel === 'OTC' ? tr('Pay at a bank branch','ব্যাংক শাখায় পরিশোধ')
@@ -1096,7 +1114,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               }</dd></div>
               {!createdReceipt && <div><dt>{tr('Edit', 'সম্পাদনা')}</dt><dd><button type="button" className="travel-flow__edit" onClick={() => stepTo(1)}><Pencil size={15} aria-hidden="true"/>{tr('Edit travel details', 'ভ্রমণের তথ্য সম্পাদনা')}</button></dd></div>}
             </div>
-            {!createdReceipt && <button type="button" className="travel-flow__edit-travel" onClick={() => stepTo(0)}><Pencil size={15} aria-hidden="true"/>{tr('Edit passengers and receipt contact', 'যাত্রী ও রসিদের যোগাযোগ সম্পাদনা')}</button>}
+            {!createdReceipt && <button type="button" className="travel-flow__edit-travel" onClick={() => stepTo(0)}><Pencil size={15} aria-hidden="true"/>{tr('Edit passengers', 'যাত্রী সম্পাদনা')}</button>}
             <div className="travel-flow__table-wrap taxpay-table-viewport">
               <TaxPayUnifiedTable className="travel-flow__passenger-table taxpay-unified-table" aria-label={tr('Passenger-wise travel tax amounts','যাত্রীভিত্তিক ভ্রমণ কর')}>
                 <thead><tr>
@@ -1205,10 +1223,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             leading={(authenticatedUser || previewAccount || unsignedGuestDrafts) && !createdReceipt && step < 2
               ? <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />
               : null}
-            back={!createdReceipt && step > 0 && <button type="button" className="tax-service-choice__cancel"
-              onClick={step === 0 ? onBackToService : () => stepTo((step-1) as 0 | 1 | 2 | 3)}>
-              <ArrowLeft size={16} aria-hidden="true"/>{tr('Back','ফিরুন')}
-            </button>}
             next={primaryAction}/>
         </div>, modalFooterTarget)}
     </div>
