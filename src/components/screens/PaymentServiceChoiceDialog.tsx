@@ -68,6 +68,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   // An existing signed-in session must always use the account journey.
   // Only signed-out users need to choose between account sign-in and walk-in.
   const alreadySignedIn = Boolean(verifiedUser || previewAccount);
+  // A walk-in checkout is not an account-owned draft, even when a guest capability exists.
+  const isWalkInPayment = view === 'payment' && !useAccount && !alreadySignedIn;
   const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
   const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(initialDraft);
   // Back from taxpayer details returns to payer choices without losing
@@ -127,7 +129,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const requestClose = () => {
     if (exitSaving) return;
     if (exitPromptOpen) { setExitPromptOpen(false); setExitError(''); return; }
-    if (view === 'payment' && draftExitActionRef.current) {
+    if (view === 'payment' && stage !== 4 && (isWalkInPayment || draftExitActionRef.current)) {
       setExitPromptOpen(true);
       setExitError('');
       return;
@@ -230,7 +232,9 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
       onClose={requestClose}
       onBackdropClose={() => {
         // A backdrop click never discards draft-eligible payment data.
-        if (exitPromptOpen || (view === 'payment' && draftExitActionRef.current)) return;
+        if (exitPromptOpen) return;
+        if (isWalkInPayment && stage !== 4) { requestClose(); return; }
+        if (view === 'payment' && draftExitActionRef.current) return;
         close();
       }}
       registerDraftExit={registerDraftExit}
@@ -423,7 +427,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
       </section>}
       {exitPromptOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 p-3 sm:p-6"
-          data-testid="payment-draft-exit-overlay"
+          data-testid={isWalkInPayment ? "walkin-payment-exit-overlay" : "payment-draft-exit-overlay"}
           onMouseDown={event => event.stopPropagation()}>
           <div role="alertdialog" aria-modal="true" aria-labelledby="payment-draft-exit-title"
             aria-describedby="payment-draft-exit-description"
@@ -452,15 +456,37 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
               </span>
               <div className="min-w-0 flex-1">
                 <h3 id="payment-draft-exit-title" className="text-lg font-semibold leading-6 text-taxpay-dark">
-                  {tr('Save your tax payment?', 'কর পরিশোধের খসড়া সংরক্ষণ করবেন?')}
+                  {isWalkInPayment
+                    ? tr('Discard tax payment?', 'কর পরিশোধ বাদ দেবেন?')
+                    : tr('Save your tax payment?', 'কর পরিশোধের খসড়া সংরক্ষণ করবেন?')}
                 </h3>
                 <p id="payment-draft-exit-description" className="mt-1.5 text-sm leading-6 text-taxpay-muted">
-                  {tr('Save a draft to continue later. Discarding will lose your unsaved changes.',
-                    'পরে চালিয়ে যেতে খসড়া সংরক্ষণ করুন। বাদ দিলে অসংরক্ষিত পরিবর্তন হারিয়ে যাবে।')}
+                  {isWalkInPayment
+                    ? tr('Discarding will erase the details entered for this walk-in payment. Keep editing to continue.',
+                      'বাদ দিলে এই ওয়াক-ইন পেমেন্টের দেওয়া তথ্য মুছে যাবে। চালিয়ে যেতে সম্পাদনা করুন।')
+                    : tr('Save a draft to continue later. Discarding will lose your unsaved changes.',
+                      'পরে চালিয়ে যেতে খসড়া সংরক্ষণ করুন। বাদ দিলে অসংরক্ষিত পরিবর্তন হারিয়ে যাবে।')}
                 </p>
               </div>
             </div>
-            {exitError && <p role="alert" className="mt-4 rounded-lg border border-taxpay-border px-3 py-2 text-sm text-taxpay-error">{exitError}</p>}
+            {!isWalkInPayment && exitError && <p role="alert" className="mt-4 rounded-lg border border-taxpay-border px-3 py-2 text-sm text-taxpay-error">{exitError}</p>}
+            {isWalkInPayment ? (
+              <div className="mt-5 grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2"
+                data-testid="walkin-payment-exit-cta-row">
+                <button ref={exitFirstButtonRef} type="button"
+                  className="min-h-11 w-full rounded-lg bg-taxpay-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-taxpay-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary"
+                  onClick={() => { setExitPromptOpen(false); setExitError(''); }}>
+                  {tr('Keep editing', 'সম্পাদনা চালিয়ে যান')}
+                </button>
+                <button type="button"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-taxpay-error/40 bg-white px-4 py-2.5 text-sm font-semibold text-taxpay-error transition-colors hover:bg-taxpay-error/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary"
+                  onClick={close}>
+                  <Trash2 size={16} strokeWidth={1.8} aria-hidden="true" />
+                  {tr('Discard tax payment', 'কর পরিশোধ বাদ দিন')}
+                </button>
+              </div>
+            ) : (
+              <>
             <div className="mt-5 grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2"
               data-testid="payment-draft-exit-cta-row">
               <button ref={exitFirstButtonRef} type="button" disabled={exitSaving}
@@ -483,6 +509,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
                 {tr('Discard tax payment', 'কর পরিশোধ বাদ দিন')}
               </button>
             </div>
+              </>
+            )}
           </div>
         </div>
       )}
