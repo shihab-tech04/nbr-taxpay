@@ -4,5 +4,5 @@ export const travelTaxModalTitle = (language: 'en' | 'bn') =>
 
 export const travelTaxModalStages = (language: 'en' | 'bn') =>
   language === 'bn'
-    ? ['যাত্রীর তথ্য', 'ভ্রমণের তথ্য', 'পেমেন্টের পূর্বদর্শন', 'চালান ও রসিদ']
-    : ['Passenger information', 'Travel details', 'Payment preview', 'Challan & receipt'];
+    ? ['যাত্রীর তথ্য', 'ভ্রমণের তথ্য', 'চূড়ান্ত পর্যালোচনা']
+    : ['Passenger Information', 'Travel Details', 'Final Preview'];
