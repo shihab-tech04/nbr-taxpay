@@ -628,7 +628,7 @@ test('F-060 supported beneficiary categories persist and recover without duplica
         const values=await options.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-option-value')).filter(Boolean).sort());
         expect(values).toEqual(choices.map(choice=>choice.value).sort());
       }
-      await options.locator('[data-option-value="'+record.value+'"]').click();
+      await optionRoot.locator('[role="option"][data-option-value="'+record.value+'"]').click();
       console.info('[F060] category selected '+record.value);
       if(record.tag==='others')await dialog.locator('#beneficiary-other-label').fill(record.other_label!);
       if(index===0)await dialog.locator('#beneficiary-new-list-name').fill('F060 supported categories');
