@@ -584,9 +584,9 @@
 
 /* The signed-in register uses a specificity-frozen shared table selector.
  * Match that real selector so the semantic heading/body weights apply. */
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table thead th {
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table thead th {
   font-weight: var(--taxpay-weight-action, 600);
 }
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table tbody td {
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table tbody td {
   font-weight: var(--taxpay-weight-reading, 400);
 }
