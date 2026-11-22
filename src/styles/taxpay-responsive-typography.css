@@ -318,11 +318,24 @@
   .taxpay-bento-year__value,.taxpay-bento-position__totals dt,
   .taxpay-unified-chart__axis,.taxpay-table-column-hint,
   .citizen-footer__disclaimer,.public-footer__copyright,
-  .public-footer__identity p,.public-footer__bottom p
+  .public-footer__bottom p
 ) {
   font-size: var(--taxpay-font-micro);
   line-height: 1.5;
 }
+/* Footer explanatory copy is content, not copyright micro metadata. */
+.taxpay-citizen-shell .public-footer__identity p {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+/* Required payment guidance (including disabled-head explanations) is not
+ * microcopy. Keep source selectors narrow to avoid official documents. */
+.taxpay-citizen-shell :is(.payment-flow-embedded,.taxpay-modal) .text-xs:not(.taxpay-type-micro),
+.taxpay-citizen-shell [data-testid="other-tax-batch"] [data-head-row] span.text-rose-700 {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+
 /* Inputs remain in normal reading size even if external utilities say text-xs. */
 .taxpay-citizen-shell :is(input,select,textarea)::placeholder {
   font-size: inherit;
