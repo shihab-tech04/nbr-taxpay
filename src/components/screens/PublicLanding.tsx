@@ -99,8 +99,8 @@ export const PublicLanding: React.FC = () => {
   return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
-      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openAllTaxPayments()}
-      onGiftTax={() => setOpenService('gift')}
+      onPayTax={() => openAllTaxPayments()}
+      onOtherTax={() => setOpenService('other')}
       paused={isPaymentServiceChoiceOpen || openService !== null}
     />
 
@@ -261,6 +261,6 @@ export const PublicLanding: React.FC = () => {
       </div>
     </section>
 
-    {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} /></React.Suspense>}
+    {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} onChooseOther={setOpenService} /></React.Suspense>}
   </div>;
 };
