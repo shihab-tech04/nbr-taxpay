@@ -151,7 +151,7 @@
 }
 /* General copy belongs to body tier; numbers and labels in data visualizations
  * are explicitly assigned to the micro tier below. */
-.taxpay-citizen-shell :is(p, li, dt, dd):not(.taxpay-type-micro):not(.receipt-view__paper *):not(.payment-certificate-document *):not(.print-card *) {
+.taxpay-citizen-shell :is(p, li, dt, dd):not(.taxpay-type-micro):not(:where(.receipt-view__paper *, .payment-certificate-document *, .print-card *)) {
   font-size: var(--taxpay-font-body);
 }
 /* Public header, menu, language switcher and safe-area bottom navigation. */
@@ -313,7 +313,7 @@
   font-size: var(--taxpay-font-micro);
   line-height: 1.5;
 }
-.taxpay-citizen-shell :is(
+.taxpay-citizen-shell.taxpay-citizen-shell :is(
   .taxpay-type-micro,.taxpay-bento-year__legend,.taxpay-bento-year__label,
   .taxpay-bento-year__value,.taxpay-bento-position__totals dt,
   .taxpay-unified-chart__axis,.taxpay-table-column-hint,
