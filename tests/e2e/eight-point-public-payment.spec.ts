@@ -1,10 +1,15 @@
 import {test,expect} from '@playwright/test';
 
-test('public home shows Bengali slogan and three working service entries without a fabricated Gift Tax challan',async({page})=>{
+test('approved fixed banner keeps three service destinations without inventing Gift Tax challans',async({page})=>{
   await page.goto('/?action=landing&lang=en');
   const active=page.locator('.public-hero-carousel__slide[data-active="true"]');
-  await expect(active.getByText('আমার করের টাকায় গড়বো স্বদেশ')).toBeVisible();
-  await expect(active.locator('.public-guest-action')).toHaveCount(3);
+  await expect(active.getByText('আমার করের টাকায় গড়বো স্বদেশ')).toHaveCount(0);
+  await expect(page.locator('.public-hero-carousel-shell--box')).toHaveCount(0);
+  await expect(active).toHaveAttribute('data-fixed-left', 'true');
+  await expect(active.locator('.public-guest-action')).toHaveCount(2);
+  await expect(active.getByRole('button',{name:'Pay Tax',exact:true})).toBeVisible();
+  await expect(active.getByRole('button',{name:'Pay Travel Tax',exact:true})).toBeVisible();
+  await expect(active.locator('.public-hero-carousel__gift-link')).toBeVisible();
   await active.getByRole('button',{name:'Gift Tax'}).click();
   const gift=page.getByRole('dialog',{name:'Gift Tax'});
   await expect(gift).toBeVisible();
