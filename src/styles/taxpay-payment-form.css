@@ -8,9 +8,9 @@
 .payment-form-section__number{display:grid;place-items:center;flex:none;width:31px;height:31px;border-radius:9px;background:#edf3ff;color:#2c5ead;font-size:14px;font-weight:800}
 .payment-form-section__heading-copy{flex:1;display:grid;gap:3px}
 .payment-form-section__heading-copy strong{font-size:14px;font-weight:750}
-.payment-form-section__heading-copy small{font-size:14px;color:#566982;font-weight:450}
-.payment-form-section__heading-copy h2{font-size:15px;font-weight:750;line-height:1.4;margin:0}
-.payment-form-section__heading-copy p{font-size:14px;line-height:1.45;color:#566982;margin:0}
+.payment-form-section__heading-copy small{font-size:var(--taxpay-type-body);color:#566982;font-weight:450}
+.payment-form-section__heading-copy h2{font-size:var(--taxpay-type-h3);font-weight:750;line-height:1.4;margin:0}
+.payment-form-section__heading-copy p{font-size:var(--taxpay-type-body);line-height:1.45;color:#566982;margin:0}
 .payment-form-section--static .payment-form-section__heading{cursor:default;border-bottom:1px solid #e6ebf2;min-height:0}
 .payment-form-section__chevron{flex:none;color:#71839e;transition:transform .2s}
 .payment-form-section[open] .payment-form-section__chevron{transform:rotate(180deg)}
@@ -55,8 +55,8 @@
 .payment-form-summary__help{margin:0;padding:4px 18px 16px;font-size:14px;color:#52667f;line-height:1.5}
 .payment-form-summary__rows{margin:0;padding:0 18px 17px;display:grid;gap:13px}
 .payment-form-summary__rows>div{display:grid;gap:3px}
-.payment-form-summary__rows dt{font-size:14px;color:#526880;font-weight:400}
-.payment-form-summary__rows dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere;line-height:1.45}
+.payment-form-summary__rows dt{font-size:var(--taxpay-type-body);color:#526880;font-weight:400}
+.payment-form-summary__rows dd{margin:0;font-size:var(--taxpay-type-body);font-weight:600;overflow-wrap:anywhere;line-height:1.45}
 .payment-form-summary__mono{font-family:ui-monospace,monospace}
 .payment-form-summary__tin {display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0;max-width:100%}
 .payment-form-summary__tin .payment-form-summary__mono {overflow-wrap:anywhere}
