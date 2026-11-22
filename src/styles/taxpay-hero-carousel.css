@@ -319,6 +319,34 @@
   }
 }
 
+/* The 24px/16px mobile type contract must fit the approved compact banner.
+ * Keep the entire illustration visible (object-fit:contain); reclaim space
+ * from the decorative image and padding, never from essential text/CTAs. */
+@media (max-width: 390px) {
+  .public-hero-carousel__slide.public-information-hero {
+    grid-template-rows: minmax(154px, auto) 142px;
+    min-height: 296px;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy {
+    padding-block: .4rem;
+  }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__actions {
+    margin-top: .4rem;
+  }
+  .public-hero-carousel__slide .public-information-hero__media {
+    height: 142px;
+  }
+}
+@media (max-width: 360px) {
+  .public-hero-carousel__slide.public-information-hero {
+    grid-template-rows: minmax(154px, auto) 126px;
+    min-height: 280px;
+  }
+  .public-hero-carousel__slide .public-information-hero__media {
+    height: 126px;
+  }
+}
+
 @media (max-width: 360px) {
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: var(--taxpay-type-h1); }
