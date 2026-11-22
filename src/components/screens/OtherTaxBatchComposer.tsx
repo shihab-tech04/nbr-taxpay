@@ -10,6 +10,9 @@ import { fitsCombinedAllocationCapacity, MAX_COMBINED_ALLOCATIONS } from '../../
 import { parseGuestAmount, sumGuestAmounts, normalizeGuestAmountInput } from '../../services/guestAmount';
 import type { Language } from '../../types/tax';
 import { RETURN_HEAD_ID } from '../../services/taxWithReturnContract';
+import { useTaxState } from '../../services/taxState';
+import { useAccountIdentity } from '../../services/accountIdentity';
+import { getDemoStoryPaymentHistory, getPrivateSimulationHistory, type SimulationCategory, type SimulationUser } from '../../services/simulatedPaymentsApi';
 
 export type OtherTaxTaxpayer = { id: string; tin: string; name: string };
 export type OtherTaxAllocation = {
@@ -30,6 +33,18 @@ const liability = V11_SOURCE_HEADS.filter(head =>
   (head.journey === 'LIABILITY' || head.journey === 'WITHHOLDING')
 );
 const grouped = GROUP_ORDER.map(name => ({ name, rows: liability.filter(head => head.grpEn === name) }));
+// Both backend history APIs are owner/capability-scoped and read-only. Do not
+// rank by TIN, public fixtures, guessed preferences or browser cache.
+const CATEGORY_GROUP_BY_PAYMENT: Record<SimulationCategory, string> = {
+  TAX_WITH_RETURN: 'Tax with Return',
+  ADVANCE_TAX: 'Advance Tax',
+  ASSESSED_DEMAND: 'Tax against Demand',
+  PENALTY: 'Penalty',
+  SOURCE_TAX_DEPOSIT: 'Source Tax',
+  APPELLATE_TRIBUNAL: 'Appellate Tribunal',
+  OTHER_TAX_PAYMENT: 'Others',
+};
+type CategoryHistory = { status: 'signed-out' | 'loading' | 'ready' | 'unavailable'; names: string[] };
 // Tax with Return shares the Walk-in catalogue UI; its one-year accounting
 // contract and original return service classification remain unchanged.
 const returnHead = V11_SOURCE_HEADS.find(head => head.id === RETURN_HEAD_ID &&
@@ -76,6 +91,44 @@ type Props = {
 export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, serviceSelection, unifiedV3 = false, allowMixedReturn = false, remarks, focusRequest, onFocusLine, originalFacilitation = false }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
+  const { previewAccount } = useTaxState();
+  const { user } = useAccountIdentity();
+  const [categoryHistory, setCategoryHistory] = useState<CategoryHistory>({ status: 'signed-out', names: [] });
+  useEffect(() => {
+    if (!allowMixedReturn) return;
+    let current = true;
+    if (!previewAccount?.id && !user?.id) {
+      setCategoryHistory({ status: 'signed-out', names: [] });
+      return () => { current = false; };
+    }
+    setCategoryHistory({ status: 'loading', names: [] });
+    const history = previewAccount?.id
+      ? getDemoStoryPaymentHistory(previewAccount.id as SimulationUser, 'payer')
+      : getPrivateSimulationHistory('payer');
+    history.then(transactions => {
+      if (!current) return;
+      const counts = new Map<string, { count: number; last: number }>();
+      for (const transaction of transactions) {
+        // Failed/reversed/pending attempts do not establish frequently paid categories.
+        if (transaction.state !== 'SIMULATED') continue;
+        const time = Date.parse(transaction.createdAt);
+        if (!Number.isFinite(time)) continue;
+        const inPayment = new Set<string>();
+        for (const allocation of transaction.allocations) {
+          const name = CATEGORY_GROUP_BY_PAYMENT[allocation.category];
+          if (name) inPayment.add(name);
+        }
+        for (const name of inPayment) {
+          const old = counts.get(name);
+          counts.set(name, { count: (old?.count ?? 0) + 1, last: Math.max(old?.last ?? 0, time) });
+        }
+      }
+      const names = [...counts].sort((a, b) => b[1].count - a[1].count || b[1].last - a[1].last ||
+        a[0].localeCompare(b[0])).slice(0, 5).map(([name]) => name);
+      setCategoryHistory({ status: 'ready', names });
+    }).catch(() => { if (current) setCategoryHistory({ status: 'unavailable', names: [] }); });
+    return () => { current = false; };
+  }, [allowMixedReturn, previewAccount?.id, user?.id]);
   const [query, setQuery] = useState('');
   const [allocationLimitError, setAllocationLimitError] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -111,6 +164,14 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const activeId = taxpayers.some(person => person.id === activeTaxpayer)
     ? activeTaxpayer : taxpayers[0]?.id;
   const activeLines = lines.filter(line => line.taxpayerId === activeId);
+  const openCategoryGroup = (name: string) => {
+    const details = Array.from(rootRef.current?.querySelectorAll<HTMLDetailsElement>('[data-head-group]') ?? [])
+      .find(node => node.getAttribute('data-head-group') === name);
+    if (!details) return;
+    details.open = true;
+    details.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    details.querySelector<HTMLElement>('summary')?.focus();
+  };
   const selectableGroups = allowMixedReturn && returnHead
     ? [{ name: 'Tax with Return', rows: [returnHead] }, ...grouped]
     : grouped;
@@ -118,6 +179,33 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     (allowMixedReturn && Boolean(returnHead) && headId === RETURN_HEAD_ID);
   const eligibleLine = (line: OtherTaxAllocation) => headEligible(line.headId);
   const search = query.trim().toLocaleLowerCase();
+  const visibleCategories = selectableGroups.filter(group => group.rows.some(head =>
+    !search || [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search)));
+  const categoryDirectory = (names: readonly string[], testId: string, label: string) => (
+    <div className="other-tax-category-table-wrap" data-testid={testId}>
+      <table className="other-tax-category-table" aria-label={label}>
+        <thead><tr>
+          <th scope="col">{tx('Category', 'শ্রেণি')}</th>
+          <th scope="col">{tx('Heads', 'খাত')}</th>
+          <th scope="col">{tx('Selected', 'নির্বাচিত')}</th>
+          <th scope="col" className="sr-only">{tx('Open', 'খুলুন')}</th>
+        </tr></thead>
+        <tbody>{names.map(name => {
+          const group = visibleCategories.find(item => item.name === name);
+          if (!group) return null;
+          return <tr key={name} data-category={name}>
+            <th scope="row">{bn ? (group.rows[0]?.grpBn || (name === 'Tax with Return' ? 'রিটার্নসহ কর' : name)) : name}</th>
+            <td className="other-tax-category-table__number">{group.rows.length}</td>
+            <td className="other-tax-category-table__number">{group.rows.filter(head => activeLines.some(line => line.headId === head.id)).length}</td>
+            <td className="other-tax-category-table__action"><button type="button" onClick={() => openCategoryGroup(name)}
+              aria-label={tx('View payment heads for ', 'পরিশোধের খাত দেখুন: ') + (bn ? group.rows[0]?.grpBn || name : name)}>
+              {tx('View heads', 'খাত দেখুন')}
+            </button></td>
+          </tr>;
+        })}</tbody>
+      </table>
+    </div>
+  );
   const count = selectableGroups.reduce((n, group) => n + (maskTaxpayerTin
     ? group.rows.filter(head => headEligible(head.id)).length
     : group.rows.length), 0);
@@ -334,6 +422,20 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                 setActiveTaxpayer(firstInvalid.taxpayerId);
                 setQuery('');
               }}>{tx('Show first incomplete payment', 'প্রথম অসম্পূর্ণ পরিশোধ দেখুন')}</button>}
+            </div>}
+            {allowMixedReturn && <div className="other-tax-category-directory" data-testid="other-tax-category-directory">
+              <h3>{tx('Frequently used categories', 'বেশি ব্যবহৃত করের শ্রেণি')}</h3>
+              {categoryHistory.status === 'ready' && categoryHistory.names.length > 0
+                ? categoryDirectory(categoryHistory.names, 'frequent-tax-categories', tx('Five most used categories from your completed payments', 'সফল পেমেন্টের ইতিহাস থেকে সর্বাধিক ব্যবহৃত পাঁচটি শ্রেণি'))
+                : <p className="other-tax-category-directory__empty" role="status">{categoryHistory.status === 'loading'
+                    ? tx('Loading your payment history…', 'পেমেন্টের ইতিহাস লোড হচ্ছে…')
+                    : categoryHistory.status === 'unavailable'
+                      ? tx('Frequent categories are temporarily unavailable. All categories remain below.', 'বেশি ব্যবহৃত শ্রেণি আপাতত পাওয়া যাচ্ছে না। সব শ্রেণি নিচে আছে।')
+                      : categoryHistory.status === 'signed-out'
+                        ? tx('Sign in to see categories from your payment history.', 'আপনার পেমেন্টের ইতিহাস থেকে শ্রেণি দেখতে সাইন ইন করুন।')
+                        : tx('No completed payments yet. Choose from all categories below.', 'এখনও সম্পন্ন পেমেন্ট নেই। নিচের সব শ্রেণি থেকে বেছে নিন।')}</p>}
+              <h3>{tx('All seven tax categories', 'সাতটি করের শ্রেণি')}</h3>
+              {categoryDirectory(visibleCategories.map(group => group.name), 'fixed-tax-categories', tx('Seven fixed tax categories', 'সাতটি নির্দিষ্ট করের শ্রেণি'))}
             </div>}
             <div className={error ? 'rounded-lg border border-rose-400' : 'rounded-lg border border-slate-200'} data-testid="other-tax-head-catalogue">
               {selectableGroups.map(group => {
