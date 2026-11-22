@@ -176,8 +176,8 @@ test('Home search and six-benefit panel share readable typography, spacing and c
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       };
     });
-    expect(computed.titleSizes[0], 'record search and benefits headings match').toBe(computed.titleSizes[1]);
-    expect(computed.titleSizes[0]).toBeGreaterThanOrEqual(20);
+    expect(computed.titleSizes[0], 'record search uses 20px subsection role').toBe(20);
+    expect(computed.titleSizes[1], 'benefits title uses the responsive section tier').toBe(viewport.width < 768 ? 20 : 24);
     expect(Math.min(...computed.bodySizes.slice(0,2)), 'home helper text remains readable').toBeGreaterThanOrEqual(15);
     expect(computed.bodySizes[2], 'benefit details retain the approved 14px baseline').toBeGreaterThanOrEqual(14);
     expect(computed.radii, 'matching understated home card corners').toEqual([10,10]);

@@ -8,7 +8,7 @@
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-directory h3 {
   margin: 14px 0 8px;
   color: #203a5c;
-  font-size: 16px;
+  font-size: var(--taxpay-type-h3);
   font-weight: 700;
   line-height: 1.45;
 }
@@ -86,10 +86,10 @@
   border-radius: 8px;
   background: #fff;
   color: #2c5ead;
-  font-size: 14px;
+  font-size: var(--taxpay-type-body);
   font-weight: 650;
   line-height: 1.4;
-  white-space: nowrap;
+  white-space: normal;
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table__action button:hover {
   border-color: #9ebbe0;
@@ -122,7 +122,7 @@
   .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table__action button {
     min-height: 44px;
     padding: 7px 6px;
-    font-size: 13px;
+    font-size: var(--taxpay-type-body);
   }
   .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table__action button svg {
     display: none;

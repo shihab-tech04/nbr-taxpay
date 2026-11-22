@@ -522,7 +522,7 @@
 .payment-head-amount[data-columns="2"] {grid-column:auto;}
 .payment-head-amount__control {min-width:0;}
 .payment-head-amount--multi {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:center;}
-.payment-head-amount__label {font-size:14px;font-weight:600;color:var(--citizen-text);margin:0;line-height:1.5;min-width:0;overflow-wrap:anywhere;}
+.payment-head-amount__label {font-size:var(--taxpay-type-body);font-weight:600;color:var(--citizen-text);margin:0;line-height:1.5;min-width:0;overflow-wrap:anywhere;}
 @media(max-width:700px){.payment-head-amount-grid{grid-template-columns:minmax(0,1fr);}.payment-head-amount[data-columns]{grid-column:1/-1;}.payment-head-amount--multi{grid-template-columns:minmax(0,1fr);gap:8px;}}
 .taxpay-citizen-shell .taxpay-modal:has(.payment-flow-embedded) .taxpay-modal__footer { justify-content:space-between; }
 .taxpay-citizen-shell .taxpay-modal:has(.payment-flow-embedded) .taxpay-modal__footer-actions { flex:1 1 auto; }
@@ -599,7 +599,7 @@
   .tax-service-choice__card { min-height: 84px; padding: .8rem .85rem; gap: .8rem; }
   .tax-service-choice__icon { flex-basis: 42px; width:42px; height:42px; }
   .tax-service-choice__card strong { font-size: .9rem; }
-  .tax-service-choice__description { font-size:14px; }
+  .tax-service-choice__description { font-size:var(--taxpay-type-body); }
   .tax-service-choice__radio { margin-inline-start: .15rem; }
   .tax-service-choice__actions button { flex: 0 0 auto; }
   .tax-service-choice__actions .tax-service-choice__cancel { min-width:100px; }
@@ -1043,7 +1043,7 @@
 }
 .taxpay-citizen-shell .tax-service-choice[data-view="payer"] .tax-service-choice__entry-heading {
   margin: 0 0 .75rem;
-  font-size: 1rem;
+  font-size: var(--taxpay-type-h3);
   font-weight: 700;
   line-height: 1.45;
   color: var(--citizen-text);
@@ -1105,7 +1105,7 @@
   grid-column: auto;
   margin: 0;
   text-align: left;
-  font-size: 23px;
+  font-size: var(--taxpay-type-h3);
   font-weight: 600;
   line-height: 1.25;
   color: var(--citizen-text);
@@ -1113,7 +1113,7 @@
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] :is(.taxpay-modal__step-count,.taxpay-modal__subtitle) {
   margin: 0;
   color: var(--citizen-muted);
-  font-size: 14px;
+  font-size: var(--taxpay-type-body);
   line-height: 1.5;
 }
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__progress {
@@ -1277,7 +1277,7 @@
     border-radius: 0;
   }
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__header { min-height: 76px; padding: 10px 12px; }
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__heading .taxpay-modal__title { font-size: 18px; }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__heading .taxpay-modal__title { font-size: var(--taxpay-type-h3); }
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__body { min-height: 0; }
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .taxpay-modal__footer { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
   .payment-identity__receipt-row { grid-template-columns: 1fr; }

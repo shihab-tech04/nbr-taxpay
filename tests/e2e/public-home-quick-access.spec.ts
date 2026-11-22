@@ -74,6 +74,9 @@ test('wide desktop uses the available canvas without crushing the footer or look
       footerGaps:footerLinks.slice(1).flatMap((link,index)=>
         Math.abs(link.top-footerLinks[index].top)<=2 ? [link.left-footerLinks[index].right] : []),
       footerLinkCount:footerLinks.length,
+      footerGeometry:{ identity:{x:identity.x,right:identity.right,width:identity.width},
+        copyright:{x:copyright.x,right:copyright.right,width:copyright.width},
+        links:footerLinks.map(r=>({x:r.x,right:r.right,width:r.width,y:r.y,height:r.height})) },
       footerCollision,
       scrollOverflow:document.documentElement.scrollHeight-window.innerHeight,
       horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
@@ -91,7 +94,7 @@ test('wide desktop uses the available canvas without crushing the footer or look
   // Two-line tagline is acceptable; footer links must never touch or overlap.
   expect(visual.footerTagline.height).toBeLessThanOrEqual(44);
   expect(visual.footerLinkCount).toBe(4);
-  expect(visual.footerCollision).toBe(false);
+  expect(visual.footerCollision,JSON.stringify(visual.footerGeometry)).toBe(false);
   expect(visual.footerGaps.every(gap=>gap>=10)).toBe(true);
   expect(visual.footer.top).toBeGreaterThanOrEqual(visual.benefits.bottom);
   expect(visual.scrollOverflow).toBeLessThanOrEqual(2);
@@ -129,6 +132,9 @@ test('reported tall desktop: homepage footer follows content with no blank space
           backgroundColor:getComputedStyle(document.querySelector('.taxpay-citizen-shell')!).backgroundColor,
           centerBottomCovered:Boolean(document.elementFromPoint(innerWidth/2,innerHeight-2)
             ?.closest('.taxpay-citizen-shell')),
+          footerGeometry:{ identity:{x:identity.x,right:identity.right,width:identity.width},
+            copyright:{x:copyright.x,right:copyright.right,width:copyright.width},
+            links:boxes.map(r=>({x:r.x,right:r.right,width:r.width,y:r.y,height:r.height})) },
           footerOverflow:boxes.some((r,i) => overlap(r,identity) || overlap(r,copyright) ||
             boxes.some((other,j)=>i!==j && overlap(r,other))),
           linkGap:boxes.slice(1).flatMap((r,i)=>
@@ -337,7 +343,7 @@ test('record search and benefits share a restrained, left-aligned desktop headin
     expect(measurements.searchY).toBeGreaterThan(measurements.recordDescriptionBottom);
     expect(measurements.searchWidth).toBeGreaterThanOrEqual(measurements.sectionWidth * .9);
     expect(measurements.weights).toEqual([600, 600, 400]);
-    expect(measurements.fontSizes).toEqual(['20px', '20px', '15px', '15px']);
+    expect(measurements.fontSizes).toEqual(['20px', '24px', '16px', '16px']);
     expect(measurements.documentHeightOverflow).toBeLessThanOrEqual(2);
     expect(measurements.documentWidthOverflow).toBeLessThanOrEqual(2);
   }
