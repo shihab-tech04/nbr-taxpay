@@ -158,7 +158,21 @@ export function TaxpayerTinLookup({
       <div ref={searchRowRef} className="taxpayer-tin-lookup__search-row taxpay-taxpayer-row__tin-search tin-lookup__row">
         <div className={['taxpayer-tin-lookup__tin-entry', 'taxpay-taxpayer-row__tin-entry', segmented ? 'taxpayer-tin-lookup__tin-entry--segmented' : '', segmented && directDigitEdit ? 'taxpayer-tin-lookup__tin-entry--direct-edit' : ''].filter(Boolean).join(' ')}
           data-testid={segmented ? segmentsTestId ?? 'taxpayer-tin-digits' : undefined}
-          style={segmented ? ({'--taxpay-tin-digit-count': maxTinLength} as React.CSSProperties) : undefined}>
+          style={segmented ? ({'--taxpay-tin-digit-count': maxTinLength} as React.CSSProperties) : undefined}
+          onPointerDown={event => {
+            if (!directDigitEdit || locked || event.button !== 0) return;
+            const input = tinRef.current;
+            if (!input) return;
+            // Prevent the transparent full-width input from resetting the
+            // selection after the user explicitly chooses a digit cell.
+            event.preventDefault();
+            const cells = Array.from(event.currentTarget.querySelectorAll(':scope > span'));
+            const hit = cells.findIndex(cell => event.clientX <= cell.getBoundingClientRect().right);
+            const index = Math.min(hit < 0 ? maxTinLength - 1 : hit, tin.length);
+            input.focus();
+            input.setSelectionRange(index, index < tin.length ? index + 1 : index);
+            setActiveDigit(Math.min(index, maxTinLength - 1));
+          }}>
           {segmented && Array.from({length: maxTinLength}, (_, index) => <span key={index}
             className={[index < tin.length ? 'is-filled' : '', directDigitEdit && activeDigit === index ? 'is-active' : ''].filter(Boolean).join(' ')} aria-hidden="true">{tin[index] ?? ''}</span>)}
           <input ref={tinRef} id={tinId} data-testid={inputTestId} type="text" inputMode="numeric" autoComplete="off"
@@ -173,14 +187,6 @@ export function TaxpayerTinLookup({
               if (directDigitEdit) setActiveDigit(Math.min(tinRef.current?.selectionStart ?? tin.length, maxTinLength - 1));
             }}
             onBlur={() => { if (directDigitEdit) setActiveDigit(null); }}
-            onClick={event => {
-              if (!directDigitEdit || locked || event.detail === 0) return;
-              const cells = Array.from(event.currentTarget.parentElement?.querySelectorAll(':scope > span') ?? []);
-              const hit = cells.findIndex(cell => event.clientX <= cell.getBoundingClientRect().right);
-              const index = Math.min(hit < 0 ? maxTinLength - 1 : hit, tin.length);
-              event.currentTarget.setSelectionRange(index, index < tin.length ? index + 1 : index);
-              setActiveDigit(Math.min(index, maxTinLength - 1));
-            }}
             onSelect={event => {
               if (directDigitEdit) setActiveDigit(Math.min(event.currentTarget.selectionStart ?? tin.length, maxTinLength - 1));
             }}
