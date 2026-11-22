@@ -74,6 +74,7 @@ export function TaxpayerTinLookup({
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeDigit, setActiveDigit] = useState<number | null>(null);
+  const pointerDigitRef = useRef<number | null>(null);
   const [suggestionLayout, setSuggestionLayout] = useState<{top: number; left: number; width: number; maxHeight: number; inDialog: boolean} | null>(null);
   // After choosing a suggestion or using the clear X, keep keyboard focus on
   // the field without reopening the menu in the very same focus event.
@@ -169,10 +170,23 @@ export function TaxpayerTinLookup({
             const cells = Array.from(event.currentTarget.querySelectorAll(':scope > span'));
             const hit = cells.findIndex(cell => event.clientX <= cell.getBoundingClientRect().right);
             const index = Math.min(hit < 0 ? maxTinLength - 1 : hit, tin.length);
+            pointerDigitRef.current = index;
             input.focus();
             input.setSelectionRange(index, index < tin.length ? index + 1 : index);
             setActiveDigit(Math.min(index, maxTinLength - 1));
-          }}>
+          }}
+          onPointerUp={() => {
+            // Mobile emulation may move the native caret during pointerup.
+            // Reassert the chosen cell after the browser processes the pointer.
+            const index = pointerDigitRef.current;
+            pointerDigitRef.current = null;
+            if (!directDigitEdit || locked || index === null) return;
+            const input = tinRef.current;
+            if (!input) return;
+            input.setSelectionRange(index, index < tin.length ? index + 1 : index);
+            setActiveDigit(Math.min(index, maxTinLength - 1));
+          }}
+          onPointerCancel={() => { pointerDigitRef.current = null; }}>
           {segmented && Array.from({length: maxTinLength}, (_, index) => <span key={index}
             className={[index < tin.length ? 'is-filled' : '', directDigitEdit && activeDigit === index ? 'is-active' : ''].filter(Boolean).join(' ')} aria-hidden="true">{tin[index] ?? ''}</span>)}
           <input ref={tinRef} id={tinId} data-testid={inputTestId} type="text" inputMode="numeric" autoComplete="off"
@@ -187,9 +201,6 @@ export function TaxpayerTinLookup({
               if (directDigitEdit) setActiveDigit(Math.min(tinRef.current?.selectionStart ?? tin.length, maxTinLength - 1));
             }}
             onBlur={() => { if (directDigitEdit) setActiveDigit(null); }}
-            onSelect={event => {
-              if (directDigitEdit) setActiveDigit(Math.min(event.currentTarget.selectionStart ?? tin.length, maxTinLength - 1));
-            }}
             onKeyUp={event => {
               if (directDigitEdit) setActiveDigit(Math.min(event.currentTarget.selectionStart ?? tin.length, maxTinLength - 1));
             }}
