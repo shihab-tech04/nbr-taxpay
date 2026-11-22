@@ -5,7 +5,8 @@ import AxeBuilder from '@axe-core/playwright';
 test('public hero opens payment while standalone receipt search stays accessible',async({page})=>{
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.goto('/?action=landing');
- await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(3);
+ await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
+ await expect(page.locator('[data-banner-service="intro"] .public-hero-carousel__gift-link')).toBeVisible();
  await expect(page.getByRole('searchbox',{name:'Search payment records by reference'})).toBeVisible();
  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
  await expect(page.locator('[data-banner-service="intro"] .public-hero-carousel__image-layer[data-visible="true"] .public-information-hero__image')).toBeVisible();
