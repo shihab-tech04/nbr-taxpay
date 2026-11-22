@@ -409,16 +409,11 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
               }}>{tx('Show first incomplete payment', 'প্রথম অসম্পূর্ণ পরিশোধ দেখুন')}</button>}
             </div>}
             {allowMixedReturn && <div className="other-tax-category-directory" data-testid="other-tax-category-directory">
-              <h3>{tx('Frequently used categories', 'বেশি ব্যবহৃত করের শ্রেণি')}</h3>
-              {categoryHistory.status === 'ready' && categoryHistory.names.length > 0
-                ? categoryDirectory(categoryHistory.names, 'frequent-tax-categories', tx('Five most used categories from your completed payments', 'সফল পেমেন্টের ইতিহাস থেকে সর্বাধিক ব্যবহৃত পাঁচটি শ্রেণি'))
-                : <p className="other-tax-category-directory__empty" role="status">{categoryHistory.status === 'loading'
-                    ? tx('Loading your payment history…', 'পেমেন্টের ইতিহাস লোড হচ্ছে…')
-                    : categoryHistory.status === 'unavailable'
-                      ? tx('Frequent categories are temporarily unavailable. All categories remain below.', 'বেশি ব্যবহৃত শ্রেণি আপাতত পাওয়া যাচ্ছে না। সব শ্রেণি নিচে আছে।')
-                      : categoryHistory.status === 'signed-out'
-                        ? tx('Sign in to see categories from your payment history.', 'আপনার পেমেন্টের ইতিহাস থেকে শ্রেণি দেখতে সাইন ইন করুন।')
-                        : tx('No completed payments yet. Choose from all categories below.', 'এখনও সম্পন্ন পেমেন্ট নেই। নিচের সব শ্রেণি থেকে বেছে নিন।')}</p>}
+              {showFrequentCategories && categoryHistory.ownerKey === ownerKey &&
+                categoryHistory.status === 'ready' && categoryHistory.names.length > 0 && <section data-testid="frequent-category-section">
+                  <h3>{tx('Frequently used categories', 'বেশি ব্যবহৃত করের শ্রেণি')}</h3>
+                  {categoryDirectory(categoryHistory.names, 'frequent-tax-categories', tx('Up to five most used categories from your completed payments', 'সফল পেমেন্টের ইতিহাস থেকে সর্বাধিক ব্যবহৃত পাঁচটি শ্রেণি'))}
+                </section>}
               <h3>{tx('All seven tax categories', 'সাতটি করের শ্রেণি')}</h3>
               {categoryDirectory(visibleCategories.map(group => group.name), 'fixed-tax-categories', tx('Seven fixed tax categories', 'সাতটি নির্দিষ্ট করের শ্রেণি'))}
             </div>}
