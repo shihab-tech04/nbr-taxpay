@@ -376,7 +376,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         <article className="citizen-public-hero public-information-hero public-hero-carousel__slide public-hero-carousel__fixed"
           data-banner-service="intro" data-banner-kind="intro">
         <div className="citizen-public-hero__copy">
-          <p className="public-hero-carousel__slogan" lang="bn">আমার করের টাকায় গড়বো স্বদেশ</p>
+          <div className="public-hero-carousel__slogan" lang="bn">আমার করের টাকায় গড়বো স্বদেশ</div>
           <h1 id="public-home-title">{bn ? 'কর পরিশোধ' : 'Tax payments'}</h1>
           <p role="status">{bannerStatus === 'loading'
             ? (bn ? 'ব্যানার লোড হচ্ছে…' : 'Loading banner information…')
@@ -476,7 +476,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                 inert={!isActive}
               >
                 <div className="citizen-public-hero__copy">
-                  <p className="public-hero-carousel__slogan" lang="bn">আমার করের টাকায় গড়বো স্বদেশ</p>
+                  <div className="public-hero-carousel__slogan" lang="bn">আমার করের টাকায় গড়বো স্বদেশ</div>
                   {intro ? (
                     <h1 id="public-home-title">
                       <span className="public-hero-copy--desktop">{heading}</span>
