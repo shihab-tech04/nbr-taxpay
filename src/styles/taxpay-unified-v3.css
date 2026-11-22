@@ -563,7 +563,7 @@
    Scope to the separate All Tax Payments route only. The original hero Pay Tax,
    Travel Tax, receipts, and account modals retain their existing components. */
 .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"] .taxpay-modal__heading .taxpay-modal__title {
-  font-size:21px;
+  font-size:var(--taxpay-type-h3);
   font-weight:700;
 }
 .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"] .taxpay-modal__progress {
@@ -805,7 +805,7 @@
 /* Mobile keeps the complete primary CTA label and full-row width. */
 @media (max-width:650px) {
   .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"] .taxpay-modal__heading .taxpay-modal__title {
-    font-size:18px;
+    font-size:var(--taxpay-type-h3);
   }
   .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .tax-service-choice__continue {
     flex:1 1 100%;
