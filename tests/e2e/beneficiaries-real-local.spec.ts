@@ -616,19 +616,25 @@ test('F-060 supported beneficiary categories persist and recover without duplica
       await page.getByRole('button',{name:'Add beneficiary',exact:true}).first().click();
       const dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
       await expect(dialog).toBeVisible();
+      console.info('[F060] add form opened');
       await dialog.locator('#beneficiary-tin').fill(record.tin);
       await dialog.locator('#beneficiary-name').fill(record.name);
+      console.info('[F060] taxpayer identity entered');
       await dialog.locator('#beneficiary-tag').click();
       const optionRoot=dialog.locator('#beneficiary-tag-options');
       const options=optionRoot.locator('[role="option"]');
+      console.info('[F060] category menu opened with '+await options.count()+' options');
       if(index===0){
         const values=await options.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-option-value')).filter(Boolean).sort());
         expect(values).toEqual(choices.map(choice=>choice.value).sort());
       }
       await options.locator('[data-option-value="'+record.value+'"]').click();
+      console.info('[F060] category selected '+record.value);
       if(record.tag==='others')await dialog.locator('#beneficiary-other-label').fill(record.other_label!);
       if(index===0)await dialog.locator('#beneficiary-new-list-name').fill('F060 supported categories');
+      console.info('[F060] required category details entered');
       await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+      console.info('[F060] add submitted '+record.value);
       await expect(page.getByText('Beneficiary saved.',{exact:true})).toBeVisible({timeout:15000});
       console.info('[F060] saved '+record.value);
     }
