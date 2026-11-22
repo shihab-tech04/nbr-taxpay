@@ -548,6 +548,7 @@ test('F-060 supported beneficiary categories persist and recover without duplica
   const signup=await fetch(new URL('/auth/v1/signup',api.origin),{
     method:'POST',headers:{apikey:key,'Content-Type':'application/json'},
     body:JSON.stringify({email,password}),
+    signal:AbortSignal.timeout(15000),
   });
   expect(signup.status).toBe(200);
   const signed=await signup.json();
@@ -559,6 +560,7 @@ test('F-060 supported beneficiary categories persist and recover without duplica
     const response=await fetch(new URL('/auth/v1/token?grant_type=password',api.origin),{
       method:'POST',headers:{apikey:key,'Content-Type':'application/json'},
       body:JSON.stringify({email,password}),
+      signal:AbortSignal.timeout(15000),
     });
     expect(response.status).toBe(200);
     const value=await response.json();
@@ -594,18 +596,23 @@ test('F-060 supported beneficiary categories persist and recover without duplica
     url.searchParams.set('select','id,owner_uid,list_id,tin,display_name,tag,relationship,other_label');
     url.searchParams.set('owner_uid','eq.'+ownerId);
     url.searchParams.set('order','tin.asc');
-    const response=await fetch(url,{headers:{apikey:key,Authorization:'Bearer '+token}});
+    const response=await fetch(url,{headers:{apikey:key,Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)});
     expect(response.status).toBe(200);
     return response.json() as Promise<SavedRow[]>;
   };
   const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:375,height:812}});
+  const closeContext=async(value:import('@playwright/test').BrowserContext)=>{
+    if(test.info().status!=='timedOut')await value.close();
+  };
   try{
     const page=await context.newPage();
     await page.goto(loginUrl(initialSession));
     await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
     await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
+    console.info('[F060] owner session and beneficiary UI ready');
     for(let index=0;index<records.length;index++){
       const record=records[index];
+      console.info('[F060] adding '+record.value);
       await page.getByRole('button',{name:'Add beneficiary',exact:true}).first().click();
       const dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
       await expect(dialog).toBeVisible();
@@ -623,6 +630,7 @@ test('F-060 supported beneficiary categories persist and recover without duplica
       if(index===0)await dialog.locator('#beneficiary-new-list-name').fill('F060 supported categories');
       await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
       await expect(page.getByText('Beneficiary saved.',{exact:true})).toBeVisible({timeout:15000});
+      console.info('[F060] saved '+record.value);
     }
 
     const directory=page.getByTestId('beneficiary-directory-mobile');
@@ -631,6 +639,7 @@ test('F-060 supported beneficiary categories persist and recover without duplica
     expect(initialRows).toHaveLength(records.length);
     expect(new Set(initialRows.map(row=>row.id)).size).toBe(records.length);
     expect(new Set(initialRows.map(row=>row.list_id)).size).toBe(1);
+    console.info('[F060] all nine owner SQL rows and mobile labels verified');
     for(const record of records){
       const saved=initialRows.find(row=>row.tin===record.tin);
       expect(saved).toMatchObject({
@@ -643,6 +652,7 @@ test('F-060 supported beneficiary categories persist and recover without duplica
       expect((await title.innerText()).split(record.en)).toHaveLength(2);
       expect(await title.innerText()).not.toContain('Friends & family members');
     }
+    console.info('[F060] approved desktop directory verified');
 
     // The approved desktop directory uses the same final labels and one row per saved record.
     await page.setViewportSize({width:1280,height:900});
@@ -664,10 +674,12 @@ test('F-060 supported beneficiary categories persist and recover without duplica
       method:'PATCH',headers:{apikey:key,Authorization:'Bearer '+initialSession.access_token,
         'Content-Type':'application/json',Prefer:'return=representation'},
       body:JSON.stringify({relationship:'cousin'}),
+      signal:AbortSignal.timeout(15000),
     });
     expect(rejected.status).toBe(400);
     expect(await rejected.text()).toContain('taxpay_beneficiary_fixed_tag_pair');
     expect(await read(initialSession.access_token)).toEqual(initialRows);
+    console.info('[F060] unsupported relation rejected without row mutation');
 
     // Cancel leaves Father saved; retrying the edit to Mother preserves owner, row and list.
     const fatherItem=directory.locator('li').filter({hasText:fatherRecord.name});
@@ -678,6 +690,7 @@ test('F-060 supported beneficiary categories persist and recover without duplica
     await expect(cancelledEditor).toBeHidden();
     expect(await read(initialSession.access_token)).toEqual(initialRows);
     await expect(fatherItem.locator('.taxpay-mobile-table-card__title span').first()).toHaveText(fatherRecord.name+' · Father');
+    console.info('[F060] cancelled edit preserved Father');
 
     await fatherItem.getByRole('button',{name:'Edit',exact:true}).click();
     const retryEditor=page.getByRole('dialog',{name:'Edit beneficiary'});
@@ -694,6 +707,7 @@ test('F-060 supported beneficiary categories persist and recover without duplica
     });
     await expect(directory.locator('li').filter({hasText:fatherRecord.name})
       .locator('.taxpay-mobile-table-card__title span').first()).toHaveText(fatherRecord.name+' · Mother');
+    console.info('[F060] retry saved Mother on the same row and list');
 
     // A fresh same-owner login reads every exact row, then the same final tags in Bengali.
     const freshSession=await signIn();
@@ -712,16 +726,18 @@ test('F-060 supported beneficiary categories persist and recover without duplica
         await expect(freshDirectory.locator('li').filter({hasText:record.name})
           .locator('.taxpay-mobile-table-card__title span').first()).toHaveText(record.name+' · '+label);
       }
+      console.info('[F060] fresh same-owner English readback verified');
       await setWorkspaceLanguage(freshPage,'bn');
       for(const record of records){
         const label=record.value==='friends_family:father'?'মা':record.bn;
         await expect(freshDirectory.locator('li').filter({hasText:record.name})
           .locator('.taxpay-mobile-table-card__title span').first()).toHaveText(record.name+' · '+label);
       }
+      console.info('[F060] fresh same-owner Bengali readback verified');
     }finally{
-      await freshContext.close();
+      await closeContext(freshContext);
     }
   }finally{
-    await context.close();
+    await closeContext(context);
   }
 });
