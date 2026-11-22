@@ -166,20 +166,25 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
       <table className="other-tax-category-table" aria-label={label}>
         <thead><tr>
           <th scope="col">{tx('Category', 'শ্রেণি')}</th>
-          <th scope="col">{tx('Heads', 'খাত')}</th>
-          <th scope="col">{tx('Selected', 'নির্বাচিত')}</th>
-          <th scope="col" className="sr-only">{tx('Open', 'খুলুন')}</th>
+          <th scope="col" className="other-tax-category-table__number">{tx('Heads', 'খাত')}</th>
+          <th scope="col" className="other-tax-category-table__action">{tx('Action', 'পদক্ষেপ')}</th>
         </tr></thead>
         <tbody>{names.map(name => {
           const group = visibleCategories.find(item => item.name === name);
           if (!group) return null;
-          return <tr key={name} data-category={name}>
-            <th scope="row">{bn ? (group.rows[0]?.grpBn || (name === 'Tax with Return' ? 'রিটার্নসহ কর' : name)) : name}</th>
+          const selectedCount = group.rows.filter(head => activeLines.some(line => line.headId === head.id)).length;
+          const groupLabel = bn ? (group.rows[0]?.grpBn || (name === 'Tax with Return' ? 'রিটার্নসহ কর' : name)) : name;
+          return <tr key={name} data-category={name} data-selected-count={selectedCount}>
+            <th scope="row">
+              <span>{groupLabel}</span>
+              {selectedCount > 0 && <span className="other-tax-category-table__selected">
+                {selectedCount} {tx('selected', 'নির্বাচিত')}
+              </span>}
+            </th>
             <td className="other-tax-category-table__number">{group.rows.length}</td>
-            <td className="other-tax-category-table__number">{group.rows.filter(head => activeLines.some(line => line.headId === head.id)).length}</td>
             <td className="other-tax-category-table__action"><button type="button" onClick={() => openCategoryGroup(name)}
-              aria-label={tx('View payment heads for ', 'পরিশোধের খাত দেখুন: ') + (bn ? group.rows[0]?.grpBn || name : name)}>
-              {tx('View heads', 'খাত দেখুন')}
+              aria-label={tx('View payment heads for ', 'পরিশোধের খাত দেখুন: ') + groupLabel}>
+              <span>{tx('View heads', 'খাত দেখুন')}</span><ChevronRight size={16} aria-hidden="true" />
             </button></td>
           </tr>;
         })}</tbody>
