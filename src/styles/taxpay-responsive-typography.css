@@ -590,3 +590,12 @@
 .taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table tbody td {
   font-weight: var(--taxpay-weight-reading, 400);
 }
+
+
+/* On the public home, the later-loaded hero carousel sets navigation to 500.
+ * Use an explicitly more specific semantic rule; do not change its geometry. */
+@media (min-width: 901px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-home-header .public-home-nav a {
+    font-weight: var(--taxpay-weight-action, 600);
+  }
+}
