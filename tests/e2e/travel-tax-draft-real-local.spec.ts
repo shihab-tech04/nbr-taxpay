@@ -117,7 +117,7 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     await expect(modal.locator('[data-passenger-id]')).toHaveCount(1);
     await modal.getByRole('button', { name: 'Undo removal' }).click();
     await expect(modal.locator('[data-passenger-id="' + secondId + '"]')).toHaveAttribute('data-complete', 'true');
-    await modal.locator('#travel-mobile').fill('01712345678');
+    await expect(modal.locator('#travel-mobile')).toHaveCount(0);
     await modal.getByRole('button', { name: 'Continue to travel details' }).click();
     await expect(modal.locator('.travel-flow')).toHaveAttribute('data-step', '1');
     await modal.locator('#travel-port').selectOption('Benapole');
@@ -205,13 +205,15 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     await resumedSecond.locator('#travel-passport-' + resumedSecondId).fill('TEST230001');
     await resumedSecond.locator('#travel-lookup-' + resumedSecondId).click();
     await resumedSecond.getByRole('button', { name: 'যাত্রী যোগ করুন', exact: true }).click();
-    await expect(resumed.locator('#travel-mobile')).toHaveValue('01712345678');
+    await expect(resumed.locator('#travel-mobile')).toHaveCount(0);
     await resumed.getByRole('button', { name: 'ভ্রমণের তথ্য দিতে এগিয়ে যান' }).click();
     await expect(resumedFlow).toHaveAttribute('data-step', '1');
     await expect(resumed.locator('#travel-port')).toHaveValue('Benapole');
     await expect(resumed.locator('#travel-destination')).toHaveValue('India');
     await resumed.locator('#travel-departure-date').fill(futureTravelDate);
     await resumed.getByRole('button', { name: 'পেমেন্ট পর্যালোচনায় যান' }).click();
+    await expect(resumed.locator('#travel-mobile')).toHaveValue('');
+    await resumed.locator('#travel-mobile').fill('01712345678');
     await expect(resumed.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(2);
 
     // Do not create a payment; discard the disposable draft after the full recovery journey.
