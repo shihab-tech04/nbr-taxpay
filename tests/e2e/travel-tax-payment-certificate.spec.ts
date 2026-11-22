@@ -68,16 +68,23 @@ for (const language of ['en', 'bn'] as const) {
     await modal.locator('#travel-passport-first').fill('TEST123456');
     await modal.locator('#travel-lookup-first').click();
     await modal.getByRole('button', { name: /^(Add passenger|যাত্রী যোগ করুন)$/ }).click();
-    await modal.getByRole('button', { name: /Add another passenger|আরেকজন যাত্রী/ }).click();
-    const people = modal.getByTestId('travel-passenger-list').locator('.travel-flow__person');
-    await expect(people).toHaveCount(2);
-    const second = people.nth(1);
-    await second.getByRole('tab', { name: /Foreign passenger|বিদেশি যাত্রী/ }).click();
+    // In the approved single-editor Travel Tax UX, confirming the first
+    // passenger reveals a blank editor with a nationality chooser. The old
+    // "Add another passenger" button and per-person editable cards no longer exist.
+    await expect(modal.getByTestId('travel-passenger-list')
+      .locator('.travel-passenger-workspace__person')).toHaveCount(1);
+    await modal.locator('.travel-passenger-workspace__blank')
+      .getByRole('button', { name: /^(Foreign|বিদেশি)$/ }).click();
+    const second = modal.locator('.travel-passenger-workspace__entry');
+    await expect(second.getByRole('tab', { name: /Foreign passenger|বিদেশি যাত্রী/ })).toBeVisible();
     await second.locator('input[id^="travel-passport-"]').fill('B7654321');
     await second.locator('input[id^="travel-name-"]').fill('FRIEND SECOND');
     await second.locator('input[id^="travel-birth-date-"]').fill('2017-08-10');
     await second.locator('input[id^="travel-country-"]').fill('India');
     await modal.getByRole('button', { name: /^(Add passenger|যাত্রী যোগ করুন)$/ }).click();
+    const people = modal.getByTestId('travel-passenger-list')
+      .locator('.travel-passenger-workspace__person');
+    await expect(people).toHaveCount(2);
     await fillTravelDetails(modal);
     const selectedTravelDate = await modal.locator('#travel-departure-date').inputValue();
     expect(selectedTravelDate).toBe(futureTravelDate);
