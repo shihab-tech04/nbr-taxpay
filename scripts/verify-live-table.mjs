@@ -100,7 +100,7 @@ try{
   await expect(user2.getByTestId('dashboard-unified-preview')).toHaveAttribute('data-account-id','user2',{timeout:30000});
   await expect(user2.getByText('User ID: user2')).toBeVisible({timeout:30000});
   await user2.goto(url('history'),{waitUntil:'domcontentloaded',timeout:45000});
-  const historyHeading=user2.getByRole('heading',{name:'Payments and transaction history'});
+  const historyHeading=user2.getByRole('heading',{name:/^(Payments and transaction history|পেমেন্ট ও লেনদেনের ইতিহাস)$/});
   try{await expect(historyHeading).toBeVisible({timeout:30000});}
   catch(error){
     const details=await user2.evaluate(()=>({url:location.href,
@@ -110,14 +110,14 @@ try{
     throw new Error('Live User2 History did not render after authenticated dashboard confirmation: '+JSON.stringify(details),{cause:error});
   }
   const activity2=user2.getByTestId('signed-in-payment-activity');
-  await expect(activity2.getByRole('searchbox',{name:'Search transactions'})).toBeVisible();
+  await expect(activity2.getByRole('searchbox',{name:/^(Search transactions|লেনদেন খুঁজুন)$/})).toBeVisible();
   await expect.poll(async () => {
     if(await activity2.getByTestId('signed-in-payment-activity-table').isVisible().catch(()=>false))return true;
-    if(await activity2.getByText('No transactions yet.').isVisible().catch(()=>false))return true;
+    if(await activity2.getByText(/^(No transactions yet\.|এখনও.*লেনদেন.*নেই[।.]?)$/).isVisible().catch(()=>false))return true;
     return false;
   },{timeout:30000}).toBe(true);
   await user2.reload({waitUntil:'domcontentloaded'});
-  await expect(user2.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:30000});
+  await expect(user2.getByRole('heading',{name:/^(Payments and transaction history|পেমেন্ট ও লেনদেনের ইতিহাস)$/})).toBeVisible({timeout:30000});
   console.log('PASS: published user2 Activity renders persistent account-scoped History after reload');
 }finally{
   await browser.close();
