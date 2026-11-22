@@ -101,6 +101,21 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   await expect(invitation).toContainText('not automatically linked');
   const toolbar = dialog.getByTestId('walkin-receipt-toolbar');
   await expect(toolbar.getByRole('button', { name: 'Back to confirmation' })).toHaveCount(1);
+  // The receipt is read in financial order: summary -> actions -> references
+  // -> payer/settlement details -> optional login. Keep the invitation secondary.
+  const hierarchyIsCorrect = await receiptPaper.evaluate(paper => {
+    const selectors = [
+      '.receipt-view__summary',
+      '.receipt-view__toolbar',
+      '.receipt-view__reference-strip',
+      '.receipt-view__parties',
+      '.walkin-postpayment-login',
+    ];
+    const elements = selectors.map(selector => paper.querySelector(selector));
+    return elements.every((element, index) => element && (index === 0 ||
+      Boolean(elements[index - 1]!.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING)));
+  });
+  expect(hierarchyIsCorrect).toBe(true);
   await expect(dialog.locator('.receipt-view__actions .receipt-view__restart')).toHaveCount(0);
   await invitation.getByRole('button', { name: 'Continue without signing in' }).click();
   await expect(invitation).toHaveCount(0);
