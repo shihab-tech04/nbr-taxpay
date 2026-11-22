@@ -25,6 +25,23 @@ test('unified v5 mobile footer has one primary action and preserves calculation 
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Taxpayer Information');
   await expect(dialog.locator('.tax-service-choice__eyebrow')).toHaveCount(0);
   await dialog.getByTestId('unified-tin-input').fill('222222222222');
+  // On 320px screens the second TIN row must target digit 7, never digit 1.
+  const tinInput=dialog.getByTestId('unified-tin-input');
+  const tinCells=dialog.getByTestId('unified-v5-tin-blocks').locator(':scope > span');
+  await expect(tinCells).toHaveCount(12);
+  await expect(tinInput).toHaveAttribute('inputmode','numeric');
+  for (const [digit,replacement,expected] of [
+    [6,'3','222222322222'],
+    [2,'8','228222322222'],
+  ] as const) {
+    const cell=await tinCells.nth(digit).boundingBox();
+    expect(cell).not.toBeNull();
+    await page.mouse.click(cell!.x+cell!.width/2,cell!.y+cell!.height/2);
+    await expect(tinCells.nth(digit)).toHaveClass(/is-active/);
+    await page.keyboard.type(replacement);
+    await expect(tinInput).toHaveValue(expected);
+  }
+  await tinInput.fill('222222222222');
   await dialog.getByRole('button',{name:'Search taxpayer TIN'}).click();
   await dialog.getByRole('button',{name:'Add taxpayer'}).click();
   const toHeads=dialog.getByRole('button',{name:'Continue to Payment Head'});
@@ -47,6 +64,8 @@ test('unified v5 mobile footer has one primary action and preserves calculation 
   await expect(toHeads).toHaveCSS('background-color','rgb(45, 94, 172)');
   await toHeads.click();
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
+  await expect(dialog.getByTestId('unified-v5-return-group')).toHaveCount(1);
+  await expect(dialog.getByRole('heading',{name:'Which tax would you like to pay?'})).toHaveCount(0);
   await expect(dialog.getByTestId('mobile-payment-calculation')).toHaveCount(0);
   const batch=dialog.getByTestId('other-tax-batch');
   await expect(batch.locator(':scope > .payment-form-summary')).toBeVisible();
