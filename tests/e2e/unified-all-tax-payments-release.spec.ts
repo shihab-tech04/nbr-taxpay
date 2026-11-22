@@ -196,7 +196,9 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await dialog.getByRole('button', { name: 'Make Payment' }).click();
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment channel');
     await expect(dialog.getByRole('progressbar', { name: 'Payment progress' })).toHaveCount(0);
-    await dialog.getByRole('button', { name: 'Back to Final Preview' }).click();
+    // No duplicate footer Back: the modal header is the only backward control.
+    await expect(dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__cancel')).toHaveCount(0);
+    await dialog.locator('.taxpay-modal__back').click();
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
     await expect(finalPreview).toBeVisible();
     await expect(dialog.locator('#guest-phone')).toHaveValue('01712345678');
