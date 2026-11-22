@@ -131,7 +131,7 @@ Deno.serve(async(req)=>{
   }
   if(req.method==="GET"&&path==="/authorizations"){
    const actor=u.searchParams.get("actor");
-   if(!actor||!/^user([1-9]|10)$/.test(actor))return respond({success:false,error:"INVALID_DEMO_USER"},400);
+   if(!actor||!/^user([1-9]|[12][0-9]|30)$/.test(actor))return respond({success:false,error:"INVALID_DEMO_USER"},400);
    const {data,error}=await db.rpc("demo_auth_list",{p_actor:actor});
    if(error)return respond({success:false,error:"AUTHORIZATION_READ_FAILED"},503);
    return respond({success:true,data,simulationOnly:true});
@@ -158,7 +158,7 @@ Deno.serve(async(req)=>{
     result=check.data;
    }else{
     if(!["request","accept","confirm","decline","revoke","resend","delete"].includes(action)||
-       !/^user([1-9]|10)$/.test(input.actor??""))
+       !/^user([1-9]|[12][0-9]|30)$/.test(input.actor??""))
       return respond({success:false,error:"INVALID_AUTHORIZATION_ACTION"},400);
     const {data,error}=await db.rpc("demo_auth_transition",{
      p_action:action,p_actor:input.actor,p_request:input.id??null,
@@ -194,6 +194,11 @@ Deno.serve(async(req)=>{
         return respond({success:false,error:"LEGACY_SESSION_READ_ONLY"},409);
       if(error.message?.includes("PROFILE_CAPABILITY_REQUIRED")||error.message?.includes("PROFILE_PAYMENT_SCOPE_MISMATCH"))
         return respond({success:false,error:"PROFILE_CAPABILITY_REQUIRED"},403);
+      // Expose only these non-sensitive, permanent field-validation codes.
+      // Never echo raw Postgres errors, payer names, TINs or SQL diagnostics.
+      const payerRejections=["INVALID_WALKIN_PAYER_TIN","UNMATCHED_WALKIN_PAYER_TIN","UNCONFIRMED_WALKIN_PAYER"] as const;
+      const payerReject=payerRejections.find(code=>error.message?.includes(code));
+      if(payerReject)return respond({success:false,error:payerReject,retryable:false},422);
       return respond({success:false,error:"SUBMISSION_FAILED"},400);
     }
     // Office independently reads the SQL record using the signed proof. Send only
