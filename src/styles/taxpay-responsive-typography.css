@@ -376,10 +376,17 @@
 /* Keep the approved desktop wordmark and single-row navigation geometry. */
 @media (min-width: 1200px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
-    /* The 1100px public rail plus symmetrical 2rem padding aligns the logo
-     * exactly with Home/Guide/Report, rather than offsetting it by 16px. */
-    max-width: calc(var(--public-content-max) + 4rem);
-    column-gap: 8px;
+    /* Keep the logo aligned with the 1100px Home/Guide/Report rail,
+     * while using spare viewport space to the right for four readable
+     * 16px footer links and the copyright. A centered 1100px grid
+     * forces nonwrapping links to overlap its copyright column. */
+    max-width: none;
+    width: auto;
+    margin-left: max(0px, calc((100vw - var(--public-content-max)) / 2 - 2rem));
+    margin-right: 0;
+    padding-left: 2rem;
+    padding-right: 12px;
+    column-gap: 10px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
     /* Two readable lines, not a three-line 60px block that pushes the footer
