@@ -17,6 +17,12 @@ test('Travel Tax settled record shares modal and has only Download/Print without
   await dialog.getByRole('button',{name:'Confirm preview payment'}).click();
   const receipt=dialog.locator('.taxpay-modal__body > .receipt-view--embedded');
   await expect(receipt).toBeVisible({timeout:12000});
+  const optionalLogin=dialog.getByTestId('walkin-postpayment-login');
+  await expect(optionalLogin).toBeVisible();
+  await expect(optionalLogin).toContainText('not automatically linked to an account');
+  await optionalLogin.getByRole('button',{name:'Continue without signing in'}).click();
+  await expect(optionalLogin).toHaveCount(0);
+  await expect(receipt).toBeVisible();
   await expect(receipt.getByRole('heading',{name:'Combined Travel Tax details'})).toBeVisible();
   await expect(receipt).toContainText('Not a government A-Challan or Treasury settlement.');
   await expect(dialog.locator('.travel-flow,.travel-flow__summary')).toHaveCount(0);

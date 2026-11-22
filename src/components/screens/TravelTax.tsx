@@ -56,7 +56,7 @@ function readPendingTravelPayment(key: string, sessionId: string): PendingTravel
  * government A-Challan integration. An API owner can replace those boundaries.
  */
 export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, initialReuse, onBackToService, onStageChange, registerHeaderBack }) => {
-  const { language, navigate, addPaymentReceipt, previewAccount, startPaymentReuse } = useTaxState();
+  const { language, navigate, addPaymentReceipt, previewAccount, startPaymentReuse, setPaymentServiceChoiceOpen } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // Keep the existing signed-in draft journey untouched. Unsigned guests
   // reuse WS3's current capability/session only when its backend is configured.
@@ -84,6 +84,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     passenger: TravelPassenger; index: number; wasConfirmed: boolean;
   } | null>(null);
   const [receiptReviewOpen, setReceiptReviewOpen] = useState(false);
+  const [skipPostPaymentLogin, setSkipPostPaymentLogin] = useState(false);
   type PassengerIdentityIssue = {
     id: string;
     message: string;
@@ -888,6 +889,26 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       <button data-testid="travel-receipt-back" type="button" className="sr-only"
         onClick={() => stepTo(2)}>{tr('Return to review', 'পর্যালোচনায় ফিরুন')}</button>
       <ReceiptView receipt={createdReceipt} embedded transactionActions={ownedReceiptActions}
+        postReceiptInvitation={!authenticatedUser && !previewAccount && !skipPostPaymentLogin
+          ? <aside className="walkin-postpayment-login no-print" data-testid="walkin-postpayment-login"
+              aria-label={tr('Optional sign in', 'ঐচ্ছিক সাইন ইন')}>
+              <div className="walkin-postpayment-login__copy">
+                <strong>{tr('Want easier access to your payment history?', 'আপনার পেমেন্ট রেকর্ড পরে দেখতে চান?')}</strong>
+                <p>{tr('Sign in to view payments and challans saved to your account. This walk-in receipt is not automatically linked to an account.',
+                  'সাইন ইন করলে অ্যাকাউন্টের সংরক্ষিত পেমেন্ট ও চালান দেখতে পারবেন। এই ওয়াক-ইন রসিদ স্বয়ংক্রিয়ভাবে কোনো অ্যাকাউন্টে যুক্ত হবে না।')}</p>
+              </div>
+              <div className="walkin-postpayment-login__actions">
+                <button type="button" className="walkin-postpayment-login__signin"
+                  onClick={() => { setPaymentServiceChoiceOpen(false); navigate('taxpayer_login'); }}>
+                  {tr('Sign in','সাইন ইন')} <ArrowRight size={16} aria-hidden="true"/>
+                </button>
+                <button type="button" className="walkin-postpayment-login__skip"
+                  onClick={() => setSkipPostPaymentLogin(true)}>
+                  {tr('Continue without signing in','সাইন ইন ছাড়াই চালিয়ে যান')}
+                </button>
+              </div>
+            </aside>
+          : undefined}
         onPayAgain={receiptReuse?()=>startPaymentReuse(receiptReuse!):undefined}
         onApplyForCorrection={applyReceiptCorrection}/>
     </>;
