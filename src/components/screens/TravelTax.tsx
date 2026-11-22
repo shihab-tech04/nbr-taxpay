@@ -817,6 +817,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </div>
             {medicalAssessmentControl}
           </>}
+          {item.nationality === 'BD' && item.identitySource !== 'PASSPORT_SAMPLE' && medicalAssessmentControl}
         </div>
         {item.medicalPortReferral && <p role="status" data-testid="travel-manual-assessment-blocker" className="travel-flow__medical-note">
           {tr('Manual medical assessment is required at the departure port. Online Continue is unavailable. Bring supporting documents, or untick this option if you selected it by mistake.',
