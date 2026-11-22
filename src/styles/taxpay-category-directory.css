@@ -8,7 +8,7 @@
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-directory h3 {
   margin: 14px 0 8px;
   color: #203a5c;
-  font-size: clamp(14px, 1vw, 16px);
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.45;
 }
@@ -28,7 +28,7 @@
   min-width: 0;
   table-layout: fixed;
   border-collapse: collapse;
-  font-size: clamp(14px, 1vw, 16px);
+  font-size: 16px;
   line-height: 1.45;
   color: #203a5c;
 }
@@ -43,7 +43,7 @@
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table thead th {
   font-weight: 650;
-  font-size: 14px;
+  font-size: 16px;
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table :is(th,td):first-child { width: 53%; }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table .other-tax-category-table__number {
@@ -101,7 +101,7 @@
 }
 @media (max-width: 420px) {
   .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table {
-    font-size: 14px;
+    font-size: 16px;
   }
   .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table :is(th,td) {
     padding: 8px 6px;
