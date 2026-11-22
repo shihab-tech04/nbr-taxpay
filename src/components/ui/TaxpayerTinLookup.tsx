@@ -168,7 +168,13 @@ export function TaxpayerTinLookup({
             // selection after the user explicitly chooses a digit cell.
             event.preventDefault();
             const cells = Array.from(event.currentTarget.querySelectorAll(':scope > span'));
-            const hit = cells.findIndex(cell => event.clientX <= cell.getBoundingClientRect().right);
+            // On narrow phones the 12 visible cells wrap to two rows of
+            // six: X-only matching aliases digit 7 to digit 1.
+            const hit = cells.findIndex(cell => {
+              const rect = cell.getBoundingClientRect();
+              return event.clientX >= rect.left && event.clientX <= rect.right &&
+                event.clientY >= rect.top && event.clientY <= rect.bottom;
+            });
             const index = Math.min(hit < 0 ? maxTinLength - 1 : hit, tin.length);
             pointerDigitRef.current = index;
             input.focus();
