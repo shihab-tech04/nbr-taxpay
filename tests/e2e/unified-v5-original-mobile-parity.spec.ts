@@ -66,16 +66,22 @@ test('unified v5 mobile footer has one primary action and preserves calculation 
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
   await expect(dialog.getByTestId('unified-v5-return-group')).toHaveCount(1);
   await expect(dialog.getByRole('heading',{name:'Which tax would you like to pay?'})).toHaveCount(0);
-  await expect(dialog.getByTestId('mobile-payment-calculation')).toHaveCount(0);
+  const mobileCalculation=dialog.getByTestId('mobile-payment-calculation');
+  await expect(mobileCalculation).toBeVisible();
+  await expect(mobileCalculation.getByTestId('mobile-payment-calculation-toggle')).toContainText('Payment calculation');
   const batch=dialog.getByTestId('other-tax-batch');
-  await expect(batch.locator(':scope > .payment-form-summary')).toBeVisible();
+  // PDF p.1/p.8: mobile head editor must not repeat a second calculation below the fold.
+  await expect(batch.locator(':scope > .payment-form-summary')).toHaveCount(0);
+  await mobileCalculation.getByTestId('mobile-payment-calculation-toggle').click();
+  await expect(mobileCalculation.getByTestId('mobile-payment-calculation-details')).toContainText('Payment total');
   // Original v5 active taxpayer tab: #2d5eac, not the legacy product blue.
   const selectedTab=batch.getByTestId('other-tax-taxpayer-tabs').locator('button[aria-pressed="true"]');
   await expect(selectedTab).toHaveCount(1);
   await expect(selectedTab).toHaveCSS('background-color','rgb(45, 94, 172)');
   const selectMenu=batch.getByTestId('other-tax-selection-menu').locator('summary');
   await expect(selectMenu).toContainText('Select');
-  await expect(batch.getByTestId('v5-compact-taxpayer-summary')).toBeVisible();
+  await expect(mobileCalculation.getByTestId('v5-compact-taxpayer-summary')).toBeVisible();
+  await mobileCalculation.getByTestId('mobile-payment-calculation-toggle').click();
   await dialog.screenshot({path:`test-results/sohojkor-v5-candidate-stage2-mobile-${page.viewportSize()!.width}.png`});
   await expect(dialog.getByRole('button',{name:'Copy TIN'})).toHaveCount(0);
   const continueButton=dialog.getByRole('button',{name:'Continue to Final Preview'});
@@ -129,6 +135,13 @@ test('unified v5 Final Preview stacks rows and retains only the payment CTA',asy
   await batch.getByTestId('unified-v5-return-checkbox').check();
   await expect(returnGroup.getByTestId('other-tax-line')).toHaveCount(1);
   await batch.getByTestId('unified-v5-return-amount').fill('3500');
+  // PDF p.1: fixed mobile footer shows a live total and expandable allocation details.
+  const footerCalculation=dialog.getByTestId('mobile-payment-calculation');
+  await expect(footerCalculation).toBeVisible();
+  await expect(footerCalculation.getByTestId('mobile-payment-calculation-toggle')).toContainText('3,500');
+  await footerCalculation.getByTestId('mobile-payment-calculation-toggle').click();
+  await expect(footerCalculation.getByTestId('mobile-payment-calculation-details')).toContainText('3,500');
+  await footerCalculation.getByTestId('mobile-payment-calculation-toggle').click();
   const next=dialog.getByRole('button',{name:'Continue to Final Preview'});
   await expect(next).toBeEnabled();
   await next.click();
