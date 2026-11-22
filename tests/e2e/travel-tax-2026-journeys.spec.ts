@@ -607,8 +607,15 @@ test('Travel Tax: Step 1 scroll stays inside the modal with accessible fixed act
   await modal.locator('#travel-passport-first').fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
   await modal.getByRole('button', {name: 'Add passenger'}).click();
+  // The revised Step 1 intentionally contains fewer controls, so a standard
+  // 720px/800px viewport may not overflow. Exercise an actual shallow viewport
+  // instead of incorrectly demanding a scrollbar when content fits. This still
+  // checks strict 1px fixed-action stability during nonzero modal-body scrolling.
+  const initialViewport = page.viewportSize();
+  expect(initialViewport).not.toBeNull();
+  await page.setViewportSize({width: initialViewport!.width, height: 430});
   // Step 1 now animates its height and newly revealed passenger details.
-  // Compare sticky header/footer positions only after those animations finish;
+  // Compare fixed header/footer positions only after those animations finish;
   // keep the strict 1px position assertion (do not weaken the layout gate).
   await modal.evaluate(async element => {
     await Promise.all(element.getAnimations({subtree:true})
@@ -631,6 +638,8 @@ test('Travel Tax: Step 1 scroll stays inside the modal with accessible fixed act
   });
   expect(scroll.overflow).toBeGreaterThan(0);
   expect(scroll.position).toBeGreaterThan(0);
+  // Scrolling a long Step 1 must never create a second document scrollbar.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   await expect(modal.getByRole('button', {name: 'Continue to travel details'})).toBeVisible();
   const afterHeader = await header.boundingBox();
   const afterFooter = await footer.boundingBox();
