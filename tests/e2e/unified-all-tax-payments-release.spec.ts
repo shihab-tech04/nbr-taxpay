@@ -4,6 +4,36 @@ import { expect, test } from '@playwright/test';
  * WS5 release gate for the explicitly approved All Tax Payments three-stage UI.
  * Does not submit payment, create a receipt, or mutate hosted records.
  */
+test('unified walk-in directly replaces any TIN digit and keeps only the Continue footer CTA', async ({ page }) => {
+  await page.goto('/?action=landing&lang=en');
+  await page.locator('.public-benefits__item[data-benefit="payments"]').click();
+  const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
+  await dialog.getByRole('button', { name: 'Walk-in Payment' }).click();
+  const tin = dialog.getByTestId('unified-tin-input');
+  const digits = dialog.getByTestId('unified-v5-tin-blocks').locator('span');
+  await tin.fill('111111111111');
+  await expect(digits).toHaveCount(12);
+  const selectDigit = async (index: number) => {
+    const bounds = await digits.nth(index).boundingBox();
+    expect(bounds).not.toBeNull();
+    await page.mouse.click(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2);
+    await expect(digits.nth(index)).toHaveClass(/is-active/);
+  };
+  await selectDigit(2);
+  await page.keyboard.type('3');
+  await expect(tin).toHaveValue('113111111111');
+  await selectDigit(6);
+  await page.keyboard.type('7');
+  await expect(tin).toHaveValue('113111711111');
+  // Full TIN paste and search must keep the original owner-scoped lookup and add flow.
+  await tin.fill('222222222222');
+  await expect(dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__cancel')).toHaveCount(0);
+  await expect(dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__continue')).toHaveCount(1);
+  await expect(dialog.locator('.taxpay-modal__back')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Search taxpayer TIN' }).click();
+  await expect(dialog.getByTestId('unified-taxpayer-search-result')).toBeVisible();
+});
+
 test('unified walk-in retains final payer fields, remarks, amounts and three-step progress', async ({ page }) => {
     await page.goto('/?action=landing&lang=en');
     await page.locator('.public-benefits__item[data-benefit="payments"]').click();

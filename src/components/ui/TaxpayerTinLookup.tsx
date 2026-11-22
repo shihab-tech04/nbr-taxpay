@@ -55,6 +55,8 @@ export interface TaxpayerTinLookupProps {
   segmentsTestId?: string;
   /** One accessible input drives the approved visible digit blocks. */
   segmented?: boolean;
+  /** Opt-in: click a visible digit to replace it without clearing preceding digits. */
+  directDigitEdit?: boolean;
   /** Only the approved All Tax Payments Step 1 hides the optional clear control. All other flows keep it. */
   showClearButton?: boolean;
 }
@@ -63,7 +65,7 @@ export function TaxpayerTinLookup({
   language, tinId, nameId, tin, name, onTinChange, onSearch, onClear, canSearch,
   heading, tinLabel, nameLabel, searchLabel, tinPlaceholder, namePlaceholder, maxTinLength = 12, maxNameLength = 160,
   readonlyTin = false, editableName = false, onNameChange, disabled = false, requiredTin = true,
-  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false, omitNameField = false, submitOnEnter = false, inputTestId, segmentsTestId, segmented = true, showClearButton = true,
+  autofocusTin = false, invalidTin = false, tinDescribedBy, error, status, helper, className = '', card = false, suggestedTins = SAMPLE_TIN_SUGGESTIONS, hideNameField = false, omitNameField = false, submitOnEnter = false, inputTestId, segmentsTestId, segmented = true, directDigitEdit = false, showClearButton = true,
 }: TaxpayerTinLookupProps) {
   const bn = language === 'bn';
   const tinRef = useRef<HTMLInputElement>(null);
@@ -71,6 +73,7 @@ export function TaxpayerTinLookup({
   const searchRowRef = useRef<HTMLDivElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeDigit, setActiveDigit] = useState<number | null>(null);
   const [suggestionLayout, setSuggestionLayout] = useState<{top: number; left: number; width: number; maxHeight: number; inDialog: boolean} | null>(null);
   // After choosing a suggestion or using the clear X, keep keyboard focus on
   // the field without reopening the menu in the very same focus event.
@@ -153,11 +156,11 @@ export function TaxpayerTinLookup({
         </button>}
       </div>
       <div ref={searchRowRef} className="taxpayer-tin-lookup__search-row taxpay-taxpayer-row__tin-search tin-lookup__row">
-        <div className={['taxpayer-tin-lookup__tin-entry', 'taxpay-taxpayer-row__tin-entry', segmented ? 'taxpayer-tin-lookup__tin-entry--segmented' : ''].filter(Boolean).join(' ')}
+        <div className={['taxpayer-tin-lookup__tin-entry', 'taxpay-taxpayer-row__tin-entry', segmented ? 'taxpayer-tin-lookup__tin-entry--segmented' : '', segmented && directDigitEdit ? 'taxpayer-tin-lookup__tin-entry--direct-edit' : ''].filter(Boolean).join(' ')}
           data-testid={segmented ? segmentsTestId ?? 'taxpayer-tin-digits' : undefined}
           style={segmented ? ({'--taxpay-tin-digit-count': maxTinLength} as React.CSSProperties) : undefined}>
           {segmented && Array.from({length: maxTinLength}, (_, index) => <span key={index}
-            className={index < tin.length ? 'is-filled' : ''} aria-hidden="true">{tin[index] ?? ''}</span>)}
+            className={[index < tin.length ? 'is-filled' : '', directDigitEdit && activeDigit === index ? 'is-active' : ''].filter(Boolean).join(' ')} aria-hidden="true">{tin[index] ?? ''}</span>)}
           <input ref={tinRef} id={tinId} data-testid={inputTestId} type="text" inputMode="numeric" autoComplete="off"
             maxLength={maxTinLength} value={tin} required={requiredTin} autoFocus={autofocusTin}
             readOnly={readonlyTin} disabled={disabled} aria-readonly={readonlyTin || undefined}
@@ -167,6 +170,32 @@ export function TaxpayerTinLookup({
             onFocus={() => {
               // Entering a fresh Add beneficiary modal must NOT expose all TINs.
               if (suppressNextFocusOpen.current) suppressNextFocusOpen.current = false;
+              if (directDigitEdit) setActiveDigit(Math.min(tinRef.current?.selectionStart ?? tin.length, maxTinLength - 1));
+            }}
+            onBlur={() => { if (directDigitEdit) setActiveDigit(null); }}
+            onClick={event => {
+              if (!directDigitEdit || locked || event.detail === 0) return;
+              const cells = Array.from(event.currentTarget.parentElement?.querySelectorAll(':scope > span') ?? []);
+              const hit = cells.findIndex(cell => event.clientX <= cell.getBoundingClientRect().right);
+              const index = Math.min(hit < 0 ? maxTinLength - 1 : hit, tin.length);
+              event.currentTarget.setSelectionRange(index, index < tin.length ? index + 1 : index);
+              setActiveDigit(Math.min(index, maxTinLength - 1));
+            }}
+            onSelect={event => {
+              if (directDigitEdit) setActiveDigit(Math.min(event.currentTarget.selectionStart ?? tin.length, maxTinLength - 1));
+            }}
+            onKeyUp={event => {
+              if (directDigitEdit) setActiveDigit(Math.min(event.currentTarget.selectionStart ?? tin.length, maxTinLength - 1));
+            }}
+            onPaste={event => {
+              if (!directDigitEdit || locked) return;
+              const pasted = event.clipboardData.getData('text').replace(/\D/g, '');
+              if (pasted.length === maxTinLength) {
+                event.preventDefault();
+                change(pasted);
+                setShowSuggestions(false);
+                setActiveDigit(maxTinLength - 1);
+              }
             }}
             onKeyDown={event => {
               if (event.key === 'Escape' && showSuggestions) {
@@ -189,6 +218,7 @@ export function TaxpayerTinLookup({
             onChange={event => {
               const next = event.target.value.replace(/\D/g, '').slice(0, maxTinLength);
               change(next);
+              if (directDigitEdit) setActiveDigit(Math.min(event.target.selectionStart ?? next.length, maxTinLength - 1));
               // A full-length 12- or 13-digit TIN is ready for the separate Search action.
               // Close the optional popup so it cannot cover that action in a
               // narrow dialog; partial TINs still offer suggestions/keyboard use.
