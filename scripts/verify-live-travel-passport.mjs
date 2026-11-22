@@ -22,7 +22,12 @@ try {
     await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
     const hero = page.locator('.public-hero-carousel');
     await expect(hero).toBeVisible({ timeout: 30_000 });
-    await hero.getByRole('button', { name: 'Pay Travel Tax' }).click();
+    // Public banner now exposes one Other Tax action; preserve Travel Tax's existing passenger journey.
+    await hero.getByRole('button', { name: 'Other Tax', exact: true }).click();
+    const chooser = page.getByTestId('other-tax-chooser');
+    await expect(chooser).toBeVisible();
+    await expect(chooser.getByRole('button', { name: /Gift Tax/ })).toBeVisible();
+    await chooser.getByRole('button', { name: /Travel Tax/ }).click();
 
     const modal = page.getByRole('dialog', { name: 'Travel tax' });
     await expect(modal).toBeVisible();
