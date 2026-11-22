@@ -515,7 +515,6 @@
   .tax-service-choice__continue,
   .taxpay-record-toolbar__controls button, .taxpay-record-toolbar__retry,
   .taxpay-table-tabs > button, .taxpay-unified-table thead th,
-  [data-testid="taxpayer-transaction-table"] thead th,
   .taxpay-mobile-table-cards dt, .payment-form-section__body label,
   .payment-form-section__body legend, .payment-flow-embedded label,
   .payment-flow-embedded legend, .taxpay-type-label, .taxpay-type-action
@@ -530,8 +529,7 @@
   .taxpay-modal__subtitle, .taxpay-modal__supporting-copy,
   .payment-form-section__heading-copy p,
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-  select, textarea, .taxpay-unified-table tbody td,
-  [data-testid="taxpayer-transaction-table"] tbody td
+  select, textarea, .taxpay-unified-table tbody td
 ) {
   font-weight: var(--taxpay-weight-reading);
 }
@@ -582,4 +580,13 @@
     justify-content: center;
     column-gap: 10px;
   }
+}
+
+/* The signed-in register uses a specificity-frozen shared table selector.
+ * Match that real selector so the semantic heading/body weights apply. */
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table thead th {
+  font-weight: var(--taxpay-weight-action, 600);
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table tbody td {
+  font-weight: var(--taxpay-weight-reading, 400);
 }
