@@ -575,8 +575,9 @@
   background:#2d5eac;
 }
 /* Parallel All Tax Payments: one full-width primary action in every
-   payment step. Draft controls retain their own row when offered. */
-.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"] .payment-flow-embedded__footer-actions {
+   payment step, including checkout (which has no progress bar).
+   Draft controls retain their own row when offered. */
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked .payment-flow-embedded__footer-actions {
   display:flex;
   flex-wrap:wrap;
   align-items:stretch;
@@ -603,7 +604,7 @@
   min-width:90px;
   flex:0 0 auto;
 }
-.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked[data-payment-stage="true"] .payment-flow-embedded__footer-actions > .tax-service-choice__continue {
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked .payment-flow-embedded__footer-actions > .tax-service-choice__continue {
   order:2;
   flex:1 1 100%;
   width:100%;
