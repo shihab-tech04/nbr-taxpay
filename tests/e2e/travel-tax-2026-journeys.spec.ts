@@ -271,7 +271,6 @@ test('Travel Tax: medical review stays with passenger; receipt mobile moves to p
   await modal.locator('#travel-destination').fill('India');
   await modal.locator('#travel-departure-date').fill(futureTravelDate);
   await modal.getByRole('button',{name:'Continue to review'}).click();
-  if (await modal.locator('#travel-mobile').isVisible() && !(await modal.locator('#travel-mobile').inputValue())) await modal.locator('#travel-mobile').fill('01712345678');
   const contact=modal.getByTestId('travel-preview-receipt-contact');
   const mobile=contact.locator('#travel-mobile');
   await expect(contact).toBeVisible();
