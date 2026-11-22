@@ -22,3 +22,14 @@ test('never invent favorites for empty, unsuccessful, corrupt, or absent history
   assert.deepEqual(rankFrequentTaxCategoryNames([{...paid('PENALTY',20),createdAt:'invalid'}]), []);
   assert.deepEqual(rankFrequentTaxCategoryNames([paid('PENALTY',20)],0), []);
 });
+
+test('first-time and single completed-payment accounts receive no suggestions',()=>{
+  assert.deepEqual(rankFrequentTaxCategoryNames([]), []);
+  assert.deepEqual(rankFrequentTaxCategoryNames([paid('PENALTY',20)]), []);
+  assert.deepEqual(rankFrequentTaxCategoryNames([paid('PENALTY',20),paid('ADVANCE_TAX',22,'FAILED')]), []);
+  assert.deepEqual(rankFrequentTaxCategoryNames([paid('PENALTY',20),paid('ADVANCE_TAX',22,'PENDING')]), []);
+});
+test('two completed payments enable recommendations without inventing five categories',()=>{
+  assert.deepEqual(rankFrequentTaxCategoryNames([paid('PENALTY',20),paid('PENALTY',21)]), ['Penalty']);
+  assert.deepEqual(rankFrequentTaxCategoryNames([paid('PENALTY',20),paid('ADVANCE_TAX',21)]), ['Advance Tax','Penalty']);
+});
