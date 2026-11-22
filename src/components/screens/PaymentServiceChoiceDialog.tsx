@@ -214,7 +214,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
       progress={view === 'payment' && !(unifiedEntry && (stage === 4 || checkoutOpen)) ? {
         current: stage, total: unifiedEntry ? 3 : 4, label: tr('Steps', 'ধাপ'),
         subtitle: unifiedEntry
-          ? `${tr('All Tax Payments', 'সব ধরনের কর পরিশোধ')} › ${useAccount ? tr('Signed-in Payment', 'সাইন-ইন পেমেন্ট') : tr('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট')}`
+          ? (useAccount ? tr('Signed-in Payment', 'সাইন-ইন পেমেন্ট') : tr('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট'))
           : travelJourney ? travelTaxModalTitle(language)
           : chosenService && payerForSelf !== null
           ? `${tr(chosenService.en, chosenService.bn)} › ${payerForSelf ? tr('My Tax Liability', 'আমার করদায়') : tr('Facilitate another taxpayer’s payment', 'অন্য করদাতার কর পরিশোধে সহায়তা করুন')}`
