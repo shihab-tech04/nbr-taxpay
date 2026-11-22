@@ -246,6 +246,21 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     </div>
   );
 
+  // A single contextual toolbar is shared by the receipt and certificate states.
+  // Keep it inside the receipt's reading hierarchy, not ahead of the document title.
+  const walkinToolbar = compactWalkInLayout ? (
+    <div className="receipt-view__toolbar no-print" data-testid="walkin-receipt-toolbar">
+      {onBack && <button type="button" className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
+        onClick={onBack}>{bn ? 'পেমেন্ট নিশ্চিতকরণে ফিরুন' : 'Back to confirmation'}</button>}
+      {canViewCertificate && !certificate && <button type="button"
+        className="receipt-view__action receipt-view__action--secondary"
+        onClick={() => { setDownloadError(false); setShowCertificate(value => !value); }}>
+        {showCertificate ? (bn ? 'রসিদ দেখুন' : 'View receipt') :
+          (bn ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate')}
+      </button>}
+    </div>
+  ) : null;
+
   if (!embedded) return (
     <TaxPayModal title={certificate ? (bn ? 'সহজকর পেমেন্ট সনদ' : 'Sohojkor Payment Certificate') : labels.title} service="status" className="receipt-modal" footer={<></>}
       closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
@@ -261,18 +276,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     <div className={`receipt-view receipt-view--embedded${compactWalkInLayout ? ' receipt-view--walkin' : ''}${bn ? ' font-bengali' : ''}`} lang={language}>
       {!suppressFooterActions && (!isCertificate || canViewCertificate) && (footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions)}
 
-      {compactWalkInLayout ? (
-        <div className="receipt-view__toolbar no-print" data-testid="walkin-receipt-toolbar">
-          {onBack && <button type="button" className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
-            onClick={onBack}>{bn ? 'পেমেন্ট নিশ্চিতকরণে ফিরুন' : 'Back to confirmation'}</button>}
-          {canViewCertificate && !certificate && <button type="button"
-            className="receipt-view__action receipt-view__action--secondary"
-            onClick={() => { setDownloadError(false); setShowCertificate(value => !value); }}>
-            {showCertificate ? (bn ? 'রসিদ দেখুন' : 'View receipt') :
-              (bn ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate')}
-          </button>}
-        </div>
-      ) : <>
+      {compactWalkInLayout ? (isCertificate ? walkinToolbar : null) : <>
       {/* Keep required flow navigation outside the recorded receipt's three-action footer. */}
       {showReceiptTransactionActions && onBack && <div className="no-print flex flex-wrap items-center gap-2">
         <button type="button"
@@ -313,7 +317,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <strong>{formatCurrency(receipt.totalAmount, language)}</strong>
           </div>
         </header>
-        {!isCertificate && postReceiptInvitation}
+        {compactWalkInLayout && walkinToolbar}
 
         {certificateReference && <div className="receipt-view__batch-meta" data-testid="payment-certificate-reference">
           <strong>{bn ? 'সনদ রেফারেন্স' : 'Certificate reference'}</strong>
@@ -434,6 +438,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             )}
           </div>
         </div>
+        {!isCertificate && postReceiptInvitation}
 
         {receipt.travelDetails && <section className="receipt-view__breakdown" data-testid="travel-family-challan">
           <h3 className="receipt-view__section-title">{bn ? 'যাত্রীভিত্তিক ভ্রমণ কর' : 'Passenger-wise Travel Tax'}</h3>
