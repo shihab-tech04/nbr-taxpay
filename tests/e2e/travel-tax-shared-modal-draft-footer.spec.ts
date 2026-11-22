@@ -95,6 +95,18 @@ test('Travel Tax passport lookup is full-width on tablet and phone without chang
   const action = passport.locator('.travel-flow__passport-action');
   for (const width of [375, 650, 768]) {
     await page.setViewportSize({width, height: 830});
+    // The approved Travel Tax dialog animates its width for 300 ms. Sample
+    // row and action in the same settled layout, not during different frames
+    // of that transition. Keep the strict two-pixel geometry gate unchanged.
+    await dialog.evaluate(async element => {
+      await Promise.all(
+        element.getAnimations({subtree: false})
+          .filter(animation => animation.playState === 'running')
+          .map(animation => animation.finished.catch(() => undefined))
+      );
+      await new Promise<void>(resolve => requestAnimationFrame(() =>
+        requestAnimationFrame(() => resolve())));
+    });
     const [row, input, button] = await Promise.all([
       passport.boundingBox(), field.boundingBox(), action.boundingBox()
     ]);
