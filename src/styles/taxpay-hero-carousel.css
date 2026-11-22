@@ -1104,10 +1104,10 @@
   }
   .public-home-sections > :not([hidden]) ~ :not([hidden]) {margin-top:4px;}
   .public-home-sections .public-record-discovery {
-    padding-block:14px;
+    padding-block:11px;
   }
   .public-home-sections .public-benefits {
-    padding-block:14px;
+    padding-block:11px;
   }
   .public-home-sections .public-record-discovery__heading,
   .public-home-sections .public-benefits__heading {
