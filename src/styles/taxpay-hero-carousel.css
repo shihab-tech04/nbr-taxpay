@@ -1116,7 +1116,7 @@
 @media (min-width: 981px) and (max-height: 820px) {
   .public-home-sections .public-benefits {
     padding-block: 7px;
-    padding-inline: 12px;
+    padding-inline: 16px;
   }
   .public-home-sections .public-benefits__heading {
     margin-bottom: 3px;
