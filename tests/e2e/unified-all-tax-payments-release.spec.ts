@@ -39,6 +39,19 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await page.locator('.public-benefits__item[data-benefit="payments"]').click();
     const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
     await dialog.getByRole('button', { name: 'Walk-in Payment' }).click();
+    // Compare the CTA with its own footer action row rather than the viewport.
+    // This runs in the payment-wizard matrix at 320, 375 and 1280px.
+    const expectFullWidthCta = async (label: string) => {
+      const actions = dialog.locator('.taxpay-modal__footer .payment-flow-embedded__footer-actions');
+      const button = actions.getByRole('button', { name: label });
+      await expect(button).toBeVisible();
+      const [row, cta] = await Promise.all([actions.boundingBox(), button.boundingBox()]);
+      expect(row).not.toBeNull();
+      expect(cta).not.toBeNull();
+      expect(Math.abs(cta!.x - row!.x)).toBeLessThanOrEqual(2);
+      expect(Math.abs(cta!.width - row!.width)).toBeLessThanOrEqual(2);
+    };
+    await expectFullWidthCta('Continue to Payment Head');
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Taxpayer Information');
     await expect(dialog.locator('#guest-phone')).toHaveCount(0);
@@ -62,6 +75,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await dialog.getByRole('button', { name: 'Continue to Payment Head' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
+    await expectFullWidthCta('Continue to Final Preview');
     // Keep the original modal header and thin progress; do not render extra visible step text.
     await expect(dialog.locator('.tax-service-choice__eyebrow')).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: 'Continue to Final Preview' })
@@ -125,6 +139,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await dialog.getByRole('button', { name: 'Continue to Final Preview' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
+    await expectFullWidthCta('Make Payment');
     await expect(dialog.getByTestId('payment-review')).toBeVisible();
     // Frozen v3 Step 3 uses one taxpayer-grouped payment table and working
     // edit actions, with the existing calculation rail kept separately.
@@ -185,6 +200,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     // Make Payment opens a DISTINCT checkout screen, never another preview panel.
     await dialog.getByRole('button', { name: 'Make Payment' }).click();
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment channel');
+    await expectFullWidthCta('Confirm payment');
     await expect(dialog.getByTestId('unified-v5-payment-channel-screen')).toBeVisible();
     await expect(finalPreview).toHaveCount(0);
     await expect(dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__cancel')).toHaveCount(0);

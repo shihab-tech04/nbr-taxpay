@@ -38,7 +38,10 @@ test('unified v5 mobile footer has one primary action and preserves calculation 
   await expect(footer.getByRole('button')).toHaveCount(1);
   const nextBox=await toHeads.boundingBox();
   expect(nextBox).not.toBeNull();
-  expect(nextBox!.width).toBeGreaterThan(0);
+  const firstActionsBox=await footer.boundingBox();
+  expect(firstActionsBox).not.toBeNull();
+  expect(Math.abs(nextBox!.width-firstActionsBox!.width)).toBeLessThanOrEqual(2);
+  expect(Math.abs(nextBox!.x-firstActionsBox!.x)).toBeLessThanOrEqual(2);
   await expect(toHeads).toHaveCSS('font-size','12px');
   await expect(toHeads).toHaveCSS('border-radius','9px');
   await expect(toHeads).toHaveCSS('background-color','rgb(45, 94, 172)');
@@ -63,7 +66,9 @@ test('unified v5 mobile footer has one primary action and preserves calculation 
   await expect(footer.getByRole('button')).toHaveCount(1);
   const step2Next=await continueButton.boundingBox();
   expect(step2Next).not.toBeNull();
-  expect(step2Next!.width).toBeGreaterThan(0);
+  const step2FooterBox=await footer.boundingBox();
+  expect(step2FooterBox).not.toBeNull();
+  expect(Math.abs(step2Next!.width-step2FooterBox!.width)).toBeLessThanOrEqual(2);
   await dialog.locator('.taxpay-modal__back').click();
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Taxpayer Information');
   await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
@@ -131,7 +136,9 @@ test('unified v5 Final Preview stacks rows and retains only the payment CTA',asy
   await expect(pay).toBeVisible();
   const payBox=await pay.boundingBox();
   expect(payBox).not.toBeNull();
-  expect(payBox!.width).toBeGreaterThan(0);
+  const previewFooterBox=await footer.boundingBox();
+  expect(previewFooterBox).not.toBeNull();
+  expect(Math.abs(payBox!.width-previewFooterBox!.width)).toBeLessThanOrEqual(2);
   await dialog.locator('.taxpay-modal__back').click();
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
   await dialog.getByRole('button',{name:'Continue to Final Preview'}).click();
