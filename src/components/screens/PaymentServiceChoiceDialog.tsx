@@ -207,7 +207,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     <TaxPayModal
       title={view === 'login' || view === 'entry'
         ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`)
-        : view === 'payment' && unifiedEntry && stage === 4 ? tr('Payment result', 'পেমেন্টের ফলাফল')
+        : view === 'payment' && !travelJourney && stage === 4 ? tr('Payment result', 'পেমেন্টের ফলাফল')
         : view === 'payment' && unifiedEntry && checkoutOpen ? tr('Payment channel', 'পেমেন্ট চ্যানেল')
         : view === 'payment' && travelJourney ? stages[stage - 1]
         : view === 'payment' ? stages[Math.min(stage - 1, stages.length - 1)] : tr('Pay Tax', 'কর পরিশোধ')}
