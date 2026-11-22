@@ -461,7 +461,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                             {allowMixedReturn && head.id === RETURN_HEAD_ID && <span className="block text-xs text-slate-600 mt-1">
                               {tx('Section 173 · Can be combined with other tax heads', 'ধারা ১৭৩ · অন্যান্য কর খাতের সঙ্গে পরিশোধ করা যায়')}
                             </span>}
-                            {blocked && <span className="block text-xs text-rose-700 mt-1">
+                            {blocked && <span className="block text-base text-rose-700 mt-1">
                               {head.id === 5 ? tx('Historical section 19AAAAA was omitted in 2022; not available for new payments.', 'ঐতিহাসিক ধারা ১৯এএএএএ ২০২২ সালে বিলুপ্ত হয়েছে; নতুন পরিশোধের জন্য প্রযোজ্য নয়।') : tx('Unavailable pending verification', 'যাচাই না হওয়া পর্যন্ত নির্বাচন করা যাবে না')}
                             </span>}
                           </span>
