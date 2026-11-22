@@ -93,6 +93,7 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Payment record status' })).toBeVisible();
   const receiptPaper = dialog.locator('.receipt-view__paper');
   await expect(receiptPaper).toBeVisible();
   // Optional after-payment sign-in never blocks accessing the guest receipt.
