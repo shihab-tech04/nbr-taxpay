@@ -398,7 +398,8 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
 
           <div className="space-y-2">
             <h3 className="receipt-view__section-title">
-              {isCertificate ? (bn ? 'পেমেন্টের তথ্য' : 'Payment details') : labels.treasurySection}
+              {isCertificate ? (bn ? 'পেমেন্টের তথ্য' : 'Payment details') :
+                receipt.isSimulatedDemo ? (bn ? 'পেমেন্ট রেকর্ডের অবস্থা' : 'Payment record status') : labels.treasurySection}
             </h3>
             <div className="receipt-view__detail">
               <span className="text-slate-700">{labels.paymentMethod}:</span>
