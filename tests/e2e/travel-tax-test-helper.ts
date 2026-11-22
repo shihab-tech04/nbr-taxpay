@@ -10,9 +10,9 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
   // Travel Tax is lazy-loaded. Wait for the stage UI before any isVisible()
   // probe, otherwise a fast test skips passenger confirmation during chunk load.
   // The passport editor may disappear once a passenger is confirmed.
-  // Receipt contact exists throughout the passenger stage; route options exist
-  // on the travel stage. Wait for either stable stage anchor after lazy mount.
-  await root.locator('#travel-mobile, #travel-tax-route-1').first().waitFor({ state: 'attached' });
+  // Wait for a real passenger/travel stage anchor after lazy mount.
+  // Receipt contact now belongs exclusively to the final preview.
+  await root.locator('input[id^="travel-passport-"], [data-passenger-id][data-complete="true"], #travel-tax-route-1').first().waitFor({ state: 'attached' });
   // Pay Again uses stable copied passenger IDs (e.g. repeat-traveller-1),
   // whereas a new payment starts with first. Confirm whichever is rendered.
   const passport = root.locator('input[id^="travel-passport-"]').first();
@@ -29,8 +29,6 @@ export async function fillTravelDetails(root: Locator | Page, options?: {
     }
   }
   if (await addPassenger.isVisible() && await addPassenger.isEnabled()) await addPassenger.click();
-  const mobile = root.locator('#travel-mobile');
-  if (await mobile.isVisible() && !(await mobile.inputValue())) await mobile.fill('01712345678');
   const continueToTravel = root.locator('.travel-flow__primary').filter({ hasText: /Continue to travel details|ভ্রমণের তথ্য দিতে এগিয়ে যান/ });
   if (await continueToTravel.isVisible()) await continueToTravel.click();
   const mode = options?.mode ?? (await root.locator('#travel-tax-route-1').isChecked() ? 'WATER' : 'LAND');
@@ -73,20 +71,13 @@ export async function fillForeignPassenger(root: Locator | Page, options?: {
   await root.locator('#travel-country-first').fill(options?.country ?? 'India');
   const confirmPassenger = root.getByRole('button', {name: /^(Add passenger|যাত্রী যোগ করুন)$/});
   if (await confirmPassenger.isVisible() && await confirmPassenger.isEnabled()) await confirmPassenger.click();
-  const mobile = root.locator('#travel-mobile');
-  if (await mobile.isVisible() && !(await mobile.inputValue())) await mobile.fill('01712345678');
   if (returnedToTravel) {
     await root.getByRole('button', {name: /Continue to travel details|ভ্রমণের তথ্য দিতে এগিয়ে যান/}).click();
   }
 }
-/** Complete the group-stage contact field without changing primary passenger identity. */
-export async function fillTravelReceiptMobile(root: Locator | Page) {
+/** The receipt contact belongs to the payment-preview stage, not passenger entry. */
+export async function fillTravelReceiptMobile(root: Locator | Page, mobile = '01712345678') {
   const field = root.locator('#travel-mobile');
-  if (await field.isVisible()) {
-    await field.fill('01712345678');
-  } else {
-    await root.getByRole('button', { name: /Edit passengers|যাত্রী সম্পাদনা|Edit passengers and receipt contact/ }).first().click();
-    await root.locator('#travel-mobile').fill('01712345678');
-    await root.getByRole('button', { name: /Continue to travel details|ভ্রমণের তথ্য দিতে এগিয়ে যান/ }).click();
-  }
+  await field.waitFor({state:'visible'});
+  await field.fill(mobile);
 }

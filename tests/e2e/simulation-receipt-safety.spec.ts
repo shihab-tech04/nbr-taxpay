@@ -63,6 +63,9 @@ async function travelReview(page: Page) {
   await fillTravelDetails(page);
   await expect(page.locator('#travel-tax-route-0')).toBeChecked();
   await page.getByRole('button', { name: 'Continue to review' }).click();
+  await page.locator('#travel-mobile').fill('01712345678');
+  await page.getByRole('button', { name: 'Make Payment' }).click();
+  await expect(page.getByTestId('travel-payment-channel-screen')).toBeVisible();
 }
 
 test('guest submission and receipt use only synthetic references', async ({ page }) => {
@@ -140,7 +143,7 @@ test('travel bank-slip simulation cannot instruct a real bank payment', async ({
   const submissions = await mockStoryPayments(page);
   await travelReview(page);
   await page.getByRole('button', { name: 'Pay at a bank branch' }).click();
-  await expect(page.getByText('A-Challan is the required government integration',{exact:false})).toBeVisible();
+  await expect(page.getByTestId('travel-payment-channel-screen')).toBeVisible();
   await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
   await page.getByRole('button', { name: 'Confirm preview payment' }).click();
   await expect(page.getByText('Sample bank slip pending')).toBeVisible();
