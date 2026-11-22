@@ -18,8 +18,8 @@ test('public homepage temporarily hides payment steps and FAQ, preserving entry 
 
   await page.locator('.citizen-public-hero__actions').getByRole('button', { name: 'Pay Tax', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
-  await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(2);
-  await expect(dialog.locator('[data-payment-entry]')).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
+  await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(0);
 });
 
 test('hidden homepage FAQ remains available via the existing User Guide page', async ({ page }) => {

@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
+import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
-test('original hero Pay Tax and separate All Tax Payments keep their approved routes', async ({ page }) => {
+test('All Tax Payments benefit opens the approved parallel chooser', async ({ page }) => {
   await page.setViewportSize({ width: 1140, height: 900 });
   await page.goto('/?action=landing&lang=en');
   const benefits = page.locator('.public-benefits');
@@ -27,10 +28,9 @@ test('original hero Pay Tax and separate All Tax Payments keep their approved ro
   await expect(dialog.locator('#guest-phone')).toHaveCount(0);
 });
 
-test('restored original hero Pay Tax presents the payer/service chooser and four-stage payment wizard', async ({ page }) => {
+test('preserved original tax flow still has its payer/service chooser and four-stage wizard', async ({ page }) => {
   await page.goto('/?action=landing&lang=en');
-  await page.locator('.citizen-public-hero__actions').getByRole('button',{name:'Pay Tax',exact:true}).click();
-  const modal = page.getByRole('dialog',{name:'Pay Tax'});
+  const modal = await openLegacyTaxServiceChoice(page);
   await expect(modal.locator('[data-payer-relationship]')).toHaveCount(2);
   await expect(modal.locator('[data-payment-entry]')).toHaveCount(0);
   await modal.locator('[data-payer-relationship="OTHER"]').click();
