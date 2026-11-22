@@ -1261,9 +1261,9 @@
 @media (max-width: 600px) {
   .public-hero-carousel-shell--box .public-hero-carousel__slide.public-information-hero {
     --box-hero-copy-height: clamp(180px, calc(215px - 5.833vw), 198px);
-    grid-template-rows: minmax(var(--box-hero-copy-height), auto) clamp(184px, 52vw, 250px);
+    grid-template-rows: minmax(var(--box-hero-copy-height), auto) clamp(178px, 45vw, 240px);
     height: auto;
-    min-height: calc(var(--box-hero-copy-height) + clamp(184px, 52vw, 250px));
+    min-height: calc(var(--box-hero-copy-height) + clamp(178px, 45vw, 240px));
   }
   .public-hero-carousel-shell--box .citizen-public-hero__copy h1,
   .public-hero-carousel-shell--box .citizen-public-hero__copy h2,
