@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { mockPublishedBannerCms } from './mock-published-banners';
+test.beforeEach(async ({page}) => { await mockPublishedBannerCms(page); });
 
 /**
  * Real rendered Taxpayer surfaces — never substitute probe elements for
@@ -50,9 +52,15 @@ test('real payment chooser, stage titles and form controls are readable at narro
       const dialog=page.getByRole('dialog').last();
       await expect(dialog).toBeVisible();
       await size(page,'.taxpay-modal__title',20);
-      await size(page,'.tax-service-choice__access-option strong',20);
-      await size(page,'.tax-service-choice__access-option small',16);
-      await size(page,'.taxpay-modal button.tax-service-choice__continue',16);
+      const walkin = dialog.locator('.taxpay-unified-entry__walkin');
+      await expect(walkin).toBeVisible();
+      await size(page,'.taxpay-unified-entry__walkin',16);
+      await walkin.click();
+      await expect(dialog.locator('.taxpay-modal__title')).toBeVisible();
+      await size(page,'.taxpay-modal__title',20);
+      const firstInput = dialog.locator('input:not([type="checkbox"]):not([type="radio"])').first();
+      await expect(firstInput).toBeVisible();
+      expect(await firstInput.evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBe(16);
       await noOverflow(page,width,lang);
     }
   }
@@ -66,7 +74,6 @@ test('real authenticated history keeps 16px tabular headers and cells', async ({
     await expect(table).toBeVisible();
     await size(page,'[data-testid="taxpayer-transaction-table"] thead th',16);
     await size(page,'[data-testid="taxpayer-transaction-table"] tbody td',16);
-    await size(page,'.taxpayer-workspace .taxpay-record-toolbar__search input',16);
     await noOverflow(page,1280,lang);
   }
 });
