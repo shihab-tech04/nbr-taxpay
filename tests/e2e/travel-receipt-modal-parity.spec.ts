@@ -10,6 +10,8 @@ test('Travel Tax settled record shares modal and has only Download/Print without
   await fillTravelDetails(dialog);
   await dialog.getByRole('button',{name:'Continue to review'}).click();
   await dialog.locator('#travel-mobile').fill('01712345678');
+  await dialog.getByRole('button',{name:'Make Payment'}).click();
+  await expect(dialog.getByTestId('travel-payment-channel-screen')).toBeVisible();
   await dialog.getByRole('button',{name:'Pay online'}).click();
   await dialog.getByRole('button',{name:'Mobile banking'}).click();
   await dialog.getByRole('radio',{name:'Nagad'}).check();
@@ -62,18 +64,18 @@ test('Travel Tax progressive modal preserves passenger data and travel details t
   await openTravelTaxFromBanner(page);
   const dialog=page.getByRole('dialog',{name:'Travel tax'});
   await expect(dialog).toHaveAttribute('data-payment-stage','true');
-  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Passenger information');
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Passenger Information');
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
   await expect(dialog.locator('.travel-flow__summary')).toBeHidden();
   await expect(dialog.locator('#travel-tax-route-results')).toHaveCount(0);
   await expect(dialog.locator('.payment-form-section').getByRole('heading',{name:'Passenger information'})).toHaveCount(0);
   await fillTravelDetails(dialog);
-  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Travel details');
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Travel Details');
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
   await dialog.getByRole('button',{name:'Back'}).click();
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
   await expect(dialog.locator('#travel-mobile')).toHaveCount(0);
-  await expect(dialog.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE BANGLADESHI PASSENGER');
+  await expect(dialog.locator('.travel-passenger-workspace__person')).toContainText('SAMPLE BANGLADESHI PASSENGER');
   await page.setViewportSize({width:375,height:812});
   await expect(dialog.locator('.travel-flow__summary')).toBeHidden();
   await expect(dialog.getByTestId('mobile-payment-calculation')).toHaveCount(0);
@@ -88,7 +90,7 @@ test('Travel Tax progressive modal preserves passenger data and travel details t
   await dialog.locator('#travel-mobile').fill('01712345678');
   await expect(dialog.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','3');
   await dialog.getByRole('button',{name:'Back'}).click();
-  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Travel details');
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Travel Details');
   await expect(dialog.locator('#travel-port')).toHaveValue('Benapole');
 });
 
@@ -145,13 +147,13 @@ test('Tax with Return and Travel Tax stages keep identical dialog width at match
     await page.goto('/');
     await openTravelTaxFromBanner(page);
     const travel = page.getByRole('dialog', {name: 'Travel tax'});
-    await expect(travel.locator('.taxpay-modal__title')).toHaveText('Passenger information');
+    await expect(travel.locator('.taxpay-modal__title')).toHaveText('Passenger Information');
     const passengerBounds = await travel.boundingBox();
     expect(passengerBounds).not.toBeNull();
     expect(Math.abs(passengerBounds!.width - paymentBounds!.width)).toBeLessThanOrEqual(2);
 
     await fillTravelDetails(travel);
-    await expect(travel.locator('.taxpay-modal__title')).toHaveText('Travel details');
+    await expect(travel.locator('.taxpay-modal__title')).toHaveText('Travel Details');
     const routeBounds = await travel.boundingBox();
     expect(routeBounds).not.toBeNull();
     expect(Math.abs(routeBounds!.width - paymentBounds!.width)).toBeLessThanOrEqual(2);
