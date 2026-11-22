@@ -207,7 +207,12 @@
 /* The public homepage has a later desktop layout rule with a hard-coded
  * 20px title. Keep the approved responsive 20px mobile / 24px tablet tier. */
 .taxpay-citizen-shell:has(.public-home-sections) .public-benefits__heading h2 {
-  font-size: var(--taxpay-font-section);
+  font-size: 20px;
+}
+@media (min-width: 768px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-benefits__heading h2 {
+    font-size: 24px;
+  }
 }
 .taxpay-citizen-shell .public-benefits__copy :is(h3,strong) {
   font-size: var(--taxpay-font-subsection);
@@ -352,7 +357,7 @@
  * Keep every desktop destination in the existing single-row footer rail. */
 @media (min-width: 981px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
-    max-width: 180px;
+    max-width: 160px;
     line-height: 1.25;
     white-space: normal;
     overflow-wrap: normal;
@@ -370,10 +375,11 @@
 /* Keep the approved desktop wordmark and single-row navigation geometry. */
 @media (min-width: 1200px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    max-width: calc(var(--public-content-max) + 6rem);
     column-gap: 8px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
-    max-width: 220px;
+    max-width: 160px;
     line-height: 1.25;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
