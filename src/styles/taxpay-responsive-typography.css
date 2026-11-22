@@ -359,6 +359,26 @@
   }
 }
 
+/* The 16px footer must stay a single, collision-free desktop row.
+ * Use available full-width footer canvas rather than reducing any font. */
+@media (min-width: 1200px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    max-width: none;
+    padding-inline: clamp(12px, 1.5vw, 24px);
+    column-gap: 12px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity img.public-footer__wordmark {
+    width: 76px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
+    max-width: 170px;
+    line-height: 1.25;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
+    flex-wrap: nowrap;
+    column-gap: 10px;
+  }
+}
 /* Inputs remain in normal reading size even if external utilities say text-xs. */
 .taxpay-citizen-shell :is(input,select,textarea)::placeholder {
   font-size: inherit;
