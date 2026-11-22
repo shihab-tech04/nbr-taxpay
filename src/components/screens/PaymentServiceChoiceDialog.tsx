@@ -234,7 +234,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
       onBackdropClose={() => {
         // A backdrop click never discards draft-eligible payment data.
         if (exitPromptOpen) return;
-        if (isWalkInPayment && stage !== 4) { requestClose(); return; }
+        // Outside taps should never discard a walk-in payment or interrupt editing.
+        if (isWalkInPayment && stage !== 4) return;
         if (view === 'payment' && draftExitActionRef.current) return;
         close();
       }}
