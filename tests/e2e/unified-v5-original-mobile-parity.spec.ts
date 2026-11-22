@@ -95,7 +95,11 @@ test('approved v5 Final Preview stacks payment rows on mobile; AY, amount and du
   await dialog.getByRole('button',{name:'Add taxpayer'}).click();
   await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
   const batch=dialog.getByTestId('other-tax-batch');
+  const returnGroup=batch.getByTestId('unified-v5-return-group');
+  await expect(returnGroup).toHaveAttribute('data-head-group','Tax with Return');
+  await returnGroup.locator('summary').click();
   await batch.getByTestId('unified-v5-return-checkbox').check();
+  await expect(returnGroup.getByTestId('other-tax-line')).toHaveCount(1);
   await batch.getByTestId('unified-v5-return-amount').fill('3500');
   const next=dialog.getByRole('button',{name:'Continue to Final Preview'});
   await expect(next).toBeEnabled();
