@@ -604,3 +604,107 @@
     width: 100%;
   }
 }
+
+/* Parallel Walk-in Payment Result: the challan is always accessible before
+   the optional account invitation. Original tax and receipt layouts stay intact. */
+.payment-flow-embedded--receipt .walkin-result-challan {
+  padding: 0 20px 16px;
+  display: grid;
+  gap: 10px;
+}
+.payment-flow-embedded--receipt .walkin-result-challan > button {
+  min-height: 44px;
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 10px 16px;
+  border-radius: 9px;
+  color: #fff;
+  background: #285eaa;
+  font-size: 14px;
+  font-weight: 700;
+}
+.payment-flow-embedded--receipt .walkin-result-challan > button:hover { background: #214f90; }
+.payment-flow-embedded--receipt .walkin-result-challan__batch { display: flex; flex-wrap: wrap; gap: 8px; }
+.payment-flow-embedded--receipt .walkin-result-challan__batch button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #cbd9e9;
+  border-radius: 8px;
+  background: #fff;
+  color: #285eaa;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits {
+  border-top: 1px solid #e4e9f1;
+  padding: 18px 20px 20px;
+  color: #203a5c;
+  background: #fafbfd;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits h3 {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.45;
+  margin: 0 0 10px;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits ul {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits li {
+  position: relative;
+  padding-inline-start: 23px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits li::before {
+  content: '✓';
+  position: absolute;
+  inset-inline-start: 0;
+  color: #167651;
+  font-weight: 800;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.payment-flow-embedded--receipt .walkin-result-benefits__actions button {
+  min-height: 44px;
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits__actions .walkin-postpayment-login__signin {
+  background: #285eaa;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits__actions .walkin-postpayment-login__skip {
+  background: #fff;
+  border: 1px solid #cbd9e9;
+  color: #285eaa;
+}
+.payment-flow-embedded--receipt .walkin-result-benefits p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 12px 0 0;
+  color: #526880;
+}
+.payment-flow-embedded--unified :is(.walkin-result-challan, .walkin-result-benefits) button:focus-visible {
+  outline: 2px solid #285eaa;
+  outline-offset: 3px;
+}
+@media (max-width: 560px) {
+  .payment-flow-embedded--receipt .walkin-result-challan { padding: 0 14px 14px; }
+  .payment-flow-embedded--receipt .walkin-result-challan > button { width: 100%; }
+  .payment-flow-embedded--receipt .walkin-result-benefits { padding: 16px 14px 18px; }
+  .payment-flow-embedded--receipt .walkin-result-benefits__actions { flex-direction: column; }
+  .payment-flow-embedded--receipt .walkin-result-benefits__actions button { width: 100%; justify-content: center; }
+}
