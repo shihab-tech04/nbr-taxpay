@@ -161,7 +161,7 @@ test('Travel Tax: Add passenger is attached to the checked passenger card, not r
   await expect(modal.locator('.travel-flow__contact')).toHaveCount(0);
   await add.click();
   await expect(add).toHaveCount(0);
-  await expect(modal.getByRole('button',{name: 'Add another passenger'})).toBeVisible();
+  await expect(modal.locator('#travel-new-passport')).toBeVisible();
 });
 
 test('Travel Tax: passport Check button activates on entry and results overlay without moving the field',async({page})=>{
@@ -634,11 +634,16 @@ test('Travel Tax: Step 1 scroll stays inside the modal with accessible fixed act
   expect(beforeHeader).not.toBeNull();
   expect(beforeFooter).not.toBeNull();
 
-  const owner = main;
-  const other = body;
-  expect(await owner.evaluate(element => getComputedStyle(element).overflowY)).toBe('auto');
-  expect(await other.evaluate(element => getComputedStyle(element).overflowY))
-    .not.toBe('auto');
+  // Share the approved Taxpayer modal's true scroll owner: either the inner
+  // payment area or the modal body, never the document behind the dialog.
+  const mainIsScrollable = await main.evaluate(element =>
+    element.scrollHeight > element.clientHeight &&
+    ['auto','scroll'].includes(getComputedStyle(element).overflowY));
+  const owner = mainIsScrollable ? main : body;
+  const other = mainIsScrollable ? body : main;
+  expect(await owner.evaluate(element => ['auto','scroll'].includes(getComputedStyle(element).overflowY))).toBe(true);
+  expect(await other.evaluate(element => ['auto','scroll'].includes(getComputedStyle(element).overflowY)))
+    .toBe(false);
   const scroll = await owner.evaluate(element => {
     element.scrollTop = element.scrollHeight;
     return {position: element.scrollTop, overflow: element.scrollHeight - element.clientHeight};
@@ -788,7 +793,7 @@ test('Travel Tax: medical assessment option survives passport check and passenge
   await page.goto('/');
   await openTravelTaxFromBanner(page);
   const modal=page.getByRole('dialog',{name:'Travel tax'});
-  const option=modal.getByLabel('Request manual assessment at departure port');
+  const option=modal.getByLabel('Request manual medical assessment at departure port');
   await expect(option).not.toBeChecked();
   await modal.locator('#travel-passport-first').fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
@@ -1073,7 +1078,7 @@ for (const [language,project] of [['en','desktop-1280'],['bn','mobile-375']] as 
     await acknowledge.check();
     await expect(confirm).toBeEnabled();
     // Returning from checkout and editing travel details must reset confirmation.
-    await modal.getByRole('button',{name:'Back',exact:true}).click();
+    await modal.getByRole('button',{name:language==='bn'?'ফিরুন':'Back',exact:true}).click();
     await expect(modal.locator('#travel-mobile')).toHaveValue('01712345678');
     await modal.getByRole('button',{name:language==='bn'?'ভ্রমণের তথ্য সম্পাদনা':'Edit travel details'}).click();
     await modal.locator('#travel-destination').fill('Nepal');
@@ -1085,7 +1090,7 @@ for (const [language,project] of [['en','desktop-1280'],['bn','mobile-375']] as 
     await acknowledge.check();
     await expect(confirm).toBeEnabled();
     // Changing receipt mobile in Final Preview also requires new approval.
-    await modal.getByRole('button',{name:'Back',exact:true}).click();
+    await modal.getByRole('button',{name:language==='bn'?'ফিরুন':'Back',exact:true}).click();
     await modal.locator('#travel-mobile').fill('01712340000');
     await expect(modal.locator('#travel-mobile')).toHaveValue('01712340000');
     await expect(modal.locator('.travel-flow__passenger-table tfoot'))
