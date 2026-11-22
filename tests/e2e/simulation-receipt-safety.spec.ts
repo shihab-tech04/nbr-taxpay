@@ -63,6 +63,7 @@ async function travelReview(page: Page) {
   await fillTravelDetails(page);
   await expect(page.locator('#travel-tax-route-0')).toBeChecked();
   await page.getByRole('button', { name: 'Continue to review' }).click();
+  await page.locator('#travel-mobile').fill('01712345678');
 }
 
 test('guest submission and receipt use only synthetic references', async ({ page }) => {

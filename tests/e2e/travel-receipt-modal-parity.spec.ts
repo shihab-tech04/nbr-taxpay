@@ -9,6 +9,7 @@ test('Travel Tax settled record shares modal and has only Download/Print without
   const dialog=page.getByRole('dialog',{name:'Travel tax'});
   await fillTravelDetails(dialog);
   await dialog.getByRole('button',{name:'Continue to review'}).click();
+  await dialog.locator('#travel-mobile').fill('01712345678');
   await dialog.getByRole('button',{name:'Pay online'}).click();
   await dialog.getByRole('button',{name:'Mobile banking'}).click();
   await dialog.getByRole('radio',{name:'Nagad'}).check();

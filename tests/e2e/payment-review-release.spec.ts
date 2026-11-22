@@ -372,6 +372,7 @@ test('Travel Tax follows approved Land/Water, multi-passenger bilingual preview 
   await expect(page.getByRole('heading', { name: 'ভ্রমণ কর' })).toBeVisible();
   await expect(page.locator('.travel-flow__age-breakdown')).toContainText('SAMPLE PASSENGER');
   await page.getByRole('button', { name: 'পেমেন্ট পর্যালোচনায় যান' }).click();
+  await page.locator('#travel-mobile').fill('01712345678');
   await expect(page.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
   await page.getByRole('button', { name: 'অনলাইনে পরিশোধ' }).click();
   await page.getByRole('button', { name: 'মোবাইল ব্যাংকিং' }).click();

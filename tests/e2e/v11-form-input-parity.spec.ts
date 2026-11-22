@@ -81,6 +81,11 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   await travel.getByRole('radio', { name: 'bKash' }).check();
   await expect(submit).toBeDisabled();
   await travel.getByRole('checkbox', { name: 'I confirm the travel information, all passengers and the combined amount.' }).check();
+  // The final preview now requires the receipt contact, separately from the passenger stage.
+  await expect(submit).toBeDisabled();
+  await travel.locator('#travel-mobile').fill('01712345678');
+  await expect(submit).toBeDisabled();
+  await travel.getByRole('checkbox', { name: 'I confirm the travel information, all passengers and the combined amount.' }).check();
   await expect(submit).toBeEnabled();
   await submit.click();
   await expect(travel.locator('.receipt-view__paper')).toContainText('SIM-', { timeout: 10000 });
