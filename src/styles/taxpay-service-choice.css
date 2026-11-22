@@ -2764,3 +2764,86 @@
     padding: 14px;
   }
 }
+
+/* Travel Tax passenger entry / confirmed-passenger rail, using the same
+   split composition as the parallel walk-in taxpayer step. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__party-summary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 10px;
+  background: var(--citizen-bg);
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__party-summary-heading h3 {
+  margin: 0;
+  font: 700 15px/1.5 Poppins, system-ui, sans-serif;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__party-summary-heading strong {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: 999px;
+  color: var(--citizen-text);
+  background: var(--citizen-surface);
+  font: 700 13px/1.4 Poppins, system-ui, sans-serif;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__party-empty {
+  min-width: 0;
+  padding: 25px 14px;
+  border: 1px dashed var(--citizen-border);
+  border-radius: 10px;
+  text-align: center;
+  background: var(--citizen-surface);
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__party-empty p {
+  margin: 0;
+  color: var(--citizen-muted);
+  font-size: 14px;
+}
+@media (min-width: 801px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow[data-step="0"] .travel-flow__party {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, .9fr);
+    column-gap: 18px;
+    row-gap: 12px;
+    align-items: start;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__party-summary-heading {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__person--editing {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    align-self: start;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__person--saved,
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__party-empty {
+    grid-column: 2;
+    align-self: start;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__add-another {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    margin-top: 0;
+  }
+}
+@media (max-width: 800px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow[data-step="0"] .travel-flow__party {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__person--editing { order: 0; width: 100%; }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__party-summary-heading { order: 1; width: 100%; }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__party-empty { order: 2; width: 100%; }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__person--saved { order: 3; width: 100%; }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__add-another { order: 4; margin-top: 0; }
+}
