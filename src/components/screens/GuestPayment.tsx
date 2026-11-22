@@ -464,6 +464,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const batchRecoveryChecked = useRef(false);
   const [batchRecoveryError, setBatchRecoveryError] = useState(false);
   const [showReceiptDetails, setShowReceiptDetails] = useState(false);
+  const [skipPostPaymentLogin, setSkipPostPaymentLogin] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [paymentStorageWarning, setPaymentStorageWarning] = useState(false);
   const [errorField, setErrorField] = useState<GuestErrorField | null>(null);
@@ -1615,7 +1616,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     // A new checkout is not a repeat payment: discard immutable source provenance.
     setSourcePaymentId(null); setSourceAllocationIds([]);
     setAuthorizedTaxpayerId(null); setTin(''); setOtherTaxpayerName('');
-    setShowReceiptDetails(false); setErrorMessage(''); backToUnifiedPreview(); setStep(1);
+    setShowReceiptDetails(false); setSkipPostPaymentLogin(false); setErrorMessage(''); backToUnifiedPreview(); setStep(1);
   };
 
   if (step === 4) {
@@ -1646,6 +1647,26 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (showReceiptDetails && createdReceipt) return (
       <div lang={language} className={`payment-receipt-details ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''}`}>
         <ReceiptView receipt={createdReceipt} embedded={embedded} onBack={() => setShowReceiptDetails(false)}
+          compactWalkInLayout={embedded}
+          postReceiptInvitation={embedded && completed && !officeMirrorPending && !signedInAccount && !skipPostPaymentLogin
+            ? <aside className="walkin-postpayment-login no-print" data-testid="walkin-postpayment-login" aria-label={language === 'bn' ? 'ঐচ্ছিক সাইন ইন' : 'Optional sign in'}>
+                <div className="walkin-postpayment-login__copy">
+                  <strong>{language === 'bn' ? 'আপনার পেমেন্ট রেকর্ড পরে দেখতে চান?' : 'Want easier access to your payment history?'}</strong>
+                  <p>{language === 'bn'
+                    ? 'সাইন ইন করলে অ্যাকাউন্টের সংরক্ষিত পেমেন্ট ও চালান দেখতে পারবেন। এই ওয়াক-ইন রসিদ স্বয়ংক্রিয়ভাবে কোনো অ্যাকাউন্টে যুক্ত হবে না।'
+                    : 'Sign in to view payments and challans saved to your account. This walk-in receipt is not automatically linked to an account.'}</p>
+                </div>
+                <div className="walkin-postpayment-login__actions">
+                  <button type="button" className="walkin-postpayment-login__signin"
+                    onClick={() => { setPaymentServiceChoiceOpen(false); navigate('taxpayer_login'); }}>
+                    {language === 'bn' ? 'সাইন ইন' : 'Sign in'} <ArrowRight size={16} aria-hidden="true" />
+                  </button>
+                  <button type="button" className="walkin-postpayment-login__skip"
+                    onClick={() => setSkipPostPaymentLogin(true)}>
+                    {language === 'bn' ? 'সাইন ইন ছাড়াই চালিয়ে যান' : 'Continue without signing in'}
+                  </button>
+                </div>
+              </aside> : undefined}
           transactionActions={Boolean(completed&&currentOwner&&createdReceipt.paymentTransactionId)}
           onPayAgain={repeatCopy?()=>{setShowReceiptDetails(false);
             startPaymentReuse(repeatCopy!);}:undefined}
@@ -1672,7 +1693,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               : <div><span>{language === 'bn' ? 'পেমেন্ট রেফারেন্স' : 'Payment reference'}</span><strong className="payment-lifecycle__reference-value">{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Being generated…')}</strong></div>}
           </div>
           <details className="payment-lifecycle__progress-detail" open={!completed && !bankPending && !declined}>
-            <summary>{language === 'bn' ? 'পেমেন্টের অগ্রগতি ও রেফারেন্স' : 'Payment progress and references'} <span>{lifecycleStages.length} / {ONLINE_LIFECYCLE.length}</span></summary>
+            <summary>{language === 'bn' ? 'পেমেন্টের অগ্রগতি ও রেফারেন্স' : 'Payment progress and references'} {!completed && <span>{lifecycleStages.length} / {ONLINE_LIFECYCLE.length}</span>}</summary>
           <div className="payment-lifecycle__details">
             {!batchAttempt && <dl className="payment-lifecycle__references">
               <div><dt>{language === 'bn' ? 'কর ইভেন্ট আইডি' : 'Tax event ID'}</dt><dd>{attemptReceipt?.taxEventId || '—'}</dd></div>
@@ -1725,7 +1746,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
           {bankPending && errorMessage && <p role="alert">{errorMessage}</p>}
           {completed && officeMirrorPending && errorMessage && <p role="alert">{errorMessage}</p>}
           {declined && <div className="payment-lifecycle__result payment-lifecycle__result--failed"><AlertCircle size={20} aria-hidden="true" /><p>{errorMessage || (language === 'bn' ? 'পেমেন্ট মাধ্যমটি অনুরোধ প্রত্যাখ্যান করেছে। অন্য পদ্ধতিতে আবার চেষ্টা করুন।' : 'The payment channel declined the request. You can retry with another method.')}</p></div>}
-          {completed && <div className="payment-lifecycle__result payment-lifecycle__result--complete"><CheckCircle size={20} aria-hidden="true" /><p>{officeMirrorPending
+          {completed && <div className="payment-lifecycle__result payment-lifecycle__result--complete"><FileText size={18} aria-hidden="true" /><p>{officeMirrorPending
             ? (language === 'bn' ? 'সিমুলেশন TaxPay ডাটাবেসে সংরক্ষিত। অফিস সমন্বয় অপেক্ষমাণ; এটি প্রকৃত কর পরিশোধ নয়।' : 'Simulation saved in TaxPay SQL. Office synchronization is pending; this is not a real tax payment.')
             : (language === 'bn' ? 'পেমেন্ট রেকর্ড সংরক্ষিত হয়েছে; নিষ্পত্তি যাচাই হয়নি।' : 'Payment record saved; settlement is not verified.')}</p></div>}
           <div className="payment-lifecycle__actions no-print">
