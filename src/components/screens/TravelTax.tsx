@@ -138,8 +138,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       Boolean(person && typeof person.id === 'string' && typeof person.name === 'string' &&
       typeof person.passport === 'string' && typeof person.birthDate === 'string' &&
       (person.nationality === 'BD' || person.nationality === 'FOREIGN'))
-    ).slice(0,20);
-    if (!restored.length) throw new Error('Saved passenger information was incomplete.');
+    );
+    // Never silently drop passengers from an older draft. A malformed row
+    // must be reported rather than discarded during restoration.
+    if (!restored.length || restored.length !== saved.passengers.length)
+      throw new Error('Saved passenger information was incomplete.');
     // A new saved journey must never inherit an earlier unsaved edit/undo.
     setEditBackup(null); setRemovedPassenger(null);
     setMode(saved.mode === 'WATER' ? 'WATER' : 'LAND');
@@ -337,6 +340,34 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
   useEffect(() => { onCheckoutChange?.(checkoutOpen); }, [checkoutOpen,onCheckoutChange]);
+  // Dismiss the existing on-focus ten-sample picker without changing focus
+  // or rerendering the modal between pointerdown and click. That early state
+  // change can swallow clicks on Travel Tax's Edit passengers control.
+  useEffect(() => {
+    if (!passportSuggestionsFor) return;
+    const field = document.getElementById('travel-passport-' + passportSuggestionsFor);
+    const options = document.getElementById('travel-passport-suggestions-' + passportSuggestionsFor);
+    const isOutside = (node: EventTarget | null) =>
+      node instanceof Node && !field?.contains(node) && !options?.contains(node);
+    const onOutsideClick = (event: MouseEvent) => {
+      // Run after the clicked control's React handler, never at pointerdown.
+      if (isOutside(event.target)) setPassportSuggestionsFor(null);
+    };
+    const onFocusMoved = (event: FocusEvent) => {
+      if (!isOutside(event.target)) return;
+      // Tab should close the picker, but pointer focus must not unmount
+      // controls before their click is dispatched.
+      requestAnimationFrame(() => {
+        if (isOutside(document.activeElement)) setPassportSuggestionsFor(null);
+      });
+    };
+    document.addEventListener('click', onOutsideClick);
+    document.addEventListener('focusin', onFocusMoved);
+    return () => {
+      document.removeEventListener('click', onOutsideClick);
+      document.removeEventListener('focusin', onFocusMoved);
+    };
+  }, [passportSuggestionsFor]);
   // The shared modal header owns Back, including receipt/review navigation.
   // Do not proxy through footer DOM buttons: they can disappear or be disabled.
   useEffect(() => {
@@ -744,7 +775,26 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               </div>
               {passportSuggestionsFor === item.id && <div
                 className="travel-flow__passport-suggestions" id={'travel-passport-suggestions-' + item.id}
-                role="listbox" aria-label={tr('Available sample passports','উপলব্ধ নমুনা পাসপোর্ট')}>
+                role="listbox" aria-label={tr('Available sample passports','উপলব্ধ নমুনা পাসপোর্ট')}
+                onKeyDown={event => {
+                  if (event.key === 'Escape') {
+                    event.preventDefault(); event.stopPropagation();
+                    // Focus first; then dismiss so the input focus handler
+                    // cannot reopen suggestions in the same event.
+                    document.getElementById('travel-passport-' + item.id)?.focus();
+                    setPassportSuggestionsFor(null);
+                    return;
+                  }
+                  if (!['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
+                  const options = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]'));
+                  const current = options.indexOf(document.activeElement as HTMLButtonElement);
+                  if (!options.length || current < 0) return;
+                  event.preventDefault();
+                  const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1
+                    : event.key === 'ArrowDown' ? (current + 1) % options.length
+                    : (current + options.length - 1) % options.length;
+                  options[next].focus();
+                }}>
                 <p className="travel-flow__passport-suggestions-heading" role="presentation">
                   {tr('Sample passport numbers','নমুনা পাসপোর্ট নম্বর')}
                 </p>

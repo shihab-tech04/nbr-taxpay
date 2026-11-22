@@ -1148,3 +1148,41 @@ for (const [language,project] of [['en','desktop-1280'],['bn','mobile-375']] as 
     await expect(confirm).toBeEnabled();
   });
 }
+
+// Contract: outside-click dismissal must not swallow real Travel Tax step clicks.
+test('Travel Tax passport suggestions recover on keyboard Escape and outside pointer or Tab', async ({ page }) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal = page.getByRole('dialog', { name: 'Travel tax' });
+  const passport = modal.locator('#travel-passport-first');
+  const list = modal.locator('#travel-passport-suggestions-first');
+  await passport.focus();
+  await expect(list.getByRole('option')).toHaveCount(10);
+  await passport.press('ArrowDown');
+  await expect(list.getByRole('option').first()).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(list.getByRole('option').nth(1)).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(list).toHaveCount(0);
+  await expect(passport).toBeFocused();
+  await expect(modal).toBeVisible(); // Escape never closes the payment dialog.
+
+  // Focusing elsewhere dismisses an open picker without changing identity.
+  await modal.getByRole('tab', { name: 'Bangladeshi passenger' }).focus();
+  await passport.focus();
+  await expect(list.getByRole('option')).toHaveCount(10);
+  await modal.locator('.travel-passenger-workspace__editor h2').click();
+  await expect(list).toHaveCount(0);
+  await expect(passport).toHaveValue('');
+
+  await passport.focus();
+  await expect(list.getByRole('option')).toHaveCount(10);
+  // The disabled Check Passport control is skipped: Tab enters the sample
+  // options, where the list must remain open. Dismiss only after focus
+  // actually leaves the full picker, not when it moves between its controls.
+  await passport.press('Tab');
+  await expect(list).toHaveCount(1);
+  await list.getByRole('option').last().focus();
+  await page.keyboard.press('Tab');
+  await expect(list).toHaveCount(0);
+});
