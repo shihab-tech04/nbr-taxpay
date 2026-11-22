@@ -21,7 +21,7 @@ test('reference dashboard is recipient-first with a responsive hero and accessib
     await expect(hero.locator('.taxpay-overview-feature__donut')).toBeVisible();
     await expect(hero).toHaveCSS('background-image','none');
     await expect(hero.locator('.taxpay-overview-feature__main')).toHaveCSS('display','grid');
-    await expect(hero.locator('.taxpay-overview-feature__amount > p')).toHaveCSS('font-size','13px');
+    await expect(hero.locator('.taxpay-overview-feature__amount > p')).toHaveCSS('font-size','16px');
     await expect(hero.locator('.taxpay-overview-feature__amount > p')).toHaveCSS('color','rgb(237, 245, 255)');
     if(width>=1200){
       const rect=await hero.boundingBox();

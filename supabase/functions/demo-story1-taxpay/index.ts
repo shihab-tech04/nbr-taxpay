@@ -22,6 +22,14 @@ function serviceCredential():string {
 function serviceClient(url:string){
  return createClient(url,serviceCredential(),{auth:{persistSession:false,autoRefreshToken:false}});
 }
+async function verifiedDemoAuthorizationActor(req:Request,url:string,actor:unknown):Promise<boolean>{
+ if(typeof actor!=="string"||!/^user([1-9]|[12][0-9]|30)$/.test(actor))return false;
+ let hash:string|null=null;
+ try{hash=await capabilityHash(req);}catch{return false;}
+ if(!hash)return false;
+ const {data,error}=await serviceClient(url).rpc("taxpay_demo_authorization_actor",{p_capability_hash:hash});
+ return !error&&data===actor;
+}
 // The source selector is derived only from the server's configured Supabase URL.
 // Office verifies a separate payment+session-bound proof at that exact source.
 function officeMirrorSource(url:string):'original'|'v2'{
@@ -131,8 +139,9 @@ Deno.serve(async(req)=>{
   }
   if(req.method==="GET"&&path==="/authorizations"){
    const actor=u.searchParams.get("actor");
-   if(!actor||!/^user([1-9]|[12][0-9]|30)$/.test(actor))return respond({success:false,error:"INVALID_DEMO_USER"},400);
-   const {data,error}=await db.rpc("demo_auth_list",{p_actor:actor});
+   if(!await verifiedDemoAuthorizationActor(req,url,actor))
+     return respond({success:false,error:"AUTHORIZATION_ACTOR_NOT_VERIFIED"},403);
+   const {data,error}=await serviceClient(url).rpc("demo_auth_list",{p_actor:actor});
    if(error)return respond({success:false,error:"AUTHORIZATION_READ_FAILED"},503);
    return respond({success:true,data,simulationOnly:true});
   }
@@ -150,17 +159,22 @@ Deno.serve(async(req)=>{
   if(req.method==="POST"&&(path==="/authorizations"||path==="/authorizations/sync")){
    const raw=await req.text();if(raw.length>1000)return respond({success:false,error:"PAYLOAD_TOO_LARGE"},400);
    const input=JSON.parse(raw),action=path.endsWith("/sync")?"sync":input.action;
+   // Neither an actor label nor a UUID provides access to a consent record.
+   if(!await verifiedDemoAuthorizationActor(req,url,input.actor))
+     return respond({success:false,error:"AUTHORIZATION_ACTOR_NOT_VERIFIED"},403);
    let result:{id:string;status:string;consentCode?:string|null;attempts?:number};
    if(action==="sync"){
     if(!uuid.test(input.id))return respond({success:false,error:"INVALID_ID"},400);
     const check=await serviceClient(url).rpc("demo_auth_public_snapshot",{p_request:input.id});
     if(check.error)return respond({success:false,error:"REQUEST_NOT_FOUND"},404);
+    if(check.data?.payerId!==input.actor&&check.data?.taxpayerId!==input.actor)
+      return respond({success:false,error:"AUTHORIZATION_ACTOR_NOT_VERIFIED"},403);
     result=check.data;
    }else{
     if(!["request","accept","confirm","decline","revoke","resend","delete"].includes(action)||
        !/^user([1-9]|[12][0-9]|30)$/.test(input.actor??""))
       return respond({success:false,error:"INVALID_AUTHORIZATION_ACTION"},400);
-    const {data,error}=await db.rpc("demo_auth_transition",{
+    const {data,error}=await serviceClient(url).rpc("demo_auth_transition",{
      p_action:action,p_actor:input.actor,p_request:input.id??null,
      p_target_tin:input.tin??null,p_code:input.code??null
     });

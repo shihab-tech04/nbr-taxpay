@@ -50,6 +50,7 @@ async function reachWalkInResult(page: Page, language: 'en' | 'bn') {
   await dialog.getByRole('button', {name: language === 'bn' ? 'করদাতা যোগ করুন' : 'Add taxpayer'}).click();
   await dialog.locator('.tax-service-choice__continue').filter({hasText: language === 'bn' ? 'পেমেন্ট খাতে' : 'Continue to Payment Head'}).click();
   const editor = dialog.getByTestId('other-tax-batch');
+  await editor.getByTestId('fixed-tax-categories').locator('tr[data-category="Advance Tax"] button').click();
   const group = editor.locator('[data-head-group="Advance Tax"]');
   if (await group.getAttribute('open') === null) await group.locator('summary').click();
   await editor.getByRole('checkbox', {name:/Select 68A|68A/}).check();

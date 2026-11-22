@@ -88,6 +88,17 @@ test('authorization input and compact delete confirmation remain within mobile v
     status:'REVOKED',requestedAt:Date.now()-300000,codeExpiresAt:Date.now()+300000,consentCode:null,
     confirmedAt:null,activeUntil:null,attempts:0,revokedAt:Date.now()-100000,codeResends:0,codeSentAt:null};
   await enterUser1(page);
+  // This geometry test stubs the authorization endpoint. Supply its matching
+  // fictional session token locally; the separate real-Edge SQL test proves
+  // fabricated capabilities cannot authorize a hosted account.
+  await page.evaluate(() => {
+    sessionStorage.setItem('taxpay-taxpayer-preview-user','user1');
+    sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
+      profileId:'user1',capability:'A'.repeat(43),
+      paymentSessionId:'00000000-0000-4000-8000-000000000001',
+      language:'en',selectedListId:null
+    }));
+  });
   await page.unroute('**/functions/v1/demo-story1-taxpay/authorizations?actor=*');
   await page.route('**/functions/v1/demo-story1-taxpay/authorizations?actor=*',route=>route.fulfill({
     status:200,contentType:'application/json',body:JSON.stringify({success:true,data:[row]})
