@@ -68,6 +68,14 @@ color:var(--color-taxpay-muted,#5f6b7a);cursor:pointer}
 .taxpayer-tin-lookup__tin-entry--segmented:focus-within {
   outline:2px solid #085587;outline-offset:2px;border-radius:8px;
 }
+/* Scoped, exact-digit focus for the unified Walk-in editor; other TIN journeys stay unchanged. */
+.taxpayer-tin-lookup__tin-entry--direct-edit:focus-within { outline:0; }
+.taxpayer-tin-lookup__tin-entry--direct-edit:focus-within > span.is-active {
+  border-color:#2c5ead;
+  background:#eaf2ff;
+  box-shadow:0 0 0 2px #2c5ead;
+  color:#143c79;
+}
 /* Preserve the tested Clear action without covering the final TIN digits. */
 .taxpayer-tin-lookup__search,
 .taxpayer-tin-lookup__search:disabled {

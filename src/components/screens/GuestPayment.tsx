@@ -2705,9 +2705,9 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
           )}
           {step === 1 ? (
             <>
-              <button type="button" className="tax-service-choice__cancel" onClick={onBackToService}>
+              {!unifiedFlow && <button type="button" className="tax-service-choice__cancel" onClick={onBackToService}>
                 <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
-              </button>
+              </button>}
               {(signedInAccount || unsignedGuestDrafts) && isPaymentDraftService(category) &&
                 <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />}
               <button type="button" className="tax-service-choice__continue" aria-label={unifiedFlow ? (language === 'bn' ? 'পেমেন্ট খাতে এগিয়ে যান' : 'Continue to Payment Head') : (language === 'bn' ? 'খাত ও পরিমাণে এগিয়ে যান' : 'Continue to purpose & amount')} onClick={handleStep1Next} disabled={!canContinueStep1}>

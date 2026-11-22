@@ -66,7 +66,7 @@ export function UnifiedTaxpayerWorkspace({
         onTinChange={value => {setDraftTin(value);setSearchedTin(null);}}
         onClear={() => {setDraftTin('');setSearchedTin(null);}}
         onSearch={() => setSearchedTin(draftTin)} canSearch={validTin}
-        maxTinLength={12} suggestedTins={[]} omitNameField submitOnEnter showClearButton={false}
+        maxTinLength={12} suggestedTins={[]} omitNameField submitOnEnter showClearButton={false} directDigitEdit
         searchLabel={tx('Search taxpayer TIN','করদাতার টিআইএন অনুসন্ধান')}
         inputTestId="unified-tin-input" segmentsTestId="unified-v5-tin-blocks"
         className="unified-taxpayer-workspace__shared-lookup"

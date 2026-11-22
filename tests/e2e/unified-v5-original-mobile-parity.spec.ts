@@ -31,18 +31,17 @@ test('approved v5 mobile footer keeps full button labels and original calculatio
   await expect(toHeads.locator('.payment-flow-embedded__action-long')).toBeVisible();
   await expect(toHeads.locator('.payment-flow-embedded__action-long')).toHaveText('Continue to Payment Head');
   await expect(toHeads.locator('.payment-flow-embedded__action-short')).toBeHidden();
-  // The original approved mobile footer uses two equally wide buttons,
-  // complete text (allowed to wrap), 12px font, and 9px corner radius.
+  // The newly approved Walk-in Step 1 has ONE footer CTA, without a
+  // redundant Back action. Header back/close and later-stage recovery remain.
   const footer=dialog.locator('.taxpay-modal__footer .payment-flow-embedded__footer-actions');
-  const back=footer.getByRole('button',{name:'Back'});
-  const [backBox,nextBox]=await Promise.all([back.boundingBox(),toHeads.boundingBox()]);
-  expect(backBox).not.toBeNull();
+  await expect(footer.getByRole('button',{name:'Back'})).toHaveCount(0);
+  await expect(footer.getByRole('button')).toHaveCount(1);
+  const nextBox=await toHeads.boundingBox();
   expect(nextBox).not.toBeNull();
-  expect(Math.abs(backBox!.width-nextBox!.width)).toBeLessThanOrEqual(3);
+  expect(nextBox!.width).toBeGreaterThan(0);
   await expect(toHeads).toHaveCSS('font-size','12px');
   await expect(toHeads).toHaveCSS('border-radius','9px');
   await expect(toHeads).toHaveCSS('background-color','rgb(45, 94, 172)');
-  await expect(back).toHaveCSS('background-color','rgb(255, 255, 255)');
   await toHeads.click();
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
   await expect(dialog.getByTestId('mobile-payment-calculation')).toHaveCount(0);
