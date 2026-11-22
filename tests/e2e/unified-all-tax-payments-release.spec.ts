@@ -9,6 +9,9 @@ test('unified walk-in directly replaces any TIN digit and keeps only the Continu
   await page.locator('.public-benefits__item[data-benefit="payments"]').click();
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await dialog.getByRole('button', { name: 'Walk-in Payment' }).click();
+  // The subtitle is flow context, not a non-clickable breadcrumb.
+  await expect(dialog.locator('.taxpay-modal__subtitle')).toHaveText('Walk-in Payment');
+  await expect(dialog.locator('.taxpay-modal__subtitle')).not.toContainText('›');
   const tin = dialog.getByTestId('unified-tin-input');
   const digits = dialog.getByTestId('unified-v5-tin-blocks').locator('span');
   await tin.fill('111111111111');
@@ -75,6 +78,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await dialog.getByRole('button', { name: 'Continue to Payment Head' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
+    await expect(dialog.locator('.taxpay-modal__subtitle')).toHaveText('Walk-in Payment');
     await expectFullWidthCta('Continue to Final Preview');
     // Keep the original modal header and thin progress; do not render extra visible step text.
     await expect(dialog.locator('.tax-service-choice__eyebrow')).toHaveCount(0);
@@ -139,6 +143,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await dialog.getByRole('button', { name: 'Continue to Final Preview' }).click();
 
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
+    await expect(dialog.locator('.taxpay-modal__subtitle')).toHaveText('Walk-in Payment');
     await expectFullWidthCta('Make Payment');
     await expect(dialog.getByTestId('payment-review')).toBeVisible();
     // Frozen v3 Step 3 uses one taxpayer-grouped payment table and working
