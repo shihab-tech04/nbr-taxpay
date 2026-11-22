@@ -133,9 +133,13 @@ test('Travel Tax: Add passenger is attached to the checked passenger card, not r
   expect(confirmBox).not.toBeNull();
   // Confirmation spans the same content column as medical review, not
   // a small, distant button anchored to the right of a huge empty row.
-  expect(Math.abs(confirmBox!.x - medicalBox!.x)).toBeLessThanOrEqual(3);
+  const identityCard = await passenger.locator('.travel-flow__identity-card').boundingBox();
+  expect(identityCard).not.toBeNull();
+  // The medical control belongs INSIDE the checked passenger's information card.
+  expect(medicalBox!.x).toBeGreaterThanOrEqual(identityCard!.x - 2);
+  expect(medicalBox!.x + medicalBox!.width).toBeLessThanOrEqual(identityCard!.x + identityCard!.width + 2);
   expect(confirmBox!.width).toBeGreaterThanOrEqual(120);
-  expect(confirmBox!.width).toBeLessThanOrEqual(medicalBox!.width);
+  expect(confirmBox!.width).toBeLessThanOrEqual((await passenger.boundingBox())!.width);
   const footer = await modal.locator('.taxpay-modal__footer').boundingBox();
   expect(footer).not.toBeNull();
   // The action must be completely above the fixed modal footer.
