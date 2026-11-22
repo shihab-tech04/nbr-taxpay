@@ -14,6 +14,7 @@ import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { getDemoStoryPaymentHistory, getPrivateSimulationHistory, type SimulationUser } from '../../services/simulatedPaymentsApi';
 import { rankFrequentTaxCategoryNames } from '../../services/paymentFrequentCategories';
+import '../../styles/taxpay-category-directory.css';
 
 export type OtherTaxTaxpayer = { id: string; tin: string; name: string };
 export type OtherTaxAllocation = {
@@ -36,7 +37,7 @@ const liability = V11_SOURCE_HEADS.filter(head =>
 const grouped = GROUP_ORDER.map(name => ({ name, rows: liability.filter(head => head.grpEn === name) }));
 // Both backend history APIs are owner/capability-scoped and read-only. Do not
 // rank by TIN, public fixtures, guessed preferences or browser cache.
-type CategoryHistory = { status: 'signed-out' | 'loading' | 'ready' | 'unavailable'; names: string[] };
+type CategoryHistory = { status: 'signed-out' | 'loading' | 'ready' | 'unavailable'; ownerKey: string; names: string[] };
 // Tax with Return shares the Walk-in catalogue UI; its one-year accounting
 // contract and original return service classification remain unchanged.
 const returnHead = V11_SOURCE_HEADS.find(head => head.id === RETURN_HEAD_ID &&
@@ -71,6 +72,8 @@ type Props = {
   unifiedV3?: boolean;
   /** New All Tax Payments v5 combines Return with other supported heads. */
   allowMixedReturn?: boolean;
+  /** The current payment journey is account-owned. Walk-in never shows account suggestions. */
+  showFrequentCategories?: boolean;
   /** Optional challan comments stay inside the editor scroll column. */
   remarks?: React.ReactNode;
   focusRequest?: { lineId: string; requestId: number } | null;
@@ -80,29 +83,32 @@ type Props = {
   originalFacilitation?: boolean;
 };
 
-export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, serviceSelection, unifiedV3 = false, allowMixedReturn = false, remarks, focusRequest, onFocusLine, originalFacilitation = false }: Props) {
+export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTaxpayerIds, maskTaxpayerTin = false, preserveSourcePaymentAmounts = false, onChange, error, summary, serviceSelection, unifiedV3 = false, allowMixedReturn = false, showFrequentCategories = false, remarks, focusRequest, onFocusLine, originalFacilitation = false }: Props) {
   const bn = language === 'bn';
   const tx = (en: string, bangla: string) => bn ? bangla : en;
   const { previewAccount } = useTaxState();
   const { user } = useAccountIdentity();
-  const [categoryHistory, setCategoryHistory] = useState<CategoryHistory>({ status: 'signed-out', names: [] });
+  // Partition pending/ready history by its actual account, not a recipient TIN.
+  const ownerKey = previewAccount?.id ? 'preview:' + previewAccount.id : user?.id ? 'user:' + user.id : '';
+  const [categoryHistory, setCategoryHistory] = useState<CategoryHistory>({ status: 'signed-out', ownerKey: '', names: [] });
   useEffect(() => {
-    if (!allowMixedReturn) return;
-    let current = true;
-    if (!previewAccount?.id && !user?.id) {
-      setCategoryHistory({ status: 'signed-out', names: [] });
-      return () => { current = false; };
+    // Even a signed-in user who intentionally selected Walk-in must not
+    // request account history or see personalized categories here.
+    if (!allowMixedReturn || !showFrequentCategories || !ownerKey) {
+      setCategoryHistory({ status: 'signed-out', ownerKey: '', names: [] });
+      return;
     }
-    setCategoryHistory({ status: 'loading', names: [] });
+    let current = true;
+    setCategoryHistory({ status: 'loading', ownerKey, names: [] });
     const history = previewAccount?.id
       ? getDemoStoryPaymentHistory(previewAccount.id as SimulationUser, 'payer')
       : getPrivateSimulationHistory('payer');
     history.then(transactions => {
       if (!current) return;
-      setCategoryHistory({ status: 'ready', names: rankFrequentTaxCategoryNames(transactions) });
-    }).catch(() => { if (current) setCategoryHistory({ status: 'unavailable', names: [] }); });
+      setCategoryHistory({ status: 'ready', ownerKey, names: rankFrequentTaxCategoryNames(transactions) });
+    }).catch(() => { if (current) setCategoryHistory({ status: 'unavailable', ownerKey, names: [] }); });
     return () => { current = false; };
-  }, [allowMixedReturn, previewAccount?.id, user?.id]);
+  }, [allowMixedReturn, showFrequentCategories, ownerKey, previewAccount?.id]);
   const [query, setQuery] = useState('');
   const [allocationLimitError, setAllocationLimitError] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
