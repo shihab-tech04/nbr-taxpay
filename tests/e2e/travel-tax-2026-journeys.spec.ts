@@ -819,6 +819,48 @@ test('Travel Tax: medical assessment option survives passport check and passenge
 });
 
 
+
+for (const [language, project] of [['en', 'desktop-1280'], ['bn', 'mobile-375']] as const) {
+  test('TT-01/02: Travel Tax zero-preview group completes without payment or challan ('+language+')', async ({page}, info) => {
+    test.skip(info.project.name !== project, 'Represent desktop English and mobile Bengali');
+    await page.goto(language === 'bn' ? '/?lang=bn' : '/');
+    await openTravelTaxFromBanner(page);
+    const modal = page.locator('.taxpay-modal:visible').first();
+    const nextPassenger = language === 'bn' ? 'যাত্রী যোগ করুন' : 'Add passenger';
+    const nextTravel = language === 'bn' ? 'ভ্রমণের তথ্য দিতে এগিয়ে যান' : 'Continue to travel details';
+    const nextReview = language === 'bn' ? 'পেমেন্ট পর্যালোচনায় যান' : 'Continue to review';
+    await modal.locator('#travel-passport-first').fill('TEST230006');
+    await modal.locator('#travel-lookup-first').click();
+    await modal.getByRole('button', {name:nextPassenger, exact:true}).click();
+    await modal.getByRole('button', {name:nextTravel}).click();
+    await modal.locator('#travel-port').selectOption('Benapole');
+    await modal.locator('#travel-destination').fill('India');
+    await modal.locator('#travel-departure-date').fill(futureTravelDate);
+    await modal.getByRole('button', {name:nextReview}).click();
+    const total = modal.getByTestId('travel-currency').last();
+    await expect(total).toBeVisible();
+    await expect(total.locator('svg.travel-currency__mark')).toBeVisible();
+    await expect(total).toContainText('৳');
+    await expect(modal.getByTestId('travel-preview-receipt-contact')).toHaveCount(0);
+    const finish = modal.getByTestId('travel-zero-tax-finish');
+    await expect(finish).toBeEnabled();
+    await finish.click();
+    await expect(modal.getByTestId('travel-zero-tax-result')).toBeVisible();
+    await expect(modal.getByTestId('travel-zero-tax-result')).toContainText(
+      language === 'bn' ? 'কোনো পেমেন্ট করা হয়নি' : 'No payment was made');
+    await expect(modal.locator('.receipt-view')).toHaveCount(0);
+    await expect(modal.locator('#travel-mobile')).toHaveCount(0);
+    await expect(modal.getByTestId('travel-payment-channel-screen')).toHaveCount(0);
+    await modal.screenshot({animations:'disabled'});
+    await modal.getByRole('button', {name:language==='bn'?'ফিরুন':'Back',exact:true}).click();
+    await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','3');
+    await modal.getByTestId('travel-zero-tax-finish').click();
+    await modal.getByRole('button', {name:language==='bn'?'আরেকটি ভ্রমণ পর্যালোচনা শুরু করুন':'Start another travel review'}).click();
+    await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
+    await expect(modal.locator('#travel-passport-first')).toHaveValue('');
+  });
+}
+
 test('Travel Tax: Bangla journey validates, edits and shows the shared receipt without clipping', async ({ page }) => {
   await page.goto('/?lang=bn');
   await openTravelTaxFromBanner(page);
