@@ -214,8 +214,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const { user: authenticatedUser } = useAccountIdentity();
   // The standalone guest route can also be visited from a signed-in session.
   const signedInAccount = withAccount || Boolean(authenticatedUser || previewAccount);
-  // Only show unsigned guest draft actions after their existing WS3 session API responds.
-  const unsignedGuestDrafts = !signedInAccount && backendConfigured;
+  // Drafts belong to signed-in account payments. Walk-in payments must never
+  // offer Save Draft or register a guest draft-save callback on exit, even when
+  // the public backend and its optional guest capability are available.
+  const unsignedGuestDrafts = false;
   const accountTaxpayer = usePaymentAccountProfile(signedInAccount ? authenticatedUser?.id ?? null : null, signedInAccount ? previewAccount : null);
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const commonCopy = UI_STRINGS[language];
