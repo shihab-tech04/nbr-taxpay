@@ -304,8 +304,9 @@ test('taxpayer mobile menu matches the compact desktop destinations and keeps ex
   for(const [label,route] of destinations){
     await page.getByRole('button',{name:'Open menu'}).first().click();
     const dialog=page.getByRole('dialog',{name:'Services & menu'});
-    await expect(dialog.locator('.citizen-dialog__link:visible')).toHaveCount(9);
+    await expect(dialog.locator('.citizen-dialog__link:visible')).toHaveCount(10);
     await expect(dialog.getByRole('button',{name:'Travel Tax',exact:true})).toBeVisible();
+    await expect(dialog.getByRole('button',{name:'Gift Tax',exact:true})).toBeVisible();
     await expect(dialog.getByRole('button',{name:'Tax Credit Certificates'})).toBeVisible();
     await expect(dialog.getByRole('button',{name:'Correction Requests'})).toHaveCount(0);
     await expect(dialog.getByRole('button',{name:'Beneficiaries'})).toBeVisible();
