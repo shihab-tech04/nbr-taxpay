@@ -929,11 +929,18 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
           {step === 0 && !createdReceipt && <section className="travel-flow__panel" aria-label={tr('Passenger information', 'যাত্রীর তথ্য')}>
             <PaymentFormSection number={1} title={tr('Passenger information', 'যাত্রীর তথ্য')} hideHeading={embedded}>
               <div className="travel-flow__party" data-testid="travel-passenger-list">
+                <div className="travel-flow__party-summary-heading">
+                  <h3>{tr('Passengers in this payment', 'এই পেমেন্টে যাত্রীরা')}</h3>
+                  <strong aria-label={tr('Confirmed passengers', 'নিশ্চিত যাত্রীর সংখ্যা')}>{confirmedPassengerIds.length}</strong>
+                </div>
+                {confirmedPassengerIds.length === 0 && <div className="travel-flow__party-empty" role="status">
+                  <p>{tr('No passengers added yet', 'এখনো কোনো যাত্রী যোগ করা হয়নি')}</p>
+                </div>}
                 {passengers.map((item, index) => {
                   const editing = editingPassengerId === item.id || (!item.name.trim() && index === 0);
                   const valid = !invalidPassengerIds.has(item.id);
                   const assessment = assessments[index]?.assessment;
-                  return <section key={item.id} className="travel-flow__person" data-passenger-id={item.id}
+                  return <section key={item.id} className={'travel-flow__person ' + (editing ? 'travel-flow__person--editing' : 'travel-flow__person--saved')} data-passenger-id={item.id}
                     data-complete={valid && confirmedPassengerIds.includes(item.id) ? 'true' : 'false'}>
                     <div className="travel-flow__person-header">
                       <h3>{tr('Passenger ', 'যাত্রী ')}{index + 1}</h3>
@@ -1013,9 +1020,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     {tr('Undo removal', 'বাদ দেওয়া বাতিল করুন')}
                   </button>
                 </div>}
-              </div>
               {confirmedPassengerIds.length > 0 && allPassengersComplete && <button
-                type="button" className="travel-flow__add-member" onClick={() => {
+                type="button" className="travel-flow__add-member travel-flow__add-another" onClick={() => {
                   const id = crypto.randomUUID();
                   setPassengers(existing => [...existing, makeTravelPassenger(id, 'BD')]);
                   setEditingPassengerId(id); setPassengerIssue(null); setAcknowledged(false);
@@ -1025,6 +1031,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 }}>
                 <Plus size={18} aria-hidden="true"/>{tr('Add another passenger', 'আরেকজন যাত্রী যোগ করুন')}
               </button>}
+              </div>
             </PaymentFormSection>
           </section>}
 
