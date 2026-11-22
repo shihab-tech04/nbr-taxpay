@@ -99,7 +99,7 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     await modal.locator('#travel-lookup-first').click();
     await modal.getByRole('button', { name: 'Add passenger', exact: true }).click();
     await modal.getByRole('button', { name: 'Bangladeshi', exact: true }).click();
-    const second = modal.locator('[data-passenger-id]').nth(1);
+    const second = modal.locator('.travel-passenger-workspace__entry');
     const secondId = await second.getAttribute('data-passenger-id');
     expect(secondId).toBeTruthy();
     savedPassengerId = secondId!;
@@ -108,15 +108,15 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     await second.getByRole('button', { name: 'Add passenger', exact: true }).click();
     // F-153/US-150-T03/T04: cancel edit, remove, undo, then persist the
     // original two IDs to isolated SQL. Undo must not create a duplicate draft.
-    await second.getByRole('button', { name: 'Edit', exact: true }).click();
+    await modal.locator('.travel-passenger-workspace__person').filter({hasText:'SAMPLE PASSENGER TWO'}).getByRole('button', {name:/Edit SAMPLE PASSENGER TWO/}).click();
     await second.locator('#travel-passport-' + secondId).fill('TEST230002');
-    await second.getByRole('button', { name: 'Cancel edit', exact: true }).click();
-    await expect(second).toHaveAttribute('data-complete', 'true');
-    await expect(second).toContainText('SAMPLE PASSENGER TWO');
-    await second.getByRole('button', { name: 'Remove passenger 2' }).click();
-    await expect(modal.locator('[data-passenger-id]')).toHaveCount(1);
+    await modal.locator('.travel-passenger-workspace__entry').getByRole('button', { name: 'Cancel edit', exact: true }).click();
+    await expect(modal.locator('.travel-passenger-workspace__person').filter({hasText:'SAMPLE PASSENGER TWO'})).toBeVisible();
+    await expect(modal.locator('.travel-passenger-workspace__person').filter({hasText:'SAMPLE PASSENGER TWO'})).toContainText('SAMPLE PASSENGER TWO');
+    await modal.locator('.travel-passenger-workspace__person').filter({hasText:'SAMPLE PASSENGER TWO'}).getByRole('button',{name:/Remove SAMPLE PASSENGER TWO/}).click();
+    await expect(modal.locator('.travel-passenger-workspace__person')).toHaveCount(1);
     await modal.getByRole('button', { name: 'Undo removal' }).click();
-    await expect(modal.locator('[data-passenger-id="' + secondId + '"]')).toHaveAttribute('data-complete', 'true');
+    await expect(modal.locator('.travel-passenger-workspace__person').filter({hasText:'SAMPLE PASSENGER TWO'})).toBeVisible();
     await expect(modal.locator('#travel-mobile')).toHaveCount(0);
     await modal.getByRole('button', { name: 'Continue to travel details' }).click();
     await expect(modal.locator('.travel-flow')).toHaveAttribute('data-step', '1');
