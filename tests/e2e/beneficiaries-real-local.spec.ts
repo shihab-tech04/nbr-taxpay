@@ -1,5 +1,6 @@
 import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
+import {setWorkspaceLanguage} from './workspace-language';
 import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
@@ -525,5 +526,224 @@ test('F-059 Others description enforces the 1–80 character boundary in UI and 
     }
   }finally{
     await context.close();
+  }
+});
+
+// F-060: every approved category/relation pair must persist through owner SQL
+// and render its single final label in English and Bengali.
+test('F-060 supported beneficiary categories persist and recover without duplicate final tags',async({browser})=>{
+  test.setTimeout(150_000);
+  const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL, key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+  const dsn=process.env.TAXPAY_LOCAL_PG_DSN;
+  if(!raw||!key||!dsn)throw new Error('BLOCKED: disposable local Supabase credentials required');
+  const api=new URL(raw), database=new URL(dsn);
+  if(api.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(api.hostname))
+    throw new Error('Refusing non-loopback beneficiary acceptance');
+  if((database.protocol!=='postgres:'&&database.protocol!=='postgresql:')||
+    !['localhost','127.0.0.1','[::1]'].includes(database.hostname))
+    throw new Error('Refusing non-loopback beneficiary SQL fixture');
+
+  const email='beneficiary-f060-'+randomUUID()+'@example.invalid';
+  const password=randomBytes(32).toString('base64url');
+  const signup=await fetch(new URL('/auth/v1/signup',api.origin),{
+    method:'POST',headers:{apikey:key,'Content-Type':'application/json'},
+    body:JSON.stringify({email,password}),
+    signal:AbortSignal.timeout(15000),
+  });
+  expect(signup.status).toBe(200);
+  const signed=await signup.json();
+  expect(signed.user?.id).toBeTruthy();
+  const ownerId=signed.user.id as string;
+  const initialSession=signed.session??signed;
+  expect(initialSession.access_token).toBeTruthy();
+  const signIn=async()=>{
+    const response=await fetch(new URL('/auth/v1/token?grant_type=password',api.origin),{
+      method:'POST',headers:{apikey:key,'Content-Type':'application/json'},
+      body:JSON.stringify({email,password}),
+      signal:AbortSignal.timeout(15000),
+    });
+    expect(response.status).toBe(200);
+    const value=await response.json();
+    expect(value.user?.id).toBe(ownerId);
+    expect(value.access_token).toBeTruthy();
+    expect(value.refresh_token).toBeTruthy();
+    return value;
+  };
+  const loginUrl=(session:{access_token:string;refresh_token:string;expires_at?:number})=>
+    '/?action=beneficiaries#access_token='+encodeURIComponent(session.access_token)+
+    '&refresh_token='+encodeURIComponent(session.refresh_token)+
+    '&token_type=bearer&expires_in=3600&expires_at='+
+    (session.expires_at??Math.floor(Date.now()/1000)+3600);
+
+  const choices=[
+    {value:'clients',tag:'clients',relationship:null,other_label:null,en:'Clients',bn:'ক্লায়েন্ট'},
+    {value:'friends_family:father',tag:'friends_family',relationship:'father',other_label:null,en:'Father',bn:'বাবা'},
+    {value:'friends_family:mother',tag:'friends_family',relationship:'mother',other_label:null,en:'Mother',bn:'মা'},
+    {value:'friends_family:siblings',tag:'friends_family',relationship:'siblings',other_label:null,en:'Siblings',bn:'ভাইবোন'},
+    {value:'friends_family:son',tag:'friends_family',relationship:'son',other_label:null,en:'Son',bn:'ছেলে'},
+    {value:'friends_family:daughter',tag:'friends_family',relationship:'daughter',other_label:null,en:'Daughter',bn:'মেয়ে'},
+    {value:'friends_family:spouse',tag:'friends_family',relationship:'spouse',other_label:null,en:'Spouse',bn:'স্বামী/স্ত্রী'},
+    {value:'friends_family:friends',tag:'friends_family',relationship:'friends',other_label:null,en:'Friends',bn:'বন্ধু'},
+    {value:'others',tag:'others',relationship:null,other_label:'Service contact',en:'Service contact',bn:'Service contact'},
+  ] as const;
+  const records=choices.map((choice,index)=>({
+    ...choice,tin:String(765432109000+index),name:'F060 Person '+(index+1),
+  }));
+  type SavedRow={id:string;owner_uid:string;list_id:string;tin:string;display_name:string;
+    tag:string|null;relationship:string|null;other_label:string|null};
+  const read=async(token:string)=>{
+    const url=new URL('/rest/v1/taxpay_beneficiaries',api.origin);
+    url.searchParams.set('select','id,owner_uid,list_id,tin,display_name,tag,relationship,other_label');
+    url.searchParams.set('owner_uid','eq.'+ownerId);
+    url.searchParams.set('order','tin.asc');
+    const response=await fetch(url,{headers:{apikey:key,Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)});
+    expect(response.status).toBe(200);
+    return response.json() as Promise<SavedRow[]>;
+  };
+  const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:375,height:812}});
+  const closeContext=async(value:import('@playwright/test').BrowserContext)=>{
+    if(test.info().status!=='timedOut')await value.close();
+  };
+  try{
+    const page=await context.newPage();
+    await page.goto(loginUrl(initialSession));
+    await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+    await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
+    console.info('[F060] owner session and beneficiary UI ready');
+    for(let index=0;index<records.length;index++){
+      const record=records[index];
+      console.info('[F060] adding '+record.value);
+      await page.getByRole('button',{name:'Add beneficiary',exact:true}).first().click();
+      const dialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+      await expect(dialog).toBeVisible();
+      console.info('[F060] add form opened');
+      await dialog.locator('#beneficiary-tin').fill(record.tin);
+      await dialog.locator('#beneficiary-name').fill(record.name);
+      console.info('[F060] taxpayer identity entered');
+      await dialog.locator('#beneficiary-tag').click();
+      const optionRoot=dialog.locator('#beneficiary-tag-options');
+      const options=optionRoot.locator('[role="option"]');
+      console.info('[F060] category menu opened with '+await options.count()+' options');
+      if(index===0){
+        const values=await options.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-option-value')).filter(Boolean).sort());
+        expect(values).toEqual(choices.map(choice=>choice.value).sort());
+      }
+      await optionRoot.locator('[role="option"][data-option-value="'+record.value+'"]').click();
+      console.info('[F060] category selected '+record.value);
+      if(record.tag==='others')await dialog.locator('#beneficiary-other-label').fill(record.other_label!);
+      if(index===0)await dialog.locator('#beneficiary-new-list-name').fill('F060 supported categories');
+      console.info('[F060] required category details entered');
+      await dialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+      console.info('[F060] add submitted '+record.value);
+      await expect(page.getByText('Beneficiary saved.',{exact:true})).toBeVisible({timeout:15000});
+      console.info('[F060] saved '+record.value);
+    }
+
+    const directory=page.getByTestId('beneficiary-directory-mobile');
+    await expect(directory.locator('li')).toHaveCount(records.length);
+    const initialRows=await read(initialSession.access_token);
+    expect(initialRows).toHaveLength(records.length);
+    expect(new Set(initialRows.map(row=>row.id)).size).toBe(records.length);
+    expect(new Set(initialRows.map(row=>row.list_id)).size).toBe(1);
+    console.info('[F060] all nine owner SQL rows and mobile labels verified');
+    for(const record of records){
+      const saved=initialRows.find(row=>row.tin===record.tin);
+      expect(saved).toMatchObject({
+        owner_uid:ownerId,tin:record.tin,display_name:record.name,
+        tag:record.tag,relationship:record.relationship,other_label:record.other_label,
+      });
+      const item=directory.locator('li').filter({hasText:record.name});
+      const title=item.locator('.taxpay-mobile-table-card__title span').first();
+      await expect(title).toHaveText(record.name+' · '+record.en);
+      expect((await title.innerText()).split(record.en)).toHaveLength(2);
+      expect(await title.innerText()).not.toContain('Friends & family members');
+    }
+    console.info('[F060] approved desktop directory verified');
+
+    // The approved desktop directory uses the same final labels and one row per saved record.
+    await page.setViewportSize({width:1280,height:900});
+    const desktop=page.getByTestId('beneficiary-directory-desktop');
+    await expect(desktop).toBeVisible();
+    await expect(desktop.locator('tbody tr')).toHaveCount(records.length);
+    for(const record of records){
+      const row=desktop.locator('tbody tr').filter({hasText:record.name});
+      await expect(row.locator('.taxpayer-transaction-row__title')).toHaveText(record.name+' · '+record.en);
+    }
+    await page.setViewportSize({width:375,height:812});
+
+    // An unsupported relation must be rejected by SQL and leave the saved row intact.
+    const fatherRecord=records.find(record=>record.value==='friends_family:father')!;
+    const fatherBefore=initialRows.find(row=>row.tin===fatherRecord.tin)!;
+    const invalidUrl=new URL('/rest/v1/taxpay_beneficiaries',api.origin);
+    invalidUrl.searchParams.set('id','eq.'+fatherBefore.id);
+    const rejected=await fetch(invalidUrl,{
+      method:'PATCH',headers:{apikey:key,Authorization:'Bearer '+initialSession.access_token,
+        'Content-Type':'application/json',Prefer:'return=representation'},
+      body:JSON.stringify({relationship:'cousin'}),
+      signal:AbortSignal.timeout(15000),
+    });
+    expect(rejected.status).toBe(400);
+    expect(await rejected.text()).toContain('taxpay_beneficiary_fixed_tag_pair');
+    expect(await read(initialSession.access_token)).toEqual(initialRows);
+    console.info('[F060] unsupported relation rejected without row mutation');
+
+    // Cancel leaves Father saved; retrying the edit to Mother preserves owner, row and list.
+    const fatherItem=directory.locator('li').filter({hasText:fatherRecord.name});
+    await fatherItem.getByRole('button',{name:'Edit',exact:true}).click();
+    const cancelledEditor=page.getByRole('dialog',{name:'Edit beneficiary'});
+    await chooseBeneficiaryOption(cancelledEditor,'beneficiary-edit-tag','friends_family:mother');
+    await cancelledEditor.getByRole('button',{name:'Cancel',exact:true}).click();
+    await expect(cancelledEditor).toBeHidden();
+    expect(await read(initialSession.access_token)).toEqual(initialRows);
+    await expect(fatherItem.locator('.taxpay-mobile-table-card__title span').first()).toHaveText(fatherRecord.name+' · Father');
+    console.info('[F060] cancelled edit preserved Father');
+
+    await fatherItem.getByRole('button',{name:'Edit',exact:true}).click();
+    const retryEditor=page.getByRole('dialog',{name:'Edit beneficiary'});
+    await chooseBeneficiaryOption(retryEditor,'beneficiary-edit-tag','friends_family:mother');
+    await retryEditor.getByRole('button',{name:'Save changes',exact:true}).click();
+    await expect(page.getByText('Beneficiary details updated.',{exact:true})).toBeVisible({timeout:15000});
+    await expect(retryEditor).toBeHidden();
+    const savedRows=await read(initialSession.access_token);
+    expect(savedRows).toHaveLength(records.length);
+    const updatedFather=savedRows.find(row=>row.tin===fatherRecord.tin)!;
+    expect(updatedFather).toMatchObject({
+      id:fatherBefore.id,owner_uid:fatherBefore.owner_uid,list_id:fatherBefore.list_id,
+      tin:fatherBefore.tin,display_name:fatherBefore.display_name,tag:'friends_family',relationship:'mother',other_label:null,
+    });
+    await expect(directory.locator('li').filter({hasText:fatherRecord.name})
+      .locator('.taxpay-mobile-table-card__title span').first()).toHaveText(fatherRecord.name+' · Mother');
+    console.info('[F060] retry saved Mother on the same row and list');
+
+    // A fresh same-owner login reads every exact row, then the same final tags in Bengali.
+    const freshSession=await signIn();
+    const freshContext=await browser.newContext({
+      baseURL:'http://127.0.0.1:4173',viewport:{width:375,height:812},storageState:{cookies:[],origins:[]},
+    });
+    try{
+      const freshPage=await freshContext.newPage();
+      await freshPage.goto(loginUrl(freshSession));
+      await expect(freshPage.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+      const freshDirectory=freshPage.getByTestId('beneficiary-directory-mobile');
+      await expect(freshDirectory.locator('li')).toHaveCount(records.length);
+      expect(await read(freshSession.access_token)).toEqual(savedRows);
+      for(const record of records){
+        const label=record.value==='friends_family:father'?'Mother':record.en;
+        await expect(freshDirectory.locator('li').filter({hasText:record.name})
+          .locator('.taxpay-mobile-table-card__title span').first()).toHaveText(record.name+' · '+label);
+      }
+      console.info('[F060] fresh same-owner English readback verified');
+      await setWorkspaceLanguage(freshPage,'bn');
+      for(const record of records){
+        const label=record.value==='friends_family:father'?'মা':record.bn;
+        await expect(freshDirectory.locator('li').filter({hasText:record.name})
+          .locator('.taxpay-mobile-table-card__title span').first()).toHaveText(record.name+' · '+label);
+      }
+      console.info('[F060] fresh same-owner Bengali readback verified');
+    }finally{
+      await closeContext(freshContext);
+    }
+  }finally{
+    await closeContext(context);
   }
 });
