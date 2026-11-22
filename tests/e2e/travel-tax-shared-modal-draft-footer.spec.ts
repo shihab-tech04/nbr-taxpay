@@ -12,7 +12,7 @@ async function previewLogin(page:Page) {
 
 async function assertUnifiedTravel(modal:Locator, width:number) {
   await expect(modal).toBeVisible();
-  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passengers and receipt details');
+  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passenger information');
   await expect(modal.locator('.tax-service-choice--travel')).toHaveCount(0);
   await expect(modal.locator('.tax-service-choice__selected-service')).toHaveCount(0);
   await expect(modal.locator('.travel-flow')).toBeVisible();
@@ -30,8 +30,8 @@ async function assertUnifiedTravel(modal:Locator, width:number) {
   const [left,right,bar]=await Promise.all([save.boundingBox(),next.boundingBox(),footer.boundingBox()]);
   expect(left && right && bar).toBeTruthy();
   if (left && right && bar) {
-    expect(Math.abs(left.y-right.y),'aligned footer actions at '+width+'px').toBeLessThan(7);
-    expect(left.x+left.width,'Save Draft is left of Continue').toBeLessThanOrEqual(right.x+2);
+    expect(left.y + left.height,'Save Draft precedes the full-width primary action at '+width+'px').toBeLessThanOrEqual(right.y+2);
+    expect(right.width,'Continue fills the footer at '+width+'px').toBeGreaterThanOrEqual(bar.width-60);
     expect(right.x+right.width,'Continue stays inside modal').toBeLessThanOrEqual(bar.x+bar.width+2);
   }
   const formWidth=await modal.locator('.travel-flow__main').evaluate(node=>node.getBoundingClientRect().width);
@@ -78,7 +78,7 @@ test('Bengali Travel Tax retains identical stage heading and single primary foot
  await page.goto('/?action=landing&lang=bn');
  await openTravelTaxFromBanner(page);
  const modal=page.getByRole('dialog',{name:'ভ্রমণ কর'});
- await expect(modal.locator('.taxpay-modal__title')).toHaveText('যাত্রী ও রসিদের তথ্য');
+ await expect(modal.locator('.taxpay-modal__title')).toHaveText('যাত্রীর তথ্য');
  await expect(modal.getByTestId('travel-passenger-list')).toBeVisible();
  await expect(modal.locator('.tax-service-choice__selected-service')).toHaveCount(0);
  await expect(modal.locator('.taxpay-modal__footer .travel-flow__primary')).toHaveCount(1);
