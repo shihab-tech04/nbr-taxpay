@@ -290,7 +290,7 @@
 
 /* Small labels are deliberately limited to genuine secondary/meta roles.
  * Under no circumstances use the 12px tier for required input labels. */
-.taxpay-citizen-shell :is(
+.taxpay-citizen-shell.taxpay-citizen-shell :is(
   .taxpay-type-micro,.taxpay-bento-year__legend,.taxpay-bento-year__label,
   .taxpay-bento-year__value,.taxpay-bento-position__totals dt,
   .taxpay-unified-chart__axis,.taxpay-table-column-hint,
