@@ -98,7 +98,7 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     await modal.locator('#travel-passport-first').fill('TEST123456');
     await modal.locator('#travel-lookup-first').click();
     await modal.getByRole('button', { name: 'Add passenger', exact: true }).click();
-    await modal.getByRole('button', { name: 'Add another passenger' }).click();
+    await modal.getByRole('button', { name: 'Bangladeshi', exact: true }).click();
     const second = modal.locator('[data-passenger-id]').nth(1);
     const secondId = await second.getAttribute('data-passenger-id');
     expect(secondId).toBeTruthy();
