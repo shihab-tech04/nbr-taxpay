@@ -79,11 +79,18 @@ test('Travel Tax resends the identical payment after a lost response ' +
   await modal.getByRole('button', { name: 'Add passenger', exact: true }).click();
   await fillTravelDetails(modal);
   await modal.getByRole('button', { name: 'Continue to review' }).click();
+  // The approved four-stage redesign moved receipt contact into Final Preview.
+  // Keep the payment disabled without a valid 01-prefixed 11-digit number.
+  const confirmPreview = modal.getByRole('button', { name: 'Confirm preview payment' });
+  await expect(confirmPreview).toBeDisabled();
+  await expect(modal.locator('#travel-mobile')).toBeVisible();
+  await modal.locator('#travel-mobile').fill('01712345678');
   await modal.getByRole('button', { name: 'Pay online' }).click();
   await modal.getByRole('button', { name: 'Mobile banking' }).click();
   await modal.getByRole('radio', { name: 'Nagad' }).check();
   await modal.getByLabel(/I confirm the travel information/).check();
   const submit = modal.getByRole('button', { name: 'Confirm preview payment' });
+  await expect(submit).toBeEnabled();
   await submit.click();
   await expect(modal.getByRole('alert')).toContainText('Retry with the same details');
   if (refresh) {
