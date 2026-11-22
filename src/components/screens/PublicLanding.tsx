@@ -19,7 +19,7 @@ const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
 ]);
 
 export const PublicLanding: React.FC = () => {
-  const { language, navigate, openPaymentServiceChoice, openAllTaxPayments, isPaymentServiceChoiceOpen } = useTaxState();
+  const { language, navigate, openAllTaxPayments, isPaymentServiceChoiceOpen } = useTaxState();
   const [openService, setOpenService] = useState<PublicService | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -55,7 +55,8 @@ export const PublicLanding: React.FC = () => {
   const bn = language === 'bn';
   const t = (en: string, bangla: string) => bn ? bangla : en;
 
-  // Preserve the original hero Pay Tax chooser; the first benefit starts the separate unified flow.
+  // The banner and All Tax Payments benefit now share the approved parallel entry.
+  // Preserve the original payment flow implementation without changing its behavior.
   const citizenBenefits = [
     {
       id: 'payments',
@@ -98,7 +99,7 @@ export const PublicLanding: React.FC = () => {
   return <div className={'citizen-public-hub public-information-hub public-home-sections mx-auto w-full' + (bn ? ' font-bengali' : '')}>
     <PublicHeroCarousel
       language={language}
-      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
+      onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openAllTaxPayments()}
       onGiftTax={() => setOpenService('gift')}
       paused={isPaymentServiceChoiceOpen || openService !== null}
     />
