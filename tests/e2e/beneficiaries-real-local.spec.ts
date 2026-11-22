@@ -747,3 +747,170 @@ test('F-060 supported beneficiary categories persist and recover without duplica
     await closeContext(context);
   }
 });
+
+// F-061 scoped SQL-first evidence: one owner's search/filter result must be an
+// exact subset of that owner's SQL rows on the approved desktop/mobile views.
+test('F-061 beneficiary search and filters match owner-scoped SQL rows',async({browser})=>{
+  test.setTimeout(120_000);
+  const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL, key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+  const dsn=process.env.TAXPAY_LOCAL_PG_DSN;
+  if(!raw||!key||!dsn)throw new Error('BLOCKED: disposable local Supabase credentials required');
+  const api=new URL(raw), database=new URL(dsn);
+  if(api.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(api.hostname))
+    throw new Error('Refusing non-loopback beneficiary acceptance');
+  if((database.protocol!=='postgres:'&&database.protocol!=='postgresql:')||
+    !['localhost','127.0.0.1','[::1]'].includes(database.hostname))
+    throw new Error('Refusing non-loopback beneficiary SQL fixture');
+
+  type Session={access_token:string;refresh_token:string;expires_at?:number};
+  type User={id:string;email:string;session:Session};
+  type List={id:string;owner_uid:string;name:string};
+  type SavedRow={id:string;owner_uid:string;list_id:string;tin:string;display_name:string;
+    tag:string|null;relationship:string|null;other_label:string|null};
+  const createUser=async():Promise<User>=>{
+    const email='beneficiary-f061-'+randomUUID()+'@example.invalid';
+    const password=randomBytes(32).toString('base64url');
+    const response=await fetch(new URL('/auth/v1/signup',api.origin),{
+      method:'POST',headers:{apikey:key,'Content-Type':'application/json'},
+      body:JSON.stringify({email,password}),signal:AbortSignal.timeout(15000),
+    });
+    const body=await response.text();
+    expect(response.status,body).toBe(200);
+    const signed=JSON.parse(body);
+    expect(signed.user?.id).toBeTruthy();
+    const session=signed.session??signed;
+    expect(session.access_token).toBeTruthy();
+    expect(session.refresh_token).toBeTruthy();
+    return {id:signed.user.id,email,session};
+  };
+  const ownerA=await createUser(),ownerB=await createUser();
+  expect(ownerA.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  expect(ownerB.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  const loginUrl=(session:Session)=>
+    '/?action=beneficiaries#access_token='+encodeURIComponent(session.access_token)+
+    '&refresh_token='+encodeURIComponent(session.refresh_token)+
+    '&token_type=bearer&expires_in=3600&expires_at='+
+    (session.expires_at??Math.floor(Date.now()/1000)+3600);
+  const insert=async<T>(table:string,token:string,columns:string,payload:unknown):Promise<T[]>=>{
+    const url=new URL('/rest/v1/'+table,api.origin);
+    url.searchParams.set('select',columns);
+    const response=await fetch(url,{
+      method:'POST',
+      headers:{apikey:key,Authorization:'Bearer '+token,'Content-Type':'application/json',Prefer:'return=representation'},
+      body:JSON.stringify(payload),signal:AbortSignal.timeout(15000),
+    });
+    const body=await response.text();
+    expect(response.status,body).toBe(201);
+    return JSON.parse(body) as T[];
+  };
+  const listsA=await insert<List>('taxpay_beneficiary_lists',ownerA.session.access_token,
+    'id,owner_uid,name',[
+      {owner_uid:ownerA.id,name:'F061 Alpha'},
+      {owner_uid:ownerA.id,name:'F061 Beta'},
+    ]);
+  const listsB=await insert<List>('taxpay_beneficiary_lists',ownerB.session.access_token,
+    'id,owner_uid,name',[{owner_uid:ownerB.id,name:'F061 Private'}]);
+  expect(listsA).toHaveLength(2);
+  expect(listsB).toHaveLength(1);
+  const alpha=listsA.find(list=>list.name==='F061 Alpha')!;
+  const beta=listsA.find(list=>list.name==='F061 Beta')!;
+  const rowsA=await insert<SavedRow>('taxpay_beneficiaries',ownerA.session.access_token,
+    'id,owner_uid,list_id,tin,display_name,tag,relationship,other_label',[
+      {owner_uid:ownerA.id,list_id:alpha.id,tin:'765432100001',display_name:'F061 Zahra',tag:'clients',relationship:null,other_label:null},
+      {owner_uid:ownerA.id,list_id:alpha.id,tin:'765432100002',display_name:'F061 Nabil',tag:'friends_family',relationship:'father',other_label:null},
+      {owner_uid:ownerA.id,list_id:beta.id,tin:'765432100003',display_name:'F061 Mina',tag:'others',relationship:null,other_label:'Tax adviser'},
+    ]);
+  const rowsB=await insert<SavedRow>('taxpay_beneficiaries',ownerB.session.access_token,
+    'id,owner_uid,list_id,tin,display_name,tag,relationship,other_label',[
+      {owner_uid:ownerB.id,list_id:listsB[0].id,tin:'765432100004',display_name:'F061 Mina',tag:'clients',relationship:null,other_label:null},
+    ]);
+  expect(rowsA).toHaveLength(3);
+  expect(rowsB).toHaveLength(1);
+
+  const readApi=async(token:string,ownerId:string)=>{
+    const url=new URL('/rest/v1/taxpay_beneficiaries',api.origin);
+    url.searchParams.set('select','id,owner_uid,list_id,tin,display_name,tag,relationship,other_label');
+    url.searchParams.set('owner_uid','eq.'+ownerId);
+    url.searchParams.set('order','tin.asc');
+    const response=await fetch(url,{headers:{apikey:key,Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)});
+    const body=await response.text();
+    expect(response.status,body).toBe(200);
+    return JSON.parse(body) as SavedRow[];
+  };
+  const sqlRows=spawnSync('psql',['-X','-Atq','-v','ON_ERROR_STOP=1','-c',
+    `select coalesce(json_agg(to_jsonb(q) order by q.tin)::text,'[]') from (
+       select id::text,owner_uid::text,list_id::text,tin,display_name,tag,relationship,other_label
+       from public.taxpay_beneficiaries where owner_uid='${ownerA.id}'::uuid
+     ) q;`],{
+       encoding:'utf8',timeout:10_000,
+       env:{...process.env,PGHOST:database.hostname,PGPORT:database.port||'5432',
+         PGUSER:decodeURIComponent(database.username),PGPASSWORD:decodeURIComponent(database.password),
+         PGDATABASE:database.pathname.slice(1)},
+     });
+  expect(sqlRows.status,sqlRows.stderr).toBe(0);
+  const authoritativeRows=JSON.parse(sqlRows.stdout.trim()) as SavedRow[];
+  expect(authoritativeRows).toEqual([...rowsA].sort((a,b)=>a.tin.localeCompare(b.tin)));
+  expect(await readApi(ownerA.session.access_token,ownerA.id)).toEqual(authoritativeRows);
+  expect(await readApi(ownerB.session.access_token,ownerA.id)).toEqual([]);
+
+  const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:375,height:812}});
+  try{
+    const page=await context.newPage();
+    await page.goto(loginUrl(ownerA.session));
+    await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+    await expect(page.getByRole('heading',{name:'Beneficiaries',exact:true})).toBeVisible();
+    const mobile=page.getByTestId('beneficiary-directory-mobile');
+    await expect(mobile.locator('li')).toHaveCount(authoritativeRows.length);
+    for(const row of authoritativeRows)await expect(mobile.locator('li').filter({hasText:row.display_name})).toHaveCount(1);
+    await expect(mobile.locator('li').filter({hasText:'F061 Mina'})).toHaveCount(1);
+
+    const search=page.getByPlaceholder('Name or TIN');
+    await search.fill('765432100002');
+    await expect(mobile.locator('li')).toHaveCount(1);
+    await expect(mobile.locator('li').first()).toContainText('F061 Nabil');
+    await search.fill('F061 Mina');
+    await expect(mobile.locator('li')).toHaveCount(1);
+    await expect(mobile.locator('li').first()).toContainText('F061 Mina');
+    await search.fill('no matching local row');
+    await expect(mobile.locator('li')).toHaveCount(0);
+    await expect(page.getByText('No matching beneficiaries',{exact:true})).toBeVisible();
+    await search.fill('');
+
+    await page.getByRole('button',{name:'Filter',exact:true}).click();
+    await chooseBeneficiaryOption(page,'beneficiary-filter-tag','clients');
+    await expect(mobile.locator('li')).toHaveCount(1);
+    await expect(mobile.locator('li').first()).toContainText('F061 Zahra');
+    await chooseBeneficiaryOption(page,'beneficiary-filter-tag','friends_family:father');
+    await expect(mobile.locator('li')).toHaveCount(1);
+    await expect(mobile.locator('li').first()).toContainText('F061 Nabil');
+
+    const listButton=page.locator('#beneficiary-list');
+    await listButton.click();
+    const listMenu=page.getByRole('dialog',{name:'Choose beneficiary list'});
+    await listMenu.getByRole('button',{name:'F061 Beta',exact:true}).click();
+    await expect(mobile.locator('li')).toHaveCount(1);
+    await expect(mobile.locator('li').first()).toContainText('F061 Mina');
+    await expect(page.getByTestId('beneficiary-directory-desktop')).toBeHidden();
+
+    await listButton.click();
+    await page.getByRole('dialog',{name:'Choose beneficiary list'})
+      .getByRole('button',{name:'All beneficiaries',exact:true}).click();
+    await page.setViewportSize({width:1280,height:900});
+    const desktop=page.getByTestId('beneficiary-directory-desktop');
+    await expect(desktop).toBeVisible();
+    await expect(desktop.locator('tbody tr')).toHaveCount(authoritativeRows.length);
+    const zahra=desktop.locator('tbody tr').filter({hasText:'F061 Zahra'});
+    await expect(zahra.getByRole('button',{name:'Edit',exact:true})).toHaveClass(/beneficiary-directory__secondary/);
+    await expect(zahra.getByRole('button',{name:'Make payment',exact:true})).toHaveClass(/beneficiary-directory__pay/);
+
+    await setWorkspaceLanguage(page,'bn');
+    await expect(page.getByPlaceholder('নাম বা টিআইএন')).toBeVisible();
+    await page.getByPlaceholder('নাম বা টিআইএন').fill('765432100002');
+    await expect(desktop.locator('tbody tr')).toHaveCount(1);
+    await expect(desktop.locator('tbody tr').first()).toContainText('F061 Nabil');
+    await expect(desktop.locator('tbody tr').first().getByRole('button',{name:'সম্পাদনা',exact:true})).toBeVisible();
+    await expect(desktop.locator('tbody tr').first().getByRole('button',{name:'পেমেন্ট করুন',exact:true})).toBeVisible();
+  }finally{
+    await context.close();
+  }
+});
