@@ -464,6 +464,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const batchRecoveryChecked = useRef(false);
   const [batchRecoveryError, setBatchRecoveryError] = useState(false);
   const [showReceiptDetails, setShowReceiptDetails] = useState(false);
+  const [selectedWalkInReceipt, setSelectedWalkInReceipt] = useState<ChallanReceipt | null>(null);
   const [skipPostPaymentLogin, setSkipPostPaymentLogin] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [paymentStorageWarning, setPaymentStorageWarning] = useState(false);
@@ -1676,9 +1677,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }
     if (showReceiptDetails && createdReceipt) return (
       <div lang={language} className={`payment-receipt-details ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''}`}>
-        <ReceiptView receipt={createdReceipt} embedded={embedded} onBack={() => setShowReceiptDetails(false)}
+        <ReceiptView receipt={selectedWalkInReceipt ?? createdReceipt} embedded={embedded} onBack={() => setShowReceiptDetails(false)}
           compactWalkInLayout={embedded}
-          postReceiptInvitation={embedded && completed && !officeMirrorPending && !signedInAccount && !skipPostPaymentLogin
+          postReceiptInvitation={!unifiedFlow && embedded && completed && !officeMirrorPending && !signedInAccount && !skipPostPaymentLogin
             ? <aside className="walkin-postpayment-login no-print" data-testid="walkin-postpayment-login" aria-label={language === 'bn' ? 'ঐচ্ছিক সাইন ইন' : 'Optional sign in'}>
                 <div className="walkin-postpayment-login__copy">
                   <strong>{language === 'bn' ? 'আপনার পেমেন্ট রেকর্ড পরে দেখতে চান?' : 'Want easier access to your payment history?'}</strong>
@@ -1789,12 +1790,51 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             }}>{language === 'bn' ? 'অফিস সমন্বয় আবার চেষ্টা' : 'Retry Office synchronization'}</button>}
             {completed && !embedded && (batchAttempt ? <button type="button" className="payment-lifecycle__primary" onClick={startAnotherBatch} disabled={officeMirrorPending}>{copy.anotherPayment}</button> : <button type="button" className="payment-lifecycle__primary" onClick={() => setShowReceiptDetails(true)}>{language === 'bn' ? 'রসিদের বিবরণ দেখুন' : 'View receipt details'} <ArrowRight size={17} /></button>)}
           </div>
+          {unifiedFlow && embedded && completed && !signedInAccount && createdReceipt && (
+            <div className="walkin-result-challan no-print" data-testid="walkin-challan-action">
+              <button type="button" className="payment-lifecycle__primary"
+                onClick={() => { setSelectedWalkInReceipt(createdReceipt); setShowReceiptDetails(true); }}>
+                <FileText size={17} aria-hidden="true" />
+                {language === 'bn' ? 'চালানের বিবরণ' : 'Challan Details'}
+                <ArrowRight size={17} aria-hidden="true" />
+              </button>
+              {confirmedReceipts.length > 1 && <div className="walkin-result-challan__batch" aria-label={language === 'bn' ? 'এই পেমেন্টের চালানসমূহ' : 'Challans from this payment'}>
+                {confirmedReceipts.map((receipt, index) => <button type="button" key={receipt.id}
+                  onClick={() => { setSelectedWalkInReceipt(receipt); setShowReceiptDetails(true); }}>
+                  {language === 'bn' ? 'চালান ' : 'Challan '}{index + 1}: {receipt.challanNo}
+                </button>)}
+              </div>}
+            </div>
+          )}
+          {unifiedFlow && embedded && completed && !officeMirrorPending && !signedInAccount && !skipPostPaymentLogin && (
+            <aside className="walkin-result-benefits no-print" data-testid="walkin-result-benefits"
+              aria-labelledby="walkin-result-benefits-title">
+              <h3 id="walkin-result-benefits-title">{language === 'bn' ? 'সহজকর অ্যাকাউন্টে আরও সুবিধা' : 'Get More with a Shohojkor Account'}</h3>
+              <ul>
+                <li>{language === 'bn' ? 'উপলব্ধ পেমেন্ট সনদ দেখুন' : 'Access Payment Certificates'}</li>
+                <li>{language === 'bn' ? 'আগের পেমেন্ট রেকর্ড ও চালান দেখুন' : 'View previous payment records and challans'}</li>
+                <li>{language === 'bn' ? 'পেমেন্টের ইতিহাস অনুসরণ করুন' : 'Track payment history'}</li>
+              </ul>
+              <div className="walkin-result-benefits__actions">
+                <button type="button" className="walkin-postpayment-login__signin"
+                  onClick={() => { setPaymentServiceChoiceOpen(false); navigate('taxpayer_login'); }}>
+                  {language === 'bn' ? 'সাইন ইন' : 'Log In'} <ArrowRight size={16} aria-hidden="true" />
+                </button>
+                <button type="button" className="walkin-postpayment-login__skip" onClick={() => setSkipPostPaymentLogin(true)}>
+                  {language === 'bn' ? 'সাইন ইন ছাড়াই চালিয়ে যান' : 'Continue without Login'}
+                </button>
+              </div>
+              <p>{language === 'bn'
+                ? 'এই ওয়াক-ইন পেমেন্ট স্বয়ংক্রিয়ভাবে কোনো অ্যাকাউন্টে যুক্ত হবে না।'
+                : 'This walk-in payment is not automatically linked to an account.'}</p>
+            </aside>
+          )}
         </section>
         </div>
         {embedded && modalFooterTarget && createPortal(
           <PaymentJourneyFooter className="payment-flow-embedded__footer-actions"
             next={<>
-              {completed && (batchAttempt ? <button type="button" className="tax-service-choice__continue" onClick={startAnotherBatch} disabled={officeMirrorPending}>{copy.anotherPayment} <ArrowRight size={17} /></button> : <button type="button" className="tax-service-choice__continue" onClick={() => setShowReceiptDetails(true)}>{language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'} <ArrowRight size={17} /></button>)}
+              {completed && !(unifiedFlow && !signedInAccount) && (batchAttempt ? <button type="button" className="tax-service-choice__continue" onClick={startAnotherBatch} disabled={officeMirrorPending}>{copy.anotherPayment} <ArrowRight size={17} /></button> : <button type="button" className="tax-service-choice__continue" onClick={() => setShowReceiptDetails(true)}>{language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'} <ArrowRight size={17} /></button>)}
               {bankPending && <button type="button" className="tax-service-choice__continue" onClick={simulateBankSettlement}>{language === 'bn' ? 'ব্যাংক পরিশোধের ধাপে যান' : 'Continue bank payment'} <ArrowRight size={17} /></button>}
               {declined && <button type="button" className="tax-service-choice__continue" onClick={retryPayment} disabled={isProcessing}>{batchAttempt ? (language === 'bn' ? 'অপেক্ষমাণ রেকর্ডে আবার চেষ্টা' : 'Retry pending records') : syncPending ? (language === 'bn' ? 'পেমেন্ট নিশ্চিতকরণ আবার চেষ্টা' : 'Retry payment confirmation') : paymentValidationBlocked ? (batchAttemptRef.current ? (language === 'bn' ? 'তালিকা সংশোধন করে আবার চেষ্টা করুন' : 'Retry after updating the saved list') : (language === 'bn' ? 'পেমেন্টের তথ্য দেখুন' : 'Review payment details')) : (language === 'bn' ? 'অন্য পদ্ধতিতে চেষ্টা' : 'Try another method')} <ArrowRight size={17} /></button>}
             </>} />, modalFooterTarget
