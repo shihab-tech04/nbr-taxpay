@@ -101,7 +101,8 @@ test('public semantic font weights stay hierarchical across EN/BN phones, tablet
       await page.goto('/?action=landing&lang='+lang);
       await expect(page.locator('.public-benefits__heading h2')).toBeVisible();
       expect(await fontWeight(page,'.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2')).toBe(700);
-      expect(await fontWeight(page,'.public-benefits__heading h2')).toBe(700);
+      expect(await fontWeight(page,'.public-benefits__heading h2')).toBe(600);
+      expect(await fontWeight(page,'.public-record-discovery__heading h2')).toBe(600);
       expect(await fontWeight(page,'.public-benefits__copy h3')).toBe(600);
       expect(await fontWeight(page,'.public-record-discovery__heading p')).toBe(400);
       expect(await fontWeight(page,'.public-home-nav a')).toBe(600);
