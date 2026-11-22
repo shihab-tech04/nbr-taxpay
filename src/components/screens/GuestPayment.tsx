@@ -1190,6 +1190,36 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       }
     } catch (error) {
       const message=error instanceof Error?error.message:'';
+      // A permanent SQL payer-validation rejection belongs at the editable
+      // Final Preview field. Do not display a misleading bank failure or
+      // automatically replay the same invalid combined payment request.
+      if (unifiedFlow && /^(INVALID_WALKIN_PAYER_TIN|UNMATCHED_WALKIN_PAYER_TIN|UNCONFIRMED_WALKIN_PAYER)$/.test(message)) {
+        pendingConfirmationRetryable.current=false;
+        pendingStoryRef.current=null;
+        try { clearCombinedOtherTaxRequest(getStorySessionId()); } catch { /* No valid SQL row was created. */ }
+        setPaymentValidationBlocked(true);
+        setPaymentPhase('review');
+        setLifecycleStages([]);
+        setAttemptReceipt(null);
+        setUnifiedCheckout(false);
+        onCheckoutChange?.(false);
+        setStep(3);
+        setValidationError(
+          message === 'INVALID_WALKIN_PAYER_TIN'
+            ? (language === 'bn'
+                ? 'পরিশোধকারীর টিআইএন ১২ বা ১৩ সংখ্যার হতে হবে। সংশোধন করুন অথবা ঐচ্ছিক ঘরটি খালি রাখুন।'
+                : 'Payer TIN must contain 12 or 13 digits. Correct it or leave this optional field blank.')
+            : message === 'UNMATCHED_WALKIN_PAYER_TIN'
+              ? (language === 'bn'
+                  ? 'পরিশোধকারীর টিআইএন নমুনা তালিকায় পাওয়া যায়নি। তথ্য আবার খুঁজুন অথবা ঘরটি খালি রাখুন।'
+                  : 'Payer TIN was not found in the sample list. Search again or leave this optional field blank.')
+              : (language === 'bn'
+                  ? 'পরিশোধকারীর নাম ও টিআইএন মিলছে না। আবার খুঁজে তথ্য নিশ্চিত করুন।'
+                  : 'Payer name and TIN do not match. Search and confirm the payer again.'),
+          'payerTin'
+        );
+        return;
+      }
       const validationBlocked=/^(Choose a saved demo beneficiary|Choose a demo beneficiary|INVALID_BENEFICIARY|AUTHORIZATION_REQUIRED|PROFILE_CAPABILITY_REQUIRED|SUBMISSION_FAILED|Simulation payment details are incomplete)/.test(message);
       // Do not automatically retry a permanent SQL validation rejection.
       pendingConfirmationRetryable.current = !validationBlocked &&
