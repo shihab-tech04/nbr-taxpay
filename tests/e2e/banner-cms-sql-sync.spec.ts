@@ -45,7 +45,7 @@ test('SQL-backed banners preserve image order while keeping the published intro 
     name: mobile ? 'SQL mobile heading' : 'Updated SQL-controlled headline',
   })).toBeVisible();
   await expect(carousel.getByRole('button', { name: 'Start tax payment' })).toBeVisible();
-  await expect(carousel.getByRole('button', { name: 'Start travel tax' })).toBeVisible();
+  await expect(carousel.getByRole('button', { name: 'Other Tax' })).toBeVisible();
   await carousel.focus();
   for (let i = 1; i <= 4; i++) {
     await page.keyboard.press('ArrowRight');
@@ -54,9 +54,9 @@ test('SQL-backed banners preserve image order while keeping the published intro 
       .locator('img')).toHaveAttribute('src', /taxpay-hero-(return|advance|withholding|travel)-v9/);
     const active = carousel.locator('.public-hero-carousel__slide').nth(i);
     await expect(active.getByRole('button', { name: 'Start tax payment' })).toBeVisible();
-    await expect(active.getByRole('button', { name: 'Start travel tax' })).toBeVisible();
+    await expect(active.getByRole('button', { name: 'Other Tax' })).toBeVisible();
     await expect(active.locator('.public-guest-action')).toHaveCount(2);
-    await expect(active.locator('.public-hero-carousel__gift-link')).toBeVisible();
+    await expect(active.locator('.public-hero-carousel__gift-link')).toHaveCount(0);
     await expect(carousel.getByRole('heading', { name: mobile ? 'SQL mobile heading' : 'Updated SQL-controlled headline' })).toBeVisible();
   }
 });
@@ -96,7 +96,7 @@ test('CMS outage never resurrects unpublished bundled artwork and payment action
   await expect(fallback.locator('[data-banner-service="intro"] img'))
     .toHaveAttribute('src', /branding\/published\/banner-intro\.jpg/);
   await expect(fallback.getByRole('button', { name: 'Pay Tax' })).toBeVisible();
-  await expect(fallback.getByRole('button', { name: 'Pay Travel Tax' })).toBeVisible();
+  await expect(fallback.getByRole('button', { name: 'Other Tax' })).toBeVisible();
 
   cmsAvailable = true;
   await advanceBrandingRefresh(page);
@@ -112,10 +112,10 @@ test('custom CMS button labels appear visually in compact English and Bangla lay
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(banners) }));
   await page.goto('/?action=landing');
   const hero = page.locator('.public-hero-carousel__slide[data-banner-service="intro"]');
-  await expect(hero.locator('.public-hero-carousel__travel-compact')).toHaveText('Start travel tax');
+  await expect(hero.locator('.public-hero-carousel__travel-compact')).toHaveText('Other Tax');
   await expect(hero.locator('.public-hero-carousel__pay-compact')).toHaveText('Start tax payment');
   await setWorkspaceLanguage(page, 'bn');
-  await expect(hero.locator('.public-hero-carousel__travel-compact')).toHaveText('ভ্রমণ কর শুরু');
+  await expect(hero.locator('.public-hero-carousel__travel-compact')).toHaveText('অন্যান্য কর');
   await expect(hero.locator('.public-hero-carousel__pay-compact')).toHaveText('কর পরিশোধ শুরু');
 });
 
@@ -214,7 +214,7 @@ test('reordering published CMS banners retains the selected service, fixed copy 
   await expect(retained).toHaveCSS('background-color', 'rgb(239, 247, 244)');
   await expect(retained.locator('h2')).toHaveCSS('color', 'rgb(24, 90, 67)');
   await expect(retained.getByRole('button', {name: 'Start tax payment'})).toBeVisible();
-  await expect(retained.getByRole('button', {name: 'Start travel tax'})).toBeVisible();
+  await expect(retained.getByRole('button', {name: 'Other Tax'})).toBeVisible();
   await expect(carousel.getByRole('heading', {
     name: page.viewportSize()!.width <= 640 ? 'SQL mobile heading' : 'Updated SQL-controlled headline',
   })).toBeVisible();
@@ -256,7 +256,7 @@ test('unpublishing the active banner preserves available payment actions and avo
   // The unpublished Travel Tax row cannot supply its custom label; the
   // approved fallback still exposes the separate Travel Tax action.
   await expect(carousel.locator('.public-hero-carousel__slide[data-active="true"]')
-    .getByRole('button', {name: 'Pay Travel Tax'})).toBeVisible();
+    .getByRole('button', {name: 'Other Tax'})).toBeVisible();
   await expect(carousel.locator('[data-banner-service="travel"]')).toHaveCount(0);
 });
 
