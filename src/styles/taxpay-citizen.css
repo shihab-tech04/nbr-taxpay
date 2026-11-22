@@ -3129,3 +3129,251 @@
   .receipt-view--walkin .walkin-postpayment-login__actions{width:100%}
   .receipt-view--walkin .walkin-postpayment-login__actions button{flex:1 1 100%}
 }
+
+
+/* Walk-in receipt reading hierarchy — PR #952 screenshot follow-up.
+   Scope to the walk-in reader; do not change signed-in receipts, financial values,
+   print layout, modal footer contracts, or other payment journeys. */
+@media screen {
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px 20px;
+    padding: 2px 0 16px;
+    border-bottom: 0;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__summary-copy {
+    min-width: 0;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__summary h3 {
+    font-size: clamp(19px, 2vw, 22px);
+    line-height: 1.35;
+    letter-spacing: -.015em;
+    margin: 2px 0 0;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__eyebrow {
+    font-size: 12px;
+    letter-spacing: .015em;
+    margin: 0;
+    color: var(--citizen-primary-dark);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__summary-subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--citizen-muted);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__amount {
+    min-width: 132px;
+    padding: 0;
+    text-align: right;
+    align-self: center;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__amount strong {
+    display: block;
+    font-size: clamp(24px, 2.6vw, 30px);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__toolbar {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 12px 0;
+    margin: 0 0 16px;
+    border-top: 1px solid var(--citizen-border);
+    border-bottom: 1px solid var(--citizen-border);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__toolbar .receipt-view__action {
+    min-height: 40px;
+    min-width: 0;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__toolbar .receipt-view__action:last-child {
+    margin-left: auto;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__reference-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 22px;
+    align-items: start;
+    padding: 16px 18px;
+    margin: 0;
+    background: #f8fafc;
+    border: 1px solid #e1e7ef;
+    border-radius: 12px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__reference-strip > div:first-child {
+    grid-column: 1 / -1;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e1e7ef;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__reference-strip > div > span:first-child {
+    color: #526579;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__reference-strip .font-mono-plex,
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__reference-number {
+    font-size: 12.5px;
+    line-height: 1.55;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view--walkin .receipt-view__parties {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 16px 0 12px;
+    margin: 0;
+    border-bottom: 0;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__parties > div {
+    padding: 15px 17px;
+    border: 1px solid #e1e7ef;
+    border-radius: 12px;
+    background: var(--citizen-surface);
+    min-width: 0;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__section-title {
+    margin: 0 0 6px;
+    padding-bottom: 10px;
+    font-size: 15px;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view--walkin .receipt-view__detail {
+    grid-template-columns: minmax(0, 37%) minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 3px;
+    align-items: start;
+    line-height: 1.45;
+    padding: 9px 0;
+    font-size: 13px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__detail > span:first-child {
+    color: #5c6c7c;
+    font-weight: 550;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__detail > span:last-child {
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__detail .font-mono-plex {
+    font-size: 12px;
+    line-height: 1.5;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(176px, 206px);
+    align-items: center;
+    gap: 18px;
+    margin: 4px 0 18px;
+    padding: 16px 18px;
+    border: 1px solid #e1e7ef;
+    border-radius: 12px;
+    background: #f8fafc;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__copy strong {
+    display: block;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__copy p {
+    margin-top: 5px;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: #586a7d;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__actions button {
+    width: 100%;
+    min-height: 40px;
+    min-width: 0;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    font-size: 12.5px;
+    padding: 8px 10px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__breakdown {
+    margin: 0;
+    padding-top: 14px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__breakdown-content {
+    border-color: #e1e7ef;
+    border-radius: 12px;
+  }
+}
+@media screen and (max-width: 760px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view--walkin .receipt-view__parties {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__actions {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__actions button {
+    flex: 1 1 180px;
+  }
+}
+@media screen and (max-width: 480px) {
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__amount {
+    text-align: left;
+    min-width: 0;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__toolbar .receipt-view__action {
+    width: 100%;
+    margin-left: 0;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__reference-strip {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__reference-strip > div:first-child {
+    grid-column: auto;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .receipt-view__parties > div {
+    padding: 14px;
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .receipt-view--walkin .receipt-view__detail {
+    grid-template-columns: minmax(0, 38%) minmax(0, 1fr);
+    gap: 10px;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__actions {
+    display: grid;
+  }
+  .taxpay-citizen-shell .receipt-view--walkin .walkin-postpayment-login__actions button {
+    width: 100%;
+  }
+}
