@@ -601,6 +601,16 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     const availableSamples = SAMPLE_BD_PASSPORTS.filter(sample =>
       sample.passport.includes(normalizedPassport) && !passengers.some(other =>
         other.id !== item.id && other.passport.trim().toUpperCase() === sample.passport));
+    const medicalAssessmentControl = (
+        <div className="travel-passenger-workspace__medical" data-testid="travel-passenger-medical-control">
+          <label className="travel-flow__check" htmlFor={'travel-medical-'+item.id}>
+            <input id={'travel-medical-'+item.id} type="checkbox" checked={item.medicalPortReferral}
+              onChange={event=>changePassenger(item.id,{medicalPortReferral:event.target.checked})}/>
+            <span>{tr('Request manual medical assessment at departure port',
+              'বন্দরে সরাসরি চিকিৎসাজনিত মূল্যায়নের অনুরোধ')}</span>
+          </label>
+        </div>
+    );
     return <>
       <div className="travel-flow__passenger-tabs" role="tablist"
         aria-label={tr('Passenger type for passenger ', 'যাত্রীর ধরন, যাত্রী ') + (index + 1)}>
@@ -760,6 +770,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 <div><dt>{tr('Date of birth','জন্মতারিখ')}</dt><dd data-testid={'travel-passenger-birth-' + item.id}>{item.birthDate}</dd></div>
                 <div><dt>{tr('Nationality','জাতীয়তা')}</dt><dd>{tr('Bangladeshi','বাংলাদেশি')}</dd></div>
               </dl>
+              {medicalAssessmentControl}
             </section>}
           </> : <>
             <div className="travel-flow__field">
@@ -804,15 +815,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 onChange={event => changePassenger(item.id, {country: event.target.value})}
                 placeholder={tr('Enter country','দেশ লিখুন')}/>
             </div>
+            {medicalAssessmentControl}
           </>}
-          <div className="travel-passenger-workspace__medical" data-testid="travel-passenger-medical-control">
-            <label className="travel-flow__check" htmlFor={'travel-medical-'+item.id}>
-              <input id={'travel-medical-'+item.id} type="checkbox" checked={item.medicalPortReferral}
-                onChange={event=>changePassenger(item.id,{medicalPortReferral:event.target.checked})}/>
-              <span>{tr('Request manual medical assessment at departure port',
-                'বন্দরে সরাসরি চিকিৎসাজনিত মূল্যায়নের অনুরোধ')}</span>
-            </label>
-          </div>
         </div>
         {item.medicalPortReferral && <p role="status" data-testid="travel-manual-assessment-blocker" className="travel-flow__medical-note">
           {tr('Manual medical assessment is required at the departure port. Online Continue is unavailable. Bring supporting documents, or untick this option if you selected it by mistake.',
