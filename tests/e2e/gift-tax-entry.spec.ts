@@ -19,7 +19,7 @@ for (const locale of ['en', 'bn'] as const) {
     await gift.locator('#gift-tax-amount').fill('3250.50');
     await gift.getByRole('button', {name:bn ? 'এগিয়ে যান' : 'Continue'}).click();
     await expect(gift.getByTestId('gift-tax-review')).toBeVisible();
-    await expect(gift.getByTestId('gift-tax-review')).toContainText('3,250.5');
+    await expect(gift.getByTestId('gift-tax-review')).toContainText(bn ? '৩,২৫০.৫' : '3,250.5');
     await gift.getByRole('button', {name:bn ? 'পর্যালোচনা শেষ করুন' : 'Finish review'}).click();
     await expect(gift.getByTestId('gift-tax-review-complete')).toContainText(bn ? 'কোনো টাকা কাটা হয়নি' : 'No money was charged');
     await expect(page.locator('.receipt-view')).toHaveCount(0);
