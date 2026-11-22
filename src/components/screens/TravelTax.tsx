@@ -551,7 +551,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (step !== 2 || processing) return;
+    if (step !== 2 || !checkoutOpen || processing) return;
     const problem = pendingPayment.current ? null : validateTravelDetails() ?? validatePassengers() ?? validateReceiptContact();
     if (problem) { showError(problem); return; }
     if (!pendingPayment.current && (!paymentMethod || !paymentChannel || !acknowledged)) {
@@ -859,7 +859,17 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     <button type="button" className="travel-flow__primary" onClick={() => stepTo(3)}>
       {tr('View combined challan', 'সম্মিলিত চালান দেখুন')}<ArrowRight size={17} aria-hidden="true"/>
     </button>
-  ) : createdReceipt ? null : step === 2 ? (
+  ) : createdReceipt ? null : step === 2 && !checkoutOpen ? (
+    <button type="button" className="travel-flow__primary" disabled={!allCalculated || totalAmount <= 0}
+      onClick={() => {
+        const problem=validateTravelDetails() ?? validatePassengers() ?? validateReceiptContact();
+        if(problem){showError(problem);if(!receiptMobileComplete)
+          requestAnimationFrame(()=>document.getElementById('travel-mobile')?.focus());return;}
+        setCheckoutOpen(true);
+      }}>
+      {tr('Make Payment','পেমেন্ট করুন')}<ArrowRight size={17} aria-hidden="true"/>
+    </button>
+  ) : step === 2 ? (
     <button type="button" className="travel-flow__primary" disabled={!canSubmit} onClick={() => {
       const form = document.getElementById('travel-tax-form');
       if (form instanceof HTMLFormElement) form.requestSubmit();
@@ -927,8 +937,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
         {!embedded && <h1 className="travel-flow__standalone-title">{tr('Travel tax', 'ভ্রমণ কর')}</h1>}
         {!embedded && <nav className="travel-flow__steps" aria-label={tr('Travel tax steps', 'ভ্রমণ করের ধাপ')}>
           {[
-            tr('Passengers and receipt details', 'যাত্রী ও রসিদের তথ্য'), tr('Travel details', 'ভ্রমণের তথ্য'),
-            tr('Payment', 'পেমেন্ট'), tr('Challan', 'চালান'),
+            tr('Passenger Information','যাত্রীর তথ্য'), tr('Travel Details','ভ্রমণের তথ্য'),
+            tr('Final Preview','চূড়ান্ত পর্যালোচনা'),
           ].map((name, idx) => (
             <button key={name} type="button" disabled={idx > step || !!createdReceipt}
               className={'travel-flow__step' + (idx === step ? ' travel-flow__step--current' : '')}
@@ -1088,8 +1098,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </PaymentFormSection>
           </section>}
 
-          {step === 2 && (!createdReceipt || receiptReviewOpen) && <section className="travel-flow__panel" aria-label={tr('Payment preview','পেমেন্টের পূর্বদর্শন')}>
-            <p className="travel-flow__field-hint">{tr('Review passenger and travel details, add the receipt mobile, then choose how to pay.', 'যাত্রী ও ভ্রমণের তথ্য পর্যালোচনা করুন, রসিদের মোবাইল নম্বর দিন, তারপর পেমেন্টের মাধ্যম নির্বাচন করুন।')}</p>
+          {step === 2 && !checkoutOpen && (!createdReceipt || receiptReviewOpen) && <section className="travel-flow__panel" aria-label={tr('Final Preview','চূড়ান্ত পর্যালোচনা')}>
+            <p className="travel-flow__field-hint">{tr('Review passenger and travel details and provide receipt contact before checkout.', 'যাত্রী ও ভ্রমণের তথ্য পর্যালোচনা করুন এবং রসিদের মোবাইল নম্বর দিন।')}</p>
             <section className="travel-flow__contact" aria-label={tr('Receipt contact', 'রসিদের যোগাযোগ')} data-testid="travel-preview-receipt-contact">
               <h3>{tr('Receipt contact', 'রসিদের যোগাযোগ')}</h3>
               <div className="travel-flow__field">
@@ -1110,14 +1120,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               <div><dt>{tr('Travel','ভ্রমণ')}</dt><dd>{mode === 'LAND' ? tr('By land','স্থলপথে') : tr('By water','নৌপথে')}</dd></div>
               <div><dt>{tr('Departure port','যাত্রা বন্দর')}</dt><dd>{selectedPort}</dd></div>
               <div><dt>{tr('Destination / date','গন্তব্য / তারিখ')}</dt><dd>{destination} / {travelDate}</dd></div>
-              <div><dt>{tr('Payment channel','পেমেন্ট চ্যানেল')}</dt><dd>{
-                paymentChannel === 'NOW' ? tr('Pay online','অনলাইনে পরিশোধ')
-                : paymentChannel === 'OTC' ? tr('Pay at a bank branch','ব্যাংক শাখায় পরিশোধ')
-                : tr('Not selected','নির্বাচিত নয়')
-              }</dd></div>
-              <div><dt>{tr('Payment method','পেমেন্ট পদ্ধতি')}</dt><dd>{
-                paymentMethod ? paymentMethodLabel(paymentMethod,language) : tr('Not selected','নির্বাচিত নয়')
-              }</dd></div>
               {!createdReceipt && <div><dt>{tr('Edit', 'সম্পাদনা')}</dt><dd><button type="button" className="travel-flow__edit" onClick={() => stepTo(1)}><Pencil size={15} aria-hidden="true"/>{tr('Edit travel details', 'ভ্রমণের তথ্য সম্পাদনা')}</button></dd></div>}
             </div>
             {!createdReceipt && <button type="button" className="travel-flow__edit-travel" onClick={() => stepTo(0)}><Pencil size={15} aria-hidden="true"/>{tr('Edit passengers', 'যাত্রী সম্পাদনা')}</button>}
@@ -1138,10 +1140,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                   <td className="text-right tabular-nums">{formatCurrency(totalAmount, language)}</td></tr></tfoot>
               </TaxPayUnifiedTable>
             </div>
+          </section>}
+
+          {step === 2 && checkoutOpen && !createdReceipt &&
+            <section className="travel-flow__panel travel-flow__checkout"
+              data-testid="travel-payment-channel-screen" aria-label={tr('Payment channel','পেমেন্ট চ্যানেল')}>
             <header className="travel-flow__section-header">
-              <h3>{createdReceipt ? tr('Recorded payment', 'রেকর্ডকৃত পেমেন্ট') : tr('Payment channel','পেমেন্ট চ্যানেল')}</h3>
-              <p>{tr('A-Challan is the required government integration; this environment only records a clearly marked simulation.',
-                'সরকারি A-Challan সংযোগ ডেভেলপার পর্যায়ে হবে; এখানে শুধু চিহ্নিত নমুনা লেনদেন রয়েছে।')}</p>
+              <h3>{tr('Choose payment channel','পেমেন্ট চ্যানেল বেছে নিন')}</h3>
+              <p>{tr('Choose online payment or a bank branch.','অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন।')}</p>
             </header>
             {!createdReceipt && <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
               onChannelChange={(channel, method) => { setPaymentChannel(channel); setPaymentMethod(method); setMethodGroup(null); setAcknowledged(false); }}
@@ -1181,7 +1187,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
         <div className="travel-flow__summary-title"><CreditCard size={18} aria-hidden="true"/>
           <h3>{tr('Payment calculation','পেমেন্টের হিসাব')}</h3>
         </div>
-        <p className="travel-flow__summary-label">{tr('Calculated amount · sample rates','স্বয়ংক্রিয় হিসাব · নমুনা বিধি')}</p>
+        <p className="travel-flow__summary-label">{tr('Calculated amount · sample rates','হিসাবকৃত পরিমাণ · নমুনা হার')}</p>
         <strong className="travel-flow__total travel-flow__total--with-words" data-testid="travel-payment-total">
           {allCalculated ? formatCurrency(totalAmount, language) : validAssessments.length > 0 && travelDate ? formatCurrency(provisionalAmount, language) : '—'}
         </strong>
