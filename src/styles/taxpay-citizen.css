@@ -1227,15 +1227,15 @@
     width: 96px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
-    max-width: 185px;
+    max-width: 110px;
     white-space: normal;
     overflow-wrap: normal;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
     min-width: 0;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-end;
-    gap: 8px 14px;
+    gap: 6px 10px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs a,
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs button {
