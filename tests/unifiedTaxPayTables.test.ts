@@ -70,6 +70,19 @@ test('official receipt and certificate print tables remain outside generic table
   }
 });
 
+test('payer history displays and searches the original receipt and certificate references',()=>{
+ const history=read('src/components/screens/AccountBeneficiaryHistory.tsx');
+ const references=read('src/services/accountBeneficiaryHistoryReferences.ts');
+ const receipt=read('src/components/common/ReceiptView.tsx');
+ assert.match(history,/accountBeneficiaryPaymentReferences\(row\)/);
+ assert.match(history,/displayAccountBeneficiaryPaymentReference\(row\)/);
+ assert.match(references,/entry\.receipt\.challanNo/);
+ assert.match(references,/SK-PC-/);
+ assert.match(receipt,/canViewCertificate/);
+ assert.match(receipt,/downloadDisplayedCertificate\(receipt, paperRef\.current, isCertificate\)/);
+ assert.match(receipt,/window\.print\(\)/);
+});
+
 test('ledger, Activity and Beneficiaries share one column-driven data renderer with preserved actions',()=>{
   const component=read('src/components/ui/TaxPayDataTable.tsx');
   assert.ok(component.includes('export function TaxPayDataGrid<Row>'));
