@@ -470,3 +470,132 @@
     min-width: 0;
   }
 }
+
+
+/*
+ * Shared citizen font-weight hierarchy (EN Poppins / BN Noto Sans Bengali).
+ * Size tiers are separately owned above. Keep font weights stable across widths:
+ * 700 for primary/page/section titles and financial totals, 600 for subordinate
+ * headings, visible labels, navigation and actions; 500 for micro metadata;
+ * 400 for reading copy and editable values. No officer/print scope.
+ * These selectors target rendered reusable controls instead of altering layout.
+ */
+.taxpay-citizen-shell {
+  --taxpay-weight-reading: 400;
+  --taxpay-weight-meta: 500;
+  --taxpay-weight-action: 600;
+  --taxpay-weight-title: 700;
+}
+
+.taxpay-citizen-shell :is(
+  .taxpay-type-h1, .taxpay-type-h2,
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2,
+  .taxpayer-page-heading h1, .taxpayer-dashboard-header h1,
+  .taxpayer-workspace > h2, .taxpayer-workspace .taxpay-table-toolbar__title,
+  .taxpay-modal__title, .taxpay-bento-hero h2
+) {
+  font-weight: var(--taxpay-weight-title);
+}
+
+.taxpay-citizen-shell :is(
+  .taxpay-type-h3, .taxpay-type-h4, .public-benefits__copy h3,
+  .public-record-discovery__heading h2, .public-benefits__heading h2,
+  .citizen-hub-service-grid__copy strong, .tax-service-choice__entry-heading,
+  .payment-form-section__heading-copy h2, .taxpay-record-toolbar__heading h3,
+  .taxpayer-workspace h3, .taxpayer-workspace h4
+) {
+  font-weight: var(--taxpay-weight-action);
+}
+
+.taxpay-citizen-shell :is(
+  .public-home-nav a, .public-footer__navs a, .public-footer__navs button,
+  .public-home-login-link, .citizen-nav-link, .public-home-language,
+  .public-guest-actions .public-guest-action, .public-hero-carousel__travel,
+  .tax-service-choice__continue,
+  .taxpay-record-toolbar__controls button, .taxpay-record-toolbar__retry,
+  .taxpay-table-tabs > button, .taxpay-unified-table thead th,
+  .taxpay-mobile-table-cards dt, .payment-form-section__body label,
+  .payment-form-section__body legend, .payment-flow-embedded label,
+  .payment-flow-embedded legend, .taxpay-type-label, .taxpay-type-action
+) {
+  font-weight: var(--taxpay-weight-action);
+}
+
+.taxpay-citizen-shell :is(
+  .taxpay-type-body, .taxpay-type-helper, .taxpay-type-meta,
+  .public-record-discovery__heading p, .public-benefits__heading p,
+  .public-benefits__copy p, .taxpay-modal__description,
+  .taxpay-modal__subtitle, .taxpay-modal__supporting-copy,
+  .payment-form-section__heading-copy p,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select, textarea, .taxpay-unified-table tbody td
+) {
+  font-weight: var(--taxpay-weight-reading);
+}
+
+.taxpay-citizen-shell :is(
+  .taxpay-type-micro, .citizen-footer__disclaimer,
+  .public-footer__copyright, .public-footer__bottom p,
+  .taxpay-table-count, .taxpay-table-column-hint
+) {
+  font-weight: var(--taxpay-weight-meta);
+}
+
+.taxpay-citizen-shell :is(
+  .taxpay-type-financial, .payment-form-summary__total,
+  .taxpay-bento-position__highlight strong,
+  .taxpay-bento-position__totals dd
+) {
+  font-weight: var(--taxpay-weight-title);
+}
+
+
+/* 1121–1199px desktop: 16px links plus the wordmark and copyright do not
+ * fit into three simultaneous columns. Keep every link in one horizontal
+ * navigation row, but place that row below the identity/copyright row.
+ * No clipping, font reduction, hidden destinations or mobile changes. */
+@media (min-width: 1121px) and (max-width: 1199px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 0;
+    padding-block: 6px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: center;
+    column-gap: 10px;
+  }
+}
+
+/* The signed-in register uses a specificity-frozen shared table selector.
+ * Match that real selector so the semantic heading/body weights apply. */
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table thead th {
+  font-weight: var(--taxpay-weight-action, 600);
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel table.taxpayer-transaction-table tbody td {
+  font-weight: var(--taxpay-weight-reading, 400);
+}
+
+
+/* On the public home, the later-loaded hero carousel sets navigation to 500.
+ * Use an explicitly more specific semantic rule; do not change its geometry. */
+@media (min-width: 901px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-home-header .public-home-nav a {
+    font-weight: var(--taxpay-weight-action, 600);
+  }
+}

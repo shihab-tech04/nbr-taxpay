@@ -82,3 +82,43 @@ test('real authenticated history keeps 16px tabular headers and cells', async ({
     await noOverflow(page,1280,lang);
   }
 });
+
+
+/* Real-element font-weight acceptance complements the preceding size-only
+ * contract. Avoid style probes and protect signed-in plus public EN/BN UI. */
+const fontWeight = async (page: import('@playwright/test').Page, selector: string) => {
+  const element = page.locator(selector).first();
+  await expect(element, 'Missing visible typography target: ' + selector).toBeVisible();
+  return element.evaluate(node => Number(getComputedStyle(node).fontWeight));
+};
+
+test('public semantic font weights stay hierarchical across EN/BN phones, tablets and desktops', async ({page}, info) => {
+  test.skip(info.project.name !== 'mobile-375', 'Explicitly exercises all six viewport widths');
+  test.setTimeout(120000);
+  for (const width of [320,375,480,768,1024,1920]) {
+    for (const lang of ['en','bn']) {
+      await page.setViewportSize({width,height:900});
+      await page.goto('/?action=landing&lang='+lang);
+      await expect(page.locator('.public-benefits__heading h2')).toBeVisible();
+      expect(await fontWeight(page,'.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2')).toBe(700);
+      expect(await fontWeight(page,'.public-benefits__heading h2')).toBe(600);
+      expect(await fontWeight(page,'.public-record-discovery__heading h2')).toBe(600);
+      expect(await fontWeight(page,'.public-benefits__copy h3')).toBe(600);
+      expect(await fontWeight(page,'.public-record-discovery__heading p')).toBe(400);
+      // Desktop nav is visible at >=901px; the public mobile-shell may hide
+      // this duplicate desktop header and use its own accessible navigation.
+      if (width >= 901) expect(await fontWeight(page,'.public-home-nav a')).toBe(600);
+      await noOverflow(page,width,lang);
+    }
+  }
+});
+
+test('real taxpayer history preserves label/record weight contrast', async ({page}, info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'Test actual register cells, not fixture classes');
+  for (const lang of ['en','bn']) {
+    await page.goto('/?action=history&demoUser=user1&lang='+lang);
+    await expect(page.getByTestId('taxpayer-transaction-table')).toBeVisible();
+    expect(await fontWeight(page,'[data-testid="taxpayer-transaction-table"] thead th')).toBe(600);
+    expect(await fontWeight(page,'[data-testid="taxpayer-transaction-table"] tbody td')).toBe(400);
+  }
+});
