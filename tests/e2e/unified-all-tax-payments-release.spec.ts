@@ -48,11 +48,14 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
       const actions = dialog.locator('.taxpay-modal__footer .payment-flow-embedded__footer-actions');
       const button = actions.getByRole('button', { name: label });
       await expect(button).toBeVisible();
-      const [row, cta] = await Promise.all([actions.boundingBox(), button.boundingBox()]);
-      expect(row).not.toBeNull();
-      expect(cta).not.toBeNull();
-      expect(Math.abs(cta!.x - row!.x)).toBeLessThanOrEqual(2);
-      expect(Math.abs(cta!.width - row!.width)).toBeLessThanOrEqual(2);
+      // Portal footer geometry settles after the stage/date/draft effects.
+      // Poll the measured state rather than assert during an intermediate frame;
+      // keep the same original 2px acceptance tolerance.
+      await expect.poll(async () => {
+        const [row, cta] = await Promise.all([actions.boundingBox(), button.boundingBox()]);
+        if (!row || !cta) return Infinity;
+        return Math.max(Math.abs(cta.x - row.x), Math.abs(cta.width - row.width));
+      }, { timeout: 7000 }).toBeLessThanOrEqual(2);
     };
     await expectFullWidthCta('Continue to Payment Head');
 
