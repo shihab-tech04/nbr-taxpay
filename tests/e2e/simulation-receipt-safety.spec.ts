@@ -3,16 +3,46 @@ import { fillTravelDetails } from './travel-tax-test-helper';
 import { expect, test, type Page } from '@playwright/test';
 
 const paymentId = '10000000-0000-4000-8000-000000000002';
-type PaymentInput = { idempotencyKey: string; service: string; details: { receiptReference: string; receiptSnapshot: Record<string, unknown> } };
+type PaymentInput = { idempotencyKey: string; sessionId: string; service: string; amountMinor: number; details: Record<string, unknown> & { receiptReference: string; receiptSnapshot: Record<string, unknown> } };
 async function mockStoryPayments(page: Page) {
   const submissions: PaymentInput[] = [];
   // No test makes a hosted write, even if another backend call is introduced.
   await page.route('**/*.supabase.co/**', route => route.abort());
-  await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
-    if (route.request().method() !== 'POST') return route.abort();
-    submissions.push(route.request().postDataJSON() as PaymentInput);
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
-      success: true, id: paymentId, status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true,
+  await page.route('**/functions/v1/demo-story1-taxpay/payments**', async route => {
+    const request = route.request();
+    if (request.method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: {
+        'access-control-allow-origin': '*',
+        'access-control-allow-methods': 'GET, POST, OPTIONS',
+        'access-control-allow-headers': '*',
+      } });
+      return;
+    }
+    if (request.method() === 'POST') {
+      submissions.push(request.postDataJSON() as PaymentInput);
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        success: true, id: paymentId, status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true,
+      }) });
+      return;
+    }
+    if (request.method() !== 'GET') return route.abort();
+    const url = new URL(request.url());
+    const headers = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-methods': 'GET, POST, OPTIONS',
+      'access-control-allow-headers': '*',
+    };
+    if (url.pathname.endsWith('/' + paymentId) && submissions.length) {
+      const saved = submissions[submissions.length - 1];
+      await route.fulfill({ status: 200, contentType: 'application/json', headers, body: JSON.stringify({
+        success: true, simulationOnly: true,
+        data: { id: paymentId, status: 'SIMULATED_SUCCESS', createdAt: '2026-11-22T00:00:00.000Z',
+          data: { service: saved.service, amountMinor: saved.amountMinor, origin: 'TAXPAY_UI', details: saved.details } },
+      }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', headers, body: JSON.stringify({
+      success: true, simulationOnly: true, data: { items: [], total: 0 },
     }) });
   });
   return submissions;

@@ -142,6 +142,16 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
       {id:unsnapshottedMulti,service:'ADVANCE_TAX',amountMinor:6500,status:'SIMULATED_SUCCESS',createdAt:'2026-10-17T12:00:00Z'},
       {id:travelPayment,service:'TRAVEL_TAX',amountMinor:100000,status:'SIMULATED_SUCCESS',createdAt:date}
     ];
+    const latestTravelSubmission=submittedTravelPayments[submittedTravelPayments.length-1];
+    if(url.pathname.endsWith('/payments/'+newTravelPayment)&&latestTravelSubmission){
+      expect(url.searchParams.get('sessionId')).toBe(latestTravelSubmission.sessionId);
+      expect(route.request().headers()['x-taxpay-guest-capability']).toBe(cap);
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        success:true,simulationOnly:true,data:{id:newTravelPayment,status:'SIMULATED_SUCCESS',createdAt:date,
+          data:{service:'TRAVEL_TAX',amountMinor:100000,origin:'TAXPAY_UI',
+            details:latestTravelSubmission.details}}
+      })});return;
+    }
     const chosen=records.find(item=>url.pathname.includes('/payments/'+item.id));
     if(chosen){
       const details=chosen.id===payment
