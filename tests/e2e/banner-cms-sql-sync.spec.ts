@@ -231,7 +231,7 @@ test('reordering published CMS banners retains the selected service, fixed copy 
   await expect(retainedBn).toHaveCSS('background-color', 'rgb(239, 247, 244)');
   await expect(retainedBn.locator('h2')).toHaveCSS('color', 'rgb(24, 90, 67)');
   await expect(retainedBn.getByRole('button', {name: 'কর পরিশোধ শুরু'})).toBeVisible();
-  await expect(retainedBn.getByRole('button', {name: 'ভ্রমণ কর শুরু'})).toBeVisible();
+  await expect(retainedBn.getByRole('button', {name: 'অন্যান্য কর'})).toBeVisible();
   expect(await page.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
 });
