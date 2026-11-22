@@ -321,7 +321,7 @@
 
 @media (max-width: 360px) {
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
-  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: 1.15rem; }
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2 { font-size: var(--taxpay-type-h1); }
 }
 
 @media (max-width: 900px) {
@@ -519,7 +519,7 @@
 }
 .public-record-discovery__heading { margin-bottom: .75rem; min-width: 0; }
 .public-record-discovery__heading h2 { margin: 0; color: var(--citizen-text); font-size: 1.25rem; line-height: 1.35; font-weight: 600; }
-.public-record-discovery__heading p { margin: .25rem 0 0; color: var(--citizen-muted); font-size: .9375rem; line-height: 1.5; }
+.public-record-discovery__heading p { margin: .25rem 0 0; color: var(--citizen-muted); font-size: var(--taxpay-type-body); line-height: 1.5; }
 .public-record-discovery__interactive { position: relative; min-width: 0; }
 .public-record-search {
   display: flex; align-items: stretch; min-width: 0; width: 100%; min-height: 60px;
@@ -724,7 +724,7 @@
 @media (min-width: 901px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-home-nav a,
   .taxpay-citizen-shell:has(.public-home-sections) .public-home-language {
-    font-size: .875rem;
+    font-size: var(--taxpay-type-body);
     font-weight: 500;
   }
 }
@@ -744,14 +744,14 @@
 .public-benefits__heading h2 {
   margin: 0;
   color: var(--citizen-text);
-  font-size: 1.25rem;
+  font-size: var(--taxpay-type-h2);
   font-weight: 600;
   line-height: 1.35;
 }
 .public-benefits__heading p {
   margin: 0;
   color: var(--citizen-muted);
-  font-size: .9375rem;
+  font-size: var(--taxpay-type-body);
   font-weight: 400;
   line-height: 1.5;
 }
