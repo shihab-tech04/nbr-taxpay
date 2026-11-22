@@ -58,32 +58,30 @@ test('v5 Return checkbox composes with other taxpayer/head and written final tot
   await modal.getByRole('button',{name:'Continue to Payment Head'}).click();
   await expect(modal.getByText('Paying tax for').first()).toBeVisible();
   await expect(modal.getByText('Search and select').first()).toBeVisible();
-  const checkbox=modal.getByTestId('unified-v5-return-checkbox');
+  const catalogue = modal.getByTestId('other-tax-head-catalogue');
+  const returnGroup = catalogue.getByTestId('unified-v5-return-group');
+  await expect(returnGroup).toHaveAttribute('data-head-group', 'Tax with Return');
+  await expect(returnGroup.locator('summary')).toContainText('Tax with Return');
+  await expect(returnGroup.locator('summary')).toContainText('(1)');
+  await expect(returnGroup.locator('[data-head-row="125"]')).toHaveCount(1);
+  await returnGroup.locator('summary').click();
+  const checkbox = returnGroup.getByTestId('unified-v5-return-checkbox');
   await expect(checkbox).toBeVisible();
-  await expect(checkbox).toHaveAttribute('type','checkbox');
   await checkbox.check();
-  // Both the selected service and AY/amount are inside ONE bordered component.
-  const returnGroup = modal.getByTestId('unified-v5-return-group');
-  await expect(returnGroup).toBeVisible();
-  await expect(returnGroup.locator('.unified-v5-return-card')).toHaveCount(1);
-  await expect(returnGroup.locator('.unified-v5-return-fields')).toHaveCount(1);
-  const cohesive = await returnGroup.evaluate(root => {
-    const card = root.querySelector<HTMLElement>('.unified-v5-return-card');
-    const fields = root.querySelector<HTMLElement>('.unified-v5-return-fields');
-    return {
-      connected: Boolean(card && fields && card.parentElement === fields.parentElement),
-      outerBorder: window.getComputedStyle(root).borderTopWidth,
-      cardBorder: card ? window.getComputedStyle(card).borderTopWidth : 'missing',
-      backgroundsMatch: Boolean(card && fields) &&
-        window.getComputedStyle(card!).backgroundColor === window.getComputedStyle(fields!).backgroundColor,
-    };
-  });
-  expect(cohesive).toEqual({ connected:true,outerBorder:'1px',cardBorder:'0px',backgroundsMatch:true });
+  // Return is inside the SAME catalogue and uses exactly the same line editor,
+  // not a separate custom card above the Tax head section.
+  await expect(modal.locator('.unified-v5-return-card')).toHaveCount(0);
+  await expect(returnGroup.getByTestId('other-tax-line')).toHaveCount(1);
+  await expect(returnGroup.getByTestId('other-tax-line').locator('select[id^="other-tax-year-"]')).toHaveValue('2026-27');
+  await expect(returnGroup.getByRole('button',{name:'Add another assessment year'})).toHaveCount(0);
+  await expect(modal.getByText(/168 available payment heads/)).toBeVisible();
   const returnAmount=modal.getByTestId('unified-v5-return-amount');
   await returnAmount.fill('1500');
   const taxpayerTabs=modal.getByTestId('other-tax-taxpayer-tabs').locator('button[data-taxpayer-id]');
   await expect(taxpayerTabs).toHaveCount(2);
   await taxpayerTabs.nth(1).click();
+  // Each taxpayer retains independent Return and ordinary head selections.
+  await expect(returnGroup.getByTestId('unified-v5-return-checkbox')).not.toBeChecked();
   const batch=modal.getByTestId('other-tax-batch');
   const group=batch.locator('[data-head-group="Advance Tax"]');
   if (await group.getAttribute('open')===null) await group.locator('summary').click();
