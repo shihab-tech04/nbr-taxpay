@@ -33,8 +33,20 @@ test('walk-in parallel chooser uses a seven-row category table and keeps Return 
   await expect(dialog.getByText('Sign in to see categories from your payment history.')).toHaveCount(0);
   await expect(dialog.getByTestId('frequent-category-section')).toHaveCount(0);
   await expect(dialog.getByTestId('unified-v5-return-group')).toHaveCount(1);
+  await expect(dialog.getByTestId('other-tax-head-catalogue')).toBeHidden();
   await table.getByRole('button',{name:'View payment heads for Tax with Return'}).click();
+  await expect(dialog.getByTestId('other-tax-category-directory')).toHaveCount(0);
+  await expect(dialog.getByTestId('other-tax-head-catalogue')).toBeVisible();
   await expect(dialog.getByTestId('unified-v5-return-group')).toHaveAttribute('open','');
+  await expect(dialog.locator('[data-head-group="Advance Tax"]')).toBeHidden();
+  await dialog.getByTestId('unified-v5-return-checkbox').check();
+  await expect(dialog.getByTestId('unified-v5-return-amount')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Back to categories' }).click();
+  await expect(dialog.getByTestId('fixed-tax-categories')).toBeVisible();
+  await expect(dialog.getByTestId('other-tax-head-catalogue')).toBeHidden();
+  await expect(table.locator('tr[data-category="Tax with Return"]')).toHaveAttribute('data-selected-count','1');
+  await table.getByRole('button',{name:'View payment heads for Tax with Return'}).click();
+  await expect(dialog.getByTestId('unified-v5-return-checkbox')).toBeChecked();
 });
 
 // The banner and first benefit must share one parallel entry, while legacy
@@ -69,6 +81,12 @@ for (const locale of ['en', 'bn'] as const) {
     });
     await expect(exit).toBeVisible();
     await expect(exit.locator('button')).toHaveCount(2);
+    const discard = exit.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ বাদ দিন' : 'Discard tax payment' });
+    const discardLabel = discard.locator('span.whitespace-nowrap');
+    await expect(discardLabel).toBeVisible();
+    const size = await discard.boundingBox();
+    const labelSize = await discardLabel.boundingBox();
+    expect(size && labelSize && labelSize.height < size.height).toBeTruthy();
     await expect(exit.getByRole('button', { name: locale === 'bn' ? 'সম্পাদনা চালিয়ে যান' : 'Keep editing' })).toBeVisible();
     await expect(exit.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ বাদ দিন' : 'Discard tax payment' })).toBeVisible();
     await expect(exit.getByText(/Save Draft|Save your tax payment|saved beneficiary session|খসড়া সংরক্ষণ/)).toHaveCount(0);

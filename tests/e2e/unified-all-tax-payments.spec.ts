@@ -64,7 +64,7 @@ test('v5 Return checkbox composes with other taxpayer/head and written final tot
   await expect(returnGroup.locator('summary')).toContainText('Tax with Return');
   await expect(returnGroup.locator('summary')).toContainText('(1)');
   await expect(returnGroup.locator('[data-head-row="125"]')).toHaveCount(1);
-  await returnGroup.locator('summary').click();
+  await modal.getByTestId('fixed-tax-categories').getByRole('button',{name:'View payment heads for Tax with Return'}).click();
   const checkbox = returnGroup.getByTestId('unified-v5-return-checkbox');
   await expect(checkbox).toBeVisible();
   await checkbox.check();
@@ -77,19 +77,23 @@ test('v5 Return checkbox composes with other taxpayer/head and written final tot
   await expect(modal.getByText(/168 available payment heads/)).toBeVisible();
   const returnAmount=modal.getByTestId('unified-v5-return-amount');
   await returnAmount.fill('1500');
+  const returnCheckboxBox = await checkbox.boundingBox();
+  expect(returnCheckboxBox).not.toBeNull();
   const taxpayerTabs=modal.getByTestId('other-tax-taxpayer-tabs').locator('button[data-taxpayer-id]');
   await expect(taxpayerTabs).toHaveCount(2);
   await taxpayerTabs.nth(1).click();
   // Each taxpayer retains independent Return and ordinary head selections.
   await expect(returnGroup.getByTestId('unified-v5-return-checkbox')).not.toBeChecked();
   const batch=modal.getByTestId('other-tax-batch');
+  await batch.getByRole('button',{name:'Back to categories'}).click();
+  await batch.getByTestId('fixed-tax-categories').getByRole('button',{name:'View payment heads for Advance Tax'}).click();
   const group=batch.locator('[data-head-group="Advance Tax"]');
-  if (await group.getAttribute('open')===null) await group.locator('summary').click();
+  await expect(group).toHaveAttribute('open','');
   const catalogCheck = batch.getByRole('checkbox',{name:/Select 68A/});
   // Both Return and catalogue checkboxes belong on the LEFT of their labels.
-  const leftAlignment = await Promise.all([
-    checkbox.boundingBox(), catalogCheck.boundingBox(),
-  ]);
+  const leftAlignment = [
+    returnCheckboxBox, await catalogCheck.boundingBox(),
+  ];
   expect(leftAlignment[0]).not.toBeNull();
   expect(leftAlignment[1]).not.toBeNull();
   expect(Math.abs(leftAlignment[0]!.x - leftAlignment[1]!.x)).toBeLessThan(13);
