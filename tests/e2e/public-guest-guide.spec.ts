@@ -336,7 +336,8 @@ test('guest receipt search is under the banner and opens receipt results in the 
  await page.goto('/?action=landing');
  const search=page.getByRole('searchbox',{name:'Search payment records by reference'});
  await expect(search).toBeVisible();
- await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(3);
+ await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
+ await expect(page.locator('[data-banner-service="intro"] .public-hero-carousel__gift-link')).toBeVisible();
  await expect(page.getByRole('dialog',{name:'Payment status & receipt'})).toHaveCount(0);
  await search.fill('NO-SUCH-DEMO-REFERENCE-12345');
  await page.locator('.public-record-search').getByRole('button',{name:'Search records'}).click();
@@ -364,7 +365,8 @@ test('Bangla homepage reference search keeps keyboard access and modal receipt d
  await setWorkspaceLanguage(page,'bn');
  const search=page.getByRole('searchbox',{name:'রেফারেন্স দিয়ে পেমেন্ট রেকর্ড খুঁজুন'});
  await expect(search).toBeVisible();
- await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(3);
+ await expect(page.locator('[data-banner-service="intro"] .public-guest-action')).toHaveCount(2);
+ await expect(page.locator('[data-banner-service="intro"] .public-hero-carousel__gift-link')).toBeVisible();
  await expect(page.getByRole('dialog',{name:'পেমেন্টের অবস্থা ও রসিদ'})).toHaveCount(0);
  await search.fill('SYNTHETIC-NO-MATCH-2026');
  await search.press('Enter');
