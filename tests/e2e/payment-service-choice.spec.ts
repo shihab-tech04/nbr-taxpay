@@ -299,7 +299,7 @@ test('Declined Travel Tax payment never issues a receipt', async ({ page }) => {
   await travel.getByRole('radio', { name: 'Nagad' }).check();
   await travel.getByRole('checkbox', { name: 'Show declined payment outcome' }).check();
   await travel.getByLabel('I confirm the travel information, all passengers and the combined amount.').check();
-  await travel.getByRole('button', { name: 'Confirm preview payment' }).click();
+  await travel.getByRole('button', { name: 'Confirm sample payment' }).click();
   await expect(travel.getByRole('alert')).toContainText('Payment preview declined', { timeout: 12000 });
   await expect(travel.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
 });

@@ -86,13 +86,13 @@ test('Travel Tax resends the identical payment after a lost response ' +
   await modal.locator('#travel-mobile').fill('01712345678');
   await modal.getByRole('button', { name: 'Make Payment' }).click();
   await expect(modal.getByTestId('travel-payment-channel-screen')).toBeVisible();
-  const confirmPreview = modal.getByRole('button', { name: 'Confirm preview payment' });
+  const confirmPreview = modal.getByRole('button', { name: 'Confirm sample payment' });
   await expect(confirmPreview).toBeDisabled();
   await modal.getByRole('button', { name: 'Pay online' }).click();
   await modal.getByRole('button', { name: 'Mobile banking' }).click();
   await modal.getByRole('radio', { name: 'Nagad' }).check();
   await modal.getByLabel(/I confirm the travel information/).check();
-  const submit = modal.getByRole('button', { name: 'Confirm preview payment' });
+  const submit = modal.getByRole('button', { name: 'Confirm sample payment' });
   await expect(submit).toBeEnabled();
   await submit.click();
   await expect(modal.getByRole('alert')).toContainText('Retry with the same details');

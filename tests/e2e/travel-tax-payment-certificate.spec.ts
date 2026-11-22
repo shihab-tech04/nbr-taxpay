@@ -99,7 +99,7 @@ for (const language of ['en', 'bn'] as const) {
     await modal.getByRole('button', { name: /Mobile banking|মোবাইল ব্যাংকিং/ }).click();
     await modal.getByRole('radio', { name: 'Nagad' }).check();
     await modal.getByLabel(/I confirm the travel information|ভ্রমণের তথ্য/).check();
-    await modal.getByRole('button', { name: /Confirm preview payment|নমুনা পেমেন্ট নিশ্চিত করুন/ }).click();
+    await modal.getByRole('button', { name: /Confirm sample payment|নমুনা পেমেন্ট নিশ্চিত করুন/ }).click();
 
     const receiptPaper = modal.locator('.receipt-view__paper');
     await expect(receiptPaper).toBeVisible();

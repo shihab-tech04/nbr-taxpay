@@ -39,7 +39,7 @@ test('public hero opens receipt lookup and its Travel Tax banner starts the jour
   await travel.getByRole('button',{name:'Mobile banking'}).click();
  await travel.getByRole('radio',{name:'bKash'}).check();
  await travel.locator('.travel-flow__channel-option input[type="checkbox"]').check();
- await travel.getByRole('button',{name:'Confirm preview payment'}).click();
+ await travel.getByRole('button',{name:'Confirm sample payment'}).click();
  await expect(travel.getByRole('heading',{name:'Combined Travel Tax details'})).toBeVisible();
  await expect(travel.getByText('Not valid for travel or proof of payment.',{exact:false})).toHaveCount(0);
  await page.keyboard.press('Escape');
@@ -463,7 +463,7 @@ test('travel tax desktop summary stays anchored during the wizard, then full-wid
   await modal.getByRole('button',{name:'Mobile banking'}).click();
   await modal.getByRole('radio',{name:'bKash'}).check();
   await modal.locator('.travel-flow__channel-option input[type="checkbox"]').check();
-  await modal.getByRole('button',{name:'Confirm preview payment'}).click();
+  await modal.getByRole('button',{name:'Confirm sample payment'}).click();
   await expect(modal.getByRole('heading',{name:'Combined Travel Tax details'})).toBeVisible({timeout:12000});
   await expect(modal.locator('.travel-flow__summary')).toHaveCount(0);
   await expect(modal.locator('.taxpay-modal__body > .receipt-view--embedded')).toBeVisible();
@@ -513,7 +513,7 @@ test('Travel Tax keeps workflow actions separate from receipt Download and Print
   await modal.getByRole('button',{name:'Mobile banking'}).click();
   await modal.getByRole('radio',{name:'bKash'}).check();
   await modal.locator('.travel-flow__channel-option input[type="checkbox"]').check();
-  await actions.getByRole('button',{name:'Confirm preview payment'}).click();
+  await actions.getByRole('button',{name:'Confirm sample payment'}).click();
   await expect(modal.getByRole('heading',{name:'Combined Travel Tax details'})).toBeVisible({timeout:12000});
   await expect(footer.locator('.travel-flow__footer-actions')).toHaveCount(0);
   await expect(footer.locator('.receipt-view__actions')).toHaveCount(1);
