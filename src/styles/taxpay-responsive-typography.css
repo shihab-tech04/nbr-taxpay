@@ -363,15 +363,14 @@
  * Use available full-width footer canvas rather than reducing any font. */
 @media (min-width: 1200px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
-    max-width: none;
-    padding-inline: clamp(12px, 1.5vw, 24px);
-    column-gap: 12px;
+    /* Preserve the approved 1100px-aligned footer identity. */
+    column-gap: 8px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity img.public-footer__wordmark {
-    width: 76px;
+    width: 68px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
-    max-width: 170px;
+    max-width: 160px;
     line-height: 1.25;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
