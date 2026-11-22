@@ -12,7 +12,8 @@ import type { Language } from '../../types/tax';
 import { RETURN_HEAD_ID } from '../../services/taxWithReturnContract';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
-import { getDemoStoryPaymentHistory, getPrivateSimulationHistory, type SimulationCategory, type SimulationUser } from '../../services/simulatedPaymentsApi';
+import { getDemoStoryPaymentHistory, getPrivateSimulationHistory, type SimulationUser } from '../../services/simulatedPaymentsApi';
+import { rankFrequentTaxCategoryNames } from '../../services/paymentFrequentCategories';
 
 export type OtherTaxTaxpayer = { id: string; tin: string; name: string };
 export type OtherTaxAllocation = {
@@ -35,15 +36,6 @@ const liability = V11_SOURCE_HEADS.filter(head =>
 const grouped = GROUP_ORDER.map(name => ({ name, rows: liability.filter(head => head.grpEn === name) }));
 // Both backend history APIs are owner/capability-scoped and read-only. Do not
 // rank by TIN, public fixtures, guessed preferences or browser cache.
-const CATEGORY_GROUP_BY_PAYMENT: Record<SimulationCategory, string> = {
-  TAX_WITH_RETURN: 'Tax with Return',
-  ADVANCE_TAX: 'Advance Tax',
-  ASSESSED_DEMAND: 'Tax against Demand',
-  PENALTY: 'Penalty',
-  SOURCE_TAX_DEPOSIT: 'Source Tax',
-  APPELLATE_TRIBUNAL: 'Appellate Tribunal',
-  OTHER_TAX_PAYMENT: 'Others',
-};
 type CategoryHistory = { status: 'signed-out' | 'loading' | 'ready' | 'unavailable'; names: string[] };
 // Tax with Return shares the Walk-in catalogue UI; its one-year accounting
 // contract and original return service classification remain unchanged.
@@ -107,25 +99,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
       : getPrivateSimulationHistory('payer');
     history.then(transactions => {
       if (!current) return;
-      const counts = new Map<string, { count: number; last: number }>();
-      for (const transaction of transactions) {
-        // Failed/reversed/pending attempts do not establish frequently paid categories.
-        if (transaction.state !== 'SIMULATED') continue;
-        const time = Date.parse(transaction.createdAt);
-        if (!Number.isFinite(time)) continue;
-        const inPayment = new Set<string>();
-        for (const allocation of transaction.allocations) {
-          const name = CATEGORY_GROUP_BY_PAYMENT[allocation.category];
-          if (name) inPayment.add(name);
-        }
-        for (const name of inPayment) {
-          const old = counts.get(name);
-          counts.set(name, { count: (old?.count ?? 0) + 1, last: Math.max(old?.last ?? 0, time) });
-        }
-      }
-      const names = [...counts].sort((a, b) => b[1].count - a[1].count || b[1].last - a[1].last ||
-        a[0].localeCompare(b[0])).slice(0, 5).map(([name]) => name);
-      setCategoryHistory({ status: 'ready', names });
+      setCategoryHistory({ status: 'ready', names: rankFrequentTaxCategoryNames(transactions) });
     }).catch(() => { if (current) setCategoryHistory({ status: 'unavailable', names: [] }); });
     return () => { current = false; };
   }, [allowMixedReturn, previewAccount?.id, user?.id]);
