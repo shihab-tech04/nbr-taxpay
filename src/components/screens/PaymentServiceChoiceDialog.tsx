@@ -433,7 +433,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
           onMouseDown={event => event.stopPropagation()}>
           <div role="alertdialog" aria-modal="true" aria-labelledby="payment-draft-exit-title"
             aria-describedby="payment-draft-exit-description"
-            className="box-border max-h-[calc(100dvh-24px)] w-full max-w-[440px] overflow-y-auto overscroll-contain rounded-2xl border border-taxpay-border bg-white p-5 shadow-xl sm:p-6"
+            className={`box-border max-h-[calc(100dvh-24px)] w-full overflow-y-auto overscroll-contain rounded-2xl border border-taxpay-border bg-white p-5 shadow-xl sm:p-6 ${isWalkInPayment ? 'max-w-[520px]' : 'max-w-[440px]'}`}
             onKeyDown={event => {
               if (event.key === 'Escape') {
                 event.preventDefault();
@@ -454,7 +454,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             }}>
             <div className="flex items-start gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-taxpay-primary/10 text-taxpay-primary" aria-hidden="true">
-                <FileCheck2 size={20} strokeWidth={1.8} />
+                {isWalkInPayment ? <Trash2 size={20} strokeWidth={1.8} /> : <FileCheck2 size={20} strokeWidth={1.8} />}
               </span>
               <div className="min-w-0 flex-1">
                 <h3 id="payment-draft-exit-title" className="text-lg font-semibold leading-6 text-taxpay-dark">
@@ -478,13 +478,13 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
                 <button ref={exitFirstButtonRef} type="button"
                   className="min-h-11 w-full rounded-lg bg-taxpay-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-taxpay-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary"
                   onClick={() => { setExitPromptOpen(false); setExitError(''); }}>
-                  {tr('Keep editing', 'সম্পাদনা চালিয়ে যান')}
+                  <span className="whitespace-nowrap">{tr('Keep editing', 'সম্পাদনা চালিয়ে যান')}</span>
                 </button>
                 <button type="button"
                   className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-taxpay-error/40 bg-white px-4 py-2.5 text-sm font-semibold text-taxpay-error transition-colors hover:bg-taxpay-error/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary"
                   onClick={close}>
                   <Trash2 size={16} strokeWidth={1.8} aria-hidden="true" />
-                  {tr('Discard tax payment', 'কর পরিশোধ বাদ দিন')}
+                  <span className="whitespace-nowrap">{tr('Discard tax payment', 'কর পরিশোধ বাদ দিন')}</span>
                 </button>
               </div>
             ) : (
