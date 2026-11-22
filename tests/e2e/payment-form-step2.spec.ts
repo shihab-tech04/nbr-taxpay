@@ -39,7 +39,7 @@ test('mobile service gate and four payment steps remain compact and usable', asy
   await expect(dialog.locator('.payment-form-section--static').first()).toHaveCSS('border-top-width', '0px');
   await expect(dialog.locator('.taxpay-modal__subtitle')).not.toContainText('Other Tax Payment & Travel Tax');
   await expect(dialog.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
-  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveCSS('font-size', '14px');
+  await expect(dialog.locator('.taxpay-modal__step-count')).toHaveCSS('font-size', '16px');
   await expect(dialog.getByTestId('other-tax-taxpayer-list')).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Add another taxpayer' })).toHaveCount(0);
   await dialog.locator('#guest-tin').fill('123456789012');
@@ -107,7 +107,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await expect(batch).toBeVisible();
   await expect(summary).toBeVisible();
   await expect(summary.locator('[data-payment-service]')).toHaveCount(0);
-  await expect(summary.locator('.payment-form-summary__eyebrow')).toHaveCSS('font-size', '14px');
+  await expect(summary.locator('.payment-form-summary__eyebrow')).toHaveCSS('font-size', '12px');
   const columns = await dialog.locator('.payment-flow-embedded__content').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
   expect(columns).toBe(2);
   await batch.locator('[data-head-group="Advance Tax"] summary').click();
