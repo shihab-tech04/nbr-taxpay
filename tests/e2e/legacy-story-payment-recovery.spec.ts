@@ -399,7 +399,7 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await travelDialog.getByRole('button',{name:'Mobile banking'}).click();
   await travelDialog.getByRole('radio',{name:'Nagad'}).check();
   await travelDialog.getByLabel(/I confirm the travel information/).check();
-  await travelDialog.getByRole('button',{name:'Confirm preview payment'}).click();
+  await travelDialog.getByRole('button',{name:'Confirm sample payment'}).click();
   await expect(travelDialog.locator('.receipt-view__paper')).toBeVisible({timeout:15000});
   const certificateButton=travelDialog.getByRole('button',{name:/View payment certificate|পেমেন্ট সনদ দেখুন/});
   await expect(certificateButton).toBeVisible();

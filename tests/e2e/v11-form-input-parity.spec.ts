@@ -79,7 +79,7 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   await travel.locator('#travel-mobile').fill('01712345678');
   await travel.getByRole('button', { name: 'Make Payment' }).click();
   await expect(travel.getByTestId('travel-payment-channel-screen')).toBeVisible();
-  const submit = travel.getByRole('button', { name: 'Confirm preview payment' });
+  const submit = travel.getByRole('button', { name: 'Confirm sample payment' });
   await expect(submit).toBeDisabled();
   const online = travel.getByRole('button', { name: 'Pay online' });
   await expect(online).toHaveAttribute('aria-pressed', 'false');

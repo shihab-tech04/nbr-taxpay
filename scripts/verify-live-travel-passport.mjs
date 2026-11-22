@@ -163,7 +163,9 @@ try {
         document.documentElement.scrollWidth - document.documentElement.clientWidth);
       if (overflow > 2) throw new Error('Live mobile Travel Tax has horizontal overflow: ' + overflow + 'px');
     }
-    await page.screenshot({ path: 'test-results/live-travel-passport-' + name + '.png', fullPage: false });
+    // Screenshot at the fully settled animation state, not the initial 240 ms fade.
+    await page.screenshot({ path: 'test-results/live-travel-passport-' + name + '.png',
+      fullPage: false, animations: 'disabled' });
     await page.close();
   }
   console.log('PASS: production Travel Tax passport lookup, manual medical block, duplicate handling, passenger rail, separate receipt contact and payment channel, EN/desktop/mobile responsive bounds');

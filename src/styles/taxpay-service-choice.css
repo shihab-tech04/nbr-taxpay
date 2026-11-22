@@ -2848,6 +2848,60 @@
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__add-another { order: 4; margin-top: 0; }
 }
 
+/* Travel Tax-specific acceptance corrections (TT-01/03/04).
+   Scope every rule to Travel so the approved Taxpayer font/UI stays frozen. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-currency {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .14em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-currency__mark {
+  width: .66em;
+  height: 1em;
+  flex: 0 0 auto;
+  align-self: center;
+  display: inline-block;
+  overflow: visible;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__rate-caption {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--citizen-muted);
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .payment-form-draft-controls__save {
+  background: transparent;
+  color: var(--citizen-primary);
+  border-color: var(--citizen-border);
+  box-shadow: none;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .payment-form-draft-controls__save:hover:not(:disabled) {
+  background: var(--citizen-primary-light);
+  border-color: var(--citizen-primary);
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .payment-form-draft-controls__save:focus-visible {
+  outline: 3px solid var(--citizen-primary);
+  outline-offset: 2px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__zero-tax-result {
+  border: 1px solid var(--citizen-border);
+  border-radius: 10px;
+  padding: 20px;
+  background: var(--citizen-surface);
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__zero-tax-result h3 {
+  margin: 0 0 10px;
+  font: 700 17px/1.5 Poppins, system-ui, sans-serif;
+  color: var(--citizen-text);
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__zero-tax-result [role="status"] {
+  margin: 0 0 16px;
+  color: var(--citizen-muted);
+  line-height: 1.6;
+}
+
 /* Travel Tax three-stage parity. Reuses the approved Taxpayer modal shell and
    selected-person rail sizes; this override is service-scoped and does not
    modify the frozen income-tax workspace. */
