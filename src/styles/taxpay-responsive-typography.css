@@ -290,7 +290,21 @@
 
 /* Small labels are deliberately limited to genuine secondary/meta roles.
  * Under no circumstances use the 12px tier for required input labels. */
-.taxpay-citizen-shell.taxpay-citizen-shell :is(
+.taxpay-citizen-shell.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+/* Utility class text-sm is a body role in payment/service flows, not a
+ * license to re-introduce 14px in status messages and row descriptions. */
+.taxpay-citizen-shell :is(.payment-flow-embedded,.taxpay-modal) .text-sm:not(.taxpay-type-micro):not(.payment-certificate-document *) {
+  font-size: var(--taxpay-font-body);
+}
+/* Summary eyebrow is a real secondary 12px micro-label. */
+.taxpay-citizen-shell.taxpay-citizen-shell .payment-form-summary__eyebrow {
+  font-size: var(--taxpay-font-micro);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell :is(
   .taxpay-type-micro,.taxpay-bento-year__legend,.taxpay-bento-year__label,
   .taxpay-bento-year__value,.taxpay-bento-position__totals dt,
   .taxpay-unified-chart__axis,.taxpay-table-column-hint,
