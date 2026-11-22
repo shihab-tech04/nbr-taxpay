@@ -195,10 +195,18 @@ test('426px scrolled mobile footer is one compact white row above the floating P
   test.skip(!testInfo.project.name.startsWith('mobile-'),'Mobile footer geometry requires a mobile browser project');
   await page.setViewportSize({width:426,height:882});
   await page.goto('/?action=landing&lang=en');
-  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
   await expect(page.locator('.taxpay-public-mobile-navigation .citizen-corners')).toHaveCount(1);
   const footer=page.locator('.public-footer');
   await expect(footer).toBeVisible();
+  // The CMS hero and web fonts can extend the document after navigation.
+  // Assert at the actual scroll end, not at the now-stale first scroll position.
+  // This never changes the overlap/clearance/size acceptance thresholds.
+  await page.evaluate(async () => { await document.fonts.ready; });
+  await expect.poll(async () => {
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    return page.evaluate(() =>
+      Math.abs(document.documentElement.scrollHeight - window.innerHeight - window.scrollY));
+  }).toBeLessThanOrEqual(2);
   const result=await page.evaluate(()=>{
     const footer=document.querySelector('.public-footer')!;
     const row=document.querySelector('.public-footer__inner')!;
