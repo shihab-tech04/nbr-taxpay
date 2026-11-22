@@ -143,7 +143,7 @@
   border-radius: 8px;
   background: #fff;
   color: #2c5ead;
-  font-size: 14px;
+  font-size: var(--taxpay-type-body, 16px);
   font-weight: 650;
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-back:hover {
