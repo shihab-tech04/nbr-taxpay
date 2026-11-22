@@ -166,6 +166,13 @@
   line-height: 1.5;
 }
 
+/* Current two-action CMS hero and its supplemental service link retain their
+ * approved geometry; both use the same readable 16px action/copy tier. */
+.taxpay-citizen-shell :is(.public-hero-carousel__slogan,.public-guest-actions .public-guest-action,.public-hero-carousel__gift-link) {
+  font-size: var(--taxpay-font-body);
+  line-height: 1.5;
+}
+
 /* Public homepage: preserve hero artwork/CTA arrangement and text contrast,
  * but never shrink primary heading to 18.4px at 320px. */
 .taxpay-citizen-shell .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy :is(h1,h2),
