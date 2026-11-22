@@ -1119,7 +1119,7 @@
     padding-inline: 16px;
   }
   .public-home-sections .public-benefits__heading {
-    margin-bottom: 3px;
+    margin-bottom: 4px;
     gap: 0;
   }
   .public-home-sections .public-benefits__heading :is(h2,p) {
