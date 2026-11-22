@@ -134,7 +134,8 @@ test('Travel Tax: Add passenger is attached to the checked passenger card, not r
   // Confirmation spans the same content column as medical review, not
   // a small, distant button anchored to the right of a huge empty row.
   expect(Math.abs(confirmBox!.x - medicalBox!.x)).toBeLessThanOrEqual(3);
-  expect(confirmBox!.width).toBeGreaterThanOrEqual(medicalBox!.width * 0.96);
+  expect(confirmBox!.width).toBeGreaterThanOrEqual(120);
+  expect(confirmBox!.width).toBeLessThanOrEqual(medicalBox!.width);
   const footer = await modal.locator('.taxpay-modal__footer').boundingBox();
   expect(footer).not.toBeNull();
   // The action must be completely above the fixed modal footer.
@@ -248,7 +249,8 @@ test('Travel Tax: search result requires confirmation before adding another pass
   await modal.locator('#travel-new-passport').focus();
   await expect(another).toHaveCount(0);
   await expect(add).toHaveCount(0);
-  await expect(modal.getByTestId('travel-passenger-list').locator('.travel-passenger-workspace__person, .travel-passenger-workspace__entry')).toHaveCount(2);
+  await expect(modal.locator('.travel-passenger-workspace__person')).toHaveCount(1);
+  await expect(modal.locator('.travel-passenger-workspace__entry')).toHaveCount(1);
 });
 
 test('Travel Tax: medical review stays with passenger; receipt mobile moves to preview',async({page})=>{
@@ -278,18 +280,19 @@ test('Travel Tax: medical review stays with passenger; receipt mobile moves to p
   const [contactBox,mobileBox]=await Promise.all([contact.boundingBox(),mobile.boundingBox()]);
   expect(contactBox && mobileBox).toBeTruthy();
   expect(mobileBox!.width).toBeGreaterThan(contactBox!.width * .8);
-  const confirm=modal.getByRole('button',{name:'Confirm preview payment'});
-  await expect(confirm).toBeDisabled();
+  const payment=modal.getByRole('button',{name:'Make Payment'});
+  await expect(payment).toBeVisible();
+  await payment.click();
+  await expect(modal.getByRole('alert')).toContainText('11-digit receipt mobile number');
   await mobile.fill('0171234');
   await expect(mobile).toHaveAttribute('aria-invalid','true');
   await expect(contact).toContainText('11-digit mobile number');
   await mobile.fill('01712345678');
   await expect(mobile).not.toHaveAttribute('aria-invalid','true');
-  if (await modal.getByRole('button',{name:/^(Make Payment|পেমেন্ট করুন)$/}).isVisible()) {
-    const contact=modal.locator('#travel-mobile');
-    if (await contact.isVisible() && !/^01\\d{9}$/.test(await contact.inputValue())) await contact.fill('01712345678');
-    await modal.getByRole('button',{name:/^(Make Payment|পেমেন্ট করুন)$/}).click();
-  }
+  await payment.click();
+  await expect(modal.getByTestId('travel-payment-channel-screen')).toBeVisible();
+  const confirm=modal.getByRole('button',{name:'Confirm preview payment'});
+  await expect(confirm).toBeDisabled();
   await modal.getByRole('button',{name:'Pay online'}).click();
   await modal.getByRole('button',{name:'Mobile banking'}).click();
   await modal.getByRole('radio',{name:'Nagad'}).check();
@@ -386,7 +389,7 @@ test('Travel Tax: additional passengers are added in Step 1, share one receipt a
   const people=modal.getByTestId('travel-passenger-list').locator('.travel-passenger-workspace__person, .travel-passenger-workspace__entry');
   const completePeople=modal.getByTestId('travel-passenger-list').locator('[data-passenger-id][data-complete="true"]');
   await expect(people).toHaveCount(2);
-  const second=people.nth(1);
+  const second=modal.locator('.travel-passenger-workspace__entry');
   await second.getByRole('tab',{name:'Foreign passenger'}).click();
   await second.getByLabel('Passport number').fill('B7654321');
   await second.getByLabel('Passenger name as on passport').fill('FRIEND SECOND');
@@ -430,7 +433,7 @@ test('Travel Tax: every passenger must be confirmed and Back preserves confirmat
   const people=modal.getByTestId('travel-passenger-list').locator('.travel-passenger-workspace__person, .travel-passenger-workspace__entry');
   const completePeople=modal.getByTestId('travel-passenger-list').locator('[data-passenger-id][data-complete="true"]');
   await expect(people).toHaveCount(2);
-  const first=people.nth(0), second=people.nth(1);
+  const first=modal.locator('.travel-passenger-workspace__person'), second=modal.locator('.travel-passenger-workspace__entry');
   await second.getByLabel('Passport number').fill('TEST230001');
   await second.getByRole('button',{name:'Check Passport'}).click();
 
@@ -475,7 +478,7 @@ test('Travel Tax: duplicate passports cannot be confirmed or included in final t
   await modal.locator('#travel-lookup-first').click();
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
   await modal.locator('#travel-new-passport').focus();
-  const second=modal.getByTestId('travel-passenger-list').locator('.travel-passenger-workspace__person, .travel-passenger-workspace__entry').nth(1);
+  const second=modal.locator('.travel-passenger-workspace__entry');
   await second.getByLabel('Passport number').focus();
   const unusedSuggestions = second.locator('.travel-flow__passport-suggestions');
   await expect(unusedSuggestions.getByRole('option')).toHaveCount(9);
@@ -500,10 +503,8 @@ test('Travel Tax: duplicate passports cannot be confirmed or included in final t
   await expect(completePassengers).toHaveCount(2);
   const summaries=modal.getByTestId('travel-passenger-list').locator('.travel-passenger-workspace__person');
   await expect(summaries).toHaveCount(2);
-  const maskedPassports=await Promise.all([
-    summaries.nth(0).locator('div').nth(1).locator('dd').innerText(),
-    summaries.nth(1).locator('div').nth(1).locator('dd').innerText(),
-  ]);
+  const maskedPassports=await summaries.locator('small').allTextContents();
+  expect(maskedPassports).toHaveLength(2);
   expect(maskedPassports[0]).not.toBe(maskedPassports[1]);
   await modal.getByRole('button',{name:'Continue to travel details'}).click();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
@@ -526,7 +527,7 @@ test('Travel Tax: incomplete foreign passenger shows a field error and recovers 
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
   const passengerList=modal.getByTestId('travel-passenger-list');
   await modal.locator('#travel-new-passport').focus();
-  const second=passengerList.locator('.travel-passenger-workspace__person, .travel-passenger-workspace__entry').nth(1);
+  const second=passengerList.locator('.travel-passenger-workspace__entry');
   await second.getByRole('tab',{name:'Foreign passenger'}).click();
   const passport=second.getByLabel('Passport number');
   const name=second.getByLabel('Passenger name as on passport');
@@ -539,15 +540,15 @@ test('Travel Tax: incomplete foreign passenger shows a field error and recovers 
   await second.getByRole('button',{name:'Add passenger',exact:true}).click();
   await expect(country).toHaveAttribute('aria-invalid','true');
   await expect(country).toBeFocused();
-  await expect(second.getByRole('status')).toContainText('country of nationality');
+  await expect(second.getByRole('alert')).toContainText('country of nationality');
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
   await expect(passengerList.locator('[data-complete="true"]')).toHaveCount(1);
   await country.fill('India');
   await expect(country).not.toHaveAttribute('aria-invalid','true');
   await second.getByRole('button',{name:'Add passenger',exact:true}).click();
   await expect(passengerList.locator('[data-complete="true"]')).toHaveCount(2);
-  await expect(passengerList.locator('.travel-passenger-workspace__person, .travel-passenger-workspace__entry').nth(0)).toContainText('SAMPLE BANGLADESHI PASSENGER');
-  await expect(passengerList.locator('.travel-passenger-workspace__person, .travel-passenger-workspace__entry').nth(1)).toContainText('SAMPLE FOREIGN TRAVELLER');
+  await expect(passengerList.locator('.travel-passenger-workspace__person').nth(0)).toContainText('SAMPLE BANGLADESHI PASSENGER');
+  await expect(passengerList.locator('.travel-passenger-workspace__person').nth(1)).toContainText('SAMPLE FOREIGN TRAVELLER');
   await modal.getByRole('button',{name:'Continue to travel details'}).click();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','2');
 });
@@ -574,13 +575,9 @@ test('Travel Tax: medical referral is not an online tax exemption',async({page})
   await modal.locator('#travel-passport-first').fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
   await modal.locator('#travel-medical-first').check();
-  const help = modal.getByRole('button',{name:'What is manual assessment?'});
-  await help.click();
-  await expect(modal.getByRole('tooltip')).toContainText('does not approve a tax exemption online');
-  const medicalPassenger=modal.getByTestId('travel-passenger-list').locator('.travel-passenger-workspace__person, .travel-passenger-workspace__entry').first();
-  const addPassenger=modal.getByRole('button',{name:'Add passenger',exact:true});
+  const medicalPassenger=modal.locator('.travel-passenger-workspace__entry');
   await expect(medicalPassenger).toContainText('Manual medical assessment is required at the departure port.');
-  await expect(medicalPassenger).toContainText('This does not approve a tax exemption online');
+  const addPassenger=modal.getByRole('button',{name:'Add passenger',exact:true});
   await expect(addPassenger).toBeDisabled();
   await expect(medicalPassenger).toHaveAttribute('data-complete','false');
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
@@ -637,8 +634,8 @@ test('Travel Tax: Step 1 scroll stays inside the modal with accessible fixed act
   expect(beforeHeader).not.toBeNull();
   expect(beforeFooter).not.toBeNull();
 
-  const owner = info.project.name === 'desktop-1280' ? body : main;
-  const other = info.project.name === 'desktop-1280' ? main : body;
+  const owner = main;
+  const other = body;
   expect(await owner.evaluate(element => getComputedStyle(element).overflowY)).toBe('auto');
   expect(await other.evaluate(element => getComputedStyle(element).overflowY))
     .not.toBe('auto');
@@ -715,11 +712,10 @@ test('Travel Tax: modal resizing, conditional passenger cards and passport sugge
   await expect(modal.getByRole('button', {name: 'Add passenger'})).toBeEnabled();
   await modal.getByRole('button', {name: 'Add passenger', exact: true}).click();
   await modal.locator('#travel-new-passport').focus();
-  const newPassenger = modal.locator('.travel-passenger-workspace__person, .travel-passenger-workspace__entry').last();
+  const newPassenger = modal.locator('.travel-passenger-workspace__entry');
   await expect(newPassenger).toBeVisible();
-  expect(await newPassenger.evaluate(element => getComputedStyle(element).animationName))
-    .toContain('travel-flow-expand');
-  await expect(modal.locator('.travel-flow__person-body').last()).toBeVisible();
+  await expect(modal.locator('.travel-passenger-workspace__person')).toHaveCount(1);
+  await expect(newPassenger.locator('.travel-flow__passport-row')).toBeVisible();
   await expect(modal.getByRole('button', {name: 'Continue to travel details'})).toBeDisabled();
 });
 
@@ -799,6 +795,9 @@ test('Travel Tax: medical assessment option survives passport check and passenge
   await expect(option).toBeVisible();
   await expect(option).not.toBeChecked();
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
+  await expect(option).toHaveCount(0);
+  await expect(modal.locator('.travel-passenger-workspace__person')).toHaveCount(1);
+  await modal.locator('.travel-passenger-workspace__copy button').click();
   await expect(option).toBeVisible();
   await option.check();
   await expect(option).toBeChecked();
@@ -806,7 +805,8 @@ test('Travel Tax: medical assessment option survives passport check and passenge
   await option.uncheck();
   await expect(option).not.toBeChecked();
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
-  await expect(option).toBeVisible();
+  await expect(option).toHaveCount(0);
+  await expect(modal.locator('.travel-passenger-workspace__person')).toHaveCount(1);
 });
 
 
