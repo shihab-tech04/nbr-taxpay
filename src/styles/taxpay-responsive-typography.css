@@ -389,10 +389,10 @@
     column-gap: 10px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
-    /* Two readable lines, not a three-line 60px block that pushes the footer
-     * beyond the approved viewport on short desktop pages. */
-    flex: 0 0 180px;
-    max-width: 180px;
+    /* Keep the 16px explanatory copy within two lines so the aligned
+     * footer stays compact at approved desktop heights. */
+    flex: 0 0 220px;
+    max-width: 220px;
     line-height: 1.25;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
