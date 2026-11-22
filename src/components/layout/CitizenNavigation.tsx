@@ -4,6 +4,7 @@ import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { UserRole } from '../../types/tax';
 import { SiteLogo } from './SiteLogo';
+const GiftTaxServiceModal = React.lazy(() => import('../screens/GiftTaxEntryModal').then(module => ({default: module.GiftTaxEntryModal})));
 
 type CitizenAction = { route: string; en: string; bn: string; category?: string };
 const guestLinks: CitizenAction[] = [
@@ -92,6 +93,7 @@ export function CitizenNavigation() {
   const compact = scrollCompact && !isTaxpayer;
   const [menuOpen, setMenuOpen] = useState(false);
   const [payPopoverOpen, setPayPopoverOpen] = useState(false);
+  const [giftTaxOpen, setGiftTaxOpen] = useState(false);
   const payPopoverRef = useRef<HTMLDivElement>(null);
   const payButtonRef = useRef<HTMLButtonElement>(null);
   const [inputFocused, setInputFocused] = useState(false);
@@ -339,6 +341,9 @@ export function CitizenNavigation() {
           <button type="button" role="menuitem" onClick={() => {setPayPopoverOpen(false);openPaymentServiceChoice('TRAVEL_TAX');}}>
             <Route size={17} aria-hidden="true"/>{bn ? 'ভ্রমণ কর' : 'Travel Tax'}
           </button>
+          <button type="button" role="menuitem" onClick={() => {setPayPopoverOpen(false);setGiftTaxOpen(true);}}>
+            <CreditCard size={17} aria-hidden="true"/>{bn ? 'দান কর' : 'Gift Tax'}
+          </button>
         </div>
       )}
       {overlayOpen && (
@@ -361,6 +366,9 @@ export function CitizenNavigation() {
                       </button>
                       <button type="button" className="citizen-dialog__link" onClick={() => {setMenuOpen(false);openPaymentServiceChoice('TRAVEL_TAX');}}>
                         <Route size={19} aria-hidden="true"/><span>{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</span>
+                      </button>
+                      <button type="button" className="citizen-dialog__link" onClick={() => {setMenuOpen(false);setGiftTaxOpen(true);}}>
+                        <CreditCard size={19} aria-hidden="true"/><span>{bn ? 'দান কর' : 'Gift Tax'}</span>
                       </button>
                     </div>
                   </div>}
@@ -397,6 +405,9 @@ export function CitizenNavigation() {
           </div>
         </div>
       )}
+      {giftTaxOpen && <React.Suspense fallback={<p role="status">{bn ? 'দান কর লোড হচ্ছে…' : 'Loading Gift Tax…'}</p>}>
+        <GiftTaxServiceModal onClose={() => setGiftTaxOpen(false)} />
+      </React.Suspense>}
     </>
   );
 }
