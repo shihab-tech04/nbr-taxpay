@@ -63,7 +63,7 @@ for (const locale of ['en', 'bn'] as const) {
     const tin = payment.getByTestId('unified-tin-input');
     await tin.fill('222222222222');
     await expect(payment.locator('.payment-form-draft-controls__save')).toHaveCount(0);
-    await payment.getByRole('button', { name: 'Close payment services' }).click();
+    await payment.locator('.taxpay-modal__close').click();
     const exit = payment.getByRole('alertdialog', {
       name: locale === 'bn' ? 'কর পরিশোধ বাদ দেবেন?' : 'Discard tax payment?',
     });
@@ -83,8 +83,9 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(exit).toHaveCount(0);
     await expect(tin).toHaveValue('222222222222');
     await page.locator('.taxpay-modal__overlay').click({ position: { x: 2, y: 2 } });
-    await expect(exit).toBeVisible();
-    await exit.getByRole('button', { name: locale === 'bn' ? 'সম্পাদনা চালিয়ে যান' : 'Keep editing' }).click();
+    await expect(payment).toBeVisible();
+    await expect(exit).toHaveCount(0);
+    await expect(tin).toHaveValue('222222222222');
 
     if (locale === 'en') {
       await payment.getByRole('button', { name: 'Search taxpayer TIN' }).click();
