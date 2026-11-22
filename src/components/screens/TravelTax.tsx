@@ -848,6 +848,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     const id = crypto.randomUUID();
     setPassengers(items => [...items, {...makeTravelPassenger(id,nationality), passport}]);
     setEditingPassengerId(id); setPassengerIssue(null); setError(''); setAcknowledged(false);
+    // The empty search turns into the real passenger editor without dropping
+    // the keyboard focus or the first typed passport character.
+    requestAnimationFrame(() => document.getElementById('travel-passport-'+id)?.focus());
   };
   const primaryAction = createdReceipt && bankSlipPending ? (
     <button type="button" className="travel-flow__primary" onClick={settleBankSlip} disabled={processing}>
