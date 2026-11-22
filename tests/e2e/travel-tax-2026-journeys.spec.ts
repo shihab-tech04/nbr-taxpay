@@ -749,7 +749,7 @@ test('Travel Tax: receipt Back returns to recorded review with all passengers an
   await modal.locator('#travel-lookup-first').click();
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
   await modal.locator('#travel-new-passport').focus();
-  const second=modal.locator('.travel-passenger-workspace__person, .travel-passenger-workspace__entry').nth(1);
+  const second=modal.locator('.travel-passenger-workspace__entry');
   await second.locator('input[role="combobox"]').fill('TEST230001');
   await second.getByRole('button',{name:'Check Passport'}).click();
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
@@ -941,9 +941,8 @@ test('F-153 / US-150 T01 T03: editing a confirmed passenger reprices review and 
   await modal.locator('#travel-lookup-first').click();
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
   await modal.locator('#travel-new-passport').focus();
-  const members=modal.getByTestId('travel-passenger-list').locator('.travel-passenger-workspace__person, .travel-passenger-workspace__entry');
-  const child=members.nth(1);
-  const id=await child.getAttribute('data-passenger-id');
+  const id=await modal.locator('.travel-passenger-workspace__entry').getAttribute('data-passenger-id');
+  const child=modal.locator('[data-passenger-id="'+id+'"]');
   expect(id).toBeTruthy();
   await child.getByRole('tab',{name:'Foreign passenger'}).click();
   await child.getByLabel('Passport number').fill('TRAVELF153');
@@ -957,16 +956,18 @@ test('F-153 / US-150 T01 T03: editing a confirmed passenger reprices review and 
   if (await modal.locator('#travel-mobile').isVisible() && !(await modal.locator('#travel-mobile').inputValue())) await modal.locator('#travel-mobile').fill('01712345678');
   await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(2);
   await modal.getByRole('button',{name:'Edit passengers'}).click();
-  await child.getByRole('button',{name:'Edit',exact:true}).click();
+  await child.locator('.travel-passenger-workspace__copy button').click();
   await expect(child).toHaveAttribute('data-complete','false');
   await child.getByLabel('Date of birth').fill('2012-08-10');
   await child.getByLabel('Passenger name as on passport').fill('EDITED FOREIGN ADULT');
   await child.getByRole('button',{name:'Cancel edit'}).click();
   await expect(child).toHaveAttribute('data-complete','true');
   await expect(child).toContainText('FOREIGN CHILD');
-  await expect(child).toContainText('2017-08-10');
+  await child.locator('.travel-passenger-workspace__copy button').click();
+  await expect(child.getByLabel('Date of birth')).toHaveValue('2017-08-10');
+  await child.getByRole('button',{name:'Cancel edit'}).click();
   await expect(child).not.toContainText('EDITED FOREIGN ADULT');
-  await child.getByRole('button',{name:'Edit',exact:true}).click();
+  await child.locator('.travel-passenger-workspace__copy button').click();
   await child.getByLabel('Date of birth').fill('2012-08-10');
   await child.getByLabel('Passenger name as on passport').fill('EDITED FOREIGN ADULT');
   await child.getByRole('button',{name:'Add passenger',exact:true}).click();
@@ -992,9 +993,9 @@ test('F-153 / US-150 T02 T03: removing either passenger reprices and undo restor
   await modal.locator('#travel-lookup-first').click();
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
   await modal.locator('#travel-new-passport').focus();
-  const members=modal.getByTestId('travel-passenger-list').locator('.travel-passenger-workspace__person, .travel-passenger-workspace__entry');
-  const second=members.nth(1);
-  const secondId=await second.getAttribute('data-passenger-id');
+  const secondId=await modal.locator('.travel-passenger-workspace__entry').getAttribute('data-passenger-id');
+  const members=modal.locator('.travel-passenger-workspace__person');
+  const second=modal.locator('.travel-passenger-workspace__entry');
   expect(secondId).toBeTruthy();
   await second.locator('#travel-passport-'+secondId).fill('TEST230001');
   await second.locator('#travel-lookup-'+secondId).click();
@@ -1002,10 +1003,10 @@ test('F-153 / US-150 T02 T03: removing either passenger reprices and undo restor
   await fillTravelDetails(modal);
   await expect(modal.getByTestId('travel-payment-total')).toContainText('2,000');
   await modal.getByRole('button',{name:'Edit passengers (2)'}).click();
-  await modal.getByRole('button',{name:'Remove passenger 2'}).click();
+  await members.nth(1).locator('.travel-passenger-workspace__remove').click();
   await expect(members).toHaveCount(1);
   await expect(members.first()).toContainText('SAMPLE BANGLADESHI PASSENGER');
-  await expect(modal.getByRole('button',{name:'Remove passenger 1'})).toHaveCount(0);
+  await expect(members).toHaveCount(1);
   const undo=modal.getByRole('button',{name:'Undo removal'});
   await expect(undo).toBeVisible();
   await undo.click();
@@ -1014,14 +1015,14 @@ test('F-153 / US-150 T02 T03: removing either passenger reprices and undo restor
   await expect(members.nth(1)).toHaveAttribute('data-complete','true');
   // Removing mid-edit must Undo to the previously confirmed identity, not
   // resurrect the half-edited passport or an unconfirmed passenger.
-  await members.first().getByRole('button',{name:'Edit',exact:true}).click();
-  await members.first().locator('#travel-passport-first').fill('TEST230003');
-  await expect(members.first()).toHaveAttribute('data-complete','false');
-  await modal.getByRole('button',{name:'Remove passenger 1'}).click();
+  await members.first().locator('.travel-passenger-workspace__copy button').click();
+  await modal.locator('.travel-passenger-workspace__entry').locator('#travel-passport-first').fill('TEST230003');
+  await expect(modal.locator('.travel-passenger-workspace__entry')).toHaveAttribute('data-complete','false');
+  await members.first().locator('.travel-passenger-workspace__remove').click();
   await modal.getByRole('button',{name:'Undo removal'}).click();
   await expect(members.first()).toContainText('SAMPLE BANGLADESHI PASSENGER');
   await expect(members.first()).toHaveAttribute('data-complete','true');
-  await modal.getByRole('button',{name:'Remove passenger 1'}).click();
+  await members.first().locator('.travel-passenger-workspace__remove').click();
   await expect(members).toHaveCount(1);
   await expect(members.first()).toHaveAttribute('data-passenger-id',secondId!);
   await expect(members.first()).toContainText('SAMPLE PASSENGER TWO');
