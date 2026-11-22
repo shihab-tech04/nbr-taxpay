@@ -34,11 +34,16 @@ interface ReceiptViewProps {
   payAgainTestId?: string;
   /** Secondary receipts in a batch must not create extra modal footer controls. */
   suppressFooterActions?: boolean;
+  /** Compact Walk-in toolbar; leave shared account-history receipt variants unchanged. */
+  compactWalkInLayout?: boolean;
+  /** Optional post-payment invitation. Excluded from printed or downloaded receipt. */
+  postReceiptInvitation?: React.ReactNode;
 }
 
 export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment, certificate = false,
   transactionActions = false, onPayAgain, onApplyForCorrection, payAgainUnavailableReason,
-  payAgainTestId = 'receipt-pay-again', suppressFooterActions = false }) => {
+  payAgainTestId = 'receipt-pay-again', suppressFooterActions = false,
+  compactWalkInLayout = false, postReceiptInvitation }) => {
   const { language, navigate } = useTaxState();
   const [showCertificate, setShowCertificate] = useState(false);
   const canViewCertificate = canViewPaymentCertificate(receipt);
@@ -208,7 +213,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   // The existing shared modal owns the action footer. The receipt supplies its controls.
   const receiptActions = (
     <div className={'receipt-view__actions no-print'+(showReceiptTransactionActions?' receipt-view__actions--transaction':'')}>
-      {!showReceiptTransactionActions && onBack && <button type="button" className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
+      {!compactWalkInLayout && !showReceiptTransactionActions && onBack && <button type="button" className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
         onClick={onBack}>{bn ? 'পেমেন্ট নিশ্চিতকরণে ফিরুন' : 'Back to confirmation'}</button>}
       {!showReceiptTransactionActions && onNewPayment && <button type="button"
         className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
@@ -253,9 +258,21 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   );
 
   return (
-    <div className={`receipt-view receipt-view--embedded${bn ? ' font-bengali' : ''}`} lang={language}>
+    <div className={`receipt-view receipt-view--embedded${compactWalkInLayout ? ' receipt-view--walkin' : ''}${bn ? ' font-bengali' : ''}`} lang={language}>
       {!suppressFooterActions && (!isCertificate || canViewCertificate) && (footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions)}
 
+      {compactWalkInLayout ? (
+        <div className="receipt-view__toolbar no-print" data-testid="walkin-receipt-toolbar">
+          {onBack && <button type="button" className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
+            onClick={onBack}>{bn ? 'পেমেন্ট নিশ্চিতকরণে ফিরুন' : 'Back to confirmation'}</button>}
+          {canViewCertificate && !certificate && <button type="button"
+            className="receipt-view__action receipt-view__action--secondary"
+            onClick={() => { setDownloadError(false); setShowCertificate(value => !value); }}>
+            {showCertificate ? (bn ? 'রসিদ দেখুন' : 'View receipt') :
+              (bn ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate')}
+          </button>}
+        </div>
+      ) : <>
       {/* Keep required flow navigation outside the recorded receipt's three-action footer. */}
       {showReceiptTransactionActions && onBack && <div className="no-print flex flex-wrap items-center gap-2">
         <button type="button"
@@ -274,6 +291,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         {showCertificate ? (bn ? 'রসিদ দেখুন' : 'View receipt')
           : (bn ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate')}
       </button>}
+      </>}
       {downloadError && <p role="alert" className="no-print">
         {bn ? 'সনদ ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।' : 'Unable to download the certificate. Try again.'}
       </p>}
@@ -295,6 +313,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <strong>{formatCurrency(receipt.totalAmount, language)}</strong>
           </div>
         </header>
+        {!isCertificate && postReceiptInvitation}
 
         {certificateReference && <div className="receipt-view__batch-meta" data-testid="payment-certificate-reference">
           <strong>{bn ? 'সনদ রেফারেন্স' : 'Certificate reference'}</strong>

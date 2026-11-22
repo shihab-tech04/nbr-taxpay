@@ -175,12 +175,12 @@
 
 /* Step 4: observable ACS / Treasury / NBR stages, with distinct bank-pending and failed outcomes. */
 .payment-lifecycle{border:1px solid #d8e3f1;border-radius:14px;background:#fff;overflow:hidden;min-width:0;color:#193353}
-.payment-lifecycle__heading{display:flex;gap:12px;align-items:flex-start;background:#f0f6ff;padding:19px 21px;border-bottom:1px solid #dae7f7}
-.payment-lifecycle__heading--complete{background:#eefaf5}
+.payment-lifecycle__heading{display:flex;gap:12px;align-items:center;background:#f7f9fc;padding:16px 20px;border-bottom:1px solid #e4e9f1}
+.payment-lifecycle__heading--complete{background:#f7f9fc}
 .payment-lifecycle__heading--pending{background:#fff9ec}
 .payment-lifecycle__heading--failed{background:#fff0f0}
 .payment-flow-embedded__confirmation-layout{width:100%;min-width:0;max-width:none;margin:0;padding:20px 22px}
-.payment-lifecycle__overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:20px 21px}
+.payment-lifecycle__overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:16px 20px}
 .payment-lifecycle__overview>div{display:grid;gap:6px;min-width:0}
 .payment-lifecycle__overview span{font-size:14px;color:#526880}
 .payment-lifecycle__overview strong{font-size:clamp(17px,2vw,23px);font-weight:700;line-height:1.4;color:#1f56a1;overflow-wrap:anywhere}
@@ -194,7 +194,7 @@
 .payment-receipt-details.payment-flow-embedded--receipt{width:100%;max-width:none;margin:0}
 .payment-lifecycle__heading h2{font-size:18px;font-weight:850;margin:0;line-height:1.4}
 .payment-lifecycle__heading p{font-size:14px;color:#405a74;margin:6px 0 0;line-height:1.6}
-.payment-lifecycle__symbol{display:grid;place-items:center;border-radius:10px;width:38px;height:38px;background:white;color:#2968b2;flex:none}
+.payment-lifecycle__symbol{display:grid;place-items:center;width:28px;height:28px;color:#2968b2;flex:none}
 .payment-lifecycle__heading--failed .payment-lifecycle__symbol{color:#b64242}
 .payment-lifecycle__heading--complete .payment-lifecycle__symbol{color:#147957}
 .payment-lifecycle__details{display:flex;flex-direction:column-reverse;gap:20px;padding:20px 21px}
@@ -209,13 +209,13 @@
 .payment-lifecycle__event--failed .payment-lifecycle__event-dot{background:#fee4e4;color:#a92424}
 .payment-lifecycle__waiting{color:#405a74!important;font-weight:550!important}
 .payment-lifecycle__waiting .payment-lifecycle__event-dot{background:#edf1f6;color:#728ba7}
-.payment-lifecycle__result{display:flex;align-items:flex-start;gap:10px;margin:0 20px 16px;padding:15px;border-radius:10px;font-size:14px;line-height:1.65}
+.payment-lifecycle__result{display:flex;align-items:flex-start;gap:10px;margin:0 20px 16px;padding:11px 13px;border-radius:9px;font-size:14px;line-height:1.55}
 .payment-lifecycle__result p{margin:0}
 .payment-lifecycle__result strong{display:block;margin-bottom:4px}
 .payment-lifecycle__result svg{flex:none;margin-top:2px}
 .payment-lifecycle__result--pending{color:#75551c;background:#fff6df;border:1px solid #f1e0b0}
 .payment-lifecycle__result--failed{color:#943d3d;background:#fff0f0;border:1px solid #f3d6d6}
-.payment-lifecycle__result--complete{color:#166746;background:#e9f7f0;border:1px solid #bee8d1}
+.payment-lifecycle__result--complete{color:#3e5570;background:#f7f9fc;border:1px solid #dfe6ef}
 .payment-lifecycle__actions{display:flex;flex-wrap:wrap;gap:10px;padding:0 21px 20px}
 @media(max-width:900px){.payment-review{grid-template-columns:minmax(0,1fr)}.payment-review__aside{position:static;grid-row:1}.payment-review__rows{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.payment-radio-card-grid{grid-template-columns:1fr}.payment-radio-card{min-height:56px;padding:11px 12px}.payment-review__method-groups{grid-template-columns:1fr}.payment-review__method-group{justify-content:flex-start;padding:11px 14px;min-height:49px}.payment-review__method-list{grid-template-columns:repeat(2,minmax(0,1fr))}.payment-review__method{flex-wrap:wrap;gap:7px;min-width:0}.payment-review__brand{min-width:40px}.payment-form-summary__breakdown{padding:13px 14px}}

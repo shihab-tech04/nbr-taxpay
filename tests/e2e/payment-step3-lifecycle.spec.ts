@@ -95,6 +95,16 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
   const receiptPaper = dialog.locator('.receipt-view__paper');
   await expect(receiptPaper).toBeVisible();
+  // Optional after-payment sign-in never blocks accessing the guest receipt.
+  const invitation = dialog.getByTestId('walkin-postpayment-login');
+  await expect(invitation).toBeVisible();
+  await expect(invitation).toContainText('not automatically linked');
+  const toolbar = dialog.getByTestId('walkin-receipt-toolbar');
+  await expect(toolbar.getByRole('button', { name: 'Back to confirmation' })).toHaveCount(1);
+  await expect(dialog.locator('.receipt-view__actions .receipt-view__restart')).toHaveCount(0);
+  await invitation.getByRole('button', { name: 'Continue without signing in' }).click();
+  await expect(invitation).toHaveCount(0);
+  await expect(receiptPaper).toBeVisible();
   const backToConfirmation = dialog.getByRole('button', { name: 'Back to confirmation', exact: true });
   await expect(backToConfirmation).toBeVisible();
   await backToConfirmation.click();
@@ -104,6 +114,24 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   await expect(dialog.locator('.payment-form-summary')).toHaveCount(0);
   await expect(dialog.getByText('Not an official challan')).toHaveCount(0);
   await expect(dialog.getByText('Simulation only. No actual money transfer, government challan or tax credit has occurred.')).toHaveCount(0);
+});
+
+
+test('after a saved walk-in record, Sign in is optional and opens the existing login route', async ({ page }) => {
+  const dialog = await openReview(page, 'Other Tax');
+  await dialog.getByRole('button', { name: 'Pay online' }).click();
+  await dialog.getByRole('button', { name: 'Cards' }).click();
+  await dialog.getByRole('radio', { name: 'Visa' }).check();
+  await dialog.getByRole('checkbox', { name: /I confirm/ }).check();
+  await dialog.getByRole('button', { name: /Pay ৳ 12,500/ }).click();
+  await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
+  await dialog.getByRole('button', { name: 'Receipt details' }).click();
+  const invitation = dialog.getByTestId('walkin-postpayment-login');
+  await expect(invitation).toBeVisible();
+  await expect(dialog.locator('.receipt-view__reference-strip')).toBeVisible();
+  await invitation.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page).toHaveURL(/action=taxpayer_login/);
+  await expect(page.getByRole('dialog').getByLabel('User ID')).toBeVisible();
 });
 
 test('bank branch creates an unpaid challan first, then a receipt after simulated settlement', async ({ page }) => {
