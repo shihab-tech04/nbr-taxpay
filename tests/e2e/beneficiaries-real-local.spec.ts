@@ -487,6 +487,26 @@ test('F-059 Others description enforces the 1–80 character boundary in UI and 
       expect(await read(initialSession.access_token)).toEqual([accepted80]);
     }
 
+    // Recover after invalid input without losing the selected beneficiary or its list.
+    const recoveredLabel='Recovered family contact';
+    await invalidLabel.fill(recoveredLabel);
+    const recoverySave=invalidEditor.getByRole('button',{name:'Save changes',exact:true});
+    await expect(recoverySave).toBeEnabled();
+    await recoverySave.click();
+    await expect(page.getByText('Beneficiary details updated.',{exact:true})).toBeVisible({timeout:15000});
+    await expect(invalidEditor).toBeHidden();
+    const recoveredRows=await read(initialSession.access_token);
+    expect(recoveredRows).toHaveLength(1);
+    const recoveredRow=recoveredRows[0];
+    expect(recoveredRow).toMatchObject({
+      id:accepted80.id,owner_uid:ownerId,list_id:accepted80.list_id,
+      tin,display_name:name,tag:'others',relationship:null,other_label:recoveredLabel,
+    });
+    const recoveredMobileRow=directory.locator('li').filter({hasText:name});
+    const recoveredTitle=recoveredMobileRow.locator('.taxpay-mobile-table-card__title span').first();
+    await expect(recoveredTitle).toHaveText(name+' · '+recoveredLabel);
+    expect((await recoveredTitle.innerText()).split(recoveredLabel)).toHaveLength(2);
+
     // A new password-grant session and mobile browser context must read the same exact owner SQL row and label.
     const freshSession=await signIn();
     const freshContext=await browser.newContext({
@@ -498,8 +518,8 @@ test('F-059 Others description enforces the 1–80 character boundary in UI and 
       await expect(freshPage.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
       const freshRow=freshPage.getByTestId('beneficiary-directory-mobile').locator('li').filter({hasText:name});
       const freshTitle=freshRow.locator('.taxpay-mobile-table-card__title span').first();
-      await expect(freshTitle).toHaveText(name+' · '+label80);
-      expect((await read(freshSession.access_token))).toEqual([accepted80]);
+      await expect(freshTitle).toHaveText(name+' · '+recoveredLabel);
+      expect((await read(freshSession.access_token))).toEqual([recoveredRow]);
     }finally{
       await freshContext.close();
     }
