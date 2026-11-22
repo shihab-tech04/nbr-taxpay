@@ -337,7 +337,7 @@ test('record search and benefits share a restrained, left-aligned desktop headin
     expect(measurements.searchY).toBeGreaterThan(measurements.recordDescriptionBottom);
     expect(measurements.searchWidth).toBeGreaterThanOrEqual(measurements.sectionWidth * .9);
     expect(measurements.weights).toEqual([600, 600, 400]);
-    expect(measurements.fontSizes).toEqual(['20px', '20px', '15px', '15px']);
+    expect(measurements.fontSizes).toEqual(['20px', '24px', '16px', '16px']);
     expect(measurements.documentHeightOverflow).toBeLessThanOrEqual(2);
     expect(measurements.documentWidthOverflow).toBeLessThanOrEqual(2);
   }
