@@ -203,11 +203,13 @@ interface GuestPaymentProps {
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
   onCheckoutChange?: (checkout: boolean) => void;
+  /** Register this step's header Back handler; unified Walk-in footer stays single-CTA. */
+  registerHeaderBack?: (action: (() => void) | null) => void;
   /** New Home entry: preserve the existing payment engine but present three input steps. */
   unifiedFlow?: boolean;
 }
 
-export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialReuse, initialForSelf, initialBeneficiary, onBackToService, onStageChange, onCheckoutChange, unifiedFlow = false }) => {
+export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialReuse, initialForSelf, initialBeneficiary, onBackToService, onStageChange, onCheckoutChange, registerHeaderBack, unifiedFlow = false }) => {
   const { language, navigate, addPaymentReceipt, routeParams, previewAccount, setPaymentServiceChoiceOpen, startPaymentReuse } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // The standalone guest route can also be visited from a signed-in session.
@@ -1533,6 +1535,19 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setUnifiedCheckout(false);
     onCheckoutChange?.(false);
   };
+  useEffect(() => {
+    if (!unifiedFlow || !registerHeaderBack) return;
+    const back = () => {
+      if (isProcessing || step === 4) return;
+      if (step === 1) { onBackToService?.(); return; }
+      if (step === 2) { clearValidationError(); setStep(1); return; }
+      if (unifiedCheckout) backToUnifiedPreview();
+      else setStep(2);
+    };
+    registerHeaderBack(back);
+    return () => registerHeaderBack(null);
+  }, [unifiedFlow, registerHeaderBack, step, unifiedCheckout, isProcessing,
+      onBackToService, onCheckoutChange, clearValidationError]);
 
   const retryPayment = () => {
     if (paymentPhase === 'failed' && batchAttemptRef.current?.phase === 'READY') {
@@ -2715,23 +2730,19 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
               </button>
             </>
           ) : step === 2 ? (<>
-            <button type="button" className="tax-service-choice__cancel" onClick={() => { clearValidationError(); setStep(1); }}>
+            {!unifiedFlow && <button type="button" className="tax-service-choice__cancel" onClick={() => { clearValidationError(); setStep(1); }}>
               <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
-            </button>
+            </button>}
             {(signedInAccount || unsignedGuestDrafts) && isPaymentDraftService(category) &&
               <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />}
             <button type="button" className="tax-service-choice__continue" aria-label={unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to Final Preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')} onClick={handleStep2Next} disabled={!initialReuse && otherBatch && (!batchValid || !storyAmountSupported)}>
               <span className="payment-flow-embedded__action-long">{unifiedFlow ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় যান' : 'Continue to Final Preview') : (language === 'bn' ? 'পেমেন্ট চ্যানেলে এগিয়ে যান' : 'Continue to payment channel')}</span><span className="payment-flow-embedded__action-short" aria-hidden="true">{unifiedFlow ? (language === 'bn' ? 'পর্যালোচনা' : 'Preview') : (language === 'bn' ? 'চ্যানেল' : 'Channel')}</span><ArrowRight size={18} aria-hidden="true" />
             </button>
           </>) : step === 3 ? (<>
-            <button type="button" className="tax-service-choice__cancel"
-              onClick={unifiedFlow && unifiedCheckout ? backToUnifiedPreview : () => setStep(2)}
-              disabled={isProcessing}>
-              <ArrowLeft size={17} aria-hidden="true" />
-              {unifiedFlow && unifiedCheckout
-                ? (language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় ফিরুন' : 'Back to Final Preview')
-                : commonCopy.btnBack}
-            </button>
+            {!unifiedFlow && <button type="button" className="tax-service-choice__cancel"
+              onClick={() => setStep(2)} disabled={isProcessing}>
+              <ArrowLeft size={17} aria-hidden="true" />{commonCopy.btnBack}
+            </button>}
             <button type="button" className="tax-service-choice__continue"
               onClick={unifiedFlow && !unifiedCheckout ? openUnifiedCheckout : handleExecutePayment}
               disabled={batchRecoveryError || isProcessing || !storyAmountSupported || (otherBatch && !batchValid) ||

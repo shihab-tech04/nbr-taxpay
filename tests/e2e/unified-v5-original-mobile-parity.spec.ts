@@ -3,7 +3,7 @@ import {test,expect} from '@playwright/test';
 /** Exact source: Sohojkor_v5_Single_Primary_Action_Interactive.html (original 147,876 bytes).
  * Scope: parallel All Tax Payments ONLY. This is intentionally not a pixel-certification.
  */
-test('approved v5 mobile footer keeps full button labels and original calculation placement',async({page},info)=>{
+test('unified v5 mobile footer has one primary action and preserves calculation placement',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375' && info.project.name!=='mobile-320','Mobile original-v5 reference');
   await page.goto('/?action=landing&lang=en');
   await page.locator('.public-benefits__item[data-benefit="payments"]').click();
@@ -59,11 +59,15 @@ test('approved v5 mobile footer keeps full button labels and original calculatio
   const continueButton=dialog.getByRole('button',{name:'Continue to Final Preview'});
   await expect(continueButton.locator('.payment-flow-embedded__action-long')).toBeVisible();
   await expect(continueButton.locator('.payment-flow-embedded__action-short')).toBeHidden();
-  const [step2Back,step2Next]=await Promise.all([
-    footer.getByRole('button',{name:'Back'}).boundingBox(),continueButton.boundingBox()
-  ]);
-  expect(step2Back).not.toBeNull();expect(step2Next).not.toBeNull();
-  expect(Math.abs(step2Back!.width-step2Next!.width)).toBeLessThanOrEqual(3);
+  await expect(footer.getByRole('button',{name:'Back'})).toHaveCount(0);
+  await expect(footer.getByRole('button')).toHaveCount(1);
+  const step2Next=await continueButton.boundingBox();
+  expect(step2Next).not.toBeNull();
+  expect(step2Next!.width).toBeGreaterThan(0);
+  await dialog.locator('.taxpay-modal__back').click();
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Taxpayer Information');
+  await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
   await expect(continueButton).toHaveCSS('font-size','12px');
   // Review is deliberately disabled before a valid head and positive amount exist.
   await expect(continueButton).toBeDisabled();
@@ -71,7 +75,7 @@ test('approved v5 mobile footer keeps full button labels and original calculatio
   expect(hasOverflow).toBe(false);
 });
 
-test('approved v5 Final Preview stacks payment rows on mobile; AY, amount and dual footer remain visible',async({page},info)=>{
+test('unified v5 Final Preview stacks rows and retains only the payment CTA',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375' && info.project.name!=='mobile-320','Original v5 mobile preview reference');
   await page.goto('/?action=landing&lang=en');
   await page.locator('.public-benefits__item[data-benefit="payments"]').click();
@@ -121,13 +125,17 @@ test('approved v5 Final Preview stacks payment rows on mobile; AY, amount and du
   await expect(dialog.getByRole('button',{name:'Copy TIN'})).toHaveCount(0);
 
   const footer=dialog.locator('.taxpay-modal__footer .payment-flow-embedded__footer-actions');
-  const back=footer.getByRole('button',{name:'Back'});
   const pay=footer.getByRole('button',{name:'Make Payment'});
-  await expect(back).toBeVisible();
+  await expect(footer.getByRole('button',{name:'Back'})).toHaveCount(0);
+  await expect(footer.getByRole('button')).toHaveCount(1);
   await expect(pay).toBeVisible();
-  const [backBox,payBox]=await Promise.all([back.boundingBox(),pay.boundingBox()]);
-  expect(backBox).not.toBeNull();expect(payBox).not.toBeNull();
-  expect(Math.abs(backBox!.width-payBox!.width)).toBeLessThanOrEqual(3);
+  const payBox=await pay.boundingBox();
+  expect(payBox).not.toBeNull();
+  expect(payBox!.width).toBeGreaterThan(0);
+  await dialog.locator('.taxpay-modal__back').click();
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
+  await dialog.getByRole('button',{name:'Continue to Final Preview'}).click();
+  await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
   await expect(pay).toHaveCSS('font-size','12px');
   await dialog.screenshot({path:`test-results/sohojkor-v5-candidate-stage3-mobile-${page.viewportSize()!.width}.png`});
   const excess=await dialog.locator('.taxpay-modal__body').evaluate(el=>el.scrollWidth-el.clientWidth);
