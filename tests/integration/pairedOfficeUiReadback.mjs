@@ -53,8 +53,13 @@ try {
   browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   let paymentRequests = 0;
+  let remarksRequests = 0;
   let missingBearer = false;
+  let missingRemarksBearer = false;
+  let wrongRemarksPaymentId = false;
+  let failFirstRemarksRead = true;
   let routeError = null;
+  const remarksRouteResults = [];
   await page.route('**/*', (route) => {
     const url = new URL(route.request().url());
     if (url.hostname === '127.0.0.1' || url.hostname === 'localhost') return route.continue();
@@ -104,6 +109,57 @@ try {
       return route.abort();
     }
   });
+  await page.route('https://ihbtabrvmyiwikqqbhrf.supabase.co/rest/v1/rpc/payment_v1_office_guarded_challan_remarks', async (route) => {
+    try {
+      const request = route.request();
+      const requestHeaders = request.headers();
+      const corsHeaders = {
+        'access-control-allow-origin': '*',
+        'access-control-allow-methods': 'POST, OPTIONS',
+        'access-control-allow-headers': requestHeaders['access-control-request-headers'] ||
+          'authorization, apikey, content-type, x-client-info, prefer',
+      };
+      if (request.method() === 'OPTIONS')
+        return route.fulfill({ status: 204, headers: corsHeaders });
+      const authorization = requestHeaders.authorization;
+      const body = request.postDataJSON();
+      if (!authorization || !authorization.startsWith('Bearer ')) {
+        missingRemarksBearer = true;
+        return route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ message: 'Verified Office officer required' }) });
+      }
+      if (body?.p_payment_id !== payment.id) {
+        wrongRemarksPaymentId = true;
+        return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ message: 'Payment identity mismatch' }) });
+      }
+      remarksRequests++;
+      if (failFirstRemarksRead) {
+        failFirstRemarksRead = false;
+        remarksRouteResults.push({ attempt: remarksRequests, status: 503 });
+        return route.fulfill({ status: 503, headers: corsHeaders, contentType: 'application/json',
+          body: JSON.stringify({ message: 'Temporary Office SQL read outage' }) });
+      }
+      const response = {
+        paymentId: fixture.expected.id,
+        challanRemarks: fixture.expected.challanRemarks,
+        receiptReference: fixture.expected.receiptReference,
+      };
+      const remarksType = typeof response.challanRemarks;
+      remarksRouteResults.push({ attempt: remarksRequests, status: 200, keys: Object.keys(response),
+        remarksType,
+        remarksCodePoints: remarksType === 'string' ? Array.from(response.challanRemarks).length : null });
+      if (remarksType !== 'string')
+        throw new TypeError('Paired Office UI fixture must supply exact remarks text as a string');
+      return route.fulfill({
+        status: 200,
+        headers: corsHeaders,
+        contentType: 'application/json',
+        body: JSON.stringify(response),
+      });
+    } catch (error) {
+      routeError = error instanceof Error ? error.message : String(error);
+      return route.abort();
+    }
+  });
 
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(String(error?.message || error).slice(0, 450)));
@@ -135,8 +191,60 @@ try {
   assert.equal(missingBearer, false);
   assert.equal(routeError, null, routeError || undefined);
   await page.getByRole('button', { name: 'View Details' }).first().click();
-  const drawer = page.locator('.dynamic-drawer');
+  const drawer = page.locator('.dynamic-drawer:visible');
   await drawer.waitFor({ state: 'visible', timeout: 10000 });
+  assert.equal(await drawer.count(), 1, 'Office details must have one visible transaction drawer');
+  const guardedRemarksControl = drawer.locator('[data-testid="office-guarded-challan-remarks"]');
+  try {
+    await guardedRemarksControl.getByRole('alert').waitFor({ state: 'visible', timeout: 10000 });
+  } catch (error) {
+    const snapshot = await guardedRemarksControl.evaluate(node => ({
+      text: node.textContent?.trim().slice(0, 180) ?? null,
+      alertCount: node.querySelectorAll('[role="alert"]').length,
+      retryButtonCount: node.querySelectorAll('button').length,
+    })).catch(() => ({ unavailable: true }));
+    console.error('Office remarks retry diagnostic:', JSON.stringify({
+      paymentRequests,
+      remarksRequests,
+      missingBearer,
+      missingRemarksBearer,
+      wrongRemarksPaymentId,
+      routeError: routeError ? String(routeError).slice(0, 180) : null,
+      pageErrorCount: pageErrors.length,
+      snapshot,
+    }));
+    throw error;
+  }
+  const requestsBeforeRetry = remarksRequests;
+  assert.deepEqual(remarksRouteResults.map(result => result.status), [503],
+    'The first authorized Office SQL read must fail before retry');
+  const remarksRetryButton = guardedRemarksControl.getByRole('button', { name: 'Retry', exact: true });
+  assert.equal(await remarksRetryButton.count(), 1,
+    'Office must expose a retry after the authorized SQL read fails');
+  await remarksRetryButton.click();
+  try {
+    const visibleRemarksText = guardedRemarksControl.locator('span');
+    await visibleRemarksText.waitFor({ state: 'visible', timeout: 10000 });
+    assert.equal(await visibleRemarksText.textContent(), fixture.expected.challanRemarks,
+      'Visible Office drawer must render the exact guarded SQL remarks after retry');
+  } catch (error) {
+    const visibleState = await guardedRemarksControl.evaluate(node => ({
+      text: node.textContent?.trim().slice(0, 180) ?? null,
+      alert: node.querySelector('[role="alert"]')?.textContent?.trim().slice(0, 120) ?? null,
+      spans: Array.from(node.querySelectorAll('span')).map(span => span.textContent?.trim().slice(0, 100)),
+    })).catch(() => ({ unavailable: true }));
+    console.error('Office visible remarks retry diagnostic:', JSON.stringify({
+      requestsBeforeRetry, remarksRequests, remarksRouteResults,
+      missingRemarksBearer, wrongRemarksPaymentId, routeError: Boolean(routeError),
+      routeErrorMessage: routeError ? String(routeError).slice(0, 180) : null,
+      visibleDrawerCount: await drawer.count(), visibleState,
+    }));
+    throw error;
+  }
+  assert.equal(remarksRequests, requestsBeforeRetry + 1,
+    'Office retry must issue exactly one fresh officer-guarded SQL read');
+  assert.deepEqual(remarksRouteResults.map(result => result.status), [503, 200],
+    'Office must recover from the failed guarded SQL read without reusing its error result');
   const drawerText = await drawer.innerText();
   // The same drawer must work for both the original fixed SQL fixture and
   // a current Work A browser-generated payment. Never assert that a real
@@ -199,6 +307,18 @@ try {
   const verifyVisibleAllocations = async (language) => {
     const visibleDrawer = page.locator('.dynamic-drawer');
     await visibleDrawer.waitFor({ state: 'visible', timeout: 10000 });
+    const guardedRemarks = visibleDrawer.locator('[data-testid="office-guarded-challan-remarks"]');
+    await guardedRemarks.waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForFunction(({ selector, expected }) =>
+      document.querySelector(selector)?.querySelector('span')?.textContent === expected,
+    { selector: '.dynamic-drawer [data-testid="office-guarded-challan-remarks"]',
+      expected: fixture.expected.challanRemarks }, { timeout: 10000 });
+    assert.equal(await guardedRemarks.locator('span').textContent(), fixture.expected.challanRemarks,
+      language + ' Office drawer must render the exact officer-guarded multilingual remarks, including line breaks');
+    const remarksField = visibleDrawer.locator('.drawer-field:has([data-testid="office-guarded-challan-remarks"])');
+    assert.equal(await remarksField.locator('.drawer-field__label').innerText(),
+      language === 'bn' ? 'চালানের মন্তব্য' : 'Challan remarks',
+      language + ' Office remarks label must follow the selected language');
     const rows = visibleDrawer.locator('.office-shared-allocation-list__item');
     assert.equal(await rows.count(), expectedAllocations.length,
       language + ' drawer must render exactly two source-backed allocation lines');
@@ -229,6 +349,7 @@ try {
   };
   await verifyVisibleAllocations('en');
   const priorRequests = paymentRequests;
+  const priorRemarksRequests = remarksRequests;
   await page.evaluate(() => sessionStorage.setItem('ws3_office_test_language', 'bn'));
   const bengaliReadback = page.waitForResponse(response =>
     response.url().includes('/functions/v1/demo-story1-office/payments') && response.status() === 200);
@@ -237,11 +358,17 @@ try {
   await screen.waitFor({ state: 'visible', timeout: 30000 });
   assert.ok(paymentRequests > priorRequests, 'Bengali refresh must re-read the authorized Office endpoint');
   assert.equal(missingBearer, false);
+  assert.equal(missingRemarksBearer, false);
+  assert.equal(wrongRemarksPaymentId, false);
   assert.equal(routeError, null, routeError || undefined);
+  // Refresh closes the details drawer. Reopen the same payment in BN, then
+  // require a new guarded SQL RPC instead of expecting a closed drawer to poll.
   await page.locator('.payment-module__table-card .card-table__action-btn').first().click();
   await verifyVisibleAllocations('bn');
-  console.log('PASS Office #270 UI readback EN/BN refresh: paired parent ' + payment.id +
-    ', two individually verified immutable allocations, payer, beneficiaries, heads/years/exact amounts, original receipt/certificate references and authorized Office readback');
+  assert.ok(remarksRequests > priorRemarksRequests,
+    'Reopening after Bengali refresh must re-read remarks through the separate officer-guarded SQL RPC');
+  console.log('PASS Office #270 UI readback EN/BN refresh and error/retry: paired parent ' + payment.id +
+    ', exact officer-guarded BN/EN multiline remarks, two individually verified immutable allocations, payer, beneficiaries, heads/years/exact amounts, original receipt/certificate references and authorized Office readback');
 } finally {
   if (browser) await browser.close();
   if (server.exitCode === null) {

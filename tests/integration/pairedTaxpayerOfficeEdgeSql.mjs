@@ -24,6 +24,8 @@ assert.notEqual(new URL(sourceDb).port,new URL(officeDb).port,'Taxpayer and Offi
 const officeSecret='ws3-disposable-shared-mirror-secret';
 // Reuse the active MAKER fixture installed by pairedCorrectionOfficeSql.mjs.
 const officerId='80000000-0000-4000-8000-000000000011';
+// Use an identity outside the seeded MAKER/REVIEWER/APPROVER identities.
+const unauthorizedOfficerId=randomUUID();
 const officeToken='ws3-disposable-authorized-office-session';
 const servers={};
 const officeFailure={next:true};
@@ -213,7 +215,9 @@ const allocations=[
     assessmentYear:'2025-26',amountMinor:3500,serviceCode:'ASSESSED_DEMAND',isWithholding:false},
 ];
 const idempotencyKey=randomUUID();
+const challanRemarks='বাংলা মন্তব্য: করের অতিরিক্ত তথ্য\nEnglish challan context longer than twenty characters.';
 const receiptSnapshot={paymentCategory:'OTHER_TAX_PAYMENT',totalAmount:50,challanNo:'SIM-'+idempotencyKey,
+  paymentRemarks:challanRemarks,
   items:lines,allocationItems:allocations.map((item,index)=>({allocationId:item.allocationId,
     taxpayerTin:item.taxpayerTin,assessmentYear:item.assessmentYear,amountMinor:item.amountMinor,
     paymentServiceEn:lines[index].headNameEn,economicCode:lines[index].economicCode})),isSimulatedDemo:true};
@@ -221,7 +225,8 @@ const payload={origin:'TAXPAY_UI',idempotencyKey,sessionId:profile.paymentSessio
   service:'OTHER_TAX_PAYMENT',amountMinor:5000,details:{payerId:'user1',payerName:'WS3 Edge SQL payer',
     payerMode:'OTHER',combinedPayment:true,allocationContractVersion:3,allocationCount:2,taxpayerCount:2,
     receiptReference:'SIM-'+idempotencyKey,totalAmount:50,assessmentYear:'2026-27, 2025-26',
-    taxpayerTin:'',lines,receiptLines:lines,allocations,receiptSnapshot}};
+    taxpayerTin:'',paymentRemarks:challanRemarks,challanRemarks,
+    lines,receiptLines:lines,allocations,receiptSnapshot}};
 
 const officeFixture=psql(officeDb,
   `SELECT jsonb_build_object('userExists',EXISTS(SELECT 1 FROM auth.users WHERE id=${sqlText(officerId)}::uuid),`+
@@ -247,6 +252,10 @@ try{
   assert.equal(Number(sourceRow.amountMinor),5000);
   assert.equal(sourceRow.status,'SIMULATED_SUCCESS');
   assert.deepEqual(sourceRow.data.details.allocations,allocations);
+  assert.equal(sourceRow.data.details.challanRemarks,challanRemarks,
+    'The original Taxpayer SQL parent must preserve the exact BN/EN multiline challan remarks');
+  assert.equal(sourceRow.data.details.receiptSnapshot.paymentRemarks,challanRemarks,
+    'The original receipt snapshot must preserve the same printable remarks');
   assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`),0);
 
   const retry=await request('TAXPAY_SQL','/payments','POST',payload,headers);
@@ -258,6 +267,9 @@ try{
   assert.equal(history.data.data.id,sourceId);
   assert.equal(history.data.data.data.idempotencyKey,idempotencyKey);
   assert.deepEqual(history.data.data.data.details.allocations,allocations);
+  assert.equal(history.data.data.data.details.challanRemarks,challanRemarks,
+    'Capability-scoped Taxpayer API readback must preserve the exact original remarks');
+  assert.equal(history.data.data.data.details.receiptSnapshot.paymentRemarks,challanRemarks);
 
   const officeRow=psql(officeDb,`SELECT jsonb_build_object('id',id,'sessionId',session_id,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`);
   assert.equal(officeRow.id,sourceId);
@@ -279,19 +291,65 @@ try{
   assert.equal(row.details.payerId,'user1');
   assert.equal(row.details.receiptReference,'SIM-'+idempotencyKey);
   assert.equal(row.details.receiptSnapshot.challanNo,'SIM-'+idempotencyKey);
+  assert.equal(row.details.challanRemarks,challanRemarks,
+    'Office payment feed must retain the immutable original challan remarks');
+  assert.equal(row.details.receiptSnapshot.paymentRemarks,challanRemarks);
   assert.deepEqual(row.details.allocations.map(item=>item.allocationId),allocationIds);
   assert.deepEqual(row.details.allocations.map(item=>item.taxpayerTin),['222222222222','333333333333']);
   assert.deepEqual(row.details.allocations.map(item=>item.headId),[121,145]);
   assert.deepEqual(row.details.allocations.map(item=>item.assessmentYear),['2026-27','2025-26']);
   assert.deepEqual(row.details.allocations.map(item=>item.amountMinor),[1500,3500]);
+  const guardedRemarks=psql(officeDb,[
+    'BEGIN;','SET LOCAL ROLE authenticated;',
+    `SELECT set_config('request.jwt.claim.sub',${sqlText(officerId)},true);`,
+    `SELECT public.payment_v1_office_guarded_challan_remarks(${sqlText(sourceId)}::uuid);`,
+    'COMMIT;'
+  ].join('\n'));
+  assert.equal(guardedRemarks.paymentId,sourceId,
+    'The guarded Office SQL readback must bind remarks to the immutable mirrored payment ID');
+  assert.equal(guardedRemarks.challanRemarks,challanRemarks,
+    'The active Office officer SQL function must return the exact multiline BN/EN remarks');
+  assert.equal(guardedRemarks.receiptReference,'SIM-'+idempotencyKey);
+  const unauthorizedRemarks=spawnSync('psql',['-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-d',officeDb],{
+    input:[
+      'BEGIN;','SET LOCAL ROLE authenticated;',
+      `SELECT set_config('request.jwt.claim.sub',${sqlText(unauthorizedOfficerId)},true);`,
+      `SELECT public.payment_v1_office_guarded_challan_remarks(${sqlText(sourceId)}::uuid);`,
+      'COMMIT;'
+    ].join('\n'),encoding:'utf8'
+  });
+  const outsiderRoleCount=psql(officeDb,
+    `SELECT count(*) FROM payment_sync.officer_roles WHERE user_uid=${sqlText(unauthorizedOfficerId)}::uuid AND active AND role IN ('MAKER','REVIEWER','APPROVER');`);
+  assert.equal(outsiderRoleCount,0,'The denial fixture must have no active privileged Office role');
+  assert.notEqual(unauthorizedRemarks.status,0,
+    'A non-officer must not read Office challan remarks');
+  assert.match(unauthorizedRemarks.stderr,/Active authorized Office payment officer required/,
+    'The guarded Office SQL RPC must fail at its active-role check');
+  assert.ok(!unauthorizedRemarks.stdout.includes(challanRemarks),
+    'A denied officer read must not return taxpayer remarks');
   const officeUiFixtureOut=process.env.WS3_OFFICE_UI_FIXTURE_OUT;
-  if(officeUiFixtureOut)writeFileSync(officeUiFixtureOut,JSON.stringify({
+  assert.ok(officeUiFixtureOut,'The paired Office browser fixture path is required');
+  const officeUiFixture={
     payment:row,
     expected:{id:sourceId,status:sourceRow.status,payerId:'user1',
       receiptReference:'SIM-'+idempotencyKey,allocationIds,allocationTins:['222222222222','333333333333'],
       headIds:[121,145],assessmentYears:['2026-27','2025-26'],amountsMinor:[1500,3500],
-      totalMinor:5000},
-  }),{mode:0o600});
+      totalMinor:5000,challanRemarks:guardedRemarks.challanRemarks},
+  };
+  assert.equal(typeof officeUiFixture.expected.challanRemarks,'string',
+    'The guarded Office SQL response must be included in the browser fixture');
+  assert.equal(officeUiFixture.expected.challanRemarks,challanRemarks,
+    'The browser fixture must carry the exact guarded SQL remarks');
+  assert.equal(officeUiFixture.payment.details.challanRemarks,challanRemarks,
+    'The browser fixture must retain the original Office SQL parent remarks');
+  writeFileSync(officeUiFixtureOut,JSON.stringify(officeUiFixture),{mode:0o600});
+  const writtenOfficeUiFixture=JSON.parse(readFileSync(officeUiFixtureOut,'utf8'));
+  assert.equal(writtenOfficeUiFixture.expected.challanRemarks,challanRemarks,
+    'The serialized browser fixture must retain the exact guarded SQL remarks');
+  assert.equal(writtenOfficeUiFixture.payment.details.challanRemarks,challanRemarks,
+    'The serialized browser fixture must retain the original SQL parent remarks');
+  console.log('PASS: paired Office browser fixture contains exact officer-guarded multiline remarks ('+
+    Array.from(writtenOfficeUiFixture.expected.challanRemarks).length+' code points)');
 
 
   const notices=async(profile,action='received-notices-list',eventId)=>request(
@@ -413,8 +471,12 @@ try{
   const payAgainPayload=structuredClone(payload);
   payAgainPayload.idempotencyKey=payAgainKey;
   payAgainPayload.details.sourcePaymentId=sourceId;
+  const payAgainRemarks='নতুন চালানের মন্তব্য\nEdited independently for this separate Pay Again record.';
+  payAgainPayload.details.paymentRemarks=payAgainRemarks;
+  payAgainPayload.details.challanRemarks=payAgainRemarks;
   payAgainPayload.details.receiptReference='SIM-'+payAgainKey;
   payAgainPayload.details.receiptSnapshot.challanNo='SIM-'+payAgainKey;
+  payAgainPayload.details.receiptSnapshot.paymentRemarks=payAgainRemarks;
   payAgainPayload.details.allocations=payAgainPayload.details.allocations.map((allocation,index)=>
     ({...allocation,allocationId:payAgainAllocationIds[index]}));
   payAgainPayload.details.receiptSnapshot.allocationItems=
@@ -429,13 +491,30 @@ try{
   const payAgainSource=psql(sourceDb,`SELECT jsonb_build_object('id',id,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(payAgainId)}::uuid;`);
   assert.equal(payAgainSource.id,payAgainId);
   assert.equal(payAgainSource.data.details.sourcePaymentId,sourceId);
+  assert.equal(payAgainSource.data.details.challanRemarks,payAgainRemarks,
+    'Pay Again must preserve the independently edited remarks on the new parent');
+  assert.equal(payAgainSource.data.details.receiptSnapshot.paymentRemarks,payAgainRemarks);
   assert.deepEqual(payAgainSource.data.details.allocations.map(item=>item.allocationId),payAgainAllocationIds);
   const originalAfterPayAgain=psql(sourceDb,`SELECT jsonb_build_object('id',id,'sessionId',session_id,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(sourceId)}::uuid;`);
   assert.deepEqual(originalAfterPayAgain,sourceRow,'Pay Again must preserve the original Taxpayer parent and allocations');
+  assert.equal(originalAfterPayAgain.data.details.challanRemarks,challanRemarks,
+    'Editing Pay Again remarks must not mutate the original Taxpayer parent');
   const payAgainOfficeStored=psql(officeDb,`SELECT jsonb_build_object('id',id,'data',data) FROM demo_payment.story_payments WHERE id=${sqlText(payAgainId)}::uuid;`);
   assert.equal(payAgainOfficeStored.id,payAgainId);
   assert.deepEqual(payAgainOfficeStored.data,payAgainSource.data,
     'Separate Office SQL must retain Pay Again parent, source lineage and allocation snapshot');
+  assert.equal(payAgainOfficeStored.data.details.challanRemarks,payAgainRemarks,
+    'Separate Office SQL must preserve the new Pay Again remarks exactly');
+  const payAgainGuardedRemarks=psql(officeDb,[
+    'BEGIN;','SET LOCAL ROLE authenticated;',
+    `SELECT set_config('request.jwt.claim.sub',${sqlText(officerId)},true);`,
+    `SELECT public.payment_v1_office_guarded_challan_remarks(${sqlText(payAgainId)}::uuid);`,
+    'COMMIT;'
+  ].join('\n'));
+  assert.equal(payAgainGuardedRemarks.paymentId,payAgainId);
+  assert.equal(payAgainGuardedRemarks.challanRemarks,payAgainRemarks,
+    'The Office SQL guard must read the independently edited Pay Again remarks');
+  assert.equal(payAgainGuardedRemarks.receiptReference,'SIM-'+payAgainKey);
   const payAgainReadback=await request('OFFICE_SQL','/payments?page=1&perPage=100','GET',undefined,
     {authorization:'Bearer '+officeToken});
   assert.equal(payAgainReadback.status,200);
@@ -445,6 +524,8 @@ try{
   assert.equal(payAgainItem.details.sourcePaymentId,sourceId);
   assert.equal(payAgainItem.details.receiptReference,'SIM-'+payAgainKey);
   assert.equal(payAgainItem.details.receiptSnapshot.challanNo,'SIM-'+payAgainKey);
+  assert.equal(payAgainItem.details.challanRemarks,payAgainRemarks);
+  assert.equal(payAgainItem.details.receiptSnapshot.paymentRemarks,payAgainRemarks);
   assert.deepEqual(payAgainItem.details.allocations.map(item=>item.allocationId),payAgainAllocationIds);
   const payAgainReplay=await request('TAXPAY_SQL','/payments','POST',payAgainPayload,headers);
   assert.equal(payAgainReplay.status,200);
@@ -652,6 +733,16 @@ try{
     await verifyWs3BrowserOrigin({request,psql,sqlText,sourceDb,officeDb,officeToken,
       sourceSha:process.env.WS1_SOURCE_SHA});
   }
+  // The Work A and F-039 browser acceptance helpers also write Office UI
+  // fixtures. Restore the F-178 SQL-backed parent after they finish so the
+  // guarded remarks UI test reads this payment ID and the exact SQL value
+  // verified above, rather than an unrelated payment without remarks.
+  writeFileSync(officeUiFixtureOut,JSON.stringify(officeUiFixture),{mode:0o600});
+  const finalOfficeUiFixture=JSON.parse(readFileSync(officeUiFixtureOut,'utf8'));
+  assert.equal(finalOfficeUiFixture.payment.id,sourceId,
+    'The Office UI must receive the same F-178 Taxpayer/Office SQL parent');
+  assert.equal(finalOfficeUiFixture.expected.challanRemarks,challanRemarks,
+    'The final Office UI fixture must retain the exact guarded SQL remarks');
   console.log('PASS: separate disposable Taxpayer and Office SQL through existing Edge handlers; combined multi-recipient v3 allocations, distinct Pay Again parent lineage and separate Travel Tax passengers, exact amounts/years/heads, payer, receipt/certificate, authorized readback and passport redaction, recipient notice isolation, Office outage recovery, idempotent replay/conflict immutability, and single source/Office notices');
 }finally{
   await Promise.all([taxpayerServer,officeServer,recipientServer].map(server=>new Promise(resolve=>server.close(resolve))));

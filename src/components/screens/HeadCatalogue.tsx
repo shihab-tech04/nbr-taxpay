@@ -121,7 +121,9 @@ export const HeadCatalogue: React.FC = () => {
             <select id="v11-head-group" value={group} onChange={e => {setGroup(e.target.value);setPage(1);}}
               className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary">
               <option value="ALL">{t.all}</option>
-              {V11_HEAD_GROUPS.map(name=><option key={name} value={name}>{name}</option>)}
+              {V11_HEAD_GROUPS.map(name=><option key={name} value={name}>
+                {language==='bn'?(V11_SOURCE_HEADS.find(head=>head.grpEn===name)?.grpBn??name):name}
+              </option>)}
             </select>
           </div>
         </div>
@@ -143,7 +145,7 @@ export const HeadCatalogue: React.FC = () => {
               <article key={head.id} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-xs text-slate-600">ID {head.id} · {head.grpEn}</p>
+                    <p className="text-xs text-slate-600">ID {head.id} · {language==='bn'?head.grpBn:head.grpEn}</p>
                     <h2 className="font-serif-fraunces text-lg font-bold text-taxpay-text break-words">{head.en}</h2>
                   </div>
                   <p className={blocked ? 'max-w-full rounded-md border border-amber-400 bg-amber-50 px-2 py-1.5 text-xs font-bold text-amber-900' : 'text-xs font-medium text-slate-500'}>

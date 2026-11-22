@@ -117,3 +117,26 @@ test('saved-beneficiary deletion is bound to the captured edit owner and verifie
   assert.ok(remove.indexOf('const recovered=await loadBeneficiaries(deleteOwnerContext.ownerUid,{forceFresh:true})')>recover,
     'a dropped first readback gets a fresh owner-scoped recovery read before retry is offered');
 });
+
+test('bulk beneficiary removal stays bound to the owner captured when confirmation opens',()=>{
+  const source=readFileSync(new URL('../src/components/screens/Beneficiaries.tsx',import.meta.url),'utf8');
+  const body=(name:string)=>{
+    const start=[`async function ${name}(`,`function ${name}(`]
+      .map(marker=>source.indexOf(marker)).find(index=>index>=0)??-1;
+    assert.notEqual(start,-1,`${name} handler exists`);
+    const end=source.indexOf('\n  }',start);
+    assert.notEqual(end,-1,`${name} handler has a body`);
+    return source.slice(start,end);
+  };
+  const request=body('requestBulkRemove');
+  assert.ok(request.includes('bulkRemoveOwnerContextRef.current=context'));
+  const remove=body('confirmBulkRemove');
+  const preflight=remove.indexOf('if(!ownerIsCurrent())');
+  const mutation=remove.indexOf('removeBeneficiary(context.ownerUid,id)');
+  assert.ok(preflight>=0&&mutation>preflight,'bulk deletion checks the captured owner before its first write');
+  assert.ok(remove.includes('if(!ownerIsCurrent()){closeStaleBulkRemove();return;}'),
+    'bulk deletion stops between rows if the owner changes during the request');
+  const readback=remove.indexOf('const saved=await reload()');
+  assert.ok(readback>mutation&&remove.indexOf('if(!ownerIsCurrent())',readback)>readback,
+    'bulk deletion checks owner context after the fresh list readback');
+});

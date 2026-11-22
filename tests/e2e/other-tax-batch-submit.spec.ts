@@ -12,8 +12,18 @@ async function openOtherTax(page: Page) {
 test('one combined receipt covers multiple TINs, survives response loss, and retries one SQL record', async ({ page }) => {
   const saved=new Map<string,{id:string;input:Record<string,any>}>();
   const calls:Record<string,any>[]=[];
-  let loseFirstResponse=true;
-  await page.route('**/functions/v1/demo-story1-taxpay/payments',async route=>{
+  let sourceReadbacks=0;
+  let officePendingResponses=2;
+  await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
+    if(route.request().method()==='GET'){
+      const requestedId=new URL(route.request().url()).pathname.split('/').pop();
+      const record=[...saved.values()].find(item=>item.id===requestedId);
+      if(!record)return route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({success:false})});
+      sourceReadbacks++;
+      return route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({success:true,simulationOnly:true,data:{id:record.id,
+          status:'SIMULATED_SUCCESS',data:record.input}})});
+    }
     const input=route.request().postDataJSON() as Record<string,any>;
     calls.push(input);
     let record=saved.get(input.idempotencyKey);
@@ -21,10 +31,11 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
       record={id:'00000000-0000-4000-8000-000000000201',input};
       saved.set(input.idempotencyKey,record);
     }
-    if(loseFirstResponse){
-      loseFirstResponse=false;
+    if(officePendingResponses>0){
+      officePendingResponses--;
       await route.fulfill({status:503,contentType:'application/json',
-        body:JSON.stringify({success:false,error:'OFFICE_SYNC_PENDING'})});
+        body:JSON.stringify({success:false,error:'OFFICE_SYNC_PENDING',retryable:true,
+          requestId:record.id})});
       return;
     }
     await route.fulfill({status:200,contentType:'application/json',
@@ -64,22 +75,43 @@ test('one combined receipt covers multiple TINs, survives response loss, and ret
   await dialog.getByRole('button',{name:'Continue to payment channel'}).click();
   await expect(dialog.getByTestId('payment-review-remarks')).toContainText('Challan clarification for two taxpayers');
   expect(await dialog.getByTestId('payment-review-remarks').locator('p').textContent()).toBe(remarks);
+  // Use the modal's accessible Back control. It delegates to the embedded
+  // payment footer action and keeps the same draft review state.
+  const backButton = dialog.getByRole('button', { name: 'Back', exact: true });
+  await expect(backButton).toHaveCount(1);
+  await backButton.click();
+  await expect(remarksInput).toHaveValue(remarks);
+  await dialog.getByRole('button',{name:'Continue to payment channel'}).click();
+  expect(await dialog.getByTestId('payment-review-remarks').locator('p').textContent()).toBe(remarks);
   await dialog.getByRole('button',{name:'Pay online'}).click();
   await dialog.getByRole('button',{name:'Mobile banking'}).click();
   await dialog.getByRole('radio',{name:'bKash'}).check();
   await dialog.getByRole('checkbox',{name:/I confirm each taxpayer TIN/}).check();
   await dialog.getByRole('button',{name:/Pay ৳ 50/}).click();
-  await expect(dialog.getByRole('heading',{name:'Simulation confirmation pending'})).toBeVisible({timeout:15000});
+  await expect(dialog.getByRole('heading',{name:'Simulation saved — Office sync pending'})).toBeVisible({timeout:15000});
   expect(saved.size).toBe(1);
   expect(calls).toHaveLength(1);
+  expect(sourceReadbacks).toBe(1);
+  await page.reload();
   dialog=await openOtherTax(page);
+  // A refresh keeps the exact idempotent request, but the new page must not
+  // claim it is saved until a fresh capability-scoped SQL readback succeeds.
   await expect(dialog.getByRole('heading',{name:'Simulation confirmation pending'})).toBeVisible();
+  await expect(dialog.locator('.payment-lifecycle__overview').locator('strong').first()).toContainText('50');
   await expect(dialog.getByRole('button',{name:'Back',exact:true})).toHaveCount(0);
+  await dialog.getByRole('button',{name:'Retry payment confirmation'}).click();
+  await expect(dialog.getByRole('heading',{name:'Simulation saved — Office sync pending'})).toBeVisible({timeout:15000});
+  await expect(dialog.getByRole('alert')).toContainText('Office synchronization is still pending. Retry the same request.');
+  expect(saved.size).toBe(1);
+  expect(calls).toHaveLength(2);
+  expect(sourceReadbacks).toBe(2);
   await dialog.getByRole('button',{name:'Retry Office synchronization'}).click();
   await expect(dialog.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:15000});
   expect(saved.size).toBe(1);
-  expect(calls).toHaveLength(2);
+  expect(calls).toHaveLength(3);
+  expect(sourceReadbacks).toBe(3);
   expect(calls[1]).toEqual(calls[0]);
+  expect(calls[2]).toEqual(calls[0]);
   expect(calls[0].amountMinor).toBe(5000);
   expect(calls[0].details.combinedPayment).toBe(true);
   expect(calls[0].details.paymentRemarks).toBe(remarks);

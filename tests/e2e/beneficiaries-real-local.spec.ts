@@ -2,15 +2,21 @@ import { openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 import {chooseBeneficiaryOption} from './beneficiarySearchableSelect';
 import {expect,test} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
 
 // Real disposable Auth + PostgREST. Fail closed if pointed at any hosted database.
 test('real account saves private beneficiary, reopens it, isolates another owner and prefills Pay Tax',async({browser})=>{
   test.setTimeout(120_000);
   const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL, key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
-  if(!raw||!key)throw new Error('BLOCKED: disposable local Supabase credentials required');
+  const dsn=process.env.TAXPAY_LOCAL_PG_DSN;
+  if(!raw||!key||!dsn)throw new Error('BLOCKED: disposable local Supabase credentials required');
   const api=new URL(raw);
+  const database=new URL(dsn);
   if(api.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(api.hostname))
     throw new Error('Refusing non-loopback beneficiary acceptance');
+  if((database.protocol!=='postgres:'&&database.protocol!=='postgresql:')||
+    !['localhost','127.0.0.1','[::1]'].includes(database.hostname))
+    throw new Error('Refusing non-loopback beneficiary SQL fixture');
   const makeUser=async()=>{
     const email='beneficiary-'+randomUUID()+'@example.invalid',password=randomBytes(32).toString('base64url');
     const response=await fetch(new URL('/auth/v1/signup',api.origin),{
@@ -179,6 +185,75 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(modal.locator('#guest-tin, #guest-payer-name')).toHaveCount(0);
   await expect(modal.getByRole('button',{name:'Add another taxpayer'})).toHaveCount(0);
 
+  // Disposable local SQL only: preserve an immutable payment snapshot independently
+  // of the saved-contact row that may later be removed.
+  const paymentSession=randomUUID();
+  const submittedPaymentResponse=await fetch(new URL('/rest/v1/rpc/demo_story1_submit',api.origin),{
+    method:'POST',
+    headers:{apikey:key,Authorization:'Bearer '+ownerA.session.access_token,'Content-Type':'application/json'},
+    body:JSON.stringify({p_input:{
+      idempotencyKey:randomUUID(),
+      sessionId:paymentSession,
+      service:'ADVANCE_TAX',
+      amountMinor:1500,
+      details:{
+        taxpayerTin:'012345678901',
+        taxpayerName:'Local Beneficiary One',
+        payerName:'Local owner',
+        assessmentYear:'2026-27',
+        paymentHead:'Advance tax',
+      },
+    }}),
+  });
+  expect(submittedPaymentResponse.status).toBe(200);
+  const submittedPayment=await submittedPaymentResponse.json() as {id?:string;status?:string};
+  expect(submittedPayment.id).toBeTruthy();
+  expect(submittedPayment.status).toBe('SIMULATED_SUCCESS');
+
+  // This random Auth user has no approver-created demo-profile binding, so
+  // the production claim RPC correctly refuses to link this synthetic payment.
+  // Seed only the disposable local owner-history index to model an already
+  // owned history row; both the Auth API and SQL target must be loopback.
+  const paymentId=submittedPayment.id;
+  expect(paymentId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  expect(ownerA.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  const ownerHistoryFixture=spawnSync('psql',['-X','-Atq','-v','ON_ERROR_STOP=1','-c',
+    `insert into public.taxpay_story1_payment_owners(payment_id,owner_uid)
+     values ('${paymentId}'::uuid,'${ownerA.id}'::uuid)
+     returning payment_id::text;`],{
+       encoding:'utf8',timeout:10_000,
+       env:{
+         ...process.env,
+         PGHOST:database.hostname,
+         PGPORT:database.port||'5432',
+         PGUSER:decodeURIComponent(database.username),
+         PGPASSWORD:decodeURIComponent(database.password),
+         PGDATABASE:database.pathname.slice(1),
+       },
+     });
+  expect(ownerHistoryFixture.status,ownerHistoryFixture.stderr).toBe(0);
+  expect(ownerHistoryFixture.stdout.trim()).toBe(paymentId);
+
+  const readPaymentHistory=async()=>{
+    const response=await fetch(new URL('/rest/v1/rpc/taxpay_my_story1_payments',api.origin),{
+      method:'POST',
+      headers:{apikey:key,Authorization:'Bearer '+ownerA.session.access_token,'Content-Type':'application/json'},
+      body:JSON.stringify({p_page:1,p_per_page:100}),
+    });
+    expect(response.status).toBe(200);
+    return response.json() as Promise<{
+      items:Array<{id:string;service:string;amountMinor:number;status:string;details:Record<string,unknown>}>;
+      total:number;page:number;perPage:number;
+    }>;
+  };
+  const historyBeforeDelete=await readPaymentHistory();
+  expect(historyBeforeDelete.total).toBe(1);
+  expect(historyBeforeDelete.items).toHaveLength(1);
+  expect(historyBeforeDelete.items[0]).toMatchObject({
+    id:submittedPayment.id,service:'ADVANCE_TAX',amountMinor:1500,status:'SIMULATED_SUCCESS',
+    details:{taxpayerTin:'012345678901',taxpayerName:'Local Beneficiary One'},
+  });
+
   // Exact accepted deletion must round-trip through real owner-scoped SQL.
   // A zero-row RLS/stale delete must never be reported as successful.
   const savedUrl=new URL('/rest/v1/taxpay_beneficiaries',api.origin);
@@ -270,5 +345,185 @@ test('real account saves private beneficiary, reopens it, isolates another owner
   await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
   expect(await read(ownerA.session.access_token)).toEqual([]);
   expect(await read(ownerB.session.access_token)).toEqual([]);
+  expect(await readPaymentHistory()).toEqual(historyBeforeDelete);
   await context.close();
+});
+
+ 
+// F-059: exercise the 1–80 Others detail boundary through the real UI and owner-scoped local SQL.
+test('F-059 Others description enforces the 1–80 character boundary in UI and SQL',async({browser})=>{
+  test.setTimeout(90_000);
+  const raw=process.env.TAXPAY_LOCAL_SUPABASE_URL, key=process.env.TAXPAY_LOCAL_SUPABASE_ANON_KEY;
+  const dsn=process.env.TAXPAY_LOCAL_PG_DSN;
+  if(!raw||!key||!dsn)throw new Error('BLOCKED: disposable local Supabase credentials required');
+  const api=new URL(raw), database=new URL(dsn);
+  if(api.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(api.hostname))
+    throw new Error('Refusing non-loopback beneficiary acceptance');
+  if((database.protocol!=='postgres:'&&database.protocol!=='postgresql:')||
+    !['localhost','127.0.0.1','[::1]'].includes(database.hostname))
+    throw new Error('Refusing non-loopback beneficiary SQL fixture');
+  const email='beneficiary-f059-'+randomUUID()+'@example.invalid';
+  const password=randomBytes(32).toString('base64url');
+  const signup=await fetch(new URL('/auth/v1/signup',api.origin),{
+    method:'POST',headers:{apikey:key,'Content-Type':'application/json'},
+    body:JSON.stringify({email,password}),
+  });
+  expect(signup.status).toBe(200);
+  const signed=await signup.json();
+  expect(signed.user?.id).toBeTruthy();
+  const ownerId=signed.user.id as string;
+  const initialSession=signed.session??signed;
+  expect(initialSession.access_token).toBeTruthy();
+  const signIn=async()=>{
+    const response=await fetch(new URL('/auth/v1/token?grant_type=password',api.origin),{
+      method:'POST',headers:{apikey:key,'Content-Type':'application/json'},
+      body:JSON.stringify({email,password}),
+    });
+    expect(response.status).toBe(200);
+    const value=await response.json();
+    expect(value.user?.id).toBe(ownerId);
+    expect(value.access_token).toBeTruthy();
+    expect(value.refresh_token).toBeTruthy();
+    return value;
+  };
+  const loginUrl=(session:{access_token:string;refresh_token:string;expires_at?:number})=>
+    '/?action=beneficiaries#access_token='+encodeURIComponent(session.access_token)+
+    '&refresh_token='+encodeURIComponent(session.refresh_token)+
+    '&token_type=bearer&expires_in=3600&expires_at='+
+    (session.expires_at??Math.floor(Date.now()/1000)+3600);
+  const tin='765432109876', name='F059 Boundary Person', labelOne='Q', label80='Z'.repeat(80);
+  const read=async(token:string)=>{
+    const url=new URL('/rest/v1/taxpay_beneficiaries',api.origin);
+    url.searchParams.set('select','id,owner_uid,list_id,tin,display_name,tag,relationship,other_label');
+    url.searchParams.set('owner_uid','eq.'+ownerId);
+    url.searchParams.set('tin','eq.'+tin);
+    const response=await fetch(url,{headers:{apikey:key,Authorization:'Bearer '+token}});
+    expect(response.status).toBe(200);
+    return response.json() as Promise<Array<{
+      id:string;owner_uid:string;list_id:string;tin:string;display_name:string;
+      tag:string|null;relationship:string|null;other_label:string|null;
+    }>>;
+  };
+  const context=await browser.newContext({baseURL:'http://127.0.0.1:4173',viewport:{width:375,height:812}});
+  try{
+    const page=await context.newPage();
+    await page.goto(loginUrl(initialSession));
+    await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+    await page.getByRole('button',{name:'Create list',exact:true}).first().click();
+    const listDialog=page.getByRole('dialog',{name:'Create list'});
+    await listDialog.locator('#beneficiary-create-list-name').fill('F059 validation');
+    await listDialog.getByRole('button',{name:'Create list',exact:true}).click();
+
+    await page.getByRole('button',{name:'Add beneficiary',exact:true}).first().click();
+    const addDialog=page.getByRole('dialog',{name:'Beneficiary entry'});
+    await addDialog.locator('#beneficiary-tin').fill(tin);
+    await addDialog.locator('#beneficiary-name').fill(name);
+    await chooseBeneficiaryOption(addDialog,'beneficiary-tag','others');
+    const addLabel=addDialog.locator('#beneficiary-other-label');
+    await expect(addLabel).toHaveAttribute('maxlength','80');
+    await addLabel.fill(labelOne);
+    await expect(addDialog).toContainText('1/80 characters');
+    await addDialog.getByRole('button',{name:'Add beneficiary',exact:true}).click();
+    await expect(page.getByText('Beneficiary saved.',{exact:true})).toBeVisible({timeout:15000});
+    let rows=await read(initialSession.access_token);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      owner_uid:ownerId,tin,display_name:name,tag:'others',relationship:null,other_label:labelOne,
+    });
+    const directory=page.getByTestId('beneficiary-directory-mobile');
+    const savedRow=directory.locator('li').filter({hasText:name});
+    await expect(savedRow.locator('.taxpay-mobile-table-card__title span').first())
+      .toHaveText(name+' · '+labelOne);
+
+    // Edit the saved Others detail to the exact 80-character limit and verify SQL readback.
+    await savedRow.getByRole('button',{name:'Edit',exact:true}).click();
+    const editor=page.getByRole('dialog',{name:'Edit beneficiary'});
+    const editLabel=editor.locator('#beneficiary-edit-other-label');
+    await expect(editLabel).toHaveAttribute('maxlength','80');
+    await editLabel.fill(label80);
+    await expect(editor).toContainText('80/80 characters');
+    await editor.getByRole('button',{name:'Save changes',exact:true}).click();
+    await expect(page.getByText('Beneficiary details updated.',{exact:true})).toBeVisible({timeout:15000});
+    rows=await read(initialSession.access_token);
+    expect(rows).toHaveLength(1);
+    const accepted80=rows[0];
+    expect(accepted80).toMatchObject({
+      owner_uid:ownerId,tin,display_name:name,tag:'others',relationship:null,other_label:label80,
+    });
+    const updatedRow=directory.locator('li').filter({hasText:name});
+    const title=updatedRow.locator('.taxpay-mobile-table-card__title span').first();
+    await expect(title).toHaveText(name+' · '+label80);
+    expect((await title.innerText()).split(label80)).toHaveLength(2);
+
+    // The approved input prevents an 81st typed character; the mandatory empty detail remains invalid.
+    await updatedRow.getByRole('button',{name:'Edit',exact:true}).click();
+    const invalidEditor=page.getByRole('dialog',{name:'Edit beneficiary'});
+    const invalidLabel=invalidEditor.locator('#beneficiary-edit-other-label');
+    await expect(invalidLabel).toHaveAttribute('maxlength','80');
+    await invalidLabel.press('End');
+    await invalidLabel.pressSequentially('Z');
+    await expect(invalidLabel).toHaveValue(label80);
+    await invalidLabel.fill('');
+    expect(await invalidLabel.evaluate(el=>(el as HTMLInputElement).validity.valueMissing)).toBe(true);
+    await expect(invalidEditor.getByRole('button',{name:'Save changes',exact:true})).toBeDisabled();
+    await expect(invalidEditor).toBeVisible();
+    expect(await read(initialSession.access_token)).toEqual([accepted80]);
+
+    // Bypass the browser control and attempt the same invalid writes against the real local SQL constraint.
+    const patchSaved=async(value:string)=>{
+      const url=new URL('/rest/v1/taxpay_beneficiaries',api.origin);
+      url.searchParams.set('id','eq.'+accepted80.id);
+      return fetch(url,{
+        method:'PATCH',
+        headers:{apikey:key,Authorization:'Bearer '+initialSession.access_token,
+          'Content-Type':'application/json',Prefer:'return=representation'},
+        body:JSON.stringify({other_label:value}),
+      });
+    };
+    for(const invalidValue of ['', 'Z'.repeat(81)]){
+      const rejected=await patchSaved(invalidValue);
+      expect(rejected.status).toBe(400);
+      expect(await rejected.text()).toContain('taxpay_beneficiary_other_label_consistency');
+      expect(await read(initialSession.access_token)).toEqual([accepted80]);
+    }
+
+    // Recover after invalid input without losing the selected beneficiary or its list.
+    const recoveredLabel='Recovered family contact';
+    await invalidLabel.fill(recoveredLabel);
+    const recoverySave=invalidEditor.getByRole('button',{name:'Save changes',exact:true});
+    await expect(recoverySave).toBeEnabled();
+    await recoverySave.click();
+    await expect(page.getByText('Beneficiary details updated.',{exact:true})).toBeVisible({timeout:15000});
+    await expect(invalidEditor).toBeHidden();
+    const recoveredRows=await read(initialSession.access_token);
+    expect(recoveredRows).toHaveLength(1);
+    const recoveredRow=recoveredRows[0];
+    expect(recoveredRow).toMatchObject({
+      id:accepted80.id,owner_uid:ownerId,list_id:accepted80.list_id,
+      tin,display_name:name,tag:'others',relationship:null,other_label:recoveredLabel,
+    });
+    const recoveredMobileRow=directory.locator('li').filter({hasText:name});
+    const recoveredTitle=recoveredMobileRow.locator('.taxpay-mobile-table-card__title span').first();
+    await expect(recoveredTitle).toHaveText(name+' · '+recoveredLabel);
+    expect((await recoveredTitle.innerText()).split(recoveredLabel)).toHaveLength(2);
+
+    // A new password-grant session and mobile browser context must read the same exact owner SQL row and label.
+    const freshSession=await signIn();
+    const freshContext=await browser.newContext({
+      baseURL:'http://127.0.0.1:4173',viewport:{width:375,height:812},storageState:{cookies:[],origins:[]},
+    });
+    try{
+      const freshPage=await freshContext.newPage();
+      await freshPage.goto(loginUrl(freshSession));
+      await expect(freshPage.getByTestId('beneficiaries-page')).toBeVisible({timeout:15000});
+      const freshRow=freshPage.getByTestId('beneficiary-directory-mobile').locator('li').filter({hasText:name});
+      const freshTitle=freshRow.locator('.taxpay-mobile-table-card__title span').first();
+      await expect(freshTitle).toHaveText(name+' · '+recoveredLabel);
+      expect((await read(freshSession.access_token))).toEqual([recoveredRow]);
+    }finally{
+      await freshContext.close();
+    }
+  }finally{
+    await context.close();
+  }
 });
