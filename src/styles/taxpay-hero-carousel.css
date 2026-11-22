@@ -922,7 +922,8 @@
     border: 0;
   }
   .public-home-sections .public-benefits__heading h2 {
-    font-size: 1.25rem;
+    /* Desktop section title belongs to the approved 24px tier. */
+    font-size: var(--taxpay-type-h2);
     font-weight: 600;
     line-height: 1.35;
     letter-spacing: -.012em;
