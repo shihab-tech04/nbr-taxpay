@@ -12,7 +12,7 @@ async function previewLogin(page:Page) {
 
 async function assertUnifiedTravel(modal:Locator, width:number) {
   await expect(modal).toBeVisible();
-  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passenger information');
+  await expect(modal.locator('.taxpay-modal__title')).toHaveText('Passenger Information');
   await expect(modal.locator('.tax-service-choice--travel')).toHaveCount(0);
   await expect(modal.locator('.tax-service-choice__selected-service')).toHaveCount(0);
   await expect(modal.locator('.travel-flow')).toBeVisible();
