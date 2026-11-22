@@ -100,6 +100,10 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   // Unified Walk-in header Back has a stage-owned handler. No hidden footer
   // button is needed to proxy navigation, and non-unified routes stay intact.
   const unifiedHeaderBackRef = useRef<(() => void) | null>(null);
+  const travelHeaderBackRef = useRef<(() => void) | null>(null);
+  const registerTravelHeaderBack = useCallback((action: (() => void) | null) => {
+    travelHeaderBackRef.current = action;
+  }, []);
   const registerUnifiedHeaderBack = useCallback((action: (() => void) | null) => {
     unifiedHeaderBackRef.current = action;
   }, []);
@@ -242,13 +246,10 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         }
         : view === 'payer' && draftEntryBlocking && draftEntryMode === 'list'
         ? () => setDraftEntryMode('choice')
-        : view === 'login' ? () => setView('payer') : view === 'payment' && (travelJourney ? stage > 1 : stage !== 4) ? () => {
-        if (travelJourney && stage === 4) {
-          document.querySelector<HTMLButtonElement>('.taxpay-modal[data-public-service="travel"] [data-testid="travel-receipt-back"]')?.click();
-          return;
-        }
-        if (travelJourney && document.querySelector('.taxpay-modal[data-public-service="travel"] .travel-flow[data-receipt-review="true"]')) {
-          document.querySelector<HTMLButtonElement>('.taxpay-modal[data-public-service="travel"] .travel-flow__footer-actions .travel-flow__primary')?.click();
+        : view === 'login' ? () => setView('payer') : view === 'payment' && (travelJourney || stage !== 4) ? () => {
+        if (travelJourney) {
+          if (travelHeaderBackRef.current) travelHeaderBackRef.current();
+          else if (stage === 1) (directTravelEntry ? requestClose() : returnToService());
           return;
         }
         if (unifiedEntry) {
@@ -295,7 +296,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
       {view === 'payment' && travelJourney ? (
         <TravelTax key={draftToResume ? 'travel-draft-' + draftToResume.id : initialReuse ? 'travel-reuse-' + initialReuse.sourcePaymentId : 'travel-tax-modal'}
           embedded fourStepJourney initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
-          onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage} />
+          onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage}
+          registerHeaderBack={registerTravelHeaderBack} />
       ) : <section key={view} ref={flowRef} data-view={view}
         data-banner-entry={initialService && view === 'payment' ? 'true' : undefined}
         data-payment-service={view === 'payment' && chosenService ? chosenService.id : undefined}
@@ -404,7 +406,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
          ) : effectiveSelected === 'TRAVEL_TAX' ? (
           <TravelTax key={draftToResume ? 'travel-draft-' + draftToResume.id : initialReuse ? 'travel-reuse-' + initialReuse.sourcePaymentId : 'travel-tax-modal'}
             embedded fourStepJourney initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
-            onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage} />
+            onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage}
+          registerHeaderBack={registerTravelHeaderBack} />
         ) : effectiveSelected ? (
           <GuestPayment key={draftToResume ? 'payment-draft-' + draftToResume.id : initialReuse ? 'payment-reuse-' + initialReuse.sourcePaymentId : effectiveSelected + '-' + String(payerForSelf)}
             embedded unifiedFlow={unifiedEntry} initialCategory={effectiveSelected} initialForSelf={payerForSelf ?? undefined}
