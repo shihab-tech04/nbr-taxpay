@@ -90,6 +90,11 @@ for (const language of ['en', 'bn'] as const) {
     expect(selectedTravelDate).toBe(futureTravelDate);
     await modal.getByRole('button', { name: /Continue to review|পেমেন্ট পর্যালোচনায় যান/ }).click();
     await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText(totalText);
+    // Final Preview retains a required receipt contact; payment methods belong
+    // to the following Payment Channel screen, not the preview itself.
+    await modal.locator('#travel-mobile').fill('01712345678');
+    await modal.getByRole('button', { name: /^(Make Payment|পেমেন্ট করুন)$/ }).click();
+    await expect(modal.getByTestId('travel-payment-channel-screen')).toBeVisible();
     await modal.getByRole('button', { name: /Pay online|অনলাইনে পরিশোধ/ }).click();
     await modal.getByRole('button', { name: /Mobile banking|মোবাইল ব্যাংকিং/ }).click();
     await modal.getByRole('radio', { name: 'Nagad' }).check();
