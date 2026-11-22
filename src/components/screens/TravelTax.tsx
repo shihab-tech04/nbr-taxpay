@@ -970,7 +970,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               <p className="travel-passenger-workspace__help">{tr('Enter a passport number and search.','পাসপোর্ট নম্বর লিখে অনুসন্ধান করুন।')}</p>
               {pendingPassenger ? (() => {
                 const item=pendingPassenger, index=passengers.findIndex(p=>p.id===item.id);
-                return <div className="travel-passenger-workspace__entry" data-passenger-id={item.id}>
+                return <div className="travel-passenger-workspace__entry" data-passenger-id={item.id} data-complete="false">
                   {renderPassengerEditor(item,index)}
                   {passengerIssue?.id===item.id && <p id={'travel-passenger-issue-'+item.id}
                     className="travel-flow__inline-error" role="alert">{passengerIssue.message}</p>}
@@ -1026,7 +1026,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 {!confirmedPassengerIds.length && <div className="travel-passenger-workspace__selected-empty">
                   <UserRound size={19}/><strong>{tr('No passengers added','কোনো যাত্রী যোগ করা হয়নি')}</strong></div>}
                 {passengers.filter(item=>confirmedPassengerIds.includes(item.id)).map((item,i)=>
-                  <div className="travel-passenger-workspace__person" key={item.id}>
+                  <div className="travel-passenger-workspace__person" key={item.id} data-passenger-id={item.id} data-complete="true">
                     <span className="travel-passenger-workspace__avatar">{i+1}</span>
                     <div className="travel-passenger-workspace__copy">
                       <button type="button" onClick={()=>beginPassengerEdit(item)}
