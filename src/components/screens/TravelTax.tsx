@@ -43,8 +43,6 @@ interface TravelTaxProps {
   onCheckoutChange?: (checkout: boolean) => void;
 }
 
-const MAX_TRAVEL_PASSENGERS = 20; // Matches the existing saved-draft passenger boundary.
-
 function maskPassport(passport: string) {
   return passport.length <= 4 ? '••••' : '••••' + passport.slice(-4);
 }
@@ -342,22 +340,32 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
   useEffect(() => { onCheckoutChange?.(checkoutOpen); }, [checkoutOpen,onCheckoutChange]);
-  // Keep the existing on-focus ten-sample picker, but close it when the user
-  // clicks or tabs outside. A focused option remains keyboard-operable.
+  // Dismiss the existing on-focus ten-sample picker without changing focus
+  // or rerendering the modal between pointerdown and click. That early state
+  // change can swallow clicks on Travel Tax's Edit passengers control.
   useEffect(() => {
     if (!passportSuggestionsFor) return;
-    const dismissOutside = (event: Event) => {
-      if (!(event.target instanceof Node)) return;
-      const field = document.getElementById('travel-passport-' + passportSuggestionsFor);
-      const options = document.getElementById('travel-passport-suggestions-' + passportSuggestionsFor);
-      if (!field?.contains(event.target) && !options?.contains(event.target))
-        setPassportSuggestionsFor(null);
+    const field = document.getElementById('travel-passport-' + passportSuggestionsFor);
+    const options = document.getElementById('travel-passport-suggestions-' + passportSuggestionsFor);
+    const isOutside = (node: EventTarget | null) =>
+      node instanceof Node && !field?.contains(node) && !options?.contains(node);
+    const onOutsideClick = (event: MouseEvent) => {
+      // Run after the clicked control's React handler, never at pointerdown.
+      if (isOutside(event.target)) setPassportSuggestionsFor(null);
     };
-    document.addEventListener('pointerdown', dismissOutside);
-    document.addEventListener('focusin', dismissOutside);
+    const onFocusMoved = (event: FocusEvent) => {
+      if (!isOutside(event.target)) return;
+      // Tab should close the picker, but pointer focus must not unmount
+      // controls before their click is dispatched.
+      requestAnimationFrame(() => {
+        if (isOutside(document.activeElement)) setPassportSuggestionsFor(null);
+      });
+    };
+    document.addEventListener('click', onOutsideClick);
+    document.addEventListener('focusin', onFocusMoved);
     return () => {
-      document.removeEventListener('pointerdown', dismissOutside);
-      document.removeEventListener('focusin', dismissOutside);
+      document.removeEventListener('click', onOutsideClick);
+      document.removeEventListener('focusin', onFocusMoved);
     };
   }, [passportSuggestionsFor]);
   // The shared modal header owns Back, including receipt/review navigation.
@@ -903,11 +911,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     passengers.find(p => !confirmedPassengerIds.includes(p.id)) ?? null;
   const beginNewPassenger = (nationality: TravellerNationality = 'BD', passport = '') => {
     if (pendingPassenger) { setEditingPassengerId(pendingPassenger.id); return; }
-    if (passengers.length >= MAX_TRAVEL_PASSENGERS) {
-      showError(tr('Up to 20 passengers can be added to one travel review.',
-        'একটি ভ্রমণ পর্যালোচনায় সর্বোচ্চ ২০ জন যাত্রী যোগ করা যাবে।'));
-      return;
-    }
     const id = crypto.randomUUID();
     setPassengers(items => [...items, {...makeTravelPassenger(id,nationality), passport}]);
     setEditingPassengerId(id); setPassengerIssue(null); setError(''); setAcknowledged(false);
@@ -1064,14 +1067,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                       }}><Plus size={17} aria-hidden="true"/>{tr('Add passenger','যাত্রী যোগ করুন')}</button>
                   </div>}
                 </div>;
-              })() : passengers.length >= MAX_TRAVEL_PASSENGERS
-                ? <div className="travel-passenger-workspace__blank">
-                    <p className="travel-passenger-workspace__help" role="status">
-                      {tr('Maximum 20 passengers in this review. Remove a passenger to add another.',
-                        'এই পর্যালোচনায় সর্বোচ্চ ২০ জন যাত্রী। নতুন যাত্রী যোগ করতে একজনকে বাদ দিন।')}
-                    </p>
-                  </div>
-                : <div className="travel-passenger-workspace__blank">
+              })() : <div className="travel-passenger-workspace__blank">
                 <div className="travel-flow__passenger-tabs" role="group">
                   <button type="button" className="travel-flow__passenger-tab travel-flow__passenger-tab--active"
                     onClick={()=>beginNewPassenger('BD')}>{tr('Bangladeshi','বাংলাদেশি')}</button>
