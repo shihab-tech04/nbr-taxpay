@@ -34,6 +34,7 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
   const demoSql=useDemoSqlProfileAndServiceRecords(owner?.id??null);
   const sqlAccount=demoSql.status==='ready'&&demoSql.userId===accountId?demoSql.profile:null;
   const [reload,setReload]=useState(0);
+  const [showUnavailableFields,setShowUnavailableFields]=useState(false);
   const [recordState,setRecordState]=useState<{
     owner:DemoUserId|null;status:'loading'|'ready'|'error';profile:TaxpayerTinProfile|null
   }>({owner:null,status:'loading',profile:null});
@@ -59,6 +60,9 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
   const current=recordState.owner===accountId?recordState:null;
   const record=verified?current?.profile??null:null;
   const status=current?.status??'loading';
+  // Only User1 has a reviewed registration certificate in the canonical seed.
+  // A 13-digit demo scenario reference is not a certified 12-digit e-TIN.
+  const registrationNotLinked=status==='ready' && !record && Boolean(owner);
   const accountStatus=(sqlAccount?.roleCode??owner?.role)==='TAXPAYER_CORPORATE'
     ?tr(['Company','কোম্পানি'])
     : (sqlAccount?.roleCode??owner?.role)==='WITHHOLDING_AGENT'
@@ -84,19 +88,26 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
     const parts=name.split(/\s+/).map(part=>part.replace(/[^A-Za-z]/g,'')).filter(Boolean);
     return (parts.slice(0,2).map(part=>part[0]?.toUpperCase()).join('')||'—');
   })();
-  const details=(rows:readonly Row[])=><dl className="divide-y divide-taxpay-border">
-    {rows.map(([field,label])=>{
-      const raw=rawValue(field);
-      const kind=typeof raw==='string'?sensitiveProfileKind(field,raw):null;
-      return <div key={field} data-profile-field={field} className="grid min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(135px,43%)_minmax(0,1fr)] sm:gap-4">
-        <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
-        <dd className="min-w-0 break-words text-sm font-medium leading-relaxed text-taxpay-text">
-          {kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
-            label={tr(label)} language={language} allowCopy profileContext/>:value(field,language)}
-        </dd>
-      </div>;
-    })}
-  </dl>;
+  const details=(rows:readonly Row[])=><>
+    {registrationNotLinked && !showUnavailableFields && rows.every(([field])=>!rawValue(field)) &&
+      <p className="py-2 text-sm text-taxpay-muted">
+        {tr(['No verified registration details linked.','যাচাইকৃত নিবন্ধনের তথ্য সংযুক্ত নেই।'])}
+      </p>}
+    <dl className="divide-y divide-taxpay-border">
+      {rows.map(([field,label])=>{
+        const raw=rawValue(field);
+        const kind=typeof raw==='string'?sensitiveProfileKind(field,raw):null;
+        const hideUnavailable=registrationNotLinked && !showUnavailableFields && !raw;
+        return <div key={field} data-profile-field={field} className={(hideUnavailable?'hidden':'grid')+' min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(135px,43%)_minmax(0,1fr)] sm:gap-4'}>
+          <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
+          <dd className="min-w-0 break-words text-sm font-medium leading-relaxed text-taxpay-text">
+            {kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
+              label={tr(label)} language={language} allowCopy profileContext/>:value(field,language)}
+          </dd>
+        </div>;
+      })}
+    </dl>
+  </>;
   const panel=(title:Label,children:React.ReactNode)=><section className="flex h-full min-w-0 flex-col rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
     <h3 className="mb-4 border-b border-taxpay-border pb-3 text-base font-semibold text-taxpay-text">{tr(title)}</h3>
     {children}
@@ -183,6 +194,24 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
         </div>)}
       </div>
     </section>
+    {registrationNotLinked&&<section data-testid="registration-not-linked" role="status"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-taxpay-border bg-white px-4 py-3 sm:px-5">
+      <div className="min-w-0 space-y-1">
+        <p className="text-sm font-semibold text-taxpay-text">
+          {tr(['Registration record not linked','নিবন্ধনের রেকর্ড সংযুক্ত নেই'])}
+        </p>
+        <p className="text-sm text-taxpay-muted">
+          {tr(['Only account-backed information is shown. A demo account reference is not an issued e-TIN.',
+            'শুধু অ্যাকাউন্টে সংরক্ষিত তথ্য দেখানো হচ্ছে। ডেমো অ্যাকাউন্টের রেফারেন্স ইস্যুকৃত ই-টিআইএন নয়।'])}
+        </p>
+      </div>
+      <button type="button" aria-expanded={showUnavailableFields} onClick={()=>setShowUnavailableFields(value=>!value)}
+        className="min-h-11 rounded-lg border border-taxpay-border bg-white px-3 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light">
+        {showUnavailableFields
+          ?tr(['Hide unavailable registration fields','অনুপলব্ধ নিবন্ধন তথ্য লুকান'])
+          :tr(['Show unavailable registration fields','অনুপলব্ধ নিবন্ধন তথ্য দেখুন'])}
+      </button>
+    </section>}
     {status==='loading'&&<p role="status" className="text-sm text-taxpay-muted">{tr(['Loading registration details…','নিবন্ধন তথ্য লোড হচ্ছে…'])}</p>}
     {status==='error'&&<div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-taxpay-border bg-white px-4 py-3 text-sm text-taxpay-muted">
       <span>{tr(['Registration details are temporarily unavailable. Account information remains visible.','নিবন্ধনের তথ্য সাময়িকভাবে পাওয়া যাচ্ছে না। অ্যাকাউন্টের তথ্য দেখানো হচ্ছে।'])}</span>

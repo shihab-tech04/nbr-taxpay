@@ -1700,3 +1700,32 @@ table.taxpay-unified-table {
     overflow-wrap: anywhere;
   }
 }
+
+/* Owner-scoped favorites and seven fixed categories: tabular navigation, not cards. */
+.other-tax-batch-panel--unified-v5 .other-tax-category-directory { margin: 12px 0 18px; }
+.other-tax-batch-panel--unified-v5 .other-tax-category-directory h3 {
+  margin: 12px 0 6px; color: #203a5c; font-size: .875rem; font-weight: 700;
+}
+.other-tax-batch-panel--unified-v5 .other-tax-category-directory__empty {
+  padding: 10px 12px; color: #52627a; background: #f8fafc;
+  border: 1px solid #e0e5ed; border-radius: 8px; font-size: .8125rem;
+}
+.other-tax-batch-panel--unified-v5 .other-tax-category-table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid #dce4ef; border-radius: 9px; }
+.other-tax-batch-panel--unified-v5 .other-tax-category-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: .8125rem; }
+.other-tax-batch-panel--unified-v5 .other-tax-category-table thead { background: #f3f6fa; color: #3c536f; }
+.other-tax-batch-panel--unified-v5 .other-tax-category-table :is(th,td) { padding: 9px 10px; border-bottom: 1px solid #e6eaf0; text-align: left; vertical-align: middle; }
+.other-tax-batch-panel--unified-v5 .other-tax-category-table tr:last-child > :is(th,td) { border-bottom: 0; }
+.other-tax-batch-panel--unified-v5 .other-tax-category-table tbody th { color: #1e3b60; font-weight: 600; overflow-wrap: anywhere; width: 48%; }
+.other-tax-batch-panel--unified-v5 .other-tax-category-table__number { width: 12%; font-variant-numeric: tabular-nums; }
+.other-tax-batch-panel--unified-v5 .other-tax-category-table__action { width: 28%; text-align: right; }
+.other-tax-batch-panel--unified-v5 .other-tax-category-table__action button {
+  min-height: 36px; padding: 5px 9px; border-radius: 7px; border: 1px solid #ccd9e8;
+  background: #fff; color: #2c5ead; font-weight: 700; white-space: normal;
+}
+.other-tax-batch-panel--unified-v5 .other-tax-category-table__action button:hover { background: #edf3fb; }
+.other-tax-batch-panel--unified-v5 .other-tax-category-table__action button:focus-visible { outline: 3px solid #2c5ead; outline-offset: 2px; }
+@media (max-width: 375px) {
+  .other-tax-batch-panel--unified-v5 .other-tax-category-table { font-size: .75rem; }
+  .other-tax-batch-panel--unified-v5 .other-tax-category-table :is(th,td) { padding: 8px 5px; }
+  .other-tax-batch-panel--unified-v5 .other-tax-category-table__action button { padding: 4px; font-size: .72rem; }
+}

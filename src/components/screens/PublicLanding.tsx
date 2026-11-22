@@ -99,6 +99,7 @@ export const PublicLanding: React.FC = () => {
     <PublicHeroCarousel
       language={language}
       onPayTax={service => service === 'TRAVEL_TAX' ? setOpenService('travel') : openPaymentServiceChoice(service)}
+      onGiftTax={() => setOpenService('gift')}
       paused={isPaymentServiceChoiceOpen || openService !== null}
     />
 
