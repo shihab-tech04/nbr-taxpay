@@ -100,7 +100,7 @@ test('approved desktop rail adapts between 901px and 1439px without changing 144
     await expect(page.locator('.citizen-header')).toBeHidden();
     await expect(rail.locator('.taxpayer-reference-main-action')).toBeVisible();
     await expect(rail.getByRole('button',{name:'Overview',exact:true}))
-      .toHaveCSS('font-size', width < 1200 ? '14px' : '16px');
+      .toHaveCSS('font-size', '16px');
     if (width < 1200) await expect(rail).toHaveCSS('padding-left','10px');
     await expect(rail.getByRole('button',{name:'Overview',exact:true})).toHaveCSS('box-shadow','none');
     await expect(page.locator('.citizen-pay')).toBeHidden();
