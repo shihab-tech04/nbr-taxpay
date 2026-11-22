@@ -1218,3 +1218,18 @@
   .public-hero-carousel-shell--box .public-hero-carousel__gift { grid-column: 1 / -1; }
   .public-hero-carousel-shell--box .public-hero-carousel__slogan { font-size: .85rem; }
 }
+
+/* Three CTAs + Bengali slogan need a real copy row on 320–600px.
+ * Never hide or clip the third action inside the old 150px two-button slot. */
+@media (max-width: 600px) {
+  .public-hero-carousel-shell--box .public-hero-carousel__slide.public-information-hero {
+    grid-template-rows: minmax(200px, auto) clamp(184px, 52vw, 270px);
+    height: auto;
+    min-height: calc(200px + clamp(184px, 52vw, 270px));
+  }
+  .public-hero-carousel-shell--box .citizen-public-hero__copy h1,
+  .public-hero-carousel-shell--box .citizen-public-hero__copy h2,
+  .public-hero-carousel-shell--box .citizen-public-hero__copy > p {
+    white-space: normal;
+  }
+}
