@@ -204,14 +204,15 @@
   font-size: var(--taxpay-font-section);
   line-height: 1.35;
 }
-/* The public homepage has a later desktop layout rule with a hard-coded
- * 20px title. Keep the approved responsive 20px mobile / 24px tablet tier. */
+/* Keep the original 24px section title on tablet/desktop and the 20px
+ * compact mobile tier. Set the desktop value as the default so short-wide
+ * layout rules cannot accidentally restore the old 20px heading. */
 .taxpay-citizen-shell:has(.public-home-sections) .public-benefits__heading h2 {
-  font-size: 20px;
+  font-size: 24px;
 }
-@media (min-width: 768px) {
+@media (max-width: 767px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-benefits__heading h2 {
-    font-size: 24px;
+    font-size: 20px;
   }
 }
 .taxpay-citizen-shell .public-benefits__copy :is(h3,strong) {
@@ -375,11 +376,16 @@
 /* Keep the approved desktop wordmark and single-row navigation geometry. */
 @media (min-width: 1200px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
-    max-width: calc(var(--public-content-max) + 6rem);
+    /* The 1100px public rail plus symmetrical 2rem padding aligns the logo
+     * exactly with Home/Guide/Report, rather than offsetting it by 16px. */
+    max-width: calc(var(--public-content-max) + 4rem);
     column-gap: 8px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
-    max-width: 160px;
+    /* Two readable lines, not a three-line 60px block that pushes the footer
+     * beyond the approved viewport on short desktop pages. */
+    flex: 0 0 180px;
+    max-width: 180px;
     line-height: 1.25;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
