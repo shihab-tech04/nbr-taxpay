@@ -491,7 +491,6 @@
   .taxpay-type-h1, .taxpay-type-h2,
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h1,
   .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2,
-  .public-record-discovery__heading h2, .public-benefits__heading h2,
   .taxpayer-page-heading h1, .taxpayer-dashboard-header h1,
   .taxpayer-workspace > h2, .taxpayer-workspace .taxpay-table-toolbar__title,
   .taxpay-modal__title, .taxpay-bento-hero h2
@@ -501,8 +500,8 @@
 
 .taxpay-citizen-shell :is(
   .taxpay-type-h3, .taxpay-type-h4, .public-benefits__copy h3,
+  .public-record-discovery__heading h2, .public-benefits__heading h2,
   .citizen-hub-service-grid__copy strong, .tax-service-choice__entry-heading,
-  .tax-service-choice__card strong, .tax-service-choice__access-option strong,
   .payment-form-section__heading-copy h2, .taxpay-record-toolbar__heading h3,
   .taxpayer-workspace h3, .taxpayer-workspace h4
 ) {
@@ -513,7 +512,7 @@
   .public-home-nav a, .public-footer__navs a, .public-footer__navs button,
   .public-home-login-link, .citizen-nav-link, .public-home-language,
   .public-guest-actions .public-guest-action, .public-hero-carousel__travel,
-  .taxpay-modal__footer button, .tax-service-choice__continue,
+  .tax-service-choice__continue,
   .taxpay-record-toolbar__controls button, .taxpay-record-toolbar__retry,
   .taxpay-table-tabs > button, .taxpay-unified-table thead th,
   .taxpay-mobile-table-cards dt, .payment-form-section__body label,
@@ -549,4 +548,36 @@
   .taxpay-bento-position__totals dd
 ) {
   font-weight: var(--taxpay-weight-title);
+}
+
+
+/* 1121–1199px desktop: 16px links plus the wordmark and copyright do not
+ * fit into three simultaneous columns. Keep every link in one horizontal
+ * navigation row, but place that row below the identity/copyright row.
+ * No clipping, font reduction, hidden destinations or mobile changes. */
+@media (min-width: 1121px) and (max-width: 1199px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 0;
+    padding-block: 6px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: center;
+    column-gap: 10px;
+  }
 }
