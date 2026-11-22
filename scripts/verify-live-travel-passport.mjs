@@ -124,7 +124,7 @@ try {
     await expect(continueToTravel).toBeEnabled();
 
     await continueToTravel.click();
-    await expect(modal.locator('.taxpay-modal__title')).toHaveText('Travel details');
+    await expect(modal.locator('.taxpay-modal__title')).toHaveText('Travel Details');
     await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
     const modes = modal.locator('#travel-tax-route-results');
     await expect(modes.locator('input[type=radio]')).toHaveCount(2);
