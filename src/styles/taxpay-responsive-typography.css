@@ -416,7 +416,7 @@
     padding-block: 12px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-benefits {
-    padding-block: 12px;
+    padding-block: 14px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-benefits__heading {
     margin-bottom: 6px;
