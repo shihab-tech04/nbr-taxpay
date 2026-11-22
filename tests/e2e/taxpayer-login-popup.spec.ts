@@ -94,6 +94,9 @@ test('Bangla account search matches a Bengali profile name and only fills synthe
 });
 
 test('all ten matching ID/password pairs open their own taxpayer dashboard and profile, then sign out', async ({page}, info) => {
+  // Ten complete sign-in → dashboard → profile → sign-out journeys need a
+  // proportionate total budget; keep every assertion and the ten-account scope.
+  test.setTimeout(120_000);
   test.skip(info.project.name!=='desktop-1280','Complete ID matrix on desktop');
   await page.setViewportSize({width:1600,height:900});
   const hostedCalls:string[]=[];
