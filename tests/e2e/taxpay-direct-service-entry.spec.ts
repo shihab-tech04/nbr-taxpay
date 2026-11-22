@@ -47,10 +47,9 @@ for (const [index, service] of serviceCatalog.entries()) {
     if (service.code) await expect(active).toHaveAttribute('data-payment-service', service.code);
     else await expect(active).not.toHaveAttribute('data-payment-service');
     await expect(active.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
-    await expect(active.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
+    await expect(active.getByRole('button', { name: 'Other Tax', exact: true })).toBeVisible();
     await expect(active.locator('.public-guest-action')).toHaveCount(2);
-    await expect(active.locator('.public-hero-carousel__gift-link')).toBeVisible();
-    await expect(active.getByRole('button', {name:'Gift Tax'})).toBeVisible();
+    await expect(active.locator('.public-hero-carousel__gift-link')).toHaveCount(0);
 
     await active.getByRole('button', { name: 'Pay Tax', exact: true }).click();
     const modal = page.getByRole('dialog', { name: 'Pay Tax' });
@@ -58,7 +57,8 @@ for (const [index, service] of serviceCatalog.entries()) {
     await expect(modal.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
     await expect(modal.locator('[data-payer-relationship]')).toHaveCount(0);
     await modal.getByRole('button', { name: 'Close payment services' }).click();
-    await active.getByRole('button', { name: 'Pay Travel Tax', exact: true }).click();
+    await active.getByRole('button', { name: 'Other Tax', exact: true }).click();
+    await page.getByTestId('other-tax-chooser').getByRole('button', {name:/Travel Tax/}).click();
     await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
   });
 }
