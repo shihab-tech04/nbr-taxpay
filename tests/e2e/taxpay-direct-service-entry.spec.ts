@@ -48,7 +48,8 @@ for (const [index, service] of serviceCatalog.entries()) {
     else await expect(active).not.toHaveAttribute('data-payment-service');
     await expect(active.getByRole('button', { name: 'Pay Tax', exact: true })).toBeVisible();
     await expect(active.getByRole('button', { name: 'Pay Travel Tax', exact: true })).toBeVisible();
-    await expect(active.locator('.public-guest-action')).toHaveCount(3);
+    await expect(active.locator('.public-guest-action')).toHaveCount(2);
+    await expect(active.locator('.public-hero-carousel__gift-link')).toBeVisible();
     await expect(active.getByRole('button', {name:'Gift Tax'})).toBeVisible();
 
     await active.getByRole('button', { name: 'Pay Tax', exact: true }).click();
