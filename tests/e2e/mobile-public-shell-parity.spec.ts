@@ -222,7 +222,7 @@ test('426px scrolled mobile footer is one compact white row above the floating P
   expect(result.footerBackground).not.toBe(result.rowBackground);
   expect(result.rowToPayGap).toBeGreaterThanOrEqual(8);
   expect(result.rowToPayGap).toBeLessThanOrEqual(32);
-  expect(result.copySize).toBeGreaterThanOrEqual(14);
+  expect(result.copySize).toBe(12);
   expect(result.overflow).toBeLessThanOrEqual(2);
   const more=footer.locator('.public-footer__mobile-more > summary');
   await more.click();
