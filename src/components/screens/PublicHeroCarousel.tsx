@@ -218,14 +218,14 @@ async function fetchPublishedBanners(): Promise<BannerSlide[]> {
 type PublicHeroCarouselProps = {
   language: 'en' | 'bn';
   onPayTax: (service?: BannerPaymentService) => void;
-  onGiftTax: () => void;
+  onOtherTax: () => void;
   paused?: boolean;
 };
 
 export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   language,
   onPayTax,
-  onGiftTax,
+  onOtherTax,
   paused = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -385,9 +385,8 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
             <button type="button" className="citizen-public-primary public-guest-action"
               onClick={() => onPayTax()}>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</button>
             <button type="button" className="public-guest-action"
-              onClick={() => onPayTax('TRAVEL_TAX')}>{bn ? 'ভ্রমণ কর পরিশোধ' : 'Travel Tax'}</button>
+              onClick={onOtherTax}>{bn ? 'অন্যান্য কর' : 'Other Tax'}</button>
           </div>
-          <button type="button" className="public-hero-carousel__gift-link" onClick={onGiftTax}>{bn ? 'দান কর' : 'Gift Tax'}</button>
           {bannerStatus === 'unavailable' && <button className="public-hero-carousel__retry"
             type="button" onClick={() => {setBannerStatus('loading');setRetryNonce(n => n + 1);}}>
             {bn ? 'আবার চেষ্টা করুন' : 'Retry banner loading'}
@@ -400,7 +399,6 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   // Keep the approved two primary payment buttons and canonical introductory copy stationary.
   // SQL still controls each published slide's artwork, ordering, and image palette.
   const fixedBanner = slides.find(slide => !slide.serviceCode) ?? fallbackSlides[0];
-  const travelBanner = slides.find(slide => slide.serviceCode === 'TRAVEL_TAX') ?? fallbackSlides[4];
   // The carousel border follows the currently published service theme,
   // while the global brand controls and the main Pay Tax CTA remain fixed.
   const activeSlide = slides[activeIndex];
@@ -426,7 +424,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
         role="region"
         aria-roledescription="carousel"
         aria-label={bn ? 'কর পরিশোধের সেবা ব্যানার' : 'Tax payment service banners'}
-        aria-description={bn ? 'ছবি ও রং পরিবর্তন করতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন। আয়কর, ভ্রমণ কর ও দান করের বোতাম অপরিবর্তিত থাকবে।' : 'Swipe or use the arrow keys to change banner images and colors. Income Tax, Travel Tax and Gift Tax actions stay available on every slide.'}
+        aria-description={bn ? 'ছবি ও রং পরিবর্তন করতে সোয়াইপ করুন বা তীরচিহ্ন ব্যবহার করুন। কর পরিশোধ ও অন্যান্য করের বোতাম অপরিবর্তিত থাকবে।' : 'Swipe or use the arrow keys to change banner images and colors. Pay Tax and Other Tax remain available on every slide.'}
         className="public-hero-carousel"
         data-active-slide={activeIndex}
         data-dragging={isSwiping}
@@ -505,22 +503,13 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                           </span>
                       </>
                     </button>
-                    {(
-                      <button className="public-guest-action public-hero-carousel__travel" type="button"
-                        onClick={() => onPayTax('TRAVEL_TAX')}
-                        aria-label={bn ? travelBanner.actionBn : travelBanner.actionEn}>
-                        <WalletCards size={18} aria-hidden="true" />
-                        <span className="public-hero-carousel__travel-full">
-                          {bn ? travelBanner.actionBn : travelBanner.actionEn}
-                        </span>
-                        <span className="public-hero-carousel__travel-compact" aria-hidden="true">
-                          {bn ? compactAction(travelBanner.actionBn, fallbackSlides[4].actionBn, 'ভ্রমণ কর')
-                            : compactAction(travelBanner.actionEn, fallbackSlides[4].actionEn, 'Travel Tax')}
-                        </span>
-                      </button>
-                    )}
+                    <button className="public-guest-action public-hero-carousel__travel" type="button"
+                      onClick={onOtherTax} aria-label={bn ? 'অন্যান্য কর' : 'Other Tax'}>
+                      <WalletCards size={18} aria-hidden="true" />
+                      <span className="public-hero-carousel__travel-full">{bn ? 'অন্যান্য কর' : 'Other Tax'}</span>
+                      <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? 'অন্যান্য কর' : 'Other Tax'}</span>
+                    </button>
                   </div>
-                  <button type="button" className="public-hero-carousel__gift-link" onClick={onGiftTax}>{bn ? 'দান কর' : 'Gift Tax'}</button>
                 </div>
                 <div className="public-information-hero__media public-hero-carousel__media--illustrated" aria-hidden="true">
                   <BannerPicture key={`${slide.id}:${slide.image}:${slide.mobileImage || ''}`}
