@@ -805,6 +805,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 placeholder={tr('Enter country','দেশ লিখুন')}/>
             </div>
           </>}
+          <div className="travel-passenger-workspace__medical" data-testid="travel-passenger-medical-control">
+            <label className="travel-flow__check" htmlFor={'travel-medical-'+item.id}>
+              <input id={'travel-medical-'+item.id} type="checkbox" checked={item.medicalPortReferral}
+                onChange={event=>changePassenger(item.id,{medicalPortReferral:event.target.checked})}/>
+              <span>{tr('Request manual medical assessment at departure port',
+                'বন্দরে সরাসরি চিকিৎসাজনিত মূল্যায়নের অনুরোধ')}</span>
+            </label>
+          </div>
         </div>
         {item.medicalPortReferral && <p role="status" data-testid="travel-manual-assessment-blocker" className="travel-flow__medical-note">
           {tr('Manual medical assessment is required at the departure port. Online Continue is unavailable. Bring supporting documents, or untick this option if you selected it by mistake.',
@@ -976,14 +984,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                   {renderPassengerEditor(item,index)}
                   {passengerIssue?.id===item.id && <p id={'travel-passenger-issue-'+item.id}
                     className="travel-flow__inline-error" role="alert">{passengerIssue.message}</p>}
-                  <div className="travel-passenger-workspace__medical">
-                    <label className="travel-flow__check" htmlFor={'travel-medical-'+item.id}>
-                      <input id={'travel-medical-'+item.id} type="checkbox" checked={item.medicalPortReferral}
-                        onChange={event=>changePassenger(item.id,{medicalPortReferral:event.target.checked})}/>
-                      <span>{tr('Request manual medical assessment at departure port',
-                        'বন্দরে সরাসরি চিকিৎসাজনিত মূল্যায়নের অনুরোধ')}</span>
-                    </label>
-                  </div>
                   {editBackup?.passenger.id===item.id && <button className="travel-flow__edit" type="button"
                     onClick={cancelPassengerEdit}>{tr('Cancel edit','সম্পাদনা বাতিল')}</button>}
                   {passengers.length > 1 && <button className="travel-flow__edit travel-passenger-workspace__remove-editor"
