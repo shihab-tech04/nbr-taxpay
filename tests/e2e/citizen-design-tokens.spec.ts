@@ -68,3 +68,40 @@ test('Sobaike-level flat elevation is consistent across the public hero, section
 // Banner-dependent browser checks use explicitly published CMS rows;
 // unavailable CMS must not revive unpublished bundled artwork.
 test.beforeEach(async ({ page }) => { await mockPublishedBannerCms(page); });
+
+test('six-step responsive type roles keep EN/BN controls legible at phone, tablet and desktop widths', async ({ page }) => {
+  test.setTimeout(120_000);
+  for (const width of [320, 375, 480, 767, 768, 1024, 1280, 1920]) {
+    for (const lang of ['en','bn']) {
+      await page.setViewportSize({width,height:900});
+      await page.goto('/?action=landing&lang='+lang);
+      await expect(page.locator('.taxpay-citizen-shell')).toBeVisible();
+      const type = await page.evaluate(() => {
+        const shell = document.querySelector<HTMLElement>('.taxpay-citizen-shell')!;
+        const size = (className:string) => {
+          const node = document.createElement('span');
+          node.className = className;
+          shell.appendChild(node);
+          const value = parseFloat(getComputedStyle(node).fontSize);
+          node.remove();
+          return value;
+        };
+        const input = document.createElement('input');
+        shell.appendChild(input);
+        const inputPx = parseFloat(getComputedStyle(input).fontSize);
+        input.remove();
+        return {
+          micro:size('taxpay-type-micro'), body:size('taxpay-type-body'),
+          section:size('taxpay-type-h2'), page:size('taxpay-type-h1'),
+          inputPx, horizontalOverflow:document.documentElement.scrollWidth-innerWidth
+        };
+      });
+      expect(type.micro).toBe(12);
+      expect(type.body).toBe(16);
+      expect(type.inputPx).toBe(16);
+      expect(type.section).toBe(width>=768?24:20);
+      expect(type.page).toBe(width>=1024?32:width>=480?28:24);
+      expect(type.horizontalOverflow,JSON.stringify({width,lang,type})).toBeLessThanOrEqual(2);
+    }
+  }
+});

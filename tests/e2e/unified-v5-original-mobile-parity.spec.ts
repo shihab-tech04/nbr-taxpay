@@ -2,6 +2,8 @@ import {test,expect} from '@playwright/test';
 
 /** Exact source: Sohojkor_v5_Single_Primary_Action_Interactive.html (original 147,876 bytes).
  * Scope: parallel All Tax Payments ONLY. This is intentionally not a pixel-certification.
+ * The newly approved six-size typography contract supersedes the historical
+ * 12/14px ACTION TEXT ONLY; all original geometry, flow and calculation gates remain.
  */
 test('unified v5 mobile footer has one primary action and preserves calculation placement',async({page},info)=>{
   test.skip(info.project.name!=='mobile-375' && info.project.name!=='mobile-320','Mobile original-v5 reference');
@@ -17,10 +19,11 @@ test('unified v5 mobile footer has one primary action and preserves calculation 
   await expect(walkIn).toHaveCSS('color','rgb(38, 92, 166)');
   await expect(walkIn).toHaveCSS('border-color','rgb(199, 216, 238)');
   await expect(walkIn).toHaveCSS('border-radius','9px');
-  await expect(walkIn).toHaveCSS('font-size','14px');
+  await expect(walkIn).toHaveCSS('font-size','16px');
   await expect(walkIn).toHaveCSS('font-weight','700');
   await expect(signIn).toHaveCSS('min-height','48px');
   await expect(signIn).toHaveCSS('border-radius','9px');
+  await expect(signIn).toHaveCSS('font-size','16px');
   await walkIn.click();
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Taxpayer Information');
   await expect(dialog.locator('.tax-service-choice__eyebrow')).toHaveCount(0);
@@ -59,7 +62,7 @@ test('unified v5 mobile footer has one primary action and preserves calculation 
   expect(firstActionsBox).not.toBeNull();
   expect(Math.abs(nextBox!.width-firstActionsBox!.width)).toBeLessThanOrEqual(2);
   expect(Math.abs(nextBox!.x-firstActionsBox!.x)).toBeLessThanOrEqual(2);
-  await expect(toHeads).toHaveCSS('font-size','12px');
+  await expect(toHeads).toHaveCSS('font-size','16px');
   await expect(toHeads).toHaveCSS('border-radius','9px');
   await expect(toHeads).toHaveCSS('background-color','rgb(45, 94, 172)');
   await toHeads.click();
@@ -98,7 +101,7 @@ test('unified v5 mobile footer has one primary action and preserves calculation 
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Taxpayer Information');
   await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
-  await expect(continueButton).toHaveCSS('font-size','12px');
+  await expect(continueButton).toHaveCSS('font-size','16px');
   // Review is deliberately disabled before a valid head and positive amount exist.
   await expect(continueButton).toBeDisabled();
   const hasOverflow=await page.evaluate(()=>document.documentElement.scrollWidth > window.innerWidth+2);
@@ -119,10 +122,11 @@ test('unified v5 Final Preview stacks rows and retains only the payment CTA',asy
   await expect(walkIn).toHaveCSS('color','rgb(38, 92, 166)');
   await expect(walkIn).toHaveCSS('border-color','rgb(199, 216, 238)');
   await expect(walkIn).toHaveCSS('border-radius','9px');
-  await expect(walkIn).toHaveCSS('font-size','14px');
+  await expect(walkIn).toHaveCSS('font-size','16px');
   await expect(walkIn).toHaveCSS('font-weight','700');
   await expect(signIn).toHaveCSS('min-height','48px');
   await expect(signIn).toHaveCSS('border-radius','9px');
+  await expect(signIn).toHaveCSS('font-size','16px');
   await walkIn.click();
   await dialog.getByTestId('unified-tin-input').fill('222222222222');
   await dialog.getByRole('button',{name:'Search taxpayer TIN'}).click();
@@ -175,7 +179,7 @@ test('unified v5 Final Preview stacks rows and retains only the payment CTA',asy
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
   await dialog.getByRole('button',{name:'Continue to Final Preview'}).click();
   await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
-  await expect(pay).toHaveCSS('font-size','12px');
+  await expect(pay).toHaveCSS('font-size','16px');
   await dialog.screenshot({path:`test-results/sohojkor-v5-candidate-stage3-mobile-${page.viewportSize()!.width}.png`});
   const excess=await dialog.locator('.taxpay-modal__body').evaluate(el=>el.scrollWidth-el.clientWidth);
   expect(excess).toBeLessThanOrEqual(2);
