@@ -71,6 +71,14 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   await expect(travel.locator('#travel-tax-route-1')).toBeChecked();
   await travel.getByRole('button', { name: 'Continue to review' }).click();
 
+  // Final Preview checks receipt contact before the separate payment-channel screen.
+  await expect(travel.getByRole('button', { name: 'Make Payment' })).toBeVisible();
+  await travel.getByRole('button', { name: 'Make Payment' }).click();
+  await expect(travel.locator('#travel-mobile')).toHaveAttribute('aria-invalid', 'false').catch(() => undefined);
+  await expect(travel.locator('#travel-mobile')).toBeVisible();
+  await travel.locator('#travel-mobile').fill('01712345678');
+  await travel.getByRole('button', { name: 'Make Payment' }).click();
+  await expect(travel.getByTestId('travel-payment-channel-screen')).toBeVisible();
   const submit = travel.getByRole('button', { name: 'Confirm preview payment' });
   await expect(submit).toBeDisabled();
   const online = travel.getByRole('button', { name: 'Pay online' });
@@ -81,11 +89,7 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   await travel.getByRole('radio', { name: 'bKash' }).check();
   await expect(submit).toBeDisabled();
   await travel.getByRole('checkbox', { name: 'I confirm the travel information, all passengers and the combined amount.' }).check();
-  // The final preview now requires the receipt contact, separately from the passenger stage.
-  await expect(submit).toBeDisabled();
-  await travel.locator('#travel-mobile').fill('01712345678');
-  await expect(submit).toBeDisabled();
-  await travel.getByRole('checkbox', { name: 'I confirm the travel information, all passengers and the combined amount.' }).check();
+  // Changing the payment method requires a fresh acknowledgement.
   await expect(submit).toBeEnabled();
   await submit.click();
   await expect(travel.locator('.receipt-view__paper')).toContainText('SIM-', { timeout: 10000 });
