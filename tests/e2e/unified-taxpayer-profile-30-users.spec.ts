@@ -58,3 +58,37 @@ test('small screens and Bengali retain the identical profile grid without overfl
       'no horizontal overflow: '+id).toBeLessThanOrEqual(2);
   }
 });
+
+
+test('unlinked demo registration uses a quiet empty state without fabricating e-TIN data',async({page},info)=>{
+  test.skip(!['mobile-320','mobile-375','desktop-1280'].includes(info.project.name),'Profile empty-state parity');
+  // A real capability-owned demo-registration read can legitimately have no
+  // reviewed e-TIN row. The 13-digit scenario reference is not a certificate.
+  await page.route('**/functions/v1/taxpay-guest-beneficiaries',async route=>{
+    const body=route.request().postDataJSON() as {action?:string};
+    if(body?.action==='demo-registration'){
+      await route.fulfill({status:200,contentType:'application/json',body:'{"success":true,"data":null}'});
+    }else await route.continue();
+  });
+  await openPreviewProfile(page,'user2');
+  const profile=page.getByTestId('user1-taxpayer-profile');
+  const notice=profile.getByTestId('registration-not-linked');
+  await expect(notice).toBeVisible();
+  await expect(notice).toContainText('Registration record not linked');
+  await expect(notice).toContainText('not an issued e-TIN');
+  await expect(profile.locator('[data-profile-field="tin"]')).toContainText('Not available');
+  await expect(profile.getByRole('button',{name:'Copy TIN'})).toBeDisabled();
+  await expect(profile).not.toContainText('2222222222222');
+  // Preserve every approved field in the template, but reveal the unverified
+  // placeholders only on request, rather than repeating them across 4 cards.
+  await expect(profile.locator('[data-profile-field]')).toHaveCount(24);
+  const contact=profile.locator('[data-profile-field="mobileNumber"]');
+  await expect(contact).toBeHidden();
+  await expect(profile.getByTestId('profile-contact-card')).toContainText('No verified registration details linked.');
+  await notice.getByRole('button',{name:'Show unavailable registration fields'}).click();
+  await expect(contact).toBeVisible();
+  await expect(contact).toContainText('Not available');
+  await notice.getByRole('button',{name:'Hide unavailable registration fields'}).click();
+  await expect(contact).toBeHidden();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
