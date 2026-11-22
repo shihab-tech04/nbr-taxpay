@@ -1177,6 +1177,12 @@ test('Travel Tax passport suggestions recover on keyboard Escape and outside poi
 
   await passport.focus();
   await expect(list.getByRole('option')).toHaveCount(10);
+  // The disabled Check Passport control is skipped: Tab enters the sample
+  // options, where the list must remain open. Dismiss only after focus
+  // actually leaves the full picker, not when it moves between its controls.
   await passport.press('Tab');
+  await expect(list).toHaveCount(1);
+  await list.getByRole('option').last().focus();
+  await page.keyboard.press('Tab');
   await expect(list).toHaveCount(0);
 });
