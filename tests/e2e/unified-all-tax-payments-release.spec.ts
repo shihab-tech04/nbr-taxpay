@@ -68,6 +68,13 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
       .locator('.payment-flow-embedded__action-long')).toHaveText('Continue to Final Preview');
     await expect(dialog.getByRole('button', { name: 'Continue to Final Preview' })
       .locator('.payment-flow-embedded__action-short')).toHaveText('Preview');
+    await expect(dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__cancel')).toHaveCount(0);
+    await expect(dialog.locator('.payment-flow-embedded__footer-actions > button')).toHaveCount(1);
+    await dialog.locator('.taxpay-modal__back').click();
+    await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Taxpayer Information');
+    await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('2');
+    await dialog.getByRole('button', { name: 'Continue to Payment Head' }).click();
+    await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment Head');
     await expect(dialog.getByRole('progressbar', { name: 'Payment progress' })).toHaveAttribute('aria-valuemax', '3');
     await expect(dialog.locator('#guest-phone')).toHaveCount(0);
     await expect(dialog.locator('#guest-payment-remarks')).toHaveCount(0);
@@ -134,7 +141,8 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(editHeads).toHaveText('Heads & amounts');
     await expect(reviewTable.locator('.unified-v3-review__owner strong').first()).toContainText('Individual');
     await expect(reviewTable.locator('.unified-v3-review__owner span').first()).toContainText('222*********');
-    await expect(dialog.locator('.payment-flow-embedded__footer-actions > .tax-service-choice__cancel')).toBeVisible();
+    await expect(dialog.locator('.payment-flow-embedded__footer-actions > .tax-service-choice__cancel')).toHaveCount(0);
+    await expect(dialog.locator('.payment-flow-embedded__footer-actions > button')).toHaveCount(1);
     await expect(dialog.locator('.payment-flow-embedded__footer-actions > .tax-service-choice__continue')).toHaveText(/Make Payment/);
     await expect(dialog.getByRole('heading', { name: 'Payer and receipt details' })).toBeVisible();
     await expect(dialog.getByText('Payer information will appear on the receipt.')).toBeVisible();
@@ -179,8 +187,18 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment channel');
     await expect(dialog.getByTestId('unified-v5-payment-channel-screen')).toBeVisible();
     await expect(finalPreview).toHaveCount(0);
+    await expect(dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__cancel')).toHaveCount(0);
+    await expect(dialog.locator('.payment-flow-embedded__footer-actions > button')).toHaveCount(1);
+    await expect(dialog.getByRole('button', { name: 'Confirm payment' })).toBeDisabled();
+    await dialog.locator('.taxpay-modal__back').click();
+    await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
+    await expect(dialog.locator('#guest-payer-name')).toHaveValue('Test Walk-in Payer');
+    await dialog.getByRole('button', { name: 'Make Payment' }).click();
+    await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Payment channel');
     await expect(dialog.getByRole('progressbar', { name: 'Payment progress' })).toHaveCount(0);
-    await dialog.getByRole('button', { name: 'Back to Final Preview' }).click();
+    // No duplicate footer Back: the modal header is the only backward control.
+    await expect(dialog.locator('.payment-flow-embedded__footer-actions .tax-service-choice__cancel')).toHaveCount(0);
+    await dialog.locator('.taxpay-modal__back').click();
     await expect(dialog.locator('.taxpay-modal__title')).toHaveText('Final Preview');
     await expect(finalPreview).toBeVisible();
     await expect(dialog.locator('#guest-phone')).toHaveValue('01712345678');

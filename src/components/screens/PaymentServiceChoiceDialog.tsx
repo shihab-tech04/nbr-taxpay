@@ -97,6 +97,12 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   }, [paymentOwnerChanged, setPaymentServiceChoiceOpen]);
   const [loginReady, setLoginReady] = useState(false);
   const flowRef = useRef<HTMLElement>(null);
+  // Unified Walk-in header Back has a stage-owned handler. No hidden footer
+  // button is needed to proxy navigation, and non-unified routes stay intact.
+  const unifiedHeaderBackRef = useRef<(() => void) | null>(null);
+  const registerUnifiedHeaderBack = useCallback((action: (() => void) | null) => {
+    unifiedHeaderBackRef.current = action;
+  }, []);
   const payerHeadingRef = useRef<HTMLHeadingElement>(null);
   const stepHeadingRef = useRef<HTMLParagraphElement>(null);
   const bn = language === 'bn';
@@ -243,6 +249,13 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         }
         if (travelJourney && document.querySelector('.taxpay-modal[data-public-service="travel"] .travel-flow[data-receipt-review="true"]')) {
           document.querySelector<HTMLButtonElement>('.taxpay-modal[data-public-service="travel"] .travel-flow__footer-actions .travel-flow__primary')?.click();
+          return;
+        }
+        if (unifiedEntry) {
+          // Back from Payment Head, Final Preview and Payment channel is a
+          // direct in-memory transition; no footer control must be present.
+          if (unifiedHeaderBackRef.current) unifiedHeaderBackRef.current();
+          else if (stage === 1) returnToService();
           return;
         }
         const back = document.querySelector<HTMLButtonElement>(
@@ -398,7 +411,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
             initialBeneficiary={payerForSelf === false || parallelEntry ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
             isWithholdingMode={effectiveSelected === 'SOURCE_TAX_DEPOSIT'}
-            onBackToService={returnToService} onStageChange={reportStage} onCheckoutChange={setCheckoutOpen} />
+            onBackToService={returnToService} onStageChange={reportStage} onCheckoutChange={setCheckoutOpen}
+            registerHeaderBack={unifiedEntry ? registerUnifiedHeaderBack : undefined} />
         ) : null}
       </section>}
       {exitPromptOpen && (
