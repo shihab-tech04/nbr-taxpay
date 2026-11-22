@@ -983,6 +983,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                   </div>
                   {editBackup?.passenger.id===item.id && <button className="travel-flow__edit" type="button"
                     onClick={cancelPassengerEdit}>{tr('Cancel edit','সম্পাদনা বাতিল')}</button>}
+                  {passengers.length > 1 && <button className="travel-flow__edit travel-passenger-workspace__remove-editor"
+                    type="button" onClick={()=>removeTravelPassenger(item,index)}>
+                    <Trash2 size={15} aria-hidden="true"/>{tr('Remove passenger','যাত্রী বাদ দিন')}
+                  </button>}
                   {canShowAddPassenger && pendingConfirmationId===item.id && <div className="travel-flow__confirm-row">
                     <button type="button" className="travel-flow__add-member travel-flow__confirm-passenger"
                       disabled={item.medicalPortReferral} onClick={()=>{
