@@ -224,4 +224,33 @@ BEGIN
   RAISE NOTICE 'PASS: verified owner claims original walk-in transaction once; unrelated account receives none';
 END $verify_claim$;
 
+-- The same 30-account identity contract must work in demo authorizations;
+-- a user19 target previously failed because the SQL constructed 26 digits.
+DO $walkin_13_auth$
+DECLARE
+  v_request jsonb;
+  v_rejected boolean := false;
+BEGIN
+  v_request := public.demo_auth_transition(
+    'request','user1',NULL,'9000000000019',NULL
+  );
+  IF v_request->>'taxpayerId' <> 'user19' OR
+     v_request->>'payerId' <> 'user1' OR
+     v_request->>'status' <> 'PENDING' THEN
+    RAISE EXCEPTION 'DEMO_USER19_AUTHORIZATION_TARGET_MISMATCH';
+  END IF;
+  BEGIN
+    PERFORM public.demo_auth_transition(
+      'request','user1',NULL,'9000000000099',NULL
+    );
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE '%TIN_NOT_FOUND%' THEN v_rejected := true;
+    ELSE RAISE; END IF;
+  END;
+  IF NOT v_rejected THEN
+    RAISE EXCEPTION 'UNLISTED_AUTHORIZATION_TARGET_ACCEPTED';
+  END IF;
+  RAISE NOTICE 'PASS: user19 authorization 13-digit alias, unlisted TIN denied';
+END $walkin_13_auth$;
+
 ROLLBACK;
