@@ -323,11 +323,12 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.locator('.payment-form-summary__rows [data-payment-service]')).toHaveCount(0);
   await expect(services.locator('.taxpay-modal__subtitle')).toContainText('Tax with Return');
   await expect(services.locator('.tax-service-choice')).toHaveAttribute('data-payment-service', 'TAX_WITH_RETURN');
-  const smallDetails = await services.locator('.payment-form-summary__rows dt, .payment-form-summary__rows dd, .payment-form-summary__eyebrow')
+  const summaryDetails = await services.locator('.payment-form-summary__rows dt, .payment-form-summary__rows dd')
     .evaluateAll(nodes => nodes.filter(el => el.getClientRects().length > 0)
       .map(el => Number.parseFloat(getComputedStyle(el).fontSize)));
-  expect(smallDetails.length).toBeGreaterThan(0);
-  expect(Math.min(...smallDetails)).toBeGreaterThanOrEqual(14);
+  expect(summaryDetails.length).toBeGreaterThan(0);
+  expect(Math.min(...summaryDetails), 'payment terms and values are 16px body text').toBe(16);
+  await expect(services.locator('.payment-form-summary__eyebrow').first()).toHaveCSS('font-size', '12px');
   const visibleSmallUtilities = await services.locator('.payment-flow-embedded .text-xs, .payment-flow-embedded [class~="text-[10px]"], .payment-flow-embedded [class~="text-[11px]"]')
     .evaluateAll(elements => elements.filter(el => el.getClientRects().length > 0)
       .map(el => Number.parseFloat(getComputedStyle(el).fontSize)));
