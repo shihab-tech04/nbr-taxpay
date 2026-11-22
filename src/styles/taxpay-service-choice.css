@@ -2921,7 +2921,7 @@
   gap:12px;
 }
 .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__medical {
-  margin:14px 0;padding:13px 0;border-top:1px solid #edf0f5;
+  grid-column:1/-1;width:100%;margin:14px 0;padding:13px 0;border-top:1px solid #edf0f5;
 }
 .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__medical .travel-flow__check {
   display:flex;gap:10px;align-items:center;font-size:13px;
