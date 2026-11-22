@@ -622,10 +622,10 @@
 .public-home-brand span {display:flex; flex-direction:column; line-height:1.2;}
 .public-home-brand strong {font-size:1.12rem; font-weight:800;}
 .public-home-nav {display:flex; align-items:center; gap:clamp(.6rem,1.6vw,1.35rem); margin-left:auto;}
-.public-home-nav a {color:white; text-decoration:none; font-size:.8rem; font-weight:650; line-height:1.3; padding:.55rem .1rem; white-space:nowrap;}
+.public-home-nav a {color:white; text-decoration:none; font-size:var(--taxpay-type-body); font-weight:650; line-height:1.3; padding:.55rem .1rem; white-space:nowrap;}
 .public-home-nav a:hover {text-decoration:underline; text-underline-offset:.3rem;}
 .public-home-header__tools {display:flex; align-items:center; gap:.5rem;}
-.public-home-language,.public-home-menu {display:inline-flex; gap:.35rem; align-items:center; justify-content:center; min-height:44px; padding:.55rem .6rem; color:white; border-radius:.6rem; border:1px solid color-mix(in srgb,white 45%,transparent); font-weight:700; font-size:.77rem;}
+.public-home-language,.public-home-menu {display:inline-flex; gap:.35rem; align-items:center; justify-content:center; min-height:44px; padding:.55rem .6rem; color:white; border-radius:.6rem; border:1px solid color-mix(in srgb,white 45%,transparent); font-weight:700; font-size:var(--taxpay-type-body);}
 .public-home-menu {display:none; min-width:44px;}
 .public-information-hub {scroll-margin-top:90px;}
 .public-information-hub [id] {scroll-margin-top:95px;}
@@ -708,7 +708,7 @@
 .public-home-brand strong {color:var(--citizen-primary-dark);font-size:1.15rem;letter-spacing:-.02em;}
 .public-home-seal-fallback {display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:var(--citizen-primary-light);color:var(--citizen-primary-dark);font-size:.8rem;font-weight:850;}
 .public-home-nav {gap:clamp(.4rem,1.2vw,1rem);}
-.public-home-nav a {min-height:44px;display:inline-flex;align-items:center;padding:.55rem .45rem;border-radius:.5rem;color:var(--citizen-text);font-size:.78rem;font-weight:700;}
+.public-home-nav a {min-height:44px;display:inline-flex;align-items:center;padding:.55rem .45rem;border-radius:.5rem;color:var(--citizen-text);font-size:var(--taxpay-type-body);font-weight:700;}
 .public-home-nav a:hover {background:var(--citizen-primary-light);color:var(--citizen-primary-dark);text-decoration:none;}
 .public-home-language,.public-home-menu {background:white;color:var(--citizen-primary-dark);border-color:var(--citizen-border);}
 .public-home-language:hover,.public-home-menu:hover {background:var(--citizen-primary-light);border-color:var(--citizen-primary);}
@@ -792,7 +792,7 @@
   .public-home-brand__copy {flex:1 1 0;}
   .public-home-brand strong {font-size:1rem;}
   .public-home-header__tools {flex:0 0 auto;gap:.3rem;}
-  .public-home-language {min-width:52px;min-height:44px;padding:.45rem .3rem;font-size:.7rem;}
+  .public-home-language {min-width:52px;min-height:44px;padding:.45rem .3rem;font-size:var(--taxpay-type-body);}
   .public-home-menu {min-width:44px;min-height:44px;padding:.35rem;}
   .public-information-hero {gap:0;padding:0;border-radius:1rem;}
   .public-information-hero .citizen-public-hero__copy {padding:1.3rem 1rem .55rem;}
@@ -1204,12 +1204,12 @@
 .public-footer__inner{max-width:calc(var(--public-content-max) + 4rem);margin:0 auto;padding:.8rem clamp(1rem,3vw,2rem);display:flex;align-items:center;justify-content:space-between;gap:.65rem;}
 .public-footer__identity{display:flex;align-items:center;gap:.7rem;flex:0 0 auto;min-width:0;}
 .public-footer__identity img.public-footer__wordmark{display:block;width:112px;max-width:100%;height:37px;object-fit:contain;object-position:left center;}
-.public-footer__identity p{max-width:125px;font-size:.875rem;color:var(--citizen-muted);margin:0;line-height:1.45;}
+.public-footer__identity p{max-width:160px;font-size:var(--taxpay-type-micro);color:var(--citizen-muted);margin:0;line-height:1.45;}
 .public-footer__navs{display:flex;flex:1 1 auto;align-items:center;justify-content:center;flex-wrap:wrap;gap:.1rem .45rem;min-width:0;}
 .public-footer__navs a,.public-footer__navs button{display:inline-flex;align-items:center;gap:.25rem;text-align:left;min-height:40px;padding:.35rem 0;font-size:.875rem;color:var(--citizen-muted);white-space:nowrap;}
 .public-footer__navs a:hover,.public-footer__navs button:hover{text-decoration:underline;color:var(--citizen-primary-dark);}
 .public-footer__bottom{flex:0 0 auto;display:flex;align-items:center;min-height:32px;padding-left:clamp(.7rem,1.5vw,1.25rem);border-left:1px solid var(--citizen-border);}
-.public-footer__bottom p{margin:0;font-size:.875rem;color:var(--citizen-muted);line-height:1.5;white-space:nowrap;}
+.public-footer__bottom p{margin:0;font-size:var(--taxpay-type-micro);color:var(--citizen-muted);line-height:1.5;white-space:nowrap;}
 /* Public Home only: keep the 1100px approved page width, but let footer
    navigation wrap instead of overflowing or touching the identity. */
 @media (min-width: 1121px) {
@@ -1227,15 +1227,15 @@
     width: 96px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
-    max-width: 150px;
+    max-width: 180px;
     white-space: normal;
     overflow-wrap: normal;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
     min-width: 0;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-end;
-    gap: 8px 14px;
+    gap: 6px 10px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs a,
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs button {
@@ -1255,10 +1255,10 @@
 @media(min-width:981px) and (max-width:1120px) {
  .public-footer__inner {gap:.35rem;padding-inline:.7rem;}
  .public-footer__identity {gap:.4rem;}
- .public-footer__identity img.public-footer__wordmark {width:88px;height:33px;}
- .public-footer__identity p {max-width:108px;}
- .public-footer__navs {gap:.1rem .35rem;}
- .public-footer__bottom {padding-left:.5rem;}
+  .public-footer__identity img.public-footer__wordmark {width:78px;height:33px;}
+ .public-footer__identity p {max-width:130px;}
+ .public-footer__navs {gap:0 .2rem;flex-wrap:nowrap;}
+ .public-footer__bottom {padding-left:.25rem;}
 }
 .public-help-widget{position:fixed;right:calc(1.1rem + env(safe-area-inset-right));bottom:calc(1.1rem + env(safe-area-inset-bottom));z-index:85;display:flex;align-items:flex-end;flex-direction:column;gap:.55rem;}
 .public-help-launch{display:inline-flex;align-items:center;gap:.45rem;min-height:52px;border-radius:999px;background:var(--citizen-primary);color:white;padding:.75rem 1rem;box-shadow:var(--taxpay-shadow-raised);font-size:.79rem;font-weight:800;}
