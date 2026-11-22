@@ -118,6 +118,18 @@ test('Travel Tax passport lookup is full-width on tablet and phone without chang
     expect(await dialog.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(2);
   }
   await page.setViewportSize({width:1280,height:830});
+  // Returning from the full-width phone/tablet layout also starts the
+  // approved 300 ms dialog width transition. Measure the desktop pairing only
+  // after that transition settles; keep the strict 3 px alignment limit.
+  await dialog.evaluate(async element => {
+    await Promise.all(
+      element.getAnimations({subtree: false})
+        .filter(animation => animation.playState === 'running')
+        .map(animation => animation.finished.catch(() => undefined))
+    );
+    await new Promise<void>(resolve => requestAnimationFrame(() =>
+      requestAnimationFrame(() => resolve())));
+  });
   await page.evaluate(async () => {
     await document.fonts.ready;
     await new Promise<void>(resolve => requestAnimationFrame(() =>
