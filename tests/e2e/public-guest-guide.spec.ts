@@ -32,6 +32,8 @@ test('public hero opens receipt lookup and its Travel Tax banner starts the jour
  await expect(travel.getByRole('heading',{name:'Payment calculation'})).toBeVisible();
  await travel.getByRole('button',{name:'Continue to review'}).click();
  await expect(travel.getByRole('heading',{name:'Payment preview'})).toBeVisible();
+ // Receipt contact is required in the final preview, not the passenger form.
+ await travel.locator('#travel-mobile').fill('01712345678');
   await travel.getByRole('button',{name:'Pay online'}).click();
   await travel.getByRole('button',{name:'Mobile banking'}).click();
  await travel.getByRole('radio',{name:'bKash'}).check();
