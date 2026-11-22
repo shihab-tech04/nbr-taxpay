@@ -76,10 +76,10 @@
 .taxpay-record-toolbar__heading h3 {margin:0;font-size:16px;line-height:1.5;font-weight:650;color:var(--taxpay-table-text,#172033);}
 .taxpay-record-toolbar__controls {display:flex;flex:1 1 400px;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;min-width:0;}
 .taxpay-record-toolbar__search {display:flex;align-items:center;gap:8px;flex:1 1 220px;max-width:360px;min-width:160px;min-height:44px;padding:0 12px;border:1px solid var(--taxpay-table-border,#e1e6ee);border-radius:8px;color:var(--taxpay-table-muted,#5f6b7a);background:#fff;}
-.taxpay-record-toolbar__search input {flex:1;min-width:0;min-height:42px;background:transparent;border:0;outline:0;color:var(--taxpay-table-text,#172033);font-size:14px;}
+.taxpay-record-toolbar__search input {flex:1;min-width:0;min-height:42px;background:transparent;border:0;outline:0;color:var(--taxpay-table-text,#172033);font-size:var(--taxpay-type-body);}
 .taxpay-record-toolbar__search:focus-within {outline:2px solid var(--taxpay-table-primary,#2c5ead);outline-offset:2px;}
 .taxpay-record-toolbar__controls select,
-.taxpay-record-toolbar__controls button {min-height:44px;padding:8px 12px;border:1px solid var(--taxpay-table-border,#e1e6ee);border-radius:8px;background:var(--taxpay-table-surface,#fff);color:var(--taxpay-table-text,#172033);font-size:14px;}
+.taxpay-record-toolbar__controls button {min-height:44px;padding:8px 12px;border:1px solid var(--taxpay-table-border,#e1e6ee);border-radius:8px;background:var(--taxpay-table-surface,#fff);color:var(--taxpay-table-text,#172033);font-size:var(--taxpay-type-body);}
 .taxpay-record-toolbar__controls button:hover {background:var(--taxpay-table-hover,#f1f6ff);}
 .taxpay-record-toolbar__controls :is(select,button):focus-visible {outline:2px solid var(--taxpay-table-primary,#2c5ead);outline-offset:2px;}
 .taxpay-record-toolbar__retry {min-height:44px;padding:8px 14px;border:1px solid var(--taxpay-table-border,#e1e6ee);border-radius:8px;}
@@ -156,7 +156,7 @@
   border-radius: 8px;
   background: var(--taxpay-table-surface, #fff);
   color: var(--taxpay-table-text, #172033);
-  font-size: 14px;
+  font-size: var(--taxpay-type-body);
   font-weight: 600;
 }
 .taxpay-table-tabs > button[aria-pressed="true"],
@@ -197,7 +197,7 @@ table.taxpay-unified-table {
   border-spacing: 0;
   table-layout: auto;
   color: var(--taxpay-table-text, #172033);
-  font-size: 14px;
+  font-size: var(--taxpay-type-body);
   line-height: 1.5;
 }
 .taxpay-table-viewport > table.taxpay-unified-table {min-width:max-content;}
@@ -230,7 +230,7 @@ table.taxpay-unified-table {
   border-bottom: 1px solid var(--taxpay-table-border, #e1e6ee);
   color: var(--taxpay-table-muted, #5f6b7a);
   background: var(--taxpay-table-heading, #f7f9fc);
-  font-size: 14px;
+  font-size: var(--taxpay-type-body);
   font-weight: 650;
   line-height: 1.4;
   letter-spacing: 0;
