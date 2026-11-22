@@ -1303,7 +1303,7 @@
   max-width:330px;
   color:#edf5ff;
   font-family:inherit;
-  font-size:13px;
+  font-size:var(--taxpay-type-body);
   line-height:1.5;
   font-weight:400;
   letter-spacing:normal;
