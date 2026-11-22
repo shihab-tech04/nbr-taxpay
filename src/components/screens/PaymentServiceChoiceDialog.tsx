@@ -69,7 +69,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   // Only signed-out users need to choose between account sign-in and walk-in.
   const alreadySignedIn = Boolean(verifiedUser || previewAccount);
   // A walk-in checkout is not an account-owned draft, even when a guest capability exists.
-  const isWalkInPayment = view === 'payment' && !useAccount && !alreadySignedIn;
+  const isWalkInPayment = view === 'payment' && !useAccount && !alreadySignedIn &&
+    (draftToResume?.service ?? initialReuse?.service ?? selected) !== 'TRAVEL_TAX';
   const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
   const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(initialDraft);
   // Back from taxpayer details returns to payer choices without losing
