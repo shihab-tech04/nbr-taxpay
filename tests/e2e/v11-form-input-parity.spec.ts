@@ -74,7 +74,7 @@ test('standalone travel form requires explicit payment method and acknowledgemen
   // Final Preview checks receipt contact before the separate payment-channel screen.
   await expect(travel.getByRole('button', { name: 'Make Payment' })).toBeVisible();
   await travel.getByRole('button', { name: 'Make Payment' }).click();
-  await expect(travel.locator('#travel-mobile')).toHaveAttribute('aria-invalid', 'false').catch(() => undefined);
+  await expect(travel.getByRole('alert')).toContainText('11-digit receipt mobile number');
   await expect(travel.locator('#travel-mobile')).toBeVisible();
   await travel.locator('#travel-mobile').fill('01712345678');
   await travel.getByRole('button', { name: 'Make Payment' }).click();
