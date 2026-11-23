@@ -35,7 +35,7 @@ test('approved fixed banner keeps three service destinations without inventing G
   await expect(gift).toHaveCount(0);
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
 });
-test('walk-in parallel chooser uses a seven-row category table and keeps Return in shared head catalogue',async({page})=>{
+test('walk-in head catalogue reuses compact accordion and keeps Return in the shared editor',async({page})=>{
   await page.goto('/?action=landing&lang=en');
   await page.locator('.public-benefits__item[data-benefit="payments"]').click();
   const dialog=page.getByRole('dialog',{name:'Pay Tax'});
@@ -44,24 +44,22 @@ test('walk-in parallel chooser uses a seven-row category table and keeps Return 
   await dialog.getByRole('button',{name:'Search taxpayer TIN'}).click();
   await dialog.getByRole('button',{name:'Add taxpayer'}).click();
   await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
-  const table=dialog.getByTestId('fixed-tax-categories');
-  await expect(table.locator('tbody tr')).toHaveCount(7);
-  await expect(dialog.getByText('Sign in to see categories from your payment history.')).toHaveCount(0);
+  const categories=dialog.getByTestId('fixed-tax-categories');
+  await expect(categories.locator('details[data-head-group]')).toHaveCount(7);
+  await expect(categories.locator('table')).toHaveCount(0);
+  await expect(categories.getByRole('button',{name:/View heads/})).toHaveCount(0);
   await expect(dialog.getByTestId('frequent-category-section')).toHaveCount(0);
-  await expect(dialog.getByTestId('unified-v5-return-group')).toHaveCount(1);
-  await expect(dialog.getByTestId('other-tax-head-catalogue')).toBeHidden();
-  await table.getByRole('button',{name:'View payment heads for Tax with Return'}).click();
-  await expect(dialog.getByTestId('other-tax-category-directory')).toHaveCount(0);
-  await expect(dialog.getByTestId('other-tax-head-catalogue')).toBeVisible();
-  await expect(dialog.getByTestId('unified-v5-return-group')).toHaveAttribute('open','');
-  await expect(dialog.locator('[data-head-group="Advance Tax"]')).toBeHidden();
+  const catalogue=dialog.getByTestId('other-tax-head-catalogue');
+  await expect(catalogue).toBeVisible();
+  const group=catalogue.getByTestId('unified-v5-return-group');
+  await group.locator('summary').click();
+  await expect(group).toHaveAttribute('open','');
   await dialog.getByTestId('unified-v5-return-checkbox').check();
-  await expect(dialog.getByTestId('unified-v5-return-amount')).toBeVisible();
-  await dialog.getByRole('button', { name: 'Back to categories' }).click();
-  await expect(dialog.getByTestId('fixed-tax-categories')).toBeVisible();
-  await expect(dialog.getByTestId('other-tax-head-catalogue')).toBeHidden();
-  await expect(table.locator('tr[data-category="Tax with Return"]')).toHaveAttribute('data-selected-count','1');
-  await table.getByRole('button',{name:'View payment heads for Tax with Return'}).click();
+  await expect(group.getByTestId('unified-v5-return-amount')).toBeVisible();
+  await expect(group.locator('.other-tax-category-trigger__selected')).toContainText('1 selected');
+  await group.locator('summary').click();
+  await expect(group).not.toHaveAttribute('open','');
+  await group.locator('summary').click();
   await expect(dialog.getByTestId('unified-v5-return-checkbox')).toBeChecked();
 });
 
@@ -98,11 +96,8 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(exit).toBeVisible();
     await expect(exit.locator('button')).toHaveCount(2);
     const discard = exit.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ বাদ দিন' : 'Discard tax payment' });
-    const discardLabel = discard.locator('span.whitespace-nowrap');
-    await expect(discardLabel).toBeVisible();
-    const size = await discard.boundingBox();
-    const labelSize = await discardLabel.boundingBox();
-    expect(size && labelSize && labelSize.height < size.height).toBeTruthy();
+    await expect(discard).toBeVisible();
+    await expect(discard).toHaveCSS('min-height', '44px');
     await expect(exit.getByRole('button', { name: locale === 'bn' ? 'সম্পাদনা চালিয়ে যান' : 'Keep editing' })).toBeVisible();
     await expect(exit.getByRole('button', { name: locale === 'bn' ? 'কর পরিশোধ বাদ দিন' : 'Discard tax payment' })).toBeVisible();
     await expect(exit.getByText(/Save Draft|Save your tax payment|saved beneficiary session|খসড়া সংরক্ষণ/)).toHaveCount(0);
