@@ -1207,6 +1207,36 @@ test('Travel Tax: draft route selections survive Land/Water switch without stale
   await expect(modal.locator('#travel-port')).toHaveCount(0);
 });
 
+// Regression against the original downloadable UI: the sample picker must float
+// over the passenger form, NOT expand the modal or shift its sticky CTA.
+// The full passenger details card after Check Passport is intentionally inline.
+test('Travel Tax preview: stale notices absent and suggestions do not reflow modal at 320/375/1280', async ({page}) => {
+  for(const width of [320, 375, 1280]) {
+    await page.setViewportSize({width,height:width===1280?900:800});
+    await page.goto('/travel-tax-ui-preview.html');
+    await expect(page.locator('body')).not.toContainText('Passport search uses labelled sample data');
+    await expect(page.locator('body')).not.toContainText('Age-based sample rates are illustrative');
+    const next = page.locator('.footer button[data-action="next"]');
+    await expect(next).toBeDisabled();
+    await expect(next).toHaveCSS('background-color','rgb(228, 234, 242)');
+    const before=await page.locator('.footer').boundingBox();
+    await page.locator('#bdPassport').fill('1');
+    const suggestions=page.locator('.passport-lookup-region .suggestions');
+    await expect(suggestions).toBeVisible();
+    await expect(suggestions).toHaveCSS('position','absolute');
+    const after=await page.locator('.footer').boundingBox();
+    expect(before && after).toBeTruthy();
+    expect(Math.abs(after!.y-before!.y)).toBeLessThanOrEqual(2);
+    await expect(next).toBeDisabled();
+    await page.locator('#bdPassport').fill('TEST123456');
+    await page.locator('[data-action="check"]').click();
+    await expect(next).toBeDisabled();
+    await expect(page.locator('.info-card')).toBeVisible();
+    await page.locator('[data-action="add"]').click();
+    await expect(next).toBeEnabled();
+  }
+});
+
 // Regression: the standalone approved Walk-in preview must not look actionable
 // before any passenger has been added, even if the button is HTML-disabled.
 test('Travel Tax preview: primary action is visibly disabled until a passenger is added', async ({page}) => {
