@@ -320,7 +320,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setPassportSuggestionsFor(null);
     changePassenger(id, { nationality, passport: '', name: '', birthDate: '',
       country: nationality === 'BD' ? 'Bangladesh' : '',
-      identitySource: nationality === 'BD' ? 'PENDING' : 'MANUAL' });
+      identitySource: nationality === 'BD' ? 'PENDING' : 'MANUAL', medicalPortReferral: false });
   };
   const ageExplanation = (age: number) => age <= 5
     ? tr('Age ' + age + ' on travel date: no tax in this preview (5 or younger).',
@@ -711,15 +711,16 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     const alreadyAdded = passengers.some(other =>
                       other.id !== item.id && other.passport.trim().toUpperCase() === typedPassport);
                     changePassenger(item.id, {passport: typedPassport,
-                      name: '', birthDate: '', identitySource: 'PENDING'});
-                    setPassportSuggestionsFor(alreadyAdded ? null : item.id);
+                      name: '', birthDate: '', identitySource: 'PENDING', medicalPortReferral: false});
+                    // A complete passport must not leave the suggestion layer covering edit/remove actions.
+                    setPassportSuggestionsFor(alreadyAdded || typedPassport.length >= 10 ? null : item.id);
                   }}
                   placeholder={tr('Select or enter a sample passport','একটি নমুনা পাসপোর্ট নির্বাচন বা লিখুন')}/>
                 {item.passport && <button type="button" className="travel-flow__passport-clear"
                   aria-label={tr('Clear passport', 'পাসপোর্ট মুছুন')}
                   title={tr('Clear passport', 'পাসপোর্ট মুছুন')}
                   onClick={() => {
-                    changePassenger(item.id, {passport: '', name: '', birthDate: '', identitySource: 'PENDING'});
+                    changePassenger(item.id, {passport: '', name: '', birthDate: '', identitySource: 'PENDING', medicalPortReferral: false});
                     setPassportSuggestionsFor(null);
                     requestAnimationFrame(() => document.getElementById('travel-passport-' + item.id)?.focus());
                   }}><X size={17} aria-hidden="true"/></button>}
