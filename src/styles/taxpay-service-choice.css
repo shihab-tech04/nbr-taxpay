@@ -3004,9 +3004,9 @@
   flex:1 1 auto;width:100%;max-width:none;
 }
 
-/* Keep the destructive edit action clickable when the passport suggestion
-   list is open; an overlay must not trap the user or prevent Undo recovery. */
-.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__remove-editor {
+/* The combobox popup must not intercept the editor recovery controls:
+   both Cancel edit and Remove passenger remain directly clickable. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__entry > .travel-flow__edit {
   position:relative;z-index:32;
 }
 /* Search > identity details > Add passenger mirrors the approved compact TIN card.
