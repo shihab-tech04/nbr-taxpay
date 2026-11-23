@@ -15,9 +15,8 @@ test('parallel Walk-in accepts approved 13-digit demo payer and recovers from SQ
   await dialog.getByRole('button',{name:'Add taxpayer'}).click();
   await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
   const batch=dialog.getByTestId('other-tax-batch');
-  await batch.getByTestId('fixed-tax-categories').getByRole('button',{name:'View payment heads for Advance Tax'}).click();
   const advance=batch.locator('[data-head-group="Advance Tax"]');
-  if (await advance.getAttribute('open')===null) await advance.locator('summary').click();
+  await advance.locator('summary').click();
   await batch.getByRole('checkbox',{name:/Select 68A/}).check();
   await batch.getByTestId('other-tax-line').first()
     .locator('input[id^="other-tax-amount"]').fill('3500');
