@@ -103,7 +103,7 @@ test('unified walk-in retains final payer fields, remarks, amounts and three-ste
     const batch = dialog.getByTestId('other-tax-batch');
     // The approved directory is the only overview; open the Advance Tax
     // editor through View heads rather than a second always-visible list.
-    await batch.getByTestId('fixed-tax-categories').getByRole('button', { name: 'View payment heads for Advance Tax' }).click();
+    await batch.locator('[data-head-group="Advance Tax"] > summary').click();
     const advanceTaxGroup = batch.locator('[data-head-group="Advance Tax"]');
     const select68A = batch.getByRole('checkbox', { name: /Select 68A/ });
     const ensureAdvanceTaxOpen = async () => {

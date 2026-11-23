@@ -12,9 +12,13 @@ type Party = 'donor' | 'donee';
 type Person = {tin: string; name: string};
 type PartyMap = Record<Party, Person | null>;
 const emptyParties = (): PartyMap => ({donor: null, donee: null});
-const inputClass = 'min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 focus-visible:outline-2 focus-visible:outline-[#2C5EAD]';
-const primaryClass = 'min-h-11 rounded-xl bg-[#2C5EAD] px-5 py-2 text-sm font-semibold text-white hover:bg-[#24549D] disabled:cursor-not-allowed disabled:opacity-50';
-const secondaryClass = 'min-h-11 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50';
+const localToday = () => {
+  const now = new Date();
+  return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+};
+const inputClass = 'gift-tax-field-control';
+const primaryClass = 'gift-tax-action gift-tax-action--primary';
+const secondaryClass = 'gift-tax-action gift-tax-action--secondary';
 
 /**
  * Gift Tax V1 — approved two-screen data entry and final review.
@@ -81,7 +85,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
       setFormError(t('Enter a valid gift amount above zero (up to two decimals).', 'শূন্যের বেশি বৈধ দানের পরিমাণ লিখুন (সর্বোচ্চ দুই দশমিক স্থান)।'));
       return;
     }
-    if (!dateOfGift || dateOfGift > new Date().toISOString().slice(0, 10)) {
+    if (!dateOfGift || dateOfGift > localToday()) {
       setFormError(t('Select a valid gift date, not in the future.', 'ভবিষ্যতের নয়, এমন বৈধ দানের তারিখ নির্বাচন করুন।'));
       return;
     }
@@ -151,8 +155,8 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     </>}>
     {step === 1 && <div className="gift-tax-grid" data-testid="gift-tax-entry-form">
       <div className="gift-tax-main space-y-5">{partyLookup('donor')}{partyLookup('donee')}</div>
-      <aside className="gift-tax-aside" aria-label={t('Donor & Donee in this Payment', 'এই পেমেন্টের দাতা ও গ্রহীতা')}>
-        <h3 className="mb-3 text-sm font-semibold text-slate-900">{t('Donor & Donee in this Payment', 'এই পেমেন্টের দাতা ও গ্রহীতা')}</h3>
+      <aside className="gift-tax-aside payment-form-summary" aria-label={t('Donor & Donee in this Payment', 'এই পেমেন্টের দাতা ও গ্রহীতা')}>
+        <h3 className="gift-tax-summary-heading">{t('Donor & Donee in this Payment', 'এই পেমেন্টের দাতা ও গ্রহীতা')}</h3>
         <div className="space-y-2">{partyDisplay('donor', true)}{partyDisplay('donee', true)}</div>
       </aside>
     </div>}
@@ -160,29 +164,29 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
       <section className="gift-tax-main space-y-4">
         <h3 className="text-base font-semibold text-slate-900">{t('Gift & tax information', 'দান ও করের তথ্য')}</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div><label htmlFor="gift-tax-amount" className="mb-1.5 block text-sm font-semibold">{t('Gift amount (৳)', 'দানের পরিমাণ (৳)')} *</label>
+          <div><label htmlFor="gift-tax-amount" className="gift-tax-field-label">{t('Gift amount (৳)', 'দানের পরিমাণ (৳)')} *</label>
             <input id="gift-tax-amount" className={inputClass} inputMode="decimal" autoComplete="off" placeholder="2500000"
-              value={giftAmount} aria-invalid={Boolean(formError && parsedAmount === null)}
+              value={giftAmount} required aria-invalid={Boolean(formError && parsedAmount === null)}
               onChange={event => {setGiftAmount(event.target.value);setFormError('');}} /></div>
-          <div><label htmlFor="gift-tax-description" className="mb-1.5 block text-sm font-semibold">{t('Gift description', 'দানের বিবরণ')}</label>
+          <div><label htmlFor="gift-tax-description" className="gift-tax-field-label">{t('Gift description', 'দানের বিবরণ')}</label>
             <input id="gift-tax-description" className={inputClass} maxLength={500} value={description}
               onChange={event => setDescription(event.target.value)} placeholder={t('Enter gift details', 'দানের বিবরণ লিখুন')} /></div>
-          <div><label htmlFor="gift-tax-date" className="mb-1.5 block text-sm font-semibold">{t('Date of gift', 'দানের তারিখ')} *</label>
-            <input id="gift-tax-date" className={inputClass} type="date" max={new Date().toISOString().slice(0,10)}
-              value={dateOfGift} onChange={event => {setDateOfGift(event.target.value);setFormError('');}} /></div>
-          <div><label htmlFor="gift-tax-remarks" className="mb-1.5 block text-sm font-semibold">{t('Remarks', 'মন্তব্য')}</label>
+          <div><label htmlFor="gift-tax-date" className="gift-tax-field-label">{t('Date of gift', 'দানের তারিখ')} *</label>
+            <input id="gift-tax-date" className={inputClass} type="date" max={localToday()}
+              value={dateOfGift} required onChange={event => {setDateOfGift(event.target.value);setFormError('');}} /></div>
+          <div><label htmlFor="gift-tax-remarks" className="gift-tax-field-label">{t('Remarks', 'মন্তব্য')}</label>
             <textarea id="gift-tax-remarks" className={inputClass} rows={2} value={remarks}
               onChange={event => setRemarks(event.target.value)} placeholder={t('Optional challan remarks', 'ঐচ্ছিক চালান মন্তব্য')} /></div>
         </div>
         {formError && <p role="alert" className="text-sm text-red-700">{formError}</p>}
         <p className="text-xs leading-5 text-slate-600">{t('Estimate assumes the annual ৳20,000 allowance is available. Other exemptions and earlier gifts are not checked.', 'এই হিসাবে বার্ষিক ২০,০০০ টাকার অব্যাহতি অব্যবহৃত ধরা হয়েছে। অন্যান্য অব্যাহতি ও আগের দান যাচাই করা হয়নি।')}</p>
       </section>
-      <aside className="gift-tax-aside" data-testid="gift-tax-payment-summary">
-        <h3 className="mb-3 text-sm font-semibold text-slate-900">{t('Payment summary', 'পেমেন্ট সারসংক্ষেপ')}</h3>
-        <p className="text-sm text-slate-600">{t('Estimated Gift Tax', 'আনুমানিক দানকর')}</p>
-        <p className="my-1 text-2xl font-semibold text-[#2C5EAD]" data-testid="gift-tax-estimate">{estimatedTax === null ? '—' : '৳ ' + number(estimatedTax)}</p>
-        <p className="mb-3 text-xs text-slate-600">{amountInTakaWords(estimatedTax, language) ?? '—'}</p>
-        <dl className="rounded-xl border border-slate-200 bg-white px-3">{line(t('Donor', 'দাতা'), added.donor?.name ?? '—')}{line(t('Donor TIN', 'দাতার টিআইএন'), maskTinForDisplay(added.donor?.tin))}{line(t('Donee', 'গ্রহীতা'), added.donee?.name ?? '—')}{line(t('Donee TIN', 'গ্রহীতার টিআইএন'), maskTinForDisplay(added.donee?.tin))}</dl>
+      <aside className="gift-tax-aside payment-form-summary" data-testid="gift-tax-payment-summary">
+        <h3 className="gift-tax-summary-heading">{t('Payment summary', 'পেমেন্ট সারসংক্ষেপ')}</h3>
+        <p className="payment-form-summary__eyebrow">{t('Estimated Gift Tax', 'আনুমানিক দানকর')}</p>
+        <p className="payment-form-summary__total" data-testid="gift-tax-estimate" aria-live="polite" aria-atomic="true">{estimatedTax === null ? '—' : '৳ ' + number(estimatedTax)}</p>
+        <p className="payment-form-summary__amount-words">{amountInTakaWords(estimatedTax, language) ?? '—'}</p>
+        <dl className="gift-tax-summary-lines payment-form-summary__rows">{line(t('Donor', 'দাতা'), added.donor?.name ?? '—')}{line(t('Donor TIN', 'দাতার টিআইএন'), maskTinForDisplay(added.donor?.tin))}{line(t('Donee', 'গ্রহীতা'), added.donee?.name ?? '—')}{line(t('Donee TIN', 'গ্রহীতার টিআইএন'), maskTinForDisplay(added.donee?.tin))}</dl>
       </aside>
     </div>}
     {step === 3 && <div className="gift-tax-grid" data-testid="gift-tax-review">
@@ -202,11 +206,11 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
             'শুধু পর্যালোচনা। দানকরের অনুমোদিত খাত, পরিচয়/কর অঞ্চল যাচাই, আইনগত অব্যাহতি, পেমেন্ট গেটওয়ে ও দাতার কর ক্রেডিট চালু নেই। কোনো টাকা কাটা হয়নি, চালান তৈরি হয়নি বা SQL-এ পেমেন্ট রেকর্ড লেখা হয়নি।')}
         </div>
       </section>
-      <aside className="gift-tax-aside">
-        <h3 className="mb-3 text-sm font-semibold text-slate-900">{t('Payment summary', 'পেমেন্ট সারসংক্ষেপ')}</h3>
-        <p className="text-sm text-slate-600">{t('Estimated total', 'আনুমানিক মোট')}</p>
-        <p className="my-1 text-2xl font-semibold text-[#2C5EAD]">{estimatedTax === null ? '—' : '৳ ' + number(estimatedTax)}</p>
-        <p className="mb-3 text-xs text-slate-600">{amountInTakaWords(estimatedTax, language) ?? '—'}</p>
+      <aside className="gift-tax-aside payment-form-summary">
+        <h3 className="gift-tax-summary-heading">{t('Payment summary', 'পেমেন্ট সারসংক্ষেপ')}</h3>
+        <p className="payment-form-summary__eyebrow">{t('Estimated total', 'আনুমানিক মোট')}</p>
+        <p className="payment-form-summary__total">{estimatedTax === null ? '—' : '৳ ' + number(estimatedTax)}</p>
+        <p className="payment-form-summary__amount-words">{amountInTakaWords(estimatedTax, language) ?? '—'}</p>
         {partyDisplay('donor')}{partyDisplay('donee')}
       </aside>
     </div>}

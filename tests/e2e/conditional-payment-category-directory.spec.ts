@@ -13,19 +13,20 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 320, height: 740 
     await modal.getByRole('button', { name: 'Add taxpayer' }).click();
     await modal.getByRole('button', { name: 'Continue to Payment Head' }).click();
 
-    const table = modal.getByTestId('fixed-tax-categories');
-    await expect(table).toBeVisible();
-    await expect(table.locator('tbody tr')).toHaveCount(7);
-    await expect(table.getByRole('columnheader')).toHaveCount(3);
-    await expect(table.locator('tbody tr[data-selected-count="0"]')).toHaveCount(7);
-    await expect(table.getByRole('button', { name: /^View payment heads for / })).toHaveCount(7);
+    const categories = modal.getByTestId('fixed-tax-categories');
+    await expect(categories).toBeVisible();
+    await expect(categories.locator('details[data-head-group]')).toHaveCount(7);
+    await expect(categories.locator('table')).toHaveCount(0);
+    await expect(categories.getByRole('button', { name: /^View payment heads for / })).toHaveCount(0);
     await expect(modal.getByTestId('frequent-category-section')).toHaveCount(0);
     await expect(modal.getByTestId('frequent-tax-categories')).toHaveCount(0);
     await expect(modal.getByText(/Sign in to see categories from your payment history|No completed payments yet/)).toHaveCount(0);
 
-    // Category directory is a navigator, not a second head/payment editor.
-    await table.getByRole('button', { name: 'View payment heads for Tax with Return' }).click();
-    await expect(modal.getByTestId('unified-v5-return-group')).toHaveAttribute('open', '');
+    // Clicking a category reveals the approved checkbox, year and amount editor in place.
+    const returnGroup = categories.getByTestId('unified-v5-return-group');
+    await returnGroup.locator('summary').click();
+    await expect(returnGroup).toHaveAttribute('open', '');
+    await expect(returnGroup.getByTestId('unified-v5-return-checkbox')).toBeVisible();
     const overflow = await page.evaluate(() =>
       document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(2);

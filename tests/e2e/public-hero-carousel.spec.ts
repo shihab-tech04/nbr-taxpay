@@ -267,6 +267,9 @@ test('both fixed buttons keep the same two payment entry routes on every slide',
   await page.getByTestId('other-tax-chooser').getByRole('button', {name: /Travel Tax/}).click();
   await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
   await page.getByRole('dialog', { name: 'Travel tax' }).getByRole('button', { name: /close/i }).first().click();
+  const exit=page.getByRole('alertdialog',{name:'Discard tax payment?'});
+  await expect(exit).toBeVisible();
+  await exit.getByRole('button',{name:'Discard tax payment'}).click();
   await carousel.focus();
   await page.keyboard.press('ArrowRight');
   await carousel.getByRole('button', { name: 'Pay Tax', exact: true }).click();

@@ -9,6 +9,7 @@ import {
 import { useTaxState } from '../../services/taxState';
 import type { BannerPaymentService } from '../../services/taxState';
 import { TaxPayModal, type PaymentDraftExitAction } from '../ui/TaxPayModal';
+import { WalkInDiscardConfirmation } from '../ui/WalkInDiscardConfirmation';
 import { GuestPayment } from './GuestPayment';
 import { TravelTax } from './TravelTax';
 import {travelTaxModalTitle,travelTaxModalStages} from './travelTaxModalContract';
@@ -70,9 +71,9 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const alreadySignedIn = Boolean(verifiedUser || previewAccount);
   const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
   const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(initialDraft);
-  // Only the new parallel All Tax Payments walk-in journey uses the two-action
-  // exit. Preserve Travel Tax and the original legacy payment/draft journeys.
-  const isWalkInPayment = view === 'payment' && unifiedEntry && !useAccount && !alreadySignedIn;
+  // All signed-out Walk-in payment journeys share the ONE two-action exit;
+  // account-owned payments retain the separate Save Draft policy.
+  const isWalkInPayment = view === 'payment' && !useAccount && !alreadySignedIn;
   // Back from taxpayer details returns to payer choices without losing
   // the route back to the signed-in user's original saved-draft decision.
   const [draftEntryCompleted, setDraftEntryCompleted] = useState(Boolean(initialDraft || initialReuse));
@@ -441,7 +442,11 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             registerHeaderBack={registerUnifiedHeaderBack} />
         ) : null}
       </section>}
-      {exitPromptOpen && (
+      {exitPromptOpen && (isWalkInPayment ? (
+        <WalkInDiscardConfirmation language={language}
+          onKeepEditing={() => { setExitPromptOpen(false); setExitError(''); }}
+          onDiscard={close} />
+      ) : (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 p-3 sm:p-6"
           data-testid={isWalkInPayment ? "walkin-payment-exit-overlay" : "payment-draft-exit-overlay"}
           onMouseDown={event => event.stopPropagation()}>
@@ -529,7 +534,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             )}
           </div>
         </div>
-      )}
+      ))}
     </TaxPayModal>
   );
 }

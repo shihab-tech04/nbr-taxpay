@@ -53,6 +53,10 @@ test('Travel Tax dialog keeps keyboard entry, close, and trigger focus return wh
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Close modal' })).toBeFocused();
   await page.keyboard.press('Escape');
+  const discard = dialog.getByRole('alertdialog', {name:'Discard tax payment?'});
+  await expect(discard).toBeVisible();
+  await expect(discard.getByRole('button', {name:'Keep editing'})).toBeFocused();
+  await discard.getByRole('button', {name:'Discard tax payment'}).click();
   await expect(dialog).toHaveCount(0);
   await expect(open).toBeVisible();
 });
