@@ -91,7 +91,7 @@ export type GiftTaxSimulationMethod =
   | 'BEFTN_RTGS' | 'INTERNET_BANKING' | 'VISA' | 'MASTERCARD' | 'BANK_BRANCH' | 'SIMULATED';
 export function simulateGiftTaxPayment(input:GiftTaxPaymentInput,method:GiftTaxSimulationMethod,
   simulateDecline=false):GiftTaxPaymentOutcome {
-  if (!/^\\d{12}$/.test(input.donor.tin) || !/^\\d{12}$/.test(input.donee.tin) ||
+  if (!/^\d{12}$/.test(input.donor.tin) || !/^\d{12}$/.test(input.donee.tin) ||
     input.donor.tin===input.donee.tin ||
     !Number.isSafeInteger(input.estimatedTaxMinor) || input.estimatedTaxMinor<0 ||
     !Number.isSafeInteger(input.giftAmountMinor) || input.giftAmountMinor<=0)
