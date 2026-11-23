@@ -4,7 +4,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {GiftTaxPaymentResult} from '../src/components/screens/GiftTaxPaymentResult';
 import {
-  initiateGiftTaxPayment, validatedGiftTaxSettlement,
+  initiateGiftTaxPayment, validatedGiftTaxSettlement, simulateGiftTaxPayment,
   type GiftTaxPaymentInput, type GiftTaxPaymentOutcome,
 } from '../src/services/giftTaxPaymentGateway';
 
@@ -52,4 +52,33 @@ test('A mismatched, incomplete or non-official settlement cannot unlock document
   }));
   assert.equal(html.includes('Download receipt'),false);
   assert.equal(html.includes('gift-tax-settled-documents'),false);
+});
+
+test('Gift Tax uses the existing three meaningful synthetic gateway outcomes with no official credits',()=>{
+  const online=simulateGiftTaxPayment(input,'BKASH');
+  assert.equal(online.kind,'SIMULATED_SUCCESS');
+  assert.equal(validatedGiftTaxSettlement(online,input),null);
+  if(online.kind==='SIMULATED_SUCCESS') assert.match(online.reference,/^SIM-GIFT-/);
+  const pending=simulateGiftTaxPayment(input,'BANK_BRANCH');
+  assert.equal(pending.kind,'SIMULATED_PENDING');
+  assert.equal(validatedGiftTaxSettlement(pending,input),null);
+  const failed=simulateGiftTaxPayment(input,'BKASH',true);
+  assert.equal(failed.kind,'SIMULATED_FAILED');
+  assert.equal(validatedGiftTaxSettlement(failed,input),null);
+  const zero=simulateGiftTaxPayment({...input,estimatedTaxMinor:0},'SIMULATED');
+  assert.equal(zero.kind,'SIMULATED_NO_TAX');
+  const invalid=simulateGiftTaxPayment({...input,donor:input.donee},'BKASH');
+  assert.equal(invalid.kind,'SIMULATED_FAILED');
+});
+
+test('Sample-success lifecycle does not falsely claim official settlement, challan or credit',()=>{
+  const outcome=simulateGiftTaxPayment(input,'BKASH');
+  const html=renderToStaticMarkup(React.createElement(GiftTaxPaymentResult,{
+    language:'en',input,outcome,onBack:()=>undefined,onRetry:()=>undefined,
+  }));
+  assert.match(html,/Simulation completed/);
+  assert.match(html,/No bank transaction/);
+  assert.match(html,/View sample receipt/);
+  assert.equal(html.includes('gift-tax-settled-documents'),false);
+  assert.equal(html.includes('Download challan'),false);
 });
