@@ -74,13 +74,12 @@ test('payer history displays and searches the original receipt and certificate r
  const history=read('src/components/screens/AccountBeneficiaryHistory.tsx');
  const references=read('src/services/accountBeneficiaryHistoryReferences.ts');
  const receipt=read('src/components/common/ReceiptView.tsx');
- assert.match(history,/accountBeneficiaryPaymentReferences\\(row\\)/);
- assert.match(history,/displayAccountBeneficiaryPaymentReference\\(row\\)/);
- assert.match(references,/entry\\.receipt\\.challanNo/);
- assert.match(references,/SK-PC-/);
- assert.match(receipt,/canViewCertificate/);
- assert.match(receipt,/downloadDisplayedCertificate\\(receipt, paperRef\\.current, isCertificate\\)/);
- assert.match(receipt,/window\\.print\\(\\)/);
+ for(const expression of ['accountBeneficiaryPaymentReferences(row)','displayAccountBeneficiaryPaymentReference(row)'])
+   assert.ok(history.includes(expression),expression);
+ for(const expression of ['entry.receipt.challanNo','SK-PC-'])
+   assert.ok(references.includes(expression),expression);
+ for(const expression of ['canViewCertificate','downloadDisplayedCertificate(receipt, paperRef.current, isCertificate)','window.print()'])
+   assert.ok(receipt.includes(expression),expression);
 });
 
 test('ledger, Activity and Beneficiaries share one column-driven data renderer with preserved actions',()=>{
