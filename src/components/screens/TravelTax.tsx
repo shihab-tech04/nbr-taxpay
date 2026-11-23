@@ -732,7 +732,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     setPassportSuggestionsFor(passportAlreadyAdded ? null : item.id);
                   }}
                   onKeyDown={event => {
-                    if (event.key === 'Escape') setPassportSuggestionsFor(null);
+                    if (event.key === 'Escape' && passportSuggestionsFor === item.id) {
+                      // Dismiss only the combobox popup. The shared modal's
+                      // document-level Escape handler must not discard payment.
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setPassportSuggestionsFor(null);
+                      return;
+                    }
                     if (event.key === 'ArrowDown' && passportSuggestionsFor === item.id) {
                       event.preventDefault();
                       document.querySelector<HTMLElement>('#travel-passport-suggestions-' + item.id + ' [role="option"]')?.focus();
