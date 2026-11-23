@@ -25,7 +25,7 @@ test('approved fixed banner keeps three service destinations without inventing G
   await donee.locator('#gift-donee-tin').fill('222222222222');
   await donee.getByRole('button',{name:'Search Donee information'}).click();
   await donee.locator('#gift-donee-relationship').click();
-  await gift.getByRole('option',{name:'Father'}).click();
+  await page.getByRole('option',{name:'Father'}).click();
   await donee.getByRole('button',{name:'Add Donee'}).click();
   await gift.getByRole('button',{name:'Continue to Gift & Tax Information'}).click();
   await gift.locator('#gift-tax-amount').fill('2500');
