@@ -33,8 +33,10 @@ test('public homepage uses balanced lighter type roles without crowding footer i
       // Below 901px the desktop PublicHomeHeader is hidden; the visible mobile
       // shell uses CitizenNavigation. Never assert a hidden desktop duplicate.
       if (width >= 901) await size(page,'.public-home-language',14);
-      await size(page,'.public-footer__identity p',12);
-      await size(page,'.public-footer__bottom p',12);
+      // Homepage polish intentionally raises visible desktop footer copy at
+      // >=981px, preserving the established compact mobile text hierarchy.
+      await size(page,'.public-footer__identity p',width>=981?13:12);
+      await size(page,'.public-footer__bottom p',width>=981?13:12);
       await expect(page.getByRole('button',{name:lang==='bn'?'অন্যান্য কর':'Other Tax',exact:true})).toBeVisible();
       await size(page,'.public-hero-carousel__travel',14);
       await size(page,'.public-guest-actions .public-guest-action',14);
@@ -43,7 +45,7 @@ test('public homepage uses balanced lighter type roles without crowding footer i
       await size(page,'.public-record-discovery__heading p',14);
       await size(page,'.public-benefits__copy h3',15);
       await size(page,'.public-benefits__copy p',14);
-      await size(page,'.public-footer__navs a',13);
+      await size(page,'.public-footer__navs a',width>=981?14:13);
       await size(page,'.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2',width>=1024?28:width>=768?26:width>=480?24:22);
       await size(page,'.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow)',15);
       // On phones Help is an icon-only 44px control: its label span is hidden.
