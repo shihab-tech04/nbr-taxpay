@@ -31,7 +31,10 @@ export interface TaxPayModalProps {
   /** Read-only information dialogs may omit an otherwise empty action footer. */
   hideFooter?: boolean;
   /** Only the four payment stages use the progressive modal shell. */
-  progress?: { current: number; total: number; label?: string; subtitle?: string };
+  progress?: {
+    current: number; total: number; label?: string; subtitle?: string;
+    accessibilityLabel?: string; accessibilityValueText?: string;
+  };
 }
 
 /**
@@ -188,8 +191,10 @@ export function TaxPayModal({
           </button>
         </header>
         {progress && <div className="taxpay-modal__progress" role="progressbar"
-          aria-label="Payment progress" aria-valuemin={0} aria-valuemax={progress.total}
-          aria-valuenow={progress.current} aria-valuetext={`Step ${progress.current} of ${progress.total}`}>
+          aria-label={progress.accessibilityLabel ?? "Payment progress"}
+          aria-valuemin={0} aria-valuemax={progress.total}
+          aria-valuenow={progress.current}
+          aria-valuetext={progress.accessibilityValueText ?? `Step ${progress.current} of ${progress.total}`}>
           <span className="taxpay-modal__progress-fill" style={{ width: `${100 * progress.current / progress.total}%` }} />
         </div>}
         <div ref={bodyRef} className="taxpay-modal__body public-service-dialog__body">

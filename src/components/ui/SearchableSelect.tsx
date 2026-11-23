@@ -125,6 +125,19 @@ export function SearchableSelect({
     setActive(next);
     document.getElementById(id+'-option-'+next)?.scrollIntoView({block:'nearest'});
   };
+  const moveFocusFromPortal = (backward: boolean) => {
+    // The menu is portaled to body. Native Tab would jump to the page footer,
+    // bypassing the following form control inside the payment dialog.
+    const trigger = triggerRef.current;
+    const dialog = trigger?.closest<HTMLElement>('.taxpay-modal');
+    if (!trigger || !dialog) {trigger?.focus();return;}
+    const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(element => element.getClientRects().length > 0);
+    const index = focusable.indexOf(trigger);
+    const next = focusable[(index + (backward ? -1 : 1) + focusable.length) % focusable.length];
+    (next ?? trigger).focus();
+  };
   const toggle=()=>{
     if(disabled)return;
     setQuery('');
@@ -146,7 +159,10 @@ export function SearchableSelect({
           aria-activedescendant={active>=0?id+'-option-'+active:undefined}
           value={query} onChange={event=>setQuery(event.target.value)}
           onKeyDown={event=>{
-            if(event.key==='Tab'&&viewportPortal){event.preventDefault();setOpen(false);triggerRef.current?.focus();return;}
+            if(event.key==='Tab'&&viewportPortal){
+              event.preventDefault();event.stopPropagation();setOpen(false);
+              moveFocusFromPortal(event.shiftKey);return;
+            }
             if(event.key==='ArrowDown'){event.preventDefault();move(1);}
             if(event.key==='ArrowUp'){event.preventDefault();move(-1);}
             if(event.key==='Home'){event.preventDefault();setActive(enabled[0]??-1);}

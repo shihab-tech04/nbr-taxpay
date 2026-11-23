@@ -145,7 +145,7 @@ jobs:
           ! grep -REq '(^|[^0-9])[0-9]{12}([^0-9]|$)' dist/assets
           ! grep -REq '(^|[^0-9])[0-9]{17}([^0-9]|$)' dist/assets
           ! grep -REq '\+?880[0-9 ()-]{8,}' dist/assets
-          find dist/assets -type f -name '*.js' -size +0c | grep -q .
+          find dist/assets -type f -name '*.js' -size +0c -print -quit | grep -q .
           echo 'PASS: public Pages build has approved publishable-only review endpoint; no privileged key shipped'
       - name: Verify actual production bundle blocks unauthenticated taxpayer/sample routes
         run: npx playwright test --config playwright.production.config.ts
@@ -797,7 +797,7 @@ jobs:
           ! grep -REq '(^|[^0-9])[0-9]{12}([^0-9]|$)' dist/assets
           ! grep -REq '(^|[^0-9])[0-9]{17}([^0-9]|$)' dist/assets
           ! grep -REq '\+?880[0-9 ()-]{8,}' dist/assets
-          find dist/assets -type f -name '*.js' -size +0c | grep -q .
+          find dist/assets -type f -name '*.js' -size +0c -print -quit | grep -q .
           rm dist/taxpay-reviewed-provenance.json
           echo 'PASS: reviewed artifact safety and exact tree verified'
       - name: Configure GitHub Pages

@@ -308,3 +308,23 @@
  .taxpay-citizen-shell .gift-tax-sample-receipt__warning {display:block !important}
  .taxpay-citizen-shell .gift-tax-sample-warning {display:block !important}
 }
+
+
+/* Gift Tax recovery controls use existing citizen tokens; no new modal or theme. */
+.taxpay-citizen-shell .gift-tax-editing-notice {
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:10px;margin:0 0 12px;padding:12px 14px;
+  border:1px dashed var(--citizen-border,#d0deec);border-radius:10px;
+  background:var(--citizen-bg,#f8fafc);color:var(--citizen-muted,#506780);
+  font-size:13px;line-height:1.5;
+}
+.taxpay-citizen-shell .gift-tax-undo {
+  display:flex;align-items:center;justify-content:center;min-height:44px;
+  margin:0 14px 14px;padding:8px 12px;
+  border:1px solid var(--citizen-border,#c7d4e7);border-radius:10px;
+  background:var(--citizen-surface,#fff);color:var(--citizen-primary,#2c5ead);
+  font:inherit;font-size:13px;font-weight:700;cursor:pointer;
+}
+.taxpay-citizen-shell .gift-tax-undo:focus-visible {
+  outline:3px solid var(--citizen-primary,#2c5ead);outline-offset:2px;
+}
