@@ -1,4 +1,4 @@
-/* The public Other Tax chooser keeps the approved shared TaxPayModal geometry. */
+/* Existing Other Tax chooser — outside the Gift Tax payment stage. */
 .taxpay-citizen-shell .taxpay-modal[data-public-service="other-tax"] {
   width: min(100%, 760px);
 }
@@ -6,60 +6,62 @@
   text-align: left;
 }
 
-/* Gift Tax reuses the citizen form/summary tokens and the ONE shared modal.
-   All selectors are Gift-only; don't change Travel Tax, Pay Tax, Office, or
-   the approved mobile full-screen modal contract. */
-/* Gift Tax is a payment journey, not a compact information dialog.
-   The shared [data-payment-stage="true"] shell sets 1160px/90dvh on
-   desktop and 100%/100dvh on mobile, identically to Taxpayer Information.
-   Never override those dimensions with a Gift Tax-specific 820px cap. */
-.taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .taxpay-modal__header .taxpay-modal__title {
-  text-align: left;
-  color: var(--citizen-text, #172033);
+/*
+ * Gift Tax uses the SAME payment-flow-embedded--unified,
+ * unified-taxpayer-workspace and SelectedIdentityRail components/classes as
+ * the approved Taxpayer Information stage. These are only the Gift Tax
+ * differences; never reinvent its column sizing or rail visual tokens.
+ */
+@media (min-width: 801px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="gift"]:has(.unified-taxpayer-workspace) {
+    /* Taxpayer Information is content-height, NOT an empty 90dvh canvas. */
+    height: auto;
+    min-height: 0;
+    max-height: min(90dvh, 800px);
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="gift"] .taxpay-modal__body {
+    /* The shared workspace editor and identity rail own their padding. */
+    padding: 0;
+  }
 }
-.taxpay-citizen-shell .gift-tax-grid {
+@media (max-width: 800px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="gift"] .taxpay-modal__body {
+    padding: 12px;
+  }
+}
+
+/* Two distinct TIN identities stay in Screen 1; their field/empty-state
+ * patterns come from the approved UnifiedTaxpayerWorkspace. */
+.taxpay-citizen-shell .gift-tax-person-section {
+  min-width: 0;
+}
+.taxpay-citizen-shell .gift-tax-person-section + .gift-tax-person-section {
+  padding-top: 18px;
+  border-top: 1px solid var(--citizen-border, #dce5f0);
+}
+.taxpay-citizen-shell .gift-tax-workspace .unified-taxpayer-workspace__result {
+  min-width: 0;
+}
+.taxpay-citizen-shell .gift-tax-confirmed-person {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(225px, .9fr);
-  gap: 16px;
-  align-items: start;
+  gap: 10px;
   min-width: 0;
 }
-.taxpay-citizen-shell .gift-tax-main { min-width: 0; }
-.taxpay-citizen-shell .gift-tax-aside.payment-form-summary {
-  position: static;
-  min-width: 0;
-  padding: 0;
-  border: 1px solid var(--citizen-border, #d7e2f0);
-  border-radius: var(--citizen-radius-card, 16px);
-  background: var(--citizen-surface-subtle, #f8fbff);
-  overflow: hidden;
+.taxpay-citizen-shell .gift-tax-lookup-notice {
+  margin: 8px 0 0;
+  color: var(--citizen-muted, #526880);
+  font-size: 13px;
+  line-height: 1.5;
 }
-.taxpay-citizen-shell .gift-tax-summary-heading {
-  display: flex;
-  align-items: center;
-  min-height: 49px;
-  margin: 0;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--citizen-border, #e0e9f4);
-  color: var(--citizen-primary, #2c5ead);
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.45;
+.taxpay-citizen-shell .gift-tax-workspace .unified-taxpayer-workspace__rail {
+  /* Keep the same full-height, flush shared identity rail, never a card. */
+  border-radius: 0;
 }
-.taxpay-citizen-shell .gift-tax-aside > .space-y-2 {
-  padding: 12px 14px 16px;
-}
-.taxpay-citizen-shell .gift-tax-aside > [data-testid^="gift-added-"] {
-  margin: 0 14px 12px;
-}
-.taxpay-citizen-shell .gift-tax-aside [data-testid^="gift-added-"] {
-  border-color: var(--citizen-border, #e1e6ee);
-  border-radius: var(--citizen-radius-control, 12px);
-  background: var(--citizen-surface, #fff);
+.taxpay-citizen-shell .gift-tax-workspace .payment-form-summary__eyebrow {
+  padding-top: 14px;
 }
 .taxpay-citizen-shell .gift-tax-summary-lines {
-  padding-top: 0;
-  margin: 0;
+  margin-top: 0;
 }
 .taxpay-citizen-shell .gift-tax-summary-lines > div {
   display: flex;
@@ -67,16 +69,12 @@
   justify-content: space-between;
   gap: 12px;
 }
-.taxpay-citizen-shell .gift-tax-summary-lines dt,
-.taxpay-citizen-shell .gift-tax-summary-lines dd {
-  font-size: 14px;
-  line-height: 1.5;
-}
-.taxpay-citizen-shell .gift-tax-aside .payment-form-summary__eyebrow {
-  padding-top: 13px;
+.taxpay-citizen-shell .gift-tax-summary-lines :is(dt, dd) {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-/* Match the existing 44px citizen field and CTA patterns, not a new palette. */
+/* Existing citizen control and secondary-button tokens, no custom palette. */
 .taxpay-citizen-shell .gift-tax-field-label {
   display: block;
   margin: 0 0 6px;
@@ -107,64 +105,42 @@
 .taxpay-citizen-shell .gift-tax-field-control[aria-invalid="true"] {
   border-color: #a52335;
 }
-.taxpay-citizen-shell textarea.gift-tax-field-control {
-  resize: vertical;
-}
-.taxpay-citizen-shell .gift-tax-action {
+.taxpay-citizen-shell textarea.gift-tax-field-control { resize: vertical; }
+.taxpay-citizen-shell .gift-tax-action--secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  max-width: 100%;
   min-height: 44px;
   padding: 9px 16px;
-  border: 1px solid transparent;
-  border-radius: var(--citizen-radius-control, 12px);
-  font: inherit;
-  font-size: 14px;
-  line-height: 1.4;
-  font-weight: 650;
-  text-align: center;
-  cursor: pointer;
-}
-.taxpay-citizen-shell .gift-tax-action--primary {
-  flex: 1 1 auto;
-  background: var(--citizen-primary, #2c5ead);
-  color: #fff;
-}
-.taxpay-citizen-shell .gift-tax-action--primary:hover:not(:disabled) {
-  background: var(--citizen-primary-dark, #24549d);
-}
-.taxpay-citizen-shell .gift-tax-action--secondary {
-  border-color: var(--citizen-border, #d7e2f0);
+  border: 1px solid var(--citizen-border, #d7e2f0);
+  border-radius: var(--citizen-radius-control, 10px);
   background: var(--citizen-surface, #fff);
   color: var(--citizen-text, #172033);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
 }
-.taxpay-citizen-shell .gift-tax-action--secondary:hover:not(:disabled) {
+.taxpay-citizen-shell .gift-tax-action--secondary:hover {
   background: var(--citizen-primary-light, #eaf2ff);
 }
-.taxpay-citizen-shell .gift-tax-action:focus-visible {
+.taxpay-citizen-shell .gift-tax-action--secondary:focus-visible {
   outline: 3px solid var(--citizen-primary, #2c5ead);
   outline-offset: 2px;
 }
-/* The old 50%-transparent blue CTA was low-contrast on white.
-   Disabled is a meaningful neutral state, matching shared TaxPay controls. */
-.taxpay-citizen-shell .gift-tax-action:disabled {
-  border-color: var(--citizen-border, #d7e2f0);
-  background: #e4eaf2;
-  color: #526681;
-  opacity: 1;
-  cursor: not-allowed;
+.taxpay-citizen-shell .gift-tax-review-lines {
+  margin: 10px 0 0;
+  padding: 8px 14px;
+  border: 1px solid var(--citizen-border, #dce5f0);
+  border-radius: 10px;
+  background: var(--citizen-surface, #fff);
 }
-@media (max-width: 650px) {
-  .taxpay-citizen-shell .gift-tax-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .taxpay-citizen-shell .gift-tax-aside > .space-y-2 {
-    padding: 12px;
-  }
-}
-@media (max-width: 360px) {
-  .taxpay-citizen-shell .gift-tax-action--primary {
-    width: 100%;
-  }
+.taxpay-citizen-shell .gift-tax-preview-notice {
+  padding: 12px 14px;
+  border: 1px solid #e8ca91;
+  border-radius: 10px;
+  background: #fff8ea;
+  color: #704719;
+  font-size: 14px;
+  line-height: 1.6;
 }
