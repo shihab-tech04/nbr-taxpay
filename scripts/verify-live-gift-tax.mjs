@@ -93,6 +93,16 @@ try{
       await expect(gift.getByTestId('gift-rail-donee')).toContainText(bn?'বাবা':'Father');
       await expect(donor.getByTestId('gift-confirmed-donor')).toBeVisible();
       await expect(donee.getByTestId('gift-confirmed-donee')).toBeVisible();
+      const editor=gift.getByTestId('gift-tax-entry-form').locator('.gift-tax-main');
+      await expect(editor).toHaveCSS('display','flex');
+      const [donorSectionBox,doneeSectionBox]=await Promise.all([
+        donor.boundingBox(),donee.boundingBox()
+      ]);
+      if(!donorSectionBox||!doneeSectionBox||
+          doneeSectionBox.y-(donorSectionBox.y+donorSectionBox.height)>28){
+        throw new Error('Confirmed Donor/Donee sections stretched apart: '+
+          JSON.stringify({donorSectionBox,doneeSectionBox}));
+      }
       const body=gift.locator('.taxpay-modal__body');
       const footer=gift.locator('.taxpay-modal__footer');
       const [bodyBox,footerBox]=await Promise.all([body.boundingBox(),footer.boundingBox()]);
