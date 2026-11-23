@@ -173,9 +173,9 @@ test('signed-in headings and navigation retain semantic hierarchy on every viewp
         // Compare the same real navigation item across device classes without
         // relying on hidden duplicate desktop UI at phone/tablet widths.
         if(route==='taxpayer_home' && width>=901){
-          const nav=page.locator('.taxpayer-reference-links button').filter({hasText:'Beneficiaries'}).first();
+          const nav=page.locator('.taxpayer-reference-links > button').nth(1);
           await expect(nav).toBeVisible();
-          expect(await fontWeight(page,'.taxpayer-reference-links button:nth-child(2)'),
+          expect(await nav.evaluate(el=>Number(getComputedStyle(el).fontWeight)),
             'inactive navigation action at '+width+'/'+lang).toBe(600);
         }
 
