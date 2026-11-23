@@ -1896,6 +1896,65 @@ table.taxpay-unified-table {
     line-height: 1.45;
   }
 }
+/* Tax ledger uses the same column-key contract. Keep Event and sourced
+ * credit/balance visible, with the remaining provenance columns independently
+ * scrollable. No ledger values, source evidence or calculation is inferred. */
+@media (min-width:768px) {
+  .taxpay-taxpayer-reference [data-testid="event-tax-ledger"] .taxpay-table-viewport {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    isolation: isolate;
+  }
+  .taxpay-taxpayer-reference [data-testid="event-tax-ledger"] .taxpay-table-viewport:focus-visible {
+    outline: 2px solid var(--taxpay-table-primary, #2c5ead);
+    outline-offset: -2px;
+  }
+  .taxpay-taxpayer-reference [data-testid="event-tax-ledger"] table[data-testid="event-ledger-table"] {
+    width: 100%;
+    min-width: 1450px;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .taxpay-taxpayer-reference [data-testid="event-tax-ledger"] [data-column-key="event"] {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    min-width: 230px;
+    background: var(--taxpay-table-surface, #fff);
+    box-shadow: 1px 0 0 var(--taxpay-table-border, #e1e6ee);
+  }
+  .taxpay-taxpayer-reference [data-testid="event-tax-ledger"] [data-column-key="credit"] {
+    position: sticky;
+    right: 140px;
+    z-index: 2;
+    min-width: 140px;
+    text-align: right;
+    background: var(--taxpay-table-surface, #fff);
+    box-shadow: -1px 0 0 var(--taxpay-table-border, #e1e6ee);
+  }
+  .taxpay-taxpayer-reference [data-testid="event-tax-ledger"] [data-column-key="balance"] {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    min-width: 140px;
+    text-align: right;
+    background: var(--taxpay-table-surface, #fff);
+    box-shadow: -1px 0 0 var(--taxpay-table-border, #e1e6ee);
+  }
+  .taxpay-taxpayer-reference [data-testid="event-tax-ledger"] thead :is([data-column-key="event"],[data-column-key="credit"],[data-column-key="balance"]) {
+    z-index: 4;
+    background: var(--taxpay-table-heading, #f7f9fc);
+  }
+  .taxpay-taxpayer-reference [data-testid="event-tax-ledger"] tbody tr:nth-child(even)
+  :is([data-column-key="event"],[data-column-key="credit"],[data-column-key="balance"]) {
+    background: var(--taxpay-table-stripe, #fafbfd);
+  }
+  .taxpay-taxpayer-reference [data-testid="event-tax-ledger"] tbody tr:hover
+  :is([data-column-key="event"],[data-column-key="credit"],[data-column-key="balance"]) {
+    background: var(--taxpay-table-hover, #f1f6ff);
+  }
+}
+
 /* Owner-scoped favorites and seven fixed categories: tabular navigation, not cards. */
 .other-tax-batch-panel--unified-v5 .other-tax-category-directory { margin: 12px 0 18px; }
 .other-tax-batch-panel--unified-v5 .other-tax-category-directory h3 {
