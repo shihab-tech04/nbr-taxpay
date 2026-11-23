@@ -43,6 +43,9 @@ test('Travel Tax dialog keeps keyboard entry, close, and trigger focus return wh
   const open = page.locator('[data-banner-service="intro"]').getByRole('button', { name: 'Other Tax' });
   await open.focus();
   await page.keyboard.press('Enter');
+  const access = page.locator('.taxpay-modal[data-public-service="login"]');
+  await expect(access).toBeVisible();
+  await access.getByRole('button', { name: 'Walk-in Payment' }).click();
   const chooser = page.getByRole('dialog', { name: 'Other tax payments' });
   await expect(chooser).toBeVisible();
   await chooser.getByRole('button', {name:/Travel Tax/}).click();
