@@ -1253,18 +1253,12 @@
 /* Keep public footer readable and single-row on compact desktop widths.
    Do not shrink text or hide links to satisfy the desktop viewport. */
 @media(min-width:981px) and (max-width:1120px) {
- .public-footer__inner {
-   display:grid;
-   grid-template-columns:minmax(0,1fr) auto;
-   grid-template-rows:auto auto;
-   gap:0 12px;
-   padding:8px 16px;
- }
- .public-footer__identity {grid-column:1;grid-row:1;gap:.4rem;min-width:0;}
+ .public-footer__inner {gap:.35rem;padding-inline:.7rem;}
+ .public-footer__identity {gap:.4rem;}
  .public-footer__identity img.public-footer__wordmark {width:78px;height:33px;}
- .public-footer__identity p {max-width:160px;}
- .public-footer__navs {grid-column:1/-1;grid-row:2;justify-content:center;gap:0 12px;min-width:0;}
- .public-footer__bottom {grid-column:2;grid-row:1;justify-self:end;min-width:0;padding-left:0;border-left:0;}
+ .public-footer__identity p {max-width:130px;}
+ .public-footer__navs {gap:0 .2rem;flex-wrap:nowrap;}
+ .public-footer__bottom {padding-left:.25rem;}
 }
 .public-help-widget{position:fixed;right:calc(1.1rem + env(safe-area-inset-right));bottom:calc(1.1rem + env(safe-area-inset-bottom));z-index:85;display:flex;align-items:flex-end;flex-direction:column;gap:.55rem;}
 .public-help-launch{display:inline-flex;align-items:center;gap:.45rem;min-height:52px;border-radius:999px;background:var(--citizen-primary);color:white;padding:.75rem 1rem;box-shadow:var(--taxpay-shadow-raised);font-size:.79rem;font-weight:800;}
