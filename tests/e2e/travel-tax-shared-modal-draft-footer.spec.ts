@@ -189,3 +189,31 @@ test('Travel Tax suggestions stay attached to passport and visible above modal f
     await expect(passport).not.toHaveValue('');
   }
 });
+
+
+test('Travel Tax nested Save Draft exit scrim covers the viewport after dialog entrance',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Sweep the desktop and phone exit geometry once');
+  for(const width of [375,1280]){
+    await page.setViewportSize({width,height:720});
+    await page.goto('/?action=landing&lang=en');
+    await openTravelTaxFromBanner(page);
+    const dialog=page.getByRole('dialog',{name:'Travel tax'});
+    // The entrance animation must not retain transform and trap fixed descendants
+    // inside the clipped modal rather than the true viewport.
+    await expect(dialog).toHaveCSS('transform','none');
+    await dialog.locator('.taxpay-modal__close').click();
+    const overlay=page.getByTestId('payment-draft-exit-overlay');
+    await expect(overlay).toBeVisible();
+    await expect(overlay.getByRole('alertdialog')).toBeVisible();
+    const geometry=await overlay.evaluate(node=>{
+      const rect=node.getBoundingClientRect();
+      return {top:rect.top,left:rect.left,right:rect.right,bottom:rect.bottom,width:innerWidth,height:innerHeight};
+    });
+    expect(Math.abs(geometry.top),'exit overlay covers top at '+width).toBeLessThanOrEqual(1);
+    expect(Math.abs(geometry.left),'exit overlay covers left at '+width).toBeLessThanOrEqual(1);
+    expect(geometry.right,'exit overlay covers right at '+width).toBeGreaterThanOrEqual(geometry.width-1);
+    expect(geometry.bottom,'exit overlay covers bottom at '+width).toBeGreaterThanOrEqual(geometry.height-1);
+    await overlay.getByRole('button',{name:'Keep editing'}).click();
+    await expect(overlay).toHaveCount(0);
+  }
+});
