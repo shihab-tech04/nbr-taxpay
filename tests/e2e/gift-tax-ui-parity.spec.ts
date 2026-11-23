@@ -107,6 +107,19 @@ for (const sample of [
     await expect(gift.getByTestId('gift-tax-estimate')).toContainText(bn ? '২,৭২,০০০' : '2,72,000');
     await gift.getByRole('button', {name: bn ? 'চূড়ান্ত পর্যালোচনায় এগিয়ে যান' : 'Continue to Final Preview'}).click();
     await expect(gift.getByTestId('gift-tax-review')).toBeVisible();
+    // Gift Tax rows contain a semantic <th> and <td>, unlike the three-<td>
+    // Taxpayer rows. The shared responsive grid must not crush the label.
+    const relationRow = gift.locator('.gift-tax-preview-table tbody tr').nth(2);
+    const [labelBox, valueBox] = await Promise.all([
+      relationRow.locator('th').boundingBox(), relationRow.locator('td').boundingBox(),
+    ]);
+    expect(labelBox && valueBox, 'Gift Tax preview row requires readable label and value').toBeTruthy();
+    if (labelBox && valueBox) {
+      expect(labelBox.width, 'Gift Tax mobile preview label must not collapse').toBeGreaterThanOrEqual(90);
+      expect(valueBox.width, 'Gift Tax mobile preview value must not collapse').toBeGreaterThanOrEqual(90);
+      expect(labelBox.x + labelBox.width, 'Gift Tax label and value must not overlap')
+        .toBeLessThanOrEqual(valueBox.x + 3);
+    }
     await expect(gift.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
     await expect(gift.getByTestId('gift-tax-review-complete')).toBeVisible();
     await expect(gift.getByRole('button', {name: /pay now|এখনই পরিশোধ/i})).toHaveCount(0);
