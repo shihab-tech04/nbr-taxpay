@@ -55,17 +55,10 @@ try {
     await expect(continueToTravel).toBeDisabled();
     await expect(modal.locator('#travel-lookup-first')).toBeDisabled();
 
-    const medical = first.getByTestId('travel-passenger-medical-control');
-    const medicalBounds = await medical.boundingBox();
-    const passengerBounds = await first.boundingBox();
-    if (!medicalBounds || !passengerBounds || medicalBounds.width < .8 * passengerBounds.width) {
-      throw new Error('Manual assessment must use the available passenger editor width');
-    }
-    // The manual-assessment option must still block an ineligible online journey.
-    await medical.getByRole('checkbox').check();
-    await expect(modal.getByTestId('travel-manual-assessment-blocker')).toBeVisible();
-    await medical.getByRole('checkbox').uncheck();
-    await expect(modal.getByTestId('travel-manual-assessment-blocker')).toHaveCount(0);
+    // Manual assessment belongs to a checked individual passport, never to the
+    // empty entry stage. Preserve the verified-identity-first requirement.
+    await expect(first.getByTestId('travel-passenger-medical-control')).toHaveCount(0);
+    await expect(first.getByTestId('travel-passport-search-result')).toHaveCount(0);
 
     await modal.locator('#travel-passport-first').click();
     const options = modal.locator('#travel-passport-suggestions-first [role="option"]');
@@ -82,6 +75,24 @@ try {
     await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
     await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('2017-08-10');
     await expect(continueToTravel).toBeDisabled();
+    // Approved TIN pattern: searched identity rows + per-passport medical
+    // review + a compact Add action together inside one result card.
+    const resultCard = first.getByTestId('travel-passport-search-result');
+    const medical = resultCard.getByTestId('travel-passenger-medical-control');
+    await expect(resultCard).toBeVisible();
+    const medicalBounds = await medical.boundingBox();
+    const resultBounds = await resultCard.boundingBox();
+    if (!medicalBounds || !resultBounds ||
+        medicalBounds.x < resultBounds.x - 2 ||
+        medicalBounds.x + medicalBounds.width > resultBounds.x + resultBounds.width + 2) {
+      throw new Error('Manual assessment must remain inside the checked passport result');
+    }
+    await medical.getByRole('checkbox').check();
+    await expect(addPassenger).toBeDisabled();
+    await expect(modal.getByTestId('travel-manual-assessment-blocker')).toBeVisible();
+    await medical.getByRole('checkbox').uncheck();
+    await expect(modal.getByTestId('travel-manual-assessment-blocker')).toHaveCount(0);
+    await expect(addPassenger).toBeEnabled();
 
     // Replacing a checked identity invalidates confirmation until rechecked.
     await modal.locator('#travel-passport-first').fill('TEST230001');
@@ -94,10 +105,10 @@ try {
 
     const inOwnerCard = await addPassenger.evaluate(button => {
       const editor = button.closest('.travel-passenger-workspace__entry');
-      const row = button.closest('.travel-flow__confirm-row');
-      const assessment = editor?.querySelector('.travel-passenger-workspace__medical');
+      const card = button.closest('[data-testid="travel-passport-search-result"]');
+      const assessment = card?.querySelector('.travel-passenger-workspace__medical');
       return editor?.getAttribute('data-passenger-id') === 'first' &&
-        row?.parentElement === editor && !!assessment &&
+        !!card && !!assessment &&
         !!(assessment.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING);
     });
     if (!inOwnerCard) throw new Error('Add passenger must remain within the checked passenger editor after medical review');
