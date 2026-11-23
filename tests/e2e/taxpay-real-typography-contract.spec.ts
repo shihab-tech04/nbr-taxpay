@@ -46,7 +46,8 @@ test('public homepage uses balanced lighter type roles without crowding footer i
       await size(page,'.public-footer__navs a',13);
       await size(page,'.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2',width>=1024?28:width>=768?26:width>=480?24:22);
       await size(page,'.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow)',15);
-      await size(page,'.public-help-launch',14);
+      // On phones Help is an icon-only 44px control: its label span is hidden.
+      if (width >= 901) await size(page,'.public-help-launch',14);
       await noOverflow(page,width,lang);
     }
   }
@@ -114,7 +115,7 @@ test('public semantic font weights stay hierarchical across EN/BN phones, tablet
       expect(await fontWeight(page,'.public-record-discovery__heading h2')).toBe(600);
       expect(await fontWeight(page,'.public-benefits__copy p')).toBe(400);
       if (width >= 901) expect(await fontWeight(page,'.public-footer__navs a')).toBe(500);
-      expect(await fontWeight(page,'.public-help-launch')).toBe(500);
+      if (width >= 901) expect(await fontWeight(page,'.public-help-launch')).toBe(500);
       // Desktop nav is visible at >=901px; the public mobile-shell may hide
       // this duplicate desktop header and use its own accessible navigation.
       if (width >= 901) expect(await fontWeight(page,'.public-home-nav a')).toBe(500);
