@@ -1580,7 +1580,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     onCheckoutChange?.(false);
   };
   useEffect(() => {
-    if (!unifiedFlow || !registerHeaderBack) return;
+    // The read-only result documents also use header Back in legacy embedded payment.
+    // Earlier non-unified input-step navigation remains unchanged.
+    if (!registerHeaderBack || (!unifiedFlow && step !== 4)) return;
     const back = () => {
       if (step === 4) {
         if (!showReceiptDetails) return;
