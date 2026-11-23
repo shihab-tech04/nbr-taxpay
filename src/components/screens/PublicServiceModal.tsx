@@ -2,6 +2,7 @@ import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
 import '../../styles/taxpay-unified-table.css';
 import React from 'react';
+import {createPortal} from 'react-dom';
 import {ArrowRight, Gift, Plane} from 'lucide-react';
 import {GiftTaxEntryModal} from './GiftTaxEntryModal';
 import { useTaxState } from '../../services/taxState';
@@ -15,8 +16,16 @@ export type PublicService = 'status' | 'travel' | 'gift' | 'other';
  * stage navigation and draft lifecycle; receipt lookup stays independent. */
 export function PublicServiceModal({ service, onClose, onChooseOther }: { service: PublicService; onClose: () => void; onChooseOther?: (service: PublicService) => void }) {
   const { language } = useTaxState();
-  if (service === 'travel')
-    return <PaymentServiceChoiceDialog initialService="TRAVEL_TAX" onDismiss={onClose} />;
+  if (service === 'travel') {
+    // Public Landing is nested inside the padded/scrolled main content.
+    // Mount this full-viewport dialog under the existing citizen shell,
+    // alongside its other global payment modals, not inside the page panel.
+    // The modal retains the shell's approved CSS tokens and accessible
+    // dialog context, without changing the legacy/account Travel Tax route.
+    const dialog = <PaymentServiceChoiceDialog initialService="TRAVEL_TAX" onDismiss={onClose} />;
+    const shell = typeof document === 'undefined' ? null : document.querySelector('.taxpay-citizen-shell');
+    return shell ? createPortal(dialog, shell) : dialog;
+  }
 
   if (service === 'gift') return <GiftTaxEntryModal onClose={onClose} />;
   if (service === 'other') return <TaxPayModal
