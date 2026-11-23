@@ -731,6 +731,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     errorFocusRevision.current += 1;
                     setPassportSuggestionsFor(passportAlreadyAdded ? null : item.id);
                   }}
+                  onClick={() => {
+                    // A focused input remains focused after Escape. Clicking
+                    // it again must reopen the suggestions without a blur.
+                    if (!passportAlreadyAdded) setPassportSuggestionsFor(item.id);
+                  }}
                   onKeyDown={event => {
                     if (event.key === 'Escape' && passportSuggestionsFor === item.id) {
                       // Dismiss only the combobox popup. The shared modal's
