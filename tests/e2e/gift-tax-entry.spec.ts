@@ -33,6 +33,9 @@ for (const locale of ['en', 'bn'] as const) {
     const donee = gift.getByTestId('gift-donee-section');
     await donee.locator('#gift-donee-tin').fill('222222222222');
     await donee.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donee/}).click();
+    await donee.locator('#gift-donee-relationship').click();
+    await gift.getByRole('option', {name: bn ? 'বাবা' : 'Father'}).click();
+    await expect(donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'})).toBeEnabled();
     await donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'}).click();
     await expect(nextDetails).toBeEnabled();
     await nextDetails.click();
@@ -49,6 +52,8 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(gift.locator('#gift-tax-amount')).toHaveValue('2500000');
     await gift.getByRole('button', {name: bn ? 'চূড়ান্ত পর্যালোচনায় এগিয়ে যান' : 'Continue to Final Preview'}).click();
     await expect(gift.getByTestId('gift-tax-review')).toBeVisible();
+    await expect(gift.getByTestId('gift-tax-review')).toContainText(bn ? 'বাবা' : 'Father');
+    await expect(gift.getByRole('button', {name: bn ? 'দানের তথ্য সম্পাদনা' : 'Edit gift information'})).toBeVisible();
     await expect(gift.getByTestId('gift-tax-review')).toContainText(bn ? 'মাধ্যম' : 'Through');
     await expect(gift.getByTestId('gift-tax-review')).toContainText(bn ? 'যার পক্ষে' : 'On Behalf Of');
     await expect(gift.getByTestId('gift-tax-review-complete')).toContainText(bn ? 'কোনো টাকা কাটা হয়নি' : 'No money was charged');
@@ -78,8 +83,38 @@ for (const locale of ['en', 'bn'] as const) {
     await donor.getByRole('button', {name: bn ? 'দাতা যোগ করুন' : 'Add Donor'}).click();
     await donee.locator('#gift-donee-tin').fill('111111111111');
     await donee.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donee/}).click();
+    await donee.locator('#gift-donee-relationship').click();
+    await gift.getByRole('option', {name: bn ? 'বাবা' : 'Father'}).click();
+    await expect(donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'})).toBeEnabled();
     await donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'}).click();
     await expect(donee.getByRole('alert')).toBeVisible();
     await expect(gift.getByRole('button', {name: bn ? 'দান ও করের তথ্যে এগিয়ে যান' : 'Continue to Gift & Tax Information'})).toBeDisabled();
   });
 }
+
+
+test('Gift Tax Others needs a description and close uses the shared walk-in confirmation', async ({page}) => {
+  await page.goto('/?action=landing&lang=en');
+  await page.locator('.public-hero-carousel__slide[data-active="true"]').getByRole('button', {name:'Other Tax'}).click();
+  await page.locator('.taxpay-modal[data-public-service="login"]').getByRole('button', {name:'Walk-in Payment'}).click();
+  await page.getByTestId('other-tax-chooser').getByRole('button', {name:'Gift Tax'}).click();
+  const gift = page.getByRole('dialog', {name:'Gift Tax'});
+  const donee = gift.getByTestId('gift-donee-section');
+  await donee.locator('#gift-donee-tin').fill('222222222222');
+  await donee.getByRole('button', {name:/Search Donee/}).click();
+  await donee.locator('#gift-donee-relationship').click();
+  await gift.getByRole('option', {name:/Others — specify/}).click();
+  await expect(donee.getByRole('button', {name:'Add Donee'})).toBeDisabled();
+  await donee.locator('#gift-donee-other').fill('Cousin');
+  await expect(donee.getByRole('button', {name:'Add Donee'})).toBeEnabled();
+  await donee.getByRole('button', {name:'Add Donee'}).click();
+  await expect(gift.getByTestId('gift-added-donee')).toContainText('Cousin');
+  await gift.getByRole('button', {name:'Close Gift Tax'}).click();
+  const confirmation = page.getByTestId('walkin-payment-exit-overlay');
+  await expect(confirmation).toBeVisible();
+  await confirmation.getByRole('button', {name:'Keep editing'}).click();
+  await expect(gift.getByTestId('gift-added-donee')).toContainText('Cousin');
+  await gift.getByRole('button', {name:'Close Gift Tax'}).click();
+  await confirmation.getByRole('button', {name:'Discard tax payment'}).click();
+  await expect(gift).toHaveCount(0);
+});
