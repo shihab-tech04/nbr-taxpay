@@ -140,6 +140,10 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   };
   return <TaxPayModal title={t('Gift Tax', 'দানকর')}
     ariaLabel={t('Gift Tax', 'দানকর')} service="gift" className="gift-tax-dialog"
+    // The approved Taxpayer Information modal is a three-stage payment shell.
+    // Reuse its width, height, header, progress and mobile fullscreen rules;
+    // do not create a separate Gift Tax modal-size implementation.
+    progress={{current: step, total: 3, label: t('Steps', 'ধাপ')}}
     closeIconLabel={t('Close Gift Tax', 'দানকর বন্ধ করুন')}
     onClose={onClose}
     onBack={step === 1 ? onBack : () => setStep(step === 3 ? 2 : 1)}
