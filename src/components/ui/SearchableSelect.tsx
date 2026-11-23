@@ -21,6 +21,8 @@ interface SearchableSelectProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  /** Opt-in viewport portal for menus inside clipped payment-stage shells. */
+  viewportPortal?: boolean;
 }
 interface MenuPosition {
   top: number;
@@ -45,7 +47,7 @@ export function matchSearchableOptions(options:SearchableSelectOption[],query:st
 export function SearchableSelect({
   id,value,onChange,options,placeholder='Select an option',
   searchPlaceholder='Search options',emptyLabel='No matching options',
-  ariaLabel,required,disabled,className=''
+  ariaLabel,required,disabled,className='',viewportPortal=false
 }:SearchableSelectProps){
   const triggerRef=useRef<HTMLButtonElement>(null);
   const menuRef=useRef<HTMLDivElement>(null);
@@ -78,15 +80,28 @@ export function SearchableSelect({
     const measure=()=>{
       const rect=trigger.getBoundingClientRect();
       const modalRect=dialog?.getBoundingClientRect();
-      // Open downwards consistently; the portal can overlap the fixed footer
-      // without increasing the height of the modal's scrolling form.
-      const limitBottom=Math.min(window.innerHeight-8,(modalRect?.bottom??window.innerHeight)-10);
-      const below=Math.max(0,limitBottom-rect.bottom-5);
-      const desired=Math.min(270,58+filtered.length*43);
-      const available=Math.max(48,Math.min(desired,below));
-      const top=rect.bottom+4-(modalRect?.top??0);
-      const left=rect.left-(modalRect?.left??0);
-      setPosition({top,left,width:rect.width,maxHeight:available,inDialog:!!dialog});
+      // Gift Tax's long grouped selector must escape the clipped modal body.
+      // Flip above when there is insufficient space below the trigger.
+      if(viewportPortal){
+        const below=Math.max(0,window.innerHeight-rect.bottom-12);
+        const above=Math.max(0,rect.top-12);
+        const desired=Math.min(380,58+filtered.length*46);
+        const up=below<Math.min(210,desired)&&above>below;
+        const room=up?above:below;
+        const maxHeight=Math.max(72,Math.min(desired,room));
+        const width=Math.min(rect.width,window.innerWidth-16);
+        const top=up?Math.max(8,rect.top-maxHeight-6):Math.min(window.innerHeight-maxHeight-8,rect.bottom+4);
+        const left=Math.min(Math.max(8,rect.left),window.innerWidth-width-8);
+        setPosition({top,left,width,maxHeight,inDialog:false});
+      } else {
+        const limitBottom=Math.min(window.innerHeight-8,(modalRect?.bottom??window.innerHeight)-10);
+        const below=Math.max(0,limitBottom-rect.bottom-5);
+        const desired=Math.min(270,58+filtered.length*43);
+        const available=Math.max(48,Math.min(desired,below));
+        const top=rect.bottom+4-(modalRect?.top??0);
+        const left=rect.left-(modalRect?.left??0);
+        setPosition({top,left,width:rect.width,maxHeight:available,inDialog:!!dialog});
+      }
     };
     measure();
     window.addEventListener('resize',measure);
@@ -95,7 +110,7 @@ export function SearchableSelect({
       window.removeEventListener('resize',measure);
       window.removeEventListener('scroll',measure,true);
     };
-  },[open,filtered.length]);
+  },[open,filtered.length,viewportPortal]);
 
   const select=(option:SearchableSelectOption)=>{
     if(option.disabled)return;
@@ -117,7 +132,7 @@ export function SearchableSelect({
   };
   const dialog=open?triggerRef.current?.closest<HTMLElement>('.taxpay-modal'):null;
   const popup=open&&position&&createPortal(
-    <div ref={menuRef} className="overflow-hidden rounded-lg border border-taxpay-border bg-taxpay-surface shadow-xl"
+    <div ref={menuRef} data-searchable-popup-id={id} className="overflow-hidden rounded-lg border border-taxpay-border bg-taxpay-surface shadow-xl"
       style={{position:position.inDialog?'absolute':'fixed',top:position.top,left:position.left,
         width:position.width,maxHeight:position.maxHeight,zIndex:9999}}
       onKeyDown={event=>{
@@ -166,7 +181,7 @@ export function SearchableSelect({
         })}
       </ul>
     </div>,
-    dialog??document.body
+    viewportPortal ? document.body : (dialog??document.body)
   );
   return <>
     <button ref={triggerRef} id={id} data-value={value} type="button" disabled={disabled}
