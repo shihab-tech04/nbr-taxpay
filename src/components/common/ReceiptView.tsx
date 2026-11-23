@@ -40,6 +40,8 @@ interface ReceiptViewProps {
   suppressFooterActions?: boolean;
   /** Compact walk-in document reader; other account/history readers remain unchanged. */
   compactWalkInLayout?: boolean;
+  /** Authenticated Activity detail chrome only. Printed receipt and payment contracts are unchanged. */
+  accountRecordView?: boolean;
   activeDocument?: 'receipt' | 'certificate';
   onDocumentChange?: (next: 'receipt' | 'certificate') => void;
   /** Optional post-payment invitation. Excluded from printed or downloaded receipt. */
@@ -50,7 +52,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   giftSimulationDetails, simulationServiceName,
   transactionActions = false, onPayAgain, onApplyForCorrection, payAgainUnavailableReason,
   payAgainTestId = 'receipt-pay-again', suppressFooterActions = false,
-  compactWalkInLayout = false, activeDocument, onDocumentChange, postReceiptInvitation }) => {
+  compactWalkInLayout = false, accountRecordView = false, activeDocument, onDocumentChange, postReceiptInvitation }) => {
   const { language, navigate } = useTaxState();
   const [showCertificate, setShowCertificate] = useState(false);
   const canViewCertificate = canViewPaymentCertificate(receipt);
@@ -280,12 +282,12 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
         giftSimulationDetails={giftSimulationDetails} simulationServiceName={simulationServiceName}
         transactionActions={transactionActions} onPayAgain={onPayAgain}
         onApplyForCorrection={onApplyForCorrection} payAgainUnavailableReason={payAgainUnavailableReason}
-        suppressFooterActions={suppressFooterActions} payAgainTestId={payAgainTestId}/>
+        suppressFooterActions={suppressFooterActions} payAgainTestId={payAgainTestId} accountRecordView={accountRecordView}/>
     </TaxPayModal>
   );
 
   return (
-    <div className={`receipt-view receipt-view--embedded${compactWalkInLayout ? ' receipt-view--walkin' : ''}${bn ? ' font-bengali' : ''}`} lang={language}>
+    <div className={`receipt-view receipt-view--embedded${compactWalkInLayout ? ' receipt-view--walkin' : ''}${accountRecordView ? ' receipt-view--account-history' : ''}${bn ? ' font-bengali' : ''}`} lang={language}>
       {!suppressFooterActions && (!isCertificate || canViewCertificate) && (footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions)}
 
       {compactWalkInLayout ? walkinDocuments : <>
