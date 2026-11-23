@@ -197,7 +197,7 @@
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-page-heading h1 {
   font-size: 30px;
   line-height: 40px;
-  font-weight: 600;
+  font-weight: var(--taxpay-weight-title, 700);
   letter-spacing: -0.02em;
 }
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)[lang="bn"] .taxpayer-page-heading h1 {
