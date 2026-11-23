@@ -9,9 +9,10 @@
 /* Gift Tax reuses the citizen form/summary tokens and the ONE shared modal.
    All selectors are Gift-only; don't change Travel Tax, Pay Tax, Office, or
    the approved mobile full-screen modal contract. */
-.taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] {
-  width: min(100%, 820px);
-}
+/* Gift Tax is a payment journey, not a compact information dialog.
+   The shared [data-payment-stage="true"] shell sets 1160px/90dvh on
+   desktop and 100%/100dvh on mobile, identically to Taxpayer Information.
+   Never override those dimensions with a Gift Tax-specific 820px cap. */
 .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .taxpay-modal__header .taxpay-modal__title {
   text-align: left;
   color: var(--citizen-text, #172033);

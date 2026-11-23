@@ -25,6 +25,26 @@ for (const sample of [
     await page.emulateMedia({reducedMotion: 'reduce'});
     const gift = await openGiftTax(page, sample.language);
     const bn = sample.language === 'bn';
+    // Pixel-equivalent modal geometry with the approved Taxpayer Information
+    // payment stage: 1160px width cap, 90dvh height, shared stepper and
+    // 100dvh mobile sheet. Compare at the same viewport, not screenshots
+    // captured at different browser dimensions.
+    await expect(gift).toHaveAttribute('data-payment-stage', 'true');
+    await expect(gift.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '1');
+    const bounds = await gift.evaluate(element => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return {width:rect.width,height:rect.height,
+        maxHeight:style.maxHeight,viewportWidth:window.innerWidth,viewportHeight:window.innerHeight};
+    });
+    if (sample.width > 650) {
+      expect(bounds.width).toBeCloseTo(Math.min(1160, sample.width - 32), 0);
+      expect(bounds.height).toBeCloseTo(Math.min(sample.height * .9, 900), 0);
+    } else {
+      expect(bounds.width).toBeCloseTo(sample.width, 0);
+      expect(bounds.height).toBeCloseTo(sample.height, 0);
+    }
+
 
     // TinyFish suggested clicking the digit row closed Gift Tax; verify a real
     // trusted pointer interaction rather than treating browser-agent inference as proof.
@@ -54,6 +74,7 @@ for (const sample of [
     await continueButton.click();
     const details = gift.getByTestId('gift-tax-details-form');
     await expect(details).toBeVisible();
+    await expect(gift.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
     await expect(details.locator('.gift-tax-field-control')).toHaveCount(4);
     await expect(details.locator('.gift-tax-field-label')).toHaveCount(4);
     await expect(details.locator('#gift-tax-amount')).toHaveCSS('font-size', '16px');
@@ -65,6 +86,7 @@ for (const sample of [
     await expect(gift.getByTestId('gift-tax-estimate')).toContainText(bn ? '২,৭২,০০০' : '2,72,000');
     await gift.getByRole('button', {name: bn ? 'চূড়ান্ত পর্যালোচনায় এগিয়ে যান' : 'Continue to Final Preview'}).click();
     await expect(gift.getByTestId('gift-tax-review')).toBeVisible();
+    await expect(gift.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
     await expect(gift.getByTestId('gift-tax-review-complete')).toBeVisible();
     await expect(gift.getByRole('button', {name: /pay now|এখনই পরিশোধ/i})).toHaveCount(0);
     const overflow = await gift.locator('.taxpay-modal__body').evaluate(element => element.scrollWidth - element.clientWidth);
