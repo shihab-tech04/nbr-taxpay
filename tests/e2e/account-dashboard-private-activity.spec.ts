@@ -660,7 +660,7 @@ test('F-123 signed-in Pay menu has predictable EN/BN arrow, Home/End and Escape 
   await page.keyboard.press('ArrowDown');
   await expect(banglaMenu.getByRole('menuitem',{name:'ভ্রমণ কর'})).toBeFocused();
   await page.keyboard.press('ArrowDown');
-  await expect(banglaMenu.getByRole('menuitem',{name:'দান কর'})).toBeFocused();
+  await expect(banglaMenu.getByRole('menuitem',{name:'দানকর'})).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(banglaMenu).toHaveCount(0);
   await expect(banglaPay).toBeFocused();
