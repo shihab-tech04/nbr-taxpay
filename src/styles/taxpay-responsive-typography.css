@@ -143,8 +143,12 @@
   --font-text: 'Noto Sans Bengali', 'Poppins', system-ui, sans-serif;
   font-family: var(--font-text);
 }
-/* Ensure naturally readable controls with no iOS font-size focus zoom. */
-.taxpay-citizen-shell :is(
+/* iOS-safe body defaults must not override explicit component font roles.
+ * :is() borrowed the high specificity of input:not(...) for *every* button,
+ * causing 16px navigation/Help/CTA text despite later 14px component rules.
+ * :where() fixes that root cascade bug. Earlier explicit input rules still
+ * enforce 16px editable fields to prevent mobile focus-zoom. */
+.taxpay-citizen-shell :where(
   button, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   select, textarea, label
 ) {
