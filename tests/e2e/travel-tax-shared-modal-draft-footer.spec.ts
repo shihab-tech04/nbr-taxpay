@@ -179,15 +179,17 @@ test('Travel Tax suggestions stay attached to passport and visible above modal f
     const geometry=await list.evaluate(node=>{
       const rect=node.getBoundingClientRect();
       const input=node.closest('.travel-flow__passport-input')?.getBoundingClientRect();
+      const entry=node.closest('.travel-flow__passport-input')?.querySelector('.travel-flow__passport-entry')?.getBoundingClientRect();
       const footer=node.closest('.taxpay-modal')?.querySelector('.taxpay-modal__footer')?.getBoundingClientRect();
       const style=getComputedStyle(node);
       return {top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right,
-        inputRight:input?.right,inputLeft:input?.left,inputBottom:input?.bottom,
+        inputRight:input?.right,inputLeft:input?.left,inputBottom:entry?.bottom,
         footerTop:footer?.top,position:style.position,overflowY:style.overflowY,
         withinInput:node.parentElement?.classList.contains('travel-flow__passport-input')};
     });
     expect(geometry.withinInput,'suggestions belong to input at '+width).toBe(true);
-    expect(geometry.position,'floating listbox at '+width).toBe('absolute');
+    expect(geometry.position,'desktop floats, stacked mobile stays in flow at '+width)
+      .toBe(width<=800 ? 'static' : 'absolute');
     expect(geometry.top,'listbox below input at '+width).toBeGreaterThanOrEqual((geometry.inputBottom??0)-1);
     expect(geometry.left,'listbox left aligned at '+width).toBeGreaterThanOrEqual((geometry.inputLeft??0)-2);
     expect(geometry.right,'listbox inside input at '+width).toBeLessThanOrEqual((geometry.inputRight??0)+2);
