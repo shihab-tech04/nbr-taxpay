@@ -408,3 +408,54 @@
     width: 100%;
   }
 }
+
+/* Compact Travel Tax passport result follows approved TIN identity rows. */
+.taxpay-citizen-shell .travel-flow__identity-card--compact {
+  padding: 10px 16px 14px;
+  border-radius: 11px;
+}
+.taxpay-citizen-shell .travel-flow__identity-card--compact dl {
+  display: block;
+  margin: 0;
+}
+.taxpay-citizen-shell .travel-flow__identity-card--compact dl > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 38%) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--citizen-border);
+}
+.taxpay-citizen-shell .travel-flow__identity-card--compact dt {
+  font: 400 13px/1.5 Poppins, system-ui, sans-serif;
+  color: var(--citizen-muted);
+}
+.taxpay-citizen-shell .travel-flow__identity-card--compact dd {
+  margin: 0;
+  font: 600 14px/1.5 Poppins, system-ui, sans-serif;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__identity-card--compact .travel-passenger-workspace__medical {
+  margin: 8px 0 0;
+  padding: 6px 0 0;
+  border-top: 0;
+}
+.taxpay-citizen-shell .travel-flow__identity-card--compact .travel-flow__medical-note {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .travel-flow__identity-card--compact .travel-flow__confirm-row {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 12px;
+}
+@media (max-width: 560px) {
+  .taxpay-citizen-shell .travel-flow__identity-card--compact dl > div {
+    grid-template-columns: minmax(90px, 40%) minmax(0, 1fr);
+    gap: 8px;
+  }
+}
