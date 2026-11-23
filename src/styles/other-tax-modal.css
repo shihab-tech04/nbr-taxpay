@@ -298,9 +298,32 @@
 .taxpay-citizen-shell .gift-tax-simulation-receipt {min-width:0}
 @media(max-width:620px){
  .taxpay-citizen-shell .gift-tax-preview .unified-v3-review__heading {align-items:flex-start}
- .taxpay-citizen-shell .gift-tax-preview-table th:first-child {width:44%}
- .taxpay-citizen-shell .gift-tax-preview-table th,
- .taxpay-citizen-shell .gift-tax-preview-table td {padding:9px;font-size:13px}
+ /* The approved Taxpayer table's mobile rows use <td> cells.
+  * Gift Tax's semantic review uses <th scope="row"> + <td>, so the generic
+  * three-cell grid crushes Gift Tax headings into a one-character column.
+  * Override the row geometry for this service only, never shared reviews. */
+ .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .gift-tax-preview .gift-tax-preview-table,
+ .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .gift-tax-preview .gift-tax-preview-table tbody {
+   display:block;width:100%;min-width:0;table-layout:auto;
+ }
+ .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .gift-tax-preview .gift-tax-preview-table thead {display:none}
+ .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .gift-tax-preview .gift-tax-preview-table tbody tr {
+   display:grid;grid-template-columns:minmax(90px,42%) minmax(0,1fr);
+   align-items:start;column-gap:10px;width:100%;
+   padding:10px 2px;box-sizing:border-box;
+ }
+ .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .gift-tax-preview .gift-tax-preview-table tbody tr > th,
+ .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .gift-tax-preview .gift-tax-preview-table tbody tr > td {
+   display:block;min-width:0;width:auto!important;max-width:100%;
+   padding:0 4px!important;font-size:13px;line-height:1.5;
+   overflow-wrap:break-word;word-break:normal;white-space:normal!important;
+ }
+ .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .gift-tax-preview .gift-tax-preview-table tbody tr > th {
+   grid-column:1;text-align:left;
+ }
+ .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .gift-tax-preview .gift-tax-preview-table tbody tr > td {
+   grid-column:2;text-align:right!important;
+ }
  .taxpay-citizen-shell .gift-tax-sample-receipt__fields>div {grid-template-columns:minmax(0,1fr)}
  .taxpay-citizen-shell .gift-tax-sample-receipt__fields dd {text-align:left}
 }
