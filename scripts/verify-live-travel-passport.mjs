@@ -59,17 +59,8 @@ try {
     await expect(continueToTravel).toBeDisabled();
     await expect(modal.locator('#travel-lookup-first')).toBeDisabled();
 
-    const medical = first.getByTestId('travel-passenger-medical-control');
-    const medicalBounds = await medical.boundingBox();
-    const passengerBounds = await first.boundingBox();
-    if (!medicalBounds || !passengerBounds || medicalBounds.width < .8 * passengerBounds.width) {
-      throw new Error('Manual assessment must use the available passenger editor width');
-    }
-    // The manual-assessment option must still block an ineligible online journey.
-    await medical.getByRole('checkbox').check();
-    await expect(modal.getByTestId('travel-manual-assessment-blocker')).toBeVisible();
-    await medical.getByRole('checkbox').uncheck();
-    await expect(modal.getByTestId('travel-manual-assessment-blocker')).toHaveCount(0);
+    await expect(first.getByTestId('travel-passenger-medical-control')).toHaveCount(0);
+    await expect(first.locator('.travel-flow__identity-card')).toHaveCount(0);
 
     await modal.locator('#travel-passport-first').click();
     const options = modal.locator('#travel-passport-suggestions-first [role="option"]');
@@ -85,6 +76,18 @@ try {
     await expect(addPassenger).toBeEnabled();
     await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
     await expect(modal.getByTestId('travel-passenger-birth-first')).toHaveText('2017-08-10');
+    const checkedCard = first.locator('.travel-flow__identity-card');
+    const medical = checkedCard.getByTestId('travel-passenger-medical-control');
+    await expect(medical).toBeVisible();
+    await expect(checkedCard.getByRole('button', {name:'Add passenger', exact:true})).toBeVisible();
+    // Medical referral is attached to this passport and cannot be confirmed for online payment.
+    await medical.getByRole('checkbox').check();
+    await expect(addPassenger).toBeEnabled();
+    await addPassenger.click();
+    await expect(modal.getByRole('alert')).toContainText('medical exemption requires assessment at the departure port');
+    await expect(continueToTravel).toBeDisabled();
+    await medical.getByRole('checkbox').uncheck();
+    await expect(modal.getByTestId('travel-manual-assessment-blocker')).toHaveCount(0);
     await expect(continueToTravel).toBeDisabled();
 
     // Replacing a checked identity invalidates confirmation until rechecked.
@@ -98,10 +101,10 @@ try {
 
     const inOwnerCard = await addPassenger.evaluate(button => {
       const editor = button.closest('.travel-passenger-workspace__entry');
-      const row = button.closest('.travel-flow__confirm-row');
-      const assessment = editor?.querySelector('.travel-passenger-workspace__medical');
+      const card = button.closest('.travel-flow__identity-card');
+      const assessment = card?.querySelector('.travel-passenger-workspace__medical');
       return editor?.getAttribute('data-passenger-id') === 'first' &&
-        row?.parentElement === editor && !!assessment &&
+        !!card && !!assessment &&
         !!(assessment.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING);
     });
     if (!inOwnerCard) throw new Error('Add passenger must remain within the checked passenger editor after medical review');
