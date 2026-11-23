@@ -14,6 +14,7 @@ import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {maskTinForDisplay} from '../../services/tinDisplay';
 import {amountInTakaWords} from '../../services/amountInWords';
 import {estimateGiftTax, parseGiftValue} from '../../services/giftTaxEstimate';
+import {validGiftDate} from '../../services/giftTaxDate';
 import '../../styles/taxpay-unified-v3.css';
 
 type Party = 'donor' | 'donee';
@@ -119,7 +120,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
       setFormError(t('Enter a valid gift amount above zero (up to two decimals).', 'শূন্যের বেশি বৈধ দানের পরিমাণ লিখুন (সর্বোচ্চ দুই দশমিক স্থান)।'));
       return;
     }
-    if (!dateOfGift || dateOfGift > localToday()) {
+    if (!validGiftDate(dateOfGift, localToday())) {
       setFormError(t('Select a valid gift date, not in the future.', 'ভবিষ্যতের নয়, এমন বৈধ দানের তারিখ নির্বাচন করুন।'));
       return;
     }
@@ -134,7 +135,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   const attemptOfficialPayment = async () => {
     if (paymentBusy || !added.donor || !added.donee || !doneeClassValid ||
         !bothAdded || parsedAmount === null || estimatedTax === null ||
-        !dateOfGift || dateOfGift > localToday()) {
+        !validGiftDate(dateOfGift, localToday())) {
       setFormError(t('Review all required Gift Tax fields before payment.', 'পরিশোধের আগে দানকরের আবশ্যিক তথ্য যাচাই করুন।'));
       setStep(3);
       return;
@@ -365,7 +366,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         <div className="flex flex-wrap gap-2 py-3">
           <button type="button" className={secondaryClass} onClick={() => setStep(1)}>{t('Edit donor / donee', 'দাতা / গ্রহীতা সম্পাদনা')}</button>
           <button type="button" className={secondaryClass} onClick={() => setStep(2)}>{t('Edit gift information', 'দানের তথ্য সম্পাদনা')}</button>
-          <button type="button" className={secondaryClass} onClick={onClose}>{t('Close preview', 'পর্যালোচনা বন্ধ করুন')}</button>
+          <button type="button" className={secondaryClass} onClick={requestClose}>{t('Close preview', 'পর্যালোচনা বন্ধ করুন')}</button>
         </div>
         <div role="status" className="gift-tax-preview-notice" data-testid="gift-tax-review-complete">
           {t('Preview only. The Gift Tax payment head, authoritative identity/tax-zone lookup, statutory exemptions, gateway, and donor credit posting are not configured. No money was charged, no challan was created, and no SQL payment record was written.',

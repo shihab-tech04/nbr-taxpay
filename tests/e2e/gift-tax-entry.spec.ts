@@ -59,6 +59,12 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(gift.getByTestId('gift-tax-review-complete')).toContainText(bn ? 'কোনো টাকা কাটা হয়নি' : 'No money was charged');
     await expect(page.locator('.receipt-view')).toHaveCount(0);
     await gift.getByRole('button', {name: bn ? 'পর্যালোচনা বন্ধ করুন' : 'Close preview'}).click();
+    const discard = page.getByTestId('walkin-payment-exit-overlay');
+    await expect(discard).toBeVisible();
+    await discard.getByRole('button', {name: bn ? 'সম্পাদনা চালিয়ে যান' : 'Keep editing'}).click();
+    await expect(gift.getByTestId('gift-tax-review')).toBeVisible();
+    await gift.getByRole('button', {name: bn ? 'পর্যালোচনা বন্ধ করুন' : 'Close preview'}).click();
+    await discard.getByRole('button', {name: bn ? 'কর পরিশোধ বাদ দিন' : 'Discard tax payment'}).click();
     await expect(gift).toHaveCount(0);
 
     await hero.getByRole('button', {name: bn ? 'অন্যান্য কর' : 'Other Tax'}).click();
