@@ -104,6 +104,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   // Unified Walk-in header Back has a stage-owned handler. No hidden footer
   // button is needed to proxy navigation, and non-unified routes stay intact.
   const unifiedHeaderBackRef = useRef<(() => void) | null>(null);
+  const [resultView, setResultView] = useState<'result' | 'receipt' | 'certificate'>('result');
   const travelHeaderBackRef = useRef<(() => void) | null>(null);
   const registerTravelHeaderBack = useCallback((action: (() => void) | null) => {
     travelHeaderBackRef.current = action;
@@ -218,7 +219,10 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     <TaxPayModal
       title={view === 'login' || view === 'entry'
         ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`)
-        : view === 'payment' && !travelJourney && stage === 4 ? tr('Payment result', 'পেমেন্টের ফলাফল')
+        : view === 'payment' && !travelJourney && stage === 4
+        ? resultView === 'certificate' ? tr('Payment record certificate', 'পেমেন্ট রেকর্ড সনদ')
+          : resultView === 'receipt' ? tr('Challan details', 'চালানের বিবরণ')
+          : tr('Payment result', 'পেমেন্টের ফলাফল')
         : view === 'payment' && unifiedEntry && checkoutOpen ? tr('Payment channel', 'পেমেন্ট চ্যানেল')
         : view === 'payment' && travelJourney && stage === 4 ? tr('Payment result','পেমেন্টের ফলাফল')
         : view === 'payment' && travelJourney && travelCheckoutOpen ? tr('Payment channel','পেমেন্ট চ্যানেল')
@@ -258,7 +262,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         }
         : view === 'payer' && draftEntryBlocking && draftEntryMode === 'list'
         ? () => setDraftEntryMode('choice')
-        : view === 'login' ? () => setView('payer') : view === 'payment' && (travelJourney || stage !== 4) ? () => {
+        : view === 'login' ? () => setView('payer') : view === 'payment' && (travelJourney || stage !== 4 || (unifiedEntry && resultView !== 'result')) ? () => {
         if (travelJourney) {
           if (travelHeaderBackRef.current) travelHeaderBackRef.current();
           else if (stage === 1) (directTravelEntry ? requestClose() : returnToService());
@@ -278,7 +282,9 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         if (back && !back.disabled) back.click();
         else if (stage === 1) (directTravelEntry ? requestClose() : returnToService());
       } : undefined}
-      backLabel={tr('Back', 'ফিরুন')}
+      backLabel={resultView === 'certificate' && stage === 4 ? tr('Back to receipt', 'রসিদে ফিরুন')
+        : resultView === 'receipt' && stage === 4 ? tr('Back to confirmation', 'পেমেন্টের ফলাফলে ফিরুন')
+        : tr('Back', 'ফিরুন')}
       hideFooter={view === 'payer' && draftEntryBlocking}
       service={view === 'login' || view === 'entry' ? 'login' : view === 'payment' && effectiveSelected === 'TRAVEL_TAX' ? 'travel' : 'payment-choice'}
       closeIconLabel={travelJourney && view === 'payment' ? tr('Close modal', 'মডাল বন্ধ করুন') : tr('Close payment services', 'কর পরিশোধের সেবা বন্ধ করুন')}
@@ -426,7 +432,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
             initialBeneficiary={payerForSelf === false || parallelEntry ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
             isWithholdingMode={effectiveSelected === 'SOURCE_TAX_DEPOSIT'}
-            onBackToService={returnToService} onStageChange={reportStage} onCheckoutChange={setCheckoutOpen}
+            onBackToService={returnToService} onStageChange={reportStage}
+             onResultViewChange={setResultView} onCheckoutChange={setCheckoutOpen}
             registerHeaderBack={unifiedEntry ? registerUnifiedHeaderBack : undefined} />
         ) : null}
       </section>}
