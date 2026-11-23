@@ -155,10 +155,18 @@ test('Travel Tax suggestions stay attached to passport and visible above modal f
     const overlay=page.locator('.taxpay-modal__overlay').last();
     const cover=await overlay.evaluate(node=>{
       const rect=node.getBoundingClientRect();
+      const style=getComputedStyle(node);
+      const transformedAncestors: string[]=[];
+      for(let parent=node.parentElement;parent;parent=parent.parentElement){
+        const cs=getComputedStyle(parent);
+        if(cs.transform!=='none'||cs.filter!=='none'||cs.perspective!=='none')
+          transformedAncestors.push(parent.tagName.toLowerCase()+'.'+parent.className+':'+cs.transform);
+      }
       return {top:rect.top,left:rect.left,right:rect.right,bottom:rect.bottom,
-        vw:innerWidth,vh:innerHeight};
+        vw:innerWidth,vh:innerHeight,position:style.position,inset:style.inset,
+        transform:style.transform,transformedAncestors};
     });
-    expect(Math.abs(cover.top),'backdrop reaches top at '+width).toBeLessThanOrEqual(1);
+    expect(Math.abs(cover.top),'backdrop reaches top at '+width+': '+JSON.stringify(cover)).toBeLessThanOrEqual(1);
     expect(Math.abs(cover.left),'backdrop reaches left at '+width).toBeLessThanOrEqual(1);
     expect(cover.right,'backdrop reaches right at '+width).toBeGreaterThanOrEqual(cover.vw-1);
     expect(cover.bottom,'backdrop reaches bottom at '+width).toBeGreaterThanOrEqual(cover.vh-1);
@@ -195,6 +203,7 @@ test('Travel Tax nested Save Draft exit scrim covers the viewport after dialog e
   test.skip(info.project.name!=='desktop-1280','Sweep the desktop and phone exit geometry once');
   for(const width of [375,1280]){
     await page.setViewportSize({width,height:720});
+    await previewLogin(page);
     await page.goto('/?action=landing&lang=en');
     await openTravelTaxFromBanner(page);
     const dialog=page.getByRole('dialog',{name:'Travel tax'});
