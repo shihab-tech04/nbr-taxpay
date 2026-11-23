@@ -612,7 +612,7 @@
   line-height: 1.5;
 }
 .taxpay-citizen-shell:has(.public-home-sections) .public-home-header .public-home-nav a,
-.taxpay-citizen-shell:has(.public-home-sections) .public-home-header .public-home-language,
+.taxpay-citizen-shell:has(.public-home-sections) .public-home-language,
 .taxpay-citizen-shell:has(.public-home-sections) .public-home-header .public-home-login-link {
   font-size: var(--sohojkor-home-control);
   font-weight: var(--sohojkor-home-control-weight);
