@@ -624,6 +624,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   };
 
 
+  const confirmCheckedPassenger = (item: TravelPassenger) => {
+    const issue = passengerIdentityIssue(item.id);
+    if (issue) { reportIdentityIssue(issue); return; }
+    setConfirmedPassengerIds(ids => [...new Set([...ids, item.id])]);
+    setEditingPassengerId(null); setEditBackup(null); setPassengerIssue(null); setPassportSuggestionsFor(null);
+  };
+
   /** Each passenger uses a type tab; fields from the other type never appear. */
   const renderPassengerEditor = (item: TravelPassenger, index: number) => {
     const panelId = 'travel-passenger-panel-' + item.id;
@@ -824,6 +831,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 <div><dt>{tr('Nationality','জাতীয়তা')}</dt><dd>{tr('Bangladeshi','বাংলাদেশি')}</dd></div>
               </dl>
               {medicalAssessmentControl}
+              {canShowAddPassenger && pendingConfirmationId === item.id &&
+                <div className="travel-flow__confirm-row">
+                  <button type="button" className="travel-flow__add-member travel-flow__confirm-passenger"
+                    onClick={() => confirmCheckedPassenger(item)}>
+                    <Plus size={17} aria-hidden="true"/>{tr('Add passenger','যাত্রী যোগ করুন')}
+                  </button>
+                </div>}
             </section>}
           </> : <>
             <div className="travel-flow__field">
@@ -870,7 +884,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </div>
             {medicalAssessmentControl}
           </>}
-          {item.nationality === 'BD' && item.identitySource !== 'PASSPORT_SAMPLE' && medicalAssessmentControl}
         </div>
         {item.medicalPortReferral && <p role="status" data-testid="travel-manual-assessment-blocker" className="travel-flow__medical-note">
           {tr('Manual medical assessment is required at the departure port. Online Continue is unavailable. Bring supporting documents, or untick this option if you selected it by mistake.',
@@ -1057,15 +1070,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     type="button" onClick={()=>removeTravelPassenger(item,index)}>
                     <Trash2 size={15} aria-hidden="true"/>{tr('Remove passenger','যাত্রী বাদ দিন')}
                   </button>}
-                  {canShowAddPassenger && pendingConfirmationId===item.id && <div className="travel-flow__confirm-row">
-                    <button type="button" className="travel-flow__add-member travel-flow__confirm-passenger"
-                      disabled={item.medicalPortReferral} onClick={()=>{
-                        const issue=passengerIdentityIssue(item.id);
-                        if(issue){reportIdentityIssue(issue);return;}
-                        setConfirmedPassengerIds(ids=>[...new Set([...ids,item.id])]);
-                        setEditingPassengerId(null);setEditBackup(null);setPassengerIssue(null);setPassportSuggestionsFor(null);
-                      }}><Plus size={17} aria-hidden="true"/>{tr('Add passenger','যাত্রী যোগ করুন')}</button>
-                  </div>}
+                  {item.nationality === 'FOREIGN' && canShowAddPassenger && pendingConfirmationId === item.id &&
+                    <div className="travel-flow__confirm-row">
+                      <button type="button" className="travel-flow__add-member travel-flow__confirm-passenger"
+                        onClick={() => confirmCheckedPassenger(item)}>
+                        <Plus size={17} aria-hidden="true"/>{tr('Add passenger','যাত্রী যোগ করুন')}
+                      </button>
+                    </div>}
                 </div>;
               })() : <div className="travel-passenger-workspace__blank">
                 <div className="travel-flow__passenger-tabs" role="group">
