@@ -3,6 +3,8 @@ import {ArrowRight, ReceiptText, Search, Trash2} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {WalkInDiscardConfirmation} from '../ui/WalkInDiscardConfirmation';
+import {GiftTaxPaymentResult} from './GiftTaxPaymentResult';
+import {initiateGiftTaxPayment, type GiftTaxPaymentInput, type GiftTaxPaymentOutcome} from '../../services/giftTaxPaymentGateway';
 import {SearchableSelect} from '../ui/SearchableSelect';
 import {beneficiaryChoiceParts} from '../../services/beneficiaryClassificationChoice';
 import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,validBeneficiaryClassification} from '../../services/beneficiaryTags';
@@ -37,7 +39,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   const {language} = useTaxState();
   const bn = language === 'bn';
   const t = (en: string, bd: string) => bn ? bd : en;
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [tinInput, setTinInput] = useState<Record<Party, string>>({donor: '', donee: ''});
   const [searched, setSearched] = useState<PartyMap>(emptyParties);
   const [added, setAdded] = useState<PartyMap>(emptyParties);
@@ -50,6 +52,10 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   const [doneeChoice, setDoneeChoice] = useState('');
   const [doneeOther, setDoneeOther] = useState('');
   const [exitPromptOpen, setExitPromptOpen] = useState(false);
+  const [paymentInput, setPaymentInput] = useState<GiftTaxPaymentInput | null>(null);
+  const [paymentOutcome, setPaymentOutcome] = useState<GiftTaxPaymentOutcome | null>(null);
+  const [paymentAttemptKey, setPaymentAttemptKey] = useState<string | null>(null);
+  const [paymentBusy, setPaymentBusy] = useState(false);
   const requestClose = () => setExitPromptOpen(true);
   const doneeClass = beneficiaryChoiceParts(doneeChoice);
   const doneeClassValid = validBeneficiaryClassification(doneeClass.tag, doneeClass.relationship, doneeOther);
@@ -119,7 +125,50 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     }
     if (!bothAdded) {setStep(1); return;}
     setFormError('');
+    setPaymentAttemptKey(null);
+    setPaymentInput(null);
+    setPaymentOutcome(null);
     setStep(3);
+  };
+  /** Never submit a synthetic record as a paid challan or donor tax credit. */
+  const attemptOfficialPayment = async () => {
+    if (paymentBusy || !added.donor || !added.donee || !doneeClassValid ||
+        !bothAdded || parsedAmount === null || estimatedTax === null ||
+        !dateOfGift || dateOfGift > localToday()) {
+      setFormError(t('Review all required Gift Tax fields before payment.', 'পরিশোধের আগে দানকরের আবশ্যিক তথ্য যাচাই করুন।'));
+      setStep(3);
+      return;
+    }
+    const giftMinor = Math.round(parsedAmount * 100);
+    const taxMinor = Math.round(estimatedTax * 100);
+    if (!Number.isSafeInteger(giftMinor) || !Number.isSafeInteger(taxMinor)) {
+      setFormError(t('Gift amount is outside the supported range.', 'দানের পরিমাণ সমর্থিত সীমার বাইরে।'));
+      return;
+    }
+    const key = paymentAttemptKey ?? crypto.randomUUID();
+    setPaymentAttemptKey(key);
+    const nextInput: GiftTaxPaymentInput = {
+      donor: {tin: added.donor.tin, name: added.donor.name},
+      donee: {tin: added.donee.tin, name: added.donee.name,
+        tag: doneeClass.tag as GiftTaxPaymentInput['donee']['tag'],
+        relationship: doneeClass.relationship || null,
+        otherLabel: doneeClass.tag === 'others' ? doneeOther.trim() : null},
+      giftAmountMinor: giftMinor, estimatedTaxMinor: taxMinor,
+      description, giftDate: dateOfGift, remarks, idempotencyKey: key,
+    };
+    setPaymentInput(nextInput);
+    setPaymentBusy(true);
+    try {
+      const nextOutcome = await initiateGiftTaxPayment(nextInput);
+      setPaymentOutcome(nextOutcome);
+    } catch {
+      // An unknown transport failure must not be presented as a declined or
+      // settled payment. No financial side effect is known to have occurred.
+      setPaymentOutcome({kind: 'UNAVAILABLE', code: 'OFFICIAL_GIFT_TAX_NOT_CONFIGURED'});
+    } finally {
+      setPaymentBusy(false);
+      setStep(4);
+    }
   };
   const line = (label: string, value: React.ReactNode) => <div className="flex items-start justify-between gap-3 border-b border-slate-200 py-2.5 last:border-0">
     <dt className="text-sm text-slate-600">{label}</dt>
@@ -223,14 +272,17 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     </div>;
 
   const selectedCount = Number(Boolean(added.donor)) + Number(Boolean(added.donee));
-  return <><TaxPayModal title={t('Gift Tax', 'দানকর')}
+  return <><TaxPayModal title={step === 4 ? t('Payment Result', 'পেমেন্টের ফলাফল') : t('Gift Tax', 'দানকর')}
     ariaLabel={t('Gift Tax', 'দানকর')} service="gift" className="gift-tax-dialog taxpay-v5-locked"
-    progress={{current: step, total: 3, label: t('Steps', 'ধাপ'),
+    progress={step === 4 ? undefined : {current: step, total: 3, label: t('Steps', 'ধাপ'),
       subtitle: t('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট')}}
     closeIconLabel={t('Close Gift Tax', 'দানকর বন্ধ করুন')}
     onClose={requestClose}
-    onBack={step === 1 ? onBack : () => setStep(step === 3 ? 2 : 1)}
+    onBack={step === 1 ? onBack : step === 4 &&
+      (paymentOutcome?.kind === 'PENDING' || paymentOutcome?.kind === 'SETTLED') ? undefined
+      : () => setStep(step === 4 ? 3 : step === 3 ? 2 : 1)}
     backLabel={step === 1 ? t('Back to Other tax payments', 'অন্যান্য কর পরিশোধে ফিরুন') : t('Back to previous Gift Tax screen', 'আগের দানকর স্ক্রিনে ফিরুন')}
+    hideFooter={step === 4}
     footer={<div className="payment-flow-embedded__footer-actions">
       {step === 1 ? <button type="button" className="tax-service-choice__continue"
         disabled={!bothAdded} onClick={continueToDetails}>
@@ -240,9 +292,11 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         onClick={continueToPreview}>
         {t('Continue to Final Preview', 'চূড়ান্ত পর্যালোচনায় এগিয়ে যান')}
         <ArrowRight size={18} aria-hidden="true" />
-      </button> : <button type="button" className="tax-service-choice__continue" onClick={onClose}>
-        {t('Close preview', 'পর্যালোচনা বন্ধ করুন')}
-      </button>}
+      </button> : step === 3 ? <button type="button" className="tax-service-choice__continue"
+        onClick={() => void attemptOfficialPayment()} disabled={paymentBusy} aria-busy={paymentBusy}>
+        {t('Confirm & Pay', 'নিশ্চিত করুন ও পরিশোধ করুন')}
+        <ArrowRight size={18} aria-hidden="true" />
+      </button> : null}
     </div>}>
     {step === 1 && workspace('gift-tax-entry-form',
       <>{partyLookup('donor')}{partyLookup('donee')}</>,
@@ -311,6 +365,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         <div className="flex flex-wrap gap-2 py-3">
           <button type="button" className={secondaryClass} onClick={() => setStep(1)}>{t('Edit donor / donee', 'দাতা / গ্রহীতা সম্পাদনা')}</button>
           <button type="button" className={secondaryClass} onClick={() => setStep(2)}>{t('Edit gift information', 'দানের তথ্য সম্পাদনা')}</button>
+          <button type="button" className={secondaryClass} onClick={onClose}>{t('Close preview', 'পর্যালোচনা বন্ধ করুন')}</button>
         </div>
         <div role="status" className="gift-tax-preview-notice" data-testid="gift-tax-review-complete">
           {t('Preview only. The Gift Tax payment head, authoritative identity/tax-zone lookup, statutory exemptions, gateway, and donor credit posting are not configured. No money was charged, no challan was created, and no SQL payment record was written.',
@@ -325,6 +380,21 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         <div className="unified-taxpayer-workspace__list">
           {partyDisplay('donor')}{partyDisplay('donee')}
         </div>
+      </aside>
+    )}
+    {step === 4 && paymentInput && paymentOutcome && workspace('gift-tax-result-workspace',
+      <GiftTaxPaymentResult language={language} input={paymentInput} outcome={paymentOutcome}
+        onBack={() => setStep(3)} onRetry={() => void attemptOfficialPayment()} />,
+      <aside className="unified-taxpayer-workspace__rail gift-tax-aside payment-form-summary">
+        <h3 className="unified-taxpayer-workspace__rail-title"><ReceiptText size={17} aria-hidden="true"/>{t('Payment summary', 'পেমেন্ট সারসংক্ষেপ')}</h3>
+        <p className="payment-form-summary__eyebrow">{t('Gift Tax total', 'দানকরের মোট')}</p>
+        <p className="payment-form-summary__total">{'৳ ' + number(estimatedTax ?? 0)}</p>
+        <dl className="gift-tax-summary-lines payment-form-summary__rows">
+          {line(t('Donor', 'দাতা'), added.donor?.name ?? '—')}
+          {line(t('Donor TIN', 'দাতার টিআইএন'), maskTinForDisplay(added.donor?.tin))}
+          {line(t('Donee', 'গ্রহীতা'), added.donee?.name ?? '—')}
+          {line(t('Tag / Relationship', 'ট্যাগ / সম্পর্ক'), doneeClassLabel)}
+        </dl>
       </aside>
     )}
   </TaxPayModal>
