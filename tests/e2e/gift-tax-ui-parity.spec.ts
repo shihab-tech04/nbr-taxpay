@@ -121,8 +121,9 @@ test('Gift Tax uses the same approved payment footer action as Taxpayer Informat
   await expect(button).toBeDisabled();
   await expect(button).toHaveClass(/tax-service-choice__continue/);
   await expect(button.locator('svg')).toHaveCount(1);
-  await expect(button).toHaveCSS('background-color', 'rgb(44, 94, 173)');
-  await expect(button).toHaveCSS('opacity', '0.48');
+  // Approved v5 explicitly uses an opaque muted-blue fill for disabled primary actions.
+  await expect(button).toHaveCSS('background-color', 'rgb(137, 166, 211)');
+  await expect(button).toHaveCSS('opacity', '1');
   const footerRect = await gift.locator('.taxpay-modal__footer').boundingBox();
   const buttonRect = await button.boundingBox();
   expect(footerRect && buttonRect).toBeTruthy();
