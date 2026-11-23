@@ -1187,3 +1187,22 @@ test('Travel Tax passport suggestions recover on keyboard Escape and outside poi
   await page.keyboard.press('Tab');
   await expect(list).toHaveCount(0);
 });
+
+test('Travel Tax: draft route selections survive Land/Water switch without stale cross-mode use', async ({page}) => {
+  await page.goto('/');
+  await openTravelTaxFromBanner(page);
+  const modal=page.getByRole('dialog',{name:'Travel tax'});
+  await fillTravelDetails(modal);
+  await expect(modal.locator('#travel-port')).toBeVisible();
+  await modal.locator('#travel-port').selectOption('Benapole');
+  await modal.locator('#travel-tax-route-1').check();
+  const waterPort=modal.locator('#travel-water-port');
+  await expect(waterPort).toBeVisible();
+  await waterPort.fill('Mongla');
+  await modal.locator('#travel-tax-route-0').check();
+  await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
+  await expect(modal.locator('#travel-water-port')).toHaveCount(0);
+  await modal.locator('#travel-tax-route-1').check();
+  await expect(modal.locator('#travel-water-port')).toHaveValue('Mongla');
+  await expect(modal.locator('#travel-port')).toHaveCount(0);
+});

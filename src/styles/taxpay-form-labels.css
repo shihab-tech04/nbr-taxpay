@@ -395,7 +395,10 @@
   border-radius: 9px;
   background: var(--citizen-surface);
   color: var(--citizen-primary-dark);
-  font: 600 14px/1.4 Poppins, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  font-family: inherit;
 }
 .taxpay-citizen-shell .travel-flow__identity-card .travel-flow__confirm-passenger:hover,
 .taxpay-citizen-shell .travel-passenger-workspace__entry > .travel-flow__confirm-row .travel-flow__confirm-passenger:hover {
@@ -427,12 +430,18 @@
   border-bottom: 1px solid var(--citizen-border);
 }
 .taxpay-citizen-shell .travel-flow__identity-card--compact dt {
-  font: 400 13px/1.5 Poppins, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  font-family: inherit;
   color: var(--citizen-muted);
 }
 .taxpay-citizen-shell .travel-flow__identity-card--compact dd {
   margin: 0;
-  font: 600 14px/1.5 Poppins, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  font-family: inherit;
   text-align: right;
   overflow-wrap: anywhere;
 }

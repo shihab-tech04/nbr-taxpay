@@ -1144,7 +1144,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                       </span>
                       <input id={'travel-tax-route-' + index} name="travel-tax-route" type="radio"
                         checked={mode === item.value} onChange={() => {
-                          setMode(item.value); setPort(''); setWaterPort(''); setError(''); setAcknowledged(false);
+                          // Keep each mode's last valid port selection when toggling back.
+                          // The incompatible mode's port is never used in the calculation or payload.
+                          setMode(item.value); setError(''); setAcknowledged(false);
                         }}/>
                     </label>;
                   })}
