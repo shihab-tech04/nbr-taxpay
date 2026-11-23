@@ -444,3 +444,15 @@
   .taxpay-citizen-shell .gift-tax-confirmed-person__content > button {width:100%}
   .taxpay-citizen-shell .gift-tax-role-group {padding:10px}
 }
+
+
+/* Keep Gift Tax's two identity sections content-height even when the summary
+ * rail is taller. The shared payment-form grid must not distribute spare row
+ * height between short, already-confirmed Donor and Donee placeholders. */
+.taxpay-citizen-shell .gift-tax-workspace[data-testid="gift-tax-entry-form"] .gift-tax-main {
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  gap:0;
+}
