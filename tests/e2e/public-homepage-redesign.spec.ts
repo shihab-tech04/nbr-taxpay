@@ -292,7 +292,8 @@ test('desktop public footer preserves all links, copyright and Help clearance wi
         expect(m.identity.left,'logo visible at '+width+'/'+lang).toBeGreaterThanOrEqual(0);
         expect(m.copyright.right,'copyright visible at '+width+'/'+lang).toBeLessThanOrEqual(width+1);
         expect(m.nav.right,'nav contained at '+width+'/'+lang).toBeLessThanOrEqual(width+1);
-        const overlaps=(first:typeof m.nav,second:typeof m.help)=>
+        type Rect = {left:number;right:number;top:number;bottom:number};
+        const overlaps=(first:Rect|null,second:Rect|null)=>
           Boolean(first&&second&&
             Math.min(first.right,second.right)>Math.max(first.left,second.left)&&
             Math.min(first.bottom,second.bottom)>Math.max(first.top,second.top));
