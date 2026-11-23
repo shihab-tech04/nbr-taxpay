@@ -24,6 +24,9 @@ try {
     await expect(hero).toBeVisible({ timeout: 30_000 });
     // Public banner now exposes one Other Tax action; preserve Travel Tax's existing passenger journey.
     await hero.getByRole('button', { name: 'Other Tax', exact: true }).click();
+    const access = page.getByRole('dialog', { name: 'Pay Tax' });
+    await expect(access.getByRole('button', { name: 'Walk-in Payment' })).toBeVisible();
+    await access.getByRole('button', { name: 'Walk-in Payment' }).click();
     const chooser = page.getByTestId('other-tax-chooser');
     await expect(chooser).toBeVisible();
     await expect(chooser.getByRole('button', { name: /Gift Tax/ })).toBeVisible();
