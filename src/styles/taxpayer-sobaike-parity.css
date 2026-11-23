@@ -100,7 +100,7 @@
   border-radius: 12px;
   font-size: 16px;
   line-height: 24px;
-  font-weight: 500;
+  font-weight: var(--taxpay-weight-action, 600);
   color: var(--color-taxpay-muted);
 }
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button:hover {
