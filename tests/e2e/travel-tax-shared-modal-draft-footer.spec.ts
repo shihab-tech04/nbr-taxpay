@@ -173,6 +173,7 @@ test('passport suggestion popup remains reachable above the fixed footer and the
     expect(await modal.evaluate(node=>node.scrollWidth-node.clientWidth)).toBeLessThanOrEqual(2);
     await input.press('Escape');
     await expect(popup).toHaveCount(0);
+    await expect(modal).toBeVisible();
   }
   await page.setViewportSize({width:1280,height:900});
   const input=modal.locator('.travel-flow__passport-input input').first();
