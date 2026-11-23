@@ -21,7 +21,7 @@ const noOverflow = async (page: import('@playwright/test').Page, width: number, 
   expect(overflow, 'horizontal page overflow: ' + width + '/' + lang).toBeLessThanOrEqual(2);
 };
 
-test('real homepage restores compact component-owned typography without crowding footer in EN/BN', async ({page}, info) => {
+test('public homepage uses balanced lighter type roles without crowding footer in EN/BN', async ({page}, info) => {
   test.skip(info.project.name !== 'mobile-375', 'Single run samples all responsive breakpoints');
   test.setTimeout(120000);
   for (const width of [320,375,390,480,767,768,1024,1280,1920]) {
@@ -29,20 +29,22 @@ test('real homepage restores compact component-owned typography without crowding
       await page.setViewportSize({width,height:900});
       await page.goto('/?action=landing&lang='+lang);
       await expect(page.locator('.public-benefits__heading h2')).toBeVisible();
-      await size(page,'.public-home-nav a',16);
-      await size(page,'.public-home-language',16);
+      await size(page,'.public-home-nav a',14);
+      await size(page,'.public-home-language',14);
       await size(page,'.public-footer__identity p',12);
       await size(page,'.public-footer__bottom p',12);
       await expect(page.getByRole('button',{name:lang==='bn'?'অন্যান্য কর':'Other Tax',exact:true})).toBeVisible();
-      await size(page,'.public-hero-carousel__travel',16);
-      await size(page,'.public-guest-actions .public-guest-action',16);
-      await size(page,'.public-benefits__heading h2',width>=768?24:20);
-      await size(page,'.public-record-discovery__heading h2',20);
-      await size(page,'.public-record-discovery__heading p',16);
-      await size(page,'.public-benefits__copy h3',16);
+      await size(page,'.public-hero-carousel__travel',14);
+      await size(page,'.public-guest-actions .public-guest-action',14);
+      await size(page,'.public-benefits__heading h2',width>=768?20:18);
+      await size(page,'.public-record-discovery__heading h2',width>=768?20:18);
+      await size(page,'.public-record-discovery__heading p',14);
+      await size(page,'.public-benefits__copy h3',15);
       await size(page,'.public-benefits__copy p',14);
-      await size(page,'.public-footer__navs a',14);
-      await size(page,'.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2',width>=1024?32:width>=480?28:24);
+      await size(page,'.public-footer__navs a',13);
+      await size(page,'.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2',width>=1024?28:width>=768?26:width>=480?24:22);
+      await size(page,'.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow)',15);
+      await size(page,'.public-help-launch',14);
       await noOverflow(page,width,lang);
     }
   }
@@ -102,14 +104,18 @@ test('public semantic font weights stay hierarchical across EN/BN phones, tablet
       await page.setViewportSize({width,height:900});
       await page.goto('/?action=landing&lang='+lang);
       await expect(page.locator('.public-benefits__heading h2')).toBeVisible();
-      expect(await fontWeight(page,'.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2')).toBe(700);
+      expect(await fontWeight(page,'.public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy h2')).toBe(600);
       expect(await fontWeight(page,'.public-benefits__heading h2')).toBe(600);
       expect(await fontWeight(page,'.public-record-discovery__heading h2')).toBe(600);
-      expect(await fontWeight(page,'.public-benefits__copy h3')).toBe(600);
+      expect(await fontWeight(page,'.public-benefits__copy h3')).toBe(500);
       expect(await fontWeight(page,'.public-record-discovery__heading p')).toBe(400);
+      expect(await fontWeight(page,'.public-record-discovery__heading h2')).toBe(600);
+      expect(await fontWeight(page,'.public-benefits__copy p')).toBe(400);
+      expect(await fontWeight(page,'.public-footer__navs a')).toBe(500);
+      expect(await fontWeight(page,'.public-help-launch')).toBe(500);
       // Desktop nav is visible at >=901px; the public mobile-shell may hide
       // this duplicate desktop header and use its own accessible navigation.
-      if (width >= 901) expect(await fontWeight(page,'.public-home-nav a')).toBe(600);
+      if (width >= 901) expect(await fontWeight(page,'.public-home-nav a')).toBe(500);
       await noOverflow(page,width,lang);
     }
   }
