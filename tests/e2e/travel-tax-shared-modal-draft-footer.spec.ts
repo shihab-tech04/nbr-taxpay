@@ -152,7 +152,7 @@ test('passport suggestion popup remains reachable above the fixed footer and the
   for(const width of [320,375,768,1280,1920]){
     await page.setViewportSize({width,height:900});
     const input=modal.locator('.travel-flow__passport-input input').first();
-    await input.focus();
+    await input.click();
     const popup=modal.getByRole('listbox',{name:'Available sample passports'});
     await expect(popup).toBeVisible();
     const [overlayBounds,popupBounds,footerBounds,bodyBounds]=await Promise.all([
