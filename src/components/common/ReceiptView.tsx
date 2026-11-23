@@ -34,8 +34,10 @@ interface ReceiptViewProps {
   payAgainTestId?: string;
   /** Secondary receipts in a batch must not create extra modal footer controls. */
   suppressFooterActions?: boolean;
-  /** Compact Walk-in toolbar; leave shared account-history receipt variants unchanged. */
+  /** Compact walk-in document reader; other account/history readers remain unchanged. */
   compactWalkInLayout?: boolean;
+  activeDocument?: 'receipt' | 'certificate';
+  onDocumentChange?: (next: 'receipt' | 'certificate') => void;
   /** Optional post-payment invitation. Excluded from printed or downloaded receipt. */
   postReceiptInvitation?: React.ReactNode;
 }
@@ -43,11 +45,16 @@ interface ReceiptViewProps {
 export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment, certificate = false,
   transactionActions = false, onPayAgain, onApplyForCorrection, payAgainUnavailableReason,
   payAgainTestId = 'receipt-pay-again', suppressFooterActions = false,
-  compactWalkInLayout = false, postReceiptInvitation }) => {
+  compactWalkInLayout = false, activeDocument, onDocumentChange, postReceiptInvitation }) => {
   const { language, navigate } = useTaxState();
   const [showCertificate, setShowCertificate] = useState(false);
   const canViewCertificate = canViewPaymentCertificate(receipt);
-  const isCertificate = certificate || (canViewCertificate && showCertificate);
+  const isCertificate = certificate || (canViewCertificate && (activeDocument ? activeDocument === 'certificate' : showCertificate));
+  const changeDocument = (next: 'receipt' | 'certificate') => {
+    setDownloadError(false);
+    if (onDocumentChange) onDocumentChange(next);
+    else setShowCertificate(next === 'certificate');
+  };
   const showReceiptTransactionActions = transactionActions && !isCertificate;
   const paperRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
@@ -246,18 +253,17 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     </div>
   );
 
-  // A single contextual toolbar is shared by the receipt and certificate states.
-  // Keep it inside the receipt's reading hierarchy, not ahead of the document title.
-  const walkinToolbar = compactWalkInLayout ? (
-    <div className="receipt-view__toolbar no-print" data-testid="walkin-receipt-toolbar">
-      {onBack && <button type="button" className="receipt-view__action receipt-view__action--secondary receipt-view__restart"
-        onClick={onBack}>{bn ? 'পেমেন্ট নিশ্চিতকরণে ফিরুন' : 'Back to confirmation'}</button>}
-      {canViewCertificate && !certificate && <button type="button"
-        className="receipt-view__action receipt-view__action--secondary"
-        onClick={() => { setDownloadError(false); setShowCertificate(value => !value); }}>
-        {showCertificate ? (bn ? 'রসিদ দেখুন' : 'View receipt') :
-          (bn ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate')}
-      </button>}
+  // The modal header owns Back. This small document switcher is content navigation,
+  // not another back/close toolbar, and is excluded from document exports.
+  const walkinDocuments = compactWalkInLayout && canViewCertificate && !certificate ? (
+    <div className="receipt-view__documents no-print" role="tablist"
+      aria-label={bn ? 'পেমেন্টের নথি' : 'Payment documents'}>
+      <button type="button" role="tab" aria-selected={!isCertificate}
+        className={isCertificate ? 'receipt-view__document-tab' : 'receipt-view__document-tab receipt-view__document-tab--active'}
+        onClick={() => changeDocument('receipt')}>{bn ? 'চালানের বিবরণ' : 'Challan details'}</button>
+      <button type="button" role="tab" aria-selected={isCertificate}
+        className={isCertificate ? 'receipt-view__document-tab receipt-view__document-tab--active' : 'receipt-view__document-tab'}
+        onClick={() => changeDocument('certificate')}>{bn ? 'পেমেন্ট রেকর্ড সনদ' : 'Payment record certificate'}</button>
     </div>
   ) : null;
 
@@ -276,7 +282,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
     <div className={`receipt-view receipt-view--embedded${compactWalkInLayout ? ' receipt-view--walkin' : ''}${bn ? ' font-bengali' : ''}`} lang={language}>
       {!suppressFooterActions && (!isCertificate || canViewCertificate) && (footerTarget ? createPortal(receiptActions, footerTarget) : receiptActions)}
 
-      {compactWalkInLayout ? (isCertificate ? walkinToolbar : null) : <>
+      {compactWalkInLayout ? walkinDocuments : <>
       {/* Keep required flow navigation outside the recorded receipt's three-action footer. */}
       {showReceiptTransactionActions && onBack && <div className="no-print flex flex-wrap items-center gap-2">
         <button type="button"
@@ -291,11 +297,15 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
       </div>}
       {canViewCertificate && !certificate && <button type="button"
         className="receipt-view__action receipt-view__action--secondary no-print"
-        onClick={() => { setDownloadError(false); setShowCertificate(value => !value); }}>
+        onClick={() => changeDocument(isCertificate ? 'receipt' : 'certificate')}>
         {showCertificate ? (bn ? 'রসিদ দেখুন' : 'View receipt')
           : (bn ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate')}
       </button>}
       </>}
+      {compactWalkInLayout && isCertificate && <p className="receipt-view__record-only-note no-print" role="note">
+        {bn ? 'এই সনদটি সংরক্ষিত পেমেন্টের রেকর্ড, ব্যাংক বা ট্রেজারি নিষ্পত্তির প্রমাণ নয়।'
+          : 'Saved payment record certificate only — not proof of bank or Treasury settlement.'}
+      </p>}
       {downloadError && <p role="alert" className="no-print">
         {bn ? 'সনদ ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।' : 'Unable to download the certificate. Try again.'}
       </p>}
@@ -317,7 +327,6 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
             <strong>{formatCurrency(receipt.totalAmount, language)}</strong>
           </div>
         </header>
-        {compactWalkInLayout && walkinToolbar}
 
         {certificateReference && <div className="receipt-view__batch-meta" data-testid="payment-certificate-reference">
           <strong>{bn ? 'সনদ রেফারেন্স' : 'Certificate reference'}</strong>

@@ -8,8 +8,10 @@ const pageWidth = async (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.documentElement.scrollWidth);
 
 const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string, language: 'bn' | 'en' = 'bn', embedded = false) => {
+  // An embedded walk-in receipt is named by its shared modal header;
+  // the independent public lookup keeps its original receipt heading.
   const receiptTitle = embedded
-    ? language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'
+    ? language === 'bn' ? 'চালানের বিবরণ' : 'Challan details'
     : language === 'bn' ? 'সহজকর — রসিদের বিবরণ' : 'Sohojkor — Receipt details';
   await expect(page.getByRole('heading', { name: receiptTitle, exact: true })).toBeInViewport();
   if (projectName === 'desktop-1280' && !embedded) {
@@ -349,7 +351,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   await expect(services.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   expect(paymentPosts).toBe(1);
   await services.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(services.getByRole('heading', { name: 'Challan details' })).toBeVisible();
   await expectResponsiveReceipt(page, info.project.name, 'en', true);
 
   if (info.project.name === 'mobile-320') {
@@ -359,7 +361,7 @@ test('taxpayer Pay Tax modal preserves amounts through review and simulated rece
   if (info.project.name === 'desktop-1280') {
     await page.screenshot({ path: 'docs/acceptance-evidence/2026-10-12/taxpayer-wizard-bn-desktop-1280.png' });
   }
-  await expect(services.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(services.getByRole('heading', { name: 'Challan details' })).toBeVisible();
 });
 
 test('Travel Tax follows approved Land/Water, multi-passenger bilingual preview and one receipt', async ({ page }, info) => {

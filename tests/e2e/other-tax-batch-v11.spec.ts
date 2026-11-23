@@ -684,9 +684,9 @@ test('walk-in self payer keeps multiple heads and years without adding a second 
   const document = dialog.locator('.receipt-view__paper');
   await expect(document).toContainText('111111111111');
   await expect(document).toContainText('৳ 50');
-  await dialog.getByRole('button', { name: 'View payment certificate' }).click();
+  await dialog.getByRole('tab', { name: 'Payment record certificate' }).click();
   const certificate = dialog.getByTestId('payment-certificate-document');
-  await expect(certificate.getByRole('heading', { name: 'Payment Certificate' })).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__header .taxpay-modal__title')).toHaveText('Payment record certificate');
   await expect(document.getByTestId('payment-certificate-reference'))
     .toContainText('SK-PC-00000000-0000-4000-8000-000000000102');
   await expect(certificate).toContainText('111111111111');
@@ -697,7 +697,7 @@ test('walk-in self payer keeps multiple heads and years without adding a second 
   await expect(dialog.getByTestId('payment-certificate-total')).toContainText('৳ 50');
   await expect(certificate).not.toContainText('SIMULATED_SUCCESS');
   expect(submitted).toHaveLength(1);
-  await dialog.getByRole('button', { name: 'View receipt' }).click();
+  await dialog.getByRole('tab', { name: 'Challan details' }).click();
   await expect(document.getByTestId('payment-certificate-reference')).toHaveCount(0);
 });
 

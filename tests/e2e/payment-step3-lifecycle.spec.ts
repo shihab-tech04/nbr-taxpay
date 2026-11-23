@@ -92,7 +92,7 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   }
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Challan details' })).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Payment record status' })).toBeVisible();
   const receiptPaper = dialog.locator('.receipt-view__paper');
   await expect(receiptPaper).toBeVisible();
@@ -100,14 +100,13 @@ test('online Step 3 requires channel, method and reviewed details before advanci
   const invitation = dialog.getByTestId('walkin-postpayment-login');
   await expect(invitation).toBeVisible();
   await expect(invitation).toContainText('not automatically linked');
-  const toolbar = dialog.getByTestId('walkin-receipt-toolbar');
-  await expect(toolbar.getByRole('button', { name: 'Back to confirmation' })).toHaveCount(1);
-  // The receipt is read in financial order: summary -> actions -> references
-  // -> payer/settlement details -> optional login. Keep the invitation secondary.
+  await expect(dialog.getByTestId('walkin-receipt-toolbar')).toHaveCount(0);
+  await expect(dialog.locator('.taxpay-modal__header').getByRole('button', { name: 'Back to confirmation' })).toBeVisible();
+  // The receipt reads in financial order: summary -> references ->
+  // payer/settlement details -> optional login; Back belongs to modal header.
   const hierarchyIsCorrect = await receiptPaper.evaluate(paper => {
     const selectors = [
       '.receipt-view__summary',
-      '.receipt-view__toolbar',
       '.receipt-view__reference-strip',
       '.receipt-view__parties',
       '.walkin-postpayment-login',
@@ -166,7 +165,7 @@ test('bank branch creates an unpaid challan first, then a receipt after simulate
   await dialog.locator('.payment-lifecycle__progress-detail summary').click();
   await expect(dialog.getByTestId('payment-lifecycle').getByText('Treasury settlement not verified')).toBeVisible();
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Challan details' })).toBeVisible();
 });
 
 test('declined online authorization issues no receipt and allows a new method', async ({ page }) => {
@@ -191,5 +190,5 @@ test('declined online authorization issues no receipt and allows a new method', 
   await dialog.getByRole('button', { name: /Pay ৳ 12,500/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Challan details' })).toBeVisible();
 });

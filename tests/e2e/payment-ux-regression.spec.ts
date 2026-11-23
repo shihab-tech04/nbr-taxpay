@@ -116,7 +116,7 @@ test('online method categories reveal only relevant providers and reset the prev
   await expect(dialog.locator('.payment-form-summary')).toHaveCount(0);
   await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Challan details' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Back to confirmation' }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
