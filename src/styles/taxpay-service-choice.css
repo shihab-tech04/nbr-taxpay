@@ -3014,3 +3014,87 @@
     border-left:0;border-top:1px solid #dbe3ef;
   }
 }
+
+
+/* Travel Tax sample passport chooser — anchored to the input, not a third
+ * form-grid item. Keep its keyboard options inside the modal and let the
+ * existing form scroller expose the complete list above the pinned CTA. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__passport-input {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__passport-suggestions {
+  position: absolute;
+  z-index: 30;
+  inset-inline: 0;
+  top: calc(100% + 6px);
+  width: 100%;
+  max-height: min(224px, 40dvh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border: 1px solid var(--citizen-border);
+  border-radius: 10px;
+  background: var(--citizen-surface);
+  box-shadow: 0 8px 24px rgb(23 32 51 / 17%);
+  animation: none;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__passport-suggestions-heading {
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--citizen-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__passport-suggestions [role="option"] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--citizen-text);
+  text-align: start;
+  font-size: 14px;
+  cursor: pointer;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__passport-suggestions [role="option"] > span:last-child {
+  flex-shrink: 0;
+  color: var(--citizen-muted);
+  font-size: 12px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__passport-suggestions [role="option"]:is(:hover,:focus-visible,[aria-selected="true"]) {
+  background: var(--citizen-primary-light);
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__passport-suggestions [role="option"]:focus-visible {
+  outline: 2px solid var(--citizen-primary);
+  outline-offset: -2px;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__passport-no-results {
+  margin: 0;
+  padding: 12px;
+  color: var(--citizen-muted);
+  font-size: 14px;
+}
+/* This space belongs to the form scroller only while suggestions are open.
+ * It provides real scroll range for short-height desktops and phones, without
+ * moving the pinned modal header/footer or permanently stretching the form. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
+  .travel-passenger-workspace__editor:has(.travel-flow__passport-suggestions) {
+  padding-bottom: max(238px, 40dvh);
+}
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__passport-suggestions {
+    max-height: min(208px, 35dvh);
+  }
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
+    .travel-passenger-workspace__editor:has(.travel-flow__passport-suggestions) {
+    padding-bottom: max(212px, 35dvh);
+  }
+}
