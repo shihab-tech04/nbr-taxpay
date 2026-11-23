@@ -81,7 +81,7 @@ for (const sample of [
     await donee.locator('#gift-donee-tin').fill('222222222222');
     await donee.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donee/}).click();
     await donee.locator('#gift-donee-relationship').click();
-    await gift.getByRole('option', {name: bn ? 'বাবা' : 'Father'}).click();
+    await page.getByRole('option', {name: bn ? 'বাবা' : 'Father'}).click();
     await expect(donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'})).toBeEnabled();
     await donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'}).click();
 
