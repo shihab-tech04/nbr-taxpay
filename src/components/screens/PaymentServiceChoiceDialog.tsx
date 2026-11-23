@@ -71,9 +71,10 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const alreadySignedIn = Boolean(verifiedUser || previewAccount);
   const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
   const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(initialDraft);
-  // Only the new parallel All Tax Payments walk-in journey uses the two-action
-  // exit. Preserve Travel Tax and the original legacy payment/draft journeys.
-  const isWalkInPayment = view === 'payment' && unifiedEntry && !useAccount && !alreadySignedIn;
+  // All signed-out Walk-in payment journeys share this ONE two-action exit:
+  // never silently discard an unfinished guest payment, including Travel Tax.
+  // Account-owned payments continue using the separate Save Draft policy.
+  const isWalkInPayment = view === 'payment' && !useAccount && !alreadySignedIn;
   // Back from taxpayer details returns to payer choices without losing
   // the route back to the signed-in user's original saved-draft decision.
   const [draftEntryCompleted, setDraftEntryCompleted] = useState(Boolean(initialDraft || initialReuse));
