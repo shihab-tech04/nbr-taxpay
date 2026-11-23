@@ -445,7 +445,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                   className={groupErrors ? "group border-b border-rose-300 last:border-b-0 other-tax-group--invalid" : "group border-b border-slate-200 last:border-b-0"} data-head-group={group.name} data-invalid={groupErrors ? "true" : undefined}>
                   <summary className="other-tax-category-trigger cursor-pointer px-3 py-3 bg-slate-50 text-sm font-semibold text-taxpay-dark focus-visible:outline-2 focus-visible:outline-taxpay-primary">
                     <span className="other-tax-category-trigger__name">{bn ? matched[0].grpBn : group.name}</span>
-                    <span className="other-tax-category-trigger__count">{matched.length} {tx('heads', 'খাত')}</span>
+                    <span className="other-tax-category-trigger__count">{matched.length} {matched.length === 1 ? tx('head', 'খাত') : tx('heads', 'খাত')}</span>
                     {groupErrors > 0 && <span className="other-tax-category-trigger__error">{groupErrors} {tx('incomplete', 'অসম্পূর্ণ')}</span>}
                     {groupSelectedCount > 0 && <span className="other-tax-category-trigger__selected">
                       {groupSelectedCount} {tx('selected', 'নির্বাচিত')}
