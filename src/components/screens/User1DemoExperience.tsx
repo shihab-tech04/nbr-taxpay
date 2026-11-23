@@ -1,4 +1,4 @@
-import {TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
+import {TaxPayCompactCellList,TaxPayUnifiedTable,TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableFilterToggle,TaxPayActiveFilterChips,TaxPayOfficeRegisterToolbar,TaxPayOfficeRegisterFilters,TaxPayOfficeRegisterFooter} from '../ui/TaxPayDataTable';
 import React, {useEffect, useMemo, useState} from 'react';
 import '../../styles/taxpay-dashboard-bento.css';
 import {Activity, ArrowRight, Bell, BookOpen, CalendarDays, CircleAlert, CreditCard, Download, Info, FileCheck2, FilePenLine, FileText, Landmark, ReceiptText, Search, ShieldCheck, WalletCards} from 'lucide-react';
@@ -161,23 +161,32 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   };
   const transactionBeneficiaryCell=(item:RecordItem,compact=false)=>{
     const recipients=transactionBeneficiaries(item);
-    return <div className={compact?'space-y-1 text-sm':'mt-2 space-y-1 border-t border-taxpay-border pt-2 text-sm'}
+    // Keep the transaction itself one scannable row. Full beneficiary/amount/head
+    // details remain in the original record modal and beneficiary profiles.
+    const renderPerson=(person:(typeof recipients)[number])=><div className="min-w-0 break-words">
+      {person.saved&&previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1'
+        ?<button type="button" onClick={event=>{event.stopPropagation();navigate('beneficiaries',{openBeneficiaryTin:person.tin,returnTo:'history'});}}
+          className="min-h-9 text-left font-semibold text-taxpay-primary underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
+          aria-label={tr('Open beneficiary profile for ','উপকারভোগীর প্রোফাইল খুলুন: ')+person.name}>
+          {person.name}</button>
+        :<span className="font-medium text-taxpay-text">{person.name}</span>}
+      <span className="ml-2 text-xs text-taxpay-muted">· {person.tag??tr('Tag not saved','ট্যাগ সংরক্ষিত নেই')}</span>
+      <p className="break-all text-xs text-taxpay-muted">{person.tin}
+        {!compact&&person.amountMinor!==null&&<span> · {tr('Allocated','বরাদ্দ')}: ৳ {(person.amountMinor/100).toLocaleString(bn?'bn-BD':'en-BD')}</span>}
+      </p>
+      {!compact&&person.heads.length>0&&<p className="text-xs text-taxpay-muted">{person.heads.join(', ')}
+        {person.assessmentYears.length>0?' · '+person.assessmentYears.join(', '):''}</p>}
+    </div>;
+    return <div className={compact?'taxpayer-transaction-beneficiaries--compact':'mt-2 space-y-1 border-t border-taxpay-border pt-2 text-sm'}
       data-testid="transaction-beneficiaries" aria-label={tr('Paid for','যার কর পরিশোধ করা হয়েছে')}>
-      {!recipients.length?<p className="text-xs text-taxpay-muted">{tr('No beneficiary linked','উপকারভোগীর তথ্য সংযুক্ত নেই')}</p>:
-       recipients.map(person=><div key={person.tin} className="min-w-0 break-words">
-         {person.saved&&previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1'
-           ?<button type="button" onClick={event=>{event.stopPropagation();navigate('beneficiaries',{openBeneficiaryTin:person.tin,returnTo:'history'});}}
-             className="min-h-9 text-left font-semibold text-taxpay-primary underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
-             aria-label={tr('Open beneficiary profile for ','উপকারভোগীর প্রোফাইল খুলুন: ')+person.name}>
-             {person.name}</button>
-           :<span className="font-medium text-taxpay-text">{person.name}</span>}
-         <span className="ml-2 text-xs text-taxpay-muted">· {person.tag??tr('Tag not saved','ট্যাগ সংরক্ষিত নেই')}</span>
-         <p className="break-all text-xs text-taxpay-muted">{person.tin}
-           {!compact&&person.amountMinor!==null&&<span> · {tr('Allocated','বরাদ্দ')}: ৳ {(person.amountMinor/100).toLocaleString(bn?'bn-BD':'en-BD')}</span>}
-         </p>
-         {!compact&&person.heads.length>0&&<p className="text-xs text-taxpay-muted">{person.heads.join(', ')}
-           {person.assessmentYears.length>0?' · '+person.assessmentYears.join(', '):''}</p>}
-       </div>)}
+      {!recipients.length
+        ?<p className="text-xs text-taxpay-muted">{tr('No beneficiary linked','উপকারভোগীর তথ্য সংযুক্ত নেই')}</p>
+        :compact
+          ?<TaxPayCompactCellList items={recipients} getKey={person=>person.tin}
+            renderItem={renderPerson}
+            moreLabel={(hidden,total)=>tr(`+${hidden} more · View all ${total}`,`আরও ${hidden} জন · মোট ${total} জন দেখুন`)}
+            onShowAll={()=>setSelected(item)}/>
+          :recipients.map(person=><React.Fragment key={person.tin}>{renderPerson(person)}</React.Fragment>)}
     </div>;
   };
   const paymentTagLabel=(group:PaymentTagGroup|'own')=>group==='own'
@@ -543,7 +552,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         <p className="taxpayer-transaction-mobile-record__meta"><strong>{tr('Paid by','পরিশোধকারী')}:</strong> {payerName(item)}</p>
         <div className="taxpayer-transaction-mobile-record__meta">
           <strong>{tr('Paid for','যার জন্য পরিশোধ')}:</strong>
-          {transactionBeneficiaryCell(item)}
+          {transactionBeneficiaryCell(item,true)}
         </div>
         <div className="taxpayer-transaction-mobile-record__footer">
           <div className="taxpayer-transaction-row__status">{tag(item.state)}</div>
