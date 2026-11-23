@@ -30,7 +30,9 @@ test('public homepage uses balanced lighter type roles without crowding footer i
       await page.goto('/?action=landing&lang='+lang);
       await expect(page.locator('.public-benefits__heading h2')).toBeVisible();
       await size(page,'.public-home-nav a',14);
-      await size(page,'.public-home-language',14);
+      // Below 901px the desktop PublicHomeHeader is hidden; the visible mobile
+      // shell uses CitizenNavigation. Never assert a hidden desktop duplicate.
+      if (width >= 901) await size(page,'.public-home-language',14);
       await size(page,'.public-footer__identity p',12);
       await size(page,'.public-footer__bottom p',12);
       await expect(page.getByRole('button',{name:lang==='bn'?'অন্যান্য কর':'Other Tax',exact:true})).toBeVisible();
