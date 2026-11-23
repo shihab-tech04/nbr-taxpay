@@ -59,6 +59,7 @@ import { loadBeneficiaries } from '../../services/beneficiaries';
 import { demoIncomeTaxTypeForTin, incomeTaxEntityTypeLabel, type IncomeTaxEntityType } from '../../services/demoIncomeTaxType';
 import { userIdForHostedTin } from '../../services/hostedDemoAuthorizations';
 import { isSupportedBeneficiaryTin } from '../../services/taxpayerTinValidation';
+import { normalizeRestoredWalkInPayerTin } from '../../services/walkInPayerTinDraft';
 import { lookupSampleTaxpayer } from '../../services/sampleTaxpayerLookup';
 import { resolvePaymentPartyIdentity } from '../../services/paymentPartyIdentity';
 import { RETURN_HEAD_ID, RETURN_YEARS, returnOnlyIssue, assertReturnDraftExclusive } from '../../services/taxWithReturnContract';
@@ -500,7 +501,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       throw new Error('Saved payer relationship is invalid.');
     setForSelf(saved.forSelf === null ? null : saved.forSelf as boolean);
     setTin(stringField('tin')); setPayerName(stringField('payerName'));
-    setWalkInPayerTin(stringField('walkInPayerTin').replace(/\D/g, '').slice(0, unifiedFlow ? 13 : 12));
+    // Drafts and Pay Again may re-enter through a legacy modal even when saved
+    // in the 13-digit parallel journey. Preserve the full stored identifier;
+    // each journey still enforces its own payer lookup/validation on submission.
+    setWalkInPayerTin(normalizeRestoredWalkInPayerTin(stringField('walkInPayerTin')));
     setWalkInPayerLookup(null); setWalkInPayerConfirmed(false); setWalkInPayerSearchedTin('');
     setOtherTaxpayerName(stringField('otherTaxpayerName')); setPhone(stringField('phone'));
     setReceiptEmail(stringField('receiptEmail')); setAssessmentYear(stringField('assessmentYear') || (initialReuse ? '' : '2026-27'));
