@@ -283,7 +283,7 @@ export function TaxPayDataGrid<Row>({
   if(variant==='ledger'||variant==='tabular') {
     const desktopTable = <TaxPayUnifiedTable aria-label={ariaLabel} data-testid={testId}
       className={merge(variant==='ledger'?'taxpay-unified-table hidden min-w-[840px] w-full text-left text-xs md:table':'taxpay-unified-table hidden min-w-full w-full text-left text-sm md:table',className)}>
-      <thead><tr>{columns.map(column=><th scope="col" key={column.key} className={merge('p-3',column.headerClassName)}>{column.headerContent??column.header}</th>)}</tr></thead>
+      <thead><tr>{columns.map(column=><th scope="col" key={column.key} data-column-key={column.key} className={merge('p-3',column.headerClassName)}>{column.headerContent??column.header}</th>)}</tr></thead>
       <tbody>{rows.map(row=><tr key={getRowKey(row)} className={getRowClassName?.(row)??'hover:bg-taxpay-light'}
         data-selected={isSelected?.(row)?'true':'false'}
         data-clickable-row={onViewRow?'true':undefined} tabIndex={onViewRow?0:undefined}
@@ -296,7 +296,7 @@ export function TaxPayDataGrid<Row>({
             event.preventDefault();onViewRow(row);
           }
         }:undefined}>
-        {columns.map(column=><td key={column.key} className={merge('p-3',column.cellClassName)}>{column.renderCell(row)}</td>)}
+        {columns.map(column=><td key={column.key} data-column-key={column.key} className={merge('p-3',column.cellClassName)}>{column.renderCell(row)}</td>)}
       </tr>)}</tbody>
     </TaxPayUnifiedTable>;
     return <>
@@ -304,7 +304,7 @@ export function TaxPayDataGrid<Row>({
       {loading?<TaxPayTableState>{toolbar?.title??ariaLabel}: Loading…</TaxPayTableState>:
        error?<TaxPayTableState><p role="alert">{error}</p>{onRetry&&<button type="button" className="taxpay-record-toolbar__retry" onClick={onRetry}>Retry</button>}</TaxPayTableState>:
        rows.length===0&&emptyLabel?<TaxPayTableState>{emptyLabel}</TaxPayTableState>:<>
-      {variant==='tabular'?<TaxPayTableViewport className="hidden md:block">{desktopTable}</TaxPayTableViewport>:desktopTable}
+      {variant==='tabular'?<TaxPayTableViewport className="hidden md:block" role="region" aria-label={ariaLabel} tabIndex={0}>{desktopTable}</TaxPayTableViewport>:desktopTable}
     <ul className="taxpay-mobile-table-cards grid gap-2 p-3 md:hidden" data-testid={mobileTestId} aria-label={ariaLabel}>
       {rows.map(row=><li className="taxpay-mobile-table-card" key={getRowKey(row)}
         role={!renderMobileCard&&onViewRow?'button':undefined}
