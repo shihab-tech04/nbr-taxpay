@@ -1056,10 +1056,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       footer={<></>}
     >
       {selected.sql?<section className="space-y-4">
-        <p className="break-all text-sm text-taxpay-muted">{tr('Recorded payment','সংরক্ষিত পেমেন্ট')}: {selected.ref}</p>
+        {/* The same transaction ID is already shown in the receipt identity fields. */}
         {selected.sql.receipts.length
           ?selected.sql.receipts.map((receipt,index)=><ReceiptView receipt={receipt}
-            key={receipt.paymentTransactionId} embedded suppressFooterActions={index>0}
+            key={receipt.paymentTransactionId} embedded accountRecordView suppressFooterActions={index>0}
             payAgainTestId="recorded-pay-again-detail"
             transactionActions={index===0}
             onPayAgain={index===0&&selected.sql?.reuse?()=>payAgain(selected):undefined}
