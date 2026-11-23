@@ -64,7 +64,7 @@ test('v5 Return checkbox composes with other taxpayer/head and written final tot
   await expect(returnGroup.locator('summary')).toContainText('Tax with Return');
   await expect(returnGroup.locator('summary')).toContainText('(1)');
   await expect(returnGroup.locator('[data-head-row="125"]')).toHaveCount(1);
-  await modal.getByTestId('fixed-tax-categories').getByRole('button',{name:'View payment heads for Tax with Return'}).click();
+  await returnGroup.locator('summary').click();
   const checkbox = returnGroup.getByTestId('unified-v5-return-checkbox');
   await expect(checkbox).toBeVisible();
   await checkbox.check();
@@ -85,8 +85,7 @@ test('v5 Return checkbox composes with other taxpayer/head and written final tot
   // Each taxpayer retains independent Return and ordinary head selections.
   await expect(returnGroup.getByTestId('unified-v5-return-checkbox')).not.toBeChecked();
   const batch=modal.getByTestId('other-tax-batch');
-  await batch.getByRole('button',{name:'Back to categories'}).click();
-  await batch.getByTestId('fixed-tax-categories').getByRole('button',{name:'View payment heads for Advance Tax'}).click();
+  await batch.locator('[data-head-group="Advance Tax"] > summary').click();
   const group=batch.locator('[data-head-group="Advance Tax"]');
   await expect(group).toHaveAttribute('open','');
   const catalogCheck = batch.getByRole('checkbox',{name:/Select 68A/});
