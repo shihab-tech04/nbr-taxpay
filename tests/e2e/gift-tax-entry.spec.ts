@@ -34,7 +34,7 @@ for (const locale of ['en', 'bn'] as const) {
     await donee.locator('#gift-donee-tin').fill('222222222222');
     await donee.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donee/}).click();
     await donee.locator('#gift-donee-relationship').click();
-    await gift.getByRole('option', {name: bn ? 'বাবা' : 'Father'}).click();
+    await page.getByRole('option', {name: bn ? 'বাবা' : 'Father'}).click();
     await expect(donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'})).toBeEnabled();
     await donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'}).click();
     await expect(nextDetails).toBeEnabled();
@@ -90,7 +90,7 @@ for (const locale of ['en', 'bn'] as const) {
     await donee.locator('#gift-donee-tin').fill('111111111111');
     await donee.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donee/}).click();
     await donee.locator('#gift-donee-relationship').click();
-    await gift.getByRole('option', {name: bn ? 'বাবা' : 'Father'}).click();
+    await page.getByRole('option', {name: bn ? 'বাবা' : 'Father'}).click();
     await expect(donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'})).toBeEnabled();
     await donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'}).click();
     await expect(donee.getByRole('alert')).toBeVisible();
@@ -109,7 +109,7 @@ test('Gift Tax Others needs a description and close uses the shared walk-in conf
   await donee.locator('#gift-donee-tin').fill('222222222222');
   await donee.getByRole('button', {name:/Search Donee/}).click();
   await donee.locator('#gift-donee-relationship').click();
-  await gift.getByRole('option', {name:/Others — specify/}).click();
+  await page.getByRole('option', {name:/Others — specify/}).click();
   await expect(donee.getByRole('button', {name:'Add Donee'})).toBeDisabled();
   await donee.locator('#gift-donee-other').fill('Cousin');
   await expect(donee.getByRole('button', {name:'Add Donee'})).toBeEnabled();
