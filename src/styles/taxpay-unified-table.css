@@ -789,11 +789,11 @@ table.taxpay-unified-table {
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(1) {min-width: 170px;}
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(2) {min-width: 130px;}
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(3) {min-width: 175px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(4) {min-width: 145px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(5) {min-width: 138px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(6) {min-width: 105px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(4) {min-width: 134px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(5) {min-width: 126px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(6) {min-width: 100px;}
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(7) {min-width: 115px;text-align:right;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(8) {min-width: 160px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(8) {min-width: 146px;}
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):last-child {width:1%;text-align:right;white-space:nowrap;}
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table tbody tr[data-clickable-row="true"] {
   cursor: pointer;
