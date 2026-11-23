@@ -29,7 +29,11 @@ export type GiftTaxPaymentOutcome =
   | {kind: 'UNAVAILABLE'; code: 'OFFICIAL_GIFT_TAX_NOT_CONFIGURED'}
   | {kind: 'PENDING'; requestId: string; reference: string; receivedAt: string}
   | {kind: 'FAILED'; requestId: string; reason: string; retryable: boolean}
-  | {kind: 'SETTLED'; requestId: string; verified: GiftTaxVerifiedSettlement};
+  | {kind: 'SETTLED'; requestId: string; verified: GiftTaxVerifiedSettlement}
+  | {kind: 'SIMULATED_SUCCESS'; reference: string; method: GiftTaxSimulationMethod; createdAt: string}
+  | {kind: 'SIMULATED_PENDING'; reference: string}
+  | {kind: 'SIMULATED_FAILED'; reason: string; retryable: true}
+  | {kind: 'SIMULATED_NO_TAX'};
 
 export interface GiftTaxVerifiedSettlement {
   /** Retrieved from a trusted server verification response, never browser input. */
@@ -76,4 +80,25 @@ export async function initiateGiftTaxPayment(
   // Deliberately NO simulated RPC and NO payment_v1 request: neither settles
   // bank funds nor credits the donor. Returning success would be fabricated.
   return {kind: 'UNAVAILABLE', code: 'OFFICIAL_GIFT_TAX_NOT_CONFIGURED'};
+}
+
+/** The approved public simulation is deliberately separate from official payment.
+ * It performs NO SQL mutation, no real gateway call and no donor credit posting.
+ * Any SIM reference or receipt is a session-only preview, NOT an A-Challan.
+ */
+export type GiftTaxSimulationMethod =
+  | 'BKASH' | 'NAGAD' | 'ROCKET' | 'SONALI_E_SHEBA' | 'A_CHALLAN_CARD'
+  | 'BEFTN_RTGS' | 'INTERNET_BANKING' | 'VISA' | 'MASTERCARD' | 'BANK_BRANCH' | 'SIMULATED';
+export function simulateGiftTaxPayment(input:GiftTaxPaymentInput,method:GiftTaxSimulationMethod,
+  simulateDecline=false):GiftTaxPaymentOutcome {
+  if (!/^\\d{12}$/.test(input.donor.tin) || !/^\\d{12}$/.test(input.donee.tin) ||
+    input.donor.tin===input.donee.tin ||
+    !Number.isSafeInteger(input.estimatedTaxMinor) || input.estimatedTaxMinor<0 ||
+    !Number.isSafeInteger(input.giftAmountMinor) || input.giftAmountMinor<=0)
+    return {kind:'SIMULATED_FAILED',reason:'Invalid Gift Tax review details.',retryable:true};
+  if (input.estimatedTaxMinor===0) return {kind:'SIMULATED_NO_TAX'};
+  const reference='SIM-GIFT-'+input.idempotencyKey.slice(0,8).toUpperCase();
+  if (method==='BANK_BRANCH') return {kind:'SIMULATED_PENDING',reference};
+  if (simulateDecline) return {kind:'SIMULATED_FAILED',reason:'The simulated payment was declined. Select another method and retry.',retryable:true};
+  return {kind:'SIMULATED_SUCCESS',reference,method,createdAt:new Date().toISOString()};
 }
