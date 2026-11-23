@@ -186,22 +186,29 @@ test('Travel Tax suggestions stay attached to passport and visible above modal f
     await expect(list.getByRole('option')).toHaveCount(10);
     const geometry=await list.evaluate(node=>{
       const rect=node.getBoundingClientRect();
-      const input=node.closest('.travel-flow__passport-input')?.getBoundingClientRect();
-      const entry=node.closest('.travel-flow__passport-input')?.querySelector('.travel-flow__passport-entry')?.getBoundingClientRect();
+      const row=node.closest('.travel-flow__passport-row')?.getBoundingClientRect();
       const footer=node.closest('.taxpay-modal')?.querySelector('.taxpay-modal__footer')?.getBoundingClientRect();
       const style=getComputedStyle(node);
       return {top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right,
-        inputRight:input?.right,inputLeft:input?.left,inputBottom:entry?.bottom,
+        rowTop:row?.top,rowRight:row?.right,rowBottom:row?.bottom,rowLeft:row?.left,
         footerTop:footer?.top,position:style.position,overflowY:style.overflowY,
+        placement:node.getAttribute('data-placement'),
         withinInput:node.parentElement?.classList.contains('travel-flow__passport-input')};
     });
-    expect(geometry.withinInput,'suggestions belong to input at '+width).toBe(true);
-    expect(geometry.position,'desktop floats, stacked mobile stays in flow at '+width)
-      .toBe(width<=800 ? 'static' : 'absolute');
-    expect(geometry.top,'listbox below input at '+width).toBeGreaterThanOrEqual((geometry.inputBottom??0)-1);
-    expect(geometry.left,'listbox left aligned at '+width).toBeGreaterThanOrEqual((geometry.inputLeft??0)-2);
-    expect(geometry.right,'listbox inside input at '+width).toBeLessThanOrEqual((geometry.inputRight??0)+2);
-    expect(geometry.bottom,'options not hidden by footer at '+width).toBeLessThanOrEqual((geometry.footerTop??Infinity)-4);
+    expect(geometry.withinInput,'suggestions stay in accessible input group at '+width).toBe(true);
+    expect(geometry.position,'popup never changes the row layout at '+width).toBe('absolute');
+    expect(geometry.left,'list aligned with passport row at '+width).toBeGreaterThanOrEqual((geometry.rowLeft??0)-2);
+    expect(geometry.right,'list contained by passport row at '+width).toBeLessThanOrEqual((geometry.rowRight??Infinity)+2);
+    if(geometry.placement==='above'){
+      expect(geometry.bottom,'popup opens above the full passport row at '+width)
+        .toBeLessThanOrEqual((geometry.rowTop??Infinity)-4);
+    }else{
+      expect(geometry.placement,'explicit placement at '+width).toBe('below');
+      expect(geometry.top,'popup opens below both input and Check Passport at '+width)
+        .toBeGreaterThanOrEqual((geometry.rowBottom??0)+4);
+    }
+    expect(geometry.bottom,'options are visible above pinned footer at '+width)
+      .toBeLessThanOrEqual((geometry.footerTop??Infinity)-4);
     await list.getByRole('option').first().click();
     await expect(list).toHaveCount(0);
     await expect(passport).not.toHaveValue('');
