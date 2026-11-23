@@ -203,6 +203,7 @@ interface GuestPaymentProps {
   initialBeneficiary?: PaymentBeneficiaryPrefill;
   onBackToService?: () => void;
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
+  onResultViewChange?: (view: 'result' | 'receipt' | 'certificate') => void;
   onCheckoutChange?: (checkout: boolean) => void;
   /** Register this step's header Back handler; unified Walk-in footer stays single-CTA. */
   registerHeaderBack?: (action: (() => void) | null) => void;
@@ -210,7 +211,7 @@ interface GuestPaymentProps {
   unifiedFlow?: boolean;
 }
 
-export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialReuse, initialForSelf, initialBeneficiary, onBackToService, onStageChange, onCheckoutChange, registerHeaderBack, unifiedFlow = false }) => {
+export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = false, embedded = false, withAccount = false, initialCategory, initialDraft, initialReuse, initialForSelf, initialBeneficiary, onBackToService, onStageChange, onResultViewChange, onCheckoutChange, registerHeaderBack, unifiedFlow = false }) => {
   const { language, navigate, addPaymentReceipt, routeParams, previewAccount, setPaymentServiceChoiceOpen, startPaymentReuse } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // The standalone guest route can also be visited from a signed-in session.
@@ -467,6 +468,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const batchRecoveryChecked = useRef(false);
   const [batchRecoveryError, setBatchRecoveryError] = useState(false);
   const [showReceiptDetails, setShowReceiptDetails] = useState(false);
+  const [receiptDocument, setReceiptDocument] = useState<'receipt' | 'certificate'>('receipt');
   const [selectedWalkInReceipt, setSelectedWalkInReceipt] = useState<ChallanReceipt | null>(null);
   const [skipPostPaymentLogin, setSkipPostPaymentLogin] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -688,6 +690,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   useEffect(() => {
     if (embedded) onStageChange?.(step);
   }, [embedded, onStageChange, step]);
+  useEffect(() => {
+    if (embedded && step === 4) onResultViewChange?.(
+      !showReceiptDetails ? 'result' : receiptDocument);
+  }, [embedded, onResultViewChange, step, showReceiptDetails, receiptDocument]);
 
   // The action is in a persistent footer; direct attention to the invalid input,
   // even when the user has scrolled well past it.
@@ -1576,7 +1582,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   useEffect(() => {
     if (!unifiedFlow || !registerHeaderBack) return;
     const back = () => {
-      if (isProcessing || step === 4) return;
+      if (step === 4) {
+        if (!showReceiptDetails) return;
+        if (receiptDocument === 'certificate') setReceiptDocument('receipt');
+        else setShowReceiptDetails(false);
+        return;
+      }
+      if (isProcessing) return;
       if (step === 1) { onBackToService?.(); return; }
       if (step === 2) { clearValidationError(); setStep(1); return; }
       if (unifiedCheckout) backToUnifiedPreview();
@@ -1585,7 +1597,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     registerHeaderBack(back);
     return () => registerHeaderBack(null);
   }, [unifiedFlow, registerHeaderBack, step, unifiedCheckout, isProcessing,
-      onBackToService, onCheckoutChange, clearValidationError]);
+      showReceiptDetails, receiptDocument, onBackToService, onCheckoutChange, clearValidationError]);
 
   const retryPayment = () => {
     if (paymentPhase === 'failed' && batchAttemptRef.current?.phase === 'READY') {
@@ -1683,8 +1695,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     }
     if (showReceiptDetails && createdReceipt) return (
       <div lang={language} className={`payment-receipt-details ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''}`}>
-        <ReceiptView receipt={selectedWalkInReceipt ?? createdReceipt} embedded={embedded} onBack={() => setShowReceiptDetails(false)}
-          compactWalkInLayout={embedded}
+        <ReceiptView receipt={selectedWalkInReceipt ?? createdReceipt} embedded={embedded}
+          onBack={() => { setReceiptDocument('receipt'); setShowReceiptDetails(false); }}
+          compactWalkInLayout={embedded} activeDocument={receiptDocument}
+          onDocumentChange={setReceiptDocument}
           postReceiptInvitation={!unifiedFlow && embedded && completed && !officeMirrorPending && !signedInAccount && !skipPostPaymentLogin
             ? <aside className="walkin-postpayment-login no-print" data-testid="walkin-postpayment-login" aria-label={language === 'bn' ? 'ঐচ্ছিক সাইন ইন' : 'Optional sign in'}>
                 <div className="walkin-postpayment-login__copy">
