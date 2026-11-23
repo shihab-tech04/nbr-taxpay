@@ -19,7 +19,7 @@ export function PublicServiceModal({ service, onClose, onChooseOther, onBack }: 
   if (service === 'travel')
     return <PaymentServiceChoiceDialog initialService="TRAVEL_TAX" onDismiss={onClose} />;
 
-  if (service === 'gift') return <GiftTaxEntryModal onClose={onClose} />;
+  if (service === 'gift') return <GiftTaxEntryModal onClose={onClose} onBack={() => onChooseOther?.('other')} />;
   if (service === 'other') return <TaxPayModal
     title={language === 'bn' ? 'অন্যান্য কর পরিশোধ' : 'Other tax payments'}
     closeIconLabel={language === 'bn' ? 'বন্ধ করুন' : 'Close modal'}
