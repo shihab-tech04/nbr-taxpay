@@ -1,7 +1,7 @@
 import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
@@ -368,6 +368,29 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       document.removeEventListener('focusin', onFocusMoved);
     };
   }, [passportSuggestionsFor]);
+
+  // Keep the listbox attached to the passport field and within the modal's
+  // visible scroll area. An absolute listbox alone would otherwise disappear
+  // behind the pinned payment footer on shorter desktop viewports.
+  useLayoutEffect(() => {
+    if (!passportSuggestionsFor) return;
+    const list = document.getElementById('travel-passport-suggestions-' + passportSuggestionsFor);
+    if (!list) return;
+    const scrollOwner = [
+      list.closest<HTMLElement>('.travel-flow__main'),
+      list.closest<HTMLElement>('.taxpay-modal__body'),
+    ].find(element => element && /auto|scroll/.test(getComputedStyle(element).overflowY));
+    if (!scrollOwner) return;
+    const footer = list.closest('.taxpay-modal')?.querySelector<HTMLElement>('.taxpay-modal__footer');
+    const bottom = Math.min(
+      scrollOwner.getBoundingClientRect().bottom,
+      footer?.getBoundingClientRect().top ?? window.innerHeight,
+      window.innerHeight,
+    );
+    const overhang = list.getBoundingClientRect().bottom - bottom + 12;
+    if (overhang > 0) scrollOwner.scrollTop += overhang;
+  }, [passportSuggestionsFor]);
+
   // The shared modal header owns Back, including receipt/review navigation.
   // Do not proxy through footer DOM buttons: they can disappear or be disabled.
   useEffect(() => {
@@ -721,6 +744,46 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                   id={'travel-passport-duplicate-' + item.id}>
                   {tr('Passport already added.', 'পাসপোর্ট ইতিমধ্যে যোগ করা হয়েছে।')}
                 </p>}
+              {passportSuggestionsFor === item.id && <div
+                className="travel-flow__passport-suggestions" id={'travel-passport-suggestions-' + item.id}
+                role="listbox" aria-label={tr('Available sample passports','উপলব্ধ নমুনা পাসপোর্ট')}
+                onKeyDown={event => {
+                  if (event.key === 'Escape') {
+                    event.preventDefault(); event.stopPropagation();
+                    // Focus first; then dismiss so the input focus handler
+                    // cannot reopen suggestions in the same event.
+                    document.getElementById('travel-passport-' + item.id)?.focus();
+                    setPassportSuggestionsFor(null);
+                    return;
+                  }
+                  if (!['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
+                  const options = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]'));
+                  const current = options.indexOf(document.activeElement as HTMLButtonElement);
+                  if (!options.length || current < 0) return;
+                  event.preventDefault();
+                  const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1
+                    : event.key === 'ArrowDown' ? (current + 1) % options.length
+                    : (current + options.length - 1) % options.length;
+                  options[next].focus();
+                }}>
+                <p className="travel-flow__passport-suggestions-heading" role="presentation">
+                  {tr('Sample passport numbers','নমুনা পাসপোর্ট নম্বর')}
+                </p>
+                {availableSamples.map(sample => <button type="button" role="option"
+                  aria-selected={item.passport === sample.passport}
+                  key={sample.passport} onMouseDown={event => event.preventDefault()}
+                  onClick={() => {
+                    changePassenger(item.id, {passport: sample.passport, name: '', birthDate: '', identitySource: 'PENDING'});
+                    setPassportSuggestionsFor(null);
+                  }}>
+                  <span>{sample.passport}</span><span>{tr('Sample','নমুনা')}</span>
+                </button>)}
+                {availableSamples.length === 0 && <p className="travel-flow__passport-no-results" role="presentation">
+                  {passportAlreadyAdded
+                    ? tr('Passport already added.','পাসপোর্ট ইতিমধ্যে যোগ করা হয়েছে।')
+                    : tr('No available sample passports.','কোনো উপলব্ধ নমুনা পাসপোর্ট নেই।')}
+                </p>}
+              </div>}
               </div>
               <div className="travel-flow__field travel-flow__passport-action">
                 <button id={'travel-lookup-' + item.id} type="button"
@@ -773,46 +836,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                   });
                 }}>{tr('Check Passport','পাসপোর্ট যাচাই করুন')}</button>
               </div>
-              {passportSuggestionsFor === item.id && <div
-                className="travel-flow__passport-suggestions" id={'travel-passport-suggestions-' + item.id}
-                role="listbox" aria-label={tr('Available sample passports','উপলব্ধ নমুনা পাসপোর্ট')}
-                onKeyDown={event => {
-                  if (event.key === 'Escape') {
-                    event.preventDefault(); event.stopPropagation();
-                    // Focus first; then dismiss so the input focus handler
-                    // cannot reopen suggestions in the same event.
-                    document.getElementById('travel-passport-' + item.id)?.focus();
-                    setPassportSuggestionsFor(null);
-                    return;
-                  }
-                  if (!['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
-                  const options = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]'));
-                  const current = options.indexOf(document.activeElement as HTMLButtonElement);
-                  if (!options.length || current < 0) return;
-                  event.preventDefault();
-                  const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1
-                    : event.key === 'ArrowDown' ? (current + 1) % options.length
-                    : (current + options.length - 1) % options.length;
-                  options[next].focus();
-                }}>
-                <p className="travel-flow__passport-suggestions-heading" role="presentation">
-                  {tr('Sample passport numbers','নমুনা পাসপোর্ট নম্বর')}
-                </p>
-                {availableSamples.map(sample => <button type="button" role="option"
-                  aria-selected={item.passport === sample.passport}
-                  key={sample.passport} onMouseDown={event => event.preventDefault()}
-                  onClick={() => {
-                    changePassenger(item.id, {passport: sample.passport, name: '', birthDate: '', identitySource: 'PENDING'});
-                    setPassportSuggestionsFor(null);
-                  }}>
-                  <span>{sample.passport}</span><span>{tr('Sample','নমুনা')}</span>
-                </button>)}
-                {availableSamples.length === 0 && <p className="travel-flow__passport-no-results" role="presentation">
-                  {passportAlreadyAdded
-                    ? tr('Passport already added.','পাসপোর্ট ইতিমধ্যে যোগ করা হয়েছে।')
-                    : tr('No available sample passports.','কোনো উপলব্ধ নমুনা পাসপোর্ট নেই।')}
-                </p>}
-              </div>}
+
             </div>
             {item.identitySource === 'PASSPORT_SAMPLE' && <section className="travel-flow__identity-card"
               aria-label={tr('Passenger details','যাত্রীর তথ্য')}>
