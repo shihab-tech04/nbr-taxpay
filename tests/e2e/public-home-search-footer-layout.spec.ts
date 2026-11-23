@@ -80,8 +80,8 @@ test('Home search, benefit padding and footer remain aligned at real viewport si
       expect(geometry.button.right).toBeLessThanOrEqual(geometry.field.right+1);
       expect(geometry.button.left).toBeGreaterThan(geometry.field.left);
       if (viewport.width >= 981) {
-        expect(geometry.field.height, JSON.stringify({viewport,lang,geometry})).toBeLessThanOrEqual(62);
-        expect(geometry.field.height).toBeGreaterThanOrEqual(52);
+        expect(geometry.field.height, JSON.stringify({viewport,lang,geometry})).toBeLessThanOrEqual(54);
+        expect(geometry.field.height).toBeGreaterThanOrEqual(50);
         expect(Math.abs(geometry.searchPadding.top-geometry.benefitsPadding.top)).toBeLessThanOrEqual(1);
         expect(Math.abs(geometry.searchPadding.left-geometry.benefitsPadding.left)).toBeLessThanOrEqual(1);
       }
