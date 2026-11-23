@@ -25,24 +25,40 @@ for (const sample of [
     await page.emulateMedia({reducedMotion: 'reduce'});
     const gift = await openGiftTax(page, sample.language);
     const bn = sample.language === 'bn';
-    // Pixel-equivalent modal geometry with the approved Taxpayer Information
-    // payment stage: 1160px width cap, 90dvh height, shared stepper and
-    // 100dvh mobile sheet. Compare at the same viewport, not screenshots
-    // captured at different browser dimensions.
+    // Match the REAL approved Taxpayer workspace, not just the shell width.
     await expect(gift).toHaveAttribute('data-payment-stage', 'true');
     await expect(gift.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '1');
+    await expect(gift.locator('.taxpay-modal__subtitle')).toHaveText(bn ? 'ওয়াক-ইন পেমেন্ট' : 'Walk-in Payment');
+    await expect(gift.getByTestId('gift-tax-entry-form')).toHaveClass(/payment-flow-embedded--unified/);
+    const editor = gift.locator('.unified-taxpayer-workspace__editor');
+    const rail = gift.locator('.unified-taxpayer-workspace__rail');
+    await expect(editor).toHaveCount(1);
+    await expect(rail).toHaveCount(1);
+    await expect(gift.getByTestId('gift-tax-selected-count')).toHaveText('0');
+    await expect(gift.getByTestId('gift-tax-identity-rail')).toContainText(bn ? 'কোনো দাতা বা গ্রহীতা যোগ করা হয়নি' : 'No donor or donee added');
+    await expect(gift.locator('.unified-taxpayer-workspace__empty')).toHaveCount(2);
     const bounds = await gift.evaluate(element => {
-      const style = getComputedStyle(element);
       const rect = element.getBoundingClientRect();
-      return {width:rect.width,height:rect.height,
-        maxHeight:style.maxHeight,viewportWidth:window.innerWidth,viewportHeight:window.innerHeight};
+      return {width:rect.width,height:rect.height};
     });
     if (sample.width > 650) {
       expect(bounds.width).toBeCloseTo(Math.min(1160, sample.width - 32), 0);
-      expect(bounds.height).toBeCloseTo(Math.min(sample.height * .9, 900), 0);
+      expect(bounds.height).toBeLessThanOrEqual(Math.min(sample.height * .9, 800) + 1);
     } else {
       expect(bounds.width).toBeCloseTo(sample.width, 0);
       expect(bounds.height).toBeCloseTo(sample.height, 0);
+    }
+    if (sample.width > 900) {
+      const [editorRect, railRect, bodyRect] = await Promise.all([
+        editor.boundingBox(), rail.boundingBox(), gift.locator('.taxpay-modal__body').boundingBox(),
+      ]);
+      expect(editorRect && railRect && bodyRect).toBeTruthy();
+      if (editorRect && railRect && bodyRect) {
+        // No inset card/gap: full-height rail meets the editor at its edge.
+        expect(Math.abs(editorRect.x + editorRect.width - railRect.x)).toBeLessThanOrEqual(2);
+        expect(Math.abs(bodyRect.x + bodyRect.width - (railRect.x + railRect.width))).toBeLessThanOrEqual(2);
+        expect(Math.abs(editorRect.y - railRect.y)).toBeLessThanOrEqual(2);
+      }
     }
 
 
@@ -66,6 +82,7 @@ for (const sample of [
     await donee.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donee/}).click();
     await donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'}).click();
 
+    await expect(gift.getByTestId('gift-tax-selected-count')).toHaveText('2');
     const header = gift.locator('.taxpay-modal__title');
     await expect(header).toHaveCSS('text-align', 'left');
     await expect(gift.locator('.gift-tax-aside').first()).toHaveClass(/payment-form-summary/);
@@ -94,11 +111,18 @@ for (const sample of [
   });
 }
 
-test('Gift Tax disabled Continue uses the shared legible neutral style, not translucent white on blue', async ({page}) => {
+test('Gift Tax uses the same approved payment footer action as Taxpayer Information', async ({page}) => {
   const gift = await openGiftTax(page, 'en');
   const button = gift.getByRole('button', {name: 'Continue to Gift & Tax Information'});
   await expect(button).toBeDisabled();
-  await expect(button).toHaveCSS('opacity', '1');
-  await expect(button).toHaveCSS('background-color', 'rgb(228, 234, 242)');
-  await expect(button).toHaveCSS('color', 'rgb(82, 102, 129)');
+  await expect(button).toHaveClass(/tax-service-choice__continue/);
+  await expect(button.locator('svg')).toHaveCount(1);
+  await expect(button).toHaveCSS('background-color', 'rgb(44, 94, 173)');
+  await expect(button).toHaveCSS('opacity', '0.48');
+  const footerRect = await gift.locator('.taxpay-modal__footer').boundingBox();
+  const buttonRect = await button.boundingBox();
+  expect(footerRect && buttonRect).toBeTruthy();
+  if (footerRect && buttonRect) {
+    expect(buttonRect.width).toBeGreaterThan(footerRect.width - 80);
+  }
 });
