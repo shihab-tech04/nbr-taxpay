@@ -7,7 +7,7 @@ for(const sample of [
   {lang:'en' as const,width:1024,height:768},
   {lang:'bn' as const,width:375,height:812},
 ]) {
-  test('Gift Tax shared simulated payment, sample receipt and edit recovery '+sample.lang,async({page})=>{
+  test('Gift Tax shared simulated payment, sample receipt and edit recovery '+sample.lang+' '+sample.width,async({page})=>{
     await page.setViewportSize({width:sample.width,height:sample.height});
     await page.goto('/?action=landing&lang='+sample.lang);
     const bn=sample.lang==='bn';
