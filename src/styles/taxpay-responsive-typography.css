@@ -153,7 +153,7 @@
 }
 /* General copy belongs to body tier; numbers and labels in data visualizations
  * are explicitly assigned to the micro tier below. */
-.taxpay-citizen-shell:not(:has(.public-home-sections)) :is(p, li, dt, dd):not(.taxpay-type-micro):not(:where(.receipt-view__paper *, .payment-certificate-document *, .print-card *)) {
+.taxpay-citizen-shell:where(:not(:has(.public-home-sections))) :is(p, li, dt, dd):not(.taxpay-type-micro):not(:where(.receipt-view__paper *, .payment-certificate-document *, .print-card *)) {
   font-size: var(--taxpay-font-body);
 }
 /* Public header, menu, language switcher and safe-area bottom navigation. */
