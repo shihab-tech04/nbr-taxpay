@@ -1139,40 +1139,27 @@
 .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"] .taxpay-modal__body {
   padding: 0;
 }
-/* A completed receipt is a document, not another edge-to-edge payment form.
-   Scope spacing to the receipt state so all earlier payment steps stay unchanged. */
+/* Final result documents share the native three-column modal header and its
+   top-left Back. Stage 4 has no progress bar, so avoid data-payment-stage selectors. */
 @media screen {
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]:has(.payment-receipt-details) .taxpay-modal__body {
-    padding: 24px 30px 28px;
-  }
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]:has(.payment-receipt-details) .taxpay-modal__header {
-    grid-template-columns: minmax(0, 1fr) 44px;
-    padding-inline: 30px;
-  }
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]:has(.payment-receipt-details) .taxpay-modal__back-placeholder {
-    display: none;
-  }
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]:has(.payment-receipt-details) .taxpay-modal__heading {
-    grid-column: 1;
-  }
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]:has(.payment-receipt-details) .taxpay-modal__close {
-    grid-column: 2;
-  }
-  .taxpay-citizen-shell .payment-receipt-details .receipt-view > .receipt-view__action {
-    margin-block-end: 18px;
-  }
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]:has(.payment-receipt-details) .taxpay-modal__footer {
-    padding-inline: 30px;
-  }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.payment-receipt-details)
+    .taxpay-modal__body { padding: 14px 20px 18px; }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.payment-receipt-details)
+    .taxpay-modal__header { grid-template-columns: 44px minmax(0,1fr) 44px; padding-inline: 20px; }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.payment-receipt-details)
+    .taxpay-modal__header .taxpay-modal__title { grid-column: 2; text-align: left; }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.payment-receipt-details)
+    .taxpay-modal__close { grid-column: 3; }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.payment-receipt-details)
+    .taxpay-modal__footer { padding-inline: 20px; }
 }
 @media screen and (max-width: 800px) {
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]:has(.payment-receipt-details) .taxpay-modal__body {
-    padding: 16px;
-  }
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]:has(.payment-receipt-details) .taxpay-modal__header,
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="payment-choice"]:has(.payment-receipt-details) .taxpay-modal__footer {
-    padding-inline: 16px;
-  }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.payment-receipt-details)
+    .taxpay-modal__body { padding: 12px; }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.payment-receipt-details)
+    .taxpay-modal__header,
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.payment-receipt-details)
+    .taxpay-modal__footer { padding-inline: 12px; }
 }
 @media (min-width: 801px) {
   .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__identity > .payment-form-layout__sections,
