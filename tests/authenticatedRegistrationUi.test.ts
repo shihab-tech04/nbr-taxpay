@@ -61,5 +61,5 @@ test('M02 keeps authenticated app account metadata inside the single approved id
  const detailColumns=html.indexOf('data-testid="authenticated-profile-detail-columns"');
  assert.ok(root>=0&&summary>root&&metadata>summary&&detailColumns>metadata);
  assert.equal((html.match(/data-testid="authenticated-profile-account-metadata"/g)||[]).length,1);
- assert.equal((html.match(/<dt\\b/g)||[]).length,24,'registration keys stay singular');
+ assert.equal((html.match(/<dt\b/g)||[]).length,24,'registration keys stay singular');
 });
