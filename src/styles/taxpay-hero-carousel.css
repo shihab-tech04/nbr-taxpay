@@ -882,9 +882,9 @@
     line-height: 1.5;
   }
   .public-home-sections .public-record-search {
-    min-height: 56px;
-    padding: 4px;
-    border-radius: 10px;
+    min-height: 52px;
+    padding: 3px;
+    border-radius: 8px;
     box-shadow: 0 1px 3px rgba(12, 35, 65, .06);
   }
   .public-home-sections .public-record-search input {
@@ -968,8 +968,8 @@
 /* Medium-height desktop: retain the connected panel, but avoid unnecessary
    vertical scrolling. Tall screenshots keep the approved 24px / 136px rhythm. */
 @media (min-width: 981px) and (min-height: 821px) and (max-height: 959px) {
-  .public-home-sections .public-benefits { padding: 1.25rem; }
-  .public-home-sections .public-benefits__heading { margin-bottom: .65rem; }
+  .public-home-sections .public-benefits { padding: 1rem; }
+  .public-home-sections .public-benefits__heading { margin-bottom: .5rem; }
   .public-home-sections .public-benefits__item {
     min-height: 88px;
     padding: .65rem .9rem;
@@ -992,10 +992,10 @@
   }
   .public-home-sections > :not([hidden]) ~ :not([hidden]){margin-top:8px;}
   .public-home-sections .public-record-discovery{
-    padding:1.25rem;
+    padding:1rem;
   }
   .public-home-sections .public-record-discovery__heading{
-    margin-bottom:.65rem;
+    margin-bottom:.5rem;
   }
 }
 
