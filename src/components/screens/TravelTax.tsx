@@ -369,26 +369,38 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     };
   }, [passportSuggestionsFor]);
 
-  // Keep the listbox attached to the passport field and within the modal's
-  // visible scroll area. An absolute listbox alone would otherwise disappear
-  // behind the pinned payment footer on shorter desktop viewports.
+  // The same floating combobox belongs to the complete passport lookup row
+  // (input + Check Passport), never the input alone. Measure visible space to
+  // open above a pinned footer on short screens without shifting any form rows.
   useLayoutEffect(() => {
     if (!passportSuggestionsFor) return;
     const list = document.getElementById('travel-passport-suggestions-' + passportSuggestionsFor);
-    if (!list) return;
-    const scrollOwner = [
-      list.closest<HTMLElement>('.travel-flow__main'),
-      list.closest<HTMLElement>('.taxpay-modal__body'),
-    ].find(element => element && /auto|scroll/.test(getComputedStyle(element).overflowY));
-    if (!scrollOwner) return;
-    const footer = list.closest('.taxpay-modal')?.querySelector<HTMLElement>('.taxpay-modal__footer');
-    const bottom = Math.min(
-      scrollOwner.getBoundingClientRect().bottom,
-      footer?.getBoundingClientRect().top ?? window.innerHeight,
-      window.innerHeight,
-    );
-    const overhang = list.getBoundingClientRect().bottom - bottom + 12;
-    if (overhang > 0) scrollOwner.scrollTop += overhang;
+    const row = list?.closest<HTMLElement>('.travel-flow__passport-row');
+    if (!list || !row) return;
+    const layout = () => {
+      const scrollOwner = [
+        list.closest<HTMLElement>('.travel-flow__main'),
+        list.closest<HTMLElement>('.taxpay-modal__body'),
+      ].find(element => element && /auto|scroll/.test(getComputedStyle(element).overflowY));
+      const modal = list.closest('.taxpay-modal');
+      const footer = modal?.querySelector<HTMLElement>('.taxpay-modal__footer');
+      const header = modal?.querySelector<HTMLElement>('.taxpay-modal__header');
+      const bounds = row.getBoundingClientRect();
+      const visibleTop = Math.max(0, scrollOwner?.getBoundingClientRect().top ?? 0,
+        header?.getBoundingClientRect().bottom ?? 0);
+      const visibleBottom = Math.min(window.innerHeight,
+        scrollOwner?.getBoundingClientRect().bottom ?? window.innerHeight,
+        footer?.getBoundingClientRect().top ?? window.innerHeight);
+      const below = Math.max(0, visibleBottom - bounds.bottom - 12);
+      const above = Math.max(0, bounds.top - visibleTop - 12);
+      const placeAbove = below < 170 && above > below;
+      list.dataset.placement = placeAbove ? 'above' : 'below';
+      list.style.setProperty('--travel-passport-list-max-height',
+        Math.max(64, Math.min(210, (placeAbove ? above : below) - 8)) + 'px');
+    };
+    layout();
+    window.addEventListener('resize', layout);
+    return () => window.removeEventListener('resize', layout);
   }, [passportSuggestionsFor]);
 
   // The shared modal header owns Back, including receipt/review navigation.
