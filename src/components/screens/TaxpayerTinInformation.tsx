@@ -69,6 +69,8 @@ export function TaxpayerTinInformation({language,record,accountDetails}:Props){
           <dd className="taxpay-profile-summary-value mt-1 break-words text-taxpay-text">{value(field)}</dd>
         </div>)}
       </dl>
+      {accountDetails&&<div className="border-t border-taxpay-border px-5 py-4 sm:px-6"
+        data-testid="authenticated-profile-account-metadata">{accountDetails}</div>}
     </div>
     <div data-testid="authenticated-profile-detail-columns" className="grid items-stretch gap-4 lg:grid-cols-2">
       <div className="min-w-0 lg:col-start-1 lg:row-start-1">
@@ -84,9 +86,5 @@ export function TaxpayerTinInformation({language,record,accountDetails}:Props){
         {panel(['Certificate details','সনদের তথ্য'],TAXPAYER_PROFILE_LAYOUT.certificate)}
       </div>
     </div>
-    {accountDetails&&<section className="rounded-xl border border-taxpay-border bg-white p-4 sm:p-5"
-      data-testid="authenticated-profile-account-metadata">
-      {accountDetails}
-    </section>}
   </section>;
 }
