@@ -6,3 +6,29 @@
 .taxpay-citizen-shell .taxpay-modal[data-public-service="other-tax"] .taxpay-modal__header .taxpay-modal__title {
   text-align: left;
 }
+
+/* Gift Tax owns only its local two-column content, not shared modal geometry.
+   Preserve the approved card, header, bottom sheet and typography contracts. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] {
+  width: min(100%, 820px);
+}
+.taxpay-citizen-shell .gift-tax-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(225px, .9fr);
+  gap: 16px;
+  align-items: stretch;
+}
+.taxpay-citizen-shell .gift-tax-main {
+  min-width: 0;
+}
+.taxpay-citizen-shell .gift-tax-aside {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #e1e6ee;
+  border-radius: 16px;
+  background: #f7f9fc;
+}
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .gift-tax-grid { grid-template-columns: minmax(0, 1fr); }
+  .taxpay-citizen-shell .gift-tax-aside { padding: 12px; }
+}
