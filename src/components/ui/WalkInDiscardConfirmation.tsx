@@ -29,7 +29,7 @@ export function WalkInDiscardConfirmation({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 p-3 sm:p-6"
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-950/55 p-3 sm:p-6"
       data-testid="walkin-payment-exit-overlay"
       onMouseDown={event => event.stopPropagation()}>
       <section role="alertdialog" aria-modal="true" aria-labelledby={titleId}
