@@ -143,8 +143,12 @@
   --font-text: 'Noto Sans Bengali', 'Poppins', system-ui, sans-serif;
   font-family: var(--font-text);
 }
-/* Ensure naturally readable controls with no iOS font-size focus zoom. */
-.taxpay-citizen-shell :is(
+/* iOS-safe body defaults must not override explicit component font roles.
+ * :is() borrowed the high specificity of input:not(...) for *every* button,
+ * causing 16px navigation/Help/CTA text despite later 14px component rules.
+ * :where() fixes that root cascade bug. Earlier explicit input rules still
+ * enforce 16px editable fields to prevent mobile focus-zoom. */
+.taxpay-citizen-shell :where(
   button, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   select, textarea, label
 ) {
@@ -578,5 +582,102 @@
 @media (min-width: 901px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-home-header .public-home-nav a {
     font-weight: var(--taxpay-weight-action, 600);
+  }
+}
+
+/* ==========================================================================
+ * PUBLIC HOME VISUAL TYPE — 23 NOV 2026
+ * User-reviewed hierarchy: keep layout and payment journeys untouched.
+ * Earlier global 700/600 rules made this compact public home unnaturally bold.
+ * These homepage-owned roles override only actual public-home elements;
+ * modal, authenticated, document and Office typography remain independent.
+ * ========================================================================== */
+.taxpay-citizen-shell:has(.public-home-sections) {
+  --sohojkor-home-display: 28px;
+  --sohojkor-home-section: 20px;
+  --sohojkor-home-card: 15px;
+  --sohojkor-home-description: 14px;
+  --sohojkor-home-control: 14px;
+  --sohojkor-home-body: 15px;
+  --sohojkor-home-title-weight: 600;
+  --sohojkor-home-control-weight: 500;
+}
+.taxpay-citizen-shell:has(.public-home-sections)
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy :is(h1,h2) {
+  font-size: var(--sohojkor-home-display);
+  font-weight: var(--sohojkor-home-title-weight);
+  line-height: 1.28;
+  letter-spacing: -.012em;
+}
+.taxpay-citizen-shell:has(.public-home-sections)
+  .public-hero-carousel__slide.public-information-hero .citizen-public-hero__copy > p:not(.citizen-public-hero__eyebrow) {
+  font-size: var(--sohojkor-home-body);
+  font-weight: 400;
+  line-height: 1.5;
+}
+.taxpay-citizen-shell:has(.public-home-sections) .public-home-header .public-home-nav a,
+.taxpay-citizen-shell:has(.public-home-sections) .public-home-language,
+.taxpay-citizen-shell:has(.public-home-sections) .public-home-header .public-home-login-link {
+  font-size: var(--sohojkor-home-control);
+  font-weight: var(--sohojkor-home-control-weight);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell:has(.public-home-sections)
+  .public-hero-carousel__slide[data-fixed-left="true"] .public-guest-actions .public-guest-action {
+  font-size: var(--sohojkor-home-control);
+  font-weight: var(--sohojkor-home-control-weight);
+  line-height: 1.35;
+}
+.taxpay-citizen-shell:has(.public-home-sections)
+  :is(.public-record-discovery__heading h2,.public-benefits__heading h2) {
+  font-size: var(--sohojkor-home-section);
+  font-weight: var(--sohojkor-home-title-weight);
+  line-height: 1.35;
+  letter-spacing: -.01em;
+}
+.taxpay-citizen-shell:has(.public-home-sections)
+  :is(.public-record-discovery__heading p,.public-benefits__heading p) {
+  font-size: var(--sohojkor-home-description);
+  font-weight: 400;
+  line-height: 1.5;
+}
+.taxpay-citizen-shell:has(.public-home-sections) .public-benefits__copy h3 {
+  font-size: var(--sohojkor-home-card);
+  font-weight: 500;
+  line-height: 1.4;
+}
+.taxpay-citizen-shell:has(.public-home-sections) .public-benefits__copy p {
+  font-size: var(--sohojkor-home-description);
+  font-weight: 400;
+  line-height: 1.45;
+}
+.taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs :is(a,button) {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p,
+.taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom p {
+  font-size: 12px;
+  font-weight: 400;
+}
+.taxpay-citizen-shell:has(.public-home-sections) .public-help-launch {
+  font-size: 14px;
+  font-weight: 500;
+}
+@media (max-width: 1023px) {
+  .taxpay-citizen-shell:has(.public-home-sections) {
+    --sohojkor-home-display: 26px;
+  }
+}
+@media (max-width: 767px) {
+  .taxpay-citizen-shell:has(.public-home-sections) {
+    --sohojkor-home-display: 24px;
+    --sohojkor-home-section: 18px;
+  }
+}
+@media (max-width: 479px) {
+  .taxpay-citizen-shell:has(.public-home-sections) {
+    --sohojkor-home-display: 22px;
   }
 }
