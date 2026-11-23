@@ -10,6 +10,7 @@ import { INITIAL_RECEIPTS } from '../../data/mockData';
 // The status/Travel Tax modal pulls in the checkout and receipt modules.
 // Keep the public landing light until the user explicitly opens that service.
 const PublicServiceModal = React.lazy(() => import('./PublicServiceModal').then(module => ({default: module.PublicServiceModal})));
+const PaymentServiceChoiceDialog = React.lazy(() => import('./PaymentServiceChoiceDialog').then(module => ({default: module.PaymentServiceChoiceDialog})));
 
 const sampleReceipts = INITIAL_RECEIPTS.filter(receipt => receipt.isSimulatedDemo && !receipt.receiptMobile).slice(0, 3);
 const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
@@ -21,6 +22,7 @@ const sampleSearchOptions = sampleReceipts.flatMap(receipt => [
 export const PublicLanding: React.FC = () => {
   const { language, navigate, openAllTaxPayments, isPaymentServiceChoiceOpen } = useTaxState();
   const [openService, setOpenService] = useState<PublicService | null>(null);
+  const [otherTaxEntryOpen, setOtherTaxEntryOpen] = useState(false);
   const [paymentReference, setPaymentReference] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
@@ -100,8 +102,8 @@ export const PublicLanding: React.FC = () => {
     <PublicHeroCarousel
       language={language}
       onPayTax={() => openAllTaxPayments()}
-      onOtherTax={() => setOpenService('other')}
-      paused={isPaymentServiceChoiceOpen || openService !== null}
+      onOtherTax={() => setOtherTaxEntryOpen(true)}
+      paused={isPaymentServiceChoiceOpen || otherTaxEntryOpen || openService !== null}
     />
 
 
@@ -261,6 +263,10 @@ export const PublicLanding: React.FC = () => {
       </div>
     </section>
 
-    {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} onChooseOther={setOpenService} /></React.Suspense>}
+    {otherTaxEntryOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}>
+      <PaymentServiceChoiceDialog unifiedEntryRequested onDismiss={() => setOtherTaxEntryOpen(false)}
+        onPublicOtherTaxContinue={() => { setOtherTaxEntryOpen(false); setOpenService('other'); }} />
+    </React.Suspense>}
+    {openService && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সেবা লোড হচ্ছে…' : 'Loading service…'}</p>}><PublicServiceModal service={openService} onClose={() => setOpenService(null)} onBack={openService === 'other' ? () => { setOpenService(null); setOtherTaxEntryOpen(true); } : undefined} onChooseOther={setOpenService} /></React.Suspense>}
   </div>;
 };
