@@ -80,9 +80,13 @@ for (const sample of [
     const donee = gift.getByTestId('gift-donee-section');
     await donee.locator('#gift-donee-tin').fill('222222222222');
     await donee.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donee/}).click();
+    await donee.locator('#gift-donee-relationship').click();
+    await gift.getByRole('option', {name: bn ? 'বাবা' : 'Father'}).click();
+    await expect(donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'})).toBeEnabled();
     await donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'}).click();
 
     await expect(gift.getByTestId('gift-tax-selected-count')).toHaveText('2');
+    await expect(gift.getByTestId('gift-added-donee')).toContainText(bn ? 'বাবা' : 'Father');
     const header = gift.locator('.taxpay-modal__title');
     await expect(header).toHaveCSS('text-align', 'left');
     await expect(gift.locator('.gift-tax-aside').first()).toHaveClass(/payment-form-summary/);
