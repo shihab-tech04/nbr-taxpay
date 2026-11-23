@@ -381,9 +381,12 @@
     display: grid;
     grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
     align-items: center;
-    max-width: min(1500px, calc(100vw - 32px));
-    width: 100%;
-    margin-inline: auto;
+    /* Anchor the logo to the same 1100px public content rail, while
+       allowing footer links to use the remaining width to the right. */
+    max-width: none;
+    width: auto;
+    margin-left: max(0px, calc((100vw - var(--public-content-max)) / 2 - 16px));
+    margin-right: 0;
     padding: 8px 16px;
     column-gap: 16px;
   }
