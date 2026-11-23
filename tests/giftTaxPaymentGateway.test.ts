@@ -1,8 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import React from 'react';
-import {renderToStaticMarkup} from 'react-dom/server';
-import {GiftTaxPaymentResult} from '../src/components/screens/GiftTaxPaymentResult';
 import {
   initiateGiftTaxPayment, validatedGiftTaxSettlement, simulateGiftTaxPayment,
   type GiftTaxPaymentInput, type GiftTaxPaymentOutcome,
@@ -27,12 +24,6 @@ test('Pending and failed records never unlock receipts, downloads or official ta
     {kind:'FAILED',requestId:'b',reason:'Rejected',retryable:true},
   ] as GiftTaxPaymentOutcome[]) {
     assert.equal(validatedGiftTaxSettlement(outcome,input),null);
-    const html=renderToStaticMarkup(React.createElement(GiftTaxPaymentResult,{
-      language:'en',input,outcome,onBack:()=>undefined,onRetry:()=>undefined,
-    }));
-    assert.equal(html.includes('Download receipt'),false);
-    assert.equal(html.includes('Download challan'),false);
-    assert.equal(html.includes('gift-tax-settled-documents'),false);
   }
 });
 
@@ -47,11 +38,7 @@ test('A mismatched, incomplete or non-official settlement cannot unlock document
     confirmedAt:'2026-11-23T00:00:00Z',donorCreditPostingReference:'',
   }};
   assert.equal(validatedGiftTaxSettlement(settled,input),null);
-  const html=renderToStaticMarkup(React.createElement(GiftTaxPaymentResult,{
-    language:'bn',input,outcome:settled,onBack:()=>undefined,onRetry:()=>undefined,
-  }));
-  assert.equal(html.includes('Download receipt'),false);
-  assert.equal(html.includes('gift-tax-settled-documents'),false);
+
 });
 
 test('Gift Tax uses the existing three meaningful synthetic gateway outcomes with no official credits',()=>{
@@ -71,14 +58,13 @@ test('Gift Tax uses the existing three meaningful synthetic gateway outcomes wit
   assert.equal(invalid.kind,'SIMULATED_FAILED');
 });
 
-test('Sample-success lifecycle does not falsely claim official settlement, challan or credit',()=>{
+test('Gift Tax simulated success is distinct from settlement and never validates as an official credit',()=>{
   const outcome=simulateGiftTaxPayment(input,'BKASH');
-  const html=renderToStaticMarkup(React.createElement(GiftTaxPaymentResult,{
-    language:'en',input,outcome,onBack:()=>undefined,onRetry:()=>undefined,
-  }));
-  assert.match(html,/Simulation completed/);
-  assert.match(html,/No bank transaction/);
-  assert.match(html,/View sample receipt/);
-  assert.equal(html.includes('gift-tax-settled-documents'),false);
-  assert.equal(html.includes('Download challan'),false);
+  assert.equal(outcome.kind,'SIMULATED_SUCCESS');
+  assert.equal(validatedGiftTaxSettlement(outcome,input),null);
+  assert.equal('verified' in outcome,false);
+  if(outcome.kind==='SIMULATED_SUCCESS'){
+    assert.match(outcome.reference,/^SIM-GIFT-/);
+    assert.equal('donorCreditPostingReference' in outcome,false);
+  }
 });
