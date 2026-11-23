@@ -43,7 +43,7 @@ for (const locale of ['en', 'bn'] as const) {
     await gift.locator('#gift-tax-remarks').fill('Gift tax review');
     await expect(gift.getByTestId('gift-tax-estimate')).toContainText(bn ? '২,৭২,০০০' : '2,72,000');
 
-    await gift.getByRole('button', {name: bn ? 'পেছনে' : 'Back', exact: true}).click();
+    await gift.getByRole('button', {name: bn ? 'আগের দানকর স্ক্রিনে ফিরুন' : 'Back to previous Gift Tax screen'}).click();
     await expect(gift.getByTestId('gift-tax-entry-form')).toBeVisible();
     await gift.getByRole('button', {name: bn ? 'দান ও করের তথ্যে এগিয়ে যান' : 'Continue to Gift & Tax Information'}).click();
     await expect(gift.locator('#gift-tax-amount')).toHaveValue('2500000');
