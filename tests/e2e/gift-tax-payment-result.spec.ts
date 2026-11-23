@@ -1,11 +1,12 @@
 import {expect,test} from '@playwright/test';
 
-/** Production without official gateway must never manufacture paid/credited evidence. */
+/** Gift Tax uses the shared payment channel, lifecycle and receipt components;
+ * all simulated records remain visibly nonfinancial and browser-local. */
 for(const sample of [
   {lang:'en' as const,width:1280,height:850},
   {lang:'bn' as const,width:375,height:812},
 ]) {
-  test('Gift Tax Confirm & Pay fails closed with an honest Screen 4 and preserves edits '+sample.lang,async({page})=>{
+  test('Gift Tax shared simulated payment, sample receipt and edit recovery '+sample.lang,async({page})=>{
     await page.setViewportSize({width:sample.width,height:sample.height});
     await page.goto('/?action=landing&lang='+sample.lang);
     const bn=sample.lang==='bn';
@@ -24,25 +25,67 @@ for(const sample of [
     await donee.locator('#gift-donee-tin').fill('222222222222');
     await donee.getByRole('button',{name:bn?/খুঁজুন:/:/Search Donee/}).click();
     await donee.locator('#gift-donee-relationship').click();
-    await gift.getByRole('option',{name:bn?'বাবা':'Father'}).click();
+    await page.getByRole('option',{name:bn?'বাবা':'Father'}).click();
     await donee.getByRole('button',{name:bn?'গ্রহীতা যোগ করুন':'Add Donee'}).click();
+    await expect(gift.getByTestId('gift-rail-donor')).toContainText('User 1');
+    await expect(gift.getByTestId('gift-rail-donee')).toContainText('User 2');
+    await expect(donor.getByTestId('gift-confirmed-donor')).not.toContainText('User 1');
     await gift.getByRole('button',{name:bn?'দান ও করের তথ্যে এগিয়ে যান':'Continue to Gift & Tax Information'}).click();
     await gift.locator('#gift-tax-amount').fill('2500000');
     await gift.locator('#gift-tax-date').fill('2025-01-15');
     await gift.locator('#gift-tax-remarks').fill('Test gift remarks');
+    const remarkBox=await gift.locator('#gift-tax-remarks').boundingBox();
+    const giftAmountBox=await gift.locator('#gift-tax-amount').boundingBox();
+    expect(remarkBox!.width).toBeGreaterThanOrEqual(giftAmountBox!.width);
     await gift.getByRole('button',{name:bn?'চূড়ান্ত পর্যালোচনায় এগিয়ে যান':'Continue to Final Preview'}).click();
-    await expect(gift.getByTestId('gift-tax-review')).toContainText('Test gift remarks');
+    const review=gift.getByTestId('gift-tax-review');
+    await expect(review).toContainText('Test gift remarks');
+    await expect(review.getByTestId('unified-v3-gift-payment-details')).toBeVisible();
     await gift.getByRole('button',{name:bn?'নিশ্চিত করুন ও পরিশোধ করুন':'Confirm & Pay'}).click();
+    await expect(gift.getByTestId('gift-tax-checkout')).toBeVisible();
+    await gift.getByRole('button',{name:bn?'অনলাইনে পরিশোধ':'Pay online'}).click();
+    await gift.getByRole('button',{name:bn?'মোবাইল ব্যাংকিং':'Mobile banking'}).click();
+    await gift.getByRole('radio',{name:'bKash'}).check();
+    await gift.locator('.payment-review__ack input[type=checkbox]').check();
+    await gift.getByRole('button',{name:bn?'পেমেন্ট সিমুলেশন করুন':'Simulate payment'}).click();
     await expect(gift.getByTestId('gift-tax-payment-result')).toBeVisible();
-    await expect(gift.getByTestId('gift-tax-payment-result')).toContainText(bn?'পেমেন্ট শুরু হয়নি':'Payment not started');
-    await expect(gift.locator('.receipt-view')).toHaveCount(0);
+    await expect(gift.getByTestId('gift-tax-payment-result'))
+      .toContainText(bn?'সিমুলেশন সম্পন্ন':'Simulation completed');
     await expect(gift.getByTestId('gift-tax-settled-documents')).toHaveCount(0);
-    await expect(gift.getByRole('link',{name:/Download|ডাউনলোড/})).toHaveCount(0);
-    await expect(gift.getByTestId('gift-tax-result-workspace')).toContainText(bn?'বাবা':'Father');
+    await expect(gift.getByRole('link',{name:/Download challan|চালান ডাউনলোড/})).toHaveCount(0);
+    await gift.getByRole('button',{name:bn?'নমুনা রসিদ দেখুন':'View sample receipt'}).click();
+    await expect(gift.getByTestId('gift-tax-simulation-receipt')).toBeVisible();
+    await expect(gift.getByTestId('gift-tax-sample-receipt')).toContainText('Test gift remarks');
+    await expect(gift.getByTestId('gift-tax-sample-receipt')).toContainText(bn?'বাবা':'father');
+    await expect(gift.getByTestId('gift-tax-simulation-receipt')).toContainText(/SIM-GIFT-/);
+    await gift.getByRole('button',{name:bn?'পেমেন্টের ফলে ফিরুন':'Back to payment result'}).click();
     await gift.getByRole('button',{name:bn?'চূড়ান্ত পর্যালোচনায় ফিরুন':'Back to Final Preview'}).click();
-    await expect(gift.getByTestId('gift-tax-review')).toContainText('Test gift remarks');
+    await expect(review).toContainText('Test gift remarks');
     await gift.getByRole('button',{name:bn?'দানের তথ্য সম্পাদনা':'Edit gift information'}).click();
     await expect(gift.locator('#gift-tax-amount')).toHaveValue('2500000');
     await expect(gift.locator('#gift-tax-remarks')).toHaveValue('Test gift remarks');
   });
 }
+
+test('Gift Tax relationship popup escapes modal, flips above footer, and preserves keyboard selection',async({page})=>{
+  await page.setViewportSize({width:1280,height:780});
+  await page.goto('/?action=landing&lang=en');
+  await page.locator('.public-hero-carousel__slide[data-active="true"]').getByRole('button',{name:'Other Tax'}).click();
+  await page.locator('.taxpay-modal[data-public-service="login"]').getByRole('button',{name:'Walk-in Payment'}).click();
+  await page.getByTestId('other-tax-chooser').getByRole('button',{name:'Gift Tax'}).click();
+  const gift=page.getByRole('dialog',{name:'Gift Tax'});
+  const donee=gift.getByTestId('gift-donee-section');
+  await donee.locator('#gift-donee-tin').fill('222222222222');
+  await donee.getByRole('button',{name:/Search Donee/}).click();
+  await donee.locator('#gift-donee-relationship').click();
+  const popup=page.locator('[data-searchable-popup-id="gift-donee-relationship"]');
+  await expect(popup).toBeVisible();
+  expect(await popup.evaluate(el=>el.parentElement===document.body)).toBe(true);
+  const box=await popup.boundingBox();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y+box!.height).toBeLessThanOrEqual(780);
+  await popup.getByRole('searchbox').fill('Siblings');
+  await popup.getByRole('searchbox').press('Enter');
+  await expect(donee.locator('#gift-donee-relationship')).toHaveAttribute('data-value','friends_family:siblings');
+  await expect(donee.getByRole('button',{name:'Add Donee'})).toBeEnabled();
+});
