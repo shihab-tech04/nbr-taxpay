@@ -666,3 +666,60 @@
     --sohojkor-home-display: 22px;
   }
 }
+
+/* Homepage final visual polish — 23 Nov 2026.
+ * Deliberately scoped to the logged-out public Home: this preserves
+ * the previously fixed field geometry, navigation, content rail, EN/BN,
+ * mobile footer disclosure, signed-in pages and payment modals. */
+@media (min-width: 1121px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    padding-block: 12px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs :is(a,button) {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom p {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+@media (min-width: 1400px) {
+  /* When there is unused space beyond the centered content rail, move Help
+   * above the footer rather than letting it visually sit in the same strip. */
+  .taxpay-citizen-shell:has(.public-home-sections) .public-help-widget {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+}
+@media (min-width: 1600px) and (min-height: 840px) and (max-height: 1200px) {
+  /* Preserve the grid rows; reserve actual separation above the footer.
+   * A 2px bottom inset previously made the final card look glued to it. */
+  .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
+    padding-top: 8px;
+    padding-bottom: 12px;
+  }
+}
+@media (min-width: 981px) {
+  /* Existing approved 52px lookup, unchanged layout and 44px hit area.
+   * Its single action now reads as an action rather than a pale nested field. */
+  .taxpay-citizen-shell:has(.public-home-sections) .public-record-search button {
+    background: var(--citizen-primary);
+    color: white;
+    border-color: var(--citizen-primary);
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-record-search button:hover:not(:disabled) {
+    background: var(--citizen-primary-dark);
+    border-color: var(--citizen-primary-dark);
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-record-search button:disabled {
+    background: var(--citizen-primary-light);
+    border-color: var(--citizen-border);
+    color: var(--citizen-primary-dark);
+    opacity: 1;
+  }
+}
