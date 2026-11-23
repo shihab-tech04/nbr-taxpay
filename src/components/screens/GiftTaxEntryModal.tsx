@@ -91,7 +91,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   );
   const doneeClassLabel = beneficiaryTagLabel(committedDoneeClass.tag || null,
     committedDoneeClass.relationship || null, language, committedDoneeOther);
-  const number = (value: number) => new Intl.NumberFormat(bn ? 'bn-BD' : 'en-IN', {maximumFractionDigits: 2}).format(value);
+  const number = (value: number) => new Intl.NumberFormat(bn ? 'bn-BD' : 'en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(value);
   const parsedAmount = parseGiftValue(giftAmount);
   const estimatedTax = parsedAmount === null ? null : estimateGiftTax(parsedAmount);
   const bothAdded = Boolean(added.donor && added.donee && added.donor.tin !== added.donee.tin && !editing.donor && !editing.donee);
