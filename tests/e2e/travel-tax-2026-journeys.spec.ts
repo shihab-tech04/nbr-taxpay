@@ -1219,14 +1219,17 @@ test('Travel Tax preview: stale notices absent and suggestions do not reflow mod
     const next = page.locator('.footer button[data-action="next"]');
     await expect(next).toBeDisabled();
     await expect(next).toHaveCSS('background-color','rgb(228, 234, 242)');
-    const before=await page.locator('.footer').boundingBox();
+    // Compare layout coordinates, not viewport coordinates: mobile focusing may scroll.
+    const footerDocumentTop=() => page.locator('.footer').evaluate(
+      el => el.getBoundingClientRect().top + window.scrollY
+    );
+    const before=await footerDocumentTop();
     await page.locator('#bdPassport').fill('1');
     const suggestions=page.locator('.passport-lookup-region .suggestions');
     await expect(suggestions).toBeVisible();
     await expect(suggestions).toHaveCSS('position','absolute');
-    const after=await page.locator('.footer').boundingBox();
-    expect(before && after).toBeTruthy();
-    expect(Math.abs(after!.y-before!.y)).toBeLessThanOrEqual(2);
+    const after=await footerDocumentTop();
+    expect(Math.abs(after-before)).toBeLessThanOrEqual(2);
     await expect(next).toBeDisabled();
     await page.locator('#bdPassport').fill('TEST123456');
     await page.locator('[data-action="check"]').click();
