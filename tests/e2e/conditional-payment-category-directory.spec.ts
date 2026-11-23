@@ -13,19 +13,20 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 320, height: 740 
     await modal.getByRole('button', { name: 'Add taxpayer' }).click();
     await modal.getByRole('button', { name: 'Continue to Payment Head' }).click();
 
-    const table = modal.getByTestId('fixed-tax-categories');
-    await expect(table).toBeVisible();
-    await expect(table.locator('tbody tr')).toHaveCount(7);
-    await expect(table.getByRole('columnheader')).toHaveCount(3);
-    await expect(table.locator('tbody tr[data-selected-count="0"]')).toHaveCount(7);
-    await expect(table.getByRole('button', { name: /^View payment heads for / })).toHaveCount(7);
+    const categories = modal.getByTestId('fixed-tax-categories');
+    await expect(categories).toBeVisible();
+    await expect(categories.getByRole('button')).toHaveCount(7);
+    await expect(categories.locator('[data-selected-count="0"]')).toHaveCount(7);
+    await expect(categories.getByRole('table')).toHaveCount(0);
     await expect(modal.getByTestId('frequent-category-section')).toHaveCount(0);
     await expect(modal.getByTestId('frequent-tax-categories')).toHaveCount(0);
     await expect(modal.getByText(/Sign in to see categories from your payment history|No completed payments yet/)).toHaveCount(0);
 
-    // Category directory is a navigator, not a second head/payment editor.
-    await table.getByRole('button', { name: 'View payment heads for Tax with Return' }).click();
+    // Category choices must be compact, accessible, and open the existing
+    // real allocation editor without a redundant table/action column.
+    await categories.getByRole('button', { name: 'Choose Tax with Return' }).click();
     await expect(modal.getByTestId('unified-v5-return-group')).toHaveAttribute('open', '');
+    await expect(modal.getByTestId('other-tax-head-catalogue')).toBeVisible();
     const overflow = await page.evaluate(() =>
       document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(2);
