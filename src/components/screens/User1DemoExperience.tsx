@@ -530,7 +530,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         {key:'paid-for',header:tr('Paid for','যার জন্য পরিশোধ'),renderCell:item=>
           <div className="taxpayer-transaction-identity">{transactionBeneficiaryCell(item,true)}</div>},
         {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:item=>
-          <span className="taxpayer-transaction-reference">{item.ref}</span>},
+          <span className="taxpayer-transaction-reference" title={item.ref}>{item.ref}</span>},
         {key:'type',header:tr('Payment type','পেমেন্টের ধরন'),renderCell:item=>
           <span className="taxpayer-transaction-type">{item.typeLabel??tr(...labels[item.kind])}</span>},
         {key:'date',header:tr('Date','তারিখ'),renderCell:item=>
