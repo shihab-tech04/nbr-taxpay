@@ -15,9 +15,9 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(chooserDialog.locator('.taxpay-modal__footer')).toHaveCount(0);
     await expect(chooserDialog.locator('.taxpay-modal__title')).toHaveCSS('text-align', 'left');
     await expect(chooser.getByRole('button', {name: /Travel Tax|ভ্রমণ কর/})).toBeVisible();
-    await chooser.getByRole('button', {name: /Gift Tax|দান কর/}).click();
+    await chooser.getByRole('button', {name: /Gift Tax|দানকর/}).click();
 
-    const gift = page.getByRole('dialog', {name: bn ? 'দান কর' : 'Gift Tax'});
+    const gift = page.getByRole('dialog', {name: bn ? 'দানকর' : 'Gift Tax'});
     await expect(gift.getByTestId('gift-tax-entry-form')).toBeVisible();
     await expect(gift.locator('#gift-tax-amount')).toHaveCount(0);
     const nextDetails = gift.getByRole('button', {name: bn ? 'দান ও করের তথ্যে এগিয়ে যান' : 'Continue to Gift & Tax Information'});
@@ -69,8 +69,8 @@ for (const locale of ['en', 'bn'] as const) {
       .getByRole('button', {name: bn ? 'অন্যান্য কর' : 'Other Tax'}).click();
     await page.locator('.taxpay-modal[data-public-service="login"]')
       .getByRole('button', {name: bn ? 'ওয়াক-ইন পেমেন্ট' : 'Walk-in Payment'}).click();
-    await page.getByTestId('other-tax-chooser').getByRole('button', {name: /Gift Tax|দান কর/}).click();
-    const gift = page.getByRole('dialog', {name: bn ? 'দান কর' : 'Gift Tax'});
+    await page.getByTestId('other-tax-chooser').getByRole('button', {name: /Gift Tax|দানকর/}).click();
+    const gift = page.getByRole('dialog', {name: bn ? 'দানকর' : 'Gift Tax'});
     const donor = gift.getByTestId('gift-donor-section');
     const donee = gift.getByTestId('gift-donee-section');
     await donor.locator('#gift-donor-tin').fill('111111111111');
