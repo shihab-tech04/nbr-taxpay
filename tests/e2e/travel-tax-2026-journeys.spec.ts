@@ -187,23 +187,19 @@ test('Travel Tax: passport Check button activates on entry and results overlay w
   await expect(suggestions).toHaveCount(0);
   const baseline=await row.boundingBox();
   const cardBaseline=await modal.locator('[data-passenger-id="first"]').boundingBox();
-  const medicalBaseline=await modal.locator('.travel-passenger-workspace__medical').boundingBox();
+  await expect(modal.locator('.travel-passenger-workspace__medical')).toHaveCount(0);
   await passport.focus();
   await expect(suggestions.getByRole('option')).toHaveCount(10);
   await expect(suggestions.getByText('Sample passport numbers')).toBeVisible();
   const withPopup=await row.boundingBox();
   const withCard=await modal.locator('[data-passenger-id="first"]').boundingBox();
-  const medicalWithPopup=await modal.locator('.travel-passenger-workspace__medical').boundingBox();
   expect(baseline).not.toBeNull();
   expect(withPopup).not.toBeNull();
   expect(cardBaseline).not.toBeNull();
   expect(withCard).not.toBeNull();
-  expect(medicalBaseline).not.toBeNull();
-  expect(medicalWithPopup).not.toBeNull();
-  // Passport suggestions must not shift the medical review or expand the dialog.
+  // Passport suggestions must not shift or expand the empty lookup dialog.
   expect(Math.abs(withPopup!.height - baseline!.height)).toBeLessThanOrEqual(2);
   expect(Math.abs(withCard!.height - cardBaseline!.height)).toBeLessThanOrEqual(2);
-  expect(Math.abs(medicalWithPopup!.y - medicalBaseline!.y)).toBeLessThanOrEqual(2);
   expect(await suggestions.evaluate(el=>getComputedStyle(el).position)).toBe('absolute');
   expect(await suggestions.evaluate(el=>getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
   // Popup must receive hit testing ahead of the controls beneath it;
@@ -263,13 +259,16 @@ test('Travel Tax: medical review stays with passenger; receipt mobile moves to p
   const modal=page.getByRole('dialog',{name:'Travel tax'});
   const medical=modal.locator('.travel-passenger-workspace__medical');
   const passenger=modal.locator('[data-passenger-id="first"]');
-  await expect(medical).toBeVisible();
   await expect(modal.locator('#travel-mobile')).toHaveCount(0);
-  const [medicalBox,personBox]=await Promise.all([medical.boundingBox(),passenger.boundingBox()]);
-  expect(medicalBox && personBox).toBeTruthy();
-  expect(medicalBox!.width).toBeGreaterThan(personBox!.width * .8);
+  await expect(medical).toHaveCount(0);
   await modal.locator('#travel-passport-first').fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
+  await expect(medical).toBeVisible();
+  const identityCard=passenger.locator('.travel-flow__identity-card');
+  const [medicalBox,identityBox]=await Promise.all([medical.boundingBox(),identityCard.boundingBox()]);
+  expect(medicalBox && identityBox).toBeTruthy();
+  expect(medicalBox!.width).toBeGreaterThan(identityBox!.width * .7);
+  await expect(identityCard.getByRole('button',{name:'Add passenger',exact:true})).toBeVisible();
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
   await modal.getByRole('button',{name:'Continue to travel details'}).click();
   await expect(modal.locator('#travel-mobile')).toHaveCount(0);
@@ -582,7 +581,9 @@ test('Travel Tax: medical referral is not an online tax exemption',async({page})
   const medicalPassenger=modal.locator('.travel-passenger-workspace__entry');
   await expect(medicalPassenger).toContainText('Manual medical assessment is required at the departure port.');
   const addPassenger=modal.getByRole('button',{name:'Add passenger',exact:true});
-  await expect(addPassenger).toBeDisabled();
+  await expect(addPassenger).toBeEnabled();
+  await addPassenger.click();
+  await expect(modal.getByRole('alert')).toContainText('medical exemption requires assessment at the departure port');
   await expect(medicalPassenger).toHaveAttribute('data-complete','false');
   await expect(modal.getByRole('button',{name:'Continue to travel details'})).toBeDisabled();
   await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','1');
@@ -798,7 +799,7 @@ test('Travel Tax: medical assessment option survives passport check and passenge
   await openTravelTaxFromBanner(page);
   const modal=page.getByRole('dialog',{name:'Travel tax'});
   const option=modal.getByLabel('Request manual medical assessment at departure port');
-  await expect(option).not.toBeChecked();
+  await expect(option).toHaveCount(0);
   await modal.locator('#travel-passport-first').fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
   await expect(option).toBeVisible();
