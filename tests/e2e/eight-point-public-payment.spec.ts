@@ -36,6 +36,8 @@ test('approved fixed banner keeps three service destinations without inventing G
   await gift.getByRole('button',{name:'Close Gift Tax'}).click();
   const confirmation = page.getByTestId('walkin-payment-exit-overlay');
   await expect(confirmation).toBeVisible();
+  const overlayIndex = await confirmation.evaluate(element => Number.parseInt(getComputedStyle(element).zIndex, 10));
+  expect(overlayIndex).toBeGreaterThan(120);
   await confirmation.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(gift).toHaveCount(0);
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
