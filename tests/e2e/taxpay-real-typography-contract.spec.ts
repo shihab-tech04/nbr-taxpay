@@ -155,7 +155,12 @@ test('signed-in headings and navigation retain semantic hierarchy on every viewp
       await page.setViewportSize({width,height:900});
       for (const route of routes) {
         await page.goto('/?action='+route);
-        await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible();
+        // Beneficiaries has its own approved page component, not the
+        // Overview/History synthetic workspace. Audit its real entry instead.
+        if (route === 'beneficiaries')
+          await expect(page.getByTestId('beneficiaries-page'),route+' at '+width+'/'+lang).toBeVisible();
+        else
+          await expect(page.getByTestId('user1-synthetic-workspace'),route+' at '+width+'/'+lang).toBeVisible();
         const h1=page.locator('main .taxpayer-page-heading h1').first();
         await expect(h1,route+' heading at '+width+'/'+lang).toBeVisible();
         await page.evaluate(async () => { await document.fonts.ready; });
