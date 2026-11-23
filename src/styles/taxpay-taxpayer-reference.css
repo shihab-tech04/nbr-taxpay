@@ -133,7 +133,7 @@
   background: transparent;
   color: var(--color-taxpay-muted);
   font-size: 16px;
-  font-weight: 500;
+  font-weight: var(--taxpay-weight-action, 600);
   text-align: left;
 }
 .taxpayer-reference-links button > svg { flex-shrink: 0; color: var(--color-taxpay-muted); }
