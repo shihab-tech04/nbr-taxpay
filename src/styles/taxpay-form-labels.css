@@ -186,6 +186,23 @@
 }
 /* Keep the passport input and lookup action full-width on tablets and phones.
    Desktop retains the approved inline input + Check Passport pairing. */
+/* Sample suggestions are positioned beneath the complete input/action row,
+ * never over Check Passport. Keep the approved zero-layout-shift floating
+ * combobox on desktop AND mobile, including the original reveal motion. */
+.taxpay-citizen-shell .travel-flow__passport-input {
+  position: static;
+}
+.taxpay-citizen-shell .travel-flow__passport-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline: 0 auto;
+  width: min(100%, 520px);
+}
+.taxpay-citizen-shell .travel-flow__passport-suggestions[data-placement="above"] {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
 @media (max-width: 800px) {
   .taxpay-citizen-shell .travel-flow__passport-row {
     grid-template-columns: minmax(0, 1fr);

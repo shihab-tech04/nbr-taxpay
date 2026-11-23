@@ -1378,6 +1378,35 @@
  .public-footer__navs {gap:0 .2rem;flex-wrap:nowrap;}
  .public-footer__bottom {padding-left:.25rem;}
 }
+
+/* Public home wide desktops: retain the approved one-row footer structure,
+ * content heights, destinations and font hierarchy. Only enlarge the inner
+ * usable rail and reserve the real floating Help width on the right. */
+@media (min-width: 1800px) {
+  .taxpay-citizen-shell.taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    width: auto;
+    max-width: none;
+    margin-left: max(16px, calc((100vw - var(--public-content-max)) / 2));
+    margin-right: max(112px, env(safe-area-inset-right));
+  }
+  .taxpay-citizen-shell.taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
+}
+
+/* The dialog backdrop must be a viewport surface, never a scroll-area-sized
+ * background or a strip below the sticky public navigation. */
+.taxpay-citizen-shell .taxpay-modal__overlay.public-service-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
+  margin: 0;
+  box-sizing: border-box;
+}
+
 .public-help-widget{position:fixed;right:calc(1.1rem + env(safe-area-inset-right));bottom:calc(1.1rem + env(safe-area-inset-bottom));z-index:85;display:flex;align-items:flex-end;flex-direction:column;gap:.55rem;}
 .public-help-launch{display:inline-flex;align-items:center;gap:.45rem;min-height:52px;border-radius:999px;background:var(--citizen-primary);color:white;padding:.75rem 1rem;box-shadow:var(--taxpay-shadow-raised);font-size:.79rem;font-weight:800;}
 .public-help-panel{display:flex;flex-direction:column;width:min(350px,calc(100vw - 2rem));max-height:min(65dvh,550px);background:var(--citizen-surface);border:1px solid var(--citizen-border);border-radius:1rem;box-shadow:var(--taxpay-shadow-modal);overflow:hidden;}
@@ -2509,7 +2538,10 @@
   animation: taxpay-overlay-enter var(--taxpay-motion-normal) ease-out both;
 }
 .taxpay-citizen-shell .taxpay-modal {
-  animation: taxpay-dialog-enter var(--taxpay-motion-normal) var(--taxpay-motion-ease) both;
+  /* Do not retain the keyframe's transform after entry. A permanent transform
+   * would make nested fixed Save Draft/Discard overlays relative to this clipped
+   * dialog instead of the viewport, leaving a strip above the dimmer. */
+  animation: taxpay-dialog-enter var(--taxpay-motion-normal) var(--taxpay-motion-ease) backwards;
   transition: height var(--taxpay-motion-normal) var(--taxpay-motion-ease),
               width var(--taxpay-motion-normal) var(--taxpay-motion-ease);
 }

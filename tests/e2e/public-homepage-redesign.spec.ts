@@ -255,3 +255,53 @@ test('six connected benefit cells have soft non-moving hover/focus shadows and c
     ['0px', '0px', '0px', '16px'],
   ]);
 });
+
+
+test('desktop public footer preserves all links, copyright and Help clearance without overflow',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Explicitly sweep medium and wide screens once');
+  test.setTimeout(120000);
+  for(const width of [1121,1280,1600,1792,2048]){
+    for(const lang of ['en','bn']){
+      await page.setViewportSize({width,height:920});
+      await page.goto('/?action=landing&lang='+lang);
+      const footer=page.locator('.public-footer');
+      await expect(footer).toBeVisible();
+      await footer.scrollIntoViewIfNeeded();
+      const links=footer.locator('.public-footer__navs > :is(a,button)');
+      await expect(links).toHaveCount(4);
+      const m=await page.evaluate(()=>{
+        const rect=(node:Element|null)=>{
+          const r=node?.getBoundingClientRect();
+          return r ? {left:r.left,right:r.right,top:r.top,bottom:r.bottom} : null;
+        };
+        const box=(selector:string)=>rect(document.querySelector(selector));
+        const navLinks=Array.from(document.querySelectorAll('.public-footer__navs > :is(a,button)')).map(rect);
+        const inner=document.querySelector<HTMLElement>('.public-footer__inner');
+        const nav=document.querySelector<HTMLElement>('.public-footer__navs');
+        return {vw:innerWidth,documentOverflow:document.documentElement.scrollWidth-innerWidth,
+          innerOverflow:inner ? inner.scrollWidth-inner.clientWidth : Infinity,
+          footer:box('.public-footer'),identity:box('.public-footer__identity'),
+          nav:rect(nav),navLinks,copyright:box('.public-footer__bottom'),
+          help:box('.public-help-widget'),navDisplay:nav?getComputedStyle(nav).display:'none'};
+      });
+      expect(m.navDisplay,'public navigation visible at '+width+'/'+lang).not.toBe('none');
+      expect(m.documentOverflow,'document overflow at '+width+'/'+lang).toBeLessThanOrEqual(2);
+      expect(m.innerOverflow,'footer overflow at '+width+'/'+lang).toBeLessThanOrEqual(2);
+      expect(m.identity && m.nav && m.copyright && m.help).toBeTruthy();
+      if(m.identity && m.nav && m.copyright && m.help){
+        expect(m.identity.left,'logo visible at '+width+'/'+lang).toBeGreaterThanOrEqual(0);
+        expect(m.copyright.right,'copyright visible at '+width+'/'+lang).toBeLessThanOrEqual(width+1);
+        expect(m.nav.right,'nav contained at '+width+'/'+lang).toBeLessThanOrEqual(width+1);
+        type Rect = {left:number;right:number;top:number;bottom:number};
+        const overlaps=(first:Rect|null,second:Rect|null)=>
+          Boolean(first&&second&&
+            Math.min(first.right,second.right)>Math.max(first.left,second.left)&&
+            Math.min(first.bottom,second.bottom)>Math.max(first.top,second.top));
+        expect(m.navLinks.every(link=>!overlaps(link,m.help)),
+          'Help must not cover public footer destinations at '+width+'/'+lang).toBeTruthy();
+        expect(m.navLinks.every(link=>!overlaps(link,m.copyright)),
+          'Copyright must not cover destinations at '+width+'/'+lang).toBeTruthy();
+      }
+    }
+  }
+});

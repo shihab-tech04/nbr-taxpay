@@ -142,3 +142,104 @@ test('Travel Tax passport lookup is full-width on tablet and phone without chang
     expect(Math.abs(button.y + button.height - input.y - input.height)).toBeLessThanOrEqual(3);
   }
 });
+
+
+test('Travel Tax suggestions stay attached to passport and visible above modal footer across sizes',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','One project sweeps the exact responsive widths');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  for (const width of [1280,2048,768,375,320]) {
+    await page.setViewportSize({width,height:700});
+    await page.goto('/?action=landing&lang=en');
+    await openTravelTaxFromBanner(page);
+    const dialog=page.getByRole('dialog',{name:'Travel tax'});
+    const overlay=page.locator('.taxpay-modal__overlay').last();
+    const cover=await overlay.evaluate(node=>{
+      const rect=node.getBoundingClientRect();
+      const style=getComputedStyle(node);
+      const transformedAncestors: string[]=[];
+      for(let parent=node.parentElement;parent;parent=parent.parentElement){
+        const cs=getComputedStyle(parent);
+        if(cs.transform!=='none'||cs.filter!=='none'||cs.perspective!=='none')
+          transformedAncestors.push(parent.tagName.toLowerCase()+'.'+parent.className+':'+cs.transform);
+      }
+      const vv=window.visualViewport;
+      return {top:rect.top,left:rect.left,right:rect.right,bottom:rect.bottom,
+        vw:innerWidth,vh:innerHeight,scrollY:scrollY,
+        visualViewportOffsetTop:vv?.offsetTop,visualViewportPageTop:vv?.pageTop,
+        position:style.position,inset:style.inset,margin:style.margin,
+        translate:style.translate,transform:style.transform,
+        ancestors:[...function*(){for(let p=node.parentElement;p;p=p.parentElement)yield {
+          tag:p.tagName,cls:p.className,rectTop:p.getBoundingClientRect().top,
+          contain:getComputedStyle(p).contain,willChange:getComputedStyle(p).willChange,
+          translate:getComputedStyle(p).translate,
+        }}()],transformedAncestors};
+    });
+    expect(Math.abs(cover.top),'backdrop reaches top at '+width+': '+JSON.stringify(cover)).toBeLessThanOrEqual(1);
+    expect(Math.abs(cover.left),'backdrop reaches left at '+width).toBeLessThanOrEqual(1);
+    expect(cover.right,'backdrop reaches right at '+width).toBeGreaterThanOrEqual(cover.vw-1);
+    expect(cover.bottom,'backdrop reaches bottom at '+width).toBeGreaterThanOrEqual(cover.vh-1);
+
+    const passport=dialog.getByRole('combobox',{name:/Passport number/i}).first();
+    await passport.focus();
+    const list=dialog.getByRole('listbox',{name:'Available sample passports'});
+    await expect(list).toBeVisible();
+    await expect(list.getByRole('option')).toHaveCount(10);
+    const geometry=await list.evaluate(node=>{
+      const rect=node.getBoundingClientRect();
+      const row=node.closest('.travel-flow__passport-row')?.getBoundingClientRect();
+      const footer=node.closest('.taxpay-modal')?.querySelector('.taxpay-modal__footer')?.getBoundingClientRect();
+      const style=getComputedStyle(node);
+      return {top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right,
+        rowTop:row?.top,rowRight:row?.right,rowBottom:row?.bottom,rowLeft:row?.left,
+        footerTop:footer?.top,position:style.position,overflowY:style.overflowY,
+        placement:node.getAttribute('data-placement'),
+        withinInput:node.parentElement?.classList.contains('travel-flow__passport-input')};
+    });
+    expect(geometry.withinInput,'suggestions stay in accessible input group at '+width).toBe(true);
+    expect(geometry.position,'popup never changes the row layout at '+width).toBe('absolute');
+    expect(geometry.left,'list aligned with passport row at '+width).toBeGreaterThanOrEqual((geometry.rowLeft??0)-2);
+    expect(geometry.right,'list contained by passport row at '+width).toBeLessThanOrEqual((geometry.rowRight??Infinity)+2);
+    if(geometry.placement==='above'){
+      expect(geometry.bottom,'popup opens above the full passport row at '+width)
+        .toBeLessThanOrEqual((geometry.rowTop??Infinity)-4);
+    }else{
+      expect(geometry.placement,'explicit placement at '+width).toBe('below');
+      expect(geometry.top,'popup opens below both input and Check Passport at '+width)
+        .toBeGreaterThanOrEqual((geometry.rowBottom??0)+4);
+    }
+    expect(geometry.bottom,'options are visible above pinned footer at '+width)
+      .toBeLessThanOrEqual((geometry.footerTop??Infinity)-4);
+    await list.getByRole('option').first().click();
+    await expect(list).toHaveCount(0);
+    await expect(passport).not.toHaveValue('');
+  }
+});
+
+
+test('Travel Tax nested Save Draft exit scrim covers the viewport after dialog entrance',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Sweep the desktop and phone exit geometry once');
+  for(const width of [375,1280]){
+    await page.setViewportSize({width,height:720});
+    await previewLogin(page);
+    await page.goto('/?action=landing&lang=en');
+    await openTravelTaxFromBanner(page);
+    const dialog=page.getByRole('dialog',{name:'Travel tax'});
+    // The entrance animation must not retain transform and trap fixed descendants
+    // inside the clipped modal rather than the true viewport.
+    await expect(dialog).toHaveCSS('transform','none');
+    await dialog.locator('.taxpay-modal__close').click();
+    const overlay=page.getByTestId('payment-draft-exit-overlay');
+    await expect(overlay).toBeVisible();
+    await expect(overlay.getByRole('alertdialog')).toBeVisible();
+    const geometry=await overlay.evaluate(node=>{
+      const rect=node.getBoundingClientRect();
+      return {top:rect.top,left:rect.left,right:rect.right,bottom:rect.bottom,width:innerWidth,height:innerHeight};
+    });
+    expect(Math.abs(geometry.top),'exit overlay covers top at '+width).toBeLessThanOrEqual(1);
+    expect(Math.abs(geometry.left),'exit overlay covers left at '+width).toBeLessThanOrEqual(1);
+    expect(geometry.right,'exit overlay covers right at '+width).toBeGreaterThanOrEqual(geometry.width-1);
+    expect(geometry.bottom,'exit overlay covers bottom at '+width).toBeGreaterThanOrEqual(geometry.height-1);
+    await overlay.getByRole('button',{name:'Keep editing'}).click();
+    await expect(overlay).toHaveCount(0);
+  }
+});
