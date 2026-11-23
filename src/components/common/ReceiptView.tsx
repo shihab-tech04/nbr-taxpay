@@ -1,3 +1,4 @@
+import {maskTinForDisplay} from '../../services/tinDisplay';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -21,6 +22,9 @@ import { canViewPaymentCertificate } from '../../services/paymentCertificateMode
 interface ReceiptViewProps {
   receipt: ChallanReceipt;
   certificate?: boolean;
+  /** Display-only details for a clearly labelled synthetic Gift Tax preview. */
+  giftSimulationDetails?: {doneeName:string;doneeTin:string;relationship:string;giftAmount:number;giftDate:string;description:string;remarks:string};
+  simulationServiceName?: string;
   onBack?: () => void;
   embedded?: boolean;
   backLabel?: string;
@@ -43,6 +47,7 @@ interface ReceiptViewProps {
 }
 
 export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment, certificate = false,
+  giftSimulationDetails, simulationServiceName,
   transactionActions = false, onPayAgain, onApplyForCorrection, payAgainUnavailableReason,
   payAgainTestId = 'receipt-pay-again', suppressFooterActions = false,
   compactWalkInLayout = false, activeDocument, onDocumentChange, postReceiptInvitation }) => {
@@ -138,7 +143,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
   const serviceNames = Array.from(new Set(allocationItems
     .map(item => bn ? item.paymentServiceBn : item.paymentServiceEn)
     .filter(name => name.trim().length > 0)));
-  const serviceSummary = serviceNames.length ? serviceNames.join(', ') : defaultService;
+  const serviceSummary = simulationServiceName && receipt.isSimulatedDemo ? simulationServiceName : serviceNames.length ? serviceNames.join(', ') : defaultService;
   const assessmentYears = Array.from(new Set(allocationItems
     .map(item => item.assessmentYear)
     .filter(year => year.trim().length > 0)));
@@ -272,6 +277,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
       closeIconLabel={bn ? 'বন্ধ করুন' : 'Close modal'}
       onClose={onBack ?? (() => navigate('history'))}>
       <ReceiptView receipt={receipt} embedded certificate={certificate} onBack={onBack} onNewPayment={onNewPayment}
+        giftSimulationDetails={giftSimulationDetails} simulationServiceName={simulationServiceName}
         transactionActions={transactionActions} onPayAgain={onPayAgain}
         onApplyForCorrection={onApplyForCorrection} payAgainUnavailableReason={payAgainUnavailableReason}
         suppressFooterActions={suppressFooterActions} payAgainTestId={payAgainTestId}/>
@@ -367,6 +373,19 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           </div>
         </div>
 
+        {receipt.isSimulatedDemo && giftSimulationDetails && <section className="gift-tax-sample-receipt" data-testid="gift-tax-sample-receipt">
+          <p className="gift-tax-sample-receipt__warning">{bn ? 'শুধু সিমুলেশন — সরকারি চালান, অর্থ পরিশোধ বা কর ক্রেডিটের প্রমাণ নয়' : 'SIMULATION ONLY — not a government challan, payment or tax-credit confirmation'}</p>
+          <h3 className="receipt-view__section-title">{bn ? 'দানকরের বিবরণ' : 'Gift Tax details'}</h3>
+          <dl className="gift-tax-sample-receipt__fields">
+            <div><dt>{bn ? 'মাধ্যম (কলাম ২)' : 'Through (Column 2)'}</dt><dd>{giftSimulationDetails.doneeName} · {maskTinForDisplay(giftSimulationDetails.doneeTin)}</dd></div>
+            <div><dt>{bn ? 'যার পক্ষে (কলাম ৩)' : 'On Behalf Of (Column 3)'}</dt><dd>{receipt.payerName} · {maskTinForDisplay(receipt.payerTin)}</dd></div>
+            <div><dt>{bn ? 'সম্পর্ক' : 'Relationship'}</dt><dd>{giftSimulationDetails.relationship}</dd></div>
+            <div><dt>{bn ? 'দানের পরিমাণ' : 'Gift amount'}</dt><dd>{formatCurrency(giftSimulationDetails.giftAmount,language)}</dd></div>
+            <div><dt>{bn ? 'দানের তারিখ' : 'Gift date'}</dt><dd>{giftSimulationDetails.giftDate}</dd></div>
+            <div><dt>{bn ? 'দানের বিবরণ' : 'Description'}</dt><dd>{giftSimulationDetails.description||'—'}</dd></div>
+            {giftSimulationDetails.remarks && <div><dt>{bn ? 'মন্তব্য' : 'Remarks'}</dt><dd>{giftSimulationDetails.remarks}</dd></div>}
+          </dl>
+        </section>}
         {/* Two-Column Parties & Jurisdictions */}
         <div className="receipt-view__parties">
           <div className="space-y-2">
