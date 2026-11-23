@@ -127,7 +127,7 @@ test('Step 2 guest form groups inputs and recalculates the right-hand summary', 
   await dialog.getByRole('button', { name: /Pay ৳ 12,000/ }).click();
   await expect(dialog.getByRole('heading', { name: 'Payment record saved' })).toBeVisible({ timeout: 12000 });
   await dialog.getByRole('button', { name: 'Receipt details' }).click();
-  await expect(dialog.getByRole('heading', { name: 'Receipt details' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Challan details' })).toBeVisible();
   expect(page.url()).toBe(originalUrl);
 });
 test('single-head return service remains intact and Other Tax selected amounts remain readable', async ({ page }, info) => {
