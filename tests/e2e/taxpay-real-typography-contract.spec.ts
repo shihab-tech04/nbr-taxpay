@@ -180,12 +180,12 @@ test('signed-in headings and navigation retain semantic hierarchy on every viewp
         }
 
         if(route==='taxpayer_home'){
-          const hero=page.locator('[data-testid="taxpayer-overview-bento"] .taxpay-overview-feature h2').first();
+          const hero=page.locator('[data-testid="taxpayer-overview-bento"] .taxpay-bento-tasks__heading h2').first();
           await expect(hero).toBeVisible();
           expect(await hero.evaluate(el=>Number(getComputedStyle(el).fontWeight)),
-            'overview section weight at '+width+'/'+lang).toBe(600);
+            'visible Follow-ups section weight at '+width+'/'+lang).toBe(600);
           expect(await hero.evaluate(el=>parseFloat(getComputedStyle(el).fontSize)),
-            'overview section size at '+width+'/'+lang).toBe(width>=768?24:20);
+            'visible Follow-ups section size at '+width+'/'+lang).toBe(width>=768?24:20);
         }
         if(route==='history' && width>=768){
           const register=page.getByTestId('taxpayer-transaction-table');
