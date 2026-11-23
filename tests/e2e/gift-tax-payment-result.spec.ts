@@ -4,6 +4,7 @@ import {expect,test} from '@playwright/test';
  * all simulated records remain visibly nonfinancial and browser-local. */
 for(const sample of [
   {lang:'en' as const,width:1280,height:850},
+  {lang:'en' as const,width:1024,height:768},
   {lang:'bn' as const,width:375,height:812},
 ]) {
   test('Gift Tax shared simulated payment, sample receipt and edit recovery '+sample.lang,async({page})=>{
@@ -43,18 +44,48 @@ for(const sample of [
     await expect(review.getByTestId('unified-v3-gift-payment-details')).toBeVisible();
     await gift.getByRole('button',{name:bn?'নিশ্চিত করুন ও পরিশোধ করুন':'Confirm & Pay'}).click();
     await expect(gift.getByTestId('gift-tax-checkout')).toBeVisible();
+    // The approved desktop checkout must retain a separate summary rail,
+    // even though v5 review cards flatten their own inner grid.
+    if(sample.width>900) {
+      const [editor,rail,dialog]=await Promise.all([
+        gift.locator('.gift-tax-workspace .gift-tax-main').boundingBox(),
+        gift.locator('.gift-tax-workspace .gift-tax-aside').boundingBox(),
+        gift.boundingBox(),
+      ]);
+      expect(editor&&rail&&dialog).toBeTruthy();
+      expect(dialog!.width).toBeGreaterThan(900);
+      expect(Math.abs(editor!.x+editor!.width-rail!.x)).toBeLessThanOrEqual(2);
+      expect(Math.abs(editor!.y-rail!.y)).toBeLessThanOrEqual(2);
+    }
     await gift.getByRole('button',{name:bn?'অনলাইনে পরিশোধ':'Pay online'}).click();
     await gift.getByRole('button',{name:bn?'মোবাইল ব্যাংকিং':'Mobile banking'}).click();
     await gift.getByRole('radio',{name:'bKash'}).check();
     await gift.locator('.payment-review__ack input[type=checkbox]').check();
     await gift.getByRole('button',{name:bn?'পেমেন্ট সিমুলেশন করুন':'Simulate payment'}).click();
     await expect(gift.getByTestId('gift-tax-payment-result')).toBeVisible();
+    if(sample.width>900) {
+      const [editor,rail]=await Promise.all([
+        gift.locator('.gift-tax-workspace .gift-tax-main').boundingBox(),
+        gift.locator('.gift-tax-workspace .gift-tax-aside').boundingBox(),
+      ]);
+      expect(Math.abs(editor!.x+editor!.width-rail!.x)).toBeLessThanOrEqual(2);
+    }
+    const bodyOverflow=await gift.locator('.taxpay-modal__body').evaluate(el=>el.scrollWidth-el.clientWidth);
+    expect(bodyOverflow).toBeLessThanOrEqual(2);
     await expect(gift.getByTestId('gift-tax-payment-result'))
       .toContainText(bn?'সিমুলেশন সম্পন্ন':'Simulation completed');
     await expect(gift.getByTestId('gift-tax-settled-documents')).toHaveCount(0);
     await expect(gift.getByRole('link',{name:/Download challan|চালান ডাউনলোড/})).toHaveCount(0);
     await gift.getByRole('button',{name:bn?'নমুনা রসিদ দেখুন':'View sample receipt'}).click();
     await expect(gift.getByTestId('gift-tax-simulation-receipt')).toBeVisible();
+    await expect(gift.locator('.gift-tax-workspace .gift-tax-aside')).toBeHidden();
+    if(sample.width>900) {
+      const [editor,dialog]=await Promise.all([
+        gift.locator('.gift-tax-workspace .gift-tax-main').boundingBox(),
+        gift.boundingBox(),
+      ]);
+      expect(editor!.width).toBeGreaterThan(dialog!.width-70);
+    }
     await expect(gift.getByTestId('gift-tax-sample-receipt')).toContainText('Test gift remarks');
     await expect(gift.getByTestId('gift-tax-sample-receipt')).toContainText(bn?'বাবা':'Father');
     await expect(gift.getByTestId('gift-tax-simulation-receipt')).toContainText(/SIM-GIFT-/);
