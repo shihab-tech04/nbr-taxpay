@@ -261,6 +261,9 @@ test('both fixed buttons keep the same two payment entry routes on every slide',
   await expect(payment.locator('[data-payer-relationship]')).toHaveCount(0);
   await payment.getByRole('button', { name: 'Close payment services' }).click();
   await carousel.getByRole('button', { name: 'Other Tax', exact: true }).click();
+  const otherAccess = page.locator('.taxpay-modal[data-public-service="login"]');
+  await expect(otherAccess.locator('.taxpayer-login-dialog')).toBeVisible();
+  await otherAccess.getByRole('button', { name: 'Walk-in Payment' }).click();
   await page.getByTestId('other-tax-chooser').getByRole('button', {name: /Travel Tax/}).click();
   await expect(page.getByRole('dialog', { name: 'Travel tax' })).toBeVisible();
   await page.getByRole('dialog', { name: 'Travel tax' }).getByRole('button', { name: /close/i }).first().click();

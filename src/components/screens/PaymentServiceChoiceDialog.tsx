@@ -42,7 +42,7 @@ export const TAXPAY_ENTRY_CHOICES = [
   { id: 'OTHER_TAX', Icon: WalletCards, en: 'Other Tax', bn: 'অন্যান্য কর', detailEn: 'Other tax payments.', detailBn: 'অন্যান্য কর পরিশোধ।' }
 ] as const;
 
-export function PaymentServiceChoiceDialog({ initialService = null, initialDraft = null, initialReuse = null, unifiedEntryRequested = false, onDismiss }: { initialService?: BannerPaymentService | null; initialDraft?: PaymentFormDraft | null; initialReuse?: PaymentReuse | null; unifiedEntryRequested?: boolean; onDismiss?: () => void }) {
+export function PaymentServiceChoiceDialog({ initialService = null, initialDraft = null, initialReuse = null, unifiedEntryRequested = false, onDismiss, onPublicOtherTaxContinue }: { initialService?: BannerPaymentService | null; initialDraft?: PaymentFormDraft | null; initialReuse?: PaymentReuse | null; unifiedEntryRequested?: boolean; onDismiss?: () => void; onPublicOtherTaxContinue?: () => void }) {
   const { language, navigate, setPaymentServiceChoiceOpen, previewAccount, paymentBeneficiaryPrefill } = useTaxState();
   const { user: verifiedUser, loading: accountLoading } = useAccountIdentity();
   const multiBeneficiaryPrefill = (paymentBeneficiaryPrefill?.additional?.length ?? 0) > 0;
@@ -177,6 +177,9 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     setDraftToResume(null); setDraftEntryCompleted(true); setUseAccount(withAccount); setStage(1); setCheckoutOpen(false); setView('payment');
   };
   const beginUnifiedPayment = (account: boolean) => {
+    // Public Other Tax reuses this exact sign-in/walk-in entry before showing its
+    // separate Travel/Gift chooser. Do not start the income-tax composer here.
+    if (onPublicOtherTaxContinue) { onPublicOtherTaxContinue(); return; }
     // The new entry collects payment type in Step 2, not at the entry modal.
     // Initialize the existing Other Tax composer so the first step always
     // mounts and preserves the approved taxpayer and checkout contracts.
