@@ -8,8 +8,10 @@ const pageWidth = async (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.documentElement.scrollWidth);
 
 const expectResponsiveReceipt = async (page: import('@playwright/test').Page, projectName: string, language: 'bn' | 'en' = 'bn', embedded = false) => {
+  // An embedded walk-in receipt is named by its shared modal header;
+  // the independent public lookup keeps its original receipt heading.
   const receiptTitle = embedded
-    ? language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'
+    ? language === 'bn' ? 'চালানের বিবরণ' : 'Challan details'
     : language === 'bn' ? 'সহজকর — রসিদের বিবরণ' : 'Sohojkor — Receipt details';
   await expect(page.getByRole('heading', { name: receiptTitle, exact: true })).toBeInViewport();
   if (projectName === 'desktop-1280' && !embedded) {
