@@ -20,6 +20,8 @@ const fixture:TaxpayerTinProfile={
 test('M02 signed-in registration panel renders exactly 24 sourced fields and no raw identifiers',()=>{
  const html=renderToStaticMarkup(createElement(TaxpayerTinInformation,{language:'en',record:fixture}));
  assert.equal((html.match(/<dt\b/g)||[]).length,24,'approved source fields rendered once each');
+ assert.match(html,/data-testid="authenticated-profile-summary"/);
+ assert.match(html,/data-testid="authenticated-profile-detail-columns"/);
  assert.ok(html.includes('123*********'),'TIN masks all but its first three digits');
  assert.ok(html.includes('017********'),'phone masks all but its first three digits');
  assert.ok(html.includes('de***@****.***'),'email local prefix only');
@@ -27,8 +29,8 @@ test('M02 signed-in registration panel renders exactly 24 sourced fields and no 
  assert.ok(!html.includes('123456789012'),'raw TIN never appears in initial markup');
  assert.ok(!html.includes('01712345678'),'raw mobile number never appears in initial markup');
  assert.ok(!html.includes('demo@example.invalid'),'raw email never appears in initial markup');
- assert.ok(html.includes('aria-label="Show TIN number"'));
- assert.ok(html.includes('aria-label="Copy TIN number"'));
+ assert.ok(html.includes('aria-label="Show TIN"'));
+ assert.ok(html.includes('aria-label="Copy TIN"'));
  assert.ok(html.includes('aria-label="Show Mobile number"'));
  assert.ok(html.includes('aria-label="Copy Mobile number"'));
  assert.ok(html.includes('aria-label="Show Email address"'));
