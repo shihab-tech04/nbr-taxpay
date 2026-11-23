@@ -541,8 +541,8 @@
 .public-record-search input::placeholder { color: var(--citizen-muted); opacity: 1; }
 .public-record-search button {
   display: grid; place-items: center; flex: 0 0 50px;
-  min-height: 46px; border: 1px solid var(--citizen-border);
-  border-radius: 8px; background: var(--citizen-primary-light);
+  min-height: 46px; border: 0;
+  border-radius: 6px; background: var(--citizen-primary-light);
   color: var(--citizen-primary-dark); cursor: pointer;
 }
 .public-record-search button:hover:not(:disabled) { background: color-mix(in srgb, var(--citizen-primary) 15%, var(--citizen-surface)); }
@@ -1175,7 +1175,7 @@
     display: grid;
     flex: 1 1 auto;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(210px, .85fr) auto minmax(264px, 1.15fr);
+    grid-template-rows: minmax(210px, .95fr) auto minmax(264px, 1.05fr);
     gap: clamp(12px, 1.5dvh, 20px);
     min-height: 0;
   }
@@ -1218,12 +1218,12 @@
    six benefit cells, so the footer remains in the viewport. */
 @media (min-width: 1600px) and (min-height: 840px) and (max-height: 959px) {
   .taxpay-citizen-shell main.public-information-main:has(.public-home-sections) {
-    padding-top: 2px;
-    padding-bottom: 2px;
+    padding-top: 8px;
+    padding-bottom: 8px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
-    padding-top: .4rem;
-    padding-bottom: .4rem;
+    padding-top: .55rem;
+    padding-bottom: .55rem;
   }
 }
 
