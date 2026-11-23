@@ -142,3 +142,79 @@ test('Travel Tax passport lookup is full-width on tablet and phone without chang
     expect(Math.abs(button.y + button.height - input.y - input.height)).toBeLessThanOrEqual(3);
   }
 });
+
+
+test('passport suggestion popup remains reachable above the fixed footer and the overlay covers the viewport',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Cross-breakpoint geometry runs once');
+  await page.goto('/?action=landing&lang=en');
+  await openTravelTaxFromBanner(page);
+  const modal=page.getByRole('dialog',{name:'Travel tax'});
+  for(const width of [320,375,768,1280,1920]){
+    await page.setViewportSize({width,height:900});
+    const input=modal.locator('.travel-flow__passport-input input').first();
+    await input.click();
+    const popup=modal.getByRole('listbox',{name:'Available sample passports'});
+    await expect(popup).toBeVisible();
+    const [overlayBounds,popupBounds,footerBounds,bodyBounds]=await Promise.all([
+      page.locator('.taxpay-modal__overlay').boundingBox(),
+      popup.boundingBox(),
+      modal.locator('.taxpay-modal__footer').boundingBox(),
+      modal.locator('.taxpay-modal__body').boundingBox(),
+    ]);
+    expect(overlayBounds && popupBounds && footerBounds && bodyBounds).toBeTruthy();
+    if(overlayBounds && popupBounds && footerBounds && bodyBounds){
+      expect(overlayBounds.y,'backdrop reaches top at '+width+'px').toBeLessThanOrEqual(1);
+      expect(overlayBounds.height,'backdrop covers viewport at '+width+'px').toBeGreaterThanOrEqual(899);
+      expect(popupBounds.y,'popup is not clipped by header at '+width+'px').toBeGreaterThanOrEqual(bodyBounds.y-2);
+      expect(popupBounds.y+popupBounds.height,'popup clears anchored footer at '+width+'px').toBeLessThanOrEqual(footerBounds.y+2);
+      expect(popupBounds.x,'popup stays inside viewport at '+width+'px').toBeGreaterThanOrEqual(-1);
+      expect(popupBounds.x+popupBounds.width,'popup stays inside right edge at '+width+'px').toBeLessThanOrEqual(width+1);
+    }
+    expect(await modal.evaluate(node=>node.scrollWidth-node.clientWidth)).toBeLessThanOrEqual(2);
+    await input.press('Escape');
+    await expect(popup).toHaveCount(0);
+    await expect(modal).toBeVisible();
+  }
+  await page.setViewportSize({width:1280,height:900});
+  const input=modal.locator('.travel-flow__passport-input input').first();
+  // Escape leaves the combobox focused. A new click, not another focus,
+  // is the actual user action that reopens the sample list.
+  await input.click();
+  await expect(modal.getByRole('listbox',{name:'Available sample passports'})).toBeVisible();
+  await modal.getByRole('option',{name:/TEST123456/}).click();
+  await expect(input).toHaveValue('TEST123456');
+});
+
+test('public footer keeps identity links and copyright within desktop viewport',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Cross-breakpoint footer geometry runs once');
+  await page.goto('/?action=landing&lang=en');
+  const footer=page.locator('.public-footer');
+  for(const width of [981,1024,1150,1200,1280,1600,1920,2048]){
+    await page.setViewportSize({width,height:900});
+    await footer.scrollIntoViewIfNeeded();
+    const nav=footer.locator('.public-footer__navs');
+    await expect(nav.getByRole('button',{name:'Payment status & receipt'})).toBeVisible();
+    await expect(footer.locator('.public-footer__bottom')).toBeVisible();
+    const geometry=await footer.evaluate(node=>{
+      const inner=node.querySelector('.public-footer__inner')!.getBoundingClientRect();
+      const nav=node.querySelector('.public-footer__navs')!.getBoundingClientRect();
+      const bottom=node.querySelector('.public-footer__bottom')!.getBoundingClientRect();
+      const identity=node.querySelector('.public-footer__identity')!.getBoundingClientRect();
+      const links=[...node.querySelectorAll('.public-footer__navs :is(button,a)')]
+        .map(link=>link.getBoundingClientRect());
+      return {inner:{left:inner.left,right:inner.right},nav:{left:nav.left,right:nav.right},
+        bottom:{left:bottom.left,right:bottom.right},identity:{left:identity.left,right:identity.right},
+        links:links.map(link=>({left:link.left,right:link.right}))};
+    });
+    expect(geometry.inner.left,'footer left edge at '+width+'px').toBeGreaterThanOrEqual(-1);
+    expect(geometry.inner.right,'footer right edge at '+width+'px').toBeLessThanOrEqual(width+1);
+    expect(geometry.bottom.right,'copyright visible at '+width+'px').toBeLessThanOrEqual(width+1);
+    expect(geometry.identity.right,'logo/copy visible at '+width+'px').toBeLessThanOrEqual(width+1);
+    for(const link of geometry.links){
+      expect(link.left,'footer link left edge at '+width+'px').toBeGreaterThanOrEqual(-1);
+      expect(link.right,'footer link right edge at '+width+'px').toBeLessThanOrEqual(width+1);
+    }
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth),
+      'no horizontal page overflow at '+width+'px').toBeLessThanOrEqual(2);
+  }
+});

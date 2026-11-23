@@ -1,7 +1,7 @@
 import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
@@ -95,6 +95,47 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   };
   const [passengerIssue, setPassengerIssue] = useState<PassengerIdentityIssue | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
+  const [passportSuggestionLayout, setPassportSuggestionLayout] = useState<{ placement: 'above' | 'below'; maxHeight: number }>({
+    placement: 'below', maxHeight: 210,
+  });
+  // The suggestions belong to the form's own scroll surface. Measure the
+  // visible space between the input and anchored footer, and place the popup
+  // on the side that has room rather than hiding options underneath the CTA.
+  useLayoutEffect(() => {
+    if (!passportSuggestionsFor) return;
+    const id = passportSuggestionsFor;
+    const input = document.getElementById('travel-passport-' + id);
+    const row = input?.closest<HTMLElement>('.travel-flow__passport-row');
+    const body = input?.closest<HTMLElement>('.taxpay-modal__body');
+    if (!row || !body) return;
+    const position = () => {
+      if (!row.isConnected) return;
+      const rowRect = row.getBoundingClientRect();
+      const bodyRect = body.getBoundingClientRect();
+      const footer = row.closest('.taxpay-modal')?.querySelector<HTMLElement>('.taxpay-modal__footer');
+      const footerTop = footer?.getBoundingClientRect().top ?? window.innerHeight;
+      const availableBelow = Math.max(0, Math.min(bodyRect.bottom, footerTop, window.innerHeight) - rowRect.bottom - 12);
+      const availableAbove = Math.max(0, rowRect.top - Math.max(bodyRect.top, 0) - 12);
+      // Prefer below if two option rows can fit. An upward popup otherwise
+      // covers the "Add passenger" heading and prevents outside-click dismiss.
+      const placement = availableBelow >= 80 || availableBelow >= availableAbove ? 'below' : 'above';
+      const maxHeight = Math.max(64, Math.min(210, placement === 'below' ? availableBelow : availableAbove));
+      setPassportSuggestionLayout(previous =>
+        previous.placement === placement && previous.maxHeight === maxHeight ? previous : {placement, maxHeight});
+    };
+    const frame = requestAnimationFrame(position);
+    const observer = new ResizeObserver(position);
+    observer.observe(body);
+    observer.observe(row);
+    window.addEventListener('resize', position);
+    body.addEventListener('scroll', position, {passive: true});
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('resize', position);
+      body.removeEventListener('scroll', position);
+    };
+  }, [passportSuggestionsFor]);
   const [medicalHelpFor, setMedicalHelpFor] = useState<string | null>(null);
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<ChallanReceipt['paymentMethod'] | null>(null);
@@ -692,8 +733,20 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     errorFocusRevision.current += 1;
                     setPassportSuggestionsFor(passportAlreadyAdded ? null : item.id);
                   }}
+                  onClick={() => {
+                    // A focused input remains focused after Escape. Clicking
+                    // it again must reopen the suggestions without a blur.
+                    if (!passportAlreadyAdded) setPassportSuggestionsFor(item.id);
+                  }}
                   onKeyDown={event => {
-                    if (event.key === 'Escape') setPassportSuggestionsFor(null);
+                    if (event.key === 'Escape' && passportSuggestionsFor === item.id) {
+                      // Dismiss only the combobox popup. The shared modal's
+                      // document-level Escape handler must not discard payment.
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setPassportSuggestionsFor(null);
+                      return;
+                    }
                     if (event.key === 'ArrowDown' && passportSuggestionsFor === item.id) {
                       event.preventDefault();
                       document.querySelector<HTMLElement>('#travel-passport-suggestions-' + item.id + ' [role="option"]')?.focus();
@@ -775,6 +828,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               </div>
               {passportSuggestionsFor === item.id && <div
                 className="travel-flow__passport-suggestions" id={'travel-passport-suggestions-' + item.id}
+                data-placement={passportSuggestionLayout.placement}
+                style={{maxHeight: passportSuggestionLayout.maxHeight}}
                 role="listbox" aria-label={tr('Available sample passports','উপলব্ধ নমুনা পাসপোর্ট')}
                 onKeyDown={event => {
                   if (event.key === 'Escape') {
