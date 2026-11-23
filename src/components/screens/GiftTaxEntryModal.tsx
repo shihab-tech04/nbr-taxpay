@@ -14,6 +14,7 @@ import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {maskTinForDisplay} from '../../services/tinDisplay';
 import {amountInTakaWords} from '../../services/amountInWords';
 import {estimateGiftTax, parseGiftValue} from '../../services/giftTaxEstimate';
+import {validGiftDate} from '../../services/giftTaxDate';
 import '../../styles/taxpay-unified-v3.css';
 
 type Party = 'donor' | 'donee';
@@ -24,12 +25,6 @@ const localToday = () => {
   const parts = new Intl.DateTimeFormat('en-GB', {timeZone: 'Asia/Dhaka',year: 'numeric',month: '2-digit',day: '2-digit'}).formatToParts(new Date());
   const part = (type: string) => parts.find(item => item.type === type)?.value ?? '';
   return `${part('year')}-${part('month')}-${part('day')}`;
-};
-/** Reject impossible dates, malformed values, and dates after Dhaka today. */
-export const validGiftDate = (date: string, today: string): boolean => {
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || date > today) return false;
-  const parsed = new Date(date + 'T00:00:00.000Z');
-  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
 };
 const inputClass = 'gift-tax-field-control';
 const primaryClass = 'gift-tax-action gift-tax-action--primary';
