@@ -99,8 +99,8 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
         const kind=typeof raw==='string'?sensitiveProfileKind(field,raw):null;
         const hideUnavailable=registrationNotLinked && !showUnavailableFields && !raw;
         return <div key={field} data-profile-field={field} className={(hideUnavailable?'hidden':'grid')+' min-w-0 gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(135px,43%)_minmax(0,1fr)] sm:gap-4'}>
-          <dt className="text-sm font-normal text-taxpay-muted">{tr(label)}</dt>
-          <dd className="min-w-0 break-words text-sm font-medium leading-relaxed text-taxpay-text">
+          <dt className="taxpay-profile-field-label text-taxpay-muted">{tr(label)}</dt>
+          <dd className="taxpay-profile-field-value min-w-0 break-words text-taxpay-text">
             {kind?<MaskedProfileValue key={field+':'+raw} value={raw as string} kind={kind}
               label={tr(label)} language={language} allowCopy profileContext/>:value(field,language)}
           </dd>
@@ -109,7 +109,7 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
     </dl>
   </>;
   const panel=(title:Label,children:React.ReactNode)=><section className="flex h-full min-w-0 flex-col rounded-xl border border-taxpay-border bg-white p-4 sm:p-5">
-    <h3 className="mb-4 border-b border-taxpay-border pb-3 text-base font-semibold text-taxpay-text">{tr(title)}</h3>
+    <h3 className="taxpay-profile-section-heading mb-4 border-b border-taxpay-border pb-3 text-taxpay-text">{tr(title)}</h3>
     {children}
   </section>;
   const [copied,setCopied]=useState<'idle'|'done'|'failed'>('idle');
@@ -189,8 +189,8 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
       {downloadError&&<p className="px-5 pb-3 text-sm text-taxpay-error" role="alert">{tr(['Download failed. Please retry.','ডাউনলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।'])}</p>}
       <div data-testid="user1-profile-summary" className="grid border-t border-taxpay-border sm:grid-cols-4">
         {TAXPAYER_PROFILE_LAYOUT.summary.map(([field,label])=><div key={field} data-profile-field={field} className="min-w-0 border-b border-taxpay-border px-5 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:px-6 sm:last:border-r-0">
-          <p className="text-sm text-taxpay-muted">{tr(label)}</p>
-          <p className="mt-1 break-words text-sm font-semibold text-taxpay-text">{value(field,language)}</p>
+          <p className="taxpay-profile-summary-label text-taxpay-muted">{tr(label)}</p>
+          <p className="taxpay-profile-summary-value mt-1 break-words text-taxpay-text">{value(field,language)}</p>
         </div>)}
       </div>
     </section>

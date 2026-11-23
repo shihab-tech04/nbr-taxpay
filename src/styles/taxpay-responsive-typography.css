@@ -473,6 +473,95 @@
 
 
 /*
+ * Signed-in taxpayer semantic typography: one source of truth for actual
+ * account register, profile, ledger, certificates and navigation components.
+ * Six existing rem size tokens (12/16/20/24/28/32px), four weights
+ * (400/500/600/700). Scoped: NO Office, public hero or receipt print changes.
+ */
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) {
+  --taxpayer-reading-size: var(--taxpay-type-body);
+  --taxpayer-section-size: var(--taxpay-type-h3);
+  --taxpayer-reading-weight: 400;
+  --taxpayer-label-weight: 500;
+  --taxpayer-emphasis-weight: 600;
+  --taxpayer-page-weight: 700;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  :is(.taxpayer-reference-links button, .taxpayer-activity-sections button,
+      .taxpay-office-register__actions button, .taxpay-table-tabs button,
+      .taxpay-office-register__search input) {
+  font-size: var(--taxpayer-reading-size);
+  line-height: 1.5;
+  font-weight: var(--taxpayer-label-weight);
+}
+/* Keep the frozen signed-in navigation action at 600, as established by
+ * the real 320–1920px EN/BN typography regression contract. */
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpayer-reference-links button {
+  font-weight: var(--taxpayer-emphasis-weight);
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  :is(.taxpay-office-register__title, .taxpay-record-toolbar__heading h3) {
+  font-size: var(--taxpayer-section-size);
+  font-weight: var(--taxpayer-emphasis-weight);
+  line-height: 1.4;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  :is(table.taxpay-unified-table thead th,
+      .taxpay-record-list__columns .taxpay-record-list__heading) {
+  font-size: var(--taxpayer-reading-size);
+  font-weight: var(--taxpayer-emphasis-weight);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  table.taxpay-unified-table tbody td {
+  font-size: var(--taxpayer-reading-size);
+  font-weight: var(--taxpayer-reading-weight);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  :is(.taxpayer-transaction-row__title, .taxpay-mobile-table-card__title) {
+  font-size: var(--taxpayer-reading-size);
+  font-weight: var(--taxpayer-emphasis-weight);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  :is(.taxpay-profile-field-label, .taxpay-profile-summary-label) {
+  font-size: var(--taxpayer-reading-size);
+  font-weight: var(--taxpayer-reading-weight);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpay-profile-field-value {
+  font-size: var(--taxpayer-reading-size);
+  font-weight: var(--taxpayer-label-weight);
+  line-height: 1.6;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpay-profile-summary-value {
+  font-size: var(--taxpayer-reading-size);
+  font-weight: var(--taxpayer-emphasis-weight);
+  line-height: 1.5;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpay-profile-section-heading {
+  font-size: var(--taxpayer-section-size);
+  font-weight: var(--taxpayer-emphasis-weight);
+  line-height: 1.4;
+}
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpayer-transaction-beneficiaries--compact .text-xs {
+  font-size: var(--taxpay-type-micro);
+  line-height: 1.5;
+}
+/* Real identifier remains full in the DOM/detail modal. Desktop shows one
+ * bounded line; phone cards wrap it without page-wide overflow. */
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpayer-transaction-table .taxpayer-transaction-reference {
+  font-weight: var(--taxpayer-reading-weight);
+}
+
+/*
  * Shared citizen font-weight hierarchy (EN Poppins / BN Noto Sans Bengali).
  * Size tiers are separately owned above. Keep font weights stable across widths:
  * 700 for primary/page/section titles and financial totals, 600 for subordinate
