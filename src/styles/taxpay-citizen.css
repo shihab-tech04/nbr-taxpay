@@ -1261,64 +1261,22 @@
  .public-footer__bottom {padding-left:.25rem;}
 }
 
-/* Public footer: the old unconstrained three-column rail ran past the right
- * edge on wide displays and underneath fixed Help. Keep the approved branding,
- * destinations and body font sizes; reserve the actual Help width and give
- * narrower desktop layouts their own non-overlapping two-row structure. */
-@media (min-width: 1200px) and (max-width: 1799px) {
-  .taxpay-citizen-shell.taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
-    box-sizing: border-box;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto auto;
-    width: min(100%, 1164px);
-    max-width: calc(100vw - 40px);
-    margin-inline: auto;
-    padding: 8px 16px;
-    gap: 2px 16px;
-  }
-  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity {
-    grid-column: 1; grid-row: 1;
-  }
-  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
-    grid-column: 2; grid-row: 1;
-    padding-inline-start: 10px;
-  }
-  .taxpay-citizen-shell.taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
-    grid-column: 1 / -1; grid-row: 2;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0 16px;
-  }
-}
+/* Public home wide desktops: retain the approved one-row footer structure,
+ * content heights, destinations and font hierarchy. Only enlarge the inner
+ * usable rail and reserve the real floating Help width on the right. */
 @media (min-width: 1800px) {
   .taxpay-citizen-shell.taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
-    box-sizing: border-box;
-    display: grid;
-    grid-template-columns: max-content minmax(0, 1fr) max-content;
-    align-items: center;
     width: auto;
     max-width: none;
     margin-left: max(16px, calc((100vw - var(--public-content-max)) / 2));
     margin-right: max(112px, env(safe-area-inset-right));
-    padding: 8px 12px;
-    gap: 12px 16px;
-  }
-  .taxpay-citizen-shell.taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
-    flex: 0 0 180px;
-    max-width: 180px;
   }
   .taxpay-citizen-shell.taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
     min-width: 0;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    column-gap: 12px;
-  }
-  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
-    grid-column: 3;
-    padding-inline-start: 12px;
+    flex-wrap: nowrap;
   }
 }
+
 /* The dialog backdrop must be a viewport surface, never a scroll-area-sized
  * background or a strip below the sticky public navigation. */
 .taxpay-citizen-shell .taxpay-modal__overlay.public-service-overlay {
