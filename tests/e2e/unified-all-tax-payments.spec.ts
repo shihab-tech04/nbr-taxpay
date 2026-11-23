@@ -62,7 +62,7 @@ test('v5 Return checkbox composes with other taxpayer/head and written final tot
   const returnGroup = catalogue.getByTestId('unified-v5-return-group');
   await expect(returnGroup).toHaveAttribute('data-head-group', 'Tax with Return');
   await expect(returnGroup.locator('summary')).toContainText('Tax with Return');
-  await expect(returnGroup.locator('summary')).toContainText('(1)');
+  await expect(returnGroup.locator('.other-tax-category-trigger__count')).toHaveText('1 heads');
   await expect(returnGroup.locator('[data-head-row="125"]')).toHaveCount(1);
   await returnGroup.locator('summary').click();
   const checkbox = returnGroup.getByTestId('unified-v5-return-checkbox');
