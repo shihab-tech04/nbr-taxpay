@@ -5,6 +5,7 @@ import type {ChallanReceipt} from '../../types/tax';
 import {maskTinForDisplay} from '../../services/tinDisplay';
 import type {GiftTaxPaymentInput, GiftTaxPaymentOutcome} from '../../services/giftTaxPaymentGateway';
 import {validatedGiftTaxSettlement} from '../../services/giftTaxPaymentGateway';
+import {BENEFICIARY_RELATIONS, beneficiaryFinalTagLabel, type BeneficiaryRelation} from '../../services/beneficiaryTags';
 
 interface Props {
   language: 'en'|'bn';
@@ -18,6 +19,11 @@ export function GiftTaxPaymentResult({language,input,outcome,onBack,onRetry,onRe
   const bn=language==='bn';
   const tr=(en:string,bd:string)=>bn?bd:en;
   const [showReceipt,setShowReceipt]=useState(false);
+  // Keep the original relationship slug in the payment contract; localize display only.
+  const selectedRelation = input.donee.relationship && BENEFICIARY_RELATIONS.some(value=>value===input.donee.relationship)
+    ? input.donee.relationship as BeneficiaryRelation : null;
+  const relationshipLabel = beneficiaryFinalTagLabel(input.donee.tag,selectedRelation,language,input.donee.otherLabel)
+    ?? input.donee.otherLabel ?? input.donee.relationship ?? '—';
   const proof=validatedGiftTaxSettlement(outcome,input);
   const simulatedSuccess=outcome.kind==='SIMULATED_SUCCESS';
   const simulatedPending=outcome.kind==='SIMULATED_PENDING';
@@ -63,7 +69,7 @@ export function GiftTaxPaymentResult({language,input,outcome,onBack,onRetry,onRe
     <ReceiptView receipt={receipt} embedded compactWalkInLayout
       simulationServiceName={tr('Gift Tax (simulation)','দানকর (সিমুলেশন)')}
       giftSimulationDetails={{doneeName:input.donee.name,doneeTin:input.donee.tin,
-        relationship:input.donee.otherLabel || input.donee.relationship || (input.donee.tag==='clients'?'Clients':'—'),
+        relationship:relationshipLabel,
         giftAmount:input.giftAmountMinor/100,giftDate:input.giftDate,
         description:input.description,remarks:input.remarks}}
       onBack={()=>setShowReceipt(false)}/>

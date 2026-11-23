@@ -198,7 +198,9 @@ for (const language of ['en', 'bn'] as const) {
     await expect(donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'})).toBeFocused();
     await chooser.click();
     await search.press('Shift+Tab');
-    await expect(donee.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donee/})).toBeFocused();
+    // Native reverse Tab reaches the adjacent search-result Reveal TIN control,
+    // rather than skipping that keyboard-accessible identity privacy action.
+    await expect(donee.getByRole('button', {name: bn ? 'টিআইএন দেখুন' : 'Reveal TIN'})).toBeFocused();
     await donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'}).click();
     await gift.getByRole('button', {name: bn ? 'দান ও করের তথ্যে এগিয়ে যান' : 'Continue to Gift & Tax Information'}).click();
     await gift.locator('#gift-tax-amount').fill('2500000');

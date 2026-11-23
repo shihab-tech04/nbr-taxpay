@@ -27,9 +27,9 @@ for(const sample of [
     await donee.locator('#gift-donee-relationship').click();
     await page.getByRole('option',{name:bn?'বাবা':'Father'}).click();
     await donee.getByRole('button',{name:bn?'গ্রহীতা যোগ করুন':'Add Donee'}).click();
-    await expect(gift.getByTestId('gift-rail-donor')).toContainText('User 1');
-    await expect(gift.getByTestId('gift-rail-donee')).toContainText('User 2');
-    await expect(donor.getByTestId('gift-confirmed-donor')).not.toContainText('User 1');
+    await expect(gift.getByTestId('gift-rail-donor')).toContainText(bn?'ইউজার 1':'User 1');
+    await expect(gift.getByTestId('gift-rail-donee')).toContainText(bn?'ইউজার 2':'User 2');
+    await expect(donor.getByTestId('gift-confirmed-donor')).not.toContainText(bn?'ইউজার 1':'User 1');
     await gift.getByRole('button',{name:bn?'দান ও করের তথ্যে এগিয়ে যান':'Continue to Gift & Tax Information'}).click();
     await gift.locator('#gift-tax-amount').fill('2500000');
     await gift.locator('#gift-tax-date').fill('2025-01-15');
@@ -56,7 +56,7 @@ for(const sample of [
     await gift.getByRole('button',{name:bn?'নমুনা রসিদ দেখুন':'View sample receipt'}).click();
     await expect(gift.getByTestId('gift-tax-simulation-receipt')).toBeVisible();
     await expect(gift.getByTestId('gift-tax-sample-receipt')).toContainText('Test gift remarks');
-    await expect(gift.getByTestId('gift-tax-sample-receipt')).toContainText(bn?'বাবা':'father');
+    await expect(gift.getByTestId('gift-tax-sample-receipt')).toContainText(bn?'বাবা':'Father');
     await expect(gift.getByTestId('gift-tax-simulation-receipt')).toContainText(/SIM-GIFT-/);
     await gift.getByRole('button',{name:bn?'পেমেন্টের ফলে ফিরুন':'Back to payment result'}).click();
     await gift.getByRole('button',{name:bn?'চূড়ান্ত পর্যালোচনায় ফিরুন':'Back to Final Preview'}).click();
@@ -84,8 +84,8 @@ test('Gift Tax relationship popup escapes modal, flips above footer, and preserv
   const box=await popup.boundingBox();
   expect(box!.y).toBeGreaterThanOrEqual(0);
   expect(box!.y+box!.height).toBeLessThanOrEqual(780);
-  await popup.getByRole('searchbox').fill('Siblings');
-  await popup.getByRole('searchbox').press('Enter');
+  await popup.getByRole('combobox',{name:'Search relationships'}).fill('Siblings');
+  await popup.getByRole('combobox',{name:'Search relationships'}).press('Enter');
   await expect(donee.locator('#gift-donee-relationship')).toHaveAttribute('data-value','friends_family:siblings');
   await expect(donee.getByRole('button',{name:'Add Donee'})).toBeEnabled();
 });
