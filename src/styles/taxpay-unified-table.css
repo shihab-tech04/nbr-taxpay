@@ -1873,6 +1873,22 @@ table.taxpay-unified-table {
     padding-block: 10px;
     overflow-wrap: anywhere;
   }
+  /* Pinned financial statuses must remain fully readable, not clipped by
+   * the following sticky Actions cell on narrow laptop viewports. */
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table .taxpayer-transaction-row__status {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table .taxpayer-transaction-row__status > span {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    line-height: 1.45;
+  }
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
   .taxpayer-transaction-table .taxpay-compact-cell-list {
     gap: 2px;
