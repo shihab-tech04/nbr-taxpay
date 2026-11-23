@@ -134,12 +134,12 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
       </>}
     </section>;
   };
-  return <TaxPayModal title={t('Gift Tax (উপহার কর)', 'উপহার কর (Gift Tax)')}
-    ariaLabel={t('Gift Tax', 'দান কর')} service="gift" className="gift-tax-dialog"
-    closeIconLabel={t('Close Gift Tax', 'দান কর বন্ধ করুন')}
+  return <TaxPayModal title={t('Gift Tax', 'দানকর')}
+    ariaLabel={t('Gift Tax', 'দানকর')} service="gift" className="gift-tax-dialog"
+    closeIconLabel={t('Close Gift Tax', 'দানকর বন্ধ করুন')}
     onClose={onClose}
     onBack={step === 1 ? onBack : () => setStep(step === 3 ? 2 : 1)}
-    backLabel={step === 1 ? t('Back to Other tax payments', 'অন্যান্য কর পরিশোধে ফিরুন') : t('Back to previous Gift Tax screen', 'আগের দান কর স্ক্রিনে ফিরুন')}
+    backLabel={step === 1 ? t('Back to Other tax payments', 'অন্যান্য কর পরিশোধে ফিরুন') : t('Back to previous Gift Tax screen', 'আগের দানকর স্ক্রিনে ফিরুন')}
     footer={step === 1 ? <button type="button" className={primaryClass} disabled={!bothAdded} onClick={continueToDetails}>
       {t('Continue to Gift & Tax Information', 'দান ও করের তথ্যে এগিয়ে যান')}
     </button> : step === 2 ? <>
@@ -179,7 +179,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
       </section>
       <aside className="gift-tax-aside" data-testid="gift-tax-payment-summary">
         <h3 className="mb-3 text-sm font-semibold text-slate-900">{t('Payment summary', 'পেমেন্ট সারসংক্ষেপ')}</h3>
-        <p className="text-sm text-slate-600">{t('Estimated Gift Tax', 'আনুমানিক দান কর')}</p>
+        <p className="text-sm text-slate-600">{t('Estimated Gift Tax', 'আনুমানিক দানকর')}</p>
         <p className="my-1 text-2xl font-semibold text-[#2C5EAD]" data-testid="gift-tax-estimate">{estimatedTax === null ? '—' : '৳ ' + number(estimatedTax)}</p>
         <p className="mb-3 text-xs text-slate-600">{amountInTakaWords(estimatedTax, language) ?? '—'}</p>
         <dl className="rounded-xl border border-slate-200 bg-white px-3">{line(t('Donor', 'দাতা'), added.donor?.name ?? '—')}{line(t('Donor TIN', 'দাতার টিআইএন'), maskTinForDisplay(added.donor?.tin))}{line(t('Donee', 'গ্রহীতা'), added.donee?.name ?? '—')}{line(t('Donee TIN', 'গ্রহীতার টিআইএন'), maskTinForDisplay(added.donee?.tin))}</dl>
@@ -187,7 +187,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     </div>}
     {step === 3 && <div className="gift-tax-grid" data-testid="gift-tax-review">
       <section className="gift-tax-main space-y-3">
-        <h3 className="text-base font-semibold text-slate-900">{t('Final Gift Tax preview', 'চূড়ান্ত দান কর পর্যালোচনা')}</h3>
+        <h3 className="text-base font-semibold text-slate-900">{t('Final Gift Tax preview', 'চূড়ান্ত দানকর পর্যালোচনা')}</h3>
         <dl className="rounded-xl border border-slate-200 bg-white px-4">
           {line(t('Gift amount', 'দানের পরিমাণ'), parsedAmount === null ? '—' : '৳ ' + number(parsedAmount))}
           {line(t('Gift description', 'দানের বিবরণ'), description || '—')}
@@ -199,7 +199,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         </dl>
         <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm leading-6 text-amber-950" data-testid="gift-tax-review-complete">
           {t('Preview only. The Gift Tax payment head, authoritative identity/tax-zone lookup, statutory exemptions, gateway, and donor credit posting are not configured. No money was charged, no challan was created, and no SQL payment record was written.',
-            'শুধু পর্যালোচনা। দান করের অনুমোদিত খাত, পরিচয়/কর অঞ্চল যাচাই, আইনগত অব্যাহতি, পেমেন্ট গেটওয়ে ও দাতার কর ক্রেডিট চালু নেই। কোনো টাকা কাটা হয়নি, চালান তৈরি হয়নি বা SQL-এ পেমেন্ট রেকর্ড লেখা হয়নি।')}
+            'শুধু পর্যালোচনা। দানকরের অনুমোদিত খাত, পরিচয়/কর অঞ্চল যাচাই, আইনগত অব্যাহতি, পেমেন্ট গেটওয়ে ও দাতার কর ক্রেডিট চালু নেই। কোনো টাকা কাটা হয়নি, চালান তৈরি হয়নি বা SQL-এ পেমেন্ট রেকর্ড লেখা হয়নি।')}
         </div>
       </section>
       <aside className="gift-tax-aside">
