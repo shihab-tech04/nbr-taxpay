@@ -86,6 +86,10 @@ test('Home search, benefit padding and footer remain aligned at real viewport si
         expect(Math.abs(geometry.searchPadding.left-geometry.benefitsPadding.left)).toBeLessThanOrEqual(1);
       }
       if (viewport.width >= 1121) {
+        // Homepage-only footer retains readable navigation and identity.
+        if (viewport.width >= 1400) {
+          expect(geometry.help.bottom, JSON.stringify({viewport,lang,geometry})).toBeLessThanOrEqual(geometry.footerInner.top - 8);
+        }
         // Neither footer nor Help may visually escape the same page rail.
         expect(geometry.footerInner.left).toBeGreaterThanOrEqual(geometry.rail.left-3);
         expect(geometry.footerInner.right).toBeLessThanOrEqual(geometry.rail.right+3);
