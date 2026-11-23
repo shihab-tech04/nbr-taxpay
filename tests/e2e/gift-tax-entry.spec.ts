@@ -7,7 +7,7 @@ for (const locale of ['en', 'bn'] as const) {
     const bn = locale === 'bn';
     const hero = page.locator('.public-hero-carousel__slide[data-active="true"]');
     await hero.getByRole('button', {name: bn ? 'অন্যান্য কর' : 'Other Tax'}).click();
-    const entry = page.getByRole('dialog', {name:'Pay Tax'});
+    const entry = page.locator('.taxpay-modal[data-public-service="login"]');
     await expect(entry.locator('.taxpayer-login-dialog')).toBeVisible();
     await expect(entry.getByRole('button', {name:bn ? 'ওয়াক-ইন পেমেন্ট' : 'Walk-in Payment'})).toBeVisible();
     await entry.getByRole('button', {name:bn ? 'ওয়াক-ইন পেমেন্ট' : 'Walk-in Payment'}).click();

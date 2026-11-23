@@ -11,6 +11,9 @@ test('approved fixed banner keeps three service destinations without inventing G
   await expect(active.getByRole('button',{name:'Other Tax',exact:true})).toBeVisible();
   await expect(active.locator('.public-hero-carousel__gift-link')).toHaveCount(0);
   await active.getByRole('button',{name:'Other Tax'}).click();
+  const otherAccess = page.locator('.taxpay-modal[data-public-service="login"]');
+  await expect(otherAccess.locator('.taxpayer-login-dialog')).toBeVisible();
+  await otherAccess.getByRole('button',{name:'Walk-in Payment'}).click();
   await page.getByTestId('other-tax-chooser').getByRole('button',{name:/Gift Tax/}).click();
   const gift=page.getByRole('dialog',{name:'Gift Tax'});
   await expect(gift).toBeVisible();
