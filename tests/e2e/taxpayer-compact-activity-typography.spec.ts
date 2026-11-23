@@ -65,6 +65,8 @@ test('desktop table retains nine fields but keeps Payment and Actions visible wh
         width:viewport.scrollWidth,
         paymentPosition:getComputedStyle(first).position,
         actionPosition:getComputedStyle(last).position,
+        amountPosition:getComputedStyle(t.querySelector('thead [data-column-key="amount"]')!).position,
+        statusPosition:getComputedStyle(t.querySelector('thead [data-column-key="status"]')!).position,
         paymentText:before.textContent||'',
       };
     });
@@ -72,16 +74,24 @@ test('desktop table retains nine fields but keeps Payment and Actions visible wh
     expect(geometry.width).toBeGreaterThan(geometry.viewport);
     expect(geometry.paymentPosition).toBe('sticky');
     expect(geometry.actionPosition).toBe('sticky');
+    expect(geometry.amountPosition).toBe('sticky');
+    expect(geometry.statusPosition).toBe('sticky');
     expect(geometry.paymentText,'Reference has its own column; no duplicate identity').not.toMatch(/DEMO-PAY-|[0-9a-f]{8}-[0-9a-f]{4}/i);
     await viewport.evaluate(el=>{el.scrollLeft=el.scrollWidth;});
     const edge=await table.evaluate(t=>{
       const pane=t.closest('.taxpay-table-viewport')!.getBoundingClientRect();
       const first=t.querySelector('tbody [data-column-key="payment"]')!.getBoundingClientRect();
       const last=t.querySelector('tbody [data-column-key="actions"]')!.getBoundingClientRect();
-      return {start:first.left,end:last.right,paneStart:pane.left,paneEnd:pane.right};
+      const amount=t.querySelector('tbody [data-column-key="amount"]')!.getBoundingClientRect();
+      const status=t.querySelector('tbody [data-column-key="status"]')!.getBoundingClientRect();
+      return {start:first.left,end:last.right,paneStart:pane.left,paneEnd:pane.right,
+        amountStart:amount.left,amountEnd:amount.right,statusStart:status.left,statusEnd:status.right,actionStart:last.left};
     });
     expect(edge.start).toBeGreaterThanOrEqual(edge.paneStart-2);
     expect(edge.end).toBeLessThanOrEqual(edge.paneEnd+2);
+    expect(edge.amountEnd).toBeLessThanOrEqual(edge.statusStart+2);
+    expect(edge.statusEnd).toBeLessThanOrEqual(edge.actionStart+2);
+    expect(edge.amountStart).toBeGreaterThanOrEqual(edge.paneStart);
     await expect(table.locator('tbody [data-column-key="actions"] button').first()).toBeVisible();
     await expect(page.locator('.taxpay-register-scroll-note')).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth))
