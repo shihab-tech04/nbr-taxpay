@@ -328,3 +328,119 @@
 .taxpay-citizen-shell .gift-tax-undo:focus-visible {
   outline:3px solid var(--citizen-primary,#2c5ead);outline-offset:2px;
 }
+
+
+/* 24 Nov: the selected party is a confirmation, not another data-entry prompt.
+ * Preserve the shared Taxpayer workspace and its modal/footer geometry. */
+.taxpay-citizen-shell .gift-tax-workspace[data-testid="gift-tax-entry-form"] .gift-tax-person-section {
+  min-width:0;
+}
+.taxpay-citizen-shell .gift-tax-confirmed-person__content {
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:10px;min-width:0;
+}
+.taxpay-citizen-shell .gift-tax-confirmed-person__content .gift-tax-added-hint {
+  flex:1 1 230px;min-width:0;margin:0;
+  border-color:#d8e7f1;background:#f7fafc;
+}
+.taxpay-citizen-shell .gift-tax-confirmed-person__content > button {
+  flex:none;min-height:44px;margin:0;
+}
+
+/* Keep TIN result, classification and Add Donee visibly within one decision step. */
+.taxpay-citizen-shell .gift-tax-donee-completion {
+  display:grid;gap:10px;min-width:0;
+  margin:13px 0 0;padding:14px;
+  border:1px solid #dfd4ee;border-radius:12px;
+  background:#fbf9fe;
+}
+.taxpay-citizen-shell .gift-tax-donee-completion .gift-tax-field-label {
+  margin:0;font-size:14px;
+}
+.taxpay-citizen-shell .gift-tax-donee-completion .gift-tax-relationship-trigger {
+  min-height:48px;border-color:#cbbbe2;border-radius:10px;
+  background:#fff;color:#263550;box-shadow:0 1px 2px rgba(36,30,58,.03);
+}
+.taxpay-citizen-shell .gift-tax-donee-completion .gift-tax-relationship-trigger[aria-expanded="true"] {
+  border-color:#8251b4;outline:2px solid #8251b4;outline-offset:1px;
+}
+.taxpay-citizen-shell .gift-tax-donee-completion__footer {
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:12px;padding-top:10px;border-top:1px solid #e6dff1;
+}
+.taxpay-citizen-shell .gift-tax-donee-completion__helper {
+  flex:1 1 215px;min-width:0;margin:0;
+  color:#596780;font-size:13px;line-height:1.5;
+}
+.taxpay-citizen-shell .gift-tax-donee-completion .gift-tax-add-donee {
+  display:inline-flex;align-items:center;gap:9px;
+  justify-content:center;flex:none;
+  min-height:46px;padding:10px 18px;border-color:#8251b4;
+  background:#8251b4;color:#fff;
+}
+.taxpay-citizen-shell .gift-tax-donee-completion .gift-tax-add-donee:disabled {
+  background:#e6e0ed;border-color:#d6ccdf;color:#625672;
+  cursor:not-allowed;
+}
+.taxpay-citizen-shell .gift-tax-donee-completion .gift-tax-add-donee:hover:not(:disabled) {
+  background:#71429e;border-color:#71429e;
+}
+
+/* The right summary groups donor and donee by role, not just identical cards. */
+.taxpay-citizen-shell .gift-tax-rail-roles {
+  gap:12px;padding:14px;min-width:0;
+}
+.taxpay-citizen-shell .gift-tax-role-group {
+  min-width:0;padding:12px;
+  border:1px solid #e0e6ef;border-radius:12px;
+  background:var(--gift-role-soft,#f9fafb);
+}
+.taxpay-citizen-shell .gift-tax-role-group__header {
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin:0 0 9px;min-width:0;
+}
+.taxpay-citizen-shell .gift-tax-role-group__header .gift-tax-role-group__title {
+  margin:0;color:var(--gift-role,#2c5ead);
+  font-size:14px;font-weight:750;
+}
+.taxpay-citizen-shell .gift-tax-role-group__status {
+  flex:none;padding:3px 8px;border-radius:999px;
+  border:1px solid color-mix(in srgb,var(--gift-role,#2c5ead) 24%,transparent);
+  color:var(--gift-role,#2c5ead);background:#fff;
+  font-size:11px;font-weight:700;
+}
+.taxpay-citizen-shell .gift-tax-role-group .gift-tax-identity-card {
+  min-width:0;margin:0;padding:12px;
+  border-left:3px solid var(--gift-role,#2c5ead);
+  border-radius:10px;background:#fff;
+}
+.taxpay-citizen-shell .gift-tax-role-group .gift-tax-identity-card__row {
+  display:grid;grid-template-columns:36px minmax(0,1fr) 34px;
+  align-items:start;gap:10px;min-width:0;
+}
+.taxpay-citizen-shell .gift-tax-role-group .gift-tax-identity-card__copy {
+  min-width:0;overflow-wrap:anywhere;gap:3px;
+}
+.taxpay-citizen-shell .gift-tax-role-group .gift-tax-identity-card__copy strong {
+  font-size:14px;line-height:1.4;
+}
+.taxpay-citizen-shell .gift-tax-role-group .gift-tax-identity-card__relationship {
+  display:inline-block;align-self:flex-start;max-width:100%;
+  margin-top:3px;padding:4px 8px;border-radius:7px;
+  background:#f5effb;color:#65428b;font-size:12px;
+  line-height:1.4;overflow-wrap:anywhere;
+}
+.taxpay-citizen-shell .gift-tax-role-group .gift-tax-identity-card__remove {
+  display:grid;place-items:center;min-width:34px;min-height:34px;
+}
+.taxpay-citizen-shell .gift-tax-role-group__empty {
+  margin:0;background:#fff;
+}
+@media(max-width:620px) {
+  .taxpay-citizen-shell .gift-tax-donee-completion {padding:12px}
+  .taxpay-citizen-shell .gift-tax-donee-completion__footer {align-items:stretch}
+  .taxpay-citizen-shell .gift-tax-donee-completion__helper {flex-basis:100%}
+  .taxpay-citizen-shell .gift-tax-donee-completion .gift-tax-add-donee {width:100%}
+  .taxpay-citizen-shell .gift-tax-confirmed-person__content > button {width:100%}
+  .taxpay-citizen-shell .gift-tax-role-group {padding:10px}
+}

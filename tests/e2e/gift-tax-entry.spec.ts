@@ -29,14 +29,28 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(gift.getByTestId('gift-donor-result')).toBeVisible();
     await donor.getByRole('button', {name: bn ? 'দাতা যোগ করুন' : 'Add Donor'}).click();
     await expect(gift.getByTestId('gift-added-donor').first()).toContainText('111');
+    await expect(donor.getByRole('heading', {name: bn ? 'দাতা যোগ হয়েছে' : 'Donor added'})).toBeVisible();
+    await expect(donor.getByTestId('gift-confirmed-donor')).toBeVisible();
+    await expect(gift.getByTestId('gift-rail-donor').locator('.gift-tax-role-group__status'))
+      .toHaveText(bn ? 'যোগ হয়েছে' : 'Added');
 
     const donee = gift.getByTestId('gift-donee-section');
     await donee.locator('#gift-donee-tin').fill('222222222222');
     await donee.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donee/}).click();
+    await expect(donee.getByTestId('gift-donee-next-step')).toContainText(
+      bn ? 'সম্পর্ক নির্বাচন করুন' : 'Select a relationship');
+    await expect(donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'})).toBeDisabled();
     await donee.locator('#gift-donee-relationship').click();
     await page.getByRole('option', {name: bn ? 'বাবা' : 'Father'}).click();
     await expect(donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'})).toBeEnabled();
+    await expect(donee.getByTestId('gift-donee-next-step')).toContainText(
+      bn ? 'সম্পর্ক নির্বাচন হয়েছে' : 'Relationship selected');
     await donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'}).click();
+    await expect(donee.getByRole('heading', {name: bn ? 'গ্রহীতা যোগ হয়েছে' : 'Donee added'})).toBeVisible();
+    await expect(gift.getByTestId('gift-rail-donee').locator('.gift-tax-role-group__status'))
+      .toHaveText(bn ? 'যোগ হয়েছে' : 'Added');
+    await expect(gift.getByTestId('gift-rail-donee').locator('.gift-tax-identity-card__relationship'))
+      .toContainText(bn ? 'বাবা' : 'Father');
     await expect(nextDetails).toBeEnabled();
     await nextDetails.click();
     await expect(gift.getByTestId('gift-tax-details-form')).toBeVisible();

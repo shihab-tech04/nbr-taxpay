@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Layers3, WalletCards } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ReceiptText, WalletCards } from 'lucide-react';
 import type { BannerPaymentService } from '../../services/taxState';
 import heroPaymentIllustration from '../../assets/taxpay-hero-intro-v9.webp';
 import returnTaxIllustration from '../../assets/taxpay-hero-return-v9.webp';
@@ -505,7 +505,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
                     </button>
                     <button className="public-guest-action public-hero-carousel__travel" type="button"
                       onClick={onOtherTax} aria-label={bn ? 'অন্যান্য কর' : 'Other Tax'}>
-                      <Layers3 size={18} aria-hidden="true" />
+                      <ReceiptText size={18} aria-hidden="true" />
                       <span className="public-hero-carousel__travel-full">{bn ? 'অন্যান্য কর' : 'Other Tax'}</span>
                       <span className="public-hero-carousel__travel-compact" aria-hidden="true">{bn ? 'অন্যান্য কর' : 'Other Tax'}</span>
                     </button>

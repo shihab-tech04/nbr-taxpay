@@ -286,7 +286,10 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   };
   const identityRole = (party: Party) => <section className={'gift-tax-role-group gift-tax-role-group--'+party}
     data-testid={'gift-rail-'+party}>
-    <h3 className="gift-tax-role-group__title">{party === 'donor' ? t('Donor', 'দাতা') : t('Donee', 'গ্রহীতা')}</h3>
+    <div className="gift-tax-role-group__header">
+      <h3 className="gift-tax-role-group__title">{party === 'donor' ? t('Donor', 'দাতা') : t('Donee', 'গ্রহীতা')}</h3>
+      <span className="gift-tax-role-group__status">{added[party] ? t('Added', 'যোগ হয়েছে') : t('Pending', 'অপেক্ষমাণ')}</span>
+    </div>
     {added[party] ? partyDisplay(party,true)
       : <p className="gift-tax-role-group__empty">{party === 'donor' ? t('No donor added yet', 'এখনো দাতা যোগ করা হয়নি') : t('No donee added yet', 'এখনো গ্রহীতা যোগ করা হয়নি')}</p>}
   </section>;
@@ -296,16 +299,26 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     const title = party === 'donor' ? t('Donor', 'দাতা') : t('Donee', 'গ্রহীতা');
     return <section className="gift-tax-person-section" data-testid={'gift-' + party + '-section'}>
       <h2 className="unified-taxpayer-workspace__heading">
-        {party === 'donor' ? t('Add donor', 'দাতা যোগ করুন') : t('Add donee', 'গ্রহীতা যোগ করুন')}
+        {confirmed && !editing[party]
+          ? (party === 'donor' ? t('Donor added', 'দাতা যোগ হয়েছে') : t('Donee added', 'গ্রহীতা যোগ হয়েছে'))
+          : editing[party]
+            ? (party === 'donor' ? t('Edit donor', 'দাতা সম্পাদনা') : t('Edit donee', 'গ্রহীতা সম্পাদনা'))
+            : (party === 'donor' ? t('Add donor', 'দাতা যোগ করুন') : t('Add donee', 'গ্রহীতা যোগ করুন'))}
       </h2>
-      <p className="unified-taxpayer-workspace__subheading">
-        {t('Enter a TIN and search.', 'টিআইএন লিখে অনুসন্ধান করুন।')}
-      </p>
+      {(!confirmed || editing[party]) && <p className="unified-taxpayer-workspace__subheading">
+        {editing[party]
+          ? t('Search for a replacement, or cancel to keep the current person.', 'নতুন ব্যক্তি খুঁজুন, অথবা আগের ব্যক্তিকে রাখতে বাতিল করুন।')
+          : t('Enter a TIN and search.', 'টিআইএন লিখে অনুসন্ধান করুন।')}
+      </p>}
       {confirmed && !editing[party] ? <div className="gift-tax-confirmed-person" data-testid={'gift-confirmed-' + party}>
-        <p className="gift-tax-added-hint" role="status">{t('Already added to this payment. See the ', 'এই পেমেন্টে যোগ করা হয়েছে। ডান পাশের ')}{title}{t(' card on the right.', ' কার্ড দেখুন।')}</p>
-        <button type="button" className={secondaryClass} onClick={() => beginEdit(party)}>
-          {t('Edit ', 'সম্পাদনা করুন: ') + title}
-        </button>
+        <div className="gift-tax-confirmed-person__content">
+          <p className="gift-tax-added-hint" role="status">
+            {t('Already added. See the ', 'যোগ করা হয়েছে। ডান পাশের ')}{title}{t(' card in the payment summary.', ' কার্ডে তথ্য দেখুন।')}
+          </p>
+          <button type="button" className={secondaryClass} onClick={() => beginEdit(party)}>
+            {t('Edit ', 'সম্পাদনা করুন: ') + title}
+          </button>
+        </div>
       </div> : <>
         {editing[party] && <div className="gift-tax-editing-notice" role="status">
           <span>{t('Current selection stays in this payment until a replacement is added.',
@@ -332,7 +345,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
             <TaxpayerTinSearchResultCard language={language} tin={match.tin} name={match.name}
               testId={'gift-' + party + '-result'}
               {...(party === 'donor' ? {onAdd: () => addParty(party), canAdd: true, addLabel: t('Add Donor', 'দাতা যোগ করুন')} : {})} />
-            {party === 'donee' && <div className="mt-3 space-y-2" data-testid="gift-donee-classification">
+            {party === 'donee' && <div className="gift-tax-donee-completion" data-testid="gift-donee-classification">
               <label htmlFor="gift-donee-relationship" className="gift-tax-field-label">
                 {t('Tag / Relationship', 'ট্যাগ / সম্পর্ক')} *
               </label>
@@ -340,15 +353,25 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
                 ariaLabel={t('Donee Tag / Relationship', 'গ্রহীতার ট্যাগ / সম্পর্ক')}
                 value={doneeChoice} onChange={value => {setDoneeChoice(value);setDoneeOther('');setLookupError(current => ({...current,donee:''}));}}
                 options={doneeOptions} placeholder={t('Select a tag or relationship', 'ট্যাগ বা সম্পর্ক নির্বাচন করুন')}
-                searchPlaceholder={t('Search relationships', 'সম্পর্ক খুঁজুন')} />
+                searchPlaceholder={t('Search relationships', 'সম্পর্ক খুঁজুন')}
+                className="gift-tax-relationship-trigger" />
               {doneeChoice === 'others' && <div>
                 <label htmlFor="gift-donee-other" className="gift-tax-field-label">{t('Specify relationship', 'সম্পর্ক লিখুন')} *</label>
                 <input id="gift-donee-other" className={inputClass} maxLength={80} value={doneeOther}
                   required aria-invalid={doneeOther.trim().length === 0}
                   onChange={event => {setDoneeOther(event.target.value);setLookupError(current => ({...current,donee:''}));}} />
               </div>}
-              <button type="button" className="gift-tax-action gift-tax-action--primary gift-tax-add-donee" disabled={!doneeClassValid}
-                onClick={() => addParty('donee')}>{t('Add Donee', 'গ্রহীতা যোগ করুন')}</button>
+              <div className="gift-tax-donee-completion__footer">
+                <p className="gift-tax-donee-completion__helper" role="status" data-testid="gift-donee-next-step">
+                  {doneeClassValid
+                    ? t('Relationship selected. Add this person to your payment.', 'সম্পর্ক নির্বাচন হয়েছে। এই ব্যক্তিকে পেমেন্টে যোগ করুন।')
+                    : doneeChoice === 'others'
+                      ? t('Enter the relationship above to continue.', 'এগোতে উপরে সম্পর্ক লিখুন।')
+                      : t('Select a relationship above to enable Add Donee.', 'গ্রহীতা যোগ করতে উপরে সম্পর্ক নির্বাচন করুন।')}
+                </p>
+                <button type="button" className="gift-tax-action gift-tax-action--primary gift-tax-add-donee" disabled={!doneeClassValid}
+                  onClick={() => addParty('donee')}>{t('Add Donee', 'গ্রহীতা যোগ করুন')}<ArrowRight size={16} aria-hidden="true" /></button>
+              </div>
             </div>}
             <p className="gift-tax-lookup-notice">
               {t('Sample lookup only — not an NBR verified identity.', 'শুধু নমুনা অনুসন্ধান — NBR যাচাইকৃত পরিচয় নয়।')}
