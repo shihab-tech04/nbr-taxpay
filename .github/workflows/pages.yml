@@ -468,6 +468,19 @@ jobs:
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
         run: npx playwright test tests/e2e/screenshot-ux-repair.spec.ts tests/e2e/travel-receipt-modal-parity.spec.ts
+      - name: Verify full Gift Tax preview, relationship popup, simulated checkout and receipt
+        env:
+          VITE_SUPABASE_DISABLED: 'true'
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_PUBLISHABLE_KEY: ''
+        run: |
+          node --check scripts/verify-live-gift-tax.mjs
+          npx playwright test tests/e2e/gift-tax-entry.spec.ts tests/e2e/gift-tax-ui-parity.spec.ts tests/e2e/gift-tax-payment-result.spec.ts --project=desktop-1280 --project=mobile-320 --project=mobile-375
+      - name: Confirm current production Gift Tax journey before candidate release
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'ws5/gift-tax-production-browser-acceptance')
+        env:
+          TAXPAY_LIVE_URL: https://shihab-tech04.github.io/nbr-taxpay/
+        run: node scripts/verify-live-gift-tax.mjs
       - name: Upload responsive citizen screenshots and Playwright evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -965,6 +978,11 @@ jobs:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
         run: node scripts/verify-live-master-tin.mjs
 
+      - name: Verify deployed Gift Tax donor/donee, preview and sample receipt on desktop/mobile
+        env:
+          TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/verify-live-gift-tax.mjs
+
       - name: Verify deployed Travel Tax progressive passport journey on desktop and mobile
         env:
           TAXPAY_LIVE_URL: ${{ steps.deployment.outputs.page_url }}
@@ -989,6 +1007,7 @@ jobs:
             test-results/live-auth-*.png
             test-results/live-search-*.png
             test-results/live-master-tin-*.png
+            test-results/live-gift-tax-*.png
             test-results/live-travel-passport-*.png
             test-results/live-table-*.png
             test-results/sohojkor-live-performance.json
