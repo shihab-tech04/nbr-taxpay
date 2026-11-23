@@ -652,6 +652,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
           </label>
         </div>
     );
+    const medicalAssessmentNotice = item.medicalPortReferral && (
+      <p role="status" data-testid="travel-manual-assessment-blocker" className="travel-flow__medical-note">
+        {tr('Manual medical assessment is required at the departure port. Online Continue is unavailable. Bring supporting documents, or untick this option if you selected it by mistake.',
+            'চিকিৎসাজনিত যাচাই বন্দরে সরাসরি করতে হবে। অনলাইনে এগোনো যাবে না। প্রয়োজনীয় কাগজপত্র আনুন অথবা ভুল করে নির্বাচন করলে টিক তুলে দিন।')}
+      </p>
+    );
     return <>
       <div className="travel-flow__passenger-tabs" role="tablist"
         aria-label={tr('Passenger type for passenger ', 'যাত্রীর ধরন, যাত্রী ') + (index + 1)}>
@@ -822,9 +828,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 </p>}
               </div>}
             </div>
-            {item.identitySource === 'PASSPORT_SAMPLE' && <section className="travel-flow__identity-card"
-              aria-label={tr('Passenger details','যাত্রীর তথ্য')}>
-              <h3>{tr('Passenger details','যাত্রীর তথ্য')}</h3>
+            {item.identitySource === 'PASSPORT_SAMPLE' && <section className="travel-flow__identity-card travel-flow__identity-card--compact"
+              data-testid="travel-passport-search-result" aria-label={tr('Passenger details','যাত্রীর তথ্য')}>
               <dl>
                 <div><dt>{tr('Passenger name','যাত্রীর নাম')}</dt><dd data-testid={'travel-passenger-name-' + item.id}>{item.name}</dd></div>
                 <div><dt>{tr('Passport number','পাসপোর্ট নম্বর')}</dt><dd>{item.passport}</dd></div>
@@ -832,6 +837,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 <div><dt>{tr('Nationality','জাতীয়তা')}</dt><dd>{tr('Bangladeshi','বাংলাদেশি')}</dd></div>
               </dl>
               {medicalAssessmentControl}
+              {medicalAssessmentNotice}
               {canShowAddPassenger && pendingConfirmationId === item.id &&
                 <div className="travel-flow__confirm-row">
                   <button type="button" className="travel-flow__add-member travel-flow__confirm-passenger"
@@ -847,13 +853,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               <input id={'travel-passport-' + item.id} value={item.passport} maxLength={20} autoComplete="off"
                 aria-invalid={passengerFieldIssue?.field === 'passport'}
                 aria-describedby={passengerFieldIssue?.field === 'passport' ? 'travel-passenger-issue-' + item.id : undefined}
-                onChange={event => changePassenger(item.id, {passport: event.target.value.toUpperCase().replace(/\s+/g, '')})}
+                onChange={event => changePassenger(item.id, {passport: event.target.value.toUpperCase().replace(/\s+/g, ''), medicalPortReferral: false})}
                 placeholder={tr('Enter passport number','পাসপোর্ট নম্বর লিখুন')}/>
               {item.passport && <button type="button" className="travel-flow__passport-clear"
                 aria-label={tr('Clear passport', 'পাসপোর্ট মুছুন')}
                 title={tr('Clear passport', 'পাসপোর্ট মুছুন')}
                 onClick={() => {
-                  changePassenger(item.id, {passport: ''});
+                  changePassenger(item.id, {passport: '', medicalPortReferral: false});
                   setPassportSuggestionsFor(null);
                   requestAnimationFrame(() => document.getElementById('travel-passport-' + item.id)?.focus());
                 }}><X size={17} aria-hidden="true"/></button>}
@@ -883,13 +889,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 onChange={event => changePassenger(item.id, {country: event.target.value})}
                 placeholder={tr('Enter country','দেশ লিখুন')}/>
             </div>
-            {medicalAssessmentControl}
+            {item.passport.trim().length >= 6 && medicalAssessmentControl}
+            {medicalAssessmentNotice}
           </>}
         </div>
-        {item.medicalPortReferral && <p role="status" data-testid="travel-manual-assessment-blocker" className="travel-flow__medical-note">
-          {tr('Manual medical assessment is required at the departure port. Online Continue is unavailable. Bring supporting documents, or untick this option if you selected it by mistake.',
-              'চিকিৎসাজনিত যাচাই বন্দরে সরাসরি করতে হবে। অনলাইনে এগোনো যাবে না। প্রয়োজনীয় কাগজপত্র আনুন অথবা ভুল করে নির্বাচন করলে টিক তুলে দিন।')}
-        </p>}
         {assessment && <p className="travel-flow__age-reason">{ageExplanation(assessment.age)}</p>}
       </div>
     </>;
