@@ -166,14 +166,14 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     const renderPerson=(person:(typeof recipients)[number])=><div className="min-w-0 break-words">
       {person.saved&&previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1'
         ?<button type="button" onClick={event=>{event.stopPropagation();navigate('beneficiaries',{openBeneficiaryTin:person.tin,returnTo:'history'});}}
-          className="min-h-9 text-left font-semibold text-taxpay-primary underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
+          className={(compact?'taxpay-recipient-inline-link min-h-9 ':'min-h-9 ')+'text-left font-semibold text-taxpay-primary underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary'}
           aria-label={tr('Open beneficiary profile for ','উপকারভোগীর প্রোফাইল খুলুন: ')+person.name}>
           {person.name}</button>
         :<span className="font-medium text-taxpay-text">{person.name}</span>}
-      <span className="ml-2 text-xs text-taxpay-muted">· {person.tag??tr('Tag not saved','ট্যাগ সংরক্ষিত নেই')}</span>
-      <p className="break-all text-xs text-taxpay-muted">{person.tin}
-        {!compact&&person.amountMinor!==null&&<span> · {tr('Allocated','বরাদ্দ')}: ৳ {(person.amountMinor/100).toLocaleString(bn?'bn-BD':'en-BD')}</span>}
-      </p>
+      {!compact&&<span className="ml-2 text-xs text-taxpay-muted">· {person.tag??tr('Tag not saved','ট্যাগ সংরক্ষিত নেই')}</span>}
+      {!compact&&<p className="break-all text-xs text-taxpay-muted">{person.tin}
+        {person.amountMinor!==null&&<span> · {tr('Allocated','বরাদ্দ')}: ৳ {(person.amountMinor/100).toLocaleString(bn?'bn-BD':'en-BD')}</span>}
+      </p>}
       {!compact&&person.heads.length>0&&<p className="text-xs text-taxpay-muted">{person.heads.join(', ')}
         {person.assessmentYears.length>0?' · '+person.assessmentYears.join(', '):''}</p>}
     </div>;
@@ -510,6 +510,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       <button type="button" className="min-h-10 rounded-lg px-3 text-xs font-medium text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
         onClick={()=>setReviewFilter(null)}>{tr('Clear review filter','পর্যালোচনা ফিল্টার মুছুন')}</button>
     </div>}
+    {filtered.length>0&&<p className="taxpay-register-scroll-note" role="note">
+      {tr('All payment fields are retained. Scroll the table horizontally for additional columns; Payment and Actions stay visible.',
+        'সব পেমেন্টের তথ্য অক্ষত আছে। অতিরিক্ত কলাম দেখতে টেবিলটি পাশে স্ক্রল করুন; পেমেন্ট ও কার্যক্রম দেখা যাবে।')}
+    </p>}
     {filtered.length ? <TaxPayDataGrid variant="tabular" rows={visibleHistoryRows} getRowKey={item=>item.id}
       pagination={{page:currentHistoryPage,perPage:historyPerPage,total:filtered.length,onPageChange:setHistoryPage,
         labels:bn?{previous:'আগের পৃষ্ঠা',next:'পরের পৃষ্ঠা',showing:'দেখানো হচ্ছে',of:'মোট',records:'রেকর্ড',page:'পৃষ্ঠা'}:undefined}}
@@ -520,10 +524,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       columns={[
         {key:'payment',header:tr('Payment','পেমেন্ট'),renderCell:item=><div className="taxpayer-transaction-payment-cell">
           <p className="taxpayer-transaction-row__title">{item.title}</p>
-          <div className="taxpayer-transaction-compact-meta">
-            <p className="taxpayer-transaction-reference">{item.ref}</p>
-            <p>{tr(...labels[item.kind])} · <time dateTime={item.date}>{formatDate(item.date)}</time></p>
-          </div>
+          {/* The reference, type and date each have their own dedicated columns.
+              Do not repeat them in the Payment cell and make rows three lines tall. */}
         </div>},
         {key:'paid-by',header:tr('Paid by','পরিশোধকারী'),renderCell:item=>
           <p className="taxpayer-transaction-identity">{payerName(item)}</p>},
