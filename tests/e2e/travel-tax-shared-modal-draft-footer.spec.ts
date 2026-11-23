@@ -177,7 +177,10 @@ test('passport suggestion popup remains reachable above the fixed footer and the
   }
   await page.setViewportSize({width:1280,height:900});
   const input=modal.locator('.travel-flow__passport-input input').first();
-  await input.focus();
+  // Escape leaves the combobox focused. A new click, not another focus,
+  // is the actual user action that reopens the sample list.
+  await input.click();
+  await expect(modal.getByRole('listbox',{name:'Available sample passports'})).toBeVisible();
   await modal.getByRole('option',{name:/TEST123456/}).click();
   await expect(input).toHaveValue('TEST123456');
 });
