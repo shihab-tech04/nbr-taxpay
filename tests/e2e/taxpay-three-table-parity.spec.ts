@@ -52,6 +52,17 @@ for(const language of ['en','bn'] as const){
       const row=desktop?root.locator('table.taxpay-unified-table tbody tr').first()
         :root.locator('.taxpay-mobile-table-card').first();
       await expect(row).toBeVisible();
+      if(view==='ledger'&&desktop){
+        const ledgerTable=root.getByTestId('event-ledger-table');
+        const viewport=root.locator('.taxpay-table-viewport').first();
+        await expect(viewport).toHaveAttribute('tabindex','0');
+        await expect(root.locator('.taxpay-register-scroll-note')).toBeVisible();
+        const roles=await ledgerTable.evaluate(table=>['event','credit','balance'].map(key=>{
+          const el=table.querySelector<HTMLElement>('thead [data-column-key="'+key+'"]');
+          return el?getComputedStyle(el).position:'missing';
+        }));
+        expect(roles,'Ledger event and financial context should stay accessible').toEqual(['sticky','sticky','sticky']);
+      }
       if(view==='history'&&desktop){
         await expect(root.getByTestId('taxpayer-transaction-table').locator('thead th')).toHaveCount(9);
         await expect(row.locator('td')).toHaveCount(9);
