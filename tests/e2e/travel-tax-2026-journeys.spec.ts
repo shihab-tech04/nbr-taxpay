@@ -1206,3 +1206,21 @@ test('Travel Tax: draft route selections survive Land/Water switch without stale
   await expect(modal.locator('#travel-water-port')).toHaveValue('Mongla');
   await expect(modal.locator('#travel-port')).toHaveCount(0);
 });
+
+// Regression: the standalone approved Walk-in preview must not look actionable
+// before any passenger has been added, even if the button is HTML-disabled.
+test('Travel Tax preview: primary action is visibly disabled until a passenger is added', async ({page}) => {
+  await page.goto('/travel-tax-ui-preview.html');
+  const continueButton=page.locator('.footer button[data-action="next"]');
+  await expect(continueButton).toBeVisible();
+  await expect(continueButton).toBeDisabled();
+  await expect(continueButton).toHaveCSS('background-color','rgb(228, 234, 242)');
+  await expect(continueButton).toHaveCSS('color','rgb(112, 131, 158)');
+  await page.locator('#bdPassport').fill('TEST123456');
+  await expect(continueButton).toBeDisabled();
+  await page.locator('[data-action="check"]').click();
+  await expect(continueButton).toBeDisabled();
+  await page.locator('[data-action="add"]').click();
+  await expect(continueButton).toBeEnabled();
+  await expect(continueButton).toHaveCSS('background-color','rgb(43, 93, 170)');
+});
