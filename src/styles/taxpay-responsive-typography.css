@@ -363,18 +363,18 @@
     padding: 8px 0;
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-rows: auto;
-    column-gap: 14px;
+    column-gap: 16px;
     row-gap: 0;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
     flex: 0 1 175px;
     max-width: 175px;
-    line-height: 1.4;
+    line-height: 1.5;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
     flex-wrap: nowrap;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 14px;
     min-width: 0;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
@@ -385,9 +385,10 @@
  * with copyright on its own row if all links need their full widths. */
 @media (min-width: 981px) and (max-width: 1350px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    display: grid;
     width: calc(100% - 2rem);
     max-width: var(--public-content-max);
-    padding-right: 104px;
+    padding-right: 0;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto;
     row-gap: 2px;
@@ -410,6 +411,19 @@
     justify-self: end;
     padding-left: 0;
     border-left: 0;
+  }
+}
+
+/* On the homepage only, float Help above the footer's occupied zone.
+ * The interactive panel and all mobile controls retain their existing behavior. */
+@media (min-width: 981px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-help-widget {
+    bottom: calc(5.25rem + env(safe-area-inset-bottom));
+  }
+}
+@media (min-width: 981px) and (max-width: 1350px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-help-widget {
+    bottom: calc(6.5rem + env(safe-area-inset-bottom));
   }
 }
 
@@ -637,13 +651,13 @@
   line-height: 1.45;
 }
 .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs :is(a,button) {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1.4;
 }
 .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p,
 .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom p {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
 }
 .taxpay-citizen-shell:has(.public-home-sections) .public-help-launch {
