@@ -1253,3 +1253,12 @@
 @media (max-width: 900px) {
   .public-hero-carousel__gift-link { align-self: center; }
 }
+
+/* Fixed payment dialogs are overlays, not vertically stacked home sections.
+ * The generic .public-home-sections > :not([hidden]) ~ :not([hidden])
+ * margin rule must never push the full-viewport scrim down by 3–24px. */
+.public-home-sections > :not([hidden]) ~ .taxpay-modal__overlay.public-service-overlay,
+.public-home-sections > .taxpay-modal__overlay.public-service-overlay {
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
