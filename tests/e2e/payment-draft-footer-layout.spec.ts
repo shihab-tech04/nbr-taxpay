@@ -212,14 +212,22 @@ test('draft-eligible account payment protects backdrop, Escape and X at every pa
 });
 
 
-test('signed-out guest payment keeps original immediate X-close behavior', async ({ page }) => {
-  // The draft exit confirmation belongs only to eligible signed-in payments.
-  // Preserve the existing public guest journey and do not create payment data.
+test('signed-out guest payment uses the one reusable X-discard confirmation', async ({ page }) => {
+  // Account-owned payments retain Save Draft, but ALL signed-out Walk-in
+  // journeys require explicit confirmation before destroying entered fields.
   await page.goto('/?action=landing');
   await openLegacyTaxServiceChoice(page);
   const dialog = page.getByRole('dialog', { name: 'Pay Tax' });
   await enterTaxPayService(dialog, 'TAX_WITH_RETURN', 'SELF');
   await expect(dialog.locator('.payment-form-draft-controls__save')).toHaveCount(0);
   await dialog.locator('.taxpay-modal__close').click();
+  const confirm = dialog.getByRole('alertdialog',{name:'Discard tax payment?'});
+  await expect(confirm).toBeVisible();
+  await expect(confirm.locator('button')).toHaveCount(2);
+  await confirm.getByRole('button',{name:'Keep editing'}).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  await dialog.locator('.taxpay-modal__close').click();
+  await confirm.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(dialog).toHaveCount(0);
 });

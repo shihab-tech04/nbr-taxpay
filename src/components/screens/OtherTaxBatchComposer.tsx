@@ -110,8 +110,8 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     return () => { current = false; };
   }, [allowMixedReturn, showFrequentCategories, ownerKey, previewAccount?.id]);
   const [query, setQuery] = useState('');
-  // The seven-category directory and its detailed head editor are alternative
-  // views of the same data, never two complete lists shown at once.
+  // The existing head editor is the category list. Do not add a second directory
+  // or hide the approved checkbox/year/amount controls behind View heads.
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [allocationLimitError, setAllocationLimitError] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -177,34 +177,19 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const search = query.trim().toLocaleLowerCase();
   const visibleCategories = selectableGroups.filter(group => group.rows.some(head =>
     !search || [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search)));
-  const categoryDirectory = (names: readonly string[], testId: string, label: string) => (
-    <div className="other-tax-category-table-wrap" data-testid={testId}>
-      <table className="other-tax-category-table" aria-label={label}>
-        <thead><tr>
-          <th scope="col">{tx('Category', 'শ্রেণি')}</th>
-          <th scope="col" className="other-tax-category-table__number">{tx('Heads', 'খাত')}</th>
-          <th scope="col" className="other-tax-category-table__action">{tx('Action', 'পদক্ষেপ')}</th>
-        </tr></thead>
-        <tbody>{names.map(name => {
-          const group = visibleCategories.find(item => item.name === name);
-          if (!group) return null;
-          const selectedCount = group.rows.filter(head => activeLines.some(line => line.headId === head.id)).length;
-          const groupLabel = bn ? (group.rows[0]?.grpBn || (name === 'Tax with Return' ? 'রিটার্নসহ কর' : name)) : name;
-          return <tr key={name} data-category={name} data-selected-count={selectedCount}>
-            <th scope="row">
-              <span>{groupLabel}</span>
-              {selectedCount > 0 && <span className="other-tax-category-table__selected">
-                {selectedCount} {tx('selected', 'নির্বাচিত')}
-              </span>}
-            </th>
-            <td className="other-tax-category-table__number">{group.rows.length}</td>
-            <td className="other-tax-category-table__action"><button type="button" onClick={() => openCategoryGroup(name)}
-              aria-label={tx('View payment heads for ', 'পরিশোধের খাত দেখুন: ') + groupLabel}>
-              <span>{tx('View heads', 'খাত দেখুন')}</span><ChevronRight size={16} aria-hidden="true" />
-            </button></td>
-          </tr>;
-        })}</tbody>
-      </table>
+  // Only account-owned histories may supply quick links. These open the same
+  // head editor rather than duplicating the catalogue in a seven-row table.
+  const categoryQuickLinks = (names: readonly string[]) => (
+    <div className="other-tax-category-shortcuts" data-testid="frequent-tax-categories"
+      role="group" aria-label={tx('Frequently used tax categories', 'বেশি ব্যবহৃত করের শ্রেণি')}>
+      {names.map(name => {
+        const group = visibleCategories.find(item => item.name === name);
+        if (!group) return null;
+        return <button key={name} type="button" onClick={() => openCategoryGroup(name)}>
+          {bn ? (group.rows[0]?.grpBn || (name === 'Tax with Return' ? 'রিটার্নসহ কর' : name)) : name}
+          <ChevronRight size={15} aria-hidden="true" />
+        </button>;
+      })}
     </div>
   );
   const count = selectableGroups.reduce((n, group) => n + (maskTaxpayerTin
@@ -438,23 +423,17 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                 setQuery('');
               }}>{tx('Show first incomplete payment', 'প্রথম অসম্পূর্ণ পরিশোধ দেখুন')}</button>}
             </div>}
-            {allowMixedReturn && !activeCategory && !search && <div className="other-tax-category-directory" data-testid="other-tax-category-directory">
-              {showFrequentCategories && categoryHistory.ownerKey === ownerKey &&
-                categoryHistory.status === 'ready' && categoryHistory.names.length > 0 && <section data-testid="frequent-category-section">
+            {allowMixedReturn && !search && showFrequentCategories && categoryHistory.ownerKey === ownerKey &&
+              categoryHistory.status === 'ready' && categoryHistory.names.length > 0 && (
+                <section className="other-tax-category-shortcut-section" data-testid="frequent-category-section">
                   <h3>{tx('Frequently used categories', 'বেশি ব্যবহৃত করের শ্রেণি')}</h3>
-                  {categoryDirectory(categoryHistory.names, 'frequent-tax-categories', tx('Up to five most used categories from your completed payments', 'সফল পেমেন্টের ইতিহাস থেকে সর্বাধিক ব্যবহৃত পাঁচটি শ্রেণি'))}
-                </section>}
-              <h3>{tx('All seven tax categories', 'সাতটি করের শ্রেণি')}</h3>
-              {categoryDirectory(visibleCategories.map(group => group.name), 'fixed-tax-categories', tx('Seven fixed tax categories', 'সাতটি নির্দিষ্ট করের শ্রেণি'))}
-            </div>}
-            {allowMixedReturn && (activeCategory || search) && (
-              <button type="button" className="other-tax-category-back" onClick={() => { setActiveCategory(null); setQuery(''); }}>
-                <ChevronLeft size={17} aria-hidden="true" />
-                {tx('Back to categories', 'করের শ্রেণিতে ফিরে যান')}
-              </button>
-            )}
-            <div hidden={allowMixedReturn && !activeCategory && !search}
-              className={error ? 'rounded-lg border border-rose-400' : 'rounded-lg border border-slate-200'} data-testid="other-tax-head-catalogue">
+                  {categoryQuickLinks(categoryHistory.names)}
+                </section>
+              )}
+            {allowMixedReturn && <h3 className="other-tax-category-heading">{tx('Choose a tax category', 'করের শ্রেণি নির্বাচন করুন')}</h3>}
+            <div className="other-tax-catalogue-shell" data-testid={allowMixedReturn ? 'fixed-tax-categories' : undefined}>
+              <div className={error ? 'rounded-lg border border-rose-400' : 'rounded-lg border border-slate-200'}
+                data-testid="other-tax-head-catalogue">
               {selectableGroups.map(group => {
                 const matched = group.rows.filter(head =>
                   !search || [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search));
@@ -462,16 +441,16 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                 const groupSelectedCount = group.rows.filter(head => activeLines.some(line => line.headId === head.id)).length;
                 const groupErrors = invalidLines.filter(line => line.taxpayerId === activeId && group.rows.some(head => head.id === line.headId)).length;
                 return <details key={group.name} open={search ? true : undefined}
-                  hidden={allowMixedReturn && Boolean(activeCategory) && !search && group.name !== activeCategory}
                   data-testid={group.name === 'Tax with Return' ? 'unified-v5-return-group' : undefined}
                   className={groupErrors ? "group border-b border-rose-300 last:border-b-0 other-tax-group--invalid" : "group border-b border-slate-200 last:border-b-0"} data-head-group={group.name} data-invalid={groupErrors ? "true" : undefined}>
-                  <summary className="cursor-pointer px-3 py-3 bg-slate-50 text-sm font-semibold text-taxpay-dark focus-visible:outline-2 focus-visible:outline-taxpay-primary">
-                    {bn ? matched[0].grpBn : group.name}
-                    <span className="text-slate-500 font-normal"> ({matched.length})</span>
-                    {groupErrors > 0 && <span className="ml-2 text-rose-700 text-xs font-semibold">{groupErrors} {tx('incomplete', 'অসম্পূর্ণ')}</span>}
-                    {groupSelectedCount > 0 && <span className="ml-2 text-taxpay-primary text-xs">
+                  <summary className="other-tax-category-trigger cursor-pointer px-3 py-3 bg-slate-50 text-sm font-semibold text-taxpay-dark focus-visible:outline-2 focus-visible:outline-taxpay-primary">
+                    <span className="other-tax-category-trigger__name">{bn ? matched[0].grpBn : group.name}</span>
+                    <span className="other-tax-category-trigger__count">{matched.length} {matched.length === 1 ? tx('head', 'খাত') : tx('heads', 'খাত')}</span>
+                    {groupErrors > 0 && <span className="other-tax-category-trigger__error">{groupErrors} {tx('incomplete', 'অসম্পূর্ণ')}</span>}
+                    {groupSelectedCount > 0 && <span className="other-tax-category-trigger__selected">
                       {groupSelectedCount} {tx('selected', 'নির্বাচিত')}
                     </span>}
+                    <ChevronDown className="other-tax-category-trigger__chevron" size={18} aria-hidden="true" />
                   </summary>
                   <ul className="divide-y divide-slate-200 list-none m-0 p-0">
                     {matched.map(head => {
@@ -575,6 +554,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
               {!selectableGroups.some(group => group.rows.some(head => !search ||
                 [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search))) &&
                 <p className="p-4 text-sm text-slate-600">{tx('No matching payment head', 'কোনো খাত পাওয়া যায়নি')}</p>}
+              </div>
             </div>
             {error && usedTotal === null && invalidLines.length === 0 && <p className="payment-form-field-error">{tx('Combined amount exceeds the supported limit. Reduce the amounts.', 'মোট পরিমাণ সীমার বেশি। পরিমাণ কমান।')}</p>}
 

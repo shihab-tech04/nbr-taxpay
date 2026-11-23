@@ -1224,3 +1224,23 @@ test('Travel Tax preview: primary action is visibly disabled until a passenger i
   await expect(continueButton).toBeEnabled();
   await expect(continueButton).toHaveCSS('background-color','rgb(43, 93, 170)');
 });
+
+
+test('signed-out Travel Tax X uses the same reusable Walk-in discard confirmation', async ({page}) => {
+  await page.goto('/?action=landing&lang=en');
+  await openTravelTaxFromBanner(page);
+  const modal = page.getByRole('dialog', {name:'Travel tax'});
+  const passport = modal.locator('#travel-passport-first');
+  await passport.fill('TEST123456');
+  await modal.locator('.taxpay-modal__close').click();
+  const exit = modal.getByTestId('walkin-payment-exit-overlay');
+  await expect(exit.getByRole('alertdialog', {name:'Discard tax payment?'})).toBeVisible();
+  await expect(exit.locator('button')).toHaveCount(2);
+  await expect(exit.getByRole('button', {name:'Save Draft'})).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(exit).toHaveCount(0);
+  await expect(passport).toHaveValue('TEST123456');
+  await modal.locator('.taxpay-modal__close').click();
+  await exit.getByRole('button',{name:'Discard tax payment'}).click();
+  await expect(modal).toHaveCount(0);
+});
