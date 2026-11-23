@@ -262,10 +262,14 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         }
         : view === 'payer' && draftEntryBlocking && draftEntryMode === 'list'
         ? () => setDraftEntryMode('choice')
-        : view === 'login' ? () => setView('payer') : view === 'payment' && (travelJourney || stage !== 4 || (unifiedEntry && resultView !== 'result')) ? () => {
+        : view === 'login' ? () => setView('payer') : view === 'payment' && (travelJourney || stage !== 4 || resultView !== 'result') ? () => {
         if (travelJourney) {
           if (travelHeaderBackRef.current) travelHeaderBackRef.current();
           else if (stage === 1) (directTravelEntry ? requestClose() : returnToService());
+          return;
+        }
+        if (stage === 4 && resultView !== 'result') {
+          unifiedHeaderBackRef.current?.();
           return;
         }
         if (unifiedEntry) {
@@ -434,7 +438,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             isWithholdingMode={effectiveSelected === 'SOURCE_TAX_DEPOSIT'}
             onBackToService={returnToService} onStageChange={reportStage}
              onResultViewChange={setResultView} onCheckoutChange={setCheckoutOpen}
-            registerHeaderBack={unifiedEntry ? registerUnifiedHeaderBack : undefined} />
+            registerHeaderBack={registerUnifiedHeaderBack} />
         ) : null}
       </section>}
       {exitPromptOpen && (
