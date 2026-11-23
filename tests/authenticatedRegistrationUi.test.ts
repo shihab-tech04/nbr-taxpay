@@ -49,3 +49,17 @@ test('M02 registration panel fails closed with no identity source and preserves 
    assert.ok(html.includes(language==='bn'?'ই-টিআইএন':'e-TIN'));
  }
 });
+
+
+test('M02 keeps authenticated app account metadata inside the single approved identity card',()=>{
+ const html=renderToStaticMarkup(createElement(TaxpayerTinInformation,{
+   language:'en',record:fixture,accountDetails:createElement('div',{'data-testid':'account-facts'},'Account details')
+ }));
+ const root=html.indexOf('data-testid="taxpayer-tin-information"');
+ const summary=html.indexOf('data-testid="authenticated-profile-summary"');
+ const metadata=html.indexOf('data-testid="authenticated-profile-account-metadata"');
+ const detailColumns=html.indexOf('data-testid="authenticated-profile-detail-columns"');
+ assert.ok(root>=0&&summary>root&&metadata>summary&&detailColumns>metadata);
+ assert.equal((html.match(/data-testid="authenticated-profile-account-metadata"/g)||[]).length,1);
+ assert.equal((html.match(/<dt\\b/g)||[]).length,24,'registration keys stay singular');
+});
