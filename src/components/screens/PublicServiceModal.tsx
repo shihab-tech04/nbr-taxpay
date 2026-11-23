@@ -32,10 +32,10 @@ export function PublicServiceModal({ service, onClose, onChooseOther, onBack }: 
           {type: 'travel' as const, Icon: Plane, title: language === 'bn' ? 'ভ্রমণ কর' : 'Travel Tax', detail: language === 'bn' ? 'বিদ্যমান ভ্রমণ কর প্রক্রিয়ায় যান।' : 'Continue through the existing Travel Tax journey.'},
           {type: 'gift' as const, Icon: Gift, title: language === 'bn' ? 'দানকর' : 'Gift Tax', detail: language === 'bn' ? 'দানকর পরিশোধের তথ্য খুলুন।' : 'Enter Gift Tax payment details.'},
         ]).map(({type, Icon, title, detail}) => <button key={type} type="button" onClick={() => onChooseOther?.(type)}
-          className="flex min-h-[88px] w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-blue-500 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[#2C5EAD]"><Icon size={22} aria-hidden="true" /></span>
+          className={"public-service-option public-service-option--" + type}>
+          <span className="public-service-option__icon"><Icon size={22} aria-hidden="true" /></span>
           <span className="min-w-0 flex-1"><strong className="block text-base text-slate-900">{title}</strong><span className="block text-sm text-slate-600">{detail}</span></span>
-          <ArrowRight size={18} className="shrink-0 text-[#2C5EAD]" aria-hidden="true" />
+          <ArrowRight size={18} className="public-service-option__arrow" aria-hidden="true" />
         </button>)}
       </div>
     </TaxPayModal>;
