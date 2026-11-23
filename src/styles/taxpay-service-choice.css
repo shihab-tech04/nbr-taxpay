@@ -3004,9 +3004,15 @@
   flex:1 1 auto;width:100%;max-width:none;
 }
 
+/* Keep the destructive edit action clickable when the passport suggestion
+   list is open; an overlay must not trap the user or prevent Undo recovery. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__remove-editor {
+  position:relative;z-index:32;
+}
 /* Search > identity details > Add passenger mirrors the approved compact TIN card.
    Specific to Travel Tax, without changing the shared payment modal or workflow. */
 .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__result-card {
+  grid-column:1/-1;width:100%;
   margin-top:13px;padding:9px 15px 12px;border:1px solid #c8d9ec;
   border-radius:12px;background:#fff;min-width:0;
 }
