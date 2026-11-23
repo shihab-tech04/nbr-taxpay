@@ -1,131 +1,82 @@
-/* Seven-category and account-only favorites directory.
-   Scope narrowly to the approved parallel payment flow. Preserve the existing
-   tax-head selectors, accounting inputs and Office/shared table components. */
+/* Scoped walk-in tax-category navigation. Reuses the existing payment-head
+   editor; not the shared data-table component or the accounting controls. */
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-directory {
-  margin: 12px 0 18px;
+  margin: 10px 0 16px;
   min-width: 0;
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-directory h3 {
-  margin: 14px 0 8px;
+  margin: 14px 0 10px;
   color: #203a5c;
   font-size: var(--taxpay-type-h3);
   font-weight: 700;
-  line-height: 1.45;
+  line-height: 1.35;
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-directory [data-testid="frequent-category-section"] {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table-wrap {
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  min-height: 68px;
   width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
+  padding: 12px 14px;
   border: 1px solid #dce4ef;
   border-radius: 10px;
   background: #fff;
-}
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table {
-  width: 100%;
-  min-width: 0;
-  table-layout: fixed;
-  border-collapse: collapse;
-  font-size: 16px;
-  line-height: 1.45;
   color: #203a5c;
+  text-align: start;
+  font-size: 15px;
+  line-height: 1.35;
+  transition: background-color .15s, border-color .15s;
 }
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table thead {
-  background: #f6f8fb;
-  color: #4b6078;
-}
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table :is(th,td) {
-  padding: 10px 12px;
-  border-bottom: 1px solid #e3e8ef;
-  vertical-align: middle;
-}
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table thead th {
-  font-weight: 650;
-  font-size: 16px;
-}
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table :is(th,td):first-child { width: 53%; }
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table .other-tax-category-table__number {
-  width: 15%;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table .other-tax-category-table__action {
-  width: 32%;
-  text-align: right;
-}
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table tbody th {
-  color: #203a5c;
-  font-weight: 650;
-  overflow-wrap: break-word;
-}
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table tbody tr:hover {
-  background: #f8fafc;
-}
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table__selected {
-  display: inline-flex;
-  margin-inline-start: 8px;
-  padding: 2px 7px;
-  border: 1px solid #d8e3f0;
-  border-radius: 999px;
-  background: #f3f7fc;
-  color: #2d5e95;
-  font-size: 12px;
-  font-weight: 650;
-  white-space: nowrap;
-}
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table__action button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-height: 44px;
-  padding: 8px 10px;
-  border: 1px solid #cbd9e9;
-  border-radius: 8px;
-  background: #fff;
-  color: #2c5ead;
-  font-size: var(--taxpay-type-body);
-  font-weight: 650;
-  line-height: 1.4;
-  white-space: normal;
-}
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table__action button:hover {
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-choice:hover {
   border-color: #9ebbe0;
-  background: #f1f6fc;
+  background: #f6f9fd;
 }
-.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table__action button:focus-visible {
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-choice:focus-visible {
   outline: 2px solid #2c5ead;
   outline-offset: 2px;
 }
-@media (max-width: 420px) {
-  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table {
-    font-size: 16px;
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-choice__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-choice__copy strong {
+  overflow-wrap: anywhere;
+  font-weight: 650;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-choice__detail {
+  color: #61748b;
+  font-size: 13px;
+  font-weight: 400;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-choice__selected {
+  color: #2c5ead;
+  font-weight: 650;
+  margin-inline-start: 8px;
+}
+.payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-choice > svg {
+  flex-shrink: 0;
+  color: #2c5ead;
+}
+@media (max-width: 680px) {
+  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
   }
-  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table :is(th,td) {
-    padding: 8px 6px;
-  }
-  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table :is(th,td):first-child {
-    width: 48%;
-  }
-  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table .other-tax-category-table__number {
-    width: 15%;
-  }
-  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table .other-tax-category-table__action {
-    width: 37%;
-  }
-  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table__selected {
-    display: table;
-    margin: 4px 0 0;
-  }
-  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table__action button {
-    min-height: 44px;
-    padding: 7px 6px;
-    font-size: var(--taxpay-type-body);
-  }
-  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-table__action button svg {
-    display: none;
+  .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-choice {
+    min-height: 60px;
+    padding: 10px 12px;
   }
 }
 
