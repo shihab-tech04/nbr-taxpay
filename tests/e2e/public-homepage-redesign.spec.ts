@@ -270,13 +270,18 @@ test('desktop public footer preserves all links, copyright and Help clearance wi
       const links=footer.locator('.public-footer__navs > :is(a,button)');
       await expect(links).toHaveCount(4);
       const m=await page.evaluate(()=>{
-        const box=(selector:string)=>document.querySelector(selector)?.getBoundingClientRect();
+        const rect=(node:Element|null)=>{
+          const r=node?.getBoundingClientRect();
+          return r ? {left:r.left,right:r.right,top:r.top,bottom:r.bottom} : null;
+        };
+        const box=(selector:string)=>rect(document.querySelector(selector));
+        const navLinks=Array.from(document.querySelectorAll('.public-footer__navs > :is(a,button)')).map(rect);
         const inner=document.querySelector<HTMLElement>('.public-footer__inner');
         const nav=document.querySelector<HTMLElement>('.public-footer__navs');
         return {vw:innerWidth,documentOverflow:document.documentElement.scrollWidth-innerWidth,
           innerOverflow:inner ? inner.scrollWidth-inner.clientWidth : Infinity,
           footer:box('.public-footer'),identity:box('.public-footer__identity'),
-          nav:nav?.getBoundingClientRect(),copyright:box('.public-footer__bottom'),
+          nav:rect(nav),navLinks,copyright:box('.public-footer__bottom'),
           help:box('.public-help-widget'),navDisplay:nav?getComputedStyle(nav).display:'none'};
       });
       expect(m.navDisplay,'public navigation visible at '+width+'/'+lang).not.toBe('none');
@@ -287,12 +292,14 @@ test('desktop public footer preserves all links, copyright and Help clearance wi
         expect(m.identity.left,'logo visible at '+width+'/'+lang).toBeGreaterThanOrEqual(0);
         expect(m.copyright.right,'copyright visible at '+width+'/'+lang).toBeLessThanOrEqual(width+1);
         expect(m.nav.right,'nav contained at '+width+'/'+lang).toBeLessThanOrEqual(width+1);
-        const overlapX=Math.min(m.nav.right,m.help.right)-Math.max(m.nav.left,m.help.left);
-        const overlapY=Math.min(m.nav.bottom,m.help.bottom)-Math.max(m.nav.top,m.help.top);
-        expect(overlapX<=0 || overlapY<=0,'Help must not cover public footer links at '+width+'/'+lang).toBeTruthy();
-        const navCopyrightOverlapX=Math.min(m.nav.right,m.copyright.right)-Math.max(m.nav.left,m.copyright.left);
-        const navCopyrightOverlapY=Math.min(m.nav.bottom,m.copyright.bottom)-Math.max(m.nav.top,m.copyright.top);
-        expect(navCopyrightOverlapX<=0 || navCopyrightOverlapY<=0,'copyright must not cover navigation at '+width+'/'+lang).toBeTruthy();
+        const overlaps=(first:typeof m.nav,second:typeof m.help)=>
+          Boolean(first&&second&&
+            Math.min(first.right,second.right)>Math.max(first.left,second.left)&&
+            Math.min(first.bottom,second.bottom)>Math.max(first.top,second.top));
+        expect(m.navLinks.every(link=>!overlaps(link,m.help)),
+          'Help must not cover public footer destinations at '+width+'/'+lang).toBeTruthy();
+        expect(m.navLinks.every(link=>!overlaps(link,m.copyright)),
+          'Copyright must not cover destinations at '+width+'/'+lang).toBeTruthy();
       }
     }
   }
