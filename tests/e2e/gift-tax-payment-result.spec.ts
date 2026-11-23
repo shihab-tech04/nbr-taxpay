@@ -56,7 +56,7 @@ for(const sample of [
     await gift.getByRole('button',{name:bn?'নমুনা রসিদ দেখুন':'View sample receipt'}).click();
     await expect(gift.getByTestId('gift-tax-simulation-receipt')).toBeVisible();
     await expect(gift.getByTestId('gift-tax-sample-receipt')).toContainText('Test gift remarks');
-    await expect(gift.getByTestId('gift-tax-sample-receipt')).toContainText(bn?'বাবা':'father');
+    await expect(gift.getByTestId('gift-tax-sample-receipt')).toContainText(bn?'বাবা':'Father');
     await expect(gift.getByTestId('gift-tax-simulation-receipt')).toContainText(/SIM-GIFT-/);
     await gift.getByRole('button',{name:bn?'পেমেন্টের ফলে ফিরুন':'Back to payment result'}).click();
     await gift.getByRole('button',{name:bn?'চূড়ান্ত পর্যালোচনায় ফিরুন':'Back to Final Preview'}).click();
