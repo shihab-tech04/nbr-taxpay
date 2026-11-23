@@ -302,6 +302,10 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embed
           : (bn ? 'পেমেন্ট সনদ দেখুন' : 'View payment certificate')}
       </button>}
       </>}
+      {compactWalkInLayout && isCertificate && <p className="receipt-view__record-only-note no-print" role="note">
+        {bn ? 'এই সনদটি সংরক্ষিত পেমেন্টের রেকর্ড, ব্যাংক বা ট্রেজারি নিষ্পত্তির প্রমাণ নয়।'
+          : 'Saved payment record certificate only — not proof of bank or Treasury settlement.'}
+      </p>}
       {downloadError && <p role="alert" className="no-print">
         {bn ? 'সনদ ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।' : 'Unable to download the certificate. Try again.'}
       </p>}
