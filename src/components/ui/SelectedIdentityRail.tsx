@@ -9,6 +9,7 @@ import { UserRound } from 'lucide-react';
 export function SelectedIdentityRail({
   prefix, label, count, emptyLabel, children, countTestId,
   titleIconSize = 17, emptyIconSize = 18, announceCount = false,
+  className = '', testId,
 }: {
   prefix: string;
   label: string;
@@ -19,8 +20,12 @@ export function SelectedIdentityRail({
   titleIconSize?: number;
   emptyIconSize?: number;
   announceCount?: boolean;
+  /** Optional consumer hooks; existing taxpayer/travel rails remain unchanged. */
+  className?: string;
+  testId?: string;
 }) {
-  return <aside className={prefix + '__rail'} aria-label={label}>
+  return <aside className={[prefix + '__rail', className].filter(Boolean).join(' ')}
+    aria-label={label} data-testid={testId}>
     <h3 className={prefix + '__rail-title'}>
       <UserRound size={titleIconSize} aria-hidden="true"/>
       {label}
