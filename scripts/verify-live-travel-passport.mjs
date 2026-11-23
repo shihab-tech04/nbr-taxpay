@@ -84,7 +84,7 @@ try {
     await medical.getByRole('checkbox').check();
     await expect(addPassenger).toBeEnabled();
     await addPassenger.click();
-    await expect(modal.getByRole('alert')).toContainText('medical exemption requires assessment at the departure port');
+    await expect(modal.locator('#travel-passenger-issue-first')).toContainText('medical exemption requires assessment at the departure port');
     await expect(continueToTravel).toBeDisabled();
     await medical.getByRole('checkbox').uncheck();
     await expect(modal.getByTestId('travel-manual-assessment-blocker')).toHaveCount(0);
