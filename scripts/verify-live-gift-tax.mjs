@@ -140,6 +140,21 @@ try{
       await expect(gift.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','3');
       await expect(review).toContainText('Gift Tax production UX acceptance only');
       await expect(review.locator('.gift-tax-preview-table')).not.toContainText('111111111111');
+      // Source-level tests previously passed while the deployed 320/375 preview
+      // rendered one-character-wide row headers. Fail the production gate on
+      // unreadable geometry, not just horizontal overflow.
+      if(mobile){
+        const relationRow=review.locator('.gift-tax-preview-table tbody tr').nth(2);
+        const [labelBox,valueBox]=await Promise.all([
+          relationRow.locator('th').boundingBox(),
+          relationRow.locator('td').boundingBox(),
+        ]);
+        if(!labelBox||!valueBox||labelBox.width<90||valueBox.width<90||
+           labelBox.x+labelBox.width>valueBox.x+3){
+          throw new Error('Gift Tax mobile preview crushed semantic label/value columns: '+
+            JSON.stringify({labelBox,valueBox}));
+        }
+      }
       const previewOverflow=await body.evaluate(element=>element.scrollWidth-element.clientWidth);
       if(previewOverflow>2)throw new Error('Final review horizontal overflow: '+previewOverflow);
       await gift.screenshot({path:'test-results/live-gift-tax-preview-'+sample.name+'.png',
