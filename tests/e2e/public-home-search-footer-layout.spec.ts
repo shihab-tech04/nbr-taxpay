@@ -47,15 +47,23 @@ test('Home search, benefit padding and footer remain aligned at real viewport si
             const b=el.getBoundingClientRect();
             return {left:b.left,right:b.right,top:b.top,bottom:b.bottom};
           });
+        const footer=rect('.public-footer');
         const footerIdentity=rect('.public-footer__identity');
         const footerCopyright=rect('.public-footer__bottom');
         const help=rect('.public-help-launch');
+        const benefitCards=Array.from(document.querySelectorAll('.public-benefits__item')).map(el=>{
+          const b=el.getBoundingClientRect();
+          return {left:b.left,right:b.right,top:b.top,bottom:b.bottom,height:b.height};
+        });
+        const textSize=(selector:string)=>parseFloat(getComputedStyle(document.querySelector(selector)!).fontSize);
+        const searchButtonBorder=parseFloat(getComputedStyle(document.querySelector('.public-record-search button')!).borderTopWidth);
         const footerParts=[...nav,footerIdentity,footerCopyright];
         const footerCollision=footerParts.some((a,i)=>footerParts.some((b,j)=>i<j && overlap(a,b)));
         return {
           rail:rect('.public-information-hub'),
           record:rect('.public-record-discovery'),
           benefits:rect('.public-benefits'),
+          footer,
           footerInner:rect('.public-footer__inner'),
           footerIdentity,
           footerCopyright,
@@ -63,6 +71,13 @@ test('Home search, benefit padding and footer remain aligned at real viewport si
           help,
           footerCollision,
           footerHelpCollision: footerParts.some(part=>overlap(part,help)),
+          footerHelpGap: footer.top - help.bottom,
+          benefitHelpCollision: benefitCards.some(card=>overlap(card,help)),
+          benefitCardHeights: benefitCards.map(card=>card.height),
+          taglineFont:textSize('.public-footer__identity p'),
+          footerLinkFont:textSize('.public-footer__navs a'),
+          copyrightFont:textSize('.public-footer__bottom p'),
+          searchButtonBorder,
           field:rect('.public-record-search'),
           input:rect('.public-record-search input'),
           button:rect('.public-record-search button'),
@@ -79,11 +94,22 @@ test('Home search, benefit padding and footer remain aligned at real viewport si
       expect(geometry.button.height).toBeGreaterThanOrEqual(44);
       expect(geometry.button.right).toBeLessThanOrEqual(geometry.field.right+1);
       expect(geometry.button.left).toBeGreaterThan(geometry.field.left);
+      expect(geometry.searchButtonBorder).toBe(0);
       if (viewport.width >= 981) {
         expect(geometry.field.height, JSON.stringify({viewport,lang,geometry})).toBeLessThanOrEqual(54);
         expect(geometry.field.height).toBeGreaterThanOrEqual(50);
         expect(Math.abs(geometry.searchPadding.top-geometry.benefitsPadding.top)).toBeLessThanOrEqual(1);
         expect(Math.abs(geometry.searchPadding.left-geometry.benefitsPadding.left)).toBeLessThanOrEqual(1);
+      }
+      if (viewport.width >= 981) {
+        expect(geometry.taglineFont, JSON.stringify({viewport,lang,geometry})).toBeGreaterThanOrEqual(13);
+        expect(geometry.footerLinkFont).toBeGreaterThanOrEqual(14);
+        expect(geometry.copyrightFont).toBeGreaterThanOrEqual(13);
+        expect(geometry.footerHelpGap, JSON.stringify({viewport,lang,geometry})).toBeGreaterThanOrEqual(8);
+        expect(geometry.benefitHelpCollision, JSON.stringify({viewport,lang,geometry})).toBe(false);
+      }
+      if (viewport.width >= 1600 && viewport.height >= 840 && viewport.height <= 959) {
+        expect(Math.max(...geometry.benefitCardHeights)).toBeLessThanOrEqual(122);
       }
       if (viewport.width >= 1121) {
         // Neither footer nor Help may visually escape the same page rail.
@@ -101,8 +127,8 @@ test('Home search, benefit padding and footer remain aligned at real viewport si
       }
       // Snapshot the actual browser rendering for before/after review.
       if ((viewport.width === 1769 || viewport.width === 375) && lang === 'en') {
-        await mkdir('test-results', {recursive:true});
-        await page.screenshot({path:`test-results/home-layout-${viewport.width}-${lang}.png`, fullPage:true});
+        await mkdir('test-results/screenshots', {recursive:true});
+        await page.screenshot({path:`test-results/screenshots/sohojkor-home-rhythm-polish-${viewport.width}x${viewport.height}-${info.project.name}.png`, fullPage:true});
       }
     }
   }
