@@ -135,7 +135,7 @@ test('unified v5 Final Preview stacks rows and retains only the payment CTA',asy
   const batch=dialog.getByTestId('other-tax-batch');
   const returnGroup=batch.getByTestId('unified-v5-return-group');
   await expect(returnGroup).toHaveAttribute('data-head-group','Tax with Return');
-  await batch.getByTestId('fixed-tax-categories').getByRole('button',{name:'View payment heads for Tax with Return'}).click();
+  await returnGroup.locator('summary').click();
   await batch.getByTestId('unified-v5-return-checkbox').check();
   await expect(returnGroup.getByTestId('other-tax-line')).toHaveCount(1);
   await batch.getByTestId('unified-v5-return-amount').fill('3500');
