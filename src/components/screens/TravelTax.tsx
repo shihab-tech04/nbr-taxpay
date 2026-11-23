@@ -116,7 +116,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       const footerTop = footer?.getBoundingClientRect().top ?? window.innerHeight;
       const availableBelow = Math.max(0, Math.min(bodyRect.bottom, footerTop, window.innerHeight) - rowRect.bottom - 12);
       const availableAbove = Math.max(0, rowRect.top - Math.max(bodyRect.top, 0) - 12);
-      const placement = availableBelow >= 190 || availableBelow >= availableAbove ? 'below' : 'above';
+      // Prefer below if two option rows can fit. An upward popup otherwise
+      // covers the "Add passenger" heading and prevents outside-click dismiss.
+      const placement = availableBelow >= 80 || availableBelow >= availableAbove ? 'below' : 'above';
       const maxHeight = Math.max(64, Math.min(210, placement === 'below' ? availableBelow : availableAbove));
       setPassportSuggestionLayout(previous =>
         previous.placement === placement && previous.maxHeight === maxHeight ? previous : {placement, maxHeight});
