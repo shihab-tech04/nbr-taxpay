@@ -3014,17 +3014,3 @@
     border-left:0;border-top:1px solid #dbe3ef;
   }
 }
-
-/* Keep enough viewport space for the passport combobox while it is open.
-   Expand the existing short passenger stage only, not the route/review/receipt
-   stages; its shared header and footer remain fixed. */
-@media (min-width: 651px) {
-  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(.travel-flow[data-step="0"]):has(.travel-flow__passport-suggestions) {
-    height: min(75dvh, 680px);
-    max-height: calc(100dvh - 2rem);
-  }
-  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]:has(.travel-flow[data-step="0"]):has(.travel-flow__passport-suggestions) .taxpay-modal__body {
-    flex: 1 1 auto;
-    max-height: none;
-  }
-}
