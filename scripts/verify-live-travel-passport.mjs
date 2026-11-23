@@ -20,14 +20,18 @@ try {
     const url = new URL(base);
     url.searchParams.set('action', 'landing');
     await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    const hero = page.locator('.public-hero-carousel');
-    await expect(hero).toBeVisible({ timeout: 30_000 });
-    // Public banner now exposes one Other Tax action; preserve Travel Tax's existing passenger journey.
-    await hero.getByRole('button', { name: 'Other Tax', exact: true }).click();
-    const chooser = page.getByTestId('other-tax-chooser');
-    await expect(chooser).toBeVisible();
-    await expect(chooser.getByRole('button', { name: /Gift Tax/ })).toBeVisible();
-    await chooser.getByRole('button', { name: /Travel Tax/ }).click();
+    // PR #985 routes Home > Other Tax through the approved sign-in/walk-in
+    // access modal. Keep that journey intact. Enter the separate Travel Tax
+    // flow through its existing public Guide action (also tested in EN/BN).
+    url.searchParams.set('action', 'user_guide');
+    url.searchParams.set('lang', 'en');
+    await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await page.getByRole('searchbox', { name: 'Search the guide' }).fill('Travel tax');
+    const result = page.locator('.public-guide-result-group').filter({
+      has: page.getByRole('heading', { name: 'Travel tax', exact: true }),
+    });
+    await expect(result).toBeVisible({ timeout: 15_000 });
+    await result.getByRole('button', { name: 'Pay Travel Tax' }).click();
 
     const modal = page.getByRole('dialog', { name: 'Travel tax' });
     await expect(modal).toBeVisible();
