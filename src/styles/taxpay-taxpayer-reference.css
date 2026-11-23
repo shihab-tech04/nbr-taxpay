@@ -367,19 +367,19 @@
   .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button {
     gap: 9px;
     padding: 8px 9px;
-    font-size: 14px;
+    font-size: var(--taxpay-type-body, 16px);
   }
   .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-main-action {
     padding: 8px;
-    font-size: 14px;
+    font-size: var(--taxpay-type-body, 16px);
   }
   .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom button {
     padding: 8px;
-    font-size: 13px;
+    font-size: var(--taxpay-type-body, 16px);
   }
   .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-rail-bottom strong {
     padding: 4px;
-    font-size: 12px;
+    font-size: var(--taxpay-type-micro, 12px);
   }
 }
 

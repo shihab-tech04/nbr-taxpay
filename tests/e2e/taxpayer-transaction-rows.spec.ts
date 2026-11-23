@@ -55,7 +55,16 @@ test('history uses one content panel and aligned, legible payment rows',async({p
     .filter(cell=>getComputedStyle(cell).display!=='none')
     .map(cell=>({left:cell.getBoundingClientRect().left,right:cell.getBoundingClientRect().right})));
   expect(positions).toHaveLength(9);
-  for(let i=1;i<positions.length;i++)expect(positions[i].left).toBeGreaterThanOrEqual(positions[i-1].right-1);
+  // The first Payment and last Actions cells are intentionally sticky.
+  // Adjacent middle data columns must still preserve their reading order;
+  // a fixed action column may overlay the scrolled center at the viewport edge.
+  for(let i=2;i<6;i++)
+    expect(positions[i].left).toBeGreaterThanOrEqual(positions[i-1].right-1);
+  const pinStyles=await first.evaluate(row=>{
+    const cells=row.querySelectorAll<HTMLElement>('td');
+    return [0,6,7,8].map(index=>getComputedStyle(cells[index]).position);
+  });
+  expect(pinStyles).toEqual(['sticky','sticky','sticky','sticky']);
   const viewport=panel.locator('.taxpay-table-viewport');
   // Office registers keep all columns; the actions remain reachable by local horizontal scroll.
   await viewport.evaluate(element=>{element.scrollLeft=element.scrollWidth;});

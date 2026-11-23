@@ -896,6 +896,124 @@
 /* The same receipt document in guest lookup, payment history and completed payment.
    Reuse citizen tokens, not legacy emerald receipt styling or a second layout system. */
 .receipt-view--embedded{max-width:none;width:100%;min-width:0;color:var(--citizen-text);font-family:inherit;font-size:14px;line-height:1.55}
+/* Signed-in Activity receipt reader only. Source payments, certificate HTML,
+ * public/walk-in readers and @media print document rules stay untouched.
+ * Use four semantic font weights and the existing six-size citizen scale. */
+.taxpay-taxpayer-reference .taxpayer-transaction-detail .receipt-view--account-history {
+  font-size: var(--taxpay-type-body, 16px);
+  line-height: 1.55;
+  color: var(--color-taxpay-text, #172033);
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history > .no-print.flex {
+  display: inline-flex;
+  vertical-align: middle;
+  max-width: 100%;
+  margin: 0 8px 12px 0;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history > .receipt-view__action.no-print {
+  display: inline-flex;
+  vertical-align: middle;
+  max-width: 100%;
+  margin: 0 0 12px 0;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__summary {
+  gap: 16px;
+  padding: 8px 0 18px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__eyebrow {
+  font-size: var(--taxpay-type-micro, 12px);
+  font-weight: 600;
+  line-height: 1.5;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__summary h3 {
+  font-size: var(--taxpay-type-h3, 20px);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__summary-subtitle {
+  font-size: var(--taxpay-type-body, 16px);
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__amount :is(span,small) {
+  font-size: var(--taxpay-type-micro, 12px);
+  font-weight: 500;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__amount strong {
+  font-size: 28px;
+  font-weight: 700;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__reference-strip {
+  gap: 16px;
+  padding-block: 14px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__reference-strip > div > span:first-child {
+  font-size: var(--taxpay-type-micro, 12px);
+  font-weight: 500;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__reference-strip .font-mono-plex {
+  font-size: var(--taxpay-type-micro, 12px);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__parties {
+  gap: 18px;
+  padding-block: 18px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__section-title {
+  margin-bottom: 10px;
+  font-size: var(--taxpay-type-h3, 20px);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__detail {
+  grid-template-columns: minmax(0,35%) minmax(0,1fr);
+  align-items: start;
+  gap: 10px;
+  padding-block: 6px;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__detail > span:first-child {
+  font-size: var(--taxpay-type-micro, 12px);
+  font-weight: 500;
+  line-height: 1.55;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__detail > span:last-child {
+  font-size: var(--taxpay-type-body, 16px);
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__table,
+.taxpay-taxpayer-reference .taxpayer-transaction-detail
+.receipt-view--account-history .receipt-view__cards {
+  margin-top: 8px;
+}
+@media(max-width:650px) {
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail
+  .receipt-view--account-history .receipt-view__parties {grid-template-columns:minmax(0,1fr);}
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail
+  .receipt-view--account-history .receipt-view__detail {grid-template-columns:minmax(0,38%) minmax(0,1fr);}
+  .taxpay-taxpayer-reference .taxpayer-transaction-detail
+  .receipt-view--account-history .receipt-view__summary {grid-template-columns:minmax(0,1fr);}
+}
 .receipt-view__paper{min-width:0;margin:0;padding:0;background:var(--citizen-surface);color:var(--citizen-text);border:0;border-radius:0;box-shadow:none}
 .receipt-view__summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1.5rem;align-items:center;padding:0 0 1.25rem;border-bottom:1px solid var(--citizen-border)}
 .receipt-view__eyebrow{margin:0 0 .35rem;color:var(--citizen-primary-dark);font-size:14px;font-weight:750;letter-spacing:.015em}
