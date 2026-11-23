@@ -1,5 +1,6 @@
 import '../../styles/taxpay-unified-table.css';
 import {type ComponentPropsWithoutRef,type ReactNode} from 'react';
+import {compactRecordItems} from './compactRecordItems';
 import {ChevronLeft,ChevronRight,Filter,Search,X} from 'lucide-react';
 
 /** Shared Korbritto table primitives.
@@ -221,6 +222,32 @@ export function TaxPayRecordList({variant,headers,children,className,'aria-label
  * this component owns headers, row identity, responsive rendering and rhythm.
  * Official receipt and certificate print tables are excluded.
  */
+/** A bounded identity summary for dense transaction cells and mobile cards.
+ * The owner still supplies the original record and opens its full details;
+ * no allocation, tag, reference or authorization is discarded.
+ */
+export function TaxPayCompactCellList<Item>({items,getKey,renderItem,moreLabel,onShowAll,visibleCount=1}:{
+  items:readonly Item[];
+  getKey:(item:Item)=>string;
+  renderItem:(item:Item)=>ReactNode;
+  moreLabel:(hiddenCount:number,totalCount:number)=>string;
+  onShowAll:()=>void;
+  visibleCount?:number;
+}) {
+  const projection=compactRecordItems(items,visibleCount);
+  const hidden=projection.hiddenCount;
+  return <div className="taxpay-compact-cell-list">
+    {projection.visible.map(item=><div className="taxpay-compact-cell-list__item" key={getKey(item)}>
+      {renderItem(item)}
+    </div>)}
+    {hidden>0&&<button type="button" className="taxpay-compact-cell-list__more"
+      aria-label={moreLabel(hidden,items.length)}
+      onClick={event=>{event.stopPropagation();onShowAll();}}>
+      {moreLabel(hidden,items.length)}
+    </button>}
+  </div>;
+}
+
 export type TaxPayDataColumn<Row> = {
   key: string;
   header: string;

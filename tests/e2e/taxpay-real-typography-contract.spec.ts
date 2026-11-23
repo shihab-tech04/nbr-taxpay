@@ -205,6 +205,21 @@ test('signed-in headings and navigation retain semantic hierarchy on every viewp
           expect(await hero.evaluate(el=>parseFloat(getComputedStyle(el).fontSize)),
             'visible Follow-ups section size at '+width+'/'+lang).toBe(width>=768?24:20);
         }
+        // Check the actual authenticated taxpayer profile, not a signed-out
+        // URL preview: unauthorized sessions intentionally hide its details.
+        if(route==='account_profile' && (width===375 || width===1024)){
+          const profile=page.getByTestId('user1-taxpayer-profile');
+          const label=profile.locator('.taxpay-profile-field-label').first();
+          const value=profile.locator('.taxpay-profile-field-value').first();
+          const section=profile.locator('.taxpay-profile-section-heading').first();
+          await expect(label).toBeVisible();
+          await expect(value).toBeVisible();
+          await expect(section).toBeVisible();
+          expect(await label.evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBe(16);
+          expect(await value.evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBe(16);
+          expect(await value.evaluate(el=>Number(getComputedStyle(el).fontWeight))).toBe(500);
+          expect(await section.evaluate(el=>Number(getComputedStyle(el).fontWeight))).toBe(600);
+        }
         if(route==='history' && width>=768){
           const register=page.getByTestId('taxpayer-transaction-table');
           await expect(register).toBeVisible();
