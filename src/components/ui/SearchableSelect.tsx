@@ -146,6 +146,7 @@ export function SearchableSelect({
           aria-activedescendant={active>=0?id+'-option-'+active:undefined}
           value={query} onChange={event=>setQuery(event.target.value)}
           onKeyDown={event=>{
+            if(event.key==='Tab'&&viewportPortal){event.preventDefault();setOpen(false);triggerRef.current?.focus();return;}
             if(event.key==='ArrowDown'){event.preventDefault();move(1);}
             if(event.key==='ArrowUp'){event.preventDefault();move(-1);}
             if(event.key==='Home'){event.preventDefault();setActive(enabled[0]??-1);}
