@@ -3003,6 +3003,48 @@
 .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__footer-actions .travel-flow__primary {
   flex:1 1 auto;width:100%;max-width:none;
 }
+
+/* Search > identity details > Add passenger mirrors the approved compact TIN card.
+   Specific to Travel Tax, without changing the shared payment modal or workflow. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__result-card {
+  margin-top:13px;padding:9px 15px 12px;border:1px solid #c8d9ec;
+  border-radius:12px;background:#fff;min-width:0;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__result-card dl {margin:0}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__result-card dl > div {
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  min-height:39px;padding:7px 0;border-bottom:1px solid #ecf0f5;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__result-card dt {
+  font-size:12px;line-height:1.45;color:#63758f;flex:0 1 45%;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__result-card dd {
+  margin:0;text-align:right;overflow-wrap:anywhere;font-size:13px;
+  line-height:1.45;font-weight:650;color:#193956;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__result-card .travel-passenger-workspace__medical {
+  width:100%;margin:6px 0 0;padding:4px 0;border:0;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__medical .travel-flow__check {
+  min-height:36px;padding:7px 0;line-height:1.45;cursor:pointer;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__result-action {
+  display:flex;justify-content:flex-start;margin-top:8px;
+  padding-top:10px;border-top:1px solid #ecf0f5;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__result-action .travel-flow__add-member {
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  width:auto;max-width:100%;min-height:42px;margin:0;padding:8px 16px;
+  color:#193956;background:#fff;border:1px solid #b8cbe4;
+  border-radius:9px;font:700 14px/1.4 Poppins,system-ui,sans-serif;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-passenger-workspace__result-action .travel-flow__add-member:disabled {
+  opacity:.55;cursor:not-allowed;
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__medical-note {
+  margin:8px 0 0;padding:9px 11px;font-size:12px;line-height:1.5;
+}
+
 @media (max-width:800px) {
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow--identity .travel-passenger-workspace {
     display:flex;flex-direction:column;
