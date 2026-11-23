@@ -787,13 +787,13 @@ table.taxpay-unified-table {
   vertical-align: middle;
 }
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(1) {min-width: 170px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(2) {min-width: 130px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(2) {min-width: 120px;}
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(3) {min-width: 175px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(4) {min-width: 134px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(5) {min-width: 126px;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(6) {min-width: 100px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(4) {min-width: 119px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(5) {min-width: 111px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(6) {min-width: 96px;}
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(7) {min-width: 115px;text-align:right;}
-.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(8) {min-width: 146px;}
+.taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):nth-child(8) {min-width: 190px;}
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table :is(th,td):last-child {width:1%;text-align:right;white-space:nowrap;}
 .taxpay-taxpayer-reference .taxpayer-transaction-panel .taxpayer-transaction-table tbody tr[data-clickable-row="true"] {
   cursor: pointer;
@@ -1791,19 +1791,19 @@ table.taxpay-unified-table {
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
   .taxpayer-transaction-table thead th:nth-child(1) {width:190px;}
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
-  .taxpayer-transaction-table thead th:nth-child(2) {width:130px;}
+  .taxpayer-transaction-table thead th:nth-child(2) {width:120px;}
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
   .taxpayer-transaction-table thead th:nth-child(3) {width:180px;}
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
-  .taxpayer-transaction-table thead th:nth-child(4) {width:134px;}
+  .taxpayer-transaction-table thead th:nth-child(4) {width:119px;}
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
-  .taxpayer-transaction-table thead th:nth-child(5) {width:126px;}
+  .taxpayer-transaction-table thead th:nth-child(5) {width:111px;}
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
-  .taxpayer-transaction-table thead th:nth-child(6) {width:100px;}
+  .taxpayer-transaction-table thead th:nth-child(6) {width:96px;}
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
   .taxpayer-transaction-table thead th:nth-child(7) {width:115px;}
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
-  .taxpayer-transaction-table thead th:nth-child(8) {width:146px;}
+  .taxpayer-transaction-table thead th:nth-child(8) {width:190px;}
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
   .taxpayer-transaction-table thead th:nth-child(9) {width:159px;}
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
@@ -1836,7 +1836,7 @@ table.taxpay-unified-table {
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
   .taxpayer-transaction-table :is(th,td)[data-column-key="amount"] {
     position: sticky;
-    right: 305px;
+    right: 349px;
     z-index: 2;
     background: var(--taxpay-table-surface, #fff);
     box-shadow: -1px 0 0 var(--taxpay-table-border, #e1e6ee);
@@ -1884,8 +1884,9 @@ table.taxpay-unified-table {
   .taxpayer-transaction-table .taxpayer-transaction-row__status > span {
     min-width: 0;
     max-width: 100%;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    font-size: var(--taxpay-type-micro, 12px);
+    white-space: nowrap;
+    overflow-wrap: normal;
     word-break: normal;
     line-height: 1.45;
   }
