@@ -41,7 +41,7 @@ test('Walk-in Challan uses the one shared header and an accessible receipt/certi
   await dialog.getByRole('button', {name: 'Add taxpayer'}).click();
   await dialog.locator('.tax-service-choice__continue').filter({hasText: 'Continue to Payment Head'}).click();
   const editor = dialog.getByTestId('other-tax-batch');
-  await editor.getByTestId('fixed-tax-categories').locator('tr[data-category="Advance Tax"] button').click();
+  // Reuse the approved grouped tax-head controls restored on protected Main #997.
   const group = editor.locator('[data-head-group="Advance Tax"]');
   if (await group.getAttribute('open') === null) await group.locator('summary').click();
   await editor.getByRole('checkbox', {name:/Select 68A|68A/}).check();
