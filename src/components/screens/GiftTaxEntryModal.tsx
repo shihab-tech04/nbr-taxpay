@@ -179,22 +179,29 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     const value = added[party];
     if (!value) return null;
     const title = party === 'donor' ? t('Donor', 'দাতা') : t('Donee', 'গ্রহীতা');
-    return <div className="unified-taxpayer-workspace__person" data-testid={'gift-added-' + party}>
-      <div className="unified-taxpayer-workspace__person-main">
+    return <div className={'unified-taxpayer-workspace__person gift-tax-identity-card gift-tax-identity-card--'+party}
+      data-testid={'gift-added-'+party}>
+      <div className="unified-taxpayer-workspace__person-main gift-tax-identity-card__row">
         <span className="unified-taxpayer-workspace__avatar" aria-hidden="true">
           {party === 'donor' ? t('D', 'দ') : t('R', 'গ')}
         </span>
-        <div className="unified-taxpayer-workspace__person-copy">
-          <strong>{value.name} <span>· {title}</span></strong>
+        <div className="unified-taxpayer-workspace__person-copy gift-tax-identity-card__copy">
+          <strong>{value.name}</strong>
           <small>{maskTinForDisplay(value.tin)}</small>
+          {party === 'donee' && doneeChoice && <span className="gift-tax-identity-card__relationship">{beneficiaryFinalTagLabel(doneeClass.tag || null, doneeClass.relationship || null, language, doneeOther) ?? doneeClassLabel}</span>}
         </div>
-        {party === 'donee' && doneeChoice && <small>{doneeClassLabel}</small>}
-        {removable && <button type="button" className="unified-taxpayer-workspace__remove"
+        {removable && <button type="button" className="unified-taxpayer-workspace__remove gift-tax-identity-card__remove"
           aria-label={t('Remove ', 'সরান: ') + title} title={t('Remove from this payment', 'এই পেমেন্ট থেকে সরান')}
           onClick={() => updateTin(party, '')}><Trash2 size={17} aria-hidden="true" /></button>}
       </div>
     </div>;
   };
+  const identityRole = (party: Party) => <section className={'gift-tax-role-group gift-tax-role-group--'+party}
+    data-testid={'gift-rail-'+party}>
+    <h3 className="gift-tax-role-group__title">{party === 'donor' ? t('Donor', 'দাতা') : t('Donee', 'গ্রহীতা')}</h3>
+    {added[party] ? partyDisplay(party,true)
+      : <p className="gift-tax-role-group__empty">{party === 'donor' ? t('No donor added yet', 'এখনো দাতা যোগ করা হয়নি') : t('No donee added yet', 'এখনো গ্রহীতা যোগ করা হয়নি')}</p>}
+  </section>;
   const partyLookup = (party: Party) => {
     const confirmed = added[party];
     const match = searched[party];
@@ -206,9 +213,8 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
       <p className="unified-taxpayer-workspace__subheading">
         {t('Enter a TIN and search.', 'টিআইএন লিখে অনুসন্ধান করুন।')}
       </p>
-      {confirmed ? <div className="gift-tax-confirmed-person">
-        <TaxpayerTinSearchResultCard language={language} tin={confirmed.tin} name={confirmed.name}
-          testId={'gift-confirmed-' + party} />
+      {confirmed ? <div className="gift-tax-confirmed-person" data-testid={'gift-confirmed-' + party}>
+        <p className="gift-tax-added-hint" role="status">{t('Already added to this payment. See the ', 'এই পেমেন্টে যোগ করা হয়েছে। ডান পাশের ')}{title}{t(' card on the right.', ' কার্ড দেখুন।')}</p>
         <button type="button" className={secondaryClass} onClick={() => updateTin(party, confirmed.tin)}>
           {t('Edit ', 'সম্পাদনা করুন: ') + title}
         </button>
@@ -235,7 +241,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
               <label htmlFor="gift-donee-relationship" className="gift-tax-field-label">
                 {t('Tag / Relationship', 'ট্যাগ / সম্পর্ক')} *
               </label>
-              <SearchableSelect id="gift-donee-relationship" required
+              <SearchableSelect id="gift-donee-relationship" required viewportPortal
                 ariaLabel={t('Donee Tag / Relationship', 'গ্রহীতার ট্যাগ / সম্পর্ক')}
                 value={doneeChoice} onChange={value => {setDoneeChoice(value);setDoneeOther('');setLookupError(current => ({...current,donee:''}));}}
                 options={doneeOptions} placeholder={t('Select a tag or relationship', 'ট্যাগ বা সম্পর্ক নির্বাচন করুন')}
@@ -246,7 +252,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
                   required aria-invalid={doneeOther.trim().length === 0}
                   onChange={event => {setDoneeOther(event.target.value);setLookupError(current => ({...current,donee:''}));}} />
               </div>}
-              <button type="button" className={primaryClass} disabled={!doneeClassValid}
+              <button type="button" className="gift-tax-action gift-tax-action--primary gift-tax-add-donee" disabled={!doneeClassValid}
                 onClick={() => addParty('donee')}>{t('Add Donee', 'গ্রহীতা যোগ করুন')}</button>
             </div>}
             <p className="gift-tax-lookup-notice">
@@ -306,25 +312,27 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         label={t('Donor & Donee in this Payment', 'এই পেমেন্টের দাতা ও গ্রহীতা')}
         count={selectedCount} countTestId="gift-tax-selected-count" announceCount
         emptyLabel={t('No donor or donee added', 'কোনো দাতা বা গ্রহীতা যোগ করা হয়নি')}>
-        {partyDisplay('donor', true)}{partyDisplay('donee', true)}
+        {selectedCount > 0 && <div className="gift-tax-rail-roles">
+          {identityRole('donor')}{identityRole('donee')}
+        </div>}
       </SelectedIdentityRail>
     )}
     {step === 2 && workspace('gift-tax-details-form',
       <>
-        <h2 className="unified-taxpayer-workspace__heading">{t('Gift & tax information', 'দান ও করের তথ্য')}</h2>
-        <p className="unified-taxpayer-workspace__subheading">{t('Enter and review the details of the gift.', 'দানের বিবরণ লিখুন ও যাচাই করুন।')}</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="gift-tax-details-intro"><h2 className="unified-taxpayer-workspace__heading">{t('Gift & tax information', 'দান ও করের তথ্য')}</h2>
+          <p className="unified-taxpayer-workspace__subheading">{t('Enter and review the details of the gift.', 'দানের বিবরণ লিখুন ও যাচাই করুন।')}</p></div>
+        <div className="gift-tax-details-grid">
           <div><label htmlFor="gift-tax-amount" className="gift-tax-field-label">{t('Gift amount (৳)', 'দানের পরিমাণ (৳)')} *</label>
             <input id="gift-tax-amount" className={inputClass} inputMode="decimal" autoComplete="off" placeholder="2500000"
               value={giftAmount} required aria-invalid={Boolean(formError && parsedAmount === null)}
               onChange={event => {setGiftAmount(event.target.value);setFormError('');}} /></div>
-          <div><label htmlFor="gift-tax-description" className="gift-tax-field-label">{t('Gift description', 'দানের বিবরণ')}</label>
-            <input id="gift-tax-description" className={inputClass} maxLength={500} value={description}
-              onChange={event => setDescription(event.target.value)} placeholder={t('Enter gift details', 'দানের বিবরণ লিখুন')} /></div>
           <div><label htmlFor="gift-tax-date" className="gift-tax-field-label">{t('Date of gift', 'দানের তারিখ')} *</label>
             <input id="gift-tax-date" className={inputClass} type="date" max={localToday()}
               value={dateOfGift} required onChange={event => {setDateOfGift(event.target.value);setFormError('');}} /></div>
-          <div><label htmlFor="gift-tax-remarks" className="gift-tax-field-label">{t('Remarks', 'মন্তব্য')}</label>
+          <div className="gift-tax-details-grid__full"><label htmlFor="gift-tax-description" className="gift-tax-field-label">{t('Gift description', 'দানের বিবরণ')}</label>
+            <input id="gift-tax-description" className={inputClass} maxLength={500} value={description}
+              onChange={event => setDescription(event.target.value)} placeholder={t('Enter gift details', 'দানের বিবরণ লিখুন')} /></div>
+          <div className="gift-tax-details-grid__full"><label htmlFor="gift-tax-remarks" className="gift-tax-field-label">{t('Remarks', 'মন্তব্য')}</label>
             <textarea id="gift-tax-remarks" className={inputClass} rows={2} value={remarks}
               onChange={event => setRemarks(event.target.value)} placeholder={t('Optional challan remarks', 'ঐচ্ছিক চালান মন্তব্য')} /></div>
         </div>
