@@ -257,7 +257,11 @@ export function EventBasedTaxLedger({events,language,year,onYearChange,financial
         ...(showExternalSources&&sourceFilter!=='all'?[{key:'source',label:sourceFilter==='SOHOJKOR'?'Sohojkor':EXTERNAL_LEDGER_SOURCES[sourceFilter as keyof typeof EXTERNAL_LEDGER_SOURCES],onRemove:()=>setSourceFilter('all')}]:[])
       ]}/>
     <TaxPayTablePanel className="taxpay-ledger-records">
-    <TaxPayTableViewport>
+    {visible.length>0&&<p className="taxpay-register-scroll-note hidden md:block" role="note">
+      {t('Scroll the ledger for additional source columns; event, credit and balance stay visible.',
+         'উৎসের অতিরিক্ত কলাম দেখতে লেজারটি পাশে স্ক্রল করুন; ঘটনা, ক্রেডিট ও ব্যালেন্স দেখা যাবে।')}
+    </p>}
+    <TaxPayTableViewport role="region" aria-label={t('Scrollable tax event ledger','স্ক্রলযোগ্য কর ঘটনার লেজার')} tabIndex={0}>
       {visible.length===0&&<p role="status" className="taxpay-table-state p-6 text-sm text-taxpay-muted">{t('No recorded events match the selected filters.','নির্বাচিত ফিল্টারে কোনো ঘটনা পাওয়া যায়নি।')}</p>}
         {(events.length===0||visible.length>0)&&<TaxPayDataGrid variant="ledger" rows={visible} getRowKey={e=>e.id}
           testId="event-ledger-table" ariaLabel={t('Tax event ledger','কর ঘটনার লেজার')}
