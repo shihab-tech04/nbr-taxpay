@@ -650,15 +650,18 @@
   font-weight: 400;
   line-height: 1.45;
 }
-.taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs :is(a,button) {
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.4;
-}
-.taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p,
-.taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom p {
-  font-size: 13px;
-  font-weight: 400;
+/* Desktop footer refinement must not change the solved compact mobile footer. */
+@media (min-width: 981px) {
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs :is(a,button) {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p,
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom p {
+    font-size: 13px;
+    font-weight: 400;
+  }
 }
 .taxpay-citizen-shell:has(.public-home-sections) .public-help-launch {
   font-size: 14px;
