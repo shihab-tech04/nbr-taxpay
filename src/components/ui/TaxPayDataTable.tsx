@@ -1,5 +1,6 @@
 import '../../styles/taxpay-unified-table.css';
 import {type ComponentPropsWithoutRef,type ReactNode} from 'react';
+import {compactRecordItems} from './compactRecordItems';
 import {ChevronLeft,ChevronRight,Filter,Search,X} from 'lucide-react';
 
 /** Shared Korbritto table primitives.
@@ -233,10 +234,10 @@ export function TaxPayCompactCellList<Item>({items,getKey,renderItem,moreLabel,o
   onShowAll:()=>void;
   visibleCount?:number;
 }) {
-  const visible=Math.max(1,Math.trunc(visibleCount)||1);
-  const hidden=Math.max(0,items.length-visible);
+  const projection=compactRecordItems(items,visibleCount);
+  const hidden=projection.hiddenCount;
   return <div className="taxpay-compact-cell-list">
-    {items.slice(0,visible).map(item=><div className="taxpay-compact-cell-list__item" key={getKey(item)}>
+    {projection.visible.map(item=><div className="taxpay-compact-cell-list__item" key={getKey(item)}>
       {renderItem(item)}
     </div>)}
     {hidden>0&&<button type="button" className="taxpay-compact-cell-list__more"
