@@ -417,6 +417,9 @@ test('Travel Tax modal has a top-right close and one fixed workflow action foote
   expect(positions.headerBottom).toBeLessThanOrEqual(positions.bodyTop+1);
   expect(positions.bodyBottom).toBeLessThanOrEqual(positions.footerTop+1);
   await closeIcon.click();
+  const exit = modal.getByRole('alertdialog',{name:'Discard tax payment?'});
+  await expect(exit).toBeVisible();
+  await exit.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(modal).toHaveCount(0);
 });
 
@@ -439,6 +442,9 @@ test('travel tax uses same modal header/body/footer without changing its flow',a
   await expect(modal.locator('#travel-tax-route-results')).toBeVisible();
   await expect(modal.locator('.taxpay-modal__footer-close')).toHaveCount(0);
   await page.keyboard.press('Escape');
+  const exit = modal.getByRole('alertdialog',{name:'Discard tax payment?'});
+  await expect(exit).toBeVisible();
+  await exit.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(modal).toHaveCount(0);
 });
 
