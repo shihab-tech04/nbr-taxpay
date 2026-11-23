@@ -147,7 +147,7 @@ test('Travel Tax passport lookup is full-width on tablet and phone without chang
 test('Travel Tax suggestions stay attached to passport and visible above modal footer across sizes',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','One project sweeps the exact responsive widths');
   await page.emulateMedia({reducedMotion:'reduce'});
-  for (const width of [320,375,768,1280,2048]) {
+  for (const width of [1280,2048,768,375,320]) {
     await page.setViewportSize({width,height:700});
     await page.goto('/?action=landing&lang=en');
     await openTravelTaxFromBanner(page);
@@ -162,9 +162,17 @@ test('Travel Tax suggestions stay attached to passport and visible above modal f
         if(cs.transform!=='none'||cs.filter!=='none'||cs.perspective!=='none')
           transformedAncestors.push(parent.tagName.toLowerCase()+'.'+parent.className+':'+cs.transform);
       }
+      const vv=window.visualViewport;
       return {top:rect.top,left:rect.left,right:rect.right,bottom:rect.bottom,
-        vw:innerWidth,vh:innerHeight,position:style.position,inset:style.inset,
-        transform:style.transform,transformedAncestors};
+        vw:innerWidth,vh:innerHeight,scrollY:scrollY,
+        visualViewportOffsetTop:vv?.offsetTop,visualViewportPageTop:vv?.pageTop,
+        position:style.position,inset:style.inset,margin:style.margin,
+        translate:style.translate,transform:style.transform,
+        ancestors:[...function*(){for(let p=node.parentElement;p;p=p.parentElement)yield {
+          tag:p.tagName,cls:p.className,rectTop:p.getBoundingClientRect().top,
+          contain:getComputedStyle(p).contain,willChange:getComputedStyle(p).willChange,
+          translate:getComputedStyle(p).translate,
+        }}()],transformedAncestors};
     });
     expect(Math.abs(cover.top),'backdrop reaches top at '+width+': '+JSON.stringify(cover)).toBeLessThanOrEqual(1);
     expect(Math.abs(cover.left),'backdrop reaches left at '+width).toBeLessThanOrEqual(1);
