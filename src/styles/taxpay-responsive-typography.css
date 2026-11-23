@@ -373,32 +373,39 @@
   }
 }
 
-/* Keep the approved desktop wordmark and single-row navigation geometry. */
+/* Public footer: keep the approved identity, all four destinations and
+ * copyright visible without escaping the viewport at desktop widths.
+ * Replace the old viewport-derived left margin with a centered grid. */
 @media (min-width: 1200px) {
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
-    /* Keep the logo aligned with the 1100px Home/Guide/Report rail,
-     * while using spare viewport space to the right for four readable
-     * 16px footer links and the copyright. A centered 1100px grid
-     * forces nonwrapping links to overlap its copyright column. */
-    max-width: none;
-    width: auto;
-    margin-left: max(0px, calc((100vw - var(--public-content-max)) / 2 - 2rem));
-    margin-right: 0;
-    padding-left: 2rem;
-    padding-right: 12px;
-    column-gap: 10px;
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+    align-items: center;
+    max-width: min(1500px, calc(100vw - 32px));
+    width: 100%;
+    margin-inline: auto;
+    padding: 8px 16px;
+    column-gap: 16px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity {
+    min-width: 0;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
-    /* Keep the 16px explanatory copy within two lines so the aligned
-     * footer stays compact at approved desktop heights. */
-    flex: 0 0 220px;
-    max-width: 220px;
-    line-height: 1.25;
+    flex: 0 1 180px;
+    max-width: 180px;
+    line-height: 1.35;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
-    flex-wrap: nowrap;
+    min-width: 0;
+    flex-wrap: wrap;
     justify-content: flex-end;
-    column-gap: 10px;
+    column-gap: 12px;
+    row-gap: 0;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
+    min-width: 0;
+    white-space: nowrap;
+    padding-left: 12px;
   }
 }
 
