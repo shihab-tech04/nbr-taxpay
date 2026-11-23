@@ -24,6 +24,8 @@ test('approved fixed banner keeps three service destinations without inventing G
   await donor.getByRole('button',{name:'Add Donor'}).click();
   await donee.locator('#gift-donee-tin').fill('222222222222');
   await donee.getByRole('button',{name:'Search Donee information'}).click();
+  await donee.locator('#gift-donee-relationship').click();
+  await gift.getByRole('option',{name:'Father'}).click();
   await donee.getByRole('button',{name:'Add Donee'}).click();
   await gift.getByRole('button',{name:'Continue to Gift & Tax Information'}).click();
   await gift.locator('#gift-tax-amount').fill('2500');
@@ -32,6 +34,9 @@ test('approved fixed banner keeps three service destinations without inventing G
   await expect(gift.getByTestId('gift-tax-review')).toContainText('2,500');
   await expect(gift.getByTestId('gift-tax-review-complete')).toContainText('No money was charged');
   await gift.getByRole('button',{name:'Close Gift Tax'}).click();
+  const confirmation = page.getByTestId('walkin-payment-exit-overlay');
+  await expect(confirmation).toBeVisible();
+  await confirmation.getByRole('button',{name:'Discard tax payment'}).click();
   await expect(gift).toHaveCount(0);
   await expect(page.getByRole('dialog',{name:'Pay Tax'})).toHaveCount(0);
 });
