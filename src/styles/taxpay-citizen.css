@@ -1260,6 +1260,77 @@
  .public-footer__navs {gap:0 .2rem;flex-wrap:nowrap;}
  .public-footer__bottom {padding-left:.25rem;}
 }
+
+/* Public footer: the old unconstrained three-column rail ran past the right
+ * edge on wide displays and underneath fixed Help. Keep the approved branding,
+ * destinations and body font sizes; reserve the actual Help width and give
+ * narrower desktop layouts their own non-overlapping two-row structure. */
+@media (min-width: 1200px) and (max-width: 1799px) {
+  .taxpay-citizen-shell.taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    width: min(100%, 1164px);
+    max-width: calc(100vw - 40px);
+    margin-inline: auto;
+    padding: 8px 16px;
+    gap: 2px 16px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity {
+    grid-column: 1; grid-row: 1;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
+    grid-column: 2; grid-row: 1;
+    padding-inline-start: 10px;
+  }
+  .taxpay-citizen-shell.taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
+    grid-column: 1 / -1; grid-row: 2;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0 16px;
+  }
+}
+@media (min-width: 1800px) {
+  .taxpay-citizen-shell.taxpay-citizen-shell:has(.public-home-sections) .public-footer__inner {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
+    align-items: center;
+    width: auto;
+    max-width: none;
+    margin-left: max(16px, calc((100vw - var(--public-content-max)) / 2));
+    margin-right: max(112px, env(safe-area-inset-right));
+    padding: 8px 12px;
+    gap: 12px 16px;
+  }
+  .taxpay-citizen-shell.taxpay-citizen-shell:has(.public-home-sections) .public-footer__identity p {
+    flex: 0 0 180px;
+    max-width: 180px;
+  }
+  .taxpay-citizen-shell.taxpay-citizen-shell:has(.public-home-sections) .public-footer__navs {
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    column-gap: 12px;
+  }
+  .taxpay-citizen-shell:has(.public-home-sections) .public-footer__bottom {
+    grid-column: 3;
+    padding-inline-start: 12px;
+  }
+}
+/* The dialog backdrop must be a viewport surface, never a scroll-area-sized
+ * background or a strip below the sticky public navigation. */
+.taxpay-citizen-shell .taxpay-modal__overlay.public-service-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
+  margin: 0;
+  box-sizing: border-box;
+}
+
 .public-help-widget{position:fixed;right:calc(1.1rem + env(safe-area-inset-right));bottom:calc(1.1rem + env(safe-area-inset-bottom));z-index:85;display:flex;align-items:flex-end;flex-direction:column;gap:.55rem;}
 .public-help-launch{display:inline-flex;align-items:center;gap:.45rem;min-height:52px;border-radius:999px;background:var(--citizen-primary);color:white;padding:.75rem 1rem;box-shadow:var(--taxpay-shadow-raised);font-size:.79rem;font-weight:800;}
 .public-help-panel{display:flex;flex-direction:column;width:min(350px,calc(100vw - 2rem));max-height:min(65dvh,550px);background:var(--citizen-surface);border:1px solid var(--citizen-border);border-radius:1rem;box-shadow:var(--taxpay-shadow-modal);overflow:hidden;}
