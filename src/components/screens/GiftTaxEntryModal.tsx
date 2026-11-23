@@ -5,7 +5,7 @@ import {TaxPayModal} from '../ui/TaxPayModal';
 import {WalkInDiscardConfirmation} from '../ui/WalkInDiscardConfirmation';
 import {SearchableSelect} from '../ui/SearchableSelect';
 import {beneficiaryChoiceParts} from '../../services/beneficiaryClassificationChoice';
-import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,validBeneficiaryClassification, type BeneficiaryTag} from '../../services/beneficiaryTags';
+import {BENEFICIARY_RELATIONS,beneficiaryTagLabel,beneficiaryFinalTagLabel,validBeneficiaryClassification} from '../../services/beneficiaryTags';
 import {SelectedIdentityRail} from '../ui/SelectedIdentityRail';
 import {TaxpayerTinLookup, TaxpayerTinSearchResultCard} from '../ui/TaxpayerTinLookup';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
