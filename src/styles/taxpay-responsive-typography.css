@@ -413,15 +413,15 @@
   }
 }
 
-/* Compact-height desktop keeps approved 20px outer card insets.
- * Do not impose 72px height on the search input: it is a 56px shared control,
+/* Compact-height desktop keeps approved 16px outer card insets.
+ * Do not impose 72px height on the search input: it uses the approved 52px desktop control,
  * not an oversized multiline field. Six benefit cells retain their grid. */
 @media (min-width: 1600px) and (min-height: 840px) and (max-height: 959px) {
   .taxpay-citizen-shell:has(.public-home-sections) :is(.public-record-discovery,.public-benefits) {
-    padding-block: 20px;
+    padding-block: 16px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) :is(.public-record-discovery__heading,.public-benefits__heading) {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .taxpay-citizen-shell:has(.public-home-sections) .public-record-search input {
     min-height: 44px;
