@@ -3089,12 +3089,19 @@
   .travel-passenger-workspace__editor:has(.travel-flow__passport-suggestions) {
   padding-bottom: max(238px, 40dvh);
 }
-@media (max-width: 650px) {
+/* At <=800px the Check Passport action stacks BELOW the input.
+ * The dropdown must take up actual height here, otherwise it overlays and
+ * intercepts the button (and traps keyboard/pointer payment progression). */
+@media (max-width: 800px) {
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__passport-suggestions {
+    position: static;
+    inset: auto;
+    width: 100%;
     max-height: min(208px, 35dvh);
+    margin-top: 6px;
   }
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
     .travel-passenger-workspace__editor:has(.travel-flow__passport-suggestions) {
-    padding-bottom: max(212px, 35dvh);
+    padding-bottom: 16px;
   }
 }
