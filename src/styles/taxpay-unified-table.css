@@ -1823,6 +1823,38 @@ table.taxpay-unified-table {
     box-shadow: -1px 0 0 var(--taxpay-table-border, #e1e6ee);
     text-align: right;
   }
+  /* Financial reading priority: show Amount and Status as well as the row
+   * identity and actions without requiring a blind horizontal search. */
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table :is(th,td)[data-column-key="status"] {
+    position: sticky;
+    right: 159px;
+    z-index: 2;
+    background: var(--taxpay-table-surface, #fff);
+    box-shadow: -1px 0 0 var(--taxpay-table-border, #e1e6ee);
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table :is(th,td)[data-column-key="amount"] {
+    position: sticky;
+    right: 305px;
+    z-index: 2;
+    background: var(--taxpay-table-surface, #fff);
+    box-shadow: -1px 0 0 var(--taxpay-table-border, #e1e6ee);
+    text-align: right;
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table thead :is(th[data-column-key="amount"],th[data-column-key="status"]) {
+    z-index: 4;
+    background: var(--taxpay-table-heading, #f7f9fc);
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table tbody tr:nth-child(even) :is(td[data-column-key="amount"],td[data-column-key="status"]) {
+    background: var(--taxpay-table-stripe, #fafbfd);
+  }
+  .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
+  .taxpayer-transaction-table tbody tr:hover :is(td[data-column-key="amount"],td[data-column-key="status"]) {
+    background: var(--taxpay-table-hover, #f1f6ff);
+  }
   .taxpay-taxpayer-reference .taxpayer-transaction-panel.taxpay-office-register-frame
   .taxpayer-transaction-table thead :is(th[data-column-key="payment"],th[data-column-key="actions"]) {
     z-index: 4;
