@@ -455,7 +455,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     )}
     {step === 4 && paymentInput && paymentOutcome && workspace('gift-tax-result-workspace',
       <GiftTaxPaymentResult language={language} input={paymentInput} outcome={paymentOutcome}
-        onBack={() => setStep(3)} onRetry={() => void attemptOfficialPayment()} />,
+        onBack={() => setStep(3)} onRetry={() => {setCheckoutOpen(true);setStep(3);setPaymentAcknowledged(false);}} />,
       <aside className="unified-taxpayer-workspace__rail gift-tax-aside payment-form-summary">
         <h3 className="unified-taxpayer-workspace__rail-title"><ReceiptText size={17} aria-hidden="true"/>{t('Payment summary', 'পেমেন্ট সারসংক্ষেপ')}</h3>
         <p className="payment-form-summary__eyebrow">{t('Gift Tax total', 'দানকরের মোট')}</p>
