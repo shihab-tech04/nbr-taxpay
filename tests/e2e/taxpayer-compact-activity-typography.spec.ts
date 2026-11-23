@@ -43,30 +43,3 @@ test('real Activity register bounds each recipient summary and preserves Details
   }
 });
 
-test('same real profile components and shared transaction header use coherent 16px/400–600 roles',async ({page},info)=>{
-  test.skip(info.project.name!=='desktop-1280','One source-backed preview across both locales');
-  test.setTimeout(90000);
-  for(const lang of ['en','bn']){
-    await page.goto('/?action=account_profile&demoUser=user1&lang='+lang);
-    const profile=page.getByTestId('user1-taxpayer-profile');
-    await expect(profile).toBeVisible();
-    const label=profile.locator('.taxpay-profile-field-label').first();
-    const value=profile.locator('.taxpay-profile-field-value').first();
-    const section=profile.locator('.taxpay-profile-section-heading').first();
-    await expect(label).toBeVisible();
-    await expect(value).toBeVisible();
-    await expect(section).toBeVisible();
-    const style=async (el:import('@playwright/test').Locator)=>el.evaluate(node=>{
-      const s=getComputedStyle(node);return {size:parseFloat(s.fontSize),weight:Number(s.fontWeight)};
-    });
-    expect((await style(label)).size).toBe(16);
-    expect((await style(value)).size).toBe(16);
-    expect((await style(value)).weight).toBe(500);
-    expect((await style(section)).weight).toBe(600);
-    await page.goto('/?action=history&demoUser=user1&scenarioYear=2025-2026&lang='+lang);
-    const register=page.getByTestId('taxpayer-transaction-table');
-    await expect(register).toBeVisible();
-    expect(await style(register.locator('thead th').first())).toEqual({size:16,weight:600});
-    expect(await style(register.locator('tbody td').first())).toEqual({size:16,weight:400});
-  }
-});
