@@ -100,7 +100,7 @@
   border-radius: 12px;
   font-size: 16px;
   line-height: 24px;
-  font-weight: 500;
+  font-weight: var(--taxpay-weight-action, 600);
   color: var(--color-taxpay-muted);
 }
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-reference-links button:hover {
@@ -197,7 +197,7 @@
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-page-heading h1 {
   font-size: 30px;
   line-height: 40px;
-  font-weight: 600;
+  font-weight: var(--taxpay-weight-title, 700);
   letter-spacing: -0.02em;
 }
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)[lang="bn"] .taxpayer-page-heading h1 {
@@ -213,7 +213,7 @@
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)[lang="bn"] .taxpayer-workspace :is(h2) {
   font-size: 24px;
   line-height: 34px;
-  font-weight: 700;
+  font-weight: var(--taxpay-weight-action, 600);
 }
 .taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow) .taxpayer-workspace :is(h3,h4) {
   font-size: 16px;

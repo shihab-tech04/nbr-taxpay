@@ -122,3 +122,85 @@ test('real taxpayer history preserves label/record weight contrast', async ({pag
     expect(await fontWeight(page,'[data-testid="taxpayer-transaction-table"] tbody td')).toBe(400);
   }
 });
+
+
+/**
+ * Deep post-release audit of signed-in typography on REAL routes.
+ * The prior baseline sampled public home at all widths but inspected
+ * authenticated font weights primarily on desktop History.
+ * Sign in through the existing approved local demo account and use the
+ * actual persisted session; query parameters alone aren't authentication.
+ * No mutation of beneficiary, payment or SQL data is allowed.
+ */
+test('signed-in headings and navigation retain semantic hierarchy on every viewport in EN and BN', async ({page},info) => {
+  test.skip(info.project.name !== 'desktop-1280', 'One real session covers all widths and locales');
+  test.setTimeout(360000);
+  await page.goto('/?action=taxpayer_login');
+  await page.locator('#taxpayer-login-user-id').fill('user1');
+  await page.locator('#taxpayer-login-password').fill('user1');
+  await page.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect(page.locator('.taxpay-citizen-shell.taxpay-authenticated-content')).toBeVisible();
+
+  const widths = [320,375,480,768,1024,1440,1920];
+  const routes = ['taxpayer_home','history','ledger','beneficiaries','account_profile','corrections'] as const;
+  for (const lang of ['en','bn'] as const) {
+    await page.setViewportSize({width:1280,height:900});
+    const shell = page.locator('.taxpay-citizen-shell');
+    if (await shell.getAttribute('lang') !== lang) {
+      await page.locator('.taxpayer-reference-rail-bottom button')
+        .filter({hasText:lang==='bn'?'বাংলা':'English'}).click();
+      await expect(shell).toHaveAttribute('lang',lang);
+    }
+    for (const width of widths) {
+      await page.setViewportSize({width,height:900});
+      for (const route of routes) {
+        await page.goto('/?action='+route);
+        // Account Profile and Beneficiaries deliberately render their own
+        // approved components; never use an Overview-only test ID for them.
+        const root = route === 'beneficiaries'
+          ? page.getByTestId('beneficiaries-page')
+          : route === 'account_profile'
+            ? page.getByTestId('taxpayer-unified-profile-page')
+            : page.getByTestId('user1-synthetic-workspace');
+        await expect(root,route+' at '+width+'/'+lang).toBeVisible();
+        const h1=page.locator('main .taxpayer-page-heading h1').first();
+        await expect(h1,route+' heading at '+width+'/'+lang).toBeVisible();
+        await page.evaluate(async () => { await document.fonts.ready; });
+        const style=await h1.evaluate(node=>{
+          const css=getComputedStyle(node);
+          return {size:parseFloat(css.fontSize),weight:Number(css.fontWeight),
+            line:parseFloat(css.lineHeight)};
+        });
+        const expected=width>=1024?32:width>=480?28:24;
+        expect(style.size,route+' heading size at '+width+'/'+lang).toBe(expected);
+        expect(style.weight,route+' heading weight at '+width+'/'+lang).toBe(700);
+        expect(style.line,route+' line height at '+width+'/'+lang).toBeGreaterThanOrEqual(style.size*1.25);
+        await noOverflow(page,width,lang+' '+route);
+
+        // Compare the same real navigation item across device classes without
+        // relying on hidden duplicate desktop UI at phone/tablet widths.
+        if(route==='taxpayer_home' && width>=901){
+          const nav=page.locator('.taxpayer-reference-links > button').nth(1);
+          await expect(nav).toBeVisible();
+          expect(await nav.evaluate(el=>Number(getComputedStyle(el).fontWeight)),
+            'inactive navigation action at '+width+'/'+lang).toBe(600);
+        }
+
+        if(route==='taxpayer_home'){
+          const hero=page.locator('[data-testid="taxpayer-overview-bento"] .taxpay-bento-tasks__heading h2').first();
+          await expect(hero).toBeVisible();
+          expect(await hero.evaluate(el=>Number(getComputedStyle(el).fontWeight)),
+            'visible Follow-ups section weight at '+width+'/'+lang).toBe(600);
+          expect(await hero.evaluate(el=>parseFloat(getComputedStyle(el).fontSize)),
+            'visible Follow-ups section size at '+width+'/'+lang).toBe(width>=768?24:20);
+        }
+        if(route==='history' && width>=768){
+          const register=page.getByTestId('taxpayer-transaction-table');
+          await expect(register).toBeVisible();
+          expect(await fontWeight(page,'[data-testid="taxpayer-transaction-table"] thead th')).toBe(600);
+          expect(await fontWeight(page,'[data-testid="taxpayer-transaction-table"] tbody td')).toBe(400);
+        }
+      }
+    }
+  }
+});
