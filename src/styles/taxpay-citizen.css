@@ -2462,7 +2462,10 @@
   animation: taxpay-overlay-enter var(--taxpay-motion-normal) ease-out both;
 }
 .taxpay-citizen-shell .taxpay-modal {
-  animation: taxpay-dialog-enter var(--taxpay-motion-normal) var(--taxpay-motion-ease) both;
+  /* Do not retain the keyframe's transform after entry. A permanent transform
+   * would make nested fixed Save Draft/Discard overlays relative to this clipped
+   * dialog instead of the viewport, leaving a strip above the dimmer. */
+  animation: taxpay-dialog-enter var(--taxpay-motion-normal) var(--taxpay-motion-ease) backwards;
   transition: height var(--taxpay-motion-normal) var(--taxpay-motion-ease),
               width var(--taxpay-motion-normal) var(--taxpay-motion-ease);
 }
