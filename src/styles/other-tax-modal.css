@@ -1,0 +1,8 @@
+/* Public Other Tax reuses the shared TaxPayModal header and responsive typography.
+   Keep this chooser compact and left aligned without changing payment stages. */
+.taxpay-citizen-shell .taxpay-modal[data-public-service="other-tax"] {
+  width: min(100%, 760px);
+}
+.taxpay-citizen-shell .taxpay-modal[data-public-service="other-tax"] .taxpay-modal__header .taxpay-modal__title {
+  text-align: left;
+}

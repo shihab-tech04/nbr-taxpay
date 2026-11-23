@@ -7,8 +7,19 @@ for (const locale of ['en', 'bn'] as const) {
     const bn = locale === 'bn';
     const hero = page.locator('.public-hero-carousel__slide[data-active="true"]');
     await hero.getByRole('button', {name: bn ? 'অন্যান্য কর' : 'Other Tax'}).click();
+    const entry = page.locator('.taxpay-modal[data-public-service="login"]');
+    await expect(entry.locator('.taxpayer-login-dialog')).toBeVisible();
+    await expect(entry.getByRole('button', {name:bn ? 'ওয়াক-ইন পেমেন্ট' : 'Walk-in Payment'})).toBeVisible();
+    await entry.getByRole('button', {name:bn ? 'ওয়াক-ইন পেমেন্ট' : 'Walk-in Payment'}).click();
     const chooser = page.getByTestId('other-tax-chooser');
+    const chooserDialog = page.getByRole('dialog', {name:bn ? 'অন্যান্য কর পরিশোধ' : 'Other tax payments'});
     await expect(chooser).toBeVisible();
+    await expect(chooserDialog.locator('.taxpay-modal__title')).toHaveCSS('text-align','left');
+    await expect(chooserDialog.locator('.taxpay-modal__footer')).toHaveCount(0);
+    await expect(chooserDialog.getByRole('button', {name:bn ? 'পেমেন্ট পদ্ধতি নির্বাচন করতে ফিরুন' : 'Back to payment access'})).toBeVisible();
+    await chooserDialog.getByRole('button', {name:bn ? 'পেমেন্ট পদ্ধতি নির্বাচন করতে ফিরুন' : 'Back to payment access'}).click();
+    await expect(entry).toBeVisible();
+    await entry.getByRole('button', {name:bn ? 'ওয়াক-ইন পেমেন্ট' : 'Walk-in Payment'}).click();
     await expect(chooser.getByRole('button', {name:/Travel Tax|ভ্রমণ কর/})).toBeVisible();
     await chooser.getByRole('button', {name:/Gift Tax|দান কর/}).click();
     const gift = page.getByRole('dialog', {name:bn ? 'দান কর' : 'Gift Tax'});
@@ -26,6 +37,7 @@ for (const locale of ['en', 'bn'] as const) {
     await gift.getByRole('button', {name:bn ? 'সম্পন্ন' : 'Done'}).click();
     await expect(gift).toHaveCount(0);
     await hero.getByRole('button', {name:bn ? 'অন্যান্য কর' : 'Other Tax'}).click();
+    await entry.getByRole('button', {name:bn ? 'ওয়াক-ইন পেমেন্ট' : 'Walk-in Payment'}).click();
     await page.getByTestId('other-tax-chooser').getByRole('button', {name:/Travel Tax|ভ্রমণ কর/}).click();
     await expect(page.getByRole('dialog', {name:bn ? /ভ্রমণ কর/ : /Travel tax/i})).toBeVisible();
   });

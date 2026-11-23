@@ -24,6 +24,17 @@ try {
     await expect(hero).toBeVisible({ timeout: 30_000 });
     // Public banner now exposes one Other Tax action; preserve Travel Tax's existing passenger journey.
     await hero.getByRole('button', { name: 'Other Tax', exact: true }).click();
+    // Approved Other Tax entry now shares the sign-in/walk-in access step.
+    // Match the public journey helper before opening the Travel Tax chooser.
+    const access = page.locator('.taxpay-modal[data-public-service="login"]');
+    await expect(access).toBeVisible();
+    const signedInContinue = access.getByRole('button', {
+      name: /^(?:Continue with your account|আপনার অ্যাকাউন্ট দিয়ে এগিয়ে যান)$/,
+    });
+    if (await signedInContinue.isVisible()) await signedInContinue.click();
+    else await access.getByRole('button', {
+      name: /^(?:Walk-in Payment|ওয়াক-ইন পেমেন্ট)$/,
+    }).click();
     const chooser = page.getByTestId('other-tax-chooser');
     await expect(chooser).toBeVisible();
     await expect(chooser.getByRole('button', { name: /Gift Tax/ })).toBeVisible();
