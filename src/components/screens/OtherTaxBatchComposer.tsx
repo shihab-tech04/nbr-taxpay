@@ -177,34 +177,32 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const search = query.trim().toLocaleLowerCase();
   const visibleCategories = selectableGroups.filter(group => group.rows.some(head =>
     !search || [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search)));
+  // A category is a navigation choice, not a data-table row. Keep the real
+  // payment-head editor and its allocations as the only editable source.
   const categoryDirectory = (names: readonly string[], testId: string, label: string) => (
-    <div className="other-tax-category-table-wrap" data-testid={testId}>
-      <table className="other-tax-category-table" aria-label={label}>
-        <thead><tr>
-          <th scope="col">{tx('Category', 'শ্রেণি')}</th>
-          <th scope="col" className="other-tax-category-table__number">{tx('Heads', 'খাত')}</th>
-          <th scope="col" className="other-tax-category-table__action">{tx('Action', 'পদক্ষেপ')}</th>
-        </tr></thead>
-        <tbody>{names.map(name => {
-          const group = visibleCategories.find(item => item.name === name);
-          if (!group) return null;
-          const selectedCount = group.rows.filter(head => activeLines.some(line => line.headId === head.id)).length;
-          const groupLabel = bn ? (group.rows[0]?.grpBn || (name === 'Tax with Return' ? 'রিটার্নসহ কর' : name)) : name;
-          return <tr key={name} data-category={name} data-selected-count={selectedCount}>
-            <th scope="row">
-              <span>{groupLabel}</span>
-              {selectedCount > 0 && <span className="other-tax-category-table__selected">
+    <div className="other-tax-category-grid" data-testid={testId} role="group" aria-label={label}>
+      {names.map(name => {
+        const group = visibleCategories.find(item => item.name === name);
+        if (!group) return null;
+        const selectedCount = group.rows.filter(head => activeLines.some(line => line.headId === head.id)).length;
+        const groupLabel = bn ? (group.rows[0]?.grpBn || (name === 'Tax with Return' ? 'রিটার্নসহ কর' : name)) : name;
+        return <button key={name} type="button" className="other-tax-category-choice"
+          data-category={name} data-selected-count={selectedCount}
+          onClick={() => openCategoryGroup(name)}
+          aria-label={tx('Choose ', 'নির্বাচন করুন: ') + groupLabel}
+          aria-controls="other-tax-category-head-editor">
+          <span className="other-tax-category-choice__copy">
+            <strong>{groupLabel}</strong>
+            <span className="other-tax-category-choice__detail">
+              {group.rows.length} {tx(group.rows.length === 1 ? 'payment head' : 'payment heads', 'করের খাত')}
+              {selectedCount > 0 && <span className="other-tax-category-choice__selected">
                 {selectedCount} {tx('selected', 'নির্বাচিত')}
               </span>}
-            </th>
-            <td className="other-tax-category-table__number">{group.rows.length}</td>
-            <td className="other-tax-category-table__action"><button type="button" onClick={() => openCategoryGroup(name)}
-              aria-label={tx('View payment heads for ', 'পরিশোধের খাত দেখুন: ') + groupLabel}>
-              <span>{tx('View heads', 'খাত দেখুন')}</span><ChevronRight size={16} aria-hidden="true" />
-            </button></td>
-          </tr>;
-        })}</tbody>
-      </table>
+            </span>
+          </span>
+          <ChevronRight size={18} aria-hidden="true" />
+        </button>;
+      })}
     </div>
   );
   const count = selectableGroups.reduce((n, group) => n + (maskTaxpayerTin
@@ -453,7 +451,7 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                 {tx('Back to categories', 'করের শ্রেণিতে ফিরে যান')}
               </button>
             )}
-            <div hidden={allowMixedReturn && !activeCategory && !search}
+            <div id="other-tax-category-head-editor" hidden={allowMixedReturn && !activeCategory && !search}
               className={error ? 'rounded-lg border border-rose-400' : 'rounded-lg border border-slate-200'} data-testid="other-tax-head-catalogue">
               {selectableGroups.map(group => {
                 const matched = group.rows.filter(head =>
