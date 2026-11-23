@@ -52,8 +52,16 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   const [dateOfGift, setDateOfGift] = useState('');
   const [remarks, setRemarks] = useState('');
   const [formError, setFormError] = useState('');
+  const [invalidGiftField, setInvalidGiftField] = useState<'amount' | 'date' | null>(null);
   const [doneeChoice, setDoneeChoice] = useState('');
   const [doneeOther, setDoneeOther] = useState('');
+  // Candidate identity/relationship is distinct from the selected, committed payment details.
+  const [committedDoneeChoice, setCommittedDoneeChoice] = useState('');
+  const [committedDoneeOther, setCommittedDoneeOther] = useState('');
+  const [editing, setEditing] = useState<Record<Party, boolean>>({donor: false, donee: false});
+  const [lastRemoved, setLastRemoved] = useState<{
+    party: Party; person: Person; doneeChoice: string; doneeOther: string;
+  } | null>(null);
   const [exitPromptOpen, setExitPromptOpen] = useState(false);
   const [paymentInput, setPaymentInput] = useState<GiftTaxPaymentInput | null>(null);
   const [paymentOutcome, setPaymentOutcome] = useState<GiftTaxPaymentOutcome | null>(null);
@@ -77,18 +85,75 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     })),
     {value: 'others', label: t('Others — specify', 'অন্যান্য — লিখুন'), group: t('OTHERS', 'অন্যান্য')},
   ];
-  const doneeClassLabel = beneficiaryTagLabel(doneeClass.tag || null, doneeClass.relationship || null, language, doneeOther);
+  const committedDoneeClass = beneficiaryChoiceParts(committedDoneeChoice);
+  const committedDoneeValid = validBeneficiaryClassification(
+    committedDoneeClass.tag, committedDoneeClass.relationship, committedDoneeOther
+  );
+  const doneeClassLabel = beneficiaryTagLabel(committedDoneeClass.tag || null,
+    committedDoneeClass.relationship || null, language, committedDoneeOther);
   const number = (value: number) => new Intl.NumberFormat(bn ? 'bn-BD' : 'en-IN', {maximumFractionDigits: 2}).format(value);
   const parsedAmount = parseGiftValue(giftAmount);
   const estimatedTax = parsedAmount === null ? null : estimateGiftTax(parsedAmount);
-  const bothAdded = Boolean(added.donor && added.donee && added.donor.tin !== added.donee.tin);
+  const bothAdded = Boolean(added.donor && added.donee && added.donor.tin !== added.donee.tin && !editing.donor && !editing.donee);
 
   const updateTin = (party: Party, value: string) => {
     setTinInput(current => ({...current, [party]: value}));
     setSearched(current => ({...current, [party]: null}));
-    setAdded(current => ({...current, [party]: null}));
+    // Editing a candidate never destroys the already-added person.
+    if (!editing[party]) setAdded(current => ({...current, [party]: null}));
     setLookupError(current => ({...current, [party]: ''}));
     if (party === 'donee') {setDoneeChoice(''); setDoneeOther('');}
+  };
+  const beginEdit = (party: Party) => {
+    const current = added[party];
+    if (!current) return;
+    setEditing(states => ({...states, [party]: true}));
+    setTinInput(values => ({...values, [party]: current.tin}));
+    setSearched(values => ({...values, [party]: null}));
+    setLookupError(values => ({...values, [party]: ''}));
+    if (party === 'donee') {
+      setDoneeChoice(committedDoneeChoice);
+      setDoneeOther(committedDoneeOther);
+    }
+  };
+  const cancelEdit = (party: Party) => {
+    setEditing(states => ({...states, [party]: false}));
+    setTinInput(values => ({...values, [party]: added[party]?.tin ?? ''}));
+    setSearched(values => ({...values, [party]: null}));
+    setLookupError(values => ({...values, [party]: ''}));
+    if (party === 'donee') {
+      setDoneeChoice(committedDoneeChoice);
+      setDoneeOther(committedDoneeOther);
+    }
+  };
+  const removeParty = (party: Party) => {
+    const current = added[party];
+    if (!current) return;
+    setLastRemoved({party, person: current,
+      doneeChoice: committedDoneeChoice, doneeOther: committedDoneeOther});
+    setAdded(values => ({...values, [party]: null}));
+    setEditing(values => ({...values, [party]: false}));
+    setTinInput(values => ({...values, [party]: ''}));
+    setSearched(values => ({...values, [party]: null}));
+    setLookupError(values => ({...values, [party]: ''}));
+    if (party === 'donee') {
+      setDoneeChoice(''); setDoneeOther('');
+      setCommittedDoneeChoice(''); setCommittedDoneeOther('');
+    }
+  };
+  const undoRemoval = () => {
+    if (!lastRemoved) return;
+    const {party, person, doneeChoice: choice, doneeOther: other} = lastRemoved;
+    setAdded(values => ({...values, [party]: person}));
+    setTinInput(values => ({...values, [party]: person.tin}));
+    setEditing(values => ({...values, [party]: false}));
+    setSearched(values => ({...values, [party]: null}));
+    setLookupError(values => ({...values, [party]: ''}));
+    if (party === 'donee') {
+      setDoneeChoice(choice); setDoneeOther(other);
+      setCommittedDoneeChoice(choice); setCommittedDoneeOther(other);
+    }
+    setLastRemoved(null);
   };
   const searchTin = (party: Party) => {
     const tin = tinInput[party];
@@ -116,6 +181,12 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
       return;
     }
     setAdded(current => ({...current, [party]: match}));
+    setEditing(states => ({...states, [party]: false}));
+    setLastRemoved(null);
+    if (party === 'donee') {
+      setCommittedDoneeChoice(doneeChoice);
+      setCommittedDoneeOther(doneeOther);
+    }
     setLookupError(current => ({...current, [party]: ''}));
   };
   const continueToDetails = () => {
@@ -125,14 +196,19 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   };
   const continueToPreview = () => {
     if (parsedAmount === null || estimatedTax === null) {
+      setInvalidGiftField('amount');
       setFormError(t('Enter a valid gift amount above zero (up to two decimals).', 'শূন্যের বেশি বৈধ দানের পরিমাণ লিখুন (সর্বোচ্চ দুই দশমিক স্থান)।'));
+      document.getElementById('gift-tax-amount')?.focus();
       return;
     }
     if (!validGiftDate(dateOfGift, localToday())) {
+      setInvalidGiftField('date');
       setFormError(t('Select a valid gift date, not in the future.', 'ভবিষ্যতের নয়, এমন বৈধ দানের তারিখ নির্বাচন করুন।'));
+      document.getElementById('gift-tax-date')?.focus();
       return;
     }
     if (!bothAdded) {setStep(1); return;}
+    setInvalidGiftField(null);
     setFormError('');
     setPaymentAttemptKey(null);
     setPaymentInput(null);
@@ -143,7 +219,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   };
   /** Use the existing payment-method journey, but never submit fictional Gift Tax through an unauthorized service head. */
   const attemptSimulatedPayment = async () => {
-    if (paymentBusy || !added.donor || !added.donee || !doneeClassValid ||
+    if (paymentBusy || !added.donor || !added.donee || !committedDoneeValid ||
         !bothAdded || parsedAmount === null || estimatedTax === null ||
         !validGiftDate(dateOfGift, localToday())) {
       setFormError(t('Review all required Gift Tax fields before payment.', 'পরিশোধের আগে দানকরের আবশ্যিক তথ্য যাচাই করুন।'));
@@ -161,9 +237,9 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     const nextInput: GiftTaxPaymentInput = {
       donor: {tin: added.donor.tin, name: added.donor.name},
       donee: {tin: added.donee.tin, name: added.donee.name,
-        tag: doneeClass.tag as GiftTaxPaymentInput['donee']['tag'],
-        relationship: doneeClass.relationship || null,
-        otherLabel: doneeClass.tag === 'others' ? doneeOther.trim() : null},
+        tag: committedDoneeClass.tag as GiftTaxPaymentInput['donee']['tag'],
+        relationship: committedDoneeClass.relationship || null,
+        otherLabel: committedDoneeClass.tag === 'others' ? committedDoneeOther.trim() : null},
       giftAmountMinor: giftMinor, estimatedTaxMinor: taxMinor,
       description, giftDate: dateOfGift, remarks, idempotencyKey: key,
     };
@@ -200,11 +276,11 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         <div className="unified-taxpayer-workspace__person-copy gift-tax-identity-card__copy">
           <strong>{value.name}</strong>
           <small>{maskTinForDisplay(value.tin)}</small>
-          {party === 'donee' && doneeChoice && <span className="gift-tax-identity-card__relationship">{beneficiaryFinalTagLabel(doneeClass.tag || null, doneeClass.relationship || null, language, doneeOther) ?? doneeClassLabel}</span>}
+          {party === 'donee' && committedDoneeChoice && <span className="gift-tax-identity-card__relationship">{beneficiaryFinalTagLabel(committedDoneeClass.tag || null, committedDoneeClass.relationship || null, language, committedDoneeOther) ?? doneeClassLabel}</span>}
         </div>
         {removable && <button type="button" className="unified-taxpayer-workspace__remove gift-tax-identity-card__remove"
           aria-label={t('Remove ', 'সরান: ') + title} title={t('Remove from this payment', 'এই পেমেন্ট থেকে সরান')}
-          onClick={() => updateTin(party, '')}><Trash2 size={17} aria-hidden="true" /></button>}
+          onClick={() => removeParty(party)}><Trash2 size={17} aria-hidden="true" /></button>}
       </div>
     </div>;
   };
@@ -225,12 +301,19 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
       <p className="unified-taxpayer-workspace__subheading">
         {t('Enter a TIN and search.', 'টিআইএন লিখে অনুসন্ধান করুন।')}
       </p>
-      {confirmed ? <div className="gift-tax-confirmed-person" data-testid={'gift-confirmed-' + party}>
+      {confirmed && !editing[party] ? <div className="gift-tax-confirmed-person" data-testid={'gift-confirmed-' + party}>
         <p className="gift-tax-added-hint" role="status">{t('Already added to this payment. See the ', 'এই পেমেন্টে যোগ করা হয়েছে। ডান পাশের ')}{title}{t(' card on the right.', ' কার্ড দেখুন।')}</p>
-        <button type="button" className={secondaryClass} onClick={() => updateTin(party, confirmed.tin)}>
+        <button type="button" className={secondaryClass} onClick={() => beginEdit(party)}>
           {t('Edit ', 'সম্পাদনা করুন: ') + title}
         </button>
       </div> : <>
+        {editing[party] && <div className="gift-tax-editing-notice" role="status">
+          <span>{t('Current selection stays in this payment until a replacement is added.',
+            'নতুন ব্যক্তি যোগ না করা পর্যন্ত বর্তমান নির্বাচন এই পেমেন্টে থাকবে।')}</span>
+          <button type="button" className={secondaryClass} onClick={() => cancelEdit(party)}>
+            {t('Cancel editing', 'সম্পাদনা বাতিল')}
+          </button>
+        </div>}
         <TaxpayerTinLookup language={language} tinId={'gift-' + party + '-tin'} nameId={'gift-' + party + '-name'}
           tin={tinInput[party]} name={match?.name ?? ''} onTinChange={value => updateTin(party, value)}
           onClear={() => updateTin(party, '')} onSearch={() => searchTin(party)}
@@ -294,7 +377,9 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   return <><TaxPayModal title={step === 4 ? t('Payment Result', 'পেমেন্টের ফলাফল') : t('Gift Tax', 'দানকর')}
     ariaLabel={t('Gift Tax', 'দানকর')} service="gift" className="gift-tax-dialog taxpay-v5-locked"
     progress={step === 4 ? undefined : {current: step, total: 3, label: t('Steps', 'ধাপ'),
-      subtitle: t('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট')}}
+      subtitle: t('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট'),
+      accessibilityLabel: t('Payment progress', 'পেমেন্টের অগ্রগতি'),
+      accessibilityValueText: t(`Step ${step} of 3`, `৩ ধাপের ${step === 1 ? '১' : step === 2 ? '২' : '৩'} নম্বর ধাপ`)}}
     closeIconLabel={t('Close Gift Tax', 'দানকর বন্ধ করুন')}
     onClose={requestClose}
     onBack={step === 1 ? onBack : () => {
@@ -335,6 +420,11 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         {selectedCount > 0 && <div className="gift-tax-rail-roles">
           {identityRole('donor')}{identityRole('donee')}
         </div>}
+        {lastRemoved && <button type="button" className="gift-tax-undo"
+          onClick={undoRemoval} data-testid="gift-tax-undo">
+          {t('Undo removal of ', 'ফিরিয়ে আনুন: ')}
+          {lastRemoved.party === 'donor' ? t('Donor', 'দাতা') : t('Donee', 'গ্রহীতা')}
+        </button>}
       </SelectedIdentityRail>
     )}
     {step === 2 && workspace('gift-tax-details-form',
@@ -344,11 +434,18 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         <div className="gift-tax-details-grid">
           <div><label htmlFor="gift-tax-amount" className="gift-tax-field-label">{t('Gift amount (৳)', 'দানের পরিমাণ (৳)')} *</label>
             <input id="gift-tax-amount" className={inputClass} inputMode="decimal" autoComplete="off" placeholder="2500000"
-              value={giftAmount} required aria-invalid={Boolean(formError && parsedAmount === null)}
-              onChange={event => {setGiftAmount(event.target.value);setFormError('');}} /></div>
+              value={giftAmount} required aria-invalid={invalidGiftField === 'amount'}
+              aria-describedby={invalidGiftField === 'amount' ? 'gift-tax-amount-error' : undefined}
+              onChange={event => {setGiftAmount(event.target.value);setFormError('');setInvalidGiftField(null);}} />
+            {invalidGiftField === 'amount' && <p id="gift-tax-amount-error" role="alert"
+              className="unified-taxpayer-workspace__error">{formError}</p>}</div>
           <div><label htmlFor="gift-tax-date" className="gift-tax-field-label">{t('Date of gift', 'দানের তারিখ')} *</label>
             <input id="gift-tax-date" className={inputClass} type="date" max={localToday()}
-              value={dateOfGift} required onChange={event => {setDateOfGift(event.target.value);setFormError('');}} /></div>
+              value={dateOfGift} required aria-invalid={invalidGiftField === 'date'}
+              aria-describedby={invalidGiftField === 'date' ? 'gift-tax-date-error' : undefined}
+              onChange={event => {setDateOfGift(event.target.value);setFormError('');setInvalidGiftField(null);}} />
+            {invalidGiftField === 'date' && <p id="gift-tax-date-error" role="alert"
+              className="unified-taxpayer-workspace__error">{formError}</p>}</div>
           <div className="gift-tax-details-grid__full"><label htmlFor="gift-tax-description" className="gift-tax-field-label">{t('Gift description', 'দানের বিবরণ')}</label>
             <input id="gift-tax-description" className={inputClass} maxLength={500} value={description}
               onChange={event => setDescription(event.target.value)} placeholder={t('Enter gift details', 'দানের বিবরণ লিখুন')} /></div>
@@ -356,7 +453,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
             <textarea id="gift-tax-remarks" className={inputClass} rows={2} value={remarks}
               onChange={event => setRemarks(event.target.value)} placeholder={t('Optional challan remarks', 'ঐচ্ছিক চালান মন্তব্য')} /></div>
         </div>
-        {formError && <p role="alert" className="unified-taxpayer-workspace__error">{formError}</p>}
+        {formError && !invalidGiftField && <p role="alert" className="unified-taxpayer-workspace__error">{formError}</p>}
         <p className="gift-tax-lookup-notice">{t('Estimate assumes the annual ৳20,000 allowance is available. Other exemptions and earlier gifts are not checked.', 'এই হিসাবে বার্ষিক ২০,০০০ টাকার অব্যাহতি অব্যবহৃত ধরা হয়েছে। অন্যান্য অব্যাহতি ও আগের দান যাচাই করা হয়নি।')}</p>
       </>,
       <aside className="unified-taxpayer-workspace__rail gift-tax-aside payment-form-summary"
