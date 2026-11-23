@@ -494,6 +494,12 @@
   line-height: 1.5;
   font-weight: var(--taxpayer-label-weight);
 }
+/* Keep the frozen signed-in navigation action at 600, as established by
+ * the real 320–1920px EN/BN typography regression contract. */
+.taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
+  .taxpayer-reference-links button {
+  font-weight: var(--taxpayer-emphasis-weight);
+}
 .taxpay-citizen-shell.taxpay-taxpayer-reference:not(.taxpay-taxpayer-flow)
   :is(.taxpay-office-register__title, .taxpay-record-toolbar__heading h3) {
   font-size: var(--taxpayer-section-size);
