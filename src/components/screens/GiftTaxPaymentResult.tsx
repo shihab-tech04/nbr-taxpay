@@ -104,7 +104,7 @@ export function GiftTaxPaymentResult({language,input,outcome,onBack,onRetry,onRe
       {simulatedSuccess&&<button type="button" className="payment-lifecycle__primary" onClick={()=>setShowReceipt(true)}>
         <FileText size={17}/>{tr('View sample receipt','নমুনা রসিদ দেখুন')}<ArrowRight size={17}/>
       </button>}
-      {(failed||pending||outcome.kind==='UNAVAILABLE'||noTax)&&<button type="button" className="payment-lifecycle__secondary" onClick={onBack}>
+      {(failed||pending||outcome.kind==='UNAVAILABLE'||noTax||simulatedSuccess)&&<button type="button" className="payment-lifecycle__secondary" onClick={onBack}>
         {tr('Back to Final Preview','চূড়ান্ত পর্যালোচনায় ফিরুন')}
       </button>}
       {failed&&('retryable'in outcome)&&outcome.retryable&&<button type="button" className="payment-lifecycle__primary" onClick={onRetry}>
