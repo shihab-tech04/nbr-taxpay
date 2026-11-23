@@ -511,8 +511,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         onClick={()=>setReviewFilter(null)}>{tr('Clear review filter','পর্যালোচনা ফিল্টার মুছুন')}</button>
     </div>}
     {filtered.length>0&&<p className="taxpay-register-scroll-note" role="note">
-      {tr('All payment fields are retained. Scroll the table horizontally for additional columns; Payment and Actions stay visible.',
-        'সব পেমেন্টের তথ্য অক্ষত আছে। অতিরিক্ত কলাম দেখতে টেবিলটি পাশে স্ক্রল করুন; পেমেন্ট ও কার্যক্রম দেখা যাবে।')}
+      {tr('All payment fields are retained. Scroll for additional columns; Payment, Amount, Status and Actions stay visible.',
+        'সব পেমেন্টের তথ্য অক্ষত আছে। অতিরিক্ত কলামে স্ক্রল করুন; পেমেন্ট, পরিমাণ, অবস্থা ও কার্যক্রম দেখা যাবে।')}
     </p>}
     {filtered.length ? <TaxPayDataGrid variant="tabular" rows={visibleHistoryRows} getRowKey={item=>item.id}
       pagination={{page:currentHistoryPage,perPage:historyPerPage,total:filtered.length,onPageChange:setHistoryPage,
