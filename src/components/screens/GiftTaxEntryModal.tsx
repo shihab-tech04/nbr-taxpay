@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useLayoutEffect, useState} from 'react';
 import {ArrowRight, ReceiptText, Search, Trash2} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
@@ -73,6 +73,11 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   const [paymentMethodGroup,setPaymentMethodGroup]=useState<PaymentMethodGroup|null>(null);
   const [paymentAcknowledged,setPaymentAcknowledged]=useState(false);
   const [simulateDecline,setSimulateDecline]=useState(false);
+  // Each stage owns its initial scroll position; never inherit the previous
+  // long review/checkout scroll offset when the modal swaps content.
+  useLayoutEffect(() => {
+    document.querySelector<HTMLElement>('.gift-tax-dialog .taxpay-modal__body')?.scrollTo({top: 0, left: 0});
+  }, [step, checkoutOpen]);
   const requestClose = () => setExitPromptOpen(true);
   const doneeClass = beneficiaryChoiceParts(doneeChoice);
   const doneeClassValid = validBeneficiaryClassification(doneeClass.tag, doneeClass.relationship, doneeOther);
