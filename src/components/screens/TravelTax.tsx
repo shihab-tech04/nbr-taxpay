@@ -122,9 +122,17 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
         previous.placement === placement && previous.maxHeight === maxHeight ? previous : {placement, maxHeight});
     };
     const frame = requestAnimationFrame(position);
+    const observer = new ResizeObserver(position);
+    observer.observe(body);
+    observer.observe(row);
     window.addEventListener('resize', position);
     body.addEventListener('scroll', position, {passive: true});
-    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', position); body.removeEventListener('scroll', position); };
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('resize', position);
+      body.removeEventListener('scroll', position);
+    };
   }, [passportSuggestionsFor]);
   const [medicalHelpFor, setMedicalHelpFor] = useState<string | null>(null);
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
