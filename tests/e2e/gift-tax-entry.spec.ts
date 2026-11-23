@@ -124,3 +124,93 @@ test('Gift Tax Others needs a description and close uses the shared walk-in conf
   await confirmation.getByRole('button', {name:'Discard tax payment'}).click();
   await expect(gift).toHaveCount(0);
 });
+
+
+for (const language of ['en', 'bn'] as const) {
+  test('Gift Tax edit/Cancel/Undo never silently drops a selected identity (' + language + ')', async ({page}) => {
+    const bn = language === 'bn';
+    await page.goto('/?action=landing&lang=' + language);
+    await page.locator('.public-hero-carousel__slide[data-active="true"]')
+      .getByRole('button', {name: bn ? 'অন্যান্য কর' : 'Other Tax'}).click();
+    await page.locator('.taxpay-modal[data-public-service="login"]')
+      .getByRole('button', {name: bn ? 'ওয়াক-ইন পেমেন্ট' : 'Walk-in Payment'}).click();
+    await page.getByTestId('other-tax-chooser').getByRole('button', {name: /Gift Tax|দানকর/}).click();
+    const gift = page.getByRole('dialog', {name: bn ? 'দানকর' : 'Gift Tax'});
+    const donor = gift.getByTestId('gift-donor-section');
+    const rail = gift.getByTestId('gift-tax-identity-rail');
+    await donor.locator('#gift-donor-tin').fill('111111111111');
+    await donor.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donor/}).click();
+    await donor.getByRole('button', {name: bn ? 'দাতা যোগ করুন' : 'Add Donor'}).click();
+    await expect(gift.getByTestId('gift-tax-selected-count')).toHaveText('1');
+    await expect(rail.getByTestId('gift-added-donor')).toContainText(bn ? 'ইউজার 1' : 'User 1');
+
+    await donor.getByRole('button', {name: bn ? 'সম্পাদনা করুন: দাতা' : 'Edit Donor'}).click();
+    await expect(rail.getByTestId('gift-added-donor')).toHaveCount(1);
+    await expect(donor.locator('#gift-donor-tin')).toHaveValue('111111111111');
+    await donor.locator('#gift-donor-tin').fill('333333333333');
+    await expect(rail.getByTestId('gift-added-donor')).toContainText(bn ? 'ইউজার 1' : 'User 1');
+    await donor.getByRole('button', {name: bn ? 'সম্পাদনা বাতিল' : 'Cancel editing'}).click();
+    await expect(donor.getByTestId('gift-confirmed-donor')).toBeVisible();
+    await expect(rail.getByTestId('gift-added-donor')).toContainText(bn ? 'ইউজার 1' : 'User 1');
+
+    await donor.getByRole('button', {name: bn ? 'সম্পাদনা করুন: দাতা' : 'Edit Donor'}).click();
+    await donor.locator('#gift-donor-tin').fill('333333333333');
+    await donor.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donor/}).click();
+    await donor.getByRole('button', {name: bn ? 'দাতা যোগ করুন' : 'Add Donor'}).click();
+    await expect(rail.getByTestId('gift-added-donor')).toContainText(bn ? 'ইউজার 3' : 'User 3');
+    await expect(gift.getByTestId('gift-tax-selected-count')).toHaveText('1');
+    await rail.getByRole('button', {name: bn ? 'সরান: দাতা' : 'Remove Donor'}).click();
+    await expect(gift.getByTestId('gift-tax-selected-count')).toHaveText('0');
+    await expect(gift.getByTestId('gift-tax-undo')).toBeVisible();
+    await gift.getByTestId('gift-tax-undo').click();
+    await expect(rail.getByTestId('gift-added-donor')).toContainText(bn ? 'ইউজার 3' : 'User 3');
+    await expect(gift.getByTestId('gift-tax-undo')).toHaveCount(0);
+    await expect(gift.getByTestId('gift-tax-selected-count')).toHaveText('1');
+  });
+
+  test('Gift Tax date errors and relationship popup keyboard are accessible (' + language + ')', async ({page}) => {
+    const bn = language === 'bn';
+    await page.goto('/?action=landing&lang=' + language);
+    await page.locator('.public-hero-carousel__slide[data-active="true"]')
+      .getByRole('button', {name: bn ? 'অন্যান্য কর' : 'Other Tax'}).click();
+    await page.locator('.taxpay-modal[data-public-service="login"]')
+      .getByRole('button', {name: bn ? 'ওয়াক-ইন পেমেন্ট' : 'Walk-in Payment'}).click();
+    await page.getByTestId('other-tax-chooser').getByRole('button', {name: /Gift Tax|দানকর/}).click();
+    const gift = page.getByRole('dialog', {name: bn ? 'দানকর' : 'Gift Tax'});
+    await expect(gift.locator('.taxpay-modal__progress')).toHaveAttribute('aria-label',
+      bn ? 'পেমেন্টের অগ্রগতি' : 'Payment progress');
+    await expect(gift.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuetext',
+      bn ? '৩ ধাপের ১ নম্বর ধাপ' : 'Step 1 of 3');
+    const donor = gift.getByTestId('gift-donor-section');
+    await donor.locator('#gift-donor-tin').fill('111111111111');
+    await donor.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donor/}).click();
+    await donor.getByRole('button', {name: bn ? 'দাতা যোগ করুন' : 'Add Donor'}).click();
+    const donee = gift.getByTestId('gift-donee-section');
+    await donee.locator('#gift-donee-tin').fill('222222222222');
+    await donee.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donee/}).click();
+    const chooser = donee.locator('#gift-donee-relationship');
+    await chooser.click();
+    await page.getByRole('option', {name: bn ? 'বাবা' : 'Father'}).click();
+    await chooser.click();
+    const search = page.getByRole('combobox', {name: bn ? 'সম্পর্ক খুঁজুন' : 'Search relationships'});
+    await expect(search).toBeFocused();
+    await search.press('Tab');
+    await expect(donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'})).toBeFocused();
+    await chooser.click();
+    await search.press('Shift+Tab');
+    await expect(donee.getByRole('button', {name: bn ? /খুঁজুন:/ : /Search Donee/})).toBeFocused();
+    await donee.getByRole('button', {name: bn ? 'গ্রহীতা যোগ করুন' : 'Add Donee'}).click();
+    await gift.getByRole('button', {name: bn ? 'দান ও করের তথ্যে এগিয়ে যান' : 'Continue to Gift & Tax Information'}).click();
+    await gift.locator('#gift-tax-amount').fill('2500000');
+    await gift.getByRole('button', {name: bn ? 'চূড়ান্ত পর্যালোচনায় এগিয়ে যান' : 'Continue to Final Preview'}).click();
+    const date = gift.locator('#gift-tax-date');
+    await expect(date).toBeFocused();
+    await expect(date).toHaveAttribute('aria-invalid', 'true');
+    await expect(date).toHaveAttribute('aria-describedby', 'gift-tax-date-error');
+    await expect(gift.locator('#gift-tax-date-error')).toBeVisible();
+    await date.fill('2025-01-15');
+    await expect(date).toHaveAttribute('aria-invalid', 'false');
+    await gift.getByRole('button', {name: bn ? 'চূড়ান্ত পর্যালোচনায় এগিয়ে যান' : 'Continue to Final Preview'}).click();
+    await expect(gift.getByTestId('gift-tax-review')).toBeVisible();
+  });
+}
