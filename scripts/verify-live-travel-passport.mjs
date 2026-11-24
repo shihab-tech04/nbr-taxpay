@@ -12,6 +12,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   for (const [name, viewport, mobile] of [
     ['desktop', { width: 1280, height: 800 }, false],
+    ['short-desktop', { width: 1280, height: 520 }, false],
     ['mobile', { width: 375, height: 812 }, true],
   ]) {
     const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile });
@@ -49,6 +50,8 @@ try {
         throw new Error('Passenger Information extends outside the desktop viewport');
       }
     }
+    await expect(modal.getByRole('button', {name:'Save Draft', exact:true})).toHaveCount(0);
+    await expect(modal.getByRole('button', {name:'Continue Draft', exact:true})).toHaveCount(0);
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
     await expect(modal.locator('#travel-mobile')).toHaveCount(0);
     const addPassenger = modal.getByRole('button', { name: 'Add passenger', exact: true });
@@ -66,6 +69,14 @@ try {
     const options = modal.locator('#travel-passport-suggestions-first [role="option"]');
     await expect(options).toHaveCount(10);
     await expect(options.first()).toBeVisible();
+    await expect.poll(()=>modal.locator('#travel-passport-suggestions-first').evaluate(el=>{
+      const b=el.getBoundingClientRect(); const first=el.querySelector('[role="option"]')?.getBoundingClientRect();
+      const footer=el.closest('.taxpay-modal')?.querySelector('.taxpay-modal__footer')?.getBoundingClientRect();
+      if(!first||!footer||b.height<90||b.bottom>footer.top+2)return false;
+      const hit=document.elementFromPoint(first.x+12,first.y+first.height/2);
+      return Boolean(hit?.closest('[role="option"]')&&el.contains(hit));
+    })).toBe(true);
+    await page.screenshot({path:`test-results/live-travel-passport-${name}-dropdown.png`});
     const geometry = await modal.locator('#travel-passport-suggestions-first')
       .evaluate(element => ({ scroll: element.scrollHeight, visible: element.clientHeight }));
     if (geometry.scroll <= geometry.visible) throw new Error('Ten sample passport suggestions should scroll independently');
@@ -138,6 +149,7 @@ try {
     await expect(continueToTravel).toBeEnabled();
 
     await continueToTravel.click();
+    await expect(modal.getByRole('button', {name:'Save Draft', exact:true})).toHaveCount(0);
     await expect(modal.locator('.taxpay-modal__title')).toHaveText('Travel Details');
     await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
     const modes = modal.locator('#travel-tax-route-results');
