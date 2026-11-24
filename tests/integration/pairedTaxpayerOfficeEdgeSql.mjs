@@ -68,6 +68,7 @@ function sqlRpc(origin,name,args,authenticatedOffice=false){
       // preview-profile submit it must not gain service-role privileges.
       demo_story1_submit:`public.demo_story1_submit(${sqlJson(args.p_input)})`,
       taxpay_demo_story1_submit:`public.taxpay_demo_story1_submit(${sqlText(args.p_capability_hash)},${sqlJson(args.p_input)})`,
+      taxpay_demo_story1_session_payments:`public.taxpay_demo_story1_session_payments(${sqlText(args.p_capability_hash)},${args.p_page}::integer,${args.p_per_page}::integer)`,
       taxpay_demo_story1_session_payment:`public.taxpay_demo_story1_session_payment(${sqlText(args.p_capability_hash)},${sqlText(args.p_payment_id)}::uuid)`,
       taxpay_office_story1_mirror_read:`public.taxpay_office_story1_mirror_read(${sqlText(args.p_id)}::uuid,${sqlText(args.p_session)}::uuid)`,
       taxpay_demo_received_payment_notices:`public.taxpay_demo_received_payment_notices(${sqlText(args.p_capability_hash)},${sqlText(args.p_action)},${args.p_event_id===null?'NULL::text':sqlText(args.p_event_id)},${args.p_offset}::integer,${args.p_limit}::integer)`,
@@ -507,6 +508,15 @@ try{
   assert.equal(giftReadback.status,200);
   assert.equal(giftReadback.data.data.id,giftId);
   assert.deepEqual(giftReadback.data.data.data,giftPayload);
+  const giftActivity=await request('TAXPAY_SQL','/payments?sessionId='+profile.paymentSessionId+'&page=1&perPage=100','GET',undefined,headers);
+  assert.equal(giftActivity.status,200);
+  const giftActivityRow=giftActivity.data.data.items.find(item=>item.id===giftId);
+  assert.ok(giftActivityRow,'Account-scoped Activity must list the original Gift Tax payment');
+  assert.equal(giftActivityRow.service,'GIFT_TAX');
+  assert.equal(Number(giftActivityRow.amountMinor),27200000);
+  const unrelatedGiftActivity=await request('TAXPAY_SQL','/payments?sessionId='+unrelatedProfile.paymentSessionId+'&page=1&perPage=100','GET',undefined,{'x-taxpay-guest-capability':unrelatedProfile.capability});
+  assert.equal(unrelatedGiftActivity.status,200);
+  assert.equal(unrelatedGiftActivity.data.data.items.some(item=>item.id===giftId),false);
   const giftOfficePage=await request('OFFICE_SQL','/payments?page=1&perPage=100','GET',undefined,{authorization:'Bearer '+officeToken});
   assert.equal(giftOfficePage.status,200);
   const giftOfficeItem=giftOfficePage.data.data.items.find(item=>item.id===giftId);
@@ -527,6 +537,8 @@ try{
     bad=>{bad.amountMinor++},
     bad=>{bad.details.giftDetails.donee.tin=bad.details.giftDetails.donor.tin},
     bad=>{bad.details.receiptSnapshot.paymentRemarks='tampered'},
+    bad=>{bad.details.lines[0].beneficiary='user2'},
+    bad=>{bad.details.receiptSnapshot.payerTin='222222222222'},
   ]){
     const bad=structuredClone(giftPayload);bad.idempotencyKey=randomUUID();
     bad.details.receiptReference='SIM-GIFT-'+bad.idempotencyKey;

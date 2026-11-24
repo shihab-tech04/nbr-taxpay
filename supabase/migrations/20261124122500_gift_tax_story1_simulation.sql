@@ -68,6 +68,17 @@ BEGIN
  OR s->>'challanNo' IS DISTINCT FROM d->>'receiptReference'
  OR s->>'paymentRemarks' IS DISTINCT FROM d->>'challanRemarks'
  OR s->>'paymentMethod' IS DISTINCT FROM d->>'paymentMethod'
+ OR s->>'payerTin' IS DISTINCT FROM d->>'payerTin'
+ OR s->>'payerName' IS DISTINCT FROM d->>'payerName'
+ OR s->>'receiptMobile' IS DISTINCT FROM d->>'receiptMobile'
+ OR s->>'receiptEmail' IS DISTINCT FROM d->>'receiptEmail'
+ OR s->>'noticeReference' IS DISTINCT FROM d->>'noticeReference'
+ OR s->>'id' IS DISTINCT FROM d->>'receiptReference'
+ OR s->>'gatewayTransactionId' IS DISTINCT FROM d->>'receiptReference'
+ OR s->>'tokenNumber' IS DISTINCT FROM 'SIMULATION'
+ OR s->>'isWithholding' IS DISTINCT FROM 'false'
+ OR s ? 'treasuryScrollNo' OR s ? 'treasuryDate' OR s ? 'paymentTransactionId'
+ OR d ? 'allocations' OR d ? 'combinedPayment' OR d ? 'sourcePaymentId'
  OR s->'giftDetails' IS DISTINCT FROM g
  OR s->>'isSimulatedDemo' IS DISTINCT FROM 'true'
  OR s->>'taxCreditStatus' IS DISTINCT FROM 'NOT_APPLICABLE'
@@ -81,6 +92,10 @@ BEGIN
  OR s#>>'{items,0,headNameEn}' IS DISTINCT FROM 'Gift Tax'
  OR coalesce(s#>>'{items,0,totalAmount}','') !~ '^[0-9]+(\.[0-9]{1,2})?$'
  OR (s#>>'{items,0,totalAmount}')::numeric*100 IS DISTINCT FROM v_tax
+ OR s#>'{items,0,taxAmount}' IS DISTINCT FROM s#>'{items,0,totalAmount}'
+ OR s#>'{items,0,penaltyAmount}' IS DISTINCT FROM '0'::jsonb
+ OR s#>'{items,0,surchargeAmount}' IS DISTINCT FROM '0'::jsonb
+ OR s#>'{items,0,interestAmount}' IS DISTINCT FROM '0'::jsonb
  THEN RAISE EXCEPTION 'GIFT_RECEIPT_MISMATCH'; END IF;
  -- Require the existing capability-owned demo session and donor authorization.
  -- Existing BEFORE INSERT authorization guard still enforces saved-recipient
@@ -93,6 +108,19 @@ BEGIN
    OR (d->>'payerMode'='SELF' AND v_payer IS DISTINCT FROM v_donor.profile_id)
    OR (d->>'payerMode'='OTHER' AND v_payer IS NOT DISTINCT FROM v_donor.profile_id)
    THEN RAISE EXCEPTION 'GIFT_PAYER_SCOPE_MISMATCH'; END IF;
+   IF d->>'payerTin' IS DISTINCT FROM taxpay_guest_private.walkin_sample_tin(v_payer)
+   OR d->'receiptLines' IS DISTINCT FROM s->'items'
+   OR jsonb_typeof(d->'lines') IS DISTINCT FROM 'array'
+   OR jsonb_array_length(d->'lines')<>1
+   OR d#>>'{lines,0,category}' IS DISTINCT FROM 'GIFT_TAX'
+   OR d#>>'{lines,0,assessmentYear}' IS DISTINCT FROM v_assessment
+   OR d#>>'{lines,0,amountMinor}' IS DISTINCT FROM p_input->>'amountMinor'
+   OR d#>>'{lines,0,beneficiary}' IS DISTINCT FROM (CASE WHEN d->>'payerMode'='SELF' THEN v_payer ELSE 'SAVED_TIN:'||(g#>>'{donor,tin}') END)
+   THEN RAISE EXCEPTION 'GIFT_ALLOCATION_MISMATCH'; END IF;
+ ELSE
+   IF d->'lines' IS DISTINCT FROM s->'items' OR d ? 'receiptLines' THEN
+     RAISE EXCEPTION 'GIFT_ALLOCATION_MISMATCH';
+   END IF;
  END IF;
 END;
 $gift$;
