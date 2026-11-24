@@ -220,6 +220,7 @@ type PublicHeroCarouselProps = {
   onPayTax: (service?: BannerPaymentService) => void;
   onOtherTax: () => void;
   paused?: boolean;
+  bento03?: boolean;
 };
 
 export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
@@ -227,6 +228,7 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
   onPayTax,
   onOtherTax,
   paused = false,
+  bento03 = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [slides, setSlides] = useState<BannerSlide[]>(publishedBackup);
@@ -366,6 +368,18 @@ export const PublicHeroCarousel: React.FC<PublicHeroCarouselProps> = ({
     setIsSwiping(false);
   };
 
+  // Alternate presentation only: same published CMS feed, timing, focus and navigation.
+  if (bento03) {
+    const slide=slides[activeIndex];
+    const intro=slide && !slide.serviceCode;
+    return <div className="home2-editorial" ref={containerRef} onPointerEnter={onPointerEnter} onPointerLeave={()=>setIsHovered(false)} onFocusCapture={()=>setHasFocus(true)} onBlurCapture={event=>{if(!containerRef.current?.contains(event.relatedTarget as Node|null))setHasFocus(false);}} aria-roledescription="carousel" role="region" aria-label={bn?'সহজকর ব্যানার':'Sohojkor banners'}>
+      <div className="home2-label">{bn?'০১ — সহজকর':'01 — SOHOJKOR'}</div>
+      {intro ? <svg className="home2-editorial-art" viewBox="0 0 130 180" aria-hidden="true"><circle cx="65" cy="73" r="58" fill="#ffad79"/><path d="M65 5V141M0 73H130M15 23L115 123M15 123L115 23" stroke="#fa673d" strokeWidth="10"/><circle cx="65" cy="73" r="31" fill="#fa673d" stroke="#241b17" strokeWidth="1.5"/><text x="65" y="95" fontSize="64" fill="#241b17" fontWeight="bold" textAnchor="middle">৳</text><path d="M15 151H115M15 160H115M15 169H115" stroke="#241b17" strokeWidth="1.5"/></svg> : slide ? <img className="home2-editorial-art" src={slide.image} alt="" onError={event=>{event.currentTarget.onerror=null;event.currentTarget.src=heroPaymentIllustration;}}/> : null}
+      <div className="home2-editorial-copy" aria-live="off"><h2>{intro?(bn?'স্বাগতম, বাংলাদেশ।':'Hello, Bangladesh.'):slide?(bn?slide.headingBn:slide.headingEn):(bn?'কর পরিশোধ':'Tax payments')}</h2><p>{intro?(bn?'কর পরিশোধ ও পরিচালনার সহজ উপায়।':'A simpler way to pay and manage your taxes.'):slide?(bn?slide.mobileDescriptionBn:slide.mobileDescriptionEn):(bn?'ব্যানারের তথ্য এখন পাওয়া যাচ্ছে না।':'Banner information is temporarily unavailable.')}</p></div>
+      {slides.length>1 && <div className="home2-editorial-controls"><div className="home2-dots" role="group" aria-label={bn?'ব্যানার নির্বাচন':'Select banner'}>{slides.map((s,i)=><button key={s.id} type="button" aria-label={bn?'ব্যানার '+(i+1):'Banner '+(i+1)} aria-current={i===activeIndex} onClick={()=>setActiveIndex(i)}><span/></button>)}</div><button className="home2-next" type="button" onClick={goNext} aria-label={bn?'পরের ব্যানার':'Next banner'}><ChevronRight size={20} aria-hidden="true"/></button></div>}
+      {!slide && <button type="button" className="home2-text-action" onClick={()=>setRetryNonce(n=>n+1)}>{bn?'আবার চেষ্টা করুন':'Retry banner loading'}</button>}
+    </div>;
+  }
   if (!slides.length) {
     // An unverified client fallback must never override SQL publish status.
     // Preserve functional payment entrypoints without showing any banner image.

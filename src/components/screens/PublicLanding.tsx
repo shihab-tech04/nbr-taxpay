@@ -101,14 +101,15 @@ export const PublicLanding: React.FC<{home2?: boolean}> = ({home2 = false}) => {
 
   const hero = (<PublicHeroCarousel
       language={language}
+      bento03={home2}
       onPayTax={() => openAllTaxPayments()}
       onOtherTax={() => setOtherTaxEntryOpen(true)}
       paused={isPaymentServiceChoiceOpen || otherTaxEntryOpen || openService !== null}
     />);
   const recordSearch = (<section className="public-record-discovery" aria-labelledby="public-record-discovery-title">
       <div className="public-record-discovery__heading">
-        <h2 id="public-record-discovery-title">{t('Find a payment record', 'পেমেন্ট রেকর্ড খুঁজুন')}</h2>
-        <p id="public-record-discovery-help">{t('Search by challan, token or transaction reference.', 'চালান, টোকেন বা লেনদেনের রেফারেন্স দিয়ে খুঁজুন।')}</p>
+        <h2 id="public-record-discovery-title">{home2 ? t('Already paid?', 'আগেই পরিশোধ করেছেন?') : t('Find a payment record', 'পেমেন্ট রেকর্ড খুঁজুন')}</h2>
+        <p id="public-record-discovery-help">{home2 ? t('Find your payment record, receipt or certificate.', 'আপনার পেমেন্ট রেকর্ড, রসিদ বা সনদ খুঁজুন।') : t('Search by challan, token or transaction reference.', 'চালান, টোকেন বা লেনদেনের রেফারেন্স দিয়ে খুঁজুন।')}</p>
       </div>
       <div className="public-record-discovery__interactive" ref={searchRegionRef}>
         <form
@@ -169,7 +170,7 @@ export const PublicLanding: React.FC<{home2?: boolean}> = ({home2 = false}) => {
             placeholder={t('Enter challan, token or transaction reference', 'চালান, টোকেন বা লেনদেনের রেফারেন্স লিখুন')}
           />
           <button type="submit" disabled={!paymentReference.trim()} aria-label={t('Search records', 'রেকর্ড খুঁজুন')}>
-            <Search size={23} aria-hidden="true" />
+            {home2 ? <>{t('Find payment','পেমেন্ট খুঁজুন')}<Search size={17} aria-hidden="true" /></> : <Search size={23} aria-hidden="true" />}
           </button>
         </form>
         {/* Keep the live region mounted while closed so the first update is

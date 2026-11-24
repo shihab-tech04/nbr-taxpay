@@ -277,6 +277,12 @@ test('Home 2 bilingual responsive layout keeps all actions available', async ({p
     await page.goto('/?action=home-2&lang='+lang);
     const root=page.getByTestId('home2-root');
     await expect(root).toBeVisible();
+    await expect(root).toHaveAttribute('data-design','bento-03');
+    await expect(root.locator('.home2-pay')).toHaveCSS('background-color','rgb(36, 63, 208)');
+    await expect(root.locator('.home2-travel')).toHaveCSS('background-color','rgb(217, 243, 107)');
+    await expect(root.locator('.home2-cms')).toHaveCSS('background-color','rgb(250, 103, 61)');
+    await expect(root.locator('.home2-history')).toHaveCSS('background-color','rgb(21, 26, 40)');
+    await expect(root.locator('.home2-intro h1')).toHaveText(lang==='en'?"Tax doesn't have to be complicated.":'কর পরিশোধ জটিল হওয়ার প্রয়োজন নেই.');
     await expect(root.getByTestId('home2-travel')).toBeVisible();
     await expect(root.locator('.public-record-search input')).toBeVisible();
     for(const id of ['corrections','history','again','drafts'])await expect(root.getByTestId('home2-'+id)).toBeVisible();

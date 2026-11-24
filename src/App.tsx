@@ -255,10 +255,11 @@ const MainRouter: React.FC = () => {
     }
   };
 
+  const home2Shell = currentRoute === 'home-2' || (routeParams.fromHome2 === true && (loginOverlay || receiptOverlayRoute || privateSampleGate));
   return (
-    <div lang={language} className={`taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${taxpayerReference && !privateSampleGate && (verifiedApplicationUser || previewAccount) ? " taxpay-authenticated-content" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}${!taxpayerReference ? " taxpay-public-mobile-shell" : ""}`}>
+    <div lang={language} className={`taxpay-citizen-shell${home2Shell ? ' home2-shell' : ''} min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${taxpayerReference && !privateSampleGate && (verifiedApplicationUser || previewAccount) ? " taxpay-authenticated-content" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}${!taxpayerReference ? " taxpay-public-mobile-shell" : ""}`}>
       {publicInformationRoute ? <>
-        <div className="taxpay-public-desktop-navigation"><PublicHomeHeader /></div>
+        <div className="taxpay-public-desktop-navigation"><PublicHomeHeader bento03={home2Shell} /></div>
         <div className="taxpay-public-mobile-navigation"><CitizenNavigation /></div>
       </> : <CitizenNavigation />}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}

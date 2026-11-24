@@ -11,7 +11,7 @@ const LINKS = [
   {route:'incident',en:'Report',bn:'অভিযোগ',Icon:ShieldAlert}
 ] as const;
 
-export function PublicHomeHeader() {
+export function PublicHomeHeader({bento03=false}:{bento03?:boolean}={}) {
   const {language,setLanguage,currentRoute,navigate,previewAccount,logoutPreviewAccount,setUserRole} = useTaxState();
   const {user,loading:checkingAccount} = useAccountIdentity();
   const signedIn = Boolean(user || previewAccount);
@@ -93,8 +93,8 @@ export function PublicHomeHeader() {
         setMenuOpen(false);
         if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey) return;
         event.preventDefault();
-        go(ACCOUNT_ACCESS_ROUTE);
-      }}>{bn?'লগইন':'Login'} <ArrowRight size={17} aria-hidden="true"/></a>;
+        if(bento03) navigate(ACCOUNT_ACCESS_ROUTE,{fromHome2:true}); else go(ACCOUNT_ACCESS_ROUTE);
+      }}>{bento03?(bn?'আমার অ্যাকাউন্ট':'My account'):(bn?'লগইন':'Login')} <ArrowRight size={17} aria-hidden="true"/></a>;
   return <header className="public-home-header">
     <a className="public-home-skip-link" href="#main-content">{bn?'মূল কনটেন্টে যান':'Skip to main content'} <ArrowRight size={16} aria-hidden="true"/></a>
     <div className="public-home-header__inner">
@@ -104,7 +104,7 @@ export function PublicHomeHeader() {
         event.preventDefault();go(logoHomeRoute);
       }}>
         <span className="public-home-brand__copy">
-          <SiteLogo className="public-home-wordmark" alt={bn?'সহজকর':'Sohojkor'}/>
+          {bento03?<><span className="home2-wordmark">সহজকর<em aria-hidden="true">✳</em></span><span className="home2-wordmark-tag">{bn?'কর সহজ করুন।':'TAX. SIMPLIFIED.'}</span></>:<SiteLogo className="public-home-wordmark" alt={bn?'সহজকর':'Sohojkor'}/>}
         </span>
       </a>
       <nav ref={menuNavRef} className={menuOpen?'public-home-nav public-home-nav--open':'public-home-nav'} aria-label={bn?'প্রধান নেভিগেশন':'Primary navigation'} id="public-home-nav">
