@@ -203,8 +203,7 @@ test('mobile public Help entry clears the footer identity area',async({page},inf
 });
 
 test('signed-in Transactions provides payment reference search without a separate Track payment tab',async({page})=>{
-  const record=sqlActivityRecord();
-  await mockActivitySql(page,[record]);
+  const reference='DEMO-PAY-23-01';
   await enterUser1(page);
   await page.goto('/?action=history&qaScenario=1&scenarioYear=2025-2026');
   const tabs=page.getByRole('navigation',{name:'Activity sections'});
@@ -212,7 +211,7 @@ test('signed-in Transactions provides payment reference search without a separat
   await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');
   await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
   await page.getByRole('combobox',{name:'Assessment year'}).selectOption('2023-2024');
-  await page.getByRole('searchbox',{name:'Search transaction reference'}).fill(record.id);
+  await page.getByRole('searchbox',{name:'Search transaction reference'}).fill(reference);
   await expect(page.locator('[data-testid="taxpayer-transaction-table"] tbody tr')).toHaveCount(1);
   await page.locator('.taxpayer-transaction-row__action:visible').first().click();
   await expect(page.locator('.taxpayer-transaction-detail')).toBeVisible();
