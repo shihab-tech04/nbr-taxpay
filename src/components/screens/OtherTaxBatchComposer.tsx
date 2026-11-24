@@ -15,6 +15,8 @@ import { useAccountIdentity } from '../../services/accountIdentity';
 import { getDemoStoryPaymentHistory, type SimulationUser } from '../../services/simulatedPaymentsApi';
 import { rankFrequentTaxHeadIds } from '../../services/paymentFrequentCategories';
 import { getAccountStoryPayments } from '../../services/story1AccountPaymentHistory';
+import { paymentDraftOwnerScope } from '../../services/accountPaymentFormDrafts';
+import { activePreviewSession } from '../../services/previewAccountSession';
 import '../../styles/taxpay-category-directory.css';
 
 export type OtherTaxTaxpayer = { id: string; tin: string; name: string };
@@ -90,7 +92,9 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const { previewAccount } = useTaxState();
   const { user } = useAccountIdentity();
   // Partition pending/ready history by its actual account, not a recipient TIN.
-  const ownerKey = previewAccount?.id ? 'preview:' + previewAccount.id : user?.id ? 'user:' + user.id : '';
+  const ownerKey = user?.id ? paymentDraftOwnerScope({kind:'authenticated',userId:user.id})
+    : previewAccount?.id && activePreviewSession()?.profileId===previewAccount.id
+      ? paymentDraftOwnerScope({kind:'preview',profileId:previewAccount.id}) : '';
   const [categoryHistory, setCategoryHistory] = useState<CategoryHistory>({ status: 'signed-out', ownerKey: '', headIds: [] });
   useEffect(() => {
     // Even a signed-in user who intentionally selected Walk-in must not
@@ -103,9 +107,9 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     setCategoryHistory({ status: 'loading', ownerKey, headIds: [] });
     // Both reads use the existing account-bound history capability. The
     // general simulation ledger only exposes category codes, not exact heads.
-    const history = previewAccount?.id
-      ? getDemoStoryPaymentHistory(previewAccount.id as SimulationUser, 'payer')
-      : getAccountStoryPayments(user!.id).then(rows => rows.map(row => ({
+    const history = !user?.id && previewAccount?.id
+      ? getDemoStoryPaymentHistory(previewAccount.id as SimulationUser, 'payer').then(rows=>rows.filter(row=>row.payer===previewAccount.id&&row.simulationOnly===true))
+      : getAccountStoryPayments(user!.id,{claimPending:false}).then(rows => rows.map(row => ({
           state: row.status === 'SIMULATED_SUCCESS' ? 'SIMULATED' : row.status,
           createdAt: row.createdAt,
           allocations: Array.isArray(row.details.receiptLines) ? row.details.receiptLines :

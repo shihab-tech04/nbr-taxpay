@@ -367,6 +367,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
   useEffect(() => { onCheckoutChange?.(checkoutOpen); }, [checkoutOpen,onCheckoutChange]);
+  // The shared modal body owns scrolling in Final Preview and checkout.
+  // Each transition must start at the top, not inherit the previous form offset.
+  useLayoutEffect(() => {
+    if (embedded && step === 2) {
+      document.querySelector<HTMLElement>('.taxpay-modal[data-public-service="travel"] .taxpay-modal__body')?.scrollTo({top:0});
+    }
+  }, [embedded, step, checkoutOpen]);
   // Dismiss the existing on-focus ten-sample picker without changing focus
   // or rerendering the modal between pointerdown and click. That early state
   // change can swallow clicks on Travel Tax's Edit passengers control.
@@ -1307,6 +1314,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                       <span>{tr('Calculated total','হিসাবকৃত মোট')} · {passengers.length} {tr('passenger(s)','যাত্রী')}</span>
                       <output aria-label={tr('Combined payable','মোট প্রদেয়')}><TravelCurrency amount={totalAmount} language={language}/></output>
                     </div>
+                    {amountWords && <p data-testid="travel-checkout-total-in-words">{amountWords}</p>}
                     <p>{tr('Preview calculation — payment and settlement are not yet confirmed.',
                       'প্রিভিউ হিসাব — পরিশোধ ও নিষ্পত্তি এখনো নিশ্চিত নয়।')}</p>
                   </div>
@@ -1394,7 +1402,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
 
       {embedded && modalFooterTarget && createPortal(
         <div className="travel-flow__footer-content">
-          {step > 0 && <details className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
+          {step > 0 && !checkoutOpen && <details key={step} className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
             <summary><p>{tr('Payment calculation','পেমেন্টের হিসাব')}</p>
               <strong>{allCalculated ? <TravelCurrency amount={totalAmount} language={language}/> : validAssessments.length > 0 && travelDate ? <TravelCurrency amount={provisionalAmount} language={language}/> : '—'}</strong></summary>
             <dl>

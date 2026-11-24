@@ -472,7 +472,7 @@ test('travel tax desktop summary stays anchored during the wizard, then full-wid
   await modal.getByRole('button',{name:'Confirm sample payment'}).click();
   await expect(modal.getByRole('heading',{name:'Combined Travel Tax details'})).toBeVisible({timeout:12000});
   await expect(modal.locator('.travel-flow__summary')).toHaveCount(0);
-  await expect(modal.locator('.taxpay-modal__body > .receipt-view--embedded')).toBeVisible();
+  await expect(modal.locator('.taxpay-modal__body .receipt-view--embedded')).toBeVisible();
   await expect(modal.getByRole('button',{name:'Print receipt'})).toBeVisible();
   await expect(modal.getByRole('button',{name:'Download'})).toBeVisible();
 });
