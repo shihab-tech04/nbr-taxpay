@@ -1732,7 +1732,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     );
     return (
       <div lang={language} className={`space-y-5 ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''} ${language === 'bn' ? 'font-bengali' : ''}`}>
-        <div className="payment-flow-embedded__confirmation-layout">
+        <div className={`payment-flow-embedded__confirmation-layout${unifiedFlow && embedded && completed && !signedInAccount ? ' walkin-result-compact' : ''}`}>
         <section className="payment-lifecycle" aria-labelledby="payment-lifecycle-title">
           <div className={`payment-lifecycle__heading payment-lifecycle__heading--${syncPending || bankPending ? 'pending' : declined ? 'failed' : completed ? 'complete' : 'running'}`}>
             <span className="payment-lifecycle__symbol" aria-hidden="true">{isProcessing ? <LoaderCircle className="animate-spin" size={22} /> : declined ? <AlertCircle size={22} /> : bankPending ? <Building2 size={22} /> : <CheckCircle size={22} />}</span>
@@ -1828,6 +1828,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
               </div>}
             </div>
           )}
+        </section>
           {unifiedFlow && embedded && completed && !officeMirrorPending && !signedInAccount && !skipPostPaymentLogin && (
             <aside className="walkin-result-benefits no-print" data-testid="walkin-result-benefits"
               aria-labelledby="walkin-result-benefits-title">
@@ -1851,9 +1852,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 : 'This walk-in payment is not automatically linked to an account.'}</p>
             </aside>
           )}
-        </section>
         </div>
-        {embedded && modalFooterTarget && createPortal(
+        {embedded && modalFooterTarget && !(unifiedFlow && completed && !signedInAccount) && createPortal(
           <PaymentJourneyFooter className="payment-flow-embedded__footer-actions"
             next={<>
               {completed && !(unifiedFlow && !signedInAccount) && (batchAttempt ? <button type="button" className="tax-service-choice__continue" onClick={startAnotherBatch} disabled={officeMirrorPending}>{copy.anotherPayment} <ArrowRight size={17} /></button> : <button type="button" className="tax-service-choice__continue" onClick={() => setShowReceiptDetails(true)}>{language === 'bn' ? 'রসিদের বিবরণ' : 'Receipt details'} <ArrowRight size={17} /></button>)}

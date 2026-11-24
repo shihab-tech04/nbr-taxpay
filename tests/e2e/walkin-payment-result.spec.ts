@@ -82,6 +82,20 @@ test('parallel Walk-in result offers a guest challan before optional account ben
   await expect(offer.getByRole('button', {name:'Continue without Login'})).toBeVisible();
   await expect(dialog.getByRole('button', {name:'Receipt details'})).toHaveCount(0);
   expect(submission()).not.toBeNull();
+  const resultCard = dialog.locator('.walkin-result-compact > .payment-lifecycle');
+  await expect(resultCard).toBeVisible();
+  await expect(resultCard.getByTestId('walkin-result-benefits')).toHaveCount(0);
+  await expect(dialog.locator('.walkin-result-compact > .walkin-result-benefits')).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__footer')).toBeHidden();
+  const cardBox = await resultCard.boundingBox();
+  const offerBox = await offer.boundingBox();
+  expect(offerBox!.y).toBeGreaterThanOrEqual(cardBox!.y + cardBox!.height + 8);
+  await page.setViewportSize({width:375,height:812});
+  await expect(challan).toBeVisible();
+  await expect(offer).toBeVisible();
+  await expect(dialog.locator('.taxpay-modal__footer')).toBeHidden();
+  expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  await page.setViewportSize({width:1280,height:900});
 
   await offer.getByRole('button', {name:'Continue without Login'}).click();
   await expect(offer).toHaveCount(0);
