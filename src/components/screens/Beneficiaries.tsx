@@ -65,6 +65,12 @@ export function Beneficiaries(){
   const [people,setPeople]=useState<Beneficiary[]>([]);
   const groupLimitReached=lists.length>=5;
   const groupLimitMessage=tr('Maximum five saved groups. Choose an existing group.','সর্বোচ্চ পাঁচটি সংরক্ষিত গ্রুপ। বিদ্যমান গ্রুপ বেছে নিন।');
+  const groupErrorMessage=(e:unknown)=>{
+    const message=e instanceof Error?e.message:String(e);
+    if(message.includes('BENEFICIARY_GROUP_LIMIT'))return groupLimitMessage;
+    if(message.includes('BENEFICIARY_GROUP_NOT_EMPTY'))return tr('Move the saved beneficiaries to another list before deleting this list.','এই তালিকা মুছে ফেলার আগে সংরক্ষিত উপকারভোগীদের অন্য তালিকায় স্থানান্তর করুন।');
+    return message;
+  };
   const [activeList,setActiveList]=useState('all');
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
@@ -366,12 +372,13 @@ export function Beneficiaries(){
   async function removeList(){
     if(!editingList)return;
     const toDelete=editingList.id;
+    if(people.some(person=>person.list_id===toDelete)){setModalError(groupErrorMessage(new Error('BENEFICIARY_GROUP_NOT_EMPTY')));return;}
     setBusy(true);setModalError('');
     try{
       await deleteBeneficiaryList(owner,toDelete);
       await reload();setEditingList(null);setConfirmListDelete(false);setSearch('');
       setNotice({en:'Beneficiary list deleted.',bn:'উপকারভোগীর তালিকা মুছে ফেলা হয়েছে।'});
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){setModalError(groupErrorMessage(e));}
     finally{setBusy(false);}
   }
   function open(next:Flow,prefill?:{tin:string;name:string},saveOwner:string|null=null){
@@ -416,7 +423,7 @@ export function Beneficiaries(){
       if(!saved.lists.some(value=>value.id===list.id))throw new Error(tr('List was not saved. Please retry.','তালিকাটি সংরক্ষিত হয়নি। আবার চেষ্টা করুন।'));
       setCreateListOpen(false);setListName('');
       setNotice({en:'List created.',bn:'তালিকা তৈরি হয়েছে।'});
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){setModalError(groupErrorMessage(e));}
     finally{setBusy(false);}
   }
 
@@ -463,7 +470,7 @@ export function Beneficiaries(){
         throw new Error(tr('Saved beneficiary tag could not be verified. Refresh the list and try again.','সংরক্ষিত উপকারভোগীর ট্যাগ যাচাই করা যায়নি। তালিকা রিফ্রেশ করে আবার চেষ্টা করুন।'));
       setFlow(null);setBeneficiarySaveOwner(null);
       setNotice(count?{en:'Beneficiary saved.',bn:'উপকারভোগী সংরক্ষিত হয়েছে।'}:{en:'This beneficiary is already in the list.',bn:'এই উপকারভোগী তালিকায় আগে থেকেই আছেন।'});
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){setModalError(groupErrorMessage(e));}
     finally{setBusy(false);}
   }
 
@@ -474,7 +481,7 @@ export function Beneficiaries(){
       const imported=await parseBeneficiaryWorkbook(file);
       if(!imported.length)throw new Error(tr('The Excel file contains no beneficiaries.','এক্সেল ফাইলে কোনো উপকারভোগী নেই।'));
       setRows(imported.map(row=>({...row,selected:true})));setFilename(file.name);
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){setModalError(groupErrorMessage(e));}
     finally{setBusy(false);}
   }
 
@@ -497,7 +504,7 @@ export function Beneficiaries(){
         throw new Error(tr('Some beneficiary tags could not be verified. Refresh the list and retry.','কিছু উপকারভোগীর ট্যাগ যাচাই করা যায়নি। তালিকা রিফ্রেশ করে আবার চেষ্টা করুন।'));
       setFlow(null);
       setNotice(count?{en:`${count} beneficiaries added to the list.`,bn:`${count} জন উপকারভোগী তালিকায় যুক্ত হয়েছেন।`}:{en:'No new beneficiaries were added.',bn:'নতুন কোনো উপকারভোগী যোগ হয়নি।'});
-    }catch(e){setModalError(e instanceof Error?e.message:String(e));}
+    }catch(e){setModalError(groupErrorMessage(e));}
     finally{setBusy(false);}
   }
 
@@ -576,7 +583,7 @@ export function Beneficiaries(){
       if(!editOwnerIsCurrent()){
         closePersonEditor();
         setNotice({en:'Your account changed. Cancel and reopen this beneficiary before editing.',bn:'আপনার অ্যাকাউন্ট বদলেছে। সম্পাদনার আগে এই উপকারভোগীটি বাতিল করে আবার খুলুন।'});
-      }else setModalError(e instanceof Error?e.message:String(e));
+      }else setModalError(groupErrorMessage(e));
     }
     finally{setBusy(false);}
   }
@@ -639,7 +646,7 @@ export function Beneficiaries(){
       setNotice({en:`${stillSelected.length} beneficiaries removed.`,bn:`${stillSelected.length} জন উপকারভোগী সরানো হয়েছে।`});
     }catch(e){
       if(!ownerIsCurrent()){closeStaleBulkRemove();return;}
-      setModalError(e instanceof Error?e.message:String(e));
+      setModalError(groupErrorMessage(e));
       await reload().catch(()=>{});
       if(!ownerIsCurrent())closeStaleBulkRemove();
     }finally{setBusy(false);}
@@ -994,8 +1001,8 @@ export function Beneficiaries(){
     {editingList&&confirmListDelete&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Delete beneficiary list?','উপকারভোগীর তালিকা মুছবেন?')} ariaLabel={tr('Confirm list deletion','তালিকা মুছে ফেলা নিশ্চিত করুন')}
       onClose={()=>{if(!busy){setConfirmListDelete(false);setModalError('');}}}
       footer={<div className="flex w-full flex-wrap justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setConfirmListDelete(false)}>{tr('Cancel','বাতিল')}</UiButton>
-        <UiButton type="button" variant="primary" disabled={busy} className="gap-2" onClick={()=>void removeList()}><Trash2 size={17} aria-hidden="true"/>{busy?tr('Deleting…','মুছে ফেলা হচ্ছে…'):tr('Delete list','তালিকা মুছুন')}</UiButton></div>}>
-      <p className="text-sm text-slate-700">{tr(`Delete “${editingList.name}” and all its ${people.filter(person=>person.list_id===editingList.id).length} saved beneficiaries? This cannot be undone. Existing payment and tax records will not be affected.`,`“${editingList.name}” তালিকা এবং এর ${people.filter(person=>person.list_id===editingList.id).length} জন সংরক্ষিত উপকারভোগী মুছে ফেলবেন? এটি ফিরিয়ে আনা যাবে না। বিদ্যমান পেমেন্ট বা করের রেকর্ড পরিবর্তন হবে না।`)}</p>
+        <UiButton type="button" variant="primary" disabled={busy||people.some(person=>person.list_id===editingList.id)} className="gap-2" onClick={()=>void removeList()}><Trash2 size={17} aria-hidden="true"/>{busy?tr('Deleting…','মুছে ফেলা হচ্ছে…'):tr('Delete list','তালিকা মুছুন')}</UiButton></div>}>
+      <p className="text-sm text-slate-700">{people.some(person=>person.list_id===editingList.id)?groupErrorMessage(new Error('BENEFICIARY_GROUP_NOT_EMPTY')):tr(`Delete “${editingList.name}”? Existing payment and tax records will not be affected.`,`“${editingList.name}” তালিকা মুছে ফেলবেন? বিদ্যমান পেমেন্ট বা করের রেকর্ড পরিবর্তন হবে না।`)}</p>
       {modalError&&<p role="alert" className="mt-2 text-sm text-red-700">{modalError}</p>}
     </TaxPayModal>}
 
