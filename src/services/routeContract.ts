@@ -1,6 +1,6 @@
 /** Registered app destinations. An unknown ?action= must never masquerade as a valid screen. */
 export const ROUTES = [
-  'landing', 'user_guide', 'secure_workspace', 'head_catalogue', 'guest', 'guestwh',
+  'landing', 'home-2', 'user_guide', 'secure_workspace', 'head_catalogue', 'guest', 'guestwh',
   'travel', 'verify', 'incident', 'architecture', 'taxpayer_home', 'dashboard',
   'wizard', 'history', 'payment_details', 'ledger', 'journey', 'certificates',
   'corrections', 'notifications', 'payment_notifications', 'account_notifications', 'account_profile',

@@ -25,7 +25,7 @@ type Category = 'all'|'income'|'source'|'travel';
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5';
 const fmt = (v:number) => new Intl.NumberFormat('en-BD').format(v);
 export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: PaymentFormDraft) => void }> = ({ onResumePaymentDraft }) => {
-  const { language, receipts, taxpayerProfile, demoUser, previewAccount, userRole, navigate, selectReceipt, openPaymentServiceChoice } = useTaxState();
+  const { language, receipts, taxpayerProfile, demoUser, previewAccount, userRole, navigate, selectReceipt, openAllTaxPayments } = useTaxState();
   const { user } = useAccountIdentity();
   const bn = language === 'bn';
   const tr = (en:string, bangla:string) => bn ? bangla : en;
@@ -111,7 +111,7 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
       name={visibleName}
       language={language}
       onNavigate={route=>navigate(route)}
-      onPay={()=>openPaymentServiceChoice()}
+      onPay={()=>openAllTaxPayments()}
       onResumePaymentDraft={onResumePaymentDraft}
     />;
   }
@@ -143,7 +143,7 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
           <h2 id="account-bento-hero-title">{tr('What would you like to do?','আপনি কী করতে চান?')}</h2>
           <p className="text-sm">{tr('Start a payment, continue saved work or review your transaction history. No unverified amount is treated as tax due.','পেমেন্ট শুরু করুন, সংরক্ষিত কাজ চালিয়ে যান অথবা লেনদেন দেখুন। যাচাই হয়নি এমন অর্থ বকেয়া কর হিসেবে দেখানো হয় না।')}</p>
           <div className="taxpay-bento-hero__actions">
-            <button className="taxpay-bento-hero__secondary" type="button" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
+            <button className="taxpay-bento-hero__secondary" type="button" onClick={()=>openAllTaxPayments()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
           </div>
           <p className="mt-auto text-xs">{tr('Your saved account records are kept separate from illustrative examples.','আপনার সংরক্ষিত রেকর্ড উদাহরণের পরিমাণ থেকে পৃথক রাখা হয়।')}</p>
         </section>
@@ -188,7 +188,7 @@ export const TaxpayerDashboard: React.FC<{ onResumePaymentDraft?: (draft: Paymen
       <h2>{tr('What would you like to do?','আপনি কী করতে চান?')}</h2>
       <p>{tr('Use the existing payment journey or start separate travel tax.','বিদ্যমান পেমেন্ট যাত্রা অথবা পৃথক ভ্রমণ কর শুরু করুন।')}</p>
       <div className="taxpay-bento-hero__actions">
-        <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openPaymentServiceChoice()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
+        <button type="button" className="taxpay-bento-hero__secondary" onClick={()=>openAllTaxPayments()}>{tr('Pay tax','কর পরিশোধ')}<ArrowRight size={16}/></button>
       </div>
     </section>}
     {previewAccount && onResumePaymentDraft && <div className="taxpay-bento-drafts">

@@ -264,6 +264,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
  }
  const allocationItems=toAllocationItems(tx);
  const readbackLines=reusableAccountingLines(tx,allocationItems);
+ const allocationContractVersion=d.allocationContractVersion===5&&allocationItems?.length&&readbackLines?.length?5 as const:undefined;
  // Do not allow a saved receipt snapshot to bypass beneficiary/amount reconciliation.
  if(Array.isArray(d.allocations)&&d.allocations.length>0&&!allocationItems)
   throw new Error('Payment allocations could not be reconciled');
@@ -299,6 +300,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
     return {
       ...(raw as unknown as ChallanReceipt),
       paymentTransactionId:tx.id,
+      allocationContractVersion,
       createdAt:tx.createdAt,completedAt:tx.createdAt,
       treasuryStatus:'GATEWAY_SUCCESS',
       isSimulatedDemo:true,
@@ -327,6 +329,7 @@ export function makeConfirmedReceipt(tx:StoredPayment):ChallanReceipt{
   isRepresentativePayment:d.payerMode==='OTHER',
   taxZone:stringValue(d.taxZone)||'—',taxCircle:stringValue(d.taxCircle)||'—',
   isWithholding:category==='SOURCE_TAX_DEPOSIT'||d.isWithholding===true,
+  allocationContractVersion,
   items:allocationItems?[]:toItems(d.lines),...(allocationItems?{allocationItems}:{}),
   ...(readbackLines?{reusableAccountingLines:readbackLines}:{}),totalAmount:total,
   paymentMethod:methods.has(method as ChallanReceipt['paymentMethod'])?
