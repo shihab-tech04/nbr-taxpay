@@ -38,3 +38,45 @@ export function rankFrequentTaxCategoryNames(
   return [...counts].sort((a,b) => b[1].count-a[1].count || b[1].last-a[1].last || a[0].localeCompare(b[0]))
     .slice(0,Math.min(5,limit)).map(([name])=>name);
 }
+
+
+/** Rank only exact current-catalogue head identities actually present in
+ * owner-bound completed records. Category-only history cannot identify an
+ * individual head and must never be expanded into invented suggestions.
+ * Deduplicate within each transaction and discard unknown or blocked heads. */
+export type FrequentHeadHistory = {
+  state: string;
+  createdAt: string;
+  allocations: readonly unknown[];
+};
+export function rankFrequentTaxHeadIds(
+  transactions: readonly FrequentHeadHistory[],
+  catalogue: ReadonlyMap<number, string>,
+  limit = 5,
+): number[] {
+  if (!Number.isInteger(limit) || limit < 1) return [];
+  const counts = new Map<number, {count:number;last:number}>();
+  let completed = 0;
+  for (const transaction of transactions) {
+    if (transaction.state !== 'SIMULATED' || !Array.isArray(transaction.allocations)) continue;
+    const time = Date.parse(transaction.createdAt);
+    if (!Number.isFinite(time)) continue;
+    completed++;
+    const heads = new Set<number>();
+    for (const raw of transaction.allocations) {
+      if (!raw || typeof raw !== 'object') continue;
+      const item = raw as Record<string, unknown>;
+      if (typeof item.headId !== 'number' || !Number.isSafeInteger(item.headId) ||
+          typeof item.economicCode !== 'string' || !catalogue.has(item.headId) ||
+          catalogue.get(item.headId) !== item.economicCode) continue;
+      heads.add(item.headId);
+    }
+    for (const id of heads) {
+      const previous = counts.get(id);
+      counts.set(id,{count:(previous?.count??0)+1,last:Math.max(previous?.last??0,time)});
+    }
+  }
+  if (completed < 2) return [];
+  return [...counts].sort((a,b)=>b[1].count-a[1].count || b[1].last-a[1].last || a[0]-b[0])
+    .slice(0,Math.min(5,limit)).map(([id])=>id);
+}
