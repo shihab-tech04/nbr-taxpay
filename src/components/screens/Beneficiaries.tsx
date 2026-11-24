@@ -21,7 +21,7 @@ import {SAMPLE_TIN_SUGGESTIONS} from '../../data/sampleTinSuggestions';
 import {UiButton,UiInput} from '../ui/Controls';
 import {SearchableSelect} from '../ui/SearchableSelect';
 import {beneficiaryChoiceValue,beneficiaryChoiceParts} from '../../services/beneficiaryClassificationChoice';
-import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,renameBeneficiaryList,deleteBeneficiaryList,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
+import {addBeneficiaries,createBeneficiaryList,recoverGuestBeneficiariesToProfile,recoverLegacyGuestBeneficiariesToPreview,renameBeneficiaryList,deleteBeneficiaryList,transferBeneficiaryGroup,loadBeneficiaries,removeBeneficiary,moveBeneficiary,editBeneficiaryClassification,type Beneficiary,type BeneficiaryList} from '../../services/beneficiaries';
 import {beneficiaryTemplate,parseBeneficiaryWorkbook,type SpreadsheetRecord} from '../../services/beneficiaryExcel';
 import {beneficiaryNameForDisplay,beneficiaryNameForPrefill} from '../../services/beneficiaryNames';
 import {BeneficiaryProfile} from './BeneficiaryProfile';
@@ -134,6 +134,8 @@ export function Beneficiaries(){
   const [editingList,setEditingList]=useState<BeneficiaryList|null>(null);
   const [editingListName,setEditingListName]=useState('');
   const [confirmListDelete,setConfirmListDelete]=useState(false);
+  const [transferTarget,setTransferTarget]=useState('');
+  const listEditOwnerRef=useRef<BeneficiaryOwnerContext>({ownerUid:null,ownerKey:null,checkingIdentity:true});
   const listMenuRef=useRef<HTMLDivElement>(null);
   const listTriggerRef=useRef<HTMLButtonElement>(null);
   const fileRef=useRef<HTMLInputElement>(null);
@@ -350,11 +352,13 @@ export function Beneficiaries(){
     listTriggerRef.current?.focus();
   }
   function openListEditor(list:BeneficiaryList){
-    setListMenuOpen(false);setEditingList(list);setEditingListName(list.name);setConfirmListDelete(false);setModalError('');
+    listEditOwnerRef.current={...currentOwnerContextRef.current};
+    setTransferTarget('');setListMenuOpen(false);setEditingList(list);setEditingListName(list.name);setConfirmListDelete(false);setModalError('');
   }
   async function saveListEdit(event:React.FormEvent){
     event.preventDefault();
     if(!editingList)return;
+    if(!beneficiaryOwnerContextUnchanged(listEditOwnerRef.current,currentOwnerContextRef.current)){setModalError(accountChangedMessage());return;}
     const normalized=editingListName.trim();
     if(!normalized||normalized.length>80){setModalError(tr('Enter a list name of up to 80 characters.','সর্বোচ্চ ৮০ অক্ষরের একটি তালিকার নাম লিখুন।'));return;}
     if(normalized===editingList.name){setEditingList(null);return;}
@@ -371,12 +375,20 @@ export function Beneficiaries(){
   }
   async function removeList(){
     if(!editingList)return;
+    const context=listEditOwnerRef.current;
+    if(!beneficiaryOwnerContextUnchanged(context,currentOwnerContextRef.current)){setModalError(accountChangedMessage());return;}
     const toDelete=editingList.id;
-    if(people.some(person=>person.list_id===toDelete)){setModalError(groupErrorMessage(new Error('BENEFICIARY_GROUP_NOT_EMPTY')));return;}
+    const sourcePeople=people.filter(person=>person.list_id===toDelete);
+    const target=sourcePeople.length?transferTarget:'';
+    if(sourcePeople.length&&(!target||target===toDelete||!lists.some(list=>list.id===target))){setModalError(groupErrorMessage(new Error('BENEFICIARY_GROUP_NOT_EMPTY')));return;}
     setBusy(true);setModalError('');
     try{
-      await deleteBeneficiaryList(owner,toDelete);
-      await reload();setEditingList(null);setConfirmListDelete(false);setSearch('');
+      if(target)await transferBeneficiaryGroup(context.ownerUid,toDelete,target);
+      else await deleteBeneficiaryList(context.ownerUid,toDelete);
+      if(!beneficiaryOwnerContextUnchanged(context,currentOwnerContextRef.current))throw new Error(accountChangedMessage());
+      const saved=await reload(target||'all');
+      if(saved.lists.some(list=>list.id===toDelete)||sourcePeople.some(person=>!saved.people.some(row=>row.id===person.id&&row.list_id===target)))throw new Error(tr('Could not verify group transfer. Refresh before retrying.','গ্রুপ স্থানান্তর যাচাই করা যায়নি। আবার চেষ্টা করার আগে রিফ্রেশ করুন।'));
+      setEditingList(null);setConfirmListDelete(false);setTransferTarget('');setSearch('');
       setNotice({en:'Beneficiary list deleted.',bn:'উপকারভোগীর তালিকা মুছে ফেলা হয়েছে।'});
     }catch(e){setModalError(groupErrorMessage(e));}
     finally{setBusy(false);}
@@ -822,7 +834,7 @@ export function Beneficiaries(){
                       <span className="truncate">{list.name}</span>{activeList===list.id&&<Check size={18} aria-hidden="true"/>}
                     </button>
                     <button type="button" className="beneficiary-list-picker__edit" aria-label={tr(`Edit ${list.name}`,`${list.name} সম্পাদনা`)} title={tr('Edit list','তালিকা সম্পাদনা')} onClick={()=>openListEditor(list)}><Pencil size={17} aria-hidden="true"/></button>
-                    <button type="button" className="beneficiary-list-picker__edit" aria-label={tr(`Delete ${list.name}`,`${list.name} মুছুন`)} title={tr("Delete list","তালিকা মুছুন")} onClick={()=>{setEditingList(list);setConfirmListDelete(true);setListMenuOpen(false);setModalError("");}}><Trash2 size={17} aria-hidden="true"/></button>
+                    <button type="button" className="beneficiary-list-picker__edit" aria-label={tr(`Delete ${list.name}`,`${list.name} মুছুন`)} title={tr("Delete list","তালিকা মুছুন")} onClick={()=>{openListEditor(list);setConfirmListDelete(true);}}><Trash2 size={17} aria-hidden="true"/></button>
                   </div>)}
                 </div>}
               </div>
@@ -988,7 +1000,7 @@ export function Beneficiaries(){
     {editingList&&!confirmListDelete&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Edit beneficiary list','উপকারভোগীর তালিকা সম্পাদনা')} ariaLabel={tr('Edit beneficiary list','উপকারভোগীর তালিকা সম্পাদনা')}
       initialFocusSelector="#beneficiary-edit-list-name" onClose={()=>{if(!busy){setEditingList(null);setModalError('');}}}
       footer={<div className="beneficiary-list-edit__footer">
-        <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-red-700 hover:bg-red-50" onClick={()=>{setModalError('');setConfirmListDelete(true);}}><Trash2 size={17} aria-hidden="true"/>{tr('Delete list','তালিকা মুছুন')}</UiButton>
+        <UiButton type="button" variant="quiet" disabled={busy} className="gap-2 text-red-700 hover:bg-red-50" onClick={()=>{setTransferTarget('');setModalError('');setConfirmListDelete(true);}}><Trash2 size={17} aria-hidden="true"/>{tr('Delete list','তালিকা মুছুন')}</UiButton>
         <div className="flex items-center gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setEditingList(null)}>{tr('Cancel','বাতিল')}</UiButton>
           <UiButton type="submit" form="beneficiary-edit-list-form" variant="primary" disabled={busy}>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save changes','পরিবর্তন সংরক্ষণ')}</UiButton></div>
       </div>}>
@@ -1001,8 +1013,12 @@ export function Beneficiaries(){
     {editingList&&confirmListDelete&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Delete beneficiary list?','উপকারভোগীর তালিকা মুছবেন?')} ariaLabel={tr('Confirm list deletion','তালিকা মুছে ফেলা নিশ্চিত করুন')}
       onClose={()=>{if(!busy){setConfirmListDelete(false);setModalError('');}}}
       footer={<div className="flex w-full flex-wrap justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setConfirmListDelete(false)}>{tr('Cancel','বাতিল')}</UiButton>
-        <UiButton type="button" variant="primary" disabled={busy||people.some(person=>person.list_id===editingList.id)} className="gap-2" onClick={()=>void removeList()}><Trash2 size={17} aria-hidden="true"/>{busy?tr('Deleting…','মুছে ফেলা হচ্ছে…'):tr('Delete list','তালিকা মুছুন')}</UiButton></div>}>
+        <UiButton type="button" variant="primary" disabled={busy||(people.some(person=>person.list_id===editingList.id)&&!lists.some(list=>list.id===transferTarget&&list.id!==editingList.id))} className="gap-2" onClick={()=>void removeList()}><Trash2 size={17} aria-hidden="true"/>{busy?tr('Deleting…','মুছে ফেলা হচ্ছে…'):tr('Delete list','তালিকা মুছুন')}</UiButton></div>}>
       <p className="text-sm text-slate-700">{people.some(person=>person.list_id===editingList.id)?groupErrorMessage(new Error('BENEFICIARY_GROUP_NOT_EMPTY')):tr(`Delete “${editingList.name}”? This cannot be undone. Existing payment and tax records will not be affected.`,`“${editingList.name}” তালিকা মুছে ফেলবেন? এটি ফিরিয়ে আনা যাবে না। বিদ্যমান পেমেন্ট বা করের রেকর্ড পরিবর্তন হবে না।`)}</p>
+      {people.some(person=>person.list_id===editingList.id)&&<div className="mt-3">
+        <label htmlFor="beneficiary-transfer-destination" className="mb-1 block text-sm font-semibold">{tr('Transfer to list','যে তালিকায় স্থানান্তর করবেন')}</label>
+        <SearchableSelect id="beneficiary-transfer-destination" value={transferTarget} onChange={value=>{setTransferTarget(value);setModalError('');}} ariaLabel={tr('Transfer to list','যে তালিকায় স্থানান্তর করবেন')} searchPlaceholder={tr('Search lists','তালিকা খুঁজুন')} options={lists.filter(list=>list.id!==editingList.id).map(list=>({value:list.id,label:list.name}))}/>
+      </div>}
       {modalError&&<p role="alert" className="mt-2 text-sm text-red-700">{modalError}</p>}
     </TaxPayModal>}
 
