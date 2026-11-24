@@ -1254,25 +1254,30 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               </div>
             </section>)}
 
-          {step === 2 && checkoutOpen && !createdReceipt &&
-            <section className="travel-flow__panel travel-flow__checkout"
+          {step === 2 && checkoutOpen && !createdReceipt && (
+            <section className="payment-review payment-review--unified-v5 unified-v5-payment-channel travel-flow__unified-checkout"
               data-testid="travel-payment-channel-screen" aria-label={tr('Payment channel','পেমেন্ট চ্যানেল')}>
-            <header className="travel-flow__section-header">
-              <h3>{tr('Choose payment channel','পেমেন্ট চ্যানেল বেছে নিন')}</h3>
-              <p>{tr('Choose online payment or a bank branch.','অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন।')}</p>
-            </header>
-            {!createdReceipt && <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
-              onChannelChange={(channel, method) => { setPaymentChannel(channel); setPaymentMethod(method); setMethodGroup(null); setAcknowledged(false); }}
-              onGroupChange={group => { setMethodGroup(group); setPaymentMethod(null); setAcknowledged(false); }}
-              onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
-              simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>}
-            {!createdReceipt && (!paymentMethod || !acknowledged) && <p className="travel-flow__field-hint" role="status">{tr('Choose a payment channel and method, then confirm the details to enable payment.', 'পেমেন্ট চ্যানেল ও পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করলে পেমেন্ট চালু হবে।')}</p>}
-            {!createdReceipt && <label className="travel-flow__channel-option">
-              <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)}/>
-              <p>{tr('I confirm the travel information, all passengers and the combined amount.',
-                'ভ্রমণের তথ্য, সকল যাত্রী এবং মোট টাকার পরিমাণ নিশ্চিত করছি।')}</p>
-            </label>}
-          </section>}
+              <div className="payment-review__main">
+                <section className="payment-review__panel">
+                  <div className="payment-review__section-title">
+                    <div><h2>{tr('Choose payment channel','পেমেন্ট চ্যানেল বেছে নিন')}</h2>
+                      <p>{tr('Choose online payment or a bank branch.','অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন।')}</p></div>
+                  </div>
+                  <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
+                    onChannelChange={(channel, method) => { setPaymentChannel(channel); setPaymentMethod(method); setMethodGroup(null); setAcknowledged(false); }}
+                    onGroupChange={group => { setMethodGroup(group); setPaymentMethod(null); setAcknowledged(false); }}
+                    onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
+                    simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>
+                  {paymentChannel && paymentMethod && <label className="payment-review__ack">
+                    <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)}/>
+                    <span>{tr('I confirm the travel information, all passengers and the combined amount.',
+                      'ভ্রমণের তথ্য, সকল যাত্রী এবং মোট টাকার পরিমাণ নিশ্চিত করছি।')}</span>
+                  </label>}
+                  {!paymentMethod && <p className="travel-flow__field-hint" role="status">
+                    {tr('Choose a payment channel and method to continue.','এগিয়ে যেতে পেমেন্ট চ্যানেল ও পদ্ধতি বেছে নিন।')}</p>}
+                </section>
+              </div>
+            </section>)}
 
           {step === 3 && zeroTaxReviewFinished && !createdReceipt &&
             <section className="travel-flow__panel travel-flow__zero-tax-result"
