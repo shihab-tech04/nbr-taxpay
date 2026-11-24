@@ -90,73 +90,57 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   };
   const [passengerIssue, setPassengerIssue] = useState<PassengerIdentityIssue | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
-  const [passportSuggestionMaxHeight, setPassportSuggestionMaxHeight] = useState(210);
-  // Pointer focus precedes click. Do not move the target until that click has completed.
   const passportPointerFocus = useRef(false);
-  // The shared modal can scroll either its body or the inner form. Resolve
-  // the actual clipping and scroll ancestors rather than assuming one owner.
+  // The native top layer is independent of every clipping/scrolling ancestor.
+  // Never change the editor's natural height, modal height or scroll position
+  // to open the picker. Anchor a fixed, independently scrolling overlay.
   useLayoutEffect(() => {
     if (!passportSuggestionsFor) return;
-    const row = document.getElementById('travel-passport-' + passportSuggestionsFor)
-      ?.closest<HTMLElement>('.travel-flow__passport-row');
-    const dialog = row?.closest<HTMLElement>('.taxpay-modal');
-    const editor = row?.closest<HTMLElement>('.travel-passenger-workspace__editor');
-    if (!row || !dialog || !editor) return;
-    const ancestors: HTMLElement[] = [];
-    for (let el = row.parentElement; el && el !== dialog; el = el.parentElement) ancestors.push(el);
+    const field = document.getElementById('travel-passport-' + passportSuggestionsFor);
+    const row = field?.closest<HTMLElement>('.travel-flow__passport-row');
+    const list = document.getElementById('travel-passport-suggestions-' + passportSuggestionsFor);
+    if (!field || !row || !list) return;
     const viewport = window.visualViewport;
-    const clipping = () => {
-      const footer = dialog.querySelector<HTMLElement>('.taxpay-modal__footer')?.getBoundingClientRect();
-      const body = dialog.querySelector<HTMLElement>('.taxpay-modal__body')?.getBoundingClientRect();
-      let top = Math.max(body?.top ?? 0, viewport?.offsetTop ?? 0);
-      let bottom = Math.min(body?.bottom ?? window.innerHeight, footer?.top ?? window.innerHeight,
-        (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight));
-      for (const el of ancestors) {
-        if (/auto|scroll|hidden|clip/.test(getComputedStyle(el).overflowY)) {
-          const box = el.getBoundingClientRect();
-          top = Math.max(top, box.top + el.clientTop);
-          bottom = Math.min(bottom, box.top + el.clientTop + el.clientHeight);
-        }
-      }
-      return {top,bottom};
+    const position = () => {
+      const anchor = row.getBoundingClientRect();
+      const top = (viewport?.offsetTop ?? 0) + 8;
+      const bottom = (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight) - 8;
+      const left = (viewport?.offsetLeft ?? 0) + 8;
+      const right = (viewport?.offsetLeft ?? 0) + (viewport?.width ?? window.innerWidth) - 8;
+      const below = Math.max(0, bottom - anchor.bottom - 4);
+      const above = Math.max(0, anchor.top - top - 4);
+      const limit = Math.min(window.innerWidth <= 560 ? 190 : 210, Math.max(0, bottom - top));
+      // Prefer below. If even a small useful list cannot fit, flip above
+      // the input. The popup may overlap the fixed footer, like a normal
+      // dropdown, but it never reflows or scrolls the dialog.
+      const placement = below >= Math.min(130, limit) || below >= above ? 'below' : 'above';
+      const height = Math.floor(Math.min(limit, placement === 'below' ? below : above));
+      const width = Math.max(0, Math.min(anchor.width, right - left));
+      const x = Math.max(left, Math.min(anchor.left, right - width));
+      Object.assign(list.style, {
+        left: x + 'px',
+        width: width + 'px',
+        maxHeight: height + 'px',
+        top: placement === 'below' ? anchor.bottom + 4 + 'px' : 'auto',
+        bottom: placement === 'above' ? window.innerHeight - anchor.top + 4 + 'px' : 'auto',
+      });
+      list.dataset.placement = placement;
     };
-    const measure = (reveal: boolean) => {
-      if (!row.isConnected) return;
-      let bounds = clipping();
-      const rowBox = row.getBoundingClientRect();
-      const limit = Math.max(0, Math.min(window.innerWidth <= 560 ? 190 : 210,
-        bounds.bottom - bounds.top - Math.min(rowBox.height, 76) - 12));
-      if (reveal) {
-        const clearance = Math.max(0, rowBox.bottom + limit + 8 - bounds.bottom);
-        const existing = parseFloat(editor.style.getPropertyValue('--travel-picker-clearance')) || 0;
-        editor.style.setProperty('--travel-picker-clearance', Math.ceil(Math.max(existing, clearance + (clearance ? 16 : 0))) + 'px');
-        bounds = clipping();
-        for (const el of ancestors) {
-          if (!/auto|scroll/.test(getComputedStyle(el).overflowY)) continue;
-          const needed = row.getBoundingClientRect().bottom + limit + 8 - bounds.bottom;
-          if (needed > 0) el.scrollTop += Math.ceil(needed);
-          bounds = clipping();
-        }
-      }
-      const available = Math.max(0, bounds.bottom - row.getBoundingClientRect().bottom - 6);
-      const height = Math.floor(Math.min(limit, available));
-      setPassportSuggestionMaxHeight(old => old === height ? old : height);
-    };
-    measure(true);
-    let frame = requestAnimationFrame(() => measure(true));
-    const refresh = () => measure(false);
-    const resize = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => measure(true)); };
-    const observer = new ResizeObserver(refresh);
-    observer.observe(dialog); observer.observe(row);
-    for (const el of ancestors) el.addEventListener('scroll', refresh, {passive:true});
-    window.addEventListener('resize', resize);
-    viewport?.addEventListener('resize', resize);
+    position();
+    list.showPopover();
+    const observer = new ResizeObserver(position);
+    observer.observe(row);
+    window.addEventListener('scroll', position, true);
+    window.addEventListener('resize', position);
+    viewport?.addEventListener('resize', position);
+    viewport?.addEventListener('scroll', position);
     return () => {
-      cancelAnimationFrame(frame); observer.disconnect();
-      editor.style.removeProperty('--travel-picker-clearance');
-      for (const el of ancestors) el.removeEventListener('scroll', refresh);
-      window.removeEventListener('resize', resize);
-      viewport?.removeEventListener('resize', resize);
+      observer.disconnect();
+      window.removeEventListener('scroll', position, true);
+      window.removeEventListener('resize', position);
+      viewport?.removeEventListener('resize', position);
+      viewport?.removeEventListener('scroll', position);
+      if (list.matches(':popover-open')) list.hidePopover();
     };
   }, [passportSuggestionsFor]);
   const [medicalHelpFor, setMedicalHelpFor] = useState<string | null>(null);
@@ -855,8 +839,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               </div>
               {passportSuggestionsFor === item.id && <div
                 className="travel-flow__passport-suggestions" id={'travel-passport-suggestions-' + item.id}
-                data-placement="below"
-                style={{maxHeight: passportSuggestionMaxHeight}}
+                popover="manual"
                 role="listbox" aria-label={tr('Available sample passports','উপলব্ধ নমুনা পাসপোর্ট')}
                 onKeyDown={event => {
                   if (event.key === 'Escape') {
