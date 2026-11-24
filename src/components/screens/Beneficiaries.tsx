@@ -63,6 +63,8 @@ export function Beneficiaries(){
   const displayName=(person:Pick<Beneficiary,'display_name'>)=>beneficiaryNameForDisplay(person.display_name,tr('Name not provided','নাম দেওয়া হয়নি'));
   const [lists,setLists]=useState<BeneficiaryList[]>([]);
   const [people,setPeople]=useState<Beneficiary[]>([]);
+  const groupLimitReached=lists.length>=5;
+  const groupLimitMessage=tr('Maximum five saved groups. Choose an existing group.','সর্বোচ্চ পাঁচটি সংরক্ষিত গ্রুপ। বিদ্যমান গ্রুপ বেছে নিন।');
   const [activeList,setActiveList]=useState('all');
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
@@ -404,6 +406,7 @@ export function Beneficiaries(){
   async function saveList(event:React.FormEvent){
     event.preventDefault();
     if(!maySaveFor(createListOwnerRef.current)){setModalError(accountChangedMessage());return;}
+    if(groupLimitReached){setModalError(groupLimitMessage);return;}
     if(!listName.trim()||listName.trim().length>80){setModalError(tr('Enter a list name of up to 80 characters.','সর্বোচ্চ ৮০ অক্ষরের একটি তালিকার নাম লিখুন।'));return;}
     setBusy(true);setModalError('');
     try{
@@ -424,6 +427,7 @@ export function Beneficiaries(){
       if(!list)throw new Error(tr('Choose a valid list.','সঠিক তালিকা নির্বাচন করুন।'));
       return list.id;
     }
+    if(groupLimitReached)throw new Error(groupLimitMessage);
     if(!listName.trim())throw new Error(tr('Enter a list name.','তালিকার নাম লিখুন।'));
     const list=await createBeneficiaryList(owner,listName);
     setLists(current=>current.some(value=>value.id===list.id)?current:[...current,list]);
@@ -739,7 +743,7 @@ export function Beneficiaries(){
       title={tr('Beneficiaries','উপকারভোগী')}
       description={tr('Organize saved taxpayers and continue to payment when you are ready.','সংরক্ষিত করদাতাদের সাজান এবং প্রস্তুত হলে পেমেন্টে এগিয়ে যান।')}
       actions={<div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:w-auto sm:flex sm:flex-wrap sm:justify-end">
-        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading}
+        <UiButton className="w-full gap-2 sm:w-auto" type="button" variant="outline" disabled={checkingIdentity||loading||groupLimitReached}
           onClick={()=>{createListOwnerRef.current=activeFormOwner();setCreateListOpen(true);setModalError('');setListName('');}}>
           <Plus size={17} aria-hidden="true"/>{tr('Create list','তালিকা তৈরি')}
         </UiButton>
@@ -748,6 +752,7 @@ export function Beneficiaries(){
           <Plus size={17} aria-hidden="true"/>{tr('Add beneficiary','উপকারভোগী যোগ')}
         </UiButton>
       </div>}/>
+    {!loading&&!checkingIdentity&&!error&&<p className="text-sm text-taxpay-text" role="status" data-testid="beneficiary-group-capacity">{bn?`${lists.length.toLocaleString("bn-BD")}/৫ গ্রুপ`:`${lists.length}/5 groups`}{groupLimitReached?` — ${groupLimitMessage}`:""}</p>}
 
     {(owner||previewAccount)&&hasStoredGuestBeneficiaries()&&!guestRecoveryDone&&<div className="flex flex-col gap-2 rounded-lg border border-taxpay-border bg-taxpay-surface p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="guest-beneficiary-recovery">
       <p className="text-sm text-taxpay-text">{tr("Earlier saved beneficiaries can be restored only if this browser's original guest session is still valid. Your current profile records will be kept.",'এই ব্রাউজারের আগের অতিথি সেশন এখনও বৈধ থাকলেই সংরক্ষিত উপকারভোগী ফিরিয়ে আনা যাবে। প্রোফাইলের বর্তমান তথ্য অক্ষত থাকবে।')}</p>
@@ -966,7 +971,7 @@ export function Beneficiaries(){
 
     {createListOpen&&<TaxPayModal className="beneficiary-workflow-modal" title={tr('Create beneficiary list','উপকারভোগীর তালিকা তৈরি')} ariaLabel={tr('Create list','তালিকা তৈরি')}
       onClose={()=>{if(!busy){setCreateListOpen(false);setModalError('');}}} initialFocusSelector="#beneficiary-create-list-name"
-      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setCreateListOpen(false)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-create-list-form" variant="primary" disabled={busy}>{busy?tr('Creating…','তৈরি হচ্ছে…'):tr('Create list','তালিকা তৈরি')}</UiButton></div>}>
+      footer={<div className="flex w-full justify-end gap-2"><UiButton type="button" variant="outline" disabled={busy} onClick={()=>setCreateListOpen(false)}>{tr('Cancel','বাতিল')}</UiButton><UiButton type="submit" form="beneficiary-create-list-form" variant="primary" disabled={busy||groupLimitReached}>{busy?tr('Creating…','তৈরি হচ্ছে…'):tr('Create list','তালিকা তৈরি')}</UiButton></div>}>
       <form id="beneficiary-create-list-form" className="space-y-3 py-2" onSubmit={event=>void saveList(event)}>
         <div><label htmlFor="beneficiary-create-list-name" className="mb-1 block text-sm font-semibold">{tr('List name','তালিকার নাম')} *</label><UiInput id="beneficiary-create-list-name" maxLength={80} required value={listName} onChange={event=>setListName(event.target.value)} placeholder={tr('e.g. Family or Clients','যেমন পরিবার বা ক্লায়েন্ট')}/></div>
         {modalError&&<p role="alert" className="text-sm text-red-700">{modalError}</p>}
@@ -1018,7 +1023,7 @@ export function Beneficiaries(){
         <div><label htmlFor="beneficiary-target-list" className="mb-1 block text-sm font-semibold">{tr('Add to list','তালিকায় যোগ করুন')} *</label>
           <SearchableSelect id="beneficiary-target-list" value={targetList} onChange={setTargetList}
             ariaLabel={tr('Add to list','তালিকায় যোগ করুন')} searchPlaceholder={tr('Search lists','তালিকা খুঁজুন')}
-            options={[{value:'new',label:tr('Create new list','নতুন তালিকা তৈরি')},
+            options={[...(groupLimitReached?[]:[{value:'new',label:tr('Create new list','নতুন তালিকা তৈরি')}]),
               ...lists.map(list=>({value:list.id,label:list.name}))]}/> 
           {targetList==='new'&&<UiInput id="beneficiary-new-list-name" aria-label={tr('New list name','নতুন তালিকার নাম')} className="mt-2" maxLength={80} required value={listName} placeholder={tr('e.g. Family or Clients','যেমন পরিবার বা ক্লায়েন্ট')} onChange={event=>setListName(event.target.value)}/>}
         </div>
