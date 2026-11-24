@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 import {createServer} from 'node:http';
-import {randomUUID,webcrypto,createHmac} from 'node:crypto';
+import {randomUUID,webcrypto,createHmac,createHash} from 'node:crypto';
 import vm from 'node:vm';
 import {transformSync} from 'esbuild';
 
@@ -152,6 +152,30 @@ async function post(origin,path,body,proof){
  const result=await fetch(urls[origin]+path,{method:'POST',headers,body:JSON.stringify(body)});
  return {status:result.status,data:await result.json()};
 }
+// Exercise the signed source endpoint directly, independently of the Office
+// deployment version. The fixture secret never reaches hosted systems.
+function canonicalRecord(value){
+ if(value===null||typeof value!=='object')return JSON.stringify(value);
+ if(Array.isArray(value))return '['+value.map(canonicalRecord).join(',')+']';
+ return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+canonicalRecord(value[k])).join(',')+'}';
+}
+async function assertSourceProvenance(id,parent){
+ const original=store.get(id),session=original.sessionId;
+ const issuedAt=Math.floor(Date.now()/1000);
+ const signature=createHmac('sha256',secret)
+  .update('taxpay:office:simulated-payment:v1:'+id.toLowerCase()+':'+session.toLowerCase()+':'+issuedAt)
+  .digest('base64url');
+ const path='/demo-story1-taxpay/payments/'+id+'?sessionId='+encodeURIComponent(session);
+ const response=await fetch(urls.TAXPAY_SQL+path,{headers:{'x-taxpay-office-mirror-proof':'v1.'+issuedAt+'.'+signature}});
+ assert.equal(response.status,200);
+ const body=await response.json();
+ assert.equal(body.simulationOnly,true);
+ const {sourceProject,sourceParentId,sourceRevision,...record}=body.data;
+ assert.equal(sourceProject,isV2?'v2':'original');
+ assert.equal(sourceParentId,parent);
+ assert.equal(sourceRevision,createHash('sha256').update(canonicalRecord(original)).digest('hex'));
+ assert.deepEqual(record,original);
+}
 const servers=await Promise.all([
  start('TAXPAY_SQL','.','demo-story1-taxpay'),
  start('OFFICE_SQL',officeRoot,'demo-story1-office')
@@ -206,6 +230,7 @@ try{
  assert.equal(retried.status,200);assert.equal(retried.data.id,sourceId);
  assert.equal(retried.data.replayed,true);assert.equal(office.size,1);
  assert.deepEqual(office.get(sourceId).data,store.get(sourceId).data);
+ await assertSourceProvenance(sourceId,null);
  assert.equal(office.get(sourceId).data.details.allocations.length,2);
  assert.equal(office.get(sourceId).data.details.allocations[0].allocationId,'ws3-origin-one');
  assert.equal(office.get(sourceId).data.details.allocations[1].allocationId,'ws3-origin-two');
@@ -234,6 +259,7 @@ try{
  const newParentId=submittedAgain.data.id;
  assert.notEqual(newParentId,sourceId);
  assert.equal(office.get(newParentId).data.details.sourcePaymentId,sourceId);
+ await assertSourceProvenance(newParentId,sourceId);
  assert.equal(office.get(newParentId).data.details.receiptReference,'SIM-'+repeatKey);
  assert.deepEqual(office.get(sourceId).data.details.allocations,payload.details.allocations);
  assert.equal(office.get(sourceId).data.details.sourcePaymentId,undefined);
