@@ -37,7 +37,7 @@ async function mockStoryPayments(page: Page) {
       await route.fulfill({ status: 200, contentType: 'application/json', headers, body: JSON.stringify({
         success: true, simulationOnly: true,
         data: { id: paymentId, status: 'SIMULATED_SUCCESS', createdAt: '2026-11-22T00:00:00.000Z',
-          data: { service: saved.service, amountMinor: saved.amountMinor, origin: 'TAXPAY_UI', details: saved.details } },
+          data: { ...saved, origin: 'TAXPAY_UI' } },
       }) });
       return;
     }
