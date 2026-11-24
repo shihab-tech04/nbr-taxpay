@@ -1,58 +1,20 @@
-/* Home 2 only. No shared selector, global token or existing layout is modified. */
-.home2-root{max-width:1300px;margin:0 auto;width:100%;padding:24px;background:#f5f5f0;color:#172b3f;border-radius:24px;font-size:16px;line-height:1.5;box-sizing:border-box}
-.home2-root *{box-sizing:border-box}
-.home2-root .home2-intro{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap}
-.home2-root .home2-intro h1{font-size:clamp(26px,3vw,36px);line-height:1.22;font-weight:600;margin:0 0 8px;color:#172b3f}
-.home2-root p{margin:0}
-.home2-root .home2-intro p{color:#536274}
-.home2-root .home2-guest{display:flex;align-items:center;gap:8px;color:#32634e;font-size:14px;font-weight:500}
-.home2-root .home2-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-items:stretch}
-.home2-root .home2-grid>*{min-width:0}
-.home2-root .home2-tile{min-width:0;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px;background:#fff;overflow-wrap:anywhere}
-.home2-root .home2-tile h2{margin:0;font-size:clamp(20px,2.2vw,28px);font-weight:600;line-height:1.25;color:inherit}
-.home2-root .home2-tile p{font-size:15px;line-height:1.5;color:inherit}
-.home2-root .home2-label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;font-weight:500;letter-spacing:.04em}
-.home2-root .home2-pay{grid-column:span 2;grid-row:span 2;background:#294acb;color:#fff}
-.home2-root .home2-pay h2{font-size:clamp(28px,3vw,40px)}
-.home2-root .home2-pay p,.home2-root .home2-pay .home2-label{color:#dee5ff}
-.home2-root .home2-pay-art{width:100%;max-height:180px;min-height:100px;flex:1;margin:auto;display:block}
-.home2-root .home2-tags{display:flex;flex-wrap:wrap;gap:8px;font-size:13px}
-.home2-root .home2-tags span{border:1px solid #91a4f2;border-radius:999px;padding:5px 12px}
-.home2-root .home2-main-action,.home2-root .home2-text-action{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;font-size:15px;font-weight:600;text-align:start;cursor:pointer;border:0}
-.home2-root .home2-main-action{background:#fff;color:#294acb;padding:12px 16px;border-radius:12px;margin-top:auto}
-.home2-root .home2-text-action{background:transparent;color:inherit;padding:4px 0;justify-content:flex-start;text-decoration:underline;text-underline-offset:4px}
-.home2-root .home2-text-action svg,.home2-root .home2-main-action svg{flex-shrink:0}
-.home2-root .home2-media-row{display:flex;gap:16px;align-items:center;min-width:0;flex:1}
-.home2-root .home2-media-row>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
-.home2-root .home2-media-row>svg{width:40%;max-width:155px;flex-shrink:0}
-.home2-root .home2-travel{grid-column:span 2;background:#ddebd9;color:#234a36}
-.home2-root .home2-record{grid-column:span 2;position:relative;z-index:2;overflow:visible}
-.home2-root .home2-record .public-record-discovery{display:block;width:100%;max-width:none;margin:0;padding:0;background:transparent;box-shadow:none;border:0;min-height:0}
-.home2-root .home2-record .public-record-discovery__heading{margin:0 0 12px;text-align:start}
-.home2-root .home2-record .public-record-discovery__heading h2{font-size:clamp(20px,2.2vw,26px);color:#172b3f}
-.home2-root .home2-record .public-record-discovery__heading p{color:#536274}
-.home2-root .home2-record .public-record-discovery__interactive{width:100%;min-width:0;max-width:none;position:relative}
-.home2-root .home2-record .public-record-search{width:100%;max-width:none;min-width:0}
-.home2-root .home2-record .public-record-search input{min-width:0;width:100%}
-.home2-root .home2-cert{grid-column:span 2;background:#e6e9f7;color:#293c70}
-.home2-root .home2-small{border:1px solid #e1e5eb;text-align:start;align-items:stretch;cursor:pointer;transition:box-shadow .2s,border-color .2s;min-height:150px}
-.home2-root .home2-small:hover{border-color:#9aaaf0;box-shadow:0 6px 18px #172b3f12}
-.home2-root .home2-small-top{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#536274}
-.home2-root .home2-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#edf1fc;color:#294acb}
-.home2-root .home2-corrections .home2-icon{background:#faeee2;color:#805126}
-.home2-root .home2-history .home2-icon{background:#e7f1ed;color:#32634e}
-.home2-root .home2-again .home2-icon{background:#f6e7ec;color:#8a405e}
-.home2-root .home2-drafts .home2-icon{background:#ece7f8;color:#604b8b}
-.home2-root .home2-small-title{font-size:16px;font-weight:600;color:#172b3f}
-.home2-root .home2-small-desc,.home2-root .home2-auth-hint{font-size:13px;color:#536274}
-.home2-root .home2-auth-hint{margin-top:auto}
-.home2-root .home2-account{grid-column:span 2;background:#172b3f;color:#fff}
-.home2-root .home2-account .home2-label,.home2-root .home2-account p{color:#cfdae5}
-.home2-root .home2-cms{grid-column:span 3;min-width:0}
-.home2-root .home2-cms .public-hero-carousel{margin:0;max-width:none;width:100%}
-.home2-root .home2-help{grid-column:span 1;justify-content:center}
-.home2-root :where(button,a,input):focus-visible{outline:3px solid #1478bd;outline-offset:3px}
-.home2-root .home2-pay :focus-visible,.home2-root .home2-account :focus-visible{outline-color:#fff}
-@media(max-width:900px){.home2-root{padding:16px}.home2-root .home2-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.home2-root .home2-pay{grid-row:auto}.home2-root .home2-tile{padding:16px}.home2-root .home2-cms,.home2-root .home2-help{grid-column:span 2}.home2-root .home2-pay-art{max-height:140px}}
-@media(max-width:480px){.home2-root{padding:12px;border-radius:16px}.home2-root .home2-intro{margin-bottom:16px}.home2-root .home2-tile{padding:14px;border-radius:16px}.home2-root .home2-media-row{gap:8px}.home2-root .home2-small{min-height:136px;gap:8px}.home2-root .home2-label{font-size:11px}.home2-root .home2-record .public-record-search input{font-size:16px}}
-@media(prefers-reduced-motion:reduce){.home2-root .home2-small{transition:none}}
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');
+/* Uploaded Figma Make design: unique Home 2 namespace; existing homepage styles untouched. */
+.taxpay-citizen-shell.home2-import-shell{background:#e6e8ef;color:#141b2d;}
+.taxpay-citizen-shell.home2-import-shell > main{width:100%;max-width:none!important;padding:0!important;margin:0;}
+.home2-import-root{font-family:'Poppins','Hind Siliguri',ui-sans-serif,system-ui,sans-serif;color:#141b2d;min-width:0;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;}
+.home2-import-root[lang=bn]{font-family:'Hind Siliguri','Poppins',sans-serif;}
+.home2-import-root .home2-font-bn{font-family:'Hind Siliguri','Poppins',sans-serif;}
+.home2-import-root .home2-no-scrollbar{scrollbar-width:none;}
+.home2-import-root .home2-no-scrollbar::-webkit-scrollbar{display:none;}
+.home2-import-root .home2-press{transition:scale 160ms ease,translate 300ms ease,transform 300ms ease,background-color 160ms ease,color 160ms ease,box-shadow 300ms ease;}
+.home2-import-root .home2-press:active{scale:.98;}
+.home2-import-root[lang=bn] :is(h1,h2,h3){letter-spacing:0;line-height:1.3;}
+.home2-import-root footer[role=contentinfo]{padding-bottom:initial;}
+.home2-import-root .public-help-widget{bottom:calc(100px + env(safe-area-inset-bottom));}
+.home2-import-root .public-help-widget[data-home2-hidden=true]:not(:has(.public-help-panel)){display:none;}
+@media(min-width:960px){.home2-import-root .public-help-widget{bottom:24px;}}
+@keyframes home2-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.home2-import-root .home2-rise{animation:home2-rise 520ms cubic-bezier(.2,.7,.2,1) both;}
+@media(prefers-reduced-motion:reduce){.home2-import-root .home2-rise{animation:none}.home2-import-root .home2-press{transition:none}}
+@media(max-width:360px){.home2-import-root header[role=banner]{padding-left:10px;padding-right:10px;gap:4px;}.home2-import-root header[role=banner]>div:first-child{gap:5px}.home2-import-root header[role=banner]>div:last-child{gap:4px}.home2-import-root header[role=banner]>div:last-child>button{padding-inline:8px;}}

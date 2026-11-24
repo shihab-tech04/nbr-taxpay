@@ -277,10 +277,27 @@ test('Home 2 bilingual responsive layout keeps all actions available', async ({p
     await page.goto('/?action=home-2&lang='+lang);
     const root=page.getByTestId('home2-root');
     await expect(root).toBeVisible();
-    await expect(root.getByTestId('home2-travel')).toBeVisible();
-    await expect(root.locator('.public-record-search input')).toBeVisible();
-    for(const id of ['corrections','history','again','drafts'])await expect(root.getByTestId('home2-'+id)).toBeVisible();
+    await expect(root).toHaveAttribute('data-design','uploaded-mobile-bento');
+    await expect(root).toHaveAttribute('data-viewport',(page.viewportSize()?.width ?? 1280)>=960?'desktop':'mobile');
+    await expect(root.getByTestId('home2-pay')).toBeVisible();
+    await expect(root.getByTestId('home2-other')).toBeVisible();
+    await expect(root.getByTestId('home2-reference')).toBeVisible();
+    await expect(root.getByRole('banner')).toBeVisible();
+    await expect(root.getByRole('contentinfo')).toBeVisible();
+    await expect(page.locator('.public-home-header')).toHaveCount(0);
+    await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
     await page.screenshot({path:`test-results/screenshots/sohojkor-home-rhythm-home2-${info.project.name}-${lang}.png`,fullPage:true,animations:'disabled'});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
   }
+});
+
+
+test('Home 2 uploaded design uses actual record lookup rather than prototype response', async ({page})=>{
+  await page.goto('/?action=home-2');
+  const root=page.getByTestId('home2-root');
+  await root.getByTestId('home2-reference').fill('HOME2-CHECK-123');
+  await root.getByTestId('home2-reference').press('Enter');
+  await expect(page).toHaveURL(/action=verify/);
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page).not.toHaveURL(/HOME2-CHECK-123/);
 });
