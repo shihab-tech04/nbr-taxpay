@@ -172,7 +172,7 @@ export function MobileView({ c, onToggleLang, onAction, onSearch, signedIn }: Vi
           <SmallTile delay={260} icon={FileCheck2} title={f.certs.title} body={f.certs.short} onClick={open('certificates')} tone="bg-white ring-1 ring-[#e7e9ef]" iconTone="bg-[#e6f4f1] text-[#0f7a68]" />
           <SmallTile delay={300} icon={FilePen} title={f.corrections.title} body={f.corrections.short} onClick={open('corrections')} tone="bg-white ring-1 ring-[#e7e9ef]" iconTone="bg-[#f1ecfb] text-[#6a45c2]" />
           <SmallTile delay={340} icon={Repeat2} title={f.again.title} body={f.again.short} onClick={open('again')} tone="bg-[#fdecef] ring-1 ring-[#f6d3da]" iconTone="bg-white text-[#c4364f] shadow-sm" bodyTone="text-[#8a5862]" />
-          <SmallTile delay={380} icon={Save} title={f.drafts.title} body={f.drafts.short} onClick={open('drafts')} tone="bg-[#141b2d] text-white" iconTone="bg-white/10 text-white" bodyTone="text-white/60" />
+          <SmallTile delay={380} icon={Save} title={f.drafts.title} body={f.drafts.short} onClick={open('drafts')} tone="bg-[#f0dfe3] text-[#141b2d] ring-1 ring-[#e6cdd4]" iconTone="bg-white text-[#98566b] shadow-sm" bodyTone="text-[#704e5b]" />
 
           <Tile delay={420} className="col-span-2">
             <div className="flex items-center gap-3 rounded-[24px] bg-[#e9f2ea] px-4 py-3.5 ring-1 ring-[#d3e6d6]">

@@ -276,7 +276,7 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await expect(paid).toBeVisible({timeout:15000});
   await expect(paid.getByTestId('recorded-pay-again')).toBeEnabled();
   const illustrative=register.getByRole('row').filter({hasText:'DEMO-PAY-PEND-01'});
-  await expect(illustrative.getByTestId('recorded-pay-again')).toHaveCount(0);
+  await expect(illustrative).toHaveCount(0);
   // Each payment also exposes the repeat action within its own Details modal.
   await paid.getByRole('button',{name:'Details for Other Tax Payment'}).click();
   const detail=page.getByRole('dialog',{name:'Other Tax Payment'});
@@ -413,7 +413,7 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await travelDialog.getByLabel(/I confirm the travel information/).check();
   await travelDialog.getByRole('button',{name:'Confirm sample payment'}).click();
   await expect(travelDialog.getByTestId('travel-payment-result')).toBeVisible({timeout:15000});
-  await travelDialog.getByTestId('walkin-challan-action').getByRole('button').first().click();
+  await travelDialog.getByRole('button',{name:'Receipt details',exact:true}).click();
   await expect(travelDialog.locator('.receipt-view__paper')).toBeVisible({timeout:15000});
   const certificateButton=travelDialog.getByRole('tab',{name:/Payment record certificate|পেমেন্ট রেকর্ড সনদ/});
   await expect(certificateButton).toBeVisible();

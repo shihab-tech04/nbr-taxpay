@@ -283,7 +283,9 @@ test('Existing Travel Tax banner still provides journey, passenger and payment v
   await expect(travel.locator('.taxpay-modal__title')).toHaveText('Final Preview');
   await expect(travel.getByRole('button', { name: 'Make Payment' })).toBeVisible();
   await expect(travel.getByTestId('travel-payment-channel-screen')).toHaveCount(0);
-  await expect(travel.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
+  await expect(travel.getByTestId('travel-preview-receipt-contact')).toBeVisible();
+  await expect(travel.getByTestId('travel-payment-result')).toHaveCount(0);
+  await expect(travel.locator('.receipt-view__paper')).toHaveCount(0);
 });
 
 test('Declined Travel Tax payment never issues a receipt', async ({ page }) => {
@@ -301,5 +303,6 @@ test('Declined Travel Tax payment never issues a receipt', async ({ page }) => {
   await travel.getByLabel('I confirm the travel information, all passengers and the combined amount.').check();
   await travel.getByRole('button', { name: 'Confirm sample payment' }).click();
   await expect(travel.getByRole('alert')).toContainText('Payment preview declined', { timeout: 12000 });
-  await expect(travel.getByRole('heading', { name: 'Receipt details' })).toHaveCount(0);
+  await expect(travel.getByTestId('travel-payment-result')).toHaveCount(0);
+  await expect(travel.locator('.receipt-view__paper')).toHaveCount(0);
 });

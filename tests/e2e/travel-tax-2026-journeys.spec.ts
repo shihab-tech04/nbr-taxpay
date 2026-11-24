@@ -481,7 +481,7 @@ test('Travel Tax: every passenger must be confirmed and Back preserves confirmat
   if (await modal.locator('#travel-mobile').isVisible() && !(await modal.locator('#travel-mobile').inputValue())) await modal.locator('#travel-mobile').fill('01712345678');
   const reviewed=modal.locator('.travel-flow__passenger-table');
   await expect(reviewed.locator('tbody tr')).toHaveCount(2);
-  await expect(reviewed.locator('tfoot')).toContainText('2,000');
+  await expect(modal.getByTestId('travel-preview-total')).toContainText('2,000');
 });
 
 test('Travel Tax: duplicate passports cannot be confirmed or included in final total',async({page})=>{
@@ -913,7 +913,9 @@ test('Travel Tax: Bangla journey validates, edits and shows the shared receipt w
   await modal.getByRole('button', { name: 'পেমেন্ট পর্যালোচনায় যান' }).click();
   if (await modal.locator('#travel-mobile').isVisible() && !(await modal.locator('#travel-mobile').inputValue())) await modal.locator('#travel-mobile').fill('01712345678');
   await assertContained();
-  await expect(modal.locator('.travel-flow__passenger-table')).toContainText('মোট প্রদেয়');
+  await expect(modal.getByTestId('travel-preview-total')).toContainText('মোট পেমেন্ট');
+  await expect(modal.getByTestId('travel-preview-total')).toContainText('১,০০০');
+  await expect(modal.getByTestId('travel-preview-total-in-words')).toBeVisible();
 
   await modal.getByRole('button', { name: 'ফিরুন', exact: true }).click();
   await expect(flow).toHaveAttribute('data-step', '1');
@@ -1051,7 +1053,7 @@ test('F-153 / US-150 T01 T03: editing a confirmed passenger reprices review and 
   await expect(table.locator('tbody tr')).toHaveCount(2);
   await expect(table).toContainText('EDITED FOREIGN ADULT');
   await expect(table).not.toContainText('FOREIGN CHILD');
-  await expect(table.locator('tfoot')).toContainText('2,000');
+  await expect(modal.getByTestId('travel-preview-total')).toContainText('2,000');
 });
 
 test('F-153 / US-150: remove from passenger rail, cancel an unfinished entry, and reprice without undo',async({page},info)=>{

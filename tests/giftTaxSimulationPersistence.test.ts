@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {giftTaxStoryInput} from '../src/services/giftTaxSimulationPersistence';
+import {giftTaxStoryInput,parsePendingGiftTax} from '../src/services/giftTaxSimulationPersistence';
 import {bindPreviewStoryPayer} from '../src/services/simulatedPaymentStory';
 import {makeConfirmedReceipt} from '../src/services/confirmedPaymentCertificate';
 import {canViewPaymentCertificate} from '../src/services/paymentCertificateModel';
@@ -31,4 +31,18 @@ test('Gift Tax SQL payload, owner binding, receipt identity and amount reconcile
  assert.equal(canViewPaymentCertificate(receipt),false);
  assert.throws(()=>makeConfirmedReceipt({...parent,amountMinor:parent.amountMinor+1}));
  assert.throws(()=>giftTaxStoryInput({...input,estimatedTaxMinor:1},'BKASH',sessionId,'user1'));
+});
+
+test('Gift Tax recovery preserves the same input, method and key only for the matching fictional account and session',()=>{
+ const preview={profileId:'user1' as const,paymentSessionId:sessionId};
+ const pending={profileId:'user1',sessionId,input,method:'BKASH'};
+ const raw=JSON.stringify(pending);
+ assert.deepEqual(parsePendingGiftTax(raw,preview),pending);
+ assert.equal(parsePendingGiftTax(raw,null),null);
+ assert.equal(parsePendingGiftTax(raw,{...preview,profileId:'user2'}),null);
+ assert.equal(parsePendingGiftTax(raw,{...preview,paymentSessionId:id}),null);
+ assert.equal(parsePendingGiftTax(JSON.stringify({...pending,method:'UNKNOWN'}),preview),null);
+ assert.equal(parsePendingGiftTax(JSON.stringify({...pending,input:{...input,estimatedTaxMinor:1}}),preview),null);
+ assert.equal(parsePendingGiftTax(JSON.stringify({...pending,input:{...input,idempotencyKey:'not-a-uuid'}}),preview),null);
+ assert.equal(parsePendingGiftTax('bad JSON',preview),null);
 });
