@@ -115,3 +115,71 @@ test('Gift Tax relationship popup escapes modal, flips above footer, and preserv
   await expect(donee.locator('#gift-donee-relationship')).toHaveAttribute('data-value','friends_family:siblings');
   await expect(donee.getByRole('button',{name:'Add Donee'})).toBeEnabled();
 });
+
+
+test('Gift Tax bank branch simulation completes with the approved result, then zero-tax recovery',async({page})=>{
+  await page.setViewportSize({width:1280,height:850});
+  await page.goto('/?action=landing&lang=en');
+  await page.locator('.public-hero-carousel__slide[data-active="true"]')
+    .getByRole('button',{name:'Other Tax'}).click();
+  await page.locator('.taxpay-modal[data-public-service="login"]')
+    .getByRole('button',{name:'Walk-in Payment'}).click();
+  await page.getByTestId('other-tax-chooser').getByRole('button',{name:'Gift Tax'}).click();
+  const gift=page.getByRole('dialog',{name:'Gift Tax'});
+  const donor=gift.getByTestId('gift-donor-section');
+  await donor.locator('#gift-donor-tin').fill('111111111111');
+  await donor.getByRole('button',{name:/Search Donor/}).click();
+  await donor.getByRole('button',{name:'Add Donor'}).click();
+  const donee=gift.getByTestId('gift-donee-section');
+  await donee.locator('#gift-donee-tin').fill('222222222222');
+  await donee.getByRole('button',{name:/Search Donee/}).click();
+  await donee.locator('#gift-donee-relationship').click();
+  await page.getByRole('option',{name:'Father'}).click();
+  await donee.getByRole('button',{name:'Add Donee'}).click();
+  await gift.getByRole('button',{name:'Continue to Gift & Tax Information'}).click();
+  await gift.locator('#gift-tax-amount').fill('2500000');
+  await gift.locator('#gift-tax-date').fill('2025-01-15');
+  await gift.locator('#gift-tax-remarks').fill('Bank simulation reference sample only');
+  await gift.getByRole('button',{name:'Continue to Final Preview'}).click();
+  await gift.locator('#gift-review-payer-name').fill('Sample Bank Payer');
+  await gift.locator('#gift-review-phone').fill('01712345678');
+  await gift.getByRole('button',{name:'Make Payment'}).click();
+  await gift.getByRole('button',{name:'Pay at a bank branch'}).click();
+  await gift.locator('.payment-review__ack input[type=checkbox]').check();
+  const writes:string[]=[];
+  page.on('request',request=>{
+    if(request.method()==='GET')return;
+    try {const url=new URL(request.url());
+      if(url.hostname.endsWith('.supabase.co')&&/payment|gift|challan|credit|ledger/i.test(url.pathname)) {
+        writes.push(request.method()+' '+url.pathname);
+      }
+    }catch{/* ignore non-URL requests */}
+  });
+  await gift.getByRole('button',{name:'Confirm sample payment'}).click();
+  const result=gift.getByTestId('gift-tax-payment-result');
+  await expect(result.getByRole('heading',{name:'Bank payment slip ready'})).toBeVisible();
+  await expect(result).toContainText('This is not tax paid yet');
+  const ref=await result.locator('.payment-lifecycle__reference-value').innerText();
+  expect(ref).toMatch(/^SIM-GIFT-/);
+  await result.getByRole('button',{name:'Continue sample bank payment'}).click();
+  await expect(result.getByRole('heading',{name:'Payment record saved'})).toBeVisible();
+  await expect(result.locator('.payment-lifecycle__reference-value')).toHaveText(ref);
+  await expect(gift.getByTestId('walkin-challan-action')).toBeVisible();
+  await gift.getByRole('button',{name:'Sample Challan Details'}).click();
+  await expect(gift.getByTestId('gift-tax-simulation-receipt')).toContainText('SIMULATION ONLY');
+  await gift.getByRole('button',{name:'Back to payment result'}).click();
+  expect(writes, 'Sample bank settlement must not write money or credit to SQL').toEqual([]);
+  await gift.getByRole('button',{name:'Back to Final Preview'}).click();
+  await gift.getByRole('button',{name:'Edit gift information'}).click();
+  await gift.locator('#gift-tax-amount').fill('1');
+  await gift.getByRole('button',{name:'Continue to Final Preview'}).click();
+  await gift.getByRole('button',{name:'Finish no-tax review'}).click();
+  const zero=gift.getByTestId('gift-tax-payment-result');
+  await expect(zero.getByRole('heading',{name:'No Gift Tax payable'})).toBeVisible();
+  await expect(zero).toContainText('No payment was initiated');
+  await expect(gift.getByTestId('walkin-challan-action')).toHaveCount(0);
+  await expect(gift.getByTestId('walkin-result-benefits')).toHaveCount(0);
+  await zero.getByRole('button',{name:'Back to Final Preview'}).click();
+  await expect(gift.locator('#gift-tax-final-remarks')).toHaveValue('Bank simulation reference sample only');
+  expect(writes).toEqual([]);
+});
