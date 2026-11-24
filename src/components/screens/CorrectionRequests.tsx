@@ -17,8 +17,9 @@ import {activePreviewSession} from '../../services/previewAccountSession';
 import {getDetailedStorySessionPayments} from '../../services/story1AccountPaymentHistory';
 import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
 
-export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipts?:readonly ChallanReceipt[];preferredReference?:string;embedded?:boolean}> =
-  ({activityTabs=false,recordedReceipts=[],preferredReference='',embedded=false}) => {
+type HistoricalCorrectionReference={reference:string;year:string;amount:number;title:string};
+export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipts?:readonly ChallanReceipt[];historicalRecords?:readonly HistoricalCorrectionReference[];preferredReference?:string;embedded?:boolean}> =
+  ({activityTabs=false,recordedReceipts=[],historicalRecords=[],preferredReference='',embedded=false}) => {
   const { corrections, receipts, taxpayerProfile, userRole, demoUser, addCorrectionRequest, language, previewAccount, routeParams } = useTaxState();
   const tr=(en:string,bn:string)=>language==='bn'?bn:en;
   const {user:authenticatedUser}=useAccountIdentity();
@@ -82,15 +83,17 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
   const routeReference=typeof routeParams?.originalReference==='string'
     ?routeParams.originalReference.slice(0,80):'';
   const [challanNo, setChallanNo] = useState(preferredReference||routeReference);
-  const selectedReceipt = visibleReceipts.find(r=>r.challanNo===challanNo || r.paymentTransactionId===challanNo) ??
+  const visibleHistorical=serverMode&&previewAccount?.id==='user1'?historicalRecords:[];
+  const selectedHistorical=visibleHistorical.find(x=>x.reference===challanNo);
+  const selectedReceipt = selectedHistorical?undefined:visibleReceipts.find(r=>r.challanNo===challanNo || r.paymentTransactionId===challanNo) ??
     (!challanNo?visibleReceipts[0]:undefined);
-  const selectedChallanNo = selectedReceipt?.challanNo ?? '';
+  const selectedChallanNo = selectedHistorical?.reference??selectedReceipt?.challanNo??'';
   const allocations=selectedReceipt?.allocationItems??[];
   const [allocationIndex,setAllocationIndex]=useState('');
   const selectedIndex=allocations.length===1?0:allocationIndex===''?-1:Number(allocationIndex);
   const selectedAllocation=allocations[selectedIndex];
   const requiresAllocation=allocations.length>1;
-  const currentAY = selectedAllocation?.assessmentYear ?? (requiresAllocation?'':selectedReceipt?.assessmentYear??'');
+  const currentAY = selectedHistorical?.year??selectedAllocation?.assessmentYear??(requiresAllocation?'':selectedReceipt?.assessmentYear??'');
   const [proposedAY, setProposedAY] = useState('');
   const currentCircle = selectedReceipt?.taxCircle ?? '';
   const [proposedCircle, setProposedCircle] = useState('');
@@ -121,7 +124,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
     e.preventDefault();
     if(submitLock.current)return;
     setSubmittedTicket(null);
-    if (!selectedReceipt || !selectedChallanNo) {
+    if ((!selectedReceipt&&!selectedHistorical) || !selectedChallanNo) {
       setError(tr('Select a payment reference.','একটি পেমেন্ট রেফারেন্স নির্বাচন করুন।'));return;
     }
     if(requiresAllocation && !selectedAllocation){
@@ -137,9 +140,10 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
     try{
       if(previewAccount && !serverMode)throw Error('Session expired');
       if(serverMode){
-        if(!selectedReceipt.paymentTransactionId)throw Error('Payment unavailable');
+        if(!selectedHistorical&&!selectedReceipt?.paymentTransactionId)throw Error('Payment unavailable');
         const payload={
-          paymentId:selectedReceipt.paymentTransactionId,
+          paymentId:selectedHistorical?null:selectedReceipt!.paymentTransactionId!,
+          ...(selectedHistorical?{historicalReference:selectedHistorical.reference}:{}),
           allocationIndex:selectedAllocation?selectedIndex:null,
           allocationId:selectedAllocation?.allocationId??null,
           proposedAY,proposedCircle:proposedCircle.trim(),proposedHeadCode,reason:reason.trim()
@@ -207,13 +211,13 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
         )}
 
         {/* New Correction Form */}
-        {serverMode&&receiptPhase==='loading'?<p role="status" className="text-sm">{tr('Loading payment records…','পেমেন্ট রেকর্ড লোড হচ্ছে…')}</p>
-          :serverMode&&receiptPhase==='error'?<div role="alert" className="space-y-2 text-sm"><p>{tr('Payment records could not be loaded.','পেমেন্ট রেকর্ড লোড করা যায়নি।')}</p><UiButton variant="outline" type="button" onClick={()=>setReceiptRetry(n=>n+1)}>{tr('Retry','আবার চেষ্টা করুন')}</UiButton></div>
-          :visibleReceipts.length ? <form onSubmit={handleSubmit} className="space-y-3 text-sm" aria-busy={busy}>
+        {serverMode&&receiptPhase==='loading'&&!selectedHistorical?<p role="status" className="text-sm">{tr('Loading payment records…','পেমেন্ট রেকর্ড লোড হচ্ছে…')}</p>
+           :serverMode&&receiptPhase==='error'&&!selectedHistorical&&!visibleHistorical.length?<div role="alert" className="space-y-2 text-sm"><p>{tr('Payment records could not be loaded.','পেমেন্ট রেকর্ড লোড করা যায়নি।')}</p><UiButton variant="outline" type="button" onClick={()=>setReceiptRetry(n=>n+1)}>{tr('Retry','আবার চেষ্টা করুন')}</UiButton></div>
+          :(visibleReceipts.length||visibleHistorical.length) ? <form onSubmit={handleSubmit} className="space-y-3 text-sm" aria-busy={busy}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label htmlFor="correction-challan" className="block font-semibold text-slate-700 mb-1">
-                {tr('Select A-Challan for Rectification *','সংশোধনের জন্য এ-চালান নির্বাচন করুন *')}
+                {visibleHistorical.length?tr('Select payment reference *','পেমেন্ট রেফারেন্স নির্বাচন করুন *'):tr('Select A-Challan for Rectification *','সংশোধনের জন্য এ-চালান নির্বাচন করুন *')}
               </label>
               <select
                 id="correction-challan"
@@ -229,6 +233,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
                 className="w-full min-h-11 min-w-0 px-3 py-2 rounded-lg border border-taxpay-border text-sm"
               >
                 {!selectedChallanNo&&<option value="" disabled>{tr('Select a payment','পেমেন্ট নির্বাচন করুন')}</option>}
+                {visibleHistorical.map(r=><option key={r.reference} value={r.reference}>{r.reference} — {r.title} — ৳ {r.amount} ({r.year})</option>)}
                 {visibleReceipts.map(r => (
                   <option key={r.paymentTransactionId||r.id||r.challanNo} value={r.challanNo}>
                     {r.challanNo} — ৳ {r.totalAmount} ({r.assessmentYear})
@@ -355,6 +360,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
             />
           </div>
 
+          {selectedHistorical&&<p role="note" className="text-sm text-taxpay-muted">{tr('Historical simulated reference: no verified receipt, circle or payment-head code is available. Office can review the request; no payment or tax credit is changed.','পুরনো সিমুলেটেড রেফারেন্স: যাচাইকৃত চালান, সার্কেল বা কর খাতের কোড নেই। অফিস আবেদন পর্যালোচনা করতে পারবে; কোনো পেমেন্ট বা কর ক্রেডিট পরিবর্তিত হবে না।')}</p>}
           <p className="text-sm text-taxpay-muted">{serverMode
             ?tr('Records a simulated correction request without changing the original payment.','মূল পরিশোধ পরিবর্তন ছাড়াই সিমুলেটেড সংশোধন আবেদন নথিভুক্ত হয়।')
             :tr('Local draft only. This does not submit a request to the Office.','শুধু স্থানীয় খসড়া। এটি অফিসে জমা হবে না।')}</p>

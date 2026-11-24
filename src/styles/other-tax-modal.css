@@ -463,3 +463,17 @@
   .taxpay-citizen-shell .gift-tax-confirmed-person__content > button {width:100%}
   .taxpay-citizen-shell .gift-tax-role-group {padding:10px}
 }
+
+/* F-GIFT: keep the donor and donee form cards at their natural heights.
+ * The approved identity rail can be taller than the editor; stretching the
+ * editor's grid rows otherwise creates a large gap after selection. This
+ * applies only to the entry step and never overrides the shared payment,
+ * checkout, result, receipt or mobile sheet components. */
+.taxpay-citizen-shell .gift-tax-workspace[data-testid="gift-tax-entry-form"] .gift-tax-main {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0;
+  min-width: 0;
+}

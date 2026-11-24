@@ -156,12 +156,14 @@ Deno.serve(async(req)=>{
    if(raw.length>12000)return respond({success:false,error:"INVALID_CORRECTION_REQUEST"},400);
    let input:Record<string,unknown>;
    try{input=JSON.parse(raw);}catch{return respond({success:false,error:"INVALID_CORRECTION_REQUEST"},400);}
-   if(!input||typeof input!=="object"||Array.isArray(input)||typeof input.paymentId!=="string"||!uuid.test(input.paymentId)||
-     typeof input.requestKey!=="string"||!uuid.test(input.requestKey))
+   if(!input||typeof input!=="object"||Array.isArray(input)||typeof input.requestKey!=="string"||!uuid.test(input.requestKey))
     return respond({success:false,error:"INVALID_CORRECTION_REQUEST"},400);
-   const {data,error}=await admin.rpc("taxpay_demo_correction_save",{
-    p_capability_hash,p_payment_id:input.paymentId,p_request_key:input.requestKey,p_input:input
-   });
+   const historical=input.paymentId===null&&typeof input.historicalReference==="string"&&/^DEMO-[A-Z0-9-]{3,70}$/.test(input.historicalReference);
+   if(!historical&&(typeof input.paymentId!=="string"||!uuid.test(input.paymentId)||input.historicalReference!==undefined))
+    return respond({success:false,error:"INVALID_CORRECTION_REQUEST"},400);
+   const {data,error}=historical
+     ?await admin.rpc("taxpay_demo_historical_correction_save",{p_capability_hash,p_reference:input.historicalReference,p_request_key:input.requestKey,p_input:input})
+     :await admin.rpc("taxpay_demo_correction_save",{p_capability_hash,p_payment_id:input.paymentId,p_request_key:input.requestKey,p_input:input});
    if(error){
     const code=error.message??"";
     if(/INVALID_CORRECTION|CORRECTION_NO_CHANGE/.test(code))return respond({success:false,error:"INVALID_CORRECTION_REQUEST"},400);

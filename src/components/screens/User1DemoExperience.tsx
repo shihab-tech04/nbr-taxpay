@@ -73,6 +73,7 @@ const events:readonly RecordItem[] = [
   {id:'U1-202',year:'2023-2024',date:'2024-01-20',kind:'ait',amount:15000,state:'POSTED',title:'Advance tax',detail:'Advance-tax allocation',channel:'Bank channel (unverified)',ref:'DEMO-AIT-23-01',challan:'DEMO-CH-23-AIT'},
   {id:'U1-203',year:'2023-2024',date:'2024-08-20',kind:'income',amount:45000,state:'POSTED',title:'Tax with return',detail:'Historical payment record',channel:'Bank channel (unverified)',ref:'DEMO-PAY-23-01',challan:'DEMO-CH-23-01'}
 ];
+const historicalCorrectionRecords=events.filter(x=>x.state==='POSTED'&&['income','ait','tds','travel'].includes(x.kind)).map(x=>({reference:x.ref,year:x.year,amount:x.amount,title:x.title}));
 const labels:Record<Kind,[string,string]> = {
   income:['Income tax','আয়কর'],tds:['TDS / withholding','উৎসে কর'],ait:['Advance income tax','অগ্রিম আয়কর'],
   travel:['Travel tax','ভ্রমণ কর'],refund:['Refund inquiry','ফেরত অনুসন্ধান'],adjustment:['Adjustment inquiry','সমন্বয় অনুসন্ধান']
@@ -425,10 +426,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const applyForCorrection=(item:RecordItem)=>{
     // A route hint never authorizes a correction. Only a currently owned SQL
     // receipt can be offered; the existing request form validates its source.
-    if(!item.sql?.receipts.length || !authorizedPreviewScenario)return;
+    if(!authorizedPreviewScenario||!(item.sql?.receipts.length||(!item.sql&&historicalCorrectionRecords.some(x=>x.reference===item.ref))))return;
     setSelected(null);
     setCorrectionTarget(item);
   };
+  const canApplyCorrection=(item:RecordItem)=>authorizedPreviewScenario&&Boolean(item.sql?.receipts.length||(!item.sql&&historicalCorrectionRecords.some(x=>x.reference===item.ref)));
   const rowActions=(item:RecordItem)=><div className="flex flex-wrap items-center gap-2">
     <button type="button" onClick={()=>setSelected(item)}
       className={action+' taxpayer-transaction-row__action'}
@@ -439,6 +441,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       className={action+' taxpayer-transaction-row__action disabled:opacity-50'}>
       {tr('Pay Again','আবার পরিশোধ')}
     </button>}
+    {canApplyCorrection(item)&&<button type="button" data-testid="activity-apply-correction" className={action+' taxpayer-transaction-row__action'} onClick={()=>applyForCorrection(item)} aria-label={tr('Apply for Correction: ','সংশোধনের আবেদন: ')+item.title}>{tr('Apply for Correction','সংশোধনের আবেদন')}</button>}
   </div>;
   const formatDate=(date:string)=>new Intl.DateTimeFormat(bn?'bn-BD':'en-GB',{
     day:'numeric',month:'short',year:'numeric',timeZone:'UTC'
@@ -1052,7 +1055,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   </section>;
   const content=route==='ledger'?ledger:route==='history'?transactionList:route==='certificates'?documents:
     route==='corrections'&&authorizedPreviewScenario&&(!localQaScenario||routeParams?.applyForCorrection===true)
-      ?<CorrectionRequests recordedReceipts={sqlRows.flatMap(row=>row.sql?.receipts??[])}
+      ?<CorrectionRequests historicalRecords={historicalCorrectionRecords} recordedReceipts={sqlRows.flatMap(row=>row.sql?.receipts??[])}
         preferredReference={typeof routeParams.originalReference==='string'?routeParams.originalReference:''}/>
       :route==='corrections'?exceptions:route==='journey'?journey:route==='account_profile'?profile:route==='account_notifications'?notifications:route==='account_settings'?settings:overview;
   return <div data-testid="user1-synthetic-workspace" data-taxpay-register-page={["history","ledger","certificates","corrections"].includes(route)?"true":undefined} data-dashboard-view={overviewRoute?'true':undefined} className={'taxpayer-workspace mx-auto max-w-7xl space-y-4 pb-12 '+(bn?'font-bengali':'')}>
@@ -1069,8 +1072,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       onClose={() => setSelected(null)}
       closeIconLabel={tr('Close transaction details','লেনদেনের বিস্তারিত বন্ধ করুন')}
       className="taxpayer-transaction-detail"
-      hideFooter={!selected.sql}
-      footer={<></>}
+      hideFooter={!selected.sql&&!canApplyCorrection(selected)}
+      footer={!selected.sql&&canApplyCorrection(selected)?<button type="button" className={action} data-testid="historical-detail-apply-correction" onClick={()=>applyForCorrection(selected)}>{tr('Apply for Correction','সংশোধনের আবেদন')}</button>:<></>}
     >
       {selected.sql?<section className="space-y-4">
         {/* The same transaction ID is already shown in the receipt identity fields. */}
@@ -1100,7 +1103,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           source:selected.channel,note:selected.detail}],
       }}/>}
     </TaxPayModal>}
-    {correctionTarget && authorizedPreviewScenario && correctionTarget.sql?.receipts.length ? (
+    {correctionTarget && canApplyCorrection(correctionTarget) ? (
       <TaxPayModal
         title={tr('Apply for Correction','সংশোধনের আবেদন')}
         onClose={() => setCorrectionTarget(null)}
@@ -1110,8 +1113,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       >
         <CorrectionRequests
           embedded
-          recordedReceipts={correctionTarget.sql.receipts}
-          preferredReference={correctionTarget.sql.receipts[0].challanNo}
+          recordedReceipts={correctionTarget.sql?.receipts??[]}
+          historicalRecords={correctionTarget.sql?[]:historicalCorrectionRecords}
+          preferredReference={correctionTarget.sql?.receipts[0]?.challanNo??correctionTarget.ref}
         />
       </TaxPayModal>
     ) : null}

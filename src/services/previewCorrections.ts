@@ -3,11 +3,11 @@ import {TAXPAY_PUBLIC_ENDPOINT} from '../config/publicBackend';
 import {activePreviewSession} from './previewAccountSession';
 
 export type PreviewCorrectionInput = {
-  paymentId:string; requestKey:string; allocationIndex:number|null; allocationId:string|null;
+  paymentId:string|null; historicalReference?:string; requestKey:string; allocationIndex:number|null; allocationId:string|null;
   proposedAY:string; proposedCircle:string; proposedHeadCode:string; reason:string;
 };
 export type PreviewCorrectionRecord = {
-  id:string; paymentId:string; originalReference:string; allocationIndex:number|null; allocationId:string|null;
+  id:string; paymentId:string|null; originalReference:string; allocationIndex:number|null; allocationId:string|null;
   currentAY:string; proposedAY:string; currentCircle:string; proposedCircle:string;
   currentHeadCode:string; proposedHeadCode:string; reason:string; createdAt:string; status:'RECORDED';
   officeSyncState?:'PENDING'|'ACKNOWLEDGED';
@@ -28,8 +28,8 @@ export function previewCorrectionStatus(record:Pick<PreviewCorrectionRecord,'off
 function checked(raw:unknown):PreviewCorrectionRecord{
   if(!raw||typeof raw!=='object')throw Error('Invalid correction response');
   const row=raw as Record<string,unknown>;
-  const fields=['id','paymentId','originalReference','currentAY','proposedAY','currentCircle','proposedCircle','currentHeadCode','proposedHeadCode','reason','createdAt'];
-  if(fields.some(key=>typeof row[key]!=='string')||row.status!=='RECORDED'||
+  const fields=['id','originalReference','currentAY','proposedAY','currentCircle','proposedCircle','currentHeadCode','proposedHeadCode','reason','createdAt'];
+  if(fields.some(key=>typeof row[key]!=='string')||(row.paymentId!==null&&typeof row.paymentId!=='string')||row.status!=='RECORDED'||
     !/^[0-9a-f-]{36}$/i.test(String(row.id))||!Number.isFinite(Date.parse(String(row.createdAt)))||
     (row.allocationIndex!==null&&(!Number.isSafeInteger(row.allocationIndex)||Number(row.allocationIndex)<0))||
     (row.allocationId!==null&&typeof row.allocationId!=='string'))throw Error('Invalid correction response');
@@ -68,7 +68,7 @@ export async function listPreviewCorrections():Promise<PreviewCorrectionRecord[]
 }
 export async function submitPreviewCorrection(input:PreviewCorrectionInput):Promise<PreviewCorrectionRecord>{
   const row=checked(await request('','POST',input));
-  if(row.paymentId!==input.paymentId||row.allocationId!==input.allocationId||
+  if(row.paymentId!==input.paymentId||(input.historicalReference&&row.originalReference!==input.historicalReference)||row.allocationId!==input.allocationId||
     (input.allocationIndex!==null&&row.allocationIndex!==input.allocationIndex)||row.reason!==input.reason.trim())
     throw Error('Correction acknowledgement mismatch');
   window.dispatchEvent(new Event('taxpay:preview-corrections-changed'));

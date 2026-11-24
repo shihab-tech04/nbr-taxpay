@@ -307,6 +307,31 @@ begin
     end if;
     raise notice 'PASS: V2 correction delivery retry, exact immutable event, officer sequence and owner readback';
   end;
+  declare
+    historical_login jsonb:=public.taxpay_demo_profile_login('user1','user1');
+    h text; k uuid:=gen_random_uuid(); saved jsonb; payload jsonb; item jsonb;
+  begin
+    h:=encode(extensions.digest(convert_to(historical_login->>'capability','UTF8'),'sha256'),'hex');
+    payload:=jsonb_build_object('proposedAY','2024-2025','reason','Incorrect historical assessment year');
+    saved:=public.taxpay_demo_historical_correction_save(h,'DEMO-PAY-23-01',k,payload);
+    if saved->>'paymentId' is not null or saved->>'currentAY' is distinct from '2023-2024' or
+       saved->>'originalReference' is distinct from 'DEMO-PAY-23-01' then raise exception 'Historical source mismatch'; end if;
+    if saved is distinct from public.taxpay_demo_historical_correction_save(h,'DEMO-PAY-23-01',k,payload) then raise exception 'Historical replay mismatch'; end if;
+    item:=public.taxpay_demo_correction_claim(1,(saved->>'id')::uuid)->0->'event'->'payload';
+    if item->>'historicalScenario' is distinct from 'USER1_REFERENCE_ONLY' or item ? 'originalPaymentId' or item ? 'originalPaymentKind' or item ? 'targetAllocationId'
+       then raise exception 'Historical event fabricated payment identity'; end if;
+    begin
+      perform public.taxpay_demo_historical_correction_save(first_hash,'DEMO-PAY-23-01',gen_random_uuid(),payload);
+      raise exception 'WRONG_PROFILE_ACCEPTED';
+    exception when others then if sqlerrm<>'INVALID_DEMO_PROFILE' then raise; end if; end;
+    begin
+      perform public.taxpay_demo_historical_correction_save(h,'DEMO-UNKNOWN-REF',gen_random_uuid(),payload);
+      raise exception 'UNKNOWN_REFERENCE_ACCEPTED';
+    exception when others then if sqlerrm<>'CORRECTION_PAYMENT_UNAVAILABLE' then raise; end if; end;
+    if has_function_privilege('anon','public.taxpay_demo_historical_correction_save(text,text,uuid,jsonb)','EXECUTE') or
+       has_function_privilege('authenticated','public.taxpay_demo_historical_correction_save(text,text,uuid,jsonb)','EXECUTE') then raise exception 'Historical service RPC public'; end if;
+    raise notice 'PASS: User1 historical reference-only correction without invented receipt';
+  end;
   raise notice 'PASS: correction persistence, retry, source immutability and cross-account denial';
   raise notice 'PASS: nonempty payment activity, capability-scoped reads/writes, cross-account isolation, rejected public session paths, idempotent retry and preserved Office/notice rows';
 end
