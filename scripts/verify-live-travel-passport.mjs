@@ -65,17 +65,24 @@ try {
     await expect(first.getByTestId('travel-passenger-medical-control')).toHaveCount(0);
     await expect(first.locator('.travel-flow__identity-card')).toHaveCount(0);
 
+    await modal.evaluate(async el=>{await Promise.all(el.getAnimations({subtree:true}).filter(a=>a.playState==='running').map(a=>a.finished.catch(()=>undefined)));});
+    const modalGeometry=()=>modal.evaluate(el=>[el,el.querySelector('.taxpay-modal__footer'),el.querySelector('#travel-passport-first'),el.querySelector('.travel-passenger-workspace__rail')].map(node=>{const r=node.getBoundingClientRect();return [r.x,r.y,r.width,r.height];}));
+    const baseline=await modalGeometry();
+    await page.screenshot({path:`test-results/live-travel-passport-${name}-closed.png`});
     await modal.locator('#travel-passport-first').click();
     const options = modal.locator('#travel-passport-suggestions-first [role="option"]');
     await expect(options).toHaveCount(10);
     await expect(options.first()).toBeVisible();
     await expect.poll(()=>modal.locator('#travel-passport-suggestions-first').evaluate(el=>{
       const b=el.getBoundingClientRect(); const first=el.querySelector('[role="option"]')?.getBoundingClientRect();
-      const footer=el.closest('.taxpay-modal')?.querySelector('.taxpay-modal__footer')?.getBoundingClientRect();
-      if(!first||!footer||b.height<90||b.bottom>footer.top+2)return false;
+      if(!first||b.height<90||b.bottom>window.innerHeight+1||b.top<0||!el.matches(':popover-open'))return false;
       const hit=document.elementFromPoint(first.x+12,first.y+first.height/2);
       return Boolean(hit?.closest('[role="option"]')&&el.contains(hit));
     })).toBe(true);
+    const unchanged=async()=> (await modalGeometry()).every((r,i)=>r.every((v,j)=>Math.abs(v-baseline[i][j])<=1));
+    await expect.poll(unchanged).toBe(true);
+    await page.waitForTimeout(350);
+    if(!await unchanged()) throw new Error('Opening passport suggestions changed the modal, footer, field or passenger rail geometry');
     await page.screenshot({path:`test-results/live-travel-passport-${name}-dropdown.png`});
     const geometry = await modal.locator('#travel-passport-suggestions-first')
       .evaluate(element => ({ scroll: element.scrollHeight, visible: element.clientHeight }));
