@@ -90,6 +90,39 @@ Deno.serve(async(req)=>{
  if(!key||!url)return respond({success:false,error:"BACKEND_UNAVAILABLE"},503);
  const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
  try{
+  if(path==="/corrections"&&(req.method==="GET"||req.method==="POST")){
+   const p_capability_hash=await capabilityHash(req);
+   if(!p_capability_hash)return respond({success:false,error:"PROFILE_CAPABILITY_REQUIRED"},401);
+   const admin=serviceClient(url);
+   if(req.method==="GET"){
+    const p_limit=Number(u.searchParams.get("limit")??"100");
+    const p_offset=Number(u.searchParams.get("offset")??"0");
+    if(!Number.isSafeInteger(p_limit)||p_limit<1||p_limit>100||!Number.isSafeInteger(p_offset)||p_offset<0||p_offset>1000000)
+     return respond({success:false,error:"INVALID_CORRECTION_PAGE"},400);
+    const {data,error}=await admin.rpc("taxpay_demo_correction_list",{p_capability_hash,p_limit,p_offset});
+    if(error)return respond({success:false,error:"CORRECTION_HISTORY_UNAVAILABLE"},503);
+    return respond({success:true,data,simulationOnly:true});
+   }
+   const raw=await req.text();
+   if(raw.length>12000)return respond({success:false,error:"INVALID_CORRECTION_REQUEST"},400);
+   let input:Record<string,unknown>;
+   try{input=JSON.parse(raw);}catch{return respond({success:false,error:"INVALID_CORRECTION_REQUEST"},400);}
+   if(!input||typeof input!=="object"||Array.isArray(input)||typeof input.paymentId!=="string"||!uuid.test(input.paymentId)||
+     typeof input.requestKey!=="string"||!uuid.test(input.requestKey))
+    return respond({success:false,error:"INVALID_CORRECTION_REQUEST"},400);
+   const {data,error}=await admin.rpc("taxpay_demo_correction_save",{
+    p_capability_hash,p_payment_id:input.paymentId,p_request_key:input.requestKey,p_input:input
+   });
+   if(error){
+    const code=error.message??"";
+    if(/INVALID_CORRECTION|CORRECTION_NO_CHANGE/.test(code))return respond({success:false,error:"INVALID_CORRECTION_REQUEST"},400);
+    if(/CORRECTION_REQUEST_CONFLICT/.test(code))return respond({success:false,error:"CORRECTION_REQUEST_CONFLICT"},409);
+    if(/NOT_FOUND|INVALID_DEMO_PROFILE|INVALID_PROFILE_CAPABILITY|GUEST_SESSION_UNAVAILABLE|CORRECTION_PAYMENT_UNAVAILABLE/.test(code))
+     return respond({success:false,error:"CORRECTION_PAYMENT_UNAVAILABLE"},403);
+    return respond({success:false,error:"CORRECTION_SAVE_UNAVAILABLE"},503);
+   }
+   return respond({success:true,data,simulationOnly:true});
+  }
   if(req.method==="GET"&&path==="/profile-history"){
    const p_capability_hash=await capabilityHash(req);
    if(!p_capability_hash)return respond({success:false,error:"PROFILE_CAPABILITY_REQUIRED"},401);
