@@ -5,10 +5,12 @@ import {useTaxState} from '../../services/taxState';
 import { taxpayerBrandName } from '../../config/brand';
 
 type Message = {from:'user'|'assistant';value:string};
-export function PublicHelpChat(){
+type HelpProps={externalOpenRequest?:number;externalTrigger?:React.RefObject<HTMLElement|null>;hideLauncher?:boolean};
+export function PublicHelpChat({externalOpenRequest=0,externalTrigger,hideLauncher=false}:HelpProps={}){
  const {language,navigate}=useTaxState();
  const bn=language==='bn';
  const [open,setOpen]=useState(false);
+ useEffect(()=>{if(externalOpenRequest>0)setOpen(true);},[externalOpenRequest]);
  const [mobile,setMobile]=useState(false);
  const [input,setInput]=useState('');
  const [messages,setMessages]=useState<Message[]>([]);
@@ -62,9 +64,9 @@ export function PublicHelpChat(){
  },[open,mobile]);
  const closePanel=()=>setOpen(false);
  useEffect(()=>{
-  if(!open&&wasOpen.current)launchRef.current?.focus();
+  if(!open&&wasOpen.current){if(hideLauncher)externalTrigger?.current?.focus();else launchRef.current?.focus();}
   wasOpen.current=open;
- },[open]);
+ },[open,hideLauncher,externalTrigger]);
  useEffect(()=>{
   if(!open)return;
   const onKeyDown=(event:KeyboardEvent)=>{
@@ -101,7 +103,7 @@ export function PublicHelpChat(){
   setMessages(prev=>[...prev,{from:'user',value:query},{from:'assistant',value:answer}]);
   setInput('');
  };
- return <aside className="public-help-widget" aria-label={bn?'সহজকর সহায়তা':'Sohojkor help'}>
+ return <aside data-home2-hidden={hideLauncher||undefined} className="public-help-widget" aria-label={bn?'সহজকর সহায়তা':'Sohojkor help'}>
   {open&&<div className="public-help-backdrop" aria-hidden="true" onClick={closePanel}/>} 
   {open&&<section ref={panelRef} tabIndex={-1} id="public-help-panel" className="public-help-panel" role="dialog" aria-modal={mobile} aria-labelledby="public-help-title">
    <header><div><h2 id="public-help-title">{taxpayerBrandName(language)} {bn?'সহায়তা':'help'}</h2><p>{bn?'নির্দেশনাভিত্তিক উত্তর':'Guide-based answers'}</p></div>
@@ -126,7 +128,7 @@ export function PublicHelpChat(){
      (selectedTopic ? '&category='+encodeURIComponent(selectedTopic) : '')}><BookOpen size={15}/>{bn?'ব্যবহার নির্দেশিকা':'Open user guide'}</a>
    <p className="public-help-limit">{bn?'স্বয়ংক্রিয় আইন বা কর হিসাব নয়।':'Not tax advice or a calculation service.'}</p>
   </section>}
-  <button ref={launchRef} className="public-help-launch" type="button" aria-label={open?(bn?'সহায়তা বন্ধ করুন':'Close help'):(bn?'চ্যাট সহায়তা':'Chat support')}
-    aria-controls="public-help-panel" aria-expanded={open} onClick={()=>setOpen(v=>!v)}>{open?<><X className="public-help-launch__close" size={23}/><MessageCircle className="public-help-launch__chat" size={23}/></>:<MessageCircle size={23}/>}<span>{bn?'সহায়তা':'Help'}</span></button>
+  {!hideLauncher&&<button ref={launchRef} className="public-help-launch" type="button" aria-label={open?(bn?'সহায়তা বন্ধ করুন':'Close help'):(bn?'চ্যাট সহায়তা':'Chat support')}
+    aria-controls="public-help-panel" aria-expanded={open} onClick={()=>setOpen(v=>!v)}>{open?<><X className="public-help-launch__close" size={23}/><MessageCircle className="public-help-launch__chat" size={23}/></>:<MessageCircle size={23}/>}<span>{bn?'সহায়তা':'Help'}</span></button>}
  </aside>;
 }

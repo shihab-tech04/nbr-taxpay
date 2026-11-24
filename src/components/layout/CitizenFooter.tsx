@@ -20,7 +20,6 @@ export function CitizenFooter(){
     {!signedIn && <button onClick={()=>navigate('user_guide',{category:'security'})} type="button">{bn?'নিরাপত্তা ও সহায়তা':'Security & support'}</button>}
     <a href="https://nbr.gov.bd/" target="_blank" rel="noopener noreferrer">{bn?'এনবিআর প্রকাশনা':'NBR publications'}<ArrowUpRight size={14} aria-hidden="true"/></a>
   </>;
-  if(currentRoute==='home-2') return <footer className="public-footer no-print" aria-label={bn?'সহজকর ফুটার':'Sohojkor footer'}><div className="public-footer__inner"><div><p className="home2-footer-brand">{bn?'সহজকর — সবার জন্য।':'সহজকর — Made for everyone.'}</p><nav className="public-footer__navs" aria-label={bn?'ফুটার নেভিগেশন':'Footer navigation'}>{publicFooterLinks()}</nav></div><div className="public-footer__bottom"><p>{bn?'© ২০২৬ সহজকর':'© 2026 Sohojkor'}</p><a href={`?action=landing${bn?'&lang=bn':''}`} onClick={event=>{if(event.button===0&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();navigate('landing');}}}>{bn?'মূল পাতা':'Original Home'}</a><button type="button" onClick={()=>navigate('user_guide')}>{bn?'ব্যবহার নির্দেশিকা':'User guide'}</button></div></div></footer>;
   if(isPublic) return <footer className="public-footer no-print" aria-label={bn?'সহজকর ফুটার':'Sohojkor footer'}>
     <div className="public-footer__inner">
       <div className="public-footer__identity">

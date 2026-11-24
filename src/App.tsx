@@ -257,11 +257,11 @@ const MainRouter: React.FC = () => {
 
   const home2Shell = currentRoute === 'home-2' || (routeParams.fromHome2 === true && (loginOverlay || receiptOverlayRoute || privateSampleGate));
   return (
-    <div lang={language} className={`taxpay-citizen-shell${home2Shell ? ' home2-shell' : ''} min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${taxpayerReference && !privateSampleGate && (verifiedApplicationUser || previewAccount) ? " taxpay-authenticated-content" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}${!taxpayerReference ? " taxpay-public-mobile-shell" : ""}`}>
-      {publicInformationRoute ? <>
-        <div className="taxpay-public-desktop-navigation"><PublicHomeHeader bento03={home2Shell} /></div>
+    <div lang={language} className={`taxpay-citizen-shell${home2Shell ? ' home2-import-shell' : ''} min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${taxpayerReference && !privateSampleGate && (verifiedApplicationUser || previewAccount) ? " taxpay-authenticated-content" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}${!taxpayerReference ? " taxpay-public-mobile-shell" : ""}`}>
+      {!home2Shell && (publicInformationRoute ? <>
+        <div className="taxpay-public-desktop-navigation"><PublicHomeHeader /></div>
         <div className="taxpay-public-mobile-navigation"><CitizenNavigation /></div>
-      </> : <CitizenNavigation />}
+      </> : <CitizenNavigation />)}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
       <main ref={mainContentRef} id="main-content" tabIndex={-1} className={`flex-1 ${publicInformationRoute ? 'public-information-main' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}${currentRoute === 'incident' ? ' public-information-main--report' : ''}`}>
         {privateSampleGate ? (
@@ -301,8 +301,8 @@ const MainRouter: React.FC = () => {
           </React.Suspense>
         </>}
       </main>
-      {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
-      {publicInformationRoute && !receiptOverlayRoute && !verifiedApplicationUser && !previewAccount && <PublicHelpChat />}
+      {!home2Shell && (!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
+      {!home2Shell && publicInformationRoute && !receiptOverlayRoute && !verifiedApplicationUser && !previewAccount && <PublicHelpChat />}
       {receiptOverlayRoute && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'রসিদ লোড হচ্ছে…' : 'Loading receipt…'}</p>}>{currentRoute === 'verify'
         ? <PublicServiceModal service="status" onClose={() => navigate(routeParams.fromHome2 === true ? 'home-2' : 'landing')} />
         : <TaxPayModal title={language === 'bn' ? 'পেমেন্ট রসিদের বিবরণ' : 'Payment receipt details'}

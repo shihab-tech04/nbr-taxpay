@@ -1,88 +1,20 @@
-/* Bento 03: all visual overrides are limited to the opt-in Home 2 shell. */
-.home2-root{max-width:1300px;margin:0 auto;width:100%;padding:20px;background:#f1efe7;color:#151a28;border-radius:20px;font-size:16px;line-height:1.5;box-sizing:border-box}
-.home2-root *{box-sizing:border-box}
-.home2-root .home2-intro{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:0 0 12px;padding-top:14px;border-top:1px solid #c9c9bf}
-.home2-root .home2-intro h1{font-size:clamp(32px,4.4vw,64px);line-height:1.05;font-weight:600;letter-spacing:-.035em;margin:0;max-width:16ch;color:#151a28}
-.home2-root .home2-intro h1 span,.home2-root .home2-intro-mark>span{color:#fa673d}
-.home2-root .home2-intro-mark{flex-shrink:0;text-align:end;color:#64665f;font-size:13px}
-.home2-root .home2-intro-mark>span{font-size:38px;line-height:1}
-.home2-root p{margin:0}
-.home2-root .home2-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"cms pay pay travel" "cms record record record" "cert cert corrections history" "again drafts account account";gap:12px;align-items:stretch}
-.home2-root .home2-grid>*{min-width:0}
-.home2-root .home2-tile{min-width:0;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px;background:#fff;overflow-wrap:anywhere}
-.home2-root .home2-tile h2{margin:0;font-size:clamp(20px,2.1vw,32px);font-weight:600;line-height:1.18;color:inherit;letter-spacing:-.025em}
-.home2-root .home2-tile p{font-size:15px;line-height:1.5;color:inherit}
-.home2-root .home2-label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:500}
-.home2-root .home2-pay{grid-area:pay;background:#243fd0;color:#fff;min-height:260px}
-.home2-root .home2-pay h2{font-size:clamp(34px,4vw,60px)}
-.home2-root .home2-pay p,.home2-root .home2-pay .home2-label{color:#dce3ff}
-.home2-root .home2-pay p.home2-guest{color:#fff;font-size:13px;font-weight:500}
-.home2-root .home2-circle-arrow{display:grid;place-items:center;background:#fff;color:#243fd0;border-radius:50%;width:40px;height:40px;flex-shrink:0}
-.home2-root .home2-main-action,.home2-root .home2-text-action{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;font-size:15px;font-weight:500;text-align:start;cursor:pointer;border:0}
-.home2-root .home2-main-action{background:#fff;color:#243fd0;padding:12px 16px;border-radius:999px;margin-top:auto}
-.home2-root .home2-text-action{background:transparent;color:inherit;padding:4px 0;justify-content:flex-start;text-decoration:none;align-self:flex-start}
-.home2-root .home2-text-action:hover{text-decoration:underline;text-underline-offset:4px}
-.home2-root .home2-text-action svg,.home2-root .home2-main-action svg{flex-shrink:0}
-.home2-root .home2-media-row{display:flex;gap:12px;align-items:center;min-width:0;flex:1}
-.home2-root .home2-media-row>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
-.home2-root .home2-media-row>svg{width:42%;max-width:180px;flex-shrink:0;display:block}
-.home2-root .home2-travel{grid-area:travel;background:#d9f36b;color:#182c26}
-.home2-root .home2-travel>svg{width:100%;max-width:180px;margin:auto;display:block}
-.home2-root .home2-record{grid-area:record;position:relative;z-index:2;overflow:visible}
-.home2-root .home2-search-mark{position:absolute;right:20px;top:20px;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#eeeafd;color:#243fd0}
-.home2-root .home2-record>.home2-label{color:#676d75}
-.home2-root .home2-record .public-record-discovery{display:block;width:100%;max-width:none;margin:0;padding:0;background:transparent;box-shadow:none;border:0;min-height:0}
-.home2-root .home2-record .public-record-discovery__heading{margin:0 60px 12px 0;text-align:start}
-.home2-root .home2-record .public-record-discovery__heading h2{font-size:clamp(20px,2.2vw,28px);color:#151a28}
-.home2-root .home2-record .public-record-discovery__heading p{color:#676d75}
-.home2-root .home2-record .public-record-discovery__interactive{width:100%;min-width:0;max-width:none;position:relative}
-.home2-root .home2-record .public-record-search{display:flex;gap:8px;width:100%;max-width:none;min-width:0;border:0;padding:0;background:transparent;box-shadow:none}
-.home2-root .home2-record .public-record-search input{min-width:0;width:100%;border:0;background:#f1f1ed;border-radius:999px;padding:12px 16px;min-height:48px;color:#151a28}
-.home2-root .home2-record .public-record-search>button{display:flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;width:auto;min-width:48px;padding:10px 16px;border:0;border-radius:999px;color:#fff;background:#151a28;height:auto;min-height:48px;font-size:13px}
-.home2-root .home2-record .public-record-search>button:disabled{opacity:.65}
-.home2-root .home2-cert{grid-area:cert;background:#ded6fb;color:#30244f;min-height:185px}
-.home2-root .home2-small{border:0;text-align:start;align-items:stretch;cursor:pointer;transition:box-shadow .2s,transform .2s;min-height:150px}
-.home2-root .home2-small:hover{box-shadow:0 6px 18px #151a2820;transform:translateY(-1px)}
-.home2-root .home2-small-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:auto;color:inherit}
-.home2-root .home2-small-title{font-size:clamp(17px,1.8vw,24px);font-weight:600;line-height:1.25;color:inherit}
-.home2-root .home2-small-desc{font-size:13px;color:inherit;line-height:1.5}
-.home2-root .home2-corrections{grid-area:corrections;background:#fbc9b9;color:#703526}
-.home2-root .home2-history{grid-area:history;background:#151a28;color:#fff}
-.home2-root .home2-history .home2-small-top>svg:first-child{color:#d9f36b}
-.home2-root .home2-history .home2-small-desc{color:#c5c8d1}
-.home2-root .home2-again{grid-area:again;background:#f6d777;color:#473817}
-.home2-root .home2-drafts{grid-area:drafts;color:#151a28}
-.home2-root .home2-drafts .home2-small-top{color:#243fd0}
-.home2-root .home2-account{grid-area:account;background:#c4dfd1;color:#183f33;position:relative}
-.home2-root .home2-account h2,.home2-root .home2-account p{padding-right:48px}
-.home2-root .home2-account-icon{position:absolute;right:20px;top:20px;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#183f33;color:#fff}
-.home2-root .home2-cms{grid-area:cms;min-width:0;display:flex;background:#fa673d;border-radius:20px;color:#241b17}
-.home2-root .home2-editorial{padding:16px;display:flex;flex-direction:column;gap:12px;width:100%;min-width:0;justify-content:space-between}
-.home2-root .home2-editorial h2{font-weight:600;font-size:clamp(20px,2vw,28px);line-height:1.2;margin:0;letter-spacing:-.02em}
-.home2-root .home2-editorial p{font-size:14px;line-height:1.5;margin:0}
-.home2-root .home2-editorial-art{width:100%;max-height:230px;object-fit:contain;display:block}
-.home2-root .home2-editorial-controls{display:flex;align-items:center;justify-content:space-between;gap:4px}
-.home2-root .home2-dots{display:flex;align-items:center;gap:1px;flex-wrap:wrap}
-.home2-root .home2-dots button{display:grid;place-items:center;width:24px;height:32px;background:transparent;border:0;cursor:pointer}
-.home2-root .home2-dots button span{width:8px;height:8px;border-radius:50%;background:#ffb68c}
-.home2-root .home2-dots button[aria-current=true] span{background:#241b17}
-.home2-root .home2-next{width:44px;height:44px;display:grid;place-items:center;flex-shrink:0;border:0;background:transparent;color:#241b17;cursor:pointer}
-.home2-root :where(button,a,input):focus-visible{outline:3px solid #243fd0;outline-offset:3px}
-.home2-root .home2-pay :focus-visible,.home2-root .home2-history:focus-visible{outline-color:#fff}
-.home2-shell{background:#f1efe7!important}
-.home2-shell .public-home-header{background:#f1efe7;border:0;box-shadow:none}
-.home2-shell .public-home-header__inner{max-width:1300px}
-.home2-shell .public-home-brand__copy{display:flex;flex-direction:column}
-.home2-shell .home2-wordmark{font-weight:700;font-size:28px;color:#151a28;line-height:1.12;white-space:nowrap}
-.home2-shell .home2-wordmark em{font-style:normal;color:#fa673d;margin-left:3px}
-.home2-shell .home2-wordmark-tag{color:#64665f;font-size:10px;font-weight:500}
-.home2-shell .public-home-nav a{color:#151a28;background:transparent}
-.home2-shell .public-home-nav a>svg,.home2-shell .public-home-language>svg{display:none}
-.home2-shell .public-home-language{border-radius:999px;background:transparent;color:#151a28;border-color:#bcbdb6}
-.home2-shell .public-home-login-link{background:#151a28!important;border-radius:999px;color:#fff!important;border-color:#151a28}
-.home2-shell .public-footer{background:#f1efe7;border:0}
-.home2-shell .public-footer__inner{max-width:1300px}
-.home2-shell .home2-footer-brand{color:#151a28;font-weight:600}
-@media(max-width:900px){.home2-root{padding:16px}.home2-root .home2-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"pay pay" "travel cert" "record record" "corrections history" "again drafts" "account account" "cms cms";gap:12px}.home2-root .home2-tile{padding:16px}.home2-root .home2-cms .home2-editorial{display:grid;grid-template-columns:1fr minmax(80px,32%);align-items:center}.home2-root .home2-editorial>.home2-label,.home2-root .home2-editorial-controls{grid-column:1/-1}.home2-root .home2-editorial-art{grid-column:2;grid-row:2}.home2-root .home2-editorial-copy{grid-column:1;grid-row:2}.home2-root .home2-travel>svg{max-width:100px}.home2-root .home2-cert .home2-media-row>svg{display:none}.home2-root .home2-intro-mark{display:none}.home2-root .home2-intro h1{max-width:20ch}}
-@media(max-width:480px){.home2-root{padding:8px;border-radius:16px}.home2-root .home2-tile{padding:12px;border-radius:16px}.home2-root .home2-grid{gap:8px}.home2-root .home2-pay{min-height:200px}.home2-root .home2-media-row{gap:8px}.home2-root .home2-small{min-height:136px;gap:8px}.home2-root .home2-label{font-size:11px}.home2-root .home2-record .public-record-search input{font-size:16px}.home2-root .home2-record .public-record-search>button{padding:8px 12px}.home2-root .home2-search-mark{right:12px;top:12px;width:36px;height:36px}.home2-root .home2-record .public-record-discovery__heading{margin-right:40px}.home2-root .home2-account-icon{right:12px;top:12px}}
-@media(prefers-reduced-motion:reduce){.home2-root .home2-small{transition:none}}
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');
+/* Uploaded Figma Make design: unique Home 2 namespace; existing homepage styles untouched. */
+.taxpay-citizen-shell.home2-import-shell{background:#e6e8ef;color:#141b2d;}
+.taxpay-citizen-shell.home2-import-shell > main{width:100%;max-width:none!important;padding:0!important;margin:0;}
+.home2-import-root{font-family:'Poppins','Hind Siliguri',ui-sans-serif,system-ui,sans-serif;color:#141b2d;min-width:0;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;}
+.home2-import-root[lang=bn]{font-family:'Hind Siliguri','Poppins',sans-serif;}
+.home2-import-root .home2-font-bn{font-family:'Hind Siliguri','Poppins',sans-serif;}
+.home2-import-root .home2-no-scrollbar{scrollbar-width:none;}
+.home2-import-root .home2-no-scrollbar::-webkit-scrollbar{display:none;}
+.home2-import-root .home2-press{transition:scale 160ms ease,translate 300ms ease,transform 300ms ease,background-color 160ms ease,color 160ms ease,box-shadow 300ms ease;}
+.home2-import-root .home2-press:active{scale:.98;}
+.home2-import-root[lang=bn] :is(h1,h2,h3){letter-spacing:0;line-height:1.3;}
+.home2-import-root footer[role=contentinfo]{padding-bottom:initial;}
+.home2-import-root .public-help-widget{bottom:calc(100px + env(safe-area-inset-bottom));}
+.home2-import-root .public-help-widget[data-home2-hidden=true]:not(:has(.public-help-panel)){display:none;}
+@media(min-width:960px){.home2-import-root .public-help-widget{bottom:24px;}}
+@keyframes home2-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.home2-import-root .home2-rise{animation:home2-rise 520ms cubic-bezier(.2,.7,.2,1) both;}
+@media(prefers-reduced-motion:reduce){.home2-import-root .home2-rise{animation:none}.home2-import-root .home2-press{transition:none}}
+@media(max-width:360px){.home2-import-root header[role=banner]{padding-left:10px;padding-right:10px;gap:4px;}.home2-import-root header[role=banner]>div:first-child{gap:5px}.home2-import-root header[role=banner]>div:last-child{gap:4px}.home2-import-root header[role=banner]>div:last-child>button{padding-inline:8px;}}
