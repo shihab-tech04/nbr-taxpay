@@ -1,3 +1,4 @@
+import {mockActivitySql,sqlActivityRecord} from './mock-activity-sql';
 import './account-beneficiary-history-date-filter.spec';
 import {test,expect} from '@playwright/test';
 
@@ -30,9 +31,7 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
       :[];
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
-  await page.route('**/functions/v1/demo-story1-taxpay/payments?**',route=>
-    route.fulfill({status:200,contentType:'application/json',
-      body:JSON.stringify({success:true,data:{items:[],total:0}})}));
+  await mockActivitySql(page,[sqlActivityRecord('00000000-0000-4000-8000-000000000912','2025-26',person.tin,1500000)]);
   await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',route=>
     route.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify({success:true,simulationOnly:true,data:[record]})}));

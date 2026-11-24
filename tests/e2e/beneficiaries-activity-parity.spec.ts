@@ -376,7 +376,8 @@ test('signed-in Activity shows new payments across assessment years immediately 
   await expect(page.getByTestId('user1-synthetic-workspace')).toHaveAttribute('data-payment-source-state','ready');
   readFailure=true;
   await page.evaluate(()=>window.dispatchEvent(new Event('taxpay:story-payments-recovered')));
-  await expect(page.getByText('Recorded payments could not be verified.',{exact:true})).toBeVisible();
+  await expect(page.getByTestId('user1-synthetic-workspace')).toHaveAttribute('data-payment-source-state','error');
+  await expect(page.locator('.taxpayer-transaction-panel').getByRole('alert').filter({hasText:'Recorded payments could not be verified.'})).toBeVisible();
   await expect(page.getByText('No transactions yet.',{exact:true})).toHaveCount(0);
   await expect(page.getByTestId('taxpayer-transaction-table')).toHaveCount(0);
   readFailure=false;
