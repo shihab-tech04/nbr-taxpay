@@ -27,7 +27,13 @@ test('preview correction request history keeps existing form and records but use
  assert.match(src,/mobileTestId="preview-correction-cards"/);
  assert.match(src,/value=\{caseSearch\}/);
  assert.match(src,/renderMobileCard=/);
- assert.match(src,/visibleCorrections = corrections\.filter/);
+ assert.match(src,/localCorrections = corrections\.filter\(c=>visibleReceipts\.some/);
+ assert.match(src,/visibleCorrections:[^\n]+=serverMode/);
+ assert.match(src,/\?serverRecords\.map/);
+ assert.match(src,/:localCorrections;/);
+ assert.match(src,/listPreviewCorrections\(\)/);
+ assert.match(src,/await submitPreviewCorrection\(/);
+ assert.match(src,/setServerRecords\(rows=>\[saved,/);
  assert.match(src,/addCorrectionRequest\(/);
  assert.match(src,/c\.approverRemarks/);
  assert.match(src,/c\.currentCircle/);
