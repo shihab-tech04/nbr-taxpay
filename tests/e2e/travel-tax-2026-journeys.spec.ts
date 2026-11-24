@@ -1073,8 +1073,8 @@ test('F-153 / US-150: remove from passenger rail, cancel an unfinished entry, an
   await modal.getByRole('button',{name:'Edit passengers (1)'}).click();
   await modal.locator('#travel-new-passport').focus();
   const entry=modal.locator('.travel-passenger-workspace__entry');
-  await expect(entry.getByRole('button',{name:'Cancel adding'})).toBeVisible();
-  await entry.getByRole('button',{name:'Cancel adding'}).click();
+  await expect(modal.locator('.travel-passenger-workspace__editor').getByRole('button',{name:'Cancel adding'})).toBeVisible();
+  await modal.locator('.travel-passenger-workspace__editor').getByRole('button',{name:'Cancel adding'}).click();
   await expect(entry).toHaveCount(0);
   await expect(members).toHaveCount(1);
   await expect(modal.getByRole('button',{name:'Undo removal'})).toHaveCount(0);
