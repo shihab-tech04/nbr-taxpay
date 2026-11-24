@@ -32,11 +32,17 @@ export const getDemoStoryPaymentHistory=async (user:SimulationUser,view:'benefic
  if(!profile||profile.profileId!==user)throw Error('Sign in to the matching demo profile to view its payment activity.');
  // Bind payment history to the server-issued profile capability. The old
  // public RPC accepted any User ID from its caller and is no longer exposed.
+ const assertCurrentProfile=()=>{
+   const current=activePreviewSession();
+   if(current?.profileId!==profile.profileId||current.capability!==profile.capability||
+      current.paymentSessionId!==profile.paymentSessionId)throw Error('Demo account changed.');
+ };
  const rows:SimulationTransaction[]=[];
  const seen=new Set<string>();
  let beforeAt:string|null=null,beforeId:string|null=null;
  let finished=false;
  for(let page=0;page<10000;page++){
+   assertCurrentProfile();
    const query=new URLSearchParams({view,pageSize:'100'});
    if(beforeAt&&beforeId){query.set('beforeCreatedAt',beforeAt);query.set('beforeId',beforeId);}
    const response=await fetch(`${ROOT}/functions/v1/demo-story1-taxpay/profile-history?${query}`,{
@@ -59,6 +65,7 @@ export const getDemoStoryPaymentHistory=async (user:SimulationUser,view:'benefic
    beforeAt=last.createdAt;beforeId=last.transactionId;
  }
  if(!finished)throw Error('Demo payment history exceeds safe retrieval limit');
+ assertCurrentProfile();
  return rows.map(tx=>({...tx,allocations:tx.allocations.map((a,index)=>({
    ...a,id:a.id??`${tx.transactionId}-${index+1}`,lineNo:a.lineNo??index+1
  }))}));

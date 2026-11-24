@@ -94,3 +94,55 @@ test('unavailable history must not masquerade as an empty account',async({page},
   await expect(dashboard.getByText('Your tax journey is empty')).toHaveCount(0);
   await expect(dashboard.locator('.taxpay-unified-donut')).toHaveCount(0);
 });
+
+/** Intercept only fictional, read-only SQL fixtures. Never contact a hosted DB. */
+async function mockServiceRegister(page:import('@playwright/test').Page,user:PreviewUser,populated:boolean) {
+  await page.route('**/rest/v1/sim_payment_users?*',route=>{
+    expect(new URL(route.request().url()).searchParams.get('id')).toBe('eq.'+user);
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{
+      id:user,role_code:'TAXPAYER',name_en:'Fixture account',name_bn:null,focus_en:null,
+      focus_bn:null,tin_stub:null,jurisdiction_label:null
+    }])});
+  });
+  await page.route('**/rest/v1/sim_tax_service_records?*',route=>{
+    expect(new URL(route.request().url()).searchParams.get('user_id')).toBe('eq.'+user);
+    const records=populated?[{
+      record_id:'fixture-service-row',user_id:user,service_code:'ADVANCE_TAX',
+      assessment_year:'2026-27',amount_minor:10000,record_state:'SIMULATED',
+      participant_role:'PAYER',related_user_id:null,recorded_at:'2026-11-15T10:00:00Z',
+      simulation_only:true
+    }]:[];
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(records)});
+  });
+}
+
+test('empty service register keeps the shared controls and table structure',async({page},info)=>{
+  await mockServiceRegister(page,'user30',false);
+  await mockAccount(page,'user30');
+  const register=page.getByTestId('taxpay-service-record-register');
+  await expect(register).toBeVisible();
+  await expect(register.getByRole('searchbox',{name:'Search service records'})).toBeVisible();
+  await expect(register.getByRole('combobox',{name:'Filter record status'})).toBeVisible();
+  await expect(register.getByRole('combobox',{name:'Sort service records'})).toBeVisible();
+  await expect(register.getByRole('status')).toContainText('No stored service activity is available for this account.');
+  if(info.project.name==='desktop-1280'){
+    await expect(register.getByRole('columnheader',{name:'Service',exact:true})).toBeVisible();
+    await expect(register.getByRole('columnheader',{name:'Amount',exact:true})).toBeVisible();
+    await expect(register.getByRole('columnheader',{name:'Actions',exact:true})).toBeVisible();
+  }
+});
+
+test('filtered service register keeps its controls and recovers the original owner row',async({page},info)=>{
+  await mockServiceRegister(page,'user2',true);
+  await mockAccount(page,'user2',true);
+  const register=page.getByTestId('taxpay-service-record-register');
+  const search=register.getByRole('searchbox',{name:'Search service records'});
+  await expect(register.getByRole('button',{name:'View record: fixture-service-row'})).toBeVisible();
+  await search.fill('no-matching-record');
+  await expect(register.getByRole('status')).toContainText('No service records match your search and filters.');
+  await expect(search).toBeVisible();
+  if(info.project.name==='desktop-1280')await expect(register.getByRole('columnheader',{name:'Service',exact:true})).toBeVisible();
+  await register.getByRole('button',{name:'Clear filters'}).click();
+  await expect(register.getByRole('button',{name:'View record: fixture-service-row'})).toBeVisible();
+  await expect(register.getByRole('status').filter({hasText:'No service records match'})).toHaveCount(0);
+});
