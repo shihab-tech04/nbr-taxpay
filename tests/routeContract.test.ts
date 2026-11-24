@@ -6,13 +6,14 @@ import {OFFICE_MANAGEMENT_ROUTE_ALIASES, ROUTES, publicDemoReceiptId, receiptRet
 
 test('the TaxPay route contract matches its public and taxpayer app router', () => {
   const app = readFileSync('src/App.tsx', 'utf8');
-  const screens = [...app.matchAll(/case '([a-z_0-9]+)':/g)].map(match => match[1]);
+  const screens = [...app.matchAll(/case '([a-z_0-9-]+)':/g)].map(match => match[1]);
   screens.push('office_login');
   assert.deepEqual([...new Set(screens)].sort(), [...ROUTES].sort());
   assert.equal(new Set(ROUTES).size, ROUTES.length);
   assert.equal(validRoute('does_not_exist'), 'landing');
   assert.equal(validRoute(''), 'landing');
   assert.equal(validRoute('history'), 'history');
+  assert.equal(validRoute('home-2'), 'home-2');
   for (const route of OFFICE_MANAGEMENT_ROUTE_ALIASES) {
     assert.equal((ROUTES as readonly string[]).includes(route), false, route + ' must stay outside TaxPay routes');
     assert.equal(validRoute(route), 'landing', route);
@@ -21,7 +22,7 @@ test('the TaxPay route contract matches its public and taxpayer app router', () 
 
 test('published route-to-component index covers every registered screen with an existing file', () => {
   const index = readFileSync('FEATURE_PARITY_v11.md', 'utf8');
-  const rows = [...index.matchAll(/^\| ([a-z_0-9]+) \| (src\/components\/screens\/[A-Za-z0-9]+\.tsx) \|$/gm)];
+  const rows = [...index.matchAll(/^\| ([a-z_0-9-]+) \| (src\/components\/screens\/[A-Za-z0-9]+\.tsx) \|$/gm)];
   assert.deepEqual(rows.map(row=>row[1]).sort(), [...ROUTES].sort());
   for (const [,route,filename] of rows) assert.ok(existsSync(filename),route+': missing '+filename);
 });
@@ -48,7 +49,7 @@ test('literal navigation calls never refer to an unregistered screen', () => {
   ];
   for (const filename of menuFiles) {
     const content = readFileSync(filename, 'utf8');
-    for (const match of content.matchAll(/\b(?:route|actionKey):\s*['"]([a-z_0-9]+)['"]/g)) {
+    for (const match of content.matchAll(/\b(?:route|actionKey):\s*['"]([a-z_0-9-]+)['"]/g)) {
       assert.ok(ROUTES.some(route => route === match[1]) || OFFICE_MANAGEMENT_ROUTE_ALIASES.some(route => route === match[1]), filename + ': broken menu destination ' + match[1]);
     }
   }

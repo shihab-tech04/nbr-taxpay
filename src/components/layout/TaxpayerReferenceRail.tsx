@@ -22,7 +22,7 @@ const activityRoutes = new Set(['history', 'verify']);
 
 /** Taxpayer-only desktop layout. Demo navigation is not a verified-taxpayer entitlement. */
 export function TaxpayerReferenceRail() {
-  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, openPaymentServiceChoice } = useTaxState();
+  const { currentRoute, navigate, language, setLanguage, userRole, setUserRole, previewAccount, logoutPreviewAccount, openPaymentServiceChoice, openAllTaxPayments } = useTaxState();
   const { user } = useAccountIdentity();
   const [signOutError, setSignOutError] = React.useState('');
   const [payMenuOpen, setPayMenuOpen] = React.useState(false);
@@ -95,7 +95,7 @@ export function TaxpayerReferenceRail() {
             <CirclePlus size={20} aria-hidden={true} /><span>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</span><ChevronDown size={16} aria-hidden={true}/>
           </button>
           {payMenuOpen && <div id="taxpayer-pay-menu" className="taxpayer-reference-pay-menu" role="menu" aria-label={bn ? 'কর পরিশোধের বিকল্প' : 'Payment options'}>
-            <button type="button" role="menuitem" className="taxpayer-reference-pay-option" onClick={() => {setPayMenuOpen(false);openPaymentServiceChoice();}}><CirclePlus size={17} aria-hidden={true}/>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</button>
+            <button type="button" role="menuitem" className="taxpayer-reference-pay-option" onClick={() => {setPayMenuOpen(false);if (user || previewAccount) openAllTaxPayments(); else openPaymentServiceChoice();}}><CirclePlus size={17} aria-hidden={true}/>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</button>
             <button type="button" role="menuitem" className="taxpayer-reference-pay-option" onClick={() => {setPayMenuOpen(false);openPaymentServiceChoice('TRAVEL_TAX');}}><Plane size={17} aria-hidden={true}/>{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</button>
             <button type="button" role="menuitem" className="taxpayer-reference-pay-option" onClick={() => {setPayMenuOpen(false);setGiftTaxOpen(true);}}><Gift size={17} aria-hidden={true}/>{bn ? 'দানকর' : 'Gift Tax'}</button>
           </div>}

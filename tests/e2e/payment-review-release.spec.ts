@@ -418,7 +418,7 @@ test('Travel Tax follows approved Land/Water, multi-passenger bilingual preview 
   await page.getByRole('button', { name: 'অনলাইনে পরিশোধ' }).click();
   await page.getByRole('button', { name: 'মোবাইল ব্যাংকিং' }).click();
   await page.getByRole('radio', { name: 'Nagad' }).check();
-  await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
+  await page.locator('.payment-review__ack input[type="checkbox"]').check();
   await page.getByRole('button', { name: 'নমুনা পেমেন্ট নিশ্চিত করুন' }).click();
   await expect(page.locator('.receipt-view__paper')).toBeVisible();
   await expect(page.getByTestId('travel-family-challan')).toBeVisible();
