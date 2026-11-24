@@ -56,6 +56,8 @@ function publicError(error: unknown): { status: number; code: string } {
     return { status: 400, code: message.split(':')[0] };
   if (/LEGACY_SESSION_ALREADY_LINKED/.test(message)) return { status: 409, code: 'LEGACY_SESSION_ALREADY_LINKED' };
   if (/GUEST_SESSION_UNAVAILABLE/.test(message)) return { status: 410, code: 'GUEST_SESSION_UNAVAILABLE' };
+  if (/BENEFICIARY_GROUP_LIMIT/.test(message)) return { status: 409, code: 'BENEFICIARY_GROUP_LIMIT' };
+  if (/BENEFICIARY_GROUP_NOT_EMPTY/.test(message)) return { status: 409, code: 'BENEFICIARY_GROUP_NOT_EMPTY' };
   if (/BENEFICIARY_ALREADY_IN_LIST/.test(message)) return { status: 409, code: 'BENEFICIARY_ALREADY_IN_LIST' };
   if (/INVALID_DRAFT_PAYLOAD|INVALID_DRAFT_ACTION/.test(message))
     return { status: 400, code: message.split(':')[0] };
