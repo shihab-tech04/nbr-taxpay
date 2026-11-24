@@ -3527,3 +3527,11 @@
   .taxpay-citizen-shell .travel-flow[data-step="2"]
   .travel-flow__unified-preview .unified-v3-review__table-wrap {padding:0 9px;}
 }
+
+/* The final-stage mobile calculation is a mobile-only disclosure.
+   It must never consume desktop modal-footer space or sit beside the primary CTA. */
+@media (min-width: 651px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow__mobile-summary {
+    display: none !important;
+  }
+}
