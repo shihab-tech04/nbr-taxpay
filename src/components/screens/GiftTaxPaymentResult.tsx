@@ -59,6 +59,7 @@ export function GiftTaxPaymentResult({language,input,outcome,onBack,onRetry,onRe
     payerName:input.payer?.name||input.donor.name,payerTin:input.payer?.tin||input.donor.tin,
     taxpayerName:input.donor.name,taxpayerTin:input.donor.tin,
     receiptMobile:input.payer?.phone,receiptEmail:input.payer?.email,
+    noticeReference:input.payer?.noticeReference,
     paymentRemarks:input.remarks,isRepresentativePayment:false,
     taxZone:t('Not verified','যাচাই হয়নি'),taxCircle:t('Not verified','যাচাই হয়নি'),
     isWithholding:false,items:[{headId:0,economicCode:'SIM-GIFT',
