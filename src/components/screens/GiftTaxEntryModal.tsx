@@ -44,7 +44,7 @@ const secondaryClass = 'gift-tax-action gift-tax-action--secondary';
  * No authorized Gift Tax head, government payment API, or official credit-posting
  * path currently exists. Never turn this public form into a financial write.
  */
-export function GiftTaxEntryModal({onClose, onBack, signedIn = false, initialReuse}: {onClose: () => void; onBack?: () => void; signedIn?: boolean;initialReuse?:GiftTaxReuseDraft}) {
+export function GiftTaxEntryModal({onClose, onBack, signedIn = false, initialReuse, sourcePaymentId}: {onClose: () => void; onBack?: () => void; signedIn?: boolean;initialReuse?:GiftTaxReuseDraft;sourcePaymentId?:string}) {
   const {language, navigate} = useTaxState();
   const bn = language === 'bn';
   const t = (en: string, bd: string) => bn ? bd : en;
@@ -304,6 +304,7 @@ export function GiftTaxEntryModal({onClose, onBack, signedIn = false, initialReu
         otherLabel: committedDoneeClass.tag === 'others' ? committedDoneeOther.trim() : null},
       giftAmountMinor: giftMinor, estimatedTaxMinor: taxMinor,
       description, giftDate: dateOfGift, remarks, idempotencyKey: key,
+      ...(initialGift&&sourcePaymentId?{sourcePaymentId}:{}),
       payer: {name:payerName.trim(),phone:receiptPhone,email:receiptEmail.trim(),
         noticeReference:noticeReference.trim(),tin:payerTin},
     };

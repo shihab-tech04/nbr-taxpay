@@ -29,6 +29,8 @@ export interface GiftTaxPaymentInput {
   payer?: {name:string;phone:string;email:string;noticeReference:string;tin:string};
   /** Generated for this exact review. Reuse on retry until server resolves. */
   idempotencyKey: string;
+  /** Immutable payer-owned simulated source parent; never a new authorization. */
+  sourcePaymentId?: string;
 }
 export type GiftTaxPaymentOutcome =
   | {kind: 'UNAVAILABLE'; code: 'OFFICIAL_GIFT_TAX_NOT_CONFIGURED'}

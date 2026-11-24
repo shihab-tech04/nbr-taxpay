@@ -5,10 +5,13 @@ import {getConfirmedReceipt} from './confirmedPaymentCertificate';
 import {activePreviewSession,GIFT_PENDING_SESSION_KEY,type PreviewSession} from './previewAccountSession';
 import {sampleTinForUserNumber} from '../data/sampleTinSuggestions';
 import {estimateGiftTax} from './giftTaxEstimate';
+import {validCertificateTransactionId} from './transactionId';
 
 /** Existing immutable Story 1 parent and Office outbox; no real funds or official credit. */
 export function giftTaxStoryInput(input:GiftTaxPaymentInput,method:GiftTaxSimulationMethod,
  sessionId:string,profileId:string|null):StoryPaymentInput {
+ if(input.sourcePaymentId!==undefined&&(!profileId||!validCertificateTransactionId(input.sourcePaymentId)||input.sourcePaymentId===input.idempotencyKey))
+  throw Error('INVALID_GIFT_REPEAT_SOURCE');
  const minor=input.estimatedTaxMinor;
  if(!Number.isSafeInteger(minor)||minor<=0||Math.round((estimateGiftTax(input.giftAmountMinor/100)??-1)*100)!==minor)
   throw Error('INVALID_GIFT_AMOUNT');
@@ -24,7 +27,7 @@ export function giftTaxStoryInput(input:GiftTaxPaymentInput,method:GiftTaxSimula
  const line={headId:0,economicCode:'SIM-GIFT',headNameEn:'Gift Tax',taxAmount:minor/100,
   penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:minor/100};
  const receiptSnapshot:ChallanReceipt={
-  id:reference,challanNo:reference,tokenNumber:'SIMULATION',paymentCategory:'GIFT_TAX',assessmentYear,
+  id:reference,challanNo:reference,tokenNumber:input.sourcePaymentId?reference:'SIMULATION',paymentCategory:'GIFT_TAX',assessmentYear,
   payerName:input.payer?.name??'',payerTin:ownTin??input.payer?.tin??'',
   taxpayerName:donor.name,taxpayerTin:donor.tin,receiptMobile:input.payer?.phone??'',receiptEmail:input.payer?.email??'',
   noticeReference:input.payer?.noticeReference??'',paymentRemarks:remarks,giftDetails,isRepresentativePayment:false,
@@ -33,6 +36,7 @@ export function giftTaxStoryInput(input:GiftTaxPaymentInput,method:GiftTaxSimula
   createdAt:giftDate+'T00:00:00.000Z',isSimulatedDemo:true,
  };
  return {idempotencyKey:input.idempotencyKey,sessionId,service:'GIFT_TAX',amountMinor:minor,details:{
+  ...(input.sourcePaymentId?{sourcePaymentId:input.sourcePaymentId}:{}),
   sampleOnly:true,payerMode,payerName:receiptSnapshot.payerName,payerTin:receiptSnapshot.payerTin,
   taxpayerName:donor.name,taxpayerTin:donor.tin,assessmentYear,receiptReference:reference,
   receiptMobile:receiptSnapshot.receiptMobile,receiptEmail:receiptSnapshot.receiptEmail,
@@ -84,6 +88,7 @@ export async function persistGiftTaxSimulation(input:GiftTaxPaymentInput,method:
   if(getStorySessionId()!==sessionId||activePreviewSession()?.capability!==preview?.capability||
     receipt.paymentTransactionId!==ack.id||receipt.paymentCategory!=='GIFT_TAX'||
     receipt.challanNo!==story.details.receiptReference||receipt.paymentMethod!==method||
+    (input.sourcePaymentId&&(ack.id===input.sourcePaymentId||receipt.tokenNumber!==story.details.receiptReference))||
     Math.round(receipt.totalAmount*100)!==story.amountMinor||
     receipt.paymentRemarks!==input.remarks||canonical(receipt.giftDetails)!==canonical(story.details.giftDetails))
     return pending;
