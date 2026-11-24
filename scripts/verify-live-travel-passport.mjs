@@ -12,6 +12,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   for (const [name, viewport, mobile] of [
     ['desktop', { width: 1280, height: 800 }, false],
+    ['short-desktop', { width: 1280, height: 520 }, false],
     ['mobile', { width: 375, height: 812 }, true],
   ]) {
     const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile });
@@ -49,6 +50,8 @@ try {
         throw new Error('Passenger Information extends outside the desktop viewport');
       }
     }
+    await expect(modal.getByRole('button', {name:'Save Draft', exact:true})).toHaveCount(0);
+    await expect(modal.getByRole('button', {name:'Continue Draft', exact:true})).toHaveCount(0);
     await expect(modal.locator('#travel-tax-route-results')).toHaveCount(0);
     await expect(modal.locator('#travel-mobile')).toHaveCount(0);
     const addPassenger = modal.getByRole('button', { name: 'Add passenger', exact: true });
@@ -62,13 +65,32 @@ try {
     await expect(first.getByTestId('travel-passenger-medical-control')).toHaveCount(0);
     await expect(first.locator('.travel-flow__identity-card')).toHaveCount(0);
 
+    const geometry = () => modal.evaluate(el => {
+      const nodes=[el,...['.taxpay-modal__header','.taxpay-modal__body','.taxpay-modal__footer',
+        '.travel-flow__passport-row','.travel-passenger-workspace__rail'].map(s=>el.querySelector(s))];
+      return nodes.flatMap(node=>{if(!node)throw new Error('Missing stable modal section');
+        const b=node.getBoundingClientRect();return [b.x,b.y,b.width,b.height,node.scrollTop,node.scrollHeight];});
+    });
+    await modal.evaluate(async el=>{await Promise.all(el.getAnimations({subtree:true}).filter(a=>a.playState==='running').map(a=>a.finished.catch(()=>undefined)));});
+    const baseline=await geometry();
+    await page.screenshot({path:`test-results/live-travel-passport-${name}-closed.png`});
     await modal.locator('#travel-passport-first').click();
     const options = modal.locator('#travel-passport-suggestions-first [role="option"]');
     await expect(options).toHaveCount(10);
     await expect(options.first()).toBeVisible();
-    const geometry = await modal.locator('#travel-passport-suggestions-first')
+    await expect.poll(()=>modal.locator('#travel-passport-suggestions-first').evaluate(el=>{
+      const b=el.getBoundingClientRect(); const first=el.querySelector('[role="option"]')?.getBoundingClientRect();
+      if(!first||!el.matches(':popover-open')||b.height<90||b.top<0||b.bottom>window.innerHeight+2)return false;
+      const hit=document.elementFromPoint(first.x+12,first.y+first.height/2);
+      return Boolean(hit?.closest('[role="option"]')&&el.contains(hit));
+    })).toBe(true);
+    await modal.locator('#travel-passport-suggestions-first').evaluate(async el=>{await Promise.all(el.getAnimations().map(a=>a.finished.catch(()=>undefined)));});
+    const opened=await geometry();
+    if(Math.max(...opened.map((n,i)=>Math.abs(n-baseline[i])))>2)throw new Error('Passport dropdown changed modal layout or scroll position');
+    await page.screenshot({path:`test-results/live-travel-passport-${name}-dropdown.png`});
+    const optionScroll = await modal.locator('#travel-passport-suggestions-first')
       .evaluate(element => ({ scroll: element.scrollHeight, visible: element.clientHeight }));
-    if (geometry.scroll <= geometry.visible) throw new Error('Ten sample passport suggestions should scroll independently');
+    if (optionScroll.scroll <= optionScroll.visible) throw new Error('Ten sample passport suggestions should scroll independently');
     await options.filter({ hasText: 'TEST230005' }).click();
     await expect(modal.locator('#travel-lookup-first')).toBeEnabled();
     await expect(addPassenger).toHaveCount(0);
@@ -138,6 +160,7 @@ try {
     await expect(continueToTravel).toBeEnabled();
 
     await continueToTravel.click();
+    await expect(modal.getByRole('button', {name:'Save Draft', exact:true})).toHaveCount(0);
     await expect(modal.locator('.taxpay-modal__title')).toHaveText('Travel Details');
     await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '2');
     const modes = modal.locator('#travel-tax-route-results');

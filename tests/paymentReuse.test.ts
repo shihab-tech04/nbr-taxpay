@@ -21,7 +21,8 @@ test('copies original mixed own/other/head/year allocations without altering pai
  const before=JSON.stringify(receipt);
  const draft=reuseRecordedPayment([receipt],'ownerUid','1234567890123','original-payment');
  assert.equal(draft.ownerUid,'ownerUid');assert.equal(draft.service,'OTHER_TAX_PAYMENT');
- assert.equal(draft.formPayload.forSelf,true);
+ assert.equal(draft.formPayload.forSelf,false);
+ assert.equal(draft.formPayload.tin,'1234567890123');
  assert.deepEqual((draft.formPayload.otherTaxLines as Array<{assessmentYear:string}>).map(l=>l.assessmentYear),['2026-27','2025-26']);
  assert.deepEqual((draft.formPayload.otherTaxLines as Array<{amount:string}>).map(l=>l.amount),['10.00','20.00']);
  assert.equal((draft.formPayload.additionalTaxpayers as unknown[]).length,1);
@@ -128,7 +129,8 @@ test('preserves complete multi-taxpayer mixed-head multi-year source without reu
  assert.deepEqual(lines.map(line=>line.headId),[1,2,3,4]);
  assert.deepEqual(lines.map(line=>line.assessmentYear),['2026-27','2025-26','2027-28','2026-27']);
  assert.deepEqual(lines.map(line=>line.amount),['10.00','20.00','5.00','5.00']);
- assert.equal(copy.formPayload.forSelf,true);
+ assert.equal(copy.formPayload.forSelf,false);
+ assert.equal(copy.formPayload.tin,'1234567890123');
  assert.equal((copy.formPayload.additionalTaxpayers as unknown[]).length,2);
  assert.equal(copy.sourcePaymentId,'source-payment');
  assert.equal(Object.keys(copy.formPayload).some(key=>/challan|transaction|gateway|treasury|authorization|idempotency/i.test(key)),false);

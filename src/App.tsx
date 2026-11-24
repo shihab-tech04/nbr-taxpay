@@ -7,6 +7,8 @@ import { PublicHelpChat } from './components/layout/PublicHelpChat';
 import {AccountIdentityProvider,useAccountIdentity} from './services/accountIdentity';
 import { CitizenFooter } from './components/layout/CitizenFooter';
 import type { PaymentFormDraft } from './services/accountPaymentFormDrafts';
+import {parseGiftTaxReuseDraft} from './services/paymentReuse';
+import {activePreviewSession} from './services/previewAccountSession';
 
 // Screens
 import { PublicLanding } from './components/screens/PublicLanding';
@@ -33,6 +35,7 @@ const AuthorizationRequestPopup = React.lazy(() => import('./components/screens/
 // Do not load the large payment forms for public visitors who have not started a payment.
 const GuestPayment = React.lazy(() => import('./components/screens/GuestPayment').then(module => ({ default: module.GuestPayment })));
 const TravelTax = React.lazy(() => import('./components/screens/TravelTax').then(module => ({ default: module.TravelTax })));
+const GiftTaxReuseModal = React.lazy(() => import('./components/screens/GiftTaxEntryModal').then(module => ({default: module.GiftTaxEntryModal})));
 const PaymentServiceChoiceDialog = React.lazy(() => import('./components/screens/PaymentServiceChoiceDialog').then(module => ({ default: module.PaymentServiceChoiceDialog })));
 const Beneficiaries = React.lazy(() => import('./components/screens/Beneficiaries').then(module => ({ default: module.Beneficiaries })));
 const ArchitectureView = React.lazy(() => import('./components/screens/ArchitectureView').then(module => ({ default: module.ArchitectureView })));
@@ -105,6 +108,13 @@ const MainRouter: React.FC = () => {
     setPaymentServiceChoiceOpen(true);
   };
   const {user:verifiedApplicationUser,loading:checkingIdentity}=useAccountIdentity();
+  const giftReuse=paymentReuse?.service==='GIFT_TAX';
+  const giftCopy=giftReuse&&!verifiedApplicationUser&&previewAccount?.id===paymentReuse.ownerUid&&
+    activePreviewSession()?.profileId===paymentReuse.ownerUid
+      ?parseGiftTaxReuseDraft(paymentReuse.formPayload):null;
+  useEffect(()=>{
+    if(isPaymentServiceChoiceOpen&&giftReuse&&!giftCopy)setPaymentServiceChoiceOpen(false);
+  },[isPaymentServiceChoiceOpen,giftReuse,Boolean(giftCopy),setPaymentServiceChoiceOpen]);
   const mainContentRef = useRef<HTMLElement>(null);
   const priorCitizenRouteRef = useRef<string | null>(null);
   const privateTaxpayerRoute = isPrivateTaxpayerRoute(currentRoute, false);
@@ -130,7 +140,7 @@ const MainRouter: React.FC = () => {
     (sampleJourneysEnabled && ['TAXPAYER_INDIVIDUAL','TAXPAYER_CORPORATE','WITHHOLDING_AGENT'].includes(userRole)));
   // The public guide retains the same public navigation for guests and signed-in visitors.
   const taxpayerSupportRoute = false; // Receipt status is now a public modal, not a taxpayer-page shell.
-  const publicInformationRoute = receiptOverlayRoute || ['landing','incident'].includes(currentRoute) ||
+  const publicInformationRoute = receiptOverlayRoute || ['landing','home-2','incident'].includes(currentRoute) ||
     (['user_guide','guidance'].includes(currentRoute) && !taxpayerSupportRoute) ||
     loginOverlay || privateSampleGate;
   // A guest draft deep link retains its existing responsive shell and sign-in gate.
@@ -175,10 +185,12 @@ const MainRouter: React.FC = () => {
     }
     switch (currentRoute) {
       // Public Screens
+      case 'home-2':
+        return <PublicLanding key="home-2" home2 />;
       case 'landing':
       case 'taxpayer_login':
       case 'office_login':
-        return <PublicLanding />;
+        return routeParams.fromHome2 === true ? <PublicLanding key="home-2" home2 /> : <PublicLanding />;
       case 'user_guide':
       case 'guidance': // Legacy help bookmarks use the maintained user guide.
         return <PublicUserGuide />;
@@ -193,7 +205,7 @@ const MainRouter: React.FC = () => {
       case 'travel':
         return <TravelTax />;
       case 'verify':
-        return <PublicLanding />; // Receipt lookup opens in the shared public modal.
+        return routeParams.fromHome2 === true ? <PublicLanding key="home-2" home2 /> : <PublicLanding />; // Existing receipt modal.
       case 'incident':
         return <PublicReport />;
       case 'architecture':
@@ -253,12 +265,13 @@ const MainRouter: React.FC = () => {
     }
   };
 
+  const home2Shell = currentRoute === 'home-2' || (routeParams.fromHome2 === true && (loginOverlay || receiptOverlayRoute || privateSampleGate));
   return (
-    <div lang={language} className={`taxpay-citizen-shell min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${taxpayerReference && !privateSampleGate && (verifiedApplicationUser || previewAccount) ? " taxpay-authenticated-content" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}${!taxpayerReference ? " taxpay-public-mobile-shell" : ""}`}>
-      {publicInformationRoute ? <>
+    <div lang={language} className={`taxpay-citizen-shell${home2Shell ? ' home2-import-shell' : ''} min-h-screen flex flex-col font-sans${taxpayerReference ? " taxpay-taxpayer-reference" : ""}${taxpayerReference && !privateSampleGate && (verifiedApplicationUser || previewAccount) ? " taxpay-authenticated-content" : ""}${transactionRoute ? " taxpay-taxpayer-flow" : ""}${!taxpayerReference ? " taxpay-public-mobile-shell" : ""}`}>
+      {!home2Shell && (publicInformationRoute ? <>
         <div className="taxpay-public-desktop-navigation"><PublicHomeHeader /></div>
         <div className="taxpay-public-mobile-navigation"><CitizenNavigation /></div>
-      </> : <CitizenNavigation />}
+      </> : <CitizenNavigation />)}
       {taxpayerReference && !transactionRoute && <TaxpayerReferenceRail />}
       <main ref={mainContentRef} id="main-content" tabIndex={-1} className={`flex-1 ${publicInformationRoute ? 'public-information-main' : 'max-w-7xl'} w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8${transactionRoute ? ' citizen-main--transaction' : ''}${currentRoute === 'incident' ? ' public-information-main--report' : ''}`}>
         {privateSampleGate ? (
@@ -266,7 +279,7 @@ const MainRouter: React.FC = () => {
             {/* A protected deep link never reveals account data to signed-out visitors.
                 Render only the approved public shell while the shared login dialog
                 handles access, recovery, and close. */}
-            <PublicLanding />
+            {routeParams.fromHome2 === true ? <PublicLanding key="home-2" home2 /> : <PublicLanding />}
             {checkingIdentity && <p role="status">
               {language === 'bn' ? 'আপনার সেশন যাচাই করা হচ্ছে…' : 'Checking your session…'}
             </p>}
@@ -298,10 +311,10 @@ const MainRouter: React.FC = () => {
           </React.Suspense>
         </>}
       </main>
-      {(!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
-      {publicInformationRoute && !receiptOverlayRoute && !verifiedApplicationUser && !previewAccount && <PublicHelpChat />}
+      {!home2Shell && (!taxpayerReference || currentRoute === 'secure_workspace') && <CitizenFooter />}
+      {!home2Shell && publicInformationRoute && !receiptOverlayRoute && !verifiedApplicationUser && !previewAccount && <PublicHelpChat />}
       {receiptOverlayRoute && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'রসিদ লোড হচ্ছে…' : 'Loading receipt…'}</p>}>{currentRoute === 'verify'
-        ? <PublicServiceModal service="status" onClose={() => navigate('landing')} />
+        ? <PublicServiceModal service="status" onClose={() => navigate(routeParams.fromHome2 === true ? 'home-2' : 'landing')} />
         : <TaxPayModal title={language === 'bn' ? 'পেমেন্ট রসিদের বিবরণ' : 'Payment receipt details'}
             service="status" className="receipt-modal" footer={<></>}
             onClose={() => navigate(receiptReturnRoute(routeParams.returnTo))}>
@@ -309,12 +322,13 @@ const MainRouter: React.FC = () => {
           </TaxPayModal>}</React.Suspense>}
       {isParityModalOpen && <React.Suspense fallback={null}><ParityRegisterModal /></React.Suspense>}
       {isPaymentServiceChoiceOpen && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'পেমেন্ট সেবা লোড হচ্ছে…' : 'Loading payment service…'}</p>}>
-        <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} unifiedEntryRequested={unifiedPaymentEntryRequested} />
+        {giftReuse ? (giftCopy ? <GiftTaxReuseModal key={paymentReuse?.sourcePaymentId} signedIn initialReuse={giftCopy} onClose={()=>setPaymentServiceChoiceOpen(false)}/> : null)
+          : <PaymentServiceChoiceDialog initialService={paymentServiceInitialSelection} initialDraft={dashboardPaymentDraft} initialReuse={paymentReuse} unifiedEntryRequested={unifiedPaymentEntryRequested} />}
       </React.Suspense>}
-      {loginOverlay && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog /></React.Suspense>}
+      {loginOverlay && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog onClose={routeParams.fromHome2 === true ? ()=>navigate('home-2') : undefined} /></React.Suspense>}
       {signedOutPrivateLogin && <React.Suspense fallback={<p role="status">{language === 'bn' ? 'সাইন ইন লোড হচ্ছে…' : 'Loading sign in…'}</p>}><TaxpayerLoginDialog
         onSuccess={() => navigate(signInReturnRoute)}
-        onClose={() => navigate('landing')}
+        onClose={() => navigate(routeParams.fromHome2 === true ? 'home-2' : 'landing')}
       /></React.Suspense>}
       {(previewAccount || (verifiedApplicationUser && import.meta.env.VITE_ACCOUNT_RECEIVED_NOTICES_ENABLED === 'true')) &&
         <React.Suspense fallback={null}><AuthorizationRequestPopup /></React.Suspense>}

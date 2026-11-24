@@ -235,9 +235,14 @@ export function reuseRecordedPayment(
   // Return head. Never reconstruct that line into an editable combined draft.
   // The original remains untouched; the payer must start a valid new journey.
   const hasReturnHead = source.some(r => reusableHeads(r).some(head => head.headId === 125));
+  // Only an explicitly verified unified v5 parent can replay a mixed Return.
+  // Legacy Return and non-v5 combined receipts keep their exclusive rules.
+  const unifiedV5 = source.length===1 && service==='OTHER_TAX_PAYMENT' &&
+    source[0].allocationContractVersion===5 && Boolean(source[0].allocationItems?.length) &&
+    source[0].allocationItems!.every(item=>typeof item.allocationId==='string'&&!!item.allocationId.trim());
   if ((service === 'TAX_WITH_RETURN' && source.some(r =>
       reusableHeads(r).some(head => head.headId !== 125))) ||
-      (service !== 'TAX_WITH_RETURN' && hasReturnHead))
+      (service !== 'TAX_WITH_RETURN' && hasReturnHead && !unifiedV5))
     throw Error('Tax with Return cannot be combined with another payment head.');
   // A single fetched row may still belong to a larger multi-item batch.
   // Never treat a partial history page or missing item as an entire payment.
@@ -316,12 +321,14 @@ export function reuseRecordedPayment(
   const first = people.get(firstTin)!;
   first.id='primary';
   const others = [...people.values()].filter(p => p !== first);
+  const ownOnly=ownerIsPayee && others.length===0;
   const initial = sorted[0];
   const years = allocations.map(item => copiedYear(item.year));
   const payload: Record<string, unknown> = {
     schemaVersion: 1, category: isAllocationPayment ? 'OTHER_TAX_PAYMENT' : service,
-    step: 1, forSelf: ownerIsPayee,
-    tin: ownerIsPayee ? '' : first.tin,
+    step: 1, forSelf: ownOnly,
+    ...(unifiedV5 || (isAllocationPayment && ownerIsPayee && others.length>0) ? {unifiedFlowVersion:5} : {}),
+    tin: ownOnly ? '' : first.tin,
     payerName: '', otherTaxpayerName: first.name,
     additionalTaxpayers: others,
     otherTaxLines: isAllocationPayment
