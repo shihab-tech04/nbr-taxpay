@@ -29,6 +29,7 @@ test('approved Payment Head group typography and selection survive desktop/mobil
   for (const width of [1280, 375, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await expect(heading).toHaveCSS('font-size', '16px');
+    await modal.screenshot({ path: `test-results/sohojkor-v5-candidate-tax-head-${width}.png`, animations: 'disabled' });
     await expect(status).toHaveCSS('font-size', '14px');
     await expect(advanceTax.locator('summary')).toHaveCSS('font-size', '16px');
     await expect(advanceTax.locator('.other-tax-category-trigger__count')).toHaveCSS('font-size', '14px');
@@ -36,6 +37,7 @@ test('approved Payment Head group typography and selection survive desktop/mobil
     expect(height).toBeGreaterThanOrEqual(47.5);
     await advanceTax.locator('summary').click();
     await expect(advanceTax.locator('[data-head-row] > label > span.text-sm').first()).toHaveCSS('font-size', '16px');
+    if (width === 1280) await modal.screenshot({ path: 'test-results/sohojkor-v5-candidate-tax-head-open-desktop.png', animations: 'disabled' });
     await expect(advanceTax.locator('[data-head-row] span.text-xs').first()).toHaveCSS('font-size', '14px');
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(2);
     await advanceTax.locator('summary').click();
