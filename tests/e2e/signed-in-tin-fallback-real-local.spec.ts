@@ -66,13 +66,16 @@ for(const language of ['en','bn'] as const){
     try{
       expect(SAMPLE_TIN_SUGGESTIONS).toHaveLength(30);
       expect(auth.user.id).toMatch(/^[0-9a-f-]{36}$/i);
-      // Distinct fixture IDs per language/project avoid concurrent inserts
-      // targeting the same unique taxpayer binding. Fail closed on any conflict.
-      const fixtureId='user'+(25+(mobile?0:2)+(language==='bn'?1:0));
+      // Earlier isolated suites can already own some of these synthetic IDs.
+      // Reserve a free fixture row atomically; never overwrite another owner.
       fixtureProfile=psql(`INSERT INTO public.sim_payment_account_bindings(user_id,owner_uid,assigned_by)
-        VALUES('${fixtureId}','${auth.user.id}'::uuid,'${auth.user.id}'::uuid)
-        RETURNING user_id;`);
-      expect(fixtureProfile).toBe(fixtureId);
+        SELECT u.id,'${auth.user.id}'::uuid,'${auth.user.id}'::uuid
+        FROM public.sim_payment_users u
+        WHERE u.id IN ('user25','user26','user27','user28','user29','user30')
+          AND NOT EXISTS(SELECT 1 FROM public.sim_payment_account_bindings b WHERE b.user_id=u.id)
+        ORDER BY u.id LIMIT 1 FOR UPDATE OF u SKIP LOCKED
+        ON CONFLICT DO NOTHING RETURNING user_id;`);
+      expect(fixtureProfile, 'An unbound disposable fixture profile is required').toMatch(/^user(2[5-9]|30)$/);
       await page.goto(loginUrl);
       await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15_000});
       await page.getByRole('button',{name:language==='bn'?'তালিকা তৈরি':'Create list',exact:true}).first().click();
