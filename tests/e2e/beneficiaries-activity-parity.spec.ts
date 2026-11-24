@@ -305,3 +305,60 @@ test('User1 loads beneficiary tags for overview and Activity, not Profile or Set
   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
   await expect.poll(()=>addressBookReads).toBeGreaterThan(historyReads);
 });
+
+test('signed-in Activity shows new payments across assessment years immediately and after reload',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Exercise desktop and mobile in one owner-scoped test');
+  await mountBeneficiaryLists(page);
+  const capability='A'.repeat(43);
+  const make=(id:string,createdAt:string,assessmentYear:string,amountMinor:number)=>({
+    id,service:'OTHER_TAX_PAYMENT',amountMinor,status:'SIMULATED_SUCCESS',createdAt,
+    details:{assessmentYear,payerId:'user1',payerName:'Fictional account',taxpayerName:'Fictional account',taxpayerTin:'111111111111',payerMode:'SELF',lines:[]}
+  });
+  const old=make('00000000-0000-4000-8000-000000000901','2026-11-24T05:39:00Z','2025-26',4000);
+  const recent=make('00000000-0000-4000-8000-000000000902','2026-11-24T05:40:00Z','2026-27',452000);
+  const newest=make('00000000-0000-4000-8000-000000000903','2026-11-24T05:47:00Z','2026-27',6500);
+  let payments=[recent,old];
+  await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
+    if(route.request().method()!=='GET'||route.request().headers()['x-taxpay-guest-capability']!==capability)
+      return route.fulfill({status:403,contentType:'application/json',body:'{}'});
+    const url=new URL(route.request().url());
+    const payment=payments.find(item=>url.pathname.endsWith('/'+item.id));
+    const data=url.pathname.endsWith('/payments')
+      ?{items:payments.map(({details,...summary})=>summary),total:payments.length}
+      :payment?{id:payment.id,status:payment.status,createdAt:payment.createdAt,
+        data:{origin:'TAXPAY_UI',service:payment.service,amountMinor:payment.amountMinor,details:payment.details}}:null;
+    return route.fulfill({status:data?200:404,contentType:'application/json',
+      body:JSON.stringify({success:Boolean(data),simulationOnly:true,data})});
+  });
+  await page.goto('/?action=taxpayer_login');
+  await page.getByRole('textbox',{name:'User ID'}).fill('user1');
+  await page.getByLabel('Password',{exact:true}).fill('user1');
+  await page.getByRole('button',{name:'Sign In',exact:true}).click();
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+  await page.goto('/?action=history');
+  const year=page.getByRole('combobox',{name:'Assessment year'});
+  const table=page.getByTestId('taxpayer-transaction-table');
+  const first=table.locator('tbody tr').first();
+  await expect(year).toHaveValue('all');
+  await expect(first.locator('td:nth-child(4)')).toContainText(recent.id);
+  // Deliver the exact invalidation event produced after an acknowledged source
+  // write. Use mocked read responses only: no hosted payment mutation.
+  payments=[newest,recent,old];
+  await page.evaluate(()=>window.dispatchEvent(new Event('taxpay:story-payments-recovered')));
+  await expect(first.locator('td:nth-child(4)')).toContainText(newest.id);
+  await expect(first).toContainText('65.00');
+  await year.selectOption('2025-2026');
+  await expect(first.locator('td:nth-child(4)')).toContainText(old.id);
+  await expect(table.getByText(newest.id,{exact:true})).toHaveCount(0);
+  await page.reload();
+  await expect(year).toHaveValue('2025-2026');
+  await year.selectOption('all');
+  await expect(first.locator('td:nth-child(4)')).toContainText(newest.id);
+  await page.reload();
+  await expect(year).toHaveValue('all');
+  await expect(first.locator('td:nth-child(4)')).toContainText(newest.id);
+  await page.setViewportSize({width:375,height:812});
+  const cards=page.getByTestId('taxpayer-transaction-mobile-cards');
+  await expect(cards.locator(':scope > li').first()).toContainText(newest.id);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+});
