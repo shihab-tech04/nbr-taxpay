@@ -138,14 +138,16 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setPaymentServiceChoiceOpenState(open);
   };
   const openPaymentServiceChoice = (service?: BannerPaymentService) => {
-    setUnifiedPaymentEntryRequested(false);
+    // Unqualified income-tax entry must use the same approved workspace for
+    // every authenticated account. Explicit service referrals remain distinct.
+    setUnifiedPaymentEntryRequested(!service && Boolean(accountUser || previewAccount));
     setPaymentBeneficiaryPrefill(null);
     setPaymentReuse(null);
     setPaymentServiceInitialSelection(service ?? null);
     setPaymentServiceChoiceOpenState(true);
   };
-  // Only the explicitly approved Home action replaces the legacy payer/service
-  // chooser. Keep drafts, receipts, header Pay Tax and Travel Tax untouched.
+  // Unified income-tax entry. Explicit service referrals, existing drafts,
+  // beneficiary prefill, receipts and Travel Tax retain their own contracts.
   const openAllTaxPayments = () => {
     setPaymentBeneficiaryPrefill(null);
     setPaymentReuse(null);

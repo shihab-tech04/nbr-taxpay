@@ -11,7 +11,7 @@ const getFlow = async (page: import('@playwright/test').Page) => {
   return dialog;
 };
 
-async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en', relationship: 'SELF' | 'OTHER' = 'OTHER', unified = false, frequentHistory = false, unifiedRoute: 'taxpayer_home' | 'landing' = 'taxpayer_home') {
+async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en', relationship: 'SELF' | 'OTHER' = 'OTHER', unified = false, frequentHistory = false, unifiedRoute: 'taxpayer_home' | 'landing' | 'services' | 'user_guide' = 'taxpayer_home') {
   let sessionLanguage: 'en' | 'bn' = 'en';
   await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**', route=>{
     const payer=route.request().headers()['x-taxpay-guest-capability'];
@@ -72,7 +72,11 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
     // controls for the desktop sidebar.
     const viewport=page.viewportSize();
     if (!viewport) throw new Error('Payment entry requires a configured viewport');
-    if (viewport.width>900 && unifiedRoute==='landing') {
+    if (unifiedRoute==='services') {
+      await page.getByRole('button',{name:'Select a service',exact:true}).click();
+    } else if (unifiedRoute==='user_guide') {
+      await page.getByRole('button',{name:'Open payment services',exact:true}).filter({visible:true}).first().click();
+    } else if (viewport.width>900 && unifiedRoute==='landing') {
       // The public desktop landing renders PublicHomeHeader, not CitizenNavigation.
       // Its visible carousel Pay Tax is the actual income-tax entry.
       const pay=page.getByRole('button',{name:'Pay Tax',exact:true}).filter({visible:true}).first();
@@ -1139,3 +1143,14 @@ test('authenticated landing Pay Tax uses the same unified workspace at its nativ
   await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
   expect(writes).toEqual([]);
 });
+
+for(const route of ['services','user_guide'] as const) {
+  test(`authenticated ${route} opens the approved income-tax workspace`,async({page})=>{
+    const writes:string[]=[];
+    const {dialog}=await mockSignedInOtherTax(page,writes,'en','OTHER',true,false,route);
+    await expect(dialog.getByTestId('unified-account-own')).toBeVisible();
+    await expect(dialog.getByTestId('saved-beneficiary-picker')).toBeVisible();
+    await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(0);
+    expect(writes).toEqual([]);
+  });
+}

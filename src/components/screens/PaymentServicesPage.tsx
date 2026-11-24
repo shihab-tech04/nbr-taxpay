@@ -6,14 +6,14 @@ import { TaxpayerPageHeading } from '../layout/TaxpayerPageStructure';
 
 /** A directory of actual payment categories, not the retired connection-status mockup. */
 export const PaymentServicesPage: React.FC = () => {
-  const { language, setPaymentServiceChoiceOpen } = useTaxState();
+  const { language, openPaymentServiceChoice } = useTaxState();
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
 
   return <div className="taxpayer-payment-services mx-auto max-w-6xl space-y-4 pb-12">
     <TaxpayerPageHeading title={tr('Choose a tax payment service', 'কর পরিশোধের সেবা নির্বাচন করুন')}
       description={tr('Choose who you are paying for, select Tax with Return or Other Tax, then follow the taxpayer details, purpose and amount steps.', 'প্রথমে কার কর পরিশোধ করছেন এবং রিটার্নসহ কর বা অন্যান্য কর বেছে নিন। এরপর করদাতার তথ্য, খাত ও পরিমাণের ধাপ অনুসরণ করুন।')}
-      actions={<button type="button" className="taxpayer-service-directory__primary" onClick={() => setPaymentServiceChoiceOpen(true)}>
+      actions={<button type="button" className="taxpayer-service-directory__primary" onClick={() => openPaymentServiceChoice()}>
         {tr('Select a service', 'সেবা নির্বাচন করুন')} <ArrowRight size={18} aria-hidden="true" />
       </button>} />
     <section className="taxpayer-service-directory__grid" aria-label={tr('Two tax payment services', 'দুটি কর পরিশোধ সেবা')}>
