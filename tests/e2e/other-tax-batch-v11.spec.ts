@@ -73,10 +73,11 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
     const viewport=page.viewportSize();
     if (!viewport) throw new Error('Payment entry requires a configured viewport');
     if (viewport.width>900 && unifiedRoute==='landing') {
-      const pay=page.locator('.citizen-menu-open');
+      // The public desktop landing renders PublicHomeHeader, not CitizenNavigation.
+      // Its visible carousel Pay Tax is the actual income-tax entry.
+      const pay=page.getByRole('button',{name:'Pay Tax',exact:true}).filter({visible:true}).first();
       await expect(pay).toBeVisible();
       await pay.click();
-      await page.locator('#citizen-menu-dialog').getByRole('button',{name:'Pay Tax',exact:true}).click();
     } else if (viewport.width>900) {
       const pay=page.getByRole('button',{name:'Pay Tax menu',exact:true});
       await expect(pay).toBeVisible();
