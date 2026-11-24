@@ -198,7 +198,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     const initial=new URLSearchParams(window.location.search).get('scenarioYear');
     // Never inherit the historical sample assessment year in a real signed-in account.
     return typeof initial==='string'&&/^20\d{2}-20\d{2}$/.test(initial)
-      ? initial : (!showIllustrativeRecords?'2026-2027':'2025-2026');
+      ? initial : (!showIllustrativeRecords||((route==='taxpayer_home'||route==='dashboard')&&!localQaScenario&&!authorizedPreviewScenario)?'2026-2027':'2025-2026');
   });
   // Ordinary signed-in Activity is an all-year transaction register. Keep
   // the selected assessment year for Overview, Ledger and explicit drilldowns.
@@ -216,7 +216,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     url.searchParams.delete('monthFilter');
     window.history.replaceState(window.history.state,'',url);
   };
-  const [ledgerYear,setLedgerYear]=useState<string>(year);
+  const [ledgerYear,setLedgerYear]=useState<string>(showIllustrativeRecords?year:'all');
   const [documentSearch,setDocumentSearch]=useState('');
   const [caseFiltersExpanded,setCaseFiltersExpanded]=useState(false);
   const [caseSearch,setCaseSearch]=useState('');
@@ -378,7 +378,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     :'recorded') as DashboardChartSource;
   const overviewCompletedRows=overviewSource==='recorded'
     ?sqlRows.filter(item=>item.state==='POSTED'&&item.years?.includes(year))
-    :scoped.filter(item=>item.state==='POSTED'&&['income','ait','travel'].includes(item.kind));
+    :scoped.filter(item=>!item.sql&&item.state==='POSTED'&&['income','ait','travel'].includes(item.kind));
   const availableTransactionBeneficiaries=[...new Map(historyScoped.flatMap(item=>
     transactionBeneficiaries(item)).map(person=>[person.tin,person])).values()]
     .sort((a,b)=>a.name.localeCompare(b.name));
@@ -734,7 +734,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         <div className="taxpay-bento-hero__status" role="group" aria-label={tr('Payment and request summary','পেমেন্ট ও আবেদনের সারসংক্ষেপ')}>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--completed" onClick={openOverviewPayments}>
             <span className="taxpay-summary-metric__label"><FileCheck2 size={17} aria-hidden="true"/>{tr('Completed Payments','সম্পন্ন পেমেন্ট')}</span>
-            <strong className="tabular-nums">{overviewSource==='recorded'&&sqlLoadError?'—':completedPayments}</strong>
+            <strong className="tabular-nums">{overviewSource==='recorded'&&(sqlLoadError||sqlLoading)?'—':completedPayments}</strong>
           </button>
           <button type="button" className="taxpay-summary-metric taxpay-summary-metric--drafts" onClick={openSavedDrafts}
             aria-expanded={draftHelpVisible && !(savedDraftCount!==null && savedDraftCount>0)}>
@@ -826,7 +826,8 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           </div>
         </li>)}
       </ul>
-      {!overviewCompletedRows.length&&!(overviewSource==='recorded'&&sqlLoadError)&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('No completed payment activity for the selected assessment year.','নির্বাচিত করবর্ষে সম্পন্ন পেমেন্ট নেই।')}</p>}
+      {!overviewCompletedRows.length&&!(overviewSource==='recorded'&&(sqlLoadError||sqlLoading))&&<p role="status" className="mt-3 text-sm text-taxpay-muted">{tr('No completed payment activity for the selected assessment year.','নির্বাচিত করবর্ষে সম্পন্ন পেমেন্ট নেই।')}</p>}
+      {overviewSource==='recorded'&&sqlLoading&&<p role="status" className="mt-2 text-sm text-taxpay-muted">{tr('Loading payment records…','পেমেন্ট রেকর্ড লোড হচ্ছে…')}</p>}
       {overviewSource==='recorded'&&sqlLoadError&&<p role="alert" className="mt-2 text-sm text-taxpay-error">{tr('Account-linked payment records could not be loaded. No example activity is included in this overview.','অ্যাকাউন্টের পেমেন্ট রেকর্ড লোড হয়নি। এই বিবরণে কোনো নমুনা কার্যক্রম যুক্ত করা হয়নি।')}</p>}
     </section>
     </div>

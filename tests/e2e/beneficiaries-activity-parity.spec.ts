@@ -350,6 +350,7 @@ test('signed-in Activity shows new payments across assessment years immediately 
   await expect(first.locator('td:nth-child(4)')).toContainText(newest.id);
   await expect(first).toContainText('65.00');
   await expect(table.locator('tbody tr')).toHaveCount(3);
+  // Read failure must not silently reveal fixtures or claim a legitimate empty account.
   await year.selectOption('2025-2026');
   await expect(first.locator('td:nth-child(4)')).toContainText(old.id);
   await expect(table.getByText(newest.id,{exact:true})).toHaveCount(0);

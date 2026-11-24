@@ -76,7 +76,14 @@ test('user1 Activity keeps its approved transaction register without appended SQ
   await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');
   await expect(page.locator('.taxpayer-transaction-panel')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Transaction history'})).toBeVisible();
-  await expect(page.locator('.taxpayer-transaction-table tbody td:nth-child(4)').getByText('DEMO-PAY-02',{exact:true}).first()).toBeVisible();
+  const workspace=page.getByTestId('user1-synthetic-workspace');
+  await expect(workspace.getByText(/DEMO-PAY-|DEMO-ETDS-|DEMO-REFUND-/)).toHaveCount(0);
+  // A successful SQL read must either expose the recorded rows or the legitimate
+  // empty state for this selected year, never fall back to bundled history.
+  await expect.poll(async()=>await workspace.getByTestId('taxpayer-transaction-table').isVisible()||
+    await workspace.getByText('No transactions yet.',{exact:true}).isVisible()||
+    await workspace.getByRole('heading',{name:'No matching records'}).isVisible()).toBe(true);
+  await expect(workspace.getByText('Recorded payments could not be verified.',{exact:true})).toHaveCount(0);
   await expect(page.getByTestId('demo-sql-service-panel')).toHaveCount(0);
   await expect(page.getByTestId('recovered-story-payments')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Earlier saved payment records'})).toHaveCount(0);
