@@ -130,7 +130,9 @@ try {
     await secondPassport.fill('TEST230001');
     await expect(second.getByText('Passport already added.', { exact: true })).toBeVisible();
     await expect(continueToTravel).toBeDisabled();
-    await second.getByRole('button', { name: 'Remove passenger' }).click();
+    await second.getByRole('button', { name: 'Cancel adding' }).click();
+    await expect(modal.getByRole('button', { name: 'Remove passenger' })).toHaveCount(0);
+    await expect(modal.getByRole('button', { name: 'Undo removal' })).toHaveCount(0);
     await expect(confirmed).toHaveCount(1);
     await expect(modal.locator('.travel-passenger-workspace__entry')).toHaveCount(0);
     await expect(continueToTravel).toBeEnabled();
