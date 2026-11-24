@@ -466,6 +466,79 @@ try{
   assert.equal(psql(sourceDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(travelId)}::uuid;`),1);
   assert.equal(psql(officeDb,`SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id=${sqlText(travelId)}::uuid;`),1);
 
+  // Gift Tax: real isolated source Edge -> source PostgreSQL -> signed Office
+  // readback -> separate Office PostgreSQL. These are not mocked receipts.
+  const giftKey=randomUUID(),giftReference='SIM-GIFT-'+giftKey;
+  const giftRemarks='দানকরের মন্তব্য\nExact Gift Tax mirror acceptance';
+  const giftDetails={
+    donor:{tin:'111111111111',name:'User 1'},
+    donee:{tin:'222222222222',name:'User 2',tag:'friends_family',relationship:'father',otherLabel:null},
+    giftAmountMinor:250000000,estimatedTaxMinor:27200000,
+    giftDate:'2025-01-15',description:'Disposable Gift Tax acceptance',remarks:giftRemarks,
+  };
+  const giftLine={headId:0,economicCode:'SIM-GIFT',headNameEn:'Gift Tax',taxAmount:272000,
+    penaltyAmount:0,surchargeAmount:0,interestAmount:0,totalAmount:272000};
+  const giftSnapshot={id:giftReference,challanNo:giftReference,tokenNumber:'SIMULATION',paymentCategory:'GIFT_TAX',
+    assessmentYear:'2025-26',payerName:'Sample Payer',payerTin:giftDetails.donor.tin,
+    taxpayerName:giftDetails.donor.name,taxpayerTin:giftDetails.donor.tin,
+    receiptMobile:'01712345678',receiptEmail:'',noticeReference:'',paymentRemarks:giftRemarks,giftDetails,
+    isRepresentativePayment:false,taxZone:'—',taxCircle:'—',isWithholding:false,items:[giftLine],
+    totalAmount:272000,paymentMethod:'BKASH',gatewayTransactionId:giftReference,
+    treasuryStatus:'INITIATED',taxCreditStatus:'NOT_APPLICABLE',createdAt:'2025-01-15T00:00:00.000Z',isSimulatedDemo:true};
+  const giftPayload={origin:'TAXPAY_UI',idempotencyKey:giftKey,sessionId:profile.paymentSessionId,service:'GIFT_TAX',
+    amountMinor:27200000,details:{sampleOnly:true,payerId:'user1',payerMode:'SELF',
+      payerName:giftSnapshot.payerName,payerTin:giftSnapshot.payerTin,
+      taxpayerName:giftSnapshot.taxpayerName,taxpayerTin:giftSnapshot.taxpayerTin,
+      assessmentYear:giftSnapshot.assessmentYear,receiptReference:giftReference,
+      receiptMobile:giftSnapshot.receiptMobile,receiptEmail:'',noticeReference:'',
+      challanRemarks:giftRemarks,paymentMethod:'BKASH',giftDetails,receiptLines:[giftLine],
+      lines:[{beneficiary:'user1',category:'GIFT_TAX',assessmentYear:'2025-26',amountMinor:27200000}],
+      receiptSnapshot:giftSnapshot}};
+  const giftSubmit=await request('TAXPAY_SQL','/payments','POST',giftPayload,headers);
+  assert.equal(giftSubmit.status,200,'Gift Tax must persist and acknowledge the actual Office mirror');
+  assert.equal(giftSubmit.data.mirrored,true);
+  const giftId=giftSubmit.data.id;
+  assert.ok(giftId);
+  const giftSql="SELECT jsonb_build_object('id',id,'service',service_code,'amountMinor',amount_minor,'status',status,'data',data) FROM demo_payment.story_payments WHERE id="+sqlText(giftId)+"::uuid;";
+  const giftSource=psql(sourceDb,giftSql),giftOffice=psql(officeDb,giftSql);
+  assert.deepEqual(giftOffice,giftSource,'Gift Tax must preserve the same immutable parent, ID, amount and status in both SQL databases');
+  assert.deepEqual(giftSource.data,giftPayload);
+  const giftReadback=await request('TAXPAY_SQL','/payments/'+giftId+'?sessionId='+profile.paymentSessionId,'GET',undefined,headers);
+  assert.equal(giftReadback.status,200);
+  assert.equal(giftReadback.data.data.id,giftId);
+  assert.deepEqual(giftReadback.data.data.data,giftPayload);
+  const giftOfficePage=await request('OFFICE_SQL','/payments?page=1&perPage=100','GET',undefined,{authorization:'Bearer '+officeToken});
+  assert.equal(giftOfficePage.status,200);
+  const giftOfficeItem=giftOfficePage.data.data.items.find(item=>item.id===giftId);
+  assert.ok(giftOfficeItem,'Authorized Office register must return Gift Tax');
+  assert.equal(giftOfficeItem.service,'GIFT_TAX');
+  assert.equal(Number(giftOfficeItem.amountMinor),27200000);
+  assert.deepEqual(giftOfficeItem.details.giftDetails,giftDetails);
+  assert.equal(giftOfficeItem.details.challanRemarks,giftRemarks);
+  assert.deepEqual(giftOfficeItem.details.receiptSnapshot.giftDetails,giftDetails);
+  const giftReplay=await request('TAXPAY_SQL','/payments','POST',giftPayload,headers);
+  assert.equal(giftReplay.status,200);assert.equal(giftReplay.data.id,giftId);assert.equal(giftReplay.data.replayed,true);
+  for(const db of [sourceDb,officeDb]){
+    assert.equal(Number(psql(db,"SELECT count(*) FROM demo_payment.story_payments WHERE id="+sqlText(giftId)+"::uuid;")),1);
+    assert.equal(Number(psql(db,"SELECT count(*) FROM demo_payment.story_notifications WHERE payment_id="+sqlText(giftId)+"::uuid;")),1);
+  }
+  // Altered tax, donor identity or receipt must never create a second record.
+  for(const mutate of [
+    bad=>{bad.amountMinor++},
+    bad=>{bad.details.giftDetails.donee.tin=bad.details.giftDetails.donor.tin},
+    bad=>{bad.details.receiptSnapshot.paymentRemarks='tampered'},
+  ]){
+    const bad=structuredClone(giftPayload);bad.idempotencyKey=randomUUID();
+    bad.details.receiptReference='SIM-GIFT-'+bad.idempotencyKey;
+    bad.details.receiptSnapshot.challanNo=bad.details.receiptReference;
+    mutate(bad);
+    const rejected=await request('TAXPAY_SQL','/payments','POST',bad,headers);
+    assert.equal(rejected.status,400,'Reject mismatched Gift Tax data before any persistence');
+    assert.equal(Number(psql(sourceDb,"SELECT count(*) FROM demo_payment.story_payments WHERE idempotency_key="+sqlText(bad.idempotencyKey)+"::uuid;")),0);
+    assert.equal(Number(psql(officeDb,"SELECT count(*) FROM demo_payment.story_payments WHERE data->>'idempotencyKey'="+sqlText(bad.idempotencyKey)+";")),0);
+  }
+  console.log('PASS Gift Tax: exact source/Office SQL parent, capability readback, authorized Office register, remarks, idempotency, notifications and rejected mismatches');
+
   const payAgainKey=randomUUID();
   const payAgainAllocationIds=['ws3-pay-again-allocation-2','ws3-pay-again-allocation-3'];
   const payAgainPayload=structuredClone(payload);
