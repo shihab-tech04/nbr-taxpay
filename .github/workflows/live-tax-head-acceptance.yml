@@ -1,0 +1,47 @@
+name: Sohojkor live Tax Head acceptance
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/verify-live-tax-head.mjs'
+      - '.github/workflows/live-tax-head-acceptance.yml'
+  workflow_run:
+    workflows: ['TaxPay - build and GitHub Pages']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-tax-head:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact verified source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Check verifier syntax
+        run: node --check scripts/verify-live-tax-head.mjs
+      - name: Install locked project dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --only-shell
+      - name: Verify REAL deployed seven-category Payment Head, read-only
+        env:
+          TAXPAY_LIVE_URL: https://shihab-tech04.github.io/nbr-taxpay/
+        run: node scripts/verify-live-tax-head.mjs
+      - name: Preserve acceptance and failure screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-tax-head-${{ github.run_id }}
+          path: test-results/live-tax-head-*.png
+          retention-days: 3
+          if-no-files-found: warn
