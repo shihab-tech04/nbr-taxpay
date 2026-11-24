@@ -3417,8 +3417,6 @@
    both languages, protected footer and all previous stages unchanged. */
 @media (min-width: 1050px) {
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
-  .travel-flow[data-step="0"],
-  .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
   .travel-flow[data-step="1"] {
     grid-template-columns:minmax(0,1fr) minmax(365px,40%);
   }
@@ -3565,25 +3563,3 @@
   }
 }
 
-/* Guard the approved full-width Stage 3 geometry against legacy grid,
-   fixed-basis flex sizing and modal scroll owners at every viewport. */
-.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow[data-step="2"] {
-  display:block!important;
-  grid-template-columns:minmax(0,1fr)!important;
-  width:100%!important;
-  max-width:none!important;
-}
-.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow[data-step="2"] > .travel-flow__main {
-  display:block!important;
-  width:100%!important;
-  max-width:none!important;
-  min-width:0!important;
-  grid-column:1/-1!important;
-  flex:1 1 100%!important;
-}
-.taxpay-citizen-shell .taxpay-modal[data-public-service="travel"] .travel-flow[data-step="2"]
-:is(.travel-flow__unified-preview,.travel-flow__unified-checkout) {
-  width:100%!important;
-  max-width:100%!important;
-  box-sizing:border-box;
-}
