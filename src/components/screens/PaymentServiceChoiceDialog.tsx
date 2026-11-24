@@ -236,7 +236,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     <TaxPayModal
       title={view === 'login' || view === 'entry'
         ? tr(`Sign In To Your ${taxpayerBrandName(language)} Account`, `আপনার ${taxpayerBrandName(language)} অ্যাকাউন্টে সাইন ইন করুন`)
-        : view === 'payment' && !travelJourney && stage === 4
+        : view === 'payment' && stage === 4
         ? resultView === 'certificate' ? tr('Payment record certificate', 'পেমেন্ট রেকর্ড সনদ')
           : resultView === 'receipt' ? tr('Challan details', 'চালানের বিবরণ')
           : tr('Payment result', 'পেমেন্টের ফলাফল')
@@ -336,7 +336,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
         <TravelTax key={draftToResume ? 'travel-draft-' + draftToResume.id : initialReuse ? 'travel-reuse-' + initialReuse.sourcePaymentId : 'travel-tax-modal'}
           embedded fourStepJourney initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
           onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage}
-          registerHeaderBack={registerTravelHeaderBack} onCheckoutChange={setTravelCheckoutOpen} />
+          registerHeaderBack={registerTravelHeaderBack} onCheckoutChange={setTravelCheckoutOpen} onResultViewChange={setResultView} />
       ) : <section key={view} ref={flowRef} data-view={view}
         data-banner-entry={initialService && view === 'payment' ? 'true' : undefined}
         data-payment-service={view === 'payment' && chosenService ? chosenService.id : undefined}
@@ -446,7 +446,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
           <TravelTax key={draftToResume ? 'travel-draft-' + draftToResume.id : initialReuse ? 'travel-reuse-' + initialReuse.sourcePaymentId : 'travel-tax-modal'}
             embedded fourStepJourney initialDraft={draftToResume ?? undefined} initialReuse={initialReuse ?? undefined}
             onBackToService={directTravelEntry ? requestClose : returnToService} onStageChange={reportStage}
-          registerHeaderBack={registerTravelHeaderBack} onCheckoutChange={setTravelCheckoutOpen} />
+          registerHeaderBack={registerTravelHeaderBack} onCheckoutChange={setTravelCheckoutOpen} onResultViewChange={setResultView} />
         ) : effectiveSelected ? (
           <GuestPayment key={draftToResume ? 'payment-draft-' + draftToResume.id : initialReuse ? 'payment-reuse-' + initialReuse.sourcePaymentId : effectiveSelected + '-' + String(payerForSelf)}
             embedded unifiedFlow={unifiedEntry} initialCategory={effectiveSelected} initialForSelf={payerForSelf ?? undefined}

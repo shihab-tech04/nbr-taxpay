@@ -5,7 +5,7 @@ import {TaxPayModal} from '../ui/TaxPayModal';
 import {WalkInDiscardConfirmation} from '../ui/WalkInDiscardConfirmation';
 import {GiftTaxPaymentResult} from './GiftTaxPaymentResult';
 import {simulateGiftTaxPayment, type GiftTaxPaymentInput, type GiftTaxPaymentOutcome} from '../../services/giftTaxPaymentGateway';
-import {persistGiftTaxSimulation} from '../../services/giftTaxSimulationPersistence';
+import {persistGiftTaxSimulation,readPendingGiftTax} from '../../services/giftTaxSimulationPersistence';
 import {PaymentMethodSelector,type PaymentChannel,type PaymentMethodGroup,type PaymentMethod} from '../ui/PaymentMethodSelector';
 import {Pencil} from 'lucide-react';
 import {SearchableSelect} from '../ui/SearchableSelect';
@@ -47,7 +47,8 @@ export function GiftTaxEntryModal({onClose, onBack, signedIn = false}: {onClose:
   const {language, navigate} = useTaxState();
   const bn = language === 'bn';
   const t = (en: string, bd: string) => bn ? bd : en;
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [recovered] = useState(()=>signedIn?readPendingGiftTax():null);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(recovered?4:1);
   const [tinInput, setTinInput] = useState<Record<Party, string>>({donor: '', donee: ''});
   const [searched, setSearched] = useState<PartyMap>(emptyParties);
   const [added, setAdded] = useState<PartyMap>(emptyParties);
@@ -57,7 +58,7 @@ export function GiftTaxEntryModal({onClose, onBack, signedIn = false}: {onClose:
   const [dateOfGift, setDateOfGift] = useState('');
   const [remarks, setRemarks] = useState('');
   // Same walk-in payer/receipt fields as the approved Taxpayer Final Preview.
-  // Gift Tax remains a local sample: none of this is posted to SQL.
+  // Signed-out previews remain local; signed-in simulations use the checked SQL path.
   const [payerName, setPayerName] = useState('');
   const [receiptPhone, setReceiptPhone] = useState('');
   const [receiptEmail, setReceiptEmail] = useState('');
@@ -77,9 +78,9 @@ export function GiftTaxEntryModal({onClose, onBack, signedIn = false}: {onClose:
     party: Party; person: Person; doneeChoice: string; doneeOther: string;
   } | null>(null);
   const [exitPromptOpen, setExitPromptOpen] = useState(false);
-  const [paymentInput, setPaymentInput] = useState<GiftTaxPaymentInput | null>(null);
-  const [paymentOutcome, setPaymentOutcome] = useState<GiftTaxPaymentOutcome | null>(null);
-  const [paymentAttemptKey, setPaymentAttemptKey] = useState<string | null>(null);
+  const [paymentInput, setPaymentInput] = useState<GiftTaxPaymentInput | null>(recovered?.input??null);
+  const [paymentOutcome, setPaymentOutcome] = useState<GiftTaxPaymentOutcome | null>(recovered?{kind:'SIMULATED_SYNC_PENDING',reference:'SIM-GIFT-'+recovered.input.idempotencyKey,method:recovered.method}:null);
+  const [paymentAttemptKey, setPaymentAttemptKey] = useState<string | null>(recovered?.input.idempotencyKey??null);
   const [paymentBusy, setPaymentBusy] = useState(false);
   const [checkoutOpen,setCheckoutOpen]=useState(false);
   const [paymentChannel,setPaymentChannel]=useState<PaymentChannel|null>(null);
@@ -92,7 +93,11 @@ export function GiftTaxEntryModal({onClose, onBack, signedIn = false}: {onClose:
   useLayoutEffect(() => {
     document.querySelector<HTMLElement>('.gift-tax-dialog .taxpay-modal__body')?.scrollTo({top: 0, left: 0});
   }, [step, checkoutOpen]);
-  const requestClose = () => setExitPromptOpen(true);
+  const requestClose = () => {
+    if(paymentBusy)return;
+    if(paymentOutcome?.kind==='SIMULATED_SYNC_PENDING'&&readPendingGiftTax()){onClose();return;}
+    setExitPromptOpen(true);
+  };
   const doneeClass = beneficiaryChoiceParts(doneeChoice);
   const doneeClassValid = validBeneficiaryClassification(doneeClass.tag, doneeClass.relationship, doneeOther);
   const doneeOptions = [
@@ -461,6 +466,7 @@ export function GiftTaxEntryModal({onClose, onBack, signedIn = false}: {onClose:
     closeIconLabel={t('Close Gift Tax', 'দানকর বন্ধ করুন')}
     onClose={requestClose}
     onBack={paymentOutcome?.kind==='SIMULATED_SYNC_PENDING'||paymentBusy?undefined:step === 1 ? onBack : () => {
+       if(recovered&&step===4){onClose();return;}
       if(step===4){setStep(3);setCheckoutOpen(false)}
       else if(step===3&&checkoutOpen)setCheckoutOpen(false);
       else setStep(step===3?2:1);
@@ -733,7 +739,7 @@ export function GiftTaxEntryModal({onClose, onBack, signedIn = false}: {onClose:
       className="gift-tax-approved-flow gift-tax-result-workspace"
       data-testid="gift-tax-result-workspace">
       <GiftTaxPaymentResult signedIn={signedIn} language={language} input={paymentInput} outcome={paymentOutcome}
-        onBack={()=>{setCheckoutOpen(false);setStep(3);}}
+        onBack={()=>{if(recovered){onClose();return;}setCheckoutOpen(false);setStep(3);}}
         onRetry={()=>{setCheckoutOpen(true);setStep(3);setPaymentAcknowledged(false);}}
         onContinueBank={continueSimulatedBankPayment}
         onRefresh={retryGiftSync} busy={paymentBusy}
