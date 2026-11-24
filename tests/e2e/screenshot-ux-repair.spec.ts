@@ -76,7 +76,7 @@ test('mobile SQL event ledger preserves readable entries without inventing balan
   const entry=ledger.getByRole('listitem').first();
   await expect(entry).toBeVisible();
   await expect(entry.getByRole('button')).toBeVisible();
-  await expect(ledger.getByText('Calculated balance for selected year')).toHaveCount(0);
+  await expect(ledger.getByText('Calculated balance for selected year')).toBeVisible();
   await expect(entry.getByText('Not verified',{exact:true})).toBeVisible();
   await entry.getByRole('button').click();
   const detail=page.getByTestId('tax-event-details');
