@@ -22,7 +22,7 @@ test('confirmed payment invalidates mounted SQL history; rejected payment does n
   events.addEventListener('taxpay:story-payments-recovered', () => { refreshes++; });
   let accepted = false;
   let readbacks = 0;
-  t.mock.method(globalThis, 'fetch', async (url, options) => {
+  t.mock.method(globalThis, 'fetch', async (url: RequestInfo | URL, options?: RequestInit) => {
     if (options?.method === 'POST') return accepted
       ? Response.json({success: true, id, status: 'SIMULATED_SUCCESS', mirrored: true, simulationOnly: true})
       : Response.json({error: 'SUBMISSION_FAILED'}, {status: 400});
