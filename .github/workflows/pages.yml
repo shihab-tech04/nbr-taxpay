@@ -2,6 +2,7 @@ name: TaxPay - build and GitHub Pages
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [main]
   push:
     branches: [main]
@@ -19,7 +20,7 @@ jobs:
 
   v2-read-preflight:
     name: Taxpayer-v2 public read-only API acceptance
-    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'ws5/')
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (github.event_name == 'pull_request' && startsWith(github.head_ref, 'ws5/'))
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     permissions:
@@ -39,6 +40,7 @@ jobs:
         run: node scripts/ci/v2-public-read-preflight.mjs
 
   preflight:
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/'))
     name: Verified PR and immutable build provenance
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -73,7 +75,7 @@ jobs:
   compile:
     name: Compile, typecheck, domain and production bundle
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     permissions:
@@ -175,7 +177,7 @@ jobs:
   core-e2e:
     name: Payment, ledger and beneficiaries acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -247,7 +249,7 @@ jobs:
   core-beneficiary-e2e:
     name: Beneficiary records and table visual acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -300,7 +302,7 @@ jobs:
   core-cms-e2e:
     name: CMS banner and direct-service acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -338,7 +340,7 @@ jobs:
   payment-ux-e2e:
     name: Payment wizard and calculation acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -383,7 +385,7 @@ jobs:
   payment-progress-e2e:
     name: Payment progress and v11 input acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -419,7 +421,7 @@ jobs:
   public-e2e:
     name: Public and signed-in journey acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -488,7 +490,7 @@ jobs:
   public-travel-e2e:
     name: Travel Tax progressive journey acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -535,7 +537,7 @@ jobs:
   public-login-e2e:
     name: Taxpayer signed-in desktop and mobile acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -616,7 +618,7 @@ jobs:
   beneficiary-picker-e2e:
     name: Signed-in beneficiary picker acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -662,7 +664,7 @@ jobs:
   public-support-e2e:
     name: Public receipts and workspace acceptance
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -724,7 +726,7 @@ jobs:
   route-e2e:
     name: Public routes (shard ${{ matrix.shard }}/8)
     needs: preflight
-    if: needs.preflight.outputs.mode != 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode != 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -761,7 +763,7 @@ jobs:
   reuse-reviewed-build:
     name: Reuse exact-source verified PR bundle
     needs: preflight
-    if: needs.preflight.outputs.mode == 'reuse'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft != true || github.event.pull_request.base.ref != 'main' || startsWith(github.head_ref, 'ws5/')) && (needs.preflight.outputs.mode == 'reuse')
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     permissions:
@@ -818,9 +820,28 @@ jobs:
     permissions:
       contents: read
     steps:
+      # The draft path uses this same aggregate job and never issues release acceptance.
+      - name: Check out draft for lightweight development validation
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Node for draft validation
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Lightweight draft typecheck (not release acceptance)
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/')
+        run: |
+          npm ci --no-audit --no-fund
+          npm run lint
+          echo 'Draft development check passed; full acceptance has not run. Mark ready for review when finished.' >> "$GITHUB_STEP_SUMMARY"
       - name: Confirm mandatory check paths, including reused verified PR evidence
         shell: bash
         env:
+          DEVELOPMENT_ONLY: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.event.pull_request.base.ref == 'main' && !startsWith(github.head_ref, 'ws5/') }}
           PREFLIGHT: ${{ needs.preflight.result }}
           MODE: ${{ needs.preflight.outputs.mode }}
           COMPILE: ${{ needs.compile.result }}
@@ -838,6 +859,11 @@ jobs:
           REUSED: ${{ needs.reuse-reviewed-build.result }}
         run: |
           set -euo pipefail
+          if [ "$DEVELOPMENT_ONLY" = true ]; then
+            echo "::notice::Draft development validation only; no merge or production acceptance. Mark ready for review to run every original release gate."
+            echo "Release acceptance intentionally withheld for draft." >&2
+            exit 1
+          fi
           test "$PREFLIGHT" = success
           case "$MODE" in
             full)

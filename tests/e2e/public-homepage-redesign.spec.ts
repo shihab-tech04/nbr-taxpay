@@ -339,3 +339,17 @@ test('Home 2 Saved Drafts uses the approved soft rose palette on desktop and mob
   await expect(tile).toHaveCSS('color','rgb(20, 27, 45)');
   await expect(tile.locator('p')).toHaveCSS('color','rgb(112, 78, 91)');
 });
+
+
+test('Home 2 separates Pay Again olive and Saved Drafts rose on desktop and mobile',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.goto('/?action=home-2&lang=en');
+  const root=page.getByTestId('home2-root');
+  const again=root.getByRole('button').filter({has:page.getByRole('heading',{name:'Pay Again',exact:true})});
+  const drafts=root.getByRole('button').filter({has:page.getByRole('heading',{name:'Saved Drafts',exact:true})});
+  await expect(again).toBeVisible();
+  await expect(again).toHaveCSS('background-color','rgb(230, 233, 214)');
+  await expect(again).toHaveCSS('color','rgb(20, 27, 45)');
+  await expect(again.locator('p')).toHaveCSS('color','rgb(83, 92, 59)');
+  await expect(drafts).toHaveCSS('background-color','rgb(240, 223, 227)');
+});
