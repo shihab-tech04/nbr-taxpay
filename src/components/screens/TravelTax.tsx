@@ -1234,9 +1234,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     </div>
                     {!createdReceipt && <div className="unified-v3-review__actions">
                       <button type="button" onClick={() => stepTo(0)}><Pencil size={14} aria-hidden="true"/>
-                        {tr('Passengers','যাত্রী')}</button>
+                        {tr('Edit passengers','যাত্রী সম্পাদনা')}</button>
                       <button type="button" onClick={() => stepTo(1)}><Pencil size={14} aria-hidden="true"/>
-                        {tr('Travel details','ভ্রমণের তথ্য')}</button>
+                        {tr('Edit travel details','ভ্রমণের তথ্য সম্পাদনা')}</button>
                     </div>}
                   </div>
                   <dl className="travel-flow__review travel-flow__review--unified">
@@ -1266,7 +1266,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                 {totalAmount > 0 && <section className="payment-review__panel payment-review__payer travel-flow__unified-contact"
                     aria-label={tr('Receipt contact','রসিদের যোগাযোগ')} data-testid="travel-preview-receipt-contact">
                   <div className="payment-review__section-title">
-                    <div><h2>{tr('Payer and receipt details','পরিশোধকারী ও রসিদের তথ্য')}</h2>
+                    <div><h2>{tr('Payer contact','পরিশোধকারীর যোগাযোগ')}</h2>
                       <p>{tr('Provide the mobile number for this saved payment record.',
                         'সংরক্ষিত পেমেন্ট রেকর্ডের জন্য মোবাইল নম্বর দিন।')}</p></div>
                   </div>
