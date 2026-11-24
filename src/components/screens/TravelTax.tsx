@@ -12,7 +12,6 @@ import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { reuseRecordedPayment, type PaymentReuse } from '../../services/paymentReuse';
 import {activePreviewSession} from '../../services/previewAccountSession';
-import {TAXPAY_PUBLIC_ENDPOINT} from '../../config/publicBackend';
 import { AccountPaymentDraftControls } from '../ui/AccountPaymentDraftControls';
 import { deletePaymentFormDraft, type PaymentDraftActor, type PaymentFormDraft } from '../../services/accountPaymentFormDrafts';
 import { TRAVEL_TAX_RATES } from '../../data/mockData';
@@ -60,10 +59,9 @@ function readPendingTravelPayment(key: string, sessionId: string): PendingTravel
 export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, initialReuse, onBackToService, onStageChange, registerHeaderBack, onCheckoutChange }) => {
   const { language, navigate, addPaymentReceipt, previewAccount, startPaymentReuse, setPaymentServiceChoiceOpen } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
-  // Keep the existing signed-in draft journey untouched. Unsigned guests
-  // reuse WS3's current capability/session only when its backend is configured.
-  const unsignedGuestDrafts = !authenticatedUser && !previewAccount &&
-    Boolean(TAXPAY_PUBLIC_ENDPOINT.url && TAXPAY_PUBLIC_ENDPOINT.publishableKey);
+  // Walk-in payments must never expose account-owned draft controls, even
+  // when the production guest-capability API is available.
+  const canSaveDraft = Boolean(authenticatedUser || previewAccount);
   const modalFooterTarget = useContext(TaxPayModalFooterTarget);
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
@@ -93,47 +91,70 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const [passengerIssue, setPassengerIssue] = useState<PassengerIdentityIssue | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
   const [passportSuggestionMaxHeight, setPassportSuggestionMaxHeight] = useState(210);
-  // Keep the picker BELOW the field. A popup above intercepts the nationality
-  // tabs and headings. Reserve scroll clearance and bring the field into view
-  // instead; the approved two-column panel and fixed footer stay in place.
+  // The shared modal can scroll either its body or the inner form. Resolve
+  // the actual clipping and scroll ancestors rather than assuming one owner.
   useLayoutEffect(() => {
     if (!passportSuggestionsFor) return;
     const row = document.getElementById('travel-passport-' + passportSuggestionsFor)
       ?.closest<HTMLElement>('.travel-flow__passport-row');
-    // In Step 1 the actual scroll owner is travel-flow__main; the outer
-    // modal body intentionally has overflow:hidden to protect the fixed footer.
-    const body = row?.closest<HTMLElement>('.travel-flow__main')
-      ?? row?.closest<HTMLElement>('.taxpay-modal__body');
-    if (!row || !body) return;
-    const position = (ensureVisible: boolean) => {
-      if (!row.isConnected) return;
-      const visibleBottom = Math.min(
-        body.getBoundingClientRect().bottom,
-        row.closest('.taxpay-modal')?.querySelector<HTMLElement>('.taxpay-modal__footer')
-          ?.getBoundingClientRect().top ?? window.innerHeight,
-        window.innerHeight,
-      );
-      const limit = window.innerWidth <= 560 ? Math.min(190, window.innerHeight * .28) : 210;
-      const needed = row.getBoundingClientRect().bottom + limit + 8 - visibleBottom;
-      if (ensureVisible && needed > 0) body.scrollTop += Math.ceil(needed);
-      const available = Math.max(0, visibleBottom - row.getBoundingClientRect().bottom - 8);
-      setPassportSuggestionMaxHeight(old => {
-        const height = Math.floor(Math.min(limit, available));
-        return old === height ? old : height;
-      });
+    const dialog = row?.closest<HTMLElement>('.taxpay-modal');
+    const editor = row?.closest<HTMLElement>('.travel-passenger-workspace__editor');
+    if (!row || !dialog || !editor) return;
+    const ancestors: HTMLElement[] = [];
+    for (let el = row.parentElement; el && el !== dialog; el = el.parentElement) ancestors.push(el);
+    const viewport = window.visualViewport;
+    const clipping = () => {
+      const footer = dialog.querySelector<HTMLElement>('.taxpay-modal__footer')?.getBoundingClientRect();
+      const body = dialog.querySelector<HTMLElement>('.taxpay-modal__body')?.getBoundingClientRect();
+      let top = Math.max(body?.top ?? 0, viewport?.offsetTop ?? 0);
+      let bottom = Math.min(body?.bottom ?? window.innerHeight, footer?.top ?? window.innerHeight,
+        (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight));
+      for (const el of ancestors) {
+        if (/auto|scroll|hidden|clip/.test(getComputedStyle(el).overflowY)) {
+          const box = el.getBoundingClientRect();
+          top = Math.max(top, box.top + el.clientTop);
+          bottom = Math.min(bottom, box.top + el.clientTop + el.clientHeight);
+        }
+      }
+      return {top,bottom};
     };
-    // Scroll only when the popup OPENS. Never force-scroll back while the
-    // person moves to another field/tab or clicks outside to dismiss it.
-    const refresh = () => position(false);
-    const frame = requestAnimationFrame(() => position(true));
+    const measure = (reveal: boolean) => {
+      if (!row.isConnected) return;
+      let bounds = clipping();
+      const rowBox = row.getBoundingClientRect();
+      const limit = Math.max(0, Math.min(window.innerWidth <= 560 ? 190 : 210,
+        bounds.bottom - bounds.top - Math.min(rowBox.height, 76) - 12));
+      if (reveal) {
+        const clearance = Math.max(0, rowBox.bottom + limit + 8 - bounds.bottom);
+        const existing = parseFloat(editor.style.getPropertyValue('--travel-picker-clearance')) || 0;
+        editor.style.setProperty('--travel-picker-clearance', Math.ceil(Math.max(existing, clearance + (clearance ? 16 : 0))) + 'px');
+        bounds = clipping();
+        for (const el of ancestors) {
+          if (!/auto|scroll/.test(getComputedStyle(el).overflowY)) continue;
+          const needed = row.getBoundingClientRect().bottom + limit + 8 - bounds.bottom;
+          if (needed > 0) el.scrollTop += Math.ceil(needed);
+          bounds = clipping();
+        }
+      }
+      const available = Math.max(0, bounds.bottom - row.getBoundingClientRect().bottom - 6);
+      const height = Math.floor(Math.min(limit, available));
+      setPassportSuggestionMaxHeight(old => old === height ? old : height);
+    };
+    measure(true);
+    let frame = requestAnimationFrame(() => measure(true));
+    const refresh = () => measure(false);
+    const resize = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => measure(true)); };
     const observer = new ResizeObserver(refresh);
-    observer.observe(body); observer.observe(row);
-    window.addEventListener('resize', refresh);
-    body.addEventListener('scroll', refresh, {passive: true});
+    observer.observe(dialog); observer.observe(row);
+    for (const el of ancestors) el.addEventListener('scroll', refresh, {passive:true});
+    window.addEventListener('resize', resize);
+    viewport?.addEventListener('resize', resize);
     return () => {
       cancelAnimationFrame(frame); observer.disconnect();
-      window.removeEventListener('resize', refresh);
-      body.removeEventListener('scroll', refresh);
+      editor.style.removeProperty('--travel-picker-clearance');
+      for (const el of ancestors) el.removeEventListener('scroll', refresh);
+      window.removeEventListener('resize', resize);
+      viewport?.removeEventListener('resize', resize);
     };
   }, [passportSuggestionsFor]);
   const [medicalHelpFor, setMedicalHelpFor] = useState<string | null>(null);
@@ -168,7 +189,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   const snapshotTravelDraft = (): Record<string, unknown> => ({
     schemaVersion: 1, step: Math.min(step, 2), mode, port, waterPort,
     destination, travelDate, phone, sourcePaymentId,
-    passengers: (previewAccount || unsignedGuestDrafts)
+    passengers: previewAccount
       ? passengers.map(person => ({ ...person, passport: '', identitySource: person.nationality === 'BD' ? 'PENDING' : 'MANUAL' }))
       : passengers,
   });
@@ -235,14 +256,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     const actor: PaymentDraftActor | null = authenticatedUser
       ? {kind:'authenticated',userId:authenticatedUser.id}
       : previewAccount ? {kind:'preview',profileId:previewAccount.id}
-      : unsignedGuestDrafts ? {kind:'guest'} : null;
+      : null;
     if (!actor) return;
     let active = true;
     void deletePaymentFormDraft(actor,selectedAccountDraft).then(() => {
       if (active) setSelectedAccountDraft(null);
     }).catch(() => { /* preserve a recoverable draft if SQL cleanup fails */ });
     return () => { active = false; };
-  }, [createdReceipt?.id, bankSlipPending, selectedAccountDraft?.id, authenticatedUser?.id, previewAccount?.id, unsignedGuestDrafts]);
+  }, [createdReceipt?.id, bankSlipPending, selectedAccountDraft?.id, authenticatedUser?.id, previewAccount?.id]);
 
   useEffect(() => { onStageChange?.((step + 1) as 1 | 2 | 3 | 4); }, [step, onStageChange]);
   // The receipt takes over the wizard. Reset its scroll position when it
@@ -1085,9 +1106,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               'মূল পেমেন্ট অপরিবর্তিত থাকবে। পরিশোধের আগে প্রতিটি যাত্রীর পাসপোর্ট ও জন্মতারিখ পুনরায় দিন, যাচাই করুন এবং নতুন ভ্রমণের তারিখ নির্বাচন করুন।')}
           </p>}
           {error && <p className="travel-flow__error" id="travel-tax-error" role="alert" tabIndex={-1}>{error}</p>}
-          {(authenticatedUser || previewAccount || unsignedGuestDrafts) && !createdReceipt &&
+          {canSaveDraft && !createdReceipt &&
             <AccountPaymentDraftControls service="TRAVEL_TAX" language={language}
-              allowGuest={unsignedGuestDrafts}
               snapshot={snapshotTravelDraft} restore={restoreTravelDraft}
               selectedDraft={selectedAccountDraft} onSelectedDraft={setSelectedAccountDraft}
               guardOnly={step >= 2} actionTarget={embedded ? draftFooterTarget : undefined} />}
@@ -1368,7 +1388,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </dl>
           </details>}
           <PaymentJourneyFooter className="travel-flow__footer-actions"
-            leading={(authenticatedUser || previewAccount || unsignedGuestDrafts) && !createdReceipt && step < 2
+            leading={canSaveDraft && !createdReceipt && step < 2
               ? <div className="payment-flow-embedded__draft-actions" ref={setDraftFooterTarget} />
               : null}
             next={primaryAction}/>
