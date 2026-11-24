@@ -88,7 +88,7 @@ for (const language of ['en', 'bn'] as const) {
     const selectedTravelDate = await modal.locator('#travel-departure-date').inputValue();
     expect(selectedTravelDate).toBe(futureTravelDate);
     await modal.getByRole('button', { name: /Continue to review|পেমেন্ট পর্যালোচনায় যান/ }).click();
-    await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText(totalText);
+    await expect(modal.locator('[data-testid="travel-preview-total"]')).toContainText(totalText);
     // Final Preview retains a required receipt contact; payment methods belong
     // to the following Payment Channel screen, not the preview itself.
     await modal.locator('#travel-mobile').fill('01712345678');
@@ -99,6 +99,8 @@ for (const language of ['en', 'bn'] as const) {
     await modal.getByRole('radio', { name: 'Nagad' }).check();
     await modal.getByLabel(/I confirm the travel information|ভ্রমণের তথ্য/).check();
     await modal.getByRole('button', { name: /Confirm sample payment|নমুনা পেমেন্ট নিশ্চিত করুন/ }).click();
+    await expect(modal.getByTestId('travel-payment-result')).toBeVisible({timeout:15000});
+    await modal.getByTestId('walkin-challan-action').getByRole('button').first().click();
 
     const receiptPaper = modal.locator('.receipt-view__paper');
     await expect(receiptPaper).toBeVisible();
