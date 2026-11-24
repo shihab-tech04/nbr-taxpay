@@ -93,15 +93,16 @@ try{
       await expect(gift.getByTestId('gift-rail-donee')).toContainText(bn?'বাবা':'Father');
       await expect(donor.getByTestId('gift-confirmed-donor')).toBeVisible();
       await expect(donee.getByTestId('gift-confirmed-donee')).toBeVisible();
+      // Guard against the previously observed gap between confirmed identities.
       const editor=gift.getByTestId('gift-tax-entry-form').locator('.gift-tax-main');
       await expect(editor).toHaveCSS('display','flex');
-      const [donorSectionBox,doneeSectionBox]=await Promise.all([
+      const [donorBounds,doneeBounds]=await Promise.all([
         donor.boundingBox(),donee.boundingBox()
       ]);
-      if(!donorSectionBox||!doneeSectionBox||
-          doneeSectionBox.y-(donorSectionBox.y+donorSectionBox.height)>28){
-        throw new Error('Confirmed Donor/Donee sections stretched apart: '+
-          JSON.stringify({donorSectionBox,doneeSectionBox}));
+      if(!donorBounds||!doneeBounds||
+         doneeBounds.y-donorBounds.y-donorBounds.height>28) {
+        throw new Error('Gift Tax donor/donee stretched apart in production: '+
+          JSON.stringify({donorBounds,doneeBounds}));
       }
       const body=gift.locator('.taxpay-modal__body');
       const footer=gift.locator('.taxpay-modal__footer');
@@ -138,43 +139,53 @@ try{
       const review=gift.getByTestId('gift-tax-review');
       await expect(review).toBeVisible();
       await expect(gift.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','3');
-      await expect(review).toContainText('Gift Tax production UX acceptance only');
-      await expect(review.locator('.gift-tax-preview-table')).not.toContainText('111111111111');
-      // Source-level tests previously passed while the deployed 320/375 preview
-      // rendered one-character-wide row headers. Fail the production gate on
-      // unreadable geometry, not just horizontal overflow.
+      await expect(review.getByTestId('unified-v3-gift-payment-details')).toBeVisible();
+      await expect(review.getByRole('heading',{name:bn?'পরিশোধকারী ও রসিদের তথ্য':'Payer and receipt details'})).toBeVisible();
+      await expect(review.locator('#gift-tax-final-remarks')).toHaveValue('Gift Tax production UX acceptance only');
+      await expect(review.locator('.gift-tax-approved-table')).not.toContainText('111111111111');
+      await expect(review.locator('.unified-taxpayer-workspace__rail')).toHaveCount(0);
+      await review.locator('#gift-review-payer-name').fill('Sample Payer');
+      await review.locator('#gift-review-phone').fill('01712345678');
+      await review.locator('#gift-review-email').fill('sample@example.com');
+      await review.locator('#gift-review-reference').fill('GIFT-UX-ACCEPTANCE');
+      // The approved mobile preview now uses three cells, not the retired th/td table.
+      // Protect actual text geometry, including the full-width label and the date/amount row.
       if(mobile){
-        const relationRow=review.locator('.gift-tax-preview-table tbody tr').nth(2);
-        const [labelBox,valueBox]=await Promise.all([
-          relationRow.locator('th').boundingBox(),
-          relationRow.locator('td').boundingBox(),
-        ]);
-        if(!labelBox||!valueBox||labelBox.width<90||valueBox.width<90||
-           labelBox.x+labelBox.width>valueBox.x+3){
-          throw new Error('Gift Tax mobile preview crushed semantic label/value columns: '+
-            JSON.stringify({labelBox,valueBox}));
+        const table=review.locator('.gift-tax-approved-table');
+        const rows=table.locator('tbody tr:not(.unified-v3-review__owner)');
+        await expect(rows).toHaveCount(2);
+        for(const row of await rows.all()){
+          const cells=row.locator('td');
+          await expect(cells).toHaveCount(3);
+          const [label,date,amount]=await Promise.all([0,1,2].map(i=>cells.nth(i).boundingBox()));
+          if(!label||!date||!amount||label.width<160||date.width<70||amount.width<55||
+             label.y+label.height>date.y+2||label.y+label.height>amount.y+2||
+             date.x+date.width>amount.x+2||
+             Math.abs(date.y-amount.y)>2){
+            throw new Error('Gift Tax mobile preview unreadable or overlapping cells: '+JSON.stringify({label,date,amount}));
+          }
         }
       }
       const previewOverflow=await body.evaluate(element=>element.scrollWidth-element.clientWidth);
       if(previewOverflow>2)throw new Error('Final review horizontal overflow: '+previewOverflow);
       await gift.screenshot({path:'test-results/live-gift-tax-preview-'+sample.name+'.png',
         animations:'disabled'});
-      await gift.getByRole('button',{name:bn?'নিশ্চিত করুন ও পরিশোধ করুন':'Confirm & Pay'}).click();
+      await gift.getByRole('button',{name:bn?'পেমেন্ট করুন':'Make Payment'}).click();
       await expect(gift.getByTestId('gift-tax-checkout')).toBeVisible();
       await gift.getByRole('button',{name:bn?'অনলাইনে পরিশোধ':'Pay online'}).click();
       await gift.getByRole('button',{name:bn?'মোবাইল ব্যাংকিং':'Mobile banking'}).click();
       await gift.getByRole('radio',{name:'bKash'}).check();
       await gift.locator('.payment-review__ack input[type=checkbox]').check();
       watchWrites=true;
-      await gift.getByRole('button',{name:bn?'পেমেন্ট সিমুলেশন করুন':'Simulate payment'}).click();
+      await gift.getByRole('button',{name:bn?'নমুনা পেমেন্ট নিশ্চিত করুন':'Confirm sample payment'}).click();
       watchWrites=false;
       const result=gift.getByTestId('gift-tax-payment-result');
       await expect(result).toBeVisible();
-      await expect(result).toContainText(bn?'সিমুলেশন সম্পন্ন':'Simulation completed');
+      await expect(result).toContainText(bn?'পেমেন্ট রেকর্ড সংরক্ষিত':'Payment record saved');
       await expect(gift.getByTestId('gift-tax-settled-documents')).toHaveCount(0);
       if(financialWrites.length)throw new Error('Sample Gift Tax submitted financial API writes: '+
         financialWrites.join(', '));
-      await gift.getByRole('button',{name:bn?'নমুনা রসিদ দেখুন':'View sample receipt'}).click();
+      await gift.getByRole('button',{name:bn?'নমুনা চালানের বিবরণ':'Sample Challan Details'}).click();
       const receipt=gift.getByTestId('gift-tax-simulation-receipt');
       await expect(receipt).toBeVisible();
       await expect(receipt).toContainText('SIM-GIFT-');
@@ -187,6 +198,8 @@ try{
       await gift.getByRole('button',{name:bn?'চূড়ান্ত পর্যালোচনায় ফিরুন':
         'Back to Final Preview'}).click();
       await expect(review).toBeVisible();
+      await expect(review.locator('#gift-review-payer-name')).toHaveValue('Sample Payer');
+      await expect(review.locator('#gift-review-phone')).toHaveValue('01712345678');
       console.log('PASS: deployed Gift Tax '+sample.name+
         ' entry, roles, selector bounds, recovery, validation, preview, simulated method and marked receipt');
     }catch(error){

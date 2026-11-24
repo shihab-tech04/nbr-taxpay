@@ -1,3 +1,4 @@
+import {mockActivitySql,sqlActivityRecord} from './mock-activity-sql';
 import './account-beneficiary-history-date-filter.spec';
 import {test,expect} from '@playwright/test';
 
@@ -30,9 +31,7 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
       :[];
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data})});
   });
-  await page.route('**/functions/v1/demo-story1-taxpay/payments?**',route=>
-    route.fulfill({status:200,contentType:'application/json',
-      body:JSON.stringify({success:true,data:{items:[],total:0}})}));
+  await mockActivitySql(page,[sqlActivityRecord('00000000-0000-4000-8000-000000000912','2025-26',person.tin,1500000)]);
   await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**',route=>
     route.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify({success:true,simulationOnly:true,data:[record]})}));
@@ -58,17 +57,17 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   const timeline=profile.getByTestId('beneficiary-chronological-timeline');
   await expect(timeline).toBeVisible();
   await expect(timeline).toHaveCSS('border-left-width','2px');
-  await expect(timeline.locator('time')).toHaveCount(2);
+  // Two distinct stored simulator allocations and the owner-scoped SQL payment must each remain visible.\n  await expect(timeline.locator('time')).toHaveCount(3);\n  await expect(timeline.getByText('00000000-0000-4000-8000-000000000912',{exact:true})).toBeVisible();
   const dateFrom=profile.getByLabel('Filter history from date');
   const dateTo=profile.getByLabel('Filter history to date');
   await dateFrom.fill('2026-11-09');
   await dateTo.fill('2026-11-09');
-  await expect(timeline.locator('li')).toHaveCount(2);
+  await expect(timeline.locator('li')).toHaveCount(3);
   await dateTo.fill('2026-11-10');
   await dateFrom.fill('2026-11-10');
   await expect(profile.getByText('No payments match these filters.')).toBeVisible();
   await profile.getByRole('button',{name:'Clear filters'}).click();
-  await expect(timeline.locator('li')).toHaveCount(2);
+  await expect(timeline.locator('li')).toHaveCount(3);
   await profile.getByRole('combobox',{name:'Assessment year'}).selectOption('2025-26');
   await expect(profile.locator('ol li').getByText('Advance tax',{exact:true})).toHaveCount(0);
   await expect(profile.locator('ol li').getByText('Other tax payment',{exact:true})).toBeVisible();
@@ -79,12 +78,12 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   await expect(listScreen.getByRole('link',{name:'Open profile for User Two'})).toBeVisible();
 
   // The same saved beneficiary must be reachable from the Activity register.
-  await page.goto('/?action=history');
+  await page.goto('/?action=history&qaScenario=1&scenarioYear=2025-2026');
   const register=page.locator('.taxpayer-transaction-panel');
   await register.getByRole('button',{name:'Filter',exact:true}).click();
   await register.getByRole('combobox',{name:'Filter transactions by beneficiary',exact:true}).selectOption('222222222222');
   const activityRow=register.getByTestId('taxpayer-transaction-table').locator('tbody tr');
-  await expect(activityRow).toHaveCount(1);
+  // Both the legacy payer allocation and the independently stored SQL payment\n  // belong to this beneficiary; do not hide either in production.\n  await expect(activityRow).toHaveCount(2);\n  await expect(register.getByTestId('taxpayer-transaction-table')).toContainText('00000000-0000-4000-8000-000000000912');
   const activityRecipient=testInfo.project.name.startsWith('mobile-')
     ?register.getByTestId('taxpayer-transaction-mobile-cards')
     :activityRow.first();

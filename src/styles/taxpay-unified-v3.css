@@ -872,3 +872,329 @@
     overflow:visible;
   }
 }
+
+
+/* Gift Tax Final Preview → Payment channel → Result: reuse the approved
+ * full-width Taxpayer walk-in panels, never the identity-stage split rail.
+ * Deliberately scoped: no shared Pay Tax, Travel Tax or Nadia overrides. */
+.taxpay-citizen-shell .taxpay-modal.gift-tax-approved-stage {
+  width:min(1160px,calc(100vw - 32px));
+  max-width:1160px;
+  max-height:min(94dvh,960px);
+  min-height:0;
+  height:auto;
+}
+.taxpay-citizen-shell .taxpay-modal.gift-tax-approved-stage .taxpay-modal__body {
+  padding:0;
+  min-height:0;
+  overflow:auto;
+}
+.taxpay-citizen-shell .taxpay-modal.gift-tax-approved-stage .taxpay-modal__progress-fill {
+  background:var(--citizen-primary,#2c5ead);
+}
+.taxpay-citizen-shell .gift-tax-approved-flow {
+  display:block;width:100%;min-width:0;
+  padding:19px 23px 21px;background:#fff;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .payment-review,
+.taxpay-citizen-shell .gift-tax-approved-flow .payment-review__main {
+  display:grid;grid-template-columns:minmax(0,1fr);gap:16px;
+  width:100%;max-width:none;min-width:0;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .payment-review__panel {
+  min-width:0;width:100%;border:1px solid #dbe3ef;
+  border-radius:12px;background:#fff;overflow:hidden;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v3-review,
+.taxpay-citizen-shell .gift-tax-approved-flow .payment-review__payer {
+  padding:0;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .payment-review__section-title {
+  min-height:48px;margin:0;padding:12px 13px;
+  align-items:center;justify-content:space-between;
+  background:#fafbfc;border-bottom:1px solid #e2e7ec;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .payment-review__section-title h2 {
+  margin:0;color:#17243c;font-size:14px;font-weight:750;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v3-review__actions {
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v3-review__actions button {
+  display:inline-flex;align-items:center;gap:6px;min-height:37px;
+  padding:8px 11px;border:1px solid #d4e0ef;border-radius:8px;
+  color:#2c5ead;background:#fff;font-size:12.5px;font-weight:700;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v3-review__actions button:focus-visible,
+.taxpay-citizen-shell .gift-tax-approved-flow .gift-tax-close-preview:focus-visible {
+  outline:2px solid #2c5ead;outline-offset:2px;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v3-review__table-wrap {
+  overflow-x:auto;max-width:100%;
+}
+.taxpay-citizen-shell .gift-tax-approved-table {
+  width:100%;table-layout:fixed;
+}
+.taxpay-citizen-shell .gift-tax-approved-table th:first-child {width:56%}
+.taxpay-citizen-shell .gift-tax-approved-table th:nth-child(2) {width:23%}
+.taxpay-citizen-shell .gift-tax-approved-table th:last-child {width:21%;text-align:right}
+.taxpay-citizen-shell .gift-tax-approved-table td:last-child {text-align:right;font-weight:650}
+.taxpay-citizen-shell .gift-tax-approved-table td,
+.taxpay-citizen-shell .gift-tax-approved-table th {
+  min-width:0;overflow-wrap:anywhere;
+}
+.taxpay-citizen-shell .gift-tax-approved-extra {
+  padding:3px 14px 9px;margin:0;
+  color:#425874;background:#fff;
+}
+.taxpay-citizen-shell .gift-tax-approved-extra > div {
+  gap:14px;
+}
+.taxpay-citizen-shell .gift-tax-approved-extra dd {
+  max-width:60%;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v5-review-total {
+  display:grid;gap:7px;padding:16px 18px;
+  border-top:1px solid #e0e7f0;background:#fff;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v5-review-total p {
+  margin:0;color:#68788e;font-size:13px;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v5-payer-hint {
+  margin:0;padding:14px 14px 0;color:#697d95;font-size:13px;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .payment-review__payer > .payment-identity__fields {
+  padding:13px 15px 17px;min-width:0;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .payment-identity__receipt-row {
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px 14px;min-width:0;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .payment-identity__receipt-row > div {
+  min-width:0;display:flex;flex-direction:column;gap:5px;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .payment-identity__receipt-row label {
+  color:#344866;font-size:13px;font-weight:650;line-height:1.45;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .payment-identity__receipt-row input {
+  width:100%;min-width:0;max-width:100%;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .payment-identity__receipt-row p[role=alert],
+.taxpay-citizen-shell .gift-tax-payer-tin p[role=alert] {
+  margin:0;color:#a52335;font-size:12px;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .gift-tax-payer-tin {
+  display:grid;gap:9px;min-width:0;margin-top:13px;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v5-remarks-section {
+  border:1px solid #dbe3ef;border-radius:11px;overflow:hidden;background:#fff;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v5-remarks-heading {
+  display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;
+  min-height:48px;margin:0;padding:12px 13px;
+  border-bottom:1px solid #e2e7ec;background:#fafbfc;
+  color:#17243c;font-size:14px;font-weight:750;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v5-remarks-heading small {
+  color:#68788e;font-size:12px;font-weight:400;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v5-remarks-body {
+  padding:13px 15px;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .unified-v5-remarks-body textarea {
+  min-height:110px;resize:vertical;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .gift-tax-preview-notice {
+  margin:0;padding:12px 14px;
+}
+.taxpay-citizen-shell .gift-tax-approved-flow .gift-tax-close-preview {
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:44px;width:fit-content;padding:10px 14px;
+  border:1px solid #cad9ec;border-radius:9px;background:#fff;
+  color:#244e82;font-size:13px;font-weight:700;
+}
+.taxpay-citizen-shell .gift-tax-checkout .payment-review__panel {
+  padding:0;
+}
+.taxpay-citizen-shell .gift-tax-checkout .payment-review__channels,
+.taxpay-citizen-shell .gift-tax-checkout .payment-review__methods {
+  margin:0 18px;
+}
+.taxpay-citizen-shell .gift-tax-checkout .payment-review__channels {margin-top:0}
+.taxpay-citizen-shell .gift-tax-checkout .payment-review__methods {
+  margin-top:18px;padding-top:16px;
+}
+.taxpay-citizen-shell .gift-tax-checkout .payment-review__ack {
+  margin:17px 18px;
+}
+.taxpay-citizen-shell .gift-tax-checkout .gift-tax-preview-notice {
+  margin:0 18px 18px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace {
+  padding:30px 36px 42px;
+}
+.taxpay-citizen-shell .gift-tax-approved-result {
+  max-width:1080px;margin:0 auto;
+}
+.taxpay-citizen-shell .gift-tax-approved-result .payment-lifecycle {
+  min-width:0;margin:0;
+  width:100%;border:1px solid #dbe3ef;border-radius:12px;overflow:hidden;
+}
+.taxpay-citizen-shell .gift-tax-approved-result .walkin-result-benefits {
+  margin:0;border-top:1px solid #e0e7f1;
+}
+.taxpay-citizen-shell .gift-tax-approved-result .walkin-result-benefits p {
+  margin:7px 0 0;color:#596e87;font-size:13px;
+}
+@media(max-width:650px) {
+  .taxpay-citizen-shell .taxpay-modal.gift-tax-approved-stage {
+    width:100vw;max-width:none;height:100dvh;max-height:100dvh;
+    border-radius:0;
+  }
+  .taxpay-citizen-shell .gift-tax-approved-flow {padding:14px 12px 18px}
+  .taxpay-citizen-shell .gift-tax-approved-flow .payment-identity__receipt-row {
+    grid-template-columns:minmax(0,1fr);gap:13px;
+  }
+  .taxpay-citizen-shell .gift-tax-approved-flow .payment-review__section-title {
+    flex-wrap:wrap;gap:10px;
+  }
+  .taxpay-citizen-shell .gift-tax-approved-flow .unified-v3-review__actions {
+    justify-content:flex-start;
+  }
+  .taxpay-citizen-shell .gift-tax-approved-table th,
+  .taxpay-citizen-shell .gift-tax-approved-table td {
+    padding:9px 8px;font-size:12px;
+  }
+  .taxpay-citizen-shell .gift-tax-approved-extra dd {max-width:55%}
+  .taxpay-citizen-shell .gift-tax-result-workspace {padding:16px 12px 24px}
+  .taxpay-citizen-shell .gift-tax-checkout .payment-review__channels,
+  .taxpay-citizen-shell .gift-tax-checkout .payment-review__methods {margin-inline:12px}
+  .taxpay-citizen-shell .gift-tax-checkout .payment-review__ack {margin-inline:12px}
+  .taxpay-citizen-shell .gift-tax-checkout .gift-tax-preview-notice {margin-inline:12px}
+}
+
+
+/* Complete the approved mobile table pattern for Gift Tax's three cells:
+ * first line = gift purpose, second line = date and amount. */
+@media(max-width:520px){
+  .taxpay-citizen-shell .gift-tax-approved-flow .gift-tax-approved-table
+    tr:not(.unified-v3-review__owner) {
+    display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;
+  }
+  .taxpay-citizen-shell .gift-tax-approved-flow .gift-tax-approved-table
+    tr:not(.unified-v3-review__owner) td:first-child {
+    grid-column:1/-1;grid-row:1;white-space:normal;
+  }
+  .taxpay-citizen-shell .gift-tax-approved-flow .gift-tax-approved-table
+    tr:not(.unified-v3-review__owner) td:nth-child(2) {
+    grid-column:1;grid-row:2;text-align:left;
+  }
+  .taxpay-citizen-shell .gift-tax-approved-flow .gift-tax-approved-table
+    tr:not(.unified-v3-review__owner) td:last-child {
+    grid-column:2;grid-row:2;text-align:right;white-space:nowrap;
+  }
+}
+
+
+/* Gift Tax result uses the same approved walk-in payment-lifecycle + separate
+ * challan action + account-benefits cards. A result is not a 1160px editor. */
+.taxpay-citizen-shell .taxpay-modal.gift-tax-approved-stage.gift-tax-result-stage {
+  width:min(760px,calc(100vw - 32px));
+  max-width:760px;
+  height:auto;
+  min-height:0;
+  max-height:calc(100dvh - 32px);
+}
+.taxpay-citizen-shell .taxpay-modal.gift-tax-result-stage > .taxpay-modal__body {
+  padding:0;
+  min-height:0;
+  flex:0 1 auto;
+  overflow-y:auto;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace {
+  width:100%;
+  min-width:0;
+  padding:16px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .payment-flow-embedded__confirmation-layout {
+  width:100%;
+  max-width:none;
+  min-width:0;
+  margin:0;
+  padding:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .payment-lifecycle,
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .walkin-result-benefits {
+  width:100%;
+  min-width:0;
+  margin:0;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .walkin-result-benefits {
+  border:1px solid var(--citizen-border,#dbe3ef);
+  border-radius:10px;
+  padding:13px 16px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .walkin-result-benefits p {
+  margin-top:8px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .walkin-result-challan {
+  margin:0;
+  padding:0 14px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .gift-tax-result-edit {
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  margin:0;
+  padding:0 2px 2px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .gift-tax-result-edit button {
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+  min-height:44px;
+  border-radius:9px;
+  padding:10px 14px;
+  font-size:14px;
+  font-weight:650;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .payment-lifecycle__progress-detail > summary {
+  min-height:44px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .payment-lifecycle__actions {
+  padding-top:4px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .payment-lifecycle__overview strong {
+  overflow-wrap:anywhere;
+}
+@media(max-width:650px){
+  .taxpay-citizen-shell .taxpay-modal.gift-tax-approved-stage.gift-tax-result-stage{
+    width:100vw;
+    max-width:none;
+    height:100dvh;
+    max-height:100dvh;
+    border-radius:0;
+  }
+  .taxpay-citizen-shell .gift-tax-result-workspace{padding:12px}
+  .taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .walkin-result-benefits {
+    padding:12px;
+  }
+  .taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .walkin-result-challan {
+    padding-inline:0;
+  }
+  .taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-edit button {
+    width:100%;
+  }
+}
+
+/* Account-only additions to the approved taxpayer workspace. */
+.payment-flow-embedded--unified .unified-account-identity {padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid #e2e6eb;min-width:0;}
+.payment-flow-embedded--unified .unified-account-identity__card {display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #c8d9ec;border-radius:10px;cursor:pointer;min-width:0;}
+.payment-flow-embedded--unified .unified-account-identity__card input {width:18px;height:18px;flex:none;accent-color:var(--taxpay-primary,#2c5ead);}
+.payment-flow-embedded--unified .unified-account-identity__card span {min-width:0;overflow-wrap:anywhere;}
+.payment-flow-embedded--unified .unified-account-identity__card strong,.payment-flow-embedded--unified .unified-account-identity__card small {display:block;}
+.payment-flow-embedded--unified .unified-account-identity__card small {margin-top:4px;color:#68788e;}
+.payment-flow-embedded--unified .unified-account-beneficiaries {margin-top:16px;padding-top:16px;border-top:1px solid #e2e6eb;min-width:0;}

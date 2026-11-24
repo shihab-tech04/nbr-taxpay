@@ -106,16 +106,17 @@ test('signed-in Travel Tax draft survives refresh, rechecks passengers and stays
     await second.locator('#travel-passport-' + secondId).fill('TEST230001');
     await second.locator('#travel-lookup-' + secondId).click();
     await second.getByRole('button', { name: 'Add passenger', exact: true }).click();
-    // F-153/US-150-T03/T04: cancel edit, remove, undo, then persist the
-    // original two IDs to isolated SQL. Undo must not create a duplicate draft.
+    // F-153/US-150: cancel an edit and persist two stable passenger IDs
+    // to isolated SQL. The redundant remove/undo editor UI was removed by design;
+    // rail deletion itself is exercised in the dedicated journey browser spec.
     await modal.locator('.travel-passenger-workspace__person').filter({hasText:'SAMPLE PASSENGER TWO'}).getByRole('button', {name:/Edit SAMPLE PASSENGER TWO/}).click();
     await second.locator('#travel-passport-' + secondId).fill('TEST230002');
     await modal.locator('.travel-passenger-workspace__entry').getByRole('button', { name: 'Cancel edit', exact: true }).click();
     await expect(modal.locator('.travel-passenger-workspace__person').filter({hasText:'SAMPLE PASSENGER TWO'})).toBeVisible();
     await expect(modal.locator('.travel-passenger-workspace__person').filter({hasText:'SAMPLE PASSENGER TWO'})).toContainText('SAMPLE PASSENGER TWO');
-    await modal.locator('.travel-passenger-workspace__person').filter({hasText:'SAMPLE PASSENGER TWO'}).getByRole('button',{name:/Remove SAMPLE PASSENGER TWO/}).click();
-    await expect(modal.locator('.travel-passenger-workspace__person')).toHaveCount(1);
-    await modal.getByRole('button', { name: 'Undo removal' }).click();
+    await expect(modal.getByRole('button', { name: 'Remove passenger', exact: true })).toHaveCount(0);
+    await expect(modal.getByRole('button', { name: 'Undo removal', exact: true })).toHaveCount(0);
+    await expect(modal.locator('.travel-passenger-workspace__person')).toHaveCount(2);
     await expect(modal.locator('.travel-passenger-workspace__person').filter({hasText:'SAMPLE PASSENGER TWO'})).toBeVisible();
     await expect(modal.locator('#travel-mobile')).toHaveCount(0);
     await modal.getByRole('button', { name: 'Continue to travel details' }).click();

@@ -39,7 +39,7 @@ const transactionRoutes = new Set(['guest', 'guestwh', 'travel']);
 const taxpayerRoles: UserRole[] = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'];
 
 export function CitizenNavigation() {
-  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, demoUser, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, openPaymentServiceChoice } = useTaxState();
+  const { currentRoute, routeParams, navigate, language, setLanguage, userRole, setUserRole, demoUser, previewAccount, logoutPreviewAccount, isPaymentServiceChoiceOpen, setPaymentServiceChoiceOpen, openPaymentServiceChoice, openAllTaxPayments } = useTaxState();
   const { user: applicationUser } = useAccountIdentity();
   const [signOutError, setSignOutError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
@@ -114,6 +114,10 @@ export function CitizenNavigation() {
     setPayPopoverOpen(false);
     setCompact(false);
     navigate(route, params);
+  };
+  const openAccountIncomeTax = () => {
+    if ((applicationUser || previewAccount) && currentRoute !== 'landing') openAllTaxPayments();
+    else openPaymentServiceChoice();
   };
   const openPay = () => {
     setMenuOpen(false);
@@ -335,7 +339,7 @@ export function CitizenNavigation() {
               :(current<=0?options.length-1:current-1);
             options[target]?.focus();
           }}>
-          <button type="button" role="menuitem" onClick={() => {setPayPopoverOpen(false);openPaymentServiceChoice();}}>
+          <button type="button" role="menuitem" onClick={() => {setPayPopoverOpen(false);openAccountIncomeTax();}}>
             <Plus size={17} aria-hidden="true"/>{bn ? 'কর পরিশোধ' : 'Pay Tax'}
           </button>
           <button type="button" role="menuitem" onClick={() => {setPayPopoverOpen(false);openPaymentServiceChoice('TRAVEL_TAX');}}>
@@ -361,7 +365,7 @@ export function CitizenNavigation() {
                   {isTaxpayer && <div>
                     <p className="citizen-dialog__section-label">{bn ? 'কর পরিশোধ' : 'Pay Tax'}</p>
                     <div className="citizen-dialog__links">
-                      <button type="button" className="citizen-dialog__link" onClick={() => {setMenuOpen(false);openPaymentServiceChoice();}}>
+                      <button type="button" className="citizen-dialog__link" onClick={() => {setMenuOpen(false);openAccountIncomeTax();}}>
                         <CreditCard size={19} aria-hidden="true"/><span>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</span>
                       </button>
                       <button type="button" className="citizen-dialog__link" onClick={() => {setMenuOpen(false);openPaymentServiceChoice('TRAVEL_TAX');}}>
@@ -406,7 +410,7 @@ export function CitizenNavigation() {
         </div>
       )}
       {giftTaxOpen && <React.Suspense fallback={<p role="status">{bn ? 'দানকর লোড হচ্ছে…' : 'Loading Gift Tax…'}</p>}>
-        <GiftTaxServiceModal onClose={() => setGiftTaxOpen(false)} />
+        <GiftTaxServiceModal signedIn={isTaxpayer} onClose={() => setGiftTaxOpen(false)} />
       </React.Suspense>}
     </>
   );

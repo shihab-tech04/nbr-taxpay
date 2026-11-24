@@ -1,10 +1,11 @@
-import React, {useState} from 'react';
+import React, {useLayoutEffect, useState} from 'react';
 import {ArrowRight, ReceiptText, Search, Trash2} from 'lucide-react';
 import {useTaxState} from '../../services/taxState';
 import {TaxPayModal} from '../ui/TaxPayModal';
 import {WalkInDiscardConfirmation} from '../ui/WalkInDiscardConfirmation';
 import {GiftTaxPaymentResult} from './GiftTaxPaymentResult';
 import {simulateGiftTaxPayment, type GiftTaxPaymentInput, type GiftTaxPaymentOutcome} from '../../services/giftTaxPaymentGateway';
+import {persistGiftTaxSimulation,readPendingGiftTax} from '../../services/giftTaxSimulationPersistence';
 import {PaymentMethodSelector,type PaymentChannel,type PaymentMethodGroup,type PaymentMethod} from '../ui/PaymentMethodSelector';
 import {Pencil} from 'lucide-react';
 import {SearchableSelect} from '../ui/SearchableSelect';
@@ -14,10 +15,14 @@ import {SelectedIdentityRail} from '../ui/SelectedIdentityRail';
 import {TaxpayerTinLookup, TaxpayerTinSearchResultCard} from '../ui/TaxpayerTinLookup';
 import {lookupSampleTaxpayer} from '../../services/sampleTaxpayerLookup';
 import {maskTinForDisplay} from '../../services/tinDisplay';
+import {isOptionalReceiptEmailValid} from '../../services/receiptEmail';
 import {amountInTakaWords} from '../../services/amountInWords';
 import {estimateGiftTax, parseGiftValue} from '../../services/giftTaxEstimate';
 import {validGiftDate} from '../../services/giftTaxDate';
 import '../../styles/taxpay-unified-v3.css';
+// Gift Tax can open directly from signed-in navigation, without the public chooser.
+// Load the service-owned grid/control styles on every entry path.
+import '../../styles/other-tax-modal.css';
 
 type Party = 'donor' | 'donee';
 type Person = {tin: string; name: string};
@@ -38,11 +43,12 @@ const secondaryClass = 'gift-tax-action gift-tax-action--secondary';
  * No authorized Gift Tax head, government payment API, or official credit-posting
  * path currently exists. Never turn this public form into a financial write.
  */
-export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBack?: () => void}) {
-  const {language} = useTaxState();
+export function GiftTaxEntryModal({onClose, onBack, signedIn = false}: {onClose: () => void; onBack?: () => void; signedIn?: boolean}) {
+  const {language, navigate} = useTaxState();
   const bn = language === 'bn';
   const t = (en: string, bd: string) => bn ? bd : en;
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [recovered] = useState(()=>signedIn?readPendingGiftTax():null);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(recovered?4:1);
   const [tinInput, setTinInput] = useState<Record<Party, string>>({donor: '', donee: ''});
   const [searched, setSearched] = useState<PartyMap>(emptyParties);
   const [added, setAdded] = useState<PartyMap>(emptyParties);
@@ -51,6 +57,15 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   const [description, setDescription] = useState('');
   const [dateOfGift, setDateOfGift] = useState('');
   const [remarks, setRemarks] = useState('');
+  // Same walk-in payer/receipt fields as the approved Taxpayer Final Preview.
+  // Signed-out previews remain local; signed-in simulations use the checked SQL path.
+  const [payerName, setPayerName] = useState('');
+  const [receiptPhone, setReceiptPhone] = useState('');
+  const [receiptEmail, setReceiptEmail] = useState('');
+  const [noticeReference, setNoticeReference] = useState('');
+  const [payerTin, setPayerTin] = useState('');
+  const [payerLookup, setPayerLookup] = useState<Person | null>(null);
+  const [payerError, setPayerError] = useState<'name'|'phone'|'email'|'tin'|null>(null);
   const [formError, setFormError] = useState('');
   const [invalidGiftField, setInvalidGiftField] = useState<'amount' | 'date' | null>(null);
   const [doneeChoice, setDoneeChoice] = useState('');
@@ -63,9 +78,9 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     party: Party; person: Person; doneeChoice: string; doneeOther: string;
   } | null>(null);
   const [exitPromptOpen, setExitPromptOpen] = useState(false);
-  const [paymentInput, setPaymentInput] = useState<GiftTaxPaymentInput | null>(null);
-  const [paymentOutcome, setPaymentOutcome] = useState<GiftTaxPaymentOutcome | null>(null);
-  const [paymentAttemptKey, setPaymentAttemptKey] = useState<string | null>(null);
+  const [paymentInput, setPaymentInput] = useState<GiftTaxPaymentInput | null>(recovered?.input??null);
+  const [paymentOutcome, setPaymentOutcome] = useState<GiftTaxPaymentOutcome | null>(recovered?{kind:'SIMULATED_SYNC_PENDING',reference:'SIM-GIFT-'+recovered.input.idempotencyKey,method:recovered.method}:null);
+  const [paymentAttemptKey, setPaymentAttemptKey] = useState<string | null>(recovered?.input.idempotencyKey??null);
   const [paymentBusy, setPaymentBusy] = useState(false);
   const [checkoutOpen,setCheckoutOpen]=useState(false);
   const [paymentChannel,setPaymentChannel]=useState<PaymentChannel|null>(null);
@@ -73,7 +88,16 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   const [paymentMethodGroup,setPaymentMethodGroup]=useState<PaymentMethodGroup|null>(null);
   const [paymentAcknowledged,setPaymentAcknowledged]=useState(false);
   const [simulateDecline,setSimulateDecline]=useState(false);
-  const requestClose = () => setExitPromptOpen(true);
+  // Each stage owns its initial scroll position; never inherit the previous
+  // long review/checkout scroll offset when the modal swaps content.
+  useLayoutEffect(() => {
+    document.querySelector<HTMLElement>('.gift-tax-dialog .taxpay-modal__body')?.scrollTo({top: 0, left: 0});
+  }, [step, checkoutOpen]);
+  const requestClose = () => {
+    if(paymentBusy)return;
+    if(paymentOutcome?.kind==='SIMULATED_SYNC_PENDING'&&readPendingGiftTax()){onClose();return;}
+    setExitPromptOpen(true);
+  };
   const doneeClass = beneficiaryChoiceParts(doneeChoice);
   const doneeClassValid = validBeneficiaryClassification(doneeClass.tag, doneeClass.relationship, doneeOther);
   const doneeOptions = [
@@ -91,7 +115,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
   );
   const doneeClassLabel = beneficiaryTagLabel(committedDoneeClass.tag || null,
     committedDoneeClass.relationship || null, language, committedDoneeOther);
-  const number = (value: number) => new Intl.NumberFormat(bn ? 'bn-BD' : 'en-IN', {maximumFractionDigits: 2}).format(value);
+  const number = (value: number) => new Intl.NumberFormat(bn ? 'bn-BD' : 'en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(value);
   const parsedAmount = parseGiftValue(giftAmount);
   const estimatedTax = parsedAmount === null ? null : estimateGiftTax(parsedAmount);
   const bothAdded = Boolean(added.donor && added.donee && added.donor.tin !== added.donee.tin && !editing.donor && !editing.donee);
@@ -217,6 +241,36 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     setPaymentChannel(null);setPaymentMethod(null);setPaymentMethodGroup(null);setPaymentAcknowledged(false);
     setStep(3);
   };
+  // Complete the EXISTING sample bank journey without suggesting Treasury settlement:
+  // this only advances a browser-local simulation using its unchanged SIM reference.
+  const continueSimulatedBankPayment = async () => {
+    if (!paymentInput || paymentOutcome?.kind!=='SIMULATED_PENDING' || paymentBusy) return;
+    setPaymentBusy(true);
+    try{setPaymentOutcome(signedIn?await persistGiftTaxSimulation(paymentInput,'BANK_BRANCH'):{kind:'SIMULATED_SUCCESS',reference:paymentOutcome.reference,method:'BANK_BRANCH',createdAt:new Date().toISOString()});}
+    finally{setPaymentBusy(false);}
+  };
+  const retryGiftSync=async()=>{
+    if(!paymentInput||paymentOutcome?.kind!=='SIMULATED_SYNC_PENDING'||paymentBusy)return;
+    setPaymentBusy(true);
+    try{setPaymentOutcome(await persistGiftTaxSimulation(paymentInput,paymentOutcome.method));}
+    finally{setPaymentBusy(false);}
+  };
+  const proceedToApprovedChannel = () => {
+    if (estimatedTax === 0) {void attemptSimulatedPayment();return;}
+    if (payerName.trim().length < 2) {
+      setPayerError('name');document.getElementById('gift-review-payer-name')?.focus();return;
+    }
+    if (!/^01[3-9]\d{8}$/.test(receiptPhone)) {
+      setPayerError('phone');document.getElementById('gift-review-phone')?.focus();return;
+    }
+    if (!isOptionalReceiptEmailValid(receiptEmail)) {
+      setPayerError('email');document.getElementById('gift-review-email')?.focus();return;
+    }
+    if (payerTin && !/^\d{12,13}$/.test(payerTin)) {
+      setPayerError('tin');document.getElementById('gift-review-payer-tin')?.focus();return;
+    }
+    setPayerError(null);setFormError('');setCheckoutOpen(true);
+  };
   /** Use the existing payment-method journey, but never submit fictional Gift Tax through an unauthorized service head. */
   const attemptSimulatedPayment = async () => {
     if (paymentBusy || !added.donor || !added.donee || !committedDoneeValid ||
@@ -242,6 +296,8 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         otherLabel: committedDoneeClass.tag === 'others' ? committedDoneeOther.trim() : null},
       giftAmountMinor: giftMinor, estimatedTaxMinor: taxMinor,
       description, giftDate: dateOfGift, remarks, idempotencyKey: key,
+      payer: {name:payerName.trim(),phone:receiptPhone,email:receiptEmail.trim(),
+        noticeReference:noticeReference.trim(),tin:payerTin},
     };
     setPaymentInput(nextInput);
     if(taxMinor>0 && (!paymentChannel || !paymentMethod || !paymentAcknowledged)) {
@@ -251,7 +307,8 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     setPaymentBusy(true);
     try {
       const nextOutcome=simulateGiftTaxPayment(nextInput,paymentMethod??'SIMULATED',simulateDecline);
-      setPaymentOutcome(nextOutcome);
+      setPaymentOutcome(signedIn&&nextOutcome.kind==='SIMULATED_SUCCESS'
+        ?await persistGiftTaxSimulation(nextInput,nextOutcome.method):nextOutcome);
     } catch {
       setPaymentOutcome({kind:'SIMULATED_FAILED',reason:t('Unable to prepare the simulation. Retry without losing your details.','সিমুলেশন প্রস্তুত হয়নি। তথ্য না হারিয়ে আবার চেষ্টা করুন।'),retryable:true});
     } finally {
@@ -397,15 +454,19 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     </div>;
 
   const selectedCount = Number(Boolean(added.donor)) + Number(Boolean(added.donee));
-  return <><TaxPayModal title={step === 4 ? t('Payment Result', 'পেমেন্টের ফলাফল') : t('Gift Tax', 'দানকর')}
-    ariaLabel={t('Gift Tax', 'দানকর')} service="gift" className="gift-tax-dialog taxpay-v5-locked"
-    progress={step === 4 ? undefined : {current: step, total: 3, label: t('Steps', 'ধাপ'),
-      subtitle: t('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট'),
+  return <><TaxPayModal title={step === 4 ? t('Payment result','পেমেন্টের ফলাফল')
+    : step === 3 ? (checkoutOpen ? t('Payment channel','পেমেন্ট চ্যানেল')
+      : t('Final Preview','চূড়ান্ত পর্যালোচনা')) : t('Gift Tax','দানকর')}
+    ariaLabel={t('Gift Tax', 'দানকর')} service="gift"
+    className={'gift-tax-dialog taxpay-v5-locked' + (step >= 3 ? ' gift-tax-approved-stage' : '') + (step === 4 ? ' gift-tax-result-stage' : '')}
+    progress={step === 4 || (step === 3 && checkoutOpen) ? undefined : {current: step, total: 3, label: t('Steps', 'ধাপ'),
+      subtitle: signedIn ? t('Gift Tax', 'দানকর') : t('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট'),
       accessibilityLabel: t('Payment progress', 'পেমেন্টের অগ্রগতি'),
       accessibilityValueText: t(`Step ${step} of 3`, `৩ ধাপের ${step === 1 ? '১' : step === 2 ? '২' : '৩'} নম্বর ধাপ`)}}
     closeIconLabel={t('Close Gift Tax', 'দানকর বন্ধ করুন')}
     onClose={requestClose}
-    onBack={step === 1 ? onBack : () => {
+    onBack={paymentOutcome?.kind==='SIMULATED_SYNC_PENDING'||paymentBusy?undefined:step === 1 ? onBack : () => {
+       if(recovered&&step===4){onClose();return;}
       if(step===4){setStep(3);setCheckoutOpen(false)}
       else if(step===3&&checkoutOpen)setCheckoutOpen(false);
       else setStep(step===3?2:1);
@@ -423,13 +484,13 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         <ArrowRight size={18} aria-hidden="true" />
       </button> : step === 3 ? <button type="button" className="tax-service-choice__continue"
         onClick={() => {
-          if(!checkoutOpen && (estimatedTax??0)>0){setCheckoutOpen(true);setFormError('');return;}
+          if(!checkoutOpen){proceedToApprovedChannel();return;}
           void attemptSimulatedPayment();
         }} disabled={paymentBusy || (checkoutOpen && (estimatedTax??0)>0 && (!paymentChannel || !paymentMethod || !paymentAcknowledged))}
         aria-busy={paymentBusy}>
         {estimatedTax === 0 ? t('Finish no-tax review','করবিহীন পর্যালোচনা শেষ করুন')
-          : checkoutOpen ? t('Simulate payment','পেমেন্ট সিমুলেশন করুন')
-          : t('Confirm & Pay','নিশ্চিত করুন ও পরিশোধ করুন')}
+          : checkoutOpen ? t('Confirm sample payment','নমুনা পেমেন্ট নিশ্চিত করুন')
+          : t('Make Payment','পেমেন্ট করুন')}
         <ArrowRight size={18} aria-hidden="true" />
       </button> : null}
     </div>}>
@@ -495,99 +556,195 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
         </dl>
       </aside>
     )}
-    {step === 3 && checkoutOpen && workspace('gift-tax-checkout',
-      <section className="payment-review payment-review--unified-v5 unified-v5-payment-channel gift-tax-checkout">
-        <div className="payment-review__main"><section className="payment-review__panel">
-          <div className="payment-review__section-title"><div>
-            <h2>{t('Choose payment channel','পেমেন্ট মাধ্যম বেছে নিন')}</h2>
-            <p>{t('Use the existing simulated payment methods. No real money is charged.','বিদ্যমান সিমুলেটেড পেমেন্ট মাধ্যম ব্যবহার করুন। প্রকৃত অর্থ কাটা হবে না।')}</p>
-          </div></div>
-          <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={paymentMethodGroup}
-            method={paymentMethod}
-            onChannelChange={(channel,method)=>{setPaymentChannel(channel);setPaymentMethod(method);setPaymentMethodGroup(null);setPaymentAcknowledged(false);}}
-            onGroupChange={group=>{setPaymentMethodGroup(group);setPaymentMethod(null);setPaymentAcknowledged(false);}}
-            onMethodChange={method=>{setPaymentMethod(method);setPaymentAcknowledged(false);}}
-            simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>
-          {paymentChannel && paymentMethod && <label className="payment-review__ack">
-            <input type="checkbox" checked={paymentAcknowledged} onChange={event=>setPaymentAcknowledged(event.target.checked)}/>
-            <span>{t('I have checked the donor, donee, gift details and estimated tax. This is a simulation, not an official payment.','দাতা, গ্রহীতা, দানের বিবরণ ও আনুমানিক কর যাচাই করেছি। এটি সিমুলেশন, সরকারি পেমেন্ট নয়।')}</span>
-          </label>}
-          {formError && <p className="unified-taxpayer-workspace__error" role="alert">{formError}</p>}
-        </section></div>
-      </section>,
-      <aside className="unified-taxpayer-workspace__rail gift-tax-aside payment-form-summary">
-        <h3 className="unified-taxpayer-workspace__rail-title"><ReceiptText size={17} aria-hidden="true"/>{t('Payment summary','পেমেন্ট সারসংক্ষেপ')}</h3>
-        <p className="payment-form-summary__eyebrow">{t('Estimated Gift Tax','আনুমানিক দানকর')}</p>
-        <p className="payment-form-summary__total">{'৳ '+number(estimatedTax??0)}</p>
-        <p className="payment-form-summary__amount-words">{amountInTakaWords(estimatedTax,language)??'—'}</p>
-      </aside>
-    )}
-    {step === 3 && !checkoutOpen && workspace('gift-tax-review',
-      <>
-        <section className="payment-review payment-review--unified-v5 gift-tax-preview" aria-labelledby="gift-tax-review-heading">
-          <div className="payment-review__main">
-            <section className="payment-review__panel unified-v3-review" data-testid="unified-v3-gift-payment-details">
-              <div className="payment-review__section-title unified-v3-review__heading">
-                <h2 id="gift-tax-review-heading">{t('Final payment details','চূড়ান্ত পেমেন্টের বিবরণ')}</h2>
-                <div className="unified-v3-review__actions">
-                  <button type="button" onClick={() => setStep(1)}><Pencil size={14} aria-hidden="true"/>{t('Edit donor / donee','দাতা / গ্রহীতা সম্পাদনা')}</button>
-                  <button type="button" onClick={() => setStep(2)}><Pencil size={14} aria-hidden="true"/>{t('Edit gift information','দানের তথ্য সম্পাদনা')}</button>
+
+    {step === 3 && checkoutOpen && <div className="payment-flow-embedded--unified gift-tax-approved-flow gift-tax-checkout"
+      data-testid="gift-tax-checkout">
+      <section className="payment-review payment-review--unified-v5 unified-v5-payment-channel"
+        aria-labelledby="gift-approved-channel-heading">
+        <div className="payment-review__main">
+          <section className="payment-review__panel">
+            <div className="payment-review__section-title"><div>
+              <h2 id="gift-approved-channel-heading">{t('Choose payment channel','পেমেন্ট চ্যানেল বেছে নিন')}</h2>
+              <p>{t('Choose online payment or a bank branch','অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন')}</p>
+            </div></div>
+            <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={paymentMethodGroup}
+              method={paymentMethod}
+              onChannelChange={(channel,method)=>{setPaymentChannel(channel);setPaymentMethod(method);setPaymentMethodGroup(null);setPaymentAcknowledged(false);}}
+              onGroupChange={group=>{setPaymentMethodGroup(group);setPaymentMethod(null);setPaymentAcknowledged(false);}}
+              onMethodChange={method=>{setPaymentMethod(method);setPaymentAcknowledged(false);}}
+              simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>
+            {paymentChannel && paymentMethod && <label className="payment-review__ack">
+              <input type="checkbox" checked={paymentAcknowledged}
+                onChange={event=>setPaymentAcknowledged(event.target.checked)} />
+              <span>{t('I have checked the donor, donee, gift details and estimated tax. This is a sample, not an official payment.',
+                'দাতা, গ্রহীতা, দানের তথ্য ও আনুমানিক কর যাচাই করেছি। এটি নমুনা, সরকারি পেমেন্ট নয়।')}</span>
+            </label>}
+            <p className="gift-tax-preview-notice" role="note">
+              {t('SIMULATION ONLY — no funds, official challan or donor credit are generated.',
+                'শুধু সিমুলেশন — অর্থ, সরকারি চালান বা দাতার কর ক্রেডিট তৈরি হবে না।')}
+            </p>
+            {formError && <p className="unified-taxpayer-workspace__error" role="alert">{formError}</p>}
+          </section>
+        </div>
+      </section>
+    </div>}
+    {step === 3 && !checkoutOpen && <div className="payment-flow-embedded--unified gift-tax-approved-flow gift-tax-preview"
+      data-testid="gift-tax-review">
+      <section className="payment-review payment-review--unified-v5"
+        aria-labelledby="gift-tax-review-heading">
+        <div className="payment-review__main">
+          <section className="payment-review__panel unified-v3-review"
+            data-testid="unified-v3-gift-payment-details">
+            <div className="payment-review__section-title unified-v3-review__heading">
+              <h2 id="gift-tax-review-heading">{t('Payment details','পেমেন্টের বিবরণ')}</h2>
+              <div className="unified-v3-review__actions">
+                <button type="button" onClick={()=>setStep(1)}>
+                  <Pencil size={14} aria-hidden="true"/>{t('Donor / Donee','দাতা / গ্রহীতা')}
+                </button>
+                <button type="button" aria-label={t('Edit gift information','দানের তথ্য সম্পাদনা')} onClick={()=>setStep(2)}>
+                  <Pencil size={14} aria-hidden="true"/>{t('Gift & amount','দান ও পরিমাণ')}
+                </button>
+              </div>
+            </div>
+            <div className="unified-v3-review__table-wrap">
+              <table className="unified-v3-review__table gift-tax-approved-table"
+                aria-label={t('Gift Tax payment details','দানকরের পেমেন্টের বিবরণ')}>
+                <thead><tr>
+                  <th>{t('Donor / Donee / Payment head','দাতা / গ্রহীতা / পেমেন্ট খাত')}</th>
+                  <th>{t('Date of gift','দানের তারিখ')}</th>
+                  <th>{t('Amount','পরিমাণ')}</th>
+                </tr></thead>
+                <tbody>
+                  <tr className="unified-v3-review__owner"><td colSpan={3}>
+                    <strong>{added.donor?.name} · {t('Donor (tax-liable)','দাতা (করদায়ী)')}</strong>
+                    <span>{maskTinForDisplay(added.donor?.tin)}</span>
+                  </td></tr>
+                  <tr><td>{t('Gift Tax — estimated only','দানকর — শুধু আনুমানিক')}</td>
+                    <td>{dateOfGift}</td>
+                    <td>{'৳ '+number(estimatedTax??0)}</td></tr>
+                  <tr className="unified-v3-review__owner"><td colSpan={3}>
+                    <strong>{added.donee?.name} · {t('Donee','গ্রহীতা')}</strong>
+                    <span>{maskTinForDisplay(added.donee?.tin)} · {doneeClassLabel}</span>
+                  </td></tr>
+                  <tr><td>{t('Gift amount','দানের পরিমাণ')}</td><td>{dateOfGift}</td>
+                    <td>{'৳ '+number(parsedAmount??0)}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <dl className="gift-tax-approved-extra">
+              {line(t('Gift description','দানের বিবরণ'),description||'—')}
+              {line(t('Through — challan column 2','মাধ্যম — চালানের ২য় কলাম'),added.donee?.name??'—')}
+              {line(t('On Behalf Of — challan column 3','যার পক্ষে — চালানের ৩য় কলাম'),added.donor?.name??'—')}
+              {line(t('Tax liability belongs to','কর দায় যাঁর'),added.donor?.name??'—')}
+              {line(t('Tag / Relationship','ট্যাগ / সম্পর্ক'),doneeClassLabel)}
+            </dl>
+            <div className="unified-v5-review-total">
+              <div className="unified-v5-review-total__row">
+                <strong>{t('Estimated Gift Tax total','আনুমানিক দানকরের মোট')}</strong>
+                <output>{'৳ '+number(estimatedTax??0)}</output>
+              </div>
+              <p>{amountInTakaWords(estimatedTax,language)??'—'}</p>
+            </div>
+          </section>
+          <section className="payment-review__panel payment-review__payer"
+            aria-labelledby="gift-approved-payer-title">
+            <div className="payment-review__section-title">
+              <div><h2 id="gift-approved-payer-title">
+                {t('Payer and receipt details','পরিশোধকারী ও রসিদের তথ্য')}</h2></div>
+            </div>
+            <p className="unified-v5-payer-hint">
+              {t('Payer information will appear on the sample receipt.',
+                'পরিশোধকারীর তথ্য নমুনা রসিদে দেখানো হবে।')}</p>
+            <div className="payment-identity__fields">
+              <div className="payment-identity__receipt-row">
+                <div>
+                  <label htmlFor="gift-review-payer-name">{t('Your name (payer)','আপনার নাম (পরিশোধকারী)')} *</label>
+                  <input id="gift-review-payer-name" className="gift-tax-field-control"
+                    autoComplete="name" required placeholder={t('Your full name','আপনার পূর্ণ নাম')}
+                    value={payerName} aria-invalid={payerError==='name'}
+                    onChange={e=>{setPayerName(e.target.value);setPayerError(null)}}/>
+                  {payerError==='name'&&<p role="alert">{t('Enter a name of at least two characters.','অন্তত দুই অক্ষরের নাম লিখুন।')}</p>}
+                </div>
+                <div>
+                  <label htmlFor="gift-review-phone">{t('Mobile number for receipt','রসিদের জন্য মোবাইল নম্বর')} *</label>
+                  <input id="gift-review-phone" className="gift-tax-field-control"
+                    type="tel" inputMode="numeric" autoComplete="tel-national"
+                    placeholder="01XXXXXXXXX" maxLength={11} required
+                    value={receiptPhone} aria-invalid={payerError==='phone'}
+                    onChange={e=>{setReceiptPhone(e.target.value.replace(/\D/g,'').slice(0,11));setPayerError(null)}}/>
+                  {payerError==='phone'&&<p role="alert">{t('Enter a valid Bangladeshi mobile number.','সঠিক বাংলাদেশি মোবাইল নম্বর লিখুন।')}</p>}
+                </div>
+                <div>
+                  <label htmlFor="gift-review-email">{t('Email address (optional)','ইমেইল ঠিকানা (ঐচ্ছিক)')}</label>
+                  <input id="gift-review-email" type="email" className="gift-tax-field-control"
+                    autoComplete="email" maxLength={254} placeholder="name@example.com"
+                    value={receiptEmail} aria-invalid={payerError==='email'}
+                    onChange={e=>{setReceiptEmail(e.target.value);setPayerError(null)}}/>
+                  {payerError==='email'&&<p role="alert">{t('Enter a valid email or leave blank.','সঠিক ইমেইল দিন অথবা খালি রাখুন।')}</p>}
+                </div>
+                <div>
+                  <label htmlFor="gift-review-reference">{t('NBR notice or payment reference (optional)',
+                    'NBR নোটিশ বা পেমেন্ট রেফারেন্স (ঐচ্ছিক)')}</label>
+                  <input id="gift-review-reference" className="gift-tax-field-control"
+                    placeholder="PN-2026-000392" maxLength={160}
+                    value={noticeReference} onChange={e=>setNoticeReference(e.target.value)}/>
                 </div>
               </div>
-              <div className="unified-v3-review__table-wrap">
-                <table className="unified-v3-review__table gift-tax-preview-table" aria-label={t('Gift Tax payment information','দানকরের পেমেন্ট তথ্য')}>
-                  <thead><tr><th>{t('Information','তথ্য')}</th><th>{t('Details','বিবরণ')}</th></tr></thead>
-                  <tbody>
-                    <tr><th scope="row">{t('Donor','দাতা')}</th><td>{added.donor?.name??'—'}</td></tr>
-                    <tr><th scope="row">{t('Donee','গ্রহীতা')}</th><td>{added.donee?.name??'—'}</td></tr>
-                    <tr><th scope="row">{t('Tag / Relationship','ট্যাগ / সম্পর্ক')}</th><td>{doneeClassLabel}</td></tr>
-                    <tr><th scope="row">{t('Gift amount','দানের পরিমাণ')}</th><td>{parsedAmount===null?'—':'৳ '+number(parsedAmount)}</td></tr>
-                    <tr><th scope="row">{t('Gift description','দানের বিবরণ')}</th><td>{description||'—'}</td></tr>
-                    <tr><th scope="row">{t('Date of gift','দানের তারিখ')}</th><td>{dateOfGift}</td></tr>
-                    {remarks&&<tr><th scope="row">{t('Remarks','মন্তব্য')}</th><td>{remarks}</td></tr>}
-                    <tr className="unified-v3-review__owner"><th scope="row">{t('Through — challan column 2','মাধ্যম — চালানের ২য় কলাম')}</th><td>{added.donee?.name??'—'}</td></tr>
-                    <tr><th scope="row">{t('On Behalf Of — challan column 3','যার পক্ষে — চালানের ৩য় কলাম')}</th><td>{added.donor?.name??'—'}</td></tr>
-                    <tr><th scope="row">{t('Tax liability belongs to','কর দায় যাঁর')}</th><td>{added.donor?.name??'—'}</td></tr>
-                  </tbody>
-                </table>
+              <div className="gift-tax-payer-tin" data-testid="gift-tax-payer-tin">
+                <TaxpayerTinLookup language={language} directDigitEdit
+                  tinId="gift-review-payer-tin" nameId="gift-review-payer-lookup-name"
+                  tin={payerTin} name={payerLookup?.name??''}
+                  onTinChange={value=>{setPayerTin(value);setPayerLookup(null);setPayerError(null)}}
+                  onSearch={()=>{const found=lookupSampleTaxpayer(payerTin);
+                    setPayerLookup(found?{tin:payerTin,name:bn?found.nameBn:found.nameEn}:null);}}
+                  onClear={()=>{setPayerTin('');setPayerLookup(null);setPayerError(null)}}
+                  omitNameField maxTinLength={13}
+                  canSearch={/^\d{12,13}$/.test(payerTin)}
+                  tinLabel={t('Payer TIN (optional)','পরিশোধকারীর টিআইএন (ঐচ্ছিক)')}
+                  searchLabel={t('Search payer TIN','পরিশোধকারীর টিআইএন খুঁজুন')}
+                  tinPlaceholder={t('12- or 13-digit TIN','১২ বা ১৩ সংখ্যার টিআইএন')}
+                  invalidTin={payerError==='tin'}/>
+                {payerLookup&&<p className="gift-tax-lookup-notice">
+                  {payerLookup.name} · {t('Sample lookup only, not verified ownership.',
+                    'শুধু নমুনা অনুসন্ধান, মালিকানা যাচাই নয়।')}</p>}
+                {payerError==='tin'&&<p role="alert">{t('Use 12 or 13 digits, or leave blank.',
+                  '১২ বা ১৩ সংখ্যা লিখুন, অথবা খালি রাখুন।')}</p>}
               </div>
-              <div className="unified-v5-review-total">
-                <div className="unified-v5-review-total__row"><strong>{t('Estimated Gift Tax','আনুমানিক দানকর')}</strong><output>{estimatedTax===null?'—':'৳ '+number(estimatedTax)}</output></div>
-                <p>{amountInTakaWords(estimatedTax,language)??'—'}</p>
-              </div>
-            </section>
-          </div>
-        </section>
-        <button type="button" className={secondaryClass} onClick={requestClose}>{t('Close preview','পর্যালোচনা বন্ধ করুন')}</button>
-        <p role="status" className="gift-tax-preview-notice" data-testid="gift-tax-review-complete">
-          {t('Simulation only. No money was charged, and no official challan or donor credit has been created.','শুধু সিমুলেশন। কোনো টাকা কাটা হয়নি এবং সরকারি চালান বা দাতার কর ক্রেডিট তৈরি হয়নি।')}
-        </p>
-      </>,
-      <aside className="unified-taxpayer-workspace__rail gift-tax-aside payment-form-summary">
-        <h3 className="unified-taxpayer-workspace__rail-title"><ReceiptText size={17} aria-hidden="true"/>{t('Payment summary', 'পেমেন্ট সারসংক্ষেপ')}</h3>
-        <p className="payment-form-summary__eyebrow">{t('Estimated total', 'আনুমানিক মোট')}</p>
-        <p className="payment-form-summary__total">{estimatedTax === null ? '—' : '৳ ' + number(estimatedTax)}</p>
-        <p className="payment-form-summary__amount-words">{amountInTakaWords(estimatedTax, language) ?? '—'}</p>
-        <div className="unified-taxpayer-workspace__list">
-          {partyDisplay('donor')}{partyDisplay('donee')}
+            </div>
+          </section>
+          <section className="unified-v5-remarks-section" data-testid="challan-remarks-field">
+            <h3 className="unified-v5-remarks-heading">
+              {t('Payment Remarks / Invoice Reference','পেমেন্টের মন্তব্য / ইনভয়েস রেফারেন্স')}
+              <small>{t('(Optional)','(ঐচ্ছিক)')}</small>
+            </h3>
+            <div className="unified-v5-remarks-body">
+              <label htmlFor="gift-tax-final-remarks" className="sr-only">{t('Remarks','মন্তব্য')}</label>
+              <textarea id="gift-tax-final-remarks" className="gift-tax-field-control"
+                rows={4} maxLength={4000} value={remarks}
+                onChange={e=>setRemarks(e.target.value)}
+                placeholder={t('e.g. Gift document or payment reference','যেমন দানের দলিল বা পেমেন্ট রেফারেন্স')}/>
+              <p className="gift-tax-lookup-notice">{t('Maximum 4,000 characters','সর্বোচ্চ ৪,০০০ অক্ষর')}</p>
+            </div>
+          </section>
+          <p role="status" className="gift-tax-preview-notice" data-testid="gift-tax-review-complete">
+            {t('Simulation only. No money was charged, and no official challan or donor credit has been created.',
+              'শুধু সিমুলেশন। কোনো টাকা কাটা হয়নি এবং সরকারি চালান বা দাতার কর ক্রেডিট তৈরি হয়নি।')}
+          </p>
+          <button type="button" className="gift-tax-close-preview"
+            onClick={requestClose}>{t('Close preview','পর্যালোচনা বন্ধ করুন')}</button>
         </div>
-      </aside>
-    )}
-    {step === 4 && paymentInput && paymentOutcome && workspace('gift-tax-result-workspace',
-      <GiftTaxPaymentResult language={language} input={paymentInput} outcome={paymentOutcome}
-        onBack={() => {setCheckoutOpen(false);setStep(3);}} onRetry={() => {setCheckoutOpen(true);setStep(3);setPaymentAcknowledged(false);}} />,
-      <aside className="unified-taxpayer-workspace__rail gift-tax-aside payment-form-summary">
-        <h3 className="unified-taxpayer-workspace__rail-title"><ReceiptText size={17} aria-hidden="true"/>{t('Payment summary', 'পেমেন্ট সারসংক্ষেপ')}</h3>
-        <p className="payment-form-summary__eyebrow">{t('Gift Tax total', 'দানকরের মোট')}</p>
-        <p className="payment-form-summary__total">{'৳ ' + number(estimatedTax ?? 0)}</p>
-        <dl className="gift-tax-summary-lines payment-form-summary__rows">
-          {line(t('Donor', 'দাতা'), added.donor?.name ?? '—')}
-          {line(t('Donor TIN', 'দাতার টিআইএন'), maskTinForDisplay(added.donor?.tin))}
-          {line(t('Donee', 'গ্রহীতা'), added.donee?.name ?? '—')}
-          {line(t('Tag / Relationship', 'ট্যাগ / সম্পর্ক'), doneeClassLabel)}
-        </dl>
-      </aside>
-    )}
+      </section>
+    </div>}
+    {step === 4 && paymentInput && paymentOutcome && <div
+      className="gift-tax-approved-flow gift-tax-result-workspace"
+      data-testid="gift-tax-result-workspace">
+      <GiftTaxPaymentResult signedIn={signedIn} language={language} input={paymentInput} outcome={paymentOutcome}
+        onBack={()=>{if(recovered){onClose();return;}setCheckoutOpen(false);setStep(3);}}
+        onRetry={()=>{setCheckoutOpen(true);setStep(3);setPaymentAcknowledged(false);}}
+        onContinueBank={continueSimulatedBankPayment}
+        onRefresh={retryGiftSync} busy={paymentBusy}
+        onLogin={()=>{onClose();navigate('taxpayer_login');}}/>
+    </div>}
   </TaxPayModal>
     {exitPromptOpen && <WalkInDiscardConfirmation language={language} onKeepEditing={() => setExitPromptOpen(false)} onDiscard={onClose} />}
   </>;

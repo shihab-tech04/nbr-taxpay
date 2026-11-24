@@ -14,6 +14,7 @@ import {usePaymentAccountProfile} from '../../services/paymentAccountProfile';
 import {reuseRecordedPayment} from '../../services/paymentReuse';
 import {paymentDateInRange} from '../../services/paymentDateFilter';
 import {buildAccountBeneficiaryHistoryCsv} from '../../services/accountBeneficiaryHistoryCsv';
+import {accountBeneficiaryPaymentReferences,displayAccountBeneficiaryPaymentReference} from '../../services/accountBeneficiaryHistoryReferences';
 
 type StoredHistoryFilters={
   search:string;
@@ -82,6 +83,11 @@ function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBenefi
   const [error,setError]=useState('');
   const [exportError,setExportError]=useState('');
   const [revision,setRevision]=useState(0);
+  useEffect(()=>{
+    const refresh=()=>setRevision(value=>value+1);
+    window.addEventListener('taxpay:story-payments-recovered',refresh);
+    return()=>window.removeEventListener('taxpay:story-payments-recovered',refresh);
+  },[]);
   const [restoredFilters]=useState(()=>readHistoryFilters(ownerUid));
   const [search,setSearch]=useState(restoredFilters.search);
   const [filtersOpen,setFiltersOpen]=useState(false);
@@ -176,7 +182,7 @@ function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBenefi
       (yearFilter==='all'||row.assessmentYear===yearFilter)&&
       (headFilter==='all'||row.paymentHead===headFilter)&&
       (!q||[row.beneficiaryName,row.taxpayerTin,row.paymentHead,row.assessmentYear,
-        row.paymentId,row.batchId||'',
+        ...accountBeneficiaryPaymentReferences(row),
         ...(visibleTags.status==='ready'?visibleTags.people.filter(person=>person.tin===row.taxpayerTin)
           .flatMap(person=>[person.display_name,
             beneficiaryFinalTagLabel(person.tag,person.relationship,language,person.other_label)||'']):[])
@@ -303,7 +309,7 @@ function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBenefi
             <p className="text-sm text-taxpay-muted">{row.assessmentYear}</p>
           </div>},
           {key:'reference',header:tr('Reference','রেফারেন্স'),renderCell:row=><div>
-            <p className="break-all font-mono-plex text-sm">{row.paymentId}</p>
+            <p className="break-all font-mono-plex text-sm">{displayAccountBeneficiaryPaymentReference(row)}</p>
             {row.batchItemIndex&&row.batchItemCount&&<p className="text-sm text-taxpay-muted">
               {tr('Batch item','ব্যাচের রেকর্ড')} {row.batchItemIndex}/{row.batchItemCount}</p>}
           </div>},
@@ -324,7 +330,7 @@ function AccountBeneficiaryHistoryForOwner({ ownerUid, language }: AccountBenefi
           <p className="taxpay-mobile-table-card__meta">{tr('TIN','টিআইএন')}: {row.taxpayerTin||'—'}</p>
           <p className="taxpay-mobile-table-card__meta">{row.paymentHead} · {row.assessmentYear}</p>
           {row.economicCode&&<p className="taxpay-mobile-table-card__meta">{row.economicCode}</p>}
-          <p className="taxpay-mobile-table-card__meta">{tr('Reference','রেফারেন্স')}: {row.paymentId}</p>
+          <p className="taxpay-mobile-table-card__meta">{tr('Reference','রেফারেন্স')}: {displayAccountBeneficiaryPaymentReference(row)}</p>
           {row.batchItemIndex&&row.batchItemCount&&<p className="taxpay-mobile-table-card__meta">{tr('Batch item','ব্যাচের রেকর্ড')} {row.batchItemIndex}/{row.batchItemCount}</p>}
           <div className="taxpay-mobile-table-card__actions"><button type="button"
             className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"

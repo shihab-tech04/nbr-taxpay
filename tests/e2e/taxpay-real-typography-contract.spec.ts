@@ -1,3 +1,4 @@
+import {mockActivitySql} from './mock-activity-sql';
 import { expect, test } from '@playwright/test';
 import { mockPublishedBannerCms } from './mock-published-banners';
 test.beforeEach(async ({page}) => { await mockPublishedBannerCms(page); });
@@ -81,7 +82,7 @@ test('real payment chooser, stage titles and form controls are readable at narro
 test('real authenticated history keeps 16px tabular headers and cells', async ({page},info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Render actual 9-column register at desktop');
   for(const lang of ['en','bn']){
-    await page.goto('/?action=history&demoUser=user1&lang='+lang);
+    await page.goto('/?action=history&demoUser=user1&qaScenario=1&scenarioYear=2025-2026&lang='+lang);
     const table=page.getByTestId('taxpayer-transaction-table');
     await expect(table).toBeVisible();
     await size(page,'[data-testid="taxpayer-transaction-table"] thead th',16);
@@ -127,7 +128,7 @@ test('public semantic font weights stay hierarchical across EN/BN phones, tablet
 test('real taxpayer history preserves label/record weight contrast', async ({page}, info) => {
   test.skip(info.project.name !== 'desktop-1280', 'Test actual register cells, not fixture classes');
   for (const lang of ['en','bn']) {
-    await page.goto('/?action=history&demoUser=user1&lang='+lang);
+    await page.goto('/?action=history&demoUser=user1&qaScenario=1&scenarioYear=2025-2026&lang='+lang);
     await expect(page.getByTestId('taxpayer-transaction-table')).toBeVisible();
     expect(await fontWeight(page,'[data-testid="taxpayer-transaction-table"] thead th')).toBe(600);
     expect(await fontWeight(page,'[data-testid="taxpayer-transaction-table"] tbody td')).toBe(400);
@@ -146,6 +147,7 @@ test('real taxpayer history preserves label/record weight contrast', async ({pag
 test('signed-in headings and navigation retain semantic hierarchy on every viewport in EN and BN', async ({page},info) => {
   test.skip(info.project.name !== 'desktop-1280', 'One real session covers all widths and locales');
   test.setTimeout(360000);
+  await mockActivitySql(page);
   await page.goto('/?action=taxpayer_login');
   await page.locator('#taxpayer-login-user-id').fill('user1');
   await page.locator('#taxpayer-login-password').fill('user1');
@@ -165,7 +167,7 @@ test('signed-in headings and navigation retain semantic hierarchy on every viewp
     for (const width of widths) {
       await page.setViewportSize({width,height:900});
       for (const route of routes) {
-        await page.goto('/?action='+route);
+        await page.goto('/?action='+route+(route==='history'?'&qaScenario=1&scenarioYear=2025-2026':''));
         // Account Profile and Beneficiaries deliberately render their own
         // approved components; never use an Overview-only test ID for them.
         const root = route === 'beneficiaries'

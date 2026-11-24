@@ -81,10 +81,12 @@ export async function getDetailedStorySessionPayments(): Promise<OwnedStoryPayme
  * Owner lookup never uses a taxpayer TIN, payer name or browser-supplied user ID
  * as proof of identity. The SQL functions perform the final auth.uid() checks.
  */
-export async function getAccountStoryPayments(ownerUid: string): Promise<OwnedStoryPayment[]> {
+export async function getAccountStoryPayments(ownerUid: string, options: { claimPending?: boolean } = {}): Promise<OwnedStoryPayment[]> {
   if (!supabase || !ownerUid) throw new Error('Authenticated payment history is unavailable');
   const { data: before, error: identityError } = await supabase.auth.getUser();
   if (identityError || before.user?.id !== ownerUid) throw new Error('Account identity changed');
+  // Personalized shortcuts are a read-only affordance, not a claim action.
+  if (options.claimPending !== false) {
   const { error: claimError } = await supabase.rpc('taxpay_claim_story1_session', {
     p_session_id: getStorySessionId()
   });
@@ -94,6 +96,7 @@ export async function getAccountStoryPayments(ownerUid: string): Promise<OwnedSt
   // Never pass the entered payer TIN or a browser-selected account identity.
   const { error: payerClaimError } = await supabase.rpc('taxpay_claim_walkin_payer_payments');
   if (payerClaimError) throw new Error('Unable to verify walk-in payer history');
+  }
   const all: OwnedStoryPayment[] = [];
   const seen = new Set<string>();
   for (let page=1; page<=2000; page++) {

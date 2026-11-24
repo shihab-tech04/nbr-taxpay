@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {rankFrequentTaxCategoryNames} from '../src/services/paymentFrequentCategories';
+import {rankFrequentTaxCategoryNames, rankFrequentTaxHeadIds} from '../src/services/paymentFrequentCategories';
 import type {SimulationTransaction, SimulationCategory} from '../src/contracts/paymentSimulationContract';
 
 const paid = (category: SimulationCategory, day: number, state: SimulationTransaction['state']='SIMULATED', allocations: SimulationCategory[]=[category]) => ({
@@ -32,4 +32,16 @@ test('first-time and single completed-payment accounts receive no suggestions',(
 test('two completed payments enable recommendations without inventing five categories',()=>{
   assert.deepEqual(rankFrequentTaxCategoryNames([paid('PENALTY',20),paid('PENALTY',21)]), ['Penalty']);
   assert.deepEqual(rankFrequentTaxCategoryNames([paid('PENALTY',20),paid('ADVANCE_TAX',21)]), ['Advance Tax','Penalty']);
+});
+
+test('exact-head favorites count paid transactions, deduplicate lines, cap at five and never infer from category',()=>{
+  const catalogue=new Map([[1,'16A'],[2,'16F'],[3,'16G'],[8,'50'],[121,'64'],[123,'68B']]);
+  const row=(day:number,allocations:unknown[],state='SIMULATED')=>({state,createdAt:'2026-11-'+day+'T10:00:00Z',allocations});
+  const h=(headId:number,economicCode:string)=>({headId,economicCode});
+  const a=row(20,[h(121,'64'),h(121,'64'),h(8,'50'),h(123,'68B'),h(1,'16A'),h(2,'16F'),h(3,'16G')]);
+  const b=row(21,[h(121,'64'),h(8,'50'),h(999,'64'),h(123,'WRONG'),{category:'ADVANCE_TAX'}]);
+  assert.deepEqual(rankFrequentTaxHeadIds([a],catalogue),[]);
+  assert.deepEqual(rankFrequentTaxHeadIds([a,b,row(22,[h(3,'16G')],'FAILED')],catalogue),[8,121,1,2,3]);
+  assert.deepEqual(rankFrequentTaxHeadIds([row(20,[{category:'ADVANCE_TAX'}]),row(21,[{category:'ADVANCE_TAX'}])],catalogue),[]);
+  assert.deepEqual(rankFrequentTaxHeadIds([a,b],catalogue,10).length,5);
 });

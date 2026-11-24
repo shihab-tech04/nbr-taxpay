@@ -51,14 +51,13 @@ for (const locale of ['en', 'bn'] as const) {
       .toHaveText(bn ? 'যোগ হয়েছে' : 'Added');
     await expect(gift.getByTestId('gift-rail-donee').locator('.gift-tax-identity-card__relationship'))
       .toContainText(bn ? 'বাবা' : 'Father');
-    // Both confirmed placeholders are short. A tall right rail must never
-    // stretch the editor's grid rows and split Donor/Donee by empty space.
-    await expect(gift.getByTestId('gift-tax-entry-form').locator('.gift-tax-main')).toHaveCSS('display','flex');
-    const donorBox = await donor.boundingBox();
-    const doneeBox = await donee.boundingBox();
-    expect(donorBox && doneeBox).toBeTruthy();
-    if (donorBox && doneeBox) {
-      expect(doneeBox.y - (donorBox.y + donorBox.height)).toBeLessThanOrEqual(28);
+    // Keep both confirmed identity cards compact even when the rail is taller.
+    const editor = gift.getByTestId('gift-tax-entry-form').locator('.gift-tax-main');
+    await expect(editor).toHaveCSS('display', 'flex');
+    const [donorBounds, doneeBounds] = await Promise.all([donor.boundingBox(), donee.boundingBox()]);
+    expect(donorBounds && doneeBounds, 'Both donor and donee must render').toBeTruthy();
+    if (donorBounds && doneeBounds) {
+      expect(doneeBounds.y - donorBounds.y - donorBounds.height).toBeLessThanOrEqual(28);
     }
     await expect(nextDetails).toBeEnabled();
     await nextDetails.click();

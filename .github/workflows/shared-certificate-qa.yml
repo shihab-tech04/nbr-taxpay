@@ -21,6 +21,12 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+
+# Replace only superseded runs of the same PR; manual acceptance is independent.
+concurrency:
+  group: taxpay-shared-certificate-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   certificate:
     runs-on: ubuntu-latest

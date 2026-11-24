@@ -131,7 +131,7 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
         const escaped=/^[=+\-@\t\r]/.test(input)?"'"+input:input;
         return '"'+escaped.replaceAll('"','""')+'"';
       };
-      if(!owner||status==='loading')throw Error('Profile source unavailable');
+      if(!owner||status!=='ready')throw Error('Profile source unavailable');
       const rows=[['Field','Value'],
         ...TAXPAYER_PROFILE_FIELD_ORDER.map(([field,label])=>[label[0],rawValue(field)??'']),
       ];
@@ -165,7 +165,7 @@ export function User1TaxpayerProfile({language,account}:{language:Language;accou
             </h2>
           </div>
         </div>
-        <button type="button" onClick={exportSample}
+        <button type="button" onClick={exportSample} disabled={status!=='ready'}
           className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-taxpay-border bg-white px-4 text-sm font-semibold text-taxpay-primary hover:bg-taxpay-light sm:w-auto">
           <Download size={17} aria-hidden="true"/>{tr(['Download profile','প্রোফাইল ডাউনলোড'])}
         </button>

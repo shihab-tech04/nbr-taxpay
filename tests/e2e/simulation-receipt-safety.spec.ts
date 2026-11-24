@@ -37,7 +37,7 @@ async function mockStoryPayments(page: Page) {
       await route.fulfill({ status: 200, contentType: 'application/json', headers, body: JSON.stringify({
         success: true, simulationOnly: true,
         data: { id: paymentId, status: 'SIMULATED_SUCCESS', createdAt: '2026-11-22T00:00:00.000Z',
-          data: { service: saved.service, amountMinor: saved.amountMinor, origin: 'TAXPAY_UI', details: saved.details } },
+          data: { ...saved, origin: 'TAXPAY_UI' } },
       }) });
       return;
     }
@@ -129,7 +129,7 @@ test('travel online records simulation only, with no Treasury scroll', async ({ 
   await page.getByRole('button', { name: 'Pay online' }).click();
   await page.getByRole('button', { name: 'Mobile banking' }).click();
   await page.getByRole('radio', { name: 'bKash' }).check();
-  await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
+  await page.locator('.payment-review__ack input[type="checkbox"]').check();
   await page.getByRole('button', { name: 'Confirm sample payment' }).click();
   await expect(page.locator('.receipt-view')).toBeVisible();
   expect(submissions).toHaveLength(1);
@@ -144,7 +144,7 @@ test('travel bank-slip simulation cannot instruct a real bank payment', async ({
   await travelReview(page);
   await page.getByRole('button', { name: 'Pay at a bank branch' }).click();
   await expect(page.getByTestId('travel-payment-channel-screen')).toBeVisible();
-  await page.locator('.travel-flow__channel-option input[type="checkbox"]').check();
+  await page.locator('.payment-review__ack input[type="checkbox"]').check();
   await page.getByRole('button', { name: 'Confirm sample payment' }).click();
   await expect(page.getByText('Bank slip pending')).toBeVisible();
   await expect(page.getByText('No actual bank or Treasury settlement has occurred.',{exact:false})).toBeVisible();

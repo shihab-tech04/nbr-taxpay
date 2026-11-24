@@ -12,8 +12,11 @@ import type { Language } from '../../types/tax';
 import { RETURN_HEAD_ID } from '../../services/taxWithReturnContract';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity } from '../../services/accountIdentity';
-import { getDemoStoryPaymentHistory, getPrivateSimulationHistory, type SimulationUser } from '../../services/simulatedPaymentsApi';
-import { rankFrequentTaxCategoryNames } from '../../services/paymentFrequentCategories';
+import { getDemoStoryPaymentHistory, type SimulationUser } from '../../services/simulatedPaymentsApi';
+import { rankFrequentTaxHeadIds } from '../../services/paymentFrequentCategories';
+import { getAccountStoryPayments } from '../../services/story1AccountPaymentHistory';
+import { paymentDraftOwnerScope } from '../../services/accountPaymentFormDrafts';
+import { activePreviewSession } from '../../services/previewAccountSession';
 import '../../styles/taxpay-category-directory.css';
 
 export type OtherTaxTaxpayer = { id: string; tin: string; name: string };
@@ -37,7 +40,7 @@ const liability = V11_SOURCE_HEADS.filter(head =>
 const grouped = GROUP_ORDER.map(name => ({ name, rows: liability.filter(head => head.grpEn === name) }));
 // Both backend history APIs are owner/capability-scoped and read-only. Do not
 // rank by TIN, public fixtures, guessed preferences or browser cache.
-type CategoryHistory = { status: 'signed-out' | 'loading' | 'ready' | 'unavailable'; ownerKey: string; names: string[] };
+type CategoryHistory = { status: 'signed-out' | 'loading' | 'ready' | 'unavailable'; ownerKey: string; headIds: number[] };
 // Tax with Return shares the Walk-in catalogue UI; its one-year accounting
 // contract and original return service classification remain unchanged.
 const returnHead = V11_SOURCE_HEADS.find(head => head.id === RETURN_HEAD_ID &&
@@ -89,26 +92,38 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const { previewAccount } = useTaxState();
   const { user } = useAccountIdentity();
   // Partition pending/ready history by its actual account, not a recipient TIN.
-  const ownerKey = previewAccount?.id ? 'preview:' + previewAccount.id : user?.id ? 'user:' + user.id : '';
-  const [categoryHistory, setCategoryHistory] = useState<CategoryHistory>({ status: 'signed-out', ownerKey: '', names: [] });
+  const ownerKey = user?.id ? paymentDraftOwnerScope({kind:'authenticated',userId:user.id})
+    : previewAccount?.id && activePreviewSession()?.profileId===previewAccount.id
+      ? paymentDraftOwnerScope({kind:'preview',profileId:previewAccount.id}) : '';
+  const [categoryHistory, setCategoryHistory] = useState<CategoryHistory>({ status: 'signed-out', ownerKey: '', headIds: [] });
   useEffect(() => {
     // Even a signed-in user who intentionally selected Walk-in must not
     // request account history or see personalized categories here.
     if (!allowMixedReturn || !showFrequentCategories || !ownerKey) {
-      setCategoryHistory({ status: 'signed-out', ownerKey: '', names: [] });
+      setCategoryHistory({ status: 'signed-out', ownerKey: '', headIds: [] });
       return;
     }
     let current = true;
-    setCategoryHistory({ status: 'loading', ownerKey, names: [] });
-    const history = previewAccount?.id
-      ? getDemoStoryPaymentHistory(previewAccount.id as SimulationUser, 'payer')
-      : getPrivateSimulationHistory('payer');
+    setCategoryHistory({ status: 'loading', ownerKey, headIds: [] });
+    // Both reads use the existing account-bound history capability. The
+    // general simulation ledger only exposes category codes, not exact heads.
+    const history = !user?.id && previewAccount?.id
+      ? getDemoStoryPaymentHistory(previewAccount.id as SimulationUser, 'payer').then(rows=>rows.filter(row=>row.payer===previewAccount.id&&row.simulationOnly===true))
+      : getAccountStoryPayments(user!.id,{claimPending:false}).then(rows => rows.map(row => ({
+          state: row.status === 'SIMULATED_SUCCESS' ? 'SIMULATED' : row.status,
+          createdAt: row.createdAt,
+          allocations: Array.isArray(row.details.receiptLines) ? row.details.receiptLines :
+            Array.isArray(row.details.lines) ? row.details.lines : [],
+        })));
+    const catalogue = new Map(V11_PAYMENT_OPTIONS.filter(head =>
+      isOtherTaxHeadEligible(head.id) || (Boolean(returnHead) && head.id === RETURN_HEAD_ID))
+      .map(head => [head.id, head.economicCode] as const));
     history.then(transactions => {
       if (!current) return;
-      setCategoryHistory({ status: 'ready', ownerKey, names: rankFrequentTaxCategoryNames(transactions) });
-    }).catch(() => { if (current) setCategoryHistory({ status: 'unavailable', ownerKey, names: [] }); });
+      setCategoryHistory({ status: 'ready', ownerKey, headIds: rankFrequentTaxHeadIds(transactions, catalogue) });
+    }).catch(() => { if (current) setCategoryHistory({ status: 'unavailable', ownerKey, headIds: [] }); });
     return () => { current = false; };
-  }, [allowMixedReturn, showFrequentCategories, ownerKey, previewAccount?.id]);
+  }, [allowMixedReturn, showFrequentCategories, ownerKey, previewAccount?.id, user?.id]);
   const [query, setQuery] = useState('');
   // The existing head editor is the category list. Do not add a second directory
   // or hide the approved checkbox/year/amount controls behind View heads.
@@ -147,18 +162,6 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
   const activeId = taxpayers.some(person => person.id === activeTaxpayer)
     ? activeTaxpayer : taxpayers[0]?.id;
   const activeLines = lines.filter(line => line.taxpayerId === activeId);
-  const openCategoryGroup = (name: string) => {
-    if (allowMixedReturn) {
-      setActiveCategory(name);
-      return;
-    }
-    const details = Array.from(rootRef.current?.querySelectorAll<HTMLDetailsElement>('[data-head-group]') ?? [])
-      .find(node => node.getAttribute('data-head-group') === name);
-    if (!details) return;
-    details.open = true;
-    details.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    details.querySelector<HTMLElement>('summary')?.focus();
-  };
   useEffect(() => {
     if (!allowMixedReturn || !activeCategory || query.trim()) return;
     const details = Array.from(rootRef.current?.querySelectorAll<HTMLDetailsElement>('[data-head-group]') ?? [])
@@ -175,21 +178,32 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
     (allowMixedReturn && Boolean(returnHead) && headId === RETURN_HEAD_ID);
   const eligibleLine = (line: OtherTaxAllocation) => headEligible(line.headId);
   const search = query.trim().toLocaleLowerCase();
-  const visibleCategories = selectableGroups.filter(group => group.rows.some(head =>
-    !search || [head.codeEn, head.en, head.bn || '', head.grpEn, head.grpBn].join(' ').toLocaleLowerCase().includes(search)));
-  // Only account-owned histories may supply quick links. These open the same
-  // head editor rather than duplicating the catalogue in a seven-row table.
-  const categoryQuickLinks = (names: readonly string[]) => (
+  // Shortcuts navigate to the original editor; they do not select a head,
+  // add a line, copy an amount, modify a draft or mutate Pay Again state.
+  const frequentHeads = categoryHistory.headIds.flatMap(id => {
+    const group = selectableGroups.find(item => item.rows.some(head => head.id === id));
+    const head = group?.rows.find(item => item.id === id);
+    return head && headEligible(id) ? [head] : [];
+  });
+  const openFrequentHead = (id: number) => {
+    const row = rootRef.current?.querySelector<HTMLElement>(`[data-head-row="${id}"]`);
+    const group = row?.closest('details');
+    if (!row || !group) return;
+    group.open = true;
+    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    row.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus({ preventScroll: true });
+  };
+  const categoryQuickLinks = () => (
     <div className="other-tax-category-shortcuts" data-testid="frequent-tax-categories"
-      role="group" aria-label={tx('Frequently used tax categories', 'বেশি ব্যবহৃত করের শ্রেণি')}>
-      {names.map(name => {
-        const group = visibleCategories.find(item => item.name === name);
-        if (!group) return null;
-        return <button key={name} type="button" onClick={() => openCategoryGroup(name)}>
-          {bn ? (group.rows[0]?.grpBn || (name === 'Tax with Return' ? 'রিটার্নসহ কর' : name)) : name}
+      role="group" aria-label={tx('Frequently used tax payment heads', 'বেশি ব্যবহৃত করের খাত')}>
+      {frequentHeads.map(head =>
+        <button key={head.id} type="button" data-frequent-head-id={head.id}
+          onClick={() => openFrequentHead(head.id)}>
+          <span className="other-tax-frequent-head__copy"><small>{head.codeEn}</small>
+            <span>{bn ? head.bn || head.en : head.en}</span></span>
           <ChevronRight size={15} aria-hidden="true" />
-        </button>;
-      })}
+        </button>
+      )}
     </div>
   );
   const count = selectableGroups.reduce((n, group) => n + (maskTaxpayerTin
@@ -401,6 +415,13 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                 </button>}
               </div>
             </div>
+            {allowMixedReturn && !search && showFrequentCategories && categoryHistory.ownerKey === ownerKey &&
+              categoryHistory.status === 'ready' && frequentHeads.length > 0 && (
+                <section className="other-tax-category-shortcut-section" data-testid="frequent-category-section">
+                  <h3>{tx('Frequently used tax payment heads', 'বেশি ব্যবহৃত করের খাত')}</h3>
+                  {categoryQuickLinks()}
+                </section>
+              )}
              {allowMixedReturn && <h3 className="unified-v5-row-heading unified-v5-tax-head-heading">{tx('Tax head','করের খাত')}</h3>}
             <p className="other-tax-selection-status" role="status">
               {unifiedV3
@@ -423,13 +444,6 @@ export function OtherTaxBatchComposer({ language, taxpayers, lines, suggestionTa
                 setQuery('');
               }}>{tx('Show first incomplete payment', 'প্রথম অসম্পূর্ণ পরিশোধ দেখুন')}</button>}
             </div>}
-            {allowMixedReturn && !search && showFrequentCategories && categoryHistory.ownerKey === ownerKey &&
-              categoryHistory.status === 'ready' && categoryHistory.names.length > 0 && (
-                <section className="other-tax-category-shortcut-section" data-testid="frequent-category-section">
-                  <h3>{tx('Frequently used categories', 'বেশি ব্যবহৃত করের শ্রেণি')}</h3>
-                  {categoryQuickLinks(categoryHistory.names)}
-                </section>
-              )}
             {allowMixedReturn && <h3 className="other-tax-category-heading">{tx('Choose a tax category', 'করের শ্রেণি নির্বাচন করুন')}</h3>}
             <div className="other-tax-catalogue-shell" data-testid={allowMixedReturn ? 'fixed-tax-categories' : undefined}>
               <div className={error ? 'rounded-lg border border-rose-400' : 'rounded-lg border border-slate-200'}
