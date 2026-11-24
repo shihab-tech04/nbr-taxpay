@@ -132,6 +132,8 @@ async function post<T>(action: string, fields: Record<string, unknown> = {}, sou
         if (response.status === 409) throw new Error('The saved draft was changed in another session. Reload the draft before updating.');
         if (response.status === 404) throw new Error('The selected payment draft was not found.');
       }
+      if (result?.code === 'BENEFICIARY_GROUP_LIMIT') throw new Error('BENEFICIARY_GROUP_LIMIT');
+      if (result?.code === 'BENEFICIARY_GROUP_NOT_EMPTY') throw new Error('BENEFICIARY_GROUP_NOT_EMPTY');
       if (response.status === 409 && result?.code === 'BENEFICIARY_ALREADY_IN_LIST') {
         throw new Error('This beneficiary is already saved in the destination list.');
       }
