@@ -1360,7 +1360,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
 
       {embedded && modalFooterTarget && createPortal(
         <div className="travel-flow__footer-content">
-          {step === 1 && <details className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
+          {step > 0 && <details className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
             <summary><p>{tr('Payment calculation','পেমেন্টের হিসাব')}</p>
               <strong>{allCalculated ? <TravelCurrency amount={totalAmount} language={language}/> : validAssessments.length > 0 && travelDate ? <TravelCurrency amount={provisionalAmount} language={language}/> : '—'}</strong></summary>
             <dl>
