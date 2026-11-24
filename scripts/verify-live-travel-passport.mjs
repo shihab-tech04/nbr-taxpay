@@ -15,7 +15,47 @@ try {
     ['short-desktop', { width: 1280, height: 520 }, false],
     ['mobile', { width: 375, height: 812 }, true],
   ]) {
-    const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile });
+    const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile, serviceWorkers: 'block' });
+    // The deployed app is real; the payment acknowledgement and detail readback
+    // below are isolated browser fixtures. Never send payment or other mutation
+    // requests to a hosted service. Unknown mutation endpoints fail closed.
+    let submitted = null;
+    let posts = 0;
+    let reads = 0;
+    const fixtureId = '2bd0a21e-4a7c-4c89-9664-0ae1f7f336a8';
+    const headers = {'access-control-allow-origin':'*',
+      'access-control-allow-methods':'GET, POST, OPTIONS',
+      'access-control-allow-headers':'*'};
+    await page.route('**/*', async route => {
+      if (!['GET','HEAD','OPTIONS'].includes(route.request().method())) return route.abort('blockedbyclient');
+      await route.fallback();
+    });
+    await page.route(/\/functions\/v1\/demo-story1-taxpay\/payments(?:\/[^?]+)?(?:\?.*)?$/, async route => {
+      const request = route.request();
+      const url = new URL(request.url());
+      if (request.method() === 'OPTIONS') return route.fulfill({status:204,headers});
+      if (request.method() === 'POST' && url.pathname.endsWith('/payments')) {
+        submitted = request.postDataJSON();
+        posts++;
+        expect(submitted.service).toBe('TRAVEL_TAX');
+        expect(submitted.amountMinor).toBe(100000);
+        expect(submitted.details.passengers).toHaveLength(1);
+        return route.fulfill({status:200,headers,json:{success:true,id:fixtureId,
+          status:'SIMULATED_SUCCESS',mirrored:true,simulationOnly:true}});
+      }
+      if (request.method() === 'GET') {
+        if (url.pathname.endsWith('/'+fixtureId)) {
+          if (!submitted || url.searchParams.get('sessionId') !== submitted.sessionId)
+            return route.fulfill({status:403,headers,json:{success:false,error:'SESSION_NOT_AUTHORIZED'}});
+          reads++;
+          return route.fulfill({status:200,headers,json:{success:true,simulationOnly:true,
+            data:{id:fixtureId,status:'SIMULATED_SUCCESS',createdAt:new Date().toISOString(),
+              data:{...submitted,origin:'TAXPAY_UI'}}}});
+        }
+        return route.fulfill({status:200,headers,json:{success:true,simulationOnly:true,data:{items:[],total:0}}});
+      }
+      return route.abort('blockedbyclient');
+    });
     // Keep this browser check independent from remote CMS storage bytes.
     await page.route('https://eyqhoavnitkrajvyqvxn.supabase.co/storage/v1/object/public/**', route => route.abort('blockedbyclient'));
     const url = new URL(base);
@@ -176,6 +216,12 @@ try {
     await expect(modal.locator('.taxpay-modal__title')).toHaveText('Final Preview');
     await expect(modal.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow', '3');
     await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(1);
+    await expect(modal.getByTestId('travel-payment-details')).toBeVisible();
+    await expect(modal.getByTestId('travel-preview-total')).toContainText('1,000');
+    await expect(modal.getByTestId('travel-preview-total-in-words')).toContainText('One Thousand');
+    await expect(modal.getByRole('heading',{name:'Payer and receipt details'})).toBeVisible();
+    await expect(modal.locator('.travel-flow__passenger-table tfoot')).toHaveCount(0);
+    await modal.screenshot({path:`test-results/live-travel-passport-${name}-final-preview.png`,animations:'disabled'});
     const contact = modal.getByTestId('travel-preview-receipt-contact');
     const [contactBounds, phoneBounds] = await Promise.all([
       contact.boundingBox(),
@@ -194,6 +240,44 @@ try {
     await expect(modal.locator('#travel-mobile')).toHaveValue('01712345678');
     await modal.getByRole('button', { name: 'Edit travel details' }).click();
     await expect(modal.locator('#travel-port')).toHaveValue('Benapole');
+    await modal.getByRole('button',{name:'Continue to review'}).click();
+    await expect(modal.locator('#travel-mobile')).toHaveValue('01712345678');
+    await modal.getByRole('button',{name:'Make Payment'}).click();
+    await expect(modal.getByTestId('travel-payment-channel-screen').locator('.unified-v5-review-total')).toHaveCount(0);
+    await modal.getByRole('button',{name:'Pay online'}).click();
+    await modal.getByRole('button',{name:'Mobile banking'}).click();
+    await modal.getByRole('radio',{name:'Nagad'}).check();
+    await modal.getByLabel(/I confirm the travel information/).check();
+    await modal.getByRole('button',{name:'Confirm sample payment'}).click();
+    const confirmation = modal.getByTestId('travel-payment-result');
+    await expect(confirmation).toBeVisible({timeout:20000});
+    await expect(modal.locator('.taxpay-modal__title')).toHaveText('Payment result');
+    await expect(confirmation.getByRole('heading',{name:'Payment record saved'})).toBeVisible();
+    await expect(confirmation.locator('.payment-lifecycle__overview')).toContainText('1,000');
+    await expect(confirmation.getByTestId('walkin-result-benefits')).toBeVisible();
+    await expect(modal.getByTestId('travel-family-challan')).toHaveCount(0);
+    await modal.screenshot({path:`test-results/live-travel-passport-${name}-payment-result.png`,animations:'disabled'});
+    await confirmation.getByTestId('walkin-challan-action').getByRole('button').first().click();
+    await expect(modal.locator('.taxpay-modal__title')).toHaveText('Challan details');
+    await expect(modal.getByTestId('travel-family-challan').locator('tbody tr')).toHaveCount(1);
+    await expect(modal.getByTestId('travel-family-challan')).toContainText('SAMPLE PASSENGER TWO');
+    await expect(modal.getByRole('button',{name:'Download',exact:true})).toBeVisible();
+    await expect(modal.getByRole('button',{name:'Print receipt',exact:true})).toBeVisible();
+    await modal.screenshot({path:`test-results/live-travel-passport-${name}-challan.png`,animations:'disabled'});
+    await modal.getByRole('tab',{name:'Payment record certificate'}).click();
+    const certificate = modal.getByTestId('payment-certificate-document');
+    await expect(certificate).toBeVisible();
+    await expect(modal.locator('.taxpay-modal__title')).toHaveText('Payment record certificate');
+    await expect(certificate.getByTestId('payment-certificate-reference')).toContainText('SK-PC-'+fixtureId);
+    await expect(certificate.getByTestId('payment-certificate-total')).toContainText('1,000');
+    await modal.screenshot({path:`test-results/live-travel-passport-${name}-certificate.png`,animations:'disabled'});
+    await modal.getByRole('button',{name:'Back to receipt',exact:true}).click();
+    await expect(modal.getByTestId('travel-family-challan')).toBeVisible();
+    await modal.getByRole('button',{name:'Back to confirmation',exact:true}).click();
+    await expect(confirmation).toBeVisible();
+    expect(posts).toBe(1);
+    expect(reads).toBeGreaterThanOrEqual(1);
+    console.log('PASS: '+name+' deployed Travel Tax preview, payment result, challan and certificate; all financial requests intercepted; no hosted writes');
 
     if (mobile) {
       const overflow = await page.evaluate(() =>
@@ -205,7 +289,7 @@ try {
       fullPage: false, animations: 'disabled' });
     await page.close();
   }
-  console.log('PASS: production Travel Tax passport lookup, manual medical block, duplicate handling, passenger rail, separate receipt contact and payment channel, EN/desktop/mobile responsive bounds');
+  console.log('PASS: production Travel Tax passport lookup, manual medical block, duplicate handling, passenger rail, separate receipt contact and payment channel, EN/desktop/mobile responsive bounds, confirmation, challan and certificate (intercepted nonfinancial fixture)');
 } finally {
   await browser.close();
 }
