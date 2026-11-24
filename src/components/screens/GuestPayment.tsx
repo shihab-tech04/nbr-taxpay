@@ -2218,9 +2218,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                 selectedTins={selectedAccountRecipients.filter(p=>p.tin!==signedInProfile?.tin).map(p=>p.tin)}
                 onAvailableTins={setAvailableSavedTins} onManage={onManageBeneficiaries}
                 onChoose={people=>{
-                  if(!signedInProfile||!availableSavedTins)return;
-                  const preserved=selectedAccountRecipients.filter(p=>p.tin===signedInProfile.tin||!availableSavedTins.includes(p.tin));
-                  const saved=people.filter(p=>p.tin!==signedInProfile.tin&&availableSavedTins.includes(p.tin))
+                  // A verified account may inspect and select its own saved contacts
+                  // before a taxpayer profile is linked. Keep the separate linked
+                  // profile gate in canContinueStep1/validateIdentity unchanged.
+                  if(!paymentOwnerId||!availableSavedTins)return;
+                  const ownTin=signedInProfile?.tin;
+                  const preserved=selectedAccountRecipients.filter(p=>p.tin===ownTin||!availableSavedTins.includes(p.tin));
+                  const saved=people.filter(p=>p.tin!==ownTin&&availableSavedTins.includes(p.tin))
                     .map(p=>({...p,id:selectedAccountRecipients.find(old=>old.tin===p.tin)?.id??crypto.randomUUID()}));
                   const requested=[...preserved,...saved];
                   const removed=selectedAccountRecipients.find(p=>!requested.some(n=>n.tin===p.tin) && [...otherTaxLines,...unifiedOtherTaxParkedLines].some(l=>l.taxpayerId===p.id));

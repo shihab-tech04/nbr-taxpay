@@ -1155,13 +1155,13 @@ for(const route of ['services','user_guide'] as const) {
   });
 }
 
-test('unified account native entry preserves mixed allocation amounts through final preview, checkout and one simulated receipt',async({page})=>{
+test('F-039 unified account native entry preserves mixed allocation amounts through final preview, checkout and one simulated receipt',async({page})=>{
   const writes:string[]=[];
   const submitted:Record<string,any>[]=[];
   // No hosted writes: only the explicitly scoped synthetic fixtures below
   // can answer a POST. The application still executes its real validation.
-  await page.route('**/*.supabase.co/**',route=>
-    ['GET','HEAD','OPTIONS'].includes(route.request().method())?route.continue():route.abort());
+  await page.route('**/*.supabase.co/**',route=>route.abort());
+  // This test belongs to the existing loopback-only F-039 mock matrix.
   await mockSubmittedPaymentSqlReadback(page);
   await page.route('**/functions/v1/demo-story1-taxpay/payments',async route=>{
     if(route.request().method()!=='POST')return route.fallback();
@@ -1173,7 +1173,9 @@ test('unified account native entry preserves mixed allocation amounts through fi
   });
   const {dialog}=await mockSignedInOtherTax(page,writes,'en','OTHER',true);
   await dialog.getByTestId('unified-account-own').getByRole('checkbox').check();
-  await dialog.getByTestId('saved-beneficiary-picker').getByRole('checkbox',{name:'Select Saved Taxpayer Two'}).check();
+  const picker=dialog.getByTestId('saved-beneficiary-picker');
+  await expect(picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'})).toBeVisible();
+  await picker.getByRole('checkbox',{name:'Select Saved Taxpayer Two'}).check();
   await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('2');
   await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
   const editor=dialog.getByTestId('other-tax-batch');

@@ -44,13 +44,11 @@ test('signed-in own-tax payment uses the account TIN read-only and never carries
   await search.fill('333333333333');
   await payment.getByRole('button',{name:'Search taxpayer TIN'}).click();
   await expect(payment.getByTestId('unified-taxpayer-search-result')).toBeVisible();
-  await payment.getByRole('button',{name:'Add taxpayer',exact:true}).click();
-  await expect(count).toHaveText('1');
+  await expect(payment.getByRole('button',{name:'Add taxpayer',exact:true})).toBeDisabled();
+  await expect(count).toHaveText('0');
   await expect(own).not.toBeChecked();
-  await expect(search).toHaveValue('');
+  await expect(search).toHaveValue('333333333333');
   await own.check();
-  await expect(count).toHaveText('2');
-  await own.uncheck();
   await expect(count).toHaveText('1');
   await payment.getByRole('button',{name:'Continue to Payment Head'}).click();
   await expect(payment.getByTestId('other-tax-batch')).toBeVisible();
