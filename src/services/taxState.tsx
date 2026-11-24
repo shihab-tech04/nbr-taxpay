@@ -79,7 +79,7 @@ export interface TaxStateContextType {
   isParityModalOpen: boolean;
   setIsParityModalOpen: (open: boolean) => void;
   addPaymentReceipt: (receipt: ChallanReceipt) => void;
-  addCorrectionRequest: (corr: Omit<CorrectionRequest, 'id' | 'ticketNo' | 'lastUpdated'>, verifiedPreviewReceipt?: ChallanReceipt) => string;
+  addCorrectionRequest: (corr: Omit<CorrectionRequest, 'id' | 'ticketNo' | 'lastUpdated'>) => string;
   advanceCorrectionWorkflow: (id: string, stage: CorrectionRequest['workflowStage'], remarks: string) => void;
   addIncidentReport: (inc: Omit<IncidentReport, 'id' | 'incidentNumber' | 'reportDate' | 'status'>) => string;
   logAuditAction: (action: string, targetId: string, details: string) => void;
@@ -410,18 +410,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   };
 
-  const addCorrectionRequest = (corrData: Omit<CorrectionRequest, 'id' | 'ticketNo' | 'lastUpdated'>, verifiedPreviewReceipt?: ChallanReceipt): string => {
-    // Local sample drafts only. A server-recovered simulated receipt is not necessarily
-    // in React's local receipt collection. The form re-reads it with the active
-    // preview capability before passing it here. Never infer official authorization.
-    const session = activePreviewSession();
-    const matches = (receipt: ChallanReceipt) =>
-      receipt.isSimulatedDemo === true && receipt.challanNo === corrData.challanNo &&
-      receipt.payerTin === corrData.taxpayerTin;
-    const recoveredPreview = Boolean(!accountUser && previewAccount && session &&
-      session.profileId === previewAccount.id && verifiedPreviewReceipt?.paymentTransactionId &&
-      corrData.taxpayerTin === taxpayerProfile.tin && matches(verifiedPreviewReceipt));
-    if (!recoveredPreview && !receipts.some(matches)) {
+  const addCorrectionRequest = (corrData: Omit<CorrectionRequest, 'id' | 'ticketNo' | 'lastUpdated'>): string => {
+    if (!receipts.some(receipt=>receipt.isSimulatedDemo && receipt.challanNo===corrData.challanNo && receipt.payerTin===corrData.taxpayerTin)) {
       throw new Error('This sample payment does not belong to the selected preview.');
     }
     const ticketNo = `CORR-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
