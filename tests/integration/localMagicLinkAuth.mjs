@@ -10,7 +10,11 @@ const allowed = host => ['127.0.0.1', 'localhost', '[::1]'].includes(host);
 if (api.protocol !== 'http:' || !allowed(api.hostname) || api.pathname !== '/' || api.search || api.hash) {
   throw new Error('Refusing to test magic-link authentication against a non-loopback endpoint');
 }
-const mail = new URL('http://127.0.0.1:54324');
+const mailPort = process.env.TAXPAY_LOCAL_SMTP_PORT ?? '54324';
+if (!/^[0-9]{1,5}$/.test(mailPort) || Number(mailPort) < 1024 || Number(mailPort) > 65535) {
+  throw new Error('Invalid isolated loopback mail port');
+}
+const mail = new URL('http://127.0.0.1:' + mailPort);
 const callback = 'http://127.0.0.1:4173/?action=secure_workspace';
 const email = 'taxpay-synthetic-' + randomUUID() + '@example.invalid';
 

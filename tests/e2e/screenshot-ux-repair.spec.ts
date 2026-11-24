@@ -159,7 +159,6 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
   await openTravelTaxFromBanner(page);
   const dialog=page.getByRole('dialog',{name:'Travel tax'});
   await fillTravelDetails(dialog);
-  await dialog.getByRole('button',{name:'Continue to review'}).click();
   const age=dialog.locator('.travel-flow__age-breakdown');
   await expect(age).toContainText('Age 34 on travel date');
   const box=await age.boundingBox();
@@ -167,6 +166,9 @@ test('desktop Travel Tax keeps long journey descriptions readable in the calcula
   expect(box).not.toBeNull();
   expect(side).not.toBeNull();
   expect(box!.x + box!.width).toBeLessThanOrEqual(side!.x + side!.width + 1);
+  await dialog.getByRole('button',{name:'Continue to review'}).click();
+  await expect(dialog.getByTestId('travel-unified-final-preview')).toBeVisible();
+  await expect(dialog.locator('.travel-flow__summary')).toBeHidden();
 });
 
 test('mobile bento retains separate travel tax and opens its approved payment modal',async({page},info)=>{
