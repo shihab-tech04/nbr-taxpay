@@ -3530,38 +3530,25 @@
   }
 }
 
-/* Travel Tax standalone route uses the SAME approved full-width Step 3 layout
-   as the walk-in modal. The old side rail overlaid the payable action at 320px. */
-.travel-flow[data-step="2"] {
-  display: block;
-  min-width: 0;
+/* Standalone Travel Tax is page content, not a constrained modal. Keep
+   review, actions and back in natural document flow; the page scrolls. */
+.taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"],
+.taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"] > .travel-flow__main,
+.taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"] #travel-tax-form {
+  display:block;position:relative;width:100%;height:auto;min-height:0;max-height:none;min-width:0;overflow:visible;
 }
-.travel-flow[data-step="2"] > .travel-flow__summary {
-  display: none !important;
+.taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"] :is(.travel-flow__unified-preview,.travel-flow__unified-checkout,.payment-review__main) {
+  position:static;height:auto;max-height:none;min-height:0;overflow:visible;
 }
-.travel-flow[data-step="2"] > .travel-flow__main {
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
+.taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"] .travel-flow__standalone-actions {
+  position:relative;display:flex;justify-content:flex-end;clear:both;padding:16px 0 4px;isolation:isolate;z-index:1;
 }
-.travel-flow[data-step="2"] .travel-flow__standalone-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding: 16px 0 4px;
+.taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"] .travel-flow__standalone-actions .travel-flow__primary {
+  position:static;transform:none;width:min(100%,360px);min-height:48px;
 }
-.travel-flow[data-step="2"] .travel-flow__standalone-actions .travel-flow__primary {
-  width: min(100%, 360px);
-  min-height: 48px;
+@media (max-width:650px) {
+  .taxpay-citizen-shell .travel-flow[data-embedded="false"][data-step="2"] .travel-flow__standalone-actions .travel-flow__primary {width:100%;}
 }
-@media (max-width: 650px) {
-  .travel-flow[data-step="2"] .travel-flow__standalone-actions .travel-flow__primary {
-    width: 100%;
-  }
-}
-
-
-
-
 /* Final Preview / Payment channel share the modal's body scroll owner.
    Explicit grid rows keep header and footer out of the content at 320px,
    including checkout where the progress bar is intentionally absent. */

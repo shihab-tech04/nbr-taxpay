@@ -87,6 +87,11 @@ jobs:
         with:
           version: latest
 
+      - name: Isolate disposable Supabase project identity and mail HTTP port
+        run: |
+          python3 scripts/ci/isolate-local-supabase.test.py
+          python3 scripts/ci/isolate-local-supabase.py
+
       - name: Remove stale local TaxPay containers before starting
         run: supabase stop --no-backup || true
 
