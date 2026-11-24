@@ -90,6 +90,11 @@
   border-radius: 10px;
   box-shadow: 0 12px 26px rgb(18 42 77 / 20%);
 }
+.taxpay-citizen-shell .travel-flow__passport-suggestions[data-placement="above"] {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+.taxpay-citizen-shell .travel-flow__passport-suggestions { scrollbar-gutter: stable; }
 .taxpay-citizen-shell .travel-flow__passport-suggestions-heading,
 .taxpay-citizen-shell .travel-flow__passport-no-results {
   margin: 0;
