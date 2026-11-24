@@ -1003,7 +1003,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
           ? <aside className="walkin-result-benefits no-print" data-testid="walkin-postpayment-login"
               aria-label={tr('Optional sign in', 'ঐচ্ছিক সাইন ইন')}>
               <div className="walkin-postpayment-login__copy">
-                <h3>{tr('Want easier access to your payment history?', 'আপনার পেমেন্ট রেকর্ড পরে দেখতে চান?')}</strong>
+                <h3>{tr('Want easier access to your payment history?', 'আপনার পেমেন্ট রেকর্ড পরে দেখতে চান?')}</h3>
                 <p>{tr('Sign in to view payments and challans saved to your account. This walk-in receipt is not automatically linked to an account.',
                   'সাইন ইন করলে অ্যাকাউন্টের সংরক্ষিত পেমেন্ট ও চালান দেখতে পারবেন। এই ওয়াক-ইন রসিদ স্বয়ংক্রিয়ভাবে কোনো অ্যাকাউন্টে যুক্ত হবে না।')}</p>
               </div>
