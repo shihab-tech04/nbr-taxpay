@@ -412,6 +412,8 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
   await travelDialog.getByRole('radio',{name:'Nagad'}).check();
   await travelDialog.getByLabel(/I confirm the travel information/).check();
   await travelDialog.getByRole('button',{name:'Confirm sample payment'}).click();
+  await expect(travelDialog.getByTestId('travel-payment-result')).toBeVisible({timeout:15000});
+  await travelDialog.getByRole('button',{name:'Receipt details',exact:true}).click();
   await expect(travelDialog.locator('.receipt-view__paper')).toBeVisible({timeout:15000});
   const certificateButton=travelDialog.getByRole('tab',{name:/Payment record certificate|পেমেন্ট রেকর্ড সনদ/});
   await expect(certificateButton).toBeVisible();
