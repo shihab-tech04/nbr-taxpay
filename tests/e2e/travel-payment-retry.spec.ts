@@ -54,8 +54,7 @@ test('Travel Tax resends the identical payment after a lost response ' +
       await route.fulfill({ status: 200, headers, json: {
         success: true, simulationOnly: true,
         data: { id: paymentId, status: 'SIMULATED_SUCCESS', createdAt: '2026-11-14T08:00:00.000Z',
-          data: { service: saved.service, amountMinor: saved.amountMinor,
-            origin: 'TAXPAY_UI', details: saved.details } },
+          data: { ...saved, origin: 'TAXPAY_UI' } },
       } });
       return;
     }
