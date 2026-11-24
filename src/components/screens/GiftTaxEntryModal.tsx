@@ -39,7 +39,7 @@ const secondaryClass = 'gift-tax-action gift-tax-action--secondary';
  * No authorized Gift Tax head, government payment API, or official credit-posting
  * path currently exists. Never turn this public form into a financial write.
  */
-export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBack?: () => void}) {
+export function GiftTaxEntryModal({onClose, onBack, signedIn = false}: {onClose: () => void; onBack?: () => void; signedIn?: boolean}) {
   const {language, navigate} = useTaxState();
   const bn = language === 'bn';
   const t = (en: string, bd: string) => bn ? bd : en;
@@ -443,7 +443,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     ariaLabel={t('Gift Tax', 'দানকর')} service="gift"
     className={'gift-tax-dialog taxpay-v5-locked' + (step >= 3 ? ' gift-tax-approved-stage' : '') + (step === 4 ? ' gift-tax-result-stage' : '')}
     progress={step === 4 || (step === 3 && checkoutOpen) ? undefined : {current: step, total: 3, label: t('Steps', 'ধাপ'),
-      subtitle: t('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট'),
+      subtitle: signedIn ? t('Gift Tax', 'দানকর') : t('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট'),
       accessibilityLabel: t('Payment progress', 'পেমেন্টের অগ্রগতি'),
       accessibilityValueText: t(`Step ${step} of 3`, `৩ ধাপের ${step === 1 ? '১' : step === 2 ? '২' : '৩'} নম্বর ধাপ`)}}
     closeIconLabel={t('Close Gift Tax', 'দানকর বন্ধ করুন')}
@@ -720,7 +720,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     {step === 4 && paymentInput && paymentOutcome && <div
       className="gift-tax-approved-flow gift-tax-result-workspace"
       data-testid="gift-tax-result-workspace">
-      <GiftTaxPaymentResult language={language} input={paymentInput} outcome={paymentOutcome}
+      <GiftTaxPaymentResult signedIn={signedIn} language={language} input={paymentInput} outcome={paymentOutcome}
         onBack={()=>{setCheckoutOpen(false);setStep(3);}}
         onRetry={()=>{setCheckoutOpen(true);setStep(3);setPaymentAcknowledged(false);}}
         onContinueBank={continueSimulatedBankPayment}

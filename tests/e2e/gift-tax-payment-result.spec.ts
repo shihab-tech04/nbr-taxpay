@@ -6,17 +6,34 @@ for(const sample of [
   {lang:'en' as const,width:1280,height:850},
   {lang:'en' as const,width:1024,height:768},
   {lang:'bn' as const,width:375,height:812},
+  {lang:'en' as const,width:1600,height:900,signedIn:true},
+  {lang:'bn' as const,width:1600,height:900,signedIn:true},
+  {lang:'en' as const,width:375,height:812,signedIn:true},
+  {lang:'bn' as const,width:375,height:812,signedIn:true},
 ]) {
-  test('Gift Tax shared simulated payment, sample receipt and edit recovery '+sample.lang+' '+sample.width,async({page})=>{
+  test('Gift Tax shared simulated payment, sample receipt and edit recovery '+sample.lang+' '+sample.width+('signedIn' in sample?' signed in':' guest'),async({page})=>{
     await page.setViewportSize({width:sample.width,height:sample.height});
-    await page.goto('/?action=landing&lang='+sample.lang);
+    const signedIn='signedIn' in sample && sample.signedIn;
+    await page.goto((signedIn?'/?action=taxpayer_home&demoUser=user1&lang=':'/?action=landing&lang=')+sample.lang);
     const bn=sample.lang==='bn';
+    if(signedIn){
+      if(sample.width>=1600){
+        const rail=page.getByRole('complementary',{name:bn?'করদাতা ডেস্কটপ নেভিগেশন':'Taxpayer desktop navigation'});
+        await rail.getByRole('button',{name:bn?'লেনদেন':'Activity',exact:true}).click();
+        await rail.getByRole('button',{name:bn?'কর পরিশোধের মেনু':'Pay Tax menu'}).click();
+      }else await page.getByRole('button',{name:bn?'কর পরিশোধের ধরন নির্বাচন':'Pay — select payment type'}).click();
+      const menu=page.getByRole('menu',{name:bn?(sample.width>=1600?'কর পরিশোধের বিকল্প':'পরিশোধের ধরন'):'Payment options'});
+      await expect(menu.getByRole('menuitem')).toHaveText(bn?['কর পরিশোধ','ভ্রমণ কর','দানকর']:['Pay Tax','Travel Tax','Gift Tax']);
+      await menu.getByRole('menuitem',{name:bn?'দানকর':'Gift Tax',exact:true}).click();
+      await expect(menu).toHaveCount(0);
+    }else{
     await page.locator('.public-hero-carousel__slide[data-active="true"]')
       .getByRole('button',{name:bn?'অন্যান্য কর':'Other Tax'}).click();
     await page.locator('.taxpay-modal[data-public-service="login"]')
       .getByRole('button',{name:bn?'ওয়াক-ইন পেমেন্ট':'Walk-in Payment'}).click();
     await page.getByTestId('other-tax-chooser')
       .getByRole('button',{name:/Gift Tax|দানকর/}).click();
+    }
     const gift=page.getByRole('dialog',{name:bn?'দানকর':'Gift Tax'});
     const donor=gift.getByTestId('gift-donor-section');
     await donor.locator('#gift-donor-tin').fill('111111111111');
@@ -64,7 +81,7 @@ for(const sample of [
     const bodyOverflow=await gift.locator('.taxpay-modal__body').evaluate(el=>el.scrollWidth-el.clientWidth);
     expect(bodyOverflow).toBeLessThanOrEqual(2);
     await expect(gift.getByTestId('gift-tax-payment-result'))
-      .toContainText(bn?'পেমেন্ট রেকর্ড সংরক্ষিত':'Payment record saved');
+      .toContainText(signedIn?(bn?'নমুনা পেমেন্ট সম্পন্ন':'Sample payment completed'):(bn?'পেমেন্ট রেকর্ড সংরক্ষিত':'Payment record saved'));
     await expect(gift.getByTestId('gift-tax-settled-documents')).toHaveCount(0);
     await expect(gift.getByRole('link',{name:/Download challan|চালান ডাউনলোড/})).toHaveCount(0);
     await gift.getByRole('button',{name:bn?'নমুনা চালানের বিবরণ':'Sample Challan Details'}).click();
@@ -81,9 +98,11 @@ for(const sample of [
     // The approved walk-in result has independent lifecycle, receipt and benefits cards.
     await expect(gift.getByTestId('gift-tax-result-shell').locator('.payment-flow-embedded__confirmation-layout > .payment-lifecycle')).toBeVisible();
     const benefits=gift.getByTestId('walkin-result-benefits');
-    await expect(benefits).toBeVisible();
     await expect(gift.getByTestId('walkin-challan-action')).toBeVisible();
-    await benefits.getByRole('button',{name:bn?'সাইন ইন ছাড়াই চালিয়ে যান':'Continue without Login'}).click();
+    if(!signedIn){
+      await expect(benefits).toBeVisible();
+      await benefits.getByRole('button',{name:bn?'সাইন ইন ছাড়াই চালিয়ে যান':'Continue without Login'}).click();
+    }
     await expect(benefits).toHaveCount(0);
     await gift.getByRole('button',{name:bn?'চূড়ান্ত পর্যালোচনায় ফিরুন':'Back to Final Preview'}).click();
     await expect(review.locator('#gift-tax-final-remarks')).toHaveValue('Test gift remarks');

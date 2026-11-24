@@ -16,6 +16,7 @@ interface Props {
   onContinueBank: () => void;
   onLogin: () => void;
   onRefresh?: () => void;
+  signedIn?: boolean;
 }
 
 /**
@@ -29,7 +30,7 @@ interface Props {
  * deliberately carries isSimulatedDemo and a SIM-GIFT reference.
  */
 export function GiftTaxPaymentResult({
-  language, input, outcome, onBack, onRetry, onContinueBank, onLogin, onRefresh,
+  language, input, outcome, onBack, onRetry, onContinueBank, onLogin, onRefresh, signedIn = false,
 }: Props) {
   const bn=language==='bn';
   const t=(en:string,bd:string)=>bn?bd:en;
@@ -50,7 +51,7 @@ export function GiftTaxPaymentResult({
   const format=(value:number)=>new Intl.NumberFormat(bn?'bn-BD':'en-IN',{maximumFractionDigits:2}).format(value);
   const amount='৳ '+format(input.estimatedTaxMinor/100);
   const Icon=pending?(simulatedPending?Building2:Clock3):failed?AlertCircle:CheckCircle2;
-  const heading=simulatedSuccess?t('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')
+  const heading=simulatedSuccess?(signedIn ? t('Sample payment completed','নমুনা পেমেন্ট সম্পন্ন') : t('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত'))
     :noTax?t('No Gift Tax payable','কোনো দানকর পরিশোধযোগ্য নয়')
     :simulatedPending?t('Bank payment slip ready','ব্যাংকের জন্য পরিশোধ-স্লিপ প্রস্তুত')
     :pending?t('Payment pending','পেমেন্ট অপেক্ষমাণ')
@@ -58,8 +59,8 @@ export function GiftTaxPaymentResult({
     :officialProof?t('Payment confirmed','পেমেন্ট নিশ্চিত')
     :t('Payment not started','পেমেন্ট শুরু হয়নি');
   const resultText=simulatedSuccess
-    ?t('Sample payment record saved in this browser; settlement is not verified. No money, official challan or donor tax credit was created.',
-      'এই ব্রাউজারে নমুনা পেমেন্ট রেকর্ড সংরক্ষিত; নিষ্পত্তি যাচাই হয়নি। কোনো টাকা, সরকারি চালান বা দাতার কর ক্রেডিট তৈরি হয়নি।')
+    ?(signedIn ? t('Sample payment completed for this session only. It is not saved to your account or SQL. No money, official challan or donor tax credit was created.', 'এই সেশনের জন্য নমুনা পেমেন্ট সম্পন্ন। অ্যাকাউন্ট বা SQL-এ সংরক্ষিত হয়নি। কোনো টাকা, সরকারি চালান বা দাতার কর ক্রেডিট তৈরি হয়নি।') : t('Sample payment record saved in this browser; settlement is not verified. No money, official challan or donor tax credit was created.',
+      'এই ব্রাউজারে নমুনা পেমেন্ট রেকর্ড সংরক্ষিত; নিষ্পত্তি যাচাই হয়নি। কোনো টাকা, সরকারি চালান বা দাতার কর ক্রেডিট তৈরি হয়নি।'))
     :noTax?t('This review calculates zero Gift Tax. No payment was initiated and no money was charged.',
       'এই হিসাবে দানকর শূন্য। কোনো পেমেন্ট শুরু হয়নি এবং অর্থ কাটা হয়নি।')
     :simulatedPending?t('This is not tax paid yet. Only a sample bank payment slip was created; bank settlement and donor credit remain unverified.',
@@ -191,7 +192,7 @@ export function GiftTaxPaymentResult({
           <ArrowRight size={17} aria-hidden="true"/>
         </button>
       </div>}
-      {simulatedSuccess&&!skipAccount&&<aside className="walkin-result-benefits no-print"
+      {simulatedSuccess&&!signedIn&&!skipAccount&&<aside className="walkin-result-benefits no-print"
         data-testid="walkin-result-benefits" aria-labelledby="gift-walkin-benefits-title">
         <h3 id="gift-walkin-benefits-title">
           {t('Get More with a Sohojkor Account','সহজকর অ্যাকাউন্টে আরও সুবিধা')}
