@@ -23,7 +23,8 @@ export type PaymentCategory =
   | 'SOURCE_TAX_DEPOSIT'   // Withholding TDS / TCS (Chapter VII)
   | 'APPELLATE_TRIBUNAL'   // S.300 Dispute / appeal deposit
   | 'OTHER_TAX_PAYMENT'    // Miscellaneous / Surcharge / Environment
-  | 'TRAVEL_TAX';
+  | 'TRAVEL_TAX'
+  | 'GIFT_TAX';
 
 export interface MasterPaymentHead {
   id: number;
@@ -143,6 +144,7 @@ export interface ChallanReceipt {
       amount: number;
     }>;
   };
+  giftDetails?: {donor:{tin:string;name:string};donee:{tin:string;name:string;tag:'clients'|'friends_family'|'others';relationship:string|null;otherLabel:string|null};giftAmountMinor:number;estimatedTaxMinor:number;giftDate:string;description:string;remarks:string};
   noticeReference?: string;
   /** Optional taxpayer-supplied parent-challan comments, distinct from NBR reference. */
   paymentRemarks?: string;

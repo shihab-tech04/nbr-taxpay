@@ -19,7 +19,7 @@ test('mobile transaction details use a contained sheet with a visible close cont
   test.skip(info.project.name==='desktop-1280','Mobile detail reflow');
   await mockActivitySql(page);
   await enterUser1(page);
-  await page.goto('/?action=history');
+  await page.goto('/?action=history&qaScenario=1&scenarioYear=2025-2026');
   await page.locator('.taxpayer-transaction-row__action:visible').first().click();
   const dialog=page.locator('.taxpayer-transaction-detail');
   await expect(dialog).toHaveClass(/taxpay-modal/);
@@ -68,7 +68,7 @@ test('mobile SQL event ledger preserves readable entries without inventing balan
   test.skip(info.project.name==='desktop-1280','Mobile ledger reflow');
   await mockActivitySql(page);
   await enterUser1(page);
-  await page.goto('/?action=ledger');
+  await page.goto('/?action=ledger&qaScenario=1&scenarioYear=2025-2026');
   const ledger=page.getByTestId('event-tax-ledger');
   await expect(ledger).toBeVisible();
   await expect(page.getByText('No ledger records are available for this account yet.')).toHaveCount(0);
@@ -206,7 +206,7 @@ test('signed-in Transactions provides payment reference search without a separat
   const record=sqlActivityRecord();
   await mockActivitySql(page,[record]);
   await enterUser1(page);
-  await page.goto('/?action=history');
+  await page.goto('/?action=history&qaScenario=1&scenarioYear=2025-2026');
   const tabs=page.getByRole('navigation',{name:'Activity sections'});
   await expect(tabs.getByRole('button',{name:'Track payment'})).toHaveCount(0);
   await expect(tabs.getByRole('button',{name:'Transactions'})).toHaveAttribute('aria-current','page');
