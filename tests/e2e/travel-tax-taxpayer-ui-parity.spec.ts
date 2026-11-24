@@ -2,13 +2,20 @@ import { expect, test } from '@playwright/test';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import { fillTravelDetails } from './travel-tax-test-helper';
 
-async function reachTravelPreview(page: import('@playwright/test').Page) {
+async function reachTravelPreview(page: import('@playwright/test').Page, multiple = false) {
   await page.goto('/');
   await openTravelTaxFromBanner(page);
   const modal = page.getByRole('dialog', { name: 'Travel tax' });
   await modal.locator('#travel-passport-first').fill('TEST123456');
   await modal.locator('#travel-lookup-first').click();
   await modal.getByRole('button', { name: 'Add passenger', exact: true }).click();
+  if (multiple) {
+    await modal.locator('.travel-passenger-workspace__blank').getByRole('button', {name:'Bangladeshi', exact:true}).click();
+    const second = modal.locator('.travel-passenger-workspace__entry');
+    await second.locator('input[role="combobox"]').fill('TEST230001');
+    await second.getByRole('button', {name:'Check Passport'}).click();
+    await modal.getByRole('button', {name:'Add passenger', exact:true}).click();
+  }
   await modal.getByRole('button', { name: 'Continue to travel details' }).click();
   await fillTravelDetails(modal);
   if ((page.viewportSize()?.width ?? 0) > 800) {
@@ -24,23 +31,36 @@ async function reachTravelPreview(page: import('@playwright/test').Page) {
     expect(geometry.railWidth).toBeGreaterThan(geometry.bodyWidth * 0.35);
     expect(geometry.overflow).toBe('auto');
     expect(geometry.listOverflow).toBe('visible');
+    if (multiple) {
+      await expect(list.locator('.travel-flow__age-row')).toHaveCount(2);
+      const visible = await list.evaluate(el => {
+        const rail = el.closest('.travel-flow__summary')!.getBoundingClientRect();
+        return Array.from(el.querySelectorAll('.travel-flow__age-row')).every(row => {
+          const box = row.getBoundingClientRect(); return box.top >= rail.top && box.bottom <= rail.bottom + 2;
+        });
+      });
+      expect(visible, 'Two passengers must fit without a nested scrollbar at standard desktop size').toBe(true);
+    }
   }
   await modal.getByRole('button', { name: 'Continue to review' }).click();
   return modal;
 }
 
 test('Travel Tax keeps taxpayer v5 review and checkout components without a squeezed payment rail', async ({ page }) => {
-  const modal = await reachTravelPreview(page);
+  const modal = await reachTravelPreview(page, true);
   const preview = modal.getByTestId('travel-unified-final-preview');
   await expect(preview).toBeVisible();
   await expect(preview).toHaveClass(/payment-review--unified-v5/);
   await expect(preview.locator('.unified-v3-review')).toBeVisible();
-  await expect(preview.locator('.unified-v3-review__table tbody tr')).toHaveCount(1);
-  await expect(preview.getByTestId('travel-preview-total')).toContainText('1,000');
-  await expect(preview.getByTestId('travel-preview-total-in-words')).toContainText('One Thousand');
+  await expect(preview.locator('.unified-v3-review__table tbody tr')).toHaveCount(2);
+  await expect(preview.getByTestId('travel-preview-total')).toContainText('2,000');
+  await expect(preview.getByTestId('travel-preview-total-in-words')).toContainText('Two Thousand');
   await expect(preview.locator('.unified-v3-review__table tfoot')).toHaveCount(0);
   await expect(modal.locator('.travel-flow__summary')).toBeHidden();
   await expect(modal.getByTestId('travel-preview-receipt-contact')).toBeVisible();
+  await expect(preview.getByTestId('travel-payment-details')).toBeVisible();
+  await expect(modal.getByRole('heading', {name:'Payer and receipt details'})).toBeVisible();
+  await modal.screenshot({path: test.info().outputPath('travel-final-preview.png'),animations:'disabled'});
   const metrics = await preview.evaluate(element => {
     const modalBody = element.closest('.taxpay-modal__body') as HTMLElement;
     return {
@@ -73,6 +93,7 @@ test('Travel Tax keeps taxpayer v5 review and checkout components without a sque
   await expect(checkout.locator('.payment-review__method-groups')).toHaveCount(0);
   await modal.getByRole('button', { name: 'Pay online' }).click();
   await expect(checkout.locator('.payment-review__method-groups')).toBeVisible();
+  await modal.screenshot({path:test.info().outputPath('travel-payment-channel.png'),animations:'disabled'});
   await modal.getByRole('button', { name: 'Mobile banking' }).click();
   await expect(modal.locator('.travel-flow__summary')).toBeHidden();
   await modal.getByRole('button', { name: 'Back', exact: true }).first().click();
@@ -97,12 +118,14 @@ test('Travel Tax sample result uses the shared compact walk-in receipt and accou
   await expect(result.getByTestId('walkin-result-benefits')).toBeVisible();
   await expect(result.locator('.walkin-result-benefits__actions button')).toHaveCount(2);
   await expect(modal.getByTestId('travel-family-challan')).toHaveCount(0);
+  await modal.screenshot({path:info.outputPath('travel-payment-result.png'),animations:'disabled'});
   await result.getByTestId('walkin-challan-action').getByRole('button').first().click();
   await expect(modal.getByTestId('travel-family-challan')).toBeVisible({ timeout: 12000 });
   await expect(modal.locator('.payment-flow-embedded--receipt')).toBeVisible();
   await expect(modal.locator('.receipt-view--walkin')).toBeVisible();
   await expect(modal.getByRole('button', { name: 'Download' })).toBeVisible();
   await expect(modal.getByRole('button', { name: 'Print receipt' })).toBeVisible();
+  await modal.screenshot({path:info.outputPath('travel-challan-details.png'),animations:'disabled'});
   await expect(modal.getByTestId('travel-family-challan')).toContainText(
     'not proof of government A-Challan issuance or Treasury settlement');
 });

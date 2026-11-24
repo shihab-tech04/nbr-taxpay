@@ -1,4 +1,4 @@
-import { PaymentReviewTotal, PaymentChannelScreen, PaymentConfirmationLayout, WalkInChallanAction, WalkInResultBenefits } from '../ui/UnifiedPaymentStages';
+import { PaymentReviewTotal, PaymentChannelScreen, PaymentConfirmationLayout, WalkInChallanAction, WalkInResultBenefits, PaymentReviewDetails, PaymentPayerDetails, PaymentConfirmationHeading, PaymentConfirmationOverview } from '../ui/UnifiedPaymentStages';
 import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
@@ -274,7 +274,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
       window.scrollTo({ top: 0 });
     }
-  }, [createdReceipt, bankSlipPending]);
+  }, [createdReceipt, bankSlipPending, resultDocument]);
 
 
   // Preserve the existing simulation-only land and water rates until verified
@@ -1069,14 +1069,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   if (embedded && createdReceipt && !bankSlipPending && !receiptReviewOpen) {
     if (resultDocument === 'result') return <div lang={language} className="space-y-5 payment-flow-embedded payment-flow-embedded--receipt" data-testid="travel-payment-result">
       <PaymentConfirmationLayout>
-        <div className="payment-lifecycle__heading payment-lifecycle__heading--complete">
-          <span className="payment-lifecycle__symbol" aria-hidden="true"><CheckCircle size={22}/></span>
-          <div><h2 id="payment-lifecycle-title">{tr('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</h2></div>
-        </div>
-        <div className="payment-lifecycle__overview">
-          <div><span>{tr('Amount','মোট পরিশোধ')}</span><strong><TravelCurrency amount={createdReceipt.totalAmount} language={language}/></strong></div>
+        <PaymentConfirmationHeading state="complete" icon={<CheckCircle size={22}/>}>{tr('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</PaymentConfirmationHeading>
+        <PaymentConfirmationOverview language={language} amount={<TravelCurrency amount={createdReceipt.totalAmount} language={language}/>}>
           <div><span>{tr('Payment reference','পেমেন্ট রেফারেন্স')}</span><strong className="payment-lifecycle__reference-value">{createdReceipt.challanNo}</strong></div>
-        </div>
+        </PaymentConfirmationOverview>
         <details className="payment-lifecycle__progress-detail">
           <summary>{tr('Payment progress and references','পেমেন্টের অগ্রগতি ও রেফারেন্স')}</summary>
           <div className="payment-lifecycle__details"><dl className="payment-lifecycle__references">
@@ -1089,11 +1085,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
         <div className="payment-lifecycle__result payment-lifecycle__result--complete"><FileText size={18} aria-hidden="true"/>
           <p>{tr('Payment record saved; settlement is not verified.','পেমেন্ট রেকর্ড সংরক্ষিত হয়েছে; নিষ্পত্তি যাচাই হয়নি।')}</p>
         </div>
-        <WalkInChallanAction language={language} onOpen={() => setResultDocument('receipt')}/>
+        {!authenticatedUser && !previewAccount && <WalkInChallanAction language={language} onOpen={() => setResultDocument('receipt')}/>}
         {!authenticatedUser && !previewAccount && !skipPostPaymentLogin && <WalkInResultBenefits language={language}
           onSignIn={() => { setPaymentServiceChoiceOpen(false); navigate('taxpayer_login'); }}
           onSkip={() => setSkipPostPaymentLogin(true)}/>}
       </PaymentConfirmationLayout>
+      {(authenticatedUser || previewAccount) && modalFooterTarget && createPortal(
+        <PaymentJourneyFooter className="payment-flow-embedded__footer-actions" next={<button type="button" className="tax-service-choice__continue" onClick={() => setResultDocument('receipt')}>{tr('Receipt details','রসিদের বিবরণ')} <ArrowRight size={17}/></button>}/>, modalFooterTarget)}
     </div>;
     return <div className="payment-receipt-details payment-flow-embedded payment-flow-embedded--receipt" lang={language}>
       <button data-testid="travel-receipt-back" type="button" className="sr-only"
@@ -1267,16 +1265,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             <section className="payment-review payment-review--unified-v5 travel-flow__unified-preview"
               data-testid="travel-unified-final-preview" aria-label={tr('Final Preview','চূড়ান্ত পর্যালোচনা')}>
               <div className="payment-review__main">
-                <section className="payment-review__panel unified-v3-review" aria-labelledby="travel-unified-review-title">
-                  <div className="payment-review__section-title unified-v3-review__heading">
-                    <h2 id="travel-unified-review-title">{tr('Payment details','পেমেন্টের বিবরণ')}</h2>
-                    {!createdReceipt && <div className="unified-v3-review__actions">
+                <PaymentReviewDetails language={language} headingId="travel-unified-review-title" testId="travel-payment-details" actions={!createdReceipt && <div className="unified-v3-review__actions">
                       <button type="button" onClick={() => stepTo(0)}><Pencil size={14} aria-hidden="true"/>
                         {tr('Edit passengers','যাত্রী সম্পাদনা')} ({passengers.length})</button>
                       <button type="button" onClick={() => stepTo(1)}><Pencil size={14} aria-hidden="true"/>
                         {tr('Edit travel details','ভ্রমণের তথ্য সম্পাদনা')}</button>
-                    </div>}
-                  </div>
+                    </div>}>
                   <dl className="travel-flow__review travel-flow__review--unified">
                     <div><dt>{tr('Travel','ভ্রমণ')}</dt><dd>{mode === 'LAND' ? tr('By land','স্থলপথে') : tr('By water','নৌপথে')}</dd></div>
                     <div><dt>{tr('Departure port','যাত্রা বন্দর')}</dt><dd>{selectedPort}</dd></div>
@@ -1299,18 +1293,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     </TaxPayUnifiedTable>
                   </div>
                   <PaymentReviewTotal language={language} amount={totalAmount} formatted={<TravelCurrency amount={totalAmount} language={language}/>} testId="travel-preview-total" wordsTestId="travel-preview-total-in-words"/>
-                </section>
-                {totalAmount > 0 && <section className="payment-review__panel payment-review__payer travel-flow__unified-contact"
-                    aria-label={tr('Receipt contact','রসিদের যোগাযোগ')} data-testid="travel-preview-receipt-contact">
-                  <div className="payment-review__section-title">
-                    <div><h2>{tr('Payer and receipt details','পরিশোধকারী ও রসিদের তথ্য')}</h2></div>
-                  </div>
-                  <p className="unified-v5-payer-hint">{tr('Payer information will appear on the receipt.','পরিশোধকারীর তথ্য রসিদে দেখানো হবে।')}</p>
-                  <div className="payment-identity__fields travel-flow__field">
-                    <label htmlFor="travel-mobile">{tr('Mobile number for receipt','রসিদের জন্য মোবাইল নম্বর')} *</label>
+                </PaymentReviewDetails>
+                {totalAmount > 0 && <PaymentPayerDetails language={language} className="travel-flow__unified-contact" headingId="travel-payer-title" testId="travel-preview-receipt-contact">
+                  <div className="travel-flow__field">
+                    <label htmlFor="travel-mobile" className="block text-xs font-semibold text-slate-700 mb-1">{tr('Mobile number for receipt','রসিদের জন্য মোবাইল নম্বর')} *</label>
                     {createdReceipt ? <p className="travel-flow__contact-readonly">{phone}</p> : <>
                       <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11}
-                        autoComplete="tel-national" value={phone} placeholder="01XXXXXXXXX"
+                        autoComplete="tel-national" value={phone} placeholder={tr('01XXXXXXXXX','০১XXXXXXXXX')} required
+                        className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
                         aria-invalid={phone.length > 0 && !receiptMobileComplete}
                         aria-describedby={phone.length > 0 && !receiptMobileComplete ? 'travel-mobile-error' : undefined}
                         onChange={event => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 11)); setError(''); setAcknowledged(false); }}/>
@@ -1319,7 +1309,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                       </p>}
                     </>}
                   </div>
-                </section>}
+                </PaymentPayerDetails>}
               </div>
             </section>)}
 

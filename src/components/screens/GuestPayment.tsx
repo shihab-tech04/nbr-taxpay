@@ -1,4 +1,4 @@
-import { PaymentReviewTotal, PaymentChannelScreen, PaymentConfirmationLayout, WalkInChallanAction, WalkInResultBenefits } from '../ui/UnifiedPaymentStages';
+import { PaymentReviewTotal, PaymentChannelScreen, PaymentConfirmationLayout, WalkInChallanAction, WalkInResultBenefits, PaymentReviewDetails, PaymentPayerDetails, PaymentConfirmationHeading, PaymentConfirmationOverview } from '../ui/UnifiedPaymentStages';
 import { maskTinForDisplay } from '../../services/tinDisplay';
 import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
@@ -26,7 +26,6 @@ import { BLOCKED_HEAD_IDS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { V11_PAYMENT_OPTIONS } from '../../data/v11PaymentOptions';
 import { PaymentCategory, ChallanReceipt, PaymentLineItem } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
-import { amountInTakaWords } from '../../services/amountInWords';
 import { UI_STRINGS } from '../../services/localization';
 import { ReceiptView } from '../common/ReceiptView';
 import { PaymentFormSection, PaymentLiveSummary } from '../ui/PaymentFormLayout';
@@ -1788,17 +1787,13 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     return (
       <div lang={language} className={`space-y-5 ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''} ${language === 'bn' ? 'font-bengali' : ''}`}>
         <PaymentConfirmationLayout>
-          <div className={`payment-lifecycle__heading payment-lifecycle__heading--${syncPending || bankPending ? 'pending' : declined ? 'failed' : completed ? 'complete' : 'running'}`}>
-            <span className="payment-lifecycle__symbol" aria-hidden="true">{isProcessing ? <LoaderCircle className="animate-spin" size={22} /> : declined ? <AlertCircle size={22} /> : bankPending ? <Building2 size={22} /> : <CheckCircle size={22} />}</span>
-            <div>
-              <h2 id="payment-lifecycle-title">{declined && batchAttempt ? (language === 'bn' ? 'পেমেন্ট রেকর্ড অপেক্ষমাণ' : 'Payment records pending') : syncPending ? (language === 'bn' ? 'সিমুলেশন নিশ্চিতকরণ অপেক্ষমাণ' : 'Simulation confirmation pending') : declined && paymentValidationBlocked ? (language === 'bn' ? 'পেমেন্টের তথ্য সংশোধন করুন' : 'Review payment information') : declined ? (language === 'bn' ? 'পরিশোধের অনুরোধ প্রত্যাখ্যাত' : 'Payment request declined') : bankPending ? (language === 'bn' ? 'ব্যাংকের জন্য পরিশোধ-স্লিপ প্রস্তুত' : 'Bank payment slip ready') : completed ? officeMirrorPending ? (language === 'bn' ? 'সিমুলেশন সংরক্ষিত — অফিস সমন্বয় অপেক্ষমাণ' : 'Simulation saved — Office sync pending') : (language === 'bn' ? 'পেমেন্ট রেকর্ড সংরক্ষিত' : 'Payment record saved') : (language === 'bn' ? 'পরিশোধ প্রক্রিয়াধীন…' : 'Processing payment…')}</h2>
-            </div>
-          </div>
-          <div className="payment-lifecycle__overview">
-            <div><span>{language === 'bn' ? 'মোট পরিশোধ' : 'Amount'}</span><strong>{formatCurrency(shownTotal, language)}</strong></div>
+          <PaymentConfirmationHeading state={syncPending || bankPending ? 'pending' : declined ? 'failed' : completed ? 'complete' : 'running'} icon={isProcessing ? <LoaderCircle className="animate-spin" size={22} /> : declined ? <AlertCircle size={22} /> : bankPending ? <Building2 size={22} /> : <CheckCircle size={22} />}>
+            {declined && batchAttempt ? (language === 'bn' ? 'পেমেন্ট রেকর্ড অপেক্ষমাণ' : 'Payment records pending') : syncPending ? (language === 'bn' ? 'সিমুলেশন নিশ্চিতকরণ অপেক্ষমাণ' : 'Simulation confirmation pending') : declined && paymentValidationBlocked ? (language === 'bn' ? 'পেমেন্টের তথ্য সংশোধন করুন' : 'Review payment information') : declined ? (language === 'bn' ? 'পরিশোধের অনুরোধ প্রত্যাখ্যাত' : 'Payment request declined') : bankPending ? (language === 'bn' ? 'ব্যাংকের জন্য পরিশোধ-স্লিপ প্রস্তুত' : 'Bank payment slip ready') : completed ? officeMirrorPending ? (language === 'bn' ? 'সিমুলেশন সংরক্ষিত — অফিস সমন্বয় অপেক্ষমাণ' : 'Simulation saved — Office sync pending') : (language === 'bn' ? 'পেমেন্ট রেকর্ড সংরক্ষিত' : 'Payment record saved') : (language === 'bn' ? 'পরিশোধ প্রক্রিয়াধীন…' : 'Processing payment…')}
+          </PaymentConfirmationHeading>
+          <PaymentConfirmationOverview language={language} amount={formatCurrency(shownTotal, language)}>
             {batchAttempt ? <div><p className="text-sm text-taxpay-muted">{language === 'bn' ? 'সংরক্ষিত রেকর্ড' : 'Records saved'}</p><p><strong>{confirmedReceipts.length} / {batchAttempt.items.length}</strong></p></div>
               : <div><span>{language === 'bn' ? 'পেমেন্ট রেফারেন্স' : 'Payment reference'}</span><strong className="payment-lifecycle__reference-value">{referenceReady ? attemptReceipt?.challanNo : (language === 'bn' ? 'তৈরি হচ্ছে…' : 'Being generated…')}</strong></div>}
-          </div>
+          </PaymentConfirmationOverview>
           <details className="payment-lifecycle__progress-detail" open={!completed && !bankPending && !declined}>
             <summary>{language === 'bn' ? 'পেমেন্টের অগ্রগতি ও রেফারেন্স' : 'Payment progress and references'} {!completed && <span>{lifecycleStages.length} / {ONLINE_LIFECYCLE.length}</span>}</summary>
           <div className="payment-lifecycle__details">
@@ -2746,18 +2741,14 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
         {step === 3 && (!unifiedFlow || !unifiedCheckout) && (
           <div className={unifiedFlow ? "payment-review payment-review--unified-v5" : "payment-review"} data-testid="payment-review">
             <div className="payment-review__main">
-              {unifiedFlow && <section className="payment-review__panel unified-v3-review" aria-labelledby="unified-v3-review-title" data-testid="unified-v3-payment-details">
-                <div className="payment-review__section-title unified-v3-review__heading">
-                  <h2 id="unified-v3-review-title">{language === 'bn' ? 'পেমেন্টের বিবরণ' : 'Payment details'}</h2>
-                  <div className="unified-v3-review__actions">
+              {unifiedFlow && <PaymentReviewDetails language={language} actions={<div className="unified-v3-review__actions">
                     <button type="button" aria-label={language === 'bn' ? 'করদাতা সম্পাদনা' : 'Edit taxpayers'} onClick={() => setStep(1)}>
                       <Pencil size={14} aria-hidden="true"/>{language === 'bn' ? 'করদাতা' : 'Taxpayers'}
                     </button>
                     <button type="button" aria-label={language === 'bn' ? 'খাত ও পরিমাণ সম্পাদনা' : 'Edit heads & amounts'} onClick={() => setStep(2)}>
                       <Pencil size={14} aria-hidden="true"/>{language === 'bn' ? 'খাত ও পরিমাণ' : 'Heads & amounts'}
                     </button>
-                  </div>
-                </div>
+                  </div>}>
                 <div className="unified-v3-review__table-wrap">
                   <table className="unified-v3-review__table">
                     <thead><tr>
@@ -2785,17 +2776,8 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   </table>
                 </div>
                 <PaymentReviewTotal language={language} amount={totalAmount} formatted={formatCurrency(totalAmount, language)}/>
-              </section>}
-              {unifiedFlow && <section className="payment-review__panel payment-review__payer" aria-labelledby="payment-final-payer-title">
-                <div className="payment-review__section-title">
-                  <div><h2 id="payment-final-payer-title">{language === 'bn' ? 'পরিশোধকারী ও রসিদের তথ্য' : 'Payer and receipt details'}</h2></div>
-                </div>
-                {unifiedFlow && <p className="unified-v5-payer-hint">{language === 'bn'
-                    ? 'পরিশোধকারীর তথ্য রসিদে দেখানো হবে।'
-                    : 'Payer information will appear on the receipt.'}</p>}
-                <div className="payment-identity__fields">{payerReceiptFields}</div>
-                {ownAccountTax && !isWithholdingMode && receiptEmailControl}
-              </section>}
+              </PaymentReviewDetails>}
+              {unifiedFlow && <PaymentPayerDetails language={language} extra={ownAccountTax && !isWithholdingMode && receiptEmailControl}>{payerReceiptFields}</PaymentPayerDetails>}
               {!unifiedFlow && <section className="payment-review__panel" aria-labelledby="guest-payment-channel-title">
                 <div className="payment-review__section-title"><span className="payment-review__section-number">01</span><div><h2 id="guest-payment-channel-title">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2><p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div></div>
                 {!storyAmountSupported && <p role="alert" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
