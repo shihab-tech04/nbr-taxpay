@@ -318,7 +318,7 @@ test('signed-in Activity shows new payments across assessment years immediately 
   const recent=make('00000000-0000-4000-8000-000000000902','2026-11-24T05:40:00Z','2026-27',452000);
   const newest=make('00000000-0000-4000-8000-000000000903','2026-11-24T05:47:00Z','2026-27',6500);
   let payments=[recent,old];
-  await page.route('**/functions/v1/demo-story1-taxpay/payments**',async route=>{
+  await page.route(url=>url.pathname==='/functions/v1/demo-story1-taxpay/payments'||url.pathname.startsWith('/functions/v1/demo-story1-taxpay/payments/'),async route=>{
     if(route.request().method()!=='GET'||route.request().headers()['x-taxpay-guest-capability']!==capability)
       return route.fulfill({status:403,contentType:'application/json',body:'{}'});
     const url=new URL(route.request().url());
