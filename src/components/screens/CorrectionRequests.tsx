@@ -53,6 +53,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
       .catch(()=>{if(active)setHistoryError(true);}).finally(()=>{if(active)setHistoryLoading(false);});
     return()=>{active=false;};
   },[previewAccount?.id,serverMode,historyRetry]);
+  const localCorrections = corrections.filter(c=>visibleReceipts.some(r=>r.challanNo===c.challanNo && r.payerTin===c.taxpayerTin));
   const visibleCorrections:(CorrectionRequest&{simulationRecorded?:boolean})[]=serverMode
     ?serverRecords.map(row=>({
       id:row.id,ticketNo:'SIM-CORR-'+row.id,challanNo:row.originalReference,taxpayerTin:taxpayerProfile.tin,
@@ -64,7 +65,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
       ...(row.allocationIndex!==null?{targetAllocationIndex:row.allocationIndex}:{}),
       ...(row.allocationId?{targetAllocationId:row.allocationId}:{})
     }))
-    :corrections.filter(c=>visibleReceipts.some(r=>r.challanNo===c.challanNo && r.payerTin===c.taxpayerTin));
+    :localCorrections;
 
   const routeReference=typeof routeParams?.originalReference==='string'
     ?routeParams.originalReference.slice(0,80):'';
@@ -307,13 +308,14 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
             </div>
             <div>
               <label htmlFor="correction-proposed-head" className="block font-semibold text-taxpay-dark mb-1">
-                Proposed payment head
+                {serverMode?tr("Proposed payment head","প্রস্তাবিত কর খাত"):"Proposed payment head (unverified options)"}
               </label>
-              <select id="correction-proposed-head" value={proposedHeadCode}
+              <select id="correction-proposed-head" value={serverMode?proposedHeadCode:proposedHead}
                 disabled={busy||requiresAllocation&&!selectedAllocation}
                 onChange={(e) => setProposedHeadCode(e.target.value)}
                 className="w-full min-h-11 min-w-0 px-3 py-2 rounded-lg border border-taxpay-border text-sm">
-                <option value="">{tr("No change","পরিবর্তন নেই")}</option>
+                {serverMode&&<option value="">{tr("No change","পরিবর্তন নেই")}</option>}
+                {!serverMode&&currentHeadCode&&!MASTER_PAYMENT_HEADS.some(head=>head.status!=='BLOCKED'&&head.economicCode===currentHeadCode)&&<option value={currentHeadCode}>{currentHeadCode}</option>}
                 {MASTER_PAYMENT_HEADS.filter(head => head.status !== 'BLOCKED').map(head => (
                   <option key={head.id} value={head.economicCode}>{head.economicCode} — {head.nameEn}</option>
                 ))}
