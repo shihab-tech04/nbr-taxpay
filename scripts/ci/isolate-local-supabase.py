@@ -17,9 +17,14 @@ def prepare(path, run_id, attempt):
         raise ValueError("Unexpected local SMTP configuration")
     # Preserve fixed API/DB ports used by existing test clients. Pick an unused
     # mail HTTP port without killing a listener or disabling mail acceptance.
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("0.0.0.0", 0))
-        port = sock.getsockname()[1]
+    for _ in range(10):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.bind(("0.0.0.0", 0))
+            port = sock.getsockname()[1]
+        if port not in {4173, 4174, 8083, 54320, 54321, 54322, 54323, 54324, 54325, 54326, 54327, 54329, 55433}:
+            break
+    else:
+        raise RuntimeError("No isolated mail port available")
     project = f"taxpay-ci-{run_id}-{attempt}"
     result, count = re.subn(r'^project_id = "[^"\n]+"$', f'project_id = "{project}"', raw, flags=re.M)
     if count != 1:
@@ -34,8 +39,11 @@ def prepare(path, run_id, attempt):
         raise ValueError("Unexpected configuration changes")
     path.write_text(result)
     print(f"CI-only project {project}; isolated mail HTTP port {port}")
+    return port
 
 if __name__ == "__main__":
     if os.environ.get("GITHUB_ACTIONS") != "true" or os.environ.get("GITHUB_REPOSITORY") != "shihab-tech04/nbr-taxpay":
         sys.exit("Refusing to modify config outside the intended GitHub CI repository")
-    prepare(Path("supabase/config.toml"), os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"])
+    port = prepare(Path("supabase/config.toml"), os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"])
+    with open(os.environ["GITHUB_ENV"], "a") as env:
+        env.write(f"TAXPAY_LOCAL_SMTP_PORT={port}\n")
