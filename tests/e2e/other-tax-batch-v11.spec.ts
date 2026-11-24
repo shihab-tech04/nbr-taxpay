@@ -67,7 +67,10 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
   }
   if(unified){
     await page.goto('/?action=taxpayer_home');
-    await page.getByTestId('dashboard-payment-drafts').getByRole('button',{name:'Start a payment',exact:true}).click();
+    // User1 hides the draft action when the overview has no itemized records.
+    // Use the approved public All Tax Payments action in the same signed-in session.
+    await page.goto('/?action=landing&lang=en');
+    await page.locator('.public-benefits__item[data-benefit="payments"]').click();
     const dialog=page.getByRole('dialog',{name:'Pay Tax'});
     await dialog.getByRole('button',{name:'Start new Tax payment'}).click();
     await expect(dialog.getByTestId('unified-account-own')).toBeVisible();

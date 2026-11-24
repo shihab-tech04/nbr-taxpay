@@ -192,7 +192,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     setTopLevel('OTHER_TAX');
     setPayerForSelf(account ? null : false);
     setEntryAccess(account ? 'account' : 'guest');
-    if (account && publicUnifiedEntry && view === 'entry') {
+    if (account && publicUnifiedEntry && (view === 'entry' || view === 'login')) {
       // Explicit sign-in enters the same owner-scoped start/resume gate.
       setDraftEntryCompleted(false); setDraftEntryMode('choice');
       setDraftEntryBlocking(true); setView('payer'); return;
