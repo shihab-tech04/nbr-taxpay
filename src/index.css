@@ -116,7 +116,7 @@
 .taxpay-citizen-shell .taxpay-type-meta { font-size: var(--taxpay-type-meta); line-height: 1.5; }
 .taxpay-citizen-shell .taxpay-type-financial { font-size: var(--taxpay-type-financial); line-height: 1.35; font-variant-numeric: tabular-nums; }
 .taxpay-citizen-shell[lang="bn"] { line-height: 1.65; }
-.taxpay-citizen-shell[lang="bn"] :is(input,select,textarea,button) { line-height: 1.55; }
+.taxpay-citizen-shell[lang="bn"] :is(input,select,textarea,button):not(:where([data-home2-view] *)) { line-height: 1.55; }
 
 /* Enforce the same loaded font in both citizen experiences, never Officer. */
 .taxpay-citizen-shell { font-family: 'Poppins', 'Noto Sans Bengali', system-ui, sans-serif; }

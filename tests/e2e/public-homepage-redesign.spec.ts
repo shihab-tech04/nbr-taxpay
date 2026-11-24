@@ -301,3 +301,30 @@ test('Home 2 uploaded design uses actual record lookup rather than prototype res
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page).not.toHaveURL(/HOME2-CHECK-123/);
 });
+
+
+test('Imported Home 2 retains source typography and never clips desktop hero or guide controls',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Cross-viewport source typography acceptance');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  for(const width of [960,1024,1280,1920]){
+    await page.setViewportSize({width,height:900});
+    for(const lang of ['en','bn']){
+      await page.goto('/?action=home-2&lang='+lang);
+      const root=page.getByTestId('home2-root');
+      await expect(root).toBeVisible();
+      await page.evaluate(()=>document.fonts.ready);
+      const hero=root.getByTestId('home2-desktop-hero');
+      const copy=root.getByTestId('home2-hero-copy');
+      await expect(copy.locator('p').first()).toHaveCSS('font-size','14.5px');
+      await expect(copy.locator('li').first()).toHaveCSS('font-size','12px');
+      await expect(root.getByTestId('home2-guide-action')).toHaveCSS('font-size','13px');
+      const outer=await hero.boundingBox();const trust=await root.getByTestId('home2-hero-trust').boundingBox();
+      expect(trust!.y+trust!.height,'trust labels remain inside the hero').toBeLessThanOrEqual(outer!.y+outer!.height+1);
+      for(const id of ['home2-guide-action','home2-chat-action']){
+        const action=root.getByTestId(id);
+        expect(await action.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(2);
+      }
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+    }
+  }
+});

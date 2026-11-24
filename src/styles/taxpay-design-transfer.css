@@ -70,10 +70,10 @@
 
 /* Legacy Tailwind shadow utilities appear on public payment and taxpayer views.
  * Normalize them within the citizen shell without affecting the separate Office UI. */
-.taxpay-citizen-shell :is(.shadow-xs, .shadow-sm, .shadow-md) {
+.taxpay-citizen-shell :is(.shadow-xs, .shadow-sm, .shadow-md):not(:where([data-home2-view] *)) {
   box-shadow: var(--citizen-shadow-card);
 }
-.taxpay-citizen-shell :is(.shadow-lg, .shadow-xl, .shadow-2xl) {
+.taxpay-citizen-shell :is(.shadow-lg, .shadow-xl, .shadow-2xl):not(:where([data-home2-view] *)) {
   box-shadow: var(--citizen-shadow-modal);
 }
 
