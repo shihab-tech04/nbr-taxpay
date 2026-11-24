@@ -94,6 +94,9 @@ function sqlRpc(origin,name,args){
    payment_v1_internal_bridge_config:()=> 'public.payment_v1_internal_bridge_config()',
    payment_v1_internal_ingest_correction:()=> 'public.payment_v1_internal_ingest_correction('+pgJSON(args.p_event)+')',
    payment_v1_internal_claim_commands:()=> 'public.payment_v1_internal_claim_commands('+args.p_limit+'::integer)',
+   // Office Main #298 queries persisted source provenance even for legacy corrections.
+   // Run the real guarded SQL route (NULL means original Taxpayer), never a mock success.
+   payment_v1_demo_correction_route:()=> 'coalesce(to_jsonb(public.payment_v1_demo_correction_route('+sqlText(args.p_id)+'::uuid)),\'null\'::jsonb)',
    payment_v1_internal_ack_correction_command:()=> 'public.payment_v1_internal_ack_correction_command('+
     sqlText(args.p_message_id)+'::uuid,'+sqlText(args.p_claim_token)+'::uuid,'+args.p_success+','+
     (args.p_review_state===null?'NULL':sqlText(args.p_review_state))+','+
@@ -308,6 +311,15 @@ const bootstrap=[
 ].join('\n');
 assert.equal(db(office,bootstrap),true);
 installOfficeCommandClaim();
+// Office #298 added provenance-scoped V2 corrections without replacing the
+// original Office review queue. Install the actual companion migration in the
+// disposable Office database so this legacy round-trip verifies compatibility.
+const officeV2Migration=readFileSync(resolve(officeRoot,
+ 'supabase/migrations/20261124060500_office_v2_demo_correction_sync.sql'),'utf8');
+assert.match(officeV2Migration,/create function public\.payment_v1_demo_correction_route\(p_id uuid\)/);
+const officeHasV2Route=db(office,
+ "SELECT to_jsonb(to_regprocedure('public.payment_v1_demo_correction_route(uuid)') IS NOT NULL);");
+if(!officeHasV2Route)db(office,officeV2Migration+"\nSELECT 'true'::jsonb;");
 const correctionReplayText=JSON.stringify(retryEvent);
 const correctionReplay=await postBridge('OFFICE_SQL','/payment-sync-bridge',
  {mode:'ingest',eventText:correctionReplayText,signature:await signBridgePayload(correctionReplayText)});
@@ -321,6 +333,9 @@ assert.equal(item.caseKind,'UNSOLICITED_PAYMENT_REPORT',
  'Original source case category must survive signed Edge delivery to separate Office SQL');
 assert.equal(item.sourceEventId,started.eventId);
 assert.equal(item.reviewState,'PENDING_OFFICER');
+assert.equal(db(office,"SELECT coalesce(to_jsonb(public.payment_v1_demo_correction_route('"+
+ started.inquiryId+"'::uuid)),'null'::jsonb);"),null,
+ 'Original Office correction must not be misrouted to Taxpayer-v2');
 assert.deepEqual(item.availableActions,['MAKER_ACKNOWLEDGE']);
 
 const blocked=spawnSync('psql',['-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-d',office],

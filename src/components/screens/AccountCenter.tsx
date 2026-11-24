@@ -316,6 +316,23 @@ export function AccountCenter({ page }: { page: AccountPage }) {
     !normalizedNotificationSearch || [item.category,item.assessment_year,item.id,
       date(item.created_at)].some(text=>text.toLocaleLowerCase().includes(normalizedNotificationSearch)));
   const sampleOnly = !user && sample;
+  // Preserve account metadata under the one authorized profile composition.
+  // It must not be rendered again as a detached standalone card.
+  const accountDetails = user && page === 'profile' ? (
+    <div className="space-y-3" data-testid="profile-integrated-account-details">
+                <h2>{language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details'}</h2>
+                <dl className="taxpayer-account-facts">
+                  <div><dt>{t.name}</dt><dd>{typeof user.user_metadata?.taxpay_display_name === 'string' && user.user_metadata.taxpay_display_name.trim() ? user.user_metadata.taxpay_display_name : t.noName}</dd></div>
+                  <div><dt>{t.email}</dt><dd>{user.email
+                     ?<MaskedProfileValue value={user.email} kind="email" label={t.email} language={language} allowCopy/>
+                     :'—'}</dd></div>
+                  <div><dt>{t.verified}</dt><dd>{user.email_confirmed_at ? date(user.email_confirmed_at) : t.unverified}</dd></div>
+                  <div><dt>{t.joined}</dt><dd>{date(user.created_at)}</dd></div>
+                  <div><dt>{t.accountId}</dt><dd className="taxpayer-account-id">{user.id}</dd></div>
+                </dl>
+                <p className="taxpayer-account-notice"><ShieldAlert size={17} aria-hidden />{t.consent}</p>
+              </div>
+  ) : null;
   return (
     <section className="taxpayer-account-center" lang={language} aria-labelledby="taxpay-account-title">
       <TaxpayerPageHeading id="taxpay-account-title" className="taxpayer-account-heading"
@@ -384,25 +401,10 @@ export function AccountCenter({ page }: { page: AccountPage }) {
           </section>
         ) : (
           <>
-            {page === 'profile' && (
-              <section className="taxpayer-account-panel">
-                <h2>{language === 'bn' ? 'অ্যাকাউন্টের তথ্য' : 'Account details'}</h2>
-                <dl className="taxpayer-account-facts">
-                  <div><dt>{t.name}</dt><dd>{typeof user.user_metadata?.taxpay_display_name === 'string' && user.user_metadata.taxpay_display_name.trim() ? user.user_metadata.taxpay_display_name : t.noName}</dd></div>
-                  <div><dt>{t.email}</dt><dd>{user.email
-                     ?<MaskedProfileValue value={user.email} kind="email" label={t.email} language={language} allowCopy/>
-                     :'—'}</dd></div>
-                  <div><dt>{t.verified}</dt><dd>{user.email_confirmed_at ? date(user.email_confirmed_at) : t.unverified}</dd></div>
-                  <div><dt>{t.joined}</dt><dd>{date(user.created_at)}</dd></div>
-                  <div><dt>{t.accountId}</dt><dd className="taxpayer-account-id">{user.id}</dd></div>
-                </dl>
-                <p className="taxpayer-account-notice"><ShieldAlert size={17} aria-hidden />{t.consent}</p>
-              </section>
-            )}
             {page === 'profile' && <AccountRecentActivity ownerUid={user.id} language={language}/>}
             {page === 'profile' && registrationStatus==='loading' && <p role="status" className="taxpayer-account-panel">{language==='bn'?'করদাতার নিবন্ধন তথ্য যাচাই হচ্ছে…':'Checking taxpayer registration information…'}</p>}
             {page === 'profile' && registrationStatus==='error' && <div className="taxpayer-account-panel"><p role="alert">{language==='bn'?'নিবন্ধন তথ্য পাওয়া যায়নি। আবার চেষ্টা করুন।':'Registration information could not be loaded. Retry.'}</p><button type="button" onClick={()=>setRegistrationRetry(value=>value+1)}>{t.retry}</button></div>}
-            {page === 'profile' && <TaxpayerTinInformation key={user.id} language={language} record={registrationRecord} />}
+            {page === 'profile' && <TaxpayerTinInformation key={user.id} language={language} record={registrationRecord} accountDetails={accountDetails} />}
             {(page === 'profile' || page === 'settings') && (
               <form className="taxpayer-account-panel taxpayer-account-fields" onSubmit={savePreferences}>
                 <h2>{t.preferences}</h2>
