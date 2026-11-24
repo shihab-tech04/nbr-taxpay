@@ -203,6 +203,20 @@ test('authorized user1 preview reconciles Overview with Activity without a sourc
   await page.route('**/auth/v1/user',route=>route.fulfill({
     status:401,contentType:'application/json',body:'{"message":"No application Auth session"}'
   }));
+  // Explicit API fixtures test the source contract; real persistence is independently
+  // covered by demo-profile-persistence-real-local.spec.ts against disposable SQL.
+  let correctionUnavailable=false;
+  const correctionRows=['DEMO-PAY-01','DEMO-PAY-02'].map((reference,i)=>({
+    id:'00000000-0000-4000-8000-00000000000'+(i+2),paymentId:null,originalReference:reference,
+    allocationIndex:null,allocationId:null,currentAY:i===0?'2025-2026':'2025-26',proposedAY:'2024-2025',
+    currentCircle:'',proposedCircle:'',currentHeadCode:'',proposedHeadCode:'',reason:'Review assessment year '+reference,
+    createdAt:'2026-11-24T01:00:00Z',status:'RECORDED',officeSyncState:'ACKNOWLEDGED',reviewState:'PENDING_OFFICER'
+  }));
+  await page.route('**/demo-story1-taxpay/corrections?*',async route=>{
+    expect(route.request().headers()['x-taxpay-guest-capability']).toBe('A'.repeat(43));
+    await route.fulfill({status:correctionUnavailable?503:200,contentType:'application/json',
+      body:JSON.stringify(correctionUnavailable?{success:false}:{success:true,simulationOnly:true,data:correctionRows})});
+  });
   await page.goto('/?action=taxpayer_home');
   await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2025-2026');
@@ -210,7 +224,10 @@ test('authorized user1 preview reconciles Overview with Activity without a sourc
   await expect(overview.getByTestId('dashboard-source-indicator')).toContainText('simulated');
   await expect(overview.locator('.taxpay-summary-metric--completed strong')).toHaveText('5');
   await expect(overview.locator('.taxpay-summary-metric--requests strong')).toHaveText('2');
-  await expect(overview.getByTestId('dashboard-correction-request-list').getByRole('listitem')).toHaveCount(2);
+  await overview.locator('.taxpay-summary-metric--requests').click();
+  await expect(overview.getByTestId('dashboard-recorded-corrections').getByRole('listitem')).toHaveCount(2);
+  await expect(overview.getByTestId('dashboard-recorded-corrections')).toContainText('DEMO-PAY-01');
+  await expect(overview.getByTestId('dashboard-correction-request-list')).toHaveCount(0);
   const chart=overview.getByTestId('dashboard-payment-analytics');
   await expect(chart).toHaveAttribute('data-chart-source','example');
   await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
@@ -234,6 +251,15 @@ test('authorized user1 preview reconciles Overview with Activity without a sourc
     .locator('.taxpay-summary-metric--completed strong')).toHaveText('3');
   await expect(page.getByTestId('taxpayer-overview-bento')
     .locator('.taxpay-summary-metric--requests strong')).toHaveText('0');
+  // A failed authoritative read is neither zero nor a sample count.
+  correctionUnavailable=true;
+  await page.reload();
+  await expect(overview.locator('.taxpay-summary-metric--requests strong')).toHaveText('—');
+  await overview.locator('.taxpay-summary-metric--requests').click();
+  await expect(overview.getByRole('alert').filter({hasText:'Correction request history unavailable.'})).toBeVisible();
+  correctionUnavailable=false;
+  await overview.getByRole('button',{name:'Retry',exact:true}).click();
+  await expect(overview.locator('.taxpay-summary-metric--requests strong')).toHaveText('0');
 });
 
 test('populated Overview uses full-width balanced KPIs and readable charts across screen widths',async({page},info)=>{

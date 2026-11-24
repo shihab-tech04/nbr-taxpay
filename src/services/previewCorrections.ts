@@ -15,6 +15,10 @@ export type PreviewCorrectionRecord = {
   reviewUpdatedAt?:string|null;reviewReason?:string|null;
   initiatedBy?:'OFFICE'|'TAXPAYER';requestedOutcome?:string|null;evidenceNote?:string|null;
 };
+export function correctionsForAssessmentYear(rows:readonly PreviewCorrectionRecord[],year:string){
+ const normalize=(value:string)=>value.trim().replace(/^(20\d{2})-(\d{2})$/,(_,start:string,end:string)=>start+'-20'+end);
+ return rows.filter(row=>normalize(row.currentAY)===normalize(year));
+}
 export function previewCorrectionStatus(record:Pick<PreviewCorrectionRecord,'officeSyncState'|'reviewState'>,language:'en'|'bn'){
   const bn=language==='bn';
   if(record.officeSyncState!=='ACKNOWLEDGED')return bn?'অফিসে পাঠানো হচ্ছে':'Awaiting Office';
