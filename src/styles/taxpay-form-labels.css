@@ -90,9 +90,9 @@
   border-radius: 10px;
   box-shadow: 0 12px 26px rgb(18 42 77 / 20%);
 }
-.taxpay-citizen-shell .travel-flow__passport-suggestions[data-placement="above"] {
-  top: auto;
-  bottom: calc(100% + 4px);
+.taxpay-citizen-shell .taxpay-modal__body:has(.travel-flow__passport-suggestions) {
+  /* Make room to scroll the entire below-input list above the anchored CTA. */
+  padding-bottom: max(240px, 34vh);
 }
 .taxpay-citizen-shell .travel-flow__passport-suggestions { scrollbar-gutter: stable; }
 .taxpay-citizen-shell .travel-flow__passport-suggestions-heading,
