@@ -200,7 +200,8 @@ test('Travel Tax: passport Check button activates on entry and results overlay w
   // Passport suggestions must not shift or expand the empty lookup dialog.
   expect(Math.abs(withPopup!.height - baseline!.height)).toBeLessThanOrEqual(2);
   expect(Math.abs(withCard!.height - cardBaseline!.height)).toBeLessThanOrEqual(2);
-  expect(await suggestions.evaluate(el=>getComputedStyle(el).position)).toBe('absolute');
+  expect(await suggestions.evaluate(el=>getComputedStyle(el).position)).toBe('fixed');
+  expect(await suggestions.evaluate(el=>el.matches(':popover-open'))).toBe(true);
   expect(await suggestions.evaluate(el=>getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
   // Popup must receive hit testing ahead of the controls beneath it;
   // otherwise medical labels can appear through the floating list.
@@ -1279,16 +1280,29 @@ test('Walk-in Travel Tax: short desktop dropdown is hit-testable and has no draf
     await expect(modal.getByRole('button',{name:'Continue Draft',exact:true})).toHaveCount(0);
     const input=modal.locator('#travel-passport-first');
     const list=modal.locator('#travel-passport-suggestions-first');
+    await modal.evaluate(async el=>{await Promise.all(el.getAnimations({subtree:true}).filter(a=>a.playState==='running').map(a=>a.finished.catch(()=>undefined)));});
+    const geometry=()=>modal.evaluate(el=>[el,el.querySelector('.taxpay-modal__footer'),el.querySelector('#travel-passport-first'),el.querySelector('.travel-passenger-workspace__rail')].map(node=>{const r=node!.getBoundingClientRect();return [r.x,r.y,r.width,r.height];}));
+    const baseline=await geometry();
     await input.click();
     await expect(list.getByRole('option')).toHaveCount(10);
     await expect.poll(()=>list.evaluate(el=>{
       const b=el.getBoundingClientRect();
       const first=el.querySelector('[role="option"]')?.getBoundingClientRect();
-      const footer=el.closest('.taxpay-modal')?.querySelector('.taxpay-modal__footer')?.getBoundingClientRect();
-      if(!first||!footer||b.height<90||b.bottom>footer.top+2)return false;
+      if(!first||b.height<90||b.bottom>window.innerHeight+1||b.top<0||!el.matches(':popover-open'))return false;
       const hit=document.elementFromPoint(first.x+12,first.y+first.height/2);
       return Boolean(hit?.closest('[role="option"]')&&el.contains(hit));
     })).toBe(true);
+    // The modal, footer, field and passenger rail must retain their exact
+    // closed-state dimensions and positions while the list is open.
+    const unchanged=async()=> (await geometry()).every((r,i)=>r.every((v,j)=>Math.abs(v-baseline[i][j])<=1));
+    await expect.poll(unchanged).toBe(true);
+    await page.waitForTimeout(350);
+    expect(await unchanged()).toBe(true);
+    await input.press('Escape');
+    await expect(list).toHaveCount(0);
+    expect(await unchanged()).toBe(true);
+    await input.click();
+    await expect(list.getByRole('option')).toHaveCount(10);
     await list.getByRole('option',{name:/TEST230005/}).click();
     await modal.getByRole('button',{name:'Check Passport'}).click();
     await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
