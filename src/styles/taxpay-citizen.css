@@ -3421,7 +3421,7 @@
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
   .travel-flow__age-breakdown {gap:8px;}
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
-  .travel-flow__age-row {padding:12px 14px;}
+  .travel-flow__age-row {padding:8px 10px;}
 }
 /* Final Preview and payment-channel use the same single-column card
    composition as the approved unified Taxpayer workflow. */
@@ -3437,14 +3437,6 @@
   display:block;width:100%;max-width:none;min-width:0;margin:0;
 }
 .taxpay-citizen-shell .travel-flow[data-step="2"]
-:is(.travel-flow__unified-preview,.travel-flow__unified-checkout) .payment-review__main {
-  width:100%;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:16px;
-}
-.taxpay-citizen-shell .travel-flow[data-step="2"] .payment-review__panel {
-  min-width:0;width:100%;border:1px solid var(--citizen-border);
-  border-radius:11px;background:var(--citizen-surface);overflow:hidden;
-}
-.taxpay-citizen-shell .travel-flow[data-step="2"]
 .travel-flow__unified-preview .travel-flow__review {
   border:0;border-bottom:1px solid var(--citizen-border);
   border-radius:0;margin:0;padding:8px 13px;
@@ -3458,45 +3450,10 @@
 .travel-flow__unified-preview .travel-flow__review dd {
   margin-top:4px;overflow-wrap:anywhere;
 }
-.taxpay-citizen-shell .travel-flow[data-step="2"]
-.travel-flow__unified-preview .unified-v3-review__table-wrap {
-  overflow-x:auto;max-width:100%;padding:0 13px;
-}
-.taxpay-citizen-shell .travel-flow[data-step="2"]
-.travel-flow__unified-preview .unified-v3-review__table {min-width:530px;width:100%;}
-.taxpay-citizen-shell .travel-flow[data-step="2"]
-.travel-flow__unified-preview .unified-v3-review__table :is(td,th) {
-  overflow-wrap:break-word;font-size:14px;line-height:1.5;
-}
-.taxpay-citizen-shell .travel-flow[data-step="2"]
-.travel-flow__unified-preview .unified-v3-review__table :is(td,th):first-child {
-  min-width:180px;
-}
-.taxpay-citizen-shell .travel-flow[data-step="2"]
-.travel-flow__unified-preview .unified-v3-review__table tfoot {
-  background:var(--citizen-primary-light);
-}
-.taxpay-citizen-shell .travel-flow[data-step="2"]
-.travel-flow__unified-contact {padding:0;}
-.taxpay-citizen-shell .travel-flow[data-step="2"]
-.travel-flow__unified-contact > .payment-review__section-title {
-  min-height:48px;margin:0;padding:12px 13px;
-  background:#fafbfc;border-bottom:1px solid var(--citizen-border);
-}
-.taxpay-citizen-shell .travel-flow[data-step="2"]
-.travel-flow__unified-contact > .travel-flow__field {
-  padding:14px 15px 17px;max-width:100%;
-}
-.taxpay-citizen-shell .travel-flow[data-step="2"]
-.travel-flow__unified-contact > .travel-flow__field input {max-width:100%;}
-.taxpay-citizen-shell .travel-flow[data-step="2"]
-.travel-flow__unified-checkout .payment-review__panel {padding:18px 20px 22px;}
-.taxpay-citizen-shell .travel-flow[data-step="2"]
-.travel-flow__unified-checkout .payment-review__section-title {
-  margin-bottom:16px;
-}
-.taxpay-citizen-shell .travel-flow[data-step="2"]
-.travel-flow__unified-checkout .payment-review__ack {margin-top:16px;}
+.taxpay-citizen-shell .travel-flow__unified-preview .unified-v3-review__table-wrap {overflow-x:auto;max-width:100%;}
+.taxpay-citizen-shell .travel-flow__unified-preview .unified-v3-review__table {min-width:530px;table-layout:auto;}
+.taxpay-citizen-shell .travel-flow__unified-contact .payment-identity__fields {display:block;min-width:0;}
+.taxpay-citizen-shell .travel-flow__unified-contact input {width:100%;max-width:100%;box-sizing:border-box;}
 @media (min-width:651px) {
   .taxpay-citizen-shell .taxpay-modal[data-public-service="travel"]
   .travel-flow[data-step="2"] {height:100%;overflow:hidden;}
@@ -3516,10 +3473,6 @@
   }
   .taxpay-citizen-shell .travel-flow[data-step="2"]
   .travel-flow__unified-preview .travel-flow__review > div {padding:3px 0;}
-  .taxpay-citizen-shell .travel-flow[data-step="2"]
-  .travel-flow__unified-checkout .payment-review__panel {padding:14px 13px 18px;}
-  .taxpay-citizen-shell .travel-flow[data-step="2"]
-  .travel-flow__unified-preview .unified-v3-review__table-wrap {padding:0 9px;}
 }
 
 /* The final-stage mobile calculation is a mobile-only disclosure.
