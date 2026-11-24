@@ -24,6 +24,7 @@ test('approved Payment Head group typography and selection survive desktop/mobil
   const returnGroup = catalogue.locator('[data-head-group="Tax with Return"]');
   const advanceTax = catalogue.locator('[data-head-group="Advance Tax"]');
   await expect(catalogue.locator('[data-head-group]')).toHaveCount(7);
+  await expect(catalogue).toHaveCSS('row-gap', '6px');
   await expect(status).toContainText('168 available payment heads');
 
   for (const width of [1280, 375, 320]) {
@@ -34,7 +35,8 @@ test('approved Payment Head group typography and selection survive desktop/mobil
     await expect(advanceTax.locator('summary')).toHaveCSS('font-size', '16px');
     await expect(advanceTax.locator('.other-tax-category-trigger__count')).toHaveCSS('font-size', '14px');
     const height = (await advanceTax.locator('summary').boundingBox())?.height ?? 0;
-    expect(height).toBeGreaterThanOrEqual(47.5);
+    expect(height).toBeGreaterThanOrEqual(43.5);
+    expect(height).toBeLessThanOrEqual(49);
     await advanceTax.locator('summary').click();
     await expect(advanceTax.locator('[data-head-row] > label > span.text-sm').first()).toHaveCSS('font-size', '16px');
     if (width === 1280) await modal.screenshot({ path: 'test-results/sohojkor-v5-candidate-tax-head-open-desktop.png', animations: 'disabled' });
