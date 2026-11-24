@@ -1,3 +1,4 @@
+import { PaymentReviewTotal, PaymentChannelScreen, PaymentConfirmationLayout, WalkInChallanAction, WalkInResultBenefits } from '../ui/UnifiedPaymentStages';
 import { maskTinForDisplay } from '../../services/tinDisplay';
 import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
@@ -1786,8 +1787,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     );
     return (
       <div lang={language} className={`space-y-5 ${embedded ? 'payment-flow-embedded payment-flow-embedded--receipt' : ''} ${language === 'bn' ? 'font-bengali' : ''}`}>
-        <div className="payment-flow-embedded__confirmation-layout">
-        <section className="payment-lifecycle" aria-labelledby="payment-lifecycle-title">
+        <PaymentConfirmationLayout>
           <div className={`payment-lifecycle__heading payment-lifecycle__heading--${syncPending || bankPending ? 'pending' : declined ? 'failed' : completed ? 'complete' : 'running'}`}>
             <span className="payment-lifecycle__symbol" aria-hidden="true">{isProcessing ? <LoaderCircle className="animate-spin" size={22} /> : declined ? <AlertCircle size={22} /> : bankPending ? <Building2 size={22} /> : <CheckCircle size={22} />}</span>
             <div>
@@ -1867,46 +1867,19 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             {completed && !embedded && (batchAttempt ? <button type="button" className="payment-lifecycle__primary" onClick={startAnotherBatch} disabled={officeMirrorPending}>{copy.anotherPayment}</button> : <button type="button" className="payment-lifecycle__primary" onClick={() => setShowReceiptDetails(true)}>{language === 'bn' ? 'রসিদের বিবরণ দেখুন' : 'View receipt details'} <ArrowRight size={17} /></button>)}
           </div>
           {unifiedFlow && embedded && completed && !signedInAccount && createdReceipt && (
-            <div className="walkin-result-challan no-print" data-testid="walkin-challan-action">
-              <button type="button" className="payment-lifecycle__primary"
-                onClick={() => { setSelectedWalkInReceipt(createdReceipt); setShowReceiptDetails(true); }}>
-                <FileText size={17} aria-hidden="true" />
-                {language === 'bn' ? 'চালানের বিবরণ' : 'Challan Details'}
-                <ArrowRight size={17} aria-hidden="true" />
-              </button>
+            <WalkInChallanAction language={language} onOpen={() => { setSelectedWalkInReceipt(createdReceipt); setShowReceiptDetails(true); }}>
               {confirmedReceipts.length > 1 && <div className="walkin-result-challan__batch" aria-label={language === 'bn' ? 'এই পেমেন্টের চালানসমূহ' : 'Challans from this payment'}>
                 {confirmedReceipts.map((receipt, index) => <button type="button" key={receipt.id}
                   onClick={() => { setSelectedWalkInReceipt(receipt); setShowReceiptDetails(true); }}>
                   {language === 'bn' ? 'চালান ' : 'Challan '}{index + 1}: {receipt.challanNo}
                 </button>)}
               </div>}
-            </div>
+            </WalkInChallanAction>
           )}
           {unifiedFlow && embedded && completed && !officeMirrorPending && !signedInAccount && !skipPostPaymentLogin && (
-            <aside className="walkin-result-benefits no-print" data-testid="walkin-result-benefits"
-              aria-labelledby="walkin-result-benefits-title">
-              <h3 id="walkin-result-benefits-title">{language === 'bn' ? 'সহজকর অ্যাকাউন্টে আরও সুবিধা' : 'Get More with a Shohojkor Account'}</h3>
-              <ul>
-                <li>{language === 'bn' ? 'উপলব্ধ পেমেন্ট সনদ দেখুন' : 'Access Payment Certificates'}</li>
-                <li>{language === 'bn' ? 'আগের পেমেন্ট রেকর্ড ও চালান দেখুন' : 'View previous payment records and challans'}</li>
-                <li>{language === 'bn' ? 'পেমেন্টের ইতিহাস অনুসরণ করুন' : 'Track payment history'}</li>
-              </ul>
-              <div className="walkin-result-benefits__actions">
-                <button type="button" className="walkin-postpayment-login__signin"
-                  onClick={() => { setPaymentServiceChoiceOpen(false); navigate('taxpayer_login'); }}>
-                  {language === 'bn' ? 'সাইন ইন' : 'Log In'} <ArrowRight size={16} aria-hidden="true" />
-                </button>
-                <button type="button" className="walkin-postpayment-login__skip" onClick={() => setSkipPostPaymentLogin(true)}>
-                  {language === 'bn' ? 'সাইন ইন ছাড়াই চালিয়ে যান' : 'Continue without Login'}
-                </button>
-              </div>
-              <p>{language === 'bn'
-                ? 'এই ওয়াক-ইন পেমেন্ট স্বয়ংক্রিয়ভাবে কোনো অ্যাকাউন্টে যুক্ত হবে না।'
-                : 'This walk-in payment is not automatically linked to an account.'}</p>
-            </aside>
+            <WalkInResultBenefits language={language} onSignIn={() => { setPaymentServiceChoiceOpen(false); navigate('taxpayer_login'); }} onSkip={() => setSkipPostPaymentLogin(true)}/>
           )}
-        </section>
-        </div>
+        </PaymentConfirmationLayout>
         {embedded && modalFooterTarget && createPortal(
           <PaymentJourneyFooter className="payment-flow-embedded__footer-actions"
             next={<>
@@ -2811,11 +2784,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                     ))}</tbody>
                   </table>
                 </div>
-                <div className="unified-v5-review-total" data-testid="unified-v5-payment-total">
-                  <div className="unified-v5-review-total__row"><strong>{language === 'bn' ? 'মোট পেমেন্ট' : 'Payment total'}</strong>
-                    <output aria-live="polite">{formatCurrency(totalAmount, language)}</output></div>
-                  <p data-testid="unified-v5-total-in-words">{amountInTakaWords(totalAmount, language) ?? '—'}</p>
-                </div>
+                <PaymentReviewTotal language={language} amount={totalAmount} formatted={formatCurrency(totalAmount, language)}/>
               </section>}
               {unifiedFlow && <section className="payment-review__panel payment-review__payer" aria-labelledby="payment-final-payer-title">
                 <div className="payment-review__section-title">
@@ -2870,14 +2839,16 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
           </div>
         )}
         {step === 3 && unifiedFlow && unifiedCheckout && (
-          <section className="payment-review payment-review--unified-v5 unified-v5-payment-channel"
-            data-testid="unified-v5-payment-channel-screen" aria-labelledby="unified-v5-payment-channel-heading">
-            <div className="payment-review__main">
-              <section className="payment-review__panel">
-                <div className="payment-review__section-title">
-                  <div><h2 id="unified-v5-payment-channel-heading">{language === 'bn' ? 'পেমেন্ট চ্যানেল বেছে নিন' : 'Choose payment channel'}</h2>
-                    <p>{language === 'bn' ? 'অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন' : 'Choose online payment or a bank branch'}</p></div>
-                </div>
+          <PaymentChannelScreen language={language} actions={!embedded && <div className="payment-review__standalone-actions">
+                <button type="button" className="payment-review__back" onClick={backToUnifiedPreview}>
+                  <ArrowLeft size={17}/>{language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় ফিরুন' : 'Back to Final Preview'}
+                </button>
+                <button type="button" className="payment-review__pay" onClick={handleExecutePayment}
+                  disabled={batchRecoveryError || isProcessing || !paymentChannel || !paymentMethod || !acknowledged || !storyAmountSupported || (otherBatch && !batchValid)}>
+                  {paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
+                    : (language === 'bn' ? 'পরিশোধ নিশ্চিত করুন' : 'Confirm payment')}<ArrowRight size={17}/>
+                </button>
+              </div>}>
                 {batchRecoveryError && <p role="alert" className="mb-3 text-sm text-taxpay-error">
                   {language === 'bn' ? 'সংরক্ষিত পেমেন্ট অনুরোধ পাওয়া যায়নি। আবার চেষ্টা করুন।' : 'Saved payment request is unavailable. Please retry.'}
                 </p>}
@@ -2891,19 +2862,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} />
                   <span>{language === 'bn' ? 'করদাতা, খাত, করবর্ষ ও মোট পরিমাণ যাচাই করেছি।' : 'I have checked the taxpayers, payment heads, assessment years and total amount.'}</span>
                 </label>}
-              </section>
-              {!embedded && <div className="payment-review__standalone-actions">
-                <button type="button" className="payment-review__back" onClick={backToUnifiedPreview}>
-                  <ArrowLeft size={17}/>{language === 'bn' ? 'চূড়ান্ত পর্যালোচনায় ফিরুন' : 'Back to Final Preview'}
-                </button>
-                <button type="button" className="payment-review__pay" onClick={handleExecutePayment}
-                  disabled={batchRecoveryError || isProcessing || !paymentChannel || !paymentMethod || !acknowledged || !storyAmountSupported || (otherBatch && !batchValid)}>
-                  {paymentChannel === 'OTC' ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
-                    : (language === 'bn' ? 'পরিশোধ নিশ্চিত করুন' : 'Confirm payment')}<ArrowRight size={17}/>
-                </button>
-              </div>}
-            </div>
-          </section>
+          </PaymentChannelScreen>
         )}
       </div>
       {embedded && modalFooterTarget && createPortal(
