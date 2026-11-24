@@ -237,13 +237,13 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     if (payerName.trim().length < 2) {
       setPayerError('name');document.getElementById('gift-review-payer-name')?.focus();return;
     }
-    if (!/^01[3-9]\\d{8}$/.test(receiptPhone)) {
+    if (!/^01[3-9]\d{8}$/.test(receiptPhone)) {
       setPayerError('phone');document.getElementById('gift-review-phone')?.focus();return;
     }
     if (!isOptionalReceiptEmailValid(receiptEmail)) {
       setPayerError('email');document.getElementById('gift-review-email')?.focus();return;
     }
-    if (payerTin && !/^\\d{12,13}$/.test(payerTin)) {
+    if (payerTin && !/^\d{12,13}$/.test(payerTin)) {
       setPayerError('tin');document.getElementById('gift-review-payer-tin')?.focus();return;
     }
     setPayerError(null);setFormError('');setCheckoutOpen(true);
@@ -646,7 +646,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
                     type="tel" inputMode="numeric" autoComplete="tel-national"
                     placeholder="01XXXXXXXXX" maxLength={11} required
                     value={receiptPhone} aria-invalid={payerError==='phone'}
-                    onChange={e=>{setReceiptPhone(e.target.value.replace(/\\D/g,'').slice(0,11));setPayerError(null)}}/>
+                    onChange={e=>{setReceiptPhone(e.target.value.replace(/\D/g,'').slice(0,11));setPayerError(null)}}/>
                   {payerError==='phone'&&<p role="alert">{t('Enter a valid Bangladeshi mobile number.','সঠিক বাংলাদেশি মোবাইল নম্বর লিখুন।')}</p>}
                 </div>
                 <div>
@@ -674,7 +674,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
                     setPayerLookup(found?{tin:payerTin,name:bn?found.nameBn:found.nameEn}:null);}}
                   onClear={()=>{setPayerTin('');setPayerLookup(null);setPayerError(null)}}
                   omitNameField maxTinLength={13}
-                  canSearch={/^\\d{12,13}$/.test(payerTin)}
+                  canSearch={/^\d{12,13}$/.test(payerTin)}
                   tinLabel={t('Payer TIN (optional)','পরিশোধকারীর টিআইএন (ঐচ্ছিক)')}
                   searchLabel={t('Search payer TIN','পরিশোধকারীর টিআইএন খুঁজুন')}
                   tinPlaceholder={t('12- or 13-digit TIN','১২ বা ১৩ সংখ্যার টিআইএন')}
