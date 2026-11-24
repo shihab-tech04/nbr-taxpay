@@ -152,11 +152,11 @@ try{
       watchWrites=false;
       const result=gift.getByTestId('gift-tax-payment-result');
       await expect(result).toBeVisible();
-      await expect(result).toContainText(bn?'নমুনা পেমেন্ট রেকর্ড প্রস্তুত':'Sample payment record ready');
+      await expect(result).toContainText(bn?'পেমেন্ট রেকর্ড সংরক্ষিত':'Payment record saved');
       await expect(gift.getByTestId('gift-tax-settled-documents')).toHaveCount(0);
       if(financialWrites.length)throw new Error('Sample Gift Tax submitted financial API writes: '+
         financialWrites.join(', '));
-      await gift.getByRole('button',{name:bn?'নমুনা রসিদের বিবরণ':'Sample receipt details'}).click();
+      await gift.getByRole('button',{name:bn?'নমুনা চালানের বিবরণ':'Sample Challan Details'}).click();
       const receipt=gift.getByTestId('gift-tax-simulation-receipt');
       await expect(receipt).toBeVisible();
       await expect(receipt).toContainText('SIM-GIFT-');

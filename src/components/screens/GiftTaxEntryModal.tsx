@@ -40,7 +40,7 @@ const secondaryClass = 'gift-tax-action gift-tax-action--secondary';
  * path currently exists. Never turn this public form into a financial write.
  */
 export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBack?: () => void}) {
-  const {language} = useTaxState();
+  const {language, navigate} = useTaxState();
   const bn = language === 'bn';
   const t = (en: string, bd: string) => bn ? bd : en;
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -231,6 +231,13 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     setCheckoutOpen(false);
     setPaymentChannel(null);setPaymentMethod(null);setPaymentMethodGroup(null);setPaymentAcknowledged(false);
     setStep(3);
+  };
+  // Complete the EXISTING sample bank journey without suggesting Treasury settlement:
+  // this only advances a browser-local simulation using its unchanged SIM reference.
+  const continueSimulatedBankPayment = () => {
+    if (!paymentInput || paymentOutcome?.kind!=='SIMULATED_PENDING') return;
+    setPaymentOutcome({kind:'SIMULATED_SUCCESS',reference:paymentOutcome.reference,
+      method:'BANK_BRANCH',createdAt:new Date().toISOString()});
   };
   const proceedToApprovedChannel = () => {
     if (estimatedTax === 0) {void attemptSimulatedPayment();return;}
@@ -434,7 +441,7 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
     : step === 3 ? (checkoutOpen ? t('Payment channel','পেমেন্ট চ্যানেল')
       : t('Final Preview','চূড়ান্ত পর্যালোচনা')) : t('Gift Tax','দানকর')}
     ariaLabel={t('Gift Tax', 'দানকর')} service="gift"
-    className={'gift-tax-dialog taxpay-v5-locked' + (step >= 3 ? ' gift-tax-approved-stage' : '')}
+    className={'gift-tax-dialog taxpay-v5-locked' + (step >= 3 ? ' gift-tax-approved-stage' : '') + (step === 4 ? ' gift-tax-result-stage' : '')}
     progress={step === 4 || (step === 3 && checkoutOpen) ? undefined : {current: step, total: 3, label: t('Steps', 'ধাপ'),
       subtitle: t('Walk-in Payment', 'ওয়াক-ইন পেমেন্ট'),
       accessibilityLabel: t('Payment progress', 'পেমেন্টের অগ্রগতি'),
@@ -715,7 +722,9 @@ export function GiftTaxEntryModal({onClose, onBack}: {onClose: () => void; onBac
       data-testid="gift-tax-result-workspace">
       <GiftTaxPaymentResult language={language} input={paymentInput} outcome={paymentOutcome}
         onBack={()=>{setCheckoutOpen(false);setStep(3);}}
-        onRetry={()=>{setCheckoutOpen(true);setStep(3);setPaymentAcknowledged(false);}}/>
+        onRetry={()=>{setCheckoutOpen(true);setStep(3);setPaymentAcknowledged(false);}}
+        onContinueBank={continueSimulatedBankPayment}
+        onLogin={()=>{onClose();navigate('taxpayer_login');}}/>
     </div>}
   </TaxPayModal>
     {exitPromptOpen && <WalkInDiscardConfirmation language={language} onKeepEditing={() => setExitPromptOpen(false)} onDiscard={onClose} />}
