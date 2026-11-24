@@ -521,7 +521,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/travel-tax-2026-journeys.spec.ts
+        run: npx playwright test tests/e2e/travel-tax-2026-journeys.spec.ts tests/e2e/travel-tax-taxpayer-ui-parity.spec.ts
       - name: Verify Travel Tax lost-response replay
         env:
           VITE_SUPABASE_DISABLED: 'false'
