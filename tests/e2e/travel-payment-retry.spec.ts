@@ -120,7 +120,9 @@ test('Travel Tax resends the identical payment after a lost response ' +
   } else {
     await submit.click();
   }
-  await expect.poll(() => readbackCount).toBe(2);
+  // Refresh restoration may independently re-read the same SQL row; repeated
+  // GET verification is safe and must not be confused with extra payment POSTs.
+  await expect.poll(() => readbackCount).toBeGreaterThanOrEqual(2);
   await expect(modal.locator('.receipt-view__paper')).toBeVisible();
   const receipt = modal.getByTestId('travel-family-challan');
   await expect(receipt.locator('tbody tr')).toHaveCount(2);
