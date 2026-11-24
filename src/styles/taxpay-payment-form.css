@@ -738,3 +738,47 @@
   .payment-flow-embedded--receipt .walkin-result-benefits__actions { flex-direction: column; }
   .payment-flow-embedded--receipt .walkin-result-benefits__actions button { width: 100%; justify-content: center; }
 }
+
+
+/* Completed parallel walk-in result only: independent cards and no empty modal chrome.
+   Do not affect pending/failed payments, signed-in receipt actions or other services. */
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.walkin-result-compact) {
+  width: min(100%, 760px);
+  height: auto;
+  min-height: 0;
+  max-height: calc(100dvh - 32px);
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.walkin-result-compact) > .taxpay-modal__header {
+  padding: 8px 16px;
+  min-height: 60px;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.walkin-result-compact) > .taxpay-modal__body {
+  padding: 16px;
+  flex: 0 1 auto;
+}
+.taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.walkin-result-compact) > .taxpay-modal__footer {
+  display: none;
+}
+.payment-flow-embedded--receipt .walkin-result-compact {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+}
+.payment-flow-embedded--receipt .walkin-result-compact > .walkin-result-benefits {
+  border: 1px solid var(--citizen-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  min-width: 0;
+}
+.payment-flow-embedded--receipt .walkin-result-compact .payment-lifecycle__actions:empty { display: none; }
+.payment-flow-embedded--receipt .walkin-result-compact .walkin-result-challan { padding: 0 16px 12px; }
+.payment-flow-embedded--receipt .walkin-result-compact .walkin-result-benefits ul { margin-bottom: 8px; }
+.payment-flow-embedded--receipt .walkin-result-compact .walkin-result-benefits p { margin-top: 8px; }
+@media (max-width: 650px) {
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.walkin-result-compact) { max-height: 100dvh; }
+  .taxpay-citizen-shell .taxpay-modal.taxpay-v5-locked:has(.walkin-result-compact) > .taxpay-modal__body {
+    padding: 12px 12px max(12px, env(safe-area-inset-bottom));
+  }
+  .payment-flow-embedded--receipt .walkin-result-compact > .walkin-result-benefits { padding: 12px; }
+  .payment-flow-embedded--receipt .walkin-result-compact .walkin-result-challan { padding: 0 12px 12px; }
+}
