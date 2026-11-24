@@ -2362,6 +2362,15 @@
   flex: 0 1 auto;
   min-width: 0;
 }
+/* Desktop: prevent the portal's inline-flex actions from reserving an
+ * anonymous baseline line box that raises Save Draft above Continue. Mobile
+ * keeps the approved button positions and full-screen safe-area behavior. */
+@media (min-width: 651px) {
+  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"] .payment-flow-embedded__draft-actions {
+    display: flex;
+    align-items: center;
+  }
+}
 .payment-form-draft-controls__actions {
   display: inline-flex;
   align-items: center;

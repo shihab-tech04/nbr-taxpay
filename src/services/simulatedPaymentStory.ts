@@ -40,7 +40,7 @@ function storedChallanRemarks(details: unknown): string | undefined {
 }
 
 /** Verify the original Taxpayer SQL row, including exact printable remarks. */
-function sourceReadbackMatches(stored: StoredStoryPayment, paymentId: string,
+export function sourceReadbackMatches(stored: StoredStoryPayment, paymentId: string,
   scoped: StoryPaymentInput): boolean {
   const row = stored.data;
   if (stored.id !== paymentId || stored.status !== 'SIMULATED_SUCCESS' ||
@@ -199,12 +199,12 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
   const officeMirrorPending = response.status === 503 && body.error === 'OFFICE_SYNC_PENDING' &&
     body.retryable === true && typeof body.requestId === 'string' &&
     /^[0-9a-f-]{36}$/i.test(body.requestId);
-  const hasExplicitChallanRemarks = Object.prototype.hasOwnProperty.call(scoped.details,'challanRemarks') ||
-    Object.prototype.hasOwnProperty.call(scoped.details,'paymentRemarks');
+  // A mirrored HTTP success does not prove that the current payer can read back
+  // the exact Taxpayer SQL source record. Require one capability-scoped read
+  // for every accepted payment, including legacy requests without remarks.
+  // This is read-only and retains idempotency for safe retry after a timeout.
   let acknowledged: StoryPaymentAcknowledgement;
-  if (mirroredAcknowledgement && !hasExplicitChallanRemarks) {
-    acknowledged = { ...(body as StoryPaymentAcknowledgement), officeSyncStatus: 'SYNCED' };
-  } else if (mirroredAcknowledgement || storedWithoutOffice || officeMirrorPending) {
+  if (mirroredAcknowledgement || storedWithoutOffice || officeMirrorPending) {
     const paymentId = mirroredAcknowledgement || storedWithoutOffice ? body.id! : body.requestId!;
     // A successful Office mirror is not a substitute for reading the original
     // Taxpayer SQL parent. Every acknowledgement uses this session's existing
