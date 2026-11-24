@@ -16,10 +16,10 @@ test('missing authorized profile retains all 24 fields and a clear English empty
    'Every existing profile field needs an unavailable value; no fields may disappear');
  assert.match(output,/Verified e-TIN data is not connected to this account/);
  assert.match(output,/role="status"/);
- assert.match(output,/TIN and registration/);
- assert.match(output,/Tax office and jurisdiction/);
+ assert.match(output,/e-TIN and taxpayer registration details/);
+ assert.match(output,/TIN registration and jurisdiction/);
  assert.match(output,/Contact and addresses/);
- assert.match(output,/Certificate and account records/);
+ assert.match(output,/Certificate details/);
  assert.doesNotMatch(output,/\b(?:undefined|null|DEMO-TIN-\d{3})\b/);
 });
 
@@ -27,10 +27,10 @@ test('missing authorized profile retains identical 24 fields and Bengali empty s
  const output=render('bn',null);
  assert.equal(output.split('পাওয়া যায়নি').length-1,24);
  assert.match(output,/এই অ্যাকাউন্টের জন্য যাচাইকৃত ই-টিআইএন তথ্য/);
- assert.match(output,/টিআইএন ও নিবন্ধন/);
- assert.match(output,/কর অফিস ও অধিক্ষেত্র/);
+ assert.match(output,/ই-টিআইএন ও করদাতার নিবন্ধন তথ্য/);
+ assert.match(output,/টিআইএন নিবন্ধন ও কর অধিক্ষেত্র/);
  assert.match(output,/যোগাযোগ ও ঠিকানা/);
- assert.match(output,/সনদ ও অ্যাকাউন্টের তথ্য/);
+ assert.match(output,/সনদের তথ্য/);
 });
 
 test('sourced User1 retains its original full profile and masks personal identifiers',()=>{
