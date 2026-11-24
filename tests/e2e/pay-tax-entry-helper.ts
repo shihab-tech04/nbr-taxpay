@@ -67,3 +67,27 @@ export async function enterTaxPayService(dialog: Locator, serviceId: string, pay
   await expect(continueButton).toBeEnabled();
   await continueButton.click();
 }
+
+/** The approved account entry must use a visible control at its native viewport. */
+export async function openUnifiedSignedInPayment(page: Page, locale: 'en'|'bn' = 'en', route: 'landing'|'taxpayer_home' = 'landing'): Promise<Locator> {
+  await page.goto('/?action='+route+'&lang='+locale);
+  const viewport=page.viewportSize();
+  if(!viewport) throw new Error('Expected a configured viewport');
+  const bn=locale==='bn';
+  const paymentLabel=bn?'কর পরিশোধ':'Pay Tax';
+  if(viewport.width>900 && route==='taxpayer_home') {
+    await page.getByRole('button',{name:bn?'কর পরিশোধের মেনু':'Pay Tax menu',exact:true}).click();
+    await page.getByRole('menuitem',{name:paymentLabel,exact:true}).click();
+  } else if(viewport.width>900) {
+    await page.getByRole('button',{name:paymentLabel,exact:true}).filter({visible:true}).first().click();
+  } else {
+    await page.getByRole('button',{name:bn?'কর পরিশোধের ধরন নির্বাচন':'Pay — select payment type',exact:true}).click();
+    await page.getByRole('menu',{name:/Payment options|পরিশোধের ধরন/}).getByRole('menuitem',{name:paymentLabel,exact:true}).click();
+  }
+  expect(page.viewportSize()).toEqual(viewport);
+  const dialog=page.getByRole('dialog',{name:paymentLabel});
+  await dialog.getByRole('button',{name:/Start new Tax payment|নতুন কর পরিশোধ শুরু করুন/}).click();
+  await expect(dialog.getByTestId('unified-account-own')).toBeVisible();
+  await expect(dialog.locator('[data-payment-access], [data-payer-relationship]')).toHaveCount(0);
+  return dialog;
+}
