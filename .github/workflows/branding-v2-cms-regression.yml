@@ -11,6 +11,12 @@ on:
       - .github/workflows/branding-v2-cms-regression.yml
 permissions:
   contents: read
+
+# Replace only obsolete same-PR checks; Main and manual runs stay independent.
+concurrency:
+  group: taxpay-branding-v2-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   no-branding-websocket-storm:
     name: Dynamic CMS REST and 402 regression (isolated)
