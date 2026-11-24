@@ -347,6 +347,30 @@ begin
        has_function_privilege('authenticated','public.taxpay_demo_historical_correction_save(text,text,uuid,jsonb)','EXECUTE') then raise exception 'Historical service RPC public'; end if;
     raise notice 'PASS: User1 historical reference-only correction without invented receipt';
   end;
+  declare
+    c_id uuid:=gen_random_uuid(); cmd jsonb; ack jsonb; notice jsonb;
+  begin
+    cmd:=jsonb_build_object('schemaVersion','1.0.0','origin','OFFICE_SQL','sourceProject','v2','simulationOnly',true,
+      'commandType','OFFICE_CORRECTION_INITIATED','requestId',c_id,'messageId',c_id,'sourcePaymentId',v_payment_id,
+      'originalReference','SIM-'||key_id::text,'taxpayerTin','1010101010101','officerUid',gen_random_uuid(),
+      'officerRole','MAKER','reason','Office found a simulated clerical error','requestedOutcome','Review the tax assessment year',
+      'evidenceNote','Existing recorded payment is the evidence','occurredAt',now());
+    ack:=public.taxpay_demo_correction_office_initiation(cmd);
+    if ack->>'stored' is distinct from 'true' or ack->>'ownerLinked' is distinct from 'true'
+    or ack is distinct from public.taxpay_demo_correction_office_initiation(cmd) then raise exception 'Office initiation replay failed'; end if;
+    if not exists(select 1 from jsonb_array_elements(public.taxpay_demo_correction_list(first_hash,100,0)) r where r->>'id'=c_id::text and r->>'initiatedBy'='OFFICE')
+    or exists(select 1 from jsonb_array_elements(public.taxpay_demo_correction_list(other_hash,100,0)) r where r->>'id'=c_id::text) then raise exception 'Office case owner mismatch'; end if;
+    notice:=public.taxpay_demo_correction_notices(first_hash,100,0);
+    if not exists(select 1 from jsonb_array_elements(notice->'items') n where n->>'requestId'=c_id::text and n->>'code'='OFFICE_INITIATED' and n->>'isRead'='false') then raise exception 'Office initiation notice missing'; end if;
+    begin
+      perform public.taxpay_demo_correction_office_initiation(cmd||jsonb_build_object('taxpayerTin','9999999999999'));
+      raise exception 'WRONG_RECIPIENT_ACCEPTED';
+    exception when others then if sqlerrm not in ('OFFICE_INITIATION_RECIPIENT_MISMATCH','OFFICE_INITIATION_RECIPIENT_UNBOUND') then raise; end if; end;
+    ack:=public.taxpay_demo_correction_office_initiation(cmd||jsonb_build_object('sourcePaymentId',gen_random_uuid()));
+    if ack->>'sourceAbsent' is distinct from 'true' or ack->>'stored' is distinct from 'false' then raise exception 'Unknown parent claimed persisted'; end if;
+    if (select to_jsonb(p) from demo_payment.story_payments p where p.id=v_payment_id) is distinct from original_payment then raise exception 'Office initiation changed payment'; end if;
+    raise notice 'PASS: signed Office initiation, exact source owner, replay, notification and immutable payment';
+  end;
   raise notice 'PASS: correction persistence, retry, source immutability and cross-account denial';
   raise notice 'PASS: nonempty payment activity, capability-scoped reads/writes, cross-account isolation, rejected public session paths, idempotent retry and preserved Office/notice rows';
 end

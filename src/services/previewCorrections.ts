@@ -13,6 +13,7 @@ export type PreviewCorrectionRecord = {
   officeSyncState?:'PENDING'|'ACKNOWLEDGED';
   reviewState?:'PENDING_OFFICER'|'MAKER_ACKNOWLEDGED'|'REVIEWER_VERIFIED'|'APPROVER_CLOSED'|'REJECTED';
   reviewUpdatedAt?:string|null;reviewReason?:string|null;
+  initiatedBy?:'OFFICE'|'TAXPAYER';requestedOutcome?:string|null;evidenceNote?:string|null;
 };
 export function previewCorrectionStatus(record:Pick<PreviewCorrectionRecord,'officeSyncState'|'reviewState'>,language:'en'|'bn'){
   const bn=language==='bn';
@@ -106,7 +107,7 @@ export function usePreviewCorrectionRegister(profileId:string|null,enabled=true)
 
 export type CorrectionNotice={eventId:string;requestId:string;code:string;reference:string;createdAt:string;detail:string|null;isRead:boolean};
 export function correctionNoticeTitle(code:string,language:'en'|'bn'){
- const labels:Record<string,[string,string]>={SUBMITTED:['Correction request recorded','সংশোধনের আবেদন নথিভুক্ত'],OFFICE_RECEIVED:['Office received correction','অফিস সংশোধনের আবেদন পেয়েছে'],MAKER_ACKNOWLEDGED:['Maker acknowledged','অফিসার আবেদন গ্রহণ করেছেন'],REVIEWER_VERIFIED:['Reviewer verified','আবেদন পর্যালোচিত হয়েছে'],APPROVER_CLOSED:['Correction review closed','সংশোধনের আবেদন নিষ্পত্তি হয়েছে'],REJECTED:['Correction rejected','সংশোধনের আবেদন প্রত্যাখ্যাত']};
+ const labels:Record<string,[string,string]>={SUBMITTED:['Correction request recorded','সংশোধনের আবেদন নথিভুক্ত'],OFFICE_INITIATED:['Office initiated correction','অফিস সংশোধনের আবেদন শুরু করেছে'],OFFICE_RECEIVED:['Office received correction','অফিস সংশোধনের আবেদন পেয়েছে'],MAKER_ACKNOWLEDGED:['Maker acknowledged','অফিসার আবেদন গ্রহণ করেছেন'],REVIEWER_VERIFIED:['Reviewer verified','আবেদন পর্যালোচিত হয়েছে'],APPROVER_CLOSED:['Correction review closed','সংশোধনের আবেদন নিষ্পত্তি হয়েছে'],REJECTED:['Correction rejected','সংশোধনের আবেদন প্রত্যাখ্যাত']};
  return (labels[code]??[code,code])[language==='bn'?1:0];
 }
 async function noticePage(offset=0,limit=100){

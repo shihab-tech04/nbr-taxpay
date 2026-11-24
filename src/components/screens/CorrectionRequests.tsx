@@ -66,7 +66,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
     return()=>{active=false;};
   },[ownerKey,serverMode,historyRetry]);
   const localCorrections = corrections.filter(c=>visibleReceipts.some(r=>r.challanNo===c.challanNo && r.payerTin===c.taxpayerTin));
-  const visibleCorrections:(CorrectionRequest&{simulationRecorded?:boolean;officeSyncState?:PreviewCorrectionRecord['officeSyncState'];reviewState?:PreviewCorrectionRecord['reviewState']})[]=serverMode
+  const visibleCorrections:(CorrectionRequest&{simulationRecorded?:boolean;officeSyncState?:PreviewCorrectionRecord['officeSyncState'];reviewState?:PreviewCorrectionRecord['reviewState'];initiatedBy?:PreviewCorrectionRecord['initiatedBy'];requestedOutcome?:string|null;evidenceNote?:string|null})[]=serverMode
     ?(historyOwner===ownerKey?serverRecords:[]).map(row=>({
       id:row.id,ticketNo:'SIM-CORR-'+row.id,challanNo:row.originalReference,taxpayerTin:taxpayerProfile.tin,
       taxpayerName:taxpayerProfile.nameEn,requestedBy:taxpayerProfile.nameEn,
@@ -74,7 +74,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
       proposedAssessmentYear:row.proposedAY,currentCircle:row.currentCircle,proposedCircle:row.proposedCircle,
       currentHeadCode:row.currentHeadCode,proposedHeadCode:row.proposedHeadCode,reason:row.reason,
       workflowStage:'MAKER_SUBMITTED',simulationRecorded:true,officeSyncState:row.officeSyncState,reviewState:row.reviewState,
-      approverRemarks:row.reviewReason??undefined,
+      approverRemarks:row.reviewReason??undefined,initiatedBy:row.initiatedBy,requestedOutcome:row.requestedOutcome,evidenceNote:row.evidenceNote,
       ...(row.allocationIndex!==null?{targetAllocationIndex:row.allocationIndex}:{}),
       ...(row.allocationId?{targetAllocationId:row.allocationId}:{})
     }))
@@ -411,7 +411,10 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
                 <summary className="min-h-11 cursor-pointer font-semibold text-taxpay-primary">{tr('View request','অনুরোধ দেখুন')}</summary>
                 <div className="mt-2 space-y-2 text-sm text-taxpay-text">
                   <p className="break-words">{tr('Payment head','কর খাত')}: {c.currentHeadCode||'—'} → {c.proposedHeadCode||'—'}</p>
+                  {c.initiatedBy==='OFFICE'&&<p className="font-semibold">{tr('Initiated by Office','অফিস থেকে শুরু হয়েছে')}</p>}
                   <p className="break-words">{tr('Reason','কারণ')}: {c.reason}</p>
+                  {c.requestedOutcome&&<p className="break-words">{tr('Requested outcome','প্রত্যাশিত ফলাফল')}: {c.requestedOutcome}</p>}
+                  {c.evidenceNote&&<p className="break-words">{tr('Evidence note','প্রমাণের বিবরণ')}: {c.evidenceNote}</p>}
                   {c.approverRemarks&&<p className="break-words">{tr('Review note','পর্যালোচনার মন্তব্য')}: {c.approverRemarks}</p>}
                 </div>
               </details>}
@@ -426,7 +429,10 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
               <p className="taxpay-mobile-table-card__meta">{tr('Circle','সার্কেল')}: {c.currentCircle} → {c.proposedCircle}</p>
               <details className="mt-2 rounded-lg border border-taxpay-border p-2">
                 <summary className="min-h-11 cursor-pointer font-semibold text-taxpay-primary">{tr('View request','অনুরোধ দেখুন')}</summary>
+                {c.initiatedBy==='OFFICE'&&<p className="mt-2 text-sm font-semibold">{tr('Initiated by Office','অফিস থেকে শুরু হয়েছে')}</p>}
                 <p className="mt-2 break-words text-sm">{c.reason}</p>
+                {c.requestedOutcome&&<p className="break-words text-sm">{tr('Requested outcome','প্রত্যাশিত ফলাফল')}: {c.requestedOutcome}</p>}
+                {c.evidenceNote&&<p className="break-words text-sm">{tr('Evidence note','প্রমাণের বিবরণ')}: {c.evidenceNote}</p>}
                 {c.approverRemarks&&<p className="mt-2 break-words text-sm">{tr('Review note','পর্যালোচনার মন্তব্য')}: {c.approverRemarks}</p>}
               </details>
             </div>}/>}

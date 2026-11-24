@@ -135,8 +135,10 @@ Deno.serve(async(req)=>{
    if(!secret||!await crypto.subtle.verify('HMAC',secret,Uint8Array.from(input.signature.match(/../g)!,s=>parseInt(s,16)),encoder.encode(input.commandText)))
      return respond({error:'UNAUTHORIZED_CORRECTION_COMMAND'},401);
    const command=JSON.parse(input.commandText);
-   const {data,error}=await admin.rpc('taxpay_demo_correction_office_decision',{p_command:command});
+   const initiation=command?.commandType==='OFFICE_CORRECTION_INITIATED';
+   const {data,error}=await admin.rpc(initiation?'taxpay_demo_correction_office_initiation':'taxpay_demo_correction_office_decision',{p_command:command});
    if(error)return respond({error:'CORRECTION_DECISION_NOT_ACCEPTED'},409);
+   if(initiation&&data?.stored===true)try{await deliverCorrections(url,admin,command.requestId);}catch{/* existing durable reconciler retries */}
    return respond(data);
   }
   if(path==="/corrections/notices"&&(req.method==="GET"||req.method==="POST")){
