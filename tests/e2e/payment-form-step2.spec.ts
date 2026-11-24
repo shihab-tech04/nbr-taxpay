@@ -1,10 +1,12 @@
 import { fillTravelDetails } from './travel-tax-test-helper';
+import {mockSubmittedPaymentSqlReadback} from './mock-submitted-payment-readback';
 import { expect, test } from '@playwright/test';
 import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
 
 // These are disconnected layout checks: never write synthetic UI fixtures to
 // the hosted payment database from a browser regression.
 async function mockPayment(page: import('@playwright/test').Page, expectedMinor: number | number[]) {
+  await mockSubmittedPaymentSqlReadback(page);
   const expected = Array.isArray(expectedMinor) ? expectedMinor : [expectedMinor];
   const received: number[] = [];
   await page.route('**/functions/v1/demo-story1-taxpay/payments', async route => {
