@@ -158,6 +158,8 @@ export interface ChallanReceipt {
   items: PaymentLineItem[];
   /** Reconciled SQL allocations for combined payments; absent when source rows do not reconcile. */
   allocationItems?: ReceiptAllocationItem[];
+  /** Verified v5 allocation contract provenance; absent for legacy receipts. */
+  allocationContractVersion?: 5;
   /** Independently verified SQL head rows for Pay Again when a historical receipt
    * intentionally omits duplicate display items. Not displayed as another receipt. */
   reusableAccountingLines?: PaymentLineItem[];

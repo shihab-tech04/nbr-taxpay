@@ -58,9 +58,11 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
   // Only the new Home "All Tax Payments" entry uses the consolidated three-step flow.
   // Existing drafts, Pay Again, Travel Tax and legacy payment routes retain their stages.
-  const unifiedEntry = unifiedEntryRequested && !initialService && !initialDraft && !initialReuse && !parallelEntry;
+  const genericAccountEntry = Boolean(unifiedEntryRequested && (verifiedUser||previewAccount)&&!initialService&&!initialDraft&&!initialReuse&&!paymentBeneficiaryPrefill&&!onPublicOtherTaxContinue);
+  const publicUnifiedEntry = unifiedEntryRequested && !initialService && !initialDraft && !initialReuse && !parallelEntry;
+  const initialUnifiedAccount = initialDraft?.form_payload.unifiedFlowVersion===5 || initialReuse?.formPayload.unifiedFlowVersion===5;
   const [view, setView] = useState<'entry' | 'payer' | 'login' | 'payment'>(
-    initialDraft || initialReuse || directTravelEntry || parallelEntry ? 'payment' : unifiedEntry ? 'entry' : 'payer');
+    initialDraft || initialReuse || directTravelEntry || parallelEntry ? 'payment' : publicUnifiedEntry && !genericAccountEntry ? 'entry' : 'payer');
   const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
   const [travelCheckoutOpen, setTravelCheckoutOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -71,6 +73,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const alreadySignedIn = Boolean(verifiedUser || previewAccount);
   const selectedAccess = alreadySignedIn ? 'account' : (entryAccess ?? (paymentBeneficiaryPrefill ? 'guest' : null));
   const [draftToResume, setDraftToResume] = useState<PaymentFormDraft | null>(initialDraft);
+  const unifiedEntry = draftToResume ? draftToResume.service==='OTHER_TAX_PAYMENT' && draftToResume.form_payload.unifiedFlowVersion===5 : initialReuse ? initialReuse.service==='OTHER_TAX_PAYMENT'&&initialUnifiedAccount : publicUnifiedEntry||genericAccountEntry||initialUnifiedAccount;
   // All signed-out Walk-in payment journeys share the ONE two-action exit;
   // account-owned payments retain the separate Save Draft policy.
   const isWalkInPayment = view === 'payment' && !useAccount && !alreadySignedIn;
@@ -117,7 +120,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const stepHeadingRef = useRef<HTMLParagraphElement>(null);
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
-  const close = () => { if (onDismiss) onDismiss(); else setPaymentServiceChoiceOpen(false); };
+  const manageAfterClose = useRef(false);
+  const close = () => { if (onDismiss) onDismiss(); else setPaymentServiceChoiceOpen(false); if(manageAfterClose.current){manageAfterClose.current=false;navigate('beneficiaries');} };
   const draftExitActionRef = useRef<PaymentDraftExitAction | null>(null);
   const registerDraftExit = useCallback((action: PaymentDraftExitAction | null) => {
     draftExitActionRef.current = action;
@@ -131,7 +135,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   }, [exitPromptOpen]);
   const requestClose = () => {
     if (exitSaving) return;
-    if (exitPromptOpen) { setExitPromptOpen(false); setExitError(''); return; }
+    if (exitPromptOpen) { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=false; return; }
     if (view === 'payment' && stage !== 4 && (isWalkInPayment || draftExitActionRef.current)) {
       setExitPromptOpen(true);
       setExitError('');
@@ -188,10 +192,18 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     // Initialize the existing Other Tax composer so the first step always
     // mounts and preserves the approved taxpayer and checkout contracts.
     setTopLevel('OTHER_TAX');
-    setPayerForSelf(account);
+    setPayerForSelf(account ? null : false);
     setEntryAccess(account ? 'account' : 'guest');
+    if (account && publicUnifiedEntry && (view === 'entry' || view === 'login')) {
+      // Explicit sign-in enters the same owner-scoped start/resume gate.
+      setDraftEntryCompleted(false); setDraftEntryMode('choice');
+      setDraftEntryBlocking(true); setView('payer'); return;
+    }
     beginPayment(account);
   };
+  useEffect(()=>{
+    if(genericAccountEntry && view==='payer' && draftEntryMode==='new' && !draftEntryBlocking) beginUnifiedPayment(true);
+  },[genericAccountEntry,view,draftEntryMode,draftEntryBlocking]);
   const openLogin = () => { setLoginReady(false); setView('login'); };
   const advanceToPayment = () => {
     if (payerForSelf === null || !selected || (accountLoading && !previewAccount)) return;
@@ -201,9 +213,11 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     openLogin();
   };
   const returnToService = () => {
+    if(unifiedEntry && useAccount && stage===1){requestClose();return;}
     setDraftToResume(null);
     setStage(1);
-    setView(unifiedEntry ? 'entry' : 'payer');
+    if(genericAccountEntry){setDraftEntryCompleted(false);setDraftEntryMode('choice');setEnteredFromDraftChoice(false);}
+    setView(unifiedEntry && !genericAccountEntry ? 'entry' : 'payer');
   };
   const reportStage = useCallback((next: 1 | 2 | 3 | 4) => setStage(next), []);
   useEffect(() => {
@@ -351,7 +365,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
                 onClose={requestClose} onValidityChange={setLoginReady} onSuccess={() => beginUnifiedPayment(true)} />
         ) : view === 'payer' ? <PaymentDraftEntryGate
            actor={draftActor} ownerKey={draftOwnerKey}
-           mode={draftEntryMode} onModeChange={changeDraftEntryMode}
+           mode={draftEntryMode} onModeChange={changeDraftEntryMode} alwaysShowStart={genericAccountEntry}
            enabled={Boolean(!draftEntryCompleted && draftActor && !initialService && !paymentBeneficiaryPrefill)}
            language={language}
            serviceLabel={id => {
@@ -440,13 +454,14 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
             initialBeneficiary={payerForSelf === false || parallelEntry ? paymentBeneficiaryPrefill ?? undefined : undefined} withAccount={useAccount}
             isWithholdingMode={effectiveSelected === 'SOURCE_TAX_DEPOSIT'}
             onBackToService={returnToService} onStageChange={reportStage}
+            onManageBeneficiaries={()=>{manageAfterClose.current=true;requestClose();}}
              onResultViewChange={setResultView} onCheckoutChange={setCheckoutOpen}
             registerHeaderBack={registerUnifiedHeaderBack} />
         ) : null}
       </section>}
       {exitPromptOpen && (isWalkInPayment ? (
         <WalkInDiscardConfirmation language={language}
-          onKeepEditing={() => { setExitPromptOpen(false); setExitError(''); }}
+          onKeepEditing={() => { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=false; }}
           onDiscard={close} />
       ) : (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 p-3 sm:p-6"
@@ -459,7 +474,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
               if (event.key === 'Escape') {
                 event.preventDefault();
                 event.stopPropagation();
-                if (!exitSaving) { setExitPromptOpen(false); setExitError(''); }
+                if (!exitSaving) { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=false; }
               }
               if (event.key === 'Tab') {
                 const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
@@ -498,7 +513,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
                 data-testid="walkin-payment-exit-cta-row">
                 <button ref={exitFirstButtonRef} type="button"
                   className="min-h-11 w-full rounded-lg bg-taxpay-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-taxpay-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary"
-                  onClick={() => { setExitPromptOpen(false); setExitError(''); }}>
+                  onClick={() => { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=false; }}>
                   <span className="whitespace-nowrap">{tr('Keep editing', 'সম্পাদনা চালিয়ে যান')}</span>
                 </button>
                 <button type="button"
@@ -519,7 +534,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
               </button>
               <button type="button" disabled={exitSaving}
                 className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-4 py-2.5 text-sm font-semibold text-taxpay-dark transition-colors hover:bg-taxpay-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
-                onClick={() => { setExitPromptOpen(false); setExitError(''); }}>
+                onClick={() => { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=false; }}>
                 {tr('Keep editing', 'সম্পাদনা চালিয়ে যান')}
               </button>
             </div>

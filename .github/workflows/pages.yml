@@ -61,7 +61,7 @@ jobs:
           persist-credentials: false
       - name: Check verifier regression cases
         run: |
-          node --test scripts/ci/verified-merge-release.test.mjs scripts/ci/hybrid-cutover-gate.test.mjs scripts/ci/sohojkor-v2-cutover-gate.test.mjs
+          node --test scripts/ci/verified-merge-release.test.mjs scripts/ci/hybrid-cutover-gate.test.mjs scripts/ci/sohojkor-v2-cutover-gate.test.mjs scripts/ci/main-sql-release-gate.test.mjs
       - name: Confirm exact-source PR acceptance and review artifact
         id: probe
         env:
@@ -527,7 +527,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/travel-tax-2026-journeys.spec.ts
+        run: npx playwright test tests/e2e/travel-tax-2026-journeys.spec.ts tests/e2e/travel-tax-taxpayer-ui-parity.spec.ts
       - name: Verify Travel Tax lost-response replay
         env:
           VITE_SUPABASE_DISABLED: 'false'
@@ -872,10 +872,27 @@ jobs:
           esac
 
 
+  main-sql-gate:
+    name: Exact Main SQL and Office release acceptance
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 42
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Require successful exact Main SQL and Office workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/ci/main-sql-release-gate.mjs
+
   deploy:
     name: Publish verified static build
-    if: always() && needs.verification-gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-    needs: verification-gate
+    if: always() && needs.verification-gate.result == 'success' && needs.main-sql-gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    needs: [verification-gate, main-sql-gate]
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
@@ -884,6 +901,7 @@ jobs:
       contents: read
       pages: write
       id-token: write
+      actions: read
     steps:
       - name: Check out exact Main release for hosted V2 verification
         uses: actions/checkout@v7
@@ -911,6 +929,10 @@ jobs:
         env:
           V2_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_svqqJLfKtBQNuUqCqOZSqQ_r3TDoYCk'
         run: node scripts/ci/v2-public-read-preflight.mjs
+      - name: Reconfirm exact Main SQL and Office acceptance immediately before publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/ci/main-sql-release-gate.mjs
       - name: Deploy compiled application
         id: deployment
         uses: actions/deploy-pages@v5.0.1

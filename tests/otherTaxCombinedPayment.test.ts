@@ -1,3 +1,4 @@
+import {reuseRecordedPayment} from '../src/services/paymentReuse';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -397,6 +398,10 @@ test('parallel v5 mixed Return and Other Tax keeps one reconciled parent and unc
    amountMinor:5000,status:'SIMULATED_SUCCESS',createdAt:'2026-11-18T12:00:00Z',details:v5.payload.details});
  assert.deepEqual(confirmed.allocationItems?.map(a=>a.allocationId),['one','two']);
  assert.equal(confirmed.totalAmount,50);
+ const copy=reuseRecordedPayment([confirmed],'owner-v5',confirmed.payerTin,confirmed.paymentTransactionId!);
+ assert.equal(copy.formPayload.unifiedFlowVersion,5);
+ assert.deepEqual((copy.formPayload.otherTaxLines as Array<{headId:number}>).map(line=>line.headId),[125,145]);
+ assert.throws(()=>reuseRecordedPayment([{...confirmed,allocationContractVersion:undefined}],'owner-v5',confirmed.payerTin,confirmed.paymentTransactionId!),/Tax with Return/);
  const tampered=structuredClone(v5);
  (tampered.payload.details.allocations as Array<Record<string,unknown>>)[0].headId=145;
  assert.throws(()=>saveCombinedOtherTaxRequest(tampered,'READY',store()),/INVALID_COMBINED_RECOVERY/);
