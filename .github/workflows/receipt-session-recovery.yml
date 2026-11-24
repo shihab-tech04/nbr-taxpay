@@ -27,6 +27,11 @@ on:
 permissions:
   contents: read
 
+# Replace only obsolete same-PR checks; Main and manual runs stay independent.
+concurrency:
+  group: taxpay-receipt-session-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   recover-session-receipt:
     name: Session-owned receipt readback and privacy
