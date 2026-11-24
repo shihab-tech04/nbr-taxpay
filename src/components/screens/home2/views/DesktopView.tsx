@@ -293,10 +293,10 @@ export function DesktopView({ c, onToggleLang, onAction, onSearch, signedIn }: V
               title={f.drafts.title}
               body={f.drafts.body}
               onClick={open('drafts')}
-              tone="bg-[#141b2d] text-white"
-              iconTone="bg-white/10 text-white"
-              bodyTone="text-white/60"
-              arrowTone="text-white/40"
+              tone="bg-[#f0dfe3] text-[#141b2d] ring-1 ring-[#e6cdd4]"
+              iconTone="bg-white text-[#98566b] shadow-sm"
+              bodyTone="text-[#704e5b]"
+              arrowTone="text-[#98566b]"
             />
             <FeatureTile
               row

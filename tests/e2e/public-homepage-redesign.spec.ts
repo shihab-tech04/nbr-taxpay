@@ -328,3 +328,14 @@ test('Imported Home 2 retains source typography and never clips desktop hero or 
     }
   }
 });
+
+
+test('Home 2 Saved Drafts uses the approved soft rose palette on desktop and mobile',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.goto('/?action=home-2&lang=en');
+  const tile=page.getByTestId('home2-root').getByRole('button').filter({has:page.getByRole('heading',{name:'Saved Drafts',exact:true})});
+  await expect(tile).toBeVisible();
+  await expect(tile).toHaveCSS('background-color','rgb(240, 223, 227)');
+  await expect(tile).toHaveCSS('color','rgb(20, 27, 45)');
+  await expect(tile.locator('p')).toHaveCSS('color','rgb(112, 78, 91)');
+});
