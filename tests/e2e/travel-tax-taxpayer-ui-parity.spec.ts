@@ -71,8 +71,8 @@ test('Travel Tax sample result uses the shared compact walk-in receipt and accou
   await expect(modal.getByTestId('travel-family-challan')).toBeVisible({ timeout: 12000 });
   await expect(modal.locator('.payment-flow-embedded--receipt')).toBeVisible();
   await expect(modal.locator('.receipt-view--walkin')).toBeVisible();
-  await expect(modal.locator('.walkin-result-benefits')).toBeVisible();
-  await expect(modal.locator('.walkin-result-benefits__actions button')).toHaveCount(2);
+  await expect(modal.locator('.walkin-postpayment-login')).toBeVisible();
+  await expect(modal.locator('.walkin-postpayment-login__actions button')).toHaveCount(2);
   await expect(modal.getByRole('button', { name: 'Download' })).toBeVisible();
   await expect(modal.getByRole('button', { name: 'Print receipt' })).toBeVisible();
   await expect(modal.getByTestId('travel-family-challan')).toContainText(
