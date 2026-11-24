@@ -514,7 +514,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setWalkInPayerTin(normalizeRestoredWalkInPayerTin(stringField('walkInPayerTin')));
     setWalkInPayerLookup(null); setWalkInPayerConfirmed(false); setWalkInPayerSearchedTin('');
     setOtherTaxpayerName(stringField('otherTaxpayerName')); setPhone(stringField('phone'));
-    setReceiptEmail(stringField('receiptEmail')); setAssessmentYear(stringField('assessmentYear') || (initialReuse ? '' : '2026-27'));
+    setReceiptEmail(stringField('receiptEmail')); setAssessmentYear(stringField('assessmentYear') || (initialReuse || restoredSourcePaymentId ? '' : '2026-27'));
     setNoticeReference(stringField('noticeReference'));
     setPaymentRemarks(stringField('paymentRemarks'));
     setIncomeTaxType(saved.incomeTaxType === 'COMPANY' || saved.incomeTaxType === 'NON_COMPANY'
@@ -1186,8 +1186,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       setStep(3);
       return;
     }
-    if (initialReuse && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) {
-      setValidationError(language === 'bn' ? 'আবার পেমেন্টের আগে করবর্ষ নির্বাচন করুন।' : 'Select an assessment year before paying again.', 'headId');
+    if (sourcePaymentId && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) {
+      setValidationError(language === 'bn' ? 'আবার পেমেন্টের আগে করবর্ষ নির্বাচন করুন।' : 'Select an assessment year before paying again.', 'assessmentYear');
       return;
     }
     if (!isWithholdingMode && !incomeTaxType) {
@@ -1424,7 +1424,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     if (unifiedFlow && !validateFinalPayerDetails()) { setUnifiedCheckout(false); onCheckoutChange?.(false); return; }
     if (blockInvalidReturn()) { setUnifiedCheckout(false); onCheckoutChange?.(false); setStep(exclusiveReturnIssue === 'year' ? 2 : 1); return; }
     if (batchRecoveryError || isProcessing || !acknowledged || !paymentChannel || !paymentMethod ||
-      !(otherBatch ? batchValid : amountsValid) || (initialReuse && !otherBatch && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) ||
+      !(otherBatch ? batchValid : amountsValid) || (sourcePaymentId && !otherBatch && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) ||
       !storyAmountSupported || storyAmountMinor === null) return;
     pendingMirrorRetryCount.current = 0;
     pendingConfirmationRetryable.current = false;
@@ -1624,7 +1624,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const openUnifiedCheckout = () => {
     if (!unifiedFlow || batchRecoveryError || isProcessing || !storyAmountSupported ||
       (otherBatch && !batchValid) ||
-      (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))) return;
+      (Boolean(sourcePaymentId && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear))) return;
     if (!validateFinalPayerDetails() || blockInvalidReturn()) return;
     clearValidationError();
     setUnifiedCheckout(true);
@@ -2680,7 +2680,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
                   setAssessmentYear(event.target.value);
                   if (isFieldInvalid('assessmentYear')) clearValidationError();
                   // A User1 amount belongs to its assessment year, not every year.
-                  if (suggestionUserId === 'user1') setAmountInputs({});
+                  if (suggestionUserId === 'user1' && !sourcePaymentId) setAmountInputs({});
                 }} className="min-h-11 w-full px-3 py-2 rounded border border-slate-300">
                   <option value="" disabled>{language==='bn'?'করবর্ষ নির্বাচন করুন':'Select assessment year'}</option>
                   {[...RETURN_YEARS].reverse().map(year => <option value={year} key={year}>{year}</option>)}
@@ -2816,7 +2816,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
             </aside>}
             {!embedded && <div className="payment-review__standalone-actions">
               <button type="button" className="payment-review__back" onClick={() => setStep(2)}><ArrowLeft size={17} />{commonCopy.btnBack}</button>
-              <button type="button" className="payment-review__pay" onClick={unifiedFlow ? openUnifiedCheckout : handleExecutePayment} disabled={batchRecoveryError || isProcessing || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) || (!unifiedFlow && (!paymentChannel || !paymentMethod || !acknowledged))}>{paymentChannel === 'OTC'
+              <button type="button" className="payment-review__pay" onClick={unifiedFlow ? openUnifiedCheckout : handleExecutePayment} disabled={batchRecoveryError || isProcessing || !storyAmountSupported || (otherBatch && !batchValid) || (Boolean(sourcePaymentId && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) || (!unifiedFlow && (!paymentChannel || !paymentMethod || !acknowledged))}>{paymentChannel === 'OTC'
                 ? (language === 'bn' ? 'পেমেন্ট-স্লিপ নিন' : 'Get payment slip')
                 : unifiedFlow
                   ? (language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment')
@@ -2891,7 +2891,7 @@ allowOneTimeFallback={Boolean(paymentOwnerId)}
             <button type="button" className="tax-service-choice__continue"
               onClick={unifiedFlow && !unifiedCheckout ? openUnifiedCheckout : handleExecutePayment}
               disabled={batchRecoveryError || isProcessing || !storyAmountSupported || (otherBatch && !batchValid) ||
-                (Boolean(initialReuse && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) ||
+                (Boolean(sourcePaymentId && !otherBatch) && !OTHER_TAX_YEARS.some(year => year === assessmentYear)) ||
                 ((!unifiedFlow || unifiedCheckout) && (!paymentChannel || !paymentMethod || !acknowledged))}
               aria-busy={isProcessing}>
               {unifiedFlow && !unifiedCheckout
