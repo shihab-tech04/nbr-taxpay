@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import {UiButton,UiSelect} from '../ui/Controls';
 import {
   Send,
   CheckCircle2
@@ -38,63 +39,106 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
   const visibleReceipts=[...new Map([
     ...taxpayerPreviewReceipts(receipts,taxpayerProfile.tin,userRole,demoUser,Boolean(authenticatedUser)),
     ...recordedReceipts,...ownedReceipts
-  ].map(r=>[r.paymentTransactionId||r.challanNo,r])).values()];
+  ].filter(r=>r.isSimulatedDemo===true && r.payerTin===taxpayerProfile.tin).map(r=>[r.paymentTransactionId||r.challanNo,r])).values()];
   const visibleCorrections = corrections.filter(c=>visibleReceipts.some(r=>r.challanNo===c.challanNo && r.payerTin===c.taxpayerTin));
 
   const routeReference=typeof routeParams?.originalReference==='string'
     ?routeParams.originalReference.slice(0,80):'';
   const [challanNo, setChallanNo] = useState(preferredReference||routeReference);
-  const selectedReceipt = visibleReceipts.find(r=>r.challanNo===challanNo) ??
+  const selectedReceipt = visibleReceipts.find(r=>r.challanNo===challanNo || r.paymentTransactionId===challanNo) ??
     (!challanNo?visibleReceipts[0]:undefined);
   const selectedChallanNo = selectedReceipt?.challanNo ?? '';
-  const currentAY = selectedReceipt?.assessmentYear ?? '';
-  const [proposedAY, setProposedAY] = useState('2025-2026');
+  const allocations=selectedReceipt?.allocationItems??[];
+  const [allocationIndex,setAllocationIndex]=useState('');
+  const selectedIndex=allocations.length===1?0:allocationIndex===''?-1:Number(allocationIndex);
+  const selectedAllocation=allocations[selectedIndex];
+  const requiresAllocation=allocations.length>1;
+  const currentAY = selectedAllocation?.assessmentYear ?? (requiresAllocation?'':selectedReceipt?.assessmentYear??'');
+  const [proposedAY, setProposedAY] = useState('');
   const currentCircle = selectedReceipt?.taxCircle ?? '';
-  const [proposedCircle, setProposedCircle] = useState(taxpayerProfile.taxCircle);
-  const currentHeadCode = selectedReceipt?.items[0]?.economicCode ?? '';
+  const [proposedCircle, setProposedCircle] = useState('');
+  const currentHeadCode = selectedAllocation?.economicCode ?? (requiresAllocation?'':selectedReceipt?.items[0]?.economicCode??'');
   const [proposedHeadCode, setProposedHeadCode] = useState('');
   const proposedHead = proposedHeadCode || currentHeadCode;
+  const effectiveAY=proposedAY||currentAY;
+  const effectiveCircle=proposedCircle.trim()||currentCircle;
+  const [busy,setBusy]=useState(false);
+  const submitLock=useRef(false);
   const [reason, setReason] = useState('');
   const [submittedTicket, setSubmittedTicket] = useState<string | null>(null);
   const [caseSearch,setCaseSearch]=useState('');
   const [error, setError] = useState('');
+  useEffect(()=>{
+    setAllocationIndex('');setProposedAY('');setProposedCircle('');setProposedHeadCode('');
+    setReason('');setError('');setSubmittedTicket(null);
+  },[selectedChallanNo,previewAccount?.id]);
+  const normalizeYear=(year:string)=>year.trim().replace(/^(\d{4})-(\d{2})$/,(_,start:string,end:string)=>start+'-'+start.slice(0,2)+end);
 
   const caseNeedle=caseSearch.trim().toLocaleLowerCase();
   const filteredCases=visibleCorrections.filter(c=>!caseNeedle || [
     c.ticketNo,c.challanNo,c.workflowStage,c.reason,c.currentAssessmentYear,c.proposedAssessmentYear
   ].some(value=>String(value??'').toLocaleLowerCase().includes(caseNeedle)));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedChallanNo || !visibleReceipts.some(r=>r.challanNo===selectedChallanNo) || !reason.trim()) {
-      setError('Select a payment reference and provide an explanation.');
-      return;
+    if(submitLock.current)return;
+    setSubmittedTicket(null);
+    if (!selectedReceipt || !selectedChallanNo) {
+      setError(tr('Select a payment reference.','একটি পেমেন্ট রেফারেন্স নির্বাচন করুন।'));return;
     }
-    if (currentAY === proposedAY && currentCircle === proposedCircle && currentHeadCode === proposedHead) {
-      setError('Choose at least one proposed change to the year, circle or payment head.');
-      return;
+    if(requiresAllocation && !selectedAllocation){
+      setError(tr('Select the exact payment allocation to correct.','সংশোধনের জন্য নির্দিষ্ট পরিশোধের বরাদ্দ নির্বাচন করুন।'));return;
     }
-    setError('');
-
-    const ticketNo = addCorrectionRequest({
-      challanNo: selectedChallanNo,
-      taxpayerTin: taxpayerProfile.tin,
-      taxpayerName: taxpayerProfile.nameEn,
-      requestedBy: `${taxpayerProfile.nameEn} (Self)`,
-      requestDate: new Date().toISOString().split('T')[0],
-      currentAssessmentYear: currentAY,
-      proposedAssessmentYear: proposedAY,
-      currentCircle,
-      proposedCircle,
-      currentHeadCode,
-      proposedHeadCode: proposedHead,
-      reason,
-      workflowStage: 'MAKER_SUBMITTED',
-      makerRemarks: 'Local sample request only. No official petition or Revenue Officer workflow initiated.'
-    });
-
-    setSubmittedTicket(ticketNo);
-    setReason('');
+    if(reason.trim().length<10){
+      setError(tr('Explain the correction in at least 10 characters.','সংশোধনের কারণ অন্তত ১০ অক্ষরে লিখুন।'));return;
+    }
+    if (normalizeYear(currentAY)===normalizeYear(effectiveAY) && currentCircle===effectiveCircle && currentHeadCode===proposedHead) {
+      setError(tr('Choose at least one different year, circle or payment head.','অন্তত একটি ভিন্ন করবর্ষ, সার্কেল বা কর খাত নির্বাচন করুন।'));return;
+    }
+    submitLock.current=true;setBusy(true);setError('');
+    try{
+      let verifiedPreviewReceipt:ChallanReceipt|undefined;
+      if(previewAccount){
+        const session=activePreviewSession();
+        if(!session||session.profileId!==previewAccount.id)throw Error('Session expired');
+        // Recheck against the actual capability-scoped payment source rather
+        // than authorizing a request from a route parameter or a browser fixture.
+        const payment=(await getDetailedStorySessionPayments()).find(p=>p.id===selectedReceipt.paymentTransactionId);
+        const currentSession=activePreviewSession();
+        if(!payment||currentSession?.profileId!==session.profileId||currentSession.capability!==session.capability)
+          throw Error('Payment or session changed');
+        verifiedPreviewReceipt=makeConfirmedReceipt(payment);
+        if(verifiedPreviewReceipt.challanNo!==selectedChallanNo||verifiedPreviewReceipt.payerTin!==taxpayerProfile.tin)
+          throw Error('Payment ownership changed');
+        if(selectedAllocation){
+          const confirmed=verifiedPreviewReceipt.allocationItems?.[selectedIndex];
+          if(!confirmed||confirmed.allocationId!==selectedAllocation.allocationId||confirmed.taxpayerTin!==selectedAllocation.taxpayerTin||
+            confirmed.assessmentYear!==selectedAllocation.assessmentYear||confirmed.economicCode!==selectedAllocation.economicCode||
+            confirmed.amountMinor!==selectedAllocation.amountMinor)throw Error('Payment allocation changed');
+        }
+      }
+      const ticketNo = addCorrectionRequest({
+        challanNo: selectedChallanNo,
+        ...(selectedAllocation?{targetAllocationIndex:selectedIndex,...(selectedAllocation.allocationId?{targetAllocationId:selectedAllocation.allocationId}:{})}:{}),
+        taxpayerTin: taxpayerProfile.tin,
+        taxpayerName: taxpayerProfile.nameEn,
+        requestedBy: `${taxpayerProfile.nameEn} (Self)`,
+        requestDate: new Date().toISOString().split('T')[0],
+        currentAssessmentYear: currentAY,
+        proposedAssessmentYear: effectiveAY,
+        currentCircle,
+        proposedCircle:effectiveCircle,
+        currentHeadCode,
+        proposedHeadCode: proposedHead,
+        reason:reason.trim(),
+        workflowStage: 'MAKER_SUBMITTED',
+        makerRemarks: 'Local sample request only. No official petition or Revenue Officer workflow initiated.'
+      },verifiedPreviewReceipt);
+      setSubmittedTicket(ticketNo);setReason('');
+      setProposedAY('');setProposedCircle('');setProposedHeadCode('');
+    }catch{
+      setError(tr('Unable to save this local draft. Check your session and payment, then try again. No correction was submitted.','খসড়া সংরক্ষণ করা যায়নি। সেশন ও পরিশোধ যাচাই করে আবার চেষ্টা করুন। কোনো সংশোধন জমা হয়নি।'));
+    }finally{submitLock.current=false;setBusy(false);}
   };
 
   return (
@@ -104,7 +148,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
       {!embedded && activityTabs && <TaxpayerActivityTabs />}
       <div className={embedded ? 'bg-white border border-taxpay-border rounded-xl p-3 sm:p-5' : 'bg-white border border-slate-200 rounded-xl p-6 shadow-sm'}>
         {submittedTicket && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-taxpay-dark space-y-1">
+          <div role="status" className="mb-4 p-3 rounded-lg border border-taxpay-border bg-taxpay-light space-y-1">
             <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               <span>Request saved locally: {submittedTicket}</span>
@@ -116,14 +160,14 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
         )}
 
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+          <div role="alert" className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-sm">
             {error}
           </div>
         )}
 
         {/* New Correction Form */}
-        {visibleReceipts.length ? <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {visibleReceipts.length ? <form onSubmit={handleSubmit} className="space-y-3 text-sm" aria-busy={busy}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label htmlFor="correction-challan" className="block font-semibold text-slate-700 mb-1">
                 Select A-Challan for Rectification *
@@ -131,14 +175,15 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
               <select
                 id="correction-challan"
                 value={selectedChallanNo}
-                disabled={Boolean(preferredReference)}
                 onChange={(e) => {
-                  const receipt = visibleReceipts.find(r => r.challanNo === e.target.value);
                   setChallanNo(e.target.value);
-                  setProposedCircle(receipt?.taxCircle ?? '');
+                  setProposedCircle('');
+                  setProposedAY('');
+                  setAllocationIndex('');
                   setProposedHeadCode('');
                 }}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono-plex"
+                disabled={Boolean(preferredReference)||busy}
+                className="w-full min-h-11 min-w-0 px-3 py-2 rounded-lg border border-taxpay-border text-sm"
               >
                 {visibleReceipts.map(r => (
                   <option key={r.id} value={r.challanNo}>
@@ -157,10 +202,17 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
                 type="text"
                 disabled
                 value={taxpayerProfile.tin}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-100 font-mono-plex text-slate-500"
+                className="w-full min-h-11 min-w-0 px-3 py-2 rounded-lg border border-slate-200 bg-slate-100 font-mono-plex text-slate-500"
               />
             </div>
 
+            {requiresAllocation&&<label className="sm:col-span-2 block font-medium text-taxpay-text">
+              {tr('Payment allocation to correct','সংশোধনের জন্য পরিশোধের বরাদ্দ')}
+              <UiSelect className="mt-1" value={allocationIndex} disabled={busy} onChange={e=>{setAllocationIndex(e.target.value);setProposedAY('');setProposedCircle('');setProposedHeadCode('');setError('');}}>
+                <option value="">{tr('Select a payment allocation','পরিশোধের বরাদ্দ নির্বাচন করুন')}</option>
+                {allocations.map((a,i)=><option key={a.allocationId??i} value={i}>{a.taxpayerName} — {language==='bn'?a.paymentServiceBn:a.paymentServiceEn} — {a.assessmentYear} — ৳ {(a.amountMinor/100).toLocaleString('en-BD')}</option>)}
+              </UiSelect>
+            </label>}
             <div>
               <label htmlFor="correction-current-year" className="block font-semibold text-slate-700 mb-1">
                 Current Assessment Year
@@ -169,20 +221,22 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
                 id="correction-current-year"
                 value={currentAY}
                 readOnly
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 font-medium"
+                className="w-full min-h-11 min-w-0 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 font-medium"
               />
             </div>
 
             <div>
               <label htmlFor="correction-proposed-year" className="block font-semibold text-taxpay-dark mb-1">
-                Proposed Correct Assessment Year *
+                Proposed Correct Assessment Year
               </label>
               <select
                 id="correction-proposed-year"
                 value={proposedAY}
+                disabled={busy||requiresAllocation&&!selectedAllocation}
                 onChange={(e) => setProposedAY(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50/50 font-bold text-taxpay-dark"
+                className="w-full min-h-11 min-w-0 px-3 py-2 rounded-lg border border-taxpay-border text-sm"
               >
+                <option value="">{tr("No change","পরিবর্তন নেই")}</option>
                 {ASSESSMENT_YEARS.map(ay => (
                   <option key={ay} value={ay}>{ay}</option>
                 ))}
@@ -198,7 +252,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
                 type="text"
                 value={currentCircle}
                 readOnly
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
+                className="w-full min-h-11 min-w-0 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
               />
             </div>
 
@@ -210,8 +264,10 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
                 id="correction-proposed-circle"
                 type="text"
                 value={proposedCircle}
+                placeholder={currentCircle||tr("No change","পরিবর্তন নেই")}
+                disabled={busy||requiresAllocation&&!selectedAllocation}
                 onChange={(e) => setProposedCircle(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50/50"
+                className="w-full min-h-11 min-w-0 px-3 py-2 rounded-lg border border-taxpay-border text-sm"
               />
             </div>
 
@@ -220,15 +276,17 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
                 Current payment head
               </label>
               <input id="correction-current-head" value={currentHeadCode} readOnly
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 font-mono-plex" />
+                className="w-full min-h-11 min-w-0 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 font-mono-plex" />
             </div>
             <div>
               <label htmlFor="correction-proposed-head" className="block font-semibold text-taxpay-dark mb-1">
-                Proposed payment head (unverified options)
+                Proposed payment head
               </label>
-              <select id="correction-proposed-head" value={proposedHead}
+              <select id="correction-proposed-head" value={proposedHeadCode}
+                disabled={busy||requiresAllocation&&!selectedAllocation}
                 onChange={(e) => setProposedHeadCode(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50/50 text-taxpay-dark">
+                className="w-full min-h-11 min-w-0 px-3 py-2 rounded-lg border border-taxpay-border text-sm">
+                <option value="">{tr("No change","পরিবর্তন নেই")}</option>
                 {MASTER_PAYMENT_HEADS.filter(head => head.status !== 'BLOCKED').map(head => (
                   <option key={head.id} value={head.economicCode}>{head.economicCode} — {head.nameEn}</option>
                 ))}
@@ -243,21 +301,21 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
             <textarea
               id="correction-reason"
               rows={3}
+              maxLength={1000}
+              disabled={busy}
               placeholder="State the clerical error or reason for misattribution (e.g., accidental dropdown selection of wrong year during bank payment)..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300"
+              className="w-full min-h-11 min-w-0 px-3 py-2 rounded-lg border border-taxpay-border text-sm"
             />
           </div>
 
+          <p className="text-sm text-taxpay-muted">{tr("Local draft only. This does not submit a request to the Office.","শুধু স্থানীয় খসড়া। এটি অফিসে জমা হবে না।")}</p>
           <div className="flex justify-end">
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-taxpay-primary hover:bg-taxpay-dark text-amber-300 font-bold rounded-lg text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-sm"
-            >
+            <UiButton type="submit" disabled={busy} className="gap-2">
               <Send className="w-4 h-4" />
-              <span>Save request locally</span>
-            </button>
+              <span>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save request locally','স্থানীয়ভাবে খসড়া সংরক্ষণ করুন')}</span>
+            </UiButton>
           </div>
         </form> : <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">No payment records are available for correction.</p>}
       </div>
@@ -294,7 +352,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
                 <p className="text-taxpay-text">{tr('Assessment year','করবর্ষ')}: {c.currentAssessmentYear} → {c.proposedAssessmentYear}</p>
                 <p className="text-sm text-taxpay-muted">{tr('Circle','সার্কেল')}: {c.currentCircle} → {c.proposedCircle}</p>
               </div>},
-              {key:'status',header:tr('Recorded status','নথিভুক্ত অবস্থা'),renderCell:c=><p className="font-semibold text-taxpay-text">{c.workflowStage.replaceAll('_',' ')}</p>},
+              {key:'status',header:tr('Recorded status','নথিভুক্ত অবস্থা'),renderCell:c=><p className="font-semibold text-taxpay-text">{c.makerRemarks?.startsWith('Local sample request only')?tr('Saved locally','স্থানীয়ভাবে সংরক্ষিত'):c.workflowStage.replaceAll('_',' ')}</p>},
               {key:'detail',header:tr('Details','বিস্তারিত'),renderCell:c=><details className="max-w-[22rem] rounded-lg border border-taxpay-border p-2">
                 <summary className="min-h-11 cursor-pointer font-semibold text-taxpay-primary">{tr('View request','অনুরোধ দেখুন')}</summary>
                 <div className="mt-2 space-y-2 text-sm text-taxpay-text">
@@ -306,7 +364,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
             renderMobileCard={c=><div className="space-y-2">
               <div className="taxpay-mobile-table-card__header">
                 <p className="taxpay-mobile-table-card__title">{c.ticketNo}</p>
-                <p className="text-sm font-semibold text-taxpay-primary">{c.workflowStage.replaceAll('_',' ')}</p>
+                <p className="text-sm font-semibold text-taxpay-primary">{c.makerRemarks?.startsWith('Local sample request only')?tr('Saved locally','স্থানীয়ভাবে সংরক্ষিত'):c.workflowStage.replaceAll('_',' ')}</p>
               </div>
               <p className="taxpay-mobile-table-card__meta break-all">{tr('Challan','চালান')}: {c.challanNo}</p>
               <p className="taxpay-mobile-table-card__meta">{tr('Year','করবর্ষ')}: {c.currentAssessmentYear} → {c.proposedAssessmentYear}</p>
