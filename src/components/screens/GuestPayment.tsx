@@ -484,7 +484,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   // gateway status and payment authorizations must be re-established on resume.
   const snapshotAccountDraft = (): Record<string, unknown> => ({
     schemaVersion: 1, category, step: Math.min(step, 2),
-    ...(unifiedAccountSelection ? {unifiedFlowVersion:5} : {}),
+    ...(unifiedAccountSelection ? {unifiedFlowVersion:5, taxpayerEntityOverrides} : {}),
     forSelf, tin, payerName, walkInPayerTin, otherTaxpayerName, additionalTaxpayers, oneTimeTaxpayer,
     otherTaxLines, phone, receiptEmail, assessmentYear, noticeReference, paymentRemarks,
     incomeTaxType, selectedHeadIds, amountInputs, sourcePaymentId, sourceAllocationIds,
@@ -564,6 +564,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
       if (savedOneTime && typeof savedOneTime.tin === 'string' && typeof savedOneTime.name === 'string' && typeof savedOneTime.id === 'string') {
         setAdditionalTaxpayers(previous => previous.some(p=>p.tin===savedOneTime.tin) ? previous : [...previous,{tin:savedOneTime.tin!,name:savedOneTime.name!,id:savedOneTime.id!}]);
       }
+    }
+    if (unifiedAccountSelection) {
+      const overrides=saved.taxpayerEntityOverrides;
+      setTaxpayerEntityOverrides(overrides && typeof overrides==='object' && !Array.isArray(overrides) ? Object.fromEntries(Object.entries(overrides).filter(([key,value])=>/^\d{12,13}$/.test(key)&&(value==='COMPANY'||value==='NON_COMPANY'))) as Record<string,IncomeTaxEntityType> : {});
     }
     setStep(unifiedAccountSelection ? 1 : saved.step === 2 ? 2 : 1);
   };

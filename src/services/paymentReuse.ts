@@ -270,7 +270,7 @@ export function reuseRecordedPayment(
   const payload: Record<string, unknown> = {
     schemaVersion: 1, category: isAllocationPayment ? 'OTHER_TAX_PAYMENT' : service,
     step: 1, forSelf: ownOnly,
-    ...(unifiedV5 ? {unifiedFlowVersion:5} : {}),
+    ...(unifiedV5 || (isAllocationPayment && ownerIsPayee && others.length>0) ? {unifiedFlowVersion:5} : {}),
     tin: ownOnly ? '' : first.tin,
     payerName: '', otherTaxpayerName: first.name,
     additionalTaxpayers: others,
