@@ -302,6 +302,9 @@ export async function removeGuestBeneficiary(id: string): Promise<void> {
 export async function renameGuestBeneficiaryList(id: string, name: string): Promise<void> {
   await post('rename-list', { id, name });
 }
+export async function transferGuestBeneficiaryGroup(id:string,targetListId:string):Promise<void>{
+  await post('transfer-group',{id,targetListId});
+}
 export async function deleteGuestBeneficiaryList(id: string): Promise<void> {
   await post('delete-list', { id });
 }
