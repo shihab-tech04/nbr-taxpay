@@ -1,4 +1,4 @@
-import {mockActivitySql,sqlActivityRecord} from './mock-activity-sql';
+import {mockActivitySql} from './mock-activity-sql';
 import { fillTravelDetails } from './travel-tax-test-helper';
 import { openTravelTaxFromBanner } from './public-travel-tax-entry';
 import {expect,test,type Page} from '@playwright/test';
