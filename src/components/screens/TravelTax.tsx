@@ -1,9 +1,10 @@
+import { PaymentReviewTotal, PaymentChannelScreen, PaymentConfirmationLayout, WalkInChallanAction, WalkInResultBenefits, PaymentReviewDetails, PaymentPayerDetails, PaymentConfirmationHeading, PaymentConfirmationOverview } from '../ui/UnifiedPaymentStages';
 import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
 import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, CheckCircle, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
 import {parseRecoverableTravelPayment, type PendingTravelPayment} from '../../services/travelPendingPayment';
 import { getConfirmedReceipt } from '../../services/confirmedPaymentCertificate';
@@ -40,6 +41,7 @@ interface TravelTaxProps {
   onStageChange?: (stage: 1 | 2 | 3 | 4) => void;
   registerHeaderBack?: (action: (() => void) | null) => void;
   onCheckoutChange?: (checkout: boolean) => void;
+  onResultViewChange?: (view: 'result' | 'receipt' | 'certificate') => void;
 }
 
 function maskPassport(passport: string) {
@@ -56,7 +58,7 @@ function readPendingTravelPayment(key: string, sessionId: string): PendingTravel
  * This is a UX/reference-data preview, not a real passport verification or
  * government A-Challan integration. An API owner can replace those boundaries.
  */
-export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, initialReuse, onBackToService, onStageChange, registerHeaderBack, onCheckoutChange }) => {
+export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialDraft, initialReuse, onBackToService, onStageChange, registerHeaderBack, onCheckoutChange, onResultViewChange }) => {
   const { language, navigate, addPaymentReceipt, previewAccount, startPaymentReuse, setPaymentServiceChoiceOpen } = useTaxState();
   const { user: authenticatedUser } = useAccountIdentity();
   // Walk-in payments must never expose account-owned draft controls, even
@@ -82,6 +84,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   // Confirmation is intentionally revoked until the payer saves or cancels.
   const [editBackup, setEditBackup] = useState<{ passenger: TravelPassenger; wasConfirmed: boolean } | null>(null);
   const [receiptReviewOpen, setReceiptReviewOpen] = useState(false);
+  const [resultDocument, setResultDocument] = useState<'result' | 'receipt' | 'certificate'>('result');
+  useEffect(() => { onResultViewChange?.(resultDocument); }, [resultDocument, onResultViewChange]);
   const [skipPostPaymentLogin, setSkipPostPaymentLogin] = useState(false);
   type PassengerIdentityIssue = {
     id: string;
@@ -90,57 +94,63 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   };
   const [passengerIssue, setPassengerIssue] = useState<PassengerIdentityIssue | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
+  // The native manual popover is in the browser top layer, not the modal's
+  // scroll layout. It remains a DOM child of the combobox for keyboard and
+  // dialog focus semantics, but cannot contribute to content/scroll height.
   const passportPointerFocus = useRef(false);
-  // The native top layer is independent of every clipping/scrolling ancestor.
-  // Never change the editor's natural height, modal height or scroll position
-  // to open the picker. Anchor a fixed, independently scrolling overlay.
   useLayoutEffect(() => {
     if (!passportSuggestionsFor) return;
     const field = document.getElementById('travel-passport-' + passportSuggestionsFor);
     const row = field?.closest<HTMLElement>('.travel-flow__passport-row');
-    const list = document.getElementById('travel-passport-suggestions-' + passportSuggestionsFor);
-    if (!field || !row || !list) return;
+    const popup = document.getElementById('travel-passport-suggestions-' + passportSuggestionsFor);
+    if (!field || !row || !popup) return;
     const viewport = window.visualViewport;
     const position = () => {
-      const anchor = row.getBoundingClientRect();
-      const top = (viewport?.offsetTop ?? 0) + 8;
-      const bottom = (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight) - 8;
-      const left = (viewport?.offsetLeft ?? 0) + 8;
-      const right = (viewport?.offsetLeft ?? 0) + (viewport?.width ?? window.innerWidth) - 8;
-      const below = Math.max(0, bottom - anchor.bottom - 4);
-      const above = Math.max(0, anchor.top - top - 4);
-      const limit = Math.min(window.innerWidth <= 560 ? 190 : 210, Math.max(0, bottom - top));
-      // Prefer below. If even a small useful list cannot fit, flip above
-      // the input. The popup may overlap the fixed footer, like a normal
-      // dropdown, but it never reflows or scrolls the dialog.
-      const placement = below >= Math.min(130, limit) || below >= above ? 'below' : 'above';
-      const height = Math.floor(Math.min(limit, placement === 'below' ? below : above));
-      const width = Math.max(0, Math.min(anchor.width, right - left));
-      const x = Math.max(left, Math.min(anchor.left, right - width));
-      Object.assign(list.style, {
-        left: x + 'px',
+      if (!row.isConnected || !popup.isConnected) return;
+      const anchor = field.getBoundingClientRect();
+      const rowBox = row.getBoundingClientRect();
+      const leftEdge = (viewport?.offsetLeft ?? 0) + 8;
+      const topEdge = (viewport?.offsetTop ?? 0) + 8;
+      const rightEdge = (viewport?.offsetLeft ?? 0) + (viewport?.width ?? window.innerWidth) - 8;
+      const bottomEdge = (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight) - 8;
+      const below = Math.max(0, bottomEdge - anchor.bottom - 4);
+      const above = Math.max(0, anchor.top - topEdge - 4);
+      const max = window.innerWidth <= 560 ? 190 : 210;
+      // Prefer downwards even if the list must scroll, avoiding overlap
+      // with the nationality controls. Flip only when space is too small.
+      const placement = below >= Math.min(max, 100) || below >= above ? 'below' : 'above';
+      const width = Math.min(rowBox.width, rightEdge - leftEdge);
+      Object.assign(popup.style, {
+        left: Math.max(leftEdge, Math.min(rowBox.left, rightEdge - width)) + 'px',
         width: width + 'px',
-        maxHeight: height + 'px',
+        maxHeight: Math.floor(Math.min(max, placement === 'below' ? below : above)) + 'px',
         top: placement === 'below' ? anchor.bottom + 4 + 'px' : 'auto',
         bottom: placement === 'above' ? window.innerHeight - anchor.top + 4 + 'px' : 'auto',
       });
-      list.dataset.placement = placement;
+      popup.dataset.placement = placement;
     };
     position();
-    list.showPopover();
+    popup.setAttribute('popover', 'manual');
+    popup.showPopover();
+    const frame = requestAnimationFrame(position);
     const observer = new ResizeObserver(position);
     observer.observe(row);
-    window.addEventListener('scroll', position, true);
+    observer.observe(field);
+    const dialog = row.closest<HTMLElement>('.taxpay-modal');
+    if (dialog) observer.observe(dialog);
+    // Track genuine user scroll/resize; never mutate a scroll offset or layout.
+    document.addEventListener('scroll', position, true);
     window.addEventListener('resize', position);
     viewport?.addEventListener('resize', position);
     viewport?.addEventListener('scroll', position);
     return () => {
+      cancelAnimationFrame(frame);
       observer.disconnect();
-      window.removeEventListener('scroll', position, true);
+      document.removeEventListener('scroll', position, true);
       window.removeEventListener('resize', position);
       viewport?.removeEventListener('resize', position);
       viewport?.removeEventListener('scroll', position);
-      if (list.matches(':popover-open')) list.hidePopover();
+      if (popup.matches(':popover-open')) popup.hidePopover();
     };
   }, [passportSuggestionsFor]);
   const [medicalHelpFor, setMedicalHelpFor] = useState<string | null>(null);
@@ -208,7 +218,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setPassportSuggestionsFor(null); setPassengerIssue(null);
     setPaymentChannel(null); setMethodGroup(null); setPaymentMethod(null);
     setAcknowledged(false); setSimulateDecline(false); setCreatedReceipt(null);
-    setBankSlipPending(false); setZeroTaxReviewFinished(false); setReceiptReviewOpen(false); setProcessing(false);
+    setBankSlipPending(false); setZeroTaxReviewFinished(false); setReceiptReviewOpen(false); setResultDocument('result'); setProcessing(false);
     pendingPayment.current = null; setPaymentNonce(crypto.randomUUID()); setError(''); setStep(0);
   };
   useEffect(() => {
@@ -264,7 +274,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
       window.scrollTo({ top: 0 });
     }
-  }, [createdReceipt, bankSlipPending]);
+  }, [createdReceipt, bankSlipPending, resultDocument]);
 
 
   // Preserve the existing simulation-only land and water rates until verified
@@ -374,6 +384,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     document.querySelector<HTMLElement>('.travel-flow__main')?.scrollTo({ top: 0 });
   };
   useEffect(() => { onCheckoutChange?.(checkoutOpen); }, [checkoutOpen,onCheckoutChange]);
+  // The shared modal body owns scrolling in Final Preview and checkout.
+  // Each transition must start at the top, not inherit the previous form offset.
+  useLayoutEffect(() => {
+    if (embedded && step === 2) {
+      document.querySelector<HTMLElement>('.taxpay-modal[data-public-service="travel"] .taxpay-modal__body')?.scrollTo({top:0});
+    }
+  }, [embedded, step, checkoutOpen]);
   // Dismiss the existing on-focus ten-sample picker without changing focus
   // or rerendering the modal between pointerdown and click. That early state
   // change can swallow clicks on Travel Tax's Edit passengers control.
@@ -408,6 +425,9 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     if (!registerHeaderBack) return;
     const back = () => {
       if (createdReceipt) {
+        if (!bankSlipPending && !receiptReviewOpen && resultDocument !== 'result') {
+          setResultDocument(resultDocument === 'certificate' ? 'receipt' : 'result'); return;
+        }
         stepTo(receiptReviewOpen ? 3 : 2);
         return;
       }
@@ -417,7 +437,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     };
     registerHeaderBack(back);
     return () => registerHeaderBack(null);
-  }, [registerHeaderBack, createdReceipt, receiptReviewOpen, checkoutOpen, step, onBackToService]);
+  }, [registerHeaderBack, createdReceipt, receiptReviewOpen, checkoutOpen, step, onBackToService, resultDocument, bankSlipPending]);
   const validateTravelDetails = () => {
     if (!selectedPort) return tr('Select a departure port.', 'যাত্রা শুরুর বন্দর নির্বাচন করুন।');
     if (!destination.trim()) return tr('Select or enter a destination.', 'গন্তব্য নির্বাচন বা লিখুন।');
@@ -513,7 +533,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setDestination(''); setTravelDate(''); setEditingPassengerId('first'); setPassengerIssue(null); setPassportSuggestionsFor(null);
     setPassengers([makeTravelPassenger('first', 'BD')]); setConfirmedPassengerIds([]);
     setEditBackup(null);
-    setReceiptReviewOpen(false); setPhone(''); setError('');
+    setReceiptReviewOpen(false); setResultDocument('result'); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
     setZeroTaxReviewFinished(false); setCreatedReceipt(null); setProcessing(false); pendingPayment.current = null; setPaymentNonce(crypto.randomUUID());
@@ -610,6 +630,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     }
     setRecoveringPayment(null);
     addPaymentReceipt(stored);
+    setResultDocument('result');
     setCreatedReceipt(stored);
     pendingPayment.current = null; setPaymentNonce(crypto.randomUUID());
     setBankSlipPending(false);
@@ -745,7 +766,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     const pointerFocus = passportPointerFocus.current;
                     passportPointerFocus.current = false;
                     // Keyboard focus opens immediately. Pointer focus waits for
-                    // onClick so scrolling cannot relocate the pressed field.
+                    // onClick to keep pointer and keyboard interactions consistent.
                     if (!pointerFocus) setPassportSuggestionsFor(passportAlreadyAdded ? null : item.id);
                   }}
                   onClick={() => {
@@ -996,7 +1017,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
       {tr('Confirm sample bank settlement', 'নমুনা ব্যাংক নিষ্পত্তি নিশ্চিত করুন')}
     </button>
   ) : createdReceipt && receiptReviewOpen ? (
-    <button type="button" className="travel-flow__primary" onClick={() => stepTo(3)}>
+    <button type="button" className="travel-flow__primary" onClick={() => { setResultDocument('receipt'); stepTo(3); }}>
       {tr('View combined challan', 'সম্মিলিত চালান দেখুন')}<ArrowRight size={17} aria-hidden="true"/>
     </button>
   ) : createdReceipt ? null : step === 2 && !checkoutOpen ? (
@@ -1046,37 +1067,44 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   }:undefined;
   // Preserve the shared receipt/modal action owner and full-width receipt.
   if (embedded && createdReceipt && !bankSlipPending && !receiptReviewOpen) {
-    return <>
+    if (resultDocument === 'result') return <div lang={language} className="space-y-5 payment-flow-embedded payment-flow-embedded--receipt" data-testid="travel-payment-result">
+      <PaymentConfirmationLayout>
+        <PaymentConfirmationHeading state="complete" icon={<CheckCircle size={22}/>}>{tr('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')}</PaymentConfirmationHeading>
+        <PaymentConfirmationOverview language={language} amount={<TravelCurrency amount={createdReceipt.totalAmount} language={language}/>}>
+          <div><span>{tr('Payment reference','পেমেন্ট রেফারেন্স')}</span><strong className="payment-lifecycle__reference-value">{createdReceipt.challanNo}</strong></div>
+        </PaymentConfirmationOverview>
+        <details className="payment-lifecycle__progress-detail">
+          <summary>{tr('Payment progress and references','পেমেন্টের অগ্রগতি ও রেফারেন্স')}</summary>
+          <div className="payment-lifecycle__details"><dl className="payment-lifecycle__references">
+            <div><dt>{tr('Tax event ID','কর ইভেন্ট আইডি')}</dt><dd>{createdReceipt.taxEventId || '—'}</dd></div>
+            <div><dt>{tr('Payment transaction ID','পেমেন্ট ট্রানজেকশন আইডি')}</dt><dd>{createdReceipt.paymentTransactionId || '—'}</dd></div>
+            <div><dt>{tr('Payment reference','পেমেন্ট রেফারেন্স')}</dt><dd>{createdReceipt.challanNo}</dd></div>
+            <div><dt>{tr('Amount','মোট অর্থ')}</dt><dd><TravelCurrency amount={createdReceipt.totalAmount} language={language}/></dd></div>
+          </dl></div>
+        </details>
+        <div className="payment-lifecycle__result payment-lifecycle__result--complete"><FileText size={18} aria-hidden="true"/>
+          <p>{tr('Payment record saved; settlement is not verified.','পেমেন্ট রেকর্ড সংরক্ষিত হয়েছে; নিষ্পত্তি যাচাই হয়নি।')}</p>
+        </div>
+        {!authenticatedUser && !previewAccount && <WalkInChallanAction language={language} onOpen={() => setResultDocument('receipt')}/>}
+        {!authenticatedUser && !previewAccount && !skipPostPaymentLogin && <WalkInResultBenefits language={language}
+          onSignIn={() => { setPaymentServiceChoiceOpen(false); navigate('taxpayer_login'); }}
+          onSkip={() => setSkipPostPaymentLogin(true)}/>}
+      </PaymentConfirmationLayout>
+      {(authenticatedUser || previewAccount) && modalFooterTarget && createPortal(
+        <PaymentJourneyFooter className="payment-flow-embedded__footer-actions" next={<button type="button" className="tax-service-choice__continue" onClick={() => setResultDocument('receipt')}>{tr('Receipt details','রসিদের বিবরণ')} <ArrowRight size={17}/></button>}/>, modalFooterTarget)}
+    </div>;
+    return <div className="payment-receipt-details payment-flow-embedded payment-flow-embedded--receipt" lang={language}>
       <button data-testid="travel-receipt-back" type="button" className="sr-only"
-        onClick={() => stepTo(2)}>{tr('Return to review', 'পর্যালোচনায় ফিরুন')}</button>
-      <ReceiptView receipt={createdReceipt} embedded transactionActions={ownedReceiptActions}
-        postReceiptInvitation={!authenticatedUser && !previewAccount && !skipPostPaymentLogin
-          ? <aside className="walkin-postpayment-login no-print" data-testid="walkin-postpayment-login"
-              aria-label={tr('Optional sign in', 'ঐচ্ছিক সাইন ইন')}>
-              <div className="walkin-postpayment-login__copy">
-                <strong>{tr('Want easier access to your payment history?', 'আপনার পেমেন্ট রেকর্ড পরে দেখতে চান?')}</strong>
-                <p>{tr('Sign in to view payments and challans saved to your account. This walk-in receipt is not automatically linked to an account.',
-                  'সাইন ইন করলে অ্যাকাউন্টের সংরক্ষিত পেমেন্ট ও চালান দেখতে পারবেন। এই ওয়াক-ইন রসিদ স্বয়ংক্রিয়ভাবে কোনো অ্যাকাউন্টে যুক্ত হবে না।')}</p>
-              </div>
-              <div className="walkin-postpayment-login__actions">
-                <button type="button" className="walkin-postpayment-login__signin"
-                  onClick={() => { setPaymentServiceChoiceOpen(false); navigate('taxpayer_login'); }}>
-                  {tr('Sign in','সাইন ইন')} <ArrowRight size={16} aria-hidden="true"/>
-                </button>
-                <button type="button" className="walkin-postpayment-login__skip"
-                  onClick={() => setSkipPostPaymentLogin(true)}>
-                  {tr('Continue without signing in','সাইন ইন ছাড়াই চালিয়ে যান')}
-                </button>
-              </div>
-            </aside>
-          : undefined}
+        onClick={() => setResultDocument('result')}>{tr('Return to payment result', 'পেমেন্টের ফলাফলে ফিরুন')}</button>
+      <ReceiptView receipt={createdReceipt} embedded compactWalkInLayout transactionActions={ownedReceiptActions}
+        activeDocument={resultDocument} onDocumentChange={setResultDocument}
         onPayAgain={receiptReuse?()=>startPaymentReuse(receiptReuse!):undefined}
         onApplyForCorrection={applyReceiptCorrection}/>
-    </>;
+    </div>;
   }
 
   return (
-    <div className={'travel-flow' + (step === 0 && !createdReceipt ? ' travel-flow--identity' : '') + (bn ? ' font-bengali' : '')} lang={language} data-step={step}
+    <div className={'travel-flow' + (step === 2 ? ' payment-flow-embedded--unified' : '') + (step === 0 && !createdReceipt ? ' travel-flow--identity' : '') + (bn ? ' font-bengali' : '')} lang={language} data-step={step} data-embedded={embedded ? 'true' : 'false'}
       data-receipt-review={receiptReviewOpen && !!createdReceipt ? 'true' : undefined}>
       <div className="travel-flow__main">
         {!embedded && <h1 className="travel-flow__standalone-title">{tr('Travel tax', 'ভ্রমণ কর')}</h1>}
@@ -1233,71 +1261,71 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </PaymentFormSection>
           </section>}
 
-          {step === 2 && !checkoutOpen && (!createdReceipt || receiptReviewOpen) && <section className="travel-flow__panel" aria-label={tr('Final Preview','চূড়ান্ত পর্যালোচনা')}>
-            <p className="travel-flow__field-hint">{allCalculated && totalAmount === 0
-              ? tr('Check the passenger and travel details. No payment is due under the current preview calculation.', 'যাত্রী ও ভ্রমণের তথ্য যাচাই করুন। বর্তমান প্রিভিউ হিসাব অনুযায়ী কোনো পেমেন্ট প্রয়োজন নেই।')
-              : tr('Review passenger and travel details and provide receipt contact before checkout.', 'যাত্রী ও ভ্রমণের তথ্য পর্যালোচনা করুন এবং রসিদের মোবাইল নম্বর দিন।')}</p>
-            {totalAmount > 0 && <section className="travel-flow__contact" aria-label={tr('Receipt contact', 'রসিদের যোগাযোগ')} data-testid="travel-preview-receipt-contact">
-              <h3>{tr('Receipt contact', 'রসিদের যোগাযোগ')}</h3>
-              <div className="travel-flow__field">
-                <label htmlFor="travel-mobile">{tr('Mobile number for receipt', 'রসিদের জন্য মোবাইল নম্বর')} *</label>
-                {createdReceipt ? <p className="travel-flow__contact-readonly">{phone}</p> : <>
-                  <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11}
-                    autoComplete="tel-national" value={phone} placeholder="01XXXXXXXXX"
-                    aria-invalid={phone.length > 0 && !receiptMobileComplete}
-                    aria-describedby={phone.length > 0 && !receiptMobileComplete ? 'travel-mobile-error' : undefined}
-                    onChange={event => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 11)); setError(''); setAcknowledged(false); }}/>
-                  {phone.length > 0 && !receiptMobileComplete && <p id="travel-mobile-error" className="travel-flow__inline-error" role="status">
-                    {tr('Enter a valid 11-digit mobile number starting with 01.', '০১ দিয়ে শুরু হওয়া ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।')}
-                  </p>}
-                </>}
+          {step === 2 && !checkoutOpen && (!createdReceipt || receiptReviewOpen) && (
+            <section className="payment-review payment-review--unified-v5 travel-flow__unified-preview"
+              data-testid="travel-unified-final-preview" aria-label={tr('Final Preview','চূড়ান্ত পর্যালোচনা')}>
+              <div className="payment-review__main">
+                <PaymentReviewDetails language={language} headingId="travel-unified-review-title" testId="travel-payment-details" actions={!createdReceipt && <div className="unified-v3-review__actions">
+                      <button type="button" onClick={() => stepTo(0)}><Pencil size={14} aria-hidden="true"/>
+                        {tr('Edit passengers','যাত্রী সম্পাদনা')} ({passengers.length})</button>
+                      <button type="button" onClick={() => stepTo(1)}><Pencil size={14} aria-hidden="true"/>
+                        {tr('Edit travel details','ভ্রমণের তথ্য সম্পাদনা')}</button>
+                    </div>}>
+                  <dl className="travel-flow__review travel-flow__review--unified">
+                    <div><dt>{tr('Travel','ভ্রমণ')}</dt><dd>{mode === 'LAND' ? tr('By land','স্থলপথে') : tr('By water','নৌপথে')}</dd></div>
+                    <div><dt>{tr('Departure port','যাত্রা বন্দর')}</dt><dd>{selectedPort}</dd></div>
+                    <div><dt>{tr('Destination / date','গন্তব্য / তারিখ')}</dt><dd>{destination} / {travelDate}</dd></div>
+                  </dl>
+                  <div className="unified-v3-review__table-wrap travel-flow__table-wrap taxpay-table-viewport">
+                    <TaxPayUnifiedTable className="unified-v3-review__table travel-flow__passenger-table taxpay-unified-table"
+                      aria-label={tr('Passenger-wise travel tax amounts','যাত্রীভিত্তিক ভ্রমণ কর')}>
+                      <thead><tr>
+                        <th scope="col">{tr('Passenger','যাত্রী')}</th>
+                        <th scope="col">{tr('Passport','পাসপোর্ট')}</th>
+                        <th scope="col">{tr('Age','বয়স')}</th>
+                        <th scope="col" className="text-right">{tr('Tax','কর')}</th>
+                      </tr></thead>
+                      <tbody>{passengers.map(item => <tr key={item.id}>
+                        <td>{item.name}</td><td>{maskPassport(item.passport)}</td>
+                        <td>{assessTravelPassenger(item, unitRate, travelDate)?.age ?? '—'}</td>
+                        <td className="text-right tabular-nums"><TravelCurrency amount={assessTravelPassenger(item, unitRate, travelDate)?.amount ?? 0} language={language}/></td>
+                      </tr>)}</tbody>
+                    </TaxPayUnifiedTable>
+                  </div>
+                  <PaymentReviewTotal language={language} amount={totalAmount} formatted={<TravelCurrency amount={totalAmount} language={language}/>} testId="travel-preview-total" wordsTestId="travel-preview-total-in-words"/>
+                </PaymentReviewDetails>
+                {totalAmount > 0 && <PaymentPayerDetails language={language} className="travel-flow__unified-contact" headingId="travel-payer-title" testId="travel-preview-receipt-contact">
+                  <div className="travel-flow__field">
+                    <label htmlFor="travel-mobile" className="block text-xs font-semibold text-slate-700 mb-1">{tr('Mobile number for receipt','রসিদের জন্য মোবাইল নম্বর')} *</label>
+                    {createdReceipt ? <p className="travel-flow__contact-readonly">{phone}</p> : <>
+                      <input id="travel-mobile" type="tel" inputMode="numeric" maxLength={11}
+                        autoComplete="tel-national" value={phone} placeholder={tr('01XXXXXXXXX','০১XXXXXXXXX')} required
+                        className="min-h-11 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-taxpay-primary font-mono-plex"
+                        aria-invalid={phone.length > 0 && !receiptMobileComplete}
+                        aria-describedby={phone.length > 0 && !receiptMobileComplete ? 'travel-mobile-error' : undefined}
+                        onChange={event => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 11)); setError(''); setAcknowledged(false); }}/>
+                      {phone.length > 0 && !receiptMobileComplete && <p id="travel-mobile-error" className="travel-flow__inline-error" role="status">
+                        {tr('Enter a valid 11-digit mobile number starting with 01.', '০১ দিয়ে শুরু হওয়া ১১ সংখ্যার বৈধ মোবাইল নম্বর দিন।')}
+                      </p>}
+                    </>}
+                  </div>
+                </PaymentPayerDetails>}
               </div>
-            </section>}
-            <div className="travel-flow__review">
-              <div><dt>{tr('Travel','ভ্রমণ')}</dt><dd>{mode === 'LAND' ? tr('By land','স্থলপথে') : tr('By water','নৌপথে')}</dd></div>
-              <div><dt>{tr('Departure port','যাত্রা বন্দর')}</dt><dd>{selectedPort}</dd></div>
-              <div><dt>{tr('Destination / date','গন্তব্য / তারিখ')}</dt><dd>{destination} / {travelDate}</dd></div>
-              {!createdReceipt && <div><dt>{tr('Edit', 'সম্পাদনা')}</dt><dd><button type="button" className="travel-flow__edit" onClick={() => stepTo(1)}><Pencil size={15} aria-hidden="true"/>{tr('Edit travel details', 'ভ্রমণের তথ্য সম্পাদনা')}</button></dd></div>}
-            </div>
-            {!createdReceipt && <button type="button" className="travel-flow__edit-travel" onClick={() => stepTo(0)}><Pencil size={15} aria-hidden="true"/>{tr('Edit passengers', 'যাত্রী সম্পাদনা')}</button>}
-            <div className="travel-flow__table-wrap taxpay-table-viewport">
-              <TaxPayUnifiedTable className="travel-flow__passenger-table taxpay-unified-table" aria-label={tr('Passenger-wise travel tax amounts','যাত্রীভিত্তিক ভ্রমণ কর')}>
-                <thead><tr>
-                  <th scope="col">{tr('Passenger','যাত্রী')}</th>
-                  <th scope="col">{tr('Passport','পাসপোর্ট')}</th>
-                  <th scope="col">{tr('Age','বয়স')}</th>
-                  <th scope="col" className="text-right">{tr('Tax','কর')}</th>
-                </tr></thead>
-                <tbody>{passengers.map(item => <tr key={item.id}>
-                  <td>{item.name}</td><td>{maskPassport(item.passport)}</td>
-                  <td>{assessTravelPassenger(item, unitRate, travelDate)?.age ?? '—'}</td>
-                  <td className="text-right tabular-nums"><TravelCurrency amount={assessTravelPassenger(item, unitRate, travelDate)?.amount ?? 0} language={language}/></td>
-                </tr>)}</tbody>
-                <tfoot><tr><th scope="row" colSpan={3}>{tr('Combined payable','মোট প্রদেয়')}</th>
-                  <td className="text-right tabular-nums"><TravelCurrency amount={totalAmount} language={language}/></td></tr></tfoot>
-              </TaxPayUnifiedTable>
-            </div>
-          </section>}
+            </section>)}
 
-          {step === 2 && checkoutOpen && !createdReceipt &&
-            <section className="travel-flow__panel travel-flow__checkout"
-              data-testid="travel-payment-channel-screen" aria-label={tr('Payment channel','পেমেন্ট চ্যানেল')}>
-            <header className="travel-flow__section-header">
-              <h3>{tr('Choose payment channel','পেমেন্ট চ্যানেল বেছে নিন')}</h3>
-              <p>{tr('Choose online payment or a bank branch.','অনলাইন পেমেন্ট অথবা ব্যাংক শাখা বেছে নিন।')}</p>
-            </header>
-            {!createdReceipt && <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
-              onChannelChange={(channel, method) => { setPaymentChannel(channel); setPaymentMethod(method); setMethodGroup(null); setAcknowledged(false); }}
-              onGroupChange={group => { setMethodGroup(group); setPaymentMethod(null); setAcknowledged(false); }}
-              onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
-              simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>}
-            {!createdReceipt && (!paymentMethod || !acknowledged) && <p className="travel-flow__field-hint" role="status">{tr('Choose a payment channel and method, then confirm the details to enable payment.', 'পেমেন্ট চ্যানেল ও পদ্ধতি বেছে নিয়ে তথ্য নিশ্চিত করলে পেমেন্ট চালু হবে।')}</p>}
-            {!createdReceipt && <label className="travel-flow__channel-option">
-              <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)}/>
-              <p>{tr('I confirm the travel information, all passengers and the combined amount.',
-                'ভ্রমণের তথ্য, সকল যাত্রী এবং মোট টাকার পরিমাণ নিশ্চিত করছি।')}</p>
-            </label>}
-          </section>}
+          {step === 2 && checkoutOpen && !createdReceipt && (
+            <PaymentChannelScreen language={language} testId="travel-payment-channel-screen" className="travel-flow__unified-checkout">
+                  <PaymentMethodSelector language={language} channel={paymentChannel} methodGroup={methodGroup} method={paymentMethod}
+                    onChannelChange={(channel, method) => { setPaymentChannel(channel); setPaymentMethod(method); setMethodGroup(null); setAcknowledged(false); }}
+                    onGroupChange={group => { setMethodGroup(group); setPaymentMethod(null); setAcknowledged(false); }}
+                    onMethodChange={method => { setPaymentMethod(method); setAcknowledged(false); }}
+                    simulateDecline={simulateDecline} onSimulateDeclineChange={setSimulateDecline}/>
+                  {paymentChannel && paymentMethod && <label className="payment-review__ack">
+                    <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)}/>
+                    <span>{tr('I confirm the travel information, all passengers and the combined amount.',
+                      'ভ্রমণের তথ্য, সকল যাত্রী এবং মোট টাকার পরিমাণ নিশ্চিত করছি।')}</span>
+                  </label>}
+            </PaymentChannelScreen>)}
 
           {step === 3 && zeroTaxReviewFinished && !createdReceipt &&
             <section className="travel-flow__panel travel-flow__zero-tax-result"
@@ -1329,6 +1357,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             transactionActions={ownedReceiptActions}
             onPayAgain={receiptReuse?()=>startPaymentReuse(receiptReuse!):undefined}
             onApplyForCorrection={applyReceiptCorrection}/>}
+          {!embedded && step === 2 && !createdReceipt && <div className="travel-flow__standalone-actions" data-testid="travel-standalone-stage-actions">{primaryAction}</div>}
           {!embedded && !createdReceipt && step > 0 && <button className="travel-flow__back" type="button"
             onClick={() => stepTo((step-1) as 0 | 1 | 2 | 3)}>
             <ArrowLeft size={16} aria-hidden="true"/>{tr('Back','ফিরুন')}
@@ -1366,12 +1395,12 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </div>)}
 
         </div>
-        {!embedded && primaryAction}
+        {!embedded && step !== 2 && primaryAction}
       </aside>
 
       {embedded && modalFooterTarget && createPortal(
         <div className="travel-flow__footer-content">
-          {step > 0 && <details className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
+          {step > 0 && !checkoutOpen && <details key={step} className="travel-flow__mobile-summary" data-testid="mobile-payment-calculation">
             <summary><p>{tr('Payment calculation','পেমেন্টের হিসাব')}</p>
               <strong>{allCalculated ? <TravelCurrency amount={totalAmount} language={language}/> : validAssessments.length > 0 && travelDate ? <TravelCurrency amount={provisionalAmount} language={language}/> : '—'}</strong></summary>
             <dl>

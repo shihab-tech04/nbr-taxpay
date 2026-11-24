@@ -88,7 +88,7 @@ for (const language of ['en', 'bn'] as const) {
     const selectedTravelDate = await modal.locator('#travel-departure-date').inputValue();
     expect(selectedTravelDate).toBe(futureTravelDate);
     await modal.getByRole('button', { name: /Continue to review|পেমেন্ট পর্যালোচনায় যান/ }).click();
-    await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText(totalText);
+    await expect(modal.locator('[data-testid="travel-preview-total"]')).toContainText(totalText);
     // Final Preview retains a required receipt contact; payment methods belong
     // to the following Payment Channel screen, not the preview itself.
     await modal.locator('#travel-mobile').fill('01712345678');
@@ -99,6 +99,8 @@ for (const language of ['en', 'bn'] as const) {
     await modal.getByRole('radio', { name: 'Nagad' }).check();
     await modal.getByLabel(/I confirm the travel information|ভ্রমণের তথ্য/).check();
     await modal.getByRole('button', { name: /Confirm sample payment|নমুনা পেমেন্ট নিশ্চিত করুন/ }).click();
+    await expect(modal.getByTestId('travel-payment-result')).toBeVisible({timeout:15000});
+    await modal.getByTestId('walkin-challan-action').getByRole('button').first().click();
 
     const receiptPaper = modal.locator('.receipt-view__paper');
     await expect(receiptPaper).toBeVisible();
@@ -106,12 +108,12 @@ for (const language of ['en', 'bn'] as const) {
     await expect(receipt.locator('tbody tr')).toHaveCount(2);
     await expect(receipt).toContainText(totalText);
     const firstPassenger = (await receipt.locator('tbody tr').first().locator('td').first().innerText()).trim();
-    await expect(modal.getByRole('button', { name: /View payment certificate|পেমেন্ট সনদ দেখুন/ })).toBeVisible();
-    await modal.getByRole('button', { name: /View payment certificate|পেমেন্ট সনদ দেখুন/ }).click();
+    await expect(modal.getByRole('tab', { name: /Payment record certificate|পেমেন্ট রেকর্ড সনদ/ })).toBeVisible();
+    await modal.getByRole('tab', { name: /Payment record certificate|পেমেন্ট রেকর্ড সনদ/ }).click();
 
     const certificate = modal.getByTestId('payment-certificate-document');
     await expect(certificate).toBeVisible();
-    await expect(certificate.getByRole('heading', { name: /Payment Certificate|পেমেন্ট সনদ/ })).toBeVisible();
+    await expect(certificate).toHaveAttribute('aria-label', /Payment Certificate|পেমেন্ট সনদ/);
     await expect(certificate.getByTestId('payment-certificate-reference')).toContainText('SK-PC-' + paymentId);
     await expect(certificate).toContainText(paymentId);
     await expect(certificate).toContainText(firstPassenger);
@@ -131,9 +133,9 @@ for (const language of ['en', 'bn'] as const) {
     await expect(certificate).not.toContainText('TREASURY_SCROLLED');
     await expect(certificate).not.toContainText('SIM-TOKEN');
     await expect(receipt).toHaveCount(0);
-    await modal.getByRole('button', { name: /View receipt|রসিদ দেখুন/ }).click();
+    await modal.getByRole('tab', { name: /Challan details|চালানের বিবরণ/ }).click();
     await expect(modal.getByTestId('travel-family-challan')).toBeVisible();
-    await modal.getByRole('button', { name: /View payment certificate|পেমেন্ট সনদ দেখুন/ }).click();
+    await modal.getByRole('tab', { name: /Payment record certificate|পেমেন্ট রেকর্ড সনদ/ }).click();
     await expect(modal.getByTestId('payment-certificate-document')).toBeVisible();
 
     const download = page.waitForEvent('download', { timeout: 20000 });

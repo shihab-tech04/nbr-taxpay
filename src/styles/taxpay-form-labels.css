@@ -64,24 +64,24 @@
 .taxpay-citizen-shell .travel-flow__passport-action button:hover {
   background: var(--citizen-primary-light);
 }
-/* Native top-layer dropdown: no spacer, no modal reflow, no clipped ancestors. */
-.taxpay-citizen-shell .travel-flow__passport-suggestions[popover] {
+/* Native top-layer popup: no spacer, modal resize or parent scrolling. */
+.taxpay-citizen-shell .travel-flow__passport-suggestions {
   position: fixed;
   inset: auto;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   min-width: 0;
-  max-width: calc(100vw - 16px);
+  max-width: none;
   max-height: 210px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   background: var(--citizen-surface);
-  color: var(--citizen-text);
   border: 1px solid var(--citizen-border);
   border-radius: 10px;
   box-shadow: 0 12px 26px rgb(18 42 77 / 20%);
+  color: var(--citizen-text);
   font: inherit;
 }
 .taxpay-citizen-shell .travel-flow__passport-suggestions-heading,

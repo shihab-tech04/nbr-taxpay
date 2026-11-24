@@ -64,7 +64,7 @@
 
 /* Input text is 16px even at 320px: readable and prevents iOS focus-zoom.
    Native checkbox/radio labels, icon-only controls retain their geometry. */
-.taxpay-citizen-shell :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea),
+.taxpay-citizen-shell :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea):not(:where([data-home2-view] *)),
 .taxpay-citizen-shell .taxpay-record-toolbar__search input,
 .taxpay-citizen-shell .taxpayer-transaction-filter > select {
   font-size: var(--taxpay-font-body);
@@ -151,13 +151,13 @@
 .taxpay-citizen-shell :where(
   button, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   select, textarea, label
-) {
+):not(:where([data-home2-view] *)) {
   font-size: var(--taxpay-font-body);
   line-height: 1.5;
 }
 /* General copy belongs to body tier; numbers and labels in data visualizations
  * are explicitly assigned to the micro tier below. */
-.taxpay-citizen-shell:where(:not(:has(.public-home-sections))) :is(p, li, dt, dd):not(.taxpay-type-micro):not(:where(.receipt-view__paper *, .payment-certificate-document *, .print-card *)) {
+.taxpay-citizen-shell:where(:not(:has(.public-home-sections))) :is(p, li, dt, dd):not(.taxpay-type-micro):not(:where(.receipt-view__paper *, .payment-certificate-document *, .print-card *, [data-home2-view] *)) {
   font-size: var(--taxpay-font-body);
 }
 /* Public header, menu, language switcher and safe-area bottom navigation. */

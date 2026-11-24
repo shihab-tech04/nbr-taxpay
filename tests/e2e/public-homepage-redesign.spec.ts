@@ -255,3 +255,101 @@ test('six connected benefit cells have soft non-moving hover/focus shadows and c
     ['0px', '0px', '0px', '16px'],
   ]);
 });
+
+test('Home 2 is opt-in, retains original home, and reuses the payment entry', async ({page})=>{
+  await page.goto('/?action=landing');
+  await expect(page.getByTestId('home2-root')).toHaveCount(0);
+  await expect(page.locator('.public-benefits__item')).toHaveCount(6);
+  await page.getByRole('link',{name:'Home 2',exact:true}).click();
+  await expect(page.getByTestId('home2-root')).toBeVisible();
+  await expect(page).toHaveURL(/action=home-2/);
+  await page.reload();
+  await expect(page.getByTestId('home2-root')).toBeVisible();
+  await page.getByTestId('home2-pay').click();
+  await expect(page.getByRole('dialog',{name:'Pay Tax'}).getByRole('button',{name:'Walk-in Payment'})).toBeVisible();
+  await page.goto('/?action=home-2');
+  await page.getByRole('link',{name:'Original Home',exact:true}).click();
+  await expect(page.getByTestId('home2-root')).toHaveCount(0);
+  await expect(page.locator('.public-benefits__item')).toHaveCount(6);
+});
+test('Home 2 bilingual responsive layout keeps all actions available', async ({page}, info)=>{
+  for(const lang of ['en','bn']){
+    await page.goto('/?action=home-2&lang='+lang);
+    const root=page.getByTestId('home2-root');
+    await expect(root).toBeVisible();
+    await expect(root).toHaveAttribute('data-design','uploaded-mobile-bento');
+    await expect(root).toHaveAttribute('data-viewport',(page.viewportSize()?.width ?? 1280)>=960?'desktop':'mobile');
+    await expect(root.getByTestId('home2-pay')).toBeVisible();
+    await expect(root.getByTestId('home2-other')).toBeVisible();
+    await expect(root.getByTestId('home2-reference')).toBeVisible();
+    await expect(root.getByRole('banner')).toBeVisible();
+    await expect(root.getByRole('contentinfo')).toBeVisible();
+    await expect(page.locator('.public-home-header')).toHaveCount(0);
+    await expect(page.locator('.citizen-bottom-nav')).toHaveCount(0);
+    await page.screenshot({path:`test-results/screenshots/sohojkor-home-rhythm-home2-${info.project.name}-${lang}.png`,fullPage:true,animations:'disabled'});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  }
+});
+
+
+test('Home 2 uploaded design uses actual record lookup rather than prototype response', async ({page})=>{
+  await page.goto('/?action=home-2');
+  const root=page.getByTestId('home2-root');
+  await root.getByTestId('home2-reference').fill('HOME2-CHECK-123');
+  await root.getByTestId('home2-reference').press('Enter');
+  await expect(page).toHaveURL(/action=verify/);
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page).not.toHaveURL(/HOME2-CHECK-123/);
+});
+
+
+test('Imported Home 2 retains source typography and never clips desktop hero or guide controls',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Cross-viewport source typography acceptance');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  for(const width of [960,1024,1280,1920]){
+    await page.setViewportSize({width,height:900});
+    for(const lang of ['en','bn']){
+      await page.goto('/?action=home-2&lang='+lang);
+      const root=page.getByTestId('home2-root');
+      await expect(root).toBeVisible();
+      await page.evaluate(()=>document.fonts.ready);
+      const hero=root.getByTestId('home2-desktop-hero');
+      const copy=root.getByTestId('home2-hero-copy');
+      await expect(copy.locator('p').first()).toHaveCSS('font-size','14.5px');
+      await expect(copy.locator('li').first()).toHaveCSS('font-size','12px');
+      await expect(root.getByTestId('home2-guide-action')).toHaveCSS('font-size','13px');
+      const outer=await hero.boundingBox();const trust=await root.getByTestId('home2-hero-trust').boundingBox();
+      expect(trust!.y+trust!.height,'trust labels remain inside the hero').toBeLessThanOrEqual(outer!.y+outer!.height+1);
+      for(const id of ['home2-guide-action','home2-chat-action']){
+        const action=root.getByTestId(id);
+        expect(await action.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(2);
+      }
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+    }
+  }
+});
+
+
+test('Home 2 Saved Drafts uses the approved soft rose palette on desktop and mobile',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.goto('/?action=home-2&lang=en');
+  const tile=page.getByTestId('home2-root').getByRole('button').filter({has:page.getByRole('heading',{name:'Saved Drafts',exact:true})});
+  await expect(tile).toBeVisible();
+  await expect(tile).toHaveCSS('background-color','rgb(240, 223, 227)');
+  await expect(tile).toHaveCSS('color','rgb(20, 27, 45)');
+  await expect(tile.locator('p')).toHaveCSS('color','rgb(112, 78, 91)');
+});
+
+
+test('Home 2 separates Pay Again olive and Saved Drafts rose on desktop and mobile',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.goto('/?action=home-2&lang=en');
+  const root=page.getByTestId('home2-root');
+  const again=root.getByRole('button').filter({has:page.getByRole('heading',{name:'Pay Again',exact:true})});
+  const drafts=root.getByRole('button').filter({has:page.getByRole('heading',{name:'Saved Drafts',exact:true})});
+  await expect(again).toBeVisible();
+  await expect(again).toHaveCSS('background-color','rgb(230, 233, 214)');
+  await expect(again).toHaveCSS('color','rgb(20, 27, 45)');
+  await expect(again.locator('p')).toHaveCSS('color','rgb(83, 92, 59)');
+  await expect(drafts).toHaveCSS('background-color','rgb(240, 223, 227)');
+});
