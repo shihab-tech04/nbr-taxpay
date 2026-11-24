@@ -1,7 +1,7 @@
 import '../../styles/taxpay-service-choice.css';
 import '../../styles/taxpay-payment-form.css';
 import {TaxPayUnifiedTable} from '../ui/TaxPayDataTable';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Building2, CreditCard, FileText, Flag, Globe2, Info, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { getStorySessionId, persistSimulatedPayment } from '../../services/simulatedPaymentStory';
@@ -83,9 +83,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   // Keep a reversible snapshot while a confirmed passenger is being edited.
   // Confirmation is intentionally revoked until the payer saves or cancels.
   const [editBackup, setEditBackup] = useState<{ passenger: TravelPassenger; wasConfirmed: boolean } | null>(null);
-  const [removedPassenger, setRemovedPassenger] = useState<{
-    passenger: TravelPassenger; index: number; wasConfirmed: boolean;
-  } | null>(null);
   const [receiptReviewOpen, setReceiptReviewOpen] = useState(false);
   const [skipPostPaymentLogin, setSkipPostPaymentLogin] = useState(false);
   type PassengerIdentityIssue = {
@@ -95,6 +92,50 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   };
   const [passengerIssue, setPassengerIssue] = useState<PassengerIdentityIssue | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
+  const [passportSuggestionMaxHeight, setPassportSuggestionMaxHeight] = useState(210);
+  // Keep the picker BELOW the field. A popup above intercepts the nationality
+  // tabs and headings. Reserve scroll clearance and bring the field into view
+  // instead; the approved two-column panel and fixed footer stay in place.
+  useLayoutEffect(() => {
+    if (!passportSuggestionsFor) return;
+    const row = document.getElementById('travel-passport-' + passportSuggestionsFor)
+      ?.closest<HTMLElement>('.travel-flow__passport-row');
+    // In Step 1 the actual scroll owner is travel-flow__main; the outer
+    // modal body intentionally has overflow:hidden to protect the fixed footer.
+    const body = row?.closest<HTMLElement>('.travel-flow__main')
+      ?? row?.closest<HTMLElement>('.taxpay-modal__body');
+    if (!row || !body) return;
+    const position = (ensureVisible: boolean) => {
+      if (!row.isConnected) return;
+      const visibleBottom = Math.min(
+        body.getBoundingClientRect().bottom,
+        row.closest('.taxpay-modal')?.querySelector<HTMLElement>('.taxpay-modal__footer')
+          ?.getBoundingClientRect().top ?? window.innerHeight,
+        window.innerHeight,
+      );
+      const limit = window.innerWidth <= 560 ? Math.min(190, window.innerHeight * .28) : 210;
+      const needed = row.getBoundingClientRect().bottom + limit + 8 - visibleBottom;
+      if (ensureVisible && needed > 0) body.scrollTop += Math.ceil(needed);
+      const available = Math.max(0, visibleBottom - row.getBoundingClientRect().bottom - 8);
+      setPassportSuggestionMaxHeight(old => {
+        const height = Math.floor(Math.min(limit, available));
+        return old === height ? old : height;
+      });
+    };
+    // Scroll only when the popup OPENS. Never force-scroll back while the
+    // person moves to another field/tab or clicks outside to dismiss it.
+    const refresh = () => position(false);
+    const frame = requestAnimationFrame(() => position(true));
+    const observer = new ResizeObserver(refresh);
+    observer.observe(body); observer.observe(row);
+    window.addEventListener('resize', refresh);
+    body.addEventListener('scroll', refresh, {passive: true});
+    return () => {
+      cancelAnimationFrame(frame); observer.disconnect();
+      window.removeEventListener('resize', refresh);
+      body.removeEventListener('scroll', refresh);
+    };
+  }, [passportSuggestionsFor]);
   const [medicalHelpFor, setMedicalHelpFor] = useState<string | null>(null);
   const [paymentChannel, setPaymentChannel] = useState<'NOW' | 'OTC' | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<ChallanReceipt['paymentMethod'] | null>(null);
@@ -144,7 +185,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     if (!restored.length || restored.length !== saved.passengers.length)
       throw new Error('Saved passenger information was incomplete.');
     // A new saved journey must never inherit an earlier unsaved edit/undo.
-    setEditBackup(null); setRemovedPassenger(null);
+    setEditBackup(null);
     setMode(saved.mode === 'WATER' ? 'WATER' : 'LAND');
     setPort(typeof saved.port === 'string' ? saved.port : '');
     setWaterPort(typeof saved.waterPort === 'string' ? saved.waterPort : '');
@@ -294,27 +335,13 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setEditingPassengerId(null); setEditBackup(null); setPassengerIssue(null);
     setError(''); setAcknowledged(false);
   };
-  const removeTravelPassenger = (person: TravelPassenger, index: number) => {
-    // Removing during an unfinished edit must preserve the LAST valid
-    // confirmed passenger, not the unsaved and possibly invalid editor state.
-    const original = editBackup?.passenger.id === person.id ? editBackup.passenger : person;
-    const wasConfirmed = editBackup?.passenger.id === person.id
-      ? editBackup.wasConfirmed : confirmedPassengerIds.includes(person.id);
-    setRemovedPassenger({passenger: {...original}, index, wasConfirmed});
+  const removeTravelPassenger = (person: TravelPassenger) => {
     setPassengers(existing => existing.filter(item => item.id !== person.id));
     setConfirmedPassengerIds(ids => ids.filter(id => id !== person.id));
     if (editingPassengerId === person.id) setEditingPassengerId(null);
     if (editBackup?.passenger.id === person.id) setEditBackup(null);
-    setPassengerIssue(null); setError(''); setAcknowledged(false);
-  };
-  const undoPassengerRemoval = () => {
-    if (!removedPassenger) return;
-    const {passenger, index, wasConfirmed} = removedPassenger;
-    setPassengers(existing => existing.some(item => item.id === passenger.id) ? existing : [
-      ...existing.slice(0, index), passenger, ...existing.slice(index),
-    ]);
-    if (wasConfirmed) setConfirmedPassengerIds(ids => [...new Set([...ids, passenger.id])]);
-    setRemovedPassenger(null); setPassengerIssue(null); setError(''); setAcknowledged(false);
+    setPassportSuggestionsFor(null); setPassengerIssue(null);
+    setError(''); setAcknowledged(false);
   };
   const changePassengerType = (id: string, nationality: TravellerNationality) => {
     setPassportSuggestionsFor(null);
@@ -478,7 +505,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     setStep(0); setCheckoutOpen(false); setMode('LAND'); setPort(''); setWaterPort('');
     setDestination(''); setTravelDate(''); setEditingPassengerId('first'); setPassengerIssue(null); setPassportSuggestionsFor(null);
     setPassengers([makeTravelPassenger('first', 'BD')]); setConfirmedPassengerIds([]);
-    setEditBackup(null); setRemovedPassenger(null);
+    setEditBackup(null);
     setReceiptReviewOpen(false); setPhone(''); setError('');
     setPaymentChannel(null); setPaymentMethod(null); setMethodGroup(null);
     setSimulateDecline(false); setAcknowledged(false); setBankSlipPending(false);
@@ -705,8 +732,14 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     errorFocusRevision.current += 1;
                     setPassportSuggestionsFor(passportAlreadyAdded ? null : item.id);
                   }}
+                  onClick={() => {
+                    if (!passportAlreadyAdded) setPassportSuggestionsFor(item.id);
+                  }}
                   onKeyDown={event => {
-                    if (event.key === 'Escape') setPassportSuggestionsFor(null);
+                    if (event.key === 'Escape' && passportSuggestionsFor === item.id) {
+                      event.preventDefault(); event.stopPropagation();
+                      setPassportSuggestionsFor(null); return;
+                    }
                     if (event.key === 'ArrowDown' && passportSuggestionsFor === item.id) {
                       event.preventDefault();
                       document.querySelector<HTMLElement>('#travel-passport-suggestions-' + item.id + ' [role="option"]')?.focus();
@@ -789,6 +822,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               </div>
               {passportSuggestionsFor === item.id && <div
                 className="travel-flow__passport-suggestions" id={'travel-passport-suggestions-' + item.id}
+                data-placement="below"
+                style={{maxHeight: passportSuggestionMaxHeight}}
                 role="listbox" aria-label={tr('Available sample passports','উপলব্ধ নমুনা পাসপোর্ট')}
                 onKeyDown={event => {
                   if (event.key === 'Escape') {
@@ -1061,6 +1096,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             aria-label={tr('Passenger information','যাত্রীর তথ্য')} data-testid="travel-passenger-list">
             <section className="travel-passenger-workspace__editor">
               <h2>{tr('Add passenger','যাত্রী যোগ করুন')}</h2>
+              {pendingPassenger && passengers.length > 1 && !editBackup &&
+                <button className="travel-flow__edit travel-passenger-workspace__cancel-editor"
+                  type="button" onClick={()=>removeTravelPassenger(pendingPassenger)}>
+                  {tr('Cancel adding','যোগ করা বাতিল করুন')}
+                </button>}
               <p className="travel-passenger-workspace__help">{tr('Enter a passport number and search.','পাসপোর্ট নম্বর লিখে অনুসন্ধান করুন।')}</p>
               {pendingPassenger ? (() => {
                 const item=pendingPassenger, index=passengers.findIndex(p=>p.id===item.id);
@@ -1070,10 +1110,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     className="travel-flow__inline-error" role="alert">{passengerIssue.message}</p>}
                   {editBackup?.passenger.id===item.id && <button className="travel-flow__edit" type="button"
                     onClick={cancelPassengerEdit}>{tr('Cancel edit','সম্পাদনা বাতিল')}</button>}
-                  {passengers.length > 1 && <button className="travel-flow__edit travel-passenger-workspace__remove-editor"
-                    type="button" onClick={()=>removeTravelPassenger(item,index)}>
-                    <Trash2 size={15} aria-hidden="true"/>{tr('Remove passenger','যাত্রী বাদ দিন')}
-                  </button>}
                   {item.nationality === 'FOREIGN' && canShowAddPassenger && pendingConfirmationId === item.id &&
                     <div className="travel-flow__confirm-row">
                       <button type="button" className="travel-flow__add-member travel-flow__confirm-passenger"
@@ -1102,10 +1138,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                   <span>{tr('Search another passport to add a passenger.',
                     'আরেকজন যাত্রী যোগ করতে পাসপোর্ট অনুসন্ধান করুন।')}</span></div>
               </div>}
-              {removedPassenger && <p className="travel-passenger-workspace__undo" role="status">
-                {tr('Passenger removed.','যাত্রী বাদ দেওয়া হয়েছে।')}{' '}
-                <button type="button" onClick={undoPassengerRemoval}>{tr('Undo removal','বাদ দেওয়া বাতিল করুন')}</button>
-              </p>}
+              
             </section>
             <SelectedIdentityRail prefix="travel-passenger-workspace"
               label={tr('Passengers in this payment','এই পেমেন্টে যাত্রীরা')}
@@ -1123,7 +1156,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     </div>
                     <button className="travel-passenger-workspace__remove" type="button"
                       aria-label={tr('Remove ','সরান ')+item.name}
-                      onClick={()=>removeTravelPassenger(item,passengers.findIndex(p=>p.id===item.id))}>
+                      onClick={()=>removeTravelPassenger(item)}>
                       <Trash2 size={17}/></button>
                   </div>)}
             </SelectedIdentityRail>
