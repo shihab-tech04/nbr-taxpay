@@ -95,6 +95,11 @@ test('beneficiary list custom dropdown, owner-scoped rename, delete and reload',
     expect(groupsResponse.status).toBe(201);
     const groups=await groupsResponse.json() as {id:string;name:string}[];
     expect(groups).toHaveLength(5);
+    const sixth=await fetch(new URL('/rest/v1/taxpay_beneficiary_lists',api.origin),{
+      method:'POST',headers:ownerHeaders,body:JSON.stringify({owner_uid:first.id,name:'Sixth'}),
+    });
+    expect(sixth.ok).toBe(false);
+    expect((await sixth.json()).message).toContain('BENEFICIARY_GROUP_LIMIT');
     const retained=groups.find(group=>group.name==='Group 1')!;
     const personResponse=await fetch(new URL('/rest/v1/taxpay_beneficiaries',api.origin),{
       method:'POST',headers:ownerHeaders,
@@ -102,6 +107,9 @@ test('beneficiary list custom dropdown, owner-scoped rename, delete and reload',
     });
     expect(personResponse.status).toBe(201);
     const person=(await personResponse.json())[0];
+    const directDelete=await fetch(new URL('/rest/v1/taxpay_beneficiary_lists?id=eq.'+retained.id,api.origin),{method:'DELETE',headers:ownerHeaders});
+    expect(directDelete.ok).toBe(false);
+    expect((await directDelete.json()).message).toContain('BENEFICIARY_GROUP_NOT_EMPTY');
     await page.reload();
     await expect(page.getByTestId('beneficiary-group-capacity')).toContainText('5/5 groups');
     await expect(page.getByRole('button',{name:'Create list',exact:true})).toBeDisabled();
@@ -117,6 +125,32 @@ test('beneficiary list custom dropdown, owner-scoped rename, delete and reload',
     await page.getByRole('dialog',{name:'Edit beneficiary list'}).getByRole('button',{name:'Cancel'}).click();
     const after=await fetch(new URL('/rest/v1/taxpay_beneficiaries?id=eq.'+person.id+'&select=id,list_id',api.origin),{headers:ownerHeaders});
     expect(await after.json()).toEqual([{id:person.id,list_id:retained.id}]);
+    const destination=groups.find(group=>group.name==='Group 2')!;
+    const denied=await fetch(new URL('/rest/v1/rpc/taxpay_transfer_beneficiary_group',api.origin),{
+      method:'POST',headers:{...ownerHeaders,Authorization:'Bearer '+second.token},
+      body:JSON.stringify({p_source_id:retained.id,p_target_id:destination.id}),
+    });
+    expect(denied.ok).toBe(false);
+    await page.getByRole('button',{name:'Selected list'}).click();
+    await page.getByRole('dialog',{name:'Choose beneficiary list'}).getByRole('button',{name:'Edit Group 1'}).click();
+    await page.getByRole('dialog',{name:'Edit beneficiary list'}).getByRole('button',{name:'Delete list'}).click();
+    const transfer=page.getByRole('dialog',{name:'Confirm list deletion'});
+    await transfer.getByRole('button',{name:'Transfer to list'}).click();
+    await transfer.getByRole('option',{name:'Group 2',exact:true}).click();
+    await expect(transfer.getByRole('button',{name:'Delete list'})).toBeEnabled();
+    await transfer.getByRole('button',{name:'Delete list'}).click();
+    await expect(page.getByTestId('beneficiary-group-capacity')).toContainText('4/5 groups');
+    const moved=await fetch(new URL('/rest/v1/taxpay_beneficiaries?id=eq.'+person.id+'&select=id,list_id',api.origin),{headers:ownerHeaders});
+    expect(await moved.json()).toEqual([{id:person.id,list_id:destination.id}]);
+    const createSlot=(name:string)=>fetch(new URL('/rest/v1/taxpay_beneficiary_lists',api.origin),{
+      method:'POST',headers:ownerHeaders,body:JSON.stringify({owner_uid:first.id,name}),
+    });
+    const races=await Promise.all([createSlot('Race A'),createSlot('Race B')]);
+    expect(races.filter(response=>response.ok)).toHaveLength(1);
+    expect((await races.find(response=>!response.ok)!.json()).message).toContain('BENEFICIARY_GROUP_LIMIT');
+    await page.reload();
+    await expect(page.getByTestId('beneficiary-group-capacity')).toContainText('5/5 groups');
+
 
   }finally{await context.close();}
 });
