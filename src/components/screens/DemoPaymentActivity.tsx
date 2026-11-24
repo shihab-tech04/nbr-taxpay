@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useState} from 'react';
 import {useTaxState} from '../../services/taxState';
 import {useAccountIdentity} from '../../services/accountIdentity';
+import {createPaymentHistoryRefresh} from '../../services/paymentHistoryRefresh';
 import {getStorySessionId,persistSimulatedPayment} from '../../services/simulatedPaymentStory';
 import {parsePaymentPrefill} from '../../services/paymentPrefill';
 import {paymentStatusLabel,paymentReviewStatusLabel} from '../../services/paymentStatusDisplay';
@@ -95,23 +96,24 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
   },[id,routeParams?.initialCategory,routeParams?.initialAssessmentYear,routeParams?.initialAmount]);
   useEffect(()=>{
     if(!id||!privateMode)return;
-    let active=true;
     setRows([]);setLoading(true);setLoadError('');
-    const run=async()=>{
-      try{
-        const next=privateMode?await getPrivateSimulationHistory(view):await loadSimulationHistory(id,view);
-        if(active){
-          setRows(next);setLoadError('');setLoading(false);
-          if(view==='payer'&&!historyViewChosen&&!next.length)setView('beneficiary');
-        }
-      }catch(e){
-        if(active){setLoadError(e instanceof Error?e.message:'Read failed');setLoading(false);}
-      }
+    const queue=createPaymentHistoryRefresh(
+      ()=>getPrivateSimulationHistory(view),
+      next=>{
+        setRows(next);setLoadError('');setLoading(false);
+        if(view==='payer'&&!historyViewChosen&&!next.length)setView('beneficiary');
+      },
+      e=>{setLoadError(e instanceof Error?e.message:'Read failed');setLoading(false);}
+    );
+    const invalidate=()=>{
+      if(view==='beneficiary'&&!historyViewChosen)setView('payer');
+      else queue.refresh();
     };
-    void run();
-    const timer=window.setInterval(()=>void run(),7000);
-    return()=>{active=false;window.clearInterval(timer);};
-  },[id,view,revision,privateMode,historyViewChosen]);
+    window.addEventListener('taxpay:story-payments-recovered',invalidate);
+    queue.refresh();
+    const timer=window.setInterval(queue.poll,7000);
+    return()=>{queue.dispose();window.removeEventListener('taxpay:story-payments-recovered',invalidate);window.clearInterval(timer);};
+  },[id,view,revision,privateMode,historyViewChosen,authenticatedUser?.id]);
   useEffect(()=>{
     if(!id||!previewMode)return;
     if(!isDefinedDemoUser(id)){
@@ -119,21 +121,25 @@ export const DemoPaymentActivity:React.FC<{activityTabs?:boolean}>=({activityTab
       return;
     }
     const previewUserId=id;
-    let active=true;
     setRows([]);setLoading(true);setLoadError('');
-    const run=async()=>{
-      try{
-        const [next,authorizationRecords]=await Promise.all([getDemoStoryPaymentHistory(previewUserId,view),getHostedAuthorizations(previewUserId)]);
-        if(active){
-          setRows(next);setPermittedBeneficiaries(
-            authorizationRecords.filter(r=>r.payerId===id&&r.status==='ACTIVE').map(r=>r.taxpayerId));
-          setLoadError('');setLoading(false);
-          if(view==='payer'&&!historyViewChosen&&!next.length)setView('beneficiary');
-        }
-      }catch(e){if(active){setLoadError(e instanceof Error?e.message:'Read failed');setLoading(false);}}
+    const queue=createPaymentHistoryRefresh(
+      ()=>Promise.all([getDemoStoryPaymentHistory(previewUserId,view),getHostedAuthorizations(previewUserId)]),
+      ([next,authorizationRecords])=>{
+        setRows(next);setPermittedBeneficiaries(
+          authorizationRecords.filter(r=>r.payerId===id&&r.status==='ACTIVE').map(r=>r.taxpayerId));
+        setLoadError('');setLoading(false);
+        if(view==='payer'&&!historyViewChosen&&!next.length)setView('beneficiary');
+      },
+      e=>{setLoadError(e instanceof Error?e.message:'Read failed');setLoading(false);}
+    );
+    const invalidate=()=>{
+      if(view==='beneficiary'&&!historyViewChosen)setView('payer');
+      else queue.refresh();
     };
-    void run();const timer=window.setInterval(()=>void run(),7000);
-    return()=>{active=false;window.clearInterval(timer);};
+    window.addEventListener('taxpay:story-payments-recovered',invalidate);
+    queue.refresh();
+    const timer=window.setInterval(queue.poll,7000);
+    return()=>{queue.dispose();window.removeEventListener('taxpay:story-payments-recovered',invalidate);window.clearInterval(timer);};
   },[id,view,revision,previewMode,historyViewChosen]);
 
   useEffect(()=>{
