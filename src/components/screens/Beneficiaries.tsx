@@ -729,7 +729,7 @@ export function Beneficiaries(){
   };
 
   useEffect(()=>{
-    if(beneficiaryPaymentHandoff?.addPending&&!checkingIdentity&&!loading&&!error&&activeList){
+    if(beneficiaryPaymentHandoff?.addPending&&!checkingIdentity&&!loading&&!error&&activeList&&!initialRequestRef.current){
       consumeBeneficiaryAddIntent();open('single');
     }
   },[beneficiaryPaymentHandoff?.addPending,checkingIdentity,loading,error,activeList]);

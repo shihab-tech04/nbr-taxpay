@@ -1,4 +1,4 @@
-import { enterTaxPayService, openLegacyTaxServiceChoice } from './pay-tax-entry-helper';
+import { openNativeSignedInDraftGate, openUnifiedSignedInPayment } from './pay-tax-entry-helper';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { demoLoginOtpCompletedState } from './demo-login-test-state';
 import { randomBytes, randomUUID } from 'node:crypto';
@@ -70,27 +70,25 @@ test('payment form drafts survive another browser, protect owner isolation and r
     await restoredModal.getByRole('button', { name: 'Close payment services' }).click();
     await expect(cards.locator('[data-draft-id="' + draftId + '"]')).toBeVisible();
 
-    // The existing draft makes Pay Tax open its compact two-choice modal.
-    // Regression: choosing Start new must EXPAND to the original complete payer
-    // selection, never leave the second card clipped behind the footer.
+    // Native signed-in entry uses the approved three-stage workspace. Keep
+    // compact draft choice, list Back, header geometry and guarded return.
     const entry = await open(accounts.owner);
-    await entry.goto('/?action=landing');
-    await openLegacyTaxServiceChoice(entry);
-    const entryModal = entry.getByRole('dialog', { name: 'Pay Tax' });
+    const entryModal = await openNativeSignedInDraftGate(entry);
     const draftGate = entryModal.getByTestId('account-draft-entry');
     await expect(draftGate.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
     const compactHeight = await entryModal.evaluate(node => node.getBoundingClientRect().height);
     await draftGate.getByRole('button', { name: 'Continue from draft' }).click();
-    await expect(draftGate.getByTestId('saved-payment-draft-list').locator('[data-draft-id]').first()).toBeVisible();
+    await expect(draftGate.getByTestId('saved-payment-draft-list').locator('[data-draft-id="' + draftId + '"]')).toBeVisible();
     await entryModal.locator('.taxpay-modal__header .taxpay-modal__back').click();
     await expect(draftGate.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
     await draftGate.getByRole('button', { name: 'Start new Tax payment' }).click();
-    await expect(entryModal.locator('[data-payer-relationship]')).toHaveCount(2);
-    await expect(entryModal.locator('.taxpay-modal__footer').getByRole('button', { name: 'Continue' })).toBeVisible();
-
-    // Start new is itself reached from the saved-draft choice modal.
-    // Its Back action belongs in the existing header and must return to that
-    // choice, NOT close Pay Tax or add another bottom/body action.
+    const own=entryModal.getByTestId('unified-account-own').getByRole('checkbox');
+    const next=entryModal.getByRole('button',{name:'Continue to Payment Head',exact:true});
+    await expect(own).toBeVisible();
+    await expect(entryModal.getByTestId('saved-beneficiary-picker')).toBeVisible();
+    await expect(entryModal.locator('[data-payer-relationship]')).toHaveCount(0);
+    await expect(next).toBeVisible();
+    await expect(next).toBeDisabled();
     const newPaymentBack = entryModal.locator('.taxpay-modal__header .taxpay-modal__back');
     await expect(newPaymentBack).toBeVisible();
     await expect(newPaymentBack).toHaveAttribute('aria-label', 'Back');
@@ -104,64 +102,33 @@ test('payment form drafts survive another browser, protect owner isolation and r
     });
     expect(headerSpacing.beforeTitle).toBeGreaterThanOrEqual(7);
     expect(headerSpacing.beforeClose).toBeGreaterThanOrEqual(7);
-
+    await expect.poll(async () => entryModal.evaluate(modal=>{
+      const body=modal.querySelector<HTMLElement>('.taxpay-modal__body')!;
+      const footer=modal.querySelector<HTMLElement>('.taxpay-modal__footer')!;
+      return body.scrollWidth<=body.clientWidth+2&&body.getBoundingClientRect().bottom<=footer.getBoundingClientRect().top+1;
+    })).toBe(true);
+    await expect.poll(()=>entryModal.evaluate(node=>node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(compactHeight-1);
+    await entry.screenshot({path:'test-results/draft-to-unified-workspace-'+info.project.name+'.png'});
+    await own.check();
+    await expect(next).toBeEnabled();
+    await next.click();
+    await expect(entryModal.getByTestId('other-tax-batch')).toBeVisible();
     await newPaymentBack.click();
-    await expect(draftGate.getByRole('button', { name: 'Continue from draft' })).toBeVisible();
-    await expect(draftGate.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
+    await expect(own).toBeChecked();
+    await newPaymentBack.click();
+    const exit=entryModal.getByRole('alertdialog');
+    await expect(exit.getByRole('button',{name:'Save Draft'})).toBeVisible();
+    await exit.getByRole('button',{name:'Keep editing'}).click();
+    await expect(own).toBeChecked();
+    await newPaymentBack.click();
+    await exit.getByRole('button',{name:'Discard tax payment'}).click();
+    await expect(draftGate.getByRole('button',{name:'Start new Tax payment'})).toBeVisible();
+    await expect(draftGate.getByRole('button',{name:'Continue from draft'})).toBeVisible();
     await expect(entryModal.locator('.taxpay-modal__footer')).toHaveCount(0);
     await expect(newPaymentBack).toHaveCount(0);
-    await draftGate.getByRole('button', { name: 'Start new Tax payment' }).click();
-    await expect(newPaymentBack).toBeVisible();
-    await expect(entryModal.locator('[data-payer-relationship]')).toHaveCount(2);
-    await expect(entryModal.locator('.taxpay-modal__footer').getByRole('button', { name: 'Continue' })).toBeVisible();
-
-    const measure = () => entryModal.evaluate(modal => {
-      const cards = Array.from(modal.querySelectorAll<HTMLElement>('[data-payer-relationship]'));
-      const body = modal.querySelector<HTMLElement>('.taxpay-modal__body');
-      const footer = modal.querySelector<HTMLElement>('.taxpay-modal__footer');
-      return {
-        height: modal.getBoundingClientRect().height,
-        cardCount: cards.length,
-        finalCardBottom: cards.at(-1)?.getBoundingClientRect().bottom ?? Number.POSITIVE_INFINITY,
-        bodyBottom: body?.getBoundingClientRect().bottom ?? 0,
-        footerTop: footer?.getBoundingClientRect().top ?? 0,
-        bodyScrollHeight: body?.scrollHeight ?? Number.POSITIVE_INFINITY,
-        bodyClientHeight: body?.clientHeight ?? 0,
-      };
-    });
-    await expect.poll(async () => {
-      const m = await measure();
-      return m.cardCount === 2 && m.finalCardBottom <= m.bodyBottom - 1 &&
-        m.finalCardBottom <= m.footerTop - 1 && m.bodyScrollHeight <= m.bodyClientHeight + 2 &&
-        (info.project.name.startsWith('mobile') ? m.height >= compactHeight - 1 : m.height >= compactHeight + 35);
-    }, { timeout: 10_000, message: 'Start new must expand the modal and reveal both payer cards above its footer' }).toBe(true);
-    console.log('DRAFT_TO_ORIGINAL_MODAL_GEOMETRY', JSON.stringify({ project: info.project.name, compactHeight, expanded: await measure() }));
-    await entry.screenshot({ path: 'test-results/draft-to-original-payer-' + info.project.name + '.png' });
-    // A second Back must survive after entering and leaving Taxpayer details.
-    // This is the exact real-world regression: the payer screen previously
-    // lost its Back arrow after a payment started.
-    await entryModal.locator('[data-payer-relationship="SELF"]').click();
-    await entryModal.locator('[data-payment-entry="OTHER_TAX"]').click();
-    await entryModal.locator('.taxpay-modal__footer').getByRole('button', { name: 'Continue' }).click();
-    await expect(entryModal.locator('.taxpay-modal__title')).toHaveText('Taxpayer details');
-    const payerBack = entryModal.locator('.taxpay-modal__header .taxpay-modal__back');
-    await expect(payerBack).toBeVisible();
-    await payerBack.click();
-    await expect(entryModal.locator('.taxpay-modal__title')).toHaveText('Pay Tax');
-    await expect(entryModal.locator('[data-payer-relationship]')).toHaveCount(2);
-    await expect(entryModal.locator('[data-payer-relationship="SELF"]')).toHaveAttribute('aria-pressed', 'true');
-    await expect(entryModal.locator('[data-payment-entry="OTHER_TAX"]')).toHaveAttribute('aria-pressed', 'true');
-    await expect(entryModal.locator('.taxpay-modal__footer').getByRole('button', { name: 'Continue' })).toBeVisible();
-    await expect(payerBack, 'Back must survive after returning from Taxpayer details').toBeVisible();
-    await payerBack.click();
-    await expect(draftGate.getByRole('button', { name: 'Start new Tax payment' })).toBeVisible();
-    await expect(draftGate.getByRole('button', { name: 'Continue from draft' })).toBeVisible();
-    await expect(entryModal.locator('.taxpay-modal__footer')).toHaveCount(0);
-    await expect(payerBack).toHaveCount(0);
-    await draftGate.getByRole('button', { name: 'Start new Tax payment' }).click();
-    await expect(payerBack).toBeVisible();
-    await expect(entryModal.locator('[data-payer-relationship]')).toHaveCount(2);
-    await entryModal.getByRole('button', { name: 'Close payment services' }).click();
+    await draftGate.getByRole('button',{name:'Continue from draft'}).click();
+    await expect(draftGate.locator('[data-draft-id="' + draftId + '"]')).toBeVisible();
+    await entryModal.getByRole('button',{name:'Close payment services'}).click();
 
     const b = await open(accounts.owner);
     await b.locator('.payment-form-draft-controls__open').click();
@@ -251,22 +218,23 @@ test('payment form drafts survive another browser and retain multiline challan r
   };
   try {
     const { page: first } = await openAccount();
-    await first.goto('/');
-    const firstDialog = await openLegacyTaxServiceChoice(first);
-    await enterTaxPayService(firstDialog, 'OTHER_TAX_PAYMENT', 'SELF');
-    await firstDialog.getByRole('button', { name: 'Continue to purpose & amount' }).click();
+    const firstDialog = await openUnifiedSignedInPayment(first);
+    await firstDialog.getByTestId('unified-account-own').getByRole('checkbox').check();
+    await firstDialog.getByRole('button',{name:'Continue to Payment Head'}).click();
     const batch = firstDialog.getByTestId('other-tax-batch');
     await batch.locator('[data-head-group="Advance Tax"] summary').click();
     await batch.getByRole('checkbox', { name: /Select 68A/ }).check();
+    await batch.getByTestId('other-tax-line').locator('select[id^="other-tax-year"]').selectOption('2025-26');
     await batch.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]').fill('35');
+    await firstDialog.getByRole('button',{name:'Continue to Final Preview'}).click();
     const remarks = 'বাংলা চালান মন্তব্য: অতিরিক্ত করের তথ্য\nEnglish challan note preserved across draft resume.';
     await firstDialog.locator('#guest-payment-remarks').fill(remarks);
+    await firstDialog.locator('.taxpay-modal__back').click();
     await firstDialog.getByRole('button', { name: 'Save Draft', exact: true }).click();
     await expect(firstDialog.getByRole('button', { name: 'Draft Saved' })).toBeVisible();
 
     const { page: second } = await openAccount();
-    await second.goto('/');
-    const secondDialog = await openLegacyTaxServiceChoice(second);
+    const secondDialog = await openNativeSignedInDraftGate(second);
     const draftEntry = secondDialog.getByTestId('account-draft-entry');
     await expect(draftEntry.getByRole('button', { name: 'Continue from draft' })).toBeVisible();
     await draftEntry.getByRole('button', { name: 'Continue from draft' }).click();
@@ -276,6 +244,11 @@ test('payment form drafts survive another browser and retain multiline challan r
     const savedDraftId = await savedDraft.getAttribute('data-draft-id');
     expect(savedDraftId).toBeTruthy();
     await savedDraft.click();
+    await expect(secondDialog.getByTestId('unified-account-own').getByRole('checkbox')).toBeChecked();
+    await secondDialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+    await expect(secondDialog.getByTestId('other-tax-line').locator('input[id^="other-tax-amount"]')).toHaveValue('35');
+    await expect(secondDialog.getByTestId('other-tax-line').locator('select[id^="other-tax-year"]')).toHaveValue('2025-26');
+    await secondDialog.getByRole('button',{name:'Continue to Final Preview'}).click();
     await expect(secondDialog.locator('#guest-payment-remarks')).toHaveValue(remarks);
 
     // Remove the isolated synthetic fixture through the account dashboard's

@@ -108,6 +108,53 @@ for(const language of ['en','bn'] as const){
       const classification=dialog.getByRole('combobox',{name:language==='bn'?'আয়করের ধরন Saved Contact':'Income tax type for Saved Contact'});
       await classification.selectOption('NON_COMPANY');
 
+      // Real local Auth/SQL: add a beneficiary from payment, return to the same
+      // saved draft, then manage again without a duplicate draft or payment.
+      const bn=language==='bn';
+      const saveLabel=bn?'খসড়া সংরক্ষণ করুন':'Save Draft';
+      const readDrafts=async()=>{
+        const response=await fetch(new URL('/rest/v1/taxpay_account_payment_form_drafts?select=id,service,revision,form_payload&owner_uid=eq.'+encodeURIComponent(auth.user.id),api.origin),{headers:{apikey:key,Authorization:'Bearer '+session.access_token},signal:AbortSignal.timeout(15_000)});
+        expect(response.status).toBe(200);return response.json();
+      };
+      await picker.getByRole('button',{name:bn?'উপকারভোগী যোগ':'Add beneficiary',exact:true}).click();
+      const guard=dialog.getByRole('alertdialog');
+      await guard.getByRole('button',{name:bn?'সম্পাদনা চালিয়ে যান':'Keep editing'}).click();
+      await expect(count).toHaveText('1');
+      await picker.getByRole('button',{name:bn?'উপকারভোগী যোগ':'Add beneficiary',exact:true}).click();
+      await guard.getByRole('button',{name:saveLabel,exact:true}).click();
+      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      const addFromPayment=page.getByRole('dialog',{name:bn?'উপকারভোগী যোগ':'Beneficiary entry'});
+      await expect(addFromPayment).toBeVisible();
+      await addFromPayment.locator('#beneficiary-tin').fill('333333333333');
+      await addFromPayment.getByRole('button',{name:bn?'খুঁজুন':'Search',exact:true}).click();
+      await expect(addFromPayment.getByTestId('searched-taxpayer-card')).toBeVisible();
+      await chooseBeneficiaryOption(addFromPayment,'beneficiary-tag','clients');
+      await addFromPayment.getByRole('button',{name:bn?'উপকারভোগী যোগ':'Add beneficiary',exact:true}).click();
+      await expect(addFromPayment).toHaveCount(0);
+      expect((await readBeneficiaries()).map((row:{tin:string})=>row.tin).sort()).toEqual(['012345678901','333333333333']);
+      const firstDrafts=await readDrafts();expect(firstDrafts).toHaveLength(1);
+      const draftId=firstDrafts[0].id;
+      await page.getByTestId('beneficiary-return-to-payment').getByRole('button').click();
+      await expect(dialog.getByTestId('unified-account-own')).toBeVisible();
+      await expect(count).toHaveText('1');
+      await picker.locator('#payment-beneficiary-search').fill('333333333333');
+      await expect(picker.getByRole('checkbox')).toHaveCount(1);
+      await picker.getByRole('checkbox').check();
+      await expect(count).toHaveText('2');
+      await picker.getByRole('button',{name:bn?'উপকারভোগী পরিচালনা':'Manage beneficiaries'}).click();
+      await guard.getByRole('button',{name:saveLabel,exact:true}).click();
+      await expect(page.getByTestId('beneficiaries-page')).toBeVisible();
+      const afterManage=await readDrafts();expect(afterManage).toHaveLength(1);expect(afterManage[0].id).toBe(draftId);expect(afterManage[0].revision).toBeGreaterThan(firstDrafts[0].revision);
+      await page.getByTestId('beneficiary-return-to-payment').getByRole('button').click();
+      await expect(count).toHaveText('2');
+      await picker.locator('#payment-beneficiary-search').fill('333333333333');
+      await expect(picker.getByRole('checkbox')).toBeChecked();
+      await picker.getByRole('checkbox').uncheck();
+      await expect(count).toHaveText('1');
+      await picker.locator('#payment-beneficiary-search').fill('012345678901');
+      await expect(picker.getByRole('checkbox')).toBeChecked();
+      expect(psql('SELECT count(*)::text FROM demo_payment.story_payments')).toBe(beforePaymentCount);
+
       const tin=dialog.getByTestId('unified-tin-input');
       const search=dialog.getByRole('button',{name:language==='bn'?'করদাতার টিআইএন অনুসন্ধান':'Search taxpayer TIN',exact:true});
       const addName=language==='bn'?'করদাতা যোগ করুন':'Add taxpayer';
@@ -130,9 +177,7 @@ for(const language of ['en','bn'] as const){
       await expect(dialog.getByTestId('authorized-taxpayer-choices')).toHaveCount(0);
 
       // Confirming a one-time sample neither creates an address-book row nor a payment.
-      expect(await readBeneficiaries()).toEqual([
-        {owner_uid:auth.user.id,tin:'012345678901',display_name:'Saved Contact'}
-      ]);
+      expect((await readBeneficiaries()).map((row:{tin:string})=>row.tin).sort()).toEqual(['012345678901','333333333333']);
       expect(psql('SELECT count(*)::text FROM demo_payment.story_payments')).toBe(beforePaymentCount);
       const next=dialog.getByRole('button',{name:language==='bn'?'পেমেন্ট খাতে এগিয়ে যান':'Continue to Payment Head',exact:true});
       await expect(next).toBeEnabled();
@@ -143,7 +188,7 @@ for(const language of ['en','bn'] as const){
       await expect(dialog.locator('.taxpay-modal__step-count')).toContainText('1/3');
       await expect(count).toHaveText('2');
       await expect(dialog.locator('.unified-taxpayer-workspace__person').filter({hasText:'111*********'})).toHaveCount(1);
-      expect(await readBeneficiaries()).toHaveLength(1);
+      expect(await readBeneficiaries()).toHaveLength(2);
       expect(psql('SELECT count(*)::text FROM demo_payment.story_payments')).toBe(beforePaymentCount);
     }finally{
       await context.close().catch(()=>undefined);

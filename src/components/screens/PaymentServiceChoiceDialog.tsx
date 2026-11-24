@@ -123,8 +123,15 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const bn = language === 'bn';
   const tr = (en: string, bangla: string) => bn ? bangla : en;
   const manageAfterClose = useRef<'manage'|'add'|null>(null);
+  const backToDraftChoice=useRef(false);
   const close = (draft?:PaymentFormDraft) => {
     const mode=manageAfterClose.current; manageAfterClose.current=null;
+    if(backToDraftChoice.current&&!mode){
+      backToDraftChoice.current=false;setExitPromptOpen(false);setExitError('');setDraftToResume(null);
+      setDraftEntryCompleted(false);setEnteredFromDraftChoice(false);setDraftEntryMode('choice');setDraftEntryBlocking(true);
+      setStage(1);setPayerForSelf(null);setTopLevel('OTHER_TAX');setUseAccount(false);setView('payer');return;
+    }
+    backToDraftChoice.current=false;
     if (onDismiss) onDismiss(); else setPaymentServiceChoiceOpen(false);
     if(mode)startBeneficiaryPaymentManagement(mode,draft);
   };
@@ -141,8 +148,8 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   }, [exitPromptOpen]);
   const requestClose = () => {
     if (exitSaving) return;
-    if (exitPromptOpen) { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=null; return; }
-    if (view === 'payment' && stage !== 4 && (isWalkInPayment || draftExitActionRef.current)) {
+    if (exitPromptOpen) { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=null; backToDraftChoice.current=false; return; }
+    if (view === 'payment' && stage !== 4 && (isWalkInPayment || draftExitActionRef.current || (useAccount&&(manageAfterClose.current||backToDraftChoice.current)))) {
       setExitPromptOpen(true);
       setExitError('');
       return;
@@ -220,7 +227,10 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     openLogin();
   };
   const returnToService = () => {
-    if(unifiedEntry && useAccount && stage===1){requestClose();return;}
+    if(unifiedEntry && useAccount && stage===1){
+      backToDraftChoice.current=genericAccountEntry&&enteredFromDraftChoice;
+      requestClose();return;
+    }
     setDraftToResume(null);
     setStage(1);
     if(genericAccountEntry){setDraftEntryCompleted(false);setDraftEntryMode('choice');setEnteredFromDraftChoice(false);}
@@ -468,7 +478,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
       </section>}
       {exitPromptOpen && (isWalkInPayment ? (
         <WalkInDiscardConfirmation language={language}
-          onKeepEditing={() => { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=null; }}
+          onKeepEditing={() => { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=null; backToDraftChoice.current=false; }}
           onDiscard={()=>close()} />
       ) : (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 p-3 sm:p-6"
@@ -481,7 +491,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
               if (event.key === 'Escape') {
                 event.preventDefault();
                 event.stopPropagation();
-                if (!exitSaving) { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=null; }
+                if (!exitSaving) { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=null; backToDraftChoice.current=false; }
               }
               if (event.key === 'Tab') {
                 const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
@@ -520,7 +530,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
                 data-testid="walkin-payment-exit-cta-row">
                 <button ref={exitFirstButtonRef} type="button"
                   className="min-h-11 w-full rounded-lg bg-taxpay-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-taxpay-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary"
-                  onClick={() => { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=null; }}>
+                  onClick={() => { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=null; backToDraftChoice.current=false; }}>
                   <span className="whitespace-nowrap">{tr('Keep editing', 'সম্পাদনা চালিয়ে যান')}</span>
                 </button>
                 <button type="button"
@@ -541,7 +551,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
               </button>
               <button type="button" disabled={exitSaving}
                 className="min-h-11 w-full rounded-lg border border-taxpay-border bg-white px-4 py-2.5 text-sm font-semibold text-taxpay-dark transition-colors hover:bg-taxpay-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxpay-primary disabled:opacity-60"
-                onClick={() => { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=null; }}>
+                onClick={() => { setExitPromptOpen(false); setExitError(''); manageAfterClose.current=null; backToDraftChoice.current=false; }}>
                 {tr('Keep editing', 'সম্পাদনা চালিয়ে যান')}
               </button>
             </div>

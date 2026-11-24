@@ -69,7 +69,7 @@ export async function enterTaxPayService(dialog: Locator, serviceId: string, pay
 }
 
 /** The approved account entry must use a visible control at its native viewport. */
-export async function openUnifiedSignedInPayment(page: Page, locale: 'en'|'bn' = 'en', route: 'landing'|'taxpayer_home' = 'landing'): Promise<Locator> {
+export async function openNativeSignedInDraftGate(page: Page, locale: 'en'|'bn' = 'en', route: 'landing'|'taxpayer_home' = 'landing'): Promise<Locator> {
   await page.goto('/?action='+route+'&lang='+locale);
   const viewport=page.viewportSize();
   if(!viewport) throw new Error('Expected a configured viewport');
@@ -86,6 +86,12 @@ export async function openUnifiedSignedInPayment(page: Page, locale: 'en'|'bn' =
   }
   expect(page.viewportSize()).toEqual(viewport);
   const dialog=page.getByRole('dialog',{name:paymentLabel});
+  await expect(dialog.getByTestId('account-draft-entry')).toBeVisible();
+  return dialog;
+}
+
+export async function openUnifiedSignedInPayment(page: Page, locale: 'en'|'bn' = 'en', route: 'landing'|'taxpayer_home' = 'landing'): Promise<Locator> {
+  const dialog=await openNativeSignedInDraftGate(page,locale,route);
   await dialog.getByRole('button',{name:/Start new Tax payment|নতুন কর পরিশোধ শুরু করুন/}).click();
   await expect(dialog.getByTestId('unified-account-own')).toBeVisible();
   await expect(dialog.locator('[data-payment-access], [data-payer-relationship]')).toHaveCount(0);

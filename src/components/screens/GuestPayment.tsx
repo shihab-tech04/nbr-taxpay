@@ -2275,7 +2275,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
             
             {signedInBeneficiarySelection && <SavedBeneficiaryPicker key={beneficiaryRefreshKey} language={language} allowMultiple={otherBatch}
               selectedTins={(otherBatch ? batchTaxpayers : batchTaxpayers.slice(0,1)).map(person=>person.tin).filter(Boolean)}
-              onAvailableTins={setAvailableSavedTins}
+              onAvailableTins={setAvailableSavedTins} onManage={onManageBeneficiaries}
 allowOneTimeFallback={Boolean(paymentOwnerId)}
               fallbackSelection={activeOneTimeRecipient?{tin:activeOneTimeRecipient.tin,name:language==='bn'?activeOneTimeRecipient.nameBn:activeOneTimeRecipient.nameEn}:null}
               onFallbackClear={()=>{

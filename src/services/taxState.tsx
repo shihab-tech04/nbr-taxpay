@@ -188,6 +188,8 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   if(handoffIdentityRef.current.scope!==handoffScope)handoffIdentityRef.current={scope:handoffScope};
   const handoffRouteRef=useRef(currentRoute);
   handoffRouteRef.current=currentRoute;
+  const currentHandoffRef=useRef(beneficiaryHandoff);
+  currentHandoffRef.current=beneficiaryHandoff;
   const beneficiaryPaymentHandoff=beneficiaryHandoff?.ownerScope===handoffScope&&currentRoute==='beneficiaries'?beneficiaryHandoff:null;
   const beneficiaryResumeDraft=beneficiaryResume?.scope===handoffScope?beneficiaryResume.draft:null;
   useEffect(()=>{
@@ -327,10 +329,12 @@ export const TaxStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if(!handoffActor||!handoff?.draftId||!handoff.service)throw new Error('No saved payment is available.');
     const identity=handoffIdentityRef.current;
     const drafts=await listPaymentFormDrafts(handoffActor,handoff.service);
-    if(handoffIdentityRef.current!==identity||handoffRouteRef.current!=='beneficiaries'||paymentDraftOwnerScope(handoffActor)!==handoff.ownerScope)
+    if(handoffIdentityRef.current!==identity||currentHandoffRef.current!==handoff||handoffRouteRef.current!=='beneficiaries'||paymentDraftOwnerScope(handoffActor)!==handoff.ownerScope)
       throw new Error('Your account or page changed. Reopen your saved drafts.');
     const draft=drafts.find(row=>row.id===handoff.draftId);
     if(!draft)throw new Error('This payment draft is no longer available.');
+    if(draft.form_payload.schemaVersion!==1||draft.form_payload.category!==draft.service||
+      (draft.form_payload.forSelf!==null&&typeof draft.form_payload.forSelf!=='boolean'))throw new Error('The saved payment draft could not be verified.');
     navigate(handoff.originRoute);
     setBeneficiaryHandoff(null);
     setBeneficiaryResume({scope:handoff.ownerScope,draft});
