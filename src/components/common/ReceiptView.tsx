@@ -12,6 +12,7 @@ import {
 import { ChallanReceipt } from '../../types/tax';
 import { formatCurrency } from '../../services/numberFormat';
 import { useTaxState } from '../../services/taxState';
+import {beneficiaryFinalTagLabel,type BeneficiaryRelation} from '../../services/beneficiaryTags';
 import { MASTER_PAYMENT_HEADS, CATEGORY_LABELS } from '../../data/paymentHeads';
 import { downloadDisplayedCertificate } from '../../services/receiptDocumentExport';
 import { groupReceiptAllocations } from '../../services/receiptAllocationGroups';
@@ -49,11 +50,16 @@ interface ReceiptViewProps {
 }
 
 export const ReceiptView: React.FC<ReceiptViewProps> = ({ receipt, onBack, embedded = false, onNewPayment, certificate = false,
-  giftSimulationDetails, simulationServiceName,
+  giftSimulationDetails:giftSimulationDetailsProp, simulationServiceName,
   transactionActions = false, onPayAgain, onApplyForCorrection, payAgainUnavailableReason,
   payAgainTestId = 'receipt-pay-again', suppressFooterActions = false,
   compactWalkInLayout = false, accountRecordView = false, activeDocument, onDocumentChange, postReceiptInvitation }) => {
   const { language, navigate } = useTaxState();
+  const gift=receipt.giftDetails;
+  const giftSimulationDetails=giftSimulationDetailsProp??(gift&&receipt.paymentCategory==='GIFT_TAX'?{
+    doneeName:gift.donee.name,doneeTin:gift.donee.tin,relationship:beneficiaryFinalTagLabel(gift.donee.tag,gift.donee.relationship as BeneficiaryRelation|null,language,gift.donee.otherLabel)??'—',
+    giftAmount:gift.giftAmountMinor/100,giftDate:gift.giftDate,description:gift.description,remarks:gift.remarks,
+  }:undefined);
   const [showCertificate, setShowCertificate] = useState(false);
   const canViewCertificate = canViewPaymentCertificate(receipt);
   const isCertificate = certificate || (canViewCertificate && (activeDocument ? activeDocument === 'certificate' : showCertificate));

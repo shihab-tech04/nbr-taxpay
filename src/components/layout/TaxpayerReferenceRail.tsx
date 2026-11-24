@@ -1,10 +1,12 @@
 import React from 'react';
-import { Activity, Bell, BookOpen, ChevronDown, CirclePlus, CircleUserRound, FileCheck2, Home, LogOut, Plane, UsersRound } from 'lucide-react';
+import { Activity, Bell, BookOpen, ChevronDown, CirclePlus, CircleUserRound, FileCheck2, Gift, Home, LogOut, Plane, UsersRound } from 'lucide-react';
 import {useCorrectionNotices} from '../../services/previewCorrections';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { SiteLogo } from './SiteLogo';
 import { taxpayerBrandName } from '../../config/brand';
+
+const GiftTaxServiceModal = React.lazy(() => import('../screens/GiftTaxEntryModal').then(module => ({default: module.GiftTaxEntryModal})));
 
 type RailLink = { route: string; en: string; bn: string; Icon: React.ComponentType<{size?: number; 'aria-hidden'?: boolean}> };
 
@@ -25,6 +27,7 @@ export function TaxpayerReferenceRail() {
   const { user } = useAccountIdentity();
   const [signOutError, setSignOutError] = React.useState('');
   const [payMenuOpen, setPayMenuOpen] = React.useState(false);
+  const [giftTaxOpen, setGiftTaxOpen] = React.useState(false);
   const payAnchorRef = React.useRef<HTMLDivElement>(null);
   const payButtonRef = React.useRef<HTMLButtonElement>(null);
   React.useEffect(() => {
@@ -54,7 +57,7 @@ export function TaxpayerReferenceRail() {
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [payMenuOpen]);
-  React.useEffect(() => setPayMenuOpen(false), [currentRoute]);
+  React.useEffect(() => {setPayMenuOpen(false);setGiftTaxOpen(false);}, [currentRoute, userRole, user, previewAccount]);
   const [signingOut, setSigningOut] = React.useState(false);
   const logout = async () => {
     setSignOutError('');
@@ -83,7 +86,7 @@ export function TaxpayerReferenceRail() {
   const bn = language === 'bn';
   const sampleProfile = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole);
   return (
-    <aside className="taxpayer-reference-rail" aria-label={bn ? 'করদাতা ডেস্কটপ নেভিগেশন' : 'Taxpayer desktop navigation'}>
+    <><aside className="taxpayer-reference-rail" aria-label={bn ? 'করদাতা ডেস্কটপ নেভিগেশন' : 'Taxpayer desktop navigation'}>
       <div>
         <button className="taxpayer-reference-brand" type="button" onClick={() => navigate('landing')}>
           <SiteLogo className="taxpayer-reference-wordmark" alt={taxpayerBrandName(language)} />
@@ -96,6 +99,7 @@ export function TaxpayerReferenceRail() {
           {payMenuOpen && <div id="taxpayer-pay-menu" className="taxpayer-reference-pay-menu" role="menu" aria-label={bn ? 'কর পরিশোধের বিকল্প' : 'Payment options'}>
             <button type="button" role="menuitem" className="taxpayer-reference-pay-option" onClick={() => {setPayMenuOpen(false);openPaymentServiceChoice();}}><CirclePlus size={17} aria-hidden={true}/>{bn ? 'কর পরিশোধ' : 'Pay Tax'}</button>
             <button type="button" role="menuitem" className="taxpayer-reference-pay-option" onClick={() => {setPayMenuOpen(false);openPaymentServiceChoice('TRAVEL_TAX');}}><Plane size={17} aria-hidden={true}/>{bn ? 'ভ্রমণ কর' : 'Travel Tax'}</button>
+            <button type="button" role="menuitem" className="taxpayer-reference-pay-option" onClick={() => {setPayMenuOpen(false);setGiftTaxOpen(true);}}><Gift size={17} aria-hidden={true}/>{bn ? 'দানকর' : 'Gift Tax'}</button>
           </div>}
         </div>}
         <nav className="taxpayer-reference-links" aria-label={bn ? 'করদাতা সেবা' : 'Taxpayer services'}>
@@ -125,5 +129,9 @@ export function TaxpayerReferenceRail() {
         {signOutError && <p role="alert">{signOutError}</p>}
       </div>
     </aside>
+    {giftTaxOpen && <React.Suspense fallback={<p role="status">{bn ? 'দানকর লোড হচ্ছে…' : 'Loading Gift Tax…'}</p>}>
+      <GiftTaxServiceModal signedIn onClose={() => {setGiftTaxOpen(false);payButtonRef.current?.focus();}} />
+    </React.Suspense>}
+    </>
   );
 }
