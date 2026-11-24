@@ -410,7 +410,7 @@ export function CitizenNavigation() {
         </div>
       )}
       {giftTaxOpen && <React.Suspense fallback={<p role="status">{bn ? 'দানকর লোড হচ্ছে…' : 'Loading Gift Tax…'}</p>}>
-        <GiftTaxServiceModal onClose={() => setGiftTaxOpen(false)} />
+        <GiftTaxServiceModal signedIn={isTaxpayer} onClose={() => setGiftTaxOpen(false)} />
       </React.Suspense>}
     </>
   );

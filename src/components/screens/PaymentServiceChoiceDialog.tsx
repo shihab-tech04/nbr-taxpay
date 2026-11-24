@@ -162,7 +162,9 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
       setExitSaving(false);
     }
   };
-  const effectiveSelected: ServiceId | null = draftToResume?.service ?? initialReuse?.service ?? selected;
+  const requestedService = draftToResume?.service ?? initialReuse?.service ?? selected;
+  // Gift Tax has a dedicated donor/donee journey; never send its receipt or draft to the generic income-tax composer.
+  const effectiveSelected: ServiceId | null = requestedService === 'GIFT_TAX' ? null : requestedService;
   const travelJourney = effectiveSelected === 'TRAVEL_TAX';
   const stages = travelJourney
     ? travelTaxModalStages(language)
