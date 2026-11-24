@@ -100,7 +100,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     if (!passportSuggestionsFor) return;
     const row = document.getElementById('travel-passport-' + passportSuggestionsFor)
       ?.closest<HTMLElement>('.travel-flow__passport-row');
-    const body = row?.closest<HTMLElement>('.taxpay-modal__body');
+    // In Step 1 the actual scroll owner is travel-flow__main; the outer
+    // modal body intentionally has overflow:hidden to protect the fixed footer.
+    const body = row?.closest<HTMLElement>('.travel-flow__main')
+      ?? row?.closest<HTMLElement>('.taxpay-modal__body');
     if (!row || !body) return;
     const position = (ensureVisible: boolean) => {
       if (!row.isConnected) return;
