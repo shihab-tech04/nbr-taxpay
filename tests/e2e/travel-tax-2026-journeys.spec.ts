@@ -314,6 +314,15 @@ test('Travel Tax: ten fictional passports are scrollable, selectable and verifia
   await expect(options.first()).toBeVisible();
   const geometry=await list.evaluate(el=>({scroll:el.scrollHeight,visible:el.clientHeight}));
   expect(geometry.scroll).toBeGreaterThan(geometry.visible);
+  await expect.poll(async()=>list.getAttribute('data-placement')).toMatch(/above|below/);
+  const boundaries=await list.evaluate(el=>{
+    const list=el.getBoundingClientRect();
+    const body=el.closest('.taxpay-modal__body')?.getBoundingClientRect();
+    const footer=el.closest('.taxpay-modal')?.querySelector('.taxpay-modal__footer')?.getBoundingClientRect();
+    return {top:list.top,bottom:list.bottom,bodyTop:body?.top??0,footerTop:footer?.top??window.innerHeight};
+  });
+  expect(boundaries.top).toBeGreaterThanOrEqual(boundaries.bodyTop - 2);
+  expect(boundaries.bottom).toBeLessThanOrEqual(boundaries.footerTop + 2);
   await options.filter({hasText:'TEST230005'}).click();
   await modal.getByRole('button',{name:'Check Passport'}).click();
   await expect(modal.getByTestId('travel-passenger-name-first')).toHaveText('SAMPLE PASSENGER SIX');
@@ -1036,7 +1045,7 @@ test('F-153 / US-150 T01 T03: editing a confirmed passenger reprices review and 
   await expect(table.locator('tfoot')).toContainText('2,000');
 });
 
-test('F-153 / US-150 T02 T03: removing either passenger reprices and undo restores order and IDs',async({page},info)=>{
+test('F-153 / US-150: remove from passenger rail, cancel an unfinished entry, and reprice without undo',async({page},info)=>{
   test.skip(!['desktop-1280','mobile-375'].includes(info.project.name),'EN desktop/mobile representative');
   await page.goto('/');
   await openTravelTaxFromBanner(page);
@@ -1045,52 +1054,32 @@ test('F-153 / US-150 T02 T03: removing either passenger reprices and undo restor
   await modal.locator('#travel-lookup-first').click();
   await modal.getByRole('button',{name:'Add passenger',exact:true}).click();
   await modal.locator('#travel-new-passport').focus();
-  const secondId=await modal.locator('.travel-passenger-workspace__entry').getAttribute('data-passenger-id');
-  const members=modal.locator('.travel-passenger-workspace__person');
   const second=modal.locator('.travel-passenger-workspace__entry');
+  const secondId=await second.getAttribute('data-passenger-id');
   expect(secondId).toBeTruthy();
   await second.locator('#travel-passport-'+secondId).fill('TEST230001');
   await second.locator('#travel-lookup-'+secondId).click();
   await second.getByRole('button',{name:'Add passenger',exact:true}).click();
-  await fillTravelDetails(modal);
-  await expect(modal.getByTestId('travel-payment-total')).toContainText('2,000');
-  await modal.getByRole('button',{name:'Edit passengers (2)'}).click();
+  const members=modal.locator('.travel-passenger-workspace__person');
+  await expect(members).toHaveCount(2);
+  await expect(modal.getByRole('button',{name:'Remove passenger'})).toHaveCount(0);
+  await expect(modal.getByRole('button',{name:'Undo removal'})).toHaveCount(0);
   await members.nth(1).locator('.travel-passenger-workspace__remove').click();
   await expect(members).toHaveCount(1);
-  await expect(members.first()).toContainText('SAMPLE BANGLADESHI PASSENGER');
-  await expect(members).toHaveCount(1);
-  const undo=modal.getByRole('button',{name:'Undo removal'});
-  await expect(undo).toBeVisible();
-  await undo.click();
-  await expect(members).toHaveCount(2);
-  await expect(members.nth(1)).toHaveAttribute('data-passenger-id',secondId!);
-  await expect(members.nth(1)).toHaveAttribute('data-complete','true');
-  // Removing mid-edit must Undo to the previously confirmed identity, not
-  // resurrect the half-edited passport or an unconfirmed passenger.
-  await members.first().locator('.travel-passenger-workspace__copy button').click();
-  await modal.locator('.travel-passenger-workspace__entry').locator('#travel-passport-first').fill('TEST230003');
-  await expect(modal.locator('.travel-passenger-workspace__entry')).toHaveAttribute('data-complete','false');
-  await modal.locator('.travel-passenger-workspace__entry').getByRole('button',{name:'Remove passenger'}).click();
-  await modal.getByRole('button',{name:'Undo removal'}).click();
-  await expect(members.first()).toContainText('SAMPLE BANGLADESHI PASSENGER');
-  await expect(members.first()).toHaveAttribute('data-complete','true');
-  await members.first().locator('.travel-passenger-workspace__remove').click();
-  await expect(members).toHaveCount(1);
-  await expect(members.first()).toHaveAttribute('data-passenger-id',secondId!);
-  await expect(members.first()).toContainText('SAMPLE PASSENGER TWO');
+  await expect(modal.getByText('Passenger removed.')).toHaveCount(0);
   await modal.getByRole('button',{name:'Continue to travel details'}).click();
+  await fillTravelDetails(modal);
   await expect(modal.getByTestId('travel-payment-total')).toContainText('1,000');
   await modal.getByRole('button',{name:'Edit passengers (1)'}).click();
-  await modal.getByRole('button',{name:'Undo removal'}).click();
-  await expect(members).toHaveCount(2);
-  await expect(members.nth(0)).toHaveAttribute('data-passenger-id','first');
-  await expect(members.nth(1)).toHaveAttribute('data-passenger-id',secondId!);
+  await modal.locator('#travel-new-passport').focus();
+  const entry=modal.locator('.travel-passenger-workspace__entry');
+  await expect(entry.getByRole('button',{name:'Cancel adding'})).toBeVisible();
+  await entry.getByRole('button',{name:'Cancel adding'}).click();
+  await expect(entry).toHaveCount(0);
+  await expect(members).toHaveCount(1);
+  await expect(modal.getByRole('button',{name:'Undo removal'})).toHaveCount(0);
   await modal.getByRole('button',{name:'Continue to travel details'}).click();
-  await expect(modal.getByTestId('travel-payment-total')).toContainText('2,000');
-  await modal.getByRole('button',{name:'Continue to review'}).click();
-  if (await modal.locator('#travel-mobile').isVisible() && !(await modal.locator('#travel-mobile').inputValue())) await modal.locator('#travel-mobile').fill('01712345678');
-  await expect(modal.locator('.travel-flow__passenger-table tbody tr')).toHaveCount(2);
-  await expect(modal.locator('.travel-flow__passenger-table tfoot')).toContainText('2,000');
+  await expect(modal.getByTestId('travel-payment-total')).toContainText('1,000');
 });
 
 
