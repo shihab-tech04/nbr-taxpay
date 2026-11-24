@@ -1154,3 +1154,75 @@ for(const route of ['services','user_guide'] as const) {
     expect(writes).toEqual([]);
   });
 }
+
+test('unified account native entry preserves mixed allocation amounts through final preview, checkout and one simulated receipt',async({page})=>{
+  const writes:string[]=[];
+  const submitted:Record<string,any>[]=[];
+  // No hosted writes: only the explicitly scoped synthetic fixtures below
+  // can answer a POST. The application still executes its real validation.
+  await page.route('**/*.supabase.co/**',route=>
+    ['GET','HEAD','OPTIONS'].includes(route.request().method())?route.continue():route.abort());
+  await mockSubmittedPaymentSqlReadback(page);
+  await page.route('**/functions/v1/demo-story1-taxpay/payments',async route=>{
+    if(route.request().method()!=='POST')return route.fallback();
+    submitted.push(route.request().postDataJSON());
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      success:true,id:'00000000-0000-4000-8000-000000000409',
+      status:'SIMULATED_SUCCESS',mirrored:true,simulationOnly:true
+    })});
+  });
+  const {dialog}=await mockSignedInOtherTax(page,writes,'en','OTHER',true);
+  await dialog.getByTestId('unified-account-own').getByRole('checkbox').check();
+  await dialog.getByTestId('saved-beneficiary-picker').getByRole('checkbox',{name:'Select Saved Taxpayer Two'}).check();
+  await expect(dialog.getByTestId('unified-taxpayer-count')).toHaveText('2');
+  await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+  const editor=dialog.getByTestId('other-tax-batch');
+  const group=editor.locator('[data-head-group="Advance Tax"]');
+  const openGroup=async()=>{if(await group.getAttribute('open')===null)await group.locator('summary').click();};
+  await openGroup();
+  await editor.getByRole('checkbox',{name:/Select 68A/}).check();
+  await editor.getByTestId('other-tax-line').first().locator('select[id^="other-tax-year"]').selectOption('2026-27');
+  await editor.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('15');
+  await editor.getByTestId('other-tax-taxpayer-tabs').locator('button[data-taxpayer-id]').nth(1).click();
+  await openGroup();
+  await editor.getByRole('checkbox',{name:/Select 68B/}).check();
+  await editor.getByTestId('other-tax-line').first().locator('select[id^="other-tax-year"]').selectOption('2025-26');
+  await editor.getByTestId('other-tax-line').first().locator('input[id^="other-tax-amount"]').fill('35');
+  await dialog.getByRole('button',{name:'Continue to Final Preview'}).click();
+  const review=dialog.getByTestId('unified-v3-payment-details');
+  await expect(review).toBeVisible();
+  await expect(review.locator('tbody tr.unified-v3-review__owner')).toHaveCount(2);
+  await expect(review).toContainText('2026-27');
+  await expect(review).toContainText('2025-26');
+  await expect(dialog.getByTestId('unified-v5-payment-total').locator('output')).toContainText('50');
+  await expect(dialog.getByTestId('unified-v5-payment-channel-screen')).toHaveCount(0);
+  await dialog.locator('#guest-payment-remarks').fill('Scoped mixed account payment acceptance');
+  await dialog.getByRole('button',{name:'Make Payment'}).click();
+  await expect(dialog.getByTestId('unified-v5-payment-channel-screen')).toBeVisible();
+  await expect(review).toHaveCount(0);
+  await expect(dialog.getByRole('button',{name:'Confirm payment'})).toBeDisabled();
+  expect(submitted).toHaveLength(0);
+  await dialog.locator('.taxpay-modal__back').click();
+  await expect(review).toBeVisible();
+  await expect(dialog.locator('#guest-payment-remarks')).toHaveValue('Scoped mixed account payment acceptance');
+  await dialog.getByRole('button',{name:'Make Payment'}).click();
+  await dialog.getByRole('button',{name:'Pay online'}).click();
+  await dialog.getByRole('button',{name:'Mobile banking'}).click();
+  await dialog.getByRole('radio',{name:'bKash'}).check();
+  await dialog.getByRole('checkbox',{name:/I have checked the taxpayers/}).check();
+  await dialog.getByRole('button',{name:'Confirm payment'}).click();
+  await expect(dialog.getByRole('heading',{name:'Payment record saved'})).toBeVisible({timeout:20000});
+  expect(submitted).toHaveLength(1);
+  expect(submitted[0].amountMinor).toBe(5000);
+  const allocations=submitted[0].details.allocations;
+  expect(allocations.map((x:any)=>[x.taxpayerTin,x.assessmentYear,x.amountMinor])).toEqual([
+    ['1111111111111','2026-27',1500],['222222222222','2025-26',3500]
+  ]);
+  expect(new Set(allocations.map((x:any)=>x.allocationId)).size).toBe(2);
+  await dialog.getByRole('button',{name:'Receipt details'}).click();
+  const receipt=dialog.locator('.receipt-view__paper');
+  await expect(receipt).toContainText('1111111111111');
+  await expect(receipt).toContainText('222222222222');
+  await expect(receipt).toContainText('৳ 50');
+  expect(writes).toEqual([]);
+});

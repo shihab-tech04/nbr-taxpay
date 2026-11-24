@@ -27,6 +27,15 @@ for (const locale of ['en', 'bn'] as const) {
     await expect(payment.getByTestId('unified-taxpayer-count')).toHaveText('0');
     await expect(next).toBeDisabled();
     await expect(payment.getByTestId('saved-beneficiary-picker')).toBeVisible();
+    await other.fill('333333333333');
+    await payment.getByRole('button',{name:locale==='bn'?'করদাতার টিআইএন অনুসন্ধান':'Search taxpayer TIN'}).click();
+    await expect(payment.getByTestId('unified-taxpayer-search-result')).toBeVisible();
+    await payment.getByRole('button',{name:locale==='bn'?'করদাতা যোগ করুন':'Add taxpayer',exact:true}).click();
+    await expect(own).not.toBeChecked();
+    await expect(payment.getByTestId('unified-taxpayer-count')).toHaveText('1');
+    await next.click();
+    await expect(payment.getByTestId('other-tax-batch')).toBeVisible();
+    await expect(payment.locator('.taxpay-modal__step-count')).toContainText('2/3');
     await expect(payment.locator('[data-entry-section="access"],[data-payment-access]')).toHaveCount(0);
     await expect(page.getByRole('dialog', { name: 'Sign In To Your Sohojkor Account' })).toHaveCount(0);
   });
