@@ -25,7 +25,7 @@ import {activityPaymentPayer} from '../../services/activityPaymentPayer';
 import {PAYMENT_TAG_GROUPS,paymentTagGroupLabels,paymentTagGroupForTin,type PaymentTagGroup} from '../../services/beneficiaryPaymentTags';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {taxpayerGreeting} from '../../services/taxpayerGreeting';
-import {initialActivityYear, compareActivityNewestFirst} from '../../services/activityYearScope';
+import {initialActivityYear, compareActivityNewestFirst, selectActivitySource, allowLocalActivityExamples} from '../../services/activityYearScope';
 import {EventBasedTaxLedger, PaymentLifecycleDetails, type TaxAccountEvent} from './EventBasedTaxLedger';
 
 /**
@@ -112,11 +112,13 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   // The legacy localhost QA flag retains the test-only source comparison.
   // Production preview requires a current fictional profile session and never
   // substitutes these records for a real authenticated taxpayer account.
-  const localQaScenario=['localhost','127.0.0.1'].includes(window.location.hostname)&&
-    new URLSearchParams(window.location.search).get('qaScenario')==='1';
+  const localHost=['localhost','127.0.0.1'].includes(window.location.hostname);
+  const localQaScenario=localHost&&new URLSearchParams(window.location.search).get('qaScenario')==='1';
   // A server-issued preview session selects fictional user1 Activity records only.
   // Real Supabase accounts are routed elsewhere and never inherit these figures.
   const authorizedPreviewScenario=previewAccount?.id==='user1'&&activePreviewSession()?.profileId==='user1';
+  // Production never consumes bundled events, even if a URL requests a sample.
+  const showIllustrativeRecords=allowLocalActivityExamples(localHost,Boolean(previewAccount),localQaScenario);
   const greeting=taxpayerGreeting(language,new Date().getHours(),bn?DEMO_USERS.user1.nameBn:DEMO_USERS.user1.nameEn,true);
   const tr=(en:string,bengali:string)=>bn?bengali:en;
   const [savedTagPeople,setSavedTagPeople]=useState<Beneficiary[]>([]);
@@ -194,10 +196,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     ?tr('My tax','নিজের কর'):paymentTagGroupLabels[group][language];
   const [year,setYear]=useState<string>(()=>{
     const initial=new URLSearchParams(window.location.search).get('scenarioYear');
-    // Preserve explicit year navigation. Preview Activity and Overview both
-    // open the historical fictional year; other views keep their current year.
+    // Never inherit the historical sample assessment year in a real signed-in account.
     return typeof initial==='string'&&/^20\d{2}-20\d{2}$/.test(initial)
-      ? initial : ((route==='taxpayer_home'||route==='dashboard')&&!localQaScenario&&!authorizedPreviewScenario?'2026-2027':'2025-2026');
+      ? initial : (!showIllustrativeRecords?'2026-2027':'2025-2026');
   });
   // Ordinary signed-in Activity is an all-year transaction register. Keep
   // the selected assessment year for Overview, Ledger and explicit drilldowns.
@@ -262,7 +263,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     const tag=routeParams.dashboardTagFilter;
     setPaymentTagFilter(['family','friends','clients','others','own','unassigned'].includes(String(tag))
       ?tag as PaymentTagGroup|'own':'all');
-    setDashboardHistorySource(['recorded','example'].includes(String(routeParams.dashboardSource))
+    setDashboardHistorySource(routeParams.dashboardSource==='recorded'||(showIllustrativeRecords&&routeParams.dashboardSource==='example')
       ?routeParams.dashboardSource as DashboardChartSource:'all');
     setDashboardHistoryCompletedOnly(routeParams.dashboardOnlyCompleted===true);
     setDashboardHistoryService(['income','tds','ait','other','travel'].includes(String(routeParams.dashboardService))
@@ -277,24 +278,27 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [correctionTarget,setCorrectionTarget]=useState<RecordItem|null>(null);
   const [sqlPayments,setSqlPayments]=useState<OwnedStoryPayment[]>([]);
   const [sqlLoadError,setSqlLoadError]=useState(false);
+  const [sqlLoading,setSqlLoading]=useState(authorizedPreviewScenario);
+  const retryRecordedPayments=()=>window.dispatchEvent(new Event('taxpay:story-payments-recovered'));
   useEffect(()=>{
-    if(!['history','taxpayer_home','dashboard','corrections'].includes(route)||previewAccount?.id!=='user1'||activePreviewSession()?.profileId!=='user1'){
-      setSqlPayments([]);setSqlLoadError(false);return;
+    if(!['history','taxpayer_home','dashboard','corrections','certificates','journey','ledger'].includes(route)||previewAccount?.id!=='user1'||activePreviewSession()?.profileId!=='user1'){
+      setSqlPayments([]);setSqlLoadError(false);setSqlLoading(false);return;
     }
     let active=true;
     let revision=0;
     const session=activePreviewSession();
+    setSqlLoading(true);
     const load=()=>{
       const current=++revision;
       const isCurrent=()=>active&&current===revision&&
         activePreviewSession()?.paymentSessionId===session?.paymentSessionId&&
         activePreviewSession()?.capability===session?.capability;
       void getDetailedStorySessionPayments().then(payments=>{
-        if(isCurrent()){setSqlPayments(payments);setSqlLoadError(false);}
-      }).catch(()=>{if(isCurrent()){setSqlPayments([]);setSqlLoadError(true);}});
+        if(isCurrent()){setSqlPayments(payments);setSqlLoadError(false);setSqlLoading(false);}
+      }).catch(()=>{if(isCurrent()){setSqlPayments([]);setSqlLoadError(true);setSqlLoading(false);}});
     };
     load();
-    const refresh=()=>{setHistoryPage(1);load();};
+    const refresh=()=>{setHistoryPage(1);setSqlLoading(true);load();};
     window.addEventListener('taxpay:story-payments-recovered',refresh);
     return()=>{active=false;window.removeEventListener('taxpay:story-payments-recovered',refresh);};
   },[route,previewAccount?.id]);
@@ -356,25 +360,22 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     ...new Set(['2026-2027',...taxYears.map(item=>item.year),
       ...sqlRows.flatMap(row=>row.years??[]).filter(value=>/^20\d{2}-20\d{2}$/.test(value))])
   ].sort((a,b)=>b.localeCompare(a)),[sqlRows]);
-  const totals=yearSummary(year)??{year,liability:0,tds:0,ait:0,direct:0,travel:0,
+  const totals=(showIllustrativeRecords?yearSummary(year):null)??{year,liability:0,tds:0,ait:0,direct:0,travel:0,
     applied:0,outstanding:0,pending:0,failed:0,disputed:0,posted:0};
-  const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
-  const historyScoped=useMemo(()=>historyYear==='all'
-    ?[...events,...sqlRows]
-    :[...events.filter(row=>row.year===historyYear),...sqlRows.filter(row=>row.years?.includes(historyYear))],
-    [historyYear,sqlRows]);
-  // Activity and preview Overview use the same fictional, year-scoped events.
-  // The production preview is always explicitly labeled as simulated; it never
-  // falls back to SQL on a missing fixture, or mixes its totals with SQL amounts.
-  // Local QA retains its existing source switch for regression coverage.
-  const dashboardChartRecords=useMemo(()=>authorizedPreviewScenario||localQaScenario?[...events,...sqlRows]:[...sqlRows],
-    [sqlRows,authorizedPreviewScenario,localQaScenario]);
+  // One verified owner-scoped SQL projection for the signed-in payment register,
+  // recent activity, documents and timeline. Never fall back to bundled examples.
+  const activityRecords=useMemo(()=>selectActivitySource(sqlRows,events,showIllustrativeRecords),[sqlRows,showIllustrativeRecords]);
+  const scoped=useMemo(()=>activityRecords.filter(x=>x.years?x.years.includes(year):x.year===year),[activityRecords,year]);
+  const historyScoped=useMemo(()=>historyYear==='all'?activityRecords:
+    activityRecords.filter(row=>row.years?row.years.includes(historyYear):row.year===historyYear),
+    [historyYear,activityRecords]);
+  const dashboardChartRecords=activityRecords;
   const defaultOverviewSource=localQaScenario
     ?chooseDashboardChartSource(dashboardChartRecords,year,savedTagPeople,DEMO_USERS.user1.tin)
-    :authorizedPreviewScenario?'example':'recorded';
+    :'recorded';
   const overviewSource=(localQaScenario
     ?(overviewSourceChoice?.year===year?overviewSourceChoice.source:defaultOverviewSource)
-    :authorizedPreviewScenario?'example':'recorded') as DashboardChartSource;
+    :'recorded') as DashboardChartSource;
   const overviewCompletedRows=overviewSource==='recorded'
     ?sqlRows.filter(item=>item.state==='POSTED'&&item.years?.includes(year))
     :scoped.filter(item=>item.state==='POSTED'&&['income','ait','travel'].includes(item.kind));
@@ -521,10 +522,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         ...(beneficiaryFilter!=='all'?[{key:'beneficiary',label:tr('Beneficiary: ','উপকারভোগী: ')+(availableTransactionBeneficiaries.find(p=>p.tin===beneficiaryFilter)?.name??beneficiaryFilter),onRemove:()=>setBeneficiaryFilter('all')}]:[])
       ]}/>
     {tagLoadState==='error'&&<p className="px-3 text-sm text-taxpay-error" role="alert">{tr('Saved beneficiary tags could not be loaded.','সংরক্ষিত উপকারভোগীর ট্যাগ লোড করা যায়নি।')}</p>}
-    {sqlLoadError&&<p role="alert" className="px-3 text-sm text-taxpay-error">
-      {tr('Recorded payments could not be verified. Example transactions remain available.',
-        'সংরক্ষিত পেমেন্ট যাচাই করা যায়নি। নমুনা লেনদেনগুলো দেখা যাবে।')}
-    </p>}
+    {sqlLoadError&&<div role="alert" className="px-3 text-sm text-taxpay-error">
+      {tr('Recorded payments could not be verified.','সংরক্ষিত পেমেন্ট যাচাই করা যায়নি।')}
+      <button type="button" className={action+' ml-2'} onClick={retryRecordedPayments}>{tr('Retry','আবার চেষ্টা করুন')}</button>
+    </div>}
     {reviewFilter&&<div className="taxpayer-transaction-count">
       <button type="button" className="min-h-10 rounded-lg px-3 text-xs font-medium text-taxpay-primary hover:bg-taxpay-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-taxpay-primary"
         onClick={()=>setReviewFilter(null)}>{tr('Clear review filter','পর্যালোচনা ফিল্টার মুছুন')}</button>
@@ -579,7 +580,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           <div className="taxpayer-transaction-row__status">{tag(item.state)}</div>
           {rowActions(item)}
         </div>
-      </div>}/>:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{tr('No matching records','মিল পাওয়া যায়নি')}</h3>{sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
+      </div>}/>:sqlLoading?<p role="status" className="taxpay-table-state mt-4">{tr('Loading payment records…','পেমেন্ট রেকর্ড লোড হচ্ছে…')}</p>:sqlLoadError?null:<div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center"><h3 className="font-semibold">{!activityRecords.length?tr('No transactions yet.','এখনও কোনো লেনদেন নেই।'):tr('No matching records','মিল পাওয়া যায়নি')}</h3>{!activityRecords.length?sub('Completed payments will appear here.','সম্পন্ন পেমেন্ট এখানে দেখা যাবে।'):sub('Change the filters or select another year.','ফিল্টার বা করবর্ষ পরিবর্তন করুন।')}</div>}
   </section>;
   const overviewRoute=route==='taxpayer_home'||route==='dashboard';
   const pageTitle=route==='history'?tr('Payments & activity','পেমেন্ট ও লেনদেন'):route==='ledger'?tr('Tax ledger','কর লেজার'):route==='certificates'?tr('Receipts & payment records','রসিদ ও পেমেন্ট রেকর্ড'):route==='corrections'?tr('Corrections & exceptions','সংশোধন ও ব্যতিক্রম'):route==='journey'?tr('My tax journey','আমার কর কার্যক্রম'):route==='account_profile'?tr('Taxpayer profile','করদাতা প্রোফাইল'):route==='account_notifications'?tr('Notifications','বিজ্ঞপ্তি'):route==='account_settings'?tr('Profile settings','প্রোফাইল সেটিংস'):tr('Overview','সংক্ষিপ্ত বিবরণ');
@@ -692,7 +693,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
               </strong>
               <p>{overviewHasAmount
                 ?([ ...overviewCompletedRows ].length
-                  ?tr('Latest payment activity','সর্বশেষ পেমেন্ট কার্যক্রম')+': '+money([...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date))[0].amount)+' · '+formatDate([...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date))[0].date)
+                  ?tr('Latest payment activity','সর্বশেষ পেমেন্ট কার্যক্রম')+': '+money([...overviewCompletedRows].sort(compareActivityNewestFirst)[0].amount)+' · '+formatDate([...overviewCompletedRows].sort(compareActivityNewestFirst)[0].date)
                   :tr('Payer-initiated allocations for this assessment year','এই করবর্ষে আপনার শুরু করা পেমেন্ট বরাদ্দ'))
                 :overviewSource==='recorded'&&sqlLoadError
                   ?tr('Payment records could not be loaded','পেমেন্ট রেকর্ড লোড করা যায়নি')
@@ -810,7 +811,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         ?tr('Example payer-initiated activity','উদাহরণভিত্তিক পরিশোধকারীর কার্যক্রম')
         :tr('Saved session payment activity','সংরক্ষিত সেশন পেমেন্ট কার্যক্রম')} · {tr('Assessment year','করবর্ষ')}: {year}</p>
       <ul className="mt-3 divide-y divide-taxpay-border" aria-label={tr('Latest transactions in selected year','নির্বাচিত করবর্ষের সাম্প্রতিক লেনদেন')}>
-        {[...overviewCompletedRows].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+        {[...overviewCompletedRows].sort(compareActivityNewestFirst).slice(0,5).map(item=><li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-taxpay-text">{item.title}</p>
             <p className="mt-1 text-xs text-taxpay-muted"><time dateTime={item.date}>{formatDate(item.date)}</time> · {tr(...labels[item.kind])}</p>
@@ -837,7 +838,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       language={language}
       sourceLoadError={overviewSource==='recorded'&&sqlLoadError}
       allowExamples={localQaScenario}
-      previewOnlyExamples={authorizedPreviewScenario&&!localQaScenario}
+      previewOnlyExamples={false}
       selectedSource={overviewSource}
       onSourceChange={source=>{if(localQaScenario)setOverviewSourceChoice({year,source});}}
       onManageBeneficiaries={()=>navigate('beneficiaries')}
@@ -854,7 +855,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   </div>;
   // A single event projection powers every supported assessment year; a record is
   // never promoted into an official balance just because its scenario state is POSTED.
-  const ledgerEvents:TaxAccountEvent[]=taxYears.flatMap(assessment=>{
+  const ledgerEvents:TaxAccountEvent[]=showIllustrativeRecords?taxYears.flatMap(assessment=>{
     let running=assessment.liability*100;
     const opening:TaxAccountEvent={
       id:'OPEN-'+assessment.year,occurredAt:assessment.year.slice(0,4)+'-07-01T00:00:00Z',
@@ -886,6 +887,16 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       } satisfies TaxAccountEvent;
     });
     return [opening,...entries];
+  }):sqlRows.flatMap(row=>{
+    const receipts=row.sql?.receipts??[];
+    const lines=receipts.flatMap(receipt=>(receipt.allocationItems??[]).map((line,index)=>({
+      id:receipt.paymentTransactionId+':'+index,year:normalizeAY(line.assessmentYear),amountMinor:line.amountMinor,
+      component:bn?line.paymentServiceBn:line.paymentServiceEn
+    })));
+    // A legacy multi-year payment without exact allocations is one unallocated record, never repeated by year.
+    const entries=lines.length&&lines.reduce((sum,line)=>sum+line.amountMinor,0)===Math.round(row.amount*100)?lines:[{id:row.id,year:row.years?.length===1?row.year:'—',amountMinor:Math.round(row.amount*100),component:row.title}];
+    return entries.map(line=>({id:line.id,occurredAt:row.occurredAt??row.date,code:'PAYMENT_RECORD_PRESENT',title:row.title,assessmentYear:line.year,component:line.component,
+      amountMinor:line.amountMinor,effectMinor:null,balanceAfterMinor:null,actor:tr('Not recorded','নথিভুক্ত নয়'),source:tr('Recorded payment','নথিভুক্ত পেমেন্ট'),paymentId:row.ref,reference:row.ref,status:tr('Recorded','রেকর্ড হয়েছে'),reason:row.detail}));
   });
   const visibleLedgerTotals=ledgerYear==='all'
     ? taxYears.map(y=>yearSummary(y.year)!).reduce((sum,item)=>({
@@ -894,20 +905,22 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     }),{liability:0,applied:0,outstanding:0})
     : yearSummary(ledgerYear)||totals;
   const ledger=<>
-    <section className="grid gap-3 sm:grid-cols-3" aria-label={tr('Assessment-year summary','করবর্ষের সারসংক্ষেপ')}>
+    {showIllustrativeRecords&&<section className="grid gap-3 sm:grid-cols-3" aria-label={tr('Assessment-year summary','করবর্ষের সারসংক্ষেপ')}>
       {card('Tax liability','করদায়',money(visibleLedgerTotals.liability),'Opening liabilities','প্রাথমিক দায়')}
       {card('Applied credits','প্রয়োগকৃত ক্রেডিট',money(visibleLedgerTotals.applied),'Posted source, advance and direct entries','উৎসে কর, অগ্রিম কর ও সরাসরি এন্ট্রি')}
       {card('Remaining balance','অবশিষ্ট দায়',money(visibleLedgerTotals.outstanding),'Scenario journal, not an official NBR balance','সরকারি এনবিআর ব্যালেন্স নয়')}
-    </section>
-    <EventBasedTaxLedger events={ledgerEvents} language={language} year={ledgerYear} showRecordedScenarioBalance
+    </section>}
+    {sqlLoading&&<p role="status" className="text-sm text-taxpay-muted">{tr('Loading payment records…','পেমেন্ট রেকর্ড লোড হচ্ছে…')}</p>}
+    {sqlLoadError&&<div role="alert" className="text-sm text-taxpay-error">{tr('Recorded payments could not be verified.','সংরক্ষিত পেমেন্ট যাচাই করা যায়নি।')} <button type="button" className={action} onClick={retryRecordedPayments}>{tr('Retry','আবার চেষ্টা করুন')}</button></div>}
+    <EventBasedTaxLedger events={ledgerEvents} language={language} year={ledgerYear} showRecordedScenarioBalance={showIllustrativeRecords}
       onYearChange={nextYear=>nextYear==='all'?setLedgerYear('all'):changeYear(nextYear)}
-      onOpenPayment={reference=>{const record=events.find(item=>item.ref===reference);if(record)setSelected(record);}}/>
+      onOpenPayment={reference=>{const record=activityRecords.find(item=>item.ref===reference);if(record)setSelected(record);}}/>
   </>;
 
   // Records, exceptions and beneficiary entries use the same column-driven grid.
   // Preserve the existing case/receipt details modal and never suggest that
   // a recorded payment automatically means a government receipt was issued.
-  const allDocumentRecords=scoped.filter(x=>x.state==='POSTED'&&(x.challan||x.kind==='tds'));
+  const allDocumentRecords=scoped.filter(x=>x.state==='POSTED'&&(Boolean(x.sql?.receipts.length)||x.challan||x.kind==='tds'));
   const documentNeedle=documentSearch.trim().toLocaleLowerCase();
   const documentRecords=allDocumentRecords.filter(x=>(x.title+' '+x.ref+' '+(x.challan||'')+' '+tr(...labels[x.kind]))
     .toLocaleLowerCase().includes(documentNeedle));
@@ -940,7 +953,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           {key:'action',header:tr('Actions','কার্যক্রম'),renderCell:x=><button type="button" className={action}
             onClick={()=>setSelected(x)} aria-label={tr('View payment details for ','পেমেন্টের বিস্তারিত: ')+x.title}>{tr('View details','বিস্তারিত দেখুন')}</button>}
         ]}/>
-    </div>:<p role="status" className="taxpay-table-state mt-4">{documentSearch?tr('No payment records match this search.','এই অনুসন্ধানে কোনো পেমেন্ট রেকর্ড পাওয়া যায়নি।'):tr('No recorded payment references for this assessment year.','এই করবর্ষে কোনো পেমেন্ট রেফারেন্স নেই।')}</p>}
+    </div>:sqlLoading?<p role="status" className="taxpay-table-state mt-4">{tr('Loading payment records…','পেমেন্ট রেকর্ড লোড হচ্ছে…')}</p>:sqlLoadError?<div role="alert" className="taxpay-table-state mt-4">{tr('Recorded payments could not be verified.','সংরক্ষিত পেমেন্ট যাচাই করা যায়নি।')} <button type="button" className={action} onClick={retryRecordedPayments}>{tr('Retry','আবার চেষ্টা করুন')}</button></div>:<p role="status" className="taxpay-table-state mt-4">{documentSearch?tr('No payment records match this search.','এই অনুসন্ধানে কোনো পেমেন্ট রেকর্ড পাওয়া যায়নি।'):tr('No recorded payment references for this assessment year.','এই করবর্ষে কোনো পেমেন্ট রেফারেন্স নেই।')}</p>}
     <TaxPayOfficeRegisterFooter shown={documentRecords.length} total={allDocumentRecords.length}
       labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('records','রেকর্ড')}}/>
   </section></>;
@@ -949,11 +962,12 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const correctionRecords=allCorrectionRecords.filter(x=>(caseStatus==='all'||x.state===caseStatus)&&
     (x.title+' '+x.ref+' '+x.detail+' '+tr(...stateLabels[x.state])).toLocaleLowerCase().includes(caseNeedle));
   const exceptions=<>
-    <div className="grid gap-3 sm:grid-cols-3">
+    {!showIllustrativeRecords&&<p role="status" className="text-sm text-taxpay-muted">{tr('Only verified payment records are shown. Correction status requires the account correction register.','শুধু যাচাইকৃত পেমেন্ট রেকর্ড দেখানো হচ্ছে। সংশোধনের অবস্থা দেখতে অ্যাকাউন্ট সংশোধন রেজিস্টার প্রয়োজন।')}</p>}
+    {showIllustrativeRecords&&<div className="grid gap-3 sm:grid-cols-3">
       {card('Awaiting reconciliation','সমন্বয়ের অপেক্ষায়',String(allCorrectionRecords.filter(x=>x.state==='PENDING').length),'Not yet counted as a tax credit','এখনো কর ক্রেডিট হিসেবে গণনা হয়নি')}
       {card('Refund or adjustment inquiries','ফেরত বা সমন্বয়ের আবেদন',String(allCorrectionRecords.filter(x=>x.state==='REQUESTED').length),'A request does not mean approval','আবেদন মানেই অনুমোদন নয়')}
       {card('Failed, reversed or disputed','ব্যর্থ, প্রত্যাবর্তিত বা বিরোধপূর্ণ',String(allCorrectionRecords.filter(x=>['DISPUTED','FAILED','REVERSED'].includes(x.state)).length),'Excluded from confirmed tax credits','নিশ্চিত কর ক্রেডিটে অন্তর্ভুক্ত নয়')}
-    </div>
+    </div>}
     <section className={panel+' taxpayer-records-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-exceptions-heading">
       <TaxPayOfficeRegisterToolbar id="taxpayer-exceptions-heading"
         title={tr('Cases requiring attention','যেসব বিষয়ে নজর দেওয়া প্রয়োজন')}
@@ -993,7 +1007,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
             {key:'action',header:tr('Actions','কার্যক্রম'),renderCell:x=><button type="button" className={action}
               onClick={()=>setSelected(x)} aria-label={tr('View case details for ','বিষয়ের বিস্তারিত: ')+x.title}>{tr('View details','বিস্তারিত দেখুন')}</button>}
           ]}/>
-      </div>:<p role="status" className="taxpay-table-state mt-4">{caseSearch||caseStatus!=='all'?tr('No cases match the selected filters.','নির্বাচিত ফিল্টারে কোনো বিষয় পাওয়া যায়নি।'):tr('No unresolved or disputed records for this assessment year.','এই করবর্ষে কোনো অমীমাংসিত বা বিরোধপূর্ণ রেকর্ড নেই।')}</p>}
+      </div>:<p role="status" className="taxpay-table-state mt-4">{caseSearch||caseStatus!=='all'?tr('No cases match the selected filters.','নির্বাচিত ফিল্টারে কোনো বিষয় পাওয়া যায়নি।'):showIllustrativeRecords?tr('No unresolved or disputed records for this assessment year.','এই করবর্ষে কোনো অমীমাংসিত বা বিরোধপূর্ণ রেকর্ড নেই।'):tr('Correction register status unavailable.','সংশোধন রেজিস্টারের অবস্থা পাওয়া যাচ্ছে না।')}</p>}
       <TaxPayOfficeRegisterFooter shown={correctionRecords.length} total={allCorrectionRecords.length}
         labels={{showing:tr('Showing','দেখানো হচ্ছে'),of:tr('of','মোট'),records:tr('cases','বিষয়')}}/>
     </section>
@@ -1001,7 +1015,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
 
   // The same immutable payment records feed Transactions, Tax Ledger and this journey.
   // Group by calendar year, not assessment year; do not manufacture posting milestones.
-  const journeyEvents=[...events].sort((a,b)=>b.date.localeCompare(a.date)||a.id.localeCompare(b.id));
+  const journeyEvents=[...activityRecords].sort(compareActivityNewestFirst);
   const journeyCalendarYears=[...new Set(journeyEvents.map(item=>item.date.slice(0,4)))];
   const journey=<section className={panel+' taxpayer-payment-journey'} aria-labelledby="taxpayer-journey-events-heading" data-testid="taxpay-payment-journey">
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1013,6 +1027,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       {tr('Recorded payment events only. An attempt, a saved receipt and a verified tax credit are different statuses.',
         'শুধু নথিভুক্ত পেমেন্টের ঘটনা। পেমেন্ট প্রচেষ্টা, সংরক্ষিত রসিদ এবং যাচাইকৃত কর ক্রেডিট আলাদা অবস্থা।')}
     </p>
+    {!journeyEvents.length&&(sqlLoading?<p role="status" className="mt-5 text-sm text-taxpay-muted">{tr('Loading payment records…','পেমেন্ট রেকর্ড লোড হচ্ছে…')}</p>:sqlLoadError?<div role="alert" className="mt-5 text-sm text-taxpay-error">{tr('Recorded payments could not be verified.','সংরক্ষিত পেমেন্ট যাচাই করা যায়নি।')} <button type="button" className={action} onClick={retryRecordedPayments}>{tr('Retry','আবার চেষ্টা করুন')}</button></div>:<p role="status" className="mt-5 text-sm text-taxpay-muted">{tr('No transactions yet.','এখনও কোনো লেনদেন নেই।')}</p>)}
     <div className="mt-5 space-y-6">
       {journeyCalendarYears.map(calendarYear=><section key={calendarYear} aria-label={calendarYear}>
         <h3 className="mb-3 text-xl font-semibold text-taxpay-text">{calendarYear}</h3>

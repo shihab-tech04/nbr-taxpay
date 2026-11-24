@@ -341,15 +341,19 @@ test('signed-in Activity shows new payments across assessment years immediately 
   const first=table.locator('tbody tr').first();
   await expect(year).toHaveValue('all');
   await expect(first.locator('td:nth-child(4)')).toContainText(recent.id);
+  await expect(table.locator('tbody tr')).toHaveCount(2);
+  await expect(table.getByText(/DEMO-/)).toHaveCount(0);
   // Deliver the exact invalidation event produced after an acknowledged source
   // write. Use mocked read responses only: no hosted payment mutation.
   payments=[newest,recent,old];
   await page.evaluate(()=>window.dispatchEvent(new Event('taxpay:story-payments-recovered')));
   await expect(first.locator('td:nth-child(4)')).toContainText(newest.id);
   await expect(first).toContainText('65.00');
+  await expect(table.locator('tbody tr')).toHaveCount(3);
   await year.selectOption('2025-2026');
   await expect(first.locator('td:nth-child(4)')).toContainText(old.id);
   await expect(table.getByText(newest.id,{exact:true})).toHaveCount(0);
+  await expect(table.locator('tbody tr')).toHaveCount(1);
   await page.reload();
   await expect(year).toHaveValue('2025-2026');
   await year.selectOption('all');
@@ -360,5 +364,13 @@ test('signed-in Activity shows new payments across assessment years immediately 
   await page.setViewportSize({width:375,height:812});
   const cards=page.getByTestId('taxpayer-transaction-mobile-cards');
   await expect(cards.locator(':scope > li').first()).toContainText(newest.id);
+  await expect(cards.locator(':scope > li')).toHaveCount(3);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  await page.goto('/?action=journey');
+  await expect(page.getByTestId('taxpay-payment-journey')).toContainText(newest.id);
+  await expect(page.getByTestId('taxpay-payment-journey')).not.toContainText('DEMO-PAY-');
+  payments=[];
+  await page.goto('/?action=history');
+  await expect(page.getByText('No transactions yet.',{exact:true})).toBeVisible();
+  await expect(page.getByTestId('taxpayer-transaction-table')).toHaveCount(0);
 });
