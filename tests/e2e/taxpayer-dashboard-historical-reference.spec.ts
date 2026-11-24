@@ -188,57 +188,35 @@ test('returning from Top 5 clears the hidden relationship filter and restores th
   await expect(beneficiary.getByRole('combobox',{name:'Filter top beneficiaries by relationship'})).toHaveValue('all');
 });
 
-test('authorized user1 preview reconciles Overview with Activity without a source switch',async({page},info)=>{
-  test.skip(info.project.name!=='desktop-1280','Scoped preview source-parity browser acceptance');
+test('authorized User1 with empty SQL reads never displays hardcoded payments or totals',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280','Scoped SQL-only account acceptance');
   await page.addInitScript(()=>{
     sessionStorage.setItem('taxpay-taxpayer-preview-user','user1');
     sessionStorage.setItem('korbritto.demo-profile-session.v1',JSON.stringify({
-      profileId:'user1',
-      capability:'A'.repeat(43),
-      paymentSessionId:'00000000-0000-4000-8000-000000000001',
-      language:'en',
-      selectedListId:null
+      profileId:'user1',capability:'A'.repeat(43),paymentSessionId:'00000000-0000-4000-8000-000000000001',
+      language:'en',selectedListId:null
     }));
   });
-  await page.route('**/auth/v1/user',route=>route.fulfill({
-    status:401,contentType:'application/json',body:'{"message":"No application Auth session"}'
-  }));
+  await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
+  await page.route(url=>url.pathname==='/functions/v1/demo-story1-taxpay/payments',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,simulationOnly:true,data:{items:[],total:0}})}));
   await page.goto('/?action=taxpayer_home');
   await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
-  await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2025-2026');
+  await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2026-2027');
   const overview=page.getByTestId('taxpayer-overview-bento');
-  await expect(overview.getByTestId('dashboard-source-indicator')).toContainText('simulated');
-  await expect(overview.locator('.taxpay-summary-metric--completed strong')).toHaveText('5');
+  await expect(overview.getByTestId('dashboard-source-indicator')).toContainText('Payments linked to this session');
+  await expect(overview.getByTestId('dashboard-payment-analytics')).toHaveAttribute('data-chart-source','recorded');
   await expect(overview.locator('.taxpay-summary-metric--requests strong')).toHaveText('—');
   await overview.locator('.taxpay-summary-metric--requests').click();
   await expect(overview.getByRole('alert').filter({hasText:'Correction request history unavailable.'})).toBeVisible();
   await expect(overview.getByTestId('dashboard-recorded-corrections')).toHaveCount(0);
-  await expect(overview.getByTestId('dashboard-correction-request-list')).toHaveCount(0);
-  const chart=overview.getByTestId('dashboard-payment-analytics');
-  await expect(chart).toHaveAttribute('data-chart-source','example');
-  await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
-  await expect(chart).toContainText('Simulated Activity preview');
-  await expect(chart.getByTestId('dashboard-chart-source')).toHaveCount(0);
-  await expect(overview.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
-  await expect(overview.locator('.taxpay-bento-recent')).toContainText('Tax with return — part 2');
-
-  // The same year and source navigate to the original Activity transactions.
-  await overview.locator('.taxpay-summary-metric--completed').click();
-  await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-  await expect(page.getByTestId('user1-synthetic-workspace')).toContainText('DEMO-PAY-01');
-  await expect(page.getByTestId('user1-synthetic-workspace')).toContainText('DEMO-PAY-02');
-  await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2025-2026');
-
-  // Changing the selected year updates the same preview projection and never
-  // treats pending/failed/withheld transactions as completed payments.
-  await page.goto('/?action=taxpayer_home&scenarioYear=2024-2025');
-  await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2024-2025');
-  await expect(page.getByTestId('taxpayer-overview-bento')
-    .locator('.taxpay-summary-metric--completed strong')).toHaveText('3');
-  await expect(page.getByTestId('taxpayer-overview-bento')
-    .locator('.taxpay-summary-metric--requests strong')).toHaveText('—');
+  await expect(overview.getByTestId('dashboard-chart-source')).toHaveCount(0);
+  await expect(overview).not.toContainText('113,500');
+  await expect(overview).not.toContainText('Tax with return — part 2');
+  await page.goto('/?action=history');
+  await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('all');
+  await expect(page.getByText('No transactions yet.',{exact:true})).toBeVisible();
+  await expect(page.getByTestId('user1-synthetic-workspace')).not.toContainText('DEMO-PAY-');
 });
-
 
 test('populated Overview uses full-width balanced KPIs and readable charts across screen widths',async({page},info)=>{
   test.skip(info.project.name!=='desktop-1280','Single targeted responsive visual acceptance');

@@ -508,6 +508,8 @@ test('User1 historical Activity exposes all three correction entries and persist
     await page.getByRole('button',{name:'Sign In',exact:true}).click();
     await expect(page).toHaveURL(/action=taxpayer_home/);
     await page.goto('/?action=history&scenarioYear=2023-2024');
+    await expect(page.getByTestId('user1-synthetic-workspace')).not.toContainText('DEMO-PAY-23-01');
+    await page.goto('/?action=history&scenarioYear=2023-2024&qaScenario=1');
     const workspace=page.getByTestId('user1-synthetic-workspace');
     await expect(workspace).toBeVisible();
     await expect(workspace.getByRole('combobox',{name:/Assessment year|করবর্ষ/})).toHaveValue('2023-2024');

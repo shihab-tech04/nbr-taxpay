@@ -30,30 +30,30 @@ test('connected User1 correction dashboard uses authoritative year-scoped histor
     await route.fulfill({status:correctionUnavailable?503:200,headers,contentType:'application/json',
       body:JSON.stringify(correctionUnavailable?{success:false}:{success:true,simulationOnly:true,data:correctionRows})});
   });
-  await page.goto('/?action=taxpayer_home');
+  await page.route(url=>url.pathname.endsWith('/demo-story1-taxpay/payments'),async route=>{
+    const headers={'access-control-allow-origin':'*','access-control-allow-methods':'GET, OPTIONS','access-control-allow-headers':'apikey, content-type, x-taxpay-guest-capability'};
+    if(route.request().method()==='OPTIONS'){await route.fulfill({status:204,headers});return;}
+    await route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify({success:true,simulationOnly:true,data:{items:[],total:0}})});
+  });
+  await page.goto('/?action=taxpayer_home&scenarioYear=2025-2026');
   await expect(page.getByRole('heading',{name:'Your tax overview'})).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2025-2026');
   const overview=page.getByTestId('taxpayer-overview-bento');
-  await expect(overview.getByTestId('dashboard-source-indicator')).toContainText('simulated');
-  await expect(overview.locator('.taxpay-summary-metric--completed strong')).toHaveText('5');
+  await expect(overview.getByTestId('dashboard-source-indicator')).toContainText('Payments linked to this session');
+  await expect(overview.locator('.taxpay-summary-metric--completed strong')).toHaveText('0');
   await expect(overview.locator('.taxpay-summary-metric--requests strong')).toHaveText('2');
   await overview.locator('.taxpay-summary-metric--requests').click();
   await expect(overview.getByTestId('dashboard-recorded-corrections').getByRole('listitem')).toHaveCount(2);
   await expect(overview.getByTestId('dashboard-recorded-corrections')).toContainText('DEMO-PAY-01');
   await expect(overview.getByTestId('dashboard-correction-request-list')).toHaveCount(0);
   const chart=overview.getByTestId('dashboard-payment-analytics');
-  await expect(chart).toHaveAttribute('data-chart-source','example');
-  await expect(chart.getByTestId('dashboard-service-breakdown')).toContainText('113,500');
-  await expect(chart).toContainText('Simulated Activity preview');
+  await expect(chart).toHaveAttribute('data-chart-source','recorded');
+  await expect(overview).not.toContainText('113,500');
+  await expect(overview).not.toContainText('Tax with return — part 2');
   await expect(chart.getByTestId('dashboard-chart-source')).toHaveCount(0);
-  await expect(overview.getByRole('heading',{name:'My Tax Journey'})).toBeVisible();
-  await expect(overview.locator('.taxpay-bento-recent')).toContainText('Tax with return — part 2');
-
-  // The same year and source navigate to the original Activity transactions.
   await overview.locator('.taxpay-summary-metric--completed').click();
   await expect(page.getByRole('heading',{name:'Payments & activity'})).toBeVisible();
-  await expect(page.getByTestId('user1-synthetic-workspace')).toContainText('DEMO-PAY-01');
-  await expect(page.getByTestId('user1-synthetic-workspace')).toContainText('DEMO-PAY-02');
+  await expect(page.getByTestId('user1-synthetic-workspace')).not.toContainText('DEMO-PAY-');
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2025-2026');
 
   // Changing the selected year updates the same preview projection and never
@@ -61,7 +61,7 @@ test('connected User1 correction dashboard uses authoritative year-scoped histor
   await page.goto('/?action=taxpayer_home&scenarioYear=2024-2025');
   await expect(page.getByRole('combobox',{name:'Assessment year'})).toHaveValue('2024-2025');
   await expect(page.getByTestId('taxpayer-overview-bento')
-    .locator('.taxpay-summary-metric--completed strong')).toHaveText('3');
+    .locator('.taxpay-summary-metric--completed strong')).toHaveText('0');
   await expect(page.getByTestId('taxpayer-overview-bento')
     .locator('.taxpay-summary-metric--requests strong')).toHaveText('0');
   // A failed authoritative read is neither zero nor a sample count.
