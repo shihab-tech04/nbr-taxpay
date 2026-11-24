@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useLayoutEffect,useState} from 'react';
 import {AlertCircle, Building2, CheckCircle2, Clock3, FileText, ArrowRight, Download, Printer} from 'lucide-react';
 import {ReceiptView} from '../common/ReceiptView';
 import type {ChallanReceipt} from '../../types/tax';
@@ -19,6 +19,11 @@ export function GiftTaxPaymentResult({language,input,outcome,onBack,onRetry,onRe
   const bn=language==='bn';
   const tr=(en:string,bd:string)=>bn?bd:en;
   const [showReceipt,setShowReceipt]=useState(false);
+  // The long payment result and receipt share the same scrolling modal body.
+  // Opening the receipt must begin at its warning and action controls.
+  useLayoutEffect(() => {
+    document.querySelector<HTMLElement>('.gift-tax-dialog .taxpay-modal__body')?.scrollTo({top: 0, left: 0});
+  }, [showReceipt]);
   // Keep the original relationship slug in the payment contract; localize display only.
   const selectedRelation = input.donee.relationship && BENEFICIARY_RELATIONS.some(value=>value===input.donee.relationship)
     ? input.donee.relationship as BeneficiaryRelation : null;
@@ -84,7 +89,7 @@ export function GiftTaxPaymentResult({language,input,outcome,onBack,onRetry,onRe
     </div>
     <div className="payment-lifecycle__overview">
       <div><span>{tr('Gift Tax amount','দানকরের পরিমাণ')}</span>
-        <strong>{new Intl.NumberFormat(bn?'bn-BD':'en-IN',{style:'currency',currency:'BDT',maximumFractionDigits:2}).format(input.estimatedTaxMinor/100).replace('BDT','৳')}</strong></div>
+        <strong>{new Intl.NumberFormat(bn?'bn-BD':'en-IN',{style:'currency',currency:'BDT',minimumFractionDigits:2,maximumFractionDigits:2}).format(input.estimatedTaxMinor/100).replace('BDT','৳')}</strong></div>
       {reference&&<div><span>{tr('Simulation reference','সিমুলেশন রেফারেন্স')}</span><strong className="payment-lifecycle__reference-value">{reference}</strong></div>}
     </div>
     <div className="payment-lifecycle__details">

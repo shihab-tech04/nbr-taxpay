@@ -7,27 +7,46 @@
 }
 
 /*
- * Gift Tax uses the SAME payment-flow-embedded--unified,
- * unified-taxpayer-workspace and SelectedIdentityRail components/classes as
- * the approved Taxpayer Information stage. These are only the Gift Tax
- * differences; never reinvent its column sizing or rail visual tokens.
+ * Gift Tax uses the existing unified payment workspace and identity rail.
+ * The workflow shell must not shrink on result (which has no progress bar),
+ * and the v5 review rule must not flatten its inner two-column form grid.
+ * Keep these fixes scoped to Gift Tax; other payment PR owners are unaffected.
  */
-@media (min-width: 801px) {
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="gift"]:has(.unified-taxpayer-workspace) {
-    /* Taxpayer Information is content-height, NOT an empty 90dvh canvas. */
+@media (min-width: 651px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] {
+    width: min(100%, 1160px);
     height: auto;
     min-height: 0;
     max-height: min(90dvh, 800px);
   }
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="gift"] .taxpay-modal__body {
-    /* The shared workspace editor and identity rail own their padding. */
+}
+/* Desktop-only Gift Tax geometry: leave the approved mobile/small-tablet
+ * workspace stack intact to prevent the summary rail intercepting controls. */
+@media (min-width: 901px) {
+  .taxpay-citizen-shell .taxpay-modal[data-public-service="gift"] .taxpay-modal__body {
     padding: 0;
   }
-}
-@media (max-width: 800px) {
-  .taxpay-citizen-shell .taxpay-modal[data-payment-stage="true"][data-public-service="gift"] .taxpay-modal__body {
-    padding: 12px;
+  .taxpay-citizen-shell .payment-flow-embedded--unified.gift-tax-workspace > .payment-flow-embedded__content {
+    display: block;
+    width: 100%;
+    min-width: 0;
   }
+  .taxpay-citizen-shell .gift-tax-workspace .payment-flow-embedded__content > .payment-form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(270px, 310px);
+    align-items: stretch;
+    gap: 0;
+    width: 100%;
+    min-width: 0;
+  }
+  .taxpay-citizen-shell .gift-tax-workspace[data-testid="gift-tax-result-workspace"]:has(.gift-tax-simulation-receipt)
+    .payment-flow-embedded__content > .payment-form-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* The sample receipt is the document, not another two-column payment form. */
+.taxpay-citizen-shell .gift-tax-workspace[data-testid="gift-tax-result-workspace"]:has(.gift-tax-simulation-receipt) .gift-tax-aside {
+  display: none;
 }
 
 /* Two distinct TIN identities stay in Screen 1; their field/empty-state
