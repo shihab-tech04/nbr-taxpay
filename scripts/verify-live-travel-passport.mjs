@@ -88,9 +88,9 @@ try {
     const opened=await geometry();
     if(Math.max(...opened.map((n,i)=>Math.abs(n-baseline[i])))>2)throw new Error('Passport dropdown changed modal layout or scroll position');
     await page.screenshot({path:`test-results/live-travel-passport-${name}-dropdown.png`});
-    const geometry = await modal.locator('#travel-passport-suggestions-first')
+    const optionScroll = await modal.locator('#travel-passport-suggestions-first')
       .evaluate(element => ({ scroll: element.scrollHeight, visible: element.clientHeight }));
-    if (geometry.scroll <= geometry.visible) throw new Error('Ten sample passport suggestions should scroll independently');
+    if (optionScroll.scroll <= optionScroll.visible) throw new Error('Ten sample passport suggestions should scroll independently');
     await options.filter({ hasText: 'TEST230005' }).click();
     await expect(modal.locator('#travel-lookup-first')).toBeEnabled();
     await expect(addPassenger).toHaveCount(0);
