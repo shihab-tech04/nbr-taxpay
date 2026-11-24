@@ -27,12 +27,14 @@ const receipt={
   createdAt:'2026-11-15',isSimulatedDemo:true,
 } as ChallanReceipt;
 
-test('M04 F-026/F-027/F-028: valid single Return copy keeps its original year, head, amount and parent',()=>{
+test('M04 F-026/F-027/F-028: valid single Return copy keeps head, amount and parent; noncurrent AY requires explicit selection',()=>{
   const original=JSON.stringify(receipt);
   const copy=reuseRecordedPayment([receipt],'owner-1',sourceTin,parent);
   assert.equal(copy.service,'TAX_WITH_RETURN');
   assert.equal(copy.formPayload.category,'TAX_WITH_RETURN');
-  assert.equal(copy.formPayload.assessmentYear,'2025-26');
+  assert.equal(copy.formPayload.assessmentYear,'');
+  assert.equal(receipt.assessmentYear,'2025-26');
+  copy.formPayload.assessmentYear='2025-26';
   assert.deepEqual(copy.formPayload.selectedHeadIds,[125]);
   assert.deepEqual(copy.formPayload.amountInputs,{125:'19.75'});
   assert.deepEqual(copy.formPayload.otherTaxLines,[]);

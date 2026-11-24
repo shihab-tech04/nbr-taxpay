@@ -88,8 +88,10 @@ test('F-178 / US-181: canonical SQL remarks flow through receipt into NEW mixed-
   assert.equal(repeated.service,'OTHER_TAX_PAYMENT');
   assert.deepEqual((repeated.formPayload.otherTaxLines as Array<{headId:number;assessmentYear:string;amount:string}>)
     .map(line=>[line.headId,line.assessmentYear,line.amount]),[
-      [8,'2026-27','12.00'],[145,'2025-26','18.00'],
+      [8,'2026-27','12.00'],[145,'','18.00'],
     ]);
+  assert.equal(confirmed.allocationItems?.[1].assessmentYear,'2025-26');
+  (repeated.formPayload.otherTaxLines as Array<{assessmentYear:string}>)[1].assessmentYear='2025-26';
   assert.deepEqual(details,sourceBefore);
   repeated.formPayload.paymentRemarks='Edited only on new payment';
   assert.deepEqual(confirmed,receiptBefore);
