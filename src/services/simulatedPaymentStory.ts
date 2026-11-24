@@ -242,6 +242,13 @@ export async function persistSimulatedPayment(input: StoryPaymentInput): Promise
       }
     }
   } catch { /* Submitted SQL receipt remains authoritative; history can retry. */ }
+  // The payment modal can remain over an already-mounted Activity screen.
+  // Reuse its existing SQL-history invalidation signal only after the source
+  // acknowledgement and account claim attempt; never inject a local receipt.
+  // The event carries no payment or owner data; readers recheck their scope.
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('taxpay:story-payments-recovered'));
+  }
   return acknowledged;
 }
 
