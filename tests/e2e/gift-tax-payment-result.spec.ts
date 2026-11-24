@@ -40,58 +40,46 @@ for(const sample of [
     expect(remarkBox!.width).toBeGreaterThanOrEqual(giftAmountBox!.width);
     await gift.getByRole('button',{name:bn?'চূড়ান্ত পর্যালোচনায় এগিয়ে যান':'Continue to Final Preview'}).click();
     const review=gift.getByTestId('gift-tax-review');
-    await expect(review).toContainText('Test gift remarks');
+    await expect(review.locator('#gift-tax-final-remarks')).toHaveValue('Test gift remarks');
     await expect(review.getByTestId('unified-v3-gift-payment-details')).toBeVisible();
-    await gift.getByRole('button',{name:bn?'নিশ্চিত করুন ও পরিশোধ করুন':'Confirm & Pay'}).click();
+    await expect(review.getByRole('heading',{name:bn?'পরিশোধকারী ও রসিদের তথ্য':'Payer and receipt details'})).toBeVisible();
+    await expect(review.locator('.unified-taxpayer-workspace__rail')).toHaveCount(0);
+    await review.locator('#gift-review-payer-name').fill('Sample Payer');
+    await review.locator('#gift-review-phone').fill('01712345678');
+    await gift.getByRole('button',{name:bn?'পেমেন্ট করুন':'Make Payment'}).click();
     await expect(gift.getByTestId('gift-tax-checkout')).toBeVisible();
-    // The approved desktop checkout must retain a separate summary rail,
-    // even though v5 review cards flatten their own inner grid.
-    if(sample.width>900) {
-      const [editor,rail,dialog]=await Promise.all([
-        gift.locator('.gift-tax-workspace .gift-tax-main').boundingBox(),
-        gift.locator('.gift-tax-workspace .gift-tax-aside').boundingBox(),
-        gift.boundingBox(),
-      ]);
-      expect(editor&&rail&&dialog).toBeTruthy();
-      expect(dialog!.width).toBeGreaterThan(900);
-      expect(Math.abs(editor!.x+editor!.width-rail!.x)).toBeLessThanOrEqual(2);
-      expect(Math.abs(editor!.y-rail!.y)).toBeLessThanOrEqual(2);
-    }
+    // Approved Taxpayer payment channel is full-width, with no Gift Tax split rail.
+    await expect(gift.locator('.gift-tax-checkout .unified-taxpayer-workspace__rail')).toHaveCount(0);
+    const channelRect=await gift.getByTestId('gift-tax-checkout').boundingBox();
+    const dialogRect=await gift.boundingBox();
+    expect(channelRect&&dialogRect).toBeTruthy();
+    expect(channelRect!.width).toBeGreaterThan(dialogRect!.width-95);
     await gift.getByRole('button',{name:bn?'অনলাইনে পরিশোধ':'Pay online'}).click();
     await gift.getByRole('button',{name:bn?'মোবাইল ব্যাংকিং':'Mobile banking'}).click();
     await gift.getByRole('radio',{name:'bKash'}).check();
     await gift.locator('.payment-review__ack input[type=checkbox]').check();
-    await gift.getByRole('button',{name:bn?'পেমেন্ট সিমুলেশন করুন':'Simulate payment'}).click();
+    await gift.getByRole('button',{name:bn?'নমুনা পেমেন্ট নিশ্চিত করুন':'Confirm sample payment'}).click();
     await expect(gift.getByTestId('gift-tax-payment-result')).toBeVisible();
-    if(sample.width>900) {
-      const [editor,rail]=await Promise.all([
-        gift.locator('.gift-tax-workspace .gift-tax-main').boundingBox(),
-        gift.locator('.gift-tax-workspace .gift-tax-aside').boundingBox(),
-      ]);
-      expect(Math.abs(editor!.x+editor!.width-rail!.x)).toBeLessThanOrEqual(2);
-    }
+    await expect(gift.locator('.gift-tax-result-workspace .unified-taxpayer-workspace__rail')).toHaveCount(0);
     const bodyOverflow=await gift.locator('.taxpay-modal__body').evaluate(el=>el.scrollWidth-el.clientWidth);
     expect(bodyOverflow).toBeLessThanOrEqual(2);
     await expect(gift.getByTestId('gift-tax-payment-result'))
-      .toContainText(bn?'সিমুলেশন সম্পন্ন':'Simulation completed');
+      .toContainText(bn?'নমুনা পেমেন্ট রেকর্ড প্রস্তুত':'Sample payment record ready');
     await expect(gift.getByTestId('gift-tax-settled-documents')).toHaveCount(0);
     await expect(gift.getByRole('link',{name:/Download challan|চালান ডাউনলোড/})).toHaveCount(0);
-    await gift.getByRole('button',{name:bn?'নমুনা রসিদ দেখুন':'View sample receipt'}).click();
+    await gift.getByRole('button',{name:bn?'নমুনা রসিদের বিবরণ':'Sample receipt details'}).click();
     await expect(gift.getByTestId('gift-tax-simulation-receipt')).toBeVisible();
     await expect(gift.locator('.gift-tax-workspace .gift-tax-aside')).toBeHidden();
-    if(sample.width>900) {
-      const [editor,dialog]=await Promise.all([
-        gift.locator('.gift-tax-workspace .gift-tax-main').boundingBox(),
-        gift.boundingBox(),
-      ]);
-      expect(editor!.width).toBeGreaterThan(dialog!.width-70);
-    }
+    const receiptRect=await gift.getByTestId('gift-tax-result-workspace').boundingBox();
+    const receiptDialogRect=await gift.boundingBox();
+    expect(receiptRect&&receiptDialogRect).toBeTruthy();
+    expect(receiptRect!.width).toBeGreaterThan(receiptDialogRect!.width-95);
     await expect(gift.getByTestId('gift-tax-sample-receipt')).toContainText('Test gift remarks');
     await expect(gift.getByTestId('gift-tax-sample-receipt')).toContainText(bn?'বাবা':'Father');
     await expect(gift.getByTestId('gift-tax-simulation-receipt')).toContainText(/SIM-GIFT-/);
     await gift.getByRole('button',{name:bn?'পেমেন্টের ফলে ফিরুন':'Back to payment result'}).click();
     await gift.getByRole('button',{name:bn?'চূড়ান্ত পর্যালোচনায় ফিরুন':'Back to Final Preview'}).click();
-    await expect(review).toContainText('Test gift remarks');
+    await expect(review.locator('#gift-tax-final-remarks')).toHaveValue('Test gift remarks');
     await gift.getByRole('button',{name:bn?'দানের তথ্য সম্পাদনা':'Edit gift information'}).click();
     await expect(gift.locator('#gift-tax-amount')).toHaveValue('2500000');
     await expect(gift.locator('#gift-tax-remarks')).toHaveValue('Test gift remarks');

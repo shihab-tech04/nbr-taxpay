@@ -3,12 +3,40 @@
    Keep the legacy/Travel Tax UI, controls, and accounting behavior untouched. */
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-heading,
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-shortcut-section h3 {
-  margin: 12px 0 8px;
+  margin: 14px 0 10px;
   color: #203a5c;
-  font-size: var(--taxpay-type-h3, 18px);
-  font-weight: 650;
+  font-size: var(--taxpay-type-body, 16px);
+  font-weight: 600;
   line-height: 1.4;
 }
+/* Keep the restored grouped Tax Head editor compact. Global responsive
+   utility rules promote .text-xs and status copy to 16px in payment modals;
+   secondary catalogue guidance is metadata, not a second heading. Scope these
+   corrections to this editor so Gift/Travel, return, receipts, and forms retain
+   their established typography and 16px required control labels. */
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .unified-v5-tax-head-heading {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  padding: 12px 0 4px;
+}
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-selection-status {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: #526781;
+}
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-row] span.text-xs:not(.taxpay-type-micro) {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.taxpay-citizen-shell .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 [data-head-row] > label > span.text-sm {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-catalogue-shell {
   min-width: 0;
   width: 100%;
@@ -35,14 +63,14 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 5px 10px;
-  min-height: 54px;
-  padding: 12px 14px;
+  min-height: 48px;
+  padding: 10px 12px;
   list-style: none;
   background: #fff;
   color: #203a5c;
   font-size: var(--taxpay-type-body, 16px);
-  font-weight: 650;
-  line-height: 1.35;
+  font-weight: 600;
+  line-height: 1.4;
 }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger::-webkit-details-marker { display: none; }
 .payment-flow-embedded--unified .other-tax-batch-panel--unified-v5 .other-tax-category-trigger:hover {
