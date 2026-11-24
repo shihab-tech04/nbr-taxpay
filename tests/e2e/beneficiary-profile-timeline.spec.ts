@@ -83,7 +83,7 @@ test('beneficiary profile shows only this payer’s allocations, filters and ret
   await register.getByRole('button',{name:'Filter',exact:true}).click();
   await register.getByRole('combobox',{name:'Filter transactions by beneficiary',exact:true}).selectOption('222222222222');
   const activityRow=register.getByTestId('taxpayer-transaction-table').locator('tbody tr');
-  await expect(activityRow).toHaveCount(1);
+  // Both the legacy payer allocation and the independently stored SQL payment\n  // belong to this beneficiary; do not hide either in production.\n  await expect(activityRow).toHaveCount(2);\n  await expect(register.getByTestId('taxpayer-transaction-table')).toContainText('00000000-0000-4000-8000-000000000912');
   const activityRecipient=testInfo.project.name.startsWith('mobile-')
     ?register.getByTestId('taxpayer-transaction-mobile-cards')
     :activityRow.first();
