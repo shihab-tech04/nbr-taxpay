@@ -11,7 +11,8 @@ import { MASTER_PAYMENT_HEADS } from '../../data/paymentHeads';
 import { useAccountIdentity } from '../../services/accountIdentity';
 import { taxpayerPreviewReceipts } from '../../services/taxpayerEvidence';
 import {TaxPayDataGrid,TaxPayTableControls,TaxPayTableCounter,TaxPayTableState} from '../ui/TaxPayDataTable';
-import type {ChallanReceipt} from '../../types/tax';
+import type {ChallanReceipt,CorrectionRequest} from '../../types/tax';
+import {listPreviewCorrections,submitPreviewCorrection,type PreviewCorrectionRecord} from '../../services/previewCorrections';
 import {activePreviewSession} from '../../services/previewAccountSession';
 import {getDetailedStorySessionPayments} from '../../services/story1AccountPaymentHistory';
 import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
@@ -40,7 +41,30 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
     ...taxpayerPreviewReceipts(receipts,taxpayerProfile.tin,userRole,demoUser,Boolean(authenticatedUser)),
     ...recordedReceipts,...ownedReceipts
   ].filter(r=>r.isSimulatedDemo===true && r.payerTin===taxpayerProfile.tin).map(r=>[r.paymentTransactionId||r.challanNo,r])).values()];
-  const visibleCorrections = corrections.filter(c=>visibleReceipts.some(r=>r.challanNo===c.challanNo && r.payerTin===c.taxpayerTin));
+  const [serverRecords,setServerRecords]=useState<PreviewCorrectionRecord[]>([]);
+  const [historyLoading,setHistoryLoading]=useState(Boolean(previewAccount));
+  const [historyError,setHistoryError]=useState(false);
+  const [historyRetry,setHistoryRetry]=useState(0);
+  const serverMode=Boolean(previewAccount && activePreviewSession()?.profileId===previewAccount.id);
+  useEffect(()=>{
+    let active=true;
+    setServerRecords([]);setHistoryError(false);setHistoryLoading(serverMode);
+    if(serverMode)void listPreviewCorrections().then(rows=>{if(active)setServerRecords(rows);})
+      .catch(()=>{if(active)setHistoryError(true);}).finally(()=>{if(active)setHistoryLoading(false);});
+    return()=>{active=false;};
+  },[previewAccount?.id,serverMode,historyRetry]);
+  const visibleCorrections:(CorrectionRequest&{simulationRecorded?:boolean})[]=serverMode
+    ?serverRecords.map(row=>({
+      id:row.id,ticketNo:'SIM-CORR-'+row.id,challanNo:row.originalReference,taxpayerTin:taxpayerProfile.tin,
+      taxpayerName:taxpayerProfile.nameEn,requestedBy:taxpayerProfile.nameEn,
+      requestDate:row.createdAt,lastUpdated:row.createdAt,currentAssessmentYear:row.currentAY,
+      proposedAssessmentYear:row.proposedAY,currentCircle:row.currentCircle,proposedCircle:row.proposedCircle,
+      currentHeadCode:row.currentHeadCode,proposedHeadCode:row.proposedHeadCode,reason:row.reason,
+      workflowStage:'MAKER_SUBMITTED',simulationRecorded:true,
+      ...(row.allocationIndex!==null?{targetAllocationIndex:row.allocationIndex}:{}),
+      ...(row.allocationId?{targetAllocationId:row.allocationId}:{})
+    }))
+    :corrections.filter(c=>visibleReceipts.some(r=>r.challanNo===c.challanNo && r.payerTin===c.taxpayerTin));
 
   const routeReference=typeof routeParams?.originalReference==='string'
     ?routeParams.originalReference.slice(0,80):'';
@@ -64,6 +88,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
   const effectiveCircle=proposedCircle.trim()||currentCircle;
   const [busy,setBusy]=useState(false);
   const submitLock=useRef(false);
+  const pendingSubmission=useRef<{fingerprint:string;key:string}|null>(null);
   const [reason, setReason] = useState('');
   const [submittedTicket, setSubmittedTicket] = useState<string | null>(null);
   const [caseSearch,setCaseSearch]=useState('');
@@ -97,25 +122,24 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
     }
     submitLock.current=true;setBusy(true);setError('');
     try{
-      let verifiedPreviewReceipt:ChallanReceipt|undefined;
-      if(previewAccount){
-        const session=activePreviewSession();
-        if(!session||session.profileId!==previewAccount.id)throw Error('Session expired');
-        // Recheck against the actual capability-scoped payment source rather
-        // than authorizing a request from a route parameter or a browser fixture.
-        const payment=(await getDetailedStorySessionPayments()).find(p=>p.id===selectedReceipt.paymentTransactionId);
-        const currentSession=activePreviewSession();
-        if(!payment||currentSession?.profileId!==session.profileId||currentSession.capability!==session.capability)
-          throw Error('Payment or session changed');
-        verifiedPreviewReceipt=makeConfirmedReceipt(payment);
-        if(verifiedPreviewReceipt.challanNo!==selectedChallanNo||verifiedPreviewReceipt.payerTin!==taxpayerProfile.tin)
-          throw Error('Payment ownership changed');
-        if(selectedAllocation){
-          const confirmed=verifiedPreviewReceipt.allocationItems?.[selectedIndex];
-          if(!confirmed||confirmed.allocationId!==selectedAllocation.allocationId||confirmed.taxpayerTin!==selectedAllocation.taxpayerTin||
-            confirmed.assessmentYear!==selectedAllocation.assessmentYear||confirmed.economicCode!==selectedAllocation.economicCode||
-            confirmed.amountMinor!==selectedAllocation.amountMinor)throw Error('Payment allocation changed');
-        }
+      if(previewAccount && !serverMode)throw Error('Session expired');
+      if(serverMode){
+        if(!selectedReceipt.paymentTransactionId)throw Error('Payment unavailable');
+        const payload={
+          paymentId:selectedReceipt.paymentTransactionId,
+          allocationIndex:selectedAllocation?selectedIndex:null,
+          allocationId:selectedAllocation?.allocationId??null,
+          proposedAY,proposedCircle:proposedCircle.trim(),proposedHeadCode,reason:reason.trim()
+        };
+        const fingerprint=JSON.stringify([previewAccount?.id,payload]);
+        if(pendingSubmission.current?.fingerprint!==fingerprint)
+          pendingSubmission.current={fingerprint,key:crypto.randomUUID()};
+        const saved=await submitPreviewCorrection({...payload,requestKey:pendingSubmission.current.key});
+        pendingSubmission.current=null;
+        setServerRecords(rows=>[saved,...rows.filter(row=>row.id!==saved.id)]);
+        setSubmittedTicket('SIM-CORR-'+saved.id);setReason('');
+        setProposedAY('');setProposedCircle('');setProposedHeadCode('');
+        return;
       }
       const ticketNo = addCorrectionRequest({
         challanNo: selectedChallanNo,
@@ -133,11 +157,13 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
         reason:reason.trim(),
         workflowStage: 'MAKER_SUBMITTED',
         makerRemarks: 'Local sample request only. No official petition or Revenue Officer workflow initiated.'
-      },verifiedPreviewReceipt);
+      });
       setSubmittedTicket(ticketNo);setReason('');
       setProposedAY('');setProposedCircle('');setProposedHeadCode('');
     }catch{
-      setError(tr('Unable to save this local draft. Check your session and payment, then try again. No correction was submitted.','খসড়া সংরক্ষণ করা যায়নি। সেশন ও পরিশোধ যাচাই করে আবার চেষ্টা করুন। কোনো সংশোধন জমা হয়নি।'));
+      setError(serverMode
+        ?tr('Could not confirm the request. Your entries are preserved; retry to safely recover the same request.','আবেদন নিশ্চিত করা যায়নি। আপনার তথ্য রাখা হয়েছে; একই আবেদন পুনরুদ্ধার করতে আবার চেষ্টা করুন।')
+        :tr('Unable to save this local draft. Check your session and payment, then try again.','খসড়া সংরক্ষণ করা যায়নি। সেশন ও পরিশোধ যাচাই করে আবার চেষ্টা করুন।'));
     }finally{submitLock.current=false;setBusy(false);}
   };
 
@@ -151,10 +177,10 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
           <div role="status" className="mb-4 p-3 rounded-lg border border-taxpay-border bg-taxpay-light space-y-1">
             <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Request saved locally: {submittedTicket}</span>
+              <span className="break-all">{serverMode?tr('Request recorded:','আবেদন নথিভুক্ত:'):tr('Request saved locally:','স্থানীয় খসড়া সংরক্ষিত:')} {submittedTicket}</span>
             </div>
             <p className="text-xs text-emerald-700">
-              Not submitted to NBR or an official review queue.
+              {serverMode?tr('Recorded in the simulated payment system. No financial record changed.','সিমুলেটেড পেমেন্ট সিস্টেমে নথিভুক্ত। আর্থিক রেকর্ড পরিবর্তিত হয়নি।'):tr('Not submitted to NBR or an official review queue.','এনবিআর বা অফিসের পর্যালোচনায় জমা হয়নি।')}
             </p>
           </div>
         )}
@@ -310,11 +336,13 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
             />
           </div>
 
-          <p className="text-sm text-taxpay-muted">{tr("Local draft only. This does not submit a request to the Office.","শুধু স্থানীয় খসড়া। এটি অফিসে জমা হবে না।")}</p>
+          <p className="text-sm text-taxpay-muted">{serverMode
+            ?tr('Records a simulated correction request without changing the original payment.','মূল পরিশোধ পরিবর্তন ছাড়াই সিমুলেটেড সংশোধন আবেদন নথিভুক্ত হয়।')
+            :tr('Local draft only. This does not submit a request to the Office.','শুধু স্থানীয় খসড়া। এটি অফিসে জমা হবে না।')}</p>
           <div className="flex justify-end">
             <UiButton type="submit" disabled={busy} className="gap-2">
               <Send className="w-4 h-4" />
-              <span>{busy?tr('Saving…','সংরক্ষণ হচ্ছে…'):tr('Save request locally','স্থানীয়ভাবে খসড়া সংরক্ষণ করুন')}</span>
+              <span>{busy?tr('Submitting…','জমা হচ্ছে…'):serverMode?tr('Submit correction request','সংশোধনের আবেদন জমা দিন'):tr('Save request locally','স্থানীয়ভাবে খসড়া সংরক্ষণ করুন')}</span>
             </UiButton>
           </div>
         </form> : <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">No payment records are available for correction.</p>}
@@ -323,7 +351,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
       <section className="taxpayer-records-panel rounded-xl border border-taxpay-border bg-white p-4 sm:p-6 space-y-3"
         data-testid="preview-correction-register" aria-label={tr('Saved correction requests','সংরক্ষিত সংশোধনের অনুরোধ')}>
         <div className="taxpay-table-toolbar">
-          <h3 className="text-base font-semibold text-taxpay-text">{tr('Saved correction requests','সংরক্ষিত সংশোধনের অনুরোধ')}</h3>
+          <h3 className="text-base font-semibold text-taxpay-text">{serverMode?tr('Correction requests','সংশোধনের আবেদন'):tr('Saved correction requests','সংরক্ষিত সংশোধনের অনুরোধ')}</h3>
           <TaxPayTableCounter label={tr('Requests','অনুরোধ')} shown={filteredCases.length} total={visibleCorrections.length}/>
         </div>
         <TaxPayTableControls className="taxpay-record-page-filters">
@@ -337,7 +365,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
           {caseSearch&&<button type="button" className="min-h-11 rounded-lg border border-taxpay-border px-3 font-semibold text-taxpay-primary"
             onClick={()=>setCaseSearch('')}>{tr('Clear search','অনুসন্ধান মুছুন')}</button>}
         </TaxPayTableControls>
-        {filteredCases.length===0?<TaxPayTableState>{visibleCorrections.length
+        {historyLoading?<TaxPayTableState>{tr('Loading correction requests…','আবেদন লোড হচ্ছে…')}</TaxPayTableState>:historyError?<div role="alert" className="space-y-2 text-sm"><p>{tr('Correction history unavailable.','আবেদনের ইতিহাস পাওয়া যাচ্ছে না।')}</p><UiButton type="button" variant="secondary" onClick={()=>setHistoryRetry(n=>n+1)}>{tr('Retry','আবার চেষ্টা করুন')}</UiButton></div>:filteredCases.length===0?<TaxPayTableState>{visibleCorrections.length
           ?tr('No requests match your search.','অনুসন্ধানে কোনো অনুরোধ পাওয়া যায়নি।')
           :tr('No correction requests saved yet.','এখনো কোনো সংশোধনের অনুরোধ সংরক্ষিত হয়নি।')}</TaxPayTableState>:
           <TaxPayDataGrid variant="tabular" rows={filteredCases} getRowKey={c=>c.id}
@@ -352,7 +380,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
                 <p className="text-taxpay-text">{tr('Assessment year','করবর্ষ')}: {c.currentAssessmentYear} → {c.proposedAssessmentYear}</p>
                 <p className="text-sm text-taxpay-muted">{tr('Circle','সার্কেল')}: {c.currentCircle} → {c.proposedCircle}</p>
               </div>},
-              {key:'status',header:tr('Recorded status','নথিভুক্ত অবস্থা'),renderCell:c=><p className="font-semibold text-taxpay-text">{c.makerRemarks?.startsWith('Local sample request only')?tr('Saved locally','স্থানীয়ভাবে সংরক্ষিত'):c.workflowStage.replaceAll('_',' ')}</p>},
+              {key:'status',header:tr('Recorded status','নথিভুক্ত অবস্থা'),renderCell:c=><p className="font-semibold text-taxpay-text">{c.simulationRecorded?tr('Recorded','নথিভুক্ত'):c.makerRemarks?.startsWith('Local sample request only')?tr('Saved locally','স্থানীয়ভাবে সংরক্ষিত'):c.workflowStage.replaceAll('_',' ')}</p>},
               {key:'detail',header:tr('Details','বিস্তারিত'),renderCell:c=><details className="max-w-[22rem] rounded-lg border border-taxpay-border p-2">
                 <summary className="min-h-11 cursor-pointer font-semibold text-taxpay-primary">{tr('View request','অনুরোধ দেখুন')}</summary>
                 <div className="mt-2 space-y-2 text-sm text-taxpay-text">
@@ -364,7 +392,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
             renderMobileCard={c=><div className="space-y-2">
               <div className="taxpay-mobile-table-card__header">
                 <p className="taxpay-mobile-table-card__title">{c.ticketNo}</p>
-                <p className="text-sm font-semibold text-taxpay-primary">{c.makerRemarks?.startsWith('Local sample request only')?tr('Saved locally','স্থানীয়ভাবে সংরক্ষিত'):c.workflowStage.replaceAll('_',' ')}</p>
+                <p className="text-sm font-semibold text-taxpay-primary">{c.simulationRecorded?tr('Recorded','নথিভুক্ত'):c.makerRemarks?.startsWith('Local sample request only')?tr('Saved locally','স্থানীয়ভাবে সংরক্ষিত'):c.workflowStage.replaceAll('_',' ')}</p>
               </div>
               <p className="taxpay-mobile-table-card__meta break-all">{tr('Challan','চালান')}: {c.challanNo}</p>
               <p className="taxpay-mobile-table-card__meta">{tr('Year','করবর্ষ')}: {c.currentAssessmentYear} → {c.proposedAssessmentYear}</p>
