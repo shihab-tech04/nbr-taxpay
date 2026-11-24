@@ -1,5 +1,6 @@
 import React from 'react';
 import { Activity, Bell, BookOpen, ChevronDown, CirclePlus, CircleUserRound, FileCheck2, Home, LogOut, Plane, UsersRound } from 'lucide-react';
+import {useCorrectionNotices} from '../../services/previewCorrections';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { SiteLogo } from './SiteLogo';
@@ -78,6 +79,7 @@ export function TaxpayerReferenceRail() {
     } catch { setSignOutError(language === 'bn' ? 'সাইন আউট ব্যর্থ। আবার চেষ্টা করুন।' : 'Sign-out failed. Please retry.'); }
     finally { setSigningOut(false); }
   };
+  const correctionNotices=useCorrectionNotices(previewAccount?.id??null);
   const bn = language === 'bn';
   const sampleProfile = ['TAXPAYER_INDIVIDUAL', 'TAXPAYER_CORPORATE', 'WITHHOLDING_AGENT'].includes(userRole);
   return (
@@ -101,7 +103,7 @@ export function TaxpayerReferenceRail() {
             <button key={route} type="button" aria-current={(currentRoute === route || (route === 'taxpayer_home' && currentRoute === 'dashboard') || (route === 'history' && activityRoutes.has(currentRoute))) ? 'page' : undefined}
               onClick={() => navigate(route)}>
               <Icon size={20} aria-hidden={true} />
-              <span>{bn ? bnLabel : en}</span>
+              <span>{bn ? bnLabel : en}</span>{route==='account_notifications'&&Boolean(correctionNotices.unreadCount)&&<span aria-label={bn?'অপঠিত সংশোধনের বিজ্ঞপ্তি':'Unread correction notifications'} className="text-xs font-semibold">{correctionNotices.unreadCount}</span>}
             </button>
           ))}
         </nav>

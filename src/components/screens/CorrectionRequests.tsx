@@ -107,7 +107,7 @@ export const CorrectionRequests: React.FC<{activityTabs?:boolean;recordedReceipt
   const pendingSubmission=useRef<{fingerprint:string;key:string}|null>(null);
   const [reason, setReason] = useState('');
   const [submittedTicket, setSubmittedTicket] = useState<string | null>(null);
-  const [caseSearch,setCaseSearch]=useState('');
+  const [caseSearch,setCaseSearch]=useState(typeof routeParams?.correctionRequestId==='string'?routeParams.correctionRequestId:'');
   const [error, setError] = useState('');
   useEffect(()=>{
     setAllocationIndex('');setProposedAY('');setProposedCircle('');setProposedHeadCode('');

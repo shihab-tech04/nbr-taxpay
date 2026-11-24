@@ -1,5 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {AccountCenter} from './AccountCenter';
+import {PreviewCorrectionNotifications} from './PreviewCorrectionNotifications';
 import { SessionPaymentNotifications } from './SessionPaymentNotifications';
 import {ReceivedPaymentNoticeRegister} from './ReceivedPaymentNoticeRegister';
 import {getStoryNotices,getStorySessionPayments} from '../../services/simulatedPaymentStory';
@@ -298,6 +299,7 @@ export const NotificationsView:React.FC=()=>{
            </div>}
          ]}/>}
     </section>
+    <PreviewCorrectionNotifications/>
     <ReceivedPaymentNoticeRegister profileId={previewAccount.id} language={language}/>
     <SessionPaymentNotifications language={language}/>
   </main>;

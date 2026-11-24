@@ -305,6 +305,21 @@ begin
           where x.payment_id=v_payment_id) is distinct from original_notice then
       raise exception 'Office review modified the original payment, mirror, or notice';
     end if;
+    declare n jsonb; eid text; ack jsonb;
+    begin
+      n:=public.taxpay_demo_correction_notices(first_hash,100,0);
+      if (select count(*) from jsonb_array_elements(n->'items') e where e->>'requestId'=v_id::text)<>5
+         or jsonb_array_length(public.taxpay_demo_correction_notices(other_hash,100,0)->'items')<>0 then raise exception 'Correction notifications not owner scoped'; end if;
+      eid:='decision:'||(v_cmd->>'messageId');
+      ack:=public.taxpay_demo_correction_notice_read(first_hash,eid);
+      if ack->>'isRead' is distinct from 'true' or not exists(select 1 from jsonb_array_elements(public.taxpay_demo_correction_notices(first_hash,100,0)->'items') e where e->>'eventId'=eid and e->>'isRead'='true') then raise exception 'Notice read state not persisted'; end if;
+      begin
+        perform public.taxpay_demo_correction_notice_read(other_hash,eid);
+        raise exception 'CROSS_ACCOUNT_NOTICE_READ';
+      exception when others then if sqlerrm<>'CORRECTION_NOTICE_NOT_FOUND' then raise; end if; end;
+      if public.taxpay_demo_correction_notice_read(first_hash,eid) is distinct from ack then raise exception 'Notice acknowledgement replay mismatch'; end if;
+    end;
+    raise notice 'PASS: correction notifications for every stage, owner isolation, and durable read acknowledgement';
     raise notice 'PASS: V2 correction delivery retry, exact immutable event, officer sequence and owner readback';
   end;
   declare

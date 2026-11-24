@@ -38,7 +38,7 @@ function checked(raw:unknown):PreviewCorrectionRecord{
   if(row.reviewReason!==undefined&&row.reviewReason!==null&&typeof row.reviewReason!=='string')throw Error('Invalid Office review reason');
   return row as unknown as PreviewCorrectionRecord;
 }
-async function request(path:string,method:'GET'|'POST',body?:PreviewCorrectionInput):Promise<unknown>{
+async function request(path:string,method:'GET'|'POST',body?:PreviewCorrectionInput|{eventId:string}):Promise<unknown>{
   const session=activePreviewSession();
   const {url,publishableKey}=TAXPAY_PUBLIC_ENDPOINT;
   if(!session||!url||!publishableKey)throw Error('Correction session unavailable');
@@ -102,4 +102,46 @@ export function usePreviewCorrectionRegister(profileId:string|null,enabled=true)
   const visible=state.key===key?state:{key,phase:'loading' as const,rows:[]};
   return {phase:visible.phase,rows:visible.rows,count:key&&visible.phase==='ready'?visible.rows.length:null,
     retry:()=>setRevision(n=>n+1)};
+}
+
+export type CorrectionNotice={eventId:string;requestId:string;code:string;reference:string;createdAt:string;detail:string|null;isRead:boolean};
+export function correctionNoticeTitle(code:string,language:'en'|'bn'){
+ const labels:Record<string,[string,string]>={SUBMITTED:['Correction request recorded','সংশোধনের আবেদন নথিভুক্ত'],OFFICE_RECEIVED:['Office received correction','অফিস সংশোধনের আবেদন পেয়েছে'],MAKER_ACKNOWLEDGED:['Maker acknowledged','অফিসার আবেদন গ্রহণ করেছেন'],REVIEWER_VERIFIED:['Reviewer verified','আবেদন পর্যালোচিত হয়েছে'],APPROVER_CLOSED:['Correction review closed','সংশোধনের আবেদন নিষ্পত্তি হয়েছে'],REJECTED:['Correction rejected','সংশোধনের আবেদন প্রত্যাখ্যাত']};
+ return (labels[code]??[code,code])[language==='bn'?1:0];
+}
+async function noticePage(offset=0,limit=100){
+ const raw=await request('/notices?offset='+offset+'&limit='+limit,'GET') as {items:CorrectionNotice[];unreadCount:number};
+ if(!Array.isArray(raw?.items)||raw.items.length>limit||!Number.isSafeInteger(raw.unreadCount)||raw.unreadCount<0)throw Error('Invalid correction notices');
+ for(const n of raw.items)if(!n||typeof n.eventId!=='string'||typeof n.requestId!=='string'||typeof n.code!=='string'||typeof n.reference!=='string'||!Number.isFinite(Date.parse(n.createdAt))||typeof n.isRead!=='boolean'||(n.detail!==null&&typeof n.detail!=='string'))throw Error('Invalid correction notice');
+ return raw;
+}
+export async function markCorrectionNoticeRead(eventId:string){
+ const r=await request('/notices','POST',{eventId}) as {eventId:string;isRead:boolean};
+ if(r?.eventId!==eventId||r.isRead!==true)throw Error('Notice acknowledgement mismatch');
+ window.dispatchEvent(new Event('taxpay:correction-notices-changed'));
+}
+export function useCorrectionNotices(profileId:string|null,full=false){
+ const session=activePreviewSession(),key=session&&session.profileId===profileId?session.capability:null;
+ type Result={key:string|null;phase:'loading'|'ready'|'error';items:CorrectionNotice[];unreadCount:number|null};
+ const [result,setResult]=useState<Result>({key:null,phase:'loading',items:[],unreadCount:null});
+ const [revision,setRevision]=useState(0);
+ useEffect(()=>{
+  let active=true,sequence=0;
+  if(!key)return;
+  const load=async()=>{
+   const attempt=++sequence;
+   try{
+    const first=await noticePage(0,full?100:1),items=[...first.items];
+    if(full)for(let offset=100;items.length===offset&&offset<=1000000;offset+=100){const page=await noticePage(offset);items.push(...page.items);if(page.items.length<100)break;}
+    if(active&&attempt===sequence)setResult({key,phase:'ready',items,unreadCount:first.unreadCount});
+   }catch{if(active&&attempt===sequence)setResult({key,phase:'error',items:[],unreadCount:null});}
+  };
+  void load();
+  const timer=window.setInterval(load,60000);
+  window.addEventListener('focus',load);
+  window.addEventListener('taxpay:correction-notices-changed',load);
+  window.addEventListener('taxpay:preview-corrections-changed',load);
+  return()=>{active=false;window.clearInterval(timer);window.removeEventListener('focus',load);window.removeEventListener('taxpay:correction-notices-changed',load);window.removeEventListener('taxpay:preview-corrections-changed',load);};
+ },[key,full,revision]);
+ return {...(key&&result.key===key?result:{key,phase:'loading' as const,items:[],unreadCount:null}),retry:()=>setRevision(n=>n+1)};
 }

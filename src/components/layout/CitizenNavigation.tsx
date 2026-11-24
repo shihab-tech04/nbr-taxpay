@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Activity, Bell, BookOpen, CircleHelp, CreditCard, FileCheck2, Globe2, Home, List, LogOut, Menu, Plus, Receipt, RotateCcw, Route, Settings2, ShieldAlert, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react';
+import {useCorrectionNotices} from '../../services/previewCorrections';
 import { useTaxState } from '../../services/taxState';
 import { useAccountIdentity, signOutApplicationAccount } from '../../services/accountIdentity';
 import { UserRole } from '../../types/tax';
@@ -82,6 +83,7 @@ export function CitizenNavigation() {
   // The separate public route reads only SQL events for this browser session.
   // Notifications belong to a signed-in account. Browser-only payment records
   // remain available through payment-status and receipt flows, not a guest bell.
+  const correctionNotices=useCorrectionNotices(previewAccount?.id??null);
   const showNotifications = isTaxpayer;
   const notificationRoute = 'account_notifications';
   const inTransaction = transactionRoutes.has(currentRoute);
@@ -277,7 +279,7 @@ export function CitizenNavigation() {
               </nav>
               <div className="citizen-header__utilities">
                 {showNotifications && <button type="button" className="citizen-header__notification" onClick={() => go(notificationRoute)}
-                  aria-label={bn ? 'বিজ্ঞপ্তি' : 'Notifications'} title={bn ? 'বিজ্ঞপ্তি' : 'Notifications'}><Bell size={23} aria-hidden="true"/></button>}
+                  aria-label={bn ? 'বিজ্ঞপ্তি' : 'Notifications'} title={bn ? 'বিজ্ঞপ্তি' : 'Notifications'}><Bell size={23} aria-hidden="true"/>{Boolean(correctionNotices.unreadCount)&&<span className="text-xs font-semibold" aria-label={bn?"অপঠিত সংশোধনের বিজ্ঞপ্তি":"Unread correction notifications"}>{correctionNotices.unreadCount}</span>}</button>}
                 <button type="button" className="citizen-language citizen-desktop-control" onClick={() => setLanguage(bn ? 'en' : 'bn')}
                   title={bn ? 'Switch to English' : 'বাংলায় দেখুন'}><Globe2 size={16} aria-hidden="true"/>{bn ? 'EN' : 'বাংলা'}</button>
                 <button type="button" className="citizen-menu-open citizen-desktop-control" onClick={() => setMenuOpen(true)}
@@ -309,7 +311,7 @@ export function CitizenNavigation() {
           <button className="citizen-corner citizen-corner--top-left" onClick={() => setMenuOpen(true)}
             aria-label={bn ? 'মেনু খুলুন' : 'Open menu'}><Menu aria-hidden="true"/></button>
           {showNotifications && <button className="citizen-corner citizen-corner--top-right" onClick={() => go(notificationRoute)}
-            aria-label={bn ? 'বিজ্ঞপ্তি' : 'Notifications'}><Bell aria-hidden="true"/></button>}
+            aria-label={bn ? 'বিজ্ঞপ্তি' : 'Notifications'}><Bell aria-hidden="true"/>{Boolean(correctionNotices.unreadCount)&&<span className="text-xs font-semibold" aria-label={bn?"অপঠিত সংশোধনের বিজ্ঞপ্তি":"Unread correction notifications"}>{correctionNotices.unreadCount}</span>}</button>}
           {isTaxpayer && <button className="citizen-corner citizen-corner--bottom-left" onClick={() => go(home)}
             aria-label={bn ? 'মূল পাতা' : 'Home'}><Home aria-hidden="true"/></button>}
         </div>

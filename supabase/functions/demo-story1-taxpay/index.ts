@@ -139,6 +139,23 @@ Deno.serve(async(req)=>{
    if(error)return respond({error:'CORRECTION_DECISION_NOT_ACCEPTED'},409);
    return respond(data);
   }
+  if(path==="/corrections/notices"&&(req.method==="GET"||req.method==="POST")){
+   const p_capability_hash=await capabilityHash(req);
+   if(!p_capability_hash)return respond({success:false,error:"PROFILE_CAPABILITY_REQUIRED"},401);
+   const admin=serviceClient(url);
+   if(req.method==="GET"){
+    const p_limit=Number(u.searchParams.get("limit")??"100"),p_offset=Number(u.searchParams.get("offset")??"0");
+    if(!Number.isSafeInteger(p_limit)||p_limit<1||p_limit>100||!Number.isSafeInteger(p_offset)||p_offset<0||p_offset>1000000)return respond({success:false,error:"INVALID_NOTICE_PAGE"},400);
+    const {data,error}=await admin.rpc("taxpay_demo_correction_notices",{p_capability_hash,p_limit,p_offset});
+    return error?respond({success:false,error:"CORRECTION_NOTICES_UNAVAILABLE"},503):respond({success:true,data,simulationOnly:true});
+   }
+   const raw=await req.text();
+   if(raw.length>1000)return respond({success:false,error:"INVALID_NOTICE"},400);
+   let input;try{input=JSON.parse(raw);}catch{return respond({success:false,error:"INVALID_NOTICE"},400);}
+   if(typeof input?.eventId!=="string"||!/^(submitted|office|decision):[0-9a-f-]{36}$/i.test(input.eventId))return respond({success:false,error:"INVALID_NOTICE"},400);
+   const {data,error}=await admin.rpc("taxpay_demo_correction_notice_read",{p_capability_hash,p_event_id:input.eventId});
+   return error?respond({success:false,error:"CORRECTION_NOTICE_NOT_AVAILABLE"},403):respond({success:true,data,simulationOnly:true});
+  }
   if(path==="/corrections"&&(req.method==="GET"||req.method==="POST")){
    const p_capability_hash=await capabilityHash(req);
    if(!p_capability_hash)return respond({success:false,error:"PROFILE_CAPABILITY_REQUIRED"},401);
