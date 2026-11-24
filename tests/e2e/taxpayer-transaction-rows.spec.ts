@@ -143,3 +143,53 @@ test('signed-in Activity has no separate Track payment tab and legacy tracking l
     await expect(page.getByRole('button',{name:language==='bn'?'লেনদেনসমূহ':'Transactions'})).toHaveAttribute('aria-current','page');
   }
 });
+
+test('User2 Activity opens on transaction history while Pay Tax stays separate',async({page},info)=>{
+  test.skip(info.project.name!=='desktop-1280'&&info.project.name!=='mobile-320',
+    'Representative English and Bengali account journeys; each exercises all approved CSS widths');
+  const language=info.project.name==='mobile-320'?'bn':'en';
+  await page.goto('/?action=taxpayer_login'+(language==='bn'?'&lang=bn':''));
+  const login=page.getByRole('dialog');
+  await login.getByLabel(language==='bn'?'ইউজার আইডি':'User ID',{exact:true}).fill('user2');
+  await login.getByLabel(language==='bn'?'পাসওয়ার্ড':'Password',{exact:true}).fill('user2');
+  await login.getByTestId('taxpayer-login-submit').click();
+  await expect(login).toHaveCount(0);
+  await expect(page).toHaveURL(/action=taxpayer_home/);
+
+  const widths=[320,375,390,768,1280];
+  const activityHeading=language==='bn'?'পেমেন্ট ও লেনদেনের ইতিহাস':'Payments and transaction history';
+  const historyName=language==='bn'?'লেনদেনের ইতিহাস':'Transaction history';
+  const composerName=language==='bn'?'নতুন পেমেন্ট':'New payment';
+  const payTaxLabel=language==='bn'?'কর পরিশোধ':'Pay Tax';
+  for(const width of widths){
+    const height=width===320?720:width===375?812:width===390?844:900;
+    await page.setViewportSize({width,height});
+    await page.goto('/?action=history&lang='+language);
+
+    await expect(page.getByRole('heading',{name:activityHeading,exact:true})).toBeVisible();
+    await expect(page.getByRole('region',{name:historyName,exact:true})).toBeVisible();
+    await expect(page.locator('main section[aria-label="'+composerName+'"]')).toHaveCount(0);
+    await expect(page.getByRole('heading',{
+      name:language==='bn'?'পেমেন্টের শ্রেণি নির্বাচন করুন':'Choose payment category',exact:true
+    })).toHaveCount(0);
+
+    const payLabel=language==='bn'
+      ?/^(কর পরিশোধের মেনু|কর পরিশোধের ধরন নির্বাচন)$/
+      :/^(Pay Tax menu|Pay — select payment type)$/;
+    const payButton=page.getByRole('button',{name:payLabel,exact:true});
+    await expect(payButton).toBeVisible();
+    await payButton.click();
+    const optionsName=language==='bn'
+      ?/^(কর পরিশোধের বিকল্প|পরিশোধের ধরন)$/
+      :/^Payment options$/;
+    const options=page.getByRole('menu',{name:optionsName,exact:true});
+    await expect(options.getByRole('menuitem',{name:payTaxLabel,exact:true})).toBeVisible();
+    await options.getByRole('menuitem',{name:payTaxLabel,exact:true}).click();
+    const dialog=page.getByRole('dialog',{name:payTaxLabel,exact:true});
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole('region',{name:historyName,exact:true})).toBeVisible();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+  }
+});

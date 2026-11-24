@@ -63,7 +63,10 @@ test('taxpayer → shared SQL → Maker/Reviewer/Approver Office UI → benefici
  const taxpayer=await visit(payer,'http://127.0.0.1:4173/?action=history');
  await expect(taxpayer.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:16000});
  await expect(taxpayer.page.getByText('User ID: user8')).toBeVisible();
- await expect(taxpayer.page.getByRole('heading',{name:'Choose payment category'})).toBeVisible();
+ // Activity remains history-first; open the distinct signed-in payment wizard.
+ // Preserve the selected Auth session and all disposable SQL/Office assertions.
+ await taxpayer.page.goto('http://127.0.0.1:4173/?action=wizard');
+ await expect(taxpayer.page.getByRole('heading',{name:'Choose payment category'})).toBeVisible({timeout:16000});
  // A mixed payment cannot include Tax with Return. Exercise the legal
   // Advance Tax + Penalty combination across TaxPay → Office review instead.
   await taxpayer.page.getByRole('button',{name:/ADVANCE TAX/i}).click();

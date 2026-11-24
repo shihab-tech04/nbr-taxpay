@@ -12,6 +12,10 @@ import {DashboardPaymentDrafts} from './DashboardPaymentDrafts';
 import {DemoServiceRecordsPanel} from './DemoServiceRecordsPanel';
 import type {DemoUserId} from '../../data/demoUsers';
 import type {PaymentFormDraft} from '../../services/accountPaymentFormDrafts';
+import {getDetailedStorySessionPayments} from '../../services/story1AccountPaymentHistory';
+import {makeConfirmedReceipt} from '../../services/confirmedPaymentCertificate';
+import {activePreviewSession} from '../../services/previewAccountSession';
+import {useTaxState} from '../../services/taxState';
 import '../../styles/taxpay-dashboard-preview.css';
 
 type LoadState = {
@@ -20,6 +24,7 @@ type LoadState = {
   transactions:SimulationTransaction[];
   people:Beneficiary[];
 };
+type CorrectionCountState={owner:SimulationUser|null;phase:'loading'|'ready'|'error';count:number|null};
 type Props = {
   profileId:SimulationUser;
   demoUserId:DemoUserId;
@@ -56,9 +61,11 @@ const EmptyIllustration:React.FC<{icon:'people'|'journey'|'draft'|'request';titl
 export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,language,onNavigate,onPay,onResumePaymentDraft})=>{
   const bn=language==='bn';
   const tr=(en:string,local:string)=>bn?local:en;
+  const {corrections}=useTaxState();
   const [year,setYear]=useState('2026-2027');
   const [tab,setTab]=useState<'drafts'|'requests'>('drafts');
   const [draftCount,setDraftCount]=useState<number|null>(null);
+  const [correctionCount,setCorrectionCount]=useState<CorrectionCountState>({owner:null,phase:'loading',count:null});
   const [snapshot,setSnapshot]=useState<LoadState>({owner:null,phase:'loading',transactions:[],people:[]});
   // Preserve the existing cross-browser Continue Draft journey: once saved drafts
   // load, show their cards without requiring a hidden tab to be opened first.
@@ -85,6 +92,40 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
   },[profileId]);
   const visible=snapshot.owner===profileId?snapshot:{owner:profileId,phase:'loading' as const,transactions:[],people:[]};
   const valid=visible.phase==='ready';
+  const correctionCountForOwner:CorrectionCountState=correctionCount.owner===profileId
+    ?correctionCount:{owner:profileId,phase:'loading',count:null};
+  const correctionCountLabel=correctionCountForOwner.phase==='ready'&&correctionCountForOwner.count!==null
+    ?correctionCountForOwner.count.toLocaleString(bn?'bn-BD':'en-BD'):'—';
+  const correctionCountHint=correctionCountForOwner.phase==='loading'
+    ?tr('Checking count… · View requests','আবেদনের সংখ্যা দেখা হচ্ছে… · আবেদন দেখুন')
+    :correctionCountForOwner.phase==='error'
+      ?tr('Count unavailable · View requests','আবেদনের সংখ্যা পাওয়া যায়নি · আবেদন দেখুন')
+      :tr('View requests','আবেদন দেখুন');
+  useEffect(()=>{
+    let active=true;
+    if(visible.phase!=='ready'){
+      setCorrectionCount({owner:profileId,phase:visible.phase==='error'?'error':'loading',count:null});
+      return()=>{active=false;};
+    }
+    setCorrectionCount({owner:profileId,phase:'loading',count:null});
+    const loadCount=async()=>{
+      if(activePreviewSession()?.profileId!==profileId)throw new Error('Preview account changed');
+      const payments=await getDetailedStorySessionPayments();
+      if(activePreviewSession()?.profileId!==profileId)throw new Error('Preview account changed');
+      const receiptKeys=new Set(payments.flatMap(payment=>{
+        try{
+          const receipt=makeConfirmedReceipt(payment);
+          return [JSON.stringify([receipt.challanNo,receipt.payerTin])];
+        }catch{return [];}
+      }));
+      const count=corrections.filter(inquiry=>receiptKeys.has(JSON.stringify([inquiry.challanNo,inquiry.taxpayerTin]))).length;
+      if(active)setCorrectionCount({owner:profileId,phase:'ready',count});
+    };
+    void loadCount().catch(()=>{
+      if(active)setCorrectionCount({owner:profileId,phase:'error',count:null});
+    });
+    return()=>{active=false;};
+  },[profileId,visible.phase,corrections]);
   const years=useMemo(()=>[...new Set([
     '2026-2027',...ASSESSMENT_YEARS.map(normalYear),
     ...(valid?visible.transactions.flatMap(t=>t.allocations.map(a=>normalYear(a.assessmentYear))):[])
@@ -207,8 +248,8 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
             <button type="button" className="taxpay-summary-metric taxpay-summary-metric--requests"
               onClick={()=>setTab('requests')}>
               <span className="taxpay-summary-metric__label"><ReceiptText aria-hidden="true"/>{tr('Correction Requests','সংশোধনের আবেদন')}</span>
-              <strong className="tabular-nums">—</strong>
-              <small>{tr('View requests','আবেদন দেখুন')}</small>
+              <strong className="tabular-nums" data-testid="dashboard-correction-request-count">{correctionCountLabel}</strong>
+              <small>{correctionCountHint}</small>
             </button>
           </div>
         </section>
@@ -221,7 +262,7 @@ export const PreviewDashboardBento:React.FC<Props>=({profileId,demoUserId,name,l
                   {tr('Drafts','খসড়া')} <span>{draftCount===null?'—':draftCount}</span>
                 </button>
                 <button type="button" aria-pressed={tab==='requests'} onClick={()=>setTab('requests')}>
-                  {tr('Requests','আবেদন')} <span>—</span>
+                  {tr('Requests','আবেদন')} <span>{correctionCountLabel}</span>
                 </button>
               </div>
             </div>

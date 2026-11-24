@@ -75,6 +75,8 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  const one=await visit(payer,'history',{width:375,height:812},payerPreview);
  await expect(one.page.getByRole('heading',{name:'Payments and transaction history'})).toBeVisible({timeout:15000});
  await expect(one.page.getByText('User ID: user6')).toBeVisible();
+ // Activity is history-first; the separate wizard route owns payment creation.
+ await one.page.goto('/?action=wizard');
  await expect(one.page.getByRole('heading',{name:'Choose payment category'})).toBeVisible();
  // Tax with Return is deliberately exclusive; use an eligible mixed-head pair.
  await one.page.getByRole('button',{name:/ADVANCE TAX/i}).click();
@@ -312,6 +314,11 @@ test('bound taxpayers and TaxPay officer read back a multi-beneficiary payment w
  await expect(one.page.getByRole('status').filter({
   hasText:'Payment record saved. Office copy pending; Treasury settlement unverified:'
  })).toBeVisible({timeout:15000});
+ const returnToHistory=one.page.getByRole('button',{name:'Back to transaction history'});
+ await expect(returnToHistory).toBeVisible();
+ await returnToHistory.click();
+ await expect(one.page.getByTestId('pay-again-copy-status')).toHaveCount(0);
+ await expect(one.page.getByTestId('pay-again-mobile').first()).toBeVisible();
  expect(repeatRequests).toHaveLength(1);
  const afterRepeat=await request('/rest/v1/rpc/sim_my_payment_history',
   {p_view:'payer'},payer.session.access_token);

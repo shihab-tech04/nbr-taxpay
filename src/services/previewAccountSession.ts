@@ -10,6 +10,9 @@ const PREVIEW_SESSION_KEY='korbritto.demo-profile-session.v1';
 const capabilityPattern=/^[A-Za-z0-9_-]{43}$/;
 const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const demoIdPattern=/^user(?:[1-9]|[1-4][0-9]|5[0-5])$/;
+class TransientDemoLoginError extends Error {
+  constructor(){super('Unable to load your saved demo profile. Please retry.');this.name='TransientDemoLoginError';}
+}
 export type DemoSettings={language:'en'|'bn';selectedListId:string|null;paymentSessionId:string};
 export type PreviewSession=DemoSettings&{profileId:DemoUserId;capability:string};
 const outstanding=new Map<string,Map<'language'|'selected-list',string>>();
@@ -60,21 +63,42 @@ export function clearPreviewSession():void {
 async function send<T>(action:string,fields:Record<string,unknown>,capability?:string):Promise<T>{
   const {url,publishableKey}=TAXPAY_PUBLIC_ENDPOINT;
   if(!url||!publishableKey)throw new Error('Saved preview profiles are unavailable.');
-  const result=await fetch(url.replace(/\/$/,'')+'/functions/v1/taxpay-guest-beneficiaries',{
-    method:'POST',cache:'no-store',headers:{
-      apikey:publishableKey,'content-type':'application/json',
-      ...(capability?{'x-taxpay-guest-capability':capability}:{})
-    },body:JSON.stringify({action,...fields})
-  });
+  let result:Response;
+  try{
+    result=await fetch(url.replace(/\/$/,'')+'/functions/v1/taxpay-guest-beneficiaries',{
+      method:'POST',cache:'no-store',headers:{
+        apikey:publishableKey,'content-type':'application/json',
+        ...(capability?{'x-taxpay-guest-capability':capability}:{})
+      },body:JSON.stringify({action,...fields})
+    });
+  }catch(error){
+    if(action==='demo-login')throw new TransientDemoLoginError();
+    throw error;
+  }
   const body=await result.json().catch(()=>null) as {success?:boolean;data?:T;code?:string}|null;
-  if(!result.ok||body?.success!==true)throw new Error(body?.code==='INVALID_DEMO_LOGIN'
-    ?'Incorrect User ID or password.':'Unable to save or load your demo profile. Please retry.');
+  if(!result.ok||body?.success!==true){
+    if(body?.code==='INVALID_DEMO_LOGIN')throw new Error('Incorrect User ID or password.');
+    if(action==='demo-login'&&(result.status===429||result.status>=500))throw new TransientDemoLoginError();
+    throw new Error('Unable to save or load your demo profile. Please retry.');
+  }
   return body.data as T;
 }
 export async function signInPreviewProfile(id:string,password:string):Promise<PreviewSession|null>{
   if(!demoIdPattern.test(id)||password!==id)return null;
   const attempt=++sessionGeneration;
-  const raw=await send<PreviewSession>('demo-login',{userId:id,password});
+  let raw:PreviewSession|null=null;
+  for(let retry=0;retry<3;retry++){
+    if(attempt!==sessionGeneration)throw new Error('Demo account changed.');
+    try{
+      raw=await send<PreviewSession>('demo-login',{userId:id,password});
+      break;
+    }catch(error){
+      if(attempt!==sessionGeneration)throw new Error('Demo account changed.');
+      if(!(error instanceof TransientDemoLoginError)||retry===2)throw error;
+      await new Promise(resolve=>setTimeout(resolve,250*(retry+1)));
+    }
+  }
+  if(!raw)throw new Error('Demo account response could not be verified.');
   if(attempt!==sessionGeneration)throw new Error('Demo account changed.');
   const session=valid(raw);
   if(!session||session.profileId!==id)throw new Error('Demo account response could not be verified.');

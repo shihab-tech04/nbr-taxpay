@@ -34,6 +34,7 @@ async function takePending(action:string):Promise<Request>{
   return request;
 }
 let loginCount=0;
+let transientLoginFailures=0;
 const response=(data:unknown)=>new Response(JSON.stringify({success:true,data}),{
   status:200,headers:{'content-type':'application/json'},
 });
@@ -47,6 +48,12 @@ globalThis.fetch=async (_input,init)=>{
   const body=JSON.parse(String(init?.body)) as {action:string;userId?:string};
   if(body.action==='demo-login'){
     loginCount++;
+    if(transientLoginFailures>0){
+      transientLoginFailures--;
+      return new Response(JSON.stringify({success:false,code:'SERVICE_UNAVAILABLE'}),{
+        status:503,headers:{'content-type':'application/json'},
+      });
+    }
     if(delayedLoginIds.has(body.userId??'')){
       return new Promise<Response>(resolve=>waiting.push({action:'demo-login',resolve}));
     }
@@ -63,6 +70,7 @@ beforeEach(()=>{
   waiting.length=0;
   delayedLoginIds.clear();
   loginCount=0;
+  transientLoginFailures=0;
 });
 after(async()=>{
   // The draft service constructs a real Supabase client against this invalid
@@ -146,6 +154,24 @@ test('sign-out invalidates a preview sign-in still waiting on the network',async
   deferred.resolve(loginResponse('user1',1));
   await assert.rejects(oldAttempt,/Demo account changed/);
   assert.equal(session.activePreviewSession(),null);
+});
+
+test('temporary saved-profile read failure retries demo login and restores the selected account',async()=>{
+  transientLoginFailures=1;
+  const profile=await session.signInPreviewProfile('user2','user2');
+  assert.equal(loginCount,2);
+  assert.equal(profile?.profileId,'user2');
+  assert.equal(session.activePreviewSession()?.capability,profile?.capability);
+});
+
+test('exhausted saved-profile retries keep the prior preview session intact',async()=>{
+  const current=await session.signInPreviewProfile('user1','user1');
+  assert.ok(current);
+  transientLoginFailures=3;
+  await assert.rejects(session.signInPreviewProfile('user2','user2'),/Unable to load your saved demo profile/);
+  assert.equal(loginCount,4);
+  assert.equal(session.activePreviewSession()?.profileId,'user1');
+  assert.equal(session.activePreviewSession()?.capability,current.capability);
 });
 
 test('preview draft list refuses a late response from an old capability for the same demo profile',async()=>{

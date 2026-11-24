@@ -308,6 +308,8 @@ for (const [language, project] of [['en', 'desktop-1280'], ['bn', 'mobile-320']]
         'No issuer-verified tax credit certificates are available');
     await expect(visibleRecords).toBeVisible();
     await expect(visibleRecords.getByText(accountCertificateId)).toBeVisible();
+    await expect(visibleRecords).toContainText('111**********');
+    await expect(visibleRecords).not.toContainText('1111111111111');
     await expect(register).toContainText('Nusrat Jahan');
     await expect(register).toContainText('2026-27');
     await expect(register).toContainText('৳');
