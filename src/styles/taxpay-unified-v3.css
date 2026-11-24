@@ -1094,3 +1094,98 @@
     grid-column:2;grid-row:2;text-align:right;white-space:nowrap;
   }
 }
+
+
+/* Gift Tax result uses the same approved walk-in payment-lifecycle + separate
+ * challan action + account-benefits cards. A result is not a 1160px editor. */
+.taxpay-citizen-shell .taxpay-modal.gift-tax-approved-stage.gift-tax-result-stage {
+  width:min(760px,calc(100vw - 32px));
+  max-width:760px;
+  height:auto;
+  min-height:0;
+  max-height:calc(100dvh - 32px);
+}
+.taxpay-citizen-shell .taxpay-modal.gift-tax-result-stage > .taxpay-modal__body {
+  padding:0;
+  min-height:0;
+  flex:0 1 auto;
+  overflow-y:auto;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace {
+  width:100%;
+  min-width:0;
+  padding:16px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .payment-flow-embedded__confirmation-layout {
+  width:100%;
+  max-width:none;
+  min-width:0;
+  margin:0;
+  padding:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .payment-lifecycle,
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .walkin-result-benefits {
+  width:100%;
+  min-width:0;
+  margin:0;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .walkin-result-benefits {
+  border:1px solid var(--citizen-border,#dbe3ef);
+  border-radius:10px;
+  padding:13px 16px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .walkin-result-benefits p {
+  margin-top:8px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .walkin-result-challan {
+  margin:0;
+  padding:0 14px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .gift-tax-result-edit {
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  margin:0;
+  padding:0 2px 2px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .gift-tax-result-edit button {
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+  min-height:44px;
+  border-radius:9px;
+  padding:10px 14px;
+  font-size:14px;
+  font-weight:650;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .payment-lifecycle__progress-detail > summary {
+  min-height:44px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .payment-lifecycle__actions {
+  padding-top:4px;
+}
+.taxpay-citizen-shell .gift-tax-result-workspace .payment-lifecycle__overview strong {
+  overflow-wrap:anywhere;
+}
+@media(max-width:650px){
+  .taxpay-citizen-shell .taxpay-modal.gift-tax-approved-stage.gift-tax-result-stage{
+    width:100vw;
+    max-width:none;
+    height:100dvh;
+    max-height:100dvh;
+    border-radius:0;
+  }
+  .taxpay-citizen-shell .gift-tax-result-workspace{padding:12px}
+  .taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .walkin-result-benefits {
+    padding:12px;
+  }
+  .taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-cards > .walkin-result-challan {
+    padding-inline:0;
+  }
+  .taxpay-citizen-shell .gift-tax-result-workspace .gift-tax-result-edit button {
+    width:100%;
+  }
+}

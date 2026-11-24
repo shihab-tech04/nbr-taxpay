@@ -371,7 +371,7 @@ jobs:
           VITE_SUPABASE_DISABLED: 'true'
           VITE_SUPABASE_URL: ''
           VITE_SUPABASE_PUBLISHABLE_KEY: ''
-        run: npx playwright test tests/e2e/mobile-payment-footer-calculation.spec.ts tests/e2e/payment-ux-regression.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/guest-amount-boundary.spec.ts tests/e2e/unified-all-tax-payments.spec.ts tests/e2e/unified-all-tax-payments-release.spec.ts tests/e2e/walkin-payment-result.spec.ts tests/e2e/parallel-walkin-payer-sql-recovery.spec.ts tests/e2e/unified-v5-original-mobile-parity.spec.ts tests/e2e/tin-master-visual-privacy.spec.ts
+        run: npx playwright test tests/e2e/mobile-payment-footer-calculation.spec.ts tests/e2e/payment-ux-regression.spec.ts tests/e2e/payment-step3-lifecycle.spec.ts tests/e2e/payment-form-step2.spec.ts tests/e2e/guest-amount-boundary.spec.ts tests/e2e/unified-all-tax-payments.spec.ts tests/e2e/unified-all-tax-payments-release.spec.ts tests/e2e/walkin-payment-result.spec.ts tests/e2e/parallel-walkin-payer-sql-recovery.spec.ts tests/e2e/unified-v5-original-mobile-parity.spec.ts tests/e2e/walkin-tax-head-typography.spec.ts tests/e2e/tin-master-visual-privacy.spec.ts
       - name: Preserve actual approved-v5 parity screenshots for visual comparison
         if: always()
         uses: actions/upload-artifact@v4
