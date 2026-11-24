@@ -58,7 +58,7 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
   const selected: ServiceId | null = topLevel === 'TAX_WITH_RETURN' ? 'TAX_WITH_RETURN' : topLevel === 'OTHER_TAX' ? (initialService && initialService !== 'TAX_WITH_RETURN' ? initialService : 'OTHER_TAX_PAYMENT') : null;
   // Only the new Home "All Tax Payments" entry uses the consolidated three-step flow.
   // Existing drafts, Pay Again, Travel Tax and legacy payment routes retain their stages.
-  const genericAccountEntry = Boolean((verifiedUser||previewAccount)&&!initialService&&!initialDraft&&!initialReuse&&!paymentBeneficiaryPrefill&&!onPublicOtherTaxContinue);
+  const genericAccountEntry = Boolean(unifiedEntryRequested && (verifiedUser||previewAccount)&&!initialService&&!initialDraft&&!initialReuse&&!paymentBeneficiaryPrefill&&!onPublicOtherTaxContinue);
   const publicUnifiedEntry = unifiedEntryRequested && !initialService && !initialDraft && !initialReuse && !parallelEntry;
   const initialUnifiedAccount = initialDraft?.form_payload.unifiedFlowVersion===5 || initialReuse?.formPayload.unifiedFlowVersion===5;
   const [view, setView] = useState<'entry' | 'payer' | 'login' | 'payment'>(
@@ -192,6 +192,11 @@ export function PaymentServiceChoiceDialog({ initialService = null, initialDraft
     setTopLevel('OTHER_TAX');
     setPayerForSelf(account ? null : false);
     setEntryAccess(account ? 'account' : 'guest');
+    if (account && publicUnifiedEntry && view === 'entry') {
+      // Explicit sign-in enters the same owner-scoped start/resume gate.
+      setDraftEntryCompleted(false); setDraftEntryMode('choice');
+      setDraftEntryBlocking(true); setView('payer'); return;
+    }
     beginPayment(account);
   };
   useEffect(()=>{

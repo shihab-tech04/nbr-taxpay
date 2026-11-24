@@ -24,7 +24,7 @@ interface Props {
   onAddAdditional: (person: OtherTaxTaxpayer) => void;
   onRemove: (id: string) => void;
   error?: string;
-  account?: { own:{tin:string;name:string}|null; selected:OtherTaxTaxpayer[]; onToggleOwn:()=>void; savedBeneficiaries:React.ReactNode; canAdd:(tin:string)=>boolean; onAdd:(tin:string,name:string)=>void; };
+  account?: { own:{tin:string;name:string}|null; selected:OtherTaxTaxpayer[]; onToggleOwn:()=>void; savedBeneficiaries:React.ReactNode; canAdd:(tin:string)=>boolean; onAdd:(tin:string,name:string)=>void; classification:(tin:string)=>'COMPANY'|'NON_COMPANY'|null; onClassification:(tin:string,type:'COMPANY'|'NON_COMPANY')=>void; };
 }
 
 const mask = maskTinForDisplay;
@@ -117,14 +117,16 @@ export function UnifiedTaxpayerWorkspace({
         {selected.map((person,index) => {
           const count = allocations.filter(line=>line.taxpayerId===person.id).length;
           const confirming = pendingRemoval === person.id;
+          const personType=account?account.classification(person.tin):demoIncomeTaxTypeForTin(person.tin);
           return <div key={person.id} className="unified-taxpayer-workspace__person">
             <div className="unified-taxpayer-workspace__person-main">
               <span className="unified-taxpayer-workspace__avatar" aria-hidden="true">{index+1}</span>
-              <div className="unified-taxpayer-workspace__person-copy"><strong>{person.name}{demoIncomeTaxTypeForTin(person.tin) && <span> · {identityType(demoIncomeTaxTypeForTin(person.tin))}</span>}</strong><small>{mask(person.tin)}</small></div>
+              <div className="unified-taxpayer-workspace__person-copy"><strong>{person.name}{personType && <span> · {identityType(personType)}</span>}</strong><small>{mask(person.tin)}</small></div>
               <button className="unified-taxpayer-workspace__remove" aria-label={tx('Remove ', 'সরান ') + person.name}
                 title={tx('Remove taxpayer', 'করদাতা সরান')} type="button"
                 onClick={()=>count ? setPendingRemoval(person.id):onRemove(person.id)}><Trash2 size={17}/></button>
             </div>
+            {account&&!personType&&<label className="unified-taxpayer-workspace__person-copy">{tx('Income tax type','আয়করের ধরন')}<select aria-label={tx('Income tax type for ','আয়করের ধরন ')+person.name} value="" onChange={event=>{const value=event.target.value;if(value==='COMPANY'||value==='NON_COMPANY')account.onClassification(person.tin,value);}}><option value="" disabled>{tx('Select income tax type','আয়করের ধরন নির্বাচন করুন')}</option><option value="NON_COMPANY">{tx('Individual','ব্যক্তি')}</option><option value="COMPANY">{tx('Company','কোম্পানি')}</option></select></label>}
             {confirming && <div className="unified-taxpayer-workspace__confirm" role="alert">
               <span>{tx('This also removes the taxpayer’s assigned payment heads. Continue?', 'এই করদাতার নির্বাচিত খাতও বাদ যাবে। এগোবেন?')}</span>
               <button type="button" onClick={()=>{onRemove(person.id);setPendingRemoval(null);}}>{tx('Remove', 'সরান')}</button>

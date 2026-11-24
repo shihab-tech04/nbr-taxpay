@@ -359,7 +359,7 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
   const [selectedHeadIds, setSelectedHeadIds] = useState<number[]>([]);
   // Both payer relationships use the same Other Tax selection and allocation UI.
   const otherBatch = !isWithholdingMode && forSelf !== null && category === 'OTHER_TAX_PAYMENT';
-  useEffect(()=>{setOneTimeRecipient(null);},[paymentOwnerId,unifiedAccountSelection ? null : forSelf,category]);
+  useEffect(()=>{setOneTimeRecipient(null);},[paymentOwnerId,unifiedAccountSelection ? null : forSelf,unifiedAccountSelection ? null : category]);
   const simpleOwnOtherTax = otherBatch && forSelf === true && !signedInAccount;
   // Retain older draft data for recovery, but never submit extra recipients as SELF.
   const selfLiabilityHasAdditionalRecipients = forSelf === true &&
@@ -559,6 +559,12 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
     setPaymentChannel(null); setMethodGroup(null); setPaymentMethod(null); setAcknowledged(false);
     setPaymentPhase('review'); setAttemptReceipt(null); setCreatedReceipt(null);
     setErrorMessage(''); setErrorField(null); setErrorHeadId(null);
+    // Never restore one-time authorization from a stored snapshot.
+    if (unifiedAccountSelection) { setOneTimeRecipient(null); setOneTimeTaxpayer(null);
+      if (savedOneTime && typeof savedOneTime.tin === 'string' && typeof savedOneTime.name === 'string' && typeof savedOneTime.id === 'string') {
+        setAdditionalTaxpayers(previous => previous.some(p=>p.tin===savedOneTime.tin) ? previous : [...previous,{tin:savedOneTime.tin!,name:savedOneTime.name!,id:savedOneTime.id!}]);
+      }
+    }
     setStep(unifiedAccountSelection ? 1 : saved.step === 2 ? 2 : 1);
   };
   useEffect(() => {
@@ -2188,8 +2194,8 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
         {/* STEP 1: Taxpayer Identification */}
         {step === 1 && (unifiedAccountSelection ? (
           <UnifiedTaxpayerWorkspace language={language} primaryTin={taxpayerTin} primaryName={otherTaxpayerName}
-            additional={additionalTaxpayers} confirmedTins={confirmedOtherTaxTins} allocations={otherTaxLines}
-            error={errorField==='tin'?errorMessage:undefined}
+            additional={additionalTaxpayers} confirmedTins={confirmedOtherTaxTins} allocations={otherTaxLines.length ? otherTaxLines : unifiedOtherTaxParkedLines}
+            error={errorField==='tin'||errorField==='incomeTaxType'?errorMessage:undefined}
             onAddPrimary={addAccountRecipient} onAddAdditional={p=>addAccountRecipient(p.tin,p.name)}
             onRemove={id=>replaceAccountRecipients(selectedAccountRecipients.filter(p=>p.id!==id))}
             account={{
@@ -2202,7 +2208,9 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   : [{id:crypto.randomUUID(),tin:signedInProfile.tin,name:signedInPayerName},...selectedAccountRecipients]);
               },
               canAdd:canAddAccountRecipient,onAdd:addAccountRecipient,
-              savedBeneficiaries:<SavedBeneficiaryPicker language={language} allowMultiple
+              classification:entityTypeForTin,
+              onClassification:(value,type)=>setTaxpayerEntityOverrides(previous=>({...previous,[value]:type})),
+              savedBeneficiaries:<SavedBeneficiaryPicker key={beneficiaryRefreshKey} language={language} allowMultiple
                 selectedTins={selectedAccountRecipients.filter(p=>p.tin!==signedInProfile?.tin).map(p=>p.tin)}
                 onAvailableTins={setAvailableSavedTins} onManage={onManageBeneficiaries}
                 onChoose={people=>{
@@ -2210,7 +2218,10 @@ export const GuestPayment: React.FC<GuestPaymentProps> = ({ isWithholdingMode = 
                   const preserved=selectedAccountRecipients.filter(p=>p.tin===signedInProfile.tin||!availableSavedTins.includes(p.tin));
                   const saved=people.filter(p=>p.tin!==signedInProfile.tin&&availableSavedTins.includes(p.tin))
                     .map(p=>({...p,id:selectedAccountRecipients.find(old=>old.tin===p.tin)?.id??crypto.randomUUID()}));
-                  replaceAccountRecipients([...preserved,...saved]);
+                  const requested=[...preserved,...saved];
+                  const removed=selectedAccountRecipients.find(p=>!requested.some(n=>n.tin===p.tin) && [...otherTaxLines,...unifiedOtherTaxParkedLines].some(l=>l.taxpayerId===p.id));
+                  if(removed) { setValidationError(language==='bn'?'নির্বাচিত খাতসহ করদাতা সরাতে ডান পাশের তালিকা ব্যবহার করুন।':'To remove a taxpayer with assigned payment heads, use the selected taxpayer list.','tin'); return; }
+                  replaceAccountRecipients(requested);
                 }}/>
             }}/>
         ) : unifiedFlow && !signedInAccount ? (
