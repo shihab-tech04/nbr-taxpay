@@ -151,6 +151,19 @@ test('prior-browser Story1 recovery preserves original data without duplicating 
           data:{...latestTravelSubmission,origin:'TAXPAY_UI'}}
       })});return;
     }
+    // A repeated SQL payment must read back the exact newly submitted source
+    // identity, not fall through to the older recovered-record list.
+    const lastSubmitted=paymentSubmissions[paymentSubmissions.length-1];
+    if(url.pathname.endsWith('/payments/00000000-0000-4000-8000-000000039999') && lastSubmitted){
+      expect(url.searchParams.get('sessionId')).toBe(lastSubmitted.sessionId);
+      expect(route.request().headers()['x-taxpay-guest-capability']).toBe(cap);
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        success:true,simulationOnly:true,
+        data:{id:'00000000-0000-4000-8000-000000039999',status:'SIMULATED_SUCCESS',
+          data:{...lastSubmitted,origin:'TAXPAY_UI'}}
+      })});
+      return;
+    }
     const chosen=records.find(item=>url.pathname.includes('/payments/'+item.id));
     if(chosen){
       const details=chosen.id===payment
