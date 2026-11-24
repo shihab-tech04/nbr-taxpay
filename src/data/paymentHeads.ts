@@ -1785,6 +1785,7 @@ export const CATEGORY_LABELS: Record<string, { en: string; bn: string; desc: str
     bn: 'আপিল ট্রাইব্যুনাল ফি',
     desc: 'Statutory 10% appeal deposit, memorandum fees, or certified copy petition charges (Section 300)'
   },
+  GIFT_TAX: { en: 'Gift Tax', bn: 'দানকর', desc: 'Simulated Gift Tax payment' },
   TRAVEL_TAX: { en: 'Travel Tax', bn: 'ভ্রমণ কর', desc: 'Travel tax payment' },
   OTHER_TAX_PAYMENT: {
     en: 'Other Tax Payment',

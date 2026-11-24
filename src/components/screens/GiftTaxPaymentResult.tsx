@@ -16,6 +16,8 @@ interface Props {
   onContinueBank: () => void;
   onLogin: () => void;
   onRefresh?: () => void;
+  signedIn?: boolean;
+  busy?:boolean;
 }
 
 /**
@@ -29,7 +31,7 @@ interface Props {
  * deliberately carries isSimulatedDemo and a SIM-GIFT reference.
  */
 export function GiftTaxPaymentResult({
-  language, input, outcome, onBack, onRetry, onContinueBank, onLogin, onRefresh,
+  language, input, outcome, onBack, onRetry, onContinueBank, onLogin, onRefresh, signedIn = false, busy=false,
 }: Props) {
   const bn=language==='bn';
   const t=(en:string,bd:string)=>bn?bd:en;
@@ -44,24 +46,27 @@ export function GiftTaxPaymentResult({
   const noTax=outcome.kind==='SIMULATED_NO_TAX';
   const simulatedPending=outcome.kind==='SIMULATED_PENDING';
   const failed=outcome.kind==='FAILED'||outcome.kind==='SIMULATED_FAILED';
-  const pending=outcome.kind==='PENDING'||simulatedPending;
+  const syncPending=outcome.kind==='SIMULATED_SYNC_PENDING';
+  const pending=outcome.kind==='PENDING'||simulatedPending||syncPending;
   const completed=Boolean(officialProof)||simulatedSuccess||noTax;
   const reference='reference' in outcome ? outcome.reference : officialProof?.paymentReference;
   const format=(value:number)=>new Intl.NumberFormat(bn?'bn-BD':'en-IN',{maximumFractionDigits:2}).format(value);
   const amount='৳ '+format(input.estimatedTaxMinor/100);
   const Icon=pending?(simulatedPending?Building2:Clock3):failed?AlertCircle:CheckCircle2;
-  const heading=simulatedSuccess?t('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত')
+  const heading=simulatedSuccess?(signedIn ? t('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত') : t('Payment record saved','পেমেন্ট রেকর্ড সংরক্ষিত'))
     :noTax?t('No Gift Tax payable','কোনো দানকর পরিশোধযোগ্য নয়')
+    :syncPending?t('Payment synchronization pending','পেমেন্ট সিঙ্ক অপেক্ষমাণ')
     :simulatedPending?t('Bank payment slip ready','ব্যাংকের জন্য পরিশোধ-স্লিপ প্রস্তুত')
     :pending?t('Payment pending','পেমেন্ট অপেক্ষমাণ')
     :failed?t('Payment request declined','পরিশোধের অনুরোধ প্রত্যাখ্যাত')
     :officialProof?t('Payment confirmed','পেমেন্ট নিশ্চিত')
     :t('Payment not started','পেমেন্ট শুরু হয়নি');
   const resultText=simulatedSuccess
-    ?t('Sample payment record saved in this browser; settlement is not verified. No money, official challan or donor tax credit was created.',
-      'এই ব্রাউজারে নমুনা পেমেন্ট রেকর্ড সংরক্ষিত; নিষ্পত্তি যাচাই হয়নি। কোনো টাকা, সরকারি চালান বা দাতার কর ক্রেডিট তৈরি হয়নি।')
+    ?(signedIn ? t('Simulated payment recorded in Taxpayer SQL and mirrored to Office. No money, official challan or donor tax credit was created.', 'করদাতার SQL-এ নমুনা পেমেন্ট সংরক্ষিত এবং অফিসে সিঙ্ক হয়েছে। কোনো টাকা, সরকারি চালান বা দাতার কর ক্রেডিট তৈরি হয়নি।') : t('Sample payment record saved in this browser; settlement is not verified. No money, official challan or donor tax credit was created.',
+      'এই ব্রাউজারে নমুনা পেমেন্ট রেকর্ড সংরক্ষিত; নিষ্পত্তি যাচাই হয়নি। কোনো টাকা, সরকারি চালান বা দাতার কর ক্রেডিট তৈরি হয়নি।'))
     :noTax?t('This review calculates zero Gift Tax. No payment was initiated and no money was charged.',
       'এই হিসাবে দানকর শূন্য। কোনো পেমেন্ট শুরু হয়নি এবং অর্থ কাটা হয়নি।')
+    :syncPending?t('The original transaction is not yet fully verified. Retry synchronization with the same reference; do not submit another payment.','মূল লেনদেনের সিঙ্ক যাচাই হয়নি। একই রেফারেন্সে আবার চেষ্টা করুন; নতুন পেমেন্ট করবেন না।')
     :simulatedPending?t('This is not tax paid yet. Only a sample bank payment slip was created; bank settlement and donor credit remain unverified.',
       'এখনও কর পরিশোধ হয়নি। শুধু নমুনা ব্যাংক-স্লিপ তৈরি হয়েছে; ব্যাংক নিষ্পত্তি ও দাতার কর ক্রেডিট যাচাই হয়নি।')
     :failed?t('The simulated payment was declined. Your Gift Tax details are still available; retry with another sample payment method.',
@@ -70,7 +75,7 @@ export function GiftTaxPaymentResult({
       'স্বতন্ত্রভাবে যাচাইকৃত নিষ্পত্তি ও দাতার কর ক্রেডিটসহ পেমেন্ট নিশ্চিত হয়েছে।')
     :t('No Gift Tax settlement has been initiated. No money or official document was created.',
       'দানকরের কোনো নিষ্পত্তি শুরু হয়নি। অর্থ বা সরকারি নথি তৈরি হয়নি।');
-  const receipt:ChallanReceipt|null=simulatedSuccess&&outcome.kind==='SIMULATED_SUCCESS'?{
+  const receipt:ChallanReceipt|null=simulatedSuccess&&outcome.kind==='SIMULATED_SUCCESS'?(outcome.receipt??{
     id:outcome.reference,challanNo:outcome.reference,tokenNumber:'SIMULATION',
     paymentCategory:'OTHER_TAX_PAYMENT',assessmentYear:'—',
     payerName:input.payer?.name||input.donor.name,payerTin:input.payer?.tin||input.donor.tin,
@@ -85,7 +90,7 @@ export function GiftTaxPaymentResult({
     totalAmount:input.estimatedTaxMinor/100,paymentMethod:outcome.method,
     gatewayTransactionId:outcome.reference,treasuryStatus:'INITIATED',
     taxCreditStatus:'NOT_APPLICABLE',createdAt:outcome.createdAt,isSimulatedDemo:true,
-  }:null;
+  }):null;
 
   if(showReceipt&&receipt) return <div className="gift-tax-simulation-receipt" data-testid="gift-tax-simulation-receipt">
     <p role="note" className="gift-tax-sample-warning">
@@ -111,6 +116,7 @@ export function GiftTaxPaymentResult({
     t('Treasury settlement not verified','ট্রেজারি নিষ্পত্তি যাচাই হয়নি'),
     t('Donor credit not posted','দাতার কর ক্রেডিট পোস্ট হয়নি'),
   ]:noTax?[t('Gift Tax reviewed — no payment due','দানকর পর্যালোচিত — পরিশোধ প্রযোজ্য নয়')]
+    :syncPending?[t('Simulation submission prepared','নমুনা পেমেন্ট প্রস্তুত'),t('Waiting for Taxpayer SQL and Office readback','করদাতা SQL এবং অফিস যাচাইয়ের অপেক্ষায়')]
     :pending?[t('Sample bank payment slip prepared','নমুনা ব্যাংক পরিশোধ স্লিপ প্রস্তুত'),
       t('Waiting for sample bank confirmation','নমুনা ব্যাংক নিশ্চিতকরণের অপেক্ষায়')]
     :failed?[t('Sample payment request started','নমুনা পেমেন্ট অনুরোধ শুরু হয়েছে'),
@@ -140,7 +146,7 @@ export function GiftTaxPaymentResult({
               <div><dt>{t('Tax event ID','কর ইভেন্ট আইডি')}</dt>
                 <dd>{t('Not issued — sample only','ইস্যু হয়নি — শুধু নমুনা')}</dd></div>
               <div><dt>{t('Payment transaction ID','পেমেন্ট ট্রানজেকশন আইডি')}</dt>
-                <dd>{t('Not issued — sample only','ইস্যু হয়নি — শুধু নমুনা')}</dd></div>
+                <dd>{receipt?.paymentTransactionId??t('Not issued — sample only','ইস্যু হয়নি — শুধু নমুনা')}</dd></div>
               <div><dt>{t('Payment reference','পেমেন্ট রেফারেন্স')}</dt><dd>{reference??'—'}</dd></div>
               <div><dt>{t('Amount','মোট অর্থ')}</dt><dd>{amount}</dd></div>
               <div><dt>{t('Donor (tax-liable)','দাতা (করদায়ী)')}</dt>
@@ -168,20 +174,20 @@ export function GiftTaxPaymentResult({
         {(failed||pending||noTax||outcome.kind==='UNAVAILABLE')&&
           <div className="payment-lifecycle__actions no-print">
             {simulatedPending&&<button type="button" className="payment-lifecycle__primary"
-              onClick={onContinueBank}>
+              onClick={onContinueBank} disabled={busy}>
               {t('Continue sample bank payment','নমুনা ব্যাংক পেমেন্ট এগিয়ে নিন')}<ArrowRight size={16}/>
             </button>}
             {failed&&'retryable' in outcome&&outcome.retryable&&<button type="button"
               className="payment-lifecycle__primary" onClick={onRetry}>
               {t('Try another payment method','অন্য পেমেন্ট পদ্ধতিতে চেষ্টা করুন')}<ArrowRight size={16}/>
             </button>}
-            {outcome.kind==='PENDING'&&onRefresh&&<button type="button"
-              className="payment-lifecycle__secondary" onClick={onRefresh}>
+            {(outcome.kind==='PENDING'||syncPending)&&onRefresh&&<button type="button"
+              className="payment-lifecycle__secondary" onClick={onRefresh} disabled={busy}>
               {t('Check status','অবস্থা দেখুন')}
             </button>}
-            <button type="button" className="payment-lifecycle__secondary" onClick={onBack}>
+            {!syncPending&&<button type="button" className="payment-lifecycle__secondary" onClick={onBack}>
               {t('Back to Final Preview','চূড়ান্ত পর্যালোচনায় ফিরুন')}
-            </button>
+            </button>}
           </div>}
       </section>
       {receipt&&<div className="walkin-result-challan no-print" data-testid="walkin-challan-action">
@@ -191,7 +197,7 @@ export function GiftTaxPaymentResult({
           <ArrowRight size={17} aria-hidden="true"/>
         </button>
       </div>}
-      {simulatedSuccess&&!skipAccount&&<aside className="walkin-result-benefits no-print"
+      {simulatedSuccess&&!signedIn&&!skipAccount&&<aside className="walkin-result-benefits no-print"
         data-testid="walkin-result-benefits" aria-labelledby="gift-walkin-benefits-title">
         <h3 id="gift-walkin-benefits-title">
           {t('Get More with a Sohojkor Account','সহজকর অ্যাকাউন্টে আরও সুবিধা')}
