@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import {retryStory1OwnershipClaim,type ClaimActor,type ClaimAttempt} from './story1OwnershipClaim';
+import {retryStory1OwnershipClaim,readStory1OwnedPaymentPage,type ClaimActor,type ClaimAttempt} from './story1OwnershipClaim';
 import { getStorySessionId, getStorySessionPayments, storyApiHeaders } from './simulatedPaymentStory';
 import { TAXPAY_PUBLIC_ENDPOINT } from '../config/publicBackend';
 import { makeConfirmedReceipt, validCertificateTransactionId } from './confirmedPaymentCertificate';
@@ -104,20 +104,19 @@ export async function getAccountStoryPayments(ownerUid: string, options: { claim
   if (!supabase || !ownerUid) throw new Error('Authenticated payment history is unavailable');
   const { data: before, error: identityError } = await supabase.auth.getUser();
   if (identityError || before.user?.id !== ownerUid) throw new Error('Account identity changed');
+  // Capture one exact account bearer for both claims and every paginated read.
+  // A mutable client could otherwise return another account during A→B→A switching.
+  const client=supabase;
+  const currentActor=async():Promise<ClaimActor|null>=>{
+    const {data,error}=await client.auth.getSession();
+    const session=data.session;
+    if(error||!session?.access_token||session.user.id!==ownerUid)return null;
+    return {userId:session.user.id,accessToken:session.access_token};
+  };
+  const actor=await currentActor();
+  if(!actor)throw Error('Account identity changed');
   // Personalized shortcuts are a read-only affordance, not a claim action.
   if (options.claimPending !== false) {
-    // A mounted Activity/Certificate read automatically retries a transient
-    // ownership failure after the source acknowledgement event. Only retry the
-    // idempotent link RPC; the payment submission itself is never repeated.
-    const client=supabase;
-    const currentActor=async():Promise<ClaimActor|null>=>{
-      const {data,error}=await client.auth.getSession();
-      const session=data.session;
-      if(error||!session?.access_token||session.user.id!==ownerUid)return null;
-      return {userId:session.user.id,accessToken:session.access_token};
-    };
-    const actor=await currentActor();
-    if(!actor)throw Error('Account identity changed');
     const sessionId=getStorySessionId();
     const signedClaim=(name:'taxpay_claim_story1_session'|'taxpay_claim_walkin_payer_payments',args:Record<string,unknown>)=>
       (captured:ClaimActor):Promise<ClaimAttempt>=>invokeStory1OwnershipClaim(name,args,captured);
@@ -134,10 +133,9 @@ export async function getAccountStoryPayments(ownerUid: string, options: { claim
   const all: OwnedStoryPayment[] = [];
   const seen = new Set<string>();
   for (let page=1; page<=2000; page++) {
-    const { data, error } = await supabase.rpc('taxpay_my_story1_payments', {
-      p_page:page, p_per_page:100
-    });
-    if (error || !isRecord(data) || !Array.isArray(data.items) ||
+    const data=await readStory1OwnedPaymentPage(actor,currentActor,TAXPAY_PUBLIC_ENDPOINT.url,
+      TAXPAY_PUBLIC_ENDPOINT.publishableKey,page);
+    if (!isRecord(data) || !Array.isArray(data.items) ||
         typeof data.total !== 'number' || !Number.isSafeInteger(data.total) ||
         data.total < 0 || data.items.length > 100 || data.page !== page) {
       throw new Error('Unable to verify account-owned payment history');

@@ -23,3 +23,25 @@ export async function retryStory1OwnershipClaim(
   }
   return 'pending';
 }
+
+/** Every page uses the captured bearer and rejects changed sessions before and
+ * after I/O. Never accept data fetched through a mutable client auth token. */
+export async function readStory1OwnedPaymentPage(actor:ClaimActor,
+  currentActor:()=>Promise<ClaimActor|null>,endpoint:string,publishableKey:string,
+  page:number,fetcher:typeof fetch=fetch):Promise<unknown>{
+  const assertCurrent=async()=>{
+    const current=await currentActor();
+    if(!current||current.userId!==actor.userId||current.accessToken!==actor.accessToken)
+      throw Error('Account identity changed');
+  };
+  await assertCurrent();
+  const response=await fetcher(endpoint.replace(/\/$/,'')+'/rest/v1/rpc/taxpay_my_story1_payments',{
+    method:'POST',cache:'no-store',headers:{apikey:publishableKey,
+      Authorization:'Bearer '+actor.accessToken,'Content-Type':'application/json'},
+    body:JSON.stringify({p_page:page,p_per_page:100})
+  });
+  if(!response.ok)throw Error('Unable to verify account-owned payment history');
+  const data:unknown=await response.json();
+  await assertCurrent();
+  return data;
+}
