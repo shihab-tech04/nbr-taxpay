@@ -39,7 +39,7 @@ export function Home2Layout({onSearch,onOtherTax}:Props){
   };
   const View=desktop?DesktopView:MobileView;
   return <div data-testid="home2-root" data-design="uploaded-mobile-bento" data-viewport={desktop?'desktop':'mobile'} className="home2-import-root" lang={language}>
-    <View c={copy[language]} onToggleLang={()=>setLanguage(language==='en'?'bn':'en')} onAction={onAction} onSearch={onSearch} signedIn={signedIn}/>
+    <div data-home2-view><View c={copy[language]} onToggleLang={()=>setLanguage(language==='en'?'bn':'en')} onAction={onAction} onSearch={onSearch} signedIn={signedIn}/></div>
     <PublicHelpChat externalOpenRequest={helpRequest} externalTrigger={helpTrigger} hideLauncher/>
   </div>;
 }

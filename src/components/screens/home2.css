@@ -18,3 +18,7 @@
 .home2-import-root .home2-rise{animation:home2-rise 520ms cubic-bezier(.2,.7,.2,1) both;}
 @media(prefers-reduced-motion:reduce){.home2-import-root .home2-rise{animation:none}.home2-import-root .home2-press{transition:none}}
 @media(max-width:360px){.home2-import-root header[role=banner]{padding-left:10px;padding-right:10px;gap:4px;}.home2-import-root header[role=banner]>div:first-child{gap:5px}.home2-import-root header[role=banner]>div:last-child{gap:4px}.home2-import-root header[role=banner]>div:last-child>button{padding-inline:8px;}}
+
+/* Match the standalone ZIP's Tailwind preflight line-height, not the citizen shell's 1.6/1.65. Shared help/payment/login overlays are outside this boundary. */
+.home2-import-root [data-home2-view]{line-height:1.5;font-size:16px;}
+.home2-import-root [data-home2-view] :is(button,input){font-family:inherit;}
