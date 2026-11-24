@@ -1,7 +1,7 @@
 import React,{useState} from 'react';
 import {useTaxState} from '../../services/taxState';
 import {useCorrectionNotices,markCorrectionNoticeRead,correctionNoticeTitle} from '../../services/previewCorrections';
-import {UiButton} from '../ui/UiButton';
+import {UiButton} from '../ui/Controls';
 export function PreviewCorrectionNotifications(){
  const {previewAccount,language,navigate}=useTaxState();
  const notices=useCorrectionNotices(previewAccount?.id??null,true);

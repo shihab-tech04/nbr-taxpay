@@ -92,7 +92,7 @@ function sqlRpc(origin,name,args){
   },
   OFFICE_SQL:{
    payment_v1_internal_bridge_config:()=> 'public.payment_v1_internal_bridge_config()',
-   payment_v1_demo_correction_route:()=> 'public.payment_v1_demo_correction_route('+sqlText(args.p_id)+'::uuid)',
+   payment_v1_demo_correction_route:()=> "coalesce(to_jsonb(public.payment_v1_demo_correction_route("+sqlText(args.p_id)+"::uuid)),'null'::jsonb)",
    payment_v1_internal_ingest_correction:()=> 'public.payment_v1_internal_ingest_correction('+pgJSON(args.p_event)+')',
    payment_v1_internal_claim_commands:()=> 'public.payment_v1_internal_claim_commands('+args.p_limit+'::integer)',
    payment_v1_internal_ack_correction_command:()=> 'public.payment_v1_internal_ack_correction_command('+
