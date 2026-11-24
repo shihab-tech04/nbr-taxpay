@@ -11,7 +11,7 @@ const getFlow = async (page: import('@playwright/test').Page) => {
   return dialog;
 };
 
-async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en', relationship: 'SELF' | 'OTHER' = 'OTHER', unified = false, frequentHistory = false) {
+async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en', relationship: 'SELF' | 'OTHER' = 'OTHER', unified = false, frequentHistory = false, unifiedRoute: 'taxpayer_home' | 'landing' = 'taxpayer_home') {
   let sessionLanguage: 'en' | 'bn' = 'en';
   await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**', route=>{
     const payer=route.request().headers()['x-taxpay-guest-capability'];
@@ -67,15 +67,28 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
     }
   }
   if(unified){
-    await page.goto('/?action=taxpayer_home');
-    // Open the actual signed-in Pay Tax action, even when the dashboard has
-    // no draft rows or its follow-up panel is showing requests.
-    const pay = page.getByRole('button',{name:'Pay — select payment type'});
+    await page.goto('/?action='+unifiedRoute);
+    // Use native navigation at the configured viewport; never substitute mobile
+    // controls for the desktop sidebar.
     const viewport=page.viewportSize();
-    if (viewport && viewport.width>900 && !(await pay.isVisible())) await page.setViewportSize({width:900,height:viewport.height});
-    await pay.click();
-    await page.getByRole('menu',{name:'Payment options'}).getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
-    if(viewport) await page.setViewportSize(viewport);
+    if (!viewport) throw new Error('Payment entry requires a configured viewport');
+    if (viewport.width>900 && unifiedRoute==='landing') {
+      const pay=page.locator('.citizen-menu-open');
+      await expect(pay).toBeVisible();
+      await pay.click();
+      await page.locator('#citizen-menu-dialog').getByRole('button',{name:'Pay Tax',exact:true}).click();
+    } else if (viewport.width>900) {
+      const pay=page.getByRole('button',{name:'Pay Tax menu',exact:true});
+      await expect(pay).toBeVisible();
+      await pay.click();
+      await page.getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
+    } else {
+      const pay=page.getByRole('button',{name:'Pay — select payment type'});
+      await expect(pay).toBeVisible();
+      await pay.click();
+      await page.getByRole('menu',{name:'Payment options'}).getByRole('menuitem',{name:'Pay Tax',exact:true}).click();
+    }
+    expect(page.viewportSize()).toEqual(viewport);
     const dialog=page.getByRole('dialog',{name:'Pay Tax'});
     await dialog.getByRole('button',{name:'Start new Tax payment'}).click();
     await expect(dialog.getByTestId('unified-account-own')).toBeVisible();
@@ -1111,5 +1124,17 @@ test('F-039 unified frequent head is owner-scoped and opens the original editor 
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
   await original.check();
   await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
+  expect(writes).toEqual([]);
+});
+
+test('authenticated landing Pay Tax uses the same unified workspace at its native viewport',async({page})=>{
+  const writes:string[]=[];
+  const {dialog}=await mockSignedInOtherTax(page,writes,'en','OTHER',true,false,'landing');
+  await expect(dialog.getByTestId('unified-account-own')).toBeVisible();
+  await expect(dialog.getByTestId('saved-beneficiary-picker')).toBeVisible();
+  await expect(dialog.locator('[data-payer-relationship]')).toHaveCount(0);
+  await dialog.getByTestId('unified-account-own').getByRole('checkbox').check();
+  await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+  await expect(dialog.getByTestId('other-tax-batch')).toBeVisible();
   expect(writes).toEqual([]);
 });

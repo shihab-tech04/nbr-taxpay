@@ -116,7 +116,7 @@ export function CitizenNavigation() {
     navigate(route, params);
   };
   const openAccountIncomeTax = () => {
-    if ((applicationUser || previewAccount) && currentRoute !== 'landing') openAllTaxPayments();
+    if (applicationUser || previewAccount) openAllTaxPayments();
     else openPaymentServiceChoice();
   };
   const openPay = () => {
