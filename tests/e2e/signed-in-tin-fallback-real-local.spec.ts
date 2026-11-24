@@ -17,7 +17,7 @@ for(const language of ['en','bn'] as const){
       !['localhost','127.0.0.1','[::1]'].includes(database.hostname))
       throw new Error('Refusing hosted Auth or SQL for the one-time TIN fallback test.');
     const psql=(query:string)=>{
-      const run=spawnSync('psql',['-X','-At','-v','ON_ERROR_STOP=1','-c',query],{
+      const run=spawnSync('psql',['-X','-q','-At','-v','ON_ERROR_STOP=1','-c',query],{
         encoding:'utf8',timeout:10_000,
         env:{...process.env,PGHOST:database.hostname.replace(/^\[|\]$/g,''),PGPORT:database.port||'5432',
           PGUSER:decodeURIComponent(database.username),PGPASSWORD:decodeURIComponent(database.password),
@@ -66,12 +66,13 @@ for(const language of ['en','bn'] as const){
     try{
       expect(SAMPLE_TIN_SUGGESTIONS).toHaveLength(30);
       expect(auth.user.id).toMatch(/^[0-9a-f-]{36}$/i);
+      // Distinct fixture IDs per language/project avoid concurrent inserts
+      // targeting the same unique taxpayer binding. Fail closed on any conflict.
+      const fixtureId='user'+(25+(mobile?0:2)+(language==='bn'?1:0));
       fixtureProfile=psql(`INSERT INTO public.sim_payment_account_bindings(user_id,owner_uid,assigned_by)
-        SELECT id,'${auth.user.id}'::uuid,'${auth.user.id}'::uuid
-        FROM public.sim_payment_users WHERE id IN ('user25','user26','user27','user28','user29','user30')
-          AND NOT EXISTS(SELECT 1 FROM public.sim_payment_account_bindings WHERE user_id=sim_payment_users.id)
-        ORDER BY id LIMIT 1 ON CONFLICT DO NOTHING RETURNING user_id;`);
-      expect(fixtureProfile).toMatch(/^user(2[5-9]|30)$/);
+        VALUES('${fixtureId}','${auth.user.id}'::uuid,'${auth.user.id}'::uuid)
+        RETURNING user_id;`);
+      expect(fixtureProfile).toBe(fixtureId);
       await page.goto(loginUrl);
       await expect(page.getByTestId('beneficiaries-page')).toBeVisible({timeout:15_000});
       await page.getByRole('button',{name:language==='bn'?'তালিকা তৈরি':'Create list',exact:true}).first().click();
