@@ -43,7 +43,11 @@ test('Travel Tax keeps taxpayer v5 review and checkout components without a sque
   await expect(checkout).toHaveClass(/unified-v5-payment-channel/);
   await expect(checkout.locator('.payment-review__channels')).toBeVisible();
   await expect(checkout.getByTestId('travel-checkout-total')).toContainText('1,000');
-  await expect(modal.getByTestId('mobile-payment-calculation')).toHaveCount(0);
+  if ((page.viewportSize()?.width ?? 0) >= 651) {
+    await expect(modal.getByTestId('mobile-payment-calculation')).toBeHidden();
+  } else {
+    await expect(modal.getByTestId('mobile-payment-calculation')).toBeVisible();
+  }
   await expect(checkout.locator('.payment-review__method-groups')).toHaveCount(0);
   await modal.getByRole('button', { name: 'Pay online' }).click();
   await expect(checkout.locator('.payment-review__method-groups')).toBeVisible();
