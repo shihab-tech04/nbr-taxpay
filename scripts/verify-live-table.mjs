@@ -36,8 +36,43 @@ try{
   await expect(page.getByTestId('user1-synthetic-workspace')).toBeVisible({timeout:30_000});
   // Same tab keeps the existing account session. Direct anonymous history links
   // must continue to show the approved sign-in boundary.
+  // Inspect the real, owner-capability-scoped list before filtering. The
+  // default Activity view must never hide a successful payment's assessment year.
+  const details=new Map();
+  page.on('response',async r=>{
+    if(r.request().method()!=='GET'||!r.ok()||!new URL(r.url()).pathname.includes('/demo-story1-taxpay/payments/'))return;
+    try{const payload=await r.json();if(payload.success===true&&payload.data?.id)details.set(payload.data.id,payload);}catch{}
+  });
+  const ownerList=page.waitForResponse(r=>{
+    const u=new URL(r.url());
+    return u.pathname.endsWith('/demo-story1-taxpay/payments')&&u.searchParams.get('page')==='1'&&r.request().method()==='GET';
+  },{timeout:45000});
   await page.goto(url('history'),{waitUntil:'domcontentloaded',timeout:45000});
   const panel=page.locator('.taxpayer-transaction-panel');
+  const assessmentYear=page.getByRole('combobox',{name:'Assessment year'});
+  await expect(assessmentYear).toHaveValue('all');
+  const response=await ownerList;
+  if(!response.ok())throw Error('Published owner payment list unavailable');
+  const ownerPayments=await response.json();
+  if(ownerPayments.success!==true||!Array.isArray(ownerPayments.data?.items))throw Error('Invalid owner payment list');
+  const latest=ownerPayments.data.items[0];
+  if(latest){
+    // Parent batch reference can differ from a source payment ID. Capture
+    // the same verified detail used by the existing register, not any
+    // privileged backend data or fixture.
+    await expect.poll(()=>details.has(latest.id),{timeout:30000}).toBe(true);
+    const latestDetail=details.get(latest.id);
+    const d=latestDetail.data?.data?.details;
+    if(latestDetail.success!==true||latestDetail.data?.id!==latest.id||!d)throw Error('Latest owner payment detail mismatch');
+    const validBatch=typeof d.batchId==='string'&&Number.isSafeInteger(d.batchItemIndex)&&d.batchItemIndex>0&&Number.isSafeInteger(d.batchItemCount)&&d.batchItemIndex<=d.batchItemCount;
+    const reference=validBatch?d.batchId:latest.id;
+    await expect(panel.getByTestId('taxpayer-transaction-table').locator('tbody tr').first().locator('td:nth-child(4)')).toContainText(reference,{timeout:30000});
+    console.log('PASS: newest owner-scoped SQL payment is first in default all-year Activity');
+  }
+  // Preserve the historical illustrative layout assertions without assuming
+  // the real account has exactly 14 total payments or no recent SQL records.
+  await assessmentYear.selectOption('2025-2026');
+  await panel.getByRole('searchbox',{name:'Search transaction reference'}).fill('DEMO-');
   await expect(panel.getByTestId('convay-table-toolbar')).toBeVisible({timeout:30000});
   await expect(panel.getByRole('searchbox',{name:'Search transaction reference'})).toBeVisible();
   const filterButton=panel.getByRole('button',{name:'Filter',exact:true});

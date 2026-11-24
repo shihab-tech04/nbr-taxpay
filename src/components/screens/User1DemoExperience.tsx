@@ -25,6 +25,7 @@ import {activityPaymentPayer} from '../../services/activityPaymentPayer';
 import {PAYMENT_TAG_GROUPS,paymentTagGroupLabels,paymentTagGroupForTin,type PaymentTagGroup} from '../../services/beneficiaryPaymentTags';
 import {TaxpayerActivityTabs, TaxpayerPageHeading} from '../layout/TaxpayerPageStructure';
 import {taxpayerGreeting} from '../../services/taxpayerGreeting';
+import {initialActivityYear, compareActivityNewestFirst} from '../../services/activityYearScope';
 import {EventBasedTaxLedger, PaymentLifecycleDetails, type TaxAccountEvent} from './EventBasedTaxLedger';
 
 /**
@@ -36,7 +37,7 @@ import {EventBasedTaxLedger, PaymentLifecycleDetails, type TaxAccountEvent} from
 type Kind = 'income'|'tds'|'ait'|'travel'|'refund'|'adjustment';
 type State = 'POSTED'|'PENDING'|'FAILED'|'REVERSED'|'DISPUTED'|'REQUESTED';
 type RecordItem = {
-  id:string; year:string; date:string; kind:Kind; amount:number; state:State;
+  id:string; year:string; date:string; occurredAt?:string; kind:Kind; amount:number; state:State;
   title:string; detail:string; channel:string; ref:string; challan?:string; beneficiaryTin?:string;
   sql?:{receipts:ChallanReceipt[];reuse:PaymentReuse|null}; years?:string[]; typeLabel?:string;
 };
@@ -198,10 +199,15 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     return typeof initial==='string'&&/^20\d{2}-20\d{2}$/.test(initial)
       ? initial : ((route==='taxpayer_home'||route==='dashboard')&&!localQaScenario&&!authorizedPreviewScenario?'2026-2027':'2025-2026');
   });
+  // Ordinary signed-in Activity is an all-year transaction register. Keep
+  // the selected assessment year for Overview, Ledger and explicit drilldowns.
+  const [historyYear,setHistoryYear]=useState(()=>initialActivityYear(
+    new URLSearchParams(window.location.search).get('scenarioYear'),
+    year,authorizedPreviewScenario&&!localQaScenario,false));
   const [overviewSourceChoice,setOverviewSourceChoice]=useState<{year:string;source:DashboardChartSource}|null>(null);
   const changeYear=(nextYear:string)=>{
-    setYear(nextYear);
-    setLedgerYear(nextYear);
+    if(route==='history')setHistoryYear(nextYear);
+    if(nextYear!=='all'){setYear(nextYear);setLedgerYear(nextYear);}
     setMonthFilter('all');
     const url=new URL(window.location.href);
     url.searchParams.set('scenarioYear',nextYear);
@@ -234,6 +240,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const [dashboardHistoryCompletedOnly,setDashboardHistoryCompletedOnly]=useState(false);
   useEffect(()=>{
     if(route!=='history')return;
+    const scopedDrilldown=routeParams.dashboardSource==='recorded'||routeParams.dashboardSource==='example'||
+      Array.isArray(routeParams.reviewStatuses)||typeof routeParams.monthFilter==='string'||typeof routeParams.categoryFilter==='string';
+    setHistoryYear(initialActivityYear(new URLSearchParams(window.location.search).get('scenarioYear'),
+      year,authorizedPreviewScenario&&!localQaScenario,scopedDrilldown));
     // A chart drill-down is a new scoped view, never inherit unrelated
     // Activity filters from a previous search or payment head.
     if(routeParams.dashboardSource==='recorded'||routeParams.dashboardSource==='example'){
@@ -284,8 +294,9 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       }).catch(()=>{if(isCurrent()){setSqlPayments([]);setSqlLoadError(true);}});
     };
     load();
-    window.addEventListener('taxpay:story-payments-recovered',load);
-    return()=>{active=false;window.removeEventListener('taxpay:story-payments-recovered',load);};
+    const refresh=()=>{setHistoryPage(1);load();};
+    window.addEventListener('taxpay:story-payments-recovered',refresh);
+    return()=>{active=false;window.removeEventListener('taxpay:story-payments-recovered',refresh);};
   },[route,previewAccount?.id]);
   // SQL records are never matched to illustrative DEMO-* rows by their labels.
   // Every complete multi-head batch is one transaction and repeats as a whole.
@@ -336,10 +347,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       const minor=items.reduce((total,entry)=>total+entry.payment.amountMinor,0);
       const kind:Kind=first.service==='TRAVEL_TAX'?'travel':first.service==='SOURCE_TAX_DEPOSIT'?'tds':'income';
       return {id:'recorded-'+id,ref:id,year:years[0]??'—',years:years.length?years:['—'],
-        date:first.createdAt.slice(0,10),kind,amount:minor/100,state:'POSTED' as const,
+        date:first.createdAt.slice(0,10),occurredAt:first.createdAt,kind,amount:minor/100,state:'POSTED' as const,
         title:service,typeLabel:service,detail:'SQL-recorded simulated payment',
         channel:'Recorded simulated payment',sql:{receipts,reuse}};
-    }).sort((a,b)=>b.date.localeCompare(a.date));
+    }).sort(compareActivityNewestFirst);
   },[sqlPayments]);
   const availableYears=useMemo(()=>[
     ...new Set(['2026-2027',...taxYears.map(item=>item.year),
@@ -348,7 +359,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
   const totals=yearSummary(year)??{year,liability:0,tds:0,ait:0,direct:0,travel:0,
     applied:0,outstanding:0,pending:0,failed:0,disputed:0,posted:0};
   const scoped=useMemo(()=>events.filter(x=>x.year===year),[year]);
-  const historyScoped=useMemo(()=>[...scoped,...sqlRows.filter(row=>row.years?.includes(year))],[scoped,sqlRows,year]);
+  const historyScoped=useMemo(()=>historyYear==='all'
+    ?[...events,...sqlRows]
+    :[...events.filter(row=>row.year===historyYear),...sqlRows.filter(row=>row.years?.includes(historyYear))],
+    [historyYear,sqlRows]);
   // Activity and preview Overview use the same fictional, year-scoped events.
   // The production preview is always explicitly labeled as simulated; it never
   // falls back to SQL on a missing fixture, or mixes its totals with SQL amounts.
@@ -374,11 +388,10 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
     const needsAllocationMatch=dashboardHistoryService!=='all'||(
       dashboardHistorySource!=='all'&&
       (beneficiaryFilter!=='all'||paymentTagFilter!=='all'));
-    const allocationMatch=!needsAllocationMatch||matchesDashboardChartDrilldown(
-      x,year,x.sql?'recorded':'example',savedTagPeople,DEMO_USERS.user1.tin,
-      dashboardHistoryService,
-      beneficiaryFilter==='all'?undefined:beneficiaryFilter,
-      paymentTagFilter==='all'?undefined:paymentTagFilter);
+    const allocationMatch=!needsAllocationMatch||(historyYear==='all'?(x.years??[x.year]):[historyYear]).some(ay=>
+      matchesDashboardChartDrilldown(x,ay,x.sql?'recorded':'example',savedTagPeople,DEMO_USERS.user1.tin,
+        dashboardHistoryService,beneficiaryFilter==='all'?undefined:beneficiaryFilter,
+        paymentTagFilter==='all'?undefined:paymentTagFilter));
     const searchFields=[x.ref,x.title,x.challan||'',x.detail,x.typeLabel||'',payerName(x),...people.flatMap(p=>
       [p.name,p.tin,p.tag||'',...p.heads,...p.assessmentYears])];
     return (dashboardHistorySource==='all'||((dashboardHistorySource==='recorded')===Boolean(x.sql)))&&
@@ -391,11 +404,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
       (beneficiaryFilter==='all'||people.some(person=>person.tin===beneficiaryFilter))&&
       (paymentTagFilter==='all'||(tagLoadState==='ready'&&matchesTransactionTag(x,paymentTagFilter)))&&
       searchFields.join(' ').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
-  }).sort((a,b)=>b.date.localeCompare(a.date));
+  }).sort(compareActivityNewestFirst);
   const historyPerPage=10;
   const currentHistoryPage=Math.min(historyPage,Math.max(1,Math.ceil(filtered.length/historyPerPage)));
   const visibleHistoryRows=filtered.slice((currentHistoryPage-1)*historyPerPage,currentHistoryPage*historyPerPage);
-  useEffect(()=>setHistoryPage(1),[year,query,kind,status,monthFilter,reviewFilter,paymentTagFilter,beneficiaryFilter,dashboardHistorySource,dashboardHistoryCompletedOnly,dashboardHistoryService]);
+  useEffect(()=>setHistoryPage(1),[historyYear,query,kind,status,monthFilter,reviewFilter,paymentTagFilter,beneficiaryFilter,dashboardHistorySource,dashboardHistoryCompletedOnly,dashboardHistoryService]);
   const availableHistoryMonths=[...new Set(historyScoped.map(x=>x.date.slice(0,7)))].sort();
   // Use the same selected-year, owner-owned projection as the Activity table.
   // Keep demo events identifiable; SQL records are simulation payments, not certified credits.
@@ -451,11 +464,11 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
           recipients.flatMap(p=>p.heads).join('; ')];
       })].map(x=>x.map(clean).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF'+lines],{type:'text/csv;charset=utf-8'}));
-    const a=document.createElement('a');a.href=url;a.download='Sohojkor_user1_SYNTHETIC_'+year+'.csv';a.click();URL.revokeObjectURL(url);
+    const a=document.createElement('a');a.href=url;a.download='Sohojkor_user1_SYNTHETIC_'+historyYear+'.csv';a.click();URL.revokeObjectURL(url);
   };
   const years=<label className="flex flex-col gap-1 text-xs font-medium text-slate-600">{tr('Assessment year','করবর্ষ')}
-    <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={year} onChange={e=>changeYear(e.target.value)}>{(['history','taxpayer_home','dashboard'].includes(route)?availableYears:taxYears.map(x=>x.year)).map(value=>
-      <option key={value} value={value}>{value==='—'?tr('Unknown assessment year','অজ্ঞাত করবর্ষ'):value}</option>)}</select>
+    <select aria-label={tr('Assessment year','করবর্ষ')} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" value={route==='history'?historyYear:year} onChange={e=>changeYear(e.target.value)}>{(route==='history'?['all',...availableYears]:['taxpayer_home','dashboard'].includes(route)?availableYears:taxYears.map(x=>x.year)).map(value=>
+      <option key={value} value={value}>{value==='all'?tr('All years','সব করবর্ষ'):value==='—'?tr('Unknown assessment year','অজ্ঞাত করবর্ষ'):value}</option>)}</select>
   </label>;
   const transactionList=<section className={panel+' taxpayer-transaction-panel taxpay-office-register-frame'} aria-labelledby="taxpayer-transaction-heading">
     <TaxPayOfficeRegisterToolbar id="taxpayer-transaction-heading" testId="convay-table-toolbar"
