@@ -22,6 +22,9 @@ export interface GiftTaxPaymentInput {
   description: string;
   giftDate: string;
   remarks: string;
+  /** Sample-only payer/receipt fields from the shared walk-in Final Preview.
+   * Never interpreted as authorization or sent to the financial gateway. */
+  payer?: {name:string;phone:string;email:string;noticeReference:string;tin:string};
   /** Generated for this exact review. Reuse on retry until server resolves. */
   idempotencyKey: string;
 }

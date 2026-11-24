@@ -128,28 +128,35 @@ try{
       const review=gift.getByTestId('gift-tax-review');
       await expect(review).toBeVisible();
       await expect(gift.locator('.taxpay-modal__progress')).toHaveAttribute('aria-valuenow','3');
-      await expect(review).toContainText('Gift Tax production UX acceptance only');
-      await expect(review.locator('.gift-tax-preview-table')).not.toContainText('111111111111');
+      await expect(review.getByTestId('unified-v3-gift-payment-details')).toBeVisible();
+      await expect(review.getByRole('heading',{name:bn?'পরিশোধকারী ও রসিদের তথ্য':'Payer and receipt details'})).toBeVisible();
+      await expect(review.locator('#gift-tax-final-remarks')).toHaveValue('Gift Tax production UX acceptance only');
+      await expect(review.locator('.gift-tax-approved-table')).not.toContainText('111111111111');
+      await expect(review.locator('.unified-taxpayer-workspace__rail')).toHaveCount(0);
+      await review.locator('#gift-review-payer-name').fill('Sample Payer');
+      await review.locator('#gift-review-phone').fill('01712345678');
+      await review.locator('#gift-review-email').fill('sample@example.com');
+      await review.locator('#gift-review-reference').fill('GIFT-UX-ACCEPTANCE');
       const previewOverflow=await body.evaluate(element=>element.scrollWidth-element.clientWidth);
       if(previewOverflow>2)throw new Error('Final review horizontal overflow: '+previewOverflow);
       await gift.screenshot({path:'test-results/live-gift-tax-preview-'+sample.name+'.png',
         animations:'disabled'});
-      await gift.getByRole('button',{name:bn?'নিশ্চিত করুন ও পরিশোধ করুন':'Confirm & Pay'}).click();
+      await gift.getByRole('button',{name:bn?'পেমেন্ট করুন':'Make Payment'}).click();
       await expect(gift.getByTestId('gift-tax-checkout')).toBeVisible();
       await gift.getByRole('button',{name:bn?'অনলাইনে পরিশোধ':'Pay online'}).click();
       await gift.getByRole('button',{name:bn?'মোবাইল ব্যাংকিং':'Mobile banking'}).click();
       await gift.getByRole('radio',{name:'bKash'}).check();
       await gift.locator('.payment-review__ack input[type=checkbox]').check();
       watchWrites=true;
-      await gift.getByRole('button',{name:bn?'পেমেন্ট সিমুলেশন করুন':'Simulate payment'}).click();
+      await gift.getByRole('button',{name:bn?'নমুনা পেমেন্ট নিশ্চিত করুন':'Confirm sample payment'}).click();
       watchWrites=false;
       const result=gift.getByTestId('gift-tax-payment-result');
       await expect(result).toBeVisible();
-      await expect(result).toContainText(bn?'সিমুলেশন সম্পন্ন':'Simulation completed');
+      await expect(result).toContainText(bn?'নমুনা পেমেন্ট রেকর্ড প্রস্তুত':'Sample payment record ready');
       await expect(gift.getByTestId('gift-tax-settled-documents')).toHaveCount(0);
       if(financialWrites.length)throw new Error('Sample Gift Tax submitted financial API writes: '+
         financialWrites.join(', '));
-      await gift.getByRole('button',{name:bn?'নমুনা রসিদ দেখুন':'View sample receipt'}).click();
+      await gift.getByRole('button',{name:bn?'নমুনা রসিদের বিবরণ':'Sample receipt details'}).click();
       const receipt=gift.getByTestId('gift-tax-simulation-receipt');
       await expect(receipt).toBeVisible();
       await expect(receipt).toContainText('SIM-GIFT-');
@@ -162,6 +169,8 @@ try{
       await gift.getByRole('button',{name:bn?'চূড়ান্ত পর্যালোচনায় ফিরুন':
         'Back to Final Preview'}).click();
       await expect(review).toBeVisible();
+      await expect(review.locator('#gift-review-payer-name')).toHaveValue('Sample Payer');
+      await expect(review.locator('#gift-review-phone')).toHaveValue('01712345678');
       console.log('PASS: deployed Gift Tax '+sample.name+
         ' entry, roles, selector bounds, recovery, validation, preview, simulated method and marked receipt');
     }catch(error){
