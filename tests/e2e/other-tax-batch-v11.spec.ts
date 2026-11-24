@@ -10,8 +10,13 @@ const getFlow = async (page: import('@playwright/test').Page) => {
   return dialog;
 };
 
-async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en', relationship: 'SELF' | 'OTHER' = 'OTHER', unified = false) {
+async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en' | 'bn' = 'en', relationship: 'SELF' | 'OTHER' = 'OTHER', unified = false, frequentHistory = false) {
   let sessionLanguage: 'en' | 'bn' = 'en';
+  await page.route('**/functions/v1/demo-story1-taxpay/profile-history?**', route=>{
+    const payer=route.request().headers()['x-taxpay-guest-capability'];
+    const rows=frequentHistory&&payer==='A'.repeat(43) ? [20,21].map(day=>({id:'SIM-'+day,transactionId:'00000000-0000-4000-8000-0000000000'+day,payer:'user1',state:'SIMULATED',createdAt:'2026-11-'+day+'T10:00:00Z',simulationOnly:true,totalMinor:10000,reviewStatus:'MIRRORED_TO_OFFICE',events:[],allocations:[{id:'line-'+day,lineNo:1,beneficiary:'user1',category:'TAX_WITH_RETURN',assessmentYear:'2026-27',amountMinor:10000,headId:125,economicCode:'74'}]})) : [];
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,simulationOnly:true,data:rows})});
+  });
   const list={id:'00000000-0000-4000-8000-000000000001',name:'Family',created_at:'2026-01-01T00:00:00Z'};
   const people=[
     {id:'00000000-0000-4000-8000-000000000002',list_id:list.id,tin:'222222222222',display_name:'Saved Taxpayer Two',tag:'friends_family',relationship:'father',created_at:list.created_at,updated_at:list.created_at},
@@ -62,7 +67,7 @@ async function mockSignedInOtherTax(page: Page, writes: string[], language: 'en'
   }
   if(unified){
     await page.goto('/?action=taxpayer_home');
-    await page.getByRole('button',{name:'Pay tax',exact:true}).first().click();
+    await page.getByTestId('dashboard-payment-drafts').getByRole('button',{name:'Start a payment',exact:true}).click();
     const dialog=page.getByRole('dialog',{name:'Pay Tax'});
     await dialog.getByRole('button',{name:'Start new Tax payment'}).click();
     await expect(dialog.getByTestId('unified-account-own')).toBeVisible();
@@ -1073,5 +1078,27 @@ test('F-039 unified account dashboard: own TIN and saved recipients share the ap
   await expect(batch).toBeVisible();
   await expect(batch.getByTestId('unified-v5-return-group')).toBeVisible();
   await expect(dialog.getByTestId('frequent-category-section')).toHaveCount(0);
+  expect(writes).toEqual([]);
+});
+
+
+test('F-039 unified frequent head is owner-scoped and opens the original editor without adding an allocation', async ({page})=>{
+  const writes:string[]=[];
+  const {dialog}=await mockSignedInOtherTax(page,writes,'en','OTHER',true,true);
+  await dialog.getByTestId('unified-account-own').getByRole('checkbox').check();
+  await dialog.getByRole('button',{name:'Continue to Payment Head'}).click();
+  const batch=dialog.getByTestId('other-tax-batch');
+  const rail=batch.getByTestId('frequent-category-section');
+  await expect(rail).toBeVisible();
+  await expect(rail.locator('[data-frequent-head-id]')).toHaveCount(1);
+  await expect(rail.locator('[data-frequent-head-id="125"]')).toBeVisible();
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
+  await rail.locator('[data-frequent-head-id="125"]').click();
+  const original=batch.getByTestId('unified-v5-return-checkbox');
+  await expect(original).toBeVisible();
+  await expect(original).not.toBeChecked();
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(0);
+  await original.check();
+  await expect(batch.getByTestId('other-tax-line')).toHaveCount(1);
   expect(writes).toEqual([]);
 });
