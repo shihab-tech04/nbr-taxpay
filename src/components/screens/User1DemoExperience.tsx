@@ -281,7 +281,7 @@ export const User1DemoExperience:React.FC<{route:string;activityTabs?:boolean;on
         activePreviewSession()?.capability===session?.capability;
       void getDetailedStorySessionPayments().then(payments=>{
         if(isCurrent()){setSqlPayments(payments);setSqlLoadError(false);}
-      }).catch(()=>{if(isCurrent()){setSqlLoadError(true);}});
+      }).catch(()=>{if(isCurrent()){setSqlPayments([]);setSqlLoadError(true);}});
     };
     load();
     window.addEventListener('taxpay:story-payments-recovered',load);
