@@ -92,9 +92,10 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
   };
   const [passengerIssue, setPassengerIssue] = useState<PassengerIdentityIssue | null>(null);
   const [passportSuggestionsFor, setPassportSuggestionsFor] = useState<string | null>(null);
-  const [passportSuggestionLayout, setPassportSuggestionLayout] = useState<{ placement: 'above' | 'below'; maxHeight: number }>({
-    placement: 'below', maxHeight: 210,
-  });
+  const [passportSuggestionMaxHeight, setPassportSuggestionMaxHeight] = useState(210);
+  // Keep the picker BELOW the field. A popup above intercepts the nationality
+  // tabs and headings. Reserve scroll clearance and bring the field into view
+  // instead; the approved two-column panel and fixed footer stay in place.
   useLayoutEffect(() => {
     if (!passportSuggestionsFor) return;
     const row = document.getElementById('travel-passport-' + passportSuggestionsFor)
@@ -103,17 +104,20 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
     if (!row || !body) return;
     const position = () => {
       if (!row.isConnected) return;
-      const rect = row.getBoundingClientRect();
-      const container = body.getBoundingClientRect();
-      const footer = row.closest('.taxpay-modal')?.querySelector<HTMLElement>('.taxpay-modal__footer')
-        ?.getBoundingClientRect().top ?? window.innerHeight;
-      const below = Math.max(0, Math.min(container.bottom, footer, window.innerHeight) - rect.bottom - 8);
-      const above = Math.max(0, rect.top - Math.max(container.top, 0) - 8);
-      const placement = below >= 150 || below >= above ? 'below' : 'above';
+      const visibleBottom = Math.min(
+        body.getBoundingClientRect().bottom,
+        row.closest('.taxpay-modal')?.querySelector<HTMLElement>('.taxpay-modal__footer')
+          ?.getBoundingClientRect().top ?? window.innerHeight,
+        window.innerHeight,
+      );
       const limit = window.innerWidth <= 560 ? Math.min(190, window.innerHeight * .28) : 210;
-      const maxHeight = Math.max(0, Math.floor(Math.min(limit, placement === 'below' ? below : above)));
-      setPassportSuggestionLayout(old => old.placement === placement && old.maxHeight === maxHeight
-        ? old : {placement, maxHeight});
+      const needed = row.getBoundingClientRect().bottom + limit + 8 - visibleBottom;
+      if (needed > 0) body.scrollTop += Math.ceil(needed);
+      const available = Math.max(0, visibleBottom - row.getBoundingClientRect().bottom - 8);
+      setPassportSuggestionMaxHeight(old => {
+        const height = Math.floor(Math.min(limit, available));
+        return old === height ? old : height;
+      });
     };
     const frame = requestAnimationFrame(position);
     const observer = new ResizeObserver(position);
@@ -812,8 +816,8 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
               </div>
               {passportSuggestionsFor === item.id && <div
                 className="travel-flow__passport-suggestions" id={'travel-passport-suggestions-' + item.id}
-                data-placement={passportSuggestionLayout.placement}
-                style={{maxHeight: passportSuggestionLayout.maxHeight}}
+                data-placement="below"
+                style={{maxHeight: passportSuggestionMaxHeight}}
                 role="listbox" aria-label={tr('Available sample passports','উপলব্ধ নমুনা পাসপোর্ট')}
                 onKeyDown={event => {
                   if (event.key === 'Escape') {
@@ -1086,6 +1090,11 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             aria-label={tr('Passenger information','যাত্রীর তথ্য')} data-testid="travel-passenger-list">
             <section className="travel-passenger-workspace__editor">
               <h2>{tr('Add passenger','যাত্রী যোগ করুন')}</h2>
+              {pendingPassenger && passengers.length > 1 && !editBackup &&
+                <button className="travel-flow__edit travel-passenger-workspace__cancel-editor"
+                  type="button" onClick={()=>removeTravelPassenger(pendingPassenger)}>
+                  {tr('Cancel adding','যোগ করা বাতিল করুন')}
+                </button>}
               <p className="travel-passenger-workspace__help">{tr('Enter a passport number and search.','পাসপোর্ট নম্বর লিখে অনুসন্ধান করুন।')}</p>
               {pendingPassenger ? (() => {
                 const item=pendingPassenger, index=passengers.findIndex(p=>p.id===item.id);
@@ -1095,10 +1104,6 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
                     className="travel-flow__inline-error" role="alert">{passengerIssue.message}</p>}
                   {editBackup?.passenger.id===item.id && <button className="travel-flow__edit" type="button"
                     onClick={cancelPassengerEdit}>{tr('Cancel edit','সম্পাদনা বাতিল')}</button>}
-                  {passengers.length > 1 && !editBackup && <button className="travel-flow__edit travel-passenger-workspace__cancel-editor"
-                    type="button" onClick={()=>removeTravelPassenger(item)}>
-                    {tr('Cancel adding','যোগ করা বাতিল করুন')}
-                  </button>}
                   {item.nationality === 'FOREIGN' && canShowAddPassenger && pendingConfirmationId === item.id &&
                     <div className="travel-flow__confirm-row">
                       <button type="button" className="travel-flow__add-member travel-flow__confirm-passenger"
