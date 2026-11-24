@@ -241,16 +241,22 @@ begin
        or public.taxpay_demo_correction_ack(v_id,gen_random_uuid(),true) then
       raise exception 'Invalid or duplicate correction claim accepted';
     end if;
-    if not public.taxpay_demo_correction_ack(v_id,v_token,false)
-       or public.taxpay_demo_correction_get(v_id)->>'officeSyncState' is distinct from 'PENDING' then
+    if not public.taxpay_demo_correction_ack(v_id,v_token,false) then
+      raise exception 'Failed delivery claim was not released';
+    end if;
+    if public.taxpay_demo_correction_get(v_id)->>'officeSyncState' is distinct from 'PENDING' then
       raise exception 'Failed delivery incorrectly became acknowledged';
     end if;
     -- Advance only this disposable fixture's retry time, not a hosted record.
     update taxpay_guest_private.story_correction_requests set sync_next_at=now() where id=v_id;
     v_claim:=public.taxpay_demo_correction_claim(1,v_id);
     if v_claim->0->'event' is distinct from v_event then raise exception 'Correction retry altered immutable event'; end if;
-    if not public.taxpay_demo_correction_ack(v_id,(v_claim->0->>'claimToken')::uuid,true)
-       or public.taxpay_demo_correction_get(v_id)->>'officeSyncState' is distinct from 'ACKNOWLEDGED' then
+    if not public.taxpay_demo_correction_ack(v_id,(v_claim->0->>'claimToken')::uuid,true) then
+      raise exception 'Valid Office acknowledgement was not accepted';
+    end if;
+    -- Use a new SQL statement: a STABLE read inside the acknowledgement
+    -- expression sees its initial snapshot rather than the preceding write.
+    if public.taxpay_demo_correction_get(v_id)->>'officeSyncState' is distinct from 'ACKNOWLEDGED' then
       raise exception 'Office acknowledgement did not persist';
     end if;
     v_cmd:=jsonb_build_object('schemaVersion','1.0.0','origin','OFFICE_SQL','sourceProject','v2',
