@@ -18,6 +18,10 @@ declare
   original_outbox jsonb;
   original_notice jsonb;
   v_payment_id uuid;
+  correction_key uuid:=gen_random_uuid();
+  correction_input jsonb;
+  saved_correction jsonb;
+  replay_correction jsonb;
 begin
   first_login:=public.taxpay_demo_profile_login('user10','user10');
   other_login:=public.taxpay_demo_profile_login('user9','user9');
@@ -156,6 +160,61 @@ begin
          and p.provolatile='v')<>4 then
     raise exception 'Capability-backed GET RPCs must be VOLATILE for PostgREST session cleanup';
   end if;
+  -- The correction form operates on the same saved payment, not a local receipt
+  -- fixture. Verify the simulation-only SQL intake, readback and account scope.
+  correction_input:=jsonb_build_object('allocationIndex',0,'allocationId',null,
+    'proposedAY','2025-2026','proposedCircle','','proposedHeadCode','',
+    'reason','Selected the wrong assessment year');
+  saved_correction:=public.taxpay_demo_correction_save(first_hash,v_payment_id,correction_key,correction_input);
+  if saved_correction->>'status' is distinct from 'RECORDED'
+     or saved_correction->>'paymentId' is distinct from v_payment_id::text
+     or saved_correction->>'currentAY' is distinct from '2026-27'
+     or saved_correction->>'proposedAY' is distinct from '2025-2026'
+     or saved_correction->>'originalReference' is distinct from 'SIM-'||key_id::text then
+    raise exception 'Correction acknowledgement differs from its original payment';
+  end if;
+  replay_correction:=public.taxpay_demo_correction_save(first_hash,v_payment_id,correction_key,correction_input);
+  if saved_correction is distinct from replay_correction
+     or jsonb_array_length(public.taxpay_demo_correction_list(first_hash,100,0))<>1
+     or public.taxpay_demo_correction_list(first_hash,100,0)->0 is distinct from saved_correction
+     or jsonb_array_length(public.taxpay_demo_correction_list(other_hash,100,0))<>0 then
+    raise exception 'Correction replay or account history failed';
+  end if;
+  begin
+    perform public.taxpay_demo_correction_save(other_hash,v_payment_id,gen_random_uuid(),correction_input);
+    raise exception 'Cross-account correction was accepted';
+  exception when others then
+    if sqlerrm not like '%NOT_FOUND%' then raise; end if;
+  end;
+  begin
+    perform public.taxpay_demo_correction_save(first_hash,v_payment_id,gen_random_uuid(),
+      correction_input||jsonb_build_object('proposedAY','2026-2027'));
+    raise exception 'Unchanged assessment year was accepted';
+  exception when others then
+    if sqlerrm not like '%CORRECTION_NO_CHANGE%' then raise; end if;
+  end;
+  begin
+    perform public.taxpay_demo_correction_save(first_hash,v_payment_id,correction_key,
+      correction_input||jsonb_build_object('reason','Changed input using same request key'));
+    raise exception 'Conflicting correction replay was accepted';
+  exception when others then
+    if sqlerrm not like '%CORRECTION_REQUEST_CONFLICT%' then raise; end if;
+  end;
+  if (select to_jsonb(x) from demo_payment.story_payments x where x.id=v_payment_id) is distinct from original_payment
+     or (select coalesce(jsonb_agg(to_jsonb(x)),'[]'::jsonb) from demo_payment.mirror_outbox x
+          where x.entity_type='PAYMENT' and x.entity_id=v_payment_id) is distinct from original_outbox
+     or (select coalesce(jsonb_agg(to_jsonb(x)),'[]'::jsonb) from demo_payment.story_notifications x
+          where x.payment_id=v_payment_id) is distinct from original_notice then
+    raise exception 'Correction modified the original payment, mirror, or notice';
+  end if;
+  if has_function_privilege('anon','public.taxpay_demo_correction_save(text,uuid,uuid,jsonb)','EXECUTE')
+     or has_function_privilege('authenticated','public.taxpay_demo_correction_save(text,uuid,uuid,jsonb)','EXECUTE')
+     or has_function_privilege('anon','public.taxpay_demo_correction_list(text,integer,integer)','EXECUTE')
+     or has_function_privilege('authenticated','public.taxpay_demo_correction_list(text,integer,integer)','EXECUTE')
+     or not has_function_privilege('service_role','public.taxpay_demo_correction_save(text,uuid,uuid,jsonb)','EXECUTE') then
+    raise exception 'Simulated correction RPC privileges are incorrect';
+  end if;
+  raise notice 'PASS: correction persistence, retry, source immutability and cross-account denial';
   raise notice 'PASS: nonempty payment activity, capability-scoped reads/writes, cross-account isolation, rejected public session paths, idempotent retry and preserved Office/notice rows';
 end
 $profile_scope$;
