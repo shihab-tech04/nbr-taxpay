@@ -65,6 +65,10 @@ async function mockAccount(page:Page,hasData:boolean,storedPayments:unknown[]=[]
           is_read:false,created_at:'2026-10-04T10:00:00Z'},
       ]:[]);
     }
+    if(url.pathname==='/rest/v1/rpc/taxpay_claim_office_initiated_corrections'){
+      expect(req.postDataJSON()).toEqual({p_limit:20});
+      return response(0);
+    }
     if(url.pathname==='/rest/v1/taxpay_correction_inquiries'){
       expect(url.searchParams.get('requester_uid')).toBe('eq.'+owner.id);
       return response(hasData?[{

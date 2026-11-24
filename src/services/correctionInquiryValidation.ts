@@ -13,6 +13,8 @@ export type CorrectionInquiryInput=Readonly<{
   originalReference:string;
   reason:string;
   desiredOutcome:string;
+  /** Supporting evidence description mirrored to Office; no upload or verification implied. */
+  evidenceNote?:string;
 }>;
 export type CorrectionInquiryDecision=Readonly<{
   allowedToRecordInquiry:boolean;
@@ -38,6 +40,9 @@ export function validateCorrectionInquiry(input: CorrectionInquiryInput):Correct
     return fail('Explain the correction reason in 10–1000 characters.');
   if (outcome.length<10 || outcome.length>600)
     return fail('Describe the requested outcome in 10–600 characters.');
+  if (input.evidenceNote !== undefined && (typeof input.evidenceNote !== 'string' ||
+      [...input.evidenceNote].length>2000 || new TextEncoder().encode(input.evidenceNote).length>8000))
+    return fail('Supporting evidence must be 2,000 characters or fewer.');
   if(diff) {
     if(!['ASSESSMENT_YEAR','CIRCLE','PAYMENT_HEAD','ATTRIBUTION'].includes(diff.field))
       return fail('Unsupported attribution field.');
