@@ -1351,6 +1351,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             transactionActions={ownedReceiptActions}
             onPayAgain={receiptReuse?()=>startPaymentReuse(receiptReuse!):undefined}
             onApplyForCorrection={applyReceiptCorrection}/>}
+          {!embedded && step === 2 && !createdReceipt && <div className="travel-flow__standalone-actions" data-testid="travel-standalone-stage-actions">{primaryAction}</div>}
           {!embedded && !createdReceipt && step > 0 && <button className="travel-flow__back" type="button"
             onClick={() => stepTo((step-1) as 0 | 1 | 2 | 3)}>
             <ArrowLeft size={16} aria-hidden="true"/>{tr('Back','ফিরুন')}
@@ -1388,7 +1389,7 @@ export const TravelTax: React.FC<TravelTaxProps> = ({ embedded = false, initialD
             </div>)}
 
         </div>
-        {!embedded && primaryAction}
+        {!embedded && step !== 2 && primaryAction}
       </aside>
 
       {embedded && modalFooterTarget && createPortal(
